@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import ListingMap from '@/components/ListingMap'
-import { getGeocodedListings } from '@/actions/geocode'
+import ListingMap from '../../../components/ListingMap'
+import { getGeocodedListings } from '../../../actions/geocode'
 
 // 1. Initialize Supabase
 const supabase = createClient(
