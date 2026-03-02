@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "mapbox-gl": "^3.1.0",
+    "mapbox-gl": "^3.1.2",
 "react-map-gl": "^7.1.7",
     "@supabase/supabase-js": "latest",
     "next": "16.1.6",
