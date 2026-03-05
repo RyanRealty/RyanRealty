@@ -30,6 +30,10 @@ function isClosedStatus(s: string | null | undefined): boolean {
 const ACTIVE_STATUS_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
 
+/** Active + Pending (for home page "recent & pending" slider). */
+const ACTIVE_OR_PENDING_OR =
+  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%'
+
 export type BrowseCity = { City: string; count: number }
 export type ListingCardRow = {
   ListingKey: string | null
@@ -159,6 +163,8 @@ export type ListingsFilters = {
   sort?: 'newest' | 'oldest' | 'price_asc' | 'price_desc'
   /** If false (default), exclude closed listings. Set true to include them. */
   includeClosed?: boolean
+  /** If true, include pending (under contract) with active. Used for home page slider. */
+  includePending?: boolean
 }
 
 /**
@@ -184,6 +190,8 @@ export async function getListings(options: {
   if (options.subdivision) query = query.ilike('SubdivisionName', options.subdivision.trim())
   if (options.includeClosed === true) {
     query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Closed%')
+  } else if (options.includePending === true) {
+    query = query.or(ACTIVE_OR_PENDING_OR)
   } else {
     query = query.or(ACTIVE_STATUS_OR)
   }
@@ -215,7 +223,11 @@ export async function getListings(options: {
   }
   const { data } = await query
   let rows = (data ?? []) as ListingCardRow[]
-  if (!options.includeClosed) {
+  if (options.includeClosed) {
+    // use as-is
+  } else if (options.includePending) {
+    rows = rows.filter((r) => isActiveStatus(r.StandardStatus) || isPendingStatus(r.StandardStatus)).slice(offset, offset + limit)
+  } else {
     rows = rows.filter((r) => isActiveStatus(r.StandardStatus)).slice(offset, offset + limit)
   }
   return rows
