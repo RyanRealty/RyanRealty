@@ -1,0 +1,64 @@
+# Vercel deployment and staying in sync
+
+## How Vercel gets your code
+
+Vercel deploys from your **Git repository** (e.g. GitHub/GitLab/Bitbucket). It does **not** see uncommitted or unpushed changes on your machine.
+
+- **Commit** = save changes locally (Git).
+- **Push** = send those commits to the remote (e.g. `origin` on GitHub).
+- **Vercel** = builds and deploys when it sees a **new push** on the branch it’s connected to (often `main` or `master`).
+
+So: if your latest work isn’t committed and pushed, Vercel will keep serving the last version it saw.
+
+---
+
+## Step-by-step: Get the latest code onto Vercel
+
+1. **Commit your changes**
+   ```bash
+   git add .
+   git status   # optional: check what will be committed
+   git commit -m "Your message, e.g. Auth, profile, email sign-in"
+   ```
+
+2. **Push to the remote**
+   ```bash
+   git push origin main
+   ```
+   (Use your branch name if different, e.g. `master`.)
+
+3. **Vercel**
+   - Vercel will detect the push and start a new deployment.
+   - In the Vercel dashboard: **Project → Deployments** to see status and logs.
+
+---
+
+## If the deployment fails (errors)
+
+1. **Vercel dashboard**
+   - Open your project → **Deployments**.
+   - Click the failed deployment → **Building** or **Logs**.
+   - Read the error message (e.g. missing env var, build timeout, TypeScript error).
+
+2. **Reproduce the build locally**
+   ```bash
+   npm run build
+   ```
+   If this fails, fix the errors; then commit, push, and redeploy.
+
+3. **Environment variables**
+   - Vercel → **Project → Settings → Environment Variables**.
+   - Add the same vars you use in `.env.local` for production (e.g. `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, etc.).
+   - **Redeploy** after changing env vars (Deployments → ⋮ on latest → Redeploy).
+
+4. **Build timeouts**
+   - If a page takes too long during build, it can timeout. We set `dynamic = 'force-dynamic'` on heavy admin pages (e.g. banners, sync) so they aren’t built at deploy time. If another page times out, add the same export to that page.
+
+---
+
+## Quick checklist
+
+- [ ] Code committed (`git status` clean or only intended changes).
+- [ ] Code pushed (`git push origin main` or your branch).
+- [ ] Vercel env vars set (especially `NEXT_PUBLIC_SITE_URL` = your Vercel URL).
+- [ ] Supabase Redirect URLs include your Vercel URL (see `docs/SUPABASE_AUTH_URLS.md`).

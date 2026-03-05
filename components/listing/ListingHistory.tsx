@@ -1,0 +1,58 @@
+import type { SparkListingHistoryItem } from '../../lib/spark'
+
+type Props = {
+  items: SparkListingHistoryItem[] | null
+}
+
+function formatDate(s: string | undefined): string {
+  if (!s) return ''
+  try {
+    const d = new Date(s)
+    return isNaN(d.getTime()) ? s : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  } catch {
+    return s ?? ''
+  }
+}
+
+export default function ListingHistory({ items }: Props) {
+  if (items == null) {
+    return (
+      <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-3 text-lg font-semibold">Listing history</h2>
+        <p className="text-zinc-500">Listing history is not available for this property.</p>
+      </section>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-3 text-lg font-semibold">Listing history</h2>
+        <p className="text-zinc-500">No history recorded yet.</p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <h2 className="mb-4 text-lg font-semibold">Listing history</h2>
+      <ul className="space-y-3">
+        {items.map((item, i) => {
+          const date = formatDate(item.Date)
+          const event = item.Event ?? item.Description ?? 'Update'
+          const price = item.Price ?? item.PriceChange
+          const line = [
+            date && <span key="date">{date}</span>,
+            event && <span key="event">{event}</span>,
+            price != null && <span key="price">${Number(price).toLocaleString()}</span>,
+          ].filter(Boolean)
+          return (
+            <li key={i} className="flex flex-wrap items-baseline gap-x-2 border-b border-zinc-100 pb-2 last:border-0 last:pb-0">
+              {line.length ? line : <span className="text-zinc-500">—</span>}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}

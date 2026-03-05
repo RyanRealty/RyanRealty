@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync-full",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh-place-content",
+      "schedule": "0 10 * * 0"
+    }
+  ]
+}
