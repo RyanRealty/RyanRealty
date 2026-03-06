@@ -7,12 +7,15 @@ import { getSession } from "./actions/auth";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import JsonLd from "../components/JsonLd";
-import NoDataBanner from "../components/NoDataBanner";
 import CookieConsentBanner from "../components/CookieConsentBanner";
 import SignInPrompt from "../components/SignInPrompt";
 import VisitTracker from "../components/VisitTracker";
 import AuthCodeRedirect from "../components/AuthCodeRedirect";
 import AuthErrorRedirect from "../components/AuthErrorRedirect";
+import FubIdentityBridge from "../components/FubIdentityBridge";
+import GoogleAnalytics from "../components/GoogleAnalytics";
+import MetaPixel from "../components/MetaPixel";
+import SignUpTracker from "../components/tracking/SignUpTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,6 +28,9 @@ const geistMono = Geist_Mono({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://ryanrealty.com'
+
+/** Always render with fresh data so production matches localhost (no stale static build). */
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -74,17 +80,20 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
       >
+        <GoogleAnalytics />
+        <MetaPixel />
         <JsonLd />
         <SiteHeader cities={cities} totalListings={totalListings} user={session?.user} />
-        {totalListings === 0 && <NoDataBanner />}
         <div className="min-h-[calc(100vh-120px)]">{children}</div>
         <SiteFooter />
         <CookieConsentBanner />
         <SignInPrompt user={session?.user ?? null} />
         <VisitTracker userId={session?.user?.id ?? null} />
         <Suspense fallback={null}>
+          <FubIdentityBridge />
           <AuthCodeRedirect />
           <AuthErrorRedirect />
+          <SignUpTracker />
         </Suspense>
       </body>
     </html>

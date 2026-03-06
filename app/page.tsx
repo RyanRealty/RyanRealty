@@ -1,14 +1,16 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import {
   getListings,
   getBrowseCities,
   getTotalListingsCount,
   getListingKeysWithRecentPriceChange,
-  getListingsForMap,
   getCityCentroid,
+  getCityStatusCounts,
 } from './actions/listings'
+import { getActivityFeedWithFallback } from './actions/activity-feed'
 import { getSession } from './actions/auth'
 import { getSavedListingKeys } from './actions/saved-listings'
 import { getBuyingPreferences } from './actions/buying-preferences'
@@ -27,7 +29,8 @@ import ListingCard from '../components/ListingCard'
 import ListingMap from '../components/ListingMap'
 import { getGeocodedListings } from './actions/geocode'
 import HomeCitySelector from '../components/HomeCitySelector'
-import HomeListingsSlider from '../components/HomeListingsSlider'
+import HomeListingsSection from '../components/HomeListingsSection'
+import ActivityFeedCard from '../components/ActivityFeedCard'
 
 const DEFAULT_HOME_CITY = 'Bend'
 
@@ -50,6 +53,29 @@ function slugifyCity(s: string): string {
     .toLowerCase()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
+}
+
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.com').replace(/\/$/, '')
+
+/** Always render with fresh data so production matches localhost (no stale static build). */
+export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Central Oregon Homes for Sale',
+  description: 'Search Central Oregon homes for sale. Browse listings by city and neighborhood, view maps, and find your next home with Ryan Realty.',
+  alternates: { canonical: siteUrl },
+  openGraph: {
+    title: 'Ryan Realty | Central Oregon Homes for Sale',
+    description: 'Search Central Oregon homes for sale. Browse listings, maps, and find your next home.',
+    url: siteUrl,
+    type: 'website',
+    siteName: 'Ryan Realty',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Ryan Realty | Central Oregon Homes for Sale',
+    description: 'Search Central Oregon homes for sale. Browse listings, maps, and find your next home.',
+  },
 }
 
 type HomeProps = { searchParams?: Promise<{ next?: string }> }
@@ -91,55 +117,63 @@ export default async function Home({ searchParams }: HomeProps) {
   const validCity =
     cities.find((c) => slugifyCity(c.City) === citySlug || c.City === rawCity)?.City ?? DEFAULT_HOME_CITY
 
+  const HOMEPAGE_LISTING_LIMIT = 30
+
   const [
-    listings,
+    listingsRaw,
     totalListings,
     priceChangeKeys,
     bannerResult,
-    mapListingsRaw,
     mapCenter,
+    cityStatusCounts,
+    activityFeedItems,
   ] = await Promise.all([
     getListings({
       city: validCity,
-      limit: 16,
+      limit: HOMEPAGE_LISTING_LIMIT,
       sort: 'newest',
       includePending: true,
     }),
     getTotalListingsCount(),
     getListingKeysWithRecentPriceChange(),
     getOrCreatePlaceBanner('city', cityEntityKey(validCity), `${validCity} Oregon`),
-    getListingsForMap({ city: validCity }),
     getCityCentroid(validCity).then((c) =>
       c ? { latitude: c.lat, longitude: c.lng, zoom: 11 as number } : null
     ),
+    getCityStatusCounts({ city: validCity }),
+    getActivityFeedWithFallback({ city: validCity, limit: 12 }),
   ])
+
+  let listingsWithCoords = listingsRaw
+  try {
+    listingsWithCoords = await getGeocodedListings(listingsRaw)
+  } catch {
+    // Map may show fewer points; page still loads
+  }
+
+  const hasCoords = (l: (typeof listingsWithCoords)[0]) =>
+    l.Latitude != null &&
+    l.Longitude != null &&
+    Number.isFinite(Number(l.Latitude)) &&
+    Number.isFinite(Number(l.Longitude))
+  const listingsOnMap = listingsWithCoords.filter(hasCoords)
 
   const [savedKeys, prefs] = session?.user
     ? await Promise.all([getSavedListingKeys(), getBuyingPreferences()])
     : [[], null] as [string[], Awaited<ReturnType<typeof getBuyingPreferences>>]
 
-  let listingsWithCoords = listings
-  let mapListingsWithCoords = mapListingsRaw
-  try {
-    ;[listingsWithCoords, mapListingsWithCoords] = await Promise.all([
-      getGeocodedListings(listings),
-      getGeocodedListings(mapListingsRaw),
-    ])
-  } catch {
-    // Map may show fewer points; page still loads
-  }
-
   const mapCenterResolved =
     mapCenter ?? (FALLBACK_CITY_CENTERS[cityEntityKey(validCity)] ?? FALLBACK_CITY_CENTERS.bend)
   const bannerUrl = bannerResult?.url ?? null
   const bannerAttribution = bannerResult?.attribution ?? null
+  const totalInCity = cityStatusCounts.active + cityStatusCounts.pending
   const displayPrefs =
     prefs ?? {
       downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
       interestRate: DEFAULT_DISPLAY_RATE,
       loanTermYears: DEFAULT_DISPLAY_TERM_YEARS,
     }
-  const monthlyPayments = listings.map((l) => {
+  const monthlyPayments = listingsOnMap.map((l) => {
     const price = Number(l.ListPrice ?? 0)
     const monthly =
       price > 0
@@ -228,34 +262,68 @@ export default async function Home({ searchParams }: HomeProps) {
         )}
       </section>
 
-      {/* Map for selected city */}
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        <div className="rounded-2xl border border-zinc-200 overflow-hidden shadow-sm">
-          <div className="h-[320px] sm:h-[400px]">
+      {/* Map: single source of truth — listings below are only those on the map */}
+      <section className="mx-auto max-w-7xl px-4 pt-8 pb-4 sm:px-6">
+        <div className="rounded-2xl border border-zinc-200 overflow-hidden shadow-lg">
+          <div className="h-[360px] sm:h-[440px] md:h-[480px]">
             <ListingMap
-              listings={mapListingsWithCoords}
+              listings={listingsOnMap}
               initialCenter={mapCenterResolved}
+              className="h-full w-full rounded-none"
             />
           </div>
-          <div className="flex justify-center border-t border-zinc-200 bg-zinc-50 py-3">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-zinc-200 bg-zinc-50 px-4 py-3">
             <Link
-              href="/listings?view=map"
+              href={`/search/${cityEntityKey(validCity)}`}
               className="text-sm font-medium text-zinc-700 hover:text-zinc-900"
             >
-              View full map →
+              View all {totalInCity} in {validCity} →
+            </Link>
+            <Link
+              href="/listings?view=map"
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
+            >
+              Full map view →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Recent & pending listings slider */}
-      <HomeListingsSlider
+      {/* Activity feed: full-bleed 4:5 cards, save on each (price drops, new, just sold) */}
+      {activityFeedItems.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pt-8 sm:px-6" aria-label="Activity feed">
+          <h2 className="text-xl font-bold tracking-tight text-zinc-900">Activity</h2>
+          <p className="mt-0.5 text-sm text-zinc-600">New listings, price drops, and just sold in {validCity}.</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {activityFeedItems.slice(0, 12).map((item) => (
+              <ActivityFeedCard
+                key={item.id}
+                item={item}
+                saved={session?.user ? savedKeys.includes(item.listing_key) : false}
+                signedIn={!!session?.user}
+                userEmail={session?.user?.email ?? null}
+              />
+            ))}
+          </div>
+          <Link
+            href={`/search/${cityEntityKey(validCity)}`}
+            className="mt-4 inline-block text-sm font-medium text-zinc-700 hover:text-zinc-900"
+          >
+            View all {totalInCity} in {validCity} →
+          </Link>
+        </section>
+      )}
+
+      {/* Listings on the map only — same set as map pins */}
+      <HomeListingsSection
         city={validCity}
-        listings={listings}
+        listings={listingsOnMap}
+        totalInCity={totalInCity}
         savedKeys={session?.user ? savedKeys : []}
         priceChangeKeys={priceChangeKeys}
         monthlyPayments={monthlyPayments}
         signedIn={!!session?.user}
+        userEmail={session?.user?.email ?? null}
       />
 
       {/* Browse by city */}
