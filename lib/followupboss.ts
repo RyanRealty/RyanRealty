@@ -172,10 +172,13 @@ export async function trackSignedInUser(params: {
 }
 
 /**
- * Call when a signed-in user views a listing. Sends "Viewed Property" to FUB so you can see what they're looking at.
+ * Call when a user views a listing. Sends "Viewed Property" to FUB.
+ * Use either user.email (signed-in) or fubPersonId (from email-click identity bridge cookie).
  */
 export async function trackListingView(params: {
-  user: { email?: string | null }
+  user?: { email?: string | null }
+  /** When set, event is attached to this FUB contact (e.g. from email-click cookie). */
+  fubPersonId?: number | null
   listingUrl: string
   property: {
     street?: string
@@ -191,16 +194,22 @@ export async function trackListingView(params: {
 }): Promise<void> {
   const auth = getAuth()
   if (!auth) return
-  const email = params.user.email?.trim()
-  if (!email) return
+  const email = params.user?.email?.trim()
+  const fubId = params.fubPersonId
+  let person: FubEventPerson
+  if (email) {
+    const existing = await findPersonByEmail(email)
+    person = existing ? { id: existing.id } : { emails: [{ value: email }] }
+  } else if (fubId != null && fubId > 0) {
+    person = { id: fubId }
+  } else {
+    return
+  }
 
   const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
     .toLowerCase() || 'ryanrealty.com'
-
-  const existing = await findPersonByEmail(email)
-  const person: FubEventPerson = existing ? { id: existing.id } : { emails: [{ value: email }] }
 
   await sendEvent({
     type: 'Viewed Property',
@@ -224,16 +233,88 @@ export async function trackListingView(params: {
 }
 
 /**
- * Call when a signed-in user views a page (e.g. search, home). Sends "Viewed Page" to FUB.
+ * Call when a user clicks a listing tile (card) anywhere on the site. Sends "Viewed Property" to FUB
+ * with sourceUrl = page they clicked from (home, search, etc.). Silent, fire-and-forget from client.
+ * If userEmail is provided, event is attached to that person; otherwise FUB may still record property/source.
  */
-export async function trackPageView(params: {
-  user: { email?: string | null }
-  pageUrl: string
-  pageTitle?: string
+export async function trackListingTileClick(params: {
+  listingKey: string
+  listingUrl: string
+  sourcePage: string
+  userEmail?: string | null
+  /** When set, event is attached to this FUB contact (e.g. from email-click cookie). */
+  fubPersonId?: number | null
+  property: {
+    street?: string
+    city?: string
+    state?: string
+    mlsNumber?: string
+    price?: number
+    bedrooms?: number
+    bathrooms?: number
+  }
 }): Promise<void> {
   const auth = getAuth()
   if (!auth) return
-  const email = params.user.email?.trim()
+
+  const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
+    .replace(/^https?:\/\//, '')
+    .replace(/\/$/, '')
+    .toLowerCase() || 'ryanrealty.com'
+
+  const email = params.userEmail?.trim()
+  const fubId = params.fubPersonId
+  let person: FubEventPerson
+  if (email) {
+    const existing = await findPersonByEmail(email)
+    person = existing ? { id: existing.id } : { emails: [{ value: email }] }
+  } else if (fubId != null && fubId > 0) {
+    person = { id: fubId }
+  } else {
+    person = {}
+  }
+
+  await sendEvent({
+    type: 'Viewed Property',
+    person,
+    source,
+    system: 'Ryan Realty Website',
+    sourceUrl: params.sourcePage,
+    pageUrl: params.sourcePage,
+    property: {
+      street: params.property.street,
+      city: params.property.city,
+      state: params.property.state,
+      mlsNumber: params.property.mlsNumber,
+      price: params.property.price,
+      url: params.listingUrl,
+      bedrooms: params.property.bedrooms != null ? String(params.property.bedrooms) : undefined,
+      bathrooms: params.property.bathrooms != null ? String(params.property.bathrooms) : undefined,
+    },
+  })
+}
+
+/**
+ * Call when a user saves a listing (like/save). Sends "Saved Property" to FUB. Fire after save succeeds.
+ */
+export async function trackSavedProperty(params: {
+  userEmail: string
+  listingKey: string
+  listingUrl: string
+  sourcePage?: string
+  property: {
+    street?: string
+    city?: string
+    state?: string
+    mlsNumber?: string
+    price?: number
+    bedrooms?: number
+    bathrooms?: number
+  }
+}): Promise<void> {
+  const auth = getAuth()
+  if (!auth) return
+  const email = params.userEmail?.trim()
   if (!email) return
 
   const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
@@ -243,6 +324,112 @@ export async function trackPageView(params: {
 
   const existing = await findPersonByEmail(email)
   const person: FubEventPerson = existing ? { id: existing.id } : { emails: [{ value: email }] }
+
+  await sendEvent({
+    type: 'Saved Property',
+    person,
+    source,
+    system: 'Ryan Realty Website',
+    sourceUrl: params.sourcePage ?? params.listingUrl,
+    property: {
+      street: params.property.street,
+      city: params.property.city,
+      state: params.property.state,
+      mlsNumber: params.property.mlsNumber,
+      price: params.property.price,
+      url: params.listingUrl,
+      bedrooms: params.property.bedrooms != null ? String(params.property.bedrooms) : undefined,
+      bathrooms: params.property.bathrooms != null ? String(params.property.bathrooms) : undefined,
+    },
+  })
+}
+
+/**
+ * Call when a user initiates contact about a listing (e.g. clicks "Send an email" in Contact agent).
+ * Sends "Property Inquiry" to FUB so the contact is attributed to this listing.
+ * Use userEmail (signed-in) or fubPersonId (from email-click cookie) when available so FUB knows who inquired.
+ */
+export async function trackContactAgentInquiry(params: {
+  listingUrl: string
+  userEmail?: string | null
+  fubPersonId?: number | null
+  property: {
+    street?: string
+    city?: string
+    state?: string
+    mlsNumber?: string
+    price?: number
+    bedrooms?: number
+    bathrooms?: number
+  }
+  message?: string
+}): Promise<void> {
+  const auth = getAuth()
+  if (!auth) return
+  const email = params.userEmail?.trim()
+  const fubId = params.fubPersonId
+  let person: FubEventPerson
+  if (email) {
+    const existing = await findPersonByEmail(email)
+    person = existing ? { id: existing.id } : { emails: [{ value: email }] }
+  } else if (fubId != null && fubId > 0) {
+    person = { id: fubId }
+  } else {
+    person = {}
+  }
+  const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
+    .replace(/^https?:\/\//, '')
+    .replace(/\/$/, '')
+    .toLowerCase() || 'ryanrealty.com'
+  await sendEvent({
+    type: 'Property Inquiry',
+    person,
+    source,
+    system: 'Ryan Realty Website',
+    sourceUrl: params.listingUrl,
+    message: params.message ?? 'Contact agent - email',
+    property: {
+      street: params.property.street,
+      city: params.property.city,
+      state: params.property.state,
+      mlsNumber: params.property.mlsNumber,
+      price: params.property.price,
+      url: params.listingUrl,
+      bedrooms: params.property.bedrooms != null ? String(params.property.bedrooms) : undefined,
+      bathrooms: params.property.bathrooms != null ? String(params.property.bathrooms) : undefined,
+    },
+  })
+}
+
+/**
+ * Call when a user views a page (e.g. search, home). Sends "Viewed Page" to FUB.
+ * Use either user.email (signed-in) or fubPersonId (from email-click identity bridge cookie).
+ */
+export async function trackPageView(params: {
+  user?: { email?: string | null }
+  /** When set, event is attached to this FUB contact (e.g. from email-click cookie). */
+  fubPersonId?: number | null
+  pageUrl: string
+  pageTitle?: string
+}): Promise<void> {
+  const auth = getAuth()
+  if (!auth) return
+  const email = params.user?.email?.trim()
+  const fubId = params.fubPersonId
+  let person: FubEventPerson
+  if (email) {
+    const existing = await findPersonByEmail(email)
+    person = existing ? { id: existing.id } : { emails: [{ value: email }] }
+  } else if (fubId != null && fubId > 0) {
+    person = { id: fubId }
+  } else {
+    return
+  }
+
+  const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
+    .replace(/^https?:\/\//, '')
+    .replace(/\/$/, '')
+    .toLowerCase() || 'ryanrealty.com'
 
   await sendEvent({
     type: 'Viewed Page',

@@ -36,6 +36,7 @@ yarn-error.log*
 
 # vercel
 .vercel
+.vercel-env-sync.log
 
 # supabase local
 supabase/.temp

@@ -1,5 +1,10 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Documentation
+
+- **Current features and capabilities:** See **[docs/FEATURES.md](docs/FEATURES.md)** for a detailed list of what the site and app do (listings, search, auth, sync, integrations, admin).
+- **Doc index:** See **[docs/DOCUMENTATION_INDEX.md](docs/DOCUMENTATION_INDEX.md)** for setup, deployment, sync, integrations, and admin docs.
+
 ## Getting Started
 
 First, run the development server:

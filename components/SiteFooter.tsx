@@ -1,10 +1,18 @@
 import Link from 'next/link'
 
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_OWNER_NAME || 'Ryan Realty'
-const SITE_EMAIL = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL
+const FALLBACK_NAME = process.env.NEXT_PUBLIC_SITE_OWNER_NAME || 'Ryan Realty'
+const FALLBACK_EMAIL = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL
 
-export default function SiteFooter() {
+type SiteFooterProps = {
+  brokerageName?: string
+  brokerageTagline?: string | null
+  brokerageEmail?: string | null
+}
+
+export default function SiteFooter({ brokerageName, brokerageTagline, brokerageEmail }: SiteFooterProps = {}) {
   const currentYear = new Date().getFullYear()
+  const siteName = brokerageName ?? FALLBACK_NAME
+  const siteEmail = brokerageEmail ?? FALLBACK_EMAIL
 
   return (
     <footer className="border-t border-zinc-200 bg-zinc-50 text-zinc-600">
@@ -12,15 +20,15 @@ export default function SiteFooter() {
         <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <Link href="/" className="text-lg font-semibold text-zinc-900">
-              {SITE_NAME}
+              {siteName}
             </Link>
             <p className="mt-2 max-w-sm text-sm">
-              Central Oregon&apos;s trusted source for homes for sale. Browse listings, explore neighborhoods, and find your next home.
+              {brokerageTagline?.trim() || "Central Oregon's trusted source for homes for sale. Browse listings, explore neighborhoods, and find your next home."}
             </p>
-            {SITE_EMAIL && (
+            {siteEmail && (
               <p className="mt-2 text-sm">
-                <a href={`mailto:${SITE_EMAIL}`} className="hover:text-zinc-900">
-                  {SITE_EMAIL}
+                <a href={`mailto:${siteEmail}`} className="hover:text-zinc-900">
+                  {siteEmail}
                 </a>
               </p>
             )}
@@ -29,11 +37,17 @@ export default function SiteFooter() {
             <Link href="/" className="text-sm hover:text-zinc-900">
               Home
             </Link>
+            <Link href="/about" className="text-sm hover:text-zinc-900">
+              About
+            </Link>
+            <Link href="/team" className="text-sm hover:text-zinc-900">
+              Team
+            </Link>
             <Link href="/listings" className="text-sm hover:text-zinc-900">
-              All Listings
+              Listings
             </Link>
             <Link href="/listings?view=map" className="text-sm hover:text-zinc-900">
-              Map View
+              Map
             </Link>
             <Link href="/reports" className="text-sm hover:text-zinc-900">
               Market Reports
@@ -44,7 +58,7 @@ export default function SiteFooter() {
           </nav>
         </div>
         <div className="mt-8 border-t border-zinc-200 pt-6 text-center text-sm">
-          © {currentYear} {SITE_NAME}. All rights reserved.
+          © {currentYear} {siteName}. All rights reserved.
         </div>
       </div>
     </footer>

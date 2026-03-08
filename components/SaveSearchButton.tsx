@@ -19,7 +19,7 @@ export default function SaveSearchButton({ user }: Props) {
     const filters: Record<string, unknown> = {}
     const parts = pathname?.split('/').filter(Boolean) ?? []
     if (parts[0] === 'search') {
-      if (parts[1]) filters.city = parts[1]
+      if (parts[1]) filters.city = decodeURIComponent(parts[1]).trim()
       if (parts[2]) filters.subdivision = decodeURIComponent(parts[2])
     }
     const minPrice = searchParams.get('minPrice')
@@ -27,15 +27,21 @@ export default function SaveSearchButton({ user }: Props) {
     const beds = searchParams.get('beds')
     const baths = searchParams.get('baths')
     const minSqFt = searchParams.get('minSqFt')
+    const maxSqFt = searchParams.get('maxSqFt')
     const propertyType = searchParams.get('propertyType')
     const sort = searchParams.get('sort')
+    const statusFilter = searchParams.get('statusFilter')
+    const includeClosed = searchParams.get('includeClosed')
     if (minPrice) filters.minPrice = Number(minPrice)
     if (maxPrice) filters.maxPrice = Number(maxPrice)
     if (beds) filters.beds = Number(beds)
     if (baths) filters.baths = Number(baths)
     if (minSqFt) filters.minSqFt = Number(minSqFt)
+    if (maxSqFt) filters.maxSqFt = Number(maxSqFt)
     if (propertyType) filters.propertyType = propertyType
     if (sort) filters.sort = sort
+    if (statusFilter) filters.statusFilter = statusFilter
+    if (includeClosed === '1') filters.includeClosed = true
     return filters
   }
 

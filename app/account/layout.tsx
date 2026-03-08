@@ -17,6 +17,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
         <Link href="/account/profile" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">Profile</Link>
         <Link href="/account/saved-searches" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">Saved searches</Link>
         <Link href="/account/saved-homes" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">Saved homes</Link>
+        <Link href="/account/saved-communities" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">Saved communities</Link>
         <Link href="/account/buying-preferences" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">Buying preferences</Link>
       </nav>
       {children}

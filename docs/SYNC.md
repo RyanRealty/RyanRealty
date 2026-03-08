@@ -42,6 +42,17 @@
 
 Call `GET /api/cron/sync-full` with `Authorization: Bearer <CRON_SECRET>` on a schedule (e.g. every 10–15 min). Each run does 5 listing pages or 30 history listings by default; override with `?pages=5&history_limit=30` if needed.
 
+## Spark: Listing History vs Historical Listings
+
+Flexmls/Spark expose two different concepts:
+
+| Concept | Purpose | Endpoint (example) | Docs |
+|--------|---------|--------------------|------|
+| **Listing History** | Status/event changes on a *specific* listing: status changes, who made them, price change data. | `GET /v1/listings/{id}/history` | [Listings: History](https://sparkplatform.com/docs/api_services/listings/history) |
+| **Historical Listings** | Listings that have since gone *off market* — full listing objects for prior MLS records for the same property. | `GET /v1/listings/{id}/historical` (and `/historical/pricehistory` for a price timeline) | [Listings: Historical](https://sparkplatform.com/docs/api_services/listings/historical) |
+
+We use **Listing History** to power the “Price & status history” section on the listing page (and to backfill `listing_history`). We try `/history` first, then `/historical/pricehistory` if the first returns no events. **Historical Listings** (`/historical`) is available via `fetchSparkHistoricalListings` for “previously listed at $X” or full prior listing details.
+
 ## Listing history and API key role
 
 **To get any listing history data, your Spark API key must have the Private role.** The [Spark Listings: History](https://sparkplatform.com/docs/api_services/listings/history) docs state:

@@ -44,7 +44,8 @@ export async function GET(request: Request) {
         sourceUrl,
         message: 'Signed in (Google)',
       }).catch(() => {})
-      const res = NextResponse.redirect(`${base}${safeNext}`)
+      const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
+      const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
       return res
     }
@@ -60,7 +61,8 @@ export async function GET(request: Request) {
         sourceUrl,
         message: 'Signed in (email link)',
       }).catch(() => {})
-      const res = NextResponse.redirect(`${base}${safeNext}`)
+      const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
+      const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
       return res
     }

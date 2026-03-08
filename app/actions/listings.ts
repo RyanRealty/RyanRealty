@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { listingKeyFromSlug } from '../../lib/slug'
 
 /**
  * Spark API uses StandardStatus for listing state. We categorize into Spark's three main states:
@@ -35,7 +36,8 @@ const ACTIVE_OR_PENDING_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%'
 
 export type BrowseCity = { City: string; count: number }
-export type ListingCardRow = {
+/** Row shape for listing tiles (grid, slider, saved). */
+export type ListingTileRow = {
   ListingKey: string | null
   ListNumber?: string | null
   ListPrice: number | null
@@ -55,18 +57,39 @@ export type ListingCardRow = {
   StandardStatus?: string | null
 }
 
+/** Extended row for home page tiles: brokerage, open house, DOM, sq ft, details (Videos). */
+export type HomeTileRow = ListingTileRow & {
+  TotalLivingAreaSqFt?: number | null
+  ListOfficeName?: string | null
+  ListAgentName?: string | null
+  OnMarketDate?: string | null
+  OpenHouses?: Array<{ Date?: string; StartTime?: string; EndTime?: string }> | null
+  details?: { Videos?: Array<{ Uri?: string; Id?: string }> } | null
+}
+
+/** Same shape as ListingTileRow so similar listings can use ListingTile. */
 export type SimilarListingRow = {
-  ListingKey: string
+  ListingKey: string | null
+  ListNumber?: string | null
   ListPrice: number | null
   BedroomsTotal: number | null
   BathroomsTotal: number | null
   StreetNumber: string | null
   StreetName: string | null
   City: string | null
+  State: string | null
+  PostalCode: string | null
   SubdivisionName: string | null
   PhotoURL: string | null
   Latitude: number | null
   Longitude: number | null
+  StandardStatus?: string | null
+  OnMarketDate?: string | null
+  OpenHouses?: Array<{ Date?: string; StartTime?: string; EndTime?: string }> | null
+  TotalLivingAreaSqFt?: number | null
+  ListOfficeName?: string | null
+  ListAgentName?: string | null
+  details?: { Videos?: Array<{ Uri?: string; Id?: string }> } | null
 }
 
 /**
@@ -84,7 +107,7 @@ export async function getOtherListingsInSubdivision(
   const supabase = createClient(url, anonKey)
   const { data } = await supabase
     .from('listings')
-    .select('ListingKey, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, SubdivisionName, PhotoURL, Latitude, Longitude')
+    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, OnMarketDate, OpenHouses, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, details')
     .ilike('SubdivisionName', subdivisionName)
     .neq('ListingKey', excludeListingKey)
     .neq('ListNumber', excludeListingKey)
@@ -93,43 +116,115 @@ export async function getOtherListingsInSubdivision(
   return (data ?? []) as SimilarListingRow[]
 }
 
+const SIMILAR_SELECT = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, OnMarketDate, OpenHouses, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, details'
+
+/**
+ * Similar listings for detail page: same subdivision first, then fill to minCount with recent in city.
+ * Per listing page audit: minimum 4, maximum 8; never empty (fallback to recent in region).
+ */
+export async function getSimilarListingsWithFallback(
+  subdivisionName: string | null,
+  city: string | null,
+  excludeListingKey: string,
+  minCount = 4,
+  maxCount = 8
+): Promise<SimilarListingRow[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const excludeKey = String(excludeListingKey ?? '').trim()
+  if (!url?.trim() || !anonKey?.trim() || !excludeKey) return []
+  const supabase = createClient(url, anonKey)
+  let similar: SimilarListingRow[] = []
+  if (subdivisionName?.trim()) {
+    similar = await getOtherListingsInSubdivision(subdivisionName.trim(), excludeKey)
+  }
+  if (similar.length >= maxCount) return similar.slice(0, maxCount)
+  if (similar.length >= minCount && !city?.trim()) return similar
+  const need = Math.max(minCount - similar.length, 0)
+  if (need === 0 && similar.length >= minCount) return similar.slice(0, maxCount)
+  const excludeSet = new Set([excludeKey, ...similar.map((r) => (r.ListNumber ?? r.ListingKey ?? '').toString().trim()).filter(Boolean)])
+  let query = supabase
+    .from('listings')
+    .select(SIMILAR_SELECT)
+    .or(ACTIVE_OR_PENDING_OR)
+    .neq('ListNumber', excludeKey)
+    .neq('ListingKey', excludeKey)
+    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
+    .limit((maxCount - similar.length) + 20)
+  if (city?.trim()) query = query.ilike('City', city.trim())
+  const { data: extra } = await query
+  const extraRows = (extra ?? []) as SimilarListingRow[]
+  const merged = similar.slice()
+  for (const row of extraRows) {
+    const k = (row.ListNumber ?? row.ListingKey ?? '').toString().trim()
+    if (k && !excludeSet.has(k)) {
+      excludeSet.add(k)
+      merged.push(row)
+      if (merged.length >= maxCount) break
+    }
+  }
+  return merged.slice(0, maxCount)
+}
+
+/** Static fallback so city dropdown is never empty (e.g. before first sync or if DB is unreachable). */
+const DEFAULT_BROWSE_CITIES: BrowseCity[] = [
+  { City: 'Bend', count: 0 },
+  { City: 'Redmond', count: 0 },
+  { City: 'Sisters', count: 0 },
+  { City: 'Sunriver', count: 0 },
+  { City: 'La Pine', count: 0 },
+  { City: 'Prineville', count: 0 },
+  { City: 'Madras', count: 0 },
+  { City: 'Terrebonne', count: 0 },
+  { City: 'Culver', count: 0 },
+]
+
 /**
  * Get distinct cities with active listing counts for browse nav and homepage.
  * Only cities with at least one active listing; count is active-only so it matches the city page.
- * Uses get_listings_breakdown RPC when available (full data); otherwise queries active listings only so we get a real city list.
+ * Uses a direct query on listings first; falls back to RPC if needed; finally to a static list so the dropdown is never empty.
  */
 export async function getBrowseCities(): Promise<BrowseCity[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return []
+  if (!url?.trim() || !anonKey?.trim()) return DEFAULT_BROWSE_CITIES
 
   const supabase = createClient(url, anonKey)
-  const { data: rpcData, error } = await supabase.rpc('get_listings_breakdown')
-  if (!error && rpcData != null) {
+
+  // 1) Prefer direct query so we never depend on report_listings_breakdown cache being populated
+  const { data: directData, error: directError } = await supabase
+    .from('listings')
+    .select('City')
+    .or(ACTIVE_STATUS_OR)
+    .limit(50000)
+
+  if (!directError && directData && directData.length > 0) {
+    const byCity = new Map<string, number>()
+    for (const row of directData as { City?: string; city?: string }[]) {
+      const c = (row.City ?? row.city ?? '').toString().trim()
+      if (c) byCity.set(c, (byCity.get(c) ?? 0) + 1)
+    }
+    const out = Array.from(byCity.entries())
+      .map(([City, count]) => ({ City, count }))
+      .sort((a, b) => b.count - a.count || a.City.localeCompare(b.City))
+    if (out.length > 0) return out
+  }
+
+  // 2) Optional: try RPC in case direct query was blocked or returned empty but cache has data
+  const { data: rpcData, error: rpcError } = await supabase.rpc('get_listings_breakdown')
+  if (!rpcError && rpcData != null) {
     const raw = rpcData as Record<string, unknown>
-    const byCity = (raw.byCity ?? raw.by_city) as Array<{ city: string; active?: number }> | undefined
-    if (Array.isArray(byCity)) {
-      return byCity
+    const byCity = (raw.byCity ?? raw.by_city) as Array<{ city?: string; active?: number }> | undefined
+    if (Array.isArray(byCity) && byCity.length > 0) {
+      const out = byCity
         .filter((r) => (r.city ?? '').trim() && (Number(r.active) ?? 0) > 0)
         .map((r) => ({ City: (r.city ?? '').trim(), count: Number(r.active) ?? 0 }))
         .sort((a, b) => b.count - a.count || a.City.localeCompare(b.City))
+      if (out.length > 0) return out
     }
   }
 
-  const { data } = await supabase
-    .from('listings')
-    .select('City, StandardStatus')
-    .or(ACTIVE_STATUS_OR)
-    .limit(50000)
-  if (!data?.length) return []
-  const byCity = new Map<string, number>()
-  for (const row of data as { City?: string; StandardStatus?: string }[]) {
-    const c = (row.City ?? '').trim()
-    if (c) byCity.set(c, (byCity.get(c) ?? 0) + 1)
-  }
-  return Array.from(byCity.entries())
-    .map(([City, count]) => ({ City, count }))
-    .sort((a, b) => b.count - a.count || a.City.localeCompare(b.City))
+  return DEFAULT_BROWSE_CITIES
 }
 
 /**
@@ -151,6 +246,101 @@ export async function getCityFromSlug(slug: string | undefined): Promise<string 
   return match ? match.City : null
 }
 
+export type SearchSuggestionAddress = { label: string; href: string }
+export type SearchSuggestionCity = { city: string; count: number }
+export type SearchSuggestionSubdivision = { city: string; subdivisionName: string; count: number }
+export type SearchSuggestionsResult = {
+  addresses: SearchSuggestionAddress[]
+  cities: SearchSuggestionCity[]
+  subdivisions: SearchSuggestionSubdivision[]
+}
+
+/**
+ * Smart search: autocomplete for address, city, and neighborhood (subdivision/community).
+ * Call with at least 2 characters. Returns grouped suggestions for dropdown.
+ */
+export async function getSearchSuggestions(query: string): Promise<SearchSuggestionsResult> {
+  const q = (query ?? '').trim()
+  const empty: SearchSuggestionsResult = { addresses: [], cities: [], subdivisions: [] }
+  if (q.length < 2) return empty
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url?.trim() || !anonKey?.trim()) return empty
+
+  const supabase = createClient(url, anonKey)
+  const safeQ = q.replace(/%/g, '').replace(/\\/g, '')
+  const like = `%${safeQ}%`
+
+  const [citiesRes, subdivisionsRes, addressesRes] = await Promise.all([
+    getBrowseCities().then((list) =>
+      list.filter((c) => (c.City ?? '').toLowerCase().includes(q.toLowerCase())).slice(0, 8)
+    ),
+    supabase
+      .from('listings')
+      .select('City, SubdivisionName')
+      .or(ACTIVE_STATUS_OR)
+      .or(`SubdivisionName.ilike.${like},City.ilike.${like}`)
+      .limit(400),
+    supabase
+      .from('listings')
+      .select('ListNumber, ListingKey, StreetNumber, StreetName, City, State, PostalCode')
+      .or(ACTIVE_STATUS_OR)
+      .or(`StreetNumber.ilike.${like},StreetName.ilike.${like},City.ilike.${like}`)
+      .limit(40),
+  ])
+
+  const cities: SearchSuggestionCity[] = citiesRes.map((c) => ({ city: c.City, count: c.count }))
+
+  const subRows = (subdivisionsRes.data ?? []) as { City?: string; SubdivisionName?: string }[]
+  const subByKey = new Map<string, { city: string; subdivisionName: string; count: number }>()
+  for (const row of subRows) {
+    const city = (row.City ?? '').trim()
+    const sub = (row.SubdivisionName ?? '').trim()
+    if (!city || !sub || isNaSubdivision(sub)) continue
+    const key = `${city.toLowerCase()}\t${sub.toLowerCase()}`
+    const cur = subByKey.get(key)
+    if (cur) cur.count += 1
+    else subByKey.set(key, { city, subdivisionName: sub, count: 1 })
+  }
+  const subdivisions = Array.from(subByKey.values())
+    .sort((a, b) => b.count - a.count || a.subdivisionName.localeCompare(b.subdivisionName))
+    .slice(0, 12)
+
+  const addrRows = (addressesRes.data ?? []) as {
+    ListNumber?: string | null
+    ListingKey?: string | null
+    StreetNumber?: string | null
+    StreetName?: string | null
+    City?: string | null
+    State?: string | null
+    PostalCode?: string | null
+  }[]
+  const seenAddr = new Set<string>()
+  const addresses: SearchSuggestionAddress[] = []
+  for (const row of addrRows) {
+    const sn = (row.StreetNumber ?? '').toString().trim()
+    const sname = (row.StreetName ?? '').toString().trim()
+    const city = (row.City ?? '').toString().trim()
+    const state = (row.State ?? '').toString().trim()
+    const zip = (row.PostalCode ?? '').toString().trim()
+    const addrKey = `${sn}|${sname}|${city}`.toLowerCase()
+    if (seenAddr.has(addrKey)) continue
+    seenAddr.add(addrKey)
+    const parts = [sn, sname].filter(Boolean).join(' ')
+    const label = parts
+      ? [parts, [city, state, zip].filter(Boolean).join(', ')].filter(Boolean).join(', ')
+      : [city, state, zip].filter(Boolean).join(', ')
+    if (!label) continue
+    const key = (row.ListNumber ?? row.ListingKey ?? '').toString().trim()
+    if (!key) continue
+    addresses.push({ label, href: `/listing/${encodeURIComponent(key)}` })
+    if (addresses.length >= 10) break
+  }
+
+  return { addresses, cities, subdivisions }
+}
+
 export type ListingsFilters = {
   minPrice?: number
   maxPrice?: number
@@ -167,6 +357,41 @@ export type ListingsFilters = {
   includePending?: boolean
 }
 
+/** Sort option for advanced search (includes price-per-sqft and year built). */
+export type AdvancedSort =
+  | 'newest'
+  | 'oldest'
+  | 'price_asc'
+  | 'price_desc'
+  | 'price_per_sqft_asc'
+  | 'price_per_sqft_desc'
+  | 'year_newest'
+  | 'year_oldest'
+
+/** Extended filters for advanced search (RPC). When any of these are set, use getListingsAdvanced. */
+export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & {
+  maxBeds?: number
+  maxBaths?: number
+  maxSqFt?: number
+  yearBuiltMin?: number
+  yearBuiltMax?: number
+  lotAcresMin?: number
+  lotAcresMax?: number
+  postalCode?: string
+  propertySubType?: string
+  /** active | active_and_pending | pending | closed | coming_soon | all */
+  statusFilter?: string
+  keywords?: string
+  hasOpenHouse?: boolean
+  garageMin?: number
+  hasPool?: boolean
+  hasView?: boolean
+  hasWaterfront?: boolean
+  /** Listed in last N days */
+  newListingsDays?: number
+  sort?: AdvancedSort
+}
+
 /**
  * Fetch listings for browse/search: card fields + lat/lng for map.
  * Supports optional filters (price, beds, baths, sq ft, propertyType) and sort.
@@ -177,13 +402,13 @@ export async function getListings(options: {
   subdivision?: string
   limit?: number
   offset?: number
-} & ListingsFilters = {}): Promise<ListingCardRow[]> {
+} & ListingsFilters = {}): Promise<ListingTileRow[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim()) return []
 
   const supabase = createClient(url, anonKey)
-  const select = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus'
+  const select = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, details'
   let query = supabase.from('listings').select(select)
 
   if (options.city) query = query.ilike('City', options.city)
@@ -222,7 +447,7 @@ export async function getListings(options: {
     query = query.limit(Math.min((offset + limit) * 3, 500))
   }
   const { data } = await query
-  let rows = (data ?? []) as ListingCardRow[]
+  let rows = (data ?? []) as ListingTileRow[]
   if (options.includeClosed) {
     // use as-is
   } else if (options.includePending) {
@@ -231,6 +456,170 @@ export async function getListings(options: {
     rows = rows.filter((r) => isActiveStatus(r.StandardStatus)).slice(offset, offset + limit)
   }
   return rows
+}
+
+/** Returns true if any advanced-only filter is set (so we should use RPC). */
+function hasAdvancedFilters(opts: Record<string, unknown>): boolean {
+  return (
+    opts.maxBeds != null ||
+    opts.maxBaths != null ||
+    opts.maxSqFt != null ||
+    opts.yearBuiltMin != null ||
+    opts.yearBuiltMax != null ||
+    opts.lotAcresMin != null ||
+    opts.lotAcresMax != null ||
+    (opts.postalCode != null && String(opts.postalCode).trim() !== '') ||
+    (opts.propertySubType != null && String(opts.propertySubType).trim() !== '') ||
+    (opts.statusFilter != null && String(opts.statusFilter) !== 'active') ||
+    (opts.keywords != null && String(opts.keywords).trim() !== '') ||
+    opts.hasOpenHouse === true ||
+    opts.garageMin != null ||
+    opts.hasPool === true ||
+    opts.hasView === true ||
+    opts.hasWaterfront === true ||
+    opts.newListingsDays != null ||
+    (opts.sort != null && ['price_per_sqft_asc', 'price_per_sqft_desc', 'year_newest', 'year_oldest'].includes(String(opts.sort)))
+  )
+}
+
+/**
+ * Advanced search via Supabase RPC (flat + details jsonb). Use when advanced filters are set; otherwise getListings is faster.
+ * Returns listings and total count for pagination.
+ */
+export async function getListingsAdvanced(options: {
+  city?: string
+  subdivision?: string
+  limit?: number
+  offset?: number
+} & AdvancedListingsFilters = {}): Promise<{ listings: ListingTileRow[]; totalCount: number }> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url?.trim() || !anonKey?.trim()) return { listings: [], totalCount: 0 }
+
+  const supabase = createClient(url, anonKey)
+  const limit = Math.min(options.limit ?? 100, 200)
+  const offset = options.offset ?? 0
+  const validStatus = ['active', 'active_and_pending', 'pending', 'closed', 'all'] as const
+  const statusFilter =
+    (options.statusFilter && validStatus.includes(options.statusFilter as typeof validStatus[number]))
+      ? options.statusFilter
+      : options.includeClosed === true
+        ? 'all'
+        : options.includePending === true
+          ? 'active_and_pending'
+          : 'active'
+
+  const { data, error } = await supabase.rpc('search_listings_advanced', {
+    p_city: options.city?.trim() || null,
+    p_subdivision: options.subdivision?.trim() || null,
+    p_postal_code: options.postalCode?.trim() || null,
+    p_min_price: options.minPrice != null && options.minPrice > 0 ? options.minPrice : null,
+    p_max_price: options.maxPrice != null && options.maxPrice > 0 ? options.maxPrice : null,
+    p_min_beds: options.minBeds != null && options.minBeds > 0 ? options.minBeds : null,
+    p_max_beds: options.maxBeds != null && options.maxBeds > 0 ? options.maxBeds : null,
+    p_min_baths: options.minBaths != null && options.minBaths > 0 ? options.minBaths : null,
+    p_max_baths: options.maxBaths != null && options.maxBaths > 0 ? options.maxBaths : null,
+    p_min_sqft: options.minSqFt != null && options.minSqFt > 0 ? options.minSqFt : null,
+    p_max_sqft: options.maxSqFt != null && options.maxSqFt > 0 ? options.maxSqFt : null,
+    p_year_built_min: options.yearBuiltMin != null ? options.yearBuiltMin : null,
+    p_year_built_max: options.yearBuiltMax != null ? options.yearBuiltMax : null,
+    p_lot_acres_min: options.lotAcresMin != null && options.lotAcresMin >= 0 ? options.lotAcresMin : null,
+    p_lot_acres_max: options.lotAcresMax != null && options.lotAcresMax >= 0 ? options.lotAcresMax : null,
+    p_property_type: options.propertyType?.trim() || null,
+    p_property_subtype: options.propertySubType?.trim() || null,
+    p_status_filter: statusFilter,
+    p_keywords: options.keywords?.trim() || null,
+    p_has_open_house: options.hasOpenHouse === true ? true : null,
+    p_garage_min: options.garageMin != null && options.garageMin >= 0 ? options.garageMin : null,
+    p_has_pool: options.hasPool === true ? true : null,
+    p_has_view: options.hasView === true ? true : null,
+    p_has_waterfront: options.hasWaterfront === true ? true : null,
+    p_new_listings_days: options.newListingsDays != null && options.newListingsDays > 0 ? options.newListingsDays : null,
+    p_sort: options.sort ?? 'newest',
+    p_limit: limit,
+    p_offset: offset,
+  })
+
+  if (error) {
+    return { listings: [], totalCount: 0 }
+  }
+  const rows = (data ?? []) as (ListingTileRow & { full_count?: number })[]
+  const first = rows[0] as (ListingTileRow & { full_count?: number }) | undefined
+  const totalCount =
+    first != null && typeof (first as Record<string, unknown>).full_count === 'number'
+      ? (first as Record<string, unknown>).full_count as number
+      : rows.length
+  const listings = rows.map((r) => {
+    const { full_count: _fc, ...rest } = r as ListingTileRow & { full_count?: number }
+    return rest as ListingTileRow
+  })
+  return { listings, totalCount }
+}
+
+const BASE_SORTS: ListingsFilters['sort'][] = ['newest', 'oldest', 'price_asc', 'price_desc']
+
+/**
+ * Get listings for browse/search. Uses advanced RPC when any advanced filter is set; otherwise uses fast flat-column query.
+ */
+export async function getListingsWithAdvanced(options: {
+  city?: string
+  subdivision?: string
+  limit?: number
+  offset?: number
+} & AdvancedListingsFilters = {}): Promise<{ listings: ListingTileRow[]; totalCount: number }> {
+  if (hasAdvancedFilters(options)) {
+    return getListingsAdvanced(options)
+  }
+  const baseSort: ListingsFilters['sort'] =
+    options.sort && BASE_SORTS.includes(options.sort as ListingsFilters['sort'])
+      ? (options.sort as ListingsFilters['sort'])
+      : 'newest'
+  const baseOptions: Parameters<typeof getListings>[0] = {
+    ...options,
+    sort: baseSort,
+  }
+  const listings = await getListings(baseOptions)
+  const totalCount = await getActiveListingsCount(baseOptions)
+  return { listings, totalCount }
+}
+
+const HOME_TILE_SELECT =
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, OpenHouses, details'
+
+/**
+ * Listings for home page "Homes for You" slider. Newest in city; optional filters (maxPrice, minBeds, minBaths) for curated feed.
+ */
+export async function getListingsForHomeTiles(options: {
+  city: string
+  limit?: number
+  maxPrice?: number | null
+  minBeds?: number | null
+  minBaths?: number | null
+}): Promise<HomeTileRow[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url?.trim() || !anonKey?.trim() || !options.city?.trim()) return []
+
+  const supabase = createClient(url, anonKey)
+  const limit = Math.min(options.limit ?? 16, 24)
+  let query = supabase
+    .from('listings')
+    .select(HOME_TILE_SELECT)
+    .ilike('City', options.city.trim())
+    .or(ACTIVE_OR_PENDING_OR)
+    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
+
+  if (options.maxPrice != null && options.maxPrice > 0) query = query.lte('ListPrice', options.maxPrice)
+  if (options.minBeds != null && options.minBeds > 0) query = query.gte('BedroomsTotal', options.minBeds)
+  if (options.minBaths != null && options.minBaths > 0) query = query.gte('BathroomsTotal', options.minBaths)
+
+  const fetchLimit = limit * 3
+  const { data } = await query.limit(fetchLimit)
+
+  const rows = (data ?? []) as HomeTileRow[]
+  return rows
+    .filter((r) => isActiveStatus(r.StandardStatus) || isPendingStatus(r.StandardStatus))
+    .slice(0, limit)
 }
 
 export type MapListingRow = {
@@ -244,37 +633,89 @@ export type MapListingRow = {
   City?: string | null
   State?: string | null
   PostalCode?: string | null
+  BedroomsTotal?: number | null
+  BathroomsTotal?: number | null
 }
 
 /**
- * Lightweight listings for map display (city or subdivision). Same filters as getListings (active by default).
- * Returns up to mapLimit rows with lat/lng (and address fields for geocoding when missing).
+ * Options for map listing query. Mirrors list search filters so map and list stay in sync (Zillow-style).
+ * Year/lot filters live in details JSONB and are applied only in the RPC list search; map uses table columns only.
  */
-export async function getListingsForMap(options: {
+export type GetListingsForMapOptions = {
   city?: string
   subdivision?: string
   includeClosed?: boolean
+  statusFilter?: string
   mapLimit?: number
-}): Promise<MapListingRow[]> {
+  minPrice?: number
+  maxPrice?: number
+  minBeds?: number
+  maxBeds?: number
+  minBaths?: number
+  maxBaths?: number
+  minSqFt?: number
+  maxSqFt?: number
+  yearBuiltMin?: number
+  yearBuiltMax?: number
+  lotAcresMin?: number
+  lotAcresMax?: number
+  postalCode?: string
+  propertyType?: string
+}
+
+/**
+ * Lightweight listings for map display. Uses same filters as list search so map and list stay in sync (Zillow-style).
+ * Returns up to mapLimit rows with lat/lng and address/beds/baths for InfoWindow.
+ */
+export async function getListingsForMap(options: GetListingsForMapOptions = {}): Promise<MapListingRow[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim()) return []
   const supabase = createClient(url, anonKey)
   const mapLimit = Math.min(options.mapLimit ?? 2000, 3000)
-  const select = 'ListingKey, ListNumber, ListPrice, Latitude, Longitude, StandardStatus, StreetNumber, StreetName, City, StateOrProvince, PostalCode'
+  const select = 'ListingKey, ListNumber, ListPrice, Latitude, Longitude, StandardStatus, StreetNumber, StreetName, City, StateOrProvince, PostalCode, BedroomsTotal, BathroomsTotal'
   let query = supabase.from('listings').select(select)
   if (options.city) query = query.ilike('City', options.city)
   if (options.subdivision) query = query.ilike('SubdivisionName', options.subdivision.trim())
-  if (options.includeClosed === true) {
+  const statusFilter = options.statusFilter ?? (options.includeClosed === true ? 'all' : 'active')
+  if (statusFilter === 'all') {
     query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Closed%')
+  } else if (statusFilter === 'active_and_pending') {
+    query = query.or(ACTIVE_OR_PENDING_OR)
+  } else if (statusFilter === 'pending') {
+    query = query.or('StandardStatus.ilike.%Pending%')
+  } else if (statusFilter === 'closed') {
+    query = query.or('StandardStatus.ilike.%Closed%')
   } else {
     query = query.or(ACTIVE_STATUS_OR)
   }
+  if (options.minPrice != null && options.minPrice > 0) query = query.gte('ListPrice', options.minPrice)
+  if (options.maxPrice != null && options.maxPrice > 0) query = query.lte('ListPrice', options.maxPrice)
+  if (options.minBeds != null && options.minBeds > 0) query = query.gte('BedroomsTotal', options.minBeds)
+  if (options.maxBeds != null && options.maxBeds > 0) query = query.lte('BedroomsTotal', options.maxBeds)
+  if (options.minBaths != null && options.minBaths > 0) query = query.gte('BathroomsTotal', options.minBaths)
+  if (options.maxBaths != null && options.maxBaths > 0) query = query.lte('BathroomsTotal', options.maxBaths)
+  if (options.minSqFt != null && options.minSqFt > 0) query = query.gte('TotalLivingAreaSqFt', options.minSqFt)
+  if (options.maxSqFt != null && options.maxSqFt > 0) query = query.lte('TotalLivingAreaSqFt', options.maxSqFt)
+  if (options.postalCode?.trim()) query = query.ilike('PostalCode', options.postalCode.trim())
+  const pt = options.propertyType?.trim()
+  if (pt && pt !== '' && pt !== 'all') {
+    query = query.or(`PropertyType.ilike.%${pt}%,PropertyType.is.null`)
+  }
   query = query.order('ModificationTimestamp', { ascending: false, nullsFirst: false })
   const { data } = await query.limit(mapLimit)
-  const rows = (data ?? []) as (MapListingRow & { StandardStatus?: string | null; StateOrProvince?: string | null })[]
-  const filtered = options.includeClosed ? rows : rows.filter((r) => isActiveStatus(r.StandardStatus))
-  return filtered.map(({ ListingKey, ListNumber, ListPrice, Latitude, Longitude, StreetNumber, StreetName, City, StateOrProvince, PostalCode }) => ({
+  const rows = (data ?? []) as (MapListingRow & { StandardStatus?: string | null; StateOrProvince?: string | null; BedroomsTotal?: number | null; BathroomsTotal?: number | null })[]
+  const filtered =
+    statusFilter === 'active'
+      ? rows.filter((r) => isActiveStatus(r.StandardStatus))
+      : statusFilter === 'active_and_pending'
+        ? rows.filter((r) => isActiveStatus(r.StandardStatus) || isPendingStatus(r.StandardStatus))
+        : statusFilter === 'pending'
+          ? rows.filter((r) => isPendingStatus(r.StandardStatus))
+          : statusFilter === 'closed'
+            ? rows.filter((r) => isClosedStatus(r.StandardStatus))
+            : rows
+  return filtered.map(({ ListingKey, ListNumber, ListPrice, Latitude, Longitude, StreetNumber, StreetName, City, StateOrProvince, PostalCode, BedroomsTotal, BathroomsTotal }) => ({
     ListingKey: ListingKey ?? null,
     ListNumber: ListNumber ?? null,
     ListPrice: ListPrice ?? null,
@@ -285,6 +726,8 @@ export async function getListingsForMap(options: {
     City: City ?? null,
     State: StateOrProvince ?? null,
     PostalCode: PostalCode ?? null,
+    BedroomsTotal: BedroomsTotal ?? null,
+    BathroomsTotal: BathroomsTotal ?? null,
   }))
 }
 
@@ -829,49 +1272,165 @@ export type ListingDetailRow = {
 
 /**
  * Get one listing by ListingKey or ListNumber from Supabase (used for detail page).
- * Tries ListingKey first, then ListNumber so URLs work when ListingKey is null.
- * Returns null if not found. Use row.details for full StandardFields (Photos, etc.).
+ * URL can be /listing/[key] or /listing/[key]-[address-slug]. We try multiple key candidates
+ * (first segment, all numeric segments, hyphen stripping) and both PascalCase and snake_case columns.
  */
-export async function getListingByKey(listingKey: string): Promise<ListingDetailRow | null> {
+export async function getListingByKey(listingKeyOrSlug: string): Promise<ListingDetailRow | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim() || !listingKey?.trim()) return null
+  if (!url?.trim() || !anonKey?.trim()) return null
+  const raw = String(listingKeyOrSlug ?? '')
+  const decoded = decodeURIComponent(raw).trim()
+  if (!decoded) return null
   const supabase = createClient(url, anonKey)
-  const { data: byKey, error: errKey } = await supabase
-    .from('listings')
-    .select('*')
-    .eq('ListingKey', listingKey)
-    .maybeSingle()
-  if (!errKey && byKey) {
-    const row = byKey as ListingDetailRow
+
+  const normalize = (row: ListingDetailRow): ListingDetailRow => {
     if (row.details && typeof row.details === 'string') row.details = JSON.parse(row.details) as Record<string, unknown>
     return row
   }
-  const { data: byNumber, error: errNumber } = await supabase
-    .from('listings')
-    .select('*')
-    .eq('ListNumber', listingKey)
-    .maybeSingle()
-  if (errNumber || !byNumber) return null
-  const row = byNumber as ListingDetailRow
-  if (row.details && typeof row.details === 'string') row.details = JSON.parse(row.details) as Record<string, unknown>
-  return row
+
+  /** Try to find a row by key (ListNumber or ListingKey). Tries PascalCase then snake_case columns. */
+  const tryKey = async (key: string): Promise<ListingDetailRow | null> => {
+    const k = String(key ?? '').trim()
+    if (!k) return null
+    // PascalCase: try ListNumber then ListingKey
+    const { data: byNumber } = await supabase.from('listings').select('*').eq('ListNumber', k).maybeSingle()
+    if (byNumber) return normalize(byNumber as ListingDetailRow)
+    const { data: byKey } = await supabase.from('listings').select('*').eq('ListingKey', k).maybeSingle()
+    if (byKey) return normalize(byKey as ListingDetailRow)
+    // Snake_case (some Supabase projects use lowercase columns)
+    const { data: bySnakeNum } = await supabase.from('listings').select('*').eq('list_number', k).maybeSingle()
+    if (bySnakeNum) return normalize(bySnakeNum as ListingDetailRow)
+    const { data: bySnakeKey } = await supabase.from('listings').select('*').eq('listing_key', k).maybeSingle()
+    if (bySnakeKey) return normalize(bySnakeKey as ListingDetailRow)
+    return null
+  }
+
+  // 1) First segment only (e.g. "2504654-56355-twin-rivers..." -> "2504654")
+  const firstKey = listingKeyFromSlug(decoded).trim()
+  if (firstKey) {
+    const row = await tryKey(firstKey)
+    if (row) return row
+  }
+
+  // 2) All numeric segments in order (MLS may use ListingId as one number and ListingKey as another)
+  const parts = decoded.split('-')
+  for (let i = 0; i < parts.length; i++) {
+    const seg = (parts[i] ?? '').trim()
+    if (seg && /^\d+$/.test(seg) && seg !== firstKey) {
+      const row = await tryKey(seg)
+      if (row) return row
+    }
+  }
+
+  // 3) Raw string as key (key-only URL)
+  const byRaw = await tryKey(decoded)
+  if (byRaw) return byRaw
+
+  // 4) Strip trailing segments (e.g. "BR-12345-123-main-bend" -> try "BR-12345")
+  if (decoded.includes('-')) {
+    for (let len = parts.length - 1; len >= 1; len--) {
+      const candidate = parts.slice(0, len).join('-')
+      const row = await tryKey(candidate)
+      if (row) return row
+    }
+  }
+
+  return null
 }
 
-const LISTING_CARD_SELECT = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus'
+const LISTING_TILE_SELECT = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus'
+
+export type ListingsAtAddressOptions = {
+  streetNumber: string | null
+  streetName: string | null
+  city: string | null
+  state: string | null
+  postalCode: string | null
+  excludeListingKey: string
+  /** If true, include closed/pending; default false = active only */
+  includeClosed?: boolean
+}
 
 /**
- * Fetch listing card rows by listing keys (e.g. for saved homes). Preserves order of keys where possible.
+ * Get all listings at the same address (same street number, street name, city, state, postal).
+ * Used on listing detail to show "Other listings at this address" (e.g. past sales). Default is active only; set includeClosed to show past listings.
  */
-export async function getListingsByKeys(keys: string[]): Promise<ListingCardRow[]> {
+export async function getListingsAtAddress(options: ListingsAtAddressOptions): Promise<ListingTileRow[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const excludeKey = String(options.excludeListingKey ?? '').trim()
+  if (!url?.trim() || !anonKey?.trim() || !excludeKey) return []
+  const city = (options.city ?? '').trim()
+  if (!city) return []
+
+  const supabase = createClient(url, anonKey)
+  let query = supabase
+    .from('listings')
+    .select(LISTING_TILE_SELECT)
+    .ilike('City', city)
+    .neq('ListNumber', excludeKey)
+    .neq('ListingKey', excludeKey)
+
+  const sn = (options.streetNumber ?? '').toString().trim()
+  const sname = (options.streetName ?? '').toString().trim()
+  const state = (options.state ?? '').toString().trim()
+  const zip = (options.postalCode ?? '').toString().trim()
+  if (sn) query = query.eq('StreetNumber', sn)
+  if (sname) query = query.ilike('StreetName', sname)
+  if (state) query = query.ilike('State', state)
+  if (zip) query = query.eq('PostalCode', zip)
+
+  if (options.includeClosed !== true) {
+    query = query.or(ACTIVE_STATUS_OR)
+  }
+
+  const { data } = await query.order('ModificationTimestamp', { ascending: false }).limit(50)
+  const rows = (data ?? []) as ListingTileRow[]
+  return rows.filter((r) => (r.ListNumber ?? r.ListingKey ?? '').toString().trim() !== excludeKey)
+}
+
+/**
+ * Fetch listing tile rows by listing keys (e.g. for saved homes). Preserves order of keys where possible.
+ */
+export async function getListingsByKeys(keys: string[]): Promise<ListingTileRow[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim() || keys.length === 0) return []
   const supabase = createClient(url, anonKey)
-  const { data } = await supabase.from('listings').select(LISTING_CARD_SELECT).in('ListingKey', keys)
-  let rows = (data ?? []) as ListingCardRow[]
+  const { data } = await supabase.from('listings').select(LISTING_TILE_SELECT).in('ListingKey', keys)
+  let rows = (data ?? []) as ListingTileRow[]
   const byKey = new Map(rows.map((r) => [r.ListingKey ?? r.ListNumber ?? '', r]))
-  return keys.map((k) => byKey.get(k)).filter(Boolean) as ListingCardRow[]
+  return keys.map((k) => byKey.get(k)).filter(Boolean) as ListingTileRow[]
+}
+
+/**
+ * Fetch home tile rows (full tile fields) by listing keys. Preserves order of keys. Used for trending and recently viewed.
+ * Keys may be ListingKey or ListNumber (e.g. from URL or cookie); we query both and merge.
+ */
+export async function getHomeTileRowsByKeys(keys: string[]): Promise<HomeTileRow[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url?.trim() || !anonKey?.trim() || keys.length === 0) return []
+  const supabase = createClient(url, anonKey)
+  const trimmedKeys = keys.map((k) => k.trim()).filter(Boolean)
+  if (trimmedKeys.length === 0) return []
+  const [byListingKey, byListNumber] = await Promise.all([
+    supabase.from('listings').select(HOME_TILE_SELECT).in('ListingKey', trimmedKeys),
+    supabase.from('listings').select(HOME_TILE_SELECT).in('ListNumber', trimmedKeys),
+  ])
+  const rowsA = (byListingKey.data ?? []) as HomeTileRow[]
+  const rowsB = (byListNumber.data ?? []) as HomeTileRow[]
+  const byKey = new Map<string, HomeTileRow>()
+  for (const r of rowsA) {
+    const k = (r.ListingKey ?? r.ListNumber ?? '').toString().trim()
+    if (k) byKey.set(k, r)
+  }
+  for (const r of rowsB) {
+    const k = (r.ListNumber ?? r.ListingKey ?? '').toString().trim()
+    if (k && !byKey.has(k)) byKey.set(k, r)
+  }
+  return trimmedKeys.map((k) => byKey.get(k)).filter(Boolean) as HomeTileRow[]
 }
 
 /**
@@ -918,18 +1477,58 @@ export type ListingHistoryRow = {
 }
 
 /**
+ * Return one listing key from the database (for admin sync test default).
+ * Uses service role. Order by ListNumber asc so we get a stable default.
+ */
+export async function getFirstListingKey(): Promise<string | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url?.trim() || !serviceKey?.trim()) return null
+  const supabase = createClient(url, serviceKey)
+  const { data } = await supabase
+    .from('listings')
+    .select('ListingKey, ListNumber')
+    .order('ListNumber', { ascending: true, nullsFirst: false })
+    .limit(1)
+    .maybeSingle()
+  const row = data as { ListingKey?: string | null; ListNumber?: string | null } | null
+  const key = row?.ListingKey ?? row?.ListNumber
+  return key != null ? String(key).trim() : null
+}
+
+/**
+ * Return the most recently modified listing key from Supabase (for /listings/template redirect when Spark API key is not set).
+ */
+export async function getMostRecentListingKeyFromSupabase(): Promise<string | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url?.trim() || !anonKey?.trim()) return null
+  const supabase = createClient(url, anonKey)
+  const { data } = await supabase
+    .from('listings')
+    .select('ListingKey, ListNumber')
+    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle()
+  const row = data as { ListingKey?: string | null; ListNumber?: string | null } | null
+  const key = row?.ListNumber ?? row?.ListingKey
+  return key != null ? String(key).trim() : null
+}
+
+/**
  * Get listing history from Supabase (for detail page and reports).
  * Ordered by event_date desc (most recent first). Use for CMAs, list date, price changes, last sale.
  */
 export async function getListingHistory(listingKey: string): Promise<ListingHistoryRow[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim() || !listingKey?.trim()) return []
+  const key = String(listingKey ?? '').trim()
+  if (!url?.trim() || !anonKey?.trim() || !key) return []
   const supabase = createClient(url, anonKey)
   const { data } = await supabase
     .from('listing_history')
     .select('listing_key, event_date, event, description, price, price_change, raw, created_at')
-    .eq('listing_key', listingKey)
+    .eq('listing_key', key)
     .order('event_date', { ascending: false, nullsFirst: false })
   return (data ?? []) as ListingHistoryRow[]
 }

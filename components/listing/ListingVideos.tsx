@@ -1,6 +1,7 @@
 'use client'
 
 import type { SparkVideo, SparkVirtualTour } from '../../lib/spark'
+import { getVideoEmbedHtml } from '@/lib/video-embed'
 
 const DIRECT_VIDEO_EXT = /\.(mp4|webm|ogg|mov)(\?|$)/i
 
@@ -49,6 +50,11 @@ export default function ListingVideos({ videos, virtualTours }: Props) {
                     <track kind="captions" />
                     Your browser does not support the video tag.
                   </video>
+                ) : v.Uri && getVideoEmbedHtml(v.Uri) ? (
+                  <div
+                    className="relative aspect-video w-full overflow-hidden rounded-lg [&>iframe]:h-full [&>iframe]:w-full"
+                    dangerouslySetInnerHTML={{ __html: getVideoEmbedHtml(v.Uri)! }}
+                  />
                 ) : v.Uri ? (
                   <a
                     href={v.Uri}

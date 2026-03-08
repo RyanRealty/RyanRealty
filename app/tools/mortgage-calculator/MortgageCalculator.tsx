@@ -6,13 +6,37 @@ function formatCurrency(n: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 
-type Props = { initialHomePrice?: number }
+type Props = {
+  initialHomePrice?: number
+  initialDownPaymentPct?: number
+  initialInterestRate?: number
+  initialLoanTermYears?: number
+}
 
-export default function MortgageCalculator({ initialHomePrice }: Props) {
-  const [homePrice, setHomePrice] = useState(initialHomePrice && initialHomePrice > 0 ? initialHomePrice : 500000)
-  const [downPaymentPct, setDownPaymentPct] = useState(20)
-  const [interestRate, setInterestRate] = useState(7)
-  const [loanTermYears, setLoanTermYears] = useState(30)
+export default function MortgageCalculator({
+  initialHomePrice,
+  initialDownPaymentPct,
+  initialInterestRate,
+  initialLoanTermYears,
+}: Props) {
+  const [homePrice, setHomePrice] = useState(
+    initialHomePrice && initialHomePrice > 0 ? initialHomePrice : 500000
+  )
+  const [downPaymentPct, setDownPaymentPct] = useState(
+    initialDownPaymentPct != null && initialDownPaymentPct >= 0 && initialDownPaymentPct <= 100
+      ? initialDownPaymentPct
+      : 20
+  )
+  const [interestRate, setInterestRate] = useState(
+    initialInterestRate != null && initialInterestRate >= 0 && initialInterestRate <= 20
+      ? initialInterestRate
+      : 7
+  )
+  const [loanTermYears, setLoanTermYears] = useState(
+    initialLoanTermYears != null && [10, 15, 20, 30].includes(initialLoanTermYears)
+      ? initialLoanTermYears
+      : 30
+  )
   const [propertyTaxYear, setPropertyTaxYear] = useState(5000)
   const [insuranceYear, setInsuranceYear] = useState(1500)
 

@@ -9,17 +9,29 @@ const AUTH_NEXT_COOKIE = 'auth_next'
 export type AuthUser = {
   id: string
   email?: string | null
-  user_metadata?: { full_name?: string; name?: string; avatar_url?: string }
+  /** Normalized from user_metadata and identities so Google/profile picture always works. */
+  avatar_url?: string | null
+  user_metadata?: { full_name?: string; name?: string; avatar_url?: string; picture?: string }
+}
+
+function normalizeAvatarUrl(user: { user_metadata?: Record<string, unknown>; identities?: Array<{ identity_data?: Record<string, unknown> }> }): string | null {
+  const fromMeta = user.user_metadata?.avatar_url ?? user.user_metadata?.picture
+  if (typeof fromMeta === 'string' && fromMeta) return fromMeta
+  const fromIdentity = user.identities?.[0]?.identity_data?.avatar_url ?? user.identities?.[0]?.identity_data?.picture
+  if (typeof fromIdentity === 'string' && fromIdentity) return fromIdentity
+  return null
 }
 
 export async function getSession(): Promise<{ user: AuthUser } | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
+  const avatar_url = normalizeAvatarUrl(user)
   return {
     user: {
       id: user.id,
       email: user.email ?? null,
+      avatar_url: avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null,
       user_metadata: user.user_metadata,
     },
   }
@@ -123,3 +135,4 @@ export async function signOut() {
   const supabase = await createClient()
   await supabase.auth.signOut()
 }
+

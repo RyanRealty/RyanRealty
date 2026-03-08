@@ -12,11 +12,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/listings`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/listings?view=map`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/reports`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${baseUrl}/privacy`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${baseUrl}/tools/mortgage-calculator`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
   ]
 
   const cities = await getBrowseCities()
   const cityPages: MetadataRoute.Sitemap = cities.map(({ City }) => ({
-    url: `${baseUrl}/search/${encodeURIComponent(City)}`,
+    url: `${baseUrl}/search/${cityEntityKey(City)}`,
     lastModified: new Date(),
     changeFrequency: 'daily' as const,
     priority: 0.85,

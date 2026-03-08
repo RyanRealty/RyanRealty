@@ -91,7 +91,7 @@ export default function AuthDropdown({ user }: Props) {
 
   if (user) {
     const displayName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email ?? 'there'
-    const avatarUrl = user.user_metadata?.avatar_url
+    const avatarUrl = user.avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture
     return (
       <div className="relative">
         <button
@@ -152,6 +152,13 @@ export default function AuthDropdown({ user }: Props) {
                 onClick={() => setOpen(false)}
               >
                 Saved homes
+              </Link>
+              <Link
+                href="/account/saved-communities"
+                className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
+                onClick={() => setOpen(false)}
+              >
+                Saved communities
               </Link>
               <Link
                 href="/account/buying-preferences"

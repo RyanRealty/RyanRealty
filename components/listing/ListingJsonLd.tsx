@@ -73,9 +73,15 @@ export default function ListingJsonLd({ listingKey, fields, imageUrl }: Props) {
       availability: 'https://schema.org/InStock',
     },
     additionalProperty: [
-      fields.BedsTotal != null && { '@type': 'PropertyValue', name: 'Bedrooms', value: fields.BedsTotal },
-      fields.BathsTotal != null && { '@type': 'PropertyValue', name: 'Bathrooms', value: fields.BathsTotal },
-      fields.BuildingAreaTotal != null && { '@type': 'PropertyValue', name: 'Square feet', value: fields.BuildingAreaTotal },
+      (fields as any).BedroomsTotal != null || fields.BedsTotal != null
+        ? { '@type': 'PropertyValue', name: 'Bedrooms', value: (fields as any).BedroomsTotal ?? fields.BedsTotal }
+        : null,
+      (fields as any).BathroomsTotal != null || fields.BathsTotal != null
+        ? { '@type': 'PropertyValue', name: 'Bathrooms', value: (fields as any).BathroomsTotal ?? fields.BathsTotal }
+        : null,
+      fields.BuildingAreaTotal != null
+        ? { '@type': 'PropertyValue', name: 'Square feet', value: fields.BuildingAreaTotal }
+        : null,
       fields.SubdivisionName && { '@type': 'PropertyValue', name: 'Subdivision', value: fields.SubdivisionName },
     ].filter(Boolean),
   }

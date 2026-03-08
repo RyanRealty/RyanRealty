@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { getSignInUrl } from '@/app/actions/auth'
 import type { AuthUser } from '@/app/actions/auth'
 
@@ -34,18 +34,30 @@ type Props = { user: AuthUser | null }
 export default function SignInPrompt({ user }: Props) {
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const hasNextParam = typeof window !== 'undefined' ? !!searchParams?.get('next') : false
+
+  const pathname = usePathname()
+  const isHome = pathname === '/'
 
   useEffect(() => {
     if (user) return
+    // When URL has ?next= (e.g. redirect from protected page), show prompt immediately so they can sign in and continue
+    if (hasNextParam) {
+      setShow(true)
+      return
+    }
+    // Delayed nudge only on homepage — high intent, avoid interrupting listing/team/about pages
+    if (!isHome) return
     if (wasDismissed()) return
     const t = setTimeout(() => setShow(true), 800)
     return () => clearTimeout(t)
-  }, [user])
+  }, [user, hasNextParam, isHome])
 
   async function handleSignIn() {
     setLoading('google')
-    const pathname = typeof window !== 'undefined' ? window.location.pathname : '/'
-    const next = pathname && pathname !== '/' ? pathname : '/'
+    const nextFromUrl = searchParams?.get('next')
+    const next = nextFromUrl && nextFromUrl.startsWith('/') ? nextFromUrl : '/'
     const result = await getSignInUrl('google', next)
     setLoading(null)
     if ('url' in result) window.location.href = result.url

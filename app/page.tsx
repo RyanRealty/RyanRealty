@@ -3,36 +3,32 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import {
-  getListings,
   getBrowseCities,
-  getTotalListingsCount,
-  getListingKeysWithRecentPriceChange,
   getCityCentroid,
   getCityStatusCounts,
+  getListingsForHomeTiles,
+  getHomeTileRowsByKeys,
+  getHotCommunitiesInCity,
 } from './actions/listings'
-import { getActivityFeedWithFallback } from './actions/activity-feed'
+import { getTrendingListingKeys } from './actions/listing-views'
 import { getSession } from './actions/auth'
 import { getSavedListingKeys } from './actions/saved-listings'
+import { getSavedCommunityKeys } from './actions/saved-communities'
 import { getBuyingPreferences } from './actions/buying-preferences'
-import { getProfile } from './actions/profile'
-import { HOME_CITY_COOKIE } from '../lib/home-city'
 import { getOrCreatePlaceBanner } from './actions/banners'
-import { cityEntityKey } from '../lib/slug'
-import {
-  estimatedMonthlyPayment,
-  formatMonthlyPayment,
-  DEFAULT_DISPLAY_RATE,
-  DEFAULT_DISPLAY_DOWN_PCT,
-  DEFAULT_DISPLAY_TERM_YEARS,
-} from '../lib/mortgage'
-import ListingCard from '../components/ListingCard'
-import ListingMap from '../components/ListingMap'
+import { cityEntityKey, subdivisionEntityKey } from '../lib/slug'
+import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '../lib/mortgage'
+import ListingMapGoogle from '../components/ListingMapGoogle'
 import { getGeocodedListings } from './actions/geocode'
-import HomeCitySelector from '../components/HomeCitySelector'
-import HomeListingsSection from '../components/HomeListingsSection'
-import ActivityFeedCard from '../components/ActivityFeedCard'
+import HeroSearchOverlay from '../components/HeroSearchOverlay'
+import HomeTilesSlider from '../components/home/HomeTilesSlider'
+import HomeCollapsibleMap from '../components/home/HomeCollapsibleMap'
+import AffordabilityRow from '../components/home/AffordabilityRow'
+import PopularCommunitiesRow from '../components/home/PopularCommunitiesRow'
+import CityTile from '../components/CityTile'
 
 const DEFAULT_HOME_CITY = 'Bend'
+const RECENT_VIEWED_COOKIE = 'recent_listing_views'
 
 /** Fallback map center when no listing coords (Central Oregon cities). */
 const FALLBACK_CITY_CENTERS: Record<string, { latitude: number; longitude: number; zoom: number }> = {
@@ -78,12 +74,8 @@ export const metadata: Metadata = {
   },
 }
 
-type HomeProps = { searchParams?: Promise<{ next?: string }> }
-
-export default async function Home({ searchParams }: HomeProps) {
+export default async function Home() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const sp = searchParams ? await searchParams : undefined
-  const nextUrl = sp?.next
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!url?.trim() || !anonKey?.trim()) {
@@ -106,51 +98,94 @@ export default async function Home({ searchParams }: HomeProps) {
     getSession(),
     getBrowseCities(),
   ])
-  const profile = session?.user ? await getProfile().catch(() => null) : null
 
-  const cityFromCookie = cookieStore.get(HOME_CITY_COOKIE)?.value?.trim()
-  const rawCity =
-    session?.user && profile?.defaultCity
-      ? profile.defaultCity.trim()
-      : (cityFromCookie || DEFAULT_HOME_CITY).trim()
-  const citySlug = slugifyCity(rawCity)
-  const validCity =
-    cities.find((c) => slugifyCity(c.City) === citySlug || c.City === rawCity)?.City ?? DEFAULT_HOME_CITY
+  // Homepage is always static: use default city for main content (Homes for You, map, browse). No profile/cookie for primary content.
+  const validCity = cities.find((c) => c.City === DEFAULT_HOME_CITY)?.City ?? DEFAULT_HOME_CITY
 
-  const HOMEPAGE_LISTING_LIMIT = 30
+  const prefsForFetch = session?.user ? await getBuyingPreferences().catch(() => null) : null
+  const homeTilesFilters =
+    prefsForFetch && (prefsForFetch.maxPrice != null || prefsForFetch.minBeds != null || prefsForFetch.minBaths != null)
+      ? {
+          maxPrice: prefsForFetch.maxPrice ?? undefined,
+          minBeds: prefsForFetch.minBeds ?? undefined,
+          minBaths: prefsForFetch.minBaths ?? undefined,
+        }
+      : undefined
+
+  const recentViewedRaw = cookieStore.get(RECENT_VIEWED_COOKIE)?.value
+  let recentViewedKeys: string[] = []
+  try {
+    if (recentViewedRaw) {
+      const parsed = JSON.parse(decodeURIComponent(recentViewedRaw))
+      if (Array.isArray(parsed)) recentViewedKeys = parsed.map((k: unknown) => String(k ?? '').trim()).filter(Boolean)
+    }
+  } catch { /* ignore */ }
 
   const [
-    listingsRaw,
-    totalListings,
-    priceChangeKeys,
+    homeTilesListings,
+    affordabilityPoolListings,
     bannerResult,
     mapCenter,
     cityStatusCounts,
-    activityFeedItems,
+    trendingListings,
+    hotCommunities,
+    recentViewedListingsRaw,
+    fallbackListings,
   ] = await Promise.all([
-    getListings({
+    getListingsForHomeTiles({
       city: validCity,
-      limit: HOMEPAGE_LISTING_LIMIT,
-      sort: 'newest',
-      includePending: true,
+      limit: 16,
+      ...(homeTilesFilters && {
+        maxPrice: homeTilesFilters.maxPrice,
+        minBeds: homeTilesFilters.minBeds,
+        minBaths: homeTilesFilters.minBaths,
+      }),
     }),
-    getTotalListingsCount(),
-    getListingKeysWithRecentPriceChange(),
+    getListingsForHomeTiles({ city: validCity, limit: 40 }),
     getOrCreatePlaceBanner('city', cityEntityKey(validCity), `${validCity} Oregon`),
     getCityCentroid(validCity).then((c) =>
       c ? { latitude: c.lat, longitude: c.lng, zoom: 11 as number } : null
     ),
     getCityStatusCounts({ city: validCity }),
-    getActivityFeedWithFallback({ city: validCity, limit: 12 }),
+    getTrendingListingKeys(validCity, 16).then(async (keys) => {
+      if (keys.length === 0) return []
+      const rows = await getHomeTileRowsByKeys(keys)
+      return rows.filter(
+        (r) =>
+          (r.StandardStatus ?? '').toLowerCase().includes('active') ||
+          (r.StandardStatus ?? '').toLowerCase().includes('pending') ||
+          (r.StandardStatus ?? '').toLowerCase().includes('for sale') ||
+          (r.StandardStatus ?? '').toLowerCase().includes('coming soon')
+      )
+    }),
+    getHotCommunitiesInCity(validCity).then((list) => list.slice(0, 12)),
+    recentViewedKeys.length > 0 ? getHomeTileRowsByKeys(recentViewedKeys) : Promise.resolve([]),
+    recentViewedKeys.length === 0 ? getListingsForHomeTiles({ city: validCity, limit: 16 }) : Promise.resolve([]),
   ])
 
-  let listingsWithCoords = listingsRaw
-  try {
-    listingsWithCoords = await getGeocodedListings(listingsRaw)
-  } catch {
-    // Map may show fewer points; page still loads
-  }
+  const recentlyViewedListings =
+    recentViewedListingsRaw.length > 0 ? recentViewedListingsRaw : fallbackListings
 
+  // Banners for popular community tiles (optional; same order as hotCommunities)
+  const communityBannerUrls =
+    hotCommunities.length > 0
+      ? await Promise.all(
+          hotCommunities.map((c) =>
+            getOrCreatePlaceBanner(
+              'subdivision',
+              subdivisionEntityKey(validCity, c.subdivisionName),
+              `${c.subdivisionName}, ${validCity}`
+            ).then((r) => r?.url ?? null)
+          )
+        )
+      : []
+
+  let listingsWithCoords = affordabilityPoolListings
+  try {
+    listingsWithCoords = await getGeocodedListings(listingsWithCoords)
+  } catch {
+    // Map may show fewer points
+  }
   const hasCoords = (l: (typeof listingsWithCoords)[0]) =>
     l.Latitude != null &&
     l.Longitude != null &&
@@ -158,9 +193,10 @@ export default async function Home({ searchParams }: HomeProps) {
     Number.isFinite(Number(l.Longitude))
   const listingsOnMap = listingsWithCoords.filter(hasCoords)
 
-  const [savedKeys, prefs] = session?.user
-    ? await Promise.all([getSavedListingKeys(), getBuyingPreferences()])
-    : [[], null] as [string[], Awaited<ReturnType<typeof getBuyingPreferences>>]
+  const [savedKeys, savedCommunityKeys] = session?.user
+    ? await Promise.all([getSavedListingKeys(), getSavedCommunityKeys()])
+    : [[], [] as string[]]
+  const prefs = prefsForFetch ?? null
 
   const mapCenterResolved =
     mapCenter ?? (FALLBACK_CITY_CENTERS[cityEntityKey(validCity)] ?? FALLBACK_CITY_CENTERS.bend)
@@ -173,186 +209,159 @@ export default async function Home({ searchParams }: HomeProps) {
       interestRate: DEFAULT_DISPLAY_RATE,
       loanTermYears: DEFAULT_DISPLAY_TERM_YEARS,
     }
-  const monthlyPayments = listingsOnMap.map((l) => {
-    const price = Number(l.ListPrice ?? 0)
-    const monthly =
-      price > 0
-        ? estimatedMonthlyPayment(
-            price,
-            displayPrefs.downPaymentPercent,
-            displayPrefs.interestRate,
-            displayPrefs.loanTermYears
-          )
-        : null
-    return monthly != null && monthly > 0 ? formatMonthlyPayment(monthly) : undefined
-  })
+
+  const homesForYouLabel = `Homes for You in ${validCity}`
+  const searchCityHref = `/search/${cityEntityKey(validCity)}`
+
+  const mapContent = (
+    <div className="h-[360px] sm:h-[440px] md:h-[480px]">
+      <ListingMapGoogle
+        listings={listingsOnMap}
+        initialCenter={mapCenterResolved}
+        className="h-full w-full rounded-none"
+      />
+    </div>
+  )
 
   return (
-    <main className="min-h-screen">
-      {nextUrl && !session?.user && (
-        <div className="bg-emerald-600 px-4 py-3 text-center text-sm font-medium text-white">
-          Sign in to save your preferences and get accurate pricing
-        </div>
-      )}
-
-      {/* Banner with city selector */}
-      <section className="relative -mx-4 sm:-mx-6" aria-label="Home hero">
+    <main className="min-h-screen bg-[var(--background)]">
+      <section className="relative -mx-4 min-h-[440px] sm:-mx-6 sm:min-h-[520px]" aria-label="Home hero">
         {bannerUrl ? (
-          <div className="relative h-48 w-full overflow-hidden bg-zinc-900 sm:h-56 md:h-64">
+          <div className="absolute inset-0">
             <Image
               src={bannerUrl}
-              alt={`Real estate in ${validCity}, Central Oregon – scenic area`}
-              width={1200}
-              height={336}
-              className="h-full w-full object-cover"
+              alt=""
+              fill
+              className="object-cover"
               sizes="100vw"
               priority
             />
-            {bannerAttribution && (
-              <p className="absolute bottom-2 left-2 text-xs text-white/90 drop-shadow-md">
-                {bannerAttribution}
-              </p>
-            )}
-            <div className="absolute bottom-2 right-2 flex flex-col items-end gap-1">
-              <HomeCitySelector
-                currentCity={validCity}
-                cities={cities}
-                signedIn={!!session?.user}
-              />
-            </div>
           </div>
         ) : (
-          <div className="relative flex h-48 flex-col items-center justify-center gap-4 bg-gradient-to-b from-zinc-900 to-zinc-800 px-4 py-16 text-white sm:h-56 sm:py-24">
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-              Find your home in Central Oregon
+          <div className="absolute inset-0 bg-gradient-to-b from-[var(--brand-navy)] to-[#1e293b]" />
+        )}
+        <div className="absolute inset-0 bg-[var(--brand-navy)]/60" aria-hidden />
+        {bannerAttribution && (
+          <p className="absolute bottom-2 left-2 z-10 text-xs text-white/90 drop-shadow-md">
+            {bannerAttribution}
+          </p>
+        )}
+        <div className="relative z-10 flex min-h-[440px] sm:min-h-[520px] w-full flex-col items-center justify-center px-4 py-20 sm:py-28">
+          <div className="w-full max-w-2xl text-center">
+            <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-md sm:text-4xl md:text-5xl">
+              Find Your Place in Central Oregon
             </h1>
-            <p className="text-center text-lg text-zinc-300 sm:text-xl">
-              Browse {totalListings.toLocaleString()} listings. Search by city, explore on the map.
+            <p className="mt-3 text-lg text-white/95 sm:text-xl">
+              Search homes, neighborhoods, and open listings.
             </p>
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
-              <Link
-                href="/listings"
-                className="rounded-xl bg-white px-6 py-3 text-base font-semibold text-zinc-900 shadow-lg transition hover:bg-zinc-100"
-              >
+            <div className="mt-8">
+              <HeroSearchOverlay homesForYouLabel={homesForYouLabel} />
+            </div>
+            <p className="mt-6 text-base text-white/90">
+              <Link href={searchCityHref} className="font-semibold underline decoration-white/60 underline-offset-2 hover:text-white hover:decoration-white">
+                {totalInCity} homes for sale in {validCity} and surrounding areas
+              </Link>
+              {' · '}
+              <Link href="/listings" className="font-semibold underline decoration-white/60 underline-offset-2 hover:text-white hover:decoration-white">
                 View all listings
               </Link>
-              <Link
-                href="/listings?view=map"
-                className="rounded-xl border border-zinc-500 bg-transparent px-6 py-3 text-base font-semibold text-white transition hover:bg-zinc-700"
-              >
-                Open map
-              </Link>
-              {!session?.user && (
-                <Link
-                  href="/?next=/account"
-                  className="rounded-xl border border-emerald-400 bg-emerald-600/90 px-6 py-3 text-base font-semibold text-white transition hover:bg-emerald-600"
-                >
-                  Sign in to save homes & searches
-                </Link>
-              )}
-            </div>
-            <div className="absolute bottom-4 right-4">
-              <HomeCitySelector
-                currentCity={validCity}
-                cities={cities}
-                signedIn={!!session?.user}
-              />
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Map: single source of truth — listings below are only those on the map */}
-      <section className="mx-auto max-w-7xl px-4 pt-8 pb-4 sm:px-6">
-        <div className="rounded-2xl border border-zinc-200 overflow-hidden shadow-lg">
-          <div className="h-[360px] sm:h-[440px] md:h-[480px]">
-            <ListingMap
-              listings={listingsOnMap}
-              initialCenter={mapCenterResolved}
-              className="h-full w-full rounded-none"
-            />
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-zinc-200 bg-zinc-50 px-4 py-3">
-            <Link
-              href={`/search/${cityEntityKey(validCity)}`}
-              className="text-sm font-medium text-zinc-700 hover:text-zinc-900"
-            >
-              View all {totalInCity} in {validCity} →
-            </Link>
-            <Link
-              href="/listings?view=map"
-              className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
-            >
-              Full map view →
-            </Link>
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Activity feed: full-bleed 4:5 cards, save on each (price drops, new, just sold) */}
-      {activityFeedItems.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 pt-8 sm:px-6" aria-label="Activity feed">
-          <h2 className="text-xl font-bold tracking-tight text-zinc-900">Activity</h2>
-          <p className="mt-0.5 text-sm text-zinc-600">New listings, price drops, and just sold in {validCity}.</p>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {activityFeedItems.slice(0, 12).map((item) => (
-              <ActivityFeedCard
-                key={item.id}
-                item={item}
-                saved={session?.user ? savedKeys.includes(item.listing_key) : false}
-                signedIn={!!session?.user}
-                userEmail={session?.user?.email ?? null}
-              />
-            ))}
-          </div>
-          <Link
-            href={`/search/${cityEntityKey(validCity)}`}
-            className="mt-4 inline-block text-sm font-medium text-zinc-700 hover:text-zinc-900"
-          >
-            View all {totalInCity} in {validCity} →
-          </Link>
+      <HomeCollapsibleMap
+        mapContent={mapContent}
+        cityName={validCity}
+        totalInCity={totalInCity}
+        searchHref={searchCityHref}
+      />
+
+      {/* Curated homes slider (newest in city; static default city) */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+        <HomeTilesSlider
+          title={homesForYouLabel}
+          listings={homeTilesListings}
+          savedKeys={session?.user ? savedKeys : []}
+          signedIn={!!session?.user}
+          userEmail={session?.user?.email ?? null}
+          downPaymentPercent={displayPrefs.downPaymentPercent}
+          interestRate={displayPrefs.interestRate}
+          loanTermYears={displayPrefs.loanTermYears}
+        />
+      </section>
+
+      {/* Affordability: target price input + affordable homes row */}
+      <AffordabilityRow
+        listings={affordabilityPoolListings}
+        savedKeys={session?.user ? savedKeys : []}
+        signedIn={!!session?.user}
+        userEmail={session?.user?.email ?? null}
+        downPaymentPercent={displayPrefs.downPaymentPercent}
+        interestRate={displayPrefs.interestRate}
+        loanTermYears={displayPrefs.loanTermYears}
+      />
+
+      {/* Trending Homes in [City], Oregon */}
+      {trendingListings.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+          <HomeTilesSlider
+            title={`Trending Homes in ${validCity}, Oregon`}
+            listings={trendingListings}
+            savedKeys={session?.user ? savedKeys : []}
+            signedIn={!!session?.user}
+            userEmail={session?.user?.email ?? null}
+            downPaymentPercent={displayPrefs.downPaymentPercent}
+            interestRate={displayPrefs.interestRate}
+            loanTermYears={displayPrefs.loanTermYears}
+          />
         </section>
       )}
 
-      {/* Listings on the map only — same set as map pins */}
-      <HomeListingsSection
-        city={validCity}
-        listings={listingsOnMap}
-        totalInCity={totalInCity}
-        savedKeys={session?.user ? savedKeys : []}
-        priceChangeKeys={priceChangeKeys}
-        monthlyPayments={monthlyPayments}
-        signedIn={!!session?.user}
-        userEmail={session?.user?.email ?? null}
-      />
+      {/* Popular Communities (tile-style with image background, share) */}
+      {hotCommunities.length > 0 && (
+        <PopularCommunitiesRow
+          city={validCity}
+          communities={hotCommunities}
+          bannerUrls={communityBannerUrls}
+          signedIn={!!session?.user}
+          savedCommunityKeys={savedCommunityKeys}
+        />
+      )}
 
-      {/* Browse by city */}
+      {/* Recently Viewed (only when we have recent views) or Homes you might like */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+        <HomeTilesSlider
+          title={recentViewedListingsRaw.length > 0 ? 'Recently Viewed' : 'Homes you might like'}
+          listings={recentlyViewedListings}
+          savedKeys={session?.user ? savedKeys : []}
+          signedIn={!!session?.user}
+          userEmail={session?.user?.email ?? null}
+          downPaymentPercent={displayPrefs.downPaymentPercent}
+          interestRate={displayPrefs.interestRate}
+          loanTermYears={displayPrefs.loanTermYears}
+        />
+      </section>
+
+      {/* Browse by city — all cities with active listings */}
       {cities.length > 0 && (
-        <section className="border-t border-zinc-200 bg-zinc-50 px-4 py-12 sm:px-6">
+        <section className="border-t border-[var(--border)] bg-[var(--surface-muted)] px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="browse-by-city-heading">
           <div className="mx-auto max-w-7xl">
-            <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
+            <h2 id="browse-by-city-heading" className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
               Browse by city
             </h2>
-            <p className="mt-1 text-zinc-600">Explore homes in your preferred area.</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              {cities.slice(0, 24).map(({ City, count }) => (
-                <Link
-                  key={City}
-                  href={`/search/${cityEntityKey(City)}`}
-                  className="rounded-xl border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:shadow"
-                >
-                  {City} <span className="text-zinc-400">({count})</span>
-                </Link>
+            <p className="mt-1.5 text-[var(--text-secondary)]">Explore homes in every city we serve.</p>
+            <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {cities.map(({ City, count }) => (
+                <CityTile key={City} city={City} count={count} />
               ))}
             </div>
-            {cities.length > 24 && (
-              <Link
-                href="/listings"
-                className="mt-4 inline-block text-sm font-medium text-zinc-600 hover:text-zinc-900"
-              >
-                View all cities →
-              </Link>
-            )}
+            <Link
+              href="/listings"
+              className="mt-6 inline-block text-sm font-semibold text-[var(--accent)] hover:text-[var(--accent-hover)]"
+            >
+              View all listings →
+            </Link>
           </div>
         </section>
       )}

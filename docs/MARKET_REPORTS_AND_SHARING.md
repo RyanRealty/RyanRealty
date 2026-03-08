@@ -10,6 +10,16 @@
   - Otherwise you get: **Copy link**, **Email**, **X (Twitter)**, **Facebook**, **LinkedIn**.
 - **Format**: Each page sets its own `title` and `text` (and optional `url`) so when someone shares to a platform, the link shows the right Open Graph / Twitter Card (image, title, description). No extra formatting step—share uses the same metadata that search and social crawlers see.
 
+## Explore market data
+
+- **URL**: `/reports/explore`
+- **What it is**: An interactive tool to explore all market data with no constraints: filter by **city** and **date range** (presets: last 7/30/90 days, this/last month, quarter, YTD, or custom), then view:
+  - **Key metrics**: sales in period, median price, median DOM, median $/sqft, current listings, 12‑month sales, inventory (months).
+  - **Monthly trend chart**: last 12 months of sales and median price (Recharts line chart).
+  - **Price bands chart**: sales vs current listings by price band (Recharts bar chart).
+- **Sharing**: The **Share** button uses the **current URL including query params** (`?city=...&start=...&end=...`). Anyone opening the link sees the same city and date range and can run the same view. Copy link, Email, X, Facebook, and LinkedIn all share this URL.
+- **Data**: Same RPCs as admin reports: `get_city_period_metrics`, `get_city_price_bands`, plus `get_city_metrics_timeseries` for the trend (monthly sold count and median price). SFR only (excludes condo, townhouse, etc.).
+
 ## Market reports (weekly)
 
 - **What it is**: A weekly, auto-generated “blog” post: **“Here’s what happened in the market last week.”** It lists homes that **went pending** and **closed**, broken down **by city** (from `listing_history` + `listings`).

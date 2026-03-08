@@ -27,7 +27,7 @@ export default function SearchPageJsonLd({
   siteUrl,
   listings,
 }: Props) {
-  const pagePath = city ? `/search/${encodeURIComponent(city)}${subdivision ? `/${encodeURIComponent(subdivision)}` : ''}` : '/'
+  const pagePath = city ? `/search/${cityEntityKey(city)}${subdivision ? `/${encodeURIComponent(subdivision)}` : ''}` : '/'
   const pageUrl = siteUrl ? `${siteUrl}${pagePath}` : undefined
   const description = subdivisionBlurb ?? cityMetaDescription ?? `Browse homes for sale in ${displayName}, Central Oregon.`
 

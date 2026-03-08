@@ -1,0 +1,17 @@
+---
+description: Enforce project-level design system; no isolated styling
+alwaysApply: true
+---
+
+# Design system — global requirement
+
+Before writing UI code:
+
+1. **Use design tokens** — All typography, spacing, color, radius, and motion must come from `app/globals.css` (CSS variables) or Tailwind classes that reference the theme. Do not invent one-off colors or spacing values.
+2. **No isolated styling** — Every component inherits from the same foundation. When adding a new component, reuse existing patterns (cards, buttons, sections) and token-based values.
+3. **Luxury standard** — The bar is: *Does this make someone stop scrolling, lean in, and stay?* Prefer deliberate hierarchy, generous spacing, and subtle motion over clutter.
+4. **Performance is design** — Lazy load images, use Next/Image with proper sizes, avoid layout shift. Fast load is part of the brand.
+
+**Brand colors (master set):** Navy `#102742` (--brand-navy, --brand-primary), Cream `#F0EEEC` (--brand-cream). Teal remains accent (--accent). Use tokens from `app/globals.css` only.
+
+Reference: `docs/MASTER_INSTRUCTION_SET.md` (governing foundation), `docs/BUILD_SEQUENCE_CHECKLIST.md` (implementation order 1–15).

@@ -1,8 +1,18 @@
 import type { Metadata } from 'next'
 
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.com').replace(/\/$/, '')
+
 export const metadata: Metadata = {
   title: 'Privacy & cookies',
   description: 'Privacy policy and cookie use for Ryan Realty.',
+  alternates: { canonical: `${siteUrl}/privacy` },
+  openGraph: {
+    title: 'Privacy & cookies | Ryan Realty',
+    description: 'Privacy policy and cookie use for Ryan Realty.',
+    url: `${siteUrl}/privacy`,
+    type: 'website',
+  },
+  robots: 'index, follow',
 }
 
 export default function PrivacyPage() {

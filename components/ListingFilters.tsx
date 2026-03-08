@@ -29,8 +29,10 @@ type Props = {
   /** Include closed listings (URL param includeClosed=1) */
   includeClosed?: string
   page?: string
-  /** View layout: '1' | '3x3' | '5x5' */
+  /** Columns: '1'–'4' */
   view?: string
+  /** Per page: '6' | '12' | '24' | '48' */
+  perPage?: string
 }
 
 export default function ListingFilters({
@@ -44,6 +46,7 @@ export default function ListingFilters({
   includeClosed: initIncludeClosed,
   page: _initPage,
   view: initView,
+  perPage: initPerPage,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()?.split('?')[0] ?? '/listings'
@@ -73,6 +76,8 @@ export default function ListingFilters({
     if (includeClosed) params.set('includeClosed', '1')
     const view = initView ?? searchParams.get('view')
     if (view) params.set('view', view)
+    const perPage = initPerPage ?? searchParams.get('perPage')
+    if (perPage) params.set('perPage', perPage)
     params.set('page', '1')
     const q = params.toString()
     startTransition(() => {

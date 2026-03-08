@@ -9,7 +9,7 @@ import type { SavedSearchRow } from '@/app/actions/saved-searches'
 type Props = { searches: SavedSearchRow[] }
 
 function buildSearchUrl(filters: Record<string, unknown>): string {
-  const city = typeof filters.city === 'string' ? filters.city : undefined
+  const city = typeof filters.city === 'string' ? filters.city.trim() : undefined
   const subdivision = typeof filters.subdivision === 'string' ? filters.subdivision : undefined
   const params = new URLSearchParams()
   if (typeof filters.minPrice === 'number') params.set('minPrice', String(filters.minPrice))
@@ -17,8 +17,11 @@ function buildSearchUrl(filters: Record<string, unknown>): string {
   if (typeof filters.beds === 'number') params.set('beds', String(filters.beds))
   if (typeof filters.baths === 'number') params.set('baths', String(filters.baths))
   if (typeof filters.minSqFt === 'number') params.set('minSqFt', String(filters.minSqFt))
+  if (typeof filters.maxSqFt === 'number') params.set('maxSqFt', String(filters.maxSqFt))
   if (typeof filters.propertyType === 'string') params.set('propertyType', filters.propertyType)
   if (typeof filters.sort === 'string') params.set('sort', filters.sort)
+  if (typeof filters.statusFilter === 'string') params.set('statusFilter', filters.statusFilter)
+  if (filters.includeClosed === true) params.set('includeClosed', '1')
   const q = params.toString()
   if (city && subdivision) return `/search/${cityEntityKey(city)}/${encodeURIComponent(subdivision)}${q ? `?${q}` : ''}`
   if (city) return `/search/${cityEntityKey(city)}${q ? `?${q}` : ''}`

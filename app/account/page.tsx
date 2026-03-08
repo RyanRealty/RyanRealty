@@ -4,6 +4,7 @@ import { getSession } from '@/app/actions/auth'
 import { getProfile } from '@/app/actions/profile'
 import { getSavedSearches } from '@/app/actions/saved-searches'
 import { getSavedListingKeys } from '@/app/actions/saved-listings'
+import { getSavedCommunityKeys } from '@/app/actions/saved-communities'
 import { getBuyingPreferences } from '@/app/actions/buying-preferences'
 import { redirect } from 'next/navigation'
 
@@ -16,10 +17,11 @@ export default async function AccountPage() {
   const session = await getSession()
   if (!session?.user) redirect('/')
 
-  const [profile, savedSearches, savedKeys, prefs] = await Promise.all([
+  const [profile, savedSearches, savedKeys, savedCommunityKeys, prefs] = await Promise.all([
     getProfile(),
     getSavedSearches(),
     getSavedListingKeys(),
+    getSavedCommunityKeys(),
     getBuyingPreferences(),
   ])
   const authName = session.user.user_metadata?.full_name ?? session.user.user_metadata?.name ?? null
@@ -58,6 +60,15 @@ export default async function AccountPage() {
           <span className="text-lg font-semibold text-zinc-900">Saved homes</span>
           <span className="mt-1 text-sm text-zinc-500">
             {savedKeys.length} saved
+          </span>
+        </Link>
+        <Link
+          href="/account/saved-communities"
+          className="flex flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:border-zinc-300 hover:shadow"
+        >
+          <span className="text-lg font-semibold text-zinc-900">Saved communities</span>
+          <span className="mt-1 text-sm text-zinc-500">
+            {savedCommunityKeys.length} saved
           </span>
         </Link>
         <Link

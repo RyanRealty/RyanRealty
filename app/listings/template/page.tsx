@@ -1,12 +1,15 @@
 import { redirect } from 'next/navigation'
 import { getMostRecentListingKey } from '../../../lib/spark'
+import { getMostRecentListingKeyFromSupabase } from '../../actions/listings'
 
 export default async function ListingsTemplatePage() {
-  const key = await getMostRecentListingKey()
+  // Use Spark when API key is set; otherwise use Supabase so the site works without the key (e.g. review with existing data).
+  let key = await getMostRecentListingKey()
+  if (!key) key = await getMostRecentListingKeyFromSupabase()
   if (!key) {
     return (
       <main className="min-h-screen bg-zinc-50 p-8">
-        <p className="text-zinc-600">No listings available or Spark API not configured.</p>
+        <p className="text-zinc-600">No listings in the database yet. Add SPARK_API_KEY and run a sync to populate, or import data into Supabase.</p>
       </main>
     )
   }

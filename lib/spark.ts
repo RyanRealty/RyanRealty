@@ -336,8 +336,10 @@ export type SparkListingHistoryItem = {
 export type SparkListingHistoryResponse = {
   items: SparkListingHistoryItem[]
   ok: boolean
-  /** HTTP status when ok is false (e.g. 404) */
+  /** HTTP status when ok is false (e.g. 400, 403) */
   status?: number
+  /** Response body when !ok (for 400/403 diagnosis) */
+  errorBody?: string
 }
 
 function parseHistoryItems(data: unknown): SparkListingHistoryItem[] {
@@ -350,10 +352,23 @@ function parseHistoryItems(data: unknown): SparkListingHistoryItem[] {
   return []
 }
 
+/** Spark can return 200 with D.Success = false and D.Message (e.g. Code 1500 permission denied). */
+function sparkErrorFromBody(data: Record<string, unknown> | null): string | undefined {
+  const d = data?.D as Record<string, unknown> | undefined
+  if (!d || typeof d !== 'object') return undefined
+  if (d.Success === false && typeof d.Message === 'string') {
+    const code = d.Code != null ? ` (Code ${d.Code})` : ''
+    return `${d.Message}${code}`
+  }
+  return undefined
+}
+
 /**
- * Fetch full listing history: GET /v1/listings/{id}/history
- * Returns full audit trail (NewListing, FieldChange, BackOnMarket, price/status changes).
- * Private role API keys see full history; IDX/VOW/Portal see condensed events.
+ * Listing History — status/event changes on a specific listing.
+ * GET /v1/listings/{id}/history
+ * Returns audit trail: status changes, who made them, price change data (NewListing, FieldChange, BackOnMarket, etc.).
+ * Private role sees full history; IDX/VOW/Portal may see condensed events or be restricted by MLS.
+ * @see https://sparkplatform.com/docs/api_services/listings/history
  */
 export async function fetchSparkListingHistory(
   accessToken: string,
@@ -370,9 +385,12 @@ export async function fetchSparkListingHistory(
       next: { revalidate: 0 },
     })
     if (!res.ok) {
-      return { items: [], ok: false, status: res.status }
+      const errorBody = await res.text()
+      return { items: [], ok: false, status: res.status, errorBody: errorBody || undefined }
     }
     const data = (await res.json()) as Record<string, unknown>
+    const err = sparkErrorFromBody(data)
+    if (err) return { items: [], ok: false, status: res.status, errorBody: err }
     const d = data?.D as Record<string, unknown> | undefined
     const raw = d?.Results ?? d ?? data.Results ?? data
     const items = parseHistoryItems(raw)
@@ -383,9 +401,10 @@ export async function fetchSparkListingHistory(
 }
 
 /**
- * Fetch price history: GET /v1/listings/{id}/historical/pricehistory
- * Purpose-built for a clean price timeline: on-market, price changes, most recent status per listing.
- * Limited to last 50 listings for the property. Use as primary or fallback when /history is empty.
+ * Price history (under the historical resource): GET /v1/listings/{id}/historical/pricehistory
+ * Clean price timeline for the listing: on-market, price changes, most recent status.
+ * Limited to last 50 listings for the property. Use as fallback when /history is empty.
+ * Part of Historical Listings API; access may differ from /history (e.g. VOW 403).
  */
 export async function fetchSparkPriceHistory(
   accessToken: string,
@@ -402,9 +421,12 @@ export async function fetchSparkPriceHistory(
       next: { revalidate: 0 },
     })
     if (!res.ok) {
-      return { items: [], ok: false, status: res.status }
+      const errorBody = await res.text()
+      return { items: [], ok: false, status: res.status, errorBody: errorBody || undefined }
     }
     const data = (await res.json()) as Record<string, unknown>
+    const err = sparkErrorFromBody(data)
+    if (err) return { items: [], ok: false, status: res.status, errorBody: err }
     const d = data?.D as Record<string, unknown> | undefined
     const raw = d?.Results ?? d ?? data.Results ?? data
     const items = parseHistoryItems(raw)
@@ -415,14 +437,16 @@ export async function fetchSparkPriceHistory(
 }
 
 /**
- * Fetch historical listings: GET /v1/listings/{id}/historical
+ * Historical Listings — listings that are no longer active (off market).
+ * GET /v1/listings/{id}/historical
  * Returns full listing objects for all prior MLS records for the same property.
  * Use for "Previously listed at $X in 2020" or full prior listing details.
+ * @see https://sparkplatform.com/docs/api_services/listings/historical
  */
 export async function fetchSparkHistoricalListings(
   accessToken: string,
   listingKey: string
-): Promise<{ listings: SparkListingResult[]; ok: boolean; status?: number }> {
+): Promise<{ listings: SparkListingResult[]; ok: boolean; status?: number; errorBody?: string }> {
   const token = accessToken.trim()
   const url = `${SPARK_BASE}/listings/${encodeURIComponent(listingKey)}/historical`
   try {
@@ -434,10 +458,14 @@ export async function fetchSparkHistoricalListings(
       next: { revalidate: 0 },
     })
     if (!res.ok) {
-      return { listings: [], ok: false, status: res.status }
+      const errorBody = await res.text()
+      return { listings: [], ok: false, status: res.status, errorBody: errorBody || undefined }
     }
-    const data = (await res.json()) as { D?: { Results?: SparkListingResult[] } | SparkListingResult[] }
-    const raw = data.D ?? (data as { Results?: SparkListingResult[] }).Results ?? data
+    const data = (await res.json()) as Record<string, unknown>
+    const err = sparkErrorFromBody(data)
+    if (err) return { listings: [], ok: false, status: res.status, errorBody: err }
+    const d = data?.D
+    const raw = d ?? (data as { Results?: SparkListingResult[] }).Results ?? data
     const listings = Array.isArray(raw) ? raw : []
     return { listings, ok: true }
   } catch {
@@ -528,8 +556,19 @@ export function sparkListingToSupabaseRow(
 
   const listDate = toTimestamp(f.ListDate ?? f.OnMarketDate ?? null)
   const closeDate = toTimestamp(f.CloseDate ?? null)
+  const onMarketDate = toTimestamp(f.OnMarketDate ?? f.ListDate ?? null)
   const status = (f.StandardStatus ?? f.ListStatus ?? '') as string
   const isClosed = typeof status === 'string' && status.toLowerCase().includes('closed')
+  const agentFirst = (f.ListAgentFirstName ?? '').toString().trim()
+  const agentLast = (f.ListAgentLastName ?? '').toString().trim()
+  const listAgentName = [agentFirst, agentLast].filter(Boolean).join(' ') || null
+  const openHouses = Array.isArray(f.OpenHouses)
+    ? (f.OpenHouses as Array<{ Date?: string; StartTime?: string; EndTime?: string }>).map((oh) => ({
+        Date: oh.Date ?? undefined,
+        StartTime: oh.StartTime ?? undefined,
+        EndTime: oh.EndTime ?? undefined,
+      }))
+    : []
 
   return {
     ListingKey: f.ListingKey ?? result.Id,
@@ -554,5 +593,9 @@ export function sparkListingToSupabaseRow(
     CloseDate: closeDate,
     media_finalized: isClosed,
     details: f as Record<string, unknown>,
+    ListOfficeName: (f.ListOfficeName ?? '').toString().trim() || null,
+    ListAgentName: listAgentName,
+    OnMarketDate: onMarketDate,
+    OpenHouses: openHouses.length > 0 ? openHouses : null,
   }
 }

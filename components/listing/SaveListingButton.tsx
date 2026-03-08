@@ -2,15 +2,43 @@
 
 import { useRouter } from 'next/navigation'
 import { toggleSavedListing } from '../../app/actions/saved-listings'
+import { trackSavedPropertyAction } from '../../app/actions/track-saved-property'
+import { trackSaveListing } from '@/lib/tracking'
 
-type Props = { listingKey: string; saved: boolean }
+type Props = {
+  listingKey: string
+  saved: boolean
+  /** When provided, FUB "Saved Property" is sent on save (detail page). */
+  userEmail?: string | null
+  listingUrl?: string
+  property?: { street?: string; city?: string; state?: string; mlsNumber?: string; price?: number; bedrooms?: number; bathrooms?: number }
+}
 
-export default function SaveListingButton({ listingKey, saved }: Props) {
+export default function SaveListingButton({ listingKey, saved, userEmail, listingUrl, property }: Props) {
   const router = useRouter()
 
   async function handleClick(e: React.MouseEvent) {
     e.preventDefault()
-    await toggleSavedListing(listingKey)
+    const result = await toggleSavedListing(listingKey)
+    if (result.saved) {
+      if (userEmail && listingUrl && property) {
+        trackSavedPropertyAction({
+          userEmail,
+          listingKey,
+          listingUrl,
+          sourcePage: typeof window !== 'undefined' ? window.location.href : undefined,
+          property,
+        })
+      }
+      if (listingUrl) {
+        trackSaveListing({
+          listingKey,
+          listingUrl,
+          price: property?.price,
+          mlsNumber: property?.mlsNumber ?? listingKey,
+        })
+      }
+    }
     router.refresh()
   }
 

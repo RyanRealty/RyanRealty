@@ -5,14 +5,31 @@ import {
   fetchSparkListingsPage,
   fetchSparkListingHistory,
   fetchSparkPriceHistory,
+  fetchSparkHistoricalListings,
   sparkListingToSupabaseRow,
   type SparkListingHistoryItem,
 } from '../../lib/spark'
+
+export type SyncDeltaResult = {
+  success: boolean
+  message: string
+  totalFetched?: number
+  totalUpserted?: number
+  eventsEmitted?: number
+  pagesProcessed?: number
+  error?: string
+}
 
 const SYNC_EXPAND = 'Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents'
 /** Upsert in small chunks to avoid Supabase statement timeout (large details JSON). */
 const UPSERT_CHUNK_SIZE = 12
 const UPSERT_CHUNK_SIZE_RETRY = 5
+
+/** Activity event types from sync change detection (Priority 2). */
+const ACTIVITY_NEW_LISTING = 'new_listing'
+const ACTIVITY_PRICE_DROP = 'price_drop'
+const ACTIVITY_STATUS_PENDING = 'status_pending'
+const ACTIVITY_STATUS_CLOSED = 'status_closed'
 
 /** Convert one Spark history item to a row for listing_history table. Uses Event, ModificationTimestamp/Date, PriceAtEvent/Price, etc. */
 function sparkHistoryItemToRow(listingKey: string, item: SparkListingHistoryItem) {
@@ -156,6 +173,12 @@ export async function syncSparkListings(options?: {
     }
 
     const done = currentPage > totalPages || pagesProcessed >= maxPages
+    if (done && totalUpserted > 0) {
+      await supabase.from('sync_state').upsert(
+        { id: 'default', last_full_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { onConflict: 'id' }
+      )
+    }
     return {
       success: true,
       message: done
@@ -177,6 +200,187 @@ export async function syncSparkListings(options?: {
       pagesProcessed,
       totalPagesFromSpark: totalPages,
       nextPage: currentPage,
+      error: message,
+    }
+  }
+}
+
+/**
+ * Delta sync: fetch only listings changed since last_delta_sync_at. Emits activity_events for status/price changes.
+ * Run on a 15–30 min cron. On first run (no last_delta_sync_at) uses 24h ago. Updates sync_state only on success.
+ */
+export async function syncSparkListingsDelta(options?: {
+  maxPages?: number
+  pageSize?: number
+}): Promise<SyncDeltaResult> {
+  const accessToken = process.env.SPARK_API_KEY
+  if (!accessToken?.trim()) {
+    return { success: false, message: 'SPARK_API_KEY is not set.', error: 'Missing SPARK_API_KEY' }
+  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
+    return {
+      success: false,
+      message: 'Supabase not configured.',
+      error: 'Missing Supabase env vars',
+    }
+  }
+  const supabase = createClient(supabaseUrl, serviceKey)
+  const maxPages = options?.maxPages ?? 50
+  const pageSize = options?.pageSize ?? 100
+
+  let sinceIso: string
+  const { data: stateRow } = await supabase.from('sync_state').select('last_delta_sync_at').eq('id', 'default').maybeSingle()
+  const lastAt = (stateRow as { last_delta_sync_at?: string | null } | null)?.last_delta_sync_at
+  if (lastAt) {
+    sinceIso = lastAt
+  } else {
+    const t = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    sinceIso = t.toISOString()
+  }
+  const filter = `ModificationTimestamp gt '${sinceIso.replace(/'/g, "''")}'`
+
+  let totalFetched = 0
+  let totalUpserted = 0
+  let eventsEmitted = 0
+  let pagesProcessed = 0
+  let currentPage = 1
+  let totalPages = 1
+
+  try {
+    while (currentPage <= totalPages && pagesProcessed < maxPages) {
+      const response = await fetchSparkListingsPage(accessToken, {
+        page: currentPage,
+        limit: pageSize,
+        filter,
+        orderby: '+ModificationTimestamp',
+        expand: SYNC_EXPAND,
+      })
+      const D = response.D
+      if (!D?.Success || !D.Results?.length) {
+        if (pagesProcessed === 0) {
+          await supabase.from('sync_state').upsert(
+            { id: 'default', last_delta_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { onConflict: 'id' }
+          )
+          return {
+            success: true,
+            message: 'Delta sync: no changes since last run.',
+            totalFetched: 0,
+            totalUpserted: 0,
+            eventsEmitted: 0,
+            pagesProcessed: 0,
+          }
+        }
+        break
+      }
+      if (D.Pagination) totalPages = D.Pagination.TotalPages
+      const rows = D.Results.map(sparkListingToSupabaseRow) as Array<{
+        ListNumber?: string
+        ListingKey?: string
+        StandardStatus?: string | null
+        ListPrice?: number | null
+        [k: string]: unknown
+      }>
+      const listNumbers = rows.map((r) => r.ListNumber).filter(Boolean) as string[]
+      const { data: existingRows } = await supabase
+        .from('listings')
+        .select('ListNumber, StandardStatus, ListPrice')
+        .in('ListNumber', listNumbers)
+      const existingByNum = new Map<string, { StandardStatus?: string | null; ListPrice?: number | null }>()
+      for (const r of existingRows ?? []) {
+        const row = r as { ListNumber?: string; StandardStatus?: string | null; ListPrice?: number | null }
+        if (row.ListNumber) existingByNum.set(row.ListNumber, { StandardStatus: row.StandardStatus, ListPrice: row.ListPrice })
+      }
+
+      for (let i = 0; i < rows.length; i += UPSERT_CHUNK_SIZE) {
+        const chunk = rows.slice(i, i + UPSERT_CHUNK_SIZE)
+        const { error } = await supabase.from('listings').upsert(chunk, { onConflict: 'ListNumber' })
+        if (!error) totalUpserted += chunk.length
+      }
+
+      const nowIso = new Date().toISOString()
+      for (const row of rows) {
+        const listNumber = (row.ListNumber ?? '').toString()
+        const listingKey = (row.ListingKey ?? row.ListNumber ?? '').toString()
+        if (!listNumber) continue
+        const existing = existingByNum.get(listNumber)
+        const status = (row.StandardStatus ?? '').toString().toLowerCase()
+        const isPending = /pending/i.test(status)
+        const isClosed = /closed/i.test(status)
+        const newPrice = typeof row.ListPrice === 'number' && !Number.isNaN(row.ListPrice) ? row.ListPrice : null
+
+        if (!existing) {
+          const { error: evErr } = await supabase.from('activity_events').insert({
+            listing_key: listingKey,
+            event_type: ACTIVITY_NEW_LISTING,
+            event_at: nowIso,
+            payload: { ListNumber: listNumber, City: row.City, SubdivisionName: row.SubdivisionName },
+          })
+          if (!evErr) eventsEmitted++
+        } else {
+          const oldStatus = (existing.StandardStatus ?? '').toString().toLowerCase()
+          const oldPending = /pending/i.test(oldStatus)
+          const oldClosed = /closed/i.test(oldStatus)
+          const oldPrice = existing.ListPrice != null && !Number.isNaN(Number(existing.ListPrice)) ? Number(existing.ListPrice) : null
+          if (!oldPending && isPending) {
+            const { error: evErr } = await supabase.from('activity_events').insert({
+              listing_key: listingKey,
+              event_type: ACTIVITY_STATUS_PENDING,
+              event_at: nowIso,
+              payload: { ListNumber: listNumber },
+            })
+            if (!evErr) eventsEmitted++
+          }
+          if (!oldClosed && isClosed) {
+            const { error: evErr } = await supabase.from('activity_events').insert({
+              listing_key: listingKey,
+              event_type: ACTIVITY_STATUS_CLOSED,
+              event_at: nowIso,
+              payload: { ListNumber: listNumber, ListPrice: newPrice },
+            })
+            if (!evErr) eventsEmitted++
+            await supabase.from('listings').update({ media_finalized: true }).eq('ListNumber', listNumber)
+          }
+          if (newPrice != null && oldPrice != null && newPrice < oldPrice) {
+            const { error: evErr } = await supabase.from('activity_events').insert({
+              listing_key: listingKey,
+              event_type: ACTIVITY_PRICE_DROP,
+              event_at: nowIso,
+              payload: { ListNumber: listNumber, previous_price: oldPrice, new_price: newPrice },
+            })
+            if (!evErr) eventsEmitted++
+          }
+        }
+      }
+
+      totalFetched += rows.length
+      pagesProcessed += 1
+      currentPage += 1
+    }
+
+    await supabase.from('sync_state').upsert(
+      { id: 'default', last_delta_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      { onConflict: 'id' }
+    )
+    return {
+      success: true,
+      message: `Delta sync done. ${totalUpserted} updated, ${eventsEmitted} events.`,
+      totalFetched,
+      totalUpserted,
+      eventsEmitted,
+      pagesProcessed,
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return {
+      success: false,
+      message: `Delta sync failed: ${message}`,
+      totalFetched,
+      totalUpserted,
+      eventsEmitted,
+      pagesProcessed,
       error: message,
     }
   }
@@ -330,6 +534,11 @@ export type SyncHistoryResult = {
  * Backfill listing_history from Spark API. Fetches history for each listing and upserts into Supabase.
  * Run after listing sync so CMAs and reports can use list date, price changes, last sale without calling the API.
  * Uses batches to avoid timeouts; pass offset to continue.
+ *
+ * Smart retry: we include every listing with history_finalized = false. So even if we have the listing
+ * but no history yet (e.g. API key lacked history access), we keep attempting to sync history on every run.
+ * A listing is only marked history_finalized when we successfully store at least one history row (and it's
+ * closed); until then it stays in the pool so you can get history later when access is granted.
  */
 export async function syncListingHistory(options?: {
   /** Max listings to process in this run (default 50) */
@@ -355,15 +564,16 @@ export async function syncListingHistory(options?: {
   const offset = Math.max(0, options?.offset ?? 0)
 
   try {
+    // Include every listing that doesn't have history finalized yet — we keep retrying until we get history (e.g. when you get access later).
     const { count: needSyncCount } = await supabase
       .from('listings')
       .select('*', { count: 'exact', head: true })
-      .or('history_finalized.eq.false,StandardStatus.is.null,StandardStatus.not.ilike.%closed%')
+      .eq('history_finalized', false)
     const totalListings = needSyncCount ?? 0
     const { data: rows } = await supabase
       .from('listings')
       .select('ListingKey, ListNumber, StandardStatus')
-      .or('history_finalized.eq.false,StandardStatus.is.null,StandardStatus.not.ilike.%closed%')
+      .eq('history_finalized', false)
       .order('ListNumber', { ascending: true, nullsFirst: false })
       .range(offset, offset + limit - 1)
     const listingRows = (rows ?? []) as {
@@ -419,17 +629,20 @@ export async function syncListingHistory(options?: {
         const { error } = await supabase.from('listing_history').insert(historyRows)
         if (!error) {
           historyRowsUpserted += historyRows.length
+          // Only mark history_finalized when we actually stored history. Never finalize when we got no history —
+          // so we keep retrying when you get history access later (e.g. Private role).
           const status = (row.StandardStatus ?? '').toString().toLowerCase()
           if (status.includes('closed') && row.ListNumber) {
             await supabase
               .from('listings')
-              .update({ history_finalized: true })
+              .update({ history_finalized: true, is_finalized: true })
               .eq('ListNumber', row.ListNumber)
           }
         } else if (!firstInsertError) {
           firstInsertError = error.message
         }
       }
+      // When items.length === 0 we do not set history_finalized — listing stays in the pool for the next run.
     }
 
     const nextOffset = offset + listingRows.length
@@ -465,10 +678,12 @@ export async function syncListingHistory(options?: {
 export type TestListingHistoryResult = {
   ok: boolean
   listingKey: string | null
-  /** GET /listings/{id}/history */
-  history: { items: number; ok: boolean; status?: number; sampleEvent?: Record<string, unknown> }
-  /** GET /listings/{id}/historical/pricehistory */
-  priceHistory: { items: number; ok: boolean; status?: number; sampleEvent?: Record<string, unknown> }
+  /** GET /listings/{id}/history — status/event changes on this listing */
+  history: { items: number; ok: boolean; status?: number; sampleEvent?: Record<string, unknown>; errorBody?: string }
+  /** GET /listings/{id}/historical/pricehistory — price timeline */
+  priceHistory: { items: number; ok: boolean; status?: number; sampleEvent?: Record<string, unknown>; errorBody?: string }
+  /** GET /listings/{id}/historical — off-market listings for same property */
+  historical: { count: number; ok: boolean; status?: number; errorBody?: string }
   message: string
 }
 
@@ -478,12 +693,14 @@ export type TestListingHistoryResult = {
  */
 export async function testListingHistory(listingKey?: string | null): Promise<TestListingHistoryResult> {
   const accessToken = process.env.SPARK_API_KEY
+  const emptyHistorical = { count: 0, ok: false as const }
   if (!accessToken?.trim()) {
     return {
       ok: false,
       listingKey: null,
       history: { items: 0, ok: false },
       priceHistory: { items: 0, ok: false },
+      historical: emptyHistorical,
       message: 'SPARK_API_KEY is not set.',
     }
   }
@@ -507,48 +724,57 @@ export async function testListingHistory(listingKey?: string | null): Promise<Te
       listingKey: null,
       history: { items: 0, ok: false },
       priceHistory: { items: 0, ok: false },
+      historical: emptyHistorical,
       message: 'No listing key provided and no listings in DB. Run a listing sync first or pass a ListingKey/ListNumber.',
     }
   }
 
-  const [historyRes, priceHistoryRes] = await Promise.all([
+  const [historyRes, priceHistoryRes, historicalRes] = await Promise.all([
     fetchSparkListingHistory(accessToken, keyToUse),
     fetchSparkPriceHistory(accessToken, keyToUse),
+    fetchSparkHistoricalListings(accessToken, keyToUse),
   ])
 
   const historySample = historyRes.items[0] as Record<string, unknown> | undefined
   const priceHistorySample = priceHistoryRes.items[0] as Record<string, unknown> | undefined
 
   const SPARK_HISTORY_DOC = 'https://sparkplatform.com/docs/api_services/listings/history'
+  const SPARK_HISTORICAL_DOC = 'https://sparkplatform.com/docs/api_services/listings/historical'
   let message = `Listing: ${keyToUse}. `
-  if (historyRes.ok && priceHistoryRes.ok) {
-    const hStatus = historyRes.status != null ? ` (HTTP ${historyRes.status})` : ''
-    const pStatus = priceHistoryRes.status != null ? ` (HTTP ${priceHistoryRes.status})` : ''
-    message += `History: ${historyRes.items.length} events${hStatus}. Price history: ${priceHistoryRes.items.length} events${pStatus}.`
-    if (historyRes.items.length === 0 && priceHistoryRes.items.length === 0) {
-      message += ` Both returned 0 items. To get listing history, your Spark API key must have the Private role; IDX/VOW/Portal can be fully restricted by the MLS. See ${SPARK_HISTORY_DOC}`
-    }
-  } else {
-    const parts: string[] = []
-    if (!historyRes.ok) parts.push(`/history returned ${historyRes.status ?? 'error'}`)
-    if (!priceHistoryRes.ok) parts.push(`/pricehistory returned ${priceHistoryRes.status ?? 'error'}`)
-    message += parts.join('. ')
+  const parts: string[] = []
+  if (historyRes.ok) parts.push(`History: ${historyRes.items.length} events`)
+  else parts.push(`/history → ${historyRes.status ?? 'error'}`)
+  if (priceHistoryRes.ok) parts.push(`Price history: ${priceHistoryRes.items.length} events`)
+  else parts.push(`/pricehistory → ${priceHistoryRes.status ?? 'error'}`)
+  if (historicalRes.ok) parts.push(`Historical: ${historicalRes.listings.length} off-market`)
+  else parts.push(`/historical → ${historicalRes.status ?? 'error'}`)
+  message += parts.join('. ')
+  if (historyRes.items.length === 0 && priceHistoryRes.items.length === 0 && !historicalRes.ok) {
+    message += ` See ${SPARK_HISTORY_DOC} and ${SPARK_HISTORICAL_DOC}.`
   }
 
   return {
-    ok: historyRes.ok && priceHistoryRes.ok,
+    ok: historyRes.ok && priceHistoryRes.ok && historicalRes.ok,
     listingKey: keyToUse,
     history: {
       items: historyRes.items.length,
       ok: historyRes.ok,
       status: historyRes.status,
       sampleEvent: historySample,
+      errorBody: historyRes.errorBody,
     },
     priceHistory: {
       items: priceHistoryRes.items.length,
       ok: priceHistoryRes.ok,
       status: priceHistoryRes.status,
       sampleEvent: priceHistorySample,
+      errorBody: priceHistoryRes.errorBody,
+    },
+    historical: {
+      count: historicalRes.listings.length,
+      ok: historicalRes.ok,
+      status: historicalRes.status,
+      errorBody: historicalRes.errorBody,
     },
     message,
   }

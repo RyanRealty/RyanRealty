@@ -43,8 +43,20 @@ export default async function ReportPage({ params }: Props) {
   const reportUrl = `${siteUrl}/reports/${slug}`
   const imageUrl = await getReportImageUrl(report.image_storage_path)
 
+  const reportSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Report',
+    name: report.title,
+    description: `Central Oregon real estate market report: ${report.period_start} – ${report.period_end}. Pending and closed sales by city.`,
+    url: reportUrl,
+    datePublished: report.created_at,
+    ...(imageUrl && { image: imageUrl }),
+    publisher: { '@type': 'Organization', name: 'Ryan Realty', url: siteUrl },
+  }
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reportSchema) }} />
       <nav className="mb-6 text-sm">
         <Link href="/reports" className="text-zinc-500 hover:text-zinc-900">
           ← Market reports

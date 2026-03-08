@@ -1,4 +1,14 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.com').replace(/\/$/, '')
+
+export const metadata: Metadata = {
+  title: 'Sign-in issue',
+  description: 'There was a problem signing you in. Try again or return home.',
+  alternates: { canonical: `${siteUrl}/auth-error` },
+  robots: 'noindex, follow',
+}
 
 type Props = { searchParams: Promise<{ message?: string; next?: string }> }
 

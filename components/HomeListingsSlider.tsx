@@ -1,13 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import ListingCard from './ListingCard'
+import ListingTile from './ListingTile'
 import { cityEntityKey } from '@/lib/slug'
-import type { ListingCardRow } from '@/app/actions/listings'
+import type { ListingTileRow } from '@/app/actions/listings'
 
 type Props = {
   city: string
-  listings: ListingCardRow[]
+  listings: ListingTileRow[]
   savedKeys: string[]
   priceChangeKeys: Set<string>
   monthlyPayments: (string | undefined)[]
@@ -40,15 +40,16 @@ export default function HomeListingsSlider({
       <div className="mt-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
         <div className="flex gap-6 min-w-max snap-x snap-mandatory" style={{ scrollSnapType: 'x mandatory' }}>
           {listings.map((listing, i) => {
-            const key = listing.ListingKey ?? listing.ListNumber ?? `listing-${i}`
+            const key = (listing.ListNumber ?? listing.ListingKey ?? `listing-${i}`).toString().trim()
             return (
               <div
                 key={key}
                 className="w-72 shrink-0 snap-start"
                 style={{ scrollSnapAlign: 'start' }}
               >
-                <ListingCard
+                <ListingTile
                   listing={listing}
+                  listingKey={key}
                   priority={i < 3}
                   hasRecentPriceChange={key ? priceChangeKeys.has(key) : false}
                   saved={signedIn ? savedKeys.includes(key) : undefined}

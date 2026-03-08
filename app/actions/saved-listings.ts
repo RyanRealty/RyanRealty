@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 
 export async function getSavedListingKeys(): Promise<string[]> {
   const supabase = await createClient()
@@ -60,4 +61,18 @@ export async function toggleSavedListing(listingKey: string): Promise<{ saved: b
   }
   const { error } = await saveListing(listingKey)
   return { saved: true, error }
+}
+
+/** Public save count for a listing (social proof). Uses service role to count saved_listings. */
+export async function getSavedListingCount(listingKey: string): Promise<number> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url?.trim() || !serviceKey?.trim() || !listingKey?.trim()) return 0
+  const supabase = createServiceClient(url, serviceKey)
+  const { count, error } = await supabase
+    .from('saved_listings')
+    .select('*', { count: 'exact', head: true })
+    .eq('listing_key', listingKey.trim())
+  if (error) return 0
+  return count ?? 0
 }

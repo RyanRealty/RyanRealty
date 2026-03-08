@@ -2,8 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { getBrowseCities, getTotalListingsCount } from "./actions/listings";
+import { getTotalListingsCount } from "./actions/listings";
 import { getSession } from "./actions/auth";
+import { getBrokerageSettings } from "./actions/brokerage";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import JsonLd from "../components/JsonLd";
@@ -16,6 +17,7 @@ import FubIdentityBridge from "../components/FubIdentityBridge";
 import GoogleAnalytics from "../components/GoogleAnalytics";
 import MetaPixel from "../components/MetaPixel";
 import SignUpTracker from "../components/tracking/SignUpTracker";
+import AdminHashRedirect from "../components/AdminHashRedirect";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -69,31 +71,37 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [cities, totalListings, session] = await Promise.all([
-    getBrowseCities(),
+  const [totalListings, session, brokerage] = await Promise.all([
     getTotalListingsCount(),
     getSession(),
+    getBrokerageSettings(),
   ]);
+
+  const brokerageName = brokerage?.name ?? 'Ryan Realty'
+  const brokerageLogoUrl = brokerage?.logo_url ?? null
 
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} min-h-screen overflow-x-hidden antialiased`}
       >
         <GoogleAnalytics />
         <MetaPixel />
         <JsonLd />
-        <SiteHeader cities={cities} totalListings={totalListings} user={session?.user} />
+        <SiteHeader totalListings={totalListings} user={session?.user} brokerageName={brokerageName} brokerageLogoUrl={brokerageLogoUrl} />
         <div className="min-h-[calc(100vh-120px)]">{children}</div>
-        <SiteFooter />
+        <SiteFooter brokerageName={brokerageName} brokerageTagline={brokerage?.tagline ?? null} brokerageEmail={brokerage?.primary_email ?? null} />
         <CookieConsentBanner />
-        <SignInPrompt user={session?.user ?? null} />
+        <Suspense fallback={null}>
+          <SignInPrompt user={session?.user ?? null} />
+        </Suspense>
         <VisitTracker userId={session?.user?.id ?? null} />
         <Suspense fallback={null}>
           <FubIdentityBridge />
           <AuthCodeRedirect />
           <AuthErrorRedirect />
           <SignUpTracker />
+          <AdminHashRedirect />
         </Suspense>
       </body>
     </html>

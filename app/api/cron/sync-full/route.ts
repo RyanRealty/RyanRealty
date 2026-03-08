@@ -26,6 +26,12 @@ type CursorRow = {
   total_listing_pages: number | null
   next_history_offset: number
   updated_at: string
+  run_started_at?: string | null
+  run_listings_upserted?: number
+  run_history_rows?: number
+  paused?: boolean
+  abort_requested?: boolean
+  cron_enabled?: boolean
 }
 
 /**
@@ -58,7 +64,7 @@ export async function GET(request: Request) {
   let cursorRow: CursorRow | null = null
   const { data, error: cursorError } = await supabase
     .from('sync_cursor')
-    .select('phase, next_listing_page, total_listing_pages, next_history_offset')
+    .select('phase, next_listing_page, total_listing_pages, next_history_offset, run_started_at, run_listings_upserted, run_history_rows, paused, abort_requested, cron_enabled')
     .eq('id', CURSOR_ID)
     .maybeSingle()
 
@@ -73,15 +79,57 @@ export async function GET(request: Request) {
   }
   cursorRow = data as CursorRow | null
 
+  if (cursorRow?.cron_enabled === false) {
+    return NextResponse.json({
+      ok: true,
+      skipped: true,
+      message: 'Sync cron is disabled. Enable it on the admin sync page when ready.',
+    })
+  }
+
+  if (cursorRow?.abort_requested) {
+    await supabase.from('sync_cursor').upsert(
+      {
+        id: CURSOR_ID,
+        run_started_at: null,
+        run_listings_upserted: 0,
+        run_history_rows: 0,
+        abort_requested: false,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    )
+    return NextResponse.json({ ok: true, paused: false, stopped: true, message: 'Stopped by user.' })
+  }
+  if (cursorRow?.paused) {
+    await supabase.from('sync_cursor').upsert(
+      {
+        id: CURSOR_ID,
+        run_started_at: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    )
+    return NextResponse.json({ ok: true, paused: true, message: 'Sync is paused.' })
+  }
+
   let phase = cursorRow?.phase ?? 'listings'
   let nextListingPage = cursorRow?.next_listing_page ?? 1
   const totalListingPages = cursorRow?.total_listing_pages ?? null
   let nextHistoryOffset = cursorRow?.next_history_offset ?? 0
+  const nowIso = new Date().toISOString()
+  const runAlreadyStarted = !!cursorRow?.run_started_at
+  let runStartedAt = runAlreadyStarted ? cursorRow!.run_started_at! : nowIso
+  let runListingsUpserted = cursorRow?.run_listings_upserted ?? 0
+  let runHistoryRows = cursorRow?.run_history_rows ?? 0
 
   if (phase === 'idle') {
     phase = 'listings'
     nextListingPage = 1
     nextHistoryOffset = 0
+    runStartedAt = nowIso
+    runListingsUpserted = 0
+    runHistoryRows = 0
   }
 
   if (phase === 'listings') {
@@ -104,6 +152,7 @@ export async function GET(request: Request) {
     const listingsDone = totalFromSpark != null && newNextPage > totalFromSpark
 
     if (listingsDone) {
+      runListingsUpserted += result.totalUpserted ?? 0
       await supabase
         .from('sync_cursor')
         .upsert(
@@ -114,6 +163,9 @@ export async function GET(request: Request) {
             total_listing_pages: totalFromSpark,
             next_history_offset: 0,
             updated_at: new Date().toISOString(),
+            run_started_at: runStartedAt,
+            run_listings_upserted: runListingsUpserted,
+            run_history_rows: runHistoryRows,
           },
           { onConflict: 'id' }
         )
@@ -131,6 +183,7 @@ export async function GET(request: Request) {
       })
     }
 
+    runListingsUpserted += result.totalUpserted ?? 0
     await supabase
       .from('sync_cursor')
       .upsert(
@@ -141,6 +194,9 @@ export async function GET(request: Request) {
           total_listing_pages: totalFromSpark ?? totalListingPages,
           next_history_offset: 0,
           updated_at: new Date().toISOString(),
+          run_started_at: runStartedAt,
+          run_listings_upserted: runListingsUpserted,
+          run_history_rows: runHistoryRows,
         },
         { onConflict: 'id' }
       )
@@ -177,6 +233,7 @@ export async function GET(request: Request) {
   const newOffset = result.nextOffset ?? nextHistoryOffset + historyBatchLimit
 
   if (historyDone) {
+    runHistoryRows += result.historyRowsUpserted ?? 0
     await supabase
       .from('sync_cursor')
       .upsert(
@@ -187,6 +244,9 @@ export async function GET(request: Request) {
           total_listing_pages: null,
           next_history_offset: 0,
           updated_at: new Date().toISOString(),
+          run_started_at: null,
+          run_listings_upserted: 0,
+          run_history_rows: 0,
         },
         { onConflict: 'id' }
       )
@@ -204,6 +264,7 @@ export async function GET(request: Request) {
     })
   }
 
+  runHistoryRows += result.historyRowsUpserted ?? 0
   await recordSyncRun({
     runType: 'full',
     startedAt,
@@ -220,6 +281,9 @@ export async function GET(request: Request) {
         total_listing_pages: totalListingPages,
         next_history_offset: newOffset,
         updated_at: new Date().toISOString(),
+        run_started_at: runStartedAt,
+        run_listings_upserted: runListingsUpserted,
+        run_history_rows: runHistoryRows,
       },
       { onConflict: 'id' }
     )
