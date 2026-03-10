@@ -1,11 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import ShareButton from '@/components/ShareButton'
 import { trackEvent } from '@/lib/tracking'
 import { toggleSavedListing } from '@/app/actions/saved-listings'
+import { useComparison } from '@/contexts/ComparisonContext'
 
 type Props = {
   listingKey: string
@@ -20,6 +22,8 @@ type Props = {
 
 export default function ListingActions({ listingKey, address, price, isSaved, mlsNumber, city, beds, baths }: Props) {
   const router = useRouter()
+  const { addToComparison, isInComparison } = useComparison()
+  const [compareMessage, setCompareMessage] = useState<string | null>(null)
   const listingUrl =
     typeof window !== 'undefined'
       ? window.location.href
@@ -55,7 +59,11 @@ export default function ListingActions({ listingKey, address, price, isSaved, ml
 
   const handleCompareClick = () => {
     trackEvent('compare_listing', { listing_key: listingKey, listing_url: listingUrl })
-    // TODO: add to comparison tray
+    const added = addToComparison(listingKey)
+    if (!added && !isInComparison(listingKey)) {
+      setCompareMessage('Remove one to add another. Maximum 4.')
+      setTimeout(() => setCompareMessage(null), 3000)
+    }
   }
 
   const shareTitle = [address, price != null ? `$${price.toLocaleString()}` : ''].filter(Boolean).join(' | ')
@@ -86,15 +94,26 @@ export default function ListingActions({ listingKey, address, price, isSaved, ml
         <div onClick={handleShareClick}>
           <ShareButton title={shareTitle} variant="default" className="!rounded-lg !border-[var(--gray-border)] !bg-white !text-[var(--brand-navy)] !px-4 !py-2" />
         </div>
-        <button
-          type="button"
-          onClick={handleCompareClick}
-          className="inline-flex items-center gap-2 rounded-lg border border-[var(--gray-border)] bg-white px-4 py-2 text-sm font-medium text-[var(--brand-navy)] hover:bg-[var(--gray-bg)]"
-          aria-label="Add to compare"
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-          <span className="hidden sm:inline">Compare</span>
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={handleCompareClick}
+            className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium ${isInComparison(listingKey) ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--brand-navy)]' : 'border-[var(--gray-border)] bg-white text-[var(--brand-navy)] hover:bg-[var(--gray-bg)]'}`}
+            aria-label={isInComparison(listingKey) ? 'In comparison' : 'Add to compare'}
+          >
+            {isInComparison(listingKey) ? (
+              <svg className="h-5 w-5 text-[var(--success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            )}
+            <span className="hidden sm:inline">{isInComparison(listingKey) ? 'In Comparison' : 'Compare'}</span>
+          </button>
+          {compareMessage && (
+            <p className="absolute left-0 top-full z-10 mt-1 w-56 rounded bg-[var(--brand-navy)] px-2 py-1.5 text-xs text-white shadow" role="alert">
+              {compareMessage}
+            </p>
+          )}
+        </div>
       </div>
       {/* Fixed bottom bar - mobile */}
       <div className="fixed bottom-0 left-0 right-0 z-30 flex md:hidden items-center justify-center gap-2 py-3 px-4 bg-white border-t border-[var(--gray-border)] safe-area-pb">

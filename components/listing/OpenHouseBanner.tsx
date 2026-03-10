@@ -61,20 +61,24 @@ export default function OpenHouseBanner({ openHouses, listingKey }: Props) {
   const timeStr = [startStr, endStr].filter(Boolean).join(' — ')
 
   const handleAddToCalendar = () => {
-    const ics = buildIcsBlob(oh)
-    const blob = new Blob([ics], { type: 'text/calendar' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `open-house-${oh.event_date}.ics`
-    a.click()
-    URL.revokeObjectURL(url)
+    const base = typeof window !== 'undefined' ? window.location.origin : ''
+    const url = `${base}/api/calendar?listingKey=${encodeURIComponent(listingKey)}&openHouseId=${encodeURIComponent(oh.id)}`
+    window.open(url, '_blank')
   }
 
-  const handleRsvp = () => {
+  const handleRsvp = async () => {
     trackEvent('open_house_rsvp', { listing_key: listingKey, event_date: oh.event_date })
-    setRsvpOpen(true)
-    // TODO: require auth, create notification_queue entry, push to FUB
+    const res = await fetch('/api/open-houses/rsvp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ openHouseId: oh.id, listingId: listingKey }),
+    })
+    if (res.status === 401) {
+      const returnUrl = encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : `/listings/${listingKey}`)
+      window.location.href = `/account?signin=1&returnUrl=${returnUrl}`
+      return
+    }
+    if (res.ok) setRsvpOpen(true)
   }
 
   return (

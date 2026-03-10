@@ -9,8 +9,9 @@ import { toggleSavedListing } from '@/app/actions/saved-listings'
 import { toggleLikeListing } from '@/app/actions/likes'
 import ShareButton from '@/components/ShareButton'
 import { trackListingTileClick } from '@/app/actions/track-listing-click'
-import { trackListingClick } from '@/lib/tracking'
+import { trackListingClick, trackEvent } from '@/lib/tracking'
 import { listingAddressSlug } from '@/lib/slug'
+import { useComparison } from '@/contexts/ComparisonContext'
 
 const LISTING_PROVIDED_BY = 'Oregon Data Share'
 
@@ -108,6 +109,7 @@ export default function ListingTile({
 }: ListingTileProps) {
   const [savedState, setSavedState] = useState(saved)
   const [likedState, setLikedState] = useState(liked)
+  const { addToComparison, isInComparison } = useComparison()
   const price = Number(listing.ListPrice ?? 0)
   const dom = daysOnMarket(listing.OnMarketDate ?? undefined)
   const hasOpenHouse = Array.isArray(listing.OpenHouses) && listing.OpenHouses.length > 0
@@ -156,6 +158,14 @@ export default function ListingTile({
     price > 0
       ? `$${price.toLocaleString()}${listing.City ? ` · ${listing.City}` : ''}`
       : address || undefined
+
+  const handleCompareClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${href}` : href
+    trackEvent('compare_listing', { listing_key: listingKey, listing_url: fullUrl })
+    addToComparison(listingKey)
+  }
 
   function handleTileClick() {
     const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${href}` : href
@@ -284,6 +294,22 @@ export default function ListingTile({
               )}
             </button>
           )}
+          <button
+            type="button"
+            onClick={handleCompareClick}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/95 p-0 shadow hover:bg-white"
+            aria-label={isInComparison(listingKey) ? 'In comparison' : 'Add to compare'}
+          >
+            {isInComparison(listingKey) ? (
+              <svg className="h-5 w-5 text-[var(--success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            )}
+          </button>
         </div>
 
         {/* Media badges: video, virtual tour, floor plan — click goes to listing */}

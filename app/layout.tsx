@@ -18,6 +18,8 @@ import MetaPixel from "../components/MetaPixel";
 import SignUpTracker from "../components/tracking/SignUpTracker";
 import AdminHashRedirect from "../components/AdminHashRedirect";
 import GTMHead from "../components/GTMHead";
+import { ComparisonProvider } from "../contexts/ComparisonContext";
+import ComparisonTray from "../components/comparison/ComparisonTray";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -93,13 +95,15 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen overflow-x-hidden antialiased`}
       >
-        <GoogleAnalytics />
-        <MetaPixel />
-        <JsonLd />
-        <Header user={session?.user} brokerageName={brokerageName} brokerageLogoUrl={brokerageLogoUrl} />
-        <div className="min-h-[calc(100vh-120px)]">{children}</div>
-        <Footer brokerageName={brokerageName} brokerageEmail={brokerage?.primary_email ?? null} brokeragePhone={brokerage?.primary_phone ?? null} brokerageAddress={brokerageAddress} />
-        <CookieConsentBanner />
+        <ComparisonProvider>
+          <GoogleAnalytics />
+          <MetaPixel />
+          <JsonLd />
+          <Header user={session?.user} brokerageName={brokerageName} brokerageLogoUrl={brokerageLogoUrl} />
+          <div className="min-h-[calc(100vh-120px)]">{children}</div>
+          <Footer brokerageName={brokerageName} brokerageEmail={brokerage?.primary_email ?? null} brokeragePhone={brokerage?.primary_phone ?? null} brokerageAddress={brokerageAddress} />
+          <ComparisonTray />
+          <CookieConsentBanner />
         <Suspense fallback={null}>
           <SignInPrompt user={session?.user ?? null} />
         </Suspense>
@@ -111,6 +115,7 @@ export default async function RootLayout({
           <SignUpTracker />
           <AdminHashRedirect />
         </Suspense>
+        </ComparisonProvider>
       </body>
     </html>
   );

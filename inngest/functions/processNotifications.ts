@@ -36,6 +36,8 @@ export const processNotifications = inngest.createFunction(
 
     for (const row of pending) {
       const payload = (row.payload as Record<string, unknown>) ?? {}
+      const sendAt = payload.send_at != null ? new Date(payload.send_at as string) : null
+      if (sendAt && sendAt.getTime() > Date.now()) continue
       const { data: profile } = await supabase
         .from('profiles')
         .select('notification_preferences')
@@ -71,6 +73,15 @@ export const processNotifications = inngest.createFunction(
         const listingKey = typeof payload.listing_key === 'string' ? payload.listing_key : ''
         subject = 'Status update on a saved home'
         html = `<p>A home you saved has a status update. <a href="${siteUrl}/listing/${encodeURIComponent(listingKey)}">View listing</a>.</p>`
+      } else if (row.notification_type === 'open_house_reminder_24h') {
+        const listingUrl = typeof payload.listing_url === 'string' ? payload.listing_url : `${siteUrl}/listings`
+        const eventDate = typeof payload.event_date === 'string' ? payload.event_date : ''
+        subject = 'Open house tomorrow — reminder'
+        html = `<p>Reminder: You're signed up for an open house${eventDate ? ` on ${eventDate}` : ''}. <a href="${listingUrl}">View listing and details</a>.</p>`
+      } else if (row.notification_type === 'open_house_reminder_1h') {
+        const listingUrl = typeof payload.listing_url === 'string' ? payload.listing_url : `${siteUrl}/listings`
+        subject = 'Open house in 1 hour'
+        html = `<p>Your open house is in about an hour. <a href="${listingUrl}">View listing and address</a>.</p>`
       }
 
       const result = await sendEmail({ to, subject, html })
