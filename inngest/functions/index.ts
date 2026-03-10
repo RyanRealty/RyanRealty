@@ -8,6 +8,7 @@ import {
   updateEngagementMetrics,
 } from './postSyncProcessors'
 import { processNotifications } from './processNotifications'
+import { precomputeCMA } from './precomputeCMA'
 
 export const functions = [
   initialFullSync,
@@ -18,4 +19,5 @@ export const functions = [
   queueStatusChangeNotifications,
   updateEngagementMetrics,
   processNotifications,
+  precomputeCMA,
 ]

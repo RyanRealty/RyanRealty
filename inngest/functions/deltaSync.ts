@@ -146,6 +146,12 @@ export const deltaSync = inngest.createFunction(
       name: 'sync/update-engagement-metrics',
       data: { listingKeys: [...listingsCreated, ...listingsUpdated] },
     })
+    if (listingsClosed.length > 0) {
+      await step.sendEvent('post-sync-cma', {
+        name: 'cma/precompute-all',
+        data: {},
+      })
+    }
 
     return { checkpointId, processed: result.records.length, closed: listingsClosed.length }
   }

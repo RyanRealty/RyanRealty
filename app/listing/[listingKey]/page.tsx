@@ -42,6 +42,7 @@ import ListingCtaSidebar from '../../../components/listing/ListingCtaSidebar'
 import ListingSpecial from '../../../components/listing/ListingSpecial'
 import { buildListingHighlights } from '../../../lib/listing-highlights'
 import ListingCommunitySection from '../../../components/listing/ListingCommunitySection'
+import ListingValuationSection from '../../../components/listing/ListingValuationSection'
 import ShareButton from '../../../components/ShareButton'
 import TrackListingView from '../../../components/tracking/TrackListingView'
 import Breadcrumb from '../../../components/Breadcrumb'
@@ -545,6 +546,9 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
                 )}
               </div>
             )}
+
+            {/* 3b. Estimated Value (CMA) — only when valuation exists and VOW allows display */}
+            <ListingValuationSection listingKey={resolvedKey} signedIn={!!session?.user} />
 
             {/* 4. What Makes This Property Special — per competitive audit */}
             <div className="mb-8">
