@@ -136,3 +136,14 @@ export async function signOut() {
   await supabase.auth.signOut()
 }
 
+/** Send password reset email. */
+export async function resetPasswordForEmail(email: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient()
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: `${base}/auth/callback?next=${encodeURIComponent('/dashboard/settings')}`,
+  })
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+

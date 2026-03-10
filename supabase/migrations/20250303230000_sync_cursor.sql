@@ -19,6 +19,7 @@ COMMENT ON TABLE sync_cursor IS 'Progress for /api/cron/sync-full: listings then
 -- Only service role (cron/API) should touch this table
 ALTER TABLE sync_cursor ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role full access sync_cursor" ON sync_cursor;
 CREATE POLICY "Service role full access sync_cursor"
   ON sync_cursor FOR ALL
   TO service_role

@@ -9,9 +9,11 @@ type Props = {
   listings: SimilarListingRow[]
   signedIn?: boolean
   userEmail?: string | null
+  savedKeys?: string[]
+  likedKeys?: string[]
 }
 
-export default function ListingSimilarListings({ subdivisionName, listings, signedIn = false, userEmail }: Props) {
+export default function ListingSimilarListings({ subdivisionName, listings, signedIn = false, userEmail, savedKeys = [], likedKeys = [] }: Props) {
   if (listings.length === 0) return null
 
   return (
@@ -30,6 +32,8 @@ export default function ListingSimilarListings({ subdivisionName, listings, sign
               listingKey={linkKey}
               signedIn={signedIn}
               userEmail={userEmail ?? undefined}
+              saved={signedIn ? savedKeys.includes(linkKey) : undefined}
+              liked={signedIn ? likedKeys.includes(linkKey) : undefined}
             />
           )
         })}

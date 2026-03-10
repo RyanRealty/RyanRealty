@@ -21,6 +21,7 @@ COMMENT ON TABLE sync_history IS 'Admin sync runs: listings, history, photos, or
 -- RLS: only service role (admin) can read/write
 ALTER TABLE sync_history ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role full access sync_history" ON sync_history;
 CREATE POLICY "Service role full access sync_history"
   ON sync_history FOR ALL
   TO service_role

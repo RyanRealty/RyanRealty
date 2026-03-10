@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { getSearchSuggestions } from '@/app/actions/listings'
 import type { SearchSuggestionsResult } from '@/app/actions/listings'
 import { cityEntityKey } from '@/lib/slug'
+import VoiceSearchButton from '@/components/VoiceSearchButton'
 
 const DEBOUNCE_MS = 220
 const MIN_QUERY_LENGTH = 2
@@ -147,6 +148,12 @@ export default function HeroSearchOverlay({ homesForYouLabel }: Props) {
           onFocus={() => query.trim().length >= MIN_QUERY_LENGTH && setOpen(true)}
           onKeyDown={handleKeyDown}
           className="min-w-0 flex-1 bg-transparent text-zinc-900 placeholder:text-zinc-500 focus:outline-none"
+        />
+        <VoiceSearchButton
+          onTranscript={(text) => {
+            setQuery(text)
+            router.push(`/listings?keywords=${encodeURIComponent(text)}`)
+          }}
         />
       </div>
       <p className="mt-3 text-center text-lg font-medium text-white drop-shadow-md">

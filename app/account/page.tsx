@@ -7,6 +7,7 @@ import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getSavedCommunityKeys } from '@/app/actions/saved-communities'
 import { getBuyingPreferences } from '@/app/actions/buying-preferences'
 import { redirect } from 'next/navigation'
+import ExportMyDataButton from '@/components/ExportMyDataButton'
 
 export const metadata: Metadata = {
   title: 'Account',
@@ -73,7 +74,7 @@ export default async function AccountPage() {
         </Link>
         <Link
           href="/account/buying-preferences"
-          className="flex flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:border-zinc-300 hover:shadow sm:col-span-2"
+          className="flex flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:border-zinc-300 hover:shadow"
         >
           <span className="text-lg font-semibold text-zinc-900">Buying preferences</span>
           <span className="mt-1 text-sm text-zinc-500">
@@ -82,6 +83,13 @@ export default async function AccountPage() {
               : 'Set down payment %, interest rate, and term to see estimated monthly payment on listings'}
           </span>
         </Link>
+        <div className="flex flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <span className="text-lg font-semibold text-zinc-900">Privacy & data</span>
+          <span className="mt-1 text-sm text-zinc-500">
+            Download a copy of your data (saved homes, searches, profile, activity). For deletion requests, contact us.
+          </span>
+          <ExportMyDataButton className="mt-4" />
+        </div>
       </div>
     </>
   )

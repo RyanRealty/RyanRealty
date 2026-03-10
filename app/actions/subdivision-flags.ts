@@ -3,6 +3,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { subdivisionEntityKey } from '@/lib/slug'
 import { RESORT_ENTITY_KEYS } from '@/lib/resort-communities'
+import { getSession } from '@/app/actions/auth'
+import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { logAdminAction } from '@/app/actions/log-admin-action'
 
 /**
  * Returns the set of entity_key values that are marked as resort communities.
@@ -49,6 +52,16 @@ export async function setSubdivisionResort(
     const { error } = await supabase.from('subdivision_flags').update({ is_resort: false, updated_at: new Date().toISOString() }).eq('entity_key', key)
     if (error) return { ok: false, error: error.message }
   }
+  const session = await getSession()
+  const adminRole = session?.user?.email ? (await getAdminRoleForEmail(session.user.email))?.role ?? null : null
+  await logAdminAction({
+    adminEmail: session?.user?.email ?? '',
+    role: adminRole ?? null,
+    actionType: isResort ? 'create' : 'update',
+    resourceType: 'subdivision_flag',
+    resourceId: key,
+    details: { is_resort: isResort },
+  })
   return { ok: true }
 }
 

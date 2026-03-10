@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { getListingsWithAdvanced, getListingKeysWithRecentPriceChange } from '../actions/listings'
 import { getSession } from '../actions/auth'
 import { getSavedListingKeys } from '../actions/saved-listings'
+import { getLikedListingKeys } from '../actions/likes'
 import { getBuyingPreferences } from '../actions/buying-preferences'
 import { estimatedMonthlyPayment, formatMonthlyPayment, DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '../../lib/mortgage'
 import SaveSearchButton from '../../components/SaveSearchButton'
@@ -148,13 +149,14 @@ export default async function ListingsPage({
     getListingKeysWithRecentPriceChange(),
     getSession(),
   ])
-  const [savedKeys, prefs] =
+  const [savedKeys, likedKeys, prefs] =
     session?.user
       ? await Promise.all([
           import('../actions/saved-listings').then((m) => m.getSavedListingKeys()),
+          import('../actions/likes').then((m) => m.getLikedListingKeys()),
           import('../actions/buying-preferences').then((m) => m.getBuyingPreferences()),
         ])
-      : [[], null] as [string[], Awaited<ReturnType<typeof import('../actions/buying-preferences').getBuyingPreferences>>]
+      : [[], [] as string[], null] as [string[], string[], Awaited<ReturnType<typeof import('../actions/buying-preferences').getBuyingPreferences>>]
   const listingsWithCoords = await getGeocodedListings(listings)
 
   if (isMapView) {
@@ -238,6 +240,7 @@ export default async function ListingsPage({
                 listingKey={key}
                 hasRecentPriceChange={priceChangeKeys.has(key)}
                 saved={session?.user ? savedKeys.includes(key) : undefined}
+                liked={session?.user ? likedKeys.includes(key) : undefined}
                 monthlyPayment={monthly != null && monthly > 0 ? formatMonthlyPayment(monthly) : undefined}
                 signedIn={!!session?.user}
                 userEmail={session?.user?.email ?? null}

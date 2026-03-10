@@ -26,12 +26,30 @@ export default function AdminBrokerForm({ broker, className = '' }: Props) {
     zillow_review_url: broker.zillow_review_url ?? '',
     sort_order: broker.sort_order,
     is_active: broker.is_active,
+    tagline: broker.tagline ?? '',
+    specialties: (broker.specialties ?? []).join(', '),
+    designations: (broker.designations ?? []).join(', '),
+    years_experience: broker.years_experience ?? '',
+    social_instagram: broker.social_instagram ?? '',
+    social_facebook: broker.social_facebook ?? '',
+    social_linkedin: broker.social_linkedin ?? '',
+    social_youtube: broker.social_youtube ?? '',
+    social_tiktok: broker.social_tiktok ?? '',
   })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setMessage(null)
     setLoading(true)
+    const specialties = form.specialties
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const designations = form.designations
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const yearsNum = typeof form.years_experience === 'number' ? form.years_experience : parseInt(String(form.years_experience), 10)
     const result = await updateBroker(broker.id, {
       display_name: form.display_name.trim() || undefined,
       title: form.title.trim() || undefined,
@@ -44,6 +62,15 @@ export default function AdminBrokerForm({ broker, className = '' }: Props) {
       zillow_review_url: form.zillow_review_url.trim() || null,
       sort_order: form.sort_order,
       is_active: form.is_active,
+      tagline: form.tagline.trim() || null,
+      specialties: specialties.length > 0 ? specialties : null,
+      designations: designations.length > 0 ? designations : null,
+      years_experience: Number.isFinite(yearsNum) && yearsNum > 0 ? yearsNum : null,
+      social_instagram: form.social_instagram.trim() || null,
+      social_facebook: form.social_facebook.trim() || null,
+      social_linkedin: form.social_linkedin.trim() || null,
+      social_youtube: form.social_youtube.trim() || null,
+      social_tiktok: form.social_tiktok.trim() || null,
     })
     setLoading(false)
     if (result.ok) {
@@ -107,12 +134,57 @@ export default function AdminBrokerForm({ broker, className = '' }: Props) {
         />
       </label>
       <label className="block">
+        <span className="text-sm font-medium text-zinc-700">Tagline</span>
+        <input
+          type="text"
+          value={form.tagline}
+          onChange={(e) => setForm((f) => ({ ...f, tagline: e.target.value }))}
+          placeholder="Short tagline for agent hero"
+          className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        />
+      </label>
+      <label className="block">
         <span className="text-sm font-medium text-zinc-700">Bio</span>
         <textarea
           value={form.bio}
           onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
           rows={4}
           className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        />
+      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="text-sm font-medium text-zinc-700">Specialties</span>
+          <p className="mt-0.5 text-xs text-zinc-500">Comma-separated, e.g. First-time buyers, Luxury, Land</p>
+          <input
+            type="text"
+            value={form.specialties}
+            onChange={(e) => setForm((f) => ({ ...f, specialties: e.target.value }))}
+            placeholder="First-time buyers, Luxury, Land"
+            className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          />
+        </label>
+        <label className="block">
+          <span className="text-sm font-medium text-zinc-700">Designations</span>
+          <p className="mt-0.5 text-xs text-zinc-500">Comma-separated, e.g. CRS, GRI</p>
+          <input
+            type="text"
+            value={form.designations}
+            onChange={(e) => setForm((f) => ({ ...f, designations: e.target.value }))}
+            placeholder="CRS, GRI"
+            className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          />
+        </label>
+      </div>
+      <label className="block">
+        <span className="text-sm font-medium text-zinc-700">Years of experience</span>
+        <input
+          type="number"
+          min={0}
+          value={form.years_experience === '' ? '' : form.years_experience}
+          onChange={(e) => setForm((f) => ({ ...f, years_experience: e.target.value === '' ? '' : Number(e.target.value) }))}
+          placeholder="e.g. 10"
+          className="mt-1 block w-24 rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -173,6 +245,62 @@ export default function AdminBrokerForm({ broker, className = '' }: Props) {
           </label>
         </div>
       </div>
+      <div className="border-t border-zinc-200 pt-4">
+        <h3 className="text-sm font-semibold text-zinc-800">Social links</h3>
+        <p className="mt-0.5 text-xs text-zinc-500">Profile URLs for Instagram, Facebook, LinkedIn, YouTube, TikTok. Shown on public agent page when set.</p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-sm font-medium text-zinc-700">Instagram</span>
+            <input
+              type="url"
+              value={form.social_instagram}
+              onChange={(e) => setForm((f) => ({ ...f, social_instagram: e.target.value }))}
+              placeholder="https://instagram.com/..."
+              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-zinc-700">Facebook</span>
+            <input
+              type="url"
+              value={form.social_facebook}
+              onChange={(e) => setForm((f) => ({ ...f, social_facebook: e.target.value }))}
+              placeholder="https://facebook.com/..."
+              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-zinc-700">LinkedIn</span>
+            <input
+              type="url"
+              value={form.social_linkedin}
+              onChange={(e) => setForm((f) => ({ ...f, social_linkedin: e.target.value }))}
+              placeholder="https://linkedin.com/in/..."
+              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-zinc-700">YouTube</span>
+            <input
+              type="url"
+              value={form.social_youtube}
+              onChange={(e) => setForm((f) => ({ ...f, social_youtube: e.target.value }))}
+              placeholder="https://youtube.com/..."
+              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-zinc-700">TikTok</span>
+            <input
+              type="url"
+              value={form.social_tiktok}
+              onChange={(e) => setForm((f) => ({ ...f, social_tiktok: e.target.value }))}
+              placeholder="https://tiktok.com/@..."
+              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </label>
+        </div>
+      </div>
       <div className="flex flex-wrap items-center gap-6 border-t border-zinc-200 pt-4">
         <label className="flex items-center gap-2">
           <input
@@ -203,12 +331,20 @@ export default function AdminBrokerForm({ broker, className = '' }: Props) {
           {loading ? 'Saving…' : 'Save changes'}
         </button>
         <a
+          href={`/agents/${broker.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+        >
+          View agent page
+        </a>
+        <a
           href={`/team/${broker.slug}`}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
         >
-          View profile
+          View team page
         </a>
         <button
           type="button"

@@ -18,9 +18,11 @@ CREATE INDEX IF NOT EXISTS idx_market_reports_created ON market_reports (created
 
 ALTER TABLE market_reports ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public read market_reports" ON market_reports;
 CREATE POLICY "Public read market_reports"
   ON market_reports FOR SELECT TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS "Service role manage market_reports" ON market_reports;
 CREATE POLICY "Service role manage market_reports"
   ON market_reports FOR ALL TO service_role USING (true) WITH CHECK (true);
 

@@ -23,12 +23,14 @@ COMMENT ON COLUMN listing_history.raw IS 'Full Spark history item for reporting 
 -- Allow public read (same as listings) for listing page and reports
 ALTER TABLE listing_history ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow public read listing_history" ON listing_history;
 CREATE POLICY "Allow public read listing_history"
   ON listing_history FOR SELECT
   TO anon, authenticated
   USING (true);
 
 -- Service role can do anything (sync uses service role)
+DROP POLICY IF EXISTS "Service role full access listing_history" ON listing_history;
 CREATE POLICY "Service role full access listing_history"
   ON listing_history FOR ALL
   TO service_role

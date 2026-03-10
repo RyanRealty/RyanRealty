@@ -13,7 +13,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT get_beacon_metrics(p_city, p_period_start, p_period_end, p_as_of);
+  SELECT get_beacon_metrics(p_city, p_period_start, p_period_end, p_as_of, NULL);
 $$;
 
 CREATE OR REPLACE FUNCTION get_city_price_bands(
@@ -28,7 +28,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT get_beacon_price_bands(p_city, p_period_start, p_period_end, p_sales_12mo);
+  SELECT get_beacon_price_bands(p_city, p_period_start, p_period_end, p_sales_12mo, NULL);
 $$;
 
 COMMENT ON FUNCTION get_city_period_metrics(text, date, date, date) IS 'City/period metrics: sold count, median price, median DOM, median $/sqft, current listings, 12mo sales, inventory.';

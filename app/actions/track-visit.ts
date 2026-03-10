@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { trackUserEvent } from './track-user-event'
 
 export async function trackVisit(params: {
   visitId: string
@@ -19,6 +20,12 @@ export async function trackVisit(params: {
     referrer: params.referrer?.slice(0, 2048) ?? null,
     user_agent: params.userAgent?.slice(0, 512) ?? null,
     user_id: params.userId ?? null,
+  })
+  await trackUserEvent({
+    eventType: 'page_view',
+    sessionId: params.visitId,
+    pagePath: params.path,
+    payload: { referrer: params.referrer ?? undefined },
   })
 
   const webhook = process.env.CRM_WEBHOOK_URL

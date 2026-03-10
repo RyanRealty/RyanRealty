@@ -77,6 +77,21 @@ So: if your latest work isn’t committed and pushed, Vercel will keep serving t
 
 ---
 
+## Cron and background jobs
+
+These API routes run on a schedule (Vercel Cron) or via manual trigger. Each validates `Authorization: Bearer <CRON_SECRET>` (set in Vercel env).
+
+| Route | Purpose | Suggested schedule |
+|-------|---------|--------------------|
+| `/api/cron/sync-full` | Full/delta MLS sync from Spark | Every 15–30 min |
+| `/api/cron/market-report` | Generate weekly market report (HTML + banner) | Weekly |
+| `/api/cron/refresh-place-content` | Refresh geo/place content | Daily or weekly |
+| `/api/cron/optimization-loop` | Analyze GA4/Search Console; write findings to `optimization_runs` | Weekly |
+
+In Vercel: **Project → Settings → Cron Jobs** (or `vercel.json`), add each URL with the desired schedule. Set `CRON_SECRET` in Environment Variables and pass it as `Authorization: Bearer <CRON_SECRET>` when invoking the route.
+
+---
+
 ## Quick checklist
 
 - [ ] Code committed (`git status` clean or only intended changes).

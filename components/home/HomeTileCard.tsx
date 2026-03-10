@@ -8,6 +8,7 @@ type Props = {
   listingKey: string
   monthlyPayment: string | undefined
   saved: boolean | undefined
+  liked?: boolean
   signedIn: boolean
   userEmail?: string | null
 }
@@ -18,6 +19,7 @@ export default function HomeTileCard({
   listingKey,
   monthlyPayment,
   saved,
+  liked,
   signedIn,
   userEmail,
 }: Props) {
@@ -27,6 +29,7 @@ export default function HomeTileCard({
       listingKey={listingKey}
       monthlyPayment={monthlyPayment}
       saved={signedIn ? saved : undefined}
+      liked={signedIn ? liked : undefined}
       signedIn={signedIn}
       userEmail={userEmail}
     />

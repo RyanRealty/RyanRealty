@@ -55,3 +55,24 @@ No custom code is required on your side beyond setting the env vars above. The i
 
 - `lib/followupboss.ts` – API client (find by email, send event)
 - `app/auth/callback/route.ts` – after Google sign-in, calls `trackSignedInUser(...)`
+
+## Return visit event
+
+When a signed-in user returns after **24+ hours** (cookie-based), the site sends a **Visited Website** event with `message: "return"` so you can tag or segment return traffic in FUB.
+
+- **Event type:** `Visited Website`
+- **Message:** `return`
+- You can create a FUB tag (e.g. `return`) or automation based on this event. Tag names and custom field IDs are configured in FUB; the app sends a generic `message: "return"` so you can map it there.
+
+## Event types and tags (reference)
+
+| App action        | FUB event type     | Notes / suggested tag   |
+|-------------------|--------------------|--------------------------|
+| Sign in (Google)  | Registration       | `signed_in`             |
+| View listing      | Viewed Property    | `listing_view`          |
+| View search/place | Viewed Page        | `search_view`           |
+| Save listing      | Saved Property     | `saved_property`        |
+| Property inquiry  | Property Inquiry   | `inquiry`               |
+| Return (24h+)     | Visited Website    | `return` (message sent) |
+
+Configure tags and custom fields in FUB Admin; the app sends the event type and optional `message` only.

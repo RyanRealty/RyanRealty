@@ -86,10 +86,55 @@ export default function ListingJsonLd({ listingKey, fields, imageUrl }: Props) {
     ].filter(Boolean),
   }
 
+  const beds = (fields as { BedroomsTotal?: number }).BedroomsTotal ?? fields.BedsTotal
+  const baths = (fields as { BathroomsTotal?: number }).BathroomsTotal ?? fields.BathsTotal
+  const realEstateListing: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateListing',
+    name: address || addressRegion || `Home for sale ${fields.ListingId ?? listingKey}`,
+    description: (fields.PublicRemarks ?? '').slice(0, 500) || undefined,
+    url,
+    ...(imageUrl ? { image: imageUrl } : {}),
+    address: place.address,
+    ...(place.geo ? { geo: place.geo } : {}),
+    ...(beds != null ? { numberOfRooms: beds } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: fields.ListPrice ?? undefined,
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+    },
+  }
+  const listAgent = (fields as { ListAgentName?: string }).ListAgentName
+  const listOffice = (fields as { ListOfficeName?: string }).ListOfficeName
+  if (listAgent ?? listOffice) {
+    realEstateListing.offeredBy = {
+      '@type': 'RealEstateAgent',
+      name: listAgent ?? listOffice ?? 'Listing Agent',
+      ...(listOffice ? { worksFor: { '@type': 'RealEstateOrganization', name: listOffice } } : {}),
+    }
+  }
+  const amenities = (fields as { amenities?: Record<string, unknown> }).amenities
+  if (amenities && typeof amenities === 'object' && Object.keys(amenities).length > 0) {
+    realEstateListing.amenityFeature = Object.entries(amenities)
+      .filter(([, v]) => v === true || (typeof v === 'string' && v.length > 0))
+      .map(([k, v]) => ({
+        '@type': 'LocationFeatureSpecification',
+        name: k.replace(/_/g, ' '),
+        value: v === true ? true : v,
+      }))
+  }
+
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(product) }}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(product) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(realEstateListing) }}
+      />
+    </>
   )
 }

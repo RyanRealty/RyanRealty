@@ -124,6 +124,23 @@ $$;
 
 COMMENT ON FUNCTION get_beacon_metrics(text, date, date, date) IS 'City/period metrics: sold count, median price, median DOM, median $/sqft, current listings, 12mo sales, inventory.';
 
+-- 5-arg overload so get_city_period_metrics can call unambiguously (subdivision ignored until 16100000)
+CREATE OR REPLACE FUNCTION get_beacon_metrics(
+  p_city text,
+  p_period_start date,
+  p_period_end date,
+  p_as_of date DEFAULT NULL,
+  p_subdivision text DEFAULT NULL
+)
+RETURNS JSON
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT get_beacon_metrics(p_city, p_period_start, p_period_end, p_as_of);
+$$;
+
 -- Price band distribution: counts of sales and current listings by price bucket (for histogram).
 CREATE OR REPLACE FUNCTION get_beacon_price_bands(
   p_city text,
@@ -239,3 +256,20 @@ END;
 $$;
 
 COMMENT ON FUNCTION get_beacon_price_bands(text, date, date, boolean) IS 'Price band counts for sales and current listings by city/period (or last 12 months).';
+
+-- 5-arg overload so get_city_price_bands can call unambiguously (subdivision ignored until 16100000)
+CREATE OR REPLACE FUNCTION get_beacon_price_bands(
+  p_city text,
+  p_period_start date,
+  p_period_end date,
+  p_sales_12mo boolean DEFAULT false,
+  p_subdivision text DEFAULT NULL
+)
+RETURNS JSON
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT get_beacon_price_bands(p_city, p_period_start, p_period_end, p_sales_12mo);
+$$;

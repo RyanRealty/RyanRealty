@@ -12,9 +12,11 @@ CREATE INDEX IF NOT EXISTS idx_subdivision_descriptions_entity ON subdivision_de
 
 ALTER TABLE subdivision_descriptions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public read subdivision_descriptions" ON subdivision_descriptions;
 CREATE POLICY "Public read subdivision_descriptions"
   ON subdivision_descriptions FOR SELECT TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS "Service role manage subdivision_descriptions" ON subdivision_descriptions;
 CREATE POLICY "Service role manage subdivision_descriptions"
   ON subdivision_descriptions FOR ALL TO service_role USING (true) WITH CHECK (true);
 

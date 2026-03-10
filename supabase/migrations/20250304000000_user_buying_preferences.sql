@@ -11,12 +11,15 @@ CREATE TABLE IF NOT EXISTS user_buying_preferences (
 
 ALTER TABLE user_buying_preferences ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can read own buying_preferences" ON user_buying_preferences;
 CREATE POLICY "Users can read own buying_preferences"
   ON user_buying_preferences FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own buying_preferences" ON user_buying_preferences;
 CREATE POLICY "Users can insert own buying_preferences"
   ON user_buying_preferences FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own buying_preferences" ON user_buying_preferences;
 CREATE POLICY "Users can update own buying_preferences"
   ON user_buying_preferences FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 

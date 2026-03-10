@@ -2,13 +2,14 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
- * When OAuth redirects with ?code= on the wrong path (e.g. /?code=xxx), send to /auth/callback
- * so the code gets exchanged and the user is sent back to the page they signed in from.
+ * When OAuth redirects with ?code= on the wrong path, send to callback so the code gets exchanged.
  */
 function redirectCodeToCallback(request: NextRequest): NextResponse | null {
   const code = request.nextUrl.searchParams.get('code')
-  if (!code || request.nextUrl.pathname === '/auth/callback') return null
-  const callbackUrl = new URL('/auth/callback', request.url)
+  if (!code) return null
+  const path = request.nextUrl.pathname
+  if (path === '/auth/callback' || path === '/api/auth/callback') return null
+  const callbackUrl = new URL('/api/auth/callback', request.url)
   request.nextUrl.searchParams.forEach((value, key) => callbackUrl.searchParams.set(key, value))
   return NextResponse.redirect(callbackUrl)
 }
@@ -28,17 +29,36 @@ export async function proxy(request: NextRequest) {
       getAll() {
         return request.cookies.getAll()
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
         response = NextResponse.next({ request })
         cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
+          response.cookies.set(name, value, options as { httpOnly?: boolean; secure?: boolean; sameSite?: 'lax' | 'strict' | 'none'; maxAge?: number; path?: string })
         )
       },
     },
   })
 
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+  const pathname = request.nextUrl.pathname
+
+  // Protect /admin/* (except /admin/login): require session; admin role is checked in admin layout
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+    if (!user) {
+      const loginUrl = new URL('/admin/login', request.url)
+      loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
+  // Protect /dashboard/*: require session
+  if (pathname.startsWith('/dashboard')) {
+    if (!user) {
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
 
   return response
 }

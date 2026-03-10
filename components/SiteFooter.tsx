@@ -58,7 +58,10 @@ export default function SiteFooter({ brokerageName, brokerageTagline, brokerageE
           </nav>
         </div>
         <div className="mt-8 border-t border-zinc-200 pt-6 text-center text-sm">
-          © {currentYear} {siteName}. All rights reserved.
+          <p className="text-zinc-500">
+            We are pledged to the letter and spirit of U.S. policy for the achievement of equal housing opportunity. Listing content is from the MLS and is deemed reliable but not guaranteed.
+          </p>
+          <p className="mt-2">© {currentYear} {siteName}. All rights reserved.</p>
         </div>
       </div>
     </footer>

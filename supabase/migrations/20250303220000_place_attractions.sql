@@ -16,9 +16,11 @@ CREATE INDEX IF NOT EXISTS idx_place_attractions_entity ON place_attractions (en
 
 ALTER TABLE place_attractions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public read place_attractions" ON place_attractions;
 CREATE POLICY "Public read place_attractions"
   ON place_attractions FOR SELECT TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS "Service role manage place_attractions" ON place_attractions;
 CREATE POLICY "Service role manage place_attractions"
   ON place_attractions FOR ALL TO service_role USING (true) WITH CHECK (true);
 

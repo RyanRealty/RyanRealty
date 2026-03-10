@@ -4,6 +4,7 @@
 
 ALTER TABLE listings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow public read on listings" ON listings;
 CREATE POLICY "Allow public read on listings"
   ON listings
   FOR SELECT

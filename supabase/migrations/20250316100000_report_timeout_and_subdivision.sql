@@ -64,7 +64,9 @@ $$;
 
 COMMENT ON FUNCTION get_city_metrics_timeseries(text, int, text) IS 'Monthly sold count and median price (single-pass). Optional subdivision.';
 
--- Add optional subdivision to get_beacon_metrics
+-- Add optional subdivision to get_beacon_metrics (drop 4-arg overload to avoid ambiguous call from get_city_period_metrics)
+DROP FUNCTION IF EXISTS get_beacon_metrics(text, date, date, date);
+
 CREATE OR REPLACE FUNCTION get_beacon_metrics(
   p_city text,
   p_period_start date,
@@ -169,7 +171,9 @@ BEGIN
 END;
 $$;
 
--- Add optional subdivision to get_beacon_price_bands
+-- Add optional subdivision to get_beacon_price_bands (drop 4-arg overload to avoid ambiguous call from get_city_price_bands)
+DROP FUNCTION IF EXISTS get_beacon_price_bands(text, date, date, boolean);
+
 CREATE OR REPLACE FUNCTION get_beacon_price_bands(
   p_city text,
   p_period_start date,

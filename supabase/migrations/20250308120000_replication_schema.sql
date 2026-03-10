@@ -181,14 +181,23 @@ ALTER TABLE sync_alerts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE listing_price_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE listings_historical ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role full access sync_jobs" ON sync_jobs;
 CREATE POLICY "Service role full access sync_jobs" ON sync_jobs FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Service role full access sync_state_by_resource" ON sync_state_by_resource;
 CREATE POLICY "Service role full access sync_state_by_resource" ON sync_state_by_resource FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Service role full access sync_logs" ON sync_logs;
 CREATE POLICY "Service role full access sync_logs" ON sync_logs FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Service role full access listing_sync_status" ON listing_sync_status;
 CREATE POLICY "Service role full access listing_sync_status" ON listing_sync_status FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Service role full access sync_alerts" ON sync_alerts;
 CREATE POLICY "Service role full access sync_alerts" ON sync_alerts FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Service role full access listing_price_history" ON listing_price_history;
 CREATE POLICY "Service role full access listing_price_history" ON listing_price_history FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Service role full access listings_historical" ON listings_historical;
 CREATE POLICY "Service role full access listings_historical" ON listings_historical FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- Public read for listing_price_history and listings_historical (same as listing_history) for app/reports
+DROP POLICY IF EXISTS "Allow public read listing_price_history" ON listing_price_history;
 CREATE POLICY "Allow public read listing_price_history" ON listing_price_history FOR SELECT TO anon, authenticated USING (true);
+DROP POLICY IF EXISTS "Allow public read listings_historical" ON listings_historical;
 CREATE POLICY "Allow public read listings_historical" ON listings_historical FOR SELECT TO anon, authenticated USING (true);

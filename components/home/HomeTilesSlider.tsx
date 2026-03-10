@@ -10,6 +10,7 @@ type Props = {
   title: string
   listings: HomeTileRow[]
   savedKeys: string[]
+  likedKeys?: string[]
   signedIn: boolean
   userEmail?: string | null
   downPaymentPercent: number
@@ -21,6 +22,7 @@ export default function HomeTilesSlider({
   title,
   listings,
   savedKeys,
+  likedKeys = [],
   signedIn,
   userEmail,
   downPaymentPercent,
@@ -105,6 +107,7 @@ export default function HomeTilesSlider({
                 listingKey={key}
                 monthlyPayment={monthlyPayment}
                 saved={signedIn ? savedKeys.includes(key) : undefined}
+                liked={signedIn ? likedKeys.includes(key) : undefined}
                 signedIn={signedIn}
                 userEmail={userEmail}
               />

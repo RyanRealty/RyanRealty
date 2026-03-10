@@ -53,6 +53,7 @@ import { getSavedCommunityKeys } from '../../actions/saved-communities'
 import { trackPageView } from '../../../lib/followupboss'
 import { getFubPersonIdFromCookie } from '../../actions/fub-identity-bridge'
 import { getSavedListingKeys } from '../../actions/saved-listings'
+import { getLikedListingKeys } from '../../actions/likes'
 import { getBuyingPreferences } from '../../actions/buying-preferences'
 import { estimatedMonthlyPayment, formatMonthlyPayment, DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '../../../lib/mortgage'
 
@@ -311,10 +312,10 @@ export default async function SearchPage({
     }
   }
 
-  const [savedKeys, prefs] =
+  const [savedKeys, likedKeys, prefs] =
     session?.user
-      ? await Promise.all([getSavedListingKeys(), getBuyingPreferences()])
-      : ([[], null] as [string[], Awaited<ReturnType<typeof getBuyingPreferences>>])
+      ? await Promise.all([getSavedListingKeys(), getLikedListingKeys(), getBuyingPreferences()])
+      : ([[], [] as string[], null] as [string[], string[], Awaited<ReturnType<typeof getBuyingPreferences>>])
 
   const searchBreadcrumbItems: { label: string; href?: string }[] = [
     { label: 'Ryan Realty', href: siteUrl },
@@ -702,6 +703,7 @@ export default async function SearchPage({
                   listingKey={key}
                   hasRecentPriceChange={key ? priceChangeKeys.has(key) : false}
                   saved={session?.user ? savedKeys.includes(key) : undefined}
+                  liked={session?.user ? likedKeys.includes(key) : undefined}
                   monthlyPayment={monthly != null && monthly > 0 ? formatMonthlyPayment(monthly) : undefined}
                   signedIn={!!session?.user}
                   userEmail={session?.user?.email ?? null}

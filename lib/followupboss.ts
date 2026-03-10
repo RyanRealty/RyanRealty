@@ -441,3 +441,37 @@ export async function trackPageView(params: {
     pageTitle: params.pageTitle,
   })
 }
+
+/**
+ * Call when a returning visitor is detected (e.g. same user, session or cookie older than 24h).
+ * Sends "Visited Website" with message "return" so FUB can tag or segment return traffic.
+ */
+export async function trackReturnVisit(params: {
+  userEmail: string
+  pageUrl: string
+  pageTitle?: string
+}): Promise<void> {
+  const auth = getAuth()
+  if (!auth) return
+  const email = params.userEmail?.trim()
+  if (!email) return
+
+  const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
+    .replace(/^https?:\/\//, '')
+    .replace(/\/$/, '')
+    .toLowerCase() || 'ryanrealty.com'
+
+  const existing = await findPersonByEmail(email)
+  const person: FubEventPerson = existing ? { id: existing.id } : { emails: [{ value: email }] }
+
+  await sendEvent({
+    type: 'Visited Website',
+    person,
+    source,
+    system: 'Ryan Realty Website',
+    sourceUrl: params.pageUrl,
+    pageUrl: params.pageUrl,
+    pageTitle: params.pageTitle,
+    message: 'return',
+  })
+}

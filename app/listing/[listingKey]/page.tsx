@@ -19,12 +19,14 @@ import {
 import { getBannerUrl } from '../../actions/banners'
 import { getSession } from '../../actions/auth'
 import { getBuyingPreferences } from '../../actions/buying-preferences'
-import { isListingSaved, getSavedListingCount } from '../../actions/saved-listings'
+import { isListingSaved, getSavedListingCount, getSavedListingKeys } from '../../actions/saved-listings'
+import { isListingLiked, getLikeCount, getLikedListingKeys } from '../../actions/likes'
 import { cityEntityKey, subdivisionEntityKey, listingKeyFromSlug } from '../../../lib/slug'
 import { trackListingView } from '../../../lib/followupboss'
 import { getFubPersonIdFromCookie } from '../../actions/fub-identity-bridge'
 import { estimatedMonthlyPayment, formatMonthlyPayment, DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '../../../lib/mortgage'
 import SaveListingButton from '../../../components/listing/SaveListingButton'
+import LikeButton from '../../../components/listing/LikeButton'
 import ListingHero from '../../../components/listing/ListingHero'
 import ListingFloorPlans from '../../../components/listing/ListingFloorPlans'
 import ListingVideos from '../../../components/listing/ListingVideos'
@@ -310,7 +312,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
     itemListElement: breadcrumbItems.map((item, i) => ({ '@type': 'ListItem' as const, position: i + 1, name: item.name, item: item.item })),
   }
 
-  const [areaBannerUrl, session, prefs, saved, saveCount, subdivisionContent] = await Promise.all([
+  const [areaBannerUrl, session, prefs, saved, saveCount, liked, likeCount, subdivisionContent] = await Promise.all([
     city
       ? getBannerUrl(
           subdivision ? 'subdivision' : 'city',
@@ -321,8 +323,13 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
     getBuyingPreferences(),
     isListingSaved(resolvedKey),
     getSavedListingCount(resolvedKey),
+    isListingLiked(resolvedKey),
+    getLikeCount(resolvedKey),
     city && subdivision ? getSubdivisionTabContent(city, subdivision) : Promise.resolve({ about: null, attractions: null, dining: null }),
   ])
+  const [savedKeys, likedKeys] = session?.user
+    ? await Promise.all([getSavedListingKeys(), getLikedListingKeys()])
+    : [[] as string[], [] as string[]]
   const listPrice = fields.ListPrice != null ? Number(fields.ListPrice) : 0
   const displayPrefs = prefs ?? { downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT, interestRate: DEFAULT_DISPLAY_RATE, loanTermYears: DEFAULT_DISPLAY_TERM_YEARS }
   const monthlyPayment = listPrice > 0 ? estimatedMonthlyPayment(listPrice, displayPrefs.downPaymentPercent, displayPrefs.interestRate, displayPrefs.loanTermYears) : null
@@ -481,6 +488,9 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
                     }}
                   />
                 )}
+                {session?.user && (
+                  <LikeButton listingKey={resolvedKey} liked={liked} likeCount={likeCount} variant="default" />
+                )}
                 <ShareButton
                   title={`${address || cityStateZip || `MLS# ${fields.ListingId ?? resolvedKey}`}${cityStateZip ? ` | ${cityStateZip}` : ''}`}
                   text={[`$${Number(fields.ListPrice ?? 0).toLocaleString()}`, keyFacts.beds != null && `${keyFacts.beds} bed`, keyFacts.baths != null && `${keyFacts.baths} bath`, cityStateZip].filter(Boolean).join(' · ')}
@@ -582,6 +592,8 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
                   listings={similarListings}
                   signedIn={!!session?.user}
                   userEmail={session?.user?.email ?? undefined}
+                  savedKeys={savedKeys}
+                  likedKeys={likedKeys}
                 />
               </div>
             )}
@@ -681,6 +693,8 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
                     listings={similarListings}
                     signedIn={!!session?.user}
                     userEmail={session?.user?.email ?? undefined}
+                    savedKeys={savedKeys}
+                    likedKeys={likedKeys}
                   />
                 ) : (
                   <p className="text-zinc-500">No similar listings available right now.</p>

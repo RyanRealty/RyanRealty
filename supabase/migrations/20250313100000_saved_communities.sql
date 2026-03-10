@@ -14,12 +14,15 @@ CREATE INDEX IF NOT EXISTS idx_saved_communities_entity_key ON saved_communities
 
 ALTER TABLE saved_communities ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can read own saved_communities" ON saved_communities;
 CREATE POLICY "Users can read own saved_communities"
   ON saved_communities FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own saved_communities" ON saved_communities;
 CREATE POLICY "Users can insert own saved_communities"
   ON saved_communities FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own saved_communities" ON saved_communities;
 CREATE POLICY "Users can delete own saved_communities"
   ON saved_communities FOR DELETE TO authenticated USING (auth.uid() = user_id);
 

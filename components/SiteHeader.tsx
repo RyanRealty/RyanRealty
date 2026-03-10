@@ -24,6 +24,7 @@ export default function SiteHeader({ totalListings, user = null, brokerageName =
 
   const navLinks: NavLink[] = [
     { href: '/', label: 'Home' },
+    { href: '/feed', label: 'Feed' },
     { href: '/about', label: 'About' },
     { href: '/team', label: 'Team' },
     { href: '/listings', label: 'Listings' },

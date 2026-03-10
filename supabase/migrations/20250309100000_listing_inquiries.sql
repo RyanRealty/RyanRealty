@@ -21,6 +21,7 @@ CREATE INDEX IF NOT EXISTS idx_listing_inquiries_created_at ON listing_inquiries
 ALTER TABLE listing_inquiries ENABLE ROW LEVEL SECURITY;
 
 -- No SELECT/INSERT for anon or authenticated; server uses service_role to insert and optionally read.
+DROP POLICY IF EXISTS "Service role only for listing_inquiries" ON listing_inquiries;
 CREATE POLICY "Service role only for listing_inquiries"
   ON listing_inquiries FOR ALL USING (false) WITH CHECK (false);
 

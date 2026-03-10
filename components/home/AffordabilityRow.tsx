@@ -9,6 +9,7 @@ import { estimatedMonthlyPayment, formatMonthlyPayment } from '@/lib/mortgage'
 type Props = {
   listings: HomeTileRow[]
   savedKeys: string[]
+  likedKeys?: string[]
   signedIn: boolean
   userEmail?: string | null
   downPaymentPercent: number
@@ -19,6 +20,7 @@ type Props = {
 export default function AffordabilityRow({
   listings,
   savedKeys,
+  likedKeys = [],
   signedIn,
   userEmail,
   downPaymentPercent,
@@ -130,6 +132,7 @@ export default function AffordabilityRow({
                     listingKey={key}
                     monthlyPayment={monthlyPayment}
                     saved={signedIn ? savedKeys.includes(key) : undefined}
+                    liked={signedIn ? likedKeys.includes(key) : undefined}
                     signedIn={signedIn}
                     userEmail={userEmail}
                   />

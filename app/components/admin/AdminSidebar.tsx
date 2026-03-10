@@ -21,7 +21,11 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
   const main: Array<{ href: string; label: string; icon: string }> = [
     navItem('/admin', 'Dashboard', '◉'),
   ]
-  if (isSuperuser) main.push(navItem('/admin/users', 'Users', '👤'))
+  if (isSuperuser) {
+    main.push(navItem('/admin/users', 'Users', '👤'))
+    main.push(navItem('/admin/audit-log', 'Audit log', '📋'))
+    main.push(navItem('/admin/optimization', 'Optimization', '📈'))
+  }
   if (canBrokers) main.push(navItem(role === 'broker' && brokerId ? `/admin/brokers?highlight=${brokerId}` : '/admin/brokers', role === 'broker' ? 'My profile' : 'Brokers', '👔'))
   if (canFullAdmin) {
     main.push(
@@ -30,6 +34,7 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
       navItem('/admin/geo', 'Geo', '📍'),
       navItem('/admin/resort-communities', 'Resort communities', '🏘'),
       navItem('/admin/banners', 'Banners', '🖼'),
+      navItem('/admin/query-builder', 'Query builder', '🔍'),
     )
   }
   if (canReports) main.push(navItem('/admin/reports', 'Reports', '📊'))

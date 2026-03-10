@@ -19,6 +19,8 @@ type Props = {
   listings?: SimilarListingRow[]
   signedIn?: boolean
   userEmail?: string | null
+  savedKeys?: string[]
+  likedKeys?: string[]
 }
 
 export default function ListingCommunitySection({
@@ -30,6 +32,8 @@ export default function ListingCommunitySection({
   listings = [],
   signedIn = false,
   userEmail,
+  savedKeys = [],
+  likedKeys = [],
 }: Props) {
   const searchHref = `/search/${cityEntityKey(city)}/${encodeURIComponent(subdivisionName)}`
   return (
@@ -72,6 +76,8 @@ export default function ListingCommunitySection({
                   listingKey={linkKey}
                   signedIn={signedIn}
                   userEmail={userEmail ?? undefined}
+                  saved={signedIn ? savedKeys.includes(linkKey) : undefined}
+                  liked={signedIn ? likedKeys.includes(linkKey) : undefined}
                 />
               )
             })}

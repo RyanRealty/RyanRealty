@@ -17,10 +17,12 @@ CREATE INDEX IF NOT EXISTS idx_admin_roles_user_id ON admin_roles (user_id);
 ALTER TABLE admin_roles ENABLE ROW LEVEL SECURITY;
 
 -- Only service_role can manage; app uses server-side checks for who can list/edit
+DROP POLICY IF EXISTS "Service role manage admin_roles" ON admin_roles;
 CREATE POLICY "Service role manage admin_roles"
   ON admin_roles FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- Authenticated read own role (by email match in app)
+DROP POLICY IF EXISTS "Authenticated read admin_roles" ON admin_roles;
 CREATE POLICY "Authenticated read admin_roles"
   ON admin_roles FOR SELECT TO authenticated USING (true);
 
@@ -67,9 +69,11 @@ ON CONFLICT (id) DO UPDATE SET
 
 ALTER TABLE brokerage_settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public read brokerage_settings" ON brokerage_settings;
 CREATE POLICY "Public read brokerage_settings"
   ON brokerage_settings FOR SELECT TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS "Service role manage brokerage_settings" ON brokerage_settings;
 CREATE POLICY "Service role manage brokerage_settings"
   ON brokerage_settings FOR ALL TO service_role USING (true) WITH CHECK (true);
 
