@@ -1,11 +1,30 @@
-/**
- * GTM script in <head>. Renders only when NEXT_PUBLIC_GTM_CONTAINER_ID is set.
- */
+'use client'
+
+import { useState, useEffect } from 'react'
+import { hasAnalyticsConsent } from './CookieConsentBanner'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
 
+/**
+ * GTM script in <head>. Only loads when NEXT_PUBLIC_GTM_CONTAINER_ID is set and user has analytics consent.
+ */
 export default function GTMHead() {
-  if (!GTM_ID) return null
+  const [consent, setConsent] = useState(false)
+
+  useEffect(() => {
+    if (hasAnalyticsConsent()) setConsent(true)
+  }, [])
+
+  useEffect(() => {
+    const onConsent = () => {
+      if (hasAnalyticsConsent()) setConsent(true)
+    }
+    window.addEventListener('cookie-consent', onConsent)
+    return () => window.removeEventListener('cookie-consent', onConsent)
+  }, [])
+
+  if (!GTM_ID || !consent) return null
+
   return (
     <script
       dangerouslySetInnerHTML={{

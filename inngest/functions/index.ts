@@ -14,6 +14,7 @@ import { computeBrokerStats } from './computeBrokerStats'
 import { generateBlogPost } from './generateBlogPost'
 import { computeLeadScores } from './computeLeadScores'
 import { leadWorkflows } from './leadWorkflows'
+import { aiAnalyticsAgent } from './aiAnalyticsAgent'
 
 export const functions = [
   initialFullSync,
@@ -30,4 +31,5 @@ export const functions = [
   generateBlogPost,
   computeLeadScores,
   ...leadWorkflows,
+  aiAnalyticsAgent,
 ]

@@ -18,6 +18,7 @@ import MetaPixel from "../components/MetaPixel";
 import SignUpTracker from "../components/tracking/SignUpTracker";
 import AdminHashRedirect from "../components/AdminHashRedirect";
 import GTMHead from "../components/GTMHead";
+import GTMBody from "../components/GTMBody";
 import { ComparisonProvider } from "../contexts/ComparisonContext";
 import ComparisonTray from "../components/comparison/ComparisonTray";
 
@@ -95,6 +96,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen overflow-x-hidden antialiased`}
       >
+        <GTMBody />
         <ComparisonProvider>
           <GoogleAnalytics />
           <MetaPixel />

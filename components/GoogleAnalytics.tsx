@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Script from 'next/script'
-import { hasTrackingConsent } from './CookieConsentBanner'
+import { hasAnalyticsConsent } from './CookieConsentBanner'
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
@@ -18,12 +18,12 @@ export default function GoogleAnalytics() {
   const [consentGranted, setConsentGranted] = useState(false)
 
   useEffect(() => {
-    if (hasTrackingConsent()) setConsentGranted(true)
+    if (hasAnalyticsConsent()) setConsentGranted(true)
   }, [])
 
   useEffect(() => {
-    const onConsent = (e: Event) => {
-      if ((e as CustomEvent<string>)?.detail === 'all') setConsentGranted(true)
+    const onConsent = () => {
+      if (hasAnalyticsConsent()) setConsentGranted(true)
     }
     window.addEventListener('cookie-consent', onConsent)
     return () => window.removeEventListener('cookie-consent', onConsent)

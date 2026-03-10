@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Script from 'next/script'
-import { hasTrackingConsent } from './CookieConsentBanner'
+import { hasMarketingConsent } from './CookieConsentBanner'
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
 
@@ -14,12 +14,12 @@ export default function MetaPixel() {
   const [consentGranted, setConsentGranted] = useState(false)
 
   useEffect(() => {
-    if (hasTrackingConsent()) setConsentGranted(true)
+    if (hasMarketingConsent()) setConsentGranted(true)
   }, [])
 
   useEffect(() => {
-    const onConsent = (e: Event) => {
-      if ((e as CustomEvent<string>)?.detail === 'all') setConsentGranted(true)
+    const onConsent = () => {
+      if (hasMarketingConsent()) setConsentGranted(true)
     }
     window.addEventListener('cookie-consent', onConsent)
     return () => window.removeEventListener('cookie-consent', onConsent)
