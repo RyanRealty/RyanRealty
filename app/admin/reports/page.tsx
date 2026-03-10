@@ -17,6 +17,11 @@ export default async function AdminReportsPage() {
         <GenerateReportButton generateAction={generateWeeklyMarketReport} />
       </div>
       <CityReportSection cities={cities} />
+      <h2 className="mt-8 text-xl font-semibold text-zinc-900">Report generator</h2>
+      <ul className="mt-2 space-y-1">
+        <li><Link href="/admin/reports/market" className="text-[var(--brand-navy)] hover:underline">Market report by area</Link></li>
+        <li><Link href="/admin/reports/brokers" className="text-[var(--brand-navy)] hover:underline">Broker performance</Link></li>
+      </ul>
       <p className="mt-10 text-sm text-zinc-500">
         <Link href="/admin/sync" className="underline hover:no-underline">Back to Sync</Link>
       </p>

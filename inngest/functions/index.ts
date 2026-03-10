@@ -9,6 +9,8 @@ import {
 } from './postSyncProcessors'
 import { processNotifications } from './processNotifications'
 import { precomputeCMA } from './precomputeCMA'
+import { computeMarketStats } from './computeMarketStats'
+import { computeBrokerStats } from './computeBrokerStats'
 
 export const functions = [
   initialFullSync,
@@ -20,4 +22,6 @@ export const functions = [
   updateEngagementMetrics,
   processNotifications,
   precomputeCMA,
+  computeMarketStats,
+  computeBrokerStats,
 ]

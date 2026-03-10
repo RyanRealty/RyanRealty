@@ -151,6 +151,10 @@ export const deltaSync = inngest.createFunction(
         name: 'cma/precompute-all',
         data: {},
       })
+      await step.sendEvent('post-sync-market-stats', {
+        name: 'reporting/compute-market-stats',
+        data: {},
+      })
     }
 
     return { checkpointId, processed: result.records.length, closed: listingsClosed.length }
