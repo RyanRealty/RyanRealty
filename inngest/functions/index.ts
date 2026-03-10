@@ -7,6 +7,7 @@ import {
   queueStatusChangeNotifications,
   updateEngagementMetrics,
 } from './postSyncProcessors'
+import { processNotifications } from './processNotifications'
 
 export const functions = [
   initialFullSync,
@@ -16,4 +17,5 @@ export const functions = [
   queuePriceDropNotifications,
   queueStatusChangeNotifications,
   updateEngagementMetrics,
+  processNotifications,
 ]

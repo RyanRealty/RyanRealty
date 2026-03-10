@@ -39,6 +39,7 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
     )
   }
   if (canReports) main.push(navItem('/admin/reports', 'Reports', '📊'))
+  main.push(navItem('/admin/email/compose', 'Email', '✉'))
   if (canFullAdmin) main.push(navItem('/admin/spark-status', 'Spark', '⚡'))
 
   return (
