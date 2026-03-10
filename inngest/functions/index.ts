@@ -15,6 +15,7 @@ import { generateBlogPost } from './generateBlogPost'
 import { computeLeadScores } from './computeLeadScores'
 import { leadWorkflows } from './leadWorkflows'
 import { aiAnalyticsAgent } from './aiAnalyticsAgent'
+import { regenerateSitemap } from './regenerateSitemap'
 
 export const functions = [
   initialFullSync,
@@ -32,4 +33,5 @@ export const functions = [
   computeLeadScores,
   ...leadWorkflows,
   aiAnalyticsAgent,
+  regenerateSitemap,
 ]

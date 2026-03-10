@@ -146,6 +146,10 @@ export const deltaSync = inngest.createFunction(
       name: 'sync/update-engagement-metrics',
       data: { listingKeys: [...listingsCreated, ...listingsUpdated] },
     })
+    await step.sendEvent('post-sync-sitemap', {
+      name: 'seo/regenerate-sitemap',
+      data: {},
+    })
     if (listingsClosed.length > 0) {
       await step.sendEvent('post-sync-cma', {
         name: 'cma/precompute-all',
