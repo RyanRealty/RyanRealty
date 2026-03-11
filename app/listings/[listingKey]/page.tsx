@@ -15,6 +15,7 @@ import PriceHistory from '@/components/listing/PriceHistory'
 import AgentCard from '@/components/listing/AgentCard'
 import ListingMap from '@/components/listing/ListingMap'
 import SimilarListings from '@/components/listing/SimilarListings'
+import ListingVideos from '@/components/listing/ListingVideos'
 
 type PageProps = { params: Promise<{ listingKey: string }> }
 
@@ -69,7 +70,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const data = await getListingDetailData(listingKey)
   if (!data) notFound()
 
-  const { listing, property, photos, agents, priceHistory, engagement, openHouses, community } = data
+  const { listing, property, photos, agents, priceHistory, engagement, openHouses, community, videos, virtualTours } = data
   const [saved, similarListings] = await Promise.all([
     isListingSaved(listingKey),
     getSimilarListingsForDetailPage(
@@ -165,6 +166,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
               />
               <PropertyDetails listing={listing} community={community} />
               <LeadPaintNotice yearBuilt={listing.year_built ?? null} />
+              <ListingVideos videos={videos} virtualTours={virtualTours} />
               <PaymentCalculator
                 listPrice={listing.list_price ?? 0}
                 taxAmount={listing.tax_amount ?? undefined}

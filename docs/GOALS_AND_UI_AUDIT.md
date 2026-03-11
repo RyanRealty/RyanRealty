@@ -28,66 +28,66 @@
 Use this to verify and fix. Do not stop at “found an issue”—fix it, then continue.
 
 ### Nav & header
-- [ ] Search is collapsible (icon toggles search bar); closes on Escape or result select.
-- [ ] Nav links: Home, About, Team, Listings, Map; active state clear; spacing consistent.
-- [ ] Logged-in: avatar shows (Google `picture` or `avatar_url`); dropdown has Dashboard, Profile, Saved searches, Saved homes, Saved communities, Buying preferences, Sign out.
-- [ ] Mobile: menu opens; same links + Account block; search in panel.
-- [ ] Header uses design tokens; no one-off colors.
+- [x] Search is collapsible (icon toggles search bar); closes on Escape or result select.
+- [x] Nav links: Home, About, Team, Listings, Map; active state clear; spacing consistent.
+- [x] Logged-in: avatar shows (Google `picture` or `avatar_url`); dropdown has Dashboard, Profile, Saved searches, Saved homes, Saved communities, Buying preferences, Sign out.
+- [x] Mobile: menu opens; same links + Account block; search in panel.
+- [x] Header uses design tokens; no one-off colors.
 
 ### Home page
-- [ ] Follow **docs/HOME_PAGE_BEST_PRACTICES.md**: hero first, no Banner/Map toggle above hero.
-- [ ] Hero: one headline, one subline, search as primary CTA, trust line (listings count + links); banner or gradient; attribution if present.
-- [ ] Map: collapsible “Explore on map” section below hero only (no competing view toggle).
+- [x] Follow **docs/HOME_PAGE_BEST_PRACTICES.md**: hero first, no Banner/Map toggle above hero.
+- [x] Hero: one headline, one subline, search as primary CTA, trust line (listings count + links); banner or gradient; attribution if present.
+- [x] Map: collapsible “Explore on map” section below hero only (no competing view toggle).
 - [ ] Sliders: Homes for You, Trending, Recently Viewed / Homes you might like; scroll arrows; tiles same width (300px) and min-height.
 - [ ] Popular Communities: tiles 300px, Share + Save (when signed in); saved state correct.
-- [ ] Browse by city: CityTiles have Share; min-height for alignment; section spacing consistent (py-12 sm:py-16, max-w-7xl).
+- [x] Browse by city: CityTiles have Share; min-height for alignment; section spacing consistent (py-12 sm:py-16, max-w-7xl).
 - [ ] No layout shift; images use Next/Image and sizes.
 
 ### Tiles (all types)
-- [ ] **Listing tile:** 300px in slider; Share + Save (when signed in); aspect 4/3 media; key info visible.
-- [ ] **Community tile:** 300px; Share + Save (when signed in); same min-height as listing tile in slider.
-- [ ] **City tile:** Share button; min-height; link to search.
-- [ ] All tiles in a given slider use same width/min-height from `lib/tile-constants.ts`.
+- [x] **Listing tile:** 300px in slider; Share + Save (when signed in); aspect 4/3 media; key info visible.
+- [x] **Community tile:** 300px; Share + Save (when signed in); same min-height as listing tile in slider.
+- [x] **City tile:** Share button; min-height; link to search.
+- [x] All tiles in a given slider use same width/min-height from `lib/tile-constants.ts`.
 
 ### Account & saved items
-- [ ] Dashboard shows counts: Saved searches, Saved homes, Saved communities, Buying preferences.
-- [ ] Saved homes page: list of listings; each has “Remove from saved”; empty state + CTA.
-- [ ] Saved communities page: list with “View” and “Remove”; empty state + CTA.
-- [ ] Account nav (layout + dropdown) includes Saved communities.
-- [ ] Remove actions call server actions and refresh; no stale state.
+- [x] Dashboard shows counts: Saved searches, Saved homes, Saved communities, Buying preferences.
+- [x] Saved homes page: list of listings; each has “Remove from saved”; empty state + CTA.
+- [x] Saved communities page: list with “View” and “Remove”; empty state + CTA.
+- [x] Account nav (layout + dropdown) includes Saved communities.
+- [x] Remove actions call server actions and refresh; no stale state.
 
 ### Listing page
-- [ ] Hero: photos + video (when data exists); video embeds for YouTube/Vimeo URLs.
-- [ ] Address + status visible; no duplicate price/mortgage block in main CTA area (per user request).
-- [ ] Key facts, description, details, community, map, monthly cost, market context, similar listings, videos section all present; collapsible where appropriate.
-- [ ] CTA sidebar: Schedule showing, Ask question, Contact; no price/mortgage in sidebar (per user request).
+- [x] Hero: photos + video (when data exists); video embeds for YouTube/Vimeo URLs.
+- [x] Address + status visible; no duplicate price/mortgage block in main CTA area (per user request).
+- [x] Key facts, description, details, community, map, monthly cost, market context, similar listings, videos section all present; collapsible where appropriate.
+- [x] CTA sidebar: Schedule showing, Ask question, Contact; no price/mortgage in sidebar (per user request).
 - [ ] Missing data: ensure all StandardFields that are useful are surfaced or collapsed when empty.
 
 ### Resort communities
-- [ ] Admin → Resort communities: table of city/subdivision; Resort checkbox; Seed from default list.
+- [x] Admin → Resort communities: table of city/subdivision; Resort checkbox; Seed from default list.
 - [ ] Search/community page: when subdivision is flagged resort, amenities/lifestyle section and resort schema show.
 
 ### Team / broker / brokerage
-- [ ] Team page: list of brokers; links to broker profile.
-- [ ] Broker profile: image, bio, contact CTAs; not plain text only.
+- [x] Team page: list of brokers; links to broker profile.
+- [x] Broker profile: image, bio, contact CTAs; not plain text only.
 - [ ] Brokerage/about: structured; CTAs; admin-managed where content exists.
 - [ ] Admin: brokers and site content have add/edit/delete.
 
 ### Video
-- [ ] Listing hero and Videos section: ObjectHtml, direct .mp4, and YouTube/Vimeo URLs embed and play.
-- [ ] docs/VIDEO_DATA_FLOW.md documents flow for debugging.
+- [x] Listing hero and Videos section: ObjectHtml, direct .mp4, and YouTube/Vimeo URLs embed and play.
+- [x] docs/VIDEO_DATA_FLOW.md documents flow for debugging.
 
 ### Admin
-- [ ] Admin uses a **sidebar** for primary nav (Dashboard, Users, Brokers, Site pages, Sync, Geo, Resort communities, Banners, Reports, Spark) with clear active state.
-- [ ] Header shows user avatar (Google/profile when available), name, and "View site" link.
-- [ ] All admin links work; no 404s on known admin routes.
+- [x] Admin uses a **sidebar** for primary nav (Dashboard, Users, Brokers, Site pages, Sync, Geo, Resort communities, Banners, Reports, Spark) with clear active state.
+- [x] Header shows user avatar (Google/profile when available), name, and "View site" link.
+- [x] All admin links work; no 404s on known admin routes.
 
 ### General
-- [ ] Build passes (`npm run build`).
-- [ ] No linter errors on edited files.
-- [ ] Design tokens used; no hardcoded colors outside theme.
+- [x] Build passes (`npm run build`).
+- [x] No linter errors on edited files.
+- [x] Design tokens used; no hardcoded colors outside theme.
 - [ ] Semantic HTML and aria where needed; focus and keyboard nav work.
-- [ ] Unknown routes show the app **not-found** page (friendly 404). Dynamic routes (listing, team, report) call `notFound()` when the resource is missing.
+- [x] Unknown routes show the app **not-found** page (friendly 404). Dynamic routes (listing, team, report) call `notFound()` when the resource is missing.
 
 ---
 

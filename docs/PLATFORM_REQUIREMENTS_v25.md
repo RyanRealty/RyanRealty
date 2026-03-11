@@ -4,16 +4,16 @@
 RYAN REALTY PLATFORM — MASTER PLAN
 ═══════════════════════════════════════════════════════
 Last Full Build Run: 2026-03-10
-Run By: Build Prompt Resume (Phases 1–11)
+Run By: Full Build Prompt Continue (preflight + audit + listing videos)
 Branch: optimizer-swarm
 
 COMPLETION
-Overall: High — Core platform built; broker data, security, infra verified.
-Buyer: Search, listing detail, saved homes, account. Seller: Valuation, sell page. Broker: Team, profiles. Admin: Full sidebar, protected routes, sync, reports, geo, brokers. Reporting: Reports section present. Data: Listings sync, broker import done.
+Overall: High — Core platform built; broker data, security, infra verified. Listing detail: photos, videos section (listing_videos + virtual_tour_url), CTA sidebar. Home: hero trust link, Explore on map, Browse by city. Audit: listing, resort admin, team, video, account/saved checked off.
+Buyer: Search, listing detail, saved homes, account. Seller: Valuation, sell page. Broker: Team, profiles. Admin: Full sidebar, protected routes, sync, reports, geo, brokers, resort communities. Reporting: Reports section present. Data: Listings sync, broker import done.
 
 ISSUES
-✅ Complete: Broker import, Security, Infrastructure verified, Build green.
-⚠️ Partial: Playwright e2e not installed (optional). Some audit checklist items require manual run.
+✅ Complete: Broker import, Security, Infrastructure verified, Build green. Listing videos on detail page. GOALS_AND_UI_AUDIT progress (home, listing, resort admin, team, video, account).
+⚠️ Partial: Playwright e2e not installed (optional). Env: NEXT_PUBLIC_GA_MEASUREMENT_ID, FOLLOW_UP_BOSS_API_KEY optional for build. Some audit items remain (resort on community page, brokerage/about, semantic a11y).
 🔴 Missing: None blocking.
 ⛔ Needs Matt: None.
 

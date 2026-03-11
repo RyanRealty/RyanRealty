@@ -18,7 +18,8 @@ This doc traces how listing video data gets from the MLS (Spark API) to the list
 
 ## 3. Listing page data source
 
-- **Primary**: `getListingByKey(listingKey)` in `app/actions/listings.ts` loads the row from Supabase, including the `details` column. If the row exists, `fields` on the listing page is `row.details` (parsed from JSON if stored as string).
+- **`/listings/[listingKey]`** (main listing detail): `getListingDetailData()` in `app/actions/listing-detail.ts` fetches `listing_photos`, `listing_videos` (table), and `listings.virtual_tour_url`. Videos are passed to `ListingVideos`; virtual tour URL becomes a virtual tour link. Hero uses `ListingDetailHero` (photos + virtual tour badge).
+- **Alternative path** (e.g. `/listing/[listingKey]` if used): `getListingByKey(listingKey)` in `app/actions/listings.ts` loads the row from Supabase, including the `details` column. If the row exists, `fields` on the listing page is `row.details` (parsed from JSON if stored as string).
 - **Fallback**: If there is no row (e.g. listing not synced), the page fetches from Spark via `fetchSparkListingByKey()` and uses `StandardFields` as `fields`. So video is present in both paths.
 
 ## 4. Normalizing for display (casing)

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import type { SparkVideo, SparkVirtualTour } from '@/lib/spark'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -163,6 +164,8 @@ export type ListingDetailData = {
   engagement: ListingDetailEngagement | null
   openHouses: ListingDetailOpenHouse[]
   community: ListingDetailCommunity | null
+  videos: SparkVideo[]
+  virtualTours: SparkVirtualTour[]
 }
 
 /** Fetch listing by listing_key with all related data for the listing detail page. */
@@ -190,7 +193,7 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
     (listingRow as { ListingKey?: string }).ListingKey ??
     key
 
-  const [photosRes, agentsRes, priceRes, statusRes, engagementRes, openHousesRes] = await Promise.all([
+  const [photosRes, agentsRes, priceRes, statusRes, engagementRes, openHousesRes, videosRes] = await Promise.all([
     supabase.from('listing_photos').select('*').eq('listing_key', resolvedKey).order('sort_order', { ascending: true }),
     supabase.from('listing_agents').select('*').eq('listing_key', resolvedKey).in('agent_role', ['list', 'listing']),
     supabase.from('price_history').select('*').eq('listing_key', resolvedKey).order('changed_at', { ascending: false }),
@@ -202,6 +205,7 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
       .eq('listing_key', resolvedKey)
       .gte('event_date', new Date().toISOString().slice(0, 10))
       .order('event_date', { ascending: true }),
+    supabase.from('listing_videos').select('id, video_url, sort_order').eq('listing_key', resolvedKey).order('sort_order', { ascending: true }),
   ])
 
   const { properties: propertyRaw, ...rest } = listingRow
@@ -227,6 +231,12 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
     community = comm as ListingDetailCommunity | null
   }
 
+  const videoRows = (videosRes.data ?? []) as { id: string; video_url: string; sort_order?: number }[]
+  const videos: SparkVideo[] = videoRows.map((r) => ({ Id: r.id, Uri: r.video_url }))
+  const virtualTourUrl = listing.virtual_tour_url?.trim()
+  const virtualTours: SparkVirtualTour[] =
+    virtualTourUrl ? [{ Id: 'vt0', Uri: virtualTourUrl, Name: 'Virtual tour' }] : []
+
   return {
     listing,
     property,
@@ -237,6 +247,8 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
     engagement,
     openHouses,
     community,
+    videos,
+    virtualTours,
   }
 }
 
