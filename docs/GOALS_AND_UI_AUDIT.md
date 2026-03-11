@@ -38,8 +38,8 @@ Use this to verify and fix. Do not stop at “found an issue”—fix it, then c
 - [x] Follow **docs/HOME_PAGE_BEST_PRACTICES.md**: hero first, no Banner/Map toggle above hero.
 - [x] Hero: one headline, one subline, search as primary CTA, trust line (listings count + links); banner or gradient; attribution if present.
 - [x] Map: collapsible “Explore on map” section below hero only (no competing view toggle).
-- [ ] Sliders: Homes for You, Trending, Recently Viewed / Homes you might like; scroll arrows; tiles same width (300px) and min-height.
-- [ ] Popular Communities: tiles 300px, Share + Save (when signed in); saved state correct.
+- [x] Sliders: Homes for You, Trending, Recently Viewed / Homes you might like; scroll arrows; tiles same width (300px) and min-height.
+- [x] Popular Communities: tiles 300px, Share + Save (when signed in); saved state correct.
 - [x] Browse by city: CityTiles have Share; min-height for alignment; section spacing consistent (py-12 sm:py-16, max-w-7xl).
 - [ ] No layout shift; images use Next/Image and sizes.
 
@@ -65,12 +65,12 @@ Use this to verify and fix. Do not stop at “found an issue”—fix it, then c
 
 ### Resort communities
 - [x] Admin → Resort communities: table of city/subdivision; Resort checkbox; Seed from default list.
-- [ ] Search/community page: when subdivision is flagged resort, amenities/lifestyle section and resort schema show.
+- [x] Search/community page: when subdivision is flagged resort, amenities/lifestyle section and resort schema show.
 
 ### Team / broker / brokerage
 - [x] Team page: list of brokers; links to broker profile.
 - [x] Broker profile: image, bio, contact CTAs; not plain text only.
-- [ ] Brokerage/about: structured; CTAs; admin-managed where content exists.
+- [x] Brokerage/about: structured; CTAs; admin-managed where content exists.
 - [ ] Admin: brokers and site content have add/edit/delete.
 
 ### Video
@@ -86,7 +86,7 @@ Use this to verify and fix. Do not stop at “found an issue”—fix it, then c
 - [x] Build passes (`npm run build`).
 - [x] No linter errors on edited files.
 - [x] Design tokens used; no hardcoded colors outside theme.
-- [ ] Semantic HTML and aria where needed; focus and keyboard nav work.
+- [x] Semantic HTML and aria where needed; focus and keyboard nav work.
 - [x] Unknown routes show the app **not-found** page (friendly 404). Dynamic routes (listing, team, report) call `notFound()` when the resource is missing.
 
 ---

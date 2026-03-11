@@ -497,25 +497,33 @@ export default async function SearchPage({
         </section>
       )}
 
-      {/* Amenities & lifestyle (resort communities with attractions/dining content) */}
-      {subdivision && city && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys) && (subdivisionTabContent?.attractions ?? subdivisionTabContent?.dining) && (
-        <section className="mb-10 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-900">Amenities & lifestyle</h2>
-          {subdivisionTabContent?.attractions && (
-            <div className="mt-3">
-              <h3 className="text-sm font-medium text-zinc-700">Things to do</h3>
-              <div className="mt-1 text-sm leading-relaxed text-zinc-600 whitespace-pre-line">
-                {subdivisionTabContent.attractions}
-              </div>
-            </div>
-          )}
-          {subdivisionTabContent?.dining && (
-            <div className="mt-4">
-              <h3 className="text-sm font-medium text-zinc-700">Dining</h3>
-              <div className="mt-1 text-sm leading-relaxed text-zinc-600 whitespace-pre-line">
-                {subdivisionTabContent.dining}
-              </div>
-            </div>
+      {/* Amenities & lifestyle (resort communities — section always shown when flagged; content or placeholder) */}
+      {subdivision && city && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys) && (
+        <section className="mb-10 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm" aria-labelledby="amenities-heading">
+          <h2 id="amenities-heading" className="text-lg font-semibold text-zinc-900">Amenities & lifestyle</h2>
+          {subdivisionTabContent?.attractions || subdivisionTabContent?.dining ? (
+            <>
+              {subdivisionTabContent?.attractions && (
+                <div className="mt-3">
+                  <h3 className="text-sm font-medium text-zinc-700">Things to do</h3>
+                  <div className="mt-1 text-sm leading-relaxed text-zinc-600 whitespace-pre-line">
+                    {subdivisionTabContent.attractions}
+                  </div>
+                </div>
+              )}
+              {subdivisionTabContent?.dining && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium text-zinc-700">Dining</h3>
+                  <div className="mt-1 text-sm leading-relaxed text-zinc-600 whitespace-pre-line">
+                    {subdivisionTabContent.dining}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-zinc-500">
+              Resort community. Amenities and lifestyle details for {displayName} are being updated.
+            </p>
           )}
         </section>
       )}

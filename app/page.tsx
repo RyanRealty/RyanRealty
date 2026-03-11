@@ -9,6 +9,8 @@ import {
   getTrendingListings,
   getBlogPostsForHome,
 } from './actions/home'
+import { getBrowseCities } from './actions/listings'
+import { getSavedCommunityKeys } from './actions/saved-communities'
 import { getSession } from './actions/auth'
 import { getSavedListingKeys } from './actions/saved-listings'
 import { getLikedListingKeys } from './actions/likes'
@@ -17,9 +19,11 @@ import { getOrCreatePlaceBanner } from './actions/banners'
 import { subdivisionEntityKey } from '../lib/slug'
 import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '../lib/mortgage'
 import HomeHero from '../components/home/HomeHero'
+import ExploreOnMap from '../components/home/ExploreOnMap'
 import FeaturedListings from '../components/home/FeaturedListings'
+import BrowseByCity from '../components/home/BrowseByCity'
 import JustListed from '../components/home/JustListed'
-import CommunitySpotlights from '../components/home/CommunitySpotlights'
+import PopularCommunitiesRow from '../components/home/PopularCommunitiesRow'
 import PriceDrops from '../components/home/PriceDrops'
 import MarketCTA from '../components/home/MarketCTA'
 import TrendingListings from '../components/home/TrendingListings'
@@ -74,7 +78,7 @@ export default async function Home() {
     )
   }
 
-  const [session, featured, justListed, recentlySold, priceDrops, communityHighlights, marketSnapshot, trending, blogPosts] =
+  const [session, featured, justListed, recentlySold, priceDrops, communityHighlights, marketSnapshot, trending, blogPosts, browseCities] =
     await Promise.all([
       getSession(),
       getFeaturedListings(),
@@ -85,11 +89,13 @@ export default async function Home() {
       getMarketSnapshot(),
       getTrendingListings(),
       getBlogPostsForHome(),
+      getBrowseCities(),
     ])
 
-  const [savedKeys, likedKeys, prefs, communityBannerUrls] = await Promise.all([
+  const [savedKeys, likedKeys, savedCommunityKeys, prefs, communityBannerUrls] = await Promise.all([
     session?.user ? getSavedListingKeys() : Promise.resolve([]),
     session?.user ? getLikedListingKeys() : Promise.resolve([]),
+    session?.user ? getSavedCommunityKeys() : Promise.resolve([]),
     session?.user ? getBuyingPreferences().catch(() => null) : Promise.resolve(null),
     communityHighlights.length > 0
       ? Promise.all(
@@ -162,6 +168,8 @@ export default async function Home() {
 
       <HomeHero marketSnapshot={marketForHero} />
 
+      <ExploreOnMap />
+
       {featured.length > 0 && (
         <FeaturedListings
           listings={featured}
@@ -189,10 +197,12 @@ export default async function Home() {
       )}
 
       {communityHighlights.length > 0 && (
-        <CommunitySpotlights
+        <PopularCommunitiesRow
           city={DEFAULT_HOME_CITY}
           communities={communityHighlights}
           bannerUrls={communityBannerUrls}
+          signedIn={!!session?.user}
+          savedCommunityKeys={savedCommunityKeys}
         />
       )}
 
@@ -236,6 +246,8 @@ export default async function Home() {
           loanTermYears={displayPrefs.loanTermYears}
         />
       )}
+
+      <BrowseByCity cities={browseCities} />
 
       <TrustSection />
 

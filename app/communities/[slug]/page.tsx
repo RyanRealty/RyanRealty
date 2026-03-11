@@ -84,27 +84,49 @@ export default async function CommunityDetailPage({ params }: Props) {
     return { lat, lng }
   })()
 
+  const placeSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Place' as const,
+    name: community.name,
+    address: { addressLocality: community.city, addressRegion: 'OR' },
+    ...(centroid && {
+      geo: {
+        '@type': 'GeoCoordinates',
+        latitude: centroid.lat,
+        longitude: centroid.lng,
+      },
+    }),
+    url: `${siteUrl}/communities/${slug}`,
+  }
+  const resortSchema = community.isResort
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'Resort' as const,
+        name: community.name,
+        address: { addressLocality: community.city, addressRegion: 'OR' },
+        ...(centroid && {
+          geo: {
+            '@type': 'GeoCoordinates',
+            latitude: centroid.lat,
+            longitude: centroid.lng,
+          },
+        }),
+        url: `${siteUrl}/communities/${slug}`,
+      }
+    : null
+
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Place',
-            name: community.name,
-            address: { addressLocality: community.city, addressRegion: 'OR' },
-            ...(centroid && {
-              geo: {
-                '@type': 'GeoCoordinates',
-                latitude: centroid.lat,
-                longitude: centroid.lng,
-              },
-            }),
-            url: `${siteUrl}/communities/${slug}`,
-          }),
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(placeSchema) }}
       />
+      {resortSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(resortSchema) }}
+        />
+      )}
 
       <CommunityPageTracker
         communityName={community.name}

@@ -25,23 +25,29 @@ export default async function AboutPage() {
           }}
         />
       </div>
-      <section className="mt-12 rounded-2xl border border-zinc-200 bg-zinc-50/80 p-6" aria-labelledby="about-cta-heading">
-        <h2 id="about-cta-heading" className="text-lg font-semibold text-zinc-900">Get started</h2>
-        <p className="mt-1 text-sm text-zinc-600">
+      <section className="mt-12 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-6" aria-labelledby="about-cta-heading">
+        <h2 id="about-cta-heading" className="text-lg font-semibold text-[var(--color-text-primary)]">Get started</h2>
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
           Meet our team, browse listings, or reach out with questions.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
             href="/team"
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-cta)] px-4 py-2.5 text-sm font-semibold text-[var(--color-primary)] shadow-sm hover:bg-[var(--color-cta-hover)]"
           >
             Meet the team
           </Link>
           <Link
             href="/listings"
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-white)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)]"
           >
             Browse listings
+          </Link>
+          <Link
+            href="/contact"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-white)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)]"
+          >
+            Contact us
           </Link>
         </div>
       </section>
