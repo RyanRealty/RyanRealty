@@ -12,9 +12,41 @@ export function slugify(name: string): string {
     .replace(/^-|-$/g, '') || 'unknown'
 }
 
+/** Display label for a subdivision. "Out of area; see remarks" (or similar) → "See homes nearby". */
+export function getSubdivisionDisplayName(name: string | null | undefined): string {
+  const n = (name ?? '').trim().toLowerCase()
+  if (!n) return name?.trim() ?? ''
+  if (n === 'out of area; see remarks' || n === 'out of area, see remarks') return 'See homes nearby'
+  return (name ?? '').trim()
+}
+
 /** Entity key for a city (e.g. "Bend" -> "bend"). */
 export function cityEntityKey(city: string): string {
   return slugify(city)
+}
+
+/** SEO-friendly city page path (e.g. "Bend" -> "/cities/bend"). Use for all city links. */
+export function cityPagePath(city: string): string {
+  return `/cities/${cityEntityKey(city)}`
+}
+
+/** SEO-friendly neighborhood page path (e.g. citySlug "bend", neighborhoodSlug "larkspur" -> "/cities/bend/larkspur"). */
+export function neighborhoodPagePath(citySlug: string, neighborhoodSlug: string): string {
+  return `/cities/${citySlug}/${neighborhoodSlug}`
+}
+
+/**
+ * SEO-friendly path for browsing homes for sale by place.
+ * Use for all "homes for sale in [city]" or "homes for sale in [community]" links and canonicals.
+ * - No args: /homes-for-sale (main search)
+ * - City only: /homes-for-sale/bend
+ * - City + subdivision: /homes-for-sale/bend/sunriver
+ */
+export function homesForSalePath(city?: string | null, subdivision?: string | null): string {
+  if (!city?.trim()) return '/homes-for-sale'
+  const citySlug = cityEntityKey(city)
+  if (!subdivision?.trim()) return `/homes-for-sale/${citySlug}`
+  return `/homes-for-sale/${citySlug}/${slugify(subdivision)}`
 }
 
 /** Entity key for a subdivision (e.g. city "Bend", subdivision "Sunriver" -> "bend:sunriver"). */

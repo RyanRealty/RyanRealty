@@ -3,6 +3,9 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 
 const COLUMN_OPTIONS = [1, 2, 3, 4] as const
 const PER_PAGE_OPTIONS = [6, 12, 24, 48] as const
@@ -55,16 +58,16 @@ export default function SearchListingsToolbar({
   }
 
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white p-4">
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-zinc-500">Per page</span>
-          <div className="flex rounded-lg border border-zinc-200 p-0.5">
+          <span className="text-sm font-medium text-muted-foreground">Per page</span>
+          <div className="flex rounded-lg border border-border p-0.5">
             {PER_PAGE_OPTIONS.map((n) => (
               <Link
                 key={n}
                 href={path + buildQuery(searchParams, { perPage: String(n), page: '1' })}
-                className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${perPageParam === String(n) ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}
+                className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${perPageParam === String(n) ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}
                 title={`${n} per page`}
               >
                 {n}
@@ -73,13 +76,13 @@ export default function SearchListingsToolbar({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-zinc-500">Columns</span>
-          <div className="flex rounded-lg border border-zinc-200 p-0.5">
+          <span className="text-sm font-medium text-muted-foreground">Columns</span>
+          <div className="flex rounded-lg border border-border p-0.5">
             {COLUMN_OPTIONS.map((col) => (
               <Link
                 key={col}
                 href={path + buildQuery(searchParams, { view: String(col), page: '1' })}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${viewParam === String(col) ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${viewParam === String(col) ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}
                 title={`${col} column${col === 1 ? '' : 's'}`}
               >
                 {col}
@@ -89,49 +92,49 @@ export default function SearchListingsToolbar({
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-4">
-        <p className="text-sm text-zinc-600">
+        <p className="text-sm text-muted-foreground">
           {totalCount === 0 ? 'No listings' : `${start}–${end} of ${totalCount.toLocaleString()}`}
         </p>
         {totalPages > 1 && (
           <nav className="flex flex-wrap items-center gap-2" aria-label="Pagination">
             <Link
               href={page <= 1 ? path : path + buildQuery(searchParams, { page: String(page - 1) })}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${page <= 1 ? 'pointer-events-none text-zinc-400' : 'text-zinc-700 hover:bg-zinc-100'}`}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${page <= 1 ? 'pointer-events-none text-muted-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               aria-disabled={page <= 1}
             >
               Previous
             </Link>
-            <span className="px-2 text-sm text-zinc-500">
+            <span className="px-2 text-sm text-muted-foreground">
               Page {page} of {totalPages}
             </span>
             <Link
               href={page >= totalPages ? path : path + buildQuery(searchParams, { page: String(page + 1) })}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${page >= totalPages ? 'pointer-events-none text-zinc-400' : 'text-zinc-700 hover:bg-zinc-100'}`}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${page >= totalPages ? 'pointer-events-none text-muted-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               aria-disabled={page >= totalPages}
             >
               Next
             </Link>
             {totalPages > 2 && (
               <form onSubmit={handleJump} className="ml-2 flex items-center gap-1">
-                <label htmlFor="jump-page" className="sr-only">
+                <Label htmlFor="jump-page" className="sr-only">
                   Jump to page
-                </label>
-                <input
+                </Label>
+                <Input
                   id="jump-page"
                   type="number"
                   min={1}
                   max={totalPages}
                   value={jumpPage}
                   onChange={(e) => setJumpPage(e.target.value)}
-                  className="w-14 rounded-lg border border-zinc-200 px-2 py-1.5 text-center text-sm"
+                  className="w-14 rounded-lg border border-border px-2 py-1.5 text-center text-sm"
                   aria-label="Page number"
                 />
-                <button
+                <Button
                   type="submit"
-                  className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-zinc-700"
+                  className="rounded-lg bg-primary px-2.5 py-1.5 text-sm font-medium text-white hover:bg-accent/90"
                 >
                   Go
-                </button>
+                </Button>
               </form>
             )}
           </nav>

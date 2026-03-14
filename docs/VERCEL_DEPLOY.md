@@ -67,13 +67,28 @@ So: if your latest work isn’t committed and pushed, Vercel will keep serving t
    The root layout and homepage are set to `dynamic = 'force-dynamic'`, so they render on every request using live Supabase data. If you still see old or empty content, **redeploy** after the change (Deployments → ⋮ → Redeploy).
 
 2. **Wrong or missing `NEXT_PUBLIC_SITE_URL`**  
-   In Vercel → Settings → Environment Variables, set `NEXT_PUBLIC_SITE_URL` to your live URL with no trailing slash, e.g. `https://ryanrealty-ryanrealtys-projects.vercel.app` or `https://ryanrealty.com`. Redeploy after changing env vars.
+   In Vercel → Settings → Environment Variables, set `NEXT_PUBLIC_SITE_URL` to your live URL with no trailing slash, e.g. `https://ryanrealty-ryanrealtys-projects.vercel.app` or `https://ryan-realty.com`. Redeploy after changing env vars.
 
 3. **You’re signed in locally**  
    On localhost you may be signed in (header shows “Account”); on production you’re usually not (header shows “Sign in”). That’s expected.
 
 4. **Supabase redirect URLs**  
    For sign-in to work in production, add your Vercel URL to Supabase → Authentication → URL Configuration → Redirect URLs (see `docs/SUPABASE_AUTH_URLS.md`).
+
+---
+
+## Cron and background jobs
+
+These API routes run on a schedule (Vercel Cron) or via manual trigger. Each validates `Authorization: Bearer <CRON_SECRET>` (set in Vercel env).
+
+| Route | Purpose | Suggested schedule |
+|-------|---------|--------------------|
+| `/api/cron/sync-full` | Full/delta MLS sync from Spark | Every 15–30 min |
+| `/api/cron/market-report` | Generate weekly market report (HTML + banner) | Weekly |
+| `/api/cron/refresh-place-content` | Refresh geo/place content | Daily or weekly |
+| `/api/cron/optimization-loop` | Analyze GA4/Search Console; write findings to `optimization_runs` | Weekly |
+
+In Vercel: **Project → Settings → Cron Jobs** (or `vercel.json`), add each URL with the desired schedule. Set `CRON_SECRET` in Environment Variables and pass it as `Authorization: Bearer <CRON_SECRET>` when invoking the route.
 
 ---
 

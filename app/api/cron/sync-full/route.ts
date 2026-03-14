@@ -47,6 +47,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url)
+  const force = searchParams.get('force') === '1'
   const listingPagesPerRun = Math.min(50, Math.max(1, parseInt(searchParams.get('pages') ?? String(DEFAULT_LISTING_PAGES_PER_RUN), 10) || DEFAULT_LISTING_PAGES_PER_RUN))
   const historyBatchLimit = Math.min(200, Math.max(1, parseInt(searchParams.get('history_limit') ?? String(DEFAULT_HISTORY_BATCH_LIMIT), 10) || DEFAULT_HISTORY_BATCH_LIMIT))
 
@@ -79,7 +80,7 @@ export async function GET(request: Request) {
   }
   cursorRow = data as CursorRow | null
 
-  if (cursorRow?.cron_enabled === false) {
+  if (cursorRow?.cron_enabled === false && !force) {
     return NextResponse.json({
       ok: true,
       skipped: true,
@@ -220,6 +221,7 @@ export async function GET(request: Request) {
   const result = await syncListingHistory({
     offset: nextHistoryOffset,
     limit: historyBatchLimit,
+    activeAndPendingOnly: true,
   })
 
   if (!result.success) {

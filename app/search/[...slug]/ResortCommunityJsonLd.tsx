@@ -1,4 +1,4 @@
-import { cityEntityKey, subdivisionEntityKey } from '../../../lib/slug'
+import { homesForSalePath } from '../../../lib/slug'
 
 /**
  * Resort + Place schema for type-2 (resort/amenity-rich) community pages.
@@ -23,7 +23,7 @@ export default function ResortCommunityJsonLd({
   bannerUrl,
   listingUrls,
 }: Props) {
-  const pageUrl = `${siteUrl}/search/${cityEntityKey(city)}/${encodeURIComponent(subdivision)}`
+  const pageUrl = `${siteUrl}${homesForSalePath(city, subdivision)}`
 
   const resort = {
     '@context': 'https://schema.org',
@@ -48,8 +48,8 @@ export default function ResortCommunityJsonLd({
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Ryan Realty', item: siteUrl },
-      { '@type': 'ListItem', position: 2, name: 'Homes for Sale', item: `${siteUrl}/listings` },
-      { '@type': 'ListItem', position: 3, name: city, item: `${siteUrl}/search/${cityEntityKey(city)}` },
+      { '@type': 'ListItem', position: 2, name: 'Homes for Sale', item: `${siteUrl}/homes-for-sale` },
+      { '@type': 'ListItem', position: 3, name: city, item: `${siteUrl}${homesForSalePath(city)}` },
       { '@type': 'ListItem', position: 4, name: subdivision, item: pageUrl },
     ],
   }

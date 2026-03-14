@@ -15,11 +15,13 @@ COMMENT ON TABLE report_listings_breakdown IS 'Pre-aggregated full breakdown of 
 
 ALTER TABLE report_listings_breakdown ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow public read report_listings_breakdown" ON report_listings_breakdown;
 CREATE POLICY "Allow public read report_listings_breakdown"
   ON report_listings_breakdown FOR SELECT
   TO anon, authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Service role full access report_listings_breakdown" ON report_listings_breakdown;
 CREATE POLICY "Service role full access report_listings_breakdown"
   ON report_listings_breakdown FOR ALL
   TO service_role

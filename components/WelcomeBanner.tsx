@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { Button } from "@/components/ui/button"
+import { Alert } from "@/components/ui/alert"
 
 const WELCOME_DISMISSED_KEY = 'ryan_realty_welcome_dismissed'
 
@@ -37,25 +39,22 @@ export default function WelcomeBanner() {
   if (!show) return null
 
   return (
-    <div
-      role="status"
-      className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900"
-    >
-      <p className="text-sm font-medium">
+    <Alert className="mb-8 flex flex-wrap items-center justify-between gap-4 bg-success/10 border-success/30">
+      <p className="text-sm font-medium text-success">
         Welcome to your account! Here you can manage your{' '}
         <Link href="/account/saved-searches" className="underline hover:no-underline">saved searches</Link>,{' '}
         <Link href="/account/saved-homes" className="underline hover:no-underline">saved homes</Link>,{' '}
         <Link href="/account/buying-preferences" className="underline hover:no-underline">buying preferences</Link>, and{' '}
         <Link href="/account/profile" className="underline hover:no-underline">profile</Link>.
       </p>
-      <button
+      <Button
         type="button"
         onClick={handleDismiss}
-        className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
+        className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-success hover:bg-success/15"
         aria-label="Dismiss welcome message"
       >
         Dismiss
-      </button>
-    </div>
+      </Button>
+    </Alert>
   )
 }

@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { isSuperuserAdmin } from '@/lib/admin'
+import { getSession } from '@/app/actions/auth'
+import { logAdminAction } from '@/app/actions/log-admin-action'
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -65,6 +67,9 @@ export async function upsertAdminRole(
     { onConflict: 'email' }
   )
   if (error) return { ok: false, error: error.message }
+  const session = await getSession()
+  const actorRole = session?.user?.email ? (await getAdminRoleForEmail(session.user.email))?.role ?? null : null
+  await logAdminAction({ adminEmail: session?.user?.email ?? '', role: actorRole, actionType: 'upsert', resourceType: 'admin_role', resourceId: trimmed, details: { role, broker_id: brokerId ?? null } })
   revalidatePath('/admin')
   revalidatePath('/admin/users')
   return { ok: true }
@@ -76,6 +81,9 @@ export async function removeAdminRole(email: string): Promise<{ ok: true } | { o
   const supabase = getServiceSupabase()
   const { error } = await supabase.from('admin_roles').delete().eq('email', email.trim().toLowerCase())
   if (error) return { ok: false, error: error.message }
+  const session = await getSession()
+  const actorRole = session?.user?.email ? (await getAdminRoleForEmail(session.user.email))?.role ?? null : null
+  await logAdminAction({ adminEmail: session?.user?.email ?? '', role: actorRole, actionType: 'delete', resourceType: 'admin_role', resourceId: email.trim().toLowerCase() })
   revalidatePath('/admin')
   revalidatePath('/admin/users')
   return { ok: true }

@@ -141,7 +141,7 @@ export async function trackSignedInUser(params: {
   const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
-    .toLowerCase() || 'ryanrealty.com'
+    .toLowerCase() || 'ryan-realty.com'
 
   let firstName = params.firstName?.trim()
   let lastName = params.lastName?.trim()
@@ -209,7 +209,7 @@ export async function trackListingView(params: {
   const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
-    .toLowerCase() || 'ryanrealty.com'
+    .toLowerCase() || 'ryan-realty.com'
 
   await sendEvent({
     type: 'Viewed Property',
@@ -260,7 +260,7 @@ export async function trackListingTileClick(params: {
   const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
-    .toLowerCase() || 'ryanrealty.com'
+    .toLowerCase() || 'ryan-realty.com'
 
   const email = params.userEmail?.trim()
   const fubId = params.fubPersonId
@@ -320,7 +320,7 @@ export async function trackSavedProperty(params: {
   const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
-    .toLowerCase() || 'ryanrealty.com'
+    .toLowerCase() || 'ryan-realty.com'
 
   const existing = await findPersonByEmail(email)
   const person: FubEventPerson = existing ? { id: existing.id } : { emails: [{ value: email }] }
@@ -380,7 +380,7 @@ export async function trackContactAgentInquiry(params: {
   const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
-    .toLowerCase() || 'ryanrealty.com'
+    .toLowerCase() || 'ryan-realty.com'
   await sendEvent({
     type: 'Property Inquiry',
     person,
@@ -399,6 +399,23 @@ export async function trackContactAgentInquiry(params: {
       bathrooms: params.property.bathrooms != null ? String(params.property.bathrooms) : undefined,
     },
   })
+}
+
+/**
+ * Fire-and-forget page view: calls trackPageView when session or fubPersonId is available.
+ * Use in server components so analytics never block the response.
+ */
+export function trackPageViewIfPossible(params: {
+  sessionUser?: { email?: string | null } | null
+  fubPersonId?: number | null
+  pageUrl: string
+  pageTitle?: string
+}): void {
+  if (params.sessionUser?.email) {
+    trackPageView({ user: params.sessionUser, pageUrl: params.pageUrl, pageTitle: params.pageTitle }).catch(() => {})
+  } else if (params.fubPersonId != null && params.fubPersonId > 0) {
+    trackPageView({ fubPersonId: params.fubPersonId, pageUrl: params.pageUrl, pageTitle: params.pageTitle }).catch(() => {})
+  }
 }
 
 /**
@@ -429,7 +446,7 @@ export async function trackPageView(params: {
   const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
-    .toLowerCase() || 'ryanrealty.com'
+    .toLowerCase() || 'ryan-realty.com'
 
   await sendEvent({
     type: 'Viewed Page',
@@ -439,5 +456,39 @@ export async function trackPageView(params: {
     sourceUrl: params.pageUrl,
     pageUrl: params.pageUrl,
     pageTitle: params.pageTitle,
+  })
+}
+
+/**
+ * Call when a returning visitor is detected (e.g. same user, session or cookie older than 24h).
+ * Sends "Visited Website" with message "return" so FUB can tag or segment return traffic.
+ */
+export async function trackReturnVisit(params: {
+  userEmail: string
+  pageUrl: string
+  pageTitle?: string
+}): Promise<void> {
+  const auth = getAuth()
+  if (!auth) return
+  const email = params.userEmail?.trim()
+  if (!email) return
+
+  const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
+    .replace(/^https?:\/\//, '')
+    .replace(/\/$/, '')
+    .toLowerCase() || 'ryan-realty.com'
+
+  const existing = await findPersonByEmail(email)
+  const person: FubEventPerson = existing ? { id: existing.id } : { emails: [{ value: email }] }
+
+  await sendEvent({
+    type: 'Visited Website',
+    person,
+    source,
+    system: 'Ryan Realty Website',
+    sourceUrl: params.pageUrl,
+    pageUrl: params.pageUrl,
+    pageTitle: params.pageTitle,
+    message: 'return',
   })
 }

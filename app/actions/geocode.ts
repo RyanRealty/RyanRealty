@@ -3,9 +3,22 @@ import { createClient } from '@supabase/supabase-js'
 
 const GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
 
-export async function getGeocodedListings(listings: any[]) {
+/** Minimal listing-like shape for geocoding (Spark or internal). */
+export type GeocodeListingInput = {
+  ListNumber?: string | null
+  StreetNumber?: string | null
+  StreetName?: string | null
+  City?: string | null
+  State?: string | null
+  PostalCode?: string | null
+  Latitude?: number | null
+  Longitude?: number | null
+  [k: string]: unknown
+}
+
+export async function getGeocodedListings<T extends GeocodeListingInput>(listings: T[]): Promise<T[]> {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  if (!apiKey?.trim() || !listings) return listings || []
+  if (!apiKey?.trim() || !listings) return (listings || []) as T[]
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -35,7 +48,7 @@ export async function getGeocodedListings(listings: any[]) {
                 .update({ Latitude: lat, Longitude: lng })
                 .eq('ListNumber', item.ListNumber)
             }
-            return { ...item, Latitude: lat, Longitude: lng }
+            return { ...item, Latitude: lat, Longitude: lng } as T
           }
         }
       } catch (e) {

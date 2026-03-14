@@ -28,10 +28,7 @@ export async function getGA4Summary(
   const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
 
   if (!propertyId || !clientEmail || !privateKey) {
-    return {
-      ok: false,
-      error: 'Missing GOOGLE_GA4_PROPERTY_ID, GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL, or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY',
-    }
+    return { ok: false, error: 'GA4_NOT_CONFIGURED' }
   }
 
   const key = privateKey.replace(/\\n/g, '\n')

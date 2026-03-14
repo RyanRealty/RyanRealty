@@ -2,6 +2,15 @@
 
 Reports use **100% of listing data** and stay **fast** by reading from pre-aggregated cache tables that are updated after each sync.
 
+## Report branding
+
+All reports (PDF and web) are **branded consistently**:
+
+- **Logo** — When a brokerage logo is configured (Admin → Site pages), it appears in report PDFs and anywhere the report is identified. When no logo is set, the business name is used as text.
+- **Fonts** — Brand typography from `app/globals.css`: **Amboqia Boriango** (display/headings) and **AzoSans** (body). PDFs register these fonts and use them; report web pages use `font-[family-name:var(--font-display)]` and `font-[family-name:var(--font-body)]`.
+- **Colors** — Brand palette only: navy (`#102742` / `--brand-navy`), cream (`#F0EEEC` / `--brand-cream`), accent (`#D4A853` / `--accent`), and design tokens for text/surfaces (`--text-primary`, `--text-secondary`, `--gray-border`, `--surface`, etc.). No one-off zinc or gray hex values in report UI.
+- **Tone** — Professional, confident, and aligned with the luxury real estate brand: clear headings, concise copy, and a trustworthy, expert voice. Report copy and CTAs should feel consistent with the rest of the site (align with the rest of the site).
+
 ## How it works
 
 1. **Source of truth**  

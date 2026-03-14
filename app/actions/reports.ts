@@ -19,15 +19,25 @@ export type ReportPriceBandsResult = {
   current_listings_by_band: ReportPriceBand[]
 }
 
+export type ReportFilters = {
+  includeCondoTown?: boolean
+  includeManufactured?: boolean
+  includeAcreage?: boolean
+  minPrice?: number | null
+  maxPrice?: number | null
+}
+
 /**
- * Metrics for a city (and optional subdivision) and date range (SFR only).
+ * Metrics for a city (and optional subdivision) and date range.
+ * Optional property type and price range filters.
  */
 export async function getReportMetrics(
   city: string,
   periodStart: string,
   periodEnd: string,
   asOf?: string | null,
-  subdivision?: string | null
+  subdivision?: string | null,
+  filters?: ReportFilters | null
 ): Promise<{ data: ReportMetrics | null; error?: string }> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -41,6 +51,11 @@ export async function getReportMetrics(
     p_period_end: periodEnd,
     p_as_of: asOf ?? null,
     p_subdivision: subdivision?.trim() || null,
+    p_include_condo_town: filters?.includeCondoTown ?? false,
+    p_include_manufactured: filters?.includeManufactured ?? false,
+    p_include_acreage: filters?.includeAcreage ?? false,
+    p_min_price: filters?.minPrice ?? null,
+    p_max_price: filters?.maxPrice ?? null,
   })
   if (error) {
     return { data: null, error: error.message }
@@ -56,7 +71,8 @@ export async function getReportPriceBands(
   periodStart: string,
   periodEnd: string,
   sales12mo: boolean = false,
-  subdivision?: string | null
+  subdivision?: string | null,
+  filters?: ReportFilters | null
 ): Promise<{ data: ReportPriceBandsResult | null; error?: string }> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -70,6 +86,11 @@ export async function getReportPriceBands(
     p_period_end: periodEnd,
     p_sales_12mo: sales12mo,
     p_subdivision: subdivision?.trim() || null,
+    p_include_condo_town: filters?.includeCondoTown ?? false,
+    p_include_manufactured: filters?.includeManufactured ?? false,
+    p_include_acreage: filters?.includeAcreage ?? false,
+    p_min_price: filters?.minPrice ?? null,
+    p_max_price: filters?.maxPrice ?? null,
   })
   if (error) {
     return { data: null, error: error.message }
@@ -91,7 +112,8 @@ export type ReportMetricsTimeSeriesPoint = {
 export async function getReportMetricsTimeSeries(
   city: string,
   numMonths: number = 12,
-  subdivision?: string | null
+  subdivision?: string | null,
+  filters?: ReportFilters | null
 ): Promise<{ data: ReportMetricsTimeSeriesPoint[] | null; error?: string }> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -103,12 +125,43 @@ export async function getReportMetricsTimeSeries(
     p_city: city.trim(),
     p_num_months: Math.min(60, Math.max(1, numMonths)),
     p_subdivision: subdivision?.trim() || null,
+    p_include_condo_town: filters?.includeCondoTown ?? false,
+    p_include_manufactured: filters?.includeManufactured ?? false,
+    p_include_acreage: filters?.includeAcreage ?? false,
+    p_min_price: filters?.minPrice ?? null,
+    p_max_price: filters?.maxPrice ?? null,
   })
   if (error) {
     return { data: null, error: error.message }
   }
   const arr = Array.isArray(data) ? data : (data as unknown as ReportMetricsTimeSeriesPoint[]) ?? []
   return { data: arr }
+}
+
+/**
+ * Subdivision names that have listings in the given city (for report location filter).
+ */
+export async function getReportSubdivisionsForCity(city: string): Promise<{ subdivisions: string[]; error?: string }> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url?.trim() || !key?.trim() || !city?.trim()) {
+    return { subdivisions: [] }
+  }
+  const supabase = createClient(url, key)
+  const { data, error } = await supabase
+    .from('listings')
+    .select('SubdivisionName')
+    .ilike('City', city.trim())
+    .not('SubdivisionName', 'is', null)
+    .limit(2000)
+  if (error) return { subdivisions: [], error: error.message }
+  const set = new Set<string>()
+  for (const row of data ?? []) {
+    const name = (row as { SubdivisionName?: string | null }).SubdivisionName?.trim()
+    if (name && name.toLowerCase() !== 'n/a') set.add(name)
+  }
+  const subdivisions = Array.from(set).sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }))
+  return { subdivisions }
 }
 
 /** Distinct cities in listings (for report dropdown). */

@@ -1,0 +1,519 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   Ryan Realty — Design System
+   Luxury Central Oregon real estate platform
+   All components MUST use these tokens. Nothing styled in isolation.
+   ========================================================================== */
+
+/* Brand Fonts — Amboqia Boriango (display) + AzoSans (body/UI) */
+@font-face {
+  font-family: 'Amboqia Boriango';
+  src: url('/fonts/Amboqia_Boriango.otf') format('opentype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AzoSans';
+  src: url('/fonts/AzoSans-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-display: swap;
+}
+
+:root {
+  /* ── Brand Colors ── */
+  --color-primary: #102742;
+  --color-primary-hover: #1a3a5c;
+  --color-primary-light: rgba(16, 39, 66, 0.08);
+  --color-cream: #F0EEEC;
+  --color-cta: #D4A853;
+  --color-cta-hover: #C49843;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  /* Section borders: white, cream, navy, or light navy only (text on light = dark for contrast) */
+  --color-border-cream: #E2DDD8;
+  --color-border: var(--color-border-cream);
+  --color-border-white: #FFFFFF;
+  --color-border-navy: #102742;
+  --color-border-navy-light: rgba(16, 39, 66, 0.18);
+  --color-text-primary: #1A1410;
+  --color-text-secondary: #6B6058;
+  --color-text-muted: #A09890;
+  --color-bg: #F0EEEC;
+  --color-bg-subtle: #FAFAF9;
+  --color-bg-white: #FFFFFF;
+  --focus-ring: 0 0 0 3px rgba(212, 168, 83, 0.4);
+
+  /* ── Legacy aliases (keep for existing components) ── */
+  --brand-navy: #102742;
+  --brand-cream: #F0EEEC;
+  --accent: oklch(0.97 0.001 106.424);
+  --accent-hover: #C49843;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --urgent: #EF4444;
+  --gray-dark: #1A1410;
+  --gray-secondary: #6B6058;
+  --gray-muted: #A09890;
+  --gray-border: var(--color-border-cream);
+  --gray-bg: #FAFAF9;
+  --surface: #FFFFFF;
+  --surface-muted: var(--color-bg-subtle);
+  --border: oklch(0.923 0.003 48.717);
+  --border-focus: var(--color-cta);
+  --brand-primary: var(--color-primary);
+  --brand-primary-hover: #1a3a5c;
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+
+  /* ── Typography ── */
+  --font-display: 'Amboqia Boriango', Georgia, 'Times New Roman', serif;
+  --font-body: 'AzoSans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-geist-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+
+  /* ── Spacing (4px grid) ── */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-24: 6rem;     /* 96px */
+  --space-32: 8rem;     /* 128px */
+
+  /* ── Layout ── */
+  --header-height: 4rem;
+
+  /* ── Motion ── */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --duration-micro: 150ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+
+  /* ── Radius ── */
+  --radius-btn: 6px;
+  --radius-input: 8px;
+  --radius-card: 12px;
+  --radius-container: 16px;
+  --radius-modal: 16px;
+  --radius-pill: 9999px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* ── Shadows ── */
+  --shadow-subtle: 0 1px 3px rgba(16,39,66,0.08), 0 1px 2px rgba(16,39,66,0.06);
+  --shadow-medium: 0 4px 6px rgba(16,39,66,0.07), 0 2px 4px rgba(16,39,66,0.06);
+  --shadow-strong: 0 20px 25px rgba(16,39,66,0.10), 0 10px 10px rgba(16,39,66,0.04);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.147 0.004 49.25);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.147 0.004 49.25);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.147 0.004 49.25);
+  --primary: oklch(0.488 0.243 264.376);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.97 0.001 106.424);
+  --muted-foreground: oklch(0.553 0.013 58.071);
+  --accent-foreground: oklch(0.216 0.006 56.043);
+  --destructive: oklch(0.577 0.245 27.325);
+  --input: oklch(0.923 0.003 48.717);
+  --ring: oklch(0.709 0.01 56.259);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0.001 106.423);
+  --sidebar-foreground: oklch(0.147 0.004 49.25);
+  --sidebar-primary: oklch(0.546 0.245 262.881);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-accent: oklch(0.97 0.001 106.424);
+  --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
+  --sidebar-border: oklch(0.923 0.003 48.717);
+  --sidebar-ring: oklch(0.709 0.01 56.259);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--color-primary);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-cream: var(--brand-cream);
+  --color-cta: var(--color-cta);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-urgent: var(--urgent);
+  --color-gray-dark: var(--gray-dark);
+  --color-gray-secondary: var(--gray-secondary);
+  --color-gray-muted: var(--gray-muted);
+  --color-gray-border: var(--gray-border);
+  --color-gray-bg: var(--gray-bg);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Remove dark mode override — this is a cream-based brand */
+
+/* ── Responsive base font size: larger on desktop so type doesn’t feel small ── */
+html {
+  font-size: 16px;
+}
+@media (min-width: 1024px) {
+  html {
+    font-size: 112.5%; /* 18px — bumps all rem-based type (Tailwind text-*, body) */
+  }
+}
+@media (min-width: 1280px) {
+  html {
+    font-size: 118.75%; /* 19px on large desktop */
+  }
+}
+
+/* ── Base Typography ── */
+body {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Brand display font on all major headings */
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+}
+
+/* Utility classes for explicit font use */
+.font-body {
+  font-family: var(--font-body);
+}
+
+/* ── Animations ── */
+
+/* Hero ken-burns (very subtle zoom/pan — avoids “zoomed in” feel on video) */
+@keyframes hero-ken-burns {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.03) translate(-0.5%, -0.5%); }
+}
+.animate-hero-ken-burns {
+  animation: hero-ken-burns 20s ease-in-out infinite alternate;
+}
+
+/* Listing hero carousel: smooth fade when changing slide */
+@keyframes listing-slide-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-listing-slide-fade {
+  animation: listing-slide-fade 0.2s ease-out forwards;
+}
+
+/* Hero shine — soft light sweep overlay for resort/neighborhood/city heroes */
+@keyframes hero-shine {
+  0% { opacity: 0; transform: translateX(-20%) skewX(-12deg); }
+  35% { opacity: 0.2; }
+  65% { opacity: 0.2; }
+  100% { opacity: 0; transform: translateX(120%) skewX(-12deg); }
+}
+.animate-hero-shine {
+  animation: hero-shine 8s ease-in-out 1s 1 forwards;
+  pointer-events: none;
+  transform: skewX(-12deg);
+}
+
+/* Modal */
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-modal-overlay {
+  animation: modal-fade-in 200ms ease-out forwards;
+}
+.animate-modal-content {
+  animation: modal-scale-in 200ms ease-out forwards;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #E2DDD8 25%, #F0EEEC 50%, #E2DDD8 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-card);
+}
+
+/* Scroll entry — fade up */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up var(--duration-slow) var(--ease-standard) forwards;
+  opacity: 0;
+}
+
+/* Heart save pulse */
+@keyframes heart-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.animate-heart-pulse {
+  animation: heart-pulse 300ms var(--ease-spring);
+}
+
+/* Slide in from right (mobile menu) */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 300ms var(--ease-standard);
+}
+
+/* Slide up (mobile sheet) */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 300ms var(--ease-standard);
+}
+
+/* Counter up animation */
+@keyframes counter-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-counter-up {
+  animation: counter-up var(--duration-slow) var(--ease-standard) forwards;
+  opacity: 0;
+}
+
+/* Scroll indicator bounce */
+@keyframes scroll-bounce {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(8px); opacity: 0.7; }
+}
+.animate-scroll-bounce {
+  animation: scroll-bounce 2s ease-in-out infinite;
+}
+
+/* Tile "New" badge: subtle pulse so it reads as new without being loud */
+@keyframes tile-new-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  50% { opacity: 0.95; box-shadow: 0 0 0 2px rgba(255,255,255,0.4); }
+}
+.animate-tile-new {
+  animation: tile-new-pulse 2s ease-in-out infinite;
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-ken-burns,
+  .animate-hero-shine,
+  .animate-fade-up,
+  .animate-heart-pulse,
+  .animate-slide-in-right,
+  .animate-slide-up,
+  .animate-counter-up,
+  .animate-scroll-bounce,
+  .animate-tile-new {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Focus Styles ── */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ── CTA Button Base ── */
+.btn-cta {
+  background-color: var(--color-cta);
+  color: var(--color-primary);
+  font-family: var(--font-body);
+  font-weight: 500;
+  border-radius: var(--radius-btn);
+  transition: all var(--duration-micro) var(--ease-standard);
+  cursor: pointer;
+}
+.btn-cta:hover {
+  background-color: var(--color-cta-hover);
+  transform: translateY(-1px) scale(1.02);
+}
+.btn-cta:active {
+  transform: translateY(0) scale(1);
+}
+
+/* ── Card Base ── */
+.card-base {
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-subtle);
+  transition: all var(--duration-normal) var(--ease-standard);
+}
+.card-base:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-medium);
+}
+
+/* ── Glassmorphism ── */
+.glass {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.glass-nav {
+  background: rgba(16, 39, 66, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ── Admin Sidebar ── */
+.admin-sidebar {
+  background: var(--color-primary);
+  color: var(--color-cream);
+}
+.admin-sidebar-item {
+  transition: background var(--duration-micro) var(--ease-standard);
+}
+.admin-sidebar-item:hover {
+  background: rgba(240, 238, 236, 0.08);
+}
+.admin-sidebar-item.active {
+  background: var(--color-cream);
+  color: var(--color-primary);
+  border-left: 3px solid var(--color-cta);
+}
+
+/* ── No visible scrollbars (scroll still works via touch/mouse wheel/drag) ── */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.dark {
+  --background: oklch(0.147 0.004 49.25);
+  --foreground: oklch(0.985 0.001 106.423);
+  --card: oklch(0.216 0.006 56.043);
+  --card-foreground: oklch(0.985 0.001 106.423);
+  --popover: oklch(0.216 0.006 56.043);
+  --popover-foreground: oklch(0.985 0.001 106.423);
+  --primary: oklch(0.424 0.199 265.638);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.268 0.007 34.298);
+  --muted-foreground: oklch(0.709 0.01 56.259);
+  --accent: oklch(0.268 0.007 34.298);
+  --accent-foreground: oklch(0.985 0.001 106.423);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.553 0.013 58.071);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --sidebar: oklch(0.216 0.006 56.043);
+  --sidebar-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-accent: oklch(0.268 0.007 34.298);
+  --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.553 0.013 58.071);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

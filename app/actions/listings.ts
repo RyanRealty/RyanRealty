@@ -1,7 +1,22 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { listingKeyFromSlug } from '../../lib/slug'
+import { getSubdivisionMatchNames } from '../../lib/subdivision-aliases'
+
+function getAnonSupabase(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url?.trim() || !anonKey?.trim()) return null
+  return createClient(url, anonKey)
+}
+
+function getServiceSupabase(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url?.trim() || !key?.trim()) return null
+  return createClient(url, key)
+}
 
 /**
  * Spark API uses StandardStatus for listing state. We categorize into Spark's three main states:
@@ -20,7 +35,8 @@ function isActiveStatus(s: string | null | undefined): boolean {
 }
 
 function isPendingStatus(s: string | null | undefined): boolean {
-  return /pending/i.test(String(s ?? ''))
+  const t = String(s ?? '').toLowerCase()
+  return /pending/.test(t) || /under contract/.test(t) || /undercontract/.test(t) || /contingent/.test(t)
 }
 
 function isClosedStatus(s: string | null | undefined): boolean {
@@ -31,9 +47,9 @@ function isClosedStatus(s: string | null | undefined): boolean {
 const ACTIVE_STATUS_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
 
-/** Active + Pending (for home page "recent & pending" slider). */
+/** Active + Pending (for home page "recent & pending" slider). RESO: Pending, Active Under Contract, ActiveUnderContract, Contingent. */
 const ACTIVE_OR_PENDING_OR =
-  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%'
+  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%UnderContract%,StandardStatus.ilike.%Contingent%'
 
 export type BrowseCity = { City: string; count: number }
 /** Row shape for listing tiles (grid, slider, saved). */
@@ -55,16 +71,28 @@ export type ListingTileRow = {
   ModificationTimestamp?: string | null
   PropertyType?: string | null
   StandardStatus?: string | null
+  /** Optional: list/on-market date when available (used for history + DOM). */
+  OnMarketDate?: string | null
+  /** Optional: closed sale price when listing is Closed. */
+  ClosePrice?: number | null
+  /** Optional: closed sale date when listing is Closed. */
+  CloseDate?: string | null
 }
 
-/** Extended row for home page tiles: brokerage, open house, DOM, sq ft, details (Videos). */
+/** Details from Spark/Supabase: Videos = playable/embed only; VirtualTours = 3D/tour links (not played in hero). */
+export type ListingDetailsMedia = {
+  Videos?: Array<{ Uri?: string; Id?: string }> | null
+  VirtualTours?: Array<{ Uri?: string; Id?: string; Name?: string }> | null
+}
+
+/** Extended row for home page tiles: brokerage, open house, DOM, sq ft, details (Videos, VirtualTours). */
 export type HomeTileRow = ListingTileRow & {
   TotalLivingAreaSqFt?: number | null
   ListOfficeName?: string | null
   ListAgentName?: string | null
   OnMarketDate?: string | null
   OpenHouses?: Array<{ Date?: string; StartTime?: string; EndTime?: string }> | null
-  details?: { Videos?: Array<{ Uri?: string; Id?: string }> } | null
+  details?: ListingDetailsMedia | null
 }
 
 /** Same shape as ListingTileRow so similar listings can use ListingTile. */
@@ -89,7 +117,7 @@ export type SimilarListingRow = {
   TotalLivingAreaSqFt?: number | null
   ListOfficeName?: string | null
   ListAgentName?: string | null
-  details?: { Videos?: Array<{ Uri?: string; Id?: string }> } | null
+  details?: ListingDetailsMedia | null
 }
 
 /**
@@ -100,11 +128,8 @@ export async function getOtherListingsInSubdivision(
   subdivisionName: string,
   excludeListingKey: string
 ): Promise<SimilarListingRow[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return []
-
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase) return []
   const { data } = await supabase
     .from('listings')
     .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, OnMarketDate, OpenHouses, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, details')
@@ -129,11 +154,9 @@ export async function getSimilarListingsWithFallback(
   minCount = 4,
   maxCount = 8
 ): Promise<SimilarListingRow[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const excludeKey = String(excludeListingKey ?? '').trim()
-  if (!url?.trim() || !anonKey?.trim() || !excludeKey) return []
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase || !excludeKey) return []
   let similar: SimilarListingRow[] = []
   if (subdivisionName?.trim()) {
     similar = await getOtherListingsInSubdivision(subdivisionName.trim(), excludeKey)
@@ -171,8 +194,9 @@ const DEFAULT_BROWSE_CITIES: BrowseCity[] = [
   { City: 'Bend', count: 0 },
   { City: 'Redmond', count: 0 },
   { City: 'Sisters', count: 0 },
-  { City: 'Sunriver', count: 0 },
   { City: 'La Pine', count: 0 },
+  { City: 'Sunriver', count: 0 },
+  { City: 'Tumalo', count: 0 },
   { City: 'Prineville', count: 0 },
   { City: 'Madras', count: 0 },
   { City: 'Terrebonne', count: 0 },
@@ -185,11 +209,8 @@ const DEFAULT_BROWSE_CITIES: BrowseCity[] = [
  * Uses a direct query on listings first; falls back to RPC if needed; finally to a static list so the dropdown is never empty.
  */
 export async function getBrowseCities(): Promise<BrowseCity[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return DEFAULT_BROWSE_CITIES
-
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase) return DEFAULT_BROWSE_CITIES
 
   // 1) Prefer direct query so we never depend on report_listings_breakdown cache being populated
   const { data: directData, error: directError } = await supabase
@@ -264,11 +285,8 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   const empty: SearchSuggestionsResult = { addresses: [], cities: [], subdivisions: [] }
   if (q.length < 2) return empty
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return empty
-
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase) return empty
   const safeQ = q.replace(/%/g, '').replace(/\\/g, '')
   const like = `%${safeQ}%`
 
@@ -387,6 +405,10 @@ export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & {
   hasPool?: boolean
   hasView?: boolean
   hasWaterfront?: boolean
+  hasFireplace?: boolean
+  hasGolfCourse?: boolean
+  /** View type keyword (e.g. 'Mountain', 'Golf', 'Lake') — details.View ILIKE %viewContains% */
+  viewContains?: string
   /** Listed in last N days */
   newListingsDays?: number
   sort?: AdvancedSort
@@ -403,16 +425,17 @@ export async function getListings(options: {
   limit?: number
   offset?: number
 } & ListingsFilters = {}): Promise<ListingTileRow[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return []
-
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase) return []
   const select = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, details'
   let query = supabase.from('listings').select(select)
 
   if (options.city) query = query.ilike('City', options.city)
-  if (options.subdivision) query = query.ilike('SubdivisionName', options.subdivision.trim())
+  if (options.subdivision?.trim()) {
+    const names = getSubdivisionMatchNames(options.subdivision.trim())
+    if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+    else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
+  }
   if (options.includeClosed === true) {
     query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Closed%')
   } else if (options.includePending === true) {
@@ -449,7 +472,6 @@ export async function getListings(options: {
   const { data } = await query
   let rows = (data ?? []) as ListingTileRow[]
   if (options.includeClosed) {
-    // use as-is
   } else if (options.includePending) {
     rows = rows.filter((r) => isActiveStatus(r.StandardStatus) || isPendingStatus(r.StandardStatus)).slice(offset, offset + limit)
   } else {
@@ -477,6 +499,9 @@ function hasAdvancedFilters(opts: Record<string, unknown>): boolean {
     opts.hasPool === true ||
     opts.hasView === true ||
     opts.hasWaterfront === true ||
+    opts.hasFireplace === true ||
+    opts.hasGolfCourse === true ||
+    (opts.viewContains != null && String(opts.viewContains).trim() !== '') ||
     opts.newListingsDays != null ||
     (opts.sort != null && ['price_per_sqft_asc', 'price_per_sqft_desc', 'year_newest', 'year_oldest'].includes(String(opts.sort)))
   )
@@ -492,11 +517,8 @@ export async function getListingsAdvanced(options: {
   limit?: number
   offset?: number
 } & AdvancedListingsFilters = {}): Promise<{ listings: ListingTileRow[]; totalCount: number }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return { listings: [], totalCount: 0 }
-
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase) return { listings: [], totalCount: 0 }
   const limit = Math.min(options.limit ?? 100, 200)
   const offset = options.offset ?? 0
   const validStatus = ['active', 'active_and_pending', 'pending', 'closed', 'all'] as const
@@ -534,6 +556,9 @@ export async function getListingsAdvanced(options: {
     p_has_pool: options.hasPool === true ? true : null,
     p_has_view: options.hasView === true ? true : null,
     p_has_waterfront: options.hasWaterfront === true ? true : null,
+    p_has_fireplace: options.hasFireplace === true ? true : null,
+    p_has_golf_course: options.hasGolfCourse === true ? true : null,
+    p_view_contains: options.viewContains?.trim() || null,
     p_new_listings_days: options.newListingsDays != null && options.newListingsDays > 0 ? options.newListingsDays : null,
     p_sort: options.sort ?? 'newest',
     p_limit: limit,
@@ -596,11 +621,8 @@ export async function getListingsForHomeTiles(options: {
   minBeds?: number | null
   minBaths?: number | null
 }): Promise<HomeTileRow[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim() || !options.city?.trim()) return []
-
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase || !options.city?.trim()) return []
   const limit = Math.min(options.limit ?? 16, 24)
   let query = supabase
     .from('listings')
@@ -635,6 +657,7 @@ export type MapListingRow = {
   PostalCode?: string | null
   BedroomsTotal?: number | null
   BathroomsTotal?: number | null
+  PhotoURL?: string | null
 }
 
 /**
@@ -668,22 +691,24 @@ export type GetListingsForMapOptions = {
  * Returns up to mapLimit rows with lat/lng and address/beds/baths for InfoWindow.
  */
 export async function getListingsForMap(options: GetListingsForMapOptions = {}): Promise<MapListingRow[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return []
-  const supabase = createClient(url, anonKey)
-  const mapLimit = Math.min(options.mapLimit ?? 2000, 3000)
-  const select = 'ListingKey, ListNumber, ListPrice, Latitude, Longitude, StandardStatus, StreetNumber, StreetName, City, StateOrProvince, PostalCode, BedroomsTotal, BathroomsTotal'
+  const supabase = getAnonSupabase()
+  if (!supabase) return []
+  const mapLimit = Math.min(options.mapLimit ?? 1000, 3000)
+  const select = 'ListingKey, ListNumber, ListPrice, Latitude, Longitude, StandardStatus, StreetNumber, StreetName, City, State, PostalCode, BedroomsTotal, BathroomsTotal, PhotoURL'
   let query = supabase.from('listings').select(select)
   if (options.city) query = query.ilike('City', options.city)
-  if (options.subdivision) query = query.ilike('SubdivisionName', options.subdivision.trim())
+  if (options.subdivision?.trim()) {
+    const names = getSubdivisionMatchNames(options.subdivision.trim())
+    if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+    else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
+  }
   const statusFilter = options.statusFilter ?? (options.includeClosed === true ? 'all' : 'active')
   if (statusFilter === 'all') {
     query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Closed%')
   } else if (statusFilter === 'active_and_pending') {
     query = query.or(ACTIVE_OR_PENDING_OR)
   } else if (statusFilter === 'pending') {
-    query = query.or('StandardStatus.ilike.%Pending%')
+    query = query.or('StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%')
   } else if (statusFilter === 'closed') {
     query = query.or('StandardStatus.ilike.%Closed%')
   } else {
@@ -704,7 +729,7 @@ export async function getListingsForMap(options: GetListingsForMapOptions = {}):
   }
   query = query.order('ModificationTimestamp', { ascending: false, nullsFirst: false })
   const { data } = await query.limit(mapLimit)
-  const rows = (data ?? []) as (MapListingRow & { StandardStatus?: string | null; StateOrProvince?: string | null; BedroomsTotal?: number | null; BathroomsTotal?: number | null })[]
+  const rows = (data ?? []) as (MapListingRow & { StandardStatus?: string | null; State?: string | null; BedroomsTotal?: number | null; BathroomsTotal?: number | null; PhotoURL?: string | null })[]
   const filtered =
     statusFilter === 'active'
       ? rows.filter((r) => isActiveStatus(r.StandardStatus))
@@ -715,7 +740,7 @@ export async function getListingsForMap(options: GetListingsForMapOptions = {}):
           : statusFilter === 'closed'
             ? rows.filter((r) => isClosedStatus(r.StandardStatus))
             : rows
-  return filtered.map(({ ListingKey, ListNumber, ListPrice, Latitude, Longitude, StreetNumber, StreetName, City, StateOrProvince, PostalCode, BedroomsTotal, BathroomsTotal }) => ({
+  return filtered.map(({ ListingKey, ListNumber, ListPrice, Latitude, Longitude, StreetNumber, StreetName, City, State, PostalCode, BedroomsTotal, BathroomsTotal, PhotoURL }) => ({
     ListingKey: ListingKey ?? null,
     ListNumber: ListNumber ?? null,
     ListPrice: ListPrice ?? null,
@@ -724,11 +749,100 @@ export async function getListingsForMap(options: GetListingsForMapOptions = {}):
     StreetNumber: StreetNumber ?? null,
     StreetName: StreetName ?? null,
     City: City ?? null,
-    State: StateOrProvince ?? null,
+    State: State ?? null,
     PostalCode: PostalCode ?? null,
     BedroomsTotal: BedroomsTotal ?? null,
     BathroomsTotal: BathroomsTotal ?? null,
+    PhotoURL: PhotoURL ?? null,
   }))
+}
+
+/** Bounds in decimal degrees (map viewport). Used to fetch listings visible in the current map area. */
+export type MapBounds = { west: number; south: number; east: number; north: number }
+
+export type GetListingsInBoundsOptions = GetListingsForMapOptions & {
+  /** Map viewport bounds. Listings returned are within this box. */
+  bounds: MapBounds
+  limit?: number
+  offset?: number
+  sort?: 'newest' | 'oldest' | 'price_asc' | 'price_desc'
+}
+
+const LISTING_BOUNDS_SELECT =
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, details'
+
+/**
+ * Fetch listings within map bounds (viewport-driven search). Used by the unified map view:
+ * whatever the user sees on the map is the area we search. Returns paginated tile rows + total count.
+ */
+export async function getListingsInBounds(
+  options: GetListingsInBoundsOptions
+): Promise<{ listings: ListingTileRow[]; totalCount: number }> {
+  const supabase = getAnonSupabase()
+  if (!supabase) return { listings: [], totalCount: 0 }
+  const { bounds, limit = 20, offset = 0, sort = 'newest' } = options
+
+  let query = supabase
+    .from('listings')
+    .select(LISTING_BOUNDS_SELECT, { count: 'exact' })
+    .gte('Latitude', bounds.south)
+    .lte('Latitude', bounds.north)
+    .gte('Longitude', bounds.west)
+    .lte('Longitude', bounds.east)
+
+  if (options.city?.trim()) query = query.ilike('City', options.city.trim())
+  if (options.subdivision?.trim()) {
+    const names = getSubdivisionMatchNames(options.subdivision.trim())
+    if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+    else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
+  }
+  const statusFilter = options.statusFilter ?? (options.includeClosed === true ? 'all' : 'active')
+  if (statusFilter === 'all') {
+    query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Closed%')
+  } else if (statusFilter === 'active_and_pending') {
+    query = query.or(ACTIVE_OR_PENDING_OR)
+  } else if (statusFilter === 'pending') {
+    query = query.or('StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%')
+  } else if (statusFilter === 'closed') {
+    query = query.or('StandardStatus.ilike.%Closed%')
+  } else {
+    query = query.or(ACTIVE_STATUS_OR)
+  }
+  if (options.minPrice != null && options.minPrice > 0) query = query.gte('ListPrice', options.minPrice)
+  if (options.maxPrice != null && options.maxPrice > 0) query = query.lte('ListPrice', options.maxPrice)
+  if (options.minBeds != null && options.minBeds > 0) query = query.gte('BedroomsTotal', options.minBeds)
+  if (options.maxBeds != null && options.maxBeds > 0) query = query.lte('BedroomsTotal', options.maxBeds)
+  if (options.minBaths != null && options.minBaths > 0) query = query.gte('BathroomsTotal', options.minBaths)
+  if (options.maxBaths != null && options.maxBaths > 0) query = query.lte('BathroomsTotal', options.maxBaths)
+  if (options.minSqFt != null && options.minSqFt > 0) query = query.gte('TotalLivingAreaSqFt', options.minSqFt)
+  if (options.maxSqFt != null && options.maxSqFt > 0) query = query.lte('TotalLivingAreaSqFt', options.maxSqFt)
+  if (options.postalCode?.trim()) query = query.ilike('PostalCode', options.postalCode.trim())
+  const pt = options.propertyType?.trim()
+  if (pt && pt !== '' && pt !== 'all') {
+    query = query.or(`PropertyType.ilike.%${pt}%,PropertyType.is.null`)
+  }
+  if (sort === 'newest') query = query.order('ModificationTimestamp', { ascending: false, nullsFirst: false })
+  else if (sort === 'oldest') query = query.order('ModificationTimestamp', { ascending: true, nullsFirst: true })
+  else if (sort === 'price_asc') query = query.order('ListPrice', { ascending: true, nullsFirst: true })
+  else if (sort === 'price_desc') query = query.order('ListPrice', { ascending: false, nullsFirst: false })
+
+  const limitClamp = Math.min(Math.max(limit, 1), 50)
+  const { data, error, count } = await query.range(offset, offset + limitClamp - 1)
+
+  if (error) return { listings: [], totalCount: 0 }
+  const rows = (data ?? []) as ListingTileRow[]
+  const totalCount = typeof count === 'number' ? count : rows.length
+  const filtered =
+    statusFilter === 'active'
+      ? rows.filter((r) => isActiveStatus(r.StandardStatus))
+      : statusFilter === 'active_and_pending'
+        ? rows.filter((r) => isActiveStatus(r.StandardStatus) || isPendingStatus(r.StandardStatus))
+        : statusFilter === 'pending'
+          ? rows.filter((r) => isPendingStatus(r.StandardStatus))
+          : statusFilter === 'closed'
+            ? rows.filter((r) => isClosedStatus(r.StandardStatus))
+            : rows
+  return { listings: filtered, totalCount }
 }
 
 /**
@@ -738,13 +852,15 @@ export async function getActiveListingsCount(options: {
   city?: string
   subdivision?: string
 } & Pick<ListingsFilters, 'minPrice' | 'maxPrice' | 'minBeds' | 'minBaths' | 'minSqFt' | 'propertyType' | 'includeClosed'>): Promise<number> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return 0
-  const supabase = createClient(url, anonKey)
-  let query = supabase.from('listings').select('*', { count: 'exact', head: true })
+  const supabase = getAnonSupabase()
+  if (!supabase) return 0
+  let query = supabase.from('listings').select('ListingKey', { count: 'exact', head: true })
   if (options.city) query = query.ilike('City', options.city)
-  if (options.subdivision) query = query.ilike('SubdivisionName', options.subdivision.trim())
+  if (options.subdivision?.trim()) {
+    const names = getSubdivisionMatchNames(options.subdivision.trim())
+    if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+    else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
+  }
   if (options.includeClosed === true) {
     query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Closed%')
   } else {
@@ -769,13 +885,11 @@ export async function getActiveListingsCount(options: {
  * Total active listing count (for nav or homepage). Active only.
  */
 export async function getTotalListingsCount(): Promise<number> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return 0
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase) return 0
   const { count } = await supabase
     .from('listings')
-    .select('*', { count: 'exact', head: true })
+    .select('ListingKey', { count: 'exact', head: true })
     .or(ACTIVE_STATUS_OR)
   return count ?? 0
 }
@@ -784,11 +898,9 @@ export async function getTotalListingsCount(): Promise<number> {
  * Total rows in listings table (all statuses). For admin/sync stats.
  */
 export async function getTotalListingsRows(): Promise<number> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return 0
-  const supabase = createClient(url, anonKey)
-  const { count } = await supabase.from('listings').select('*', { count: 'exact', head: true })
+  const supabase = getAnonSupabase()
+  if (!supabase) return 0
+  const { count } = await supabase.from('listings').select('ListingKey', { count: 'exact', head: true })
   return count ?? 0
 }
 
@@ -796,42 +908,81 @@ export async function getTotalListingsRows(): Promise<number> {
  * Total rows in listing_history table. For admin/sync stats.
  */
 export async function getListingHistoryCount(): Promise<number> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return 0
-  const supabase = createClient(url, anonKey)
-  const { count } = await supabase.from('listing_history').select('*', { count: 'exact', head: true })
+  const supabase = getAnonSupabase()
+  if (!supabase) return 0
+  const { count } = await supabase.from('listing_history').select('listing_key', { count: 'exact', head: true })
   return count ?? 0
 }
+
+/** Supabase .or() for terminal statuses: closed, expired, withdrawn, canceled. We do not re-fetch listing data; we can backfill history. */
+const TERMINAL_STATUS_OR =
+  'StandardStatus.ilike.%Closed%,StandardStatus.ilike.%Expired%,StandardStatus.ilike.%Withdrawn%,StandardStatus.ilike.%Cancel%'
 
 export type AdminSyncCounts = {
   activeCount: number
   totalListings: number
   historyCount: number
-  /** Listings with PhotoURL set */
-  photosCount: number
-  /** Listings with details.Videos array length > 0 */
-  videosCount: number
+  /** Active/pending listings with history_finalized = false (need history sync). */
+  activeNeedingHistoryCount: number
+  /** Listings with history_finalized = true (excluded from history sync; we do not re-sync these). */
+  historyFinalizedCount: number
+  /** Per-status counts for Final sync report (terminal statuses only). */
+  closedFinalizedCount: number
+  closedNotFinalizedCount: number
+  expiredFinalizedCount: number
+  expiredNotFinalizedCount: number
+  withdrawnFinalizedCount: number
+  withdrawnNotFinalizedCount: number
+  canceledFinalizedCount: number
+  canceledNotFinalizedCount: number
   /** Set when listing_history table is missing (run migration). */
   historyError?: string
+  /** Set when the main listings count query fails. */
+  listingsCountError?: string
 }
 
 /**
  * Admin sync page: counts using service role so we see real data (not affected by RLS).
- * Uses get_listing_media_counts() for photos/videos when available.
+ * Total listings uses the lightweight PostgREST count; get_listing_media_counts() is best-effort for photos/videos only.
  */
 export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !serviceKey?.trim()) {
-    return { activeCount: 0, totalListings: 0, historyCount: 0, photosCount: 0, videosCount: 0 }
+  const supabase = getServiceSupabase()
+  if (!supabase) {
+    return {
+      activeCount: 0,
+      totalListings: 0,
+      historyCount: 0,
+      activeNeedingHistoryCount: 0,
+      historyFinalizedCount: 0,
+      closedFinalizedCount: 0,
+      closedNotFinalizedCount: 0,
+      expiredFinalizedCount: 0,
+      expiredNotFinalizedCount: 0,
+      withdrawnFinalizedCount: 0,
+      withdrawnNotFinalizedCount: 0,
+      canceledFinalizedCount: 0,
+      canceledNotFinalizedCount: 0,
+      listingsCountError: 'Supabase not configured (missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY).',
+    }
   }
-  const supabase = createClient(url, serviceKey)
-  const [listingsRes, totalRes, historyRes, mediaRes] = await Promise.all([
-    supabase.from('listings').select('*', { count: 'exact', head: true }).or(ACTIVE_STATUS_OR),
-    supabase.from('listings').select('*', { count: 'exact', head: true }),
-    supabase.from('listing_history').select('*', { count: 'exact', head: true }),
-    supabase.rpc('get_listing_media_counts').maybeSingle(),
+  const closedOr = 'StandardStatus.ilike.%Closed%'
+  const expiredOr = 'StandardStatus.ilike.%Expired%'
+  const withdrawnOr = 'StandardStatus.ilike.%Withdrawn%'
+  const canceledOr = 'StandardStatus.ilike.%Cancel%'
+  const [listingsRes, totalRes, historyRes, activeNeedingHistoryRes, finalizedRes, closedF, closedN, expiredF, expiredN, withdrawnF, withdrawnN, canceledF, canceledN] = await Promise.all([
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(ACTIVE_STATUS_OR),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }),
+    supabase.from('listing_history').select('listing_key', { count: 'exact', head: true }),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(ACTIVE_OR_PENDING_OR).eq('history_finalized', false),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_finalized', true),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(closedOr).eq('history_finalized', true),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(closedOr).eq('history_finalized', false),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(expiredOr).eq('history_finalized', true),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(expiredOr).eq('history_finalized', false),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(withdrawnOr).eq('history_finalized', true),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(withdrawnOr).eq('history_finalized', false),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(canceledOr).eq('history_finalized', true),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(canceledOr).eq('history_finalized', false),
   ])
   let historyError: string | undefined
   if (historyRes.error) {
@@ -842,27 +993,64 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
       historyError = msg
     }
   }
-  const media = mediaRes.data as { total_listings?: number; with_photos?: number; with_videos?: number } | null
+  const totalListings = totalRes.count ?? 0
+  let listingsCountError: string | undefined
+  if (totalRes.error) {
+    listingsCountError = totalRes.error.message ?? String(totalRes.error)
+  }
+
   return {
     activeCount: listingsRes.count ?? 0,
-    totalListings: totalRes.count ?? 0,
+    totalListings,
     historyCount: historyRes.count ?? 0,
-    photosCount: media?.with_photos ?? 0,
-    videosCount: media?.with_videos ?? 0,
+    activeNeedingHistoryCount: activeNeedingHistoryRes.count ?? 0,
+    historyFinalizedCount: finalizedRes.count ?? 0,
+    closedFinalizedCount: closedF.count ?? 0,
+    closedNotFinalizedCount: closedN.count ?? 0,
+    expiredFinalizedCount: expiredF.count ?? 0,
+    expiredNotFinalizedCount: expiredN.count ?? 0,
+    withdrawnFinalizedCount: withdrawnF.count ?? 0,
+    withdrawnNotFinalizedCount: withdrawnN.count ?? 0,
+    canceledFinalizedCount: canceledF.count ?? 0,
+    canceledNotFinalizedCount: canceledN.count ?? 0,
     historyError,
+    listingsCountError,
   }
+}
+
+export type ClosedFinalizedListingRow = {
+  listing_key: string
+  city: string | null
+  list_price: number | null
+  standard_status: string | null
+}
+
+/** Closed listings with full listing data and history finalized (for admin sync page). */
+export async function getClosedFinalizedListings(limit = 50): Promise<ClosedFinalizedListingRow[]> {
+  const supabase = getServiceSupabase()
+  if (!supabase) return []
+  const { data } = await supabase
+    .from('listings')
+    .select('ListingKey, City, ListPrice, StandardStatus')
+    .ilike('StandardStatus', '%Closed%')
+    .eq('history_finalized', true)
+    .order('ListPrice', { ascending: false, nullsFirst: false })
+    .limit(limit)
+  const rows = (data ?? []) as { ListingKey?: string; City?: string; ListPrice?: number; StandardStatus?: string }[]
+  return rows.map((r) => ({
+    listing_key: r.ListingKey ?? '',
+    city: r.City ?? null,
+    list_price: r.ListPrice ?? null,
+    standard_status: r.StandardStatus ?? null,
+  }))
 }
 
 /**
  * Confirm whether the listing_history table exists (admin diagnostic, no Supabase SQL needed).
  */
 export async function getListingHistoryTableStatus(): Promise<{ exists: boolean; error?: string }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !serviceKey?.trim()) {
-    return { exists: false, error: 'Supabase not configured' }
-  }
-  const supabase = createClient(url, serviceKey)
+  const supabase = getServiceSupabase()
+  if (!supabase) return { exists: false, error: 'Supabase not configured' }
   const { error } = await supabase.from('listing_history').select('id').limit(1)
   if (error) {
     const msg = error.message ?? String(error)
@@ -876,6 +1064,129 @@ export async function getListingHistoryTableStatus(): Promise<{ exists: boolean;
   return { exists: true }
 }
 
+/** Sync dashboard: one row per status bucket (active, pending, contingent, closed+finalized, etc.) and by city A–Z. */
+export type ListingSyncStatusBreakdown = {
+  total: number
+  active: number
+  pending: number
+  contingent: number
+  closed: number
+  closed_finalized: number
+  expired: number
+  withdrawn: number
+  cancelled: number
+  other: number
+  by_city: Array<{
+    city: string
+    active: number
+    pending: number
+    contingent: number
+    closed: number
+    closed_finalized: number
+    expired: number
+    withdrawn: number
+    cancelled: number
+    other: number
+  }>
+  error?: string
+}
+
+/** DB counts by status using direct queries (no RPC). Same buckets as get_listing_sync_status_breakdown. Use when RPC is missing or fails. */
+async function getListingSyncStatusBreakdownDirect(): Promise<Omit<ListingSyncStatusBreakdown, 'by_city'>> {
+  const supabase = getServiceSupabase()
+  if (!supabase) {
+    return {
+      total: 0, active: 0, pending: 0, contingent: 0, closed: 0, closed_finalized: 0,
+      expired: 0, withdrawn: 0, cancelled: 0, other: 0,
+    }
+  }
+  const [totalRes, closedRes, expiredRes, withdrawnRes, cancelledRes, contingentRes, pendingRes, activeRes, closedFinalizedRes] = await Promise.all([
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%closed%'),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%expired%'),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%withdrawn%'),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%cancel%'),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%contingent%'),
+    supabase
+      .from('listings')
+      .select('ListingKey', { count: 'exact', head: true })
+      .or('StandardStatus.ilike.%pending%,StandardStatus.ilike.%under contract%,StandardStatus.ilike.%undercontract%')
+      .not('StandardStatus', 'ilike', '%contingent%'),
+    supabase
+      .from('listings')
+      .select('ListingKey', { count: 'exact', head: true })
+      .or('StandardStatus.is.null,StandardStatus.ilike.%active%,StandardStatus.ilike.%for sale%,StandardStatus.ilike.%coming soon%')
+      .not('StandardStatus', 'ilike', '%closed%')
+      .not('StandardStatus', 'ilike', '%expired%')
+      .not('StandardStatus', 'ilike', '%withdrawn%')
+      .not('StandardStatus', 'ilike', '%cancel%')
+      .not('StandardStatus', 'ilike', '%contingent%')
+      .not('StandardStatus', 'ilike', '%pending%')
+      .not('StandardStatus', 'ilike', '%under contract%')
+      .not('StandardStatus', 'ilike', '%undercontract%'),
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%closed%').eq('history_finalized', true),
+  ])
+  const total = totalRes.count ?? 0
+  const closed = closedRes.count ?? 0
+  const expired = expiredRes.count ?? 0
+  const withdrawn = withdrawnRes.count ?? 0
+  const cancelled = cancelledRes.count ?? 0
+  const contingent = contingentRes.count ?? 0
+  const pending = pendingRes.count ?? 0
+  const active = activeRes.count ?? 0
+  const closed_finalized = closedFinalizedRes.count ?? 0
+  const other = Math.max(0, total - active - pending - contingent - closed - expired - withdrawn - cancelled)
+  return {
+    total,
+    active,
+    pending,
+    contingent,
+    closed,
+    closed_finalized,
+    expired,
+    withdrawn,
+    cancelled,
+    other,
+  }
+}
+
+export async function getListingSyncStatusBreakdown(): Promise<ListingSyncStatusBreakdown> {
+  const supabase = getServiceSupabase()
+  if (!supabase) {
+    return {
+      total: 0, active: 0, pending: 0, contingent: 0, closed: 0, closed_finalized: 0,
+      expired: 0, withdrawn: 0, cancelled: 0, other: 0, by_city: [],
+    }
+  }
+  const { data, error } = await supabase.rpc('get_listing_sync_status_breakdown')
+  if (!error && data != null) {
+    const raw = (data ?? {}) as Record<string, unknown>
+    const total = Number(raw.total) ?? 0
+    if (total > 0) {
+      const byCity = (raw.by_city ?? []) as ListingSyncStatusBreakdown['by_city']
+      return {
+        total,
+        active: Number(raw.active) ?? 0,
+        pending: Number(raw.pending) ?? 0,
+        contingent: Number(raw.contingent) ?? 0,
+        closed: Number(raw.closed) ?? 0,
+        closed_finalized: Number(raw.closed_finalized) ?? 0,
+        expired: Number(raw.expired) ?? 0,
+        withdrawn: Number(raw.withdrawn) ?? 0,
+        cancelled: Number(raw.cancelled) ?? 0,
+        other: Number(raw.other) ?? 0,
+        by_city: Array.isArray(byCity) ? byCity : [],
+      }
+    }
+  }
+  const direct = await getListingSyncStatusBreakdownDirect()
+  return {
+    ...direct,
+    by_city: [],
+    ...(error ? { error: error.message ?? String(error) } : {}),
+  }
+}
+
 export type ListingsBreakdownStatus = { status: string; count: number }
 export type ListingsBreakdownCity = {
   city: string
@@ -883,6 +1194,10 @@ export type ListingsBreakdownCity = {
   active: number
   pending: number
   closed: number
+  /** Present after refresh_listings_breakdown() run with 20260320110000 migration. */
+  withdrawn?: number
+  expired?: number
+  canceled?: number
   other: number
 }
 export type ListingsBreakdown = {
@@ -898,12 +1213,8 @@ export type ListingsBreakdown = {
  * Uses DB function get_listings_breakdown() so all rows are counted (not limited by 1k default).
  */
 export async function getListingsBreakdown(): Promise<ListingsBreakdown> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !serviceKey?.trim()) {
-    return { total: 0, byStatus: [], byCity: [] }
-  }
-  const supabase = createClient(url, serviceKey)
+  const supabase = getServiceSupabase()
+  if (!supabase) return { total: 0, byStatus: [], byCity: [] }
   const { data, error } = await supabase.rpc('get_listings_breakdown')
   if (!error && data != null) {
     const raw = data as Record<string, unknown>
@@ -943,14 +1254,10 @@ export async function getCityStatusCounts(options: {
   city: string
   subdivision?: string | null
 }): Promise<CityStatusCounts> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  if (!url?.trim() || !options.city?.trim()) {
-    return { active: 0, pending: 0, closed: 0, other: 0 }
-  }
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (serviceKey?.trim()) {
-    const supabase = createClient(url, serviceKey)
-    const { data, error } = await supabase.rpc('get_city_status_counts', {
+  if (!options.city?.trim()) return { active: 0, pending: 0, closed: 0, other: 0 }
+  const supabaseService = getServiceSupabase()
+  if (supabaseService) {
+    const { data, error } = await supabaseService.rpc('get_city_status_counts', {
       p_city: options.city.trim(),
       p_subdivision: options.subdivision?.trim() || null,
     })
@@ -964,9 +1271,8 @@ export async function getCityStatusCounts(options: {
       }
     }
   }
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!anonKey?.trim()) return { active: 0, pending: 0, closed: 0, other: 0 }
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase) return { active: 0, pending: 0, closed: 0, other: 0 }
   let query = supabase.from('listings').select('StandardStatus').ilike('City', options.city.trim())
   if (options.subdivision?.trim()) query = query.ilike('SubdivisionName', options.subdivision.trim())
   const { data: rows } = await query.limit(10000)
@@ -985,6 +1291,7 @@ export type CityMarketStats = {
   count: number
   avgPrice: number | null
   medianPrice: number | null
+  avgDom: number | null
   newListingsLast30Days: number
   pendingCount: number
   closedLast12Months: number
@@ -992,39 +1299,64 @@ export type CityMarketStats = {
 
 /**
  * Market snapshot: active listings only for count and prices. Pending and closed (last 12 months) as separate stats.
+ * Uses proper count queries and CloseDate for sold count so numbers are accurate.
  */
 export async function getCityMarketStats(options: {
   city?: string
   subdivision?: string
 }): Promise<CityMarketStats> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) {
-    return { count: 0, avgPrice: null, medianPrice: null, newListingsLast30Days: 0, pendingCount: 0, closedLast12Months: 0 }
+  const supabase = getAnonSupabase()
+  if (!supabase) {
+    return { count: 0, avgPrice: null, medianPrice: null, avgDom: null, newListingsLast30Days: 0, pendingCount: 0, closedLast12Months: 0 }
   }
-  const supabase = createClient(url, anonKey)
-  const select = 'ListPrice, ModificationTimestamp, StandardStatus'
-  let query = supabase.from('listings').select(select)
-  if (options.city) query = query.ilike('City', options.city)
-  if (options.subdivision) query = query.ilike('SubdivisionName', options.subdivision.trim())
-  const { data } = await query.limit(5000)
-  const rows = (data ?? []) as { ListPrice?: number | null; ModificationTimestamp?: string | null; StandardStatus?: string | null }[]
+  const twelveMonthsAgo = new Date()
+  twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1)
+  const twelveMonthsIso = twelveMonthsAgo.toISOString().slice(0, 10)
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const thirtyDaysIso = thirtyDaysAgo.toISOString()
 
-  const isPending = (s: string | null | undefined) => /pending/i.test(String(s))
-  const isClosed = (s: string | null | undefined) => /closed/i.test(String(s))
-  const twelveMonthsAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const cityFilter = options.city
+  const subFilter = options.subdivision?.trim()
+  const subNames = subFilter ? getSubdivisionMatchNames(subFilter) : []
 
-  const activeRows = rows.filter((r) => isActiveStatus(r.StandardStatus))
-  const count = activeRows.length
-  const prices = activeRows.map((r) => Number(r.ListPrice)).filter((p) => Number.isFinite(p) && p > 0)
-  const newListingsLast30Days = activeRows.filter(
-    (r) => r.ModificationTimestamp && String(r.ModificationTimestamp) >= thirtyDaysAgo
+  const applyCitySub =
+    <T extends { filter: (col: string, op: string, val: string) => T; or: (expr: string) => T }>(q: T): T => {
+      let next = q
+      if (cityFilter) next = next.filter('City', 'ilike', cityFilter) as T
+      if (subNames.length === 1) next = next.filter('SubdivisionName', 'ilike', subNames[0]!) as T
+      else if (subNames.length > 1) next = next.or(subNames.map((n) => `SubdivisionName.ilike.${n}`).join(',')) as T
+      return next
+    }
+
+  let qActive = supabase.from('listings').select('ListingKey', { count: 'exact', head: true })
+  qActive = applyCitySub(qActive)
+  const { count: activeCount } = await qActive.or(ACTIVE_STATUS_OR)
+  const count = activeCount ?? 0
+
+  let qPending = supabase.from('listings').select('ListingKey', { count: 'exact', head: true })
+  qPending = applyCitySub(qPending)
+  const { count: pendingCount } = await qPending.or('StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%UnderContract%,StandardStatus.ilike.%Contingent%')
+  const pending = pendingCount ?? 0
+
+  let qClosed = supabase.from('listings').select('ListingKey', { count: 'exact', head: true })
+  qClosed = applyCitySub(qClosed)
+  const { count: closedCount } = await qClosed
+    .or('StandardStatus.ilike.%Closed%')
+    .not('CloseDate', 'is', null)
+    .gte('CloseDate', twelveMonthsIso)
+  const closedLast12Months = closedCount ?? 0
+
+  let qPrices = supabase.from('listings').select('ListPrice, ModificationTimestamp, days_on_market')
+  qPrices = applyCitySub(qPrices)
+  const { data: activeRows } = await qPrices.or(ACTIVE_STATUS_OR).limit(15000)
+  const rows = (activeRows ?? []) as { ListPrice?: number | null; ModificationTimestamp?: string | null; days_on_market?: number | null }[]
+  const prices = rows.map((r) => Number(r.ListPrice)).filter((p) => Number.isFinite(p) && p > 0)
+  const newListingsLast30Days = rows.filter(
+    (r) => r.ModificationTimestamp && String(r.ModificationTimestamp) >= thirtyDaysIso
   ).length
-  const pendingCount = rows.filter((r) => isPending(r.StandardStatus)).length
-  const closedLast12Months = rows.filter(
-    (r) => isClosed(r.StandardStatus) && r.ModificationTimestamp && String(r.ModificationTimestamp) >= twelveMonthsAgo
-  ).length
+  const domValues = rows.map((r) => Number(r.days_on_market)).filter((d) => Number.isFinite(d) && d > 0)
+  const avgDom = domValues.length > 0 ? Math.round(domValues.reduce((a, b) => a + b, 0) / domValues.length) : null
 
   let avgPrice: number | null = null
   let medianPrice: number | null = null
@@ -1034,7 +1366,7 @@ export async function getCityMarketStats(options: {
     const mid = Math.floor(prices.length / 2)
     medianPrice = prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
   }
-  return { count, avgPrice, medianPrice, newListingsLast30Days, pendingCount, closedLast12Months }
+  return { count, avgPrice, medianPrice, avgDom, newListingsLast30Days, pendingCount: pending, closedLast12Months }
 }
 
 export type SubdivisionInCity = { subdivisionName: string; count: number }
@@ -1060,12 +1392,10 @@ export type HotCommunity = {
  * Used for "Hot communities" on city pages. Uses get_subdivision_status_counts RPC when available so counts match sync page.
  */
 export async function getHotCommunitiesInCity(city: string): Promise<HotCommunity[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !city?.trim()) return []
-  if (serviceKey?.trim()) {
-    const supabase = createClient(url, serviceKey)
-    const { data: rpcData } = await supabase.rpc('get_subdivision_status_counts', { p_city: city.trim() })
+  if (!city?.trim()) return []
+  const supabaseService = getServiceSupabase()
+  if (supabaseService) {
+    const { data: rpcData } = await supabaseService.rpc('get_subdivision_status_counts', { p_city: city.trim() })
     if (rpcData != null && Array.isArray(rpcData)) {
     const arr = rpcData as { subdivision_name?: string; active?: number; pending?: number }[]
     const list: HotCommunity[] = arr
@@ -1081,10 +1411,9 @@ export async function getHotCommunitiesInCity(city: string): Promise<HotCommunit
       return list.slice(0, 5)
     }
   }
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!anonKey?.trim()) return []
-  const anon = createClient(url, anonKey)
-  const { data } = await anon
+  const supabase = getAnonSupabase()
+  if (!supabase) return []
+  const { data } = await supabase
     .from('listings')
     .select('SubdivisionName, ListPrice, StandardStatus, ModificationTimestamp')
     .ilike('City', city)
@@ -1144,10 +1473,8 @@ export async function getHotCommunitiesInCity(city: string): Promise<HotCommunit
  * Returns null if no listings with coordinates in that city.
  */
 export async function getCityCentroid(city: string): Promise<{ lat: number; lng: number } | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim() || !city?.trim()) return null
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase || !city?.trim()) return null
   const { data } = await supabase
     .from('listings')
     .select('Latitude, Longitude')
@@ -1173,10 +1500,8 @@ export async function getCommunityCentroid(
   city: string,
   subdivisionName: string
 ): Promise<{ lat: number; lng: number } | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim() || !city?.trim() || !subdivisionName?.trim()) return null
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase || !city?.trim() || !subdivisionName?.trim()) return null
   const { data } = await supabase
     .from('listings')
     .select('Latitude, Longitude')
@@ -1242,10 +1567,8 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
  * Communities in a city with listing counts (for city page "Communities in {city}").
  */
 export async function getSubdivisionsInCity(city: string): Promise<SubdivisionInCity[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim() || !city?.trim()) return []
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase || !city?.trim()) return []
   const { data } = await supabase
     .from('listings')
     .select('SubdivisionName, StandardStatus')
@@ -1262,6 +1585,33 @@ export async function getSubdivisionsInCity(city: string): Promise<SubdivisionIn
     .sort((a, b) => b.count - a.count || a.subdivisionName.localeCompare(b.subdivisionName))
 }
 
+const subdivisionSlugify = (s: string) =>
+  s
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || ''
+
+/**
+ * Resolve subdivision URL slug to display name (e.g. "sunriver" -> "Sunriver") for a given city.
+ * Used when the URL uses slugified form for SEO; APIs expect display name.
+ */
+export async function getSubdivisionNameFromSlug(
+  city: string,
+  subdivisionSlug: string
+): Promise<string | null> {
+  if (!city?.trim() || !subdivisionSlug?.trim()) return null
+  const decoded = decodeURIComponent(subdivisionSlug).trim()
+  const subs = await getSubdivisionsInCity(city)
+  const key = subdivisionSlugify(decoded)
+  const match = subs.find(
+    (s) => subdivisionSlugify(s.subdivisionName) === key || s.subdivisionName.trim() === decoded
+  )
+  return match ? match.subdivisionName : null
+}
+
 export type ListingDetailRow = {
   ListingKey: string
   ListNumber?: string | null
@@ -1276,13 +1626,11 @@ export type ListingDetailRow = {
  * (first segment, all numeric segments, hyphen stripping) and both PascalCase and snake_case columns.
  */
 export async function getListingByKey(listingKeyOrSlug: string): Promise<ListingDetailRow | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return null
+  const supabase = getAnonSupabase()
+  if (!supabase) return null
   const raw = String(listingKeyOrSlug ?? '')
   const decoded = decodeURIComponent(raw).trim()
   if (!decoded) return null
-  const supabase = createClient(url, anonKey)
 
   const normalize = (row: ListingDetailRow): ListingDetailRow => {
     if (row.details && typeof row.details === 'string') row.details = JSON.parse(row.details) as Record<string, unknown>
@@ -1293,12 +1641,10 @@ export async function getListingByKey(listingKeyOrSlug: string): Promise<Listing
   const tryKey = async (key: string): Promise<ListingDetailRow | null> => {
     const k = String(key ?? '').trim()
     if (!k) return null
-    // PascalCase: try ListNumber then ListingKey
     const { data: byNumber } = await supabase.from('listings').select('*').eq('ListNumber', k).maybeSingle()
     if (byNumber) return normalize(byNumber as ListingDetailRow)
     const { data: byKey } = await supabase.from('listings').select('*').eq('ListingKey', k).maybeSingle()
     if (byKey) return normalize(byKey as ListingDetailRow)
-    // Snake_case (some Supabase projects use lowercase columns)
     const { data: bySnakeNum } = await supabase.from('listings').select('*').eq('list_number', k).maybeSingle()
     if (bySnakeNum) return normalize(bySnakeNum as ListingDetailRow)
     const { data: bySnakeKey } = await supabase.from('listings').select('*').eq('listing_key', k).maybeSingle()
@@ -1306,14 +1652,13 @@ export async function getListingByKey(listingKeyOrSlug: string): Promise<Listing
     return null
   }
 
-  // 1) First segment only (e.g. "2504654-56355-twin-rivers..." -> "2504654")
+  /** Resolve by first segment, numeric segments, raw slug, then truncated slug (see slug.ts / listingKeyFromSlug). */
   const firstKey = listingKeyFromSlug(decoded).trim()
   if (firstKey) {
     const row = await tryKey(firstKey)
     if (row) return row
   }
 
-  // 2) All numeric segments in order (MLS may use ListingId as one number and ListingKey as another)
   const parts = decoded.split('-')
   for (let i = 0; i < parts.length; i++) {
     const seg = (parts[i] ?? '').trim()
@@ -1323,11 +1668,9 @@ export async function getListingByKey(listingKeyOrSlug: string): Promise<Listing
     }
   }
 
-  // 3) Raw string as key (key-only URL)
   const byRaw = await tryKey(decoded)
   if (byRaw) return byRaw
 
-  // 4) Strip trailing segments (e.g. "BR-12345-123-main-bend" -> try "BR-12345")
   if (decoded.includes('-')) {
     for (let len = parts.length - 1; len >= 1; len--) {
       const candidate = parts.slice(0, len).join('-')
@@ -1339,7 +1682,8 @@ export async function getListingByKey(listingKeyOrSlug: string): Promise<Listing
   return null
 }
 
-const LISTING_TILE_SELECT = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus'
+const LISTING_TILE_SELECT =
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, OnMarketDate, ClosePrice, CloseDate'
 
 export type ListingsAtAddressOptions = {
   streetNumber: string | null
@@ -1357,14 +1701,11 @@ export type ListingsAtAddressOptions = {
  * Used on listing detail to show "Other listings at this address" (e.g. past sales). Default is active only; set includeClosed to show past listings.
  */
 export async function getListingsAtAddress(options: ListingsAtAddressOptions): Promise<ListingTileRow[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const excludeKey = String(options.excludeListingKey ?? '').trim()
-  if (!url?.trim() || !anonKey?.trim() || !excludeKey) return []
   const city = (options.city ?? '').trim()
-  if (!city) return []
+  const supabase = getAnonSupabase()
+  if (!supabase || !excludeKey || !city) return []
 
-  const supabase = createClient(url, anonKey)
   let query = supabase
     .from('listings')
     .select(LISTING_TILE_SELECT)
@@ -1394,12 +1735,10 @@ export async function getListingsAtAddress(options: ListingsAtAddressOptions): P
  * Fetch listing tile rows by listing keys (e.g. for saved homes). Preserves order of keys where possible.
  */
 export async function getListingsByKeys(keys: string[]): Promise<ListingTileRow[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim() || keys.length === 0) return []
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase || keys.length === 0) return []
   const { data } = await supabase.from('listings').select(LISTING_TILE_SELECT).in('ListingKey', keys)
-  let rows = (data ?? []) as ListingTileRow[]
+  const rows = (data ?? []) as ListingTileRow[]
   const byKey = new Map(rows.map((r) => [r.ListingKey ?? r.ListNumber ?? '', r]))
   return keys.map((k) => byKey.get(k)).filter(Boolean) as ListingTileRow[]
 }
@@ -1409,10 +1748,8 @@ export async function getListingsByKeys(keys: string[]): Promise<ListingTileRow[
  * Keys may be ListingKey or ListNumber (e.g. from URL or cookie); we query both and merge.
  */
 export async function getHomeTileRowsByKeys(keys: string[]): Promise<HomeTileRow[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim() || keys.length === 0) return []
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase || keys.length === 0) return []
   const trimmedKeys = keys.map((k) => k.trim()).filter(Boolean)
   if (trimmedKeys.length === 0) return []
   const [byListingKey, byListNumber] = await Promise.all([
@@ -1440,10 +1777,8 @@ export async function getAdjacentListingKeyFromSupabase(
   modificationTimestamp: string,
   direction: 'next' | 'prev'
 ): Promise<string | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim() || !modificationTimestamp) return null
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase || !modificationTimestamp) return null
   const orderCol = 'ModificationTimestamp'
   const { data } =
     direction === 'next'
@@ -1464,6 +1799,128 @@ export async function getAdjacentListingKeyFromSupabase(
   return (data as { ListingKey?: string } | null)?.ListingKey ?? null
 }
 
+export type AdjacentListingThumb = {
+  ListingKey: string
+  PhotoURL: string | null
+  ListPrice: number | null
+  StreetNumber: string | null
+  StreetName: string | null
+  City: string | null
+}
+
+/**
+ * Get prev and next listings with thumbnail fields (PhotoURL, ListPrice, address) for the bar below the hero.
+ */
+export async function getAdjacentListingsFromSupabase(modificationTimestamp: string): Promise<{
+  prev: AdjacentListingThumb | null
+  next: AdjacentListingThumb | null
+}> {
+  const supabase = getAnonSupabase()
+  if (!supabase || !modificationTimestamp) return { prev: null, next: null }
+  const orderCol = 'ModificationTimestamp'
+  const select = 'ListingKey, PhotoURL, ListPrice, StreetNumber, StreetName, City'
+  const [prevRes, nextRes] = await Promise.all([
+    supabase
+      .from('listings')
+      .select(select)
+      .lt(orderCol, modificationTimestamp)
+      .order(orderCol, { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('listings')
+      .select(select)
+      .gt(orderCol, modificationTimestamp)
+      .order(orderCol, { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ])
+  const prev = (prevRes.data as AdjacentListingThumb | null) ?? null
+  const next = (nextRes.data as AdjacentListingThumb | null) ?? null
+  return { prev, next }
+}
+
+/**
+ * Get a slice of adjacent listings (before + after current by ModificationTimestamp) for the listing nav slider.
+ * Returns up to limitBefore before and limitAfter after the current timestamp.
+ */
+export async function getAdjacentListingsSliceFromSupabase(
+  modificationTimestamp: string,
+  limitBefore = 4,
+  limitAfter = 4
+): Promise<{ prevList: AdjacentListingThumb[]; nextList: AdjacentListingThumb[] }> {
+  const supabase = getAnonSupabase()
+  if (!supabase || !modificationTimestamp) return { prevList: [], nextList: [] }
+  const select = 'ListingKey, PhotoURL, ListPrice, StreetNumber, StreetName, City'
+  const orderCol = 'ModificationTimestamp'
+  const [prevRes, nextRes] = await Promise.all([
+    supabase
+      .from('listings')
+      .select(select)
+      .lt(orderCol, modificationTimestamp)
+      .order(orderCol, { ascending: false })
+      .limit(limitBefore),
+    supabase
+      .from('listings')
+      .select(select)
+      .gt(orderCol, modificationTimestamp)
+      .order(orderCol, { ascending: true })
+      .limit(limitAfter),
+  ])
+  const prevList = (prevRes.data ?? []) as AdjacentListingThumb[]
+  const nextList = (nextRes.data ?? []) as AdjacentListingThumb[]
+  return { prevList, nextList }
+}
+
+/**
+ * Get a slice of listings in the same subdivision (before + after current by ModificationTimestamp).
+ * Used on listing detail so the "All listings" strip shows only listings in that subdivision.
+ * Filters to active status in JS so we can combine city + subdivision in one .or() safely.
+ */
+export async function getListingsSliceInSubdivision(
+  city: string,
+  subdivisionName: string,
+  modificationTimestamp: string,
+  limitBefore = 12,
+  limitAfter = 12
+): Promise<{ prevList: AdjacentListingThumb[]; nextList: AdjacentListingThumb[] }> {
+  const cityTrim = (city ?? '').trim()
+  const subTrim = (subdivisionName ?? '').trim()
+  const supabase = getAnonSupabase()
+  if (!supabase || !modificationTimestamp || !cityTrim || !subTrim) return { prevList: [], nextList: [] }
+  const select = 'ListingKey, PhotoURL, ListPrice, StreetNumber, StreetName, City, StandardStatus'
+  const orderCol = 'ModificationTimestamp'
+  const subNames = getSubdivisionMatchNames(subTrim)
+  const subFilter =
+    subNames.length === 1
+      ? `SubdivisionName.ilike.${subNames[0]!}`
+      : subNames.map((n) => `SubdivisionName.ilike.${n}`).join(',')
+
+  const [prevRes, nextRes] = await Promise.all([
+    supabase
+      .from('listings')
+      .select(select)
+      .ilike('City', cityTrim)
+      .or(subFilter)
+      .lt(orderCol, modificationTimestamp)
+      .order(orderCol, { ascending: false })
+      .limit(limitBefore * 2),
+    supabase
+      .from('listings')
+      .select(select)
+      .ilike('City', cityTrim)
+      .or(subFilter)
+      .gt(orderCol, modificationTimestamp)
+      .order(orderCol, { ascending: true })
+      .limit(limitAfter * 2),
+  ])
+  const filterActive = (rows: (AdjacentListingThumb & { StandardStatus?: string | null })[]): AdjacentListingThumb[] =>
+    rows.filter((r) => isActiveStatus(r.StandardStatus)).map(({ StandardStatus: _, ...t }) => t)
+  const prevList = filterActive((prevRes.data ?? []) as (AdjacentListingThumb & { StandardStatus?: string | null })[]).slice(0, limitBefore)
+  const nextList = filterActive((nextRes.data ?? []) as (AdjacentListingThumb & { StandardStatus?: string | null })[]).slice(0, limitAfter)
+  return { prevList, nextList }
+}
+
 export type ListingHistoryRow = {
   id?: string
   listing_key: string
@@ -1481,10 +1938,8 @@ export type ListingHistoryRow = {
  * Uses service role. Order by ListNumber asc so we get a stable default.
  */
 export async function getFirstListingKey(): Promise<string | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !serviceKey?.trim()) return null
-  const supabase = createClient(url, serviceKey)
+  const supabase = getServiceSupabase()
+  if (!supabase) return null
   const { data } = await supabase
     .from('listings')
     .select('ListingKey, ListNumber')
@@ -1500,10 +1955,8 @@ export async function getFirstListingKey(): Promise<string | null> {
  * Return the most recently modified listing key from Supabase (for /listings/template redirect when Spark API key is not set).
  */
 export async function getMostRecentListingKeyFromSupabase(): Promise<string | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return null
-  const supabase = createClient(url, anonKey)
+  const supabase = getAnonSupabase()
+  if (!supabase) return null
   const { data } = await supabase
     .from('listings')
     .select('ListingKey, ListNumber')
@@ -1520,11 +1973,9 @@ export async function getMostRecentListingKeyFromSupabase(): Promise<string | nu
  * Ordered by event_date desc (most recent first). Use for CMAs, list date, price changes, last sale.
  */
 export async function getListingHistory(listingKey: string): Promise<ListingHistoryRow[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabase = getAnonSupabase()
   const key = String(listingKey ?? '').trim()
-  if (!url?.trim() || !anonKey?.trim() || !key) return []
-  const supabase = createClient(url, anonKey)
+  if (!supabase || !key) return []
   const { data } = await supabase
     .from('listing_history')
     .select('listing_key, event_date, event, description, price, price_change, raw, created_at')
@@ -1537,11 +1988,9 @@ export async function getListingHistory(listingKey: string): Promise<ListingHist
 const PRICE_CHANGE_BADGE_DAYS = 30
 
 export async function getListingKeysWithRecentPriceChange(withinDays = PRICE_CHANGE_BADGE_DAYS): Promise<Set<string>> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return new Set()
+  const supabase = getAnonSupabase()
+  if (!supabase) return new Set()
   const since = new Date(Date.now() - withinDays * 24 * 60 * 60 * 1000).toISOString()
-  const supabase = createClient(url, anonKey)
   const { data } = await supabase
     .from('listing_history')
     .select('listing_key')

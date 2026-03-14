@@ -212,4 +212,4 @@ Use these so copy and SEO content can be developed in parallel with the build. F
 
 ---
 
-*Use with MASTER_INSTRUCTION_SET.md and BUILD_SEQUENCE_CHECKLIST.md. Update templates as new page types or markets are added.*
+*Update templates as new page types or markets are added.*

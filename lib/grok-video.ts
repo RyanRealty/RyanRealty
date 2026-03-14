@@ -74,3 +74,77 @@ export async function generateFlyoverVideo(options: FlyoverVideoOptions): Promis
 
   throw new Error('Video generation timed out')
 }
+
+export type ImageToVideoOptions = {
+  /** Public URL of the source image to animate. */
+  image_url: string
+  /** Motion/prompt for animation. Default: gentle cinematic motion. */
+  prompt?: string
+  /** Duration in seconds (1–15). Default 5; use 3–8 for short hero clips. */
+  duration?: number
+  aspect_ratio?: '16:9' | '9:16' | '1:1'
+  resolution?: '720p' | '480p'
+}
+
+const IMAGE_TO_VIDEO_DURATION = 5
+const IMAGE_TO_VIDEO_PROMPT =
+  'Gentle cinematic motion, slow zoom, landscape comes to life. No text, no people. Subtle movement only.'
+
+/**
+ * Animate a still image to a short video using xAI Grok Imagine Video (image-to-video).
+ * Returns temporary video URL — download and store promptly.
+ */
+export async function generateImageToVideo(options: ImageToVideoOptions): Promise<string> {
+  const apiKey = process.env.XAI_API_KEY
+  if (!apiKey?.trim()) {
+    throw new Error('XAI_API_KEY is not set. Add it to .env.local for image-to-video.')
+  }
+
+  const body: Record<string, unknown> = {
+    model: MODEL,
+    image_url: options.image_url,
+    prompt: options.prompt ?? IMAGE_TO_VIDEO_PROMPT,
+    duration: Math.min(15, Math.max(1, options.duration ?? IMAGE_TO_VIDEO_DURATION)),
+    aspect_ratio: options.aspect_ratio ?? '16:9',
+    resolution: options.resolution ?? '720p',
+  }
+
+  const res = await fetch(XAI_VIDEOS_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`xAI image-to-video API error ${res.status}: ${text}`)
+  }
+
+  const startData = (await res.json()) as { request_id?: string }
+  const requestId = startData?.request_id
+  if (!requestId) throw new Error('xAI video API did not return request_id')
+
+  const deadline = Date.now() + POLL_TIMEOUT_MS
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
+    const statusRes = await fetch(`${XAI_VIDEO_STATUS_URL}/${requestId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    })
+    if (!statusRes.ok) throw new Error(`xAI video status error ${statusRes.status}`)
+    const statusData = (await statusRes.json()) as {
+      status?: string
+      video?: { url?: string }
+    }
+    if (statusData.status === 'done' && statusData.video?.url) {
+      return statusData.video.url
+    }
+    if (statusData.status === 'expired') {
+      throw new Error('Video generation expired')
+    }
+  }
+
+  throw new Error('Video generation timed out')
+}

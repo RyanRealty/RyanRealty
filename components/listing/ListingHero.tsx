@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import type { SparkPhoto, SparkVideo } from '@/lib/spark'
 import { getVideoEmbedHtml } from '@/lib/video-embed'
+import { sanitizeHtmlWithEmbeds } from '@/lib/sanitize'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowLeft01Icon, ArrowRight01Icon, PlayIcon } from '@hugeicons/core-free-icons'
+import { Button } from "@/components/ui/button"
 
 const DIRECT_VIDEO_EXT = /\.(mp4|webm|ogg|mov)(\?|$)/i
 const EMBED_VIDEO_REGEX = /youtube\.com|youtu\.be|vimeo\.com/i
@@ -32,6 +36,23 @@ type Props = {
   videos: SparkVideo[]
 }
 
+/** First direct-playable video URL (mp4/webm/etc.) for hero background, from videos array or a photo that is a video. */
+function getHeroBackgroundVideoUrl(
+  videos: SparkVideo[],
+  orderedPhotos: SparkPhoto[]
+): string | null {
+  const firstDirect = Array.isArray(videos)
+    ? videos.find((v) => v.Uri && isDirectVideoUrl(v.Uri))
+    : null
+  if (firstDirect?.Uri) return firstDirect.Uri
+  const firstPhoto = orderedPhotos[0]
+  if (firstPhoto) {
+    const url = photoToVideoUrl(firstPhoto)
+    if (url && isDirectVideoUrl(url)) return url
+  }
+  return null
+}
+
 export default function ListingHero({ photos, videos }: Props) {
   const hasVideo = Array.isArray(videos) && videos.length > 0
   const firstVideo = hasVideo ? videos[0]! : null
@@ -39,6 +60,11 @@ export default function ListingHero({ photos, videos }: Props) {
   const primaryPhoto = photoList.find((p) => p.Primary) ?? photoList[0]
   const otherPhotos = photoList.filter((p) => p !== primaryPhoto)
   const orderedPhotos = primaryPhoto ? [primaryPhoto, ...otherPhotos] : []
+
+  const heroBackgroundVideoUrl = getHeroBackgroundVideoUrl(
+    Array.isArray(videos) ? videos : [],
+    orderedPhotos
+  )
 
   const mediaItems: MediaItem[] = []
   if (firstVideo) {
@@ -59,6 +85,9 @@ export default function ListingHero({ photos, videos }: Props) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const current = mediaItems[selectedIndex]
 
+  const goPrev = () => setSelectedIndex((i) => (i === 0 ? mediaItems.length - 1 : i - 1))
+  const goNext = () => setSelectedIndex((i) => (i === mediaItems.length - 1 ? 0 : i + 1))
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (lightboxOpen) {
@@ -74,13 +103,14 @@ export default function ListingHero({ photos, videos }: Props) {
 
   if (mediaItems.length === 0) {
     return (
-      <div className="flex aspect-[16/10] max-h-[70vh] w-full items-center justify-center bg-zinc-200 text-zinc-500">
+      <div className="flex aspect-[16/10] max-h-[70vh] w-full items-center justify-center bg-border text-muted-foreground">
         No photos or video
       </div>
     )
   }
 
   const currentIsPhoto = current?.type === 'photo'
+  const showBackgroundVideoHero = Boolean(heroBackgroundVideoUrl)
   const currentPhoto = currentIsPhoto ? (current as { type: 'photo'; photo: SparkPhoto }).photo : null
   const photoSrc = currentPhoto
     ? (currentPhoto.Uri1600 ?? currentPhoto.Uri1280 ?? currentPhoto.Uri1024 ?? currentPhoto.Uri800 ?? currentPhoto.Uri640 ?? currentPhoto.Uri300 ?? '')
@@ -93,7 +123,7 @@ export default function ListingHero({ photos, videos }: Props) {
         return (
           <div
             className="aspect-video h-full w-full [&>iframe]:h-full [&>iframe]:w-full"
-            dangerouslySetInnerHTML={{ __html: v.ObjectHtml }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtmlWithEmbeds(v.ObjectHtml) }}
           />
         )
       }
@@ -117,7 +147,7 @@ export default function ListingHero({ photos, videos }: Props) {
         return (
           <div
             className="relative aspect-video h-full w-full [&>iframe]:h-full [&>iframe]:w-full"
-            dangerouslySetInnerHTML={{ __html: embedHtml }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtmlWithEmbeds(embedHtml) }}
           />
         )
       }
@@ -127,19 +157,19 @@ export default function ListingHero({ photos, videos }: Props) {
             href={v.Uri}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-full w-full items-center justify-center bg-zinc-900 text-white"
+            className="flex h-full w-full items-center justify-center bg-primary text-white"
           >
-            <span className="rounded-lg bg-white/10 px-4 py-2">Watch video →</span>
+            <span className="rounded-lg bg-card/10 px-4 py-2">Watch video →</span>
           </a>
         )
       }
       return (
-        <div className="flex h-full w-full items-center justify-center text-zinc-500">Video</div>
+        <div className="flex h-full w-full items-center justify-center text-muted-foreground">Video</div>
       )
     }
     if (currentIsPhoto && photoSrc) {
       return (
-        <button
+        <Button
           type="button"
           onClick={() => setLightboxOpen(true)}
           className="relative h-full w-full focus:outline-none"
@@ -152,65 +182,82 @@ export default function ListingHero({ photos, videos }: Props) {
             sizes="100vw"
             priority={selectedIndex === 0}
           />
-        </button>
+        </Button>
       )
     }
     return (
-      <div className="flex h-full w-full items-center justify-center text-zinc-500">No media</div>
+      <div className="flex h-full w-full items-center justify-center text-muted-foreground">No media</div>
     )
   }
 
   const isVideo = current?.type === 'video'
-  const sectionBg = isVideo ? 'bg-zinc-900' : 'bg-zinc-100'
-  const thumbStripBg = isVideo ? 'border-zinc-700 bg-zinc-900' : 'border-zinc-200 bg-zinc-100'
-  const counterClass = isVideo ? 'bg-black/60 text-white' : 'bg-white/90 text-zinc-800 shadow'
-  const dotSelected = isVideo ? 'bg-white' : 'bg-zinc-800'
-  const dotUnselected = isVideo ? 'bg-white/50 hover:bg-white/70' : 'bg-zinc-400 hover:bg-zinc-600'
-  const thumbBorder = (isSelected: boolean) => (isSelected ? (isVideo ? 'border-white' : 'border-zinc-800') : 'border-transparent opacity-80 hover:opacity-100')
-  const thumbPlaceholder = isVideo ? 'bg-zinc-800' : 'bg-zinc-200'
+  const sectionBg = isVideo ? 'bg-primary' : 'bg-muted'
+  const thumbStripBg = isVideo ? 'border-primary bg-primary' : 'border-border bg-muted'
+  const counterClass = isVideo ? 'bg-black/60 text-white' : 'bg-card/90 text-primary shadow'
+  const dotSelected = isVideo ? 'bg-card' : 'bg-primary'
+  const dotUnselected = isVideo ? 'bg-card/50 hover:bg-card/70' : 'bg-muted-foreground hover:bg-muted-foreground'
+  const thumbBorder = (isSelected: boolean) => (isSelected ? (isVideo ? 'border-white' : 'border-primary') : 'border-transparent opacity-80 hover:opacity-100')
+  const thumbPlaceholder = isVideo ? 'bg-primary' : 'bg-border'
 
   return (
-    <>
+    <div className="w-full">
+      {/* Full-bleed background video hero when listing has a direct-playable video (mp4/webm) */}
+      {showBackgroundVideoHero && heroBackgroundVideoUrl && (
+        <section className="relative w-full overflow-hidden bg-black" aria-label="Listing video">
+          <div className="aspect-[16/10] max-h-[75vh] w-full relative">
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              className="absolute inset-0 h-full w-full object-cover"
+              src={heroBackgroundVideoUrl}
+              aria-hidden
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" aria-hidden />
+          </div>
+        </section>
+      )}
+
       <section className={`relative w-full ${sectionBg}`} aria-label="Listing photos and video">
-        <div className="aspect-[16/10] max-h-[70vh] w-full">
-          {isVideo ? (
-            <div className="relative h-full w-full bg-black">{renderMainContent()}</div>
-          ) : (
-            renderMainContent()
-          )}
+        <div className="aspect-[16/10] max-h-[70vh] w-full relative">
+          <div key={selectedIndex} className="h-full w-full animate-listing-slide-fade">
+            {isVideo ? (
+              <div className="relative h-full w-full bg-black">{renderMainContent()}</div>
+            ) : (
+              renderMainContent()
+            )}
+          </div>
 
           {mediaItems.length > 1 && (
             <>
-              <div className={`absolute left-2 top-2 z-10 rounded px-2 py-1 text-sm ${counterClass}`} aria-live="polite">
-                {selectedIndex + 1} of {mediaItems.length}
+              <div className={`absolute left-4 top-4 z-10 rounded-lg px-3 py-1.5 text-sm font-medium ${counterClass}`} aria-live="polite">
+                {selectedIndex + 1} / {mediaItems.length}
               </div>
-              <button
+              <Button
                 type="button"
-                onClick={() => setSelectedIndex((i) => (i === 0 ? mediaItems.length - 1 : i - 1))}
-                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-lg hover:bg-white"
-                aria-label="Previous"
+                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white shadow-md transition-all duration-200 hover:bg-black/60 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                aria-label="Previous photo or video"
+                onClick={goPrev}
               >
-                <svg className="h-5 w-5 text-zinc-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button
+                <HugeiconsIcon icon={ArrowLeft01Icon} className="h-6 w-6" />
+              </Button>
+              <Button
                 type="button"
-                onClick={() => setSelectedIndex((i) => (i === mediaItems.length - 1 ? 0 : i + 1))}
-                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-lg hover:bg-white"
-                aria-label="Next"
+                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white shadow-md transition-all duration-200 hover:bg-black/60 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                aria-label="Next photo or video"
+                onClick={goNext}
               >
-                <svg className="h-5 w-5 text-zinc-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-              <div className="absolute bottom-2 left-0 right-0 z-10 flex justify-center gap-1">
+                <HugeiconsIcon icon={ArrowRight01Icon} className="h-6 w-6" />
+              </Button>
+              <div className="absolute bottom-3 left-0 right-0 z-10 flex justify-center gap-1.5">
                 {mediaItems.map((_, i) => (
-                  <button
+                  <Button
                     key={i}
                     type="button"
                     onClick={() => setSelectedIndex(i)}
-                    className={`h-1.5 rounded-full transition ${i === selectedIndex ? `w-6 ${dotSelected}` : `w-1.5 ${dotUnselected}`}`}
+                    className={`h-2 rounded-full transition-all duration-200 ${i === selectedIndex ? `w-6 ${dotSelected}` : `w-2 ${dotUnselected}`}`}
                     aria-label={`View ${i + 1} of ${mediaItems.length}`}
                   />
                 ))}
@@ -219,31 +266,29 @@ export default function ListingHero({ photos, videos }: Props) {
           )}
         </div>
 
-        {/* Thumbnail strip */}
+        {/* Thumbnail strip: full-bleed with horizontal padding only */}
         {mediaItems.length > 1 && (
-          <div className={`border-t px-2 py-2 ${thumbStripBg}`}>
-            <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto pb-1">
+          <div className={`border-t px-4 py-3 ${thumbStripBg}`}>
+            <div className="flex gap-2 overflow-x-auto pb-1">
               {mediaItems.map((item, i) => {
                 const sel = i === selectedIndex
                 if (item.type === 'video') {
                   return (
-                    <button
+                    <Button
                       key={item.id}
                       type="button"
                       onClick={() => setSelectedIndex(i)}
                       className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 ${thumbBorder(sel)}`}
                     >
                       <div className={`flex h-full w-full items-center justify-center ${thumbPlaceholder}`}>
-                        <svg className={`h-6 w-6 ${isVideo ? 'text-white' : 'text-zinc-500'}`} fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
+                        <HugeiconsIcon icon={PlayIcon} className={`h-6 w-6 ${isVideo ? 'text-white' : 'text-muted-foreground'}`} />
                       </div>
-                    </button>
+                    </Button>
                   )
                 }
                 const thumb = item.photo.Uri300 ?? item.photo.Uri640 ?? item.photo.Uri800
                 return (
-                  <button
+                  <Button
                     key={item.id}
                     type="button"
                     onClick={() => setSelectedIndex(i)}
@@ -252,7 +297,7 @@ export default function ListingHero({ photos, videos }: Props) {
                     {thumb ? (
                       <img
                         src={thumb}
-                        alt=""
+                        alt={`Photo ${i + 1} of property`}
                         width={80}
                         height={56}
                         className="h-full w-full object-cover"
@@ -261,7 +306,7 @@ export default function ListingHero({ photos, videos }: Props) {
                     ) : (
                       <div className={`h-full w-full ${thumbPlaceholder}`} />
                     )}
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -277,16 +322,16 @@ export default function ListingHero({ photos, videos }: Props) {
           role="button"
           tabIndex={0}
         >
-          <button
+          <Button
             type="button"
             className="absolute right-4 top-4 text-white/80 hover:text-white"
             onClick={() => setLightboxOpen(false)}
           >
             ✕
-          </button>
+          </Button>
           <img
             src={photoSrc}
-            alt=""
+            alt={`Property photo — full size view`}
             className="max-h-full max-w-full object-contain"
             onClick={(e) => e.stopPropagation()}
             width={1200}
@@ -295,6 +340,6 @@ export default function ListingHero({ photos, videos }: Props) {
           />
         </div>
       )}
-    </>
+    </div>
   )
 }

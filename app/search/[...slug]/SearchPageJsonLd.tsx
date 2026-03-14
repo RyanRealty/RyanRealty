@@ -1,4 +1,4 @@
-import { cityEntityKey } from '../../../lib/slug'
+import { homesForSalePath } from '../../../lib/slug'
 
 /**
  * Structured data for city/subdivision search pages: WebPage, BreadcrumbList, Place, ItemList.
@@ -27,7 +27,7 @@ export default function SearchPageJsonLd({
   siteUrl,
   listings,
 }: Props) {
-  const pagePath = city ? `/search/${cityEntityKey(city)}${subdivision ? `/${encodeURIComponent(subdivision)}` : ''}` : '/'
+  const pagePath = city ? homesForSalePath(city, subdivision ?? null) : '/homes-for-sale'
   const pageUrl = siteUrl ? `${siteUrl}${pagePath}` : undefined
   const description = subdivisionBlurb ?? cityMetaDescription ?? `Browse homes for sale in ${displayName}, Central Oregon.`
 
@@ -42,12 +42,12 @@ export default function SearchPageJsonLd({
 
   const breadcrumbItems: { name: string; item?: string }[] = [
     { name: 'Ryan Realty', item: siteUrl || undefined },
-    { name: 'Homes for Sale', item: siteUrl ? `${siteUrl}/listings` : undefined },
+    { name: 'Homes for Sale', item: siteUrl ? `${siteUrl}/homes-for-sale` : undefined },
   ]
   if (city) {
     breadcrumbItems.push({
       name: city,
-      item: siteUrl ? `${siteUrl}/search/${cityEntityKey(city)}` : undefined,
+      item: siteUrl ? `${siteUrl}${homesForSalePath(city)}` : undefined,
     })
   }
   if (subdivision) {

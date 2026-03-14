@@ -2,6 +2,7 @@
  * Client-side tracking: dataLayer (GA4/GTM) and Meta Pixel (fbq).
  * Only call from client components. Scripts load after cookie consent, so
  * pushing events is safe when these run.
+ * Event names from Section 30.3 (GA4 Custom Event Taxonomy).
  */
 
 declare global {
@@ -12,10 +13,98 @@ declare global {
   }
 }
 
+/** GA4 custom event names (Section 30.3). */
+export type EventName =
+  | 'generate_lead'
+  | 'tour_requested'
+  | 'schedule_tour_click'
+  | 'contact_agent_click'
+  | 'email_agent'
+  | 'call_initiated'
+  | 'cma_downloaded'
+  | 'valuation_requested'
+  | 'sign_up'
+  | 'open_house_rsvp'
+  | 'open_house_page_view'
+  | 'view_listing'
+  | 'save_listing'
+  | 'like_listing'
+  | 'share_listing'
+  | 'compare_listing'
+  | 'compare_add'
+  | 'compare_remove'
+  | 'compare_share'
+  | 'compare_pdf_download'
+  | 'share'
+  | 'view_photo_gallery'
+  | 'play_video'
+  | 'view_similar_listings'
+  | 'search'
+  | 'save_search'
+  | 'view_community'
+  | 'view_city'
+  | 'view_neighborhood'
+  | 'view_blog_post'
+  | 'view_market_report'
+  | 'download_report'
+  | 'scroll_depth'
+  | 'click_cta'
+  | 'calculator_used'
+  | 'calculator_interact'
+  | 'map_interaction'
+  | 'share_collection'
+  | 'ai_chat_started'
+  | 'ai_chat_message'
+  | 'return_visit'
+  | 'exit_intent_shown'
+  | 'homepage_view'
+  | 'hero_search'
+  | 'hero_impression'
+  | 'featured_impression'
+  | 'view_featured_listings'
+  | 'community_impression'
+  | 'newsletter_signup'
+  | 'community_view'
+  | 'community_cta_click'
+  | 'city_view'
+  | 'city_cta_click'
+  | 'neighborhood_view'
+  | 'broker_view'
+  | 'contact_agent'
+
 function pushDataLayer(obj: Record<string, unknown>) {
   if (typeof window === 'undefined') return
   window.dataLayer = window.dataLayer || []
   window.dataLayer.push(obj)
+}
+
+/**
+ * Fire a Google Ads conversion (when send_to env is set). Only call from client after consent.
+ */
+function fireGoogleAdsConversion(sendTo: string | undefined) {
+  if (typeof window === 'undefined' || !sendTo?.trim() || !window.gtag) return
+  window.gtag('event', 'conversion', { send_to: sendTo.trim() })
+}
+
+const GOOGLE_ADS_CONVERSION_LEAD = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LEAD?.trim()
+const GOOGLE_ADS_CONVERSION_SIGNUP = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_SIGNUP?.trim()
+
+/**
+ * Push a typed event to window.dataLayer for GTM/GA4.
+ * Also fires Google Ads conversion when event is generate_lead and NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LEAD is set.
+ */
+export function trackEvent(eventName: EventName, params: Record<string, unknown> = {}) {
+  pushDataLayer({ event: eventName, ...params })
+  if (eventName === 'generate_lead' && GOOGLE_ADS_CONVERSION_LEAD) {
+    fireGoogleAdsConversion(GOOGLE_ADS_CONVERSION_LEAD)
+  }
+}
+
+/**
+ * Push a page view to window.dataLayer (e.g. for virtual page views or SPA updates).
+ */
+export function trackPageView(pageType: string, params: Record<string, unknown> = {}) {
+  pushDataLayer({ event: 'page_view', page_type: pageType, ...params })
 }
 
 function trackFbq(event: string, params?: Record<string, unknown>) {
@@ -157,4 +246,5 @@ export function trackSignUp() {
     method: 'Google',
   })
   trackFbq('CompleteRegistration', { content_name: 'Account created' })
+  if (GOOGLE_ADS_CONVERSION_SIGNUP) fireGoogleAdsConversion(GOOGLE_ADS_CONVERSION_SIGNUP)
 }

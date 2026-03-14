@@ -48,3 +48,24 @@ export function subdivisionBannerPrompt(placeName: string, cityName: string): st
   const geo = getGeoHint(cityName)
   return `Aerial view of ${placeName} area, ${cityName}, Oregon. Real geography: ${geo}. ${AERIAL_STYLE}`
 }
+
+/**
+ * Build the Unsplash search query for a banner (pretty landscapes).
+ * - Cities: scenic landscape of that city.
+ * - Resort/planned communities: imagery of that specific community.
+ * - Other communities: scenic landscape of the city they belong to.
+ */
+export function getBannerSearchQuery(
+  entityType: 'city' | 'subdivision',
+  displayName: string,
+  city?: string,
+  isResort?: boolean
+): string {
+  if (entityType === 'city') {
+    return `${displayName} Oregon scenic`
+  }
+  if (isResort) {
+    return `${displayName} ${city ?? ''} Oregon scenic`.replace(/\s+/g, ' ').trim()
+  }
+  return city ? `${city} Oregon scenic` : `${displayName} Oregon scenic`
+}

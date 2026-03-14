@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { cityEntityKey } from '@/lib/slug'
+import { homesForSalePath } from '@/lib/slug'
 import { deleteSavedSearch } from '@/app/actions/saved-searches'
 import type { SavedSearchRow } from '@/app/actions/saved-searches'
+import { Button } from "@/components/ui/button"
 
 type Props = { searches: SavedSearchRow[] }
 
@@ -23,8 +24,8 @@ function buildSearchUrl(filters: Record<string, unknown>): string {
   if (typeof filters.statusFilter === 'string') params.set('statusFilter', filters.statusFilter)
   if (filters.includeClosed === true) params.set('includeClosed', '1')
   const q = params.toString()
-  if (city && subdivision) return `/search/${cityEntityKey(city)}/${encodeURIComponent(subdivision)}${q ? `?${q}` : ''}`
-  if (city) return `/search/${cityEntityKey(city)}${q ? `?${q}` : ''}`
+  if (city && subdivision) return `${homesForSalePath(city, subdivision)}${q ? `?${q}` : ''}`
+  if (city) return `${homesForSalePath(city)}${q ? `?${q}` : ''}`
   return `/listings${q ? `?${q}` : ''}`
 }
 
@@ -41,21 +42,21 @@ export default function SavedSearchesList({ searches }: Props) {
       {searches.map((s) => (
         <li
           key={s.id}
-          className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
+          className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card p-4 shadow-sm"
         >
           <Link
             href={buildSearchUrl(s.filters)}
-            className="font-medium text-zinc-900 hover:underline"
+            className="font-medium text-foreground hover:underline"
           >
             {s.name}
           </Link>
-          <button
+          <Button
             type="button"
             onClick={() => handleDelete(s.id)}
-            className="text-sm text-zinc-500 hover:text-red-600"
+            className="text-sm text-muted-foreground hover:text-destructive"
           >
             Remove
-          </button>
+          </Button>
         </li>
       ))}
     </ul>

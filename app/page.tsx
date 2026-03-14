@@ -1,370 +1,279 @@
-import Link from 'next/link'
-import Image from 'next/image'
 import type { Metadata } from 'next'
-import { cookies } from 'next/headers'
+import { getBrokerageSettings } from './actions/brokerage'
 import {
-  getBrowseCities,
-  getCityCentroid,
-  getCityStatusCounts,
-  getListingsForHomeTiles,
-  getHomeTileRowsByKeys,
-  getHotCommunitiesInCity,
-} from './actions/listings'
-import { getTrendingListingKeys } from './actions/listing-views'
+  getFeaturedListings,
+  getRecentlySold,
+  getCommunityHighlights,
+  getMarketSnapshot,
+  getTrendingListings,
+  getBlogPostsForHome,
+} from './actions/home'
+import { getCityFromSlug } from './actions/listings'
+import { filterToPrimaryCitiesOnly } from '../lib/cities'
+import { getSavedCommunityKeys } from './actions/saved-communities'
+import { getSavedCitySlugs } from './actions/saved-cities'
 import { getSession } from './actions/auth'
 import { getSavedListingKeys } from './actions/saved-listings'
-import { getSavedCommunityKeys } from './actions/saved-communities'
+import { getLikedListingKeys } from './actions/likes'
 import { getBuyingPreferences } from './actions/buying-preferences'
-import { getOrCreatePlaceBanner } from './actions/banners'
-import { cityEntityKey, subdivisionEntityKey } from '../lib/slug'
+import { getBannersBatch } from './actions/banners'
+import { getCitiesForIndex } from './actions/cities'
+import { getEngagementCountsBatch } from './actions/engagement'
+import { subdivisionEntityKey } from '../lib/slug'
 import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '../lib/mortgage'
-import ListingMapGoogle from '../components/ListingMapGoogle'
-import { getGeocodedListings } from './actions/geocode'
-import HeroSearchOverlay from '../components/HeroSearchOverlay'
-import HomeTilesSlider from '../components/home/HomeTilesSlider'
-import HomeCollapsibleMap from '../components/home/HomeCollapsibleMap'
+import HomeHero from '../components/home/HomeHero'
+import FeaturedListings from '../components/home/FeaturedListings'
 import AffordabilityRow from '../components/home/AffordabilityRow'
+import TrendingListings from '../components/home/TrendingListings'
+import BrowseByCity from '../components/home/BrowseByCity'
 import PopularCommunitiesRow from '../components/home/PopularCommunitiesRow'
-import CityTile from '../components/CityTile'
-
+import RecentlySold from '../components/home/RecentlySold'
+import TrustSection from '../components/home/TrustSection'
+import BlogTeaser from '../components/home/BlogTeaser'
+import EmailSignup from '../components/home/EmailSignup'
 const DEFAULT_HOME_CITY = 'Bend'
-const RECENT_VIEWED_COOKIE = 'recent_listing_views'
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/og-home.png`
 
-/** Fallback map center when no listing coords (Central Oregon cities). */
-const FALLBACK_CITY_CENTERS: Record<string, { latitude: number; longitude: number; zoom: number }> = {
-  bend: { latitude: 44.0582, longitude: -121.3153, zoom: 11 },
-  'la-pine': { latitude: 43.6704, longitude: -121.5036, zoom: 11 },
-  redmond: { latitude: 44.2726, longitude: -121.1739, zoom: 11 },
-  sisters: { latitude: 44.2912, longitude: -121.5492, zoom: 11 },
-  sunriver: { latitude: 43.884, longitude: -121.4386, zoom: 12 },
-  prineville: { latitude: 44.299, longitude: -120.8345, zoom: 11 },
-  madras: { latitude: 44.6335, longitude: -121.1295, zoom: 11 },
-  terrebonne: { latitude: 44.3529, longitude: -121.1778, zoom: 12 },
-  culver: { latitude: 44.5254, longitude: -121.2114, zoom: 12 },
-}
-
-function slugifyCity(s: string): string {
-  return s
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-}
-
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.com').replace(/\/$/, '')
-
-/** Always render with fresh data so production matches localhost (no stale static build). */
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: 'Central Oregon Homes for Sale',
-  description: 'Search Central Oregon homes for sale. Browse listings by city and neighborhood, view maps, and find your next home with Ryan Realty.',
+  title: 'Ryan Realty — Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
+  description:
+    'The most comprehensive Central Oregon real estate platform. Search homes in Bend, Redmond, Sisters, Sunriver and surrounding communities. Listings, market insights, and local expertise.',
   alternates: { canonical: siteUrl },
   openGraph: {
-    title: 'Ryan Realty | Central Oregon Homes for Sale',
-    description: 'Search Central Oregon homes for sale. Browse listings, maps, and find your next home.',
+    title: 'Ryan Realty — Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
+    description:
+      'The most comprehensive Central Oregon real estate platform. Search homes in Bend, Redmond, Sisters, Sunriver and surrounding communities.',
     url: siteUrl,
-    type: 'website',
     siteName: 'Ryan Realty',
+    type: 'website',
+    images: [{ url: ogImage, width: 1200, height: 630, alt: 'Ryan Realty — Central Oregon Real Estate' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ryan Realty | Central Oregon Homes for Sale',
-    description: 'Search Central Oregon homes for sale. Browse listings, maps, and find your next home.',
+    title: 'Ryan Realty — Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
+    description: 'The most comprehensive Central Oregon real estate platform.',
   },
 }
 
-export default async function Home() {
+type HomeProps = { searchParams?: Promise<{ city?: string }> }
+
+export default async function Home(props: HomeProps) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!url?.trim() || !anonKey?.trim()) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
+        <div className="rounded-lg border border-warning/30 bg-warning/10 p-6 text-foreground">
           <h1 className="text-xl font-semibold">Setup required</h1>
           <p className="mt-2 text-sm">
-            Add <code className="rounded bg-amber-100 px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
-            <code className="rounded bg-amber-100 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to{' '}
-            <code className="rounded bg-amber-100 px-1">.env.local</code> and restart the dev server.
+            Add <code className="rounded bg-warning/15 px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+            <code className="rounded bg-warning/15 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to{' '}
+            <code className="rounded bg-warning/15 px-1">.env.local</code> and restart the dev server.
           </p>
         </div>
       </main>
     )
   }
 
-  const cookieStore = await cookies()
-  const [session, cities] = await Promise.all([
-    getSession(),
-    getBrowseCities(),
-  ])
+  const searchParams = (await (props.searchParams ?? Promise.resolve({}))) as Record<string, string | string[] | undefined>
+  const citySlug = (typeof searchParams?.city === 'string' ? searchParams.city : '') || 'bend'
+  const currentCityName = (await getCityFromSlug(citySlug)) ?? DEFAULT_HOME_CITY
 
-  // Homepage is always static: use default city for main content (Homes for You, map, browse). No profile/cookie for primary content.
-  const validCity = cities.find((c) => c.City === DEFAULT_HOME_CITY)?.City ?? DEFAULT_HOME_CITY
-
-  const prefsForFetch = session?.user ? await getBuyingPreferences().catch(() => null) : null
-  const homeTilesFilters =
-    prefsForFetch && (prefsForFetch.maxPrice != null || prefsForFetch.minBeds != null || prefsForFetch.minBaths != null)
-      ? {
-          maxPrice: prefsForFetch.maxPrice ?? undefined,
-          minBeds: prefsForFetch.minBeds ?? undefined,
-          minBaths: prefsForFetch.minBaths ?? undefined,
-        }
-      : undefined
-
-  const recentViewedRaw = cookieStore.get(RECENT_VIEWED_COOKIE)?.value
-  let recentViewedKeys: string[] = []
-  try {
-    if (recentViewedRaw) {
-      const parsed = JSON.parse(decodeURIComponent(recentViewedRaw))
-      if (Array.isArray(parsed)) recentViewedKeys = parsed.map((k: unknown) => String(k ?? '').trim()).filter(Boolean)
-    }
-  } catch { /* ignore */ }
+  // Single parallel fetch — no waterfall. Session-dependent calls use .then() chaining.
+  const sessionPromise = getSession()
+  const featuredPromise = getFeaturedListings(currentCityName)
+  const trendingPromise = getTrendingListings(currentCityName)
+  const recentlySoldPromise = getRecentlySold(currentCityName)
+  const communityHighlightsPromise = getCommunityHighlights()
 
   const [
-    homeTilesListings,
-    affordabilityPoolListings,
-    bannerResult,
-    mapCenter,
-    cityStatusCounts,
-    trendingListings,
-    hotCommunities,
-    recentViewedListingsRaw,
-    fallbackListings,
+    session, brokerage, featured, recentlySold, communityHighlights,
+    marketSnapshot, trending, blogPosts, citiesForSlider,
+    savedKeys, likedKeys, savedCommunityKeys, savedCitySlugs, prefs,
   ] = await Promise.all([
-    getListingsForHomeTiles({
-      city: validCity,
-      limit: 16,
-      ...(homeTilesFilters && {
-        maxPrice: homeTilesFilters.maxPrice,
-        minBeds: homeTilesFilters.minBeds,
-        minBaths: homeTilesFilters.minBaths,
-      }),
-    }),
-    getListingsForHomeTiles({ city: validCity, limit: 40 }),
-    getOrCreatePlaceBanner('city', cityEntityKey(validCity), `${validCity} Oregon`),
-    getCityCentroid(validCity).then((c) =>
-      c ? { latitude: c.lat, longitude: c.lng, zoom: 11 as number } : null
-    ),
-    getCityStatusCounts({ city: validCity }),
-    getTrendingListingKeys(validCity, 16).then(async (keys) => {
-      if (keys.length === 0) return []
-      const rows = await getHomeTileRowsByKeys(keys)
-      return rows.filter(
-        (r) =>
-          (r.StandardStatus ?? '').toLowerCase().includes('active') ||
-          (r.StandardStatus ?? '').toLowerCase().includes('pending') ||
-          (r.StandardStatus ?? '').toLowerCase().includes('for sale') ||
-          (r.StandardStatus ?? '').toLowerCase().includes('coming soon')
-      )
-    }),
-    getHotCommunitiesInCity(validCity).then((list) => list.slice(0, 12)),
-    recentViewedKeys.length > 0 ? getHomeTileRowsByKeys(recentViewedKeys) : Promise.resolve([]),
-    recentViewedKeys.length === 0 ? getListingsForHomeTiles({ city: validCity, limit: 16 }) : Promise.resolve([]),
+    sessionPromise,
+    getBrokerageSettings(),
+    featuredPromise,
+    recentlySoldPromise,
+    communityHighlightsPromise,
+    getMarketSnapshot(),
+    trendingPromise,
+    getBlogPostsForHome(),
+    getCitiesForIndex(),
+    // User-specific data — chain off session to avoid waterfall
+    sessionPromise.then((s) => s?.user ? getSavedListingKeys() : []),
+    sessionPromise.then((s) => s?.user ? getLikedListingKeys() : []),
+    sessionPromise.then((s) => s?.user ? getSavedCommunityKeys() : []),
+    sessionPromise.then((s) => s?.user ? getSavedCitySlugs() : []),
+    sessionPromise.then((s) => s?.user ? getBuyingPreferences().catch(() => null) : null),
   ])
 
-  const recentlyViewedListings =
-    recentViewedListingsRaw.length > 0 ? recentViewedListingsRaw : fallbackListings
+  // Engagement counts + community banners — parallel, after listings resolve
+  const allListingKeys = [
+    ...featured.map((r) => (r.ListingKey ?? r.ListNumber ?? '').toString().trim()).filter(Boolean),
+    ...trending.map((r) => (r.ListingKey ?? r.ListNumber ?? '').toString().trim()).filter(Boolean),
+    ...recentlySold.map((r) => (r.ListingKey ?? r.ListNumber ?? '').toString().trim()).filter(Boolean),
+  ]
+  const [engagementCounts, communityBannerUrls] = await Promise.all([
+    allListingKeys.length > 0 ? getEngagementCountsBatch(allListingKeys) : {},
+    communityHighlights.length > 0
+      ? getBannersBatch(
+          'subdivision',
+          communityHighlights.map((c) => subdivisionEntityKey(currentCityName, c.subdivisionName))
+        ).then((bannerMap) =>
+          communityHighlights.map((c) => {
+            const key = subdivisionEntityKey(currentCityName, c.subdivisionName)
+            return bannerMap.get(key)?.url ?? null
+          })
+        ).catch(() => [] as (string | null)[])
+      : Promise.resolve([] as (string | null)[]),
+  ])
 
-  // Banners for popular community tiles (optional; same order as hotCommunities)
-  const communityBannerUrls =
-    hotCommunities.length > 0
-      ? await Promise.all(
-          hotCommunities.map((c) =>
-            getOrCreatePlaceBanner(
-              'subdivision',
-              subdivisionEntityKey(validCity, c.subdivisionName),
-              `${c.subdivisionName}, ${validCity}`
-            ).then((r) => r?.url ?? null)
-          )
-        )
-      : []
+  // Explore by city / Browse by city: only primary Central Oregon cities (Bend, Redmond, Sisters, etc.)
+  const sortedSliderCities = filterToPrimaryCitiesOnly(citiesForSlider)
 
-  let listingsWithCoords = affordabilityPoolListings
-  try {
-    listingsWithCoords = await getGeocodedListings(listingsWithCoords)
-  } catch {
-    // Map may show fewer points
+  const displayPrefs = prefs ?? {
+    downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
+    interestRate: DEFAULT_DISPLAY_RATE,
+    loanTermYears: DEFAULT_DISPLAY_TERM_YEARS,
   }
-  const hasCoords = (l: (typeof listingsWithCoords)[0]) =>
-    l.Latitude != null &&
-    l.Longitude != null &&
-    Number.isFinite(Number(l.Latitude)) &&
-    Number.isFinite(Number(l.Longitude))
-  const listingsOnMap = listingsWithCoords.filter(hasCoords)
 
-  const [savedKeys, savedCommunityKeys] = session?.user
-    ? await Promise.all([getSavedListingKeys(), getSavedCommunityKeys()])
-    : [[], [] as string[]]
-  const prefs = prefsForFetch ?? null
+  const marketForHero = {
+    count: marketSnapshot.count,
+    medianPrice: marketSnapshot.medianPrice,
+    avgDom: marketSnapshot.avgDom ?? null,
+  }
 
-  const mapCenterResolved =
-    mapCenter ?? (FALLBACK_CITY_CENTERS[cityEntityKey(validCity)] ?? FALLBACK_CITY_CENTERS.bend)
-  const bannerUrl = bannerResult?.url ?? null
-  const bannerAttribution = bannerResult?.attribution ?? null
-  const totalInCity = cityStatusCounts.active + cityStatusCounts.pending
-  const displayPrefs =
-    prefs ?? {
-      downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
-      interestRate: DEFAULT_DISPLAY_RATE,
-      loanTermYears: DEFAULT_DISPLAY_TERM_YEARS,
-    }
-
-  const homesForYouLabel = `Homes for You in ${validCity}`
-  const searchCityHref = `/search/${cityEntityKey(validCity)}`
-
-  const mapContent = (
-    <div className="h-[360px] sm:h-[440px] md:h-[480px]">
-      <ListingMapGoogle
-        listings={listingsOnMap}
-        initialCenter={mapCenterResolved}
-        className="h-full w-full rounded-none"
-      />
-    </div>
-  )
+  const marketForCTA = {
+    count: marketSnapshot.count,
+    medianPrice: marketSnapshot.medianPrice,
+    avgDom: marketSnapshot.avgDom ?? null,
+    closedLast12Months: marketSnapshot.closedLast12Months,
+  }
 
   return (
-    <main className="min-h-screen bg-[var(--background)]">
-      <section className="relative -mx-4 min-h-[440px] sm:-mx-6 sm:min-h-[520px]" aria-label="Home hero">
-        {bannerUrl ? (
-          <div className="absolute inset-0">
-            <Image
-              src={bannerUrl}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="100vw"
-              priority
-            />
-          </div>
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-b from-[var(--brand-navy)] to-[#1e293b]" />
-        )}
-        <div className="absolute inset-0 bg-[var(--brand-navy)]/60" aria-hidden />
-        {bannerAttribution && (
-          <p className="absolute bottom-2 left-2 z-10 text-xs text-white/90 drop-shadow-md">
-            {bannerAttribution}
-          </p>
-        )}
-        <div className="relative z-10 flex min-h-[440px] sm:min-h-[520px] w-full flex-col items-center justify-center px-4 py-20 sm:py-28">
-          <div className="w-full max-w-2xl text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-md sm:text-4xl md:text-5xl">
-              Find Your Place in Central Oregon
-            </h1>
-            <p className="mt-3 text-lg text-white/95 sm:text-xl">
-              Search homes, neighborhoods, and open listings.
-            </p>
-            <div className="mt-8">
-              <HeroSearchOverlay homesForYouLabel={homesForYouLabel} />
-            </div>
-            <p className="mt-6 text-base text-white/90">
-              <Link href={searchCityHref} className="font-semibold underline decoration-white/60 underline-offset-2 hover:text-white hover:decoration-white">
-                {totalInCity} homes for sale in {validCity} and surrounding areas
-              </Link>
-              {' · '}
-              <Link href="/listings" className="font-semibold underline decoration-white/60 underline-offset-2 hover:text-white hover:decoration-white">
-                View all listings
-              </Link>
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <HomeCollapsibleMap
-        mapContent={mapContent}
-        cityName={validCity}
-        totalInCity={totalInCity}
-        searchHref={searchCityHref}
+    <main className="min-h-screen bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@graph': [
+              {
+                '@type': 'RealEstateAgent',
+                name: 'Ryan Realty',
+                url: siteUrl,
+                areaServed: [
+                  { '@type': 'City', name: 'Bend', addressRegion: 'OR' },
+                  { '@type': 'City', name: 'Redmond', addressRegion: 'OR' },
+                  { '@type': 'City', name: 'Sisters', addressRegion: 'OR' },
+                  { '@type': 'City', name: 'Sunriver', addressRegion: 'OR' },
+                ],
+              },
+              {
+                '@type': 'WebSite',
+                name: 'Ryan Realty',
+                url: siteUrl,
+                potentialAction: {
+                  '@type': 'SearchAction',
+                  target: {
+                    '@type': 'EntryPoint',
+                    urlTemplate: `${siteUrl}/homes-for-sale?keywords={search_term_string}`,
+                  },
+                  'query-input': 'required name=search_term_string',
+                },
+              },
+            ],
+          }),
+        }}
       />
 
-      {/* Curated homes slider (newest in city; static default city) */}
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-        <HomeTilesSlider
-          title={homesForYouLabel}
-          listings={homeTilesListings}
-          savedKeys={session?.user ? savedKeys : []}
+      <HomeHero
+        marketSnapshot={marketForHero}
+        heroVideoUrl={brokerage?.hero_video_url?.trim() || '/videos/hero.mp4'}
+        heroImageUrl={brokerage?.hero_image_url ?? null}
+      />
+
+      {featured.length > 0 && (
+        <FeaturedListings
+          listings={featured}
+          savedKeys={savedKeys}
+          likedKeys={likedKeys}
+          signedIn={!!session?.user}
+          userEmail={session?.user?.email ?? null}
+          downPaymentPercent={displayPrefs.downPaymentPercent}
+          interestRate={displayPrefs.interestRate}
+          loanTermYears={displayPrefs.loanTermYears}
+          engagementCounts={engagementCounts}
+        />
+      )}
+
+      {featured.length > 0 && (
+        <AffordabilityRow
+          listings={featured}
+          savedKeys={savedKeys}
+          likedKeys={likedKeys}
           signedIn={!!session?.user}
           userEmail={session?.user?.email ?? null}
           downPaymentPercent={displayPrefs.downPaymentPercent}
           interestRate={displayPrefs.interestRate}
           loanTermYears={displayPrefs.loanTermYears}
         />
-      </section>
-
-      {/* Affordability: target price input + affordable homes row */}
-      <AffordabilityRow
-        listings={affordabilityPoolListings}
-        savedKeys={session?.user ? savedKeys : []}
-        signedIn={!!session?.user}
-        userEmail={session?.user?.email ?? null}
-        downPaymentPercent={displayPrefs.downPaymentPercent}
-        interestRate={displayPrefs.interestRate}
-        loanTermYears={displayPrefs.loanTermYears}
-      />
-
-      {/* Trending Homes in [City], Oregon */}
-      {trendingListings.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-          <HomeTilesSlider
-            title={`Trending Homes in ${validCity}, Oregon`}
-            listings={trendingListings}
-            savedKeys={session?.user ? savedKeys : []}
-            signedIn={!!session?.user}
-            userEmail={session?.user?.email ?? null}
-            downPaymentPercent={displayPrefs.downPaymentPercent}
-            interestRate={displayPrefs.interestRate}
-            loanTermYears={displayPrefs.loanTermYears}
-          />
-        </section>
       )}
 
-      {/* Popular Communities (tile-style with image background, share) */}
-      {hotCommunities.length > 0 && (
+      {trending.length > 0 && (
+        <TrendingListings
+          listings={trending}
+          savedKeys={savedKeys}
+          likedKeys={likedKeys}
+          signedIn={!!session?.user}
+          userEmail={session?.user?.email ?? null}
+          downPaymentPercent={displayPrefs.downPaymentPercent}
+          interestRate={displayPrefs.interestRate}
+          loanTermYears={displayPrefs.loanTermYears}
+          engagementCounts={engagementCounts}
+        />
+      )}
+
+      {communityHighlights.length > 0 && (
         <PopularCommunitiesRow
-          city={validCity}
-          communities={hotCommunities}
+          city={currentCityName}
+          communities={communityHighlights}
           bannerUrls={communityBannerUrls}
           signedIn={!!session?.user}
           savedCommunityKeys={savedCommunityKeys}
         />
       )}
 
-      {/* Recently Viewed (only when we have recent views) or Homes you might like */}
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-        <HomeTilesSlider
-          title={recentViewedListingsRaw.length > 0 ? 'Recently Viewed' : 'Homes you might like'}
-          listings={recentlyViewedListings}
-          savedKeys={session?.user ? savedKeys : []}
+      {recentlySold.length > 0 && (
+        <RecentlySold
+          listings={recentlySold}
+          savedKeys={savedKeys}
+          likedKeys={likedKeys}
           signedIn={!!session?.user}
           userEmail={session?.user?.email ?? null}
           downPaymentPercent={displayPrefs.downPaymentPercent}
           interestRate={displayPrefs.interestRate}
           loanTermYears={displayPrefs.loanTermYears}
+          engagementCounts={engagementCounts}
         />
-      </section>
-
-      {/* Browse by city — all cities with active listings */}
-      {cities.length > 0 && (
-        <section className="border-t border-[var(--border)] bg-[var(--surface-muted)] px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="browse-by-city-heading">
-          <div className="mx-auto max-w-7xl">
-            <h2 id="browse-by-city-heading" className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-              Browse by city
-            </h2>
-            <p className="mt-1.5 text-[var(--text-secondary)]">Explore homes in every city we serve.</p>
-            <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {cities.map(({ City, count }) => (
-                <CityTile key={City} city={City} count={count} />
-              ))}
-            </div>
-            <Link
-              href="/listings"
-              className="mt-6 inline-block text-sm font-semibold text-[var(--accent)] hover:text-[var(--accent-hover)]"
-            >
-              View all listings →
-            </Link>
-          </div>
-        </section>
       )}
+
+      <BrowseByCity
+        cities={sortedSliderCities}
+        savedSlugs={savedCitySlugs}
+        signedIn={!!session?.user}
+      />
+
+      <TrustSection />
+
+      {blogPosts.length > 0 && <BlogTeaser posts={blogPosts} />}
+
+      <EmailSignup />
     </main>
   )
 }

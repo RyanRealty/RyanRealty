@@ -8,8 +8,8 @@ export default async function ListingsTemplatePage() {
   if (!key) key = await getMostRecentListingKeyFromSupabase()
   if (!key) {
     return (
-      <main className="min-h-screen bg-zinc-50 p-8">
-        <p className="text-zinc-600">No listings in the database yet. Add SPARK_API_KEY and run a sync to populate, or import data into Supabase.</p>
+      <main className="min-h-screen bg-muted p-8">
+        <p className="text-muted-foreground">No listings in the database yet. Add SPARK_API_KEY and run a sync to populate, or import data into Supabase.</p>
       </main>
     )
   }

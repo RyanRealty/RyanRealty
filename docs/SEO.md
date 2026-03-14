@@ -33,7 +33,7 @@ This doc summarizes what’s in place so the site can compete for real estate se
 
 ## What you should do
 
-1. **Set `NEXT_PUBLIC_SITE_URL`** in production to your live domain (e.g. `https://ryanrealty.com`).
+1. **Set `NEXT_PUBLIC_SITE_URL`** in production to your live domain (e.g. `https://ryan-realty.com`).
 2. **Google Search Console** – Add the property and submit the sitemap (`/sitemap.xml`).
 3. **Google Business Profile** – Keep NAP and business info consistent with the site; link to the site.
 4. **Content** – Expand `lib/city-content.ts` (and subdivision blurbs) for more cities/neighborhoods to target long-tail “homes for sale in [place]” queries.

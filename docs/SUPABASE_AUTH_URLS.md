@@ -28,7 +28,7 @@ You’ll see:
 Use your **production** URL (so after sign-in in production you land on the right place):
 
 - **Value:** `https://ryanrealty-ryanrealtys-projects.vercel.app`  
-  (or your custom domain, e.g. `https://ryanrealty.com`, with **no trailing slash**)
+  (or your custom domain, e.g. `https://ryan-realty.com`, with **no trailing slash**)
 
 Type it in the **Site URL** field and leave it saved.  
 (For local dev we only need Redirect URLs; see below.)
@@ -56,8 +56,8 @@ https://ryanrealty-ryanrealtys-projects.vercel.app
 **If you use a custom domain later**, add those too, e.g.:
 
 ```
-https://www.ryanrealty.com/auth/callback
-https://www.ryanrealty.com
+https://www.ryan-realty.com/auth/callback
+https://www.ryan-realty.com
 ```
 
 So your full list might look like:

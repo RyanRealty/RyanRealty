@@ -41,8 +41,11 @@
 
 ## Data source
 
-- **Pending / closed**: From `listing_history`: events whose `event` contains “Pending” or “Closed” and `event_date` in the report range.
-- **City**: Resolved via `listings` (join on `listing_key` → `ListingKey` or `ListNumber`). Make sure listing sync and history sync run so `listing_history` and `listings` are up to date before generating the report.
+- **Sales report cards and detail pages** (`/reports`, `/reports/sales/[city]/[period]`):
+  - **Closed sales**: From the **listings** table: `StandardStatus` ilike '%closed%' and `CloseDate` in the period. This is the same source as the report RPCs (`get_city_period_metrics`). Data appears as long as Spark sync populates **CloseDate** and **StandardStatus** on closed listings.
+  - **Pending (went pending in period)**: From **listing_history**: events with `event` ilike '%Pending%' and `event_date` in the period; city resolved via `listings` (match on `ListingKey` or `ListNumber`). Requires **Sync listing history** to have been run (Admin → Sync).
+- **Weekly market report** (generated report): Uses the same logic — closed from `listings` (CloseDate), pending from `listing_history`. City and listing details come from `listings`.
+- **If reports show no data**: Ensure (1) Spark listing sync runs and returns `CloseDate` and `StandardStatus` for closed listings, and (2) for “pending” counts, run **Sync listing history** (and optionally run it with “Include closed listings” to backfill history for closed listings too).
 
 ## Optional: daily reports
 

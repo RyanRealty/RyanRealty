@@ -2,14 +2,11 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
-
-const PROPERTY_TYPES = [
-  { value: '', label: 'All types' },
-  { value: 'Residential', label: 'Residential' },
-  { value: 'Commercial', label: 'Commercial' },
-  { value: 'Land', label: 'Land' },
-  { value: 'Rental', label: 'Rental' },
-]
+import { PROPERTY_TYPES } from '@/lib/property-type'
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest first' },
@@ -60,10 +57,10 @@ export default function ListingFilters({
     const params = new URLSearchParams()
     const minPrice = (data.get('minPrice') as string)?.trim()
     const maxPrice = (data.get('maxPrice') as string)?.trim()
-    const beds = (data.get('beds') as string)?.trim()
-    const baths = (data.get('baths') as string)?.trim()
+    const beds = ((data.get('beds') as string)?.trim() === '__all__' ? '' : (data.get('beds') as string)?.trim())
+    const baths = ((data.get('baths') as string)?.trim() === '__all__' ? '' : (data.get('baths') as string)?.trim())
     const minSqFt = (data.get('minSqFt') as string)?.trim()
-    const propertyType = (data.get('propertyType') as string)?.trim()
+    const propertyType = ((data.get('propertyType') as string)?.trim() === '__all__' ? '' : (data.get('propertyType') as string)?.trim())
     const sort = (data.get('sort') as string)?.trim()
     const includeClosed = form.querySelector<HTMLInputElement>('input[name="includeClosed"]')?.checked
     if (minPrice) params.set('minPrice', minPrice)
@@ -88,110 +85,114 @@ export default function ListingFilters({
   return (
     <form
       onSubmit={applyFilters}
-      className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
+      className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4 shadow-sm"
     >
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-500">Min price</span>
-        <input
+      <Label className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-muted-foreground">Min price</span>
+        <Input
           type="number"
           name="minPrice"
           placeholder="Any"
           min={0}
           step={25000}
           defaultValue={initMinPrice}
-          className="w-28 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+          className="w-28 rounded-lg border border-border px-3 py-2 text-sm"
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-500">Max price</span>
-        <input
+      </Label>
+      <Label className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-muted-foreground">Max price</span>
+        <Input
           type="number"
           name="maxPrice"
           placeholder="Any"
           min={0}
           step={25000}
           defaultValue={initMaxPrice}
-          className="w-28 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+          className="w-28 rounded-lg border border-border px-3 py-2 text-sm"
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-500">Beds (min)</span>
-        <select
-          name="beds"
-          defaultValue={initBeds ?? ''}
-          className="w-20 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-        >
-          <option value="">Any</option>
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <option key={n} value={n}>{n}+</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-500">Baths (min)</span>
-        <select
-          name="baths"
-          defaultValue={initBaths ?? ''}
-          className="w-20 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-        >
-          <option value="">Any</option>
-          {[1, 2, 3, 4, 5].map((n) => (
-            <option key={n} value={n}>{n}+</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-500">Min sq ft</span>
-        <input
+      </Label>
+      <Label className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-muted-foreground">Beds (min)</span>
+        <Select name="beds" defaultValue={initBeds || '__all__'}>
+          <SelectTrigger className="w-20 rounded-lg px-3 py-2 text-sm">
+            <SelectValue placeholder="Any" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">Any</SelectItem>
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <SelectItem key={n} value={String(n)}>{n}+</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Label>
+      <Label className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-muted-foreground">Baths (min)</span>
+        <Select name="baths" defaultValue={initBaths || '__all__'}>
+          <SelectTrigger className="w-20 rounded-lg px-3 py-2 text-sm">
+            <SelectValue placeholder="Any" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">Any</SelectItem>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <SelectItem key={n} value={String(n)}>{n}+</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Label>
+      <Label className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-muted-foreground">Min sq ft</span>
+        <Input
           type="number"
           name="minSqFt"
           placeholder="Any"
           min={0}
           step={100}
           defaultValue={initMinSqFt}
-          className="w-24 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+          className="w-24 rounded-lg border border-border px-3 py-2 text-sm"
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-500">Property type</span>
-        <select
-          name="propertyType"
-          defaultValue={initPropertyType ?? 'Residential'}
-          className="min-w-[120px] rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-        >
-          {PROPERTY_TYPES.map(({ value, label }) => (
-            <option key={value || 'all'} value={value}>{label}</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-500">Sort by</span>
-        <select
-          name="sort"
-          defaultValue={initSort ?? 'newest'}
-          className="min-w-[140px] rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-        >
-          {SORT_OPTIONS.map(({ value, label }) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex items-center gap-2 self-end pb-2">
-        <input
+      </Label>
+      <Label className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-muted-foreground">Property type</span>
+        <Select name="propertyType" defaultValue={initPropertyType || 'Residential'}>
+          <SelectTrigger className="min-w-[120px] rounded-lg px-3 py-2 text-sm">
+            <SelectValue placeholder="All types" />
+          </SelectTrigger>
+          <SelectContent>
+            {PROPERTY_TYPES.map(({ value, label }) => (
+              <SelectItem key={value || '__all__'} value={value || '__all__'}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Label>
+      <Label className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-muted-foreground">Sort by</span>
+        <Select name="sort" defaultValue={initSort || 'newest'}>
+          <SelectTrigger className="min-w-[140px] rounded-lg px-3 py-2 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Label>
+      <Label className="flex items-center gap-2 self-end pb-2">
+        <Input
           type="checkbox"
           name="includeClosed"
           defaultChecked={initIncludeClosed === '1'}
-          className="h-4 w-4 rounded border-zinc-300"
+          className="h-4 w-4 rounded border-border"
         />
-        <span className="text-sm text-zinc-600">Include closed listings</span>
-      </label>
-      <button
+        <span className="text-sm text-muted-foreground">Include closed listings</span>
+      </Label>
+      <Button
         type="submit"
         disabled={isPending}
-        className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-70"
+        className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-white hover:bg-muted-foreground disabled:opacity-70"
       >
         {isPending ? 'Applying…' : 'Apply'}
-      </button>
+      </Button>
     </form>
   )
 }

@@ -31,8 +31,10 @@ COMMENT ON TABLE activity_events IS 'Sync change events: new_listing, price_drop
 
 ALTER TABLE activity_events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role full access activity_events" ON activity_events;
 CREATE POLICY "Service role full access activity_events"
   ON activity_events FOR ALL TO service_role USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Allow public read activity_events" ON activity_events;
 CREATE POLICY "Allow public read activity_events"
   ON activity_events FOR SELECT USING (true);

@@ -3,12 +3,18 @@
 import { createClient } from '@supabase/supabase-js'
 import { fetchPlacePhoto, fetchPlacePhotoOptions } from '../../lib/photo-api'
 import { cityEntityKey, subdivisionEntityKey } from '../../lib/slug'
+import { getBannerSearchQuery } from '../../lib/banner-prompts'
+import { getResortEntityKeys } from './subdivision-flags'
 import { getBrowseCities } from './listings'
 import { getSubdivisionsInCity } from './listings'
 
 const BUCKET = 'banners'
 
-export type BannerEntity = { entityType: 'city'; entityKey: string; displayName: string } | { entityType: 'subdivision'; entityKey: string; displayName: string; city: string }
+export type BannerEntity =
+  | { entityType: 'city'; entityKey: string; displayName: string }
+  | { entityType: 'subdivision'; entityKey: string; displayName: string; city: string; isResort?: boolean }
+
+export { getBannerSearchQuery }
 
 /**
  * Get public URL for a city or subdivision banner, or null if none exists.
@@ -58,69 +64,67 @@ export async function getBannerAttribution(
 }
 
 /**
- * Get banner URL and attribution. If none exists, fetches from Unsplash using searchQuery,
- * downloads the image, stores in Storage and banner_images, then returns the URL (no repeat API calls).
- * searchQuery: city page = "{city} Oregon", community page = "{community} {city} Oregon".
+ * Get banner URL and attribution if one already exists in storage.
+ * Never fetches or generates images during page render — returns null if no banner stored.
+ * Use the admin "Generate Banners" UI or generateAllMissingBanners() to populate banners.
  */
 export async function getOrCreatePlaceBanner(
   entityType: 'city' | 'subdivision',
   entityKey: string,
-  searchQuery: string
+  _searchQuery?: string
 ): Promise<{ url: string | null; attribution: string | null }> {
-  const existingUrl = await getBannerUrl(entityType, entityKey)
-  if (existingUrl) {
-    const attribution = await getBannerAttribution(entityType, entityKey)
-    return { url: existingUrl, attribution }
-  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl?.trim() || !key?.trim()) return { url: null, attribution: null }
 
-  const photo = await fetchPlacePhoto(searchQuery)
-  if (!photo?.url) return { url: null, attribution: null }
+  const sb = createClient(supabaseUrl, key)
+  const { data } = await sb
+    .from('banner_images')
+    .select('storage_path, attribution')
+    .eq('entity_type', entityType)
+    .eq('entity_key', entityKey)
+    .maybeSingle()
+
+  const row = data as { storage_path?: string; attribution?: string | null } | null
+  if (!row?.storage_path) return { url: null, attribution: null }
+
+  return {
+    url: `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${row.storage_path}`,
+    attribution: row.attribution?.trim() ?? null,
+  }
+}
+
+/**
+ * Batch-fetch banner URLs and attributions for multiple entities of the same type in a SINGLE query.
+ * Returns a Map keyed by entity_key with {url, attribution} values.
+ */
+export async function getBannersBatch(
+  entityType: 'city' | 'subdivision',
+  entityKeys: string[]
+): Promise<Map<string, { url: string | null; attribution: string | null }>> {
+  const result = new Map<string, { url: string | null; attribution: string | null }>()
+  if (entityKeys.length === 0) return result
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
-    return { url: photo.url, attribution: photo.attribution }
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl?.trim() || !key?.trim()) return result
+
+  const sb = createClient(supabaseUrl, key)
+  const { data } = await sb
+    .from('banner_images')
+    .select('entity_key, storage_path, attribution')
+    .eq('entity_type', entityType)
+    .in('entity_key', entityKeys)
+
+  for (const row of (data ?? []) as { entity_key: string; storage_path?: string; attribution?: string | null }[]) {
+    if (!row.storage_path) continue
+    result.set(row.entity_key, {
+      url: `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${row.storage_path}`,
+      attribution: row.attribution?.trim() ?? null,
+    })
   }
 
-  let buffer: Buffer
-  try {
-    const res = await fetch(photo.url, { next: { revalidate: 0 } })
-    if (!res.ok) return { url: photo.url, attribution: photo.attribution }
-    const ab = await res.arrayBuffer()
-    buffer = Buffer.from(ab)
-  } catch {
-    return { url: photo.url, attribution: photo.attribution }
-  }
-
-  const storagePath =
-    entityType === 'city'
-      ? `cities/${entityKey}.jpg`
-      : `subdivisions/${entityKey.replace(':', '/')}.jpg`
-  const source = photo.url.includes('unsplash') ? 'unsplash' : 'pexels'
-  const supabase = createClient(supabaseUrl, serviceKey)
-  const { data: buckets } = await supabase.storage.listBuckets()
-  if (!buckets?.some((b) => b.name === BUCKET)) {
-    await supabase.storage.createBucket(BUCKET, { public: true })
-  }
-  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, buffer, {
-    contentType: 'image/jpeg',
-    upsert: true,
-  })
-  if (uploadError) return { url: photo.url, attribution: photo.attribution }
-
-  await supabase.from('banner_images').upsert(
-    {
-      entity_type: entityType,
-      entity_key: entityKey,
-      storage_path: storagePath,
-      source,
-      attribution: photo.attribution || null,
-    },
-    { onConflict: 'entity_type,entity_key' }
-  )
-
-  const url = `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${storagePath}`
-  return { url, attribution: photo.attribution }
+  return result
 }
 
 /** Download image from URL, upload to Storage, upsert banner_images. Returns new public URL or null. */
@@ -211,16 +215,17 @@ export async function refreshPlaceBanner(
 
 /**
  * List all cities and subdivisions that exist in listings but have no banner yet.
- * Only these entities will be passed to generateAllMissingBanners (one Unsplash fetch per missing entity).
+ * Resort/planned communities get isResort so we fetch community-specific imagery; others get city landscape.
  */
 export async function listMissingBanners(): Promise<BannerEntity[]> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl?.trim() || !anonKey?.trim()) return []
 
-  const [cities, existing] = await Promise.all([
+  const [cities, existing, resortKeys] = await Promise.all([
     getBrowseCities(),
     createClient(supabaseUrl, anonKey).from('banner_images').select('entity_type, entity_key'),
+    getResortEntityKeys(),
   ])
 
   const existingSet = new Set<string>()
@@ -245,6 +250,7 @@ export async function listMissingBanners(): Promise<BannerEntity[]> {
           entityKey: subKey,
           displayName: subdivisionName,
           city: City,
+          isResort: resortKeys.has(subKey),
         })
       }
     }
@@ -254,14 +260,14 @@ export async function listMissingBanners(): Promise<BannerEntity[]> {
 }
 
 /**
- * Fetch a banner from Unsplash (search by place), store in Storage and banner_images.
- * searchQuery: city = "{city} Oregon", subdivision = "{community} {city} Oregon".
+ * Fetch a banner from Unsplash (pretty landscape), store in Storage and banner_images.
+ * Resort/planned communities: image of that community. Other communities: scenic landscape of the city.
  */
 export async function generateAndStoreBanner(entity: BannerEntity): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const searchQuery =
     entity.entityType === 'city'
-      ? `${entity.displayName} Oregon`
-      : `${entity.displayName} ${entity.city} Oregon`
+      ? getBannerSearchQuery('city', entity.displayName)
+      : getBannerSearchQuery('subdivision', entity.displayName, entity.city, entity.isResort)
   const { url } = await getOrCreatePlaceBanner(entity.entityType, entity.entityKey, searchQuery)
   if (url) return { ok: true, url }
   return { ok: false, error: 'No photo found. Set UNSPLASH_ACCESS_KEY in .env.local.' }
@@ -269,13 +275,14 @@ export async function generateAndStoreBanner(entity: BannerEntity): Promise<{ ok
 
 /**
  * Generate (or regenerate) a single banner for the current page. Call from city/subdivision search page.
- * Returns the new banner URL on success; use router.refresh() after to show it.
+ * Pass isResort for subdivisions so resort communities get community-specific imagery, others get city landscape.
  */
 export async function generateBannerForPage(params: {
   entityType: 'city' | 'subdivision'
   entityKey: string
   displayName: string
   city?: string
+  isResort?: boolean
 }): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const entity: BannerEntity =
     params.entityType === 'city'
@@ -285,6 +292,7 @@ export async function generateBannerForPage(params: {
           entityKey: params.entityKey,
           displayName: params.displayName,
           city: params.city ?? '',
+          isResort: params.isResort,
         }
   return generateAndStoreBanner(entity)
 }

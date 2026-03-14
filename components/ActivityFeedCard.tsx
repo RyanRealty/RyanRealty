@@ -4,20 +4,22 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { toggleSavedListing } from '../app/actions/saved-listings'
+import { BookmarkIcon } from '@/components/icons/ActionIcons'
 import { trackListingTileClick } from '../app/actions/track-listing-click'
 import { trackSavedPropertyAction } from '../app/actions/track-saved-property'
 import type { ActivityFeedItem } from '../app/actions/activity-feed'
+import { Button } from "@/components/ui/button"
 
 function eventBadge(type: ActivityFeedItem['event_type']): { label: string; className: string } {
   switch (type) {
     case 'new_listing':
-      return { label: 'New', className: 'bg-emerald-600' }
+      return { label: 'New', className: 'bg-success' }
     case 'price_drop':
-      return { label: 'Price drop', className: 'bg-amber-500' }
+      return { label: 'Price drop', className: 'bg-warning' }
     case 'status_pending':
-      return { label: 'Under contract', className: 'bg-amber-600' }
+      return { label: 'Under contract', className: 'bg-warning' }
     case 'status_closed':
-      return { label: 'Just sold', className: 'bg-zinc-600' }
+      return { label: 'Just sold', className: 'bg-muted-foreground' }
     default:
       return { label: '', className: '' }
   }
@@ -81,7 +83,7 @@ export default function ActivityFeedCard({ item, saved = false, signedIn = false
     <Link
       href={listingHref}
       onClick={handleClick}
-      className="group relative block overflow-hidden rounded-2xl bg-zinc-200 shadow-md transition hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:ring-offset-2"
+      className="group relative block overflow-hidden rounded-xl bg-border shadow-md transition hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
     >
       {/* 4:5 on mobile; full-bleed image */}
       <div className="aspect-[4/5] w-full sm:aspect-[3/4]">
@@ -94,7 +96,7 @@ export default function ActivityFeedCard({ item, saved = false, signedIn = false
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-zinc-300 text-zinc-500">
+          <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
             <span className="text-sm">No photo</span>
           </div>
         )}
@@ -104,16 +106,18 @@ export default function ActivityFeedCard({ item, saved = false, signedIn = false
           </span>
         )}
         {signedIn && (
-          <button
+          <Button
             type="button"
             onClick={handleToggleSave}
-            className="absolute right-2 top-2 rounded-full bg-white/90 p-2 shadow hover:bg-white"
+            className="absolute right-2 top-2 rounded-full bg-card/90 p-2 shadow hover:bg-card"
             aria-label={saved ? 'Unsave' : 'Save'}
           >
-            <svg className={`h-5 w-5 ${saved ? 'fill-red-500 text-red-500' : 'fill-none text-zinc-600'}`} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </button>
+            {saved ? (
+              <BookmarkIcon filled className="h-5 w-5 text-primary" />
+            ) : (
+              <BookmarkIcon filled={false} className="h-5 w-5 text-muted-foreground" />
+            )}
+          </Button>
         )}
         {/* Stats overlay at bottom */}
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">

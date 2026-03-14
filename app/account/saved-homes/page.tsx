@@ -26,16 +26,16 @@ export default async function SavedHomesPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Saved homes</h1>
-      <p className="mt-1 text-zinc-600">
+      <h1 className="text-2xl font-bold tracking-tight text-foreground">Saved homes</h1>
+      <p className="mt-1 text-muted-foreground">
         Your favorite listings. Remove any from here or from the listing page.
       </p>
       {listings.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-zinc-200 bg-zinc-50 p-8 text-center">
-          <p className="text-zinc-600">You haven’t saved any homes yet.</p>
+        <div className="mt-8 rounded-lg border border-border bg-muted p-8 text-center">
+          <p className="text-muted-foreground">You haven’t saved any homes yet.</p>
           <Link
             href="/listings"
-            className="mt-4 inline-block rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             Browse listings
           </Link>

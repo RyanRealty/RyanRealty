@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
+import { Button } from "@/components/ui/button"
 
 type Props = {
   id: string
@@ -34,10 +37,10 @@ export default function CollapsibleSection({ id, title, defaultOpen = true, chil
   return (
     <section
       id={id}
-      className="border-b border-zinc-200 last:border-b-0"
+      className="border-b border-border last:border-b-0"
       aria-labelledby={`${id}-heading`}
     >
-      <button
+      <Button
         type="button"
         id={`${id}-heading`}
         onClick={() => setOpen((o) => !o)}
@@ -45,20 +48,18 @@ export default function CollapsibleSection({ id, title, defaultOpen = true, chil
         aria-expanded={open}
         aria-controls={`${id}-content`}
       >
-        <span className="text-lg font-semibold text-zinc-900">{title}</span>
+        <span className="text-lg font-semibold text-foreground">{title}</span>
         {badge != null && badge !== '' && (
-          <span className="text-sm font-medium text-zinc-500">{badge}</span>
+          <span className="text-sm font-medium text-muted-foreground">{badge}</span>
         )}
         <span
-          className="shrink-0 text-zinc-500 transition-transform duration-200"
+          className="shrink-0 text-muted-foreground transition-transform duration-200"
           style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
           aria-hidden
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <HugeiconsIcon icon={ArrowDown01Icon} className="h-5 w-5" />
         </span>
-      </button>
+      </Button>
       <div
         id={`${id}-content`}
         ref={contentRef}

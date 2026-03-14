@@ -15,8 +15,10 @@ CREATE INDEX IF NOT EXISTS idx_visits_created_at ON visits (created_at);
 
 ALTER TABLE visits ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow insert visits" ON visits;
 CREATE POLICY "Allow insert visits"
   ON visits FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service role read visits" ON visits;
 CREATE POLICY "Service role read visits"
   ON visits FOR SELECT TO service_role USING (true);

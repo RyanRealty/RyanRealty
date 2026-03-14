@@ -17,12 +17,12 @@ export default function ListingSpecial({ highlights, featureTags }: Props) {
   if (!hasHighlights && !hasTags) return null
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm" aria-labelledby="listing-special-heading">
-      <h2 id="listing-special-heading" className="mb-4 text-lg font-semibold text-zinc-900">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="listing-special-heading">
+      <h2 id="listing-special-heading" className="mb-4 text-lg font-semibold text-foreground">
         What makes this property special
       </h2>
       {hasHighlights && (
-        <blockquote className="border-l-4 border-emerald-600 pl-4 text-base leading-relaxed text-zinc-700 md:text-lg md:leading-relaxed">
+        <blockquote className="border-l-4 border-success pl-4 text-base leading-relaxed text-muted-foreground md:text-lg md:leading-relaxed">
           {highlights.map((s, i) => (
             <p key={i} className={i > 0 ? 'mt-3' : ''}>
               {s}
@@ -31,11 +31,11 @@ export default function ListingSpecial({ highlights, featureTags }: Props) {
         </blockquote>
       )}
       {hasTags && (
-        <div className={`mt-4 flex flex-wrap gap-2 ${hasHighlights ? 'border-t border-zinc-100 pt-4' : ''}`}>
+        <div className={`mt-4 flex flex-wrap gap-2 ${hasHighlights ? 'border-t border-border pt-4' : ''}`}>
           {featureTags.map((tag, i) => (
             <span
               key={i}
-              className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium text-zinc-800"
+              className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-foreground"
             >
               {tag}
             </span>

@@ -13,16 +13,19 @@ CREATE INDEX IF NOT EXISTS idx_saved_searches_user_id ON saved_searches (user_id
 
 ALTER TABLE saved_searches ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can read own saved_searches" ON saved_searches;
 CREATE POLICY "Users can read own saved_searches"
   ON saved_searches FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own saved_searches" ON saved_searches;
 CREATE POLICY "Users can insert own saved_searches"
   ON saved_searches FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own saved_searches" ON saved_searches;
 CREATE POLICY "Users can delete own saved_searches"
   ON saved_searches FOR DELETE
   TO authenticated

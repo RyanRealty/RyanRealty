@@ -7,6 +7,9 @@ import { useState, useRef, useEffect } from 'react'
 import AuthDropdown from './AuthDropdown'
 import SmartSearch from './SmartSearch'
 import type { AuthUser } from '@/app/actions/auth'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Search01Icon, Cancel01Icon, Menu02Icon } from '@hugeicons/core-free-icons'
+import { Button } from "@/components/ui/button"
 
 type NavLink = { href: string; label: string }
 type SiteHeaderProps = {
@@ -24,6 +27,7 @@ export default function SiteHeader({ totalListings, user = null, brokerageName =
 
   const navLinks: NavLink[] = [
     { href: '/', label: 'Home' },
+    { href: '/feed', label: 'Feed' },
     { href: '/about', label: 'About' },
     { href: '/team', label: 'Team' },
     { href: '/listings', label: 'Listings' },
@@ -42,14 +46,14 @@ export default function SiteHeader({ totalListings, user = null, brokerageName =
   }, [searchOpen])
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white shadow-sm">
+    <header className="sticky top-0 z-50 border-b border-border bg-card shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2 text-xl font-semibold tracking-tight text-zinc-900"
+          className="flex shrink-0 items-center gap-2 text-xl font-semibold tracking-tight text-foreground"
         >
           {brokerageLogoUrl ? (
-            <Image src={brokerageLogoUrl} alt="" width={32} height={32} className="rounded object-contain" />
+            <Image src={brokerageLogoUrl} alt={`${brokerageName} logo`} width={32} height={32} className="rounded object-contain" />
           ) : null}
           <span>{brokerageName}</span>
         </Link>
@@ -62,19 +66,17 @@ export default function SiteHeader({ totalListings, user = null, brokerageName =
                 <SmartSearch onClose={() => setSearchOpen(false)} />
               </div>
             ) : null}
-            <button
+            <Button
               type="button"
               onClick={() => setSearchOpen((o) => !o)}
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                searchOpen ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700'
+                searchOpen ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-muted-foreground'
               }`}
               aria-label={searchOpen ? 'Close search' : 'Open search'}
               aria-expanded={searchOpen}
             >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
+              <HugeiconsIcon icon={Search01Icon} className="h-5 w-5" />
+            </Button>
           </div>
           <nav className="flex items-center gap-0.5" aria-label="Main navigation">
             {navLinks.map(({ href, label }) => (
@@ -83,8 +85,8 @@ export default function SiteHeader({ totalListings, user = null, brokerageName =
                 href={href}
                 className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   isActive(href)
-                    ? 'bg-zinc-100 text-zinc-900'
-                    : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
                 {label}
@@ -97,30 +99,26 @@ export default function SiteHeader({ totalListings, user = null, brokerageName =
         </div>
 
         {/* Mobile: menu button */}
-        <button
+        <Button
           type="button"
-          className="rounded-lg p-2.5 text-zinc-600 hover:bg-zinc-100 md:hidden"
+          className="rounded-lg p-2.5 text-muted-foreground hover:bg-muted md:hidden"
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen((o) => !o)}
         >
           {mobileOpen ? (
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <HugeiconsIcon icon={Cancel01Icon} className="h-6 w-6" />
           ) : (
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <HugeiconsIcon icon={Menu02Icon} className="h-6 w-6" />
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Mobile menu panel */}
       {mobileOpen && (
-        <div className="border-t border-zinc-200 bg-white md:hidden" role="dialog" aria-label="Mobile menu">
+        <div className="border-t border-border bg-card md:hidden" role="dialog" aria-label="Mobile menu">
           <div className="px-4 pt-4 pb-2">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-400">Search</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Search</p>
             <SmartSearch onClose={() => setMobileOpen(false)} />
           </div>
           <nav className="flex flex-col gap-0.5 px-4 py-4" aria-label="Main mobile">
@@ -129,7 +127,7 @@ export default function SiteHeader({ totalListings, user = null, brokerageName =
                 key={href}
                 href={href}
                 className={`rounded-lg px-4 py-3 text-sm font-medium ${
-                  isActive(href) ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-700 hover:bg-zinc-50'
+                  isActive(href) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'
                 }`}
                 onClick={() => setMobileOpen(false)}
               >
@@ -137,29 +135,29 @@ export default function SiteHeader({ totalListings, user = null, brokerageName =
               </Link>
             ))}
             {user ? (
-              <div className="mt-2 border-t border-zinc-100 pt-3">
-                <p className="mb-2 px-4 text-xs font-medium uppercase tracking-wider text-zinc-400">Account</p>
-                <Link href="/account" className="block rounded-lg px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50" onClick={() => setMobileOpen(false)}>
+              <div className="mt-2 border-t border-border pt-3">
+                <p className="mb-2 px-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">Account</p>
+                <Link href="/account" className="block rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted" onClick={() => setMobileOpen(false)}>
                   Dashboard
                 </Link>
-                <Link href="/account/profile" className="block rounded-lg px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50" onClick={() => setMobileOpen(false)}>
+                <Link href="/account/profile" className="block rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted" onClick={() => setMobileOpen(false)}>
                   Profile
                 </Link>
-                <Link href="/account/saved-searches" className="block rounded-lg px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50" onClick={() => setMobileOpen(false)}>
+                <Link href="/account/saved-searches" className="block rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted" onClick={() => setMobileOpen(false)}>
                   Saved searches
                 </Link>
-                <Link href="/account/saved-homes" className="block rounded-lg px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50" onClick={() => setMobileOpen(false)}>
+                <Link href="/account/saved-homes" className="block rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted" onClick={() => setMobileOpen(false)}>
                   Saved homes
                 </Link>
-                <Link href="/account/saved-communities" className="block rounded-lg px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50" onClick={() => setMobileOpen(false)}>
+                <Link href="/account/saved-communities" className="block rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted" onClick={() => setMobileOpen(false)}>
                   Saved communities
                 </Link>
-                <Link href="/account/buying-preferences" className="block rounded-lg px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50" onClick={() => setMobileOpen(false)}>
+                <Link href="/account/buying-preferences" className="block rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted" onClick={() => setMobileOpen(false)}>
                   Buying preferences
                 </Link>
               </div>
             ) : (
-              <p className="mt-3 px-4 text-xs text-zinc-500">Sign in to save searches and homes.</p>
+              <p className="mt-3 px-4 text-xs text-muted-foreground">Sign in to save searches and homes.</p>
             )}
           </nav>
         </div>

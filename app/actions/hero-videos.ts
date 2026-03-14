@@ -2,7 +2,8 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { cityEntityKey } from '../../lib/slug'
-import { generateFlyoverVideo } from '../../lib/grok-video'
+import { generateFlyoverVideo, generateImageToVideo } from '../../lib/grok-video'
+import { refreshPlaceBanner, getBannerUrl } from './banners'
 
 const BUCKET = 'banners'
 const VIDEO_PREFIX = 'videos'
@@ -104,4 +105,69 @@ export async function generateHeroVideoForPage(params: {
 
   const url = `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${storagePath}`
   return { ok: true, url }
+}
+
+/**
+ * Refresh hero media for a city/subdivision: fetch new image from Unsplash, store as banner,
+ * then animate that image to a 3–8 second video via xAI image-to-video and store as hero video.
+ * Single "Refresh" action for development.
+ */
+export async function refreshHeroMedia(params: {
+  entityType: 'city' | 'subdivision'
+  entityKey: string
+  searchQuery: string
+}): Promise<{ ok: true; videoUrl: string; imageUrl: string } | { ok: false; error: string }> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
+    return { ok: false, error: 'Supabase not configured for writes.' }
+  }
+
+  const { entityType, entityKey, searchQuery } = params
+  const cityKey = entityType === 'subdivision' ? (entityKey.split(':')[0] ?? entityKey) : entityKey
+
+  const bannerResult = await refreshPlaceBanner(entityType, entityKey, searchQuery)
+  if (!bannerResult.ok) return { ok: false, error: bannerResult.error }
+
+  const imageUrl = bannerResult.url
+  let videoUrl: string
+  try {
+    videoUrl = await generateImageToVideo({
+      image_url: imageUrl,
+      duration: 5,
+      prompt: 'Gentle cinematic motion, slow zoom, landscape comes to life. No text. Subtle movement only.',
+      aspect_ratio: '16:9',
+      resolution: '720p',
+    })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Image-to-video failed.'
+    return { ok: false, error: message }
+  }
+
+  const res = await fetch(videoUrl)
+  if (!res.ok) {
+    return { ok: false, error: `Failed to download generated video: ${res.status}` }
+  }
+  const buffer = Buffer.from(await res.arrayBuffer())
+  const storagePath = `${VIDEO_PREFIX}/cities/${cityKey}.mp4`
+
+  const supabase = createClient(supabaseUrl, serviceKey)
+  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, buffer, {
+    contentType: 'video/mp4',
+    upsert: true,
+  })
+  if (uploadError) {
+    return { ok: false, error: `Storage upload failed: ${uploadError.message}` }
+  }
+
+  const { error: dbError } = await supabase.from('hero_videos').upsert(
+    { entity_type: 'city', entity_key: cityKey, storage_path: storagePath },
+    { onConflict: 'entity_type,entity_key' }
+  )
+  if (dbError) {
+    return { ok: false, error: `DB upsert failed: ${dbError.message}` }
+  }
+
+  const storedVideoUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${storagePath}`
+  return { ok: true, videoUrl: storedVideoUrl, imageUrl }
 }

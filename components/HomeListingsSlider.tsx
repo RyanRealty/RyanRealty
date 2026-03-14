@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import ListingTile from './ListingTile'
-import { cityEntityKey } from '@/lib/slug'
+import { cityPagePath } from '@/lib/slug'
 import type { ListingTileRow } from '@/app/actions/listings'
 
 type Props = {
@@ -27,12 +27,12 @@ export default function HomeListingsSlider({
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <div className="flex items-end justify-between gap-4">
-        <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">
           Recent & pending in {city}
         </h2>
         <Link
-          href={`/search/${cityEntityKey(city)}`}
-          className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
+          href={cityPagePath(city)}
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           View all in {city} →
         </Link>
@@ -44,7 +44,7 @@ export default function HomeListingsSlider({
             return (
               <div
                 key={key}
-                className="w-72 shrink-0 snap-start"
+                className="shrink-0 snap-start w-[85vw] min-w-[260px] max-w-[320px] sm:w-[50vw] sm:min-w-[280px] sm:max-w-[360px] lg:w-[33.333vw] lg:min-w-[300px] lg:max-w-[420px]"
                 style={{ scrollSnapAlign: 'start' }}
               >
                 <ListingTile

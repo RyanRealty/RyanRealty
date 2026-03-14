@@ -25,6 +25,8 @@ export type ActivityFeedItem = {
  */
 export async function getActivityFeed(options?: {
   city?: string | null
+  /** When set, only include listings in this subdivision (matches SubdivisionName). */
+  subdivision?: string | null
   limit?: number
   offset?: number
 }): Promise<ActivityFeedItem[]> {
@@ -66,9 +68,14 @@ export async function getActivityFeed(options?: {
     if (key) byKey.set(key, row)
   }
   const result: ActivityFeedItem[] = []
+  const subdivisionFilter = options?.subdivision?.trim().toLowerCase()
   for (const e of events as { id: string; listing_key: string; event_type: string; event_at: string; payload?: unknown }[]) {
     const listing = byKey.get(e.listing_key)
     if (options?.city?.trim() && (listing?.City ?? '').toString().trim() !== options.city.trim()) continue
+    if (subdivisionFilter) {
+      const sub = (listing?.SubdivisionName ?? '').toString().trim().toLowerCase()
+      if (!sub || (!sub.includes(subdivisionFilter) && sub !== subdivisionFilter)) continue
+    }
     result.push({
       id: e.id,
       listing_key: e.listing_key,
@@ -111,7 +118,7 @@ export async function getActivityFeedWithFallback(options: {
     .from('listings')
     .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, SubdivisionName, PhotoURL, StandardStatus, ModificationTimestamp')
     .ilike('City', options.city.trim())
-    .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%')
+    .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%')
     .order('ModificationTimestamp', { ascending: false })
     .limit(limit * 2)
   const list = (rows ?? []) as Array<Record<string, unknown> & { ModificationTimestamp?: string }>

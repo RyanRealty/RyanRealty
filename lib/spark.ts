@@ -195,6 +195,92 @@ export async function getSparkListingsCountForSync(): Promise<{
   }
 }
 
+/** Result of Spark listing counts by status (same buckets as DB for gap audit). */
+export type SparkListingCountsByStatus = {
+  total: number
+  active: number
+  pending: number
+  contingent: number
+  closed: number
+  expired: number
+  withdrawn: number
+  cancelled: number
+  other: number
+  error?: string
+}
+
+/**
+ * Get listing count from Spark for a single _filter. Used for Spark vs DB audit.
+ */
+async function getSparkListingCountForFilter(accessToken: string, filter: string): Promise<number> {
+  const res = await fetchSparkListingsPage(accessToken, { page: 1, limit: 1, filter })
+  return res.D?.Pagination?.TotalRows ?? 0
+}
+
+/**
+ * Get listing counts by status from Spark API (same buckets as get_listing_sync_status_breakdown).
+ * Uses SparkQL contains() for substring match. Runs 9 requests in parallel (total + 8 buckets).
+ */
+export async function getSparkListingsCountsByStatus(): Promise<SparkListingCountsByStatus | null> {
+  const accessToken = process.env.SPARK_API_KEY
+  if (!accessToken?.trim()) return null
+  try {
+    // Total (no filter, same query as sync count)
+    const totalPromise = getSparkListingsCountForSync().then((r) => (r && !r.error ? r.totalListings : 0))
+    // Closed, expired, withdrawn, cancelled: single contains
+    const closedP = getSparkListingCountForFilter(accessToken, "StandardStatus Eq contains('closed')")
+    const expiredP = getSparkListingCountForFilter(accessToken, "StandardStatus Eq contains('expired')")
+    const withdrawnP = getSparkListingCountForFilter(accessToken, "StandardStatus Eq contains('withdrawn')")
+    const cancelledP = getSparkListingCountForFilter(accessToken, "StandardStatus Eq contains('cancel')")
+    const contingentP = getSparkListingCountForFilter(accessToken, "StandardStatus Eq contains('contingent')")
+    // Pending = pending or under contract, excluding contingent (Spark: (A Or B Or C) Not D)
+    const pendingFilter =
+      "(StandardStatus Eq contains('pending') Or StandardStatus Eq contains('under contract') Or StandardStatus Eq contains('undercontract')) Not StandardStatus Eq contains('contingent')"
+    const pendingP = getSparkListingCountForFilter(accessToken, pendingFilter)
+    // Active: active/for sale/coming soon (Spark does not allow StandardStatus Eq NULL)
+    const activeFilter =
+      "(StandardStatus Eq contains('active') Or StandardStatus Eq contains('for sale') Or StandardStatus Eq contains('coming soon')) Not StandardStatus Eq contains('closed') Not StandardStatus Eq contains('expired') Not StandardStatus Eq contains('withdrawn') Not StandardStatus Eq contains('cancel') Not StandardStatus Eq contains('contingent') Not StandardStatus Eq contains('pending') Not StandardStatus Eq contains('under contract') Not StandardStatus Eq contains('undercontract')"
+    const activeP = getSparkListingCountForFilter(accessToken, activeFilter)
+
+    const [total, closed, expired, withdrawn, cancelled, contingent, pending, active] = await Promise.all([
+      totalPromise,
+      closedP,
+      expiredP,
+      withdrawnP,
+      cancelledP,
+      contingentP,
+      pendingP,
+      activeP,
+    ])
+    const other = Math.max(0, total - active - pending - contingent - closed - expired - withdrawn - cancelled)
+    return {
+      total,
+      active,
+      pending,
+      contingent,
+      closed,
+      expired,
+      withdrawn,
+      cancelled,
+      other,
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return {
+      total: 0,
+      active: 0,
+      pending: 0,
+      contingent: 0,
+      closed: 0,
+      expired: 0,
+      withdrawn: 0,
+      cancelled: 0,
+      other: 0,
+      error: message,
+    }
+  }
+}
+
 /**
  * Get the date range of the dataset (oldest and newest OnMarketDate).
  * Uses OnMarketDate for _orderby so Spark returns full historical data (pre-2024);
@@ -269,6 +355,9 @@ export async function fetchSparkListingsPage(
     next: { revalidate: 0 },
   })
 
+  if (res.status === 404) {
+    return { D: { Success: true, Results: [], Pagination: { TotalRows: 0, PageSize: limit, TotalPages: 0, CurrentPage: 1 } } }
+  }
   if (!res.ok) {
     const text = await res.text()
     throw new Error(`Spark API error ${res.status}: ${text}`)
@@ -286,12 +375,13 @@ const LISTING_EXPAND =
 
 /**
  * Fetch a single listing by ListingKey with full media expansions.
+ * Returns null when the listing is not found (404), e.g. removed from MLS or invalid key.
  */
 export async function fetchSparkListingByKey(
   accessToken: string,
   listingKey: string,
   expand = LISTING_EXPAND
-): Promise<SparkListingsResponse> {
+): Promise<SparkListingsResponse | null> {
   const token = accessToken.trim()
   const params = new URLSearchParams()
   if (expand) params.set('_expand', expand)
@@ -303,6 +393,7 @@ export async function fetchSparkListingByKey(
     },
     next: { revalidate: 0 },
   })
+  if (res.status === 404) return null
   if (!res.ok) {
     const text = await res.text()
     throw new Error(`Spark API error ${res.status}: ${text}`)

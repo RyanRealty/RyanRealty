@@ -1,15 +1,22 @@
-import Link from 'next/link'
 import type { Metadata } from 'next'
-import { listMarketReports } from '../actions/market-reports'
+import { getSession } from '@/app/actions/auth'
+import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { trackPageViewIfPossible } from '@/lib/followupboss'
+import { listMarketReports, getSalesReportCardsData } from '../actions/market-reports'
+import { getEngagementCountsBatch } from '@/app/actions/engagement'
+import { PRIMARY_CITIES } from '@/lib/cities'
+import ReportsIndexContent from './ReportsIndexContent'
+import ContentPageHero from '@/components/layout/ContentPageHero'
+import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.com').replace(/\/$/, '')
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = {
-  title: 'Market Reports',
-  description: 'Weekly Central Oregon real estate market reports: pending and closed sales by city.',
+  title: 'Central Oregon Real Estate Market Reports | Ryan Realty',
+  description: 'Weekly Central Oregon real estate market reports: pending and closed sales by city. Explore by area, median price, inventory, DOM.',
   alternates: { canonical: `${siteUrl}/reports` },
   openGraph: {
-    title: 'Market Reports | Ryan Realty',
+    title: 'Central Oregon Real Estate Market Reports | Ryan Realty',
     description: 'Weekly Central Oregon real estate market reports: pending and closed sales by city.',
     url: `${siteUrl}/reports`,
     type: 'website',
@@ -23,41 +30,38 @@ export const metadata: Metadata = {
 }
 
 export default async function ReportsIndexPage() {
-  const reports = await listMarketReports(30)
+  const [reports, salesCardsRaw, session, fubPersonId] = await Promise.all([
+    listMarketReports(30),
+    getSalesReportCardsData(PRIMARY_CITIES),
+    getSession(),
+    getFubPersonIdFromCookie(),
+  ])
+  const allListingKeys = salesCardsRaw.flatMap((c) => c.listingKeys)
+  const engagementMap = allListingKeys.length > 0 ? await getEngagementCountsBatch(allListingKeys) : {}
+  const salesCards = salesCardsRaw.map((card) => ({
+    ...card,
+    likeCount: card.listingKeys.reduce((s, k) => s + (engagementMap[k]?.like_count ?? 0), 0),
+    saveCount: card.listingKeys.reduce((s, k) => s + (engagementMap[k]?.save_count ?? 0), 0),
+    shareCount: card.listingKeys.reduce((s, k) => s + (engagementMap[k]?.share_count ?? 0), 0),
+  }))
+  const pageUrl = `${siteUrl}/reports`
+  const pageTitle = 'Market Reports | Ryan Realty'
+  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-bold text-zinc-900">Market reports</h1>
-      <p className="mt-2 text-zinc-600">
-        Weekly summaries of what happened in the Central Oregon market: homes that went pending and homes that closed, by city.
-      </p>
-      <p className="mt-4">
-        <Link
-          href="/reports/explore"
-          className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800"
-        >
-          Explore market data
-          <span aria-hidden>→</span>
-        </Link>
-      </p>
-      {reports.length === 0 ? (
-        <p className="mt-8 text-zinc-500">No reports yet. Reports are generated weekly (e.g. Saturday morning).</p>
-      ) : (
-        <ul className="mt-8 space-y-3">
-          {reports.map((r) => (
-            <li key={r.slug}>
-              <Link
-                href={`/reports/${r.slug}`}
-                className="block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow"
-              >
-                <span className="font-medium text-zinc-900">{r.title}</span>
-                <span className="ml-2 text-sm text-zinc-500">
-                  {r.period_start} – {r.period_end}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+    <main className="min-h-screen bg-background">
+      <ContentPageHero
+        title="Market Reports"
+        subtitle="Weekly Central Oregon real estate insights: pending and closed sales by city, median price, inventory, and days on market. Data you can trust."
+        imageUrl={CONTENT_HERO_IMAGES.reports}
+        ctas={[
+          { label: 'Explore Reports', href: '#reports', primary: true },
+          { label: 'Search Homes', href: '/homes-for-sale', primary: false },
+        ]}
+      />
+      <section id="reports" className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+        <ReportsIndexContent reports={reports} salesCards={salesCards} />
+      </section>
     </main>
   )
 }

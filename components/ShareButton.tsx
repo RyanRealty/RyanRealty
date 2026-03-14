@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { ShareIcon as ActionShareIcon } from '@/components/icons/ActionIcons'
+import { trackEvent } from '@/lib/tracking'
+import { Button } from "@/components/ui/button"
 
 export type ShareButtonProps = {
   /** Page or content title for share text (e.g. "123 Main St, Bend | $549,000") */
@@ -15,15 +18,17 @@ export type ShareButtonProps = {
   className?: string
   /** Size: compact (icon only) or default (icon + "Share") */
   variant?: 'compact' | 'default'
+  /** If set, trackEvent('share', { context }) is fired when user shares or copies link */
+  trackContext?: string
+  /** Called when user completes a share (native, copy, or platform). Use to bump share count. */
+  onShare?: () => void
+  /** Optional class for the icon only (e.g. to match other action icons in a bar). */
+  iconClassName?: string
 }
 
-const SHARE_ICON = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-    <polyline points="16 6 12 2 8 6" />
-    <line x1="12" y1="2" x2="12" y2="15" />
-  </svg>
-)
+function ShareIcon({ className = '' }: { className?: string }) {
+  return <ActionShareIcon className={className || 'size-5 shrink-0'} />
+}
 
 function buildShareUrl(platform: string, params: { url: string; title: string; text: string }): string {
   const encodedUrl = encodeURIComponent(params.url)
@@ -32,7 +37,7 @@ function buildShareUrl(platform: string, params: { url: string; title: string; t
   switch (platform) {
     case 'twitter':
     case 'x':
-      return `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`
+      return `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`
     case 'facebook':
       return `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`
     case 'linkedin':
@@ -51,12 +56,23 @@ export default function ShareButton({
   'aria-label': ariaLabel = 'Share',
   className = '',
   variant = 'default',
+  trackContext,
+  onShare,
+  iconClassName,
 }: ShareButtonProps) {
   const [open, setOpen] = useState(false)
 
   const shareUrl = url ?? (typeof window !== 'undefined' ? window.location.href : '')
   const shareTitle = title ?? (typeof document !== 'undefined' ? document.title : '')
   const shareText = text ?? shareTitle
+
+  const trackShare = useCallback(
+    (method: string) => {
+      if (trackContext) trackEvent('share', { context: trackContext, method })
+      onShare?.()
+    },
+    [trackContext, onShare]
+  )
 
   const handleNativeShare = useCallback(async () => {
     if (typeof navigator === 'undefined' || !navigator.share) {
@@ -69,22 +85,25 @@ export default function ShareButton({
         text: shareText,
         url: shareUrl,
       })
+      trackShare('native')
       setOpen(false)
     } catch (err) {
       if ((err as Error).name !== 'AbortError') setOpen(true)
     }
-  }, [shareTitle, shareText, shareUrl])
+  }, [shareTitle, shareText, shareUrl, trackShare])
 
   const handleCopyLink = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(shareUrl)
+      trackShare('copy_link')
       setOpen(false)
     } catch {
       setOpen(true)
     }
-  }, [shareUrl])
+  }, [shareUrl, trackShare])
 
   const handlePlatformShare = useCallback((platform: string) => {
+    trackShare(platform)
     const link = buildShareUrl(platform, { url: shareUrl, title: shareTitle, text: shareText })
     if (platform === 'email') {
       window.location.href = link
@@ -92,77 +111,77 @@ export default function ShareButton({
       window.open(link, '_blank', 'noopener,noreferrer,width=600,height=500')
     }
     setOpen(false)
-  }, [shareUrl, shareTitle, shareText])
+  }, [shareUrl, shareTitle, shareText, trackShare])
 
   return (
     <div className="relative inline-block">
-      <button
+      <Button
         type="button"
         onClick={() => (typeof navigator?.share === 'function' ? handleNativeShare() : setOpen((o) => !o))}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="menu"
-        className={`inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 ${className}`}
+        className={`inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm transition hover:border-border hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:shadow-none ${className}`}
       >
-        {SHARE_ICON}
+        <ShareIcon className={iconClassName ?? (variant === 'compact' ? 'size-3.5 shrink-0 sm:size-4' : 'size-5 shrink-0')} />
         {variant === 'default' && <span>Share</span>}
-      </button>
+      </Button>
       {open && (
         <>
           <div className="fixed inset-0 z-40" aria-hidden onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-full z-50 mt-1 min-w-[200px] rounded-xl border border-zinc-200 bg-white py-2 shadow-lg"
+            className="absolute right-0 top-full z-50 mt-1 min-w-[200px] rounded-lg border border-border bg-card py-2 shadow-md"
             role="menu"
           >
-            <button
+            <Button
               type="button"
               role="menuitem"
               onClick={handleCopyLink}
-              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-muted-foreground hover:bg-muted"
             >
-              <span className="text-zinc-400">🔗</span> Copy link
-            </button>
-            <button
+              <span className="text-muted-foreground">🔗</span> Copy link
+            </Button>
+            <Button
               type="button"
               role="menuitem"
               onClick={() => handlePlatformShare('email')}
-              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-muted-foreground hover:bg-muted"
             >
-              <span className="text-zinc-400">✉️</span> Email
-            </button>
-            <button
+              <span className="text-muted-foreground">✉️</span> Email
+            </Button>
+            <Button
               type="button"
               role="menuitem"
               onClick={() => handlePlatformShare('twitter')}
-              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-muted-foreground hover:bg-muted"
             >
-              <span className="text-zinc-400">𝕏</span> X (Twitter)
-            </button>
-            <button
+              <span className="text-muted-foreground">𝕏</span> X (Twitter)
+            </Button>
+            <Button
               type="button"
               role="menuitem"
               onClick={() => handlePlatformShare('facebook')}
-              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-muted-foreground hover:bg-muted"
             >
-              <span className="text-zinc-400">f</span> Facebook
-            </button>
-            <button
+              <span className="text-muted-foreground">f</span> Facebook
+            </Button>
+            <Button
               type="button"
               role="menuitem"
               onClick={() => handlePlatformShare('linkedin')}
-              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-muted-foreground hover:bg-muted"
             >
-              <span className="text-zinc-400">in</span> LinkedIn
-            </button>
+              <span className="text-muted-foreground">in</span> LinkedIn
+            </Button>
             {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
-              <button
+              <Button
                 type="button"
                 role="menuitem"
                 onClick={handleNativeShare}
-                className="flex w-full items-center gap-3 border-t border-zinc-100 px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+                className="flex w-full items-center gap-3 border-t border-border px-4 py-2 text-left text-sm text-muted-foreground hover:bg-muted"
               >
-                <span className="text-zinc-400">⋯</span> More options…
-              </button>
+                <span className="text-muted-foreground">⋯</span> More options…
+              </Button>
             )}
           </div>
         </>

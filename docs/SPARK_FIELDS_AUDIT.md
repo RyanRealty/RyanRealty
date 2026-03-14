@@ -1,6 +1,6 @@
 # SPARK API Fields Audit
 
-Reference: MASTER_INSTRUCTION_SET.md — "If a field exists in SPARK, find a way to use it."
+Principle: If a field exists in SPARK, find a way to use it.
 
 ---
 

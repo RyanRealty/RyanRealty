@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSearchSuggestions } from '@/app/actions/listings'
 import type { SearchSuggestionsResult } from '@/app/actions/listings'
-import { cityEntityKey, subdivisionEntityKey } from '@/lib/slug'
+import { cityPagePath } from '@/lib/slug'
+import { communityPagePath } from '@/lib/community-slug'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Search01Icon } from '@hugeicons/core-free-icons'
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 const DEBOUNCE_MS = 220
 const MIN_QUERY_LENGTH = 2
@@ -72,12 +77,12 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
     i -= suggestions.addresses.length
     if (i < suggestions.cities.length) {
       const c = suggestions.cities[i]
-      return `/search/${cityEntityKey(c.city)}`
+      return cityPagePath(c.city)
     }
     i -= suggestions.cities.length
     if (i < suggestions.subdivisions.length) {
       const s = suggestions.subdivisions[i]
-      return `/search/${cityEntityKey(s.city)}/${encodeURIComponent(s.subdivisionName)}`
+      return communityPagePath(s.city, s.subdivisionName)
     }
     return null
   }
@@ -130,15 +135,15 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
   let itemIndex = 0
   const linkClass = (isHighlight: boolean) =>
     `block w-full px-4 py-2.5 text-left text-sm transition ${
-      isHighlight ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-700 hover:bg-zinc-50'
+      isHighlight ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'
     }`
 
   return (
     <div className="relative w-full max-w-md" ref={panelRef}>
-      <label htmlFor="smart-search-input" className="sr-only">
+      <Label htmlFor="smart-search-input" className="sr-only">
         Search address, city, or neighborhood
-      </label>
-      <input
+      </Label>
+      <Input
         id="smart-search-input"
         ref={inputRef}
         type="search"
@@ -154,33 +159,31 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => query.trim().length >= MIN_QUERY_LENGTH && setOpen(true)}
         onKeyDown={handleKeyDown}
-        className="w-full rounded-lg border border-zinc-300 bg-white py-2 pl-4 pr-10 text-zinc-900 placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        className="w-full rounded-lg border border-border bg-card py-2 pl-4 pr-10 text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
       />
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400">
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+        <HugeiconsIcon icon={Search01Icon} className="h-5 w-5" aria-hidden />
       </span>
 
       {open && (
         <div
           id="smart-search-results"
           role="listbox"
-          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[min(70vh,400px)] overflow-auto rounded-xl border border-zinc-200 bg-white py-2 shadow-lg"
+          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[min(70vh,400px)] overflow-auto rounded-lg border border-border bg-card py-2 shadow-md"
         >
           {query.trim().length < MIN_QUERY_LENGTH ? (
-            <p className="px-4 py-2 text-sm text-zinc-500">
+            <p className="px-4 py-2 text-sm text-muted-foreground">
               Type at least {MIN_QUERY_LENGTH} characters…
             </p>
           ) : loading ? (
-            <p className="px-4 py-2 text-sm text-zinc-500">Searching…</p>
+            <p className="px-4 py-2 text-sm text-muted-foreground">Searching…</p>
           ) : suggestions && totalItems === 0 ? (
-            <p className="px-4 py-2 text-sm text-zinc-500">No results</p>
+            <p className="px-4 py-2 text-sm text-muted-foreground">No results</p>
           ) : suggestions && totalItems > 0 ? (
             <>
               {suggestions.addresses.length > 0 && (
                 <div className="mb-1">
-                  <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Addresses
                   </p>
                   {suggestions.addresses.map((a, i) => {
@@ -207,12 +210,12 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
               )}
               {suggestions.cities.length > 0 && (
                 <div className="mb-1">
-                  <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Cities
                   </p>
                   {suggestions.cities.map((c, i) => {
                     const idx = itemIndex++
-                    const href = `/search/${cityEntityKey(c.city)}`
+                    const href = cityPagePath(c.city)
                     return (
                       <Link
                         key={`city-${i}-${c.city}`}
@@ -228,7 +231,7 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
                         }}
                       >
                         {c.city}
-                        {c.count > 0 && <span className="ml-1 text-zinc-400">({c.count})</span>}
+                        {c.count > 0 && <span className="ml-1 text-muted-foreground">({c.count})</span>}
                       </Link>
                     )
                   })}
@@ -236,12 +239,12 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
               )}
               {suggestions.subdivisions.length > 0 && (
                 <div>
-                  <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Neighborhoods &amp; communities
                   </p>
                   {suggestions.subdivisions.map((s, i) => {
                     const idx = itemIndex++
-                    const href = `/search/${cityEntityKey(s.city)}/${encodeURIComponent(s.subdivisionName)}`
+                    const href = communityPagePath(s.city, s.subdivisionName)
                     return (
                       <Link
                         key={`sub-${i}-${s.city}-${s.subdivisionName}`}
@@ -257,8 +260,8 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
                         }}
                       >
                         {s.subdivisionName}
-                        <span className="ml-1 text-zinc-400">({s.city})</span>
-                        {s.count > 0 && <span className="ml-1 text-zinc-400">· {s.count}</span>}
+                        <span className="ml-1 text-muted-foreground">({s.city})</span>
+                        {s.count > 0 && <span className="ml-1 text-muted-foreground">· {s.count}</span>}
                       </Link>
                     )
                   })}

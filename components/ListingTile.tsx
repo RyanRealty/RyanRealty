@@ -2,14 +2,23 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState, useMemo, memo } from 'react'
 import type { HomeTileRow, ListingTileRow } from '@/app/actions/listings'
 import { isResortCommunity } from '@/lib/resort-communities'
 import { toggleSavedListing } from '@/app/actions/saved-listings'
-import ShareButton from '@/components/ShareButton'
+import { toggleLikeListing } from '@/app/actions/likes'
+import { cn } from '@/lib/utils'
+import CardActionBar from '@/components/ui/CardActionBar'
+import { useComparison } from '@/contexts/ComparisonContext'
+import CardBadges from '@/components/ui/CardBadges'
+import { Button } from '@/components/ui/button'
+import { getCanonicalSiteUrl, listingShareText } from '@/lib/share-metadata'
 import { trackListingTileClick } from '@/app/actions/track-listing-click'
 import { trackListingClick } from '@/lib/tracking'
 import { listingAddressSlug } from '@/lib/slug'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowLeftRightIcon, ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
 
 const LISTING_PROVIDED_BY = 'Oregon Data Share'
 
@@ -31,9 +40,9 @@ function statusLabel(s: string | null | undefined): string {
 
 function statusColor(s: string | null | undefined): string {
   const t = (s ?? '').toLowerCase()
-  if (t.includes('pending')) return 'bg-amber-100 text-amber-800'
-  if (t.includes('closed')) return 'bg-zinc-200 text-zinc-700'
-  return 'bg-emerald-100 text-emerald-800'
+  if (t.includes('pending')) return 'bg-warning/15 text-warning'
+  if (t.includes('closed')) return 'bg-border text-muted-foreground'
+  return 'bg-success/15 text-success'
 }
 
 /** Listing tile accepts full HomeTileRow or ListingTileRow (missing fields shown as empty). */
@@ -82,28 +91,63 @@ export type ListingTileProps = {
   /** Est. monthly P&I when available */
   monthlyPayment?: string
   saved?: boolean
+  liked?: boolean
   signedIn: boolean
   userEmail?: string | null
   /** When true, show "Price reduced" badge (e.g. from listing history). */
   hasRecentPriceChange?: boolean
+  /** When true, show "Hot" badge (e.g. Trending section). */
+  hotBadge?: boolean
   /** When true, preload image (e.g. above-the-fold tiles). */
   priority?: boolean
   /** Optional FUB contact id to attach tile click to. */
   fubPersonId?: number | null
+  /** Engagement counts for social proof (small number next to icons). */
+  likeCount?: number
+  saveCount?: number
+  shareCount?: number
+  /** View count shown when not signed in (e.g. "X views"). */
+  viewCount?: number
 }
 
-export default function ListingTile({
+const MIN_LIKES_FOR_FIRE = 3
+
+function ListingTile({
   listing,
   listingKey,
   monthlyPayment,
   saved = false,
+  liked = false,
   signedIn,
   userEmail,
   hasRecentPriceChange = false,
+  hotBadge = false,
   priority = false,
   fubPersonId,
+  likeCount = 0,
+  saveCount = 0,
+  shareCount = 0,
+  viewCount = 0,
 }: ListingTileProps) {
+  const router = useRouter()
   const [savedState, setSavedState] = useState(saved)
+  const [likedState, setLikedState] = useState(liked)
+  const { isInComparison, addToComparison, removeFromComparison, comparisonItems } = useComparison()
+  const inCompare = isInComparison(listingKey)
+
+  function handleCompareToggle(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (inCompare) removeFromComparison(listingKey)
+    else addToComparison(listingKey)
+  }
+
+  function goToLogin(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    const returnUrl = typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname + window.location.search) : ''
+    router.push(`/login${returnUrl ? `?returnUrl=${returnUrl}` : ''}`)
+  }
   const price = Number(listing.ListPrice ?? 0)
   const dom = daysOnMarket(listing.OnMarketDate ?? undefined)
   const hasOpenHouse = Array.isArray(listing.OpenHouses) && listing.OpenHouses.length > 0
@@ -114,6 +158,8 @@ export default function ListingTile({
   // SEO-friendly URL: /listing/[key]-[street-city-state-zip]. Detail page resolves key from slug; key-only fallback when no address.
   const row = listing as { ListNumber?: string | null; ListingKey?: string | null; list_number?: string | null; listing_key?: string | null }
   const linkKey = (row.ListNumber ?? row.ListingKey ?? row.list_number ?? row.listing_key ?? listingKey).toString().trim()
+  /** MLS# shown to users: prefer ListNumber (actual MLS list number); fall back to link key for routing. */
+  const mlsDisplay = (row.ListNumber ?? row.list_number ?? row.ListingKey ?? row.listing_key ?? listingKey).toString().trim()
   const addressSlug = linkKey ? listingAddressSlug({
     streetNumber: listing.StreetNumber,
     streetName: listing.StreetName,
@@ -140,10 +186,28 @@ export default function ListingTile({
     setSavedState(result.saved)
   }
 
+  async function handleToggleLike(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!signedIn) return
+    const result = await toggleLikeListing(listingKey)
+    setLikedState(result.liked)
+  }
+
   const shareTitle =
     price > 0
       ? `$${price.toLocaleString()}${listing.City ? ` · ${listing.City}` : ''}`
       : address || undefined
+
+  const shareUrl = `${getCanonicalSiteUrl()}${href}`
+  const shareText = listingShareText({
+    price: listing.ListPrice ?? null,
+    beds: listing.BedroomsTotal ?? null,
+    baths: listing.BathroomsTotal ?? null,
+    sqft: (listing as ListingTileListing).TotalLivingAreaSqFt ?? null,
+    address: address || undefined,
+    city: listing.City ?? undefined,
+  })
 
   function handleTileClick() {
     const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${href}` : href
@@ -178,141 +242,117 @@ export default function ListingTile({
     <Link
       href={href}
       onClick={handleTileClick}
-      className="group flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md"
+      className="group flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10 transition hover:shadow-lg hover:-translate-y-1"
     >
       {/* Photo / video area */}
-      <div className="relative aspect-[4/3] bg-zinc-100">
+      <div className="relative aspect-[4/3] bg-muted">
         {showVideoFirst ? (
           <VideoSlider urls={videoUrls} address={address} />
         ) : primaryPhoto ? (
           <Image
             src={primaryPhoto}
-            alt=""
+            alt={address || 'Property photo'}
             fill
             className="object-cover transition group-hover:scale-[1.02]"
             sizes="(max-width: 640px) 85vw, 320px"
             priority={priority}
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-zinc-400">No photo</div>
+          <div className="flex h-full items-center justify-center text-muted-foreground">No photo</div>
         )}
 
-        {/* Top-left: Open house OR days on market (one badge), then resort if applicable */}
-        <div className="absolute left-2 top-2 flex flex-col gap-1">
-          {hasOpenHouse && (
-            <span className="rounded-md bg-rose-600 px-2 py-1 text-xs font-semibold text-white shadow">
-              Open house
-            </span>
+        {/* Compare toggle: top-right */}
+        <Button
+          type="button"
+          onClick={handleCompareToggle}
+          disabled={!inCompare && comparisonItems.length >= 4}
+          className={cn(
+            'absolute top-2 right-2 z-10 flex items-center justify-center rounded-full border-2 shadow-sm transition disabled:opacity-40',
+            'h-8 w-8',
+            inCompare
+              ? 'border-accent bg-accent text-accent-foreground'
+              : 'border-white/30 bg-black/40 text-white hover:bg-black/60',
           )}
-          {!hasOpenHouse && dom != null && dom >= 0 && (
-            <span className="rounded-md bg-white/95 px-2 py-1 text-xs font-semibold text-zinc-800 shadow">
-              {dom === 0 ? 'New' : `${dom} day${dom !== 1 ? 's' : ''} on market`}
-            </span>
-          )}
-          {isResort && (
-            <span className="rounded-md bg-indigo-700 px-2 py-1 text-xs font-semibold text-white shadow">
-              Resort lifestyle — golf, trails and more
-            </span>
-          )}
-          {hasRecentPriceChange && (
-            <span className="rounded-md bg-amber-500 px-2 py-1 text-xs font-semibold text-white shadow">
-              Price reduced
-            </span>
-          )}
-        </div>
-
-        {/* Top-right: Like + Share — same size for symmetry */}
-        <div
-          className="absolute right-2 top-2 flex items-center gap-1.5"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-          }}
+          aria-label={inCompare ? 'Remove from comparison' : 'Add to comparison'}
         >
-          <ShareButton
-            url={typeof window !== 'undefined' ? `${window.location.origin}${href}` : undefined}
-            title={shareTitle}
-            variant="compact"
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/95 p-0 shadow hover:bg-white"
-            aria-label="Share listing"
-          />
-          {signedIn && (
-            <button
-              type="button"
-              onClick={handleToggleSave}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/95 p-0 shadow hover:bg-white"
-              aria-label={savedState ? 'Remove from saved' : 'Save listing'}
-            >
-              {savedState ? (
-                <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
-                </svg>
-              ) : (
-                <svg className="h-5 w-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              )}
-            </button>
-          )}
-        </div>
+          <HugeiconsIcon icon={ArrowLeftRightIcon} className="h-4 w-4" />
+        </Button>
 
-        {/* Media badges: video, virtual tour, floor plan — click goes to listing */}
-        {(hasVideo || hasVirtTour || hasPlans) && (
-          <div className="absolute bottom-2 left-2 flex flex-wrap items-center gap-1.5">
-            {hasVideo && (
-              <span className="flex items-center gap-1 rounded bg-black/70 px-2 py-1 text-xs font-medium text-white shadow">
-                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                Video
-              </span>
-            )}
-            {hasVirtTour && (
-              <span className="rounded bg-black/70 px-2 py-1 text-xs font-medium text-white shadow">
-                Virtual tour
-              </span>
-            )}
-            {hasPlans && (
-              <span className="rounded bg-black/70 px-2 py-1 text-xs font-medium text-white shadow">
-                Floor plan
-              </span>
-            )}
-          </div>
-        )}
+        {/* Smart badges: top-left — max 3, no wrap */}
+        <CardBadges
+          position="top-left"
+          max={3}
+          items={[
+            ...(dom !== 0 && likeCount >= MIN_LIKES_FOR_FIRE ? [{ label: String(likeCount), variant: 'hot' as const, icon: <span aria-hidden><svg className="size-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 23C12 23 20 16 20 10c0-2.5-1.5-4-4-4-.8 0-1.5.2-2 .7-.5-.5-1.2-.7-2-.7-2.5 0-4 1.5-4 4 0 6 8 13 8 13z" /></svg></span> }] : []),
+            ...(hotBadge ? [{ label: 'Hot', variant: 'hot' as const, icon: <span aria-hidden>🔥</span> }] : []),
+            ...(hasOpenHouse ? [{ label: 'Open house', variant: 'open-house' as const, icon: <span aria-hidden>🏠</span> }] : []),
+            ...(dom === 0 ? [{ label: 'New', variant: 'new' as const, icon: <span aria-hidden>✨</span> }] : []),
+            ...(hasRecentPriceChange ? [{ label: 'Price reduced', variant: 'price-drop' as const, icon: <span aria-hidden>📉</span> }] : []),
+            ...(isResort ? [{ label: 'Resort & master plan', variant: 'resort' as const, icon: <span aria-hidden>🏔️</span> }] : []),
+          ]}
+        />
 
-        {/* MLS logo bottom-right of photo */}
-        <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded bg-white/90 px-1.5 py-0.5 shadow">
-          <img
-            src="/images/oregon-data-share-logo.svg"
-            alt=""
-            className="h-5 w-auto"
-            width={100}
-            height={22}
-          />
-        </div>
+        {/* Badges on image: bottom-left — Watch video (engagement), Virtual tour, Floor plan */}
+        <CardBadges
+          position="bottom-left"
+          max={3}
+          items={[
+            ...(hasVideo ? [{ label: 'Watch video', variant: 'media' as const, icon: <span aria-hidden><svg className="size-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg></span> }] : []),
+            ...(hasVirtTour ? [{ label: 'Virtual tour', variant: 'media' as const }] : []),
+            ...(hasPlans ? [{ label: 'Floor plan', variant: 'media' as const }] : []),
+          ]}
+        />
+
       </div>
 
-      {/* White content below photo */}
-      <div className="flex flex-1 flex-col bg-white p-4">
-        <p className="text-xl font-bold text-zinc-900">
-          ${price > 0 ? price.toLocaleString() : '—'}
-        </p>
-        {monthlyPayment && (
-          <p className="mt-0.5 text-sm text-zinc-500">Est. {monthlyPayment}/mo</p>
-        )}
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0 text-sm text-zinc-600">
+      {/* White content below photo: price row (price + action icons) and details */}
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex flex-nowrap items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-xl font-semibold text-foreground">
+              ${price > 0 ? price.toLocaleString() : '—'}
+            </p>
+            {monthlyPayment && (
+              <p className="mt-0.5 text-sm text-muted-foreground">Est. {monthlyPayment}/mo</p>
+            )}
+          </div>
+          <CardActionBar
+            position="priceRow"
+            variant="onLight"
+            onClickWrap={(e) => { e.preventDefault(); e.stopPropagation() }}
+            share={{
+              url: shareUrl,
+              title: shareTitle,
+              text: shareText,
+              ariaLabel: 'Share listing',
+              shareCount: shareCount > 0 ? shareCount : undefined,
+            }}
+            like={signedIn
+              ? { active: likedState, count: likeCount, ariaLabel: likedState ? 'Unlike' : 'Like', onToggle: handleToggleLike }
+              : { active: false, count: likeCount, ariaLabel: 'Like', onToggle: goToLogin }}
+            save={signedIn
+              ? { active: savedState, count: saveCount, ariaLabel: savedState ? 'Remove from saved' : 'Save listing', onToggle: handleToggleSave }
+              : { active: false, count: saveCount, ariaLabel: 'Save listing', onToggle: goToLogin }}
+            signedIn={signedIn}
+            guestCounts={!signedIn ? { viewCount, likeCount, saveCount } : undefined}
+          />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0 text-sm text-muted-foreground">
           {listing.BedroomsTotal != null && <span>{listing.BedroomsTotal} bed</span>}
           {listing.BathroomsTotal != null && <span>{listing.BathroomsTotal} bath</span>}
           {listing.TotalLivingAreaSqFt != null && listing.TotalLivingAreaSqFt > 0 && (
             <span>{Number(listing.TotalLivingAreaSqFt).toLocaleString()} sq ft</span>
           )}
+          <span>
+            Days on market: {dom != null && dom >= 0 ? (dom === 0 ? 'New' : `${dom} day${dom !== 1 ? 's' : ''}`) : '—'}
+          </span>
           <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${statusColor(listing.StandardStatus)}`}>
             {statusLabel(listing.StandardStatus)}
           </span>
         </div>
-        {address && <p className="mt-2 text-sm font-medium text-zinc-800">{address}</p>}
-        <div className="mt-3 border-t border-zinc-100 pt-3 text-xs text-zinc-500">
-          <p>MLS# {listingKey}</p>
+        {address && <p className="mt-2 text-sm font-medium text-foreground">{address}</p>}
+        <div className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
+          <p>MLS# {mlsDisplay}</p>
           {listing.ListOfficeName && <p>{listing.ListOfficeName}</p>}
           {listing.ListAgentName && <p>{listing.ListAgentName}</p>}
           <p className="mt-1">Listing provided by {LISTING_PROVIDED_BY}</p>
@@ -346,37 +386,33 @@ function VideoSlider({ urls, address }: { urls: string[]; address: string }) {
       )}
       {urls.length > 1 && (
         <>
-          <button
+          <Button
             type="button"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
               setIndex((i) => (i - 1 + urls.length) % urls.length)
             }}
-            className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-1.5 shadow"
+            className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-card/90 p-1.5 shadow-shadow-subtle"
             aria-label="Previous video"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
+            <HugeiconsIcon icon={ArrowLeft01Icon} className="h-4 w-4" />
+          </Button>
+          <Button
             type="button"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
               setIndex((i) => (i + 1) % urls.length)
             }}
-            className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-1.5 shadow"
+            className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-card/90 p-1.5 shadow-shadow-subtle"
             aria-label="Next video"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+            <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" />
+          </Button>
           <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1">
             {urls.map((_, i) => (
-              <button
+              <Button
                 key={i}
                 type="button"
                 onClick={(e) => {
@@ -384,7 +420,7 @@ function VideoSlider({ urls, address }: { urls: string[]; address: string }) {
                   e.stopPropagation()
                   setIndex(i)
                 }}
-                className={`h-1.5 w-1.5 rounded-full ${i === index ? 'bg-white' : 'bg-white/50'}`}
+                className={`h-1.5 w-1.5 rounded-full ${i === index ? 'bg-card' : 'bg-card/50'}`}
                 aria-label={`Video ${i + 1}`}
               />
             ))}
@@ -394,3 +430,5 @@ function VideoSlider({ urls, address }: { urls: string[]; address: string }) {
     </div>
   )
 }
+
+export default memo(ListingTile)

@@ -2,6 +2,7 @@
 
 import type { SparkVideo, SparkVirtualTour } from '../../lib/spark'
 import { getVideoEmbedHtml } from '@/lib/video-embed'
+import { sanitizeHtmlWithEmbeds } from '@/lib/sanitize'
 
 const DIRECT_VIDEO_EXT = /\.(mp4|webm|ogg|mov)(\?|$)/i
 
@@ -32,12 +33,12 @@ export default function ListingVideos({ videos, virtualTours }: Props) {
             {(videos ?? []).map((v, i) => (
               <div
                 key={v.Id ?? i}
-                className="overflow-hidden rounded-xl border border-zinc-200 bg-white p-2 shadow-sm"
+                className="overflow-hidden rounded-lg border border-border bg-card p-2 shadow-sm"
               >
                 {v.ObjectHtml ? (
                   <div
                     className="aspect-video w-full overflow-hidden rounded-lg [&>iframe]:h-full [&>iframe]:w-full"
-                    dangerouslySetInnerHTML={{ __html: v.ObjectHtml }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtmlWithEmbeds(v.ObjectHtml) }}
                   />
                 ) : v.Uri && isDirectVideoUrl(v.Uri) ? (
                   <video
@@ -53,24 +54,24 @@ export default function ListingVideos({ videos, virtualTours }: Props) {
                 ) : v.Uri && getVideoEmbedHtml(v.Uri) ? (
                   <div
                     className="relative aspect-video w-full overflow-hidden rounded-lg [&>iframe]:h-full [&>iframe]:w-full"
-                    dangerouslySetInnerHTML={{ __html: getVideoEmbedHtml(v.Uri)! }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtmlWithEmbeds(getVideoEmbedHtml(v.Uri)!) }}
                   />
                 ) : v.Uri ? (
                   <a
                     href={v.Uri}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block aspect-video rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-600 hover:bg-zinc-200"
+                    className="block aspect-video rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:bg-border"
                   >
                     Watch: {v.Name ?? v.Caption ?? 'Video'}
                   </a>
                 ) : (
-                  <div className="flex aspect-video items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
+                  <div className="flex aspect-video items-center justify-center rounded-lg bg-muted text-muted-foreground">
                     {v.Name ?? 'Video'}
                   </div>
                 )}
                 {(v.Caption || v.Name) && (
-                  <p className="mt-2 text-sm text-zinc-600">
+                  <p className="mt-2 text-sm text-muted-foreground">
                     {v.Caption ?? v.Name}
                   </p>
                 )}
@@ -80,7 +81,7 @@ export default function ListingVideos({ videos, virtualTours }: Props) {
         </div>
       )}
       {!hasVideos && !hasTours && (
-        <p className="text-sm text-zinc-500">No videos or virtual tours for this listing.</p>
+        <p className="text-sm text-muted-foreground">No videos or virtual tours for this listing.</p>
       )}
       {hasTours && (
         <div>
@@ -92,7 +93,7 @@ export default function ListingVideos({ videos, virtualTours }: Props) {
                 href={vt.Uri ?? '#'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50"
+                className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm hover:bg-muted"
               >
                 {vt.Name ?? 'Virtual tour'} →
               </a>

@@ -23,8 +23,19 @@ import {
   type ReportPriceBandsResult,
   type ReportMetricsTimeSeriesPoint,
   type ReportLocation,
+  type ReportFilters,
 } from '../../actions/reports'
 import ShareButton from '../../../components/ShareButton'
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 function toYMD(d: Date): string {
   return (
@@ -57,6 +68,10 @@ const PRESETS: { id: string; label: string; getRange: () => { start: string; end
     { id: 'this_quarter', label: 'This quarter', getRange: () => ({ start: toYMD(thisQuarterStart), end: toYMD(thisQuarterEnd) }) },
     { id: 'last_quarter', label: 'Last quarter', getRange: () => ({ start: toYMD(lastQuarterStart), end: toYMD(lastQuarterEnd) }) },
     { id: 'ytd', label: 'Year to date', getRange: () => ({ start: toYMD(ytdStart), end: toYMD(now) }) },
+    { id: '1y', label: 'Last 12 months', getRange: () => ({ start: toYMD(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate() + 1)), end: toYMD(now) }) },
+    { id: '2y', label: 'Last 2 years', getRange: () => ({ start: toYMD(new Date(now.getFullYear() - 2, now.getMonth(), now.getDate() + 1)), end: toYMD(now) }) },
+    { id: '5y', label: 'Last 5 years', getRange: () => ({ start: toYMD(new Date(now.getFullYear() - 5, now.getMonth(), now.getDate() + 1)), end: toYMD(now) }) },
+    { id: '10y', label: 'Last 10 years', getRange: () => ({ start: toYMD(new Date(now.getFullYear() - 10, now.getMonth(), now.getDate() + 1)), end: toYMD(now) }) },
   ]
 })()
 
@@ -72,11 +87,21 @@ export default function ExploreClient({
   initialSubdivision = '',
   initialStart = '',
   initialEnd = '',
+  initialIncludeCondoTown = false,
+  initialIncludeManufactured = false,
+  initialIncludeAcreage = false,
+  initialMinPrice,
+  initialMaxPrice,
 }: {
   initialCity?: string
   initialSubdivision?: string
   initialStart?: string
   initialEnd?: string
+  initialIncludeCondoTown?: boolean
+  initialIncludeManufactured?: boolean
+  initialIncludeAcreage?: boolean
+  initialMinPrice?: number | null
+  initialMaxPrice?: number | null
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -93,6 +118,11 @@ export default function ExploreClient({
   const [start, setStart] = useState(initialStart || '')
   const [end, setEnd] = useState(initialEnd || '')
   const [customMode, setCustomMode] = useState(false)
+  const [includeCondoTown, setIncludeCondoTown] = useState(initialIncludeCondoTown)
+  const [includeManufactured, setIncludeManufactured] = useState(initialIncludeManufactured)
+  const [includeAcreage, setIncludeAcreage] = useState(initialIncludeAcreage)
+  const [minPrice, setMinPrice] = useState<string>(initialMinPrice != null ? String(initialMinPrice) : '')
+  const [maxPrice, setMaxPrice] = useState<string>(initialMaxPrice != null ? String(initialMaxPrice) : '')
   const [metrics, setMetrics] = useState<ReportMetrics | null>(null)
   const [hasApplied, setHasApplied] = useState(false)
   const [priceBands, setPriceBands] = useState<ReportPriceBandsResult | null>(null)
@@ -102,6 +132,17 @@ export default function ExploreClient({
 
   const city = location?.city ?? ''
   const subdivision = location?.subdivision ?? null
+  const filters: ReportFilters = useMemo(() => {
+    const min = minPrice.trim() ? parseInt(minPrice.replace(/,/g, ''), 10) : null
+    const max = maxPrice.trim() ? parseInt(maxPrice.replace(/,/g, ''), 10) : null
+    return {
+      includeCondoTown: includeCondoTown || undefined,
+      includeManufactured: includeManufactured || undefined,
+      includeAcreage: includeAcreage || undefined,
+      minPrice: Number.isFinite(min) ? min! : null,
+      maxPrice: Number.isFinite(max) ? max! : null,
+    }
+  }, [includeCondoTown, includeManufactured, includeAcreage, minPrice, maxPrice])
 
   // Sync state from URL on load / when URL changes
   useEffect(() => {
@@ -109,12 +150,22 @@ export default function ExploreClient({
     const sub = searchParams.get('subdivision') ?? initialSubdivision
     const s = searchParams.get('start') ?? initialStart
     const e = searchParams.get('end') ?? initialEnd
+    const condo = searchParams.get('condo') === '1'
+    const mfd = searchParams.get('mfd') === '1'
+    const acre = searchParams.get('acre') === '1'
+    const minP = searchParams.get('minPrice')
+    const maxP = searchParams.get('maxPrice')
     if (c) {
       setLocation({ city: c, subdivision: sub || undefined })
       setLocationQuery(sub ? `${sub}, ${c}` : c)
     }
     if (s) setStart(s)
     if (e) setEnd(e)
+    setIncludeCondoTown(condo)
+    setIncludeManufactured(mfd)
+    setIncludeAcreage(acre)
+    if (minP != null) setMinPrice(minP)
+    if (maxP != null) setMaxPrice(maxP)
     if (!s || !e) {
       const preset = PRESETS.find((p) => p.id === presetId)
       if (preset) {
@@ -158,12 +209,27 @@ export default function ExploreClient({
   }, [])
 
   const updateUrl = useCallback(
-    (updates: { city?: string; subdivision?: string; start?: string; end?: string }) => {
+    (updates: {
+      city?: string
+      subdivision?: string
+      start?: string
+      end?: string
+      condo?: boolean
+      mfd?: boolean
+      acre?: boolean
+      minPrice?: string
+      maxPrice?: string
+    }) => {
       const params = new URLSearchParams(searchParams.toString())
       if (updates.city !== undefined) (updates.city ? params.set('city', updates.city) : params.delete('city'))
       if (updates.subdivision !== undefined) (updates.subdivision ? params.set('subdivision', updates.subdivision) : params.delete('subdivision'))
       if (updates.start !== undefined) (updates.start ? params.set('start', updates.start) : params.delete('start'))
       if (updates.end !== undefined) (updates.end ? params.set('end', updates.end) : params.delete('end'))
+      if (updates.condo !== undefined) (updates.condo ? params.set('condo', '1') : params.delete('condo'))
+      if (updates.mfd !== undefined) (updates.mfd ? params.set('mfd', '1') : params.delete('mfd'))
+      if (updates.acre !== undefined) (updates.acre ? params.set('acre', '1') : params.delete('acre'))
+      if (updates.minPrice !== undefined) (updates.minPrice ? params.set('minPrice', updates.minPrice) : params.delete('minPrice'))
+      if (updates.maxPrice !== undefined) (updates.maxPrice ? params.set('maxPrice', updates.maxPrice) : params.delete('maxPrice'))
       const q = params.toString()
       router.replace(q ? `/reports/explore?${q}` : '/reports/explore', { scroll: false })
     },
@@ -206,9 +272,9 @@ export default function ExploreClient({
     setLoading(true)
     try {
       const [metricsRes, bandsRes, seriesRes] = await Promise.all([
-        getReportMetrics(c, start, end, undefined, subdivision),
-        getReportPriceBands(c, start, end, false, subdivision),
-        getReportMetricsTimeSeries(c, NUM_MONTHS_TREND, subdivision),
+        getReportMetrics(c, start, end, undefined, subdivision, filters),
+        getReportPriceBands(c, start, end, false, subdivision, filters),
+        getReportMetricsTimeSeries(c, NUM_MONTHS_TREND, subdivision, filters),
       ])
       if (metricsRes.error) {
         setError(metricsRes.error)
@@ -224,13 +290,25 @@ export default function ExploreClient({
     } finally {
       setLoading(false)
     }
-  }, [city, subdivision, start, end])
+  }, [city, subdivision, start, end, filters])
 
   const handleApply = useCallback(() => {
     setHasApplied(true)
-    if (city) updateUrl({ city, subdivision: subdivision ?? undefined, start, end })
+    if (city) {
+      updateUrl({
+        city,
+        subdivision: subdivision ?? undefined,
+        start,
+        end,
+        condo: includeCondoTown,
+        mfd: includeManufactured,
+        acre: includeAcreage,
+        minPrice: minPrice.trim() || undefined,
+        maxPrice: maxPrice.trim() || undefined,
+      })
+    }
     loadData()
-  }, [city, subdivision, start, end, updateUrl, loadData])
+  }, [city, subdivision, start, end, includeCondoTown, includeManufactured, includeAcreage, minPrice, maxPrice, updateUrl, loadData])
 
   // When URL has city/start/end, auto-load once so shared links work
   useEffect(() => {
@@ -272,14 +350,14 @@ export default function ExploreClient({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap items-end gap-3">
           <div ref={containerRef} className="relative flex flex-col gap-1">
-            <span className="text-sm font-medium text-zinc-700">Location</span>
-            <input
+            <span className="text-sm font-medium text-muted-foreground">Location</span>
+            <Input
               type="text"
               value={locationQuery}
               onChange={(e) => setLocationQuery(e.target.value)}
               onFocus={() => suggestions.length > 0 && setSuggestionsOpen(true)}
               placeholder="City, community, neighborhood, or address…"
-              className="min-w-[280px] rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm"
+              className="min-w-[280px] rounded-lg border border-border bg-card px-3 py-2 text-foreground shadow-sm"
               aria-label="Search location"
               aria-autocomplete="list"
               aria-expanded={suggestionsOpen}
@@ -290,24 +368,24 @@ export default function ExploreClient({
               <ul
                 id="location-suggestions"
                 role="listbox"
-                className="absolute left-0 top-full z-50 mt-1 max-h-64 w-full min-w-[280px] overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
+                className="absolute left-0 top-full z-50 mt-1 max-h-64 w-full min-w-[280px] overflow-auto rounded-lg border border-border bg-card py-1 shadow-md"
               >
                 {suggestionsLoading && suggestions.length === 0 ? (
-                  <li className="px-3 py-2 text-sm text-zinc-500">Searching…</li>
+                  <li className="px-3 py-2 text-sm text-muted-foreground">Searching…</li>
                 ) : (
                   suggestions.map((loc) => (
                     <li key={`${loc.type}-${loc.city}-${loc.subdivision ?? ''}-${loc.label}`}>
-                      <button
+                      <Button
                         type="button"
                         role="option"
-                        className="w-full px-3 py-2 text-left text-sm text-zinc-900 hover:bg-zinc-100"
+                        className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
                         onClick={() => selectLocation(loc)}
                       >
-                        {loc.type === 'city' && <span className="text-zinc-400" aria-hidden>City · </span>}
-                        {loc.type === 'subdivision' && <span className="text-zinc-400" aria-hidden>Community · </span>}
-                        {loc.type === 'address' && <span className="text-zinc-400" aria-hidden>Address · </span>}
+                        {loc.type === 'city' && <span className="text-muted-foreground" aria-hidden>City · </span>}
+                        {loc.type === 'subdivision' && <span className="text-muted-foreground" aria-hidden>Community · </span>}
+                        {loc.type === 'address' && <span className="text-muted-foreground" aria-hidden>Address · </span>}
                         {loc.label}
-                      </button>
+                      </Button>
                     </li>
                   ))
                 )}
@@ -315,65 +393,124 @@ export default function ExploreClient({
             )}
           </div>
           {!customMode ? (
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-zinc-700">Period</span>
-              <select
-                value={presetId}
-                onChange={(e) => applyPreset(e.target.value)}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm"
-                aria-label="Date range preset"
-              >
-                {PRESETS.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Label className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-muted-foreground">Period</span>
+              <Select value={presetId} onValueChange={applyPreset}>
+                <SelectTrigger className="rounded-lg" aria-label="Date range preset">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRESETS.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Label>
           ) : (
             <div className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium text-zinc-700">Start</span>
-                <input
+              <Label className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-muted-foreground">Start</span>
+                <Input
                   type="date"
                   value={start}
                   onChange={(e) => setStart(e.target.value)}
-                  className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm"
+                  className="rounded-lg border border-border bg-card px-3 py-2 text-foreground shadow-sm"
                   aria-label="Start date"
                 />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium text-zinc-700">End</span>
-                <input
+              </Label>
+              <Label className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-muted-foreground">End</span>
+                <Input
                   type="date"
                   value={end}
                   onChange={(e) => setEnd(e.target.value)}
-                  className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm"
+                  className="rounded-lg border border-border bg-card px-3 py-2 text-foreground shadow-sm"
                   aria-label="End date"
                 />
-              </label>
+              </Label>
             </div>
           )}
-          <label className="flex items-center gap-2 py-2">
-            <input
+          <Label className="flex items-center gap-2 py-2">
+            <Input
               type="checkbox"
               checked={customMode}
               onChange={(e) => {
                 setCustomMode(e.target.checked)
                 if (!e.target.checked) applyPreset(presetId)
               }}
-              className="rounded border-zinc-300"
+              className="rounded border-border"
             />
-            <span className="text-sm text-zinc-600">Custom range</span>
-          </label>
-          <button
+            <span className="text-sm text-muted-foreground">Custom range</span>
+          </Label>
+          <div className="flex flex-col gap-2 border-l border-border pl-4">
+            <span className="text-sm font-medium text-muted-foreground">Property type</span>
+            <div className="flex flex-wrap gap-4">
+              <Label className="flex items-center gap-2">
+                <Input
+                  type="checkbox"
+                  checked={includeCondoTown}
+                  onChange={(e) => setIncludeCondoTown(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <span className="text-sm text-muted-foreground">Include condos & townhomes</span>
+              </Label>
+              <Label className="flex items-center gap-2">
+                <Input
+                  type="checkbox"
+                  checked={includeManufactured}
+                  onChange={(e) => setIncludeManufactured(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <span className="text-sm text-muted-foreground">Include manufactured</span>
+              </Label>
+              <Label className="flex items-center gap-2">
+                <Input
+                  type="checkbox"
+                  checked={includeAcreage}
+                  onChange={(e) => setIncludeAcreage(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <span className="text-sm text-muted-foreground">Include acreage/land</span>
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground">Default: single-family residential only. Check to add other types.</p>
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <Label className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-muted-foreground">Min price ($)</span>
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                placeholder="Optional"
+                className="w-28 rounded-lg border border-border bg-card px-3 py-2 text-foreground shadow-sm"
+                aria-label="Minimum price filter"
+              />
+            </Label>
+            <Label className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-muted-foreground">Max price ($)</span>
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                placeholder="Optional"
+                className="w-28 rounded-lg border border-border bg-card px-3 py-2 text-foreground shadow-sm"
+                aria-label="Maximum price filter"
+              />
+            </Label>
+          </div>
+          <Button
             type="button"
             onClick={handleApply}
             disabled={loading || !city.trim()}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
           >
             {loading ? 'Loading…' : 'Apply'}
-          </button>
+          </Button>
         </div>
         {shareUrl && (
           <ShareButton
@@ -382,12 +519,13 @@ export default function ExploreClient({
             text={shareText}
             aria-label="Share this view"
             variant="default"
+            trackContext="explore_report"
           />
         )}
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700" role="alert">
+        <p className="rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive" role="alert">
           {error}
         </p>
       )}
@@ -399,44 +537,44 @@ export default function ExploreClient({
               Key metrics
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-medium text-zinc-500">Sales (period)</p>
-                <p className="mt-1 text-2xl font-semibold text-zinc-900">{metrics.sold_count}</p>
+              <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                <p className="text-sm font-medium text-muted-foreground">Sales (period)</p>
+                <p className="mt-1 text-2xl font-semibold text-foreground">{metrics.sold_count}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-medium text-zinc-500">Median price</p>
-                <p className="mt-1 text-2xl font-semibold text-zinc-900">
+              <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                <p className="text-sm font-medium text-muted-foreground">Median price</p>
+                <p className="mt-1 text-2xl font-semibold text-foreground">
                   ${Number(metrics.median_price).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                 </p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-medium text-zinc-500">Median DOM</p>
-                <p className="mt-1 text-2xl font-semibold text-zinc-900">{metrics.median_dom} days</p>
+              <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                <p className="text-sm font-medium text-muted-foreground">Median DOM</p>
+                <p className="mt-1 text-2xl font-semibold text-foreground">{metrics.median_dom} days</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-medium text-zinc-500">Median $/sqft</p>
-                <p className="mt-1 text-2xl font-semibold text-zinc-900">
+              <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                <p className="text-sm font-medium text-muted-foreground">Median $/sqft</p>
+                <p className="mt-1 text-2xl font-semibold text-foreground">
                   ${Number(metrics.median_ppsf).toLocaleString('en-US', { maximumFractionDigits: 2 })}
                 </p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-medium text-zinc-500">Current listings</p>
-                <p className="mt-1 text-2xl font-semibold text-zinc-900">{metrics.current_listings}</p>
+              <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                <p className="text-sm font-medium text-muted-foreground">Current listings</p>
+                <p className="mt-1 text-2xl font-semibold text-foreground">{metrics.current_listings}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-medium text-zinc-500">Sales (12 mo)</p>
-                <p className="mt-1 text-2xl font-semibold text-zinc-900">{metrics.sales_12mo}</p>
+              <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                <p className="text-sm font-medium text-muted-foreground">Sales (12 mo)</p>
+                <p className="mt-1 text-2xl font-semibold text-foreground">{metrics.sales_12mo}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-medium text-zinc-500">Inventory (months)</p>
-                <p className="mt-1 text-2xl font-semibold text-zinc-900">{metrics.inventory_months ?? '—'}</p>
+              <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                <p className="text-sm font-medium text-muted-foreground">Inventory (months)</p>
+                <p className="mt-1 text-2xl font-semibold text-foreground">{metrics.inventory_months ?? '—'}</p>
               </div>
             </div>
           </section>
 
           {trendChartData.length > 0 && (
-            <section aria-labelledby="trend-heading" className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <h2 id="trend-heading" className="mb-4 text-lg font-semibold text-zinc-900">
+            <section aria-labelledby="trend-heading" className="rounded-lg border border-border bg-card p-4 shadow-sm">
+              <h2 id="trend-heading" className="mb-4 text-lg font-semibold text-foreground">
                 Monthly trend (last {NUM_MONTHS_TREND} months)
               </h2>
               <div className="h-[320px] w-full">
@@ -502,8 +640,8 @@ export default function ExploreClient({
           )}
 
           {priceBandChartData.length > 0 && (
-            <section aria-labelledby="bands-heading" className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <h2 id="bands-heading" className="mb-4 text-lg font-semibold text-zinc-900">
+            <section aria-labelledby="bands-heading" className="rounded-lg border border-border bg-card p-4 shadow-sm">
+              <h2 id="bands-heading" className="mb-4 text-lg font-semibold text-foreground">
                 Price bands: sales vs current listings
               </h2>
               <div className="h-[320px] w-full">
@@ -538,7 +676,7 @@ export default function ExploreClient({
       )}
 
       {!loading && !error && city && metrics === null && hasApplied === false && (
-        <p className="text-zinc-500">Type a location above, pick a result, then click Apply to load data.</p>
+        <p className="text-muted-foreground">Type a location above, pick a result, then click Apply to load data.</p>
       )}
     </div>
   )

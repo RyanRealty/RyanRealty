@@ -20,8 +20,8 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Profile</h1>
-      <p className="mt-1 text-zinc-600">
+      <h1 className="text-2xl font-bold tracking-tight text-foreground">Profile</h1>
+      <p className="mt-1 text-muted-foreground">
         Update your display name and phone. Your email comes from your sign-in provider and cannot be changed here.
       </p>
       <ProfileForm

@@ -21,7 +21,7 @@ To use **Google Maps** instead, follow these steps.
 2. Create or select a project.
 3. Go to **APIs & Services → Library**. Search for **Maps JavaScript API** and **Enable** it. (For geocoding, also enable **Geocoding API** if you use it.)
 4. Go to **APIs & Services → Credentials**. Click **Create credentials → API key**.
-5. Restrict the key (recommended): under **Application restrictions** choose **HTTP referrers** and add your domains (e.g. `https://ryanrealty.com/*`, `http://localhost:3000/*`). Under **API restrictions** limit to **Maps JavaScript API** (and Geocoding API if needed).
+5. Restrict the key (recommended): under **Application restrictions** choose **HTTP referrers** and add your domains (e.g. `https://ryan-realty.com/*`, `http://localhost:3000/*`). Under **API restrictions** limit to **Maps JavaScript API** (and Geocoding API if needed).
 6. Copy the API key.
 
 ---

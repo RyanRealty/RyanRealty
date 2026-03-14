@@ -41,6 +41,15 @@ yarn-error.log*
 # supabase local
 supabase/.temp
 
+# Serwist
+public/sw*
+public/swe-worker*
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude IDE local settings (optional)
+.claude
+
+.vercel

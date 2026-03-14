@@ -19,7 +19,7 @@ export async function identifyFubFromEmailClick(fubPersonId: string): Promise<{ 
   const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
-    .toLowerCase() || 'ryanrealty.com'
+    .toLowerCase() || 'ryan-realty.com'
 
   const res = await sendEvent({
     type: 'Visited Website',

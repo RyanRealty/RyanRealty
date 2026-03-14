@@ -2,14 +2,11 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTransition, useState } from 'react'
-
-const PROPERTY_TYPES = [
-  { value: '', label: 'All types' },
-  { value: 'Residential', label: 'Residential' },
-  { value: 'Commercial', label: 'Commercial' },
-  { value: 'Land', label: 'Land' },
-  { value: 'Rental', label: 'Rental' },
-]
+import { PROPERTY_TYPES } from '@/lib/property-type'
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest first' },
@@ -67,42 +64,54 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
   const {
     minPrice,
     maxPrice,
-    beds,
-    baths,
+    beds: initBeds,
+    baths: initBaths,
     minSqFt,
     maxSqFt,
-    maxBeds,
-    maxBaths,
+    maxBeds: initMaxBeds,
+    maxBaths: initMaxBaths,
     yearBuiltMin,
     yearBuiltMax,
     lotAcresMin,
     lotAcresMax,
     postalCode,
-    propertyType,
+    propertyType: initPropertyType,
     propertySubType,
-    statusFilter,
+    statusFilter: initStatusFilter,
     keywords,
     hasOpenHouse,
-    garageMin,
+    garageMin: initGarageMin,
     hasPool,
     hasView,
     hasWaterfront,
-    newListingsDays,
-    sort,
+    newListingsDays: initNewListingsDays,
+    sort: initSort,
     includeClosed,
     view: initView,
     perPage: initPerPage,
     basePath,
   } = props
   const router = useRouter()
-  const pathname = basePath ?? (usePathname()?.split('?')[0] ?? '/listings')
+  const rawPathname = usePathname()
+  const pathname = basePath ?? (rawPathname?.split('?')[0] ?? '/listings')
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [advancedOpen, setAdvancedOpen] = useState(
     !!(yearBuiltMin || yearBuiltMax || lotAcresMin || lotAcresMax || postalCode || propertySubType ||
-       statusFilter || keywords || hasOpenHouse || garageMin || hasPool || hasView || hasWaterfront || newListingsDays ||
-       maxSqFt || maxBeds || maxBaths)
+       initStatusFilter || keywords || hasOpenHouse || initGarageMin || hasPool || hasView || hasWaterfront || initNewListingsDays ||
+       maxSqFt || initMaxBeds || initMaxBaths)
   )
+
+  // Controlled state for all select elements
+  const [beds, setBeds] = useState(initBeds ?? '')
+  const [baths, setBaths] = useState(initBaths ?? '')
+  const [propertyType, setPropertyType] = useState(initPropertyType ?? '')
+  const [statusFilter, setStatusFilter] = useState(initStatusFilter ?? (includeClosed === '1' ? 'all' : 'active'))
+  const [sort, setSort] = useState(initSort ?? 'newest')
+  const [maxBeds, setMaxBeds] = useState(initMaxBeds ?? '')
+  const [maxBaths, setMaxBaths] = useState(initMaxBaths ?? '')
+  const [newListingsDays, setNewListingsDays] = useState(initNewListingsDays ?? '')
+  const [garageMin, setGarageMin] = useState(initGarageMin ?? '')
 
   function applyFilters(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -122,24 +131,24 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
 
     set('minPrice', getNum('minPrice'))
     set('maxPrice', getNum('maxPrice'))
-    set('beds', getNum('beds'))
-    set('baths', getNum('baths'))
+    set('beds', beds || undefined)
+    set('baths', baths || undefined)
     set('minSqFt', getNum('minSqFt'))
     set('maxSqFt', getNum('maxSqFt'))
-    set('maxBeds', getNum('maxBeds'))
-    set('maxBaths', getNum('maxBaths'))
+    set('maxBeds', maxBeds || undefined)
+    set('maxBaths', maxBaths || undefined)
     set('yearBuiltMin', getNum('yearBuiltMin'))
     set('yearBuiltMax', getNum('yearBuiltMax'))
     set('lotAcresMin', getNum('lotAcresMin'))
     set('lotAcresMax', getNum('lotAcresMax'))
     set('postalCode', get('postalCode'))
-    set('propertyType', get('propertyType'))
+    set('propertyType', propertyType || undefined)
     set('propertySubType', get('propertySubType'))
-    set('statusFilter', get('statusFilter') || undefined)
+    set('statusFilter', statusFilter || undefined)
     set('keywords', get('keywords'))
-    set('garageMin', getNum('garageMin'))
-    set('newListingsDays', getNum('newListingsDays'))
-    set('sort', get('sort'))
+    set('garageMin', garageMin || undefined)
+    set('newListingsDays', newListingsDays || undefined)
+    set('sort', sort)
     if (getCheck('hasOpenHouse')) params.set('hasOpenHouse', '1')
     if (getCheck('hasPool')) params.set('hasPool', '1')
     if (getCheck('hasView')) params.set('hasView', '1')
@@ -157,180 +166,221 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
     })
   }
 
-  const labelClass = 'text-xs font-medium text-zinc-500'
-  const inputClass = 'rounded-lg border border-zinc-200 px-3 py-2 text-sm'
+  const labelClass = 'text-xs font-medium text-muted-foreground'
 
   return (
-    <form onSubmit={applyFilters} className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
+    <form onSubmit={applyFilters} className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
       {/* Quick filters — always visible */}
       <div className="p-4 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1">
+        <Label className="flex flex-col gap-1">
           <span className={labelClass}>Min price</span>
-          <input type="number" name="minPrice" placeholder="Any" min={0} step={25000} defaultValue={minPrice} className={`w-28 ${inputClass}`} />
-        </label>
-        <label className="flex flex-col gap-1">
+          <Input type="number" name="minPrice" placeholder="Any" min={0} step={25000} defaultValue={minPrice} className="w-28" />
+        </Label>
+        <Label className="flex flex-col gap-1">
           <span className={labelClass}>Max price</span>
-          <input type="number" name="maxPrice" placeholder="Any" min={0} step={25000} defaultValue={maxPrice} className={`w-28 ${inputClass}`} />
-        </label>
-        <label className="flex flex-col gap-1">
+          <Input type="number" name="maxPrice" placeholder="Any" min={0} step={25000} defaultValue={maxPrice} className="w-28" />
+        </Label>
+        {/* 1. Beds */}
+        <div className="flex flex-col gap-1">
           <span className={labelClass}>Beds</span>
-          <select name="beds" defaultValue={beds ?? ''} className={`w-20 ${inputClass}`}>
-            <option value="">Any</option>
-            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-              <option key={n} value={n}>{n}+</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
+          <Select value={beds || '__all__'} onValueChange={(v) => setBeds(v === '__all__' ? '' : v)}>
+            <SelectTrigger className="w-20">
+              <SelectValue placeholder="Any" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Any</SelectItem>
+              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                <SelectItem key={n} value={String(n)}>{n}+</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {/* 2. Baths */}
+        <div className="flex flex-col gap-1">
           <span className={labelClass}>Baths</span>
-          <select name="baths" defaultValue={baths ?? ''} className={`w-20 ${inputClass}`}>
-            <option value="">Any</option>
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <option key={n} value={n}>{n}+</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
+          <Select value={baths || '__all__'} onValueChange={(v) => setBaths(v === '__all__' ? '' : v)}>
+            <SelectTrigger className="w-20">
+              <SelectValue placeholder="Any" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Any</SelectItem>
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <SelectItem key={n} value={String(n)}>{n}+</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Label className="flex flex-col gap-1">
           <span className={labelClass}>Sq ft (min)</span>
-          <input type="number" name="minSqFt" placeholder="Any" min={0} step={100} defaultValue={minSqFt} className={`w-24 ${inputClass}`} />
-        </label>
-        <label className="flex flex-col gap-1">
+          <Input type="number" name="minSqFt" placeholder="Any" min={0} step={100} defaultValue={minSqFt} className="w-24" />
+        </Label>
+        {/* 3. Property type */}
+        <div className="flex flex-col gap-1">
           <span className={labelClass}>Property type</span>
-          <select name="propertyType" defaultValue={propertyType ?? ''} className={`min-w-[120px] ${inputClass}`}>
-            {PROPERTY_TYPES.map(({ value, label }) => (
-              <option key={value || 'all'} value={value}>{label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
+          <Select value={propertyType || '__all__'} onValueChange={(v) => setPropertyType(v === '__all__' ? '' : v)}>
+            <SelectTrigger className="min-w-[120px]">
+              <SelectValue placeholder="Any" />
+            </SelectTrigger>
+            <SelectContent>
+              {PROPERTY_TYPES.map(({ value, label }) => (
+                <SelectItem key={value || '__all__'} value={value || '__all__'}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {/* 4. Status (quick filters) */}
+        <div className="flex flex-col gap-1">
           <span className={labelClass}>Status</span>
-          <select name="statusFilter" defaultValue={statusFilter ?? (includeClosed === '1' ? 'all' : 'active')} className={`min-w-[160px] ${inputClass}`}>
-            {STATUS_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="min-w-[160px]">
+              <SelectValue placeholder="Active only" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {/* 5. Sort by */}
+        <div className="flex flex-col gap-1">
           <span className={labelClass}>Sort by</span>
-          <select name="sort" defaultValue={sort ?? 'newest'} className={`min-w-[160px] ${inputClass}`}>
-            {SORT_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-2 self-end pb-2">
-          <input type="checkbox" name="includeClosed" defaultChecked={includeClosed === '1'} className="h-4 w-4 rounded border-zinc-300" />
-          <span className="text-sm text-zinc-600">Include closed</span>
-        </label>
-        <button
+          <Select value={sort} onValueChange={setSort}>
+            <SelectTrigger className="min-w-[160px]">
+              <SelectValue placeholder="Newest first" />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Label className="flex items-center gap-2 self-end pb-2">
+          <Input type="checkbox" name="includeClosed" defaultChecked={includeClosed === '1'} className="h-4 w-4 rounded border-primary/20" />
+          <span className="text-sm text-muted-foreground">Include closed</span>
+        </Label>
+        <Button
           type="button"
           onClick={() => setAdvancedOpen((o) => !o)}
-          className="self-end pb-2 text-sm font-medium text-zinc-600 hover:text-zinc-900"
+          className="self-end pb-2 text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           {advancedOpen ? 'Fewer filters' : 'More filters'}
-        </button>
-        <button type="submit" disabled={isPending} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-70 ml-auto">
-          {isPending ? 'Applying…' : 'Apply'}
-        </button>
+        </Button>
+        <Button type="submit" disabled={isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-70 ml-auto">
+          {isPending ? 'Applying\u2026' : 'Apply'}
+        </Button>
       </div>
 
       {/* Advanced filters — collapsible */}
       {advancedOpen && (
-        <div className="border-t border-zinc-200 bg-zinc-50/60 p-4 flex flex-wrap items-end gap-4">
-          <span className="w-full text-xs font-semibold text-zinc-600 uppercase tracking-wider">More filters</span>
-          <label className="flex flex-col gap-1">
+        <div className="border-t border-border bg-muted p-4 flex flex-wrap items-end gap-4">
+          <span className="w-full text-xs font-semibold text-muted-foreground uppercase tracking-wider">More filters</span>
+          {/* 6. Max beds */}
+          <div className="flex flex-col gap-1">
             <span className={labelClass}>Max beds</span>
-            <select name="maxBeds" defaultValue={maxBeds ?? ''} className={`w-20 ${inputClass}`}>
-              <option value="">Any</option>
-              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                <option key={n} value={n}>{n} or fewer</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1">
+            <Select value={maxBeds || '__all__'} onValueChange={(v) => setMaxBeds(v === '__all__' ? '' : v)}>
+              <SelectTrigger className="w-20">
+                <SelectValue placeholder="Any" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Any</SelectItem>
+                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n} or fewer</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {/* 7. Max baths */}
+          <div className="flex flex-col gap-1">
             <span className={labelClass}>Max baths</span>
-            <select name="maxBaths" defaultValue={maxBaths ?? ''} className={`w-20 ${inputClass}`}>
-              <option value="">Any</option>
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <option key={n} value={n}>{n} or fewer</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1">
+            <Select value={maxBaths || '__all__'} onValueChange={(v) => setMaxBaths(v === '__all__' ? '' : v)}>
+              <SelectTrigger className="w-20">
+                <SelectValue placeholder="Any" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Any</SelectItem>
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n} or fewer</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Label className="flex flex-col gap-1">
             <span className={labelClass}>Sq ft (max)</span>
-            <input type="number" name="maxSqFt" placeholder="Any" min={0} step={100} defaultValue={maxSqFt} className={`w-24 ${inputClass}`} />
-          </label>
-          <label className="flex flex-col gap-1">
+            <Input type="number" name="maxSqFt" placeholder="Any" min={0} step={100} defaultValue={maxSqFt} className="w-24" />
+          </Label>
+          <Label className="flex flex-col gap-1">
             <span className={labelClass}>Year built (min)</span>
-            <input type="number" name="yearBuiltMin" placeholder="Any" min={1800} max={2100} step={1} defaultValue={yearBuiltMin} className={`w-24 ${inputClass}`} />
-          </label>
-          <label className="flex flex-col gap-1">
+            <Input type="number" name="yearBuiltMin" placeholder="Any" min={1800} max={2100} step={1} defaultValue={yearBuiltMin} className="w-24" />
+          </Label>
+          <Label className="flex flex-col gap-1">
             <span className={labelClass}>Year built (max)</span>
-            <input type="number" name="yearBuiltMax" placeholder="Any" min={1800} max={2100} step={1} defaultValue={yearBuiltMax} className={`w-24 ${inputClass}`} />
-          </label>
-          <label className="flex flex-col gap-1">
+            <Input type="number" name="yearBuiltMax" placeholder="Any" min={1800} max={2100} step={1} defaultValue={yearBuiltMax} className="w-24" />
+          </Label>
+          <Label className="flex flex-col gap-1">
             <span className={labelClass}>Lot (acres min)</span>
-            <input type="number" name="lotAcresMin" placeholder="Any" min={0} step={0.1} defaultValue={lotAcresMin} className={`w-24 ${inputClass}`} />
-          </label>
-          <label className="flex flex-col gap-1">
+            <Input type="number" name="lotAcresMin" placeholder="Any" min={0} step={0.1} defaultValue={lotAcresMin} className="w-24" />
+          </Label>
+          <Label className="flex flex-col gap-1">
             <span className={labelClass}>Lot (acres max)</span>
-            <input type="number" name="lotAcresMax" placeholder="Any" min={0} step={0.1} defaultValue={lotAcresMax} className={`w-24 ${inputClass}`} />
-          </label>
-          <label className="flex flex-col gap-1">
+            <Input type="number" name="lotAcresMax" placeholder="Any" min={0} step={0.1} defaultValue={lotAcresMax} className="w-24" />
+          </Label>
+          <Label className="flex flex-col gap-1">
             <span className={labelClass}>Zip code</span>
-            <input type="text" name="postalCode" placeholder="e.g. 97702" maxLength={10} defaultValue={postalCode} className={`w-28 ${inputClass}`} />
-          </label>
-          <label className="flex flex-col gap-1">
+            <Input type="text" name="postalCode" placeholder="e.g. 97702" maxLength={10} defaultValue={postalCode} className="w-28" />
+          </Label>
+          <Label className="flex flex-col gap-1">
             <span className={labelClass}>Property subtype</span>
-            <input type="text" name="propertySubType" placeholder="e.g. Single Family" defaultValue={propertySubType} className={`min-w-[140px] ${inputClass}`} />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className={labelClass}>Status</span>
-            <select name="statusFilter" defaultValue={statusFilter ?? (includeClosed === '1' ? 'all' : 'active')} className={`min-w-[160px] ${inputClass}`}>
-              {STATUS_OPTIONS.map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 flex-1 min-w-[200px]">
-            <span className={labelClass}>Keywords (in description)</span>
-            <input type="text" name="keywords" placeholder="e.g. mountain view, granite" defaultValue={keywords} className={`w-full ${inputClass}`} />
-          </label>
-          <label className="flex flex-col gap-1">
+            <Input type="text" name="propertySubType" placeholder="e.g. Single Family" defaultValue={propertySubType} className="min-w-[140px]" />
+          </Label>
+          {/* 8. New listings */}
+          <div className="flex flex-col gap-1">
             <span className={labelClass}>New listings</span>
-            <select name="newListingsDays" defaultValue={newListingsDays ?? ''} className={`w-32 ${inputClass}`}>
-              <option value="">Any</option>
-              <option value="7">Last 7 days</option>
-              <option value="14">Last 14 days</option>
-              <option value="30">Last 30 days</option>
-            </select>
-          </label>
-          <label className="flex flex-col gap-1">
+            <Select value={newListingsDays || '__all__'} onValueChange={(v) => setNewListingsDays(v === '__all__' ? '' : v)}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Any" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Any</SelectItem>
+                <SelectItem value="7">Last 7 days</SelectItem>
+                <SelectItem value="14">Last 14 days</SelectItem>
+                <SelectItem value="30">Last 30 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {/* 9. Garage min */}
+          <div className="flex flex-col gap-1">
             <span className={labelClass}>Garage (min spaces)</span>
-            <select name="garageMin" defaultValue={garageMin ?? ''} className={`w-24 ${inputClass}`}>
-              <option value="">Any</option>
-              {[1, 2, 3, 4].map((n) => (
-                <option key={n} value={n}>{n}+</option>
-              ))}
-            </select>
-          </label>
+            <Select value={garageMin || '__all__'} onValueChange={(v) => setGarageMin(v === '__all__' ? '' : v)}>
+              <SelectTrigger className="w-24">
+                <SelectValue placeholder="Any" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Any</SelectItem>
+                {[1, 2, 3, 4].map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n}+</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex flex-wrap items-center gap-6 self-end pb-2">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="hasOpenHouse" defaultChecked={hasOpenHouse === '1'} className="h-4 w-4 rounded border-zinc-300" />
-              <span className="text-sm text-zinc-600">Open house</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="hasPool" defaultChecked={hasPool === '1'} className="h-4 w-4 rounded border-zinc-300" />
-              <span className="text-sm text-zinc-600">Pool</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="hasView" defaultChecked={hasView === '1'} className="h-4 w-4 rounded border-zinc-300" />
-              <span className="text-sm text-zinc-600">View</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="hasWaterfront" defaultChecked={hasWaterfront === '1'} className="h-4 w-4 rounded border-zinc-300" />
-              <span className="text-sm text-zinc-600">Waterfront</span>
-            </label>
+            <Label className="flex items-center gap-2">
+              <Input type="checkbox" name="hasOpenHouse" defaultChecked={hasOpenHouse === '1'} className="h-4 w-4 rounded border-primary/20" />
+              <span className="text-sm text-muted-foreground">Open house</span>
+            </Label>
+            <Label className="flex items-center gap-2">
+              <Input type="checkbox" name="hasPool" defaultChecked={hasPool === '1'} className="h-4 w-4 rounded border-primary/20" />
+              <span className="text-sm text-muted-foreground">Pool</span>
+            </Label>
+            <Label className="flex items-center gap-2">
+              <Input type="checkbox" name="hasView" defaultChecked={hasView === '1'} className="h-4 w-4 rounded border-primary/20" />
+              <span className="text-sm text-muted-foreground">View</span>
+            </Label>
+            <Label className="flex items-center gap-2">
+              <Input type="checkbox" name="hasWaterfront" defaultChecked={hasWaterfront === '1'} className="h-4 w-4 rounded border-primary/20" />
+              <span className="text-sm text-muted-foreground">Waterfront</span>
+            </Label>
           </div>
         </div>
       )}

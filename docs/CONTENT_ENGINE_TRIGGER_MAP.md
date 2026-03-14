@@ -1,7 +1,7 @@
 # Content Engine Trigger Map
 
 **Which database/sync events generate which content types, for which platforms.**  
-Use this when implementing the Automated Social Media Content Engine. Reference: MASTER_INSTRUCTION_SET.md (Automated Social Media Content Engine section).
+Use this when implementing the Automated Social Media Content Engine.
 
 ---
 
@@ -85,4 +85,3 @@ Use this when implementing the Automated Social Media Content Engine. Reference:
 
 ---
 
-*Master reference: MASTER_INSTRUCTION_SET.md. Build order: BUILD_SEQUENCE_CHECKLIST.md.*

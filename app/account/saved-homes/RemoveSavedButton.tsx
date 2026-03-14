@@ -3,6 +3,7 @@
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { unsaveListing } from '@/app/actions/saved-listings'
+import { Button } from "@/components/ui/button"
 
 type Props = { listingKey: string }
 
@@ -18,13 +19,13 @@ export default function RemoveSavedButton({ listingKey }: Props) {
   }
 
   return (
-    <button
+    <Button
       type="button"
       onClick={handleRemove}
       disabled={pending}
-      className="mt-2 text-sm font-medium text-zinc-500 hover:text-red-600 disabled:opacity-50"
+      className="mt-2 text-sm font-medium text-muted-foreground hover:text-destructive disabled:opacity-50"
     >
       {pending ? 'Removing…' : 'Remove from saved'}
-    </button>
+    </Button>
   )
 }

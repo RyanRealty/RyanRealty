@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { subdivisionEntityKey } from '@/lib/slug'
+import { incrementCommunitySaveCount, decrementCommunitySaveCount } from './community-engagement'
 
 export async function getSavedCommunityKeys(): Promise<string[]> {
   const supabase = await createClient()
@@ -39,6 +40,7 @@ export async function saveCommunity(entityKey: string): Promise<{ error: string 
     entity_key: key,
   })
   if (error) return { error: error.message }
+  await incrementCommunitySaveCount(key).catch(() => {})
   return { error: null }
 }
 
@@ -46,12 +48,14 @@ export async function unsaveCommunity(entityKey: string): Promise<{ error: strin
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not signed in' }
+  const key = entityKey.trim().toLowerCase()
   const { error } = await supabase
     .from('saved_communities')
     .delete()
     .eq('user_id', user.id)
-    .eq('entity_key', entityKey.trim())
+    .eq('entity_key', key)
   if (error) return { error: error.message }
+  await decrementCommunitySaveCount(key).catch(() => {})
   return { error: null }
 }
 

@@ -1,8 +1,7 @@
 # Ryan Realty — Full Requirements Checklist
 
-**Governing foundation:** All requirements derive from **MASTER_INSTRUCTION_SET.md** (North Star, goals, organic growth strategy, quality benchmark). Use that doc for the “why”; use this checklist to tick implementation.
 
-**See also:** BUILD_SEQUENCE_CHECKLIST.md (prioritized order) and CONTENT_BRIEF_TEMPLATES.md (copy/SEO by page type).
+**See also:** CONTENT_BRIEF_TEMPLATES.md (copy/SEO by page type).
 
 ---
 

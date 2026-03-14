@@ -13,6 +13,7 @@ CREATE INDEX IF NOT EXISTS idx_listing_views_listing_key ON listing_views (listi
 
 ALTER TABLE listing_views ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can insert listing_views" ON listing_views;
 CREATE POLICY "Anyone can insert listing_views"
   ON listing_views FOR INSERT TO anon, authenticated WITH CHECK (true);
 

@@ -9,6 +9,7 @@ import type {
   setPlaceBannerFromPhoto,
   refreshPlaceBanner,
 } from '../app/actions/banners'
+import { Button } from "@/components/ui/button"
 
 type BannerOption = { url: string; thumbUrl: string; attribution: string }
 
@@ -124,7 +125,7 @@ export default function BannerActions({
   }, [hasBanner])
 
   const btn =
-    'inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 disabled:opacity-60'
+    'inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground shadow-sm hover:bg-muted disabled:opacity-60'
 
   // No banner: show loading or error
   if (!hasBanner) {
@@ -133,10 +134,10 @@ export default function BannerActions({
         {loading && <p className="text-sm text-white/90 drop-shadow-md">Fetching banner…</p>}
         {error && (
           <>
-            <p className="text-sm text-red-200 drop-shadow-md">{error}</p>
-            <button type="button" onClick={handleGenerate} disabled={loading} className={btn}>
+            <p className="text-sm text-destructive/60 drop-shadow-md">{error}</p>
+            <Button type="button" onClick={handleGenerate} disabled={loading} className={btn}>
               Try again
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -147,39 +148,39 @@ export default function BannerActions({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
-        <button
+        <Button
           type="button"
           onClick={handleOpenPicker}
           disabled={loadingOptions}
           className={btn}
         >
           {loadingOptions ? 'Loading…' : 'Change image'}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={handleRefresh}
           disabled={loading}
           className={btn}
         >
           {loading ? 'Refreshing…' : 'Refresh image'}
-        </button>
+        </Button>
       </div>
       {showPicker && (
-        <div className="mt-2 rounded-lg border border-zinc-300 bg-white/95 p-3 shadow-lg backdrop-blur">
-          <p className="mb-2 text-xs font-medium text-zinc-500">Choose an image</p>
+        <div className="mt-2 rounded-lg border border-border bg-card/95 p-3 shadow-md backdrop-blur">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Choose an image</p>
           {loadingOptions ? (
-            <p className="text-sm text-zinc-500">Loading options…</p>
+            <p className="text-sm text-muted-foreground">Loading options…</p>
           ) : options.length === 0 ? (
-            <p className="text-sm text-zinc-500">No options found. Try &quot;Refresh image&quot; instead.</p>
+            <p className="text-sm text-muted-foreground">No options found. Try &quot;Refresh image&quot; instead.</p>
           ) : (
             <div className="grid grid-cols-4 gap-2">
               {options.map((opt, i) => (
-                <button
+                <Button
                   key={opt.url}
                   type="button"
                   onClick={() => handleSelectOption(opt)}
                   disabled={picking}
-                  className="relative aspect-video overflow-hidden rounded-md border-2 border-zinc-200 hover:border-emerald-500 focus:border-emerald-500 focus:outline-none disabled:opacity-60"
+                  className="relative aspect-video overflow-hidden rounded-md border-2 border-border hover:border-success focus:border-accent focus:outline-none disabled:opacity-60"
                 >
                   <Image
                     src={opt.thumbUrl}
@@ -189,13 +190,13 @@ export default function BannerActions({
                     sizes="120px"
                     unoptimized
                   />
-                </button>
+                </Button>
               ))}
             </div>
           )}
         </div>
       )}
-      {error && <p className="text-sm text-red-200 drop-shadow-md">{error}</p>}
+      {error && <p className="text-sm text-destructive/60 drop-shadow-md">{error}</p>}
     </div>
   )
 }

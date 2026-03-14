@@ -110,3 +110,85 @@ export function getSubdivisionBlurb(subdivisionName: string): string | null {
   if (!subdivisionName?.trim()) return null
   return subdivisionBlurb[normalizeKey(subdivisionName)] ?? null
 }
+
+/** Quick facts + market stats for building data-driven copy when no static content exists. */
+export type CityDataDrivenInput = {
+  cityName: string
+  population?: string | null
+  elevation?: string | null
+  county?: string | null
+  schoolDistrict?: string | null
+  nearestAirport?: string | null
+  activeCount: number
+  medianPrice: number | null
+  communityCount: number
+}
+
+/**
+ * Build 2–3 paragraphs of substantive "About [city]" copy from data only.
+ * Used when DB description is missing or very short so pages are never thin.
+ */
+export function buildDataDrivenCityAbout(input: CityDataDrivenInput): string[] {
+  const {
+    cityName,
+    population,
+    elevation,
+    county,
+    schoolDistrict,
+    nearestAirport,
+    activeCount,
+    medianPrice,
+    communityCount,
+  } = input
+  const paras: string[] = []
+  const priceStr =
+    medianPrice != null && Number.isFinite(medianPrice)
+      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(medianPrice)
+      : null
+
+  paras.push(
+    `${cityName} is part of Central Oregon's diverse real estate landscape. ${population ? `The area is home to approximately ${population} residents. ` : ''}${county ? `It sits in ${county} County. ` : ''}${elevation ? `Elevation is around ${elevation}. ` : ''}${nearestAirport ? `The nearest commercial airport is ${nearestAirport}. ` : ''}Buyers and sellers here benefit from a mix of neighborhoods, clear seasons, and access to outdoor recreation and major highways.`
+  )
+
+  const marketParts: string[] = []
+  if (activeCount > 0) marketParts.push(`${activeCount} active listing${activeCount === 1 ? '' : 's'}`)
+  if (priceStr) marketParts.push(`a median list price of ${priceStr}`)
+  if (communityCount > 0) marketParts.push(`${communityCount} communities and subdivisions`)
+  if (marketParts.length > 0) {
+    paras.push(
+      `The current ${cityName} real estate market includes ${marketParts.join(', ')}. Whether you're looking for a primary residence, a vacation property, or land, the area offers a range of options. Listings are updated regularly; browse below for the latest homes for sale.`
+    )
+  }
+
+  if (schoolDistrict && paras.length < 3) {
+    paras.push(
+      `Schools in the area fall under ${schoolDistrict}. Many buyers consider school districts when choosing a neighborhood; we recommend visiting the district website and touring areas that fit your priorities.`
+    )
+  }
+  return paras
+}
+
+/** Build 1–2 paragraphs for neighborhood about when description is missing or short. */
+export function buildDataDrivenNeighborhoodAbout(input: {
+  neighborhoodName: string
+  cityName: string
+  activeCount: number
+  medianPrice: number | null
+}): string[] {
+  const { neighborhoodName, cityName, activeCount, medianPrice } = input
+  const paras: string[] = []
+  const priceStr =
+    medianPrice != null && Number.isFinite(medianPrice)
+      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(medianPrice)
+      : null
+  paras.push(
+    `${neighborhoodName} is a neighborhood in ${cityName}, Oregon. It offers residents a mix of housing styles and proximity to schools, services, and Central Oregon recreation. Browse the listings below for current homes for sale in the area.`
+  )
+  if (activeCount > 0 || priceStr) {
+    const parts: string[] = []
+    if (activeCount > 0) parts.push(`${activeCount} active listing${activeCount === 1 ? '' : 's'}`)
+    if (priceStr) parts.push(`median list price ${priceStr}`)
+    paras.push(`The current market in ${neighborhoodName} includes ${parts.join(', ')}. For more area overview and city-wide stats, see the ${cityName} city page.`)
+  }
+  return paras
+}

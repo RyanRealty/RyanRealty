@@ -14,9 +14,11 @@ CREATE INDEX IF NOT EXISTS idx_banner_images_entity ON banner_images (entity_typ
 
 ALTER TABLE banner_images ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public read banner_images" ON banner_images;
 CREATE POLICY "Public read banner_images"
   ON banner_images FOR SELECT TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS "Service role manage banner_images" ON banner_images;
 CREATE POLICY "Service role manage banner_images"
   ON banner_images FOR ALL TO service_role USING (true) WITH CHECK (true);
 

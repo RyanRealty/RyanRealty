@@ -1,6 +1,9 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { getSession } from '@/app/actions/auth'
+import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { logAdminAction } from '@/app/actions/log-admin-action'
 
 export type GeoPlaceType = 'country' | 'state' | 'city' | 'neighborhood' | 'community'
 
@@ -79,6 +82,16 @@ export async function createGeoPlace(params: {
     }
     return { ok: false, error: error.message }
   }
+  const session = await getSession()
+  const adminRole = session?.user?.email ? (await getAdminRoleForEmail(session.user.email))?.role ?? null : null
+  await logAdminAction({
+    adminEmail: session?.user?.email ?? '',
+    role: adminRole ?? null,
+    actionType: 'create',
+    resourceType: 'geo_place',
+    resourceId: (data as { id: string }).id,
+    details: { type: params.type, slug, name: params.name.trim() },
+  })
   return { ok: true, id: (data as { id: string }).id }
 }
 
@@ -100,6 +113,16 @@ export async function updateGeoPlace(
   if (updates.metadata !== undefined) payload.metadata = updates.metadata
   const { error } = await createClient(supabaseUrl, serviceKey).from('geo_places').update(payload).eq('id', id)
   if (error) return { ok: false, error: error.message }
+  const session = await getSession()
+  const adminRole = session?.user?.email ? (await getAdminRoleForEmail(session.user.email))?.role ?? null : null
+  await logAdminAction({
+    adminEmail: session?.user?.email ?? '',
+    role: adminRole ?? null,
+    actionType: 'update',
+    resourceType: 'geo_place',
+    resourceId: id,
+    details: updates,
+  })
   return { ok: true }
 }
 

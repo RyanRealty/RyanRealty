@@ -2,18 +2,35 @@
 
 import { useState } from 'react'
 import type { SparkListingResult } from '../../lib/spark'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
+import { Button } from "@/components/ui/button"
 
-type Props = { listing: SparkListingResult; /** When false, description is shown elsewhere. */ showRemarks?: boolean }
+type Props = {
+  listing: SparkListingResult
+  /** When false, description is shown elsewhere. */
+  showRemarks?: boolean
+  /** When true, show agent/office phone and email; when false, only show listing broker and brokerage names. */
+  isOurBroker?: boolean
+}
 
-/** Group MLS fields for accordion sections per listing page audit (Interior, Exterior, Community, Utilities, HOA, Legal). */
+/** Group MLS fields for accordion sections (Interior, Exterior, Community, Utilities, HOA, Legal). Excluded from all details: MLS ID, lat/long, status, city. */
 const FIELD_GROUPS: { title: string; keys: string[] }[] = [
   { title: 'Interior', keys: ['BedroomsTotal', 'BedsTotal', 'BathroomsTotal', 'BathsTotal', 'BuildingAreaTotal', 'LivingArea', 'RoomsTotal', 'BedroomsPossible', 'FireplaceFeatures', 'Appliances', 'Flooring', 'Cooling', 'Heating'] },
   { title: 'Exterior', keys: ['LotSizeAcres', 'LotSizeSquareFeet', 'GarageSpaces', 'Garage', 'AttachedGarageYN', 'ParkingFeatures', 'PropertySubType', 'View', 'WaterfrontFeatures'] },
   { title: 'Community', keys: ['SubdivisionName', 'Association', 'CommunityFeatures'] },
   { title: 'Utilities', keys: ['Utilities', 'Sewer', 'WaterSource', 'Electric', 'Gas'] },
   { title: 'HOA & fees', keys: ['AssociationFee', 'AssociationFeeFrequency', 'AssociationYN', 'RentalRestrictions'] },
-  { title: 'Legal & tax', keys: ['TaxAnnualAmount', 'TaxYear', 'ParcelNumber', 'Zoning', 'YearBuilt', 'ModificationTimestamp'] },
+  { title: 'Legal & tax', keys: ['TaxAnnualAmount', 'TaxYear', 'ParcelNumber', 'Zoning', 'YearBuilt'] },
 ]
+
+/** Never show these in Property details or More details (per product: no MLS ID, lat/long, status, city). */
+/** Also exclude keys already shown once on the page: key facts strip (beds, baths, sqft, lot, year built), breadcrumb/community (subdivision). */
+const EXCLUDED_DETAIL_KEYS = new Set([
+  'ListingKey', 'ListingId', 'MlsId', 'Latitude', 'Longitude', 'StandardStatus', 'ListStatus', 'City', 'StateOrProvince', 'PostalCode',
+  'SubdivisionName', 'BedroomsTotal', 'BedsTotal', 'BathroomsTotal', 'BathsTotal', 'BuildingAreaTotal', 'LivingArea',
+  'LotSizeAcres', 'LotSizeSquareFeet', 'YearBuilt',
+])
 
 type SparkStandardFields = Record<string, unknown>
 
@@ -25,6 +42,12 @@ function isMasked(s: string): boolean {
 /** True if the string looks like a URL; we don't show raw URLs in property details. */
 function isUrl(s: string): boolean {
   return /^https?:\/\/\S+/i.test(s.trim())
+}
+
+/** True when subdivision value is blank or N/A so we hide it in More details. */
+function isSubdivisionBlank(s: string): boolean {
+  const t = s.trim().toLowerCase()
+  return !t || t === 'n/a' || t === 'na' || t === 'none'
 }
 
 /** Turn a value into a single display string; never return "[object Object]". Returns null for URLs so they aren't shown as raw text. */
@@ -74,24 +97,22 @@ function DetailsAccordion({ title, entries }: { title: string; entries: [string,
   const [open, setOpen] = useState(true)
   if (entries.length === 0) return null
   return (
-    <div className="border-b border-zinc-100 last:border-b-0">
-      <button
+    <div className="border-b border-border last:border-b-0">
+      <Button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between py-3 text-left font-semibold text-zinc-900"
+        className="flex w-full items-center justify-between py-3 text-left font-semibold text-foreground"
         aria-expanded={open}
       >
         {title}
-        <svg className={`h-4 w-4 text-zinc-500 transition ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+        <HugeiconsIcon icon={ArrowDown01Icon} className={`h-4 w-4 text-muted-foreground transition ${open ? 'rotate-180' : ''}`} />
+      </Button>
       {open && (
         <dl className="grid gap-x-4 gap-y-2 pb-3 sm:grid-cols-2">
           {entries.map(([label, value]) => (
             <div key={label}>
-              <dt className="text-sm text-zinc-500">{label}</dt>
-              <dd className="font-medium text-zinc-900">{value}</dd>
+              <dt className="text-sm text-muted-foreground">{label}</dt>
+              <dd className="font-medium text-foreground">{value}</dd>
             </div>
           ))}
         </dl>
@@ -100,17 +121,21 @@ function DetailsAccordion({ title, entries }: { title: string; entries: [string,
   )
 }
 
-export default function ListingDetails({ listing, showRemarks = true }: Props) {
+export default function ListingDetails({ listing, showRemarks = true, isOurBroker = false }: Props) {
   const f = (listing.StandardFields ?? {}) as SparkStandardFields
   const remarks = showRemarks ? (f.PublicRemarks ?? f.PrivateRemarks ?? '') : ''
 
-  const agentBlock = [
-    f.ListAgentFirstName || f.ListAgentLastName ? [f.ListAgentFirstName, f.ListAgentLastName].filter(Boolean).join(' ') : null,
-    f.ListAgentEmail,
-    f.ListAgentPreferredPhone,
-    f.ListOfficeName,
-    f.ListOfficePhone,
-  ]
+  const agentName = f.ListAgentFirstName || f.ListAgentLastName
+    ? [f.ListAgentFirstName, f.ListAgentLastName].filter(Boolean).join(' ')
+    : null
+  const officeName = typeof f.ListOfficeName === 'string' && !isMasked(f.ListOfficeName) ? f.ListOfficeName.trim() : null
+
+  /** We never show listing agency or agent phone on the site; show name, email (when our broker), and office name only. */
+  const agentBlockRaw = isOurBroker
+    ? [agentName, f.ListAgentEmail, officeName]
+    : [agentName, officeName]
+
+  const agentBlock = agentBlockRaw
     .filter(Boolean)
     .map((line) => (typeof line === 'string' && isMasked(line) ? null : line))
     .filter((line): line is string => line != null && (typeof line !== 'string' || !isMasked(line)))
@@ -151,7 +176,7 @@ export default function ListingDetails({ listing, showRemarks = true }: Props) {
   const subdivisionDisplay = formatValue(f.SubdivisionName)
   const generalEntries: [string, string][] = []
   for (const [k, v] of Object.entries(f)) {
-    if (usedKeys.has(k) || isReservedKey(k) || v == null) continue
+    if (usedKeys.has(k) || isReservedKey(k) || EXCLUDED_DETAIL_KEYS.has(k) || v == null) continue
     const val = formatValue(v)
     if (val != null && val !== '' && !val.startsWith('[') && !looksLikeUrlOrSerialized(val)) {
       const label = labelMap[k] ?? k.replace(/([A-Z])/g, ' $1').trim()
@@ -167,23 +192,23 @@ export default function ListingDetails({ listing, showRemarks = true }: Props) {
   return (
     <div className="space-y-8">
       {remarks && (
-        <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
           <h2 className="mb-3 text-lg font-semibold">Description</h2>
-          <p className="whitespace-pre-wrap text-zinc-700">{typeof remarks === 'string' ? remarks : String(remarks ?? '')}</p>
+          <p className="whitespace-pre-wrap text-muted-foreground">{typeof remarks === 'string' ? remarks : String(remarks ?? '')}</p>
         </section>
       )}
 
       {hoaFee != null && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="font-semibold text-amber-900">HOA dues: ${hoaFee}{hoaFreq ? ` ${hoaFreq}` : ''}</p>
-          {rentalNote && <p className="mt-1 text-sm text-amber-800">Rental: {String(rentalNote)}</p>}
+        <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3">
+          <p className="font-semibold text-foreground">HOA dues: ${hoaFee}{hoaFreq ? ` ${hoaFreq}` : ''}</p>
+          {rentalNote && <p className="mt-1 text-sm text-warning">Rental: {String(rentalNote)}</p>}
         </div>
       )}
 
       {agentBlock.length > 0 && (
-        <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
           <h2 className="mb-3 text-lg font-semibold">Listing agent & office</h2>
-          <ul className="space-y-1 text-zinc-700">
+          <ul className="space-y-1 text-muted-foreground">
             {agentBlock.map((line, i) => (
               <li key={i}>{typeof line === 'string' ? line : String(line ?? '')}</li>
             ))}
@@ -192,11 +217,11 @@ export default function ListingDetails({ listing, showRemarks = true }: Props) {
       )}
 
       {openHouses.length > 0 && (
-        <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
           <h2 className="mb-3 text-lg font-semibold">Open houses</h2>
           <ul className="space-y-2">
             {openHouses.map((oh, i) => (
-              <li key={i} className="text-zinc-700">
+              <li key={i} className="text-muted-foreground">
                 {oh.Date}
                 {oh.StartTime && oh.EndTime && ` ${oh.StartTime} – ${oh.EndTime}`}
               </li>
@@ -205,15 +230,17 @@ export default function ListingDetails({ listing, showRemarks = true }: Props) {
         </section>
       )}
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold">Property details</h2>
-        <div className="divide-y divide-zinc-100">
+        <div className="divide-y divide-border">
           {FIELD_GROUPS.map((group) => {
             const entries: [string, string][] = []
             for (const key of group.keys) {
+              if (EXCLUDED_DETAIL_KEYS.has(key)) continue
               const raw = f[key]
               const value = formatValue(raw)
               if (value != null && value !== '') {
+                if (key === 'SubdivisionName' && isSubdivisionBlank(value)) continue
                 const label = labelMap[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())
                 let display = key === 'AssociationFee' ? `$${value}` : value
                 if (key === 'ModificationTimestamp' && /^\d{4}-\d{2}-\d{2}/.test(value)) {

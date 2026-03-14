@@ -10,7 +10,7 @@ export default function ListingDocuments({ documents }: Props) {
   return (
     <section className="mb-10">
       <h2 className="mb-4 text-lg font-semibold">Documents</h2>
-      <ul className="space-y-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <ul className="space-y-2 rounded-lg border border-border bg-card p-4 shadow-sm">
         {documents.map((doc, i) => {
           const name = doc.Name || `Document ${i + 1}`
           const uri = doc.Uri
@@ -21,12 +21,12 @@ export default function ListingDocuments({ documents }: Props) {
                   href={uri}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   {name}
                 </a>
               ) : (
-                <span className="text-zinc-600">{name}</span>
+                <span className="text-muted-foreground">{name}</span>
               )}
             </li>
           )

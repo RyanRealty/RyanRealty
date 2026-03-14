@@ -3,7 +3,7 @@
  * Renders in root layout for site-wide identity.
  */
 export default function JsonLd() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.com'
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'
 
   const organization = {
     '@context': 'https://schema.org',
@@ -28,7 +28,7 @@ export default function JsonLd() {
     publisher: { '@id': `${baseUrl}#organization` },
     potentialAction: {
       '@type': 'SearchAction',
-      target: { '@type': 'EntryPoint', urlTemplate: `${baseUrl}/search/{search_term_string}` },
+      target: { '@type': 'EntryPoint', urlTemplate: `${baseUrl}/homes-for-sale?keywords={search_term_string}` },
       'query-input': 'required name=search_term_string',
     },
   }

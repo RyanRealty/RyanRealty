@@ -30,8 +30,8 @@ function buildReportHtml(data: MarketReportByCity[], periodStart: Date, periodEn
   const endStr = formatDate(periodEnd)
   let html = `
     <div class="market-report">
-      <p class="report-dates text-zinc-500 text-sm">${startStr} – ${endStr}</p>
-      <p class="report-intro text-zinc-700 mt-2">Here’s what happened in the Central Oregon real estate market last week, by city.</p>
+      <p class="report-dates text-muted-foreground text-sm">${startStr} – ${endStr}</p>
+      <p class="report-intro text-muted-foreground mt-2">Here’s what happened in the Central Oregon real estate market last week, by city.</p>
   `
   for (const { city, pending, closed } of data) {
     const totalPending = pending.length
@@ -40,14 +40,14 @@ function buildReportHtml(data: MarketReportByCity[], periodStart: Date, periodEn
     const citySlug = cityEntityKey(city)
     html += `
       <section class="mt-8">
-        <h2 class="text-xl font-semibold text-zinc-900"><a href="/search/${citySlug}" class="text-emerald-700 hover:text-emerald-800 hover:underline">${escapeHtml(city)}</a></h2>
+        <h2 class="text-xl font-semibold text-foreground"><a href="/search/${citySlug}" class="text-emerald-700 hover:text-emerald-800 hover:underline">${escapeHtml(city)}</a></h2>
         <div class="mt-2 grid gap-4 sm:grid-cols-2">
     `
     if (totalPending > 0) {
       html += `
-          <div class="rounded-xl border border-zinc-200 bg-amber-50/50 p-4">
+          <div class="rounded-xl border border-border bg-amber-50/50 p-4">
             <h3 class="font-medium text-amber-900">Went pending (${totalPending})</h3>
-            <ul class="mt-2 list-inside list-disc text-sm text-zinc-700">
+            <ul class="mt-2 list-inside list-disc text-sm text-muted-foreground">
       `
       for (const item of pending.slice(0, 15)) {
         const price = item.price != null ? `$${Number(item.price).toLocaleString()}` : ''
@@ -59,9 +59,9 @@ function buildReportHtml(data: MarketReportByCity[], periodStart: Date, periodEn
     }
     if (totalClosed > 0) {
       html += `
-          <div class="rounded-xl border border-zinc-200 bg-emerald-50/50 p-4">
+          <div class="rounded-xl border border-border bg-emerald-50/50 p-4">
             <h3 class="font-medium text-emerald-900">Closed (${totalClosed})</h3>
-            <ul class="mt-2 list-inside list-disc text-sm text-zinc-700">
+            <ul class="mt-2 list-inside list-disc text-sm text-muted-foreground">
       `
       for (const item of closed.slice(0, 15)) {
         const price = item.price != null ? `$${Number(item.price).toLocaleString()}` : ''

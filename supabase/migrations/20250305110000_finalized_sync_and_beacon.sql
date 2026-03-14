@@ -18,8 +18,11 @@ CREATE INDEX IF NOT EXISTS idx_listings_city_close ON listings ("City", "CloseDa
 CREATE INDEX IF NOT EXISTS idx_listings_history_finalized ON listings (history_finalized) WHERE history_finalized = false;
 CREATE INDEX IF NOT EXISTS idx_listings_media_finalized ON listings (media_finalized) WHERE media_finalized = false;
 
--- City/period metrics: by city and date range. SFR = Single Family Residential (exclude condo, manufactured, etc. via PropertyType if needed).
 -- Returns: sold_count, median_price, median_dom, median_ppsf, current_listings, sales_12mo (for inventory calc).
+-- Ensure we own the function signatures and avoid ambiguity if earlier versions exist.
+DROP FUNCTION IF EXISTS get_beacon_metrics(text, date, date, date);
+DROP FUNCTION IF EXISTS get_beacon_metrics(text, date, date, date, text);
+
 CREATE OR REPLACE FUNCTION get_beacon_metrics(
   p_city text,
   p_period_start date,

@@ -9,6 +9,10 @@ import {
   sparkListingToSupabaseRow,
   type SparkListingHistoryItem,
 } from '../../lib/spark'
+import { fetchListings, SPARK_SELECT_FIELDS } from '@/lib/spark-odata'
+import type { SparkListing } from '@/lib/spark-odata'
+import { processSparkListing } from '@/lib/listing-processor'
+import * as Sentry from '@sentry/nextjs'
 
 export type SyncDeltaResult = {
   success: boolean
@@ -146,8 +150,8 @@ export async function syncSparkListings(options?: {
       totalFetched += rows.length
 
       for (let i = 0; i < rows.length; i += UPSERT_CHUNK_SIZE) {
-        let chunk = rows.slice(i, i + UPSERT_CHUNK_SIZE)
-        let { error } = await supabase.from('listings').upsert(chunk, {
+        const chunk = rows.slice(i, i + UPSERT_CHUNK_SIZE)
+        const { error } = await supabase.from('listings').upsert(chunk, {
           onConflict: 'ListNumber',
           ignoreDuplicates: options?.insertOnly === true,
         })
@@ -205,6 +209,351 @@ export async function syncSparkListings(options?: {
   }
 }
 
+/** OData filter: Active, Pending, Active Under Contract only (RESO StandardStatus). */
+const ACTIVE_PENDING_ODATA_FILTER =
+  "(StandardStatus eq 'Active' or StandardStatus eq 'Pending' or StandardStatus eq 'ActiveUnderContract')"
+
+const REFRESH_ACTIVE_PENDING_PAGE_SIZE = 500
+
+export type SyncActivePendingResult = {
+  success: boolean
+  message: string
+  totalFetched?: number
+  totalUpserted?: number
+  error?: string
+}
+
+/** Result of running one page of active/pending refresh (for chunked, abortable UI). */
+export type RunOnePageActivePendingResult = {
+  success: boolean
+  totalFetched: number
+  totalUpserted: number
+  /** Next state: null = done, URL = OData next, 'v1' = v1 mode (use nextListingPage). */
+  nextUrl: string | null
+  /** For v1 mode: next page number to fetch (1-based). */
+  nextListingPage: number
+  /** For v1 mode: total pages. */
+  totalListingPages: number | null
+  hasMore: boolean
+  message: string
+  error?: string
+}
+
+/**
+ * Run one page of active/pending refresh. Used by sync cursor for chunked, abortable runs.
+ * State: refreshNextUrl (null | URL | 'v1'), nextListingPage (v1 page when in v1 mode).
+ */
+export async function runOnePageActivePendingSync(state: {
+  refreshNextUrl: string | null
+  nextListingPage: number
+}): Promise<RunOnePageActivePendingResult> {
+  const accessToken = process.env.SPARK_API_KEY
+  if (!accessToken?.trim()) {
+    return {
+      success: false,
+      totalFetched: 0,
+      totalUpserted: 0,
+      nextUrl: null,
+      nextListingPage: 1,
+      totalListingPages: null,
+      hasMore: false,
+      message: 'SPARK_API_KEY is not set.',
+      error: 'Missing SPARK_API_KEY',
+    }
+  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
+    return {
+      success: false,
+      totalFetched: 0,
+      totalUpserted: 0,
+      nextUrl: null,
+      nextListingPage: 1,
+      totalListingPages: null,
+      hasMore: false,
+      message: 'Supabase not configured.',
+      error: 'Missing Supabase env vars',
+    }
+  }
+
+  let totalFetched = 0
+  let totalUpserted = 0
+  const { refreshNextUrl, nextListingPage: v1Page } = state
+
+  try {
+    // First page: try OData
+    if (refreshNextUrl === null || refreshNextUrl === '') {
+      const result = await fetchListings({
+        top: REFRESH_ACTIVE_PENDING_PAGE_SIZE,
+        filter: ACTIVE_PENDING_ODATA_FILTER,
+        select: SPARK_SELECT_FIELDS,
+        expand: 'Media',
+        orderby: 'ModificationTimestamp asc',
+      })
+      const records = result.records
+      totalFetched = records.length
+      for (const record of records) {
+        try {
+          await processSparkListing(record)
+          totalUpserted += 1
+        } catch (e) {
+          Sentry.captureException(e, { extra: { listingKey: record.ListingKey } })
+        }
+      }
+      const next = result.nextUrl
+      if (next) {
+        return {
+          success: true,
+          totalFetched,
+          totalUpserted,
+          nextUrl: next,
+          nextListingPage: 1,
+          totalListingPages: null,
+          hasMore: true,
+          message: `OData: ${totalUpserted} upserted this page.`,
+        }
+      }
+      if (totalFetched > 0) {
+        return {
+          success: true,
+          totalFetched,
+          totalUpserted,
+          nextUrl: null,
+          nextListingPage: 1,
+          totalListingPages: null,
+          hasMore: false,
+          message: `Done. ${totalUpserted} listings upserted (${totalFetched} fetched).`,
+        }
+      }
+      // OData returned 0: try v1 first page
+      const response = await fetchSparkListingsPage(accessToken, {
+        page: 1,
+        limit: Math.min(REFRESH_ACTIVE_PENDING_PAGE_SIZE, 100),
+        filter: ACTIVE_PENDING_ODATA_FILTER,
+        orderby: 'ModificationTimestamp',
+      })
+      const D = response.D
+      const results = D?.Results ?? []
+      const pagination = D?.Pagination
+      totalFetched = results.length
+      for (const item of results) {
+        const sf = item.StandardFields
+        const listingKey = sf?.ListingKey ?? item.Id
+        if (!listingKey) continue
+        const raw: SparkListing = { ...sf, ListingKey: listingKey } as SparkListing
+        try {
+          await processSparkListing(raw)
+          totalUpserted += 1
+        } catch (e) {
+          Sentry.captureException(e, { extra: { listingKey } })
+        }
+      }
+      const totalPages = pagination?.TotalPages ?? 0
+      const hasMore = totalPages > 1
+      return {
+        success: true,
+        totalFetched,
+        totalUpserted,
+        nextUrl: hasMore ? 'v1' : null,
+        nextListingPage: 2,
+        totalListingPages: totalPages || null,
+        hasMore,
+        message: `V1: ${totalUpserted} upserted this page${hasMore ? ` (page 1 of ${totalPages})` : ''}.`,
+      }
+    }
+
+    // OData next page
+    if (refreshNextUrl !== 'v1') {
+      const result = await fetchListings({ nextUrl: refreshNextUrl })
+      const records = result.records
+      totalFetched = records.length
+      for (const record of records) {
+        try {
+          await processSparkListing(record)
+          totalUpserted += 1
+        } catch (e) {
+          Sentry.captureException(e, { extra: { listingKey: record.ListingKey } })
+        }
+      }
+      const next = result.nextUrl
+      return {
+        success: true,
+        totalFetched,
+        totalUpserted,
+        nextUrl: next,
+        nextListingPage: 1,
+        totalListingPages: null,
+        hasMore: !!next,
+        message: `OData: ${totalUpserted} upserted this page.`,
+      }
+    }
+
+    // V1 next page
+    const response = await fetchSparkListingsPage(accessToken, {
+      page: v1Page,
+      limit: Math.min(REFRESH_ACTIVE_PENDING_PAGE_SIZE, 100),
+      filter: ACTIVE_PENDING_ODATA_FILTER,
+      orderby: 'ModificationTimestamp',
+    })
+    const D = response.D
+    const results = D?.Results ?? []
+    const pagination = D?.Pagination
+    totalFetched = results.length
+    for (const item of results) {
+      const sf = item.StandardFields
+      const listingKey = sf?.ListingKey ?? item.Id
+      if (!listingKey) continue
+      const raw: SparkListing = { ...sf, ListingKey: listingKey } as SparkListing
+      try {
+        await processSparkListing(raw)
+        totalUpserted += 1
+      } catch (e) {
+        Sentry.captureException(e, { extra: { listingKey } })
+      }
+    }
+    const totalPages = pagination?.TotalPages ?? 0
+    const hasMore = v1Page < totalPages
+    return {
+      success: true,
+      totalFetched,
+      totalUpserted,
+      nextUrl: hasMore ? 'v1' : null,
+      nextListingPage: v1Page + 1,
+      totalListingPages: totalPages || null,
+      hasMore,
+      message: `V1: ${totalUpserted} upserted (page ${v1Page} of ${totalPages}).`,
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return {
+      success: false,
+      totalFetched: 0,
+      totalUpserted: 0,
+      nextUrl: null,
+      nextListingPage: 1,
+      totalListingPages: null,
+      hasMore: false,
+      message: `Refresh failed: ${message}`,
+      error: message,
+    }
+  }
+}
+
+/**
+ * Refresh only active and pending (and under contract) listings from Spark.
+ * Fetches all such listings via OData filter and upserts via processSparkListing (same as delta ingest).
+ * Use when you want the most current active/pending set without running a full sync.
+ * After this, run "Run all active listing histories" (section 4) to get history for status/date (active, pending, withdrawn, etc.).
+ */
+export async function syncSparkListingsActiveAndPending(): Promise<SyncActivePendingResult> {
+  const accessToken = process.env.SPARK_API_KEY
+  if (!accessToken?.trim()) {
+    return { success: false, message: 'SPARK_API_KEY is not set.', error: 'Missing SPARK_API_KEY' }
+  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
+    return {
+      success: false,
+      message: 'Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.',
+      error: 'Missing Supabase env vars',
+    }
+  }
+
+  let totalFetched = 0
+  let totalUpserted = 0
+  let nextUrl: string | null = null
+
+  try {
+    let result = await fetchListings({
+      top: REFRESH_ACTIVE_PENDING_PAGE_SIZE,
+      filter: ACTIVE_PENDING_ODATA_FILTER,
+      select: SPARK_SELECT_FIELDS,
+      expand: 'Media',
+      orderby: 'ModificationTimestamp asc',
+    })
+
+    for (;;) {
+      const records = result.records
+      totalFetched += records.length
+
+      for (const record of records) {
+        try {
+          await processSparkListing(record)
+          totalUpserted += 1
+        } catch (e) {
+          Sentry.captureException(e, { extra: { listingKey: record.ListingKey } })
+          // continue with next listing
+        }
+      }
+
+      nextUrl = result.nextUrl
+      if (!nextUrl) break
+
+      result = await fetchListings({ nextUrl })
+    }
+
+    // If OData returned nothing (e.g. SPARK_API_BASE_URL points at v1/replication), try v1 API.
+    if (totalFetched === 0) {
+      const v1PageSize = Math.min(REFRESH_ACTIVE_PENDING_PAGE_SIZE, 100)
+      let page = 1
+      let hasMore = true
+      while (hasMore) {
+        const response = await fetchSparkListingsPage(accessToken, {
+          page,
+          limit: v1PageSize,
+          filter: ACTIVE_PENDING_ODATA_FILTER,
+          orderby: 'ModificationTimestamp',
+        })
+        const D = response.D
+        const results = D?.Results ?? []
+        const pagination = D?.Pagination
+
+        totalFetched += results.length
+        for (const item of results) {
+          const sf = item.StandardFields
+          const listingKey = sf?.ListingKey ?? item.Id
+          if (!listingKey) continue
+          const raw: SparkListing = { ...sf, ListingKey: listingKey } as SparkListing
+          try {
+            await processSparkListing(raw)
+            totalUpserted += 1
+          } catch (e) {
+            Sentry.captureException(e, { extra: { listingKey } })
+          }
+        }
+
+        if (!pagination || pagination.CurrentPage >= pagination.TotalPages || results.length === 0) {
+          hasMore = false
+        } else {
+          page += 1
+        }
+      }
+    }
+
+    const message =
+      totalFetched === 0
+        ? 'No listings returned from Spark. Your Spark key may use the v1 API only — the OData Property endpoint (SPARK_API_BASE_URL) may need to point to the OData base (e.g. https://sparkapi.com/Reso/OData). Or run a full sync instead.'
+        : `Refreshed active & pending: ${totalUpserted} listings upserted (${totalFetched} fetched).`
+    return {
+      success: true,
+      message,
+      totalFetched,
+      totalUpserted,
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return {
+      success: false,
+      message: `Refresh active & pending failed: ${message}`,
+      totalFetched,
+      totalUpserted,
+      error: message,
+    }
+  }
+}
+
 /**
  * Delta sync: fetch only listings changed since last_delta_sync_at. Emits activity_events for status/price changes.
  * Run on a 15–30 min cron. On first run (no last_delta_sync_at) uses 24h ago. Updates sync_state only on success.
@@ -212,6 +561,8 @@ export async function syncSparkListings(options?: {
 export async function syncSparkListingsDelta(options?: {
   maxPages?: number
   pageSize?: number
+  /** If set, sync only listings modified after this ISO date. Otherwise use last_delta_sync_at from sync_state (or 24h ago). */
+  sinceOverride?: string
 }): Promise<SyncDeltaResult> {
   const accessToken = process.env.SPARK_API_KEY
   if (!accessToken?.trim()) {
@@ -231,15 +582,20 @@ export async function syncSparkListingsDelta(options?: {
   const pageSize = options?.pageSize ?? 100
 
   let sinceIso: string
-  const { data: stateRow } = await supabase.from('sync_state').select('last_delta_sync_at').eq('id', 'default').maybeSingle()
-  const lastAt = (stateRow as { last_delta_sync_at?: string | null } | null)?.last_delta_sync_at
-  if (lastAt) {
-    sinceIso = lastAt
+  if (options?.sinceOverride) {
+    sinceIso = options.sinceOverride
   } else {
-    const t = new Date(Date.now() - 24 * 60 * 60 * 1000)
-    sinceIso = t.toISOString()
+    const { data: stateRow } = await supabase.from('sync_state').select('last_delta_sync_at').eq('id', 'default').maybeSingle()
+    const lastAt = (stateRow as { last_delta_sync_at?: string | null } | null)?.last_delta_sync_at
+    if (lastAt) {
+      sinceIso = lastAt
+    } else {
+      const t = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      sinceIso = t.toISOString()
+    }
   }
-  const filter = `ModificationTimestamp gt '${sinceIso.replace(/'/g, "''")}'`
+  // SparkQL: datetime literals must be unquoted (per Spark API docs; quotes cause 1040 syntax error)
+  const filter = `ModificationTimestamp Gt ${sinceIso.trim()}`
 
   let totalFetched = 0
   let totalUpserted = 0
@@ -530,21 +886,37 @@ export type SyncHistoryResult = {
   insertError?: string
 }
 
+/** Supabase .or() for active + pending only (excludes closed/expired/withdrawn/canceled). Use when syncing history only for active/pending. */
+const ACTIVE_OR_PENDING_STATUS_OR =
+  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%'
+
+/** Terminal statuses: we do not re-fetch listing data from Spark, but we can backfill history. Used when activeAndPendingOnly is false. */
+const TERMINAL_STATUS_OR =
+  'StandardStatus.ilike.%Closed%,StandardStatus.ilike.%Expired%,StandardStatus.ilike.%Withdrawn%,StandardStatus.ilike.%Cancel%'
+
+function isTerminalStatus(s: string | null | undefined): boolean {
+  const t = String(s ?? '').toLowerCase()
+  return /closed/.test(t) || /expired/.test(t) || /withdrawn/.test(t) || /cancel/.test(t)
+}
+
 /**
  * Backfill listing_history from Spark API. Fetches history for each listing and upserts into Supabase.
  * Run after listing sync so CMAs and reports can use list date, price changes, last sale without calling the API.
  * Uses batches to avoid timeouts; pass offset to continue.
  *
- * Smart retry: we include every listing with history_finalized = false. So even if we have the listing
- * but no history yet (e.g. API key lacked history access), we keep attempting to sync history on every run.
- * A listing is only marked history_finalized when we successfully store at least one history row (and it's
- * closed); until then it stays in the pool so you can get history later when access is granted.
+ * When activeAndPendingOnly is true (default), only listings that are active or pending are included.
+ * When false (Backfill closed), only listings that are closed, expired, withdrawn, or canceled are included.
+ * We do not re-fetch listing data for those terminal statuses; we only backfill their history.
+ *
+ * A listing is marked history_finalized when we successfully store at least one history row and its status is terminal (closed/expired/withdrawn/canceled).
  */
 export async function syncListingHistory(options?: {
   /** Max listings to process in this run (default 50) */
   limit?: number
   /** Start at this listing offset (0-based). Use nextOffset from previous run to continue. */
   offset?: number
+  /** When true (default), only sync history for active and pending listings; skip closed. Set false to include closed. */
+  activeAndPendingOnly?: boolean
 }): Promise<SyncHistoryResult> {
   const accessToken = process.env.SPARK_API_KEY
   if (!accessToken?.trim()) {
@@ -562,20 +934,30 @@ export async function syncListingHistory(options?: {
   const supabase = createClient(supabaseUrl, serviceKey)
   const limit = Math.min(options?.limit ?? 50, 200)
   const offset = Math.max(0, options?.offset ?? 0)
+  const activeAndPendingOnly = options?.activeAndPendingOnly !== false
 
   try {
-    // Include every listing that doesn't have history finalized yet — we keep retrying until we get history (e.g. when you get access later).
-    const { count: needSyncCount } = await supabase
+    // Base query: listings that don't have history finalized yet. Optionally restrict to active/pending only.
+    let countQuery = supabase
       .from('listings')
       .select('*', { count: 'exact', head: true })
       .eq('history_finalized', false)
-    const totalListings = needSyncCount ?? 0
-    const { data: rows } = await supabase
+    let dataQuery = supabase
       .from('listings')
       .select('ListingKey, ListNumber, StandardStatus')
       .eq('history_finalized', false)
       .order('ListNumber', { ascending: true, nullsFirst: false })
       .range(offset, offset + limit - 1)
+    if (activeAndPendingOnly) {
+      countQuery = countQuery.or(ACTIVE_OR_PENDING_STATUS_OR)
+      dataQuery = dataQuery.or(ACTIVE_OR_PENDING_STATUS_OR)
+    } else {
+      countQuery = countQuery.or(TERMINAL_STATUS_OR)
+      dataQuery = dataQuery.or(TERMINAL_STATUS_OR)
+    }
+    const { count: needSyncCount } = await countQuery
+    const totalListings = needSyncCount ?? 0
+    const { data: rows } = await dataQuery
     const listingRows = (rows ?? []) as {
       ListingKey?: string | null
       ListNumber?: string | null
@@ -629,10 +1011,8 @@ export async function syncListingHistory(options?: {
         const { error } = await supabase.from('listing_history').insert(historyRows)
         if (!error) {
           historyRowsUpserted += historyRows.length
-          // Only mark history_finalized when we actually stored history. Never finalize when we got no history —
-          // so we keep retrying when you get history access later (e.g. Private role).
-          const status = (row.StandardStatus ?? '').toString().toLowerCase()
-          if (status.includes('closed') && row.ListNumber) {
+          // Only mark history_finalized when we actually stored history and status is terminal (closed/expired/withdrawn/canceled).
+          if (isTerminalStatus(row.StandardStatus) && row.ListNumber) {
             await supabase
               .from('listings')
               .update({ history_finalized: true, is_finalized: true })
