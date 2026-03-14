@@ -29,8 +29,8 @@ import { cn } from "@/lib/utils";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
-/** Always render with fresh data so production matches localhost (no stale static build). */
-export const dynamic = 'force-dynamic'
+/** Revalidate every 60s so pages load instantly from cache but data stays fresh. */
+export const revalidate = 60
 
 export const metadata: Metadata = {
   metadataBase: new URL(getCanonicalSiteUrl()),

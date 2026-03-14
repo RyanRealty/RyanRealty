@@ -7,7 +7,7 @@ import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export async function generateMetadata(): Promise<Metadata> {
   const brokerage = await getBrokerageSettings()

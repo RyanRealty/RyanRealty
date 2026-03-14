@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
 }
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function OurHomesPage() {
   const { listings } = await getListingsWithAdvanced({

@@ -7,7 +7,7 @@ import CityTilesGrid from '@/components/city/CityTilesGrid'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Central Oregon Cities — Bend, Redmond, Sisters, Sunriver | Ryan Realty',

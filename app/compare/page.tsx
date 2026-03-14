@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
 }
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 function daysOnMarket(d: string | null | undefined): number | null {
   if (!d) return null

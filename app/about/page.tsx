@@ -9,7 +9,7 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { sanitizeHtml } from '@/lib/sanitize'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'About Us',

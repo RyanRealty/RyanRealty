@@ -210,7 +210,7 @@ function hasFilterOnlySearch(sp: SearchParams): boolean {
   return Boolean(sp.maxPrice || sp.minPrice || (sp.keywords?.trim()) || sp.hasWaterfront === '1')
 }
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function SearchPage({
   params,

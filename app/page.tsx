@@ -35,7 +35,7 @@ const DEFAULT_HOME_CITY = 'Bend'
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/og-home.png`
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Ryan Realty — Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
@@ -118,8 +118,7 @@ export default async function Home(props: HomeProps) {
             getOrCreatePlaceBanner(
               'subdivision',
               subdivisionEntityKey(currentCityName, c.subdivisionName),
-              `${c.subdivisionName}, ${currentCityName}`
-            ).then((r) => r?.url ?? null)
+            ).then((r) => r?.url ?? null).catch(() => null)
           )
         )
       : Promise.resolve([] as string[]),

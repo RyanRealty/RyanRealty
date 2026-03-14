@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function NeighborhoodDetailPage({ params }: Props) {
   const { slug: citySlug, neighborhoodSlug } = await params
@@ -83,9 +83,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const pageTitle = `${neighborhood.name} in ${neighborhood.cityName}, Oregon | Ryan Realty`
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const heroImageUrl =
-    neighborhood.heroImageUrl ??
-    (await fetchPlacePhoto(`${neighborhood.name} ${neighborhood.cityName} Oregon`))?.url ??
-    null
+    neighborhood.heroImageUrl ?? null
 
   const [listings, soldListings, savedKeys, likedKeys, prefs, communitiesInNeighborhood, activityFeed, brokers, savedCommunityKeys, likedCommunityKeys] = await Promise.all([
     getNeighborhoodListings(neighborhood.id, 24),

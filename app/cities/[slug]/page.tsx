@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 function buildQuickFacts(
   cityName: string,
@@ -114,7 +114,7 @@ export default async function CityDetailPage({ params }: Props) {
   const pageTitle = `Homes for Sale in ${city.name}, Oregon | Ryan Realty`
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const heroImageUrl =
-    city.heroImageUrl ?? (await fetchPlacePhoto(`${city.name} Oregon`))?.url ?? null
+    city.heroImageUrl ?? null
 
   const [
     listings,

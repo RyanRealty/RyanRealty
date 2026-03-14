@@ -11,7 +11,7 @@ import { getActiveBrokers } from './actions/brokers'
 const ACTIVE_STATUS_OR =
   'standard_status.is.null,standard_status.ilike.%Active%,standard_status.ilike.%For Sale%,standard_status.ilike.%Coming Soon%'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')

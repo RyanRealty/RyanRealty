@@ -64,69 +64,19 @@ export async function getBannerAttribution(
 }
 
 /**
- * Get banner URL and attribution. If none exists, fetches from Unsplash using searchQuery,
- * downloads the image, stores in Storage and banner_images, then returns the URL (no repeat API calls).
- * searchQuery: city page = "{city} Oregon", community page = "{community} {city} Oregon".
+ * Get banner URL and attribution if one already exists in storage.
+ * Never fetches or generates images during page render — returns null if no banner stored.
+ * Use the admin "Generate Banners" UI or generateAllMissingBanners() to populate banners.
  */
 export async function getOrCreatePlaceBanner(
   entityType: 'city' | 'subdivision',
   entityKey: string,
-  searchQuery: string
+  _searchQuery?: string
 ): Promise<{ url: string | null; attribution: string | null }> {
   const existingUrl = await getBannerUrl(entityType, entityKey)
-  if (existingUrl) {
-    const attribution = await getBannerAttribution(entityType, entityKey)
-    return { url: existingUrl, attribution }
-  }
-
-  const photo = await fetchPlacePhoto(searchQuery)
-  if (!photo?.url) return { url: null, attribution: null }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl?.trim() || !serviceKey?.trim()) {
-    return { url: photo.url, attribution: photo.attribution }
-  }
-
-  let buffer: Buffer
-  try {
-    const res = await fetch(photo.url, { next: { revalidate: 0 } })
-    if (!res.ok) return { url: photo.url, attribution: photo.attribution }
-    const ab = await res.arrayBuffer()
-    buffer = Buffer.from(ab)
-  } catch {
-    return { url: photo.url, attribution: photo.attribution }
-  }
-
-  const storagePath =
-    entityType === 'city'
-      ? `cities/${entityKey}.jpg`
-      : `subdivisions/${entityKey.replace(':', '/')}.jpg`
-  const source = photo.url.includes('unsplash') ? 'unsplash' : 'pexels'
-  const supabase = createClient(supabaseUrl, serviceKey)
-  const { data: buckets } = await supabase.storage.listBuckets()
-  if (!buckets?.some((b) => b.name === BUCKET)) {
-    await supabase.storage.createBucket(BUCKET, { public: true })
-  }
-  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, buffer, {
-    contentType: 'image/jpeg',
-    upsert: true,
-  })
-  if (uploadError) return { url: photo.url, attribution: photo.attribution }
-
-  await supabase.from('banner_images').upsert(
-    {
-      entity_type: entityType,
-      entity_key: entityKey,
-      storage_path: storagePath,
-      source,
-      attribution: photo.attribution || null,
-    },
-    { onConflict: 'entity_type,entity_key' }
-  )
-
-  const url = `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${storagePath}`
-  return { url, attribution: photo.attribution }
+  if (!existingUrl) return { url: null, attribution: null }
+  const attribution = await getBannerAttribution(entityType, entityKey)
+  return { url: existingUrl, attribution }
 }
 
 /** Download image from URL, upload to Storage, upsert banner_images. Returns new public URL or null. */

@@ -14,7 +14,7 @@ import ResortCommunitiesSlider from '@/components/area-guides/ResortCommunitiesS
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Area Guides | Central Oregon Cities & Communities | Ryan Realty',

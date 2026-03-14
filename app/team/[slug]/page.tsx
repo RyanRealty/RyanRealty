@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function TeamMemberPage({ params }: Props) {
   const { slug } = await params
@@ -100,7 +100,7 @@ export default async function TeamMemberPage({ params }: Props) {
     loanTermYears: DEFAULT_DISPLAY_TERM_YEARS,
   }
   const brokerHeroFallback =
-    !broker.photo_url ? (await fetchPlacePhoto('professional real estate agent Central Oregon'))?.url : null
+    null
   const firstName = broker.display_name.split(' ')[0] ?? broker.display_name
 
   return (

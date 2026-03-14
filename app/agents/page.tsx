@@ -5,7 +5,7 @@ import { fetchPlacePhoto } from '@/lib/photo-api'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Our Agents | Ryan Realty — Central Oregon Real Estate',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 export default async function AgentsIndexPage() {
   const [agents, heroPhoto] = await Promise.all([
     getAgentsForIndex(),
-    fetchPlacePhoto('Central Oregon real estate'),
+    Promise.resolve(null),
   ])
 
   return (
