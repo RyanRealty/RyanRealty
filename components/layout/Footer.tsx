@@ -73,9 +73,9 @@ export default function Footer({
 
   return (
     <footer>
-      {brokerageLogoUrl && (
-        <div className="bg-[var(--card)] border-b border-[var(--border)]">
-          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <div className={brokerageLogoUrl ? "bg-[var(--card)] border-b border-[var(--border)]" : "hidden"} suppressHydrationWarning>
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+          {brokerageLogoUrl && (
             <Link href="/" className="inline-block" aria-label={name}>
               <Image
                 src={brokerageLogoUrl}
@@ -85,9 +85,9 @@ export default function Footer({
                 className="h-9 w-auto object-contain object-left"
               />
             </Link>
-          </div>
+          )}
         </div>
-      )}
+      </div>
       <div className="bg-primary text-muted">
         <div className="mx-auto max-w-7xl grid gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-6">
           <div>
