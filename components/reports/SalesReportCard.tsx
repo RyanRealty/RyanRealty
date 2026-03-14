@@ -66,7 +66,7 @@ export default function SalesReportCard({ card }: Props) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
             <p className="text-xs font-semibold uppercase tracking-wider text-white/90">{card.city}</p>
-            <h3 className="mt-0.5 font-display text-xl font-bold drop-shadow-md">
+            <h3 className="mt-0.5 text-xl font-bold drop-shadow-md">
               {card.periodLabel}
             </h3>
             <p className="mt-1 text-sm text-white/95">{summary}</p>

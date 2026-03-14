@@ -46,7 +46,7 @@ export default function HomeValuationPage() {
 
       <section className="bg-card px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="how-heading">
         <div className="mx-auto max-w-4xl">
-          <h2 id="how-heading" className="text-center font-display text-2xl font-bold text-primary sm:text-3xl">
+          <h2 id="how-heading" className="text-center text-2xl font-bold text-primary sm:text-3xl">
             How we value your home
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">

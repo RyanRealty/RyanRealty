@@ -24,10 +24,9 @@ import { ComparisonProvider } from "@/contexts/ComparisonContext";
 import ComparisonTray from "@/components/comparison/ComparisonTray";
 import LazyChatWidget from "@/components/chat/LazyChatWidget";
 import { getCanonicalSiteUrl } from "@/lib/share-metadata";
-import { Inter } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { cn } from "@/lib/utils";
-
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 /** Revalidate every 60s so pages load instantly from cache but data stays fresh. */
 export const revalidate = 60
@@ -92,12 +91,12 @@ export default async function RootLayout({
       : null
 
   return (
-    <html lang="en" className={cn("font-sans", inter.variable)}>
+    <html lang="en" className={cn("font-sans", GeistSans.variable, GeistMono.variable)}>
       <head>
         <GTMHead />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="min-h-screen overflow-x-hidden antialiased font-body">
+      <body className="min-h-screen overflow-x-hidden antialiased">
         <ComparisonProvider>
         <GTMBody />
           <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[100] focus:p-4 focus:bg-card focus:text-primary">

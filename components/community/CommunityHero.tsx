@@ -63,7 +63,7 @@ export default function CommunityHero({
               Resort & master plan community
             </span>
           )}
-          <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl drop-shadow-md">
+          <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl drop-shadow-md">
             {name}
           </h1>
           <p className="mt-1 text-lg text-muted font-sans">

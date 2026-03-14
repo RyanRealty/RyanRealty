@@ -58,7 +58,7 @@ export default async function BuyPage() {
       {/* Why buy with us */}
       <section className="border-b border-border bg-card px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="why-heading">
         <div className="mx-auto max-w-6xl">
-          <h2 id="why-heading" className="text-center font-display text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+          <h2 id="why-heading" className="text-center text-3xl font-bold tracking-tight text-primary sm:text-4xl">
             Your Central Oregon Experts
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-muted-foreground">
@@ -103,7 +103,7 @@ export default async function BuyPage() {
       {/* How it works */}
       <section className="bg-muted px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="steps-heading">
         <div className="mx-auto max-w-4xl">
-          <h2 id="steps-heading" className="text-center font-display text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+          <h2 id="steps-heading" className="text-center text-3xl font-bold tracking-tight text-primary sm:text-4xl">
             How It Works
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-center text-muted-foreground">
@@ -137,7 +137,7 @@ export default async function BuyPage() {
       {/* Quick links */}
       <section className="border-t border-border bg-card px-4 py-14 sm:px-6" aria-labelledby="explore-heading">
         <div className="mx-auto max-w-6xl">
-          <h2 id="explore-heading" className="text-center font-display text-2xl font-bold text-primary sm:text-3xl">
+          <h2 id="explore-heading" className="text-center text-2xl font-bold text-primary sm:text-3xl">
             Explore More
           </h2>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">

@@ -90,7 +90,7 @@ export default function ReviewsPage() {
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">
             Read Our Reviews
           </p>
-          <h1 className="mt-4 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
             What Our Clients Say
           </h1>
           <p className="mt-6 text-lg text-muted/90">
@@ -148,7 +148,7 @@ export default function ReviewsPage() {
 
       <section className="bg-muted px-4 py-14 sm:px-6" aria-labelledby="cta-heading">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 id="cta-heading" className="font-display text-2xl font-bold text-primary">
+          <h2 id="cta-heading" className="text-2xl font-bold text-primary">
             Ready to work with us?
           </h2>
           <p className="mt-3 text-muted-foreground">

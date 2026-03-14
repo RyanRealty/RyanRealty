@@ -80,7 +80,7 @@ export default function TilesSlider({ title, subtitle, titleId, headerRight, chi
             {title && (
               <h2
                 id={titleId}
-                className="font-display text-2xl text-primary sm:text-3xl"
+                className="text-2xl text-primary sm:text-3xl"
               >
                 {title}
               </h2>

@@ -25,7 +25,7 @@ export default function ReportsIndexContent({ reports, salesCards }: Props) {
         ))}
       </TilesSlider>
 
-      <h2 className="mt-16 font-display text-2xl font-bold text-primary sm:text-3xl">
+      <h2 className="mt-16 text-2xl font-bold text-primary sm:text-3xl">
         Weekly market reports
       </h2>
       <Link

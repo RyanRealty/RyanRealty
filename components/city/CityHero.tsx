@@ -52,7 +52,7 @@ export default function CityHero({
       </div>
       <div className="relative z-10 flex min-h-[320px] sm:min-h-[400px] flex-col justify-end px-4 pt-14 pb-8 md:pt-16 sm:px-6 sm:pb-12">
         <div className="mx-auto w-full max-w-7xl">
-          <h1 className="font-display text-4xl font-bold tracking-tight text-white sm:text-5xl drop-shadow-md">
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl drop-shadow-md">
             {name}
           </h1>
           <p className="mt-1 text-lg text-muted font-sans">Oregon</p>

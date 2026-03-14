@@ -109,7 +109,7 @@ export default function SalesReportCharts({ closed, periodStart, periodEnd }: Pr
     <div className="mt-12 space-y-12">
       {salesByDayData.some((d) => d.count > 0) && (
         <div>
-          <h3 className="font-display text-lg font-bold text-primary">
+          <h3 className="text-lg font-bold text-primary">
             Sales by day
           </h3>
           <div className="mt-4 h-64">
@@ -145,7 +145,7 @@ export default function SalesReportCharts({ closed, periodStart, periodEnd }: Pr
 
       {hasPrice && (
         <div>
-          <h3 className="font-display text-lg font-bold text-primary">
+          <h3 className="text-lg font-bold text-primary">
             Price distribution
           </h3>
           <div className="mt-4 h-64">
@@ -184,7 +184,7 @@ export default function SalesReportCharts({ closed, periodStart, periodEnd }: Pr
 
       {hasDom && (
         <div>
-          <h3 className="font-display text-lg font-bold text-primary">
+          <h3 className="text-lg font-bold text-primary">
             Days on market
           </h3>
           <div className="mt-4 h-56">

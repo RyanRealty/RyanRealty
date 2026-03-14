@@ -102,7 +102,7 @@ export default function GeoSlider({
             {title && (
               <h2
                 id={titleId}
-                className={titleSrOnly ? '' : 'font-display text-2xl font-bold text-primary sm:text-3xl'}
+                className={titleSrOnly ? '' : 'text-2xl font-bold text-primary sm:text-3xl'}
               >
                 {title}
               </h2>

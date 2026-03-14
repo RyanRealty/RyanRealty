@@ -43,7 +43,7 @@ export default function SellPlanPage() {
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">
             Our Plan
           </p>
-          <h1 className="mt-4 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
             How We Sell Your Home
           </h1>
           <p className="mt-6 text-lg text-muted/90">
@@ -70,7 +70,7 @@ export default function SellPlanPage() {
 
       <section className="border-b border-border bg-card px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="plan-heading">
         <div className="mx-auto max-w-4xl">
-          <h2 id="plan-heading" className="text-center font-display text-3xl font-bold tracking-tight text-primary sm:text-4xl">
+          <h2 id="plan-heading" className="text-center text-3xl font-bold tracking-tight text-primary sm:text-4xl">
             The Ryan Realty Plan
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
@@ -80,7 +80,7 @@ export default function SellPlanPage() {
           <ul className="mt-14 space-y-12">
             {PLAN_STEPS.map((step, i) => (
               <li key={step.title} className="flex gap-6">
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary font-display text-2xl font-bold text-accent-foreground">
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-accent-foreground">
                   {i + 1}
                 </span>
                 <div className="rounded-lg border border-border bg-muted p-6 shadow-sm">
@@ -95,7 +95,7 @@ export default function SellPlanPage() {
 
       <section className="bg-muted px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="why-heading">
         <div className="mx-auto max-w-4xl text-center">
-          <h2 id="why-heading" className="font-display text-3xl font-bold text-primary sm:text-4xl">
+          <h2 id="why-heading" className="text-3xl font-bold text-primary sm:text-4xl">
             Why list with us?
           </h2>
           <p className="mt-4 text-muted-foreground">

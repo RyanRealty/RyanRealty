@@ -24,7 +24,7 @@ export default function SellValuationPage() {
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">
             Home Valuation
           </p>
-          <h1 className="mt-4 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
             What&apos;s Your Home Worth?
           </h1>
           <p className="mt-6 text-lg text-muted/90">
@@ -50,7 +50,7 @@ export default function SellValuationPage() {
 
       <section className="border-b border-border bg-card px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="how-heading">
         <div className="mx-auto max-w-4xl">
-          <h2 id="how-heading" className="text-center font-display text-3xl font-bold text-primary sm:text-4xl">
+          <h2 id="how-heading" className="text-center text-3xl font-bold text-primary sm:text-4xl">
             How We Value Your Home
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
@@ -86,7 +86,7 @@ export default function SellValuationPage() {
 
       <section className="bg-muted px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="cta-heading">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 id="cta-heading" className="font-display text-2xl font-bold text-primary sm:text-3xl">
+          <h2 id="cta-heading" className="text-2xl font-bold text-primary sm:text-3xl">
             Ready to sell?
           </h2>
           <p className="mt-4 text-muted-foreground">

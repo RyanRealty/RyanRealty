@@ -32,7 +32,7 @@ export default function JoinPage() {
 
       <section className="border-b border-border bg-card px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="why-heading">
         <div className="mx-auto max-w-4xl">
-          <h2 id="why-heading" className="text-center font-display text-3xl font-bold text-primary sm:text-4xl">
+          <h2 id="why-heading" className="text-center text-3xl font-bold text-primary sm:text-4xl">
             Why Ryan Realty?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
@@ -72,7 +72,7 @@ export default function JoinPage() {
 
       <section className="bg-muted px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="next-heading">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 id="next-heading" className="font-display text-2xl font-bold text-primary sm:text-3xl">
+          <h2 id="next-heading" className="text-2xl font-bold text-primary sm:text-3xl">
             Ready to start the conversation?
           </h2>
           <p className="mt-4 text-muted-foreground">

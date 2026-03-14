@@ -107,7 +107,7 @@ export default async function ReportPage({ params }: Props) {
 
         {report.content_html && (
           <div
-            className="prose prose-primary mt-8 max-w-none prose-headings:font-display prose-p:font-sans prose-headings:text-primary prose-p:text-muted-foreground"
+            className="prose prose-primary mt-8 max-w-none prose-headings:text-primary prose-p:text-muted-foreground"
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(report.content_html) }}
           />
         )}

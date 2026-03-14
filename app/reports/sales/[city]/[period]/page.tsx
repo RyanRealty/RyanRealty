@@ -115,7 +115,7 @@ export default async function SalesReportPage({ params }: PageProps) {
           <>
             <SalesReportCharts closed={closed} periodStart={start} periodEnd={end} />
 
-            <h2 className="mt-14 font-display text-xl font-bold text-primary">
+            <h2 className="mt-14 text-xl font-bold text-primary">
               Closed sales ({closed.length})
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -146,7 +146,7 @@ export default async function SalesReportPage({ params }: PageProps) {
 
         {pending.length > 0 && (
           <>
-            <h2 className="mt-14 font-display text-xl font-bold text-primary">
+            <h2 className="mt-14 text-xl font-bold text-primary">
               Went pending ({pending.length})
             </h2>
             <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">

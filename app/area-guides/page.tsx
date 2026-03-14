@@ -96,7 +96,7 @@ export default async function AreaGuidesPage() {
 
       <section className="border-t border-border bg-card px-4 py-14 sm:px-6" aria-labelledby="map-heading">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 id="map-heading" className="font-display text-2xl font-bold text-primary">
+          <h2 id="map-heading" className="text-2xl font-bold text-primary">
             Search on the map
           </h2>
           <p className="mt-3 text-muted-foreground">

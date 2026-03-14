@@ -32,7 +32,7 @@ export default async function OurHomesPage() {
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">
             Our Homes
           </p>
-          <h1 className="mt-4 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Homes Listed by Ryan Realty
           </h1>
           <p className="mt-6 text-lg text-muted/90">
@@ -59,7 +59,7 @@ export default async function OurHomesPage() {
 
       <section className="border-b border-border bg-card px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="listings-heading">
         <div className="mx-auto max-w-6xl">
-          <h2 id="listings-heading" className="font-display text-2xl font-bold text-primary sm:text-3xl">
+          <h2 id="listings-heading" className="text-2xl font-bold text-primary sm:text-3xl">
             Featured homes for sale
           </h2>
           {listings.length === 0 ? (
@@ -149,7 +149,7 @@ export default async function OurHomesPage() {
 
       <section className="bg-muted px-4 py-14 sm:px-6" aria-labelledby="sell-cta-heading">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 id="sell-cta-heading" className="font-display text-2xl font-bold text-primary">
+          <h2 id="sell-cta-heading" className="text-2xl font-bold text-primary">
             Ready to list your home?
           </h2>
           <p className="mt-3 text-muted-foreground">
