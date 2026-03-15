@@ -43,7 +43,7 @@ export default function SellPlanPage() {
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">
             Our Plan
           </p>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl">
             How We Sell Your Home
           </h1>
           <p className="mt-6 text-lg text-muted/90">
@@ -60,7 +60,7 @@ export default function SellPlanPage() {
             </Link>
             <Link
               href="/contact?inquiry=Selling"
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-white/40 bg-card/10 px-6 py-3.5 text-base font-semibold text-white backdrop-blur-sm hover:bg-card/20"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-primary-foreground/40 bg-card/10 px-6 py-3.5 text-base font-semibold text-primary-foreground backdrop-blur-sm hover:bg-card/20"
             >
               Talk to our team
             </Link>
@@ -106,13 +106,13 @@ export default function SellPlanPage() {
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
               href="/sell"
-              className="rounded-lg bg-primary px-6 py-3 font-semibold text-white hover:bg-accent/90"
+              className="rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-accent/90"
             >
               Sell With Us
             </Link>
             <Link
               href="/our-homes"
-              className="rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-white"
+              className="rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
             >
               Our Homes
             </Link>

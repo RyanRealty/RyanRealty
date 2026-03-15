@@ -28,7 +28,7 @@ export default async function DashboardSearchesPage() {
       <div className="mt-4">
         <Link
           href="/homes-for-sale"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-accent/90"
         >
           Create new search
         </Link>

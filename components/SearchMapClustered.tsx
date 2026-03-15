@@ -291,7 +291,7 @@ export default function SearchMapClustered({
       const label = priceLabel(price)
       const isSaved = savedSet.has(listingKey)
       const hasVideo = Boolean(l.hasVideo)
-      const markerLabel = [label, hasVideo ? 'video' : null, isSaved ? '♥' : null].filter(Boolean).join(' · ')
+      const markerLabel = [label, hasVideo ? 'video' : null, isSaved ? 'â™¥' : null].filter(Boolean).join(' Â· ')
 
       const marker = new google.maps.Marker({
         position: { lat: l.Latitude, lng: l.Longitude },
@@ -398,7 +398,7 @@ export default function SearchMapClustered({
           color: 'var(--muted-foreground)',
         }}
       >
-        Loading map…
+        Loading mapâ€¦
       </div>
     )
   }
@@ -455,13 +455,13 @@ export default function SearchMapClustered({
               )) || null}
               <div className="mt-0.5 font-semibold">
                 ${Number(openListing.ListPrice ?? 0).toLocaleString()}
-                {savedSet.has(openKey) && <span className="ml-1 text-destructive" aria-hidden>♥</span>}
+                {savedSet.has(openKey) && <span className="ml-1 text-destructive" aria-hidden>â™¥</span>}
               </div>
               {(openListing.BedroomsTotal != null || openListing.BathroomsTotal != null) && (
                 <div className="text-xs text-muted-foreground">
                   {[openListing.BedroomsTotal != null ? `${openListing.BedroomsTotal} bed` : null, openListing.BathroomsTotal != null ? `${openListing.BathroomsTotal} bath` : null]
                     .filter(Boolean)
-                    .join(' · ')}
+                    .join(' Â· ')}
                 </div>
               )}
               <Button
@@ -469,7 +469,7 @@ export default function SearchMapClustered({
                 className="mt-1.5 block text-sm font-medium text-primary hover:underline"
                 onClick={() => router.push(`/listing/${encodeURIComponent(openKey)}`)}
               >
-                View listing →
+                View listing â†’
               </Button>
             </div>
           </InfoWindow>
@@ -490,7 +490,7 @@ export default function SearchMapClustered({
             <Button
               type="button"
               onClick={recenterMap}
-              className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90"
+              className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"
             >
               Re-center
             </Button>

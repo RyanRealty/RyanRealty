@@ -69,7 +69,11 @@ export default function HeroSearchOverlay({ homesForYouLabel }: Props) {
   const totalItems =
     suggestions == null
       ? 0
-      : suggestions.addresses.length + suggestions.cities.length + suggestions.subdivisions.length
+      : suggestions.addresses.length +
+        suggestions.cities.length +
+        suggestions.subdivisions.length +
+        suggestions.zips.length +
+        suggestions.brokers.length
 
   const getItemHref = (index: number): string | null => {
     if (!suggestions) return null
@@ -85,6 +89,10 @@ export default function HeroSearchOverlay({ homesForYouLabel }: Props) {
       const s = suggestions.subdivisions[i]
       return communityPagePath(s.city, s.subdivisionName)
     }
+    i -= suggestions.subdivisions.length
+    if (i < suggestions.zips.length) return suggestions.zips[i].href
+    i -= suggestions.zips.length
+    if (i < suggestions.brokers.length) return suggestions.brokers[i].href
     return null
   }
 
@@ -129,14 +137,14 @@ export default function HeroSearchOverlay({ homesForYouLabel }: Props) {
 
   let itemIndex = 0
   const linkClass = (isHighlight: boolean) =>
-    `block w-full px-4 py-2.5 text-left text-sm transition ${isHighlight ? 'bg-card/20 text-white' : 'text-white/90 hover:bg-card/10'}`
+    `block w-full px-4 py-2.5 text-left text-sm transition ${isHighlight ? 'bg-card/20 text-primary-foreground' : 'text-primary-foreground/90 hover:bg-card/10'}`
 
   return (
     <div className="relative w-full max-w-2xl" ref={panelRef}>
       <Label htmlFor="hero-search-input" className="sr-only">
-        Enter an address, neighborhood, city, or zip code
+        Search by city, community, neighborhood, zip, address, or broker name
       </Label>
-      <div className="flex items-center gap-3 rounded-lg border-2 border-white/30 bg-card/95 px-4 py-3 shadow-lg backdrop-blur-sm">
+      <div className="flex items-center gap-3 rounded-lg border-2 border-primary-foreground/30 bg-card/95 px-4 py-3 shadow-lg backdrop-blur-sm">
         <HugeiconsIcon icon={Search01Icon} className="h-6 w-6 shrink-0 text-muted-foreground" aria-hidden />
         <Input
           id="hero-search-input"
@@ -159,7 +167,7 @@ export default function HeroSearchOverlay({ homesForYouLabel }: Props) {
           }}
         />
       </div>
-      <p className="mt-3 text-center text-lg font-medium text-white drop-shadow-md">
+      <p className="mt-3 text-center text-lg font-medium text-primary-foreground drop-shadow-md">
         {homesForYouLabel}
       </p>
 
@@ -220,6 +228,38 @@ export default function HeroSearchOverlay({ homesForYouLabel }: Props) {
                     onClick={() => { setOpen(false); setQuery('') }}
                   >
                     {s.subdivisionName} <span className="text-muted-foreground">({s.city})</span>
+                  </Link>
+                )
+              })}
+              {suggestions.zips.map((z, i) => {
+                const idx = itemIndex++
+                return (
+                  <Link
+                    key={`zip-${i}`}
+                    role="option"
+                    aria-selected={highlight === idx}
+                    href={z.href}
+                    className={`block px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted ${highlight === idx ? 'bg-muted' : ''}`}
+                    onClick={() => { setOpen(false); setQuery('') }}
+                  >
+                    {z.postalCode}
+                    {z.city && <span className="text-muted-foreground"> ({z.city})</span>}
+                    {z.count > 0 && <span className="text-muted-foreground"> · {z.count}</span>}
+                  </Link>
+                )
+              })}
+              {suggestions.brokers.map((b, i) => {
+                const idx = itemIndex++
+                return (
+                  <Link
+                    key={`broker-${i}`}
+                    role="option"
+                    aria-selected={highlight === idx}
+                    href={b.href}
+                    className={`block px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted ${highlight === idx ? 'bg-muted' : ''}`}
+                    onClick={() => { setOpen(false); setQuery('') }}
+                  >
+                    {b.label}
                   </Link>
                 )
               })}

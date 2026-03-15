@@ -13,7 +13,7 @@ export type CityCardProps = {
 }
 
 function formatPrice(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return '—'
+  if (n == null || !Number.isFinite(n)) return 'â€”'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 
@@ -35,7 +35,7 @@ export default function CityCard({
           {heroImageUrl ? (
             <Image
               src={heroImageUrl}
-              alt={`${name}, Oregon — real estate overview`}
+              alt={`${name}, Oregon â€” real estate overview`}
               fill
               className="object-cover transition group-hover:scale-[1.02]"
               sizes="(max-width: 768px) 100vw, 50vw"
@@ -45,9 +45,9 @@ export default function CityCard({
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-6">
-            <h2 className="text-2xl font-bold text-white drop-shadow-md">{name}</h2>
-            <p className="mt-1 text-sm text-white/90">
-              {activeCount} homes for sale · Median {formatPrice(medianPrice)} · {communityCount} communities
+            <h2 className="text-2xl font-bold text-primary-foreground drop-shadow-md">{name}</h2>
+            <p className="mt-1 text-sm text-primary-foreground/90">
+              {activeCount} homes for sale Â· Median {formatPrice(medianPrice)} Â· {communityCount} communities
             </p>
           </div>
         </div>

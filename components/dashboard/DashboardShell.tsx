@@ -93,7 +93,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-primary text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                 >
@@ -120,7 +120,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
           <Button
             type="button"
             aria-label="Close menu"
-            className="fixed inset-0 z-20 bg-black/30 lg:hidden"
+            className="fixed inset-0 z-20 bg-foreground/30 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}

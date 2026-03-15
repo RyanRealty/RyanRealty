@@ -91,13 +91,13 @@ export default function Footer({
       <div className="bg-primary text-muted">
         <div className="mx-auto max-w-7xl grid gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-6">
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-white/80">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
               Buyers
             </h3>
             <ul className="mt-4 space-y-2">
               {FOOTER_BUYERS.map(({ href, label }) => (
                 <li key={href}>
-                  <Link href={href} className="text-sm text-muted hover:text-white">
+                  <Link href={href} className="text-sm text-muted hover:text-primary-foreground">
                     {label}
                   </Link>
                 </li>
@@ -105,13 +105,13 @@ export default function Footer({
             </ul>
           </div>
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-white/80">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
               Sellers
             </h3>
             <ul className="mt-4 space-y-2">
               {FOOTER_SELLERS.map(({ href, label }) => (
                 <li key={href}>
-                  <Link href={href} className="text-sm text-muted hover:text-white">
+                  <Link href={href} className="text-sm text-muted hover:text-primary-foreground">
                     {label}
                   </Link>
                 </li>
@@ -119,13 +119,13 @@ export default function Footer({
             </ul>
           </div>
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-white/80">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
               About
             </h3>
             <ul className="mt-4 space-y-2">
               {FOOTER_ABOUT.map(({ href, label }) => (
                 <li key={href}>
-                  <Link href={href} className="text-sm text-muted hover:text-white">
+                  <Link href={href} className="text-sm text-muted hover:text-primary-foreground">
                     {label}
                   </Link>
                 </li>
@@ -133,13 +133,13 @@ export default function Footer({
             </ul>
           </div>
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-white/80">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
               Explore
             </h3>
             <ul className="mt-4 space-y-2">
               {FOOTER_EXTRA.map(({ href, label }) => (
                 <li key={href}>
-                  <Link href={href} className="text-sm text-muted hover:text-white">
+                  <Link href={href} className="text-sm text-muted hover:text-primary-foreground">
                     {label}
                   </Link>
                 </li>
@@ -147,13 +147,13 @@ export default function Footer({
             </ul>
           </div>
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-white/80">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
               Communities
             </h3>
             <ul className="mt-4 space-y-2">
               {CITY_LINKS.map(({ href, label }) => (
                 <li key={href}>
-                  <Link href={href} className="text-sm text-muted hover:text-white">
+                  <Link href={href} className="text-sm text-muted hover:text-primary-foreground">
                     {label}
                   </Link>
                 </li>
@@ -161,21 +161,21 @@ export default function Footer({
             </ul>
           </div>
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-white/80">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
               Contact
             </h3>
             <address className="mt-4 not-italic text-sm text-muted">
               {address && <p className="mb-1">{address}</p>}
               {phone && (
                 <p>
-                  <a href={`tel:${phone.replace(/\D/g, '')}`} className="hover:text-white">
+                  <a href={`tel:${phone.replace(/\D/g, '')}`} className="hover:text-primary-foreground">
                     {phone}
                   </a>
                 </p>
               )}
               {email && (
                 <p className="mt-1">
-                  <a href={`mailto:${email}`} className="hover:text-white">
+                  <a href={`mailto:${email}`} className="hover:text-primary-foreground">
                     {email}
                   </a>
                 </p>
@@ -184,7 +184,7 @@ export default function Footer({
           </div>
           {(SOCIAL_FACEBOOK || SOCIAL_INSTAGRAM || SOCIAL_LINKEDIN) && (
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-white/80">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
               Follow us
             </h3>
             <div className="mt-4 flex gap-3">
@@ -193,7 +193,7 @@ export default function Footer({
                   href={SOCIAL_FACEBOOK}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-card/10 text-muted hover:bg-card/20 hover:text-white"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-card/10 text-muted hover:bg-card/20 hover:text-primary-foreground"
                   aria-label="Facebook"
                 >
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -206,7 +206,7 @@ export default function Footer({
                   href={SOCIAL_INSTAGRAM}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-card/10 text-muted hover:bg-card/20 hover:text-white"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-card/10 text-muted hover:bg-card/20 hover:text-primary-foreground"
                   aria-label="Instagram"
                 >
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -219,7 +219,7 @@ export default function Footer({
                   href={SOCIAL_LINKEDIN}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-card/10 text-muted hover:bg-card/20 hover:text-white"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-card/10 text-muted hover:bg-card/20 hover:text-primary-foreground"
                   aria-label="LinkedIn"
                 >
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -231,29 +231,29 @@ export default function Footer({
           </div>
           )}
         </div>
-        <div className="mt-12 border-t border-white/20 pt-8">
+        <div className="mt-12 border-t border-primary-foreground/20 pt-8">
           <div className="flex flex-col items-center gap-4 text-center sm:items-center sm:text-center">
             <EqualHousing className="text-muted" />
             <MLSAttribution compact />
           </div>
           <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-            <p className="text-sm text-white/80" suppressHydrationWarning>
-              © {currentYear} {name}. All rights reserved.
+            <p className="text-sm text-primary-foreground/80" suppressHydrationWarning>
+              Â© {currentYear} {name}. All rights reserved.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-              <Link href="/privacy" className="text-sm text-muted hover:text-white">
+              <Link href="/privacy" className="text-sm text-muted hover:text-primary-foreground">
                 Privacy
               </Link>
-              <Link href="/terms" className="text-sm text-muted hover:text-white">
+              <Link href="/terms" className="text-sm text-muted hover:text-primary-foreground">
                 Terms
               </Link>
-              <Link href="/fair-housing" className="text-sm text-muted hover:text-white">
+              <Link href="/fair-housing" className="text-sm text-muted hover:text-primary-foreground">
                 Fair Housing
               </Link>
-              <Link href="/dmca" className="text-sm text-muted hover:text-white">
+              <Link href="/dmca" className="text-sm text-muted hover:text-primary-foreground">
                 DMCA
               </Link>
-              <Link href="/accessibility" className="text-sm text-muted hover:text-white">
+              <Link href="/accessibility" className="text-sm text-muted hover:text-primary-foreground">
                 Accessibility
               </Link>
             </div>

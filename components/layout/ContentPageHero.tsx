@@ -32,7 +32,7 @@ export default function ContentPageHero({ title, subtitle, imageUrl, ctas }: Con
         <div className="absolute inset-0">
           <Image
             src={imageUrl}
-            alt={`${title} — hero image`}
+            alt={`${title} â€” hero image`}
             fill
             className="object-cover object-center"
             sizes="100vw"
@@ -50,7 +50,7 @@ export default function ContentPageHero({ title, subtitle, imageUrl, ctas }: Con
       </div>
       <div className="relative z-10 flex min-h-[40vh] sm:min-h-[50vh] flex-col justify-center px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto w-full max-w-4xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl lg:text-6xl">
             {title}
           </h1>
           {subtitle && (
@@ -74,7 +74,7 @@ export default function ContentPageHero({ title, subtitle, imageUrl, ctas }: Con
                   <Link
                     key={cta.href}
                     href={cta.href}
-                    className="inline-flex items-center gap-2 rounded-lg border-2 border-white/40 bg-card/10 px-6 py-3.5 text-base font-semibold text-white backdrop-blur-sm transition hover:bg-card/20"
+                    className="inline-flex items-center gap-2 rounded-lg border-2 border-primary-foreground/40 bg-card/10 px-6 py-3.5 text-base font-semibold text-primary-foreground backdrop-blur-sm transition hover:bg-card/20"
                   >
                     {cta.label}
                   </Link>

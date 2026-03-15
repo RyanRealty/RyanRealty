@@ -196,7 +196,7 @@ function ListingTile({
 
   const shareTitle =
     price > 0
-      ? `$${price.toLocaleString()}${listing.City ? ` · ${listing.City}` : ''}`
+      ? `$${price.toLocaleString()}${listing.City ? ` Â· ${listing.City}` : ''}`
       : address || undefined
 
   const shareUrl = `${getCanonicalSiteUrl()}${href}`
@@ -271,28 +271,28 @@ function ListingTile({
             'h-8 w-8',
             inCompare
               ? 'border-accent bg-accent text-accent-foreground'
-              : 'border-white/30 bg-black/40 text-white hover:bg-black/60',
+              : 'border-primary-foreground/30 bg-foreground/40 text-primary-foreground hover:bg-foreground/60',
           )}
           aria-label={inCompare ? 'Remove from comparison' : 'Add to comparison'}
         >
           <HugeiconsIcon icon={ArrowLeftRightIcon} className="h-4 w-4" />
         </Button>
 
-        {/* Smart badges: top-left — max 3, no wrap */}
+        {/* Smart badges: top-left â€” max 3, no wrap */}
         <CardBadges
           position="top-left"
           max={3}
           items={[
             ...(dom !== 0 && likeCount >= MIN_LIKES_FOR_FIRE ? [{ label: String(likeCount), variant: 'hot' as const, icon: <span aria-hidden><svg className="size-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 23C12 23 20 16 20 10c0-2.5-1.5-4-4-4-.8 0-1.5.2-2 .7-.5-.5-1.2-.7-2-.7-2.5 0-4 1.5-4 4 0 6 8 13 8 13z" /></svg></span> }] : []),
-            ...(hotBadge ? [{ label: 'Hot', variant: 'hot' as const, icon: <span aria-hidden>🔥</span> }] : []),
-            ...(hasOpenHouse ? [{ label: 'Open house', variant: 'open-house' as const, icon: <span aria-hidden>🏠</span> }] : []),
-            ...(dom === 0 ? [{ label: 'New', variant: 'new' as const, icon: <span aria-hidden>✨</span> }] : []),
-            ...(hasRecentPriceChange ? [{ label: 'Price reduced', variant: 'price-drop' as const, icon: <span aria-hidden>📉</span> }] : []),
-            ...(isResort ? [{ label: 'Resort & master plan', variant: 'resort' as const, icon: <span aria-hidden>🏔️</span> }] : []),
+            ...(hotBadge ? [{ label: 'Hot', variant: 'hot' as const, icon: <span aria-hidden>ðŸ”¥</span> }] : []),
+            ...(hasOpenHouse ? [{ label: 'Open house', variant: 'open-house' as const, icon: <span aria-hidden>ðŸ </span> }] : []),
+            ...(dom === 0 ? [{ label: 'New', variant: 'new' as const, icon: <span aria-hidden>âœ¨</span> }] : []),
+            ...(hasRecentPriceChange ? [{ label: 'Price reduced', variant: 'price-drop' as const, icon: <span aria-hidden>ðŸ“‰</span> }] : []),
+            ...(isResort ? [{ label: 'Resort & master plan', variant: 'resort' as const, icon: <span aria-hidden>ðŸ”ï¸</span> }] : []),
           ]}
         />
 
-        {/* Badges on image: bottom-left — Watch video (engagement), Virtual tour, Floor plan */}
+        {/* Badges on image: bottom-left â€” Watch video (engagement), Virtual tour, Floor plan */}
         <CardBadges
           position="bottom-left"
           max={3}
@@ -310,7 +310,7 @@ function ListingTile({
         <div className="flex flex-nowrap items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <p className="text-xl font-semibold text-foreground">
-              ${price > 0 ? price.toLocaleString() : '—'}
+              ${price > 0 ? price.toLocaleString() : 'â€”'}
             </p>
             {monthlyPayment && (
               <p className="mt-0.5 text-sm text-muted-foreground">Est. {monthlyPayment}/mo</p>
@@ -344,7 +344,7 @@ function ListingTile({
             <span>{Number(listing.TotalLivingAreaSqFt).toLocaleString()} sq ft</span>
           )}
           <span>
-            Days on market: {dom != null && dom >= 0 ? (dom === 0 ? 'New' : `${dom} day${dom !== 1 ? 's' : ''}`) : '—'}
+            Days on market: {dom != null && dom >= 0 ? (dom === 0 ? 'New' : `${dom} day${dom !== 1 ? 's' : ''}`) : 'â€”'}
           </span>
           <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${statusColor(listing.StandardStatus)}`}>
             {statusLabel(listing.StandardStatus)}
@@ -381,7 +381,7 @@ function VideoSlider({ urls, address }: { urls: string[]; address: string }) {
       />
       {address && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2">
-          <p className="text-sm font-medium text-white drop-shadow">{address}</p>
+          <p className="text-sm font-medium text-primary-foreground drop-shadow">{address}</p>
         </div>
       )}
       {urls.length > 1 && (

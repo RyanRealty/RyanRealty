@@ -9,7 +9,7 @@ export default function AdminAccessDeniedPage() {
       </p>
       <Link
         href="/"
-        className="mt-6 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary"
+        className="mt-6 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary"
       >
         Return home
       </Link>

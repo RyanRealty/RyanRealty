@@ -26,10 +26,10 @@ const variantClasses: Record<CardBadgeItem['variant'], string> = {
   resort: 'bg-accent text-accent-foreground',
   'open-house': 'bg-destructive text-destructive-foreground',
   days: 'bg-card text-foreground',
-  media: 'bg-black/70 text-white',
+  media: 'bg-foreground/70 text-primary-foreground',
   trending: 'bg-accent text-accent-foreground',
-  popular: 'bg-warning text-white',
-  steady: 'bg-black/60 text-white',
+  popular: 'bg-warning text-warning-foreground',
+  steady: 'bg-foreground/60 text-primary-foreground',
 }
 
 export type CardBadgesProps = {

@@ -30,7 +30,7 @@ export default function GeoCTAWithBroker({
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-10">
           <div className="lg:col-span-2 flex flex-col justify-center">
-            <h2 id="geo-cta-heading" className="text-2xl font-bold tracking-tight text-white">
+            <h2 id="geo-cta-heading" className="text-2xl font-bold tracking-tight text-primary-foreground">
               {heading}
             </h2>
             <div className="mt-6 flex flex-wrap items-center gap-4">
@@ -53,7 +53,7 @@ export default function GeoCTAWithBroker({
               )}
             </div>
             {supportingText && (
-              <p className="mt-4 text-sm text-white/80">{supportingText}</p>
+              <p className="mt-4 text-sm text-primary-foreground/80">{supportingText}</p>
             )}
           </div>
           <div className="lg:col-span-1">

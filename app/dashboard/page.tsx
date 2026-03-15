@@ -69,7 +69,7 @@ export default async function DashboardOverviewPage() {
             <div className="mt-4 flex flex-wrap justify-center gap-3">
               <Link
                 href="/listings"
-                className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90"
+                className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-accent/90"
               >
                 Browse listings
               </Link>
@@ -119,7 +119,7 @@ export default async function DashboardOverviewPage() {
                 href="/dashboard/saved"
                 className="mt-2 inline-block text-sm font-medium text-accent-foreground hover:underline"
               >
-                View all saved homes →
+                View all saved homes â†’
               </Link>
             </section>
           )

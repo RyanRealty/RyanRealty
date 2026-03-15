@@ -39,6 +39,10 @@ const supabaseFromEnvLocal = loadSupabaseEnvFromLocal()
 // PWA: Serwist requires webpack. Next 16 defaults to Turbopack; use `next build --webpack` to enable SW.
 // Manifest + offline page + InstallPrompt work without the service worker.
 const nextConfig: NextConfig = {
+  // Turbopack: use project dir as root so @/ resolves correctly when multiple lockfiles exist (e.g. parent folder).
+  turbopack: {
+    root: path.resolve(process.cwd()),
+  },
   env: {
     ...(supabaseFromEnvLocal.NEXT_PUBLIC_SUPABASE_URL && {
       NEXT_PUBLIC_SUPABASE_URL: supabaseFromEnvLocal.NEXT_PUBLIC_SUPABASE_URL,

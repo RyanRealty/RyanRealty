@@ -9,7 +9,7 @@ import { cityEntityKey } from '@/lib/slug'
 import { TILE_MIN_HEIGHT_PX } from '@/lib/tile-constants'
 
 function formatPrice(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return '—'
+  if (n == null || !Number.isFinite(n)) return 'â€”'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 
@@ -18,7 +18,7 @@ function formatDateRange(startStr: string, endStr: string): string {
   const end = new Date(endStr.includes('Z') || /[+-]\d{2}/.test(endStr) ? endStr : endStr + 'Z')
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return ''
   const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }
-  return `${start.toLocaleDateString('en-US', opts)} – ${end.toLocaleDateString('en-US', opts)}`
+  return `${start.toLocaleDateString('en-US', opts)} â€“ ${end.toLocaleDateString('en-US', opts)}`
 }
 
 type Props = { card: SalesReportCardData }
@@ -43,7 +43,7 @@ export default function SalesReportCard({ card }: Props) {
   const hasEngagement = likeCount > 0 || saveCount > 0 || shareCount > 0
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}${href}` : undefined
-  const shareTitle = `${card.city} — ${card.periodLabel} | Ryan Realty`
+  const shareTitle = `${card.city} â€” ${card.periodLabel} | Ryan Realty`
 
   return (
     <div
@@ -55,7 +55,7 @@ export default function SalesReportCard({ card }: Props) {
           {card.featuredImageUrl ? (
             <Image
               src={card.featuredImageUrl}
-              alt={`${card.city} market report — ${card.periodLabel}`}
+              alt={`${card.city} market report â€” ${card.periodLabel}`}
               fill
               className="object-cover transition duration-300 group-hover:scale-105"
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -64,16 +64,16 @@ export default function SalesReportCard({ card }: Props) {
             <div className="h-full w-full bg-gradient-to-br from-primary via-primary/90 to-accent/30" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-            <p className="text-xs font-semibold uppercase tracking-wider text-white/90">{card.city}</p>
+          <div className="absolute bottom-0 left-0 right-0 p-4 text-primary-foreground">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/90">{card.city}</p>
             <h3 className="mt-0.5 text-xl font-bold drop-shadow-md">
               {card.periodLabel}
             </h3>
-            <p className="mt-1 text-sm text-white/95">{summary}</p>
+            <p className="mt-1 text-sm text-primary-foreground/95">{summary}</p>
             {card.medianClosedPrice != null && card.closedCount > 0 && (
               <p className="mt-0.5 text-sm font-medium text-accent-foreground">{formatPrice(card.medianClosedPrice)} median</p>
             )}
-            {dateRange && <p className="mt-1 text-xs text-white/80">{dateRange}</p>}
+            {dateRange && <p className="mt-1 text-xs text-primary-foreground/80">{dateRange}</p>}
           </div>
         </Link>
       </div>
@@ -100,7 +100,7 @@ export default function SalesReportCard({ card }: Props) {
           <span className="text-sm font-semibold text-primary group-hover:text-accent-foreground group-hover:underline">
             View full report
           </span>
-          <span className="ml-1.5 text-sm text-muted-foreground" aria-hidden>→</span>
+          <span className="ml-1.5 text-sm text-muted-foreground" aria-hidden>â†’</span>
         </Link>
         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
           {hasData ? 'Addresses, sold dates, days on market, property types. Charts and PDF download.' : 'New sales data is added as listings close.'}

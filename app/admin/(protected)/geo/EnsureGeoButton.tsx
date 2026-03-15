@@ -32,9 +32,9 @@ export default function EnsureGeoButton() {
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-60"
+        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-60"
       >
-        {loading ? 'Running…' : 'Ensure geo places from listings'}
+        {loading ? 'Runningâ€¦' : 'Ensure geo places from listings'}
       </Button>
       {message && <p className="mt-2 text-sm text-muted-foreground">{message}</p>}
     </div>

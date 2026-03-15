@@ -78,7 +78,7 @@ export default function ListingValuation({ listingKey, propertyId, valuation, si
         {formatPrice(valuation.estimatedValue)}
       </p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Range: {formatPrice(valuation.valueLow)} — {formatPrice(valuation.valueHigh)}
+        Range: {formatPrice(valuation.valueLow)} â€” {formatPrice(valuation.valueHigh)}
       </p>
       <span
         className={`mt-2 inline-block rounded-full px-3 py-1 text-sm font-medium ${confidenceColor}`}
@@ -99,9 +99,9 @@ export default function ListingValuation({ listingKey, propertyId, valuation, si
           type="button"
           onClick={handleDownload}
           disabled={downloading}
-          className="inline-flex items-center rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-accent/90 disabled:opacity-70"
+          className="inline-flex items-center rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-accent/90 disabled:opacity-70"
         >
-          {downloading ? 'Preparing…' : 'Download Full Value Report'}
+          {downloading ? 'Preparingâ€¦' : 'Download Full Value Report'}
         </Button>
         {!signedIn && (
           <p className="mt-2 text-xs text-muted-foreground">

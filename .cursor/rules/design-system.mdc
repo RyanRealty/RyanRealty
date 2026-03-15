@@ -1,101 +1,111 @@
 ---
 description: Design system rules for all UI code — colors, fonts, spacing, components
 globs: ["**/*.tsx", "**/*.css", "app/**/*", "components/**/*"]
-alwaysApply: false
+alwaysApply: true
 ---
 
-# Ryan Realty Design System
+# Ryan Realty Design System — ENFORCED
 
-**Read `docs/DESIGN_SYSTEM.md` for the full specification.** These are the enforced rules.
+## When adding or changing UI
+Anytime you add or modify UI (new components, new pages, new sections, new forms, new buttons, etc.):
+- Use **only** shadcn/ui components from `@/components/ui/` (Button, Card, Input, Badge, Separator, Dialog, etc.) — no raw `<button>`, `<input>`, `<div className="rounded...">` for cards.
+- Use **only** design tokens for color (e.g. `bg-primary`, `text-foreground`, `border-border`, `text-muted-foreground`) — no hex, no `bg-white`/`bg-black`, no `bg-gray-*`.
+- Use **only** `cn()` from `@/lib/utils` for merging or conditional class names.
+- Do **not** use custom CSS classes from globals.css (e.g. `card-base`, `btn-cta`).
 
-## Tokens Only — No Hardcoded Values
+If a shadcn component exists for what you need, use it. If you're unsure, check the Component Mapping in CLAUDE.md or `components/ui/`.
 
-Every visual property uses a CSS custom property from `app/globals.css`.
-No raw hex colors. No raw pixel spacing. No hardcoded font names.
+## Single Source of Truth
 
-## Fonts
+`app/globals.css` defines ALL visual tokens as CSS custom properties mapped to Tailwind via `@theme inline`.
+`components/ui/` contains the ONLY allowed UI primitives (51 shadcn/ui components).
+`cn()` from `@/lib/utils` is the ONLY way to merge/conditionally apply class names.
 
-- Display/headlines: `var(--font-display)` → Amboqia Boriango (self-hosted)
-- Body/UI: `var(--font-body)` → AzoSans (self-hosted)
-- Never load any other font. Never `font-weight: 700` on headlines.
-- `h1`, `h2`, `h3` automatically get display font via globals.css selector.
+## ABSOLUTE RULES (zero exceptions)
 
-## Colors — Use Semantic Tokens
+### 1. NEVER use hardcoded colors
+- NO `text-white`, `text-black`, `bg-white`, `bg-black` — use semantic tokens
+- NO `bg-blue-*`, `bg-red-*`, `bg-gray-*`, `text-gray-*`, etc.
+- NO hex values: `bg-[#102742]`, `text-[#fff]`, etc.
+- NO `bg-black/40`, `bg-white/20` — use `bg-foreground/40`, `bg-background/20`
+- NO `text-white/80`, `border-white/30` — use `text-primary-foreground/80`, `border-border`
 
-```
---color-primary: #102742        (navy)
---color-cream: #F0EEEC          (background)
---color-cta: #D4A853            (gold buttons/accents)
---color-cta-hover: #C49843
---color-text-primary: #1A1410
---color-text-secondary: #6B6058
---color-text-muted: #A09890
---color-bg: #F0EEEC
---color-bg-subtle: #FAFAF9
---color-bg-white: #FFFFFF
---color-border: var(--color-border-cream)  (#E2DDD8)
---color-success: #22C55E
---color-warning: #F59E0B
---color-error: #EF4444
-```
+### 2. ALWAYS use shadcn/ui components
+| Need | Use | NOT |
+|------|-----|-----|
+| Button | `<Button>` from `@/components/ui/button` | `<button>`, `<a className="btn-...">` |
+| Card | `<Card>` from `@/components/ui/card` | `<div className="rounded-... border...">` |
+| Input | `<Input>` from `@/components/ui/input` | `<input>` |
+| Select | `<Select>` from `@/components/ui/select` | `<select>` |
+| Checkbox | `<Checkbox>` from `@/components/ui/checkbox` | `<input type="checkbox">` |
+| Badge | `<Badge>` from `@/components/ui/badge` | `<span className="rounded-full...">` |
+| Dialog | `<Dialog>` from `@/components/ui/dialog` | custom modal divs |
+| Separator | `<Separator>` from `@/components/ui/separator` | `<hr>`, `<div className="border-t">` |
+| Label | `<Label>` from `@/components/ui/label` | `<label>` |
+| Tooltip | `<Tooltip>` from `@/components/ui/tooltip` | `title` attribute |
+| Avatar | `<Avatar>` from `@/components/ui/avatar` | `<img className="rounded-full">` |
+| Table | `<Table>` from `@/components/ui/table` | `<table>` |
+| Sheet | `<Sheet>` from `@/components/ui/sheet` | custom slide-out panels |
 
-**NEVER use Tailwind color utilities** like `bg-zinc-*`, `text-zinc-*`, `border-zinc-*`, `bg-emerald-*`, `bg-amber-*`, `text-red-*`, `bg-blue-*`.
-Always use e.g. `bg-[var(--color-primary)]` or `text-[var(--color-text-primary)]`.
+### 3. DO NOT override shadcn component styles with className
+Use the component's built-in `variant` and `size` props instead:
+```tsx
+// CORRECT
+<Button variant="outline" size="lg">Cancel</Button>
+<Badge variant="secondary">New</Badge>
 
-**Legacy aliases exist** (`--brand-navy`, `--accent`, `--brand-cream`) — do NOT use in new code. Use `--color-primary`, `--color-cta`, `--color-cream` instead.
-
-## Spacing (4px grid)
-
-```
---space-1: 0.25rem (4px)    --space-6: 1.5rem (24px)
---space-2: 0.5rem (8px)     --space-8: 2rem (32px)
---space-3: 0.75rem (12px)   --space-12: 3rem (48px)
---space-4: 1rem (16px)      --space-16: 4rem (64px)
-```
-
-Never use Tailwind arbitrary values like `p-[24px]`.
-
-## Radius
-
-```
---radius-btn: 6px       --radius-card: 12px
---radius-input: 8px     --radius-modal: 16px
+// WRONG — defeats the whole system
+<Button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Save</Button>
 ```
 
-Use e.g. `rounded-[var(--radius-sm)]` or `rounded-[var(--radius-card)]`. Never bare `rounded-xl` or `rounded-lg`.
+The ONLY acceptable className additions on shadcn components are:
+- Layout/positioning: `className="w-full"`, `className="mt-4"`, `className="flex-1"`
+- Responsive: `className="hidden md:flex"`
+- The `cn()` wrapper for conditional layout classes
 
-## Shadows
+NEVER add color, border, radius, font-size, or padding overrides to shadcn components via className.
 
+### 4. Use `<Separator>` for visual dividers
+```tsx
+// CORRECT
+<Separator />
+<Separator orientation="vertical" />
+
+// WRONG
+<div className="border-t border-border" />
+<hr />
 ```
---shadow-subtle   --shadow-medium   --shadow-strong
+
+### 5. Use `cn()` for all conditional classes
+```tsx
+// CORRECT
+cn("base-class", isActive && "active-class")
+
+// WRONG
+`base-class ${isActive ? "active-class" : ""}`
+"base-class " + (isActive ? "active-class" : "")
 ```
 
-Never use Tailwind `shadow-sm`, `shadow-md`, `shadow-lg`, etc.
+### 6. Semantic tokens for ALL color contexts
+On dark backgrounds (heroes, CTAs, overlays): `text-primary-foreground`, NOT `text-white`
+On light backgrounds: `text-foreground`, NOT `text-black`
+Muted/secondary text: `text-muted-foreground`, NOT `text-gray-500`
+Borders: `border-border`, NOT `border-gray-200`
 
-## Components
-
-- **Buttons**: Use `.btn-cta` class or match its token pattern. Min height 44px.
-- **Cards**: Use `.card-base` class. Hover: `translateY(-4px)` + `--shadow-medium`.
-- **Header**: Solid `bg-primary text-white`, sticky. No glass/transparency.
-- **Skeletons**: `.skeleton` class for loading states.
+## Font System
+- Sans: Geist Sans via `font-sans` (default, applied at html level)
+- Mono: Geist Mono via `font-mono`
+- NO other fonts. Do not import or reference any other font family.
 
 ## Mobile-First
-
-- Base styles target mobile. Add `sm:`, `md:`, `lg:` for larger screens.
-- Grids: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`
-- Touch targets: minimum 44x44px on all interactive elements.
-- Every data-heavy page needs a `loading.tsx` with skeleton UI.
+- Base styles = mobile. Scale up with `sm:`, `md:`, `lg:`.
+- Touch targets: minimum 44x44px on interactive elements.
 
 ## Animations
-
-All animations must include `@media (prefers-reduced-motion: reduce)` override.
-Already defined animations: see `.animate-*` classes in `globals.css`.
+All defined in `globals.css`. Use the `.animate-*` utility classes.
+All respect `prefers-reduced-motion`. Never define new keyframes outside `globals.css`.
 
 ## Brand Voice (copy in components)
-
 - No hyphens or colons in user-facing copy
 - Never: "stunning", "nestled", "boasts", "don't miss", "won't last", "must see", "exclusive", "unparalleled", "world-class", "exquisite", "once in a lifetime"
-- Authentic, genuine, transparent. No pandering. No over-inflating anything. Direct and honest.
-- State facts, mention tradeoffs honestly. Write like a neighbor, not a salesperson.
-- Optimistic but grounded. Genuinely excited about what makes a place great, without manufacturing hype.
 - CTAs must be specific: "See All Caldera Springs Listings" not "Learn More"

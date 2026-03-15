@@ -22,7 +22,7 @@ export default function NeighborhoodCTA({ neighborhoodName, cityName, citySlug }
   return (
     <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="neighborhood-cta-heading">
       <div className="mx-auto max-w-3xl text-center">
-        <h2 id="neighborhood-cta-heading" className="text-2xl font-bold tracking-tight text-white">
+        <h2 id="neighborhood-cta-heading" className="text-2xl font-bold tracking-tight text-primary-foreground">
           Looking for a Home in {neighborhoodName}?
         </h2>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -44,7 +44,7 @@ export default function NeighborhoodCTA({ neighborhoodName, cityName, citySlug }
             </Link>
           </Button>
         </div>
-        <p className="mt-4 text-sm text-white/80">
+        <p className="mt-4 text-sm text-primary-foreground/80">
           Save your search to get alerts when new homes in {neighborhoodName} or {cityName} hit the market.
         </p>
         <p className="mt-2">

@@ -50,7 +50,7 @@ export default function PageActionBar({
   const showShareButton = showShare && shareUrl
   const isOverlay = variant === 'overlay'
   const buttonBase = isOverlay
-    ? 'inline-flex items-center gap-1.5 rounded-full border border-white/80 bg-black/40 backdrop-blur-sm px-3 py-2 text-sm font-medium text-white shadow-md transition hover:bg-black/55 disabled:opacity-60'
+    ? 'inline-flex items-center gap-1.5 rounded-full border border-primary-foreground/80 bg-foreground/40 backdrop-blur-sm px-3 py-2 text-sm font-medium text-primary-foreground shadow-md transition hover:bg-foreground/55 disabled:opacity-60'
     : 'inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-primary shadow-sm transition hover:bg-muted disabled:opacity-60'
   const wrapperClass = isOverlay
     ? 'flex flex-wrap items-center justify-end gap-2'
@@ -67,7 +67,7 @@ export default function PageActionBar({
           type="button"
           onClick={onSave}
           disabled={saveDisabled}
-          className={`${buttonBase} ${saveActive ? (isOverlay ? 'border-accent bg-accent/30 text-white' : 'border-accent text-accent-foreground bg-accent/5') : ''}`}
+          className={`${buttonBase} ${saveActive ? (isOverlay ? 'border-accent bg-accent/30 text-accent-foreground' : 'border-accent text-accent-foreground bg-accent/5') : ''}`}
           aria-label={saveActive ? `Remove from saved` : saveLabel}
         >
           <ActionBookmarkIcon filled={saveActive} className="h-5 w-5 flex-shrink-0" />
@@ -79,7 +79,7 @@ export default function PageActionBar({
           type="button"
           onClick={onLike}
           disabled={likeDisabled}
-          className={`${buttonBase} ${likeActive ? (isOverlay ? 'border-destructive bg-destructive/100/40 text-white' : 'border-destructive/60 text-destructive bg-destructive/100/5') : ''}`}
+          className={`${buttonBase} ${likeActive ? (isOverlay ? 'border-destructive bg-destructive/100/40 text-destructive-foreground' : 'border-destructive/60 text-destructive bg-destructive/100/5') : ''}`}
           aria-label={likeActive ? 'Unlike' : 'Like'}
         >
           <ActionHeartIcon filled={likeActive} className="h-5 w-5 flex-shrink-0" />
@@ -92,7 +92,7 @@ export default function PageActionBar({
           title={shareTitle}
           text={shareText}
           variant={isOverlay ? 'compact' : 'default'}
-          className={isOverlay ? `${buttonBase} !rounded-full !px-3 !py-2 !text-white !border-white/80 !bg-black/40` : buttonBase}
+          className={isOverlay ? `${buttonBase} !rounded-full !px-3 !py-2 !text-primary-foreground !border-primary-foreground/80 !bg-foreground/40` : buttonBase}
           aria-label="Share"
         />
       )}

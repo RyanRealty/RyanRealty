@@ -13,12 +13,12 @@ export default function Breadcrumb({ items, variant = 'default' }: Props) {
   if (items.length === 0) return null
   const isOnDark = variant === 'onDark'
   const linkClass = isOnDark
-    ? 'text-white hover:text-white/90 hover:underline'
+    ? 'text-primary-foreground hover:text-primary-foreground/90 hover:underline'
     : 'hover:text-foreground hover:underline'
-  const currentClass = isOnDark ? 'font-medium text-white' : 'font-medium text-foreground'
-  const sepClass = isOnDark ? 'text-white/80 select-none' : 'text-muted-foreground select-none'
+  const currentClass = isOnDark ? 'font-medium text-primary-foreground' : 'font-medium text-foreground'
+  const sepClass = isOnDark ? 'text-primary-foreground/80 select-none' : 'text-muted-foreground select-none'
   const olClass = isOnDark
-    ? 'flex flex-wrap items-center gap-x-1.5 gap-y-1 text-base text-white'
+    ? 'flex flex-wrap items-center gap-x-1.5 gap-y-1 text-base text-primary-foreground'
     : 'flex flex-wrap items-center gap-x-1.5 gap-y-1 text-base text-muted-foreground'
   return (
     <nav aria-label="Breadcrumb" className="mb-4">
@@ -27,7 +27,7 @@ export default function Breadcrumb({ items, variant = 'default' }: Props) {
           <li key={i} className="flex items-center gap-1.5">
             {i > 0 && (
               <span aria-hidden className={sepClass} role="separator">
-                ›
+                â€º
               </span>
             )}
             {item.href ? (

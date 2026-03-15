@@ -24,7 +24,7 @@ export default function SellValuationPage() {
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">
             Home Valuation
           </p>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl">
             What&apos;s Your Home Worth?
           </h1>
           <p className="mt-6 text-lg text-muted/90">
@@ -95,13 +95,13 @@ export default function SellValuationPage() {
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
               href="/sell"
-              className="rounded-lg bg-primary px-6 py-3 font-semibold text-white hover:bg-accent/90"
+              className="rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-accent/90"
             >
               Our selling plan
             </Link>
             <Link
               href="/contact?inquiry=Selling"
-              className="rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-white"
+              className="rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
             >
               Contact us to sell
             </Link>

@@ -56,9 +56,9 @@ export default function ForgotPasswordForm() {
       <Button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+        className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
       >
-        {loading ? 'Sending…' : 'Send reset link'}
+        {loading ? 'Sendingâ€¦' : 'Send reset link'}
       </Button>
     </form>
   )

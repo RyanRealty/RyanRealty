@@ -33,7 +33,7 @@ export default function CommunityCTA({ communityName, slug }: Props) {
   return (
     <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="community-cta-heading">
       <div className="mx-auto max-w-3xl text-center">
-        <h2 id="community-cta-heading" className="text-2xl font-bold tracking-tight text-white">
+        <h2 id="community-cta-heading" className="text-2xl font-bold tracking-tight text-primary-foreground">
           Interested in {communityName}?
         </h2>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -53,7 +53,7 @@ export default function CommunityCTA({ communityName, slug }: Props) {
             Talk to a Local Expert
           </Button>
         </div>
-        <p className="mt-4 text-sm text-white/80">
+        <p className="mt-4 text-sm text-primary-foreground/80">
           Sign in to save this community and get alerts when new homes hit the market.
         </p>
       </div>

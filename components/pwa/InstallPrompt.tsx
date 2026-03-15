@@ -83,7 +83,7 @@ export default function InstallPrompt() {
         <Button
           type="button"
           onClick={handleInstall}
-          className="rounded bg-primary px-3 py-1.5 text-sm text-white hover:opacity-90"
+          className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90"
         >
           Install
         </Button>

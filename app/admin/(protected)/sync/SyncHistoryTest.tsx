@@ -28,7 +28,7 @@ export default function SyncHistoryTest({ defaultListingKey }: Props) {
     <div className="rounded-lg border-2 border-warning/30 bg-warning/10/50 p-6">
       <h2 className="text-lg font-semibold text-foreground">Test listing &amp; historical data</h2>
       <p className="mt-1 text-sm text-warning">
-        One click tests <strong>Listing History</strong> (<code className="rounded bg-warning/15 px-1">/history</code>), <strong>Price history</strong> (<code className="rounded bg-warning/15 px-1">/historical/pricehistory</code>), and <strong>Historical Listings</strong> (<code className="rounded bg-warning/15 px-1">/historical</code> — off-market listings for same property). Use one listing key above.
+        One click tests <strong>Listing History</strong> (<code className="rounded bg-warning/15 px-1">/history</code>), <strong>Price history</strong> (<code className="rounded bg-warning/15 px-1">/historical/pricehistory</code>), and <strong>Historical Listings</strong> (<code className="rounded bg-warning/15 px-1">/historical</code> â€” off-market listings for same property). Use one listing key above.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Input
@@ -42,9 +42,9 @@ export default function SyncHistoryTest({ defaultListingKey }: Props) {
           type="button"
           onClick={handleTest}
           disabled={loading}
-          className="rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-white hover:bg-warning/85 disabled:opacity-50"
+          className="rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-warning-foreground hover:bg-warning/85 disabled:opacity-50"
         >
-          {loading ? 'Testing…' : 'Test all 3'}
+          {loading ? 'Testingâ€¦' : 'Test all 3'}
         </Button>
       </div>
       {result && (

@@ -56,7 +56,7 @@ export default function HomeExploreMap({
           </p>
           <Link
             href="/listings?view=map"
-            className="mt-4 inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-white hover:bg-primary/90"
+            className="mt-4 inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground hover:bg-primary/90"
           >
             Browse listings
           </Link>
@@ -123,9 +123,9 @@ export default function HomeExploreMap({
             <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-center border-t border-border bg-card px-4 py-4 sm:px-6">
               <Link
                 href="/listings?view=map"
-                className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-white hover:bg-primary/90"
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground hover:bg-primary/90"
               >
-                Explore on map →
+                Explore on map â†’
               </Link>
             </div>
           </>

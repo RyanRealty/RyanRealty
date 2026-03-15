@@ -93,9 +93,9 @@ export default function SiteLogoForm({ initialLogoUrl }: Props) {
             <Button
               type="submit"
               disabled={saving}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {saving ? 'Saving…' : 'Save URL'}
+              {saving ? 'Savingâ€¦' : 'Save URL'}
             </Button>
           </form>
 
@@ -110,9 +110,9 @@ export default function SiteLogoForm({ initialLogoUrl }: Props) {
             <Button
               type="submit"
               disabled={uploading}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-60"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-60"
             >
-              {uploading ? 'Uploading…' : 'Upload & set'}
+              {uploading ? 'Uploadingâ€¦' : 'Upload & set'}
             </Button>
           </form>
         </div>

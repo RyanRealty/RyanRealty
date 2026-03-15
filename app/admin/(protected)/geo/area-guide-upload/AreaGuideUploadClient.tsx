@@ -166,7 +166,7 @@ export default function AreaGuideUploadClient() {
       </section>
 
       {dialogOpen && mapping && mapping.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal aria-labelledby="area-guide-dialog-title">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4" role="dialog" aria-modal aria-labelledby="area-guide-dialog-title">
           <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-lg border border-border bg-background p-6 shadow-lg">
             <h2 id="area-guide-dialog-title" className="text-lg font-semibold text-foreground">
               Confirm folder mapping

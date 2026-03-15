@@ -86,7 +86,7 @@ export default function HomeCitySelector({ currentCity, cities, signedIn }: Prop
         </div>
       )}
       {signedIn && (
-        <p className="mt-1.5 text-xs text-white/80">Saved to your account</p>
+        <p className="mt-1.5 text-xs text-primary-foreground/80">Saved to your account</p>
       )}
     </div>
   )

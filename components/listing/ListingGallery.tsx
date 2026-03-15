@@ -71,7 +71,7 @@ export default function ListingGallery({ photos }: Props) {
 
       {lightboxOpen && src && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/90 p-4"
           onClick={() => setLightboxOpen(false)}
           onKeyDown={(e) => e.key === 'Escape' && setLightboxOpen(false)}
           role="button"
@@ -79,7 +79,7 @@ export default function ListingGallery({ photos }: Props) {
         >
           <Button
             type="button"
-            className="absolute right-4 top-4 text-white/80 hover:text-white"
+            className="absolute right-4 top-4 text-primary-foreground/80 hover:text-primary-foreground"
             onClick={() => setLightboxOpen(false)}
           >
             ✕

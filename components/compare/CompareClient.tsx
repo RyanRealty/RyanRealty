@@ -36,12 +36,12 @@ export type CompareListingData = {
 }
 
 function fmt(n: number | null | undefined): string {
-  if (n == null) return '—'
+  if (n == null) return 'â€”'
   return n.toLocaleString()
 }
 
 function fmtPrice(n: number | null | undefined): string {
-  if (n == null) return '—'
+  if (n == null) return 'â€”'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 
@@ -53,15 +53,15 @@ const rows: RowDef[] = [
   { label: 'Baths', key: 'baths', format: (v) => fmt(v as number), best: 'high' },
   { label: 'Sq Ft', key: 'sqft', format: (v) => fmt(v as number), best: 'high' },
   { label: 'Price/Sq Ft', key: 'price', format: () => '', best: 'low' }, // computed below
-  { label: 'Lot (acres)', key: 'lotSizeAcres', format: (v) => (v != null ? (v as number).toFixed(2) : '—'), best: 'high' },
-  { label: 'Year Built', key: 'yearBuilt', format: (v) => (v != null ? String(v) : '—'), best: 'high' },
+  { label: 'Lot (acres)', key: 'lotSizeAcres', format: (v) => (v != null ? (v as number).toFixed(2) : 'â€”'), best: 'high' },
+  { label: 'Year Built', key: 'yearBuilt', format: (v) => (v != null ? String(v) : 'â€”'), best: 'high' },
   { label: 'Garage', key: 'garageSpaces', format: (v) => fmt(v as number) },
   { label: 'HOA/mo', key: 'hoa', format: (v) => fmtPrice(v as number), best: 'low' },
   { label: 'Taxes/yr', key: 'taxes', format: (v) => fmtPrice(v as number), best: 'low' },
   { label: 'Days on Market', key: 'dom', format: (v) => fmt(v as number), best: 'low' },
-  { label: 'Status', key: 'status', format: (v) => (v as string) ?? '—' },
-  { label: 'Type', key: 'propertyType', format: (v) => (v as string) ?? '—' },
-  { label: 'Community', key: 'subdivision', format: (v) => (v as string) ?? '—' },
+  { label: 'Status', key: 'status', format: (v) => (v as string) ?? 'â€”' },
+  { label: 'Type', key: 'propertyType', format: (v) => (v as string) ?? 'â€”' },
+  { label: 'Community', key: 'subdivision', format: (v) => (v as string) ?? 'â€”' },
 ]
 
 function bestIndex(listings: CompareListingData[], key: keyof CompareListingData, direction: 'low' | 'high'): number | null {
@@ -105,7 +105,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
       a.click()
       URL.revokeObjectURL(a.href)
     } catch {
-      // Silent fail — user can retry
+      // Silent fail â€” user can retry
     } finally {
       setPdfLoading(false)
     }
@@ -154,7 +154,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
             size="sm"
           >
             <HugeiconsIcon icon={Download01Icon} className="h-4 w-4" />
-            {pdfLoading ? 'Generating…' : 'Download PDF'}
+            {pdfLoading ? 'Generatingâ€¦' : 'Download PDF'}
           </Button>
         </div>
       </div>
@@ -171,16 +171,16 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
             <Button
               type="button"
               onClick={() => handleRemove(l.listingKey)}
-              className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+              className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-foreground/50 text-primary-foreground hover:bg-foreground/70 transition-colors"
               aria-label={`Remove ${l.address} from comparison`}
             >
               <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4" />
             </Button>
             <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-              <Link href={`/listing/${encodeURIComponent(l.listingKey)}`} className="text-white text-sm font-semibold hover:underline line-clamp-2">
+              <Link href={`/listing/${encodeURIComponent(l.listingKey)}`} className="text-primary-foreground text-sm font-semibold hover:underline line-clamp-2">
                 {l.address}
               </Link>
-              <p className="text-white/90 text-lg font-bold mt-0.5">{fmtPrice(l.price)}</p>
+              <p className="text-primary-foreground/90 text-lg font-bold mt-0.5">{fmtPrice(l.price)}</p>
             </div>
           </div>
         ))}
@@ -213,7 +213,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
 
                     if (isPricePerSqft) {
                       const ppsf = l.price && l.sqft ? Math.round(l.price / l.sqft) : null
-                      value = ppsf != null ? `$${ppsf.toLocaleString()}` : '—'
+                      value = ppsf != null ? `$${ppsf.toLocaleString()}` : 'â€”'
                       // Compute best for price/sqft separately
                       const ppsfValues = listings.map((ll) => (ll.price && ll.sqft ? ll.price / ll.sqft : null))
                       const validPpsf = ppsfValues.filter((v): v is number => v != null)
@@ -222,7 +222,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
                         isBest = ppsf === minPpsf
                       }
                     } else {
-                      value = row.format ? row.format(l[row.key]) : String(l[row.key] ?? '—')
+                      value = row.format ? row.format(l[row.key]) : String(l[row.key] ?? 'â€”')
                       isBest = best === i && listings.filter((ll) => ll[row.key] != null).length > 1
                     }
 
@@ -265,7 +265,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
               />
             ) : (
               <div className="flex h-full items-center justify-center bg-muted text-muted-foreground text-sm">
-                Map unavailable — configure Google Maps API key
+                Map unavailable â€” configure Google Maps API key
               </div>
             )}
           </div>

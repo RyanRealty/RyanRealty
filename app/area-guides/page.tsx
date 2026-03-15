@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     'Explore Bend, Redmond, Sisters, Sunriver, La Pine, Prineville and more. Neighborhoods, market trends, and homes for sale in every corner of Central Oregon.',
   alternates: { canonical: `${siteUrl}/area-guides` },
   openGraph: {
-    title: 'Area Guides | Ryan Realty — Central Oregon',
+    title: 'Area Guides | Ryan Realty â€” Central Oregon',
     url: `${siteUrl}/area-guides`,
     type: 'website',
   },
@@ -75,7 +75,7 @@ export default async function AreaGuidesPage() {
                 <li key={city.slug}>
                   <Link
                     href={`/cities/${city.slug}`}
-                    className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary hover:text-white"
+                    className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground"
                   >
                     {city.name}
                   </Link>
@@ -104,7 +104,7 @@ export default async function AreaGuidesPage() {
           </p>
           <Link
             href="/homes-for-sale"
-            className="mt-6 inline-block rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-white"
+            className="mt-6 inline-block rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
           >
             Open map search
           </Link>

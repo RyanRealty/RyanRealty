@@ -131,27 +131,27 @@ export default function CommunityTile({ city, community, bannerUrl = null, signe
             position="top-left"
             max={3}
             items={[
-              ...(isHot ? [{ label: 'Hot market', variant: 'hot' as const, icon: <span aria-hidden>🔥</span> }] : []),
+              ...(isHot ? [{ label: 'Hot market', variant: 'hot' as const, icon: <span aria-hidden>ðŸ”¥</span> }] : []),
               ...(!isHot && isPopular ? [{ label: 'Popular', variant: 'popular' as const }] : []),
               ...(!isHot && !isPopular && totalActive > 0 ? [{ label: 'Steady', variant: 'steady' as const }] : []),
             ]}
           />
-          <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+          <div className="absolute bottom-0 left-0 right-0 p-3 text-primary-foreground">
             <span className="block font-semibold drop-shadow">{displayName}</span>
-            <span className="mt-0.5 block text-sm text-white/90">{countLabel}</span>
+            <span className="mt-0.5 block text-sm text-primary-foreground/90">{countLabel}</span>
             {medianK && (
-              <span className="mt-0.5 block text-xs text-white/80">
+              <span className="mt-0.5 block text-xs text-primary-foreground/80">
                 Median around ${medianK}
               </span>
             )}
-            <div className="mt-1 flex flex-wrap gap-1 text-[11px] text-white/90">
+            <div className="mt-1 flex flex-wrap gap-1 text-[11px] text-primary-foreground/90">
               {community.newLast7Days > 0 && (
-                <span className="rounded bg-black/50 px-1.5 py-0.5">
+                <span className="rounded bg-foreground/50 px-1.5 py-0.5">
                   {community.newLast7Days} new this week
                 </span>
               )}
               {community.pending > 0 && (
-                <span className="rounded bg-black/50 px-1.5 py-0.5">
+                <span className="rounded bg-foreground/50 px-1.5 py-0.5">
                   {community.pending} pending
                 </span>
               )}

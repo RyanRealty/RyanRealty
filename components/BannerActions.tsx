@@ -131,7 +131,7 @@ export default function BannerActions({
   if (!hasBanner) {
     return (
       <div className="flex flex-col gap-2">
-        {loading && <p className="text-sm text-white/90 drop-shadow-md">Fetching banner…</p>}
+        {loading && <p className="text-sm text-primary-foreground/90 drop-shadow-md">Fetching bannerâ€¦</p>}
         {error && (
           <>
             <p className="text-sm text-destructive/60 drop-shadow-md">{error}</p>
@@ -154,7 +154,7 @@ export default function BannerActions({
           disabled={loadingOptions}
           className={btn}
         >
-          {loadingOptions ? 'Loading…' : 'Change image'}
+          {loadingOptions ? 'Loadingâ€¦' : 'Change image'}
         </Button>
         <Button
           type="button"
@@ -162,14 +162,14 @@ export default function BannerActions({
           disabled={loading}
           className={btn}
         >
-          {loading ? 'Refreshing…' : 'Refresh image'}
+          {loading ? 'Refreshingâ€¦' : 'Refresh image'}
         </Button>
       </div>
       {showPicker && (
         <div className="mt-2 rounded-lg border border-border bg-card/95 p-3 shadow-md backdrop-blur">
           <p className="mb-2 text-xs font-medium text-muted-foreground">Choose an image</p>
           {loadingOptions ? (
-            <p className="text-sm text-muted-foreground">Loading options…</p>
+            <p className="text-sm text-muted-foreground">Loading optionsâ€¦</p>
           ) : options.length === 0 ? (
             <p className="text-sm text-muted-foreground">No options found. Try &quot;Refresh image&quot; instead.</p>
           ) : (

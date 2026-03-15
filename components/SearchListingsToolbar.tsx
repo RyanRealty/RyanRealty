@@ -67,7 +67,7 @@ export default function SearchListingsToolbar({
               <Link
                 key={n}
                 href={path + buildQuery(searchParams, { perPage: String(n), page: '1' })}
-                className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${perPageParam === String(n) ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${perPageParam === String(n) ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
                 title={`${n} per page`}
               >
                 {n}
@@ -82,7 +82,7 @@ export default function SearchListingsToolbar({
               <Link
                 key={col}
                 href={path + buildQuery(searchParams, { view: String(col), page: '1' })}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${viewParam === String(col) ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${viewParam === String(col) ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
                 title={`${col} column${col === 1 ? '' : 's'}`}
               >
                 {col}
@@ -93,7 +93,7 @@ export default function SearchListingsToolbar({
       </div>
       <div className="flex flex-wrap items-center gap-4">
         <p className="text-sm text-muted-foreground">
-          {totalCount === 0 ? 'No listings' : `${start}–${end} of ${totalCount.toLocaleString()}`}
+          {totalCount === 0 ? 'No listings' : `${start}â€“${end} of ${totalCount.toLocaleString()}`}
         </p>
         {totalPages > 1 && (
           <nav className="flex flex-wrap items-center gap-2" aria-label="Pagination">
@@ -131,7 +131,7 @@ export default function SearchListingsToolbar({
                 />
                 <Button
                   type="submit"
-                  className="rounded-lg bg-primary px-2.5 py-1.5 text-sm font-medium text-white hover:bg-accent/90"
+                  className="rounded-lg bg-primary px-2.5 py-1.5 text-sm font-medium text-primary-foreground hover:bg-accent/90"
                 >
                   Go
                 </Button>

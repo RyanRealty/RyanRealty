@@ -17,7 +17,7 @@ const WELCOME_MESSAGE: Message = {
   id: 'welcome',
   role: 'assistant',
   content:
-    'Hi there! 👋 I\'m the Ryan Realty assistant. I can help with questions about Central Oregon real estate, neighborhoods, home values, and the buying or selling process. What can I help you with?',
+    'Hi there! ðŸ‘‹ I\'m the Ryan Realty assistant. I can help with questions about Central Oregon real estate, neighborhoods, home values, and the buying or selling process. What can I help you with?',
 }
 
 function generateId() {
@@ -129,14 +129,14 @@ export default function ChatWidget() {
                 <HugeiconsIcon icon={MessageAdd01Icon} className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-white">Chat With Us</h2>
-                <p className="text-xs text-white/70">Ryan Realty • Central Oregon</p>
+                <h2 className="text-sm font-semibold text-primary-foreground">Chat With Us</h2>
+                <p className="text-xs text-primary-foreground/70">Ryan Realty â€¢ Central Oregon</p>
               </div>
             </div>
             <Button
               type="button"
               onClick={toggleOpen}
-              className="rounded-lg p-1 text-white/80 hover:bg-card/10 hover:text-white"
+              className="rounded-lg p-1 text-primary-foreground/80 hover:bg-card/10 hover:text-primary-foreground"
               aria-label="Close chat"
             >
               <HugeiconsIcon icon={Cancel01Icon} className="h-5 w-5" />
@@ -154,7 +154,7 @@ export default function ChatWidget() {
                   className={[
                     'max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed',
                     msg.role === 'user'
-                      ? 'bg-primary text-white rounded-br-md'
+                      ? 'bg-primary text-primary-foreground rounded-br-md'
                       : 'bg-muted text-foreground rounded-bl-md',
                   ].join(' ')}
                 >
@@ -184,7 +184,7 @@ export default function ChatWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about Central Oregon real estate…"
+                placeholder="Ask about Central Oregon real estateâ€¦"
                 rows={1}
                 className="flex-1 resize-none rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 style={{ maxHeight: '80px' }}
@@ -201,7 +201,7 @@ export default function ChatWidget() {
               </Button>
             </div>
             <p className="mt-1.5 text-center text-[10px] text-muted-foreground">
-              AI assistant • May not always be accurate
+              AI assistant â€¢ May not always be accurate
             </p>
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function ChatWidget() {
           'fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full px-5 py-3 font-semibold shadow-md transition-all hover:scale-105 sm:bottom-6 sm:right-6',
           isOpen
             ? 'bg-muted text-primary'
-            : 'bg-primary text-white',
+            : 'bg-primary text-primary-foreground',
         ].join(' ')}
         aria-label={isOpen ? 'Close chat' : 'Chat With Us'}
       >

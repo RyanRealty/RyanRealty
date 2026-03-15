@@ -66,7 +66,7 @@ export default function ListingDetailHero({ photos, virtualTourUrl, listingKey, 
   return (
     <div className="w-full -mt-16">
       {showBackgroundVideo && heroVideoUrl && (
-        <section className="relative w-full overflow-hidden bg-black" aria-label="Listing video">
+        <section className="relative w-full overflow-hidden bg-foreground" aria-label="Listing video">
           <div className="aspect-[16/10] max-h-[75vh] w-full relative">
             <video
               autoPlay
@@ -99,7 +99,7 @@ export default function ListingDetailHero({ photos, virtualTourUrl, listingKey, 
               priority
             />
             {virtualTourUrl && (
-              <span className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+              <span className="absolute inset-0 flex items-center justify-center bg-foreground/30 pointer-events-none">
                 <span className="w-16 h-16 rounded-full bg-card/90 flex items-center justify-center">
                   <HugeiconsIcon icon={PlayIcon} className="w-8 h-8 text-primary ml-1" aria-hidden />
                 </span>
@@ -142,7 +142,7 @@ export default function ListingDetailHero({ photos, virtualTourUrl, listingKey, 
             />
           </Button>
           {virtualTourUrl && (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+            <span className="absolute inset-0 flex items-center justify-center bg-foreground/30 pointer-events-none">
               <span className="w-14 h-14 rounded-full bg-card/90 flex items-center justify-center">
                 <HugeiconsIcon icon={PlayIcon} className="w-7 h-7 text-primary ml-0.5" aria-hidden />
               </span>
@@ -151,12 +151,12 @@ export default function ListingDetailHero({ photos, virtualTourUrl, listingKey, 
         </div>
         {/* View All Photos + counter */}
         <div className="absolute bottom-4 right-4 flex items-center gap-2">
-          <span className="rounded-full bg-black/60 text-white text-xs px-2 py-1">
+          <span className="rounded-full bg-foreground/60 text-primary-foreground text-xs px-2 py-1">
             1 / {list.length}
           </span>
           <Button
             type="button"
-            className="rounded-lg bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-accent/90"
+            className="rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-accent/90"
             onClick={() => openLightbox(0)}
           >
             View All {list.length} Photos
@@ -174,7 +174,7 @@ export default function ListingDetailHero({ photos, virtualTourUrl, listingKey, 
         >
           <Button
             type="button"
-            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-card/20 text-white flex items-center justify-center hover:bg-card/30"
+            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-card/20 text-primary-foreground flex items-center justify-center hover:bg-card/30"
             onClick={() => setLightboxOpen(false)}
             aria-label="Close gallery"
           >
@@ -182,7 +182,7 @@ export default function ListingDetailHero({ photos, virtualTourUrl, listingKey, 
           </Button>
           <Button
             type="button"
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-card/20 text-white flex items-center justify-center hover:bg-card/30"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-card/20 text-primary-foreground flex items-center justify-center hover:bg-card/30"
             onClick={() => setLightboxIndex((i) => (i === 0 ? list.length - 1 : i - 1))}
             aria-label="Previous photo"
           >
@@ -190,7 +190,7 @@ export default function ListingDetailHero({ photos, virtualTourUrl, listingKey, 
           </Button>
           <Button
             type="button"
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-card/20 text-white flex items-center justify-center hover:bg-card/30"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-card/20 text-primary-foreground flex items-center justify-center hover:bg-card/30"
             onClick={() => setLightboxIndex((i) => (i === list.length - 1 ? 0 : i + 1))}
             aria-label="Next photo"
           >
@@ -206,7 +206,7 @@ export default function ListingDetailHero({ photos, virtualTourUrl, listingKey, 
               onClick={() => setLightboxOpen(false)}
             />
           </div>
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-primary-foreground text-sm">
             {lightboxIndex + 1} / {list.length}
           </div>
         </div>

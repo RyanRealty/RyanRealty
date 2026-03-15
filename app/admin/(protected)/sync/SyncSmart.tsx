@@ -248,24 +248,24 @@ export default function SyncSmart({ initialStatus, sparkConfigured = true, compa
                 : 'Sync in progress'}
             </span>
             <span className="text-sm text-success" suppressHydrationWarning>
-              Elapsed: {mounted && status?.cursor?.runStartedAt ? formatElapsed(status.cursor.runStartedAt) : syncing ? '…' : '—'}
+              Elapsed: {mounted && status?.cursor?.runStartedAt ? formatElapsed(status.cursor.runStartedAt) : syncing ? 'â€¦' : 'â€”'}
             </span>
             <span className="text-sm text-success" title={status?.cursor?.phase === 'refresh_active_pending' ? 'Listings refreshed so far (active & pending only).' : 'Listings upserted in this run (Listings phase only).'}>
               {status?.cursor?.phase === 'refresh_active_pending' ? 'Listings refreshed: ' : 'Listings this run: '}
-              {status?.cursor?.runListingsUpserted?.toLocaleString() ?? '…'}
+              {status?.cursor?.runListingsUpserted?.toLocaleString() ?? 'â€¦'}
             </span>
             {status?.cursor?.phase === 'refresh_active_pending' ? (
               <span className="text-xs text-success">History not used for this run</span>
             ) : (
               <span className="text-sm text-success" title="History rows inserted in this run.">
-                History this run: {status?.cursor?.runHistoryRows?.toLocaleString() ?? '…'}
+                History this run: {status?.cursor?.runHistoryRows?.toLocaleString() ?? 'â€¦'}
               </span>
             )}
             <span className="text-xs font-medium text-success">
-              Phase: {status?.cursor?.phase === 'listings' ? 'Listings' : status?.cursor?.phase === 'history' ? 'History' : status?.cursor?.phase === 'refresh_active_pending' ? 'Refresh active & pending' : '…'}
+              Phase: {status?.cursor?.phase === 'listings' ? 'Listings' : status?.cursor?.phase === 'history' ? 'History' : status?.cursor?.phase === 'refresh_active_pending' ? 'Refresh active & pending' : 'â€¦'}
             </span>
             <span className="text-xs font-medium text-success">
-              Est. time remaining: {etaLabel ?? 'Calculating…'}
+              Est. time remaining: {etaLabel ?? 'Calculatingâ€¦'}
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -278,7 +278,7 @@ export default function SyncSmart({ initialStatus, sparkConfigured = true, compa
               disabled={controlPending}
               className="rounded-lg border-2 border-warning bg-warning/10 px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-warning/15 disabled:opacity-50"
             >
-              {controlPending ? '…' : 'Pause'}
+              {controlPending ? 'â€¦' : 'Pause'}
             </Button>
             <Button
               type="button"
@@ -286,7 +286,7 @@ export default function SyncSmart({ initialStatus, sparkConfigured = true, compa
               disabled={controlPending}
               className="rounded-lg border-2 border-destructive bg-destructive/10 px-4 py-2.5 text-sm font-semibold text-destructive hover:bg-destructive/15 disabled:opacity-50"
             >
-              {controlPending ? '…' : 'Stop'}
+              {controlPending ? 'â€¦' : 'Stop'}
             </Button>
           </div>
         </div>
@@ -300,9 +300,9 @@ export default function SyncSmart({ initialStatus, sparkConfigured = true, compa
             type="button"
             onClick={handleResume}
             disabled={controlPending}
-            className="rounded-lg bg-warning px-4 py-2 text-sm font-medium text-white hover:bg-warning/85 disabled:opacity-50"
+            className="rounded-lg bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/85 disabled:opacity-50"
           >
-            {controlPending ? '…' : 'Resume'}
+            {controlPending ? 'â€¦' : 'Resume'}
           </Button>
         </div>
       )}
@@ -312,15 +312,15 @@ export default function SyncSmart({ initialStatus, sparkConfigured = true, compa
           type="button"
           onClick={handleSmartSync}
           disabled={disabled}
-          className="rounded-lg bg-success px-5 py-2.5 text-sm font-semibold text-white hover:bg-success/75 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-success px-5 py-2.5 text-sm font-semibold text-success-foreground hover:bg-success/75 disabled:cursor-not-allowed disabled:opacity-50"
           title={!sparkConfigured ? 'Add SPARK_API_KEY to run sync' : undefined}
         >
           {syncing
-            ? 'Running…'
+            ? 'Runningâ€¦'
             : runInProgress
               ? status?.cursor?.phase === 'refresh_active_pending'
-                ? 'Refreshing active & pending…'
-                : 'Sync in progress…'
+                ? 'Refreshing active & pendingâ€¦'
+                : 'Sync in progressâ€¦'
               : !sparkConfigured
                 ? 'Smart Sync (key required)'
                 : 'Smart Sync'}

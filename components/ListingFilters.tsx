@@ -26,7 +26,7 @@ type Props = {
   /** Include closed listings (URL param includeClosed=1) */
   includeClosed?: string
   page?: string
-  /** Columns: '1'–'4' */
+  /** Columns: '1'â€“'4' */
   view?: string
   /** Per page: '6' | '12' | '24' | '48' */
   perPage?: string
@@ -189,9 +189,9 @@ export default function ListingFilters({
       <Button
         type="submit"
         disabled={isPending}
-        className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-white hover:bg-muted-foreground disabled:opacity-70"
+        className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-muted-foreground disabled:opacity-70"
       >
-        {isPending ? 'Applying…' : 'Apply'}
+        {isPending ? 'Applyingâ€¦' : 'Apply'}
       </Button>
     </form>
   )

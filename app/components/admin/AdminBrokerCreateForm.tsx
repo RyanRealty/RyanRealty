@@ -198,9 +198,9 @@ export default function AdminBrokerCreateForm({ className = '' }: Props) {
       <Button
         type="submit"
         disabled={loading}
-        className="rounded-lg bg-success px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-success/85 disabled:opacity-50"
+        className="rounded-lg bg-success px-4 py-2.5 text-sm font-semibold text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
       >
-        {loading ? 'Adding…' : 'Add broker'}
+        {loading ? 'Addingâ€¦' : 'Add broker'}
       </Button>
     </form>
   )

@@ -77,23 +77,23 @@ export default function VideosClient({ initialListings }: Props) {
               <Button
                 type="button"
                 onClick={() => setSelectedKey(listing.listing_key)}
-                className="relative block aspect-video w-full bg-black"
+                className="relative block aspect-video w-full bg-foreground"
               >
                 {listing.photo_url ? (
-                  <Image src={listing.photo_url} alt={`${listing.unparsed_address || listing.subdivision_name || 'Property'} — video thumbnail`} fill className="object-cover" sizes="400px" />
+                  <Image src={listing.photo_url} alt={`${listing.unparsed_address || listing.subdivision_name || 'Property'} â€” video thumbnail`} fill className="object-cover" sizes="400px" />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-white">No image</div>
+                  <div className="flex h-full items-center justify-center text-primary-foreground">No image</div>
                 )}
-                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 p-4 text-white">
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/40 p-4 text-primary-foreground">
                   <HugeiconsIcon icon={PlayIcon} className="h-16 w-16" />
                 </span>
-                <span className="absolute bottom-2 left-2 rounded bg-black/70 px-2 py-1 text-sm font-medium text-white">
+                <span className="absolute bottom-2 left-2 rounded bg-foreground/70 px-2 py-1 text-sm font-medium text-primary-foreground">
                   ${(listing.list_price ?? 0).toLocaleString()}
                 </span>
-                <span className="absolute bottom-2 right-2 flex flex-col items-end gap-0.5 text-right text-sm font-medium text-white drop-shadow">
+                <span className="absolute bottom-2 right-2 flex flex-col items-end gap-0.5 text-right text-sm font-medium text-primary-foreground drop-shadow">
                   <span>{listing.unparsed_address ?? listing.listing_key}</span>
                   {listing.video_source === 'virtual_tour' && (
-                    <span className="rounded bg-black/60 px-1.5 py-0.5 text-xs">Virtual tour</span>
+                    <span className="rounded bg-foreground/60 px-1.5 py-0.5 text-xs">Virtual tour</span>
                   )}
                 </span>
               </Button>
@@ -106,8 +106,8 @@ export default function VideosClient({ initialListings }: Props) {
                 </div>
                 <p className="text-sm text-muted-foreground">{listing.unparsed_address}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {listing.beds_total ?? '—'} bed · {listing.baths_full ?? '—'} bath
-                  {listing.living_area != null && ` · ${Number(listing.living_area).toLocaleString()} sq ft`}
+                  {listing.beds_total ?? 'â€”'} bed Â· {listing.baths_full ?? 'â€”'} bath
+                  {listing.living_area != null && ` Â· ${Number(listing.living_area).toLocaleString()} sq ft`}
                 </p>
                 <Link
                   href={`/listing/${encodeURIComponent(listing.listing_key)}`}
@@ -126,19 +126,19 @@ export default function VideosClient({ initialListings }: Props) {
         <div className="flex snap-y snap-mandatory flex-col gap-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
           {filtered.map((listing) => (
             <div key={listing.listing_key} className="flex snap-start flex-col">
-              <div className="relative aspect-[9/16] w-full overflow-hidden rounded-lg bg-black">
+              <div className="relative aspect-[9/16] w-full overflow-hidden rounded-lg bg-foreground">
                 <VideoPlayer
                   videoUrl={listing.video_url}
                   listingId={listing.listing_key}
                   posterUrl={listing.photo_url ?? undefined}
                   className="h-full w-full object-cover"
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-foreground/80 to-transparent p-4 text-primary-foreground">
                   <p className="font-semibold">${(listing.list_price ?? 0).toLocaleString()}</p>
                   <p className="text-sm">{listing.unparsed_address}</p>
                   <p className="text-xs opacity-90">
-                    {listing.beds_total ?? '—'} bed · {listing.baths_full ?? '—'} bath
-                    {listing.living_area != null && ` · ${Number(listing.living_area).toLocaleString()} sq ft`}
+                    {listing.beds_total ?? 'â€”'} bed Â· {listing.baths_full ?? 'â€”'} bath
+                    {listing.living_area != null && ` Â· ${Number(listing.living_area).toLocaleString()} sq ft`}
                   </p>
                 </div>
                 <Link
@@ -156,13 +156,13 @@ export default function VideosClient({ initialListings }: Props) {
       {/* Lightbox modal */}
       {selectedKey && selected && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/90 p-4"
           onClick={() => setSelectedKey(null)}
           role="dialog"
           aria-modal="true"
           aria-label="Video lightbox"
         >
-          <Button type="button" onClick={() => setSelectedKey(null)} className="absolute right-4 top-4 text-white" aria-label="Close">
+          <Button type="button" onClick={() => setSelectedKey(null)} className="absolute right-4 top-4 text-primary-foreground" aria-label="Close">
             <HugeiconsIcon icon={Cancel01Icon} className="h-8 w-8" />
           </Button>
           <div className="flex w-full max-w-5xl flex-col gap-4 md:flex-row" onClick={(e) => e.stopPropagation()}>
@@ -174,7 +174,7 @@ export default function VideosClient({ initialListings }: Props) {
                 className="aspect-video w-full"
               />
               {selected.video_source === 'virtual_tour' && (
-                <p className="mt-2 text-center text-sm text-white/90">Virtual tour — opens in player or new tab</p>
+                <p className="mt-2 text-center text-sm text-primary-foreground/90">Virtual tour â€” opens in player or new tab</p>
               )}
             </div>
             <div className="w-full bg-card p-4 md:w-80">
@@ -186,8 +186,8 @@ export default function VideosClient({ initialListings }: Props) {
               </div>
               <p className="text-muted-foreground">{selected.unparsed_address}</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                {selected.beds_total ?? '—'} bed · {selected.baths_full ?? '—'} bath
-                {selected.living_area != null && ` · ${Number(selected.living_area).toLocaleString()} sq ft`}
+                {selected.beds_total ?? 'â€”'} bed Â· {selected.baths_full ?? 'â€”'} bath
+                {selected.living_area != null && ` Â· ${Number(selected.living_area).toLocaleString()} sq ft`}
               </p>
               <Link
                 href={`/listing/${encodeURIComponent(selected.listing_key)}`}

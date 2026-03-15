@@ -2,6 +2,20 @@
 
 import { createClient } from '@supabase/supabase-js'
 
+/** Default cities for the activity feed slider (home and reusable section). User can add more via dropdown. */
+export const ACTIVITY_FEED_DEFAULT_CITIES = [
+  'Bend',
+  'Redmond',
+  'La Pine',
+  'Sunriver',
+  'Sisters',
+  'Tumalo',
+  'Terrebonne',
+  'Madras',
+  'Prineville',
+  'Crooked River Ranch',
+] as const
+
 export type ActivityFeedItem = {
   id: string
   listing_key: string
@@ -21,10 +35,12 @@ export type ActivityFeedItem = {
 
 /**
  * Fetch activity feed: events joined to listing data, ordered by event_at desc.
- * Optional city filter (matches listing City). Use for homepage and feed section.
+ * Filter by city (single) or cities (array). Use for homepage and feed section.
  */
 export async function getActivityFeed(options?: {
   city?: string | null
+  /** Multiple cities: include listings in any of these (overrides city when set). */
+  cities?: string[] | null
   /** When set, only include listings in this subdivision (matches SubdivisionName). */
   subdivision?: string | null
   limit?: number
@@ -67,11 +83,17 @@ export async function getActivityFeed(options?: {
     if (num) byKey.set(num, row)
     if (key) byKey.set(key, row)
   }
+  const citySet = options?.cities?.length
+    ? new Set(options.cities.map((c) => c.trim()).filter(Boolean))
+    : null
+  const singleCity = options?.city?.trim() || null
   const result: ActivityFeedItem[] = []
   const subdivisionFilter = options?.subdivision?.trim().toLowerCase()
   for (const e of events as { id: string; listing_key: string; event_type: string; event_at: string; payload?: unknown }[]) {
     const listing = byKey.get(e.listing_key)
-    if (options?.city?.trim() && (listing?.City ?? '').toString().trim() !== options.city.trim()) continue
+    const listingCity = (listing?.City ?? '').toString().trim()
+    if (citySet && !citySet.has(listingCity)) continue
+    if (singleCity && !citySet && listingCity !== singleCity) continue
     if (subdivisionFilter) {
       const sub = (listing?.SubdivisionName ?? '').toString().trim().toLowerCase()
       if (!sub || (!sub.includes(subdivisionFilter) && sub !== subdivisionFilter)) continue
@@ -119,6 +141,63 @@ export async function getActivityFeedWithFallback(options: {
     .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, SubdivisionName, PhotoURL, StandardStatus, ModificationTimestamp')
     .ilike('City', options.city.trim())
     .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%')
+    .order('ModificationTimestamp', { ascending: false })
+    .limit(limit * 2)
+  const list = (rows ?? []) as Array<Record<string, unknown> & { ModificationTimestamp?: string }>
+  const fallback: ActivityFeedItem[] = []
+  for (const r of list) {
+    if (fallback.length + events.length >= limit) break
+    const key = (r.ListingKey ?? r.ListNumber ?? '').toString()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    fallback.push({
+      id: `fallback-${key}`,
+      listing_key: key,
+      event_type: 'new_listing',
+      event_at: (r.ModificationTimestamp ?? new Date().toISOString()) as string,
+      ListPrice: r.ListPrice as number | null,
+      BedroomsTotal: r.BedroomsTotal as number | null,
+      BathroomsTotal: r.BathroomsTotal as number | null,
+      StreetNumber: r.StreetNumber as string | null,
+      StreetName: r.StreetName as string | null,
+      City: r.City as string | null,
+      SubdivisionName: r.SubdivisionName as string | null,
+      PhotoURL: r.PhotoURL as string | null,
+      StandardStatus: r.StandardStatus as string | null,
+    })
+  }
+  return [...events, ...fallback]
+}
+
+const ACTIVE_OR_PENDING_OR =
+  'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%'
+
+/**
+ * Activity feed for multiple cities: events first, then fill with newest listings in those cities.
+ * Used by the homepage/reusable slider with default cities and optional additional cities from dropdown.
+ */
+export async function getActivityFeedWithFallbackMulti(options: {
+  cities: string[]
+  limit?: number
+}): Promise<ActivityFeedItem[]> {
+  const limit = Math.min(24, Math.max(6, options.limit ?? 12))
+  const cities = options.cities.map((c) => c.trim()).filter(Boolean)
+  if (cities.length === 0) return []
+
+  const events = await getActivityFeed({ cities, limit, offset: 0 })
+  const seen = new Set(events.map((e) => e.listing_key))
+  if (events.length >= limit) return events
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url?.trim() || !anonKey?.trim()) return events
+
+  const supabase = createClient(url, anonKey)
+  const { data: rows } = await supabase
+    .from('listings')
+    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, SubdivisionName, PhotoURL, StandardStatus, ModificationTimestamp')
+    .in('City', cities)
+    .or(ACTIVE_OR_PENDING_OR)
     .order('ModificationTimestamp', { ascending: false })
     .limit(limit * 2)
   const list = (rows ?? []) as Array<Record<string, unknown> & { ModificationTimestamp?: string }>

@@ -170,7 +170,7 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
 
   return (
     <form onSubmit={applyFilters} className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-      {/* Quick filters — always visible */}
+      {/* Quick filters â€” always visible */}
       <div className="p-4 flex flex-wrap items-end gap-3">
         <Label className="flex flex-col gap-1">
           <span className={labelClass}>Min price</span>
@@ -267,12 +267,12 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
         >
           {advancedOpen ? 'Fewer filters' : 'More filters'}
         </Button>
-        <Button type="submit" disabled={isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-70 ml-auto">
+        <Button type="submit" disabled={isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-70 ml-auto">
           {isPending ? 'Applying\u2026' : 'Apply'}
         </Button>
       </div>
 
-      {/* Advanced filters — collapsible */}
+      {/* Advanced filters â€” collapsible */}
       {advancedOpen && (
         <div className="border-t border-border bg-muted p-4 flex flex-wrap items-end gap-4">
           <span className="w-full text-xs font-semibold text-muted-foreground uppercase tracking-wider">More filters</span>

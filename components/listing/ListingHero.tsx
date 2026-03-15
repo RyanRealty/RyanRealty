@@ -157,9 +157,9 @@ export default function ListingHero({ photos, videos }: Props) {
             href={v.Uri}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-full w-full items-center justify-center bg-primary text-white"
+            className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground"
           >
-            <span className="rounded-lg bg-card/10 px-4 py-2">Watch video →</span>
+            <span className="rounded-lg bg-card/10 px-4 py-2">Watch video â†’</span>
           </a>
         )
       }
@@ -193,17 +193,17 @@ export default function ListingHero({ photos, videos }: Props) {
   const isVideo = current?.type === 'video'
   const sectionBg = isVideo ? 'bg-primary' : 'bg-muted'
   const thumbStripBg = isVideo ? 'border-primary bg-primary' : 'border-border bg-muted'
-  const counterClass = isVideo ? 'bg-black/60 text-white' : 'bg-card/90 text-primary shadow'
+  const counterClass = isVideo ? 'bg-foreground/60 text-primary-foreground' : 'bg-card/90 text-primary shadow'
   const dotSelected = isVideo ? 'bg-card' : 'bg-primary'
   const dotUnselected = isVideo ? 'bg-card/50 hover:bg-card/70' : 'bg-muted-foreground hover:bg-muted-foreground'
-  const thumbBorder = (isSelected: boolean) => (isSelected ? (isVideo ? 'border-white' : 'border-primary') : 'border-transparent opacity-80 hover:opacity-100')
+  const thumbBorder = (isSelected: boolean) => (isSelected ? (isVideo ? 'border-primary-foreground' : 'border-primary') : 'border-transparent opacity-80 hover:opacity-100')
   const thumbPlaceholder = isVideo ? 'bg-primary' : 'bg-border'
 
   return (
     <div className="w-full">
       {/* Full-bleed background video hero when listing has a direct-playable video (mp4/webm) */}
       {showBackgroundVideoHero && heroBackgroundVideoUrl && (
-        <section className="relative w-full overflow-hidden bg-black" aria-label="Listing video">
+        <section className="relative w-full overflow-hidden bg-foreground" aria-label="Listing video">
           <div className="aspect-[16/10] max-h-[75vh] w-full relative">
             <video
               autoPlay
@@ -215,7 +215,7 @@ export default function ListingHero({ photos, videos }: Props) {
               src={heroBackgroundVideoUrl}
               aria-hidden
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" aria-hidden />
+            <div className="absolute inset-0 bg-gradient-to-t from-foreground/40 to-transparent pointer-events-none" aria-hidden />
           </div>
         </section>
       )}
@@ -224,7 +224,7 @@ export default function ListingHero({ photos, videos }: Props) {
         <div className="aspect-[16/10] max-h-[70vh] w-full relative">
           <div key={selectedIndex} className="h-full w-full animate-listing-slide-fade">
             {isVideo ? (
-              <div className="relative h-full w-full bg-black">{renderMainContent()}</div>
+              <div className="relative h-full w-full bg-foreground">{renderMainContent()}</div>
             ) : (
               renderMainContent()
             )}
@@ -237,7 +237,7 @@ export default function ListingHero({ photos, videos }: Props) {
               </div>
               <Button
                 type="button"
-                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white shadow-md transition-all duration-200 hover:bg-black/60 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-foreground/40 text-primary-foreground shadow-md transition-all duration-200 hover:bg-foreground/60 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
                 aria-label="Previous photo or video"
                 onClick={goPrev}
               >
@@ -245,7 +245,7 @@ export default function ListingHero({ photos, videos }: Props) {
               </Button>
               <Button
                 type="button"
-                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white shadow-md transition-all duration-200 hover:bg-black/60 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-foreground/40 text-primary-foreground shadow-md transition-all duration-200 hover:bg-foreground/60 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
                 aria-label="Next photo or video"
                 onClick={goNext}
               >
@@ -281,7 +281,7 @@ export default function ListingHero({ photos, videos }: Props) {
                       className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 ${thumbBorder(sel)}`}
                     >
                       <div className={`flex h-full w-full items-center justify-center ${thumbPlaceholder}`}>
-                        <HugeiconsIcon icon={PlayIcon} className={`h-6 w-6 ${isVideo ? 'text-white' : 'text-muted-foreground'}`} />
+                        <HugeiconsIcon icon={PlayIcon} className={`h-6 w-6 ${isVideo ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
                       </div>
                     </Button>
                   )
@@ -316,7 +316,7 @@ export default function ListingHero({ photos, videos }: Props) {
 
       {lightboxOpen && currentIsPhoto && photoSrc && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/90 p-4"
           onClick={() => setLightboxOpen(false)}
           onKeyDown={(e) => e.key === 'Escape' && setLightboxOpen(false)}
           role="button"
@@ -324,14 +324,14 @@ export default function ListingHero({ photos, videos }: Props) {
         >
           <Button
             type="button"
-            className="absolute right-4 top-4 text-white/80 hover:text-white"
+            className="absolute right-4 top-4 text-primary-foreground/80 hover:text-primary-foreground"
             onClick={() => setLightboxOpen(false)}
           >
-            ✕
+            âœ•
           </Button>
           <img
             src={photoSrc}
-            alt={`Property photo — full size view`}
+            alt={`Property photo â€” full size view`}
             className="max-h-full max-w-full object-contain"
             onClick={(e) => e.stopPropagation()}
             width={1200}

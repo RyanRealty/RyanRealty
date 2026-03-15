@@ -21,7 +21,7 @@ export default function OfflinePage() {
               window.location.reload()
             }
           }}
-          className="rounded bg-primary px-4 py-2 text-white hover:opacity-90"
+          className="rounded bg-primary px-4 py-2 text-primary-foreground hover:opacity-90"
         >
           Try again
         </Button>

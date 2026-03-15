@@ -32,7 +32,7 @@ export default async function OurHomesPage() {
           <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">
             Our Homes
           </p>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl">
             Homes Listed by Ryan Realty
           </h1>
           <p className="mt-6 text-lg text-muted/90">
@@ -49,7 +49,7 @@ export default async function OurHomesPage() {
             </Link>
             <Link
               href="/sell"
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-white/40 bg-card/10 px-6 py-3.5 text-base font-semibold text-white backdrop-blur-sm hover:bg-card/20"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-primary-foreground/40 bg-card/10 px-6 py-3.5 text-base font-semibold text-primary-foreground backdrop-blur-sm hover:bg-card/20"
             >
               Sell with us
             </Link>
@@ -71,13 +71,13 @@ export default async function OurHomesPage() {
               <div className="mt-6 flex flex-wrap justify-center gap-4">
                 <Link
                   href="/listings"
-                  className="rounded-lg bg-primary px-5 py-2.5 font-semibold text-white hover:bg-accent/90"
+                  className="rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground hover:bg-accent/90"
                 >
                   Browse all listings
                 </Link>
                 <Link
                   href="/contact?inquiry=Selling"
-                  className="rounded-lg border-2 border-primary px-5 py-2.5 font-semibold text-primary hover:bg-primary hover:text-white"
+                  className="rounded-lg border-2 border-primary px-5 py-2.5 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
                 >
                   Contact us
                 </Link>
@@ -116,7 +116,7 @@ export default async function OurHomesPage() {
                         </div>
                       )}
                       {price && (
-                        <span className="absolute left-3 top-3 rounded-lg bg-primary px-2.5 py-1 text-sm font-semibold text-white">
+                        <span className="absolute left-3 top-3 rounded-lg bg-primary px-2.5 py-1 text-sm font-semibold text-primary-foreground">
                           {price}
                         </span>
                       )}
@@ -136,7 +136,7 @@ export default async function OurHomesPage() {
               <div className="mt-10 text-center">
                 <Link
                   href="/listings"
-                  className="rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-white"
+                  className="rounded-lg border-2 border-primary px-6 py-3 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
                 >
                   View all {listings.length} listings
                 </Link>
@@ -157,7 +157,7 @@ export default async function OurHomesPage() {
           </p>
           <Link
             href="/sell"
-            className="mt-6 inline-block rounded-lg bg-primary px-6 py-3 font-semibold text-white hover:bg-accent/90"
+            className="mt-6 inline-block rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-accent/90"
           >
             Sell with us
           </Link>

@@ -38,6 +38,7 @@ type SearchParams = {
   garageMin?: string
   daysOnMarket?: string
   keywords?: string
+  postalCode?: string
 }
 
 function parseFilters(sp: SearchParams) {
@@ -63,6 +64,7 @@ function parseFilters(sp: SearchParams) {
     garageMin: sp.garageMin != null ? Number(sp.garageMin) : undefined,
     daysOnMarket: sp.daysOnMarket?.trim(),
     keywords: sp.keywords?.trim(),
+    postalCode: sp.postalCode?.trim(),
   }
 }
 
@@ -170,6 +172,7 @@ export default async function SearchPage({
     garageMin: sp.garageMin ?? '',
     daysOnMarket: sp.daysOnMarket ?? '',
     keywords: sp.keywords ?? '',
+    postalCode: sp.postalCode ?? '',
   }
 
   return (

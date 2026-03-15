@@ -250,9 +250,9 @@ export default function SyncAllButtons() {
             type="button"
             onClick={() => runAllListings()}
             disabled={listingsRunning || historyRunning || photosRunning}
-            className="rounded-lg bg-success px-5 py-2.5 text-sm font-semibold text-white hover:bg-success/75 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-success px-5 py-2.5 text-sm font-semibold text-success-foreground hover:bg-success/75 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {listingsRunning ? 'Syncing listings…' : 'Sync all listings'}
+            {listingsRunning ? 'Syncing listingsâ€¦' : 'Sync all listings'}
           </Button>
           {listingsRunning && (
             <Button
@@ -269,9 +269,9 @@ export default function SyncAllButtons() {
             type="button"
             onClick={() => runAllHistory()}
             disabled={listingsRunning || historyRunning || photosRunning}
-            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {historyRunning ? 'Syncing history…' : 'Sync all history'}
+            {historyRunning ? 'Syncing historyâ€¦' : 'Sync all history'}
           </Button>
           {historyRunning && (
             <Button
@@ -288,9 +288,9 @@ export default function SyncAllButtons() {
             type="button"
             onClick={() => runAllPhotos()}
             disabled={listingsRunning || historyRunning || photosRunning}
-            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {photosRunning ? 'Syncing photos…' : 'Sync photos only'}
+            {photosRunning ? 'Syncing photosâ€¦' : 'Sync photos only'}
           </Button>
           {photosRunning && (
             <Button
@@ -308,10 +308,10 @@ export default function SyncAllButtons() {
         <div className="rounded-lg bg-muted p-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Listings sync</p>
           <p className="mt-1 font-mono text-sm text-foreground">
-            {listingsState === 'idle' && '—'}
-            {listingsRunning && `${listingsPagesDone} pages · ${listingsUpserted.toLocaleString()} upserted`}
+            {listingsState === 'idle' && 'â€”'}
+            {listingsRunning && `${listingsPagesDone} pages Â· ${listingsUpserted.toLocaleString()} upserted`}
             {(listingsState === 'done' || listingsState === 'error') && (
-              <>{(listingsStart != null ? formatElapsed(listingsElapsed) : '')} · {listingsUpserted.toLocaleString()} upserted</>
+              <>{(listingsStart != null ? formatElapsed(listingsElapsed) : '')} Â· {listingsUpserted.toLocaleString()} upserted</>
             )}
           </p>
           {listingsPagesTotal != null && listingsRunning && (
@@ -322,10 +322,10 @@ export default function SyncAllButtons() {
         <div className="rounded-lg bg-muted p-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">History sync</p>
           <p className="mt-1 font-mono text-sm text-foreground">
-            {historyState === 'idle' && '—'}
-            {historyRunning && `${historyListingsProcessed.toLocaleString()} listings · ${historyRows.toLocaleString()} rows`}
+            {historyState === 'idle' && 'â€”'}
+            {historyRunning && `${historyListingsProcessed.toLocaleString()} listings Â· ${historyRows.toLocaleString()} rows`}
             {(historyState === 'done' || historyState === 'error') && (
-              <>{(historyStart != null ? formatElapsed(historyElapsed) : '')} · {historyRows.toLocaleString()} rows</>
+              <>{(historyStart != null ? formatElapsed(historyElapsed) : '')} Â· {historyRows.toLocaleString()} rows</>
             )}
           </p>
           {historyTotalListings != null && historyRunning && (
@@ -336,10 +336,10 @@ export default function SyncAllButtons() {
         <div className="rounded-lg bg-muted p-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Photos sync</p>
           <p className="mt-1 font-mono text-sm text-foreground">
-            {photosState === 'idle' && '—'}
-            {photosRunning && `${photosPagesDone} pages · ${photosUpdated.toLocaleString()} updated`}
+            {photosState === 'idle' && 'â€”'}
+            {photosRunning && `${photosPagesDone} pages Â· ${photosUpdated.toLocaleString()} updated`}
             {(photosState === 'done' || photosState === 'error') && (
-              <>{(photosStart != null ? formatElapsed(photosElapsed) : '')} · {photosUpdated.toLocaleString()} updated</>
+              <>{(photosStart != null ? formatElapsed(photosElapsed) : '')} Â· {photosUpdated.toLocaleString()} updated</>
             )}
           </p>
           {photosPagesTotal != null && photosRunning && (

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 type Props = { cursor: SyncCursor | null }
 
 function formatTime(iso: string | null): string {
-  if (!iso) return '—'
+  if (!iso) return 'â€”'
   try {
     const d = new Date(iso)
     return d.toLocaleString()
@@ -56,7 +56,7 @@ export default function CronSyncStatus({ cursor }: Props) {
     <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-foreground">Cron sync status</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Progress of the 15‑minute cron job. Use <strong>Run one chunk now</strong> to trigger a step immediately.
+        Progress of the 15â€‘minute cron job. Use <strong>Run one chunk now</strong> to trigger a step immediately.
       </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -92,9 +92,9 @@ export default function CronSyncStatus({ cursor }: Props) {
           type="button"
           onClick={handleRunNow}
           disabled={running}
-          className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success/75 disabled:opacity-50"
+          className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success/75 disabled:opacity-50"
         >
-          {running ? 'Running…' : 'Run one chunk now'}
+          {running ? 'Runningâ€¦' : 'Run one chunk now'}
         </Button>
         <span className="text-xs text-muted-foreground">
           {isIdle ? 'Next cron run will start a new full cycle (listings then history).' : 'Runs automatically every 15 min.'}

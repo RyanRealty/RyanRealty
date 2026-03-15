@@ -66,49 +66,49 @@ export default function BrokerContactForm({
   return (
     <section id="contact" className="bg-primary px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="broker-contact-heading">
       <div className="mx-auto max-w-2xl">
-        <h2 id="broker-contact-heading" className="text-2xl font-bold tracking-tight text-white">
+        <h2 id="broker-contact-heading" className="text-2xl font-bold tracking-tight text-primary-foreground">
           Get in Touch with {brokerFirstName}
         </h2>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
-            <Label htmlFor="contact-name" className="block text-sm font-medium text-white/90">Name</Label>
+            <Label htmlFor="contact-name" className="block text-sm font-medium text-primary-foreground/90">Name</Label>
             <Input
               id="contact-name"
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-white/20 bg-card/10 px-4 py-2.5 text-white placeholder:text-white/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="mt-1 w-full rounded-lg border border-primary-foreground/20 bg-card/10 px-4 py-2.5 text-primary-foreground placeholder:text-primary-foreground/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               placeholder="Your name"
             />
           </div>
           <div>
-            <Label htmlFor="contact-email" className="block text-sm font-medium text-white/90">Email</Label>
+            <Label htmlFor="contact-email" className="block text-sm font-medium text-primary-foreground/90">Email</Label>
             <Input
               id="contact-email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-white/20 bg-card/10 px-4 py-2.5 text-white placeholder:text-white/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="mt-1 w-full rounded-lg border border-primary-foreground/20 bg-card/10 px-4 py-2.5 text-primary-foreground placeholder:text-primary-foreground/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               placeholder="you@example.com"
             />
           </div>
           <div>
-            <Label htmlFor="contact-phone" className="block text-sm font-medium text-white/90">Phone (optional)</Label>
+            <Label htmlFor="contact-phone" className="block text-sm font-medium text-primary-foreground/90">Phone (optional)</Label>
             <Input
               id="contact-phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-white/20 bg-card/10 px-4 py-2.5 text-white placeholder:text-white/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="mt-1 w-full rounded-lg border border-primary-foreground/20 bg-card/10 px-4 py-2.5 text-primary-foreground placeholder:text-primary-foreground/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               placeholder="(541) 555-0123"
             />
           </div>
           <div>
-            <Label htmlFor="contact-help" className="block text-sm font-medium text-white/90">How can {brokerFirstName} help?</Label>
+            <Label htmlFor="contact-help" className="block text-sm font-medium text-primary-foreground/90">How can {brokerFirstName} help?</Label>
             <Select value={help || '__all__'} onValueChange={(v) => setHelp(v === '__all__' ? '' : v)}>
-              <SelectTrigger id="contact-help" className="mt-1 w-full rounded-lg border border-white/20 bg-card/10 px-4 py-2.5 text-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent">
+              <SelectTrigger id="contact-help" className="mt-1 w-full rounded-lg border border-primary-foreground/20 bg-card/10 px-4 py-2.5 text-primary-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent">
                 <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent>
@@ -122,23 +122,23 @@ export default function BrokerContactForm({
             </Select>
           </div>
           <div>
-            <Label htmlFor="contact-message" className="block text-sm font-medium text-white/90">Message</Label>
+            <Label htmlFor="contact-message" className="block text-sm font-medium text-primary-foreground/90">Message</Label>
             <Textarea
               id="contact-message"
               rows={4}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-white/20 bg-card/10 px-4 py-2.5 text-white placeholder:text-white/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="mt-1 w-full rounded-lg border border-primary-foreground/20 bg-card/10 px-4 py-2.5 text-primary-foreground placeholder:text-primary-foreground/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               placeholder={DEFAULT_MESSAGE}
             />
           </div>
           {status === 'success' && (
-            <p className="rounded-lg bg-success/20 px-4 py-3 text-sm text-white">
+            <p className="rounded-lg bg-success/20 px-4 py-3 text-sm text-success-foreground">
               Message sent! {brokerFirstName} will be in touch shortly.
             </p>
           )}
           {status === 'error' && (
-            <p className="rounded-lg bg-destructive/20 px-4 py-3 text-sm text-white">
+            <p className="rounded-lg bg-destructive/20 px-4 py-3 text-sm text-destructive-foreground">
               Something went wrong. Please try again or email directly.
             </p>
           )}

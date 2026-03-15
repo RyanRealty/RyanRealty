@@ -59,7 +59,7 @@ export default async function ExplorePage({ searchParams }: Props) {
     <main className="min-h-screen bg-background">
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-6xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
             Explore market data
           </h1>
           <p className="mt-3 text-lg text-muted">

@@ -18,6 +18,7 @@ export type BrokerageSettingsRow = {
   postal_code: string | null
   hero_video_url: string | null
   hero_image_url: string | null
+  team_image_url: string | null
   updated_at: string
 }
 
@@ -43,7 +44,7 @@ async function _getBrokerageSettingsUncached(): Promise<BrokerageSettingsRow | n
   if (!supabase) return null
   const { data } = await supabase
     .from('brokerage_settings')
-    .select('id, name, logo_url, tagline, primary_email, primary_phone, address_line1, address_line2, city, state, postal_code, hero_video_url, hero_image_url, updated_at')
+    .select('id, name, logo_url, tagline, primary_email, primary_phone, address_line1, address_line2, city, state, postal_code, hero_video_url, hero_image_url, team_image_url, updated_at')
     .eq('id', DEFAULT_ID)
     .single()
   return data as BrokerageSettingsRow | null
@@ -109,4 +110,43 @@ export async function updateBrokerageHeroMedia(heroVideoUrl: string | null, hero
   revalidatePath('/', 'layout')
   revalidatePath('/')
   return { ok: true }
+}
+
+/** Update team/social proof image URL (admin). Used by the homepage testimonials section. */
+export async function updateBrokerageTeamImageUrl(teamImageUrl: string | null): Promise<{ ok: boolean; error?: string }> {
+  const supabase = getServiceSupabase()
+  if (!supabase) return { ok: false, error: 'Server not configured' }
+  const { error } = await supabase
+    .from('brokerage_settings')
+    .update({ team_image_url: teamImageUrl?.trim() || null, updated_at: new Date().toISOString() })
+    .eq('id', DEFAULT_ID)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath('/', 'layout')
+  revalidatePath('/')
+  return { ok: true }
+}
+
+/** Upload team image to Storage and set as brokerage team photo (admin). Same bucket as logo. */
+export async function uploadBrokerageTeamImage(formData: FormData): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const file = formData.get('file') as File | null
+  if (!file?.size || !file.type.startsWith('image/')) return { ok: false, error: 'Please choose an image file.' }
+  const supabase = getServiceSupabase()
+  if (!supabase) return { ok: false, error: 'Server not configured' }
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
+  const storagePath = `team.${ext}`
+  const { data: buckets } = await supabase.storage.listBuckets()
+  if (!buckets?.some((b) => b.name === LOGO_BUCKET)) {
+    await supabase.storage.createBucket(LOGO_BUCKET, { public: true })
+  }
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const { error: uploadError } = await supabase.storage.from(LOGO_BUCKET).upload(storagePath, buffer, {
+    contentType: file.type,
+    upsert: true,
+  })
+  if (uploadError) return { ok: false, error: `Upload failed: ${uploadError.message}` }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '') ?? ''
+  const url = `${supabaseUrl}/storage/v1/object/public/${LOGO_BUCKET}/${storagePath}`
+  const result = await updateBrokerageTeamImageUrl(url)
+  if (!result.ok) return { ok: false, error: result.error }
+  return { ok: true, url }
 }

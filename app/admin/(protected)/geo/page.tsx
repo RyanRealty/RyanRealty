@@ -32,11 +32,11 @@ export default async function AdminGeoPage({
     <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <h1 className="text-2xl font-bold text-foreground">Geography &amp; Neighborhoods</h1>
       <p className="mt-2 text-muted-foreground">
-        Country → State → City → Neighborhood (optional) → Community. Create neighborhoods and assign communities. No auto-inference from SPARK.
+        Country â†’ State â†’ City â†’ Neighborhood (optional) â†’ Community. Create neighborhoods and assign communities. No auto-inference from SPARK.
       </p>
       <p className="mt-2 text-sm text-muted-foreground">
-        <Link href="/admin" className="underline">← Admin</Link>
-        {' · '}
+        <Link href="/admin" className="underline">â† Admin</Link>
+        {' Â· '}
         <Link href="/admin/geo/area-guide-upload" className="underline">Area Guide media upload</Link>
       </p>
 
@@ -57,7 +57,7 @@ export default async function AdminGeoPage({
           )}
           {citiesFromGeo.map((c) => (
             <li key={c.id}>
-              <Link href={`/admin/geo?city=${encodeURIComponent(c.id)}`} className={`rounded px-3 py-1 text-sm ${c.id === cityId ? 'bg-primary text-white' : 'bg-border hover:bg-border'}`}>
+              <Link href={`/admin/geo?city=${encodeURIComponent(c.id)}`} className={`rounded px-3 py-1 text-sm ${c.id === cityId ? 'bg-primary text-primary-foreground' : 'bg-border hover:bg-border'}`}>
                 {c.name}
               </Link>
             </li>

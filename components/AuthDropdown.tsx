@@ -209,7 +209,7 @@ export default function AuthDropdown({ user }: Props) {
                   onClick={handleSignInGoogle}
                   className="flex w-full items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
                 >
-                  {loading === 'google' ? '…' : 'Google'}
+                  {loading === 'google' ? 'â€¦' : 'Google'}
                 </Button>
                 <div className="my-2 border-t border-border" />
                 <Button
@@ -234,7 +234,7 @@ export default function AuthDropdown({ user }: Props) {
                 className="px-4 py-2 space-y-2"
               >
                 <Button type="button" onClick={() => { setMode('choose'); setEmailError(null); }} className="text-xs text-muted-foreground hover:text-muted-foreground">
-                  ← Back
+                  â† Back
                 </Button>
                 {mode === 'signup' && (
                   <Input
@@ -265,9 +265,9 @@ export default function AuthDropdown({ user }: Props) {
                 <Button
                   type="submit"
                   disabled={!!loading}
-                  className="w-full rounded-lg bg-foreground py-2 text-sm font-medium text-white hover:bg-muted-foreground disabled:opacity-50"
+                  className="w-full rounded-lg bg-foreground py-2 text-sm font-medium text-primary-foreground hover:bg-muted-foreground disabled:opacity-50"
                 >
-                  {loading === 'email' ? '…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+                  {loading === 'email' ? 'â€¦' : mode === 'signup' ? 'Create account' : 'Sign in'}
                 </Button>
               </form>
             )}

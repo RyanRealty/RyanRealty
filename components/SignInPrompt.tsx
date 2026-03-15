@@ -4,7 +4,8 @@ import { Suspense, useState, useEffect } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { getSignInUrl } from '@/app/actions/auth'
 import type { AuthUser } from '@/app/actions/auth'
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
+import { GoogleIcon, AppleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
 
 const DISMISS_KEY = 'ryan_realty_signin_prompt_dismissed'
 const DISMISS_HOURS = 24
@@ -51,11 +52,11 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
     return () => clearTimeout(t)
   }, [user, hasNextParam, isHome])
 
-  async function handleSignIn() {
-    setLoading('google')
+  async function handleSignIn(provider: 'google' | 'apple' | 'facebook') {
+    setLoading(provider)
     const nextFromUrl = searchParams?.get('next')
     const next = nextFromUrl && nextFromUrl.startsWith('/') ? nextFromUrl : '/'
-    const result = await getSignInUrl('google', next)
+    const result = await getSignInUrl(provider, next)
     setLoading(null)
     if ('url' in result) window.location.href = result.url
   }
@@ -80,21 +81,45 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
           Get the most out of Ryan Realty
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sign in with your existing account to save searches, get updates, and pick up where you left off—no new password needed.
+          Sign in with Google, Apple, or Facebook to unlock your account—no new password needed.
         </p>
-        <div className="mt-6">
+        <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-muted-foreground" aria-hidden>
+          <li>Save searches and get new listing alerts</li>
+          <li>Pick up where you left off on any device</li>
+        </ul>
+        <div className="mt-6 space-y-3">
           <Button
             type="button"
             disabled={!!loading}
-            onClick={handleSignIn}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card py-3 text-sm font-medium text-foreground shadow-sm hover:bg-muted disabled:opacity-50"
+            onClick={() => handleSignIn('google')}
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-3 text-sm font-medium text-foreground shadow-sm hover:bg-muted disabled:opacity-50"
           >
-            {loading ? '…' : 'Continue with Google'}
+            <GoogleIcon className="size-5" />
+            {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
+          </Button>
+          <Button
+            type="button"
+            disabled={!!loading}
+            onClick={() => handleSignIn('apple')}
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-3 text-sm font-medium text-foreground shadow-sm hover:bg-muted disabled:opacity-50"
+          >
+            <AppleIcon className="size-5" />
+            {loading === 'apple' ? 'Redirecting…' : 'Continue with Apple'}
+          </Button>
+          <Button
+            type="button"
+            disabled={!!loading}
+            onClick={() => handleSignIn('facebook')}
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-3 text-sm font-medium text-foreground shadow-sm hover:bg-muted disabled:opacity-50"
+          >
+            <FacebookIcon className="size-5" />
+            {loading === 'facebook' ? 'Redirecting…' : 'Continue with Facebook'}
           </Button>
         </div>
         <Button
           type="button"
           onClick={handleMaybeLater}
+          variant="ghost"
           className="mt-4 w-full text-sm text-muted-foreground hover:text-muted-foreground"
         >
           Maybe later

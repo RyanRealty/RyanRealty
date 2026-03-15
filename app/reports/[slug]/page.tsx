@@ -75,14 +75,14 @@ export default async function ReportPage({ params }: Props) {
             <span className="text-muted">{report.title}</span>
           </nav>
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{report.title}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-primary-foreground sm:text-3xl">{report.title}</h1>
             <ShareButton
               title={report.title}
               text={`Central Oregon market report: ${report.period_start} – ${report.period_end}. Pending and closed sales by city.`}
               url={reportUrl}
               variant="default"
               trackContext="weekly_report"
-              className="rounded-lg border border-muted/30 bg-card/10 px-4 py-2 text-sm font-medium text-white hover:bg-card/20"
+              className="rounded-lg border border-muted/30 bg-card/10 px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-card/20"
             />
           </div>
           <p className="mt-2 text-muted/90">

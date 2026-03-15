@@ -68,9 +68,9 @@ export default function SyncSinceDateButton() {
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
+        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
       >
-        {loading ? 'Syncing…' : 'Sync since this date'}
+        {loading ? 'Syncingâ€¦' : 'Sync since this date'}
       </Button>
       {message && (
         <span className={message.type === 'success' ? 'text-sm text-success' : 'text-sm text-destructive'}>

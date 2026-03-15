@@ -316,9 +316,9 @@ export default function CityReportSection({ cities }: { cities: string[] }) {
           type="button"
           onClick={handleGenerate}
           disabled={loading}
-          className="rounded bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
+          className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
         >
-          {loading ? 'Loading…' : 'Generate report'}
+          {loading ? 'Loadingâ€¦' : 'Generate report'}
         </Button>
       </div>
       {error && (
@@ -328,7 +328,7 @@ export default function CityReportSection({ cities }: { cities: string[] }) {
         <div className="mt-6 space-y-6">
           {periodLabel && (
             <p className="text-sm font-medium text-muted-foreground">
-              {city} — {periodLabel}
+              {city} â€” {periodLabel}
             </p>
           )}
           {breakdown != null && breakdown.length > 0 ? (
@@ -348,7 +348,7 @@ export default function CityReportSection({ cities }: { cities: string[] }) {
                           <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Median $/sqft</TableCell><TableCell className="border border-border px-3 py-2">${Number(seg.metrics.median_ppsf).toLocaleString('en-US', { maximumFractionDigits: 2 })}</TableCell></TableRow>
                           <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Current listings</TableCell><TableCell className="border border-border px-3 py-2">{seg.metrics.current_listings}</TableCell></TableRow>
                           <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Sales (prior 12 mo)</TableCell><TableCell className="border border-border px-3 py-2">{seg.metrics.sales_12mo}</TableCell></TableRow>
-                          <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Inventory (months)</TableCell><TableCell className="border border-border px-3 py-2">{seg.metrics.inventory_months ?? '—'}</TableCell></TableRow>
+                          <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Inventory (months)</TableCell><TableCell className="border border-border px-3 py-2">{seg.metrics.inventory_months ?? 'â€”'}</TableCell></TableRow>
                         </TableBody>
                       </Table>
                     </div>
@@ -392,7 +392,7 @@ export default function CityReportSection({ cities }: { cities: string[] }) {
                       <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Median $/sqft</TableCell><TableCell className="border border-border px-3 py-2">${Number(metrics.median_ppsf).toLocaleString('en-US', { maximumFractionDigits: 2 })}</TableCell></TableRow>
                       <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Current listings</TableCell><TableCell className="border border-border px-3 py-2">{metrics.current_listings}</TableCell></TableRow>
                       <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Sales (prior 12 mo)</TableCell><TableCell className="border border-border px-3 py-2">{metrics.sales_12mo}</TableCell></TableRow>
-                      <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Inventory (months)</TableCell><TableCell className="border border-border px-3 py-2">{metrics.inventory_months ?? '—'}</TableCell></TableRow>
+                      <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Inventory (months)</TableCell><TableCell className="border border-border px-3 py-2">{metrics.inventory_months ?? 'â€”'}</TableCell></TableRow>
                     </TableBody>
                   </Table>
                 </div>

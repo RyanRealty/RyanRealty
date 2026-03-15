@@ -132,11 +132,11 @@ export default function Header({
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-primary text-white">
+    <header className="sticky top-0 z-50 bg-primary text-primary-foreground">
       <div className="relative z-10 mx-auto flex h-14 md:h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/"
-          className="flex shrink-0 items-center text-lg font-semibold tracking-tight text-white sm:text-xl"
+          className="flex shrink-0 items-center text-lg font-semibold tracking-tight text-primary-foreground sm:text-xl"
           aria-label={headerLogoUrl ? brokerageName : undefined}
         >
           {headerLogoUrl ? (
@@ -162,8 +162,8 @@ export default function Header({
             href={NAV_HOME.href}
             className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
               isActive(NAV_HOME.href)
-                ? 'bg-card/15 text-white'
-                : 'text-muted hover:bg-card/10 hover:text-white'
+                ? 'bg-card/15 text-primary-foreground'
+                : 'text-muted hover:bg-card/10 hover:text-primary-foreground'
             }`}
           >
             {NAV_HOME.label}
@@ -172,8 +172,8 @@ export default function Header({
             href={NAV_HOME_VALUATION.href}
             className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
               isActive(NAV_HOME_VALUATION.href)
-                ? 'bg-card/15 text-white'
-                : 'text-muted hover:bg-card/10 hover:text-white'
+                ? 'bg-card/15 text-primary-foreground'
+                : 'text-muted hover:bg-card/10 hover:text-primary-foreground'
             }`}
           >
             {NAV_HOME_VALUATION.label}
@@ -186,8 +186,8 @@ export default function Header({
                 onClick={() => setDesktopDropdown((d) => (d === key ? null : key))}
                 className={`flex items-center gap-0.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   isMenuActive(menu.links) || desktopDropdown === key
-                    ? 'bg-card/15 text-white'
-                    : 'text-muted hover:bg-card/10 hover:text-white'
+                    ? 'bg-card/15 text-primary-foreground'
+                    : 'text-muted hover:bg-card/10 hover:text-primary-foreground'
                 }`}
                 aria-expanded={desktopDropdown === key}
                 aria-haspopup="true"
@@ -197,10 +197,10 @@ export default function Header({
               </Button>
               {desktopDropdown === key && (
                 <div
-                  className="absolute left-0 top-full z-50 mt-0.5 min-w-[220px] rounded-lg border border-white/20 bg-primary py-2 shadow-lg"
+                  className="absolute left-0 top-full z-50 mt-0.5 min-w-[220px] rounded-lg border border-primary-foreground/20 bg-primary py-2 shadow-lg"
                   role="menu"
                 >
-                  <p className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white/70">
+                  <p className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground/70">
                     {menu.label}
                   </p>
                   {menu.links.map(({ href, label }) => (
@@ -208,7 +208,7 @@ export default function Header({
                       key={href}
                       href={href}
                       role="menuitem"
-                      className="block px-4 py-2 text-sm text-muted hover:bg-card/10 hover:text-white"
+                      className="block px-4 py-2 text-sm text-muted hover:bg-card/10 hover:text-primary-foreground"
                       onClick={() => setDesktopDropdown(null)}
                     >
                       {label}
@@ -225,8 +225,8 @@ export default function Header({
               href={item.href}
               className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors inline-flex items-center justify-center ${
                 isActive(item.href)
-                  ? 'bg-card/15 text-white'
-                  : 'text-muted hover:bg-card/10 hover:text-white'
+                  ? 'bg-card/15 text-primary-foreground'
+                  : 'text-muted hover:bg-card/10 hover:text-primary-foreground'
               }`}
               aria-label={item.label}
             >
@@ -243,7 +243,7 @@ export default function Header({
           <Button
             type="button"
             onClick={onSearchClick ?? (() => setSearchOpen((o) => !o))}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-card/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-accent"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-card/10 hover:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-accent"
             aria-label="Search"
             aria-expanded={searchOpen}
           >
@@ -254,7 +254,7 @@ export default function Header({
               <Button
                 type="button"
                 onClick={() => setAccountOpen((o) => !o)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white/30 bg-card/10 focus:outline-none focus:ring-2 focus:ring-accent"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-primary-foreground/30 bg-card/10 focus:outline-none focus:ring-2 focus:ring-accent"
                 aria-label="Account menu"
                 aria-expanded={accountOpen}
                 aria-haspopup="true"
@@ -268,7 +268,7 @@ export default function Header({
                     className="rounded-full object-cover"
                   />
                 ) : (
-                  <span className="text-sm font-medium text-white">
+                  <span className="text-sm font-medium text-primary-foreground">
                     {(user.email ?? user.user_metadata?.full_name ?? '?').charAt(0).toUpperCase()}
                   </span>
                 )}
@@ -323,7 +323,7 @@ export default function Header({
 
       {searchOpen && (
         <div
-          className="border-t border-white/20 bg-primary px-4 py-3"
+          className="border-t border-primary-foreground/20 bg-primary px-4 py-3"
           role="search"
           aria-label="Site search"
         >
@@ -332,8 +332,8 @@ export default function Header({
               ref={searchInputRef}
               type="search"
               name="q"
-              placeholder="Search by city, neighborhood, or address…"
-              className="min-w-0 flex-1 rounded-lg border border-white/20 bg-card/10 px-4 py-2 text-muted placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              placeholder="City, community, zip, address, or broker…"
+              className="min-w-0 flex-1 rounded-lg border border-primary-foreground/20 bg-card/10 px-4 py-2 text-muted placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               aria-label="Search query"
             />
             <Button
@@ -363,7 +363,7 @@ export default function Header({
         >
           <div className="flex min-h-screen flex-col pt-14 pb-8 px-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-semibold text-white">Menu</span>
+              <span className="text-lg font-semibold text-primary-foreground">Menu</span>
               <Button
                 type="button"
                 onClick={() => setMobileOpen(false)}
@@ -377,7 +377,7 @@ export default function Header({
               <Link
                 href={NAV_HOME.href}
                 className={`rounded-lg px-4 py-3 text-lg font-medium ${
-                  isActive(NAV_HOME.href) ? 'bg-card/15 text-white' : 'text-muted hover:bg-card/10'
+                  isActive(NAV_HOME.href) ? 'bg-card/15 text-primary-foreground' : 'text-muted hover:bg-card/10'
                 }`}
                 onClick={() => setMobileOpen(false)}
               >
@@ -386,7 +386,7 @@ export default function Header({
               <Link
                 href={NAV_HOME_VALUATION.href}
                 className={`rounded-lg px-4 py-3 text-lg font-medium ${
-                  isActive(NAV_HOME_VALUATION.href) ? 'bg-card/15 text-white' : 'text-muted hover:bg-card/10'
+                  isActive(NAV_HOME_VALUATION.href) ? 'bg-card/15 text-primary-foreground' : 'text-muted hover:bg-card/10'
                 }`}
                 onClick={() => setMobileOpen(false)}
               >
@@ -404,13 +404,13 @@ export default function Header({
                     <HugeiconsIcon icon={ArrowDown01Icon} className={`h-5 w-5 shrink-0 transition-transform ${mobileExpanded === key ? 'rotate-180' : ''}`} />
                   </Button>
                   {mobileExpanded === key && (
-                    <div className="ml-4 flex flex-col border-l-2 border-white/20 pl-3">
+                    <div className="ml-4 flex flex-col border-l-2 border-primary-foreground/20 pl-3">
                       {menu.links.map(({ href, label }) => (
                         <Link
                           key={href}
                           href={href}
                           className={`rounded-lg px-3 py-2.5 text-base ${
-                            isActive(href) ? 'font-semibold text-white' : 'text-muted/90'
+                            isActive(href) ? 'font-semibold text-primary-foreground' : 'text-muted/90'
                           }`}
                           onClick={() => setMobileOpen(false)}
                         >
@@ -426,7 +426,7 @@ export default function Header({
                   key={item.href}
                   href={item.href}
                   className={`rounded-lg px-4 py-3 text-lg font-medium inline-flex items-center gap-2 ${
-                    isActive(item.href) ? 'bg-card/15 text-white' : 'text-muted hover:bg-card/10'
+                    isActive(item.href) ? 'bg-card/15 text-primary-foreground' : 'text-muted hover:bg-card/10'
                   }`}
                   aria-label={item.label}
                   onClick={() => setMobileOpen(false)}
@@ -439,7 +439,7 @@ export default function Header({
                 </Link>
               ))}
             </nav>
-            <div className="mt-8 border-t border-white/20 pt-6">
+            <div className="mt-8 border-t border-primary-foreground/20 pt-6">
               {user ? (
                 <>
                   <p className="px-4 text-xs font-medium uppercase tracking-wider text-muted/60">Account</p>

@@ -35,7 +35,7 @@ export default async function AdminDashboardPage() {
       <div className="mt-6 flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card px-4 py-3">
         <span className="text-sm font-medium text-muted-foreground">Date range</span>
         <div className="flex flex-wrap gap-2">
-          <span className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white">Last 30 days</span>
+          <span className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">Last 30 days</span>
           <Button type="button" className="rounded-lg bg-muted px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-border">
             Last 7 days
           </Button>

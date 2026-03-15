@@ -70,7 +70,7 @@ export default async function CommunitiesPage() {
 
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
             Communities in Central Oregon
           </h1>
           <p className="mt-3 text-lg text-muted">

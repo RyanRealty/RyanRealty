@@ -107,7 +107,7 @@ export default function FullSync() {
     }
 
     if (totalPages != null) await updateSyncCursorAfterListingsComplete(totalPages)
-    setMessage('Listings complete. Syncing listing history…')
+    setMessage('Listings complete. Syncing listing historyâ€¦')
     setPhase('history')
 
     let offset = 0
@@ -186,15 +186,15 @@ export default function FullSync() {
             disabled={isRunning}
             className="rounded border-border"
           />
-          <span className="text-sm text-muted-foreground">New only (faster — skip updating existing listing rows)</span>
+          <span className="text-sm text-muted-foreground">New only (faster â€” skip updating existing listing rows)</span>
         </Label>
         <Button
           type="button"
           onClick={() => runFullSync()}
           disabled={isRunning}
-          className="rounded-lg bg-success px-5 py-2.5 text-sm font-semibold text-white hover:bg-success/75 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-success px-5 py-2.5 text-sm font-semibold text-success-foreground hover:bg-success/75 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isRunning ? (phase === 'listings' ? 'Syncing listings…' : 'Syncing history…') : 'Start full sync'}
+          {isRunning ? (phase === 'listings' ? 'Syncing listingsâ€¦' : 'Syncing historyâ€¦') : 'Start full sync'}
         </Button>
         {isRunning && (
           <Button
@@ -216,13 +216,13 @@ export default function FullSync() {
             {phase === 'complete' && 'Complete'}
             {phase === 'stopped' && 'Stopped'}
             {phase === 'error' && 'Error'}
-            {phase === 'idle' && '—'}
+            {phase === 'idle' && 'â€”'}
           </p>
         </div>
         <div className="rounded-lg bg-muted p-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Elapsed</p>
           <p className="mt-1 font-mono font-semibold text-foreground">
-            {startTime != null ? formatElapsed(elapsedMs) : '—'}
+            {startTime != null ? formatElapsed(elapsedMs) : 'â€”'}
           </p>
         </div>
         <div className="rounded-lg bg-muted p-3">

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getPublishedBlogPosts, getPopularBlogSlugs, getBlogCategories } from '../actions/blog'
+import { getPublishedBlogPosts, getPopularBlogSlugs, getBlogCategories } from '@/app/actions/blog'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
@@ -66,7 +66,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
           <Link
             key={cat}
             href={cat === 'All' ? '/blog' : `/blog?category=${encodeURIComponent(cat)}`}
-            className={`rounded-full px-4 py-2 text-sm font-medium ${category === cat ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}
+            className={`rounded-full px-4 py-2 text-sm font-medium ${category === cat ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-border'}`}
           >
             {cat}
           </Link>

@@ -18,7 +18,7 @@ export default function MLSAttribution({ lastUpdated, compact = false }: MLSAttr
 
   if (compact) {
     return (
-      <p className="text-xs text-white/70">
+      <p className="text-xs text-primary-foreground/70">
         Listing data provided by Oregon Data Share. All information deemed reliable but not guaranteed.
         {dateStr && <span className="ml-1">Data as of {dateStr}.</span>}
       </p>

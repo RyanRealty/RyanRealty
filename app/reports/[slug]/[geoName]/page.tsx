@@ -86,11 +86,11 @@ export default async function ReportGeoPage({ params }: PageProps) {
             <span className="mx-2">/</span>
             <span className="text-muted">{decodedName}</span>
           </nav>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{decodedName} Market Report</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-primary-foreground sm:text-3xl">{decodedName} Market Report</h1>
           <p className="mt-2 text-muted/90">
             {periodStart} through {periodEnd}
           </p>
-          <div className="mt-4 inline-block rounded-full bg-card/20 px-4 py-2 text-sm font-medium text-white">
+          <div className="mt-4 inline-block rounded-full bg-card/20 px-4 py-2 text-sm font-medium text-primary-foreground">
             {condition.label}
           </div>
         </div>

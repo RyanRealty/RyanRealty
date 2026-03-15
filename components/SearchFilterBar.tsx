@@ -26,10 +26,10 @@ const STATUS_OPTIONS = [
 const PRICE_PRESETS = [
   { label: 'Any', min: undefined, max: undefined },
   { label: 'Under $300K', min: undefined, max: 300000 },
-  { label: '$300K – $500K', min: 300000, max: 500000 },
-  { label: '$500K – $750K', min: 500000, max: 750000 },
-  { label: '$750K – $1M', min: 750000, max: 1000000 },
-  { label: '$1M – $1.5M', min: 1000000, max: 1500000 },
+  { label: '$300K â€“ $500K', min: 300000, max: 500000 },
+  { label: '$500K â€“ $750K', min: 500000, max: 750000 },
+  { label: '$750K â€“ $1M', min: 750000, max: 1000000 },
+  { label: '$1M â€“ $1.5M', min: 1000000, max: 1500000 },
   { label: '$1.5M+', min: 1500000, max: undefined },
 ]
 
@@ -192,7 +192,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
 
   return (
     <div ref={barRef} className="flex flex-wrap items-center gap-2">
-      {/* Location search bar — shows current area and keeps map/search in sync (like reference: "Bend OR" at top) */}
+      {/* Location search bar â€” shows current area and keeps map/search in sync (like reference: "Bend OR" at top) */}
       {props.locationLabel != null && props.locationLabel !== '' && (
         <div className="flex items-center gap-2">
           <Link
@@ -219,7 +219,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         >
           For Sale
           <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'status' ? '▴' : '▾'}
+            {open === 'status' ? 'â–´' : 'â–¾'}
           </span>
         </Button>
         {open === 'status' && (
@@ -265,9 +265,9 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
               <Button
                 type="submit"
                 disabled={isPending}
-                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-70"
+                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-accent/90 disabled:opacity-70"
               >
-                {isPending ? 'Applying…' : 'Apply'}
+                {isPending ? 'Applyingâ€¦' : 'Apply'}
               </Button>
             </form>
           </div>
@@ -284,7 +284,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         >
           Price
           <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'price' ? '▴' : '▾'}
+            {open === 'price' ? 'â–´' : 'â–¾'}
           </span>
         </Button>
         {open === 'price' && (
@@ -351,9 +351,9 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
               <Button
                 type="submit"
                 disabled={isPending}
-                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-70"
+                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-accent/90 disabled:opacity-70"
               >
-                {isPending ? 'Applying…' : 'Apply'}
+                {isPending ? 'Applyingâ€¦' : 'Apply'}
               </Button>
             </form>
           </div>
@@ -370,7 +370,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         >
           Beds & Baths
           <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'bedsbaths' ? '▴' : '▾'}
+            {open === 'bedsbaths' ? 'â–´' : 'â–¾'}
           </span>
         </Button>
         {open === 'bedsbaths' && (
@@ -431,9 +431,9 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
               <Button
                 type="submit"
                 disabled={isPending}
-                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-70"
+                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-accent/90 disabled:opacity-70"
               >
-                {isPending ? 'Applying…' : 'Apply'}
+                {isPending ? 'Applyingâ€¦' : 'Apply'}
               </Button>
             </form>
           </div>
@@ -450,7 +450,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         >
           Home Type
           <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'hometype' ? '▴' : '▾'}
+            {open === 'hometype' ? 'â–´' : 'â–¾'}
           </span>
         </Button>
         {open === 'hometype' && (
@@ -508,9 +508,9 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
               <Button
                 type="submit"
                 disabled={isPending}
-                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-70"
+                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-accent/90 disabled:opacity-70"
               >
-                {isPending ? 'Applying…' : 'Apply'}
+                {isPending ? 'Applyingâ€¦' : 'Apply'}
               </Button>
             </form>
           </div>
@@ -527,7 +527,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         >
           More
           <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'more' ? '▴' : '▾'}
+            {open === 'more' ? 'â–´' : 'â–¾'}
           </span>
         </Button>
         {open === 'more' && (
@@ -753,9 +753,9 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                 <Button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-70"
+                  className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-accent/90 disabled:opacity-70"
                 >
-                  {isPending ? 'Applying…' : 'Apply'}
+                  {isPending ? 'Applyingâ€¦' : 'Apply'}
                 </Button>
               </div>
             </form>

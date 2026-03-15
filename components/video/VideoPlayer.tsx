@@ -57,7 +57,7 @@ export default function VideoPlayer({ videoUrl, type, listingId, posterUrl, clas
             aria-label="Play video"
           >
             <div
-              className="rounded-full bg-destructive p-6 text-white shadow-md"
+              className="rounded-full bg-destructive p-6 text-destructive-foreground shadow-md"
               style={{ clipPath: 'polygon(0 0, 0 100%, 100% 50%)' }}
             />
           </Button>

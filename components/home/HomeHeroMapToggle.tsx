@@ -24,7 +24,7 @@ export default function HomeHeroMapToggle({ heroContent, mapContent }: Props) {
           type="button"
           onClick={() => setViewMode('banner')}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-            viewMode === 'banner' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-border'
+            viewMode === 'banner' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-border'
           }`}
         >
           Banner
@@ -33,7 +33,7 @@ export default function HomeHeroMapToggle({ heroContent, mapContent }: Props) {
           type="button"
           onClick={() => setViewMode('map')}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-            viewMode === 'map' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-border'
+            viewMode === 'map' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-border'
           }`}
         >
           Map

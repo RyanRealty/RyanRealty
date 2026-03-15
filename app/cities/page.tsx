@@ -10,7 +10,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: 'Central Oregon Cities — Bend, Redmond, Sisters, Sunriver | Ryan Realty',
+  title: 'Central Oregon Cities â€” Bend, Redmond, Sisters, Sunriver | Ryan Realty',
   description:
     'Explore homes for sale in Central Oregon cities. Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and more.',
   alternates: { canonical: `${siteUrl}/cities` },
@@ -47,7 +47,7 @@ export default async function CitiesPage() {
 
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
             Central Oregon Cities
           </h1>
           <p className="mt-3 text-lg text-muted">

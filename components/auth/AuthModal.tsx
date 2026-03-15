@@ -3,14 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSignInUrl, signInWithEmailPassword, signUpWithEmailPassword } from '@/app/actions/auth'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { GoogleIcon, AppleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog'
 
 type Props = {
   open: boolean
@@ -29,10 +30,10 @@ export default function AuthModal({ open, onClose, onSuccess, next = '/dashboard
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
 
-  async function handleGoogle() {
-    setLoading('google')
+  async function handleOAuth(provider: 'google' | 'apple' | 'facebook') {
+    setLoading(provider)
     setError(null)
-    const result = await getSignInUrl('google', next)
+    const result = await getSignInUrl(provider, next)
     setLoading(null)
     if ('url' in result) window.location.href = result.url
     else setError(result.error)
@@ -117,15 +118,36 @@ export default function AuthModal({ open, onClose, onSuccess, next = '/dashboard
             Create account
           </Button>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Button
             type="button"
             variant="outline"
-            onClick={handleGoogle}
+            onClick={() => handleOAuth('google')}
             disabled={!!loading}
-            className="w-full"
+            className="flex w-full items-center justify-center gap-3"
           >
+            <GoogleIcon className="size-5" />
             {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleOAuth('apple')}
+            disabled={!!loading}
+            className="flex w-full items-center justify-center gap-3"
+          >
+            <AppleIcon className="size-5" />
+            {loading === 'apple' ? 'Redirecting…' : 'Continue with Apple'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleOAuth('facebook')}
+            disabled={!!loading}
+            className="flex w-full items-center justify-center gap-3"
+          >
+            <FacebookIcon className="size-5" />
+            {loading === 'facebook' ? 'Redirecting…' : 'Continue with Facebook'}
           </Button>
           <div className="border-t border-border" />
           {tab === 'signin' ? (

@@ -214,6 +214,11 @@
   to { opacity: 1; }
 }
 
+@keyframes review-slide-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(var(--review-slide-offset, -50%)); }
+}
+
 .animate-hero-ken-burns { animation: hero-ken-burns 20s ease-in-out alternate infinite; }
 .animate-hero-shine { animation: hero-shine 8s ease-out forwards; }
 .animate-fade-up { animation: fade-up 400ms ease-out both; }
@@ -226,6 +231,7 @@
 .animate-scroll-bounce { animation: scroll-bounce 2s ease infinite; }
 .animate-tile-new { animation: tile-new-pulse 2s ease infinite; }
 .animate-listing-slide-fade { animation: listing-slide-fade 200ms ease both; }
+.animate-review-slide { animation: review-slide-left 400ms ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-hero-ken-burns,
@@ -239,7 +245,8 @@
   .animate-counter-up,
   .animate-scroll-bounce,
   .animate-tile-new,
-  .animate-listing-slide-fade {
+  .animate-listing-slide-fade,
+  .animate-review-slide {
     animation: none;
     opacity: 1;
     transform: none;

@@ -26,7 +26,7 @@ export default function HomeValuationPage() {
     <main className="min-h-screen bg-background">
       <ContentPageHero
         title="What's your home worth?"
-        subtitle="Get a free, no-obligation valuation. We'll use recent sales and market data to give you a clear estimate—and send you a CMA you can keep."
+        subtitle="Get a free, no-obligation valuation. We'll use recent sales and market data to give you a clear estimateâ€”and send you a CMA you can keep."
         imageUrl={heroImage}
       />
 
@@ -69,7 +69,7 @@ export default function HomeValuationPage() {
 
       <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-xl font-bold text-white sm:text-2xl">
+          <h2 className="text-xl font-bold text-primary-foreground sm:text-2xl">
             Ready to sell?
           </h2>
           <p className="mt-2 text-muted/90">

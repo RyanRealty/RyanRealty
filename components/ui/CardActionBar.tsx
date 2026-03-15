@@ -64,7 +64,7 @@ const overlayBase = 'flex flex-shrink-0 items-center justify-center rounded-full
 const countClass = 'min-w-[1ch] text-[10px] tabular-nums drop-shadow-sm'
 
 function onDarkInactive() {
-  return 'border-white/30 bg-black/40 text-white hover:bg-black/60'
+  return 'border-primary-foreground/30 bg-foreground/40 text-primary-foreground hover:bg-foreground/60'
 }
 
 function onDarkLikeActive() {
@@ -100,7 +100,7 @@ export default function CardActionBar({
   const isDark = variant === 'onDark'
   const isBelow = position === 'below'
   const isPriceRow = position === 'priceRow'
-  const countColor = (isBelow || isPriceRow) ? 'text-muted-foreground' : (isDark ? 'text-white' : 'text-muted-foreground')
+  const countColor = (isBelow || isPriceRow) ? 'text-muted-foreground' : (isDark ? 'text-primary-foreground' : 'text-muted-foreground')
   const iconSize = isPriceRow ? ICON_SIZE_COMPACT : (isBelow ? ICON_SIZE_BELOW : ICON_SIZE_OVERLAY)
   const buttonSize = isPriceRow ? BUTTON_SIZE_COMPACT : (isBelow ? BUTTON_SIZE_BELOW : BUTTON_SIZE_OVERLAY)
   const wrapperClass = isPriceRow
@@ -178,7 +178,7 @@ export default function CardActionBar({
         </>
       )}
       {!signedIn && guestCounts && (guestCounts.viewCount! > 0 || guestCounts.likeCount! > 0 || guestCounts.saveCount! > 0) && (
-        <span className={cn('flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px]', (isBelow || isPriceRow) ? 'text-muted-foreground' : (isDark ? 'bg-black/40 text-white/95 backdrop-blur-sm' : 'bg-muted text-muted-foreground'))}>
+        <span className={cn('flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px]', (isBelow || isPriceRow) ? 'text-muted-foreground' : (isDark ? 'bg-foreground/40 text-primary-foreground/95 backdrop-blur-sm' : 'bg-muted text-muted-foreground'))}>
           {guestCounts.viewCount! > 0 && <span>{guestCounts.viewCount} views</span>}
           {guestCounts.likeCount! > 0 && <span>{guestCounts.likeCount} likes</span>}
           {guestCounts.saveCount! > 0 && <span>{guestCounts.saveCount} saved</span>}

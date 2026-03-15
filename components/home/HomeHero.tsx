@@ -8,7 +8,7 @@ import { trackEvent } from '@/lib/tracking'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-// No stock photography — fallback is empty; hero renders a navy gradient when no brokerage image is set.
+// No stock photography â€” fallback is empty; hero renders a navy gradient when no brokerage image is set.
 const DEFAULT_HERO_IMAGE = ''
 
 type MarketSnapshot = {
@@ -148,7 +148,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-primary/50 via-primary/25 to-transparent" aria-hidden />
       <div className="relative z-10 w-full max-w-3xl px-4 pt-24 pb-16 sm:pt-28 sm:pb-20 text-center">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-md">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary-foreground drop-shadow-md">
           Find Your Home in Central Oregon
         </h1>
         <p className="mt-4 text-lg sm:text-xl text-muted font-light">

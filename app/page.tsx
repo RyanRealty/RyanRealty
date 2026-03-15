@@ -1,39 +1,34 @@
 import type { Metadata } from 'next'
+import path from 'path'
+import fs from 'fs'
 import { getBrokerageSettings } from './actions/brokerage'
-import {
-  getFeaturedListings,
-  getRecentlySold,
-  getCommunityHighlights,
-  getMarketSnapshot,
-  getTrendingListings,
-  getBlogPostsForHome,
-} from './actions/home'
-import { getCityFromSlug } from './actions/listings'
-import { filterToPrimaryCitiesOnly } from '../lib/cities'
-import { getSavedCommunityKeys } from './actions/saved-communities'
-import { getSavedCitySlugs } from './actions/saved-cities'
+import { getMarketSnapshot } from './actions/home'
 import { getSession } from './actions/auth'
-import { getSavedListingKeys } from './actions/saved-listings'
-import { getLikedListingKeys } from './actions/likes'
-import { getBuyingPreferences } from './actions/buying-preferences'
-import { getBannersBatch } from './actions/banners'
-import { getCitiesForIndex } from './actions/cities'
-import { getEngagementCountsBatch } from './actions/engagement'
-import { subdivisionEntityKey } from '../lib/slug'
-import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '../lib/mortgage'
+import { TESTIMONIALS } from '@/lib/testimonials'
 import HomeHero from '../components/home/HomeHero'
-import FeaturedListings from '../components/home/FeaturedListings'
-import AffordabilityRow from '../components/home/AffordabilityRow'
-import TrendingListings from '../components/home/TrendingListings'
-import BrowseByCity from '../components/home/BrowseByCity'
-import PopularCommunitiesRow from '../components/home/PopularCommunitiesRow'
-import RecentlySold from '../components/home/RecentlySold'
-import TrustSection from '../components/home/TrustSection'
-import BlogTeaser from '../components/home/BlogTeaser'
+import SocialProofSection from '../components/home/SocialProofSection'
+import ActivityFeedSection from '../components/activity/ActivityFeedSection'
+import BeaconReportSection from '../components/beacon-report/BeaconReportSection'
 import EmailSignup from '../components/home/EmailSignup'
-const DEFAULT_HOME_CITY = 'Bend'
+import { getActivityFeedWithFallbackMulti, ACTIVITY_FEED_DEFAULT_CITIES } from './actions/activity-feed'
+import { getBrowseCities } from './actions/listings'
+import type { BrokerageSettingsRow } from './actions/brokerage'
+
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/og-home.png`
+
+/** Resolve team photo URL: admin URL if set, else static file with cache-buster so replacing the file shows immediately. */
+function getTeamImageSrc(brokerage: BrokerageSettingsRow | null): string {
+  const fromAdmin = brokerage?.team_image_url?.trim() || brokerage?.hero_image_url?.trim()
+  if (fromAdmin) return fromAdmin
+  try {
+    const p = path.join(process.cwd(), 'public', 'images', 'team.png')
+    const stat = fs.statSync(p)
+    return `/images/team.png?v=${stat.mtimeMs}`
+  } catch {
+    return '/images/team.png'
+  }
+}
 
 export const revalidate = 60
 
@@ -79,80 +74,18 @@ export default async function Home(props: HomeProps) {
     )
   }
 
-  const searchParams = (await (props.searchParams ?? Promise.resolve({}))) as Record<string, string | string[] | undefined>
-  const citySlug = (typeof searchParams?.city === 'string' ? searchParams.city : '') || 'bend'
-  const currentCityName = (await getCityFromSlug(citySlug)) ?? DEFAULT_HOME_CITY
-
-  // Single parallel fetch — no waterfall. Session-dependent calls use .then() chaining.
-  const sessionPromise = getSession()
-  const featuredPromise = getFeaturedListings(currentCityName)
-  const trendingPromise = getTrendingListings(currentCityName)
-  const recentlySoldPromise = getRecentlySold(currentCityName)
-  const communityHighlightsPromise = getCommunityHighlights()
-
-  const [
-    session, brokerage, featured, recentlySold, communityHighlights,
-    marketSnapshot, trending, blogPosts, citiesForSlider,
-    savedKeys, likedKeys, savedCommunityKeys, savedCitySlugs, prefs,
-  ] = await Promise.all([
-    sessionPromise,
+  const [session, brokerage, marketSnapshot, activityFeed, browseCities] = await Promise.all([
+    getSession(),
     getBrokerageSettings(),
-    featuredPromise,
-    recentlySoldPromise,
-    communityHighlightsPromise,
     getMarketSnapshot(),
-    trendingPromise,
-    getBlogPostsForHome(),
-    getCitiesForIndex(),
-    // User-specific data — chain off session to avoid waterfall
-    sessionPromise.then((s) => s?.user ? getSavedListingKeys() : []),
-    sessionPromise.then((s) => s?.user ? getLikedListingKeys() : []),
-    sessionPromise.then((s) => s?.user ? getSavedCommunityKeys() : []),
-    sessionPromise.then((s) => s?.user ? getSavedCitySlugs() : []),
-    sessionPromise.then((s) => s?.user ? getBuyingPreferences().catch(() => null) : null),
+    getActivityFeedWithFallbackMulti({ cities: [...ACTIVITY_FEED_DEFAULT_CITIES], limit: 12 }),
+    getBrowseCities(),
   ])
-
-  // Engagement counts + community banners — parallel, after listings resolve
-  const allListingKeys = [
-    ...featured.map((r) => (r.ListingKey ?? r.ListNumber ?? '').toString().trim()).filter(Boolean),
-    ...trending.map((r) => (r.ListingKey ?? r.ListNumber ?? '').toString().trim()).filter(Boolean),
-    ...recentlySold.map((r) => (r.ListingKey ?? r.ListNumber ?? '').toString().trim()).filter(Boolean),
-  ]
-  const [engagementCounts, communityBannerUrls] = await Promise.all([
-    allListingKeys.length > 0 ? getEngagementCountsBatch(allListingKeys) : {},
-    communityHighlights.length > 0
-      ? getBannersBatch(
-          'subdivision',
-          communityHighlights.map((c) => subdivisionEntityKey(currentCityName, c.subdivisionName))
-        ).then((bannerMap) =>
-          communityHighlights.map((c) => {
-            const key = subdivisionEntityKey(currentCityName, c.subdivisionName)
-            return bannerMap.get(key)?.url ?? null
-          })
-        ).catch(() => [] as (string | null)[])
-      : Promise.resolve([] as (string | null)[]),
-  ])
-
-  // Explore by city / Browse by city: only primary Central Oregon cities (Bend, Redmond, Sisters, etc.)
-  const sortedSliderCities = filterToPrimaryCitiesOnly(citiesForSlider)
-
-  const displayPrefs = prefs ?? {
-    downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
-    interestRate: DEFAULT_DISPLAY_RATE,
-    loanTermYears: DEFAULT_DISPLAY_TERM_YEARS,
-  }
 
   const marketForHero = {
     count: marketSnapshot.count,
     medianPrice: marketSnapshot.medianPrice,
     avgDom: marketSnapshot.avgDom ?? null,
-  }
-
-  const marketForCTA = {
-    count: marketSnapshot.count,
-    medianPrice: marketSnapshot.medianPrice,
-    avgDom: marketSnapshot.avgDom ?? null,
-    closedLast12Months: marketSnapshot.closedLast12Months,
   }
 
   return (
@@ -198,80 +131,19 @@ export default async function Home(props: HomeProps) {
         heroImageUrl={brokerage?.hero_image_url ?? null}
       />
 
-      {featured.length > 0 && (
-        <FeaturedListings
-          listings={featured}
-          savedKeys={savedKeys}
-          likedKeys={likedKeys}
-          signedIn={!!session?.user}
-          userEmail={session?.user?.email ?? null}
-          downPaymentPercent={displayPrefs.downPaymentPercent}
-          interestRate={displayPrefs.interestRate}
-          loanTermYears={displayPrefs.loanTermYears}
-          engagementCounts={engagementCounts}
-        />
-      )}
+      <SocialProofSection testimonials={TESTIMONIALS} teamImageSrc={getTeamImageSrc(brokerage)} />
 
-      {featured.length > 0 && (
-        <AffordabilityRow
-          listings={featured}
-          savedKeys={savedKeys}
-          likedKeys={likedKeys}
-          signedIn={!!session?.user}
-          userEmail={session?.user?.email ?? null}
-          downPaymentPercent={displayPrefs.downPaymentPercent}
-          interestRate={displayPrefs.interestRate}
-          loanTermYears={displayPrefs.loanTermYears}
-        />
-      )}
-
-      {trending.length > 0 && (
-        <TrendingListings
-          listings={trending}
-          savedKeys={savedKeys}
-          likedKeys={likedKeys}
-          signedIn={!!session?.user}
-          userEmail={session?.user?.email ?? null}
-          downPaymentPercent={displayPrefs.downPaymentPercent}
-          interestRate={displayPrefs.interestRate}
-          loanTermYears={displayPrefs.loanTermYears}
-          engagementCounts={engagementCounts}
-        />
-      )}
-
-      {communityHighlights.length > 0 && (
-        <PopularCommunitiesRow
-          city={currentCityName}
-          communities={communityHighlights}
-          bannerUrls={communityBannerUrls}
-          signedIn={!!session?.user}
-          savedCommunityKeys={savedCommunityKeys}
-        />
-      )}
-
-      {recentlySold.length > 0 && (
-        <RecentlySold
-          listings={recentlySold}
-          savedKeys={savedKeys}
-          likedKeys={likedKeys}
-          signedIn={!!session?.user}
-          userEmail={session?.user?.email ?? null}
-          downPaymentPercent={displayPrefs.downPaymentPercent}
-          interestRate={displayPrefs.interestRate}
-          loanTermYears={displayPrefs.loanTermYears}
-          engagementCounts={engagementCounts}
-        />
-      )}
-
-      <BrowseByCity
-        cities={sortedSliderCities}
-        savedSlugs={savedCitySlugs}
-        signedIn={!!session?.user}
+      <ActivityFeedSection
+        initialItems={activityFeed}
+        defaultCities={[...ACTIVITY_FEED_DEFAULT_CITIES]}
+        allCities={browseCities.map((c) => ({ city: c.City, count: c.count }))}
+        heading="Latest activity"
+        viewAllHref="/listings"
+        viewAllLabel="View all listings"
+        limit={12}
       />
 
-      <TrustSection />
-
-      {blogPosts.length > 0 && <BlogTeaser posts={blogPosts} />}
+      <BeaconReportSection />
 
       <EmailSignup />
     </main>

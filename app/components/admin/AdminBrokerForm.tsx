@@ -561,8 +561,8 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
           <div className="mt-4 flex items-center gap-4 rounded-lg border-2 border-warning/40 bg-warning/10 p-4" role="status" aria-live="polite">
             <span className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-warning border-t-transparent" aria-hidden />
             <div>
-              <p className="text-sm font-medium text-foreground">Generating professional headshot…</p>
-              <p className="text-xs text-warning">This usually takes 1–2 minutes. Please wait — do not leave or refresh.</p>
+              <p className="text-sm font-medium text-foreground">Generating professional headshotâ€¦</p>
+              <p className="text-xs text-warning">This usually takes 1â€“2 minutes. Please wait â€” do not leave or refresh.</p>
             </div>
           </div>
         )}
@@ -588,7 +588,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
         )}
         {generatedPreviewUrl && (
           <div ref={generatedPreviewRef} className="mt-4 rounded-lg border-2 border-success/40 bg-success/10/80 p-4">
-            <p className="text-sm font-medium text-success">Your new headshot — review and choose an action</p>
+            <p className="text-sm font-medium text-success">Your new headshot â€” review and choose an action</p>
             <div className="mt-3 flex flex-wrap items-start gap-4">
               <Button
                 type="button"
@@ -599,7 +599,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                 {/* eslint-disable-next-line @next/next/no-img-element -- Generated headshot blob URL; next/image not used in admin form */}
                 <img
                   src={generatedPreviewUrl}
-                  alt="Generated headshot — review before saving or setting as default"
+                  alt="Generated headshot â€” review before saving or setting as default"
                   className="h-full w-full object-contain"
                 />
               </Button>
@@ -607,7 +607,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                 <Button
                   type="button"
                   onClick={handleSetGeneratedAsDefault}
-                  className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-success/85"
+                  className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground shadow-sm hover:bg-success/85"
                 >
                   Set as default (use on site)
                 </Button>
@@ -630,7 +630,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                   onClick={() => { setGeneratedPreviewUrl(null); setMessage(null); }}
                   className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted"
                 >
-                  Disregard (don’t save)
+                  Disregard (donâ€™t save)
                 </Button>
               </div>
             </div>
@@ -649,7 +649,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                       {/* eslint-disable-next-line @next/next/no-img-element -- Saved headshot from storage; dynamic URL in admin form */}
                       <img src={url} alt="Broker headshot" className="h-full w-full object-cover" />
                       {isDefault && (
-                        <span className="absolute bottom-0 left-0 right-0 bg-success px-1 py-0.5 text-center text-[10px] font-medium text-white">
+                        <span className="absolute bottom-0 left-0 right-0 bg-success px-1 py-0.5 text-center text-[10px] font-medium text-success-foreground">
                           Default
                         </span>
                       )}
@@ -679,23 +679,23 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                   ref={headshotFileRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  className="block w-full max-w-xs text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-success file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white file:hover:bg-success/85"
+                  className="block w-full max-w-xs text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-success file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-success-foreground file:hover:bg-success/85"
                 />
               </Label>
               <Button
                 type="button"
                 onClick={handleUploadHeadshot}
                 disabled={headshotUploading}
-                className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-success/85 disabled:opacity-50"
+                className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
               >
-                {headshotUploading ? 'Uploading…' : 'Upload headshot'}
+                {headshotUploading ? 'Uploadingâ€¦' : 'Upload headshot'}
               </Button>
             </div>
           </div>
           <div className="rounded-lg border border-border bg-muted/50 p-4">
             <p className="text-sm font-medium text-muted-foreground">2. Generate professional headshot with AI</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Choose a prompt, upload a source photo, then generate. The AI will create a headshot matching the prompt (e.g. studio, wardrobe, background). Takes 1–2 minutes. Then set as default, save, or generate another.
+              Choose a prompt, upload a source photo, then generate. The AI will create a headshot matching the prompt (e.g. studio, wardrobe, background). Takes 1â€“2 minutes. Then set as default, save, or generate another.
             </p>
             {replicateConfigured === false && (
               <p className="mt-2 text-sm text-warning">
@@ -845,9 +845,9 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                     type="button"
                     onClick={handleCreatePrompt}
                     disabled={promptsLoading}
-                    className="mt-3 rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-white hover:bg-success/85 disabled:opacity-50"
+                    className="mt-3 rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground hover:bg-success/85 disabled:opacity-50"
                   >
-                    {promptsLoading ? 'Saving…' : 'Save prompt'}
+                    {promptsLoading ? 'Savingâ€¦' : 'Save prompt'}
                   </Button>
                 </div>
               </div>
@@ -859,7 +859,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                   ref={aiSourceFileRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  className="block w-full max-w-xs text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-success file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white file:hover:bg-success/85"
+                  className="block w-full max-w-xs text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-success file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-success-foreground file:hover:bg-success/85"
                 />
               </Label>
               <Label className="flex items-center gap-2">
@@ -877,9 +877,9 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                 type="button"
                 onClick={handleGenerateHeadshot}
                 disabled={headshotGenerating}
-                className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-success/85 disabled:opacity-50"
+                className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
               >
-                {headshotGenerating ? 'Generating…' : 'Generate professional headshot'}
+                {headshotGenerating ? 'Generatingâ€¦' : 'Generate professional headshot'}
               </Button>
             </div>
           </div>
@@ -906,16 +906,16 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                   ref={introVideoFileRef}
                   type="file"
                   accept="video/mp4,video/webm"
-                  className="block w-full max-w-xs text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-success file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white file:hover:bg-success/85"
+                  className="block w-full max-w-xs text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-success file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-success-foreground file:hover:bg-success/85"
                 />
               </Label>
               <Button
                 type="button"
                 onClick={handleUploadIntroVideo}
                 disabled={introVideoUploading}
-                className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-success/85 disabled:opacity-50"
+                className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
               >
-                {introVideoUploading ? 'Uploading…' : 'Upload intro video'}
+                {introVideoUploading ? 'Uploadingâ€¦' : 'Upload intro video'}
               </Button>
             </div>
           </div>
@@ -976,9 +976,9 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                 type="button"
                 onClick={handleGenerateSynthesiaVideo}
                 disabled={synthesiaGenerating}
-                className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-success/85 disabled:opacity-50"
+                className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
               >
-                {synthesiaGenerating ? 'Generating… (this may take a few minutes)' : 'Generate video'}
+                {synthesiaGenerating ? 'Generatingâ€¦ (this may take a few minutes)' : 'Generate video'}
               </Button>
             </div>
           </div>
@@ -1199,9 +1199,9 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
           type="button"
           onClick={() => handleSubmit()}
           disabled={loading}
-          className="rounded-lg bg-success px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-success/85 disabled:opacity-50"
+          className="rounded-lg bg-success px-4 py-2.5 text-sm font-semibold text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
         >
-          {loading ? 'Saving…' : 'Save changes'}
+          {loading ? 'Savingâ€¦' : 'Save changes'}
         </Button>
         <a
           href={`/agents/${broker.slug}`}
@@ -1232,7 +1232,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
       {/* Full-size headshot lightbox */}
       {headshotLightboxUrl && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/70 p-4"
           role="dialog"
           aria-modal="true"
           aria-label="Headshot full size"

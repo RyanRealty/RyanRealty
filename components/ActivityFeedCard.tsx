@@ -101,7 +101,7 @@ export default function ActivityFeedCard({ item, saved = false, signedIn = false
           </div>
         )}
         {badge.label && (
-          <span className={`absolute left-2 top-2 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white ${badge.className}`}>
+          <span className={`absolute left-2 top-2 rounded-full px-2.5 py-0.5 text-xs font-semibold text-primary-foreground ${badge.className}`}>
             {badge.label}
           </span>
         )}
@@ -121,13 +121,13 @@ export default function ActivityFeedCard({ item, saved = false, signedIn = false
         )}
         {/* Stats overlay at bottom */}
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
-          <p className="font-semibold text-white">{formatPrice(price) || 'Price TBD'}</p>
-          <p className="mt-0.5 flex items-center gap-2 text-sm text-white/90">
+          <p className="font-semibold text-primary-foreground">{formatPrice(price) || 'Price TBD'}</p>
+          <p className="mt-0.5 flex items-center gap-2 text-sm text-primary-foreground/90">
             {[item.BedroomsTotal, item.BathroomsTotal].filter(Boolean).length > 0 && (
               <span>{[item.BedroomsTotal, item.BathroomsTotal].filter(Boolean).join(' / ')}</span>
             )}
             {(item.City ?? item.SubdivisionName) && (
-              <span> · {[item.SubdivisionName, item.City].filter(Boolean).join(', ')}</span>
+              <span> Â· {[item.SubdivisionName, item.City].filter(Boolean).join(', ')}</span>
             )}
           </p>
         </div>

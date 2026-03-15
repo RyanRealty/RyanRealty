@@ -1,6 +1,7 @@
 import { getBrokerageSettings } from '@/app/actions/brokerage'
 import SiteLogoForm from './SiteLogoForm'
 import HeroMediaForm from './HeroMediaForm'
+import TeamImageForm from './TeamImageForm'
 import SitePagesList from './SitePagesList'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,7 @@ export default async function AdminSitePagesPage() {
   const logoUrl = brokerage?.logo_url ?? null
   const heroVideoUrl = brokerage?.hero_video_url ?? null
   const heroImageUrl = brokerage?.hero_image_url ?? null
+  const teamImageUrl = brokerage?.team_image_url ?? null
 
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
@@ -24,6 +26,10 @@ export default async function AdminSitePagesPage() {
 
       <div className="mt-10">
         <HeroMediaForm initialHeroVideoUrl={heroVideoUrl} initialHeroImageUrl={heroImageUrl} />
+      </div>
+
+      <div className="mt-10">
+        <TeamImageForm initialTeamImageUrl={teamImageUrl} />
       </div>
 
       <div className="mt-10">

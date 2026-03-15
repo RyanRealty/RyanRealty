@@ -270,19 +270,23 @@ export async function getCityFromSlug(slug: string | undefined): Promise<string 
 export type SearchSuggestionAddress = { label: string; href: string }
 export type SearchSuggestionCity = { city: string; count: number }
 export type SearchSuggestionSubdivision = { city: string; subdivisionName: string; count: number }
+export type SearchSuggestionZip = { postalCode: string; city?: string; count: number; href: string }
+export type SearchSuggestionBroker = { label: string; href: string }
 export type SearchSuggestionsResult = {
   addresses: SearchSuggestionAddress[]
   cities: SearchSuggestionCity[]
   subdivisions: SearchSuggestionSubdivision[]
+  zips: SearchSuggestionZip[]
+  brokers: SearchSuggestionBroker[]
 }
 
 /**
- * Smart search: autocomplete for address, city, and neighborhood (subdivision/community).
+ * Smart search: autocomplete for address, city, neighborhood (subdivision/community), zip, and broker.
  * Call with at least 2 characters. Returns grouped suggestions for dropdown.
  */
 export async function getSearchSuggestions(query: string): Promise<SearchSuggestionsResult> {
   const q = (query ?? '').trim()
-  const empty: SearchSuggestionsResult = { addresses: [], cities: [], subdivisions: [] }
+  const empty: SearchSuggestionsResult = { addresses: [], cities: [], subdivisions: [], zips: [], brokers: [] }
   if (q.length < 2) return empty
 
   const supabase = getAnonSupabase()
@@ -290,7 +294,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   const safeQ = q.replace(/%/g, '').replace(/\\/g, '')
   const like = `%${safeQ}%`
 
-  const [citiesRes, subdivisionsRes, addressesRes] = await Promise.all([
+  const [citiesRes, subdivisionsRes, addressesRes, zipsRes, brokersRes] = await Promise.all([
     getBrowseCities().then((list) =>
       list.filter((c) => (c.City ?? '').toLowerCase().includes(q.toLowerCase())).slice(0, 8)
     ),
@@ -306,6 +310,18 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
       .or(ACTIVE_STATUS_OR)
       .or(`StreetNumber.ilike.${like},StreetName.ilike.${like},City.ilike.${like}`)
       .limit(40),
+    supabase
+      .from('listings')
+      .select('PostalCode, City')
+      .or(ACTIVE_STATUS_OR)
+      .ilike('PostalCode', like)
+      .limit(300),
+    supabase
+      .from('brokers')
+      .select('slug, display_name')
+      .eq('is_active', true)
+      .ilike('display_name', like)
+      .limit(10),
   ])
 
   const cities: SearchSuggestionCity[] = citiesRes.map((c) => ({ city: c.City, count: c.count }))
@@ -356,7 +372,32 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     if (addresses.length >= 10) break
   }
 
-  return { addresses, cities, subdivisions }
+  const zipRows = (zipsRes.data ?? []) as { PostalCode?: string | null; City?: string | null }[]
+  const zipMap = new Map<string, { postalCode: string; city?: string; count: number }>()
+  for (const row of zipRows) {
+    const postalCode = (row.PostalCode ?? '').toString().trim().replace(/\D/g, '')
+    const city = (row.City ?? '').toString().trim() || undefined
+    if (!postalCode) continue
+    const key = `${postalCode}\t${(city ?? '').toLowerCase()}`
+    const cur = zipMap.get(key)
+    if (cur) cur.count += 1
+    else zipMap.set(key, { postalCode, city, count: 1 })
+  }
+  const zips: SearchSuggestionZip[] = Array.from(zipMap.values())
+    .sort((a, b) => b.count - a.count || a.postalCode.localeCompare(b.postalCode))
+    .slice(0, 8)
+    .map((z) => ({ ...z, href: `/search?postalCode=${encodeURIComponent(z.postalCode)}` }))
+
+  const brokerRows = (brokersRes.data ?? []) as { slug?: string | null; display_name?: string | null }[]
+  const brokers: SearchSuggestionBroker[] = brokerRows
+    .filter((r) => r.slug?.trim() && r.display_name?.trim())
+    .map((r) => ({
+      label: (r.display_name ?? '').trim(),
+      href: `/agents/${encodeURIComponent((r.slug ?? '').trim())}`,
+    }))
+    .slice(0, 8)
+
+  return { addresses, cities, subdivisions, zips, brokers }
 }
 
 export type ListingsFilters = {

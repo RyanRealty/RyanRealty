@@ -9,7 +9,7 @@ import { toggleSavedCity } from '@/app/actions/saved-cities'
 import { TILE_MIN_HEIGHT_PX } from '@/lib/tile-constants'
 
 function formatPrice(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return '—'
+  if (n == null || !Number.isFinite(n)) return 'â€”'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 
@@ -59,7 +59,7 @@ export default function CityTile({ city, signedIn = false, saved = false }: City
           {city.heroImageUrl ? (
             <Image
               src={city.heroImageUrl}
-              alt={`${city.name}, Oregon — city overview`}
+              alt={`${city.name}, Oregon â€” city overview`}
               fill
               className="object-cover transition hover:scale-[1.02]"
               sizes="(max-width: 768px) 100vw, 400px"
@@ -68,11 +68,11 @@ export default function CityTile({ city, signedIn = false, saved = false }: City
             <div className="h-full w-full bg-gradient-to-br from-primary to-foreground" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+          <div className="absolute bottom-0 left-0 right-0 p-4 text-primary-foreground">
             <h3 className="text-xl font-bold drop-shadow-md">{city.name}</h3>
-            <p className="mt-0.5 text-sm text-white/90">{countLabel}</p>
-            <p className="mt-0.5 text-xs text-white/80">
-              Median {formatPrice(city.medianPrice)} · {city.communityCount} communities
+            <p className="mt-0.5 text-sm text-primary-foreground/90">{countLabel}</p>
+            <p className="mt-0.5 text-xs text-primary-foreground/80">
+              Median {formatPrice(city.medianPrice)} Â· {city.communityCount} communities
             </p>
           </div>
         </Link>

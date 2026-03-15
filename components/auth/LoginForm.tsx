@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSignInUrl, signInWithEmailPassword } from '@/app/actions/auth'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { GoogleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 
 type Props = { next: string }
 
@@ -17,10 +18,10 @@ export default function LoginForm({ next }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  async function handleGoogle() {
-    setLoading('google')
+  async function handleOAuth(provider: 'google' | 'facebook') {
+    setLoading(provider)
     setError(null)
-    const result = await getSignInUrl('google', next)
+    const result = await getSignInUrl(provider, next)
     setLoading(null)
     if ('url' in result) window.location.href = result.url
     else setError(result.error)
@@ -49,11 +50,21 @@ export default function LoginForm({ next }: Props) {
     <div className="mt-6 space-y-4">
       <Button
         type="button"
-        onClick={handleGoogle}
+        onClick={() => handleOAuth('google')}
         disabled={!!loading}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
       >
+        <GoogleIcon className="size-5" />
         {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
+      </Button>
+      <Button
+        type="button"
+        onClick={() => handleOAuth('facebook')}
+        disabled={!!loading}
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+      >
+        <FacebookIcon className="size-5" />
+        {loading === 'facebook' ? 'Redirecting…' : 'Continue with Facebook'}
       </Button>
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
@@ -99,7 +110,7 @@ export default function LoginForm({ next }: Props) {
         <Button
           type="submit"
           disabled={!!loading}
-          className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+          className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
         >
           {loading === 'email' ? 'Signing in…' : 'Sign in'}
         </Button>

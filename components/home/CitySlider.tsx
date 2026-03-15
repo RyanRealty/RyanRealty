@@ -9,7 +9,7 @@ import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
 type Props = {
   cities: CityForIndex[]
   currentCitySlug: string
-  /** Optional CTA card at the end of the slider (e.g. "Homes for sale" → /listings). */
+  /** Optional CTA card at the end of the slider (e.g. "Homes for sale" â†’ /listings). */
   ctaCard?: { name: string; href: string }
 }
 
@@ -85,12 +85,12 @@ export default function CitySlider({ cities, currentCitySlug, ctaCard }: Props) 
                   />
                   <div className="relative z-10 px-4 pb-4 pt-8">
                     <span
-                      className="block text-xl font-bold tracking-tight text-white drop-shadow-md sm:text-2xl"
+                      className="block text-xl font-bold tracking-tight text-primary-foreground drop-shadow-md sm:text-2xl"
                       style={{ fontFamily: 'inherit' }}
                     >
                       {city.name}
                     </span>
-                    <span className="mt-0.5 block text-sm font-medium text-white/95">
+                    <span className="mt-0.5 block text-sm font-medium text-primary-foreground/95">
                       {city.activeCount === 0
                         ? 'No homes for sale'
                         : city.activeCount === 1
@@ -112,12 +112,12 @@ export default function CitySlider({ cities, currentCitySlug, ctaCard }: Props) 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" aria-hidden />
                 <div className="relative z-10 px-4 pb-4 pt-8">
                   <span
-                    className="block text-xl font-bold tracking-tight text-white drop-shadow-md sm:text-2xl"
+                    className="block text-xl font-bold tracking-tight text-primary-foreground drop-shadow-md sm:text-2xl"
                     style={{ fontFamily: 'inherit' }}
                   >
                     {ctaCard.name}
                   </span>
-                  <span className="mt-0.5 block text-sm font-medium text-white/90">
+                  <span className="mt-0.5 block text-sm font-medium text-primary-foreground/90">
                     Browse all listings
                   </span>
                 </div>

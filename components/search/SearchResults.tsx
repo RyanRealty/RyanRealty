@@ -10,7 +10,7 @@ import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 const PAGE_SIZE = 24
 
 function formatPrice(n: number | null | undefined): string {
-  if (n == null) return '—'
+  if (n == null) return 'â€”'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 
@@ -143,7 +143,7 @@ export default function SearchResults({
                   {photoUrl ? (
                     <Image
                       src={photoUrl}
-                      alt={`${formatAddress(listing)} — property photo`}
+                      alt={`${formatAddress(listing)} â€” property photo`}
                       fill
                       className="object-cover"
                       sizes="(max-width:640px) 100vw, (max-width:1280px) 50vw, 33vw"
@@ -153,7 +153,7 @@ export default function SearchResults({
                       No photo
                     </div>
                   )}
-                  <div className="absolute top-2 left-2 rounded bg-primary text-white text-sm font-semibold px-2 py-0.5">
+                  <div className="absolute top-2 left-2 rounded bg-primary text-primary-foreground text-sm font-semibold px-2 py-0.5">
                     {formatPrice(listing.ListPrice)}
                   </div>
                 </div>
@@ -162,8 +162,8 @@ export default function SearchResults({
                     {formatAddress(listing)}
                   </p>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {listing.BedroomsTotal ?? '—'} Beds · {listing.BathroomsTotal ?? '—'} Baths
-                    {listing.SubdivisionName && ` · ${listing.SubdivisionName}`}
+                    {listing.BedroomsTotal ?? 'â€”'} Beds Â· {listing.BathroomsTotal ?? 'â€”'} Baths
+                    {listing.SubdivisionName && ` Â· ${listing.SubdivisionName}`}
                   </p>
                 </div>
               </article>
@@ -173,7 +173,7 @@ export default function SearchResults({
       </div>
       {listings.length < total && (
         <div ref={sentinelRef} className="flex justify-center py-8">
-          {loading && <span className="text-muted-foreground">Loading more…</span>}
+          {loading && <span className="text-muted-foreground">Loading moreâ€¦</span>}
         </div>
       )}
         </>

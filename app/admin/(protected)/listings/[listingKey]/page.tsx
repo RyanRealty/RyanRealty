@@ -73,7 +73,7 @@ export default async function AdminListingDetailPage({ params }: Props) {
           href={`/listing/${key}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-accent/90"
         >
           View on site
         </Link>

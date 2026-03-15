@@ -118,11 +118,11 @@ export default function CookieConsentBanner() {
         </DialogHeader>
         <Label className="flex items-center gap-3">
           <Checkbox checked={analytics} onCheckedChange={(checked) => setAnalytics(!!checked)} />
-          <span className="text-sm">Analytics (GA4) — understand how the site is used</span>
+          <span className="text-sm">Analytics (GA4) â€” understand how the site is used</span>
         </Label>
         <Label className="flex items-center gap-3">
           <Checkbox checked={marketing} onCheckedChange={(checked) => setMarketing(!!checked)} />
-          <span className="text-sm">Marketing (Meta Pixel) — relevant ads</span>
+          <span className="text-sm">Marketing (Meta Pixel) â€” relevant ads</span>
         </Label>
         <DialogFooter>
           <Button type="button" onClick={savePreferences}>Save</Button>
@@ -140,7 +140,7 @@ export default function CookieConsentBanner() {
           <Link href="/privacy#donotsell" className="font-medium text-foreground underline hover:no-underline">Do Not Sell My Personal Information</Link>
         </p>
         <div className="mt-3 flex flex-wrap gap-3">
-          <Button type="button" onClick={acceptAll} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90">Accept All</Button>
+          <Button type="button" onClick={acceptAll} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Accept All</Button>
           <Button type="button" onClick={() => setPrefsOpen(true)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted">Manage Preferences</Button>
           <Button type="button" onClick={essentialOnly} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted">Essential only</Button>
         </div>

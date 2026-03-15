@@ -537,7 +537,7 @@ export default async function SearchPage({
                     />
                   </div>
                   {bannerAttribution && (
-                    <p className="absolute bottom-2 left-2 z-10 text-xs text-white/90 drop-shadow-md">
+                    <p className="absolute bottom-2 left-2 z-10 text-xs text-primary-foreground/90 drop-shadow-md">
                       {bannerAttribution}
                     </p>
                   )}

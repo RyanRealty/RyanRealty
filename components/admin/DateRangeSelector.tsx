@@ -92,7 +92,7 @@ export default function DateRangeSelector({ value, onChange }: Props) {
             onClick={() => handlePresetChange(p)}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
               preset === p
-                ? 'bg-primary text-white'
+                ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-border'
             }`}
           >
@@ -118,7 +118,7 @@ export default function DateRangeSelector({ value, onChange }: Props) {
           <Button
             type="button"
             onClick={handleCustomApply}
-            className="rounded bg-primary px-3 py-1 text-sm text-white hover:bg-primary"
+            className="rounded bg-primary px-3 py-1 text-sm text-primary-foreground hover:bg-primary"
           >
             Apply
           </Button>

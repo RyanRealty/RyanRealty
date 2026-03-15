@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSignInUrl, signInWithEmailPassword, resetPasswordForEmail } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { GoogleIcon } from '@/components/icons/AuthProviderIcons'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 
 const ADMIN_NEXT = '/admin'
 
@@ -74,7 +75,7 @@ export default function AdminLoginForm() {
         {forgotSent ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Check your email for a reset link. Use it to set a new password; you’ll then be signed in and sent to the admin.
+              Check your email for a reset link. Use it to set a new password; youâ€™ll then be signed in and sent to the admin.
             </p>
             <Button
               type="button"
@@ -86,7 +87,7 @@ export default function AdminLoginForm() {
           </>
         ) : (
           <form onSubmit={handleForgotSubmit} className="space-y-4">
-            <p className="text-sm text-muted-foreground">Enter your admin email and we’ll send a password reset link.</p>
+            <p className="text-sm text-muted-foreground">Enter your admin email and weâ€™ll send a password reset link.</p>
             <div>
               <Label htmlFor="admin-forgot-email" className="block text-sm font-medium text-muted-foreground">
                 Email
@@ -105,9 +106,9 @@ export default function AdminLoginForm() {
               <Button
                 type="submit"
                 disabled={loading === 'forgot'}
-                className="flex-1 rounded-lg bg-primary py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                className="flex-1 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
               >
-                {loading === 'forgot' ? 'Sending…' : 'Send reset link'}
+                {loading === 'forgot' ? 'Sendingâ€¦' : 'Send reset link'}
               </Button>
               <Button
                 type="button"
@@ -129,8 +130,9 @@ export default function AdminLoginForm() {
         type="button"
         onClick={handleGoogle}
         disabled={!!loading}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-3 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
       >
+        <GoogleIcon className="size-5 text-primary-foreground" />
         {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
       </Button>
       <div className="relative">
@@ -183,7 +185,7 @@ export default function AdminLoginForm() {
           disabled={!!loading}
           className="w-full rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
         >
-          {loading === 'email' ? 'Signing in…' : 'Sign in with email'}
+          {loading === 'email' ? 'Signing inâ€¦' : 'Sign in with email'}
         </Button>
       </form>
     </div>

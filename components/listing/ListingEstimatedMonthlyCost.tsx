@@ -60,7 +60,7 @@ export default function ListingEstimatedMonthlyCost({ listPrice, initialPrefs, s
     <section className="mb-8 rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="estimated-monthly-cost-heading">
       <h2 id="estimated-monthly-cost-heading" className="mb-3 text-lg font-semibold text-foreground">Estimated monthly cost</h2>
       <p className="text-2xl font-semibold text-foreground">
-        {monthlyPayment != null && monthlyPayment > 0 ? `Est. ${formatMonthlyPayment(monthlyPayment)}/mo` : '—'}
+        {monthlyPayment != null && monthlyPayment > 0 ? `Est. ${formatMonthlyPayment(monthlyPayment)}/mo` : 'â€”'}
       </p>
       <p className="mt-1 text-sm text-muted-foreground">Principal & interest. Adjust below or use the calculator.</p>
 
@@ -71,7 +71,7 @@ export default function ListingEstimatedMonthlyCost({ listPrice, initialPrefs, s
         aria-expanded={expanded}
         aria-controls="listing-mortgage-calculator"
       >
-        <span className="inline-block transition-transform duration-200" style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}>▶</span>
+        <span className="inline-block transition-transform duration-200" style={{ transform: expanded ? 'rotate(90deg)' : 'none' }}>â–¶</span>
         Mortgage Calculator
       </Button>
 
@@ -129,7 +129,7 @@ export default function ListingEstimatedMonthlyCost({ listPrice, initialPrefs, s
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Est. payment: <strong className="text-foreground">{monthlyPayment != null ? formatMonthlyPayment(monthlyPayment) : '—'}</strong>/mo (principal & interest)
+              Est. payment: <strong className="text-foreground">{monthlyPayment != null ? formatMonthlyPayment(monthlyPayment) : 'â€”'}</strong>/mo (principal & interest)
             </p>
             {signedIn && (
               <div className="flex items-center gap-3">
@@ -137,9 +137,9 @@ export default function ListingEstimatedMonthlyCost({ listPrice, initialPrefs, s
                   type="button"
                   onClick={handleSaveToProfile}
                   disabled={saving}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60"
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 >
-                  {saving ? 'Saving…' : 'Save to my profile'}
+                  {saving ? 'Savingâ€¦' : 'Save to my profile'}
                 </Button>
                 {saveMsg === 'saved' && <span className="text-sm text-success">Saved to your buying preferences.</span>}
                 {saveMsg === 'error' && <span className="text-sm text-destructive">Could not save.</span>}

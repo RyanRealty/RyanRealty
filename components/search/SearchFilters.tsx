@@ -3,7 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import { trackEvent } from '@/lib/tracking'
-import { getSearchSuggestions } from '@/app/actions/listings'
+import { getSearchSuggestions, type SearchSuggestionsResult } from '@/app/actions/listings'
 import { Button } from '@/components/ui/button'
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,10 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const PRICE_PRESETS = [
   { label: 'Any', min: undefined, max: undefined },
   { label: 'Under $300K', min: undefined, max: 300000 },
-  { label: '$300K – $500K', min: 300000, max: 500000 },
-  { label: '$500K – $750K', min: 500000, max: 750000 },
-  { label: '$750K – $1M', min: 750000, max: 1000000 },
-  { label: '$1M – $1.5M', min: 1000000, max: 1500000 },
+  { label: '$300K â€“ $500K', min: 300000, max: 500000 },
+  { label: '$500K â€“ $750K', min: 500000, max: 750000 },
+  { label: '$750K â€“ $1M', min: 750000, max: 1000000 },
+  { label: '$1M â€“ $1.5M', min: 1000000, max: 1500000 },
   { label: '$1.5M+', min: 1500000, max: undefined },
 ]
 
@@ -56,6 +56,7 @@ export type SearchFiltersInitial = {
   garageMin?: string
   daysOnMarket?: string
   keywords?: string
+  postalCode?: string
 }
 
 type Props = {
@@ -77,7 +78,13 @@ export default function SearchFilters({ initialFilters }: Props) {
   const searchParams = useSearchParams()
   const [locationQuery, setLocationQuery] = useState('')
   const [locationOpen, setLocationOpen] = useState(false)
-  const [suggestions, setSuggestions] = useState<{ addresses: { label: string; href: string }[]; cities: { city: string; count: number }[]; subdivisions: { city: string; subdivisionName: string; count: number }[] }>({ addresses: [], cities: [], subdivisions: [] })
+  const [suggestions, setSuggestions] = useState<SearchSuggestionsResult>({
+    addresses: [],
+    cities: [],
+    subdivisions: [],
+    zips: [],
+    brokers: [],
+  })
   const [moreOpen, setMoreOpen] = useState(false)
   const [view, setView] = useState<'split' | 'list' | 'map'>(() => (initialFilters.view === 'list' || initialFilters.view === 'map' ? initialFilters.view : 'split'))
   const locationInputRef = useRef<HTMLInputElement>(null)
@@ -137,10 +144,10 @@ export default function SearchFilters({ initialFilters }: Props) {
   const handleLocationSelect = useCallback(
     (type: 'city' | 'subdivision', city: string, subdivision?: string) => {
       if (type === 'city') {
-        updateUrl({ city, subdivision: undefined })
+        updateUrl({ city, subdivision: undefined, postalCode: undefined })
         setLocationQuery(city)
       } else {
-        updateUrl({ city, subdivision: subdivision ?? '' })
+        updateUrl({ city, subdivision: subdivision ?? '', postalCode: undefined })
         setLocationQuery(subdivision ? `${subdivision}, ${city}` : city)
       }
       setLocationOpen(false)
@@ -148,6 +155,21 @@ export default function SearchFilters({ initialFilters }: Props) {
     },
     [updateUrl, locationQuery]
   )
+
+  const handleZipSelect = useCallback(
+    (postalCode: string) => {
+      updateUrl({ postalCode, city: undefined, subdivision: undefined })
+      setLocationQuery(postalCode)
+      setLocationOpen(false)
+      trackEvent('search', { postalCode, search_term: locationQuery })
+    },
+    [updateUrl, locationQuery]
+  )
+
+  const handleBrokerSelect = useCallback((href: string) => {
+    setLocationOpen(false)
+    router.push(href)
+  }, [router])
 
   const handleSearchTrack = useCallback(() => {
     trackEvent('search', {
@@ -169,14 +191,14 @@ export default function SearchFilters({ initialFilters }: Props) {
           <Input
             ref={locationInputRef}
             type="text"
-            placeholder="City, community, or zip"
-            value={locationQuery !== undefined && locationQuery !== '' ? locationQuery : (initialFilters.subdivision && initialFilters.city ? `${initialFilters.subdivision}, ${initialFilters.city}` : (initialFilters.city ?? ''))}
+            placeholder="City, community, zip, address, or broker…"
+            value={locationQuery !== undefined && locationQuery !== '' ? locationQuery : (initialFilters.postalCode ?? (initialFilters.subdivision && initialFilters.city ? `${initialFilters.subdivision}, ${initialFilters.city}` : (initialFilters.city ?? '')))}
             onChange={(e) => setLocationQuery(e.target.value)}
             onFocus={() => setLocationOpen(true)}
             onBlur={() => setTimeout(() => setLocationOpen(false), 200)}
             className="w-full rounded-lg border border-border px-3 py-2 text-primary placeholder:text-muted-foreground focus:border-accent focus:outline-none"
           />
-          {locationOpen && (suggestions.cities.length > 0 || suggestions.subdivisions.length > 0) && (
+          {locationOpen && (suggestions.cities.length > 0 || suggestions.subdivisions.length > 0 || suggestions.zips.length > 0 || suggestions.brokers.length > 0) && (
             <div className="absolute top-full left-0 right-0 z-30 mt-1 rounded-lg border border-border bg-card shadow-md max-h-64 overflow-auto">
               {suggestions.cities.slice(0, 5).map((c) => (
                 <Button
@@ -196,6 +218,28 @@ export default function SearchFilters({ initialFilters }: Props) {
                   onMouseDown={() => handleLocationSelect('subdivision', s.city, s.subdivisionName)}
                 >
                   {s.subdivisionName}, {s.city}
+                </Button>
+              ))}
+              {suggestions.zips.slice(0, 5).map((z) => (
+                <Button
+                  key={z.postalCode}
+                  type="button"
+                  className="block w-full text-left px-3 py-2 text-sm text-primary hover:bg-muted"
+                  onMouseDown={() => handleZipSelect(z.postalCode)}
+                >
+                  {z.postalCode}
+                  {z.city && ` (${z.city})`}
+                  {z.count > 0 && ` · ${z.count}`}
+                </Button>
+              ))}
+              {suggestions.brokers.slice(0, 5).map((b) => (
+                <Button
+                  key={b.label}
+                  type="button"
+                  className="block w-full text-left px-3 py-2 text-sm text-primary hover:bg-muted"
+                  onMouseDown={() => handleBrokerSelect(b.href)}
+                >
+                  {b.label}
                 </Button>
               ))}
             </div>
@@ -236,7 +280,7 @@ export default function SearchFilters({ initialFilters }: Props) {
                 key={val || 'any'}
                 type="button"
                 onClick={() => { setFilter('beds', val); handleSearchTrack() }}
-                className={`rounded px-2 py-1 text-sm ${active ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}
+                className={`rounded px-2 py-1 text-sm ${active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
               >
                 {n == null ? 'Any' : `${n}+`}
               </Button>
@@ -255,7 +299,7 @@ export default function SearchFilters({ initialFilters }: Props) {
                 key={val || 'any'}
                 type="button"
                 onClick={() => { setFilter('baths', val); handleSearchTrack() }}
-                className={`rounded px-2 py-1 text-sm ${active ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}
+                className={`rounded px-2 py-1 text-sm ${active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
               >
                 {n == null ? 'Any' : `${n}+`}
               </Button>
@@ -272,7 +316,7 @@ export default function SearchFilters({ initialFilters }: Props) {
                 key={s}
                 type="button"
                 onClick={() => { setFilter('status', s); handleSearchTrack() }}
-                className={`rounded px-3 py-1 text-sm ${active ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}
+                className={`rounded px-3 py-1 text-sm ${active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
               >
                 {s}
               </Button>

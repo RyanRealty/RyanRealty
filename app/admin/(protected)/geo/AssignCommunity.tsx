@@ -46,7 +46,7 @@ export default function AssignCommunity({
             onChange={(e) => setCommunityId(e.target.value)}
             className="rounded border border-border px-3 py-2 text-sm"
           >
-            <option value="">Select…</option>
+            <option value="">Selectâ€¦</option>
             {communities.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -69,9 +69,9 @@ export default function AssignCommunity({
           type="button"
           onClick={handleAssign}
           disabled={loading || !communityId}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-60"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-60"
         >
-          {loading ? 'Saving…' : 'Assign'}
+          {loading ? 'Savingâ€¦' : 'Assign'}
         </Button>
       </div>
     </section>

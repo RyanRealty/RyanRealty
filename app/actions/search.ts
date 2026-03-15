@@ -37,6 +37,7 @@ export type SearchFilters = {
   golfCourse?: boolean
   keywords?: string
   communityIds?: string[]
+  postalCode?: string
 }
 
 function toAdvancedFilters(
@@ -110,7 +111,7 @@ export async function getSearchMapListings(filters: SearchFilters): Promise<MapL
     yearBuiltMax: filters.yearBuiltMax,
     lotAcresMin: filters.lotAcresMin,
     lotAcresMax: filters.lotAcresMax,
-    postalCode: undefined,
+    postalCode: filters.postalCode?.trim() || undefined,
     propertyType: filters.propertyType,
   })
 }

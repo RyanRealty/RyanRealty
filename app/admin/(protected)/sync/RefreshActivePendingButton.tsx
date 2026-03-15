@@ -37,7 +37,7 @@ export default function RefreshActivePendingButton({ runInProgress = false, sync
         return
       }
 
-      setProgress('Starting…')
+      setProgress('Startingâ€¦')
 
       while (true) {
         const result = await runOneSyncChunk()
@@ -45,7 +45,7 @@ export default function RefreshActivePendingButton({ runInProgress = false, sync
         const cursor = status?.cursor
         const upserted = cursor?.runListingsUpserted ?? 0
         if (cursor?.phase === 'refresh_active_pending' && upserted > 0) {
-          setProgress(`${upserted} listings upserted so far…`)
+          setProgress(`${upserted} listings upserted so farâ€¦`)
         } else if (result.message) {
           setProgress(result.message)
         }
@@ -102,9 +102,9 @@ export default function RefreshActivePendingButton({ runInProgress = false, sync
           type="button"
           onClick={handleClick}
           disabled={buttonDisabled}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary disabled:opacity-50"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
         >
-          {loading ? 'Refreshing…' : refreshRunningElsewhere ? 'Refresh in progress' : 'Refresh active & pending'}
+          {loading ? 'Refreshingâ€¦' : refreshRunningElsewhere ? 'Refresh in progress' : 'Refresh active & pending'}
         </Button>
         {loading && (
           <Button
@@ -113,7 +113,7 @@ export default function RefreshActivePendingButton({ runInProgress = false, sync
             disabled={stopPending}
             className="rounded-lg border-2 border-destructive bg-destructive/10 px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/15 disabled:opacity-50"
           >
-            {stopPending ? 'Stopping…' : 'Stop'}
+            {stopPending ? 'Stoppingâ€¦' : 'Stop'}
           </Button>
         )}
         {refreshRunningElsewhere && (

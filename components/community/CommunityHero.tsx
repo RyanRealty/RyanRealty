@@ -54,7 +54,7 @@ export default function CommunityHero({
       {/* Splash overlay: gradient for readability + one-time light sweep */}
       <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/55 to-primary/25" aria-hidden />
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]" aria-hidden>
-        <div className="absolute top-0 left-0 h-full w-[60%] bg-gradient-to-r from-transparent via-white/20 to-transparent animate-hero-shine" />
+        <div className="absolute top-0 left-0 h-full w-[60%] bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent animate-hero-shine" />
       </div>
       <div className="relative z-10 flex min-h-[320px] sm:min-h-[400px] flex-col justify-end px-4 pt-14 pb-8 md:pt-16 sm:px-6 sm:pb-12">
         <div className="mx-auto w-full max-w-7xl">
@@ -63,13 +63,13 @@ export default function CommunityHero({
               Resort & master plan community
             </span>
           )}
-          <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl drop-shadow-md">
+          <h1 className="mt-2 text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl drop-shadow-md">
             {name}
           </h1>
           <p className="mt-1 text-lg text-muted font-sans">
             {city}, {state}
           </p>
-          <div className="mt-4 flex flex-wrap gap-4 rounded-lg bg-black/30 px-4 py-3 text-sm text-white font-sans">
+          <div className="mt-4 flex flex-wrap gap-4 rounded-lg bg-foreground/30 px-4 py-3 text-sm text-primary-foreground font-sans">
             <span>{activeCount} Homes for Sale</span>
             {medianPrice != null && (
               <span>Median {formatPrice(medianPrice)}</span>

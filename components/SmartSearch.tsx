@@ -67,13 +67,14 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
       ? 0
       : suggestions.addresses.length +
         suggestions.cities.length +
-        suggestions.subdivisions.length
+        suggestions.subdivisions.length +
+        suggestions.zips.length +
+        suggestions.brokers.length
 
   const getItemHref = (index: number): string | null => {
     if (!suggestions) return null
     let i = index
-    if (i < suggestions.addresses.length)
-      return suggestions.addresses[i].href
+    if (i < suggestions.addresses.length) return suggestions.addresses[i].href
     i -= suggestions.addresses.length
     if (i < suggestions.cities.length) {
       const c = suggestions.cities[i]
@@ -84,6 +85,10 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
       const s = suggestions.subdivisions[i]
       return communityPagePath(s.city, s.subdivisionName)
     }
+    i -= suggestions.subdivisions.length
+    if (i < suggestions.zips.length) return suggestions.zips[i].href
+    i -= suggestions.zips.length
+    if (i < suggestions.brokers.length) return suggestions.brokers[i].href
     return null
   }
 
@@ -141,7 +146,7 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
   return (
     <div className="relative w-full max-w-md" ref={panelRef}>
       <Label htmlFor="smart-search-input" className="sr-only">
-        Search address, city, or neighborhood
+        Search by city, community, neighborhood, zip, address, or broker name
       </Label>
       <Input
         id="smart-search-input"
@@ -154,7 +159,7 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
         aria-activedescendant={
           open && totalItems > 0 ? `smart-search-item-${highlight}` : undefined
         }
-        placeholder="Search address, city, or neighborhood…"
+        placeholder="City, community, zip, address, or broker…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => query.trim().length >= MIN_QUERY_LENGTH && setOpen(true)}
@@ -238,7 +243,7 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
                 </div>
               )}
               {suggestions.subdivisions.length > 0 && (
-                <div>
+                <div className="mb-1">
                   <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Neighborhoods &amp; communities
                   </p>
@@ -262,6 +267,62 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
                         {s.subdivisionName}
                         <span className="ml-1 text-muted-foreground">({s.city})</span>
                         {s.count > 0 && <span className="ml-1 text-muted-foreground">· {s.count}</span>}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+              {suggestions.zips.length > 0 && (
+                <div className="mb-1">
+                  <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Zip codes
+                  </p>
+                  {suggestions.zips.map((z, i) => {
+                    const idx = itemIndex++
+                    return (
+                      <Link
+                        key={`zip-${i}-${z.postalCode}`}
+                        id={`smart-search-item-${idx}`}
+                        role="option"
+                        aria-selected={highlight === idx}
+                        href={z.href}
+                        className={linkClass(highlight === idx)}
+                        onClick={() => {
+                          setOpen(false)
+                          setQuery('')
+                          onClose?.()
+                        }}
+                      >
+                        {z.postalCode}
+                        {z.city && <span className="ml-1 text-muted-foreground">({z.city})</span>}
+                        {z.count > 0 && <span className="ml-1 text-muted-foreground">· {z.count}</span>}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+              {suggestions.brokers.length > 0 && (
+                <div>
+                  <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Agents &amp; brokers
+                  </p>
+                  {suggestions.brokers.map((b, i) => {
+                    const idx = itemIndex++
+                    return (
+                      <Link
+                        key={`broker-${i}-${b.label}`}
+                        id={`smart-search-item-${idx}`}
+                        role="option"
+                        aria-selected={highlight === idx}
+                        href={b.href}
+                        className={linkClass(highlight === idx)}
+                        onClick={() => {
+                          setOpen(false)
+                          setQuery('')
+                          onClose?.()
+                        }}
+                      >
+                        {b.label}
                       </Link>
                     )
                   })}

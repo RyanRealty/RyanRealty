@@ -54,7 +54,7 @@ export default function RecentlySold({
               href="/reports"
               className="text-sm font-semibold text-accent-foreground hover:text-accent-foreground"
             >
-              View market reports →
+              View market reports â†’
             </Link>
           }
         >
@@ -81,7 +81,7 @@ export default function RecentlySold({
                     shareCount={engagementCounts?.[String(key)]?.share_count}
                   />
                   {(closePrice != null || closeDate) && (
-                    <div className="absolute bottom-2 left-2 right-2 rounded-lg bg-black/70 px-2 py-1.5 text-sm text-white">
+                    <div className="absolute bottom-2 left-2 right-2 rounded-lg bg-foreground/70 px-2 py-1.5 text-sm text-primary-foreground">
                       {closePrice != null && <span className="font-semibold">{formatPrice(closePrice)}</span>}
                       {closeDate && (
                         <span className="ml-1 opacity-90">Closed {formatCloseDate(closeDate)}</span>

@@ -50,7 +50,7 @@ export default async function DashboardHistoryPage() {
           <p className="text-muted-foreground">No viewing history yet.</p>
           <Link
             href="/listings"
-            className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
+            className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-accent/90"
           >
             Browse listings
           </Link>
