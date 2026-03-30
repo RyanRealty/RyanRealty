@@ -1,0 +1,1064 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-03-30",
+  "phases": [
+    {
+      "id": "phase-0",
+      "name": "Critical Fixes",
+      "status": "complete",
+      "goal": "Fix data integrity and SEO issues that undermine everything built on top.",
+      "tasks": [
+        {
+          "id": "0.1",
+          "title": "Listing URL Canonical Consistency",
+          "status": "complete",
+          "requirement": "R1",
+          "owner": "engagement",
+          "files": [
+            "app/sitemap.ts",
+            "components/ListingTile.tsx",
+            "app/listing/[listingKey]/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Key+slug is the canonical URL form everywhere",
+            "Sitemap URLs match internal link hrefs match canonical tags",
+            "npm run build passes"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "0.2",
+          "title": "Add Missing Spark Select Fields",
+          "status": "complete",
+          "requirement": "R9",
+          "owner": "reporting",
+          "files": [
+            "lib/spark-odata.ts"
+          ],
+          "acceptanceCriteria": [
+            "ListAgentStateLicense and ListAgentEmail in SPARK_SELECT_FIELDS",
+            "listing_agents table has non-null agent_license and agent_email after sync"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "0.3",
+          "title": "Fix listing_videos Population",
+          "status": "complete",
+          "requirement": "R4",
+          "owner": "reporting",
+          "files": [
+            "app/actions/sync-spark.ts"
+          ],
+          "acceptanceCriteria": [
+            "Sync pipeline upserts listing_videos rows from details.Videos",
+            "Both listing routes read video from same source",
+            "listing_videos count is non-zero for listings with videos"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "0.4",
+          "title": "Fix Viewing History",
+          "status": "complete",
+          "requirement": "R3",
+          "owner": "engagement",
+          "files": [
+            "lib/activity-tracker.ts"
+          ],
+          "acceptanceCriteria": [
+            "view_listing events written to user_activities for logged-in users",
+            "/dashboard/history shows viewed listings"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "0.5",
+          "title": "Fix OG Images and Twitter Tags",
+          "status": "complete",
+          "requirement": "R1",
+          "owner": "engagement",
+          "files": [
+            "app/sell/page.tsx",
+            "app/buy/page.tsx",
+            "app/blog/page.tsx",
+            "app/feed/page.tsx",
+            "app/reports/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "og:image and twitter:image on all page types",
+            "Fallback OG image exists",
+            "curl confirms og:image present on each page type"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "0.6",
+          "title": "Sitemap Index Splitting",
+          "status": "complete",
+          "requirement": "R1",
+          "owner": "monetization",
+          "files": [
+            "app/sitemap.ts"
+          ],
+          "acceptanceCriteria": [
+            "Sitemap splits into multiple files when listing count exceeds 5000",
+            "Sitemap index returned at /sitemap.xml"
+          ],
+          "dependsOn": []
+        }
+      ]
+    },
+    {
+      "id": "phase-1",
+      "name": "Reporting Data Layer + Sync Hooks",
+      "status": "complete",
+      "goal": "Build the data foundation that all market intelligence features depend on.",
+      "tasks": [
+        {
+          "id": "1.1",
+          "title": "Database Migration (market_stats_cache, market_pulse_live, market_narratives)",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "supabase/migrations/*_market_stats_cache.sql"
+          ],
+          "acceptanceCriteria": [
+            "market_stats_cache table exists with correct columns and indexes",
+            "market_pulse_live table exists",
+            "market_narratives table exists",
+            "supabase db push succeeds"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "1.2",
+          "title": "Data Investigation",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [],
+          "acceptanceCriteria": [
+            "Field availability for ClosePrice, OriginalListPrice, SoldPrice documented",
+            "Spark Market Statistics API status tested"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "1.3",
+          "title": "Computation RPCs",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "supabase/migrations/*_market_rpcs.sql"
+          ],
+          "acceptanceCriteria": [
+            "compute_and_cache_period_stats RPC exists and works",
+            "refresh_market_pulse RPC exists and works",
+            "refresh_current_period_stats RPC exists and works"
+          ],
+          "dependsOn": ["1.1"]
+        },
+        {
+          "id": "1.4",
+          "title": "Market Health Score",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [],
+          "acceptanceCriteria": [
+            "0-100 score computed from absorption rate, speed, competition, supply, momentum, ratio",
+            "Labels: Very Hot, Hot, Warm, Cool, Cold"
+          ],
+          "dependsOn": ["1.3"]
+        },
+        {
+          "id": "1.5",
+          "title": "Narrative Generation Engine",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "lib/market-narrative.ts"
+          ],
+          "acceptanceCriteria": [
+            "generate_market_narrative produces overview, analysis, FAQ",
+            "Narrative reads naturally with real numbers"
+          ],
+          "dependsOn": ["1.3"]
+        },
+        {
+          "id": "1.6",
+          "title": "Backfill + Post-Sync Hooks",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "app/api/cron/sync-full/route.ts"
+          ],
+          "acceptanceCriteria": [
+            "backfill_all_historical_stats populates 12+ months of data per city",
+            "Post-sync hook refreshes market_pulse_live"
+          ],
+          "dependsOn": ["1.3"]
+        },
+        {
+          "id": "1.7",
+          "title": "Server Actions (getCachedStats, getLiveMarketPulse, etc.)",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "app/actions/market-stats.ts"
+          ],
+          "acceptanceCriteria": [
+            "getCachedStats, getStatsTimeSeries, getLiveMarketPulse, getMarketNarrative, getMarketOverview, getHottestCommunities all return expected data shapes"
+          ],
+          "dependsOn": ["1.3"]
+        },
+        {
+          "id": "1.8",
+          "title": "Reporting Components",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "components/reports/StatCard.tsx",
+            "components/reports/LivePulseBanner.tsx",
+            "components/reports/FreshnessBadge.tsx",
+            "components/reports/MiniSparkline.tsx",
+            "components/reports/MarketHealthGauge.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Components render with mock data",
+            "npm run build passes"
+          ],
+          "dependsOn": ["1.7"]
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Engagement Page Restructuring",
+      "status": "complete",
+      "goal": "Redesign page content using Reporting components. Surface video, open houses, and sharing improvements.",
+      "tasks": [
+        {
+          "id": "2.1",
+          "title": "Activity Feed Wiring",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "components/ActivityFeedSlider.tsx",
+            "app/actions/activity-feed.ts",
+            "app/page.tsx",
+            "app/search/[...slug]/page.tsx",
+            "app/listing/[listingKey]/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "ActivityFeedSlider renders on Home, City, Community, Listing Detail",
+            "Subdivision filter works",
+            "status_expired and back_on_market events included"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "2.2",
+          "title": "Market Pulse on Pages",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "app/search/[...slug]/page.tsx",
+            "app/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "City pages show LivePulseBanner + FreshnessBadge",
+            "Stats sourced from getLiveMarketPulse() and getCachedStats()"
+          ],
+          "dependsOn": ["1.7", "1.8"]
+        },
+        {
+          "id": "2.3",
+          "title": "Recently Sold Sections",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "components/RecentlySoldRow.tsx",
+            "app/actions/recently-sold.ts"
+          ],
+          "acceptanceCriteria": [
+            "Slider of recently closed sales on City and Community pages",
+            "Shows photo, Sold badge, sale price, original list price, % over/under, DOM"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "2.4",
+          "title": "Demand Indicators on Listing Pages",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "components/listing/DemandIndicators.tsx",
+            "app/actions/listing-views.ts"
+          ],
+          "acceptanceCriteria": [
+            "View count, save count, trending badge on listing detail",
+            "DOM comparison with city average"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "2.5",
+          "title": "Price History Chart",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "components/listing/PriceHistoryChart.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Visual timeline chart of price changes and status events",
+            "Renders for listings with price history data"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "2.6",
+          "title": "Area Market Context",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "components/listing/AreaMarketContext.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Shows price/sqft vs area median, price positioning, list-to-sale ratio, inventory count",
+            "Data from getCachedStats()"
+          ],
+          "dependsOn": ["1.7"]
+        },
+        {
+          "id": "2.7",
+          "title": "Video Surfacing",
+          "status": "complete",
+          "requirement": "R4",
+          "owner": "engagement",
+          "files": [
+            "components/ListingTile.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Video hover preview on listing cards",
+            "Video Tours in [City] sections",
+            "og:video tags for listings with videos"
+          ],
+          "dependsOn": ["0.3"]
+        },
+        {
+          "id": "2.8",
+          "title": "Open House Sections",
+          "status": "complete",
+          "requirement": "R5",
+          "owner": "engagement",
+          "files": [
+            "app/open-houses/page.tsx",
+            "app/open-houses/[city]/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Open house sections on city, home, community pages",
+            "Dedicated /open-houses/ and /open-houses/[city]/ pages"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "2.9",
+          "title": "Sharing Improvements",
+          "status": "complete",
+          "requirement": "R2",
+          "owner": "engagement",
+          "files": [
+            "components/ShareButton.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Instagram, WhatsApp, SMS sharing options",
+            "ShareButton on all major page types",
+            "Stats-enriched share text"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "2.10",
+          "title": "Home Page Restructure",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "app/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "All new sections present: ActivityFeed, Lifestyle, PriceRange, PageCTA, Team",
+            "Section order matches spec",
+            "Mobile responsive"
+          ],
+          "dependsOn": ["2.1", "2.2"]
+        },
+        {
+          "id": "2.11",
+          "title": "City Page Restructure",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "app/search/[...slug]/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "All new sections: About, MarketPulse, ActivityFeed, RecentlySold, Browse, PageCTA, NearbyCities",
+            "City-scoped data"
+          ],
+          "dependsOn": ["2.1", "2.2", "2.3"]
+        },
+        {
+          "id": "2.12",
+          "title": "Community Page Restructure",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "app/search/[...slug]/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "CommunityQuickFacts, MarketPulse, ActivityFeed, RecentlySold, CommunityCompare",
+            "Subdivision-specific data"
+          ],
+          "dependsOn": ["2.1", "2.2", "2.3"]
+        },
+        {
+          "id": "2.13",
+          "title": "Listing Detail Enhancements",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "app/listing/[listingKey]/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "DemandIndicators, PriceHistoryChart, AreaMarketContext, ActivityFeed, RecentlySold present",
+            "Section order per CR-9"
+          ],
+          "dependsOn": ["2.1", "2.4", "2.5", "2.6"]
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Monetization Layer",
+      "status": "complete",
+      "goal": "Add revenue-generating infrastructure: programmatic pages, ads, lead capture, blog/guides.",
+      "tasks": [
+        {
+          "id": "3.1",
+          "title": "AdUnit + InFeedAdCard Components",
+          "status": "complete",
+          "requirement": "",
+          "owner": "monetization",
+          "files": [
+            "components/AdUnit.tsx",
+            "components/search/InFeedAdCard.tsx"
+          ],
+          "acceptanceCriteria": [
+            "AdUnit renders placeholder in dev, null without AdSense ID",
+            "InFeedAdCard matches ListingTile dimensions"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "3.2",
+          "title": "Ad Placement on Existing Pages",
+          "status": "complete",
+          "requirement": "",
+          "owner": "monetization",
+          "files": [
+            "app/listing/[listingKey]/page.tsx",
+            "app/search/[...slug]/page.tsx",
+            "app/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Ads placed per CR-9 agreed order",
+            "npm run build passes"
+          ],
+          "dependsOn": ["3.1"]
+        },
+        {
+          "id": "3.3",
+          "title": "Programmatic Filter Pages",
+          "status": "complete",
+          "requirement": "",
+          "owner": "monetization",
+          "files": [
+            "lib/filter-pages.ts",
+            "app/search/[...slug]/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "/search/bend/under-300k renders with correct filters and unique metadata",
+            "~17 filter types defined",
+            "120-170 new indexable pages"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "3.4",
+          "title": "Lead Capture Surfaces with FUB Attribution",
+          "status": "complete",
+          "requirement": "R10",
+          "owner": "monetization",
+          "files": [
+            "components/HomeValuationCta.tsx",
+            "components/ExitIntentPopup.tsx",
+            "lib/followupboss.ts"
+          ],
+          "acceptanceCriteria": [
+            "Agent tracking cookie system works",
+            "FUB events include campaign/UTM data",
+            "HomeValuationCta and ExitIntentPopup functional"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "3.5",
+          "title": "Blog/Guides Infrastructure",
+          "status": "complete",
+          "requirement": "",
+          "owner": "monetization",
+          "files": [
+            "app/guides/page.tsx",
+            "app/guides/[slug]/page.tsx",
+            "app/admin/guides/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Guides table exists",
+            "Admin CRUD for guides works",
+            "Published guides render at /guides/{slug}"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "3.6",
+          "title": "Guide Content Generation",
+          "status": "complete",
+          "requirement": "",
+          "owner": "monetization",
+          "files": [],
+          "acceptanceCriteria": [
+            "33-40 articles generated",
+            "Unique content per page",
+            "FAQ schema validates"
+          ],
+          "dependsOn": ["3.5"]
+        },
+        {
+          "id": "3.7",
+          "title": "Sitemap Expansion",
+          "status": "complete",
+          "requirement": "",
+          "owner": "monetization",
+          "files": [
+            "app/sitemap.ts"
+          ],
+          "acceptanceCriteria": [
+            "Filter pages, ZIP code pages, guide pages in sitemap",
+            "Only filter pages with listings included",
+            "No 404s from sitemap URLs"
+          ],
+          "dependsOn": ["0.6", "3.3", "3.5"]
+        },
+        {
+          "id": "3.8",
+          "title": "Internal Linking Section",
+          "status": "complete",
+          "requirement": "",
+          "owner": "monetization",
+          "files": [
+            "app/search/[...slug]/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Browse by section on city pages",
+            "Links go to filter page routes",
+            "All link targets are valid routes"
+          ],
+          "dependsOn": ["3.3"]
+        },
+        {
+          "id": "3.9",
+          "title": "FUB Event Coverage",
+          "status": "complete",
+          "requirement": "",
+          "owner": "monetization",
+          "files": [
+            "lib/followupboss.ts"
+          ],
+          "acceptanceCriteria": [
+            "All lead capture surfaces mapped to FUB events",
+            "No lead capture surface is silent"
+          ],
+          "dependsOn": ["3.4"]
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Advanced Features",
+      "status": "complete",
+      "goal": "Housing market hub, email alerts, broker tools, admin cleanup.",
+      "tasks": [
+        {
+          "id": "4.1",
+          "title": "Housing Market Hub Pages",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "app/housing-market/page.tsx",
+            "app/housing-market/[...slug]/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Hub page with Central Oregon overview + city cards",
+            "City and community market pages render",
+            "301 redirects from /reports/ to /housing-market/"
+          ],
+          "dependsOn": ["1.7", "1.8"]
+        },
+        {
+          "id": "4.2",
+          "title": "Dynamic OG Images for Market Pages",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "app/housing-market/[...slug]/opengraph-image.tsx"
+          ],
+          "acceptanceCriteria": [
+            "1200x630 OG images generated with stats",
+            "Schema markup: FAQPage, Dataset, BreadcrumbList"
+          ],
+          "dependsOn": ["4.1"]
+        },
+        {
+          "id": "4.3",
+          "title": "Saved Search Email Alerts",
+          "status": "complete",
+          "requirement": "R3",
+          "owner": "engagement",
+          "files": [
+            "app/api/cron/saved-search-alerts/route.ts"
+          ],
+          "acceptanceCriteria": [
+            "Email provider integrated",
+            "Users with saved searches receive notifications"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "4.4",
+          "title": "Broker Experience",
+          "status": "complete",
+          "requirement": "R8",
+          "owner": "admin",
+          "files": [
+            "app/admin/(protected)/broker-dashboard/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Broker self-service editing",
+            "Performance dashboard with real data"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "4.5",
+          "title": "Admin Cleanup",
+          "status": "complete",
+          "requirement": "R8",
+          "owner": "admin",
+          "files": [
+            "app/admin/(protected)/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "No placeholder text on admin dashboard",
+            "Admin search bar functional",
+            "Email compose encoding fixed"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "4.6",
+          "title": "Monthly Report Snapshots",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [],
+          "acceptanceCriteria": [
+            "Monthly snapshot pages with frozen data",
+            "Auto-generated narrative"
+          ],
+          "dependsOn": ["4.1"]
+        },
+        {
+          "id": "4.7",
+          "title": "Regional Hub",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "app/housing-market/central-oregon/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Regional hub aggregating all cities"
+          ],
+          "dependsOn": ["4.1"]
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Future Differentiators",
+      "status": "complete",
+      "goal": "Features that create lasting competitive advantages.",
+      "tasks": [
+        {
+          "id": "5.1",
+          "title": "PDF/Excel Export for Market Reports",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "app/api/reports/export/route.ts"
+          ],
+          "acceptanceCriteria": [
+            "Download produces valid PDF with correct data",
+            "Excel export works"
+          ],
+          "dependsOn": ["4.1"]
+        },
+        {
+          "id": "5.2",
+          "title": "Semantic Search with pgvector",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [
+            "app/actions/semantic-search.ts"
+          ],
+          "acceptanceCriteria": [
+            "pgvector extension enabled",
+            "Natural language search returns relevant results"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "5.3",
+          "title": "Vacation Rental Potential",
+          "status": "complete",
+          "requirement": "R6",
+          "owner": "engagement",
+          "files": [],
+          "acceptanceCriteria": [
+            "STR status surfaced on applicable listings",
+            "Rental income estimates shown"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "5.4",
+          "title": "Revenue-Generating Tools",
+          "status": "complete",
+          "requirement": "",
+          "owner": "monetization",
+          "files": [
+            "app/compare/page.tsx",
+            "app/tools/appreciation/page.tsx"
+          ],
+          "acceptanceCriteria": [
+            "Community comparison tool renders",
+            "Appreciation calculator renders",
+            "Each tool has ad units + lead capture CTAs"
+          ],
+          "dependsOn": ["1.7"]
+        }
+      ]
+    },
+    {
+      "id": "phase-6",
+      "name": "Later Backlog",
+      "status": "complete",
+      "goal": "Infrastructure and monetization analytics.",
+      "tasks": [
+        {
+          "id": "6.1",
+          "title": "Google Search Console API Integration",
+          "status": "complete",
+          "requirement": "",
+          "owner": "reporting",
+          "files": [
+            "app/actions/search-console-report.ts"
+          ],
+          "acceptanceCriteria": [
+            "Search Console API ingestion",
+            "Metrics surfaced in admin dashboard"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "6.2",
+          "title": "Realtime Likes/Saves via Supabase Realtime",
+          "status": "complete",
+          "requirement": "",
+          "owner": "engagement",
+          "files": [],
+          "acceptanceCriteria": [
+            "Engagement events streamed to clients",
+            "UI components subscribe to realtime changes"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "6.3",
+          "title": "Partnership Revenue Structures",
+          "status": "complete",
+          "requirement": "",
+          "owner": "monetization",
+          "files": [
+            "app/actions/partnership-revenue.ts"
+          ],
+          "acceptanceCriteria": [
+            "Referral and partner revenue model support",
+            "Partner attribution tracking"
+          ],
+          "dependsOn": []
+        },
+        {
+          "id": "6.4",
+          "title": "Revenue Tracking Dashboard",
+          "status": "complete",
+          "requirement": "",
+          "owner": "admin",
+          "files": [],
+          "acceptanceCriteria": [
+            "Ad revenue, lead volume, estimated lead value, blended revenue visible",
+            "Admin dashboard views complete"
+          ],
+          "dependsOn": ["6.1", "6.3"]
+        }
+      ]
+    }
+  ],
+  "backlog": [
+    {
+      "id": "BL-001",
+      "title": "Duplicate listing detail routes consolidation",
+      "priority": "high",
+      "category": "tech-debt",
+      "source": "audit",
+      "status": "open",
+      "owner": "engagement",
+      "files": [
+        "app/listing/[listingKey]/page.tsx",
+        "app/listings/[listingKey]/page.tsx"
+      ],
+      "acceptanceCriteria": [
+        "/listings/[key] redirects to /listing/[key] with 301",
+        "Only one listing detail route implementation exists",
+        "All internal links use /listing/ path"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-002",
+      "title": "Duplicate agents vs team routes consolidation",
+      "priority": "high",
+      "category": "tech-debt",
+      "source": "audit",
+      "status": "open",
+      "owner": "engagement",
+      "files": [
+        "app/agents/page.tsx",
+        "app/team/page.tsx"
+      ],
+      "acceptanceCriteria": [
+        "/agents redirects to /team with 301",
+        "Sitemap only emits /team URLs",
+        "All internal links use /team"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-003",
+      "title": "Overly permissive image remote patterns",
+      "priority": "high",
+      "category": "bug",
+      "source": "audit",
+      "status": "open",
+      "owner": "shared",
+      "files": [
+        "next.config.ts"
+      ],
+      "acceptanceCriteria": [
+        "Image remote patterns restricted to known domains only",
+        "No hostname: '**' wildcard"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-004",
+      "title": "Expand test coverage beyond 5 test files",
+      "priority": "medium",
+      "category": "tech-debt",
+      "source": "audit",
+      "status": "open",
+      "owner": "shared",
+      "files": [
+        "lib/**/*.test.ts"
+      ],
+      "acceptanceCriteria": [
+        "Critical server actions have test coverage",
+        "At least 20 test files covering core functionality"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-005",
+      "title": "Wire Sentry error boundary for production monitoring",
+      "priority": "medium",
+      "category": "improvement",
+      "source": "audit",
+      "status": "open",
+      "owner": "shared",
+      "files": [
+        "app/error.tsx",
+        "sentry.client.config.ts"
+      ],
+      "acceptanceCriteria": [
+        "Root error boundary reports to Sentry",
+        "SENTRY_DSN env var documented"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-006",
+      "title": "E2E testing infrastructure",
+      "priority": "medium",
+      "category": "improvement",
+      "source": "master-plan",
+      "status": "open",
+      "owner": "shared",
+      "files": [],
+      "acceptanceCriteria": [
+        "Playwright or Cypress configured",
+        "Critical user flows covered (search, view listing, save, contact agent)",
+        "E2E runs in CI"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-007",
+      "title": "A/B testing infrastructure",
+      "priority": "low",
+      "category": "feature",
+      "source": "master-plan",
+      "status": "open",
+      "owner": "shared",
+      "files": [],
+      "acceptanceCriteria": [
+        "Feature flag system for A/B testing",
+        "GA4 event comparison between variants"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-008",
+      "title": "Content engine social media automation",
+      "priority": "medium",
+      "category": "feature",
+      "source": "master-plan",
+      "status": "open",
+      "owner": "monetization",
+      "files": [],
+      "acceptanceCriteria": [
+        "Sync events trigger content creation",
+        "Social OAuth integration for posting",
+        "Broker review queue for generated content"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-009",
+      "title": "AI video pipeline (Luma/Runway)",
+      "priority": "low",
+      "category": "feature",
+      "source": "master-plan",
+      "status": "open",
+      "owner": "engagement",
+      "files": [],
+      "acceptanceCriteria": [
+        "AI-generated short-form videos from listing photos",
+        "Broker review and approval workflow",
+        "Storage in Supabase Storage or Vercel Blob"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-010",
+      "title": "Lead scoring and broker alerts",
+      "priority": "medium",
+      "category": "feature",
+      "source": "master-plan",
+      "status": "open",
+      "owner": "monetization",
+      "files": [
+        "lib/followupboss.ts"
+      ],
+      "acceptanceCriteria": [
+        "Lead scoring based on behavior signals",
+        "Broker alerts when score crosses threshold",
+        "FUB tasks created for hot leads"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-011",
+      "title": "Identified personalization (returning user experience)",
+      "priority": "medium",
+      "category": "feature",
+      "source": "master-plan",
+      "status": "open",
+      "owner": "engagement",
+      "files": [],
+      "acceptanceCriteria": [
+        "Signed-in users see personalized content based on history",
+        "Default map/search to browsed areas",
+        "Under contract + similar notifications"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-012",
+      "title": "Resort community microsites (Type Two)",
+      "priority": "low",
+      "category": "feature",
+      "source": "master-plan",
+      "status": "open",
+      "owner": "engagement",
+      "files": [
+        "lib/resort-communities.ts"
+      ],
+      "acceptanceCriteria": [
+        "Dedicated microsite-style pages for resort communities",
+        "Community-specific content and media"
+      ],
+      "dependsOn": []
+    }
+  ]
+}
