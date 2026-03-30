@@ -126,12 +126,32 @@ function getNextTasks(registry: Registry): Task[] {
   const allTasks = getAllTasks(registry)
   const openTasks = allTasks.filter(t => t.status === 'open' && !isBlocked(t, allTasks))
 
-  // Sort by priority: high > medium > low, then by ID (phase order)
-  const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 }
+  // Build a map of task ID → phase index for ordering
+  const taskPhaseIndex = new Map<string, number>()
+  for (let i = 0; i < registry.phases.length; i++) {
+    for (const task of registry.phases[i].tasks) {
+      taskPhaseIndex.set(task.id, i)
+    }
+  }
+  // Backlog items get a phase index after all phases
+  for (const task of registry.backlog) {
+    taskPhaseIndex.set(task.id, registry.phases.length)
+  }
+
+  // Sort by: critical first, then phase/tier order, then priority within tier, then ID
+  const priorityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
   openTasks.sort((a, b) => {
-    const pa = priorityOrder[a.priority ?? 'medium'] ?? 1
-    const pb = priorityOrder[b.priority ?? 'medium'] ?? 1
+    // Critical priority always first
+    const pa = priorityOrder[a.priority ?? 'medium'] ?? 2
+    const pb = priorityOrder[b.priority ?? 'medium'] ?? 2
     if (pa !== pb) return pa - pb
+
+    // Then by phase/tier order (tier-1 before tier-2 before backlog)
+    const phaseA = taskPhaseIndex.get(a.id) ?? 999
+    const phaseB = taskPhaseIndex.get(b.id) ?? 999
+    if (phaseA !== phaseB) return phaseA - phaseB
+
+    // Then by ID (numeric sort)
     return a.id.localeCompare(b.id, undefined, { numeric: true })
   })
 

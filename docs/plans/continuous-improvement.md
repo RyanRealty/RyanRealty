@@ -1,7 +1,7 @@
 # Continuous Improvement Report
 
 **Generated**: 2026-03-30
-**Registry version**: 1.0
+**Registry version**: 2.0
 
 ---
 
@@ -9,59 +9,58 @@
 
 | Metric | Value |
 |--------|-------|
-| Total tasks | 63 |
-| Complete | 51 (81%) |
+| Total tasks | 36 |
+| Complete | 0 (0%) |
 | In progress | 0 |
-| Open (ready) | 12 |
+| Open (ready) | 29 |
 | Blocked | 0 |
 
 ## Phase Progress
 
-| phase-0 | Critical Fixes | 100% (6/6) | complete |
-| phase-1 | Reporting Data Layer + Sync Hooks | 100% (8/8) | complete |
-| phase-2 | Engagement Page Restructuring | 100% (13/13) | complete |
-| phase-3 | Monetization Layer | 100% (9/9) | complete |
-| phase-4 | Advanced Features | 100% (7/7) | complete |
-| phase-5 | Future Differentiators | 100% (4/4) | complete |
-| phase-6 | Later Backlog | 100% (4/4) | complete |
+| tier-1 | Critical — Blocks Everything | 0% (0/5) | open |
+| tier-2 | Competitive Baseline — Must-Have for Launch | 0% (0/10) | open |
+| tier-3 | Competitive Parity | 0% (0/9) | open |
+| tier-4 | Differentiators — Leapfrog Incumbents | 0% (0/7) | open |
 
 ## Work by Owner
 
-| engagement | 20/25 complete | 5 open |
-| reporting | 16/16 complete | 0 open |
-| monetization | 12/14 complete | 2 open |
-| admin | 3/3 complete | 0 open |
-| shared | 0/5 complete | 5 open |
+| seo | 0/5 complete | 5 open |
+| engagement | 0/19 complete | 19 open |
+| devops | 0/1 complete | 1 open |
+| reporting | 0/2 complete | 2 open |
+| monetization | 0/4 complete | 4 open |
+| content | 0/2 complete | 2 open |
+| qa | 0/2 complete | 2 open |
+| performance | 0/1 complete | 1 open |
 
 ## Current Priorities
 
-1. **BL-001**: Duplicate listing detail routes consolidation (high priority, owner: engagement)
-2. **BL-002**: Duplicate agents vs team routes consolidation (high priority, owner: engagement)
-3. **BL-003**: Overly permissive image remote patterns (high priority, owner: shared)
-4. **BL-004**: Expand test coverage beyond 5 test files (medium priority, owner: shared)
-5. **BL-005**: Wire Sentry error boundary for production monitoring (medium priority, owner: shared)
-6. **BL-006**: E2E testing infrastructure (medium priority, owner: shared)
-7. **BL-008**: Content engine social media automation (medium priority, owner: monetization)
-8. **BL-010**: Lead scoring and broker alerts (medium priority, owner: monetization)
-9. **BL-011**: Identified personalization (returning user experience) (medium priority, owner: engagement)
-10. **BL-007**: A/B testing infrastructure (low priority, owner: shared)
+1. **T1-001**: Fix sitemap.xml — returns 404 on production (critical priority, owner: seo)
+2. **T1-002**: Fix /about page — returns 500 error (critical priority, owner: engagement)
+3. **T1-003**: Fix /sell page — returns 500 error (critical priority, owner: engagement)
+4. **T1-004**: Allow AI crawlers in robots.txt (critical priority, owner: seo)
+5. **T1-005**: Verify all env vars are set in Vercel and document which are missing (critical priority, owner: devops)
+6. **T2-002**: Walk Score / Transit Score / Bike Score integration (high priority, owner: engagement)
+7. **T2-003**: School information with ratings (high priority, owner: engagement)
+8. **T2-004**: Filter by monthly payment (high priority, owner: engagement)
+9. **T2-005**: Integrate AI chat with property search (high priority, owner: engagement)
+10. **T2-006**: Build missing reporting components (StatCard, FreshnessBadge, MarketHealthGauge) (high priority, owner: reporting)
 
 
 
 ## Open Backlog by Category
 
-| tech-debt | 3 items |
-| bug | 1 items |
-| improvement | 2 items |
-| feature | 6 items |
+| testing | 2 items |
+| seo | 2 items |
+| performance | 1 items |
 
 ---
 
 ## Recommended Next Actions
 
-1. **BL-001 — Duplicate listing detail routes consolidation**: /listings/[key] redirects to /listing/[key] with 301
-2. **BL-002 — Duplicate agents vs team routes consolidation**: /agents redirects to /team with 301
-3. **BL-003 — Overly permissive image remote patterns**: Image remote patterns restricted to known domains only
+1. **T1-001 — Fix sitemap.xml — returns 404 on production**: GET /sitemap.xml returns 200 with valid XML
+2. **T1-002 — Fix /about page — returns 500 error**: GET /about returns 200
+3. **T1-003 — Fix /sell page — returns 500 error**: GET /sell returns 200
 
 ---
 
