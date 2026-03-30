@@ -674,7 +674,7 @@
       "priority": "high",
       "category": "testing",
       "source": "USER_JOURNEYS.md",
-      "status": "in-progress",
+      "status": "complete",
       "owner": "qa",
       "files": [
         "e2e/"
