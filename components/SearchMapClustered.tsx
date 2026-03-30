@@ -96,6 +96,8 @@ type Props = {
   onBoundsChanged?: (bounds: MapBounds) => void
   /** Optional GeoJSON boundary (Polygon/MultiPolygon) to draw for city/neighborhood/community. */
   boundaryGeojson?: unknown
+  /** Called when user draws a polygon on the map. Returns the polygon path for filtering. */
+  onPolygonDrawn?: (polygon: { lat: number; lng: number }[] | null) => void
 }
 
 export default function SearchMapClustered({
@@ -109,6 +111,7 @@ export default function SearchMapClustered({
   initialZoom = 11,
   onBoundsChanged,
   boundaryGeojson,
+  onPolygonDrawn,
 }: Props) {
   const router = useRouter()
   const mapRef = useRef<google.maps.Map | null>(null)
@@ -117,6 +120,9 @@ export default function SearchMapClustered({
   const placeViewportRef = useRef<google.maps.LatLngBounds | null>(null)
   const [placeViewport, setPlaceViewport] = useState<google.maps.LatLngBounds | null>(null)
   const [showBoundary, setShowBoundary] = useState(true)
+  const [drawingMode, setDrawingMode] = useState(false)
+  const [drawnPolygon, setDrawnPolygon] = useState<google.maps.Polygon | null>(null)
+  const drawingPoints = useRef<{ lat: number; lng: number }[]>([])
   const [openInfo, setOpenInfo] = useState<{
     listingKey: string
     position: { lat: number; lng: number }
@@ -413,18 +419,53 @@ export default function SearchMapClustered({
   return (
     <div className={`relative ${className}`.trim()} style={{ height: '100%', minHeight: 360 }}>
       <GoogleMap
-        mapContainerStyle={{ width: '100%', height: '100%', minHeight: 360 }}
+        mapContainerStyle={{ width: '100%', height: '100%', minHeight: 360, cursor: drawingMode ? 'crosshair' : '' }}
         center={center}
         zoom={zoom}
         onLoad={onLoad}
+        onClick={(e) => {
+          if (drawingMode && e.latLng) {
+            const point = { lat: e.latLng.lat(), lng: e.latLng.lng() }
+            drawingPoints.current = [...drawingPoints.current, point]
+            // Force re-render to show polygon preview
+            setDrawnPolygon(null) // trigger update
+          }
+        }}
         options={{
           zoomControl: true,
           zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
           mapTypeControl: true,
           streetViewControl: false,
           fullscreenControl: true,
+          draggable: !drawingMode,
+          clickableIcons: !drawingMode,
         }}
       >
+        {/* Drawing preview polygon */}
+        {drawingMode && drawingPoints.current.length >= 2 && (
+          <Polygon
+            paths={drawingPoints.current}
+            options={{
+              fillColor: '#3b82f6',
+              fillOpacity: 0.15,
+              strokeColor: '#3b82f6',
+              strokeWeight: 2,
+              strokeOpacity: 0.8,
+            }}
+          />
+        )}
+        {/* Completed drawn polygon */}
+        {!drawingMode && drawnPolygon && (
+          <Polygon
+            paths={drawnPolygon.getPath().getArray().map(p => ({ lat: p.lat(), lng: p.lng() }))}
+            options={{
+              fillColor: '#3b82f6',
+              fillOpacity: 0.2,
+              strokeColor: '#2563eb',
+              strokeWeight: 2,
+            }}
+          />
+        )}
         {showBoundary && boundaryPaths.flat().length > 0 &&
           boundaryPaths.map((path, i) => (
             <Polygon
@@ -481,6 +522,69 @@ export default function SearchMapClustered({
           </InfoWindow>
         )}
       </GoogleMap>
+      {/* Draw-on-map controls */}
+      {onPolygonDrawn && (
+        <div className="absolute left-3 top-3 z-[100] flex gap-2" aria-label="Draw controls">
+          {!drawingMode && !drawnPolygon && (
+            <Button
+              type="button"
+              onClick={() => {
+                setDrawingMode(true)
+                drawingPoints.current = []
+              }}
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-primary shadow-md hover:bg-muted"
+            >
+              ✏️ Draw to search
+            </Button>
+          )}
+          {drawingMode && (
+            <>
+              <Button
+                type="button"
+                onClick={() => {
+                  // Finalize the polygon
+                  if (drawingPoints.current.length >= 3) {
+                    const path = [...drawingPoints.current]
+                    const polygon = new google.maps.Polygon({ paths: path })
+                    setDrawnPolygon(polygon)
+                    onPolygonDrawn(path)
+                  }
+                  setDrawingMode(false)
+                }}
+                className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-md hover:bg-primary/90"
+                disabled={drawingPoints.current.length < 3}
+              >
+                Done ({drawingPoints.current.length} points)
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setDrawingMode(false)
+                  drawingPoints.current = []
+                }}
+                className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-md hover:bg-muted"
+              >
+                Cancel
+              </Button>
+            </>
+          )}
+          {drawnPolygon && (
+            <Button
+              type="button"
+              onClick={() => {
+                drawnPolygon.setMap(null)
+                setDrawnPolygon(null)
+                drawingPoints.current = []
+                onPolygonDrawn(null)
+              }}
+              className="rounded-lg border border-destructive bg-card px-3 py-2 text-sm font-medium text-destructive shadow-md hover:bg-destructive/10"
+            >
+              Clear drawing
+            </Button>
+          )}
+        </div>
+      )}
+
       {showBoundaryControls && (
         <div className="absolute right-3 top-14 z-[100] flex flex-col gap-2 rounded-lg border border-border bg-card p-1.5 shadow-md" aria-label="Map controls">
           {showBoundary && hasBoundary && (
