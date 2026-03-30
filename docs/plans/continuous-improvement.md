@@ -10,41 +10,36 @@
 | Metric | Value |
 |--------|-------|
 | Total tasks | 36 |
-| Complete | 0 (0%) |
+| Complete | 31 (86%) |
 | In progress | 0 |
-| Open (ready) | 29 |
+| Open (ready) | 5 |
 | Blocked | 0 |
 
 ## Phase Progress
 
-| tier-1 | Critical — Blocks Everything | 0% (0/5) | open |
-| tier-2 | Competitive Baseline — Must-Have for Launch | 0% (0/10) | open |
-| tier-3 | Competitive Parity | 0% (0/9) | open |
-| tier-4 | Differentiators — Leapfrog Incumbents | 0% (0/7) | open |
+| tier-1 | Critical — Blocks Everything | 100% (5/5) | complete |
+| tier-2 | Competitive Baseline — Must-Have for Launch | 100% (10/10) | complete |
+| tier-3 | Competitive Parity | 100% (9/9) | complete |
+| tier-4 | Differentiators — Leapfrog Incumbents | 100% (7/7) | complete |
 
 ## Work by Owner
 
-| seo | 0/5 complete | 5 open |
-| engagement | 0/19 complete | 19 open |
-| devops | 0/1 complete | 1 open |
-| reporting | 0/2 complete | 2 open |
-| monetization | 0/4 complete | 4 open |
-| content | 0/2 complete | 2 open |
+| seo | 4/5 complete | 1 open |
+| engagement | 19/19 complete | 0 open |
+| devops | 1/1 complete | 0 open |
+| reporting | 2/2 complete | 0 open |
+| monetization | 4/4 complete | 0 open |
+| content | 1/2 complete | 1 open |
 | qa | 0/2 complete | 2 open |
 | performance | 0/1 complete | 1 open |
 
 ## Current Priorities
 
-1. **T1-001**: Fix sitemap.xml — returns 404 on production (critical priority, owner: seo)
-2. **T1-002**: Fix /about page — returns 500 error (critical priority, owner: engagement)
-3. **T1-003**: Fix /sell page — returns 500 error (critical priority, owner: engagement)
-4. **T1-004**: Allow AI crawlers in robots.txt (critical priority, owner: seo)
-5. **T1-005**: Verify all env vars are set in Vercel and document which are missing (critical priority, owner: devops)
-6. **T2-002**: Walk Score / Transit Score / Bike Score integration (high priority, owner: engagement)
-7. **T2-003**: School information with ratings (high priority, owner: engagement)
-8. **T2-004**: Filter by monthly payment (high priority, owner: engagement)
-9. **T2-005**: Integrate AI chat with property search (high priority, owner: engagement)
-10. **T2-006**: Build missing reporting components (StatCard, FreshnessBadge, MarketHealthGauge) (high priority, owner: reporting)
+1. **BL-001**: Expand E2E tests to cover all 46 user journeys (high priority, owner: qa)
+2. **BL-003**: Complete structured data coverage (Product, FAQPage, BreadcrumbList, LocalBusiness) (high priority, owner: seo)
+3. **BL-005**: Performance optimization — ensure Core Web Vitals pass on all pages (high priority, owner: performance)
+4. **BL-002**: Expand unit test coverage from 3% to 30%+ (medium priority, owner: qa)
+5. **BL-004**: Content hub deepening — topic clusters for each city (medium priority, owner: content)
 
 
 
@@ -58,9 +53,9 @@
 
 ## Recommended Next Actions
 
-1. **T1-001 — Fix sitemap.xml — returns 404 on production**: GET /sitemap.xml returns 200 with valid XML
-2. **T1-002 — Fix /about page — returns 500 error**: GET /about returns 200
-3. **T1-003 — Fix /sell page — returns 500 error**: GET /sell returns 200
+1. **BL-001 — Expand E2E tests to cover all 46 user journeys**: Every UJ-XXX journey has a corresponding Playwright test
+2. **BL-003 — Complete structured data coverage (Product, FAQPage, BreadcrumbList, LocalBusiness)**: Product+Offer schema on listing pages
+3. **BL-005 — Performance optimization — ensure Core Web Vitals pass on all pages**: LCP < 2.5s on all page types
 
 ---
 

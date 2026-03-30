@@ -511,13 +511,13 @@
     {
       "id": "tier-4",
       "name": "Differentiators — Leapfrog Incumbents",
-      "status": "open",
+      "status": "complete",
       "goal": "AI-native features and deep local intelligence that Zillow/Redfin can't match.",
       "tasks": [
         {
           "id": "T4-001",
           "title": "AI property comparison tool",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "engagement",
           "files": [
@@ -537,7 +537,7 @@
         {
           "id": "T4-002",
           "title": "Personalized homepage for returning users",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "engagement",
           "files": [
@@ -559,7 +559,7 @@
         {
           "id": "T4-003",
           "title": "AI-generated neighborhood guides (LLM-optimized content)",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "content",
           "files": [
@@ -584,7 +584,7 @@
         {
           "id": "T4-004",
           "title": "Community livability scores",
-          "status": "open",
+          "status": "complete",
           "priority": "low",
           "owner": "engagement",
           "files": [
@@ -607,7 +607,7 @@
         {
           "id": "T4-005",
           "title": "Investment analysis on applicable listings",
-          "status": "open",
+          "status": "complete",
           "priority": "low",
           "owner": "engagement",
           "files": [
@@ -625,7 +625,7 @@
         {
           "id": "T4-006",
           "title": "Predictive market insights",
-          "status": "open",
+          "status": "complete",
           "priority": "low",
           "owner": "reporting",
           "files": [
@@ -647,7 +647,7 @@
         {
           "id": "T4-007",
           "title": "SMS instant alerts for saved searches",
-          "status": "open",
+          "status": "complete",
           "priority": "low",
           "owner": "monetization",
           "files": [
