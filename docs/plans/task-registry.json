@@ -691,7 +691,7 @@
       "priority": "medium",
       "category": "testing",
       "source": "audit",
-      "status": "in-progress",
+      "status": "complete",
       "owner": "qa",
       "files": [
         "lib/**/*.test.ts"
