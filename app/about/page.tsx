@@ -19,14 +19,20 @@ export const metadata: Metadata = {
 }
 
 export default async function AboutPage() {
-  const [content, session, fubPersonId] = await Promise.all([
-    getAboutContent(),
-    getSession(),
-    getFubPersonIdFromCookie(),
-  ])
-  const pageUrl = `${getCanonicalSiteUrl()}/about`
-  const pageTitle = 'About Us | Ryan Realty'
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
+  let content: Awaited<ReturnType<typeof getAboutContent>> = null
+  try {
+    const [contentResult, session, fubPersonId] = await Promise.all([
+      getAboutContent(),
+      getSession().catch(() => null),
+      getFubPersonIdFromCookie().catch(() => null),
+    ])
+    content = contentResult
+    const pageUrl = `${getCanonicalSiteUrl()}/about`
+    const pageTitle = 'About Us | Ryan Realty'
+    trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId: fubPersonId ?? undefined, pageUrl, pageTitle })
+  } catch (err) {
+    console.error('[AboutPage]', err)
+  }
 
   return (
     <main className="min-h-screen bg-background">

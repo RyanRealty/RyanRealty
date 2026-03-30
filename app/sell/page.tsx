@@ -55,40 +55,49 @@ function defaultSellBody(): string {
 }
 
 export default async function SellPage() {
-  const [pageContent, supabase, session, fubPersonId] = await Promise.all([
-    getPageContent('sell'),
-    Promise.resolve(getSupabase()),
-    getSession(),
-    getFubPersonIdFromCookie(),
-  ])
-  const pageUrl = `${siteUrl}/sell`
-  const pageTitle = 'Sell Your Home | Ryan Realty'
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
+  let pageContent: Awaited<ReturnType<typeof getPageContent>> = null
+  try {
+    const [pc, session, fubPersonId] = await Promise.all([
+      getPageContent('sell').catch(() => null),
+      getSession().catch(() => null),
+      getFubPersonIdFromCookie().catch(() => null),
+    ])
+    pageContent = pc
+    trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId: fubPersonId ?? undefined, pageUrl: `${siteUrl}/sell`, pageTitle: 'Sell Your Home | Ryan Realty' })
+  } catch (err) {
+    console.error('[SellPage] init error:', err)
+  }
+
   const title = pageContent?.title?.trim() || 'Thinking of Selling?'
   const bodyHtml = pageContent?.body_html?.trim() || defaultSellBody()
 
   let conditionLabel = 'Balanced Market'
-  if (supabase) {
-    const startOfMonth = new Date()
-    startOfMonth.setDate(1)
-    const periodStart = startOfMonth.toISOString().slice(0, 10)
-    const { data: row } = await supabase
-      .from('reporting_cache')
-      .select('metrics')
-      .eq('geo_type', 'city')
-      .eq('geo_name', 'Bend')
-      .eq('period_type', 'monthly')
-      .eq('period_start', periodStart)
-      .order('computed_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    const metrics = (row?.metrics as Record<string, unknown>) ?? {}
-    const result = classifyMarketCondition({
-      monthsOfInventory: metrics.inventory_months != null ? Number(metrics.inventory_months) : null,
-      avgDom: metrics.median_dom != null ? Number(metrics.median_dom) : null,
-      listToSoldRatio: null,
-    })
-    conditionLabel = result.label
+  try {
+    const supabase = getSupabase()
+    if (supabase) {
+      const startOfMonth = new Date()
+      startOfMonth.setDate(1)
+      const periodStart = startOfMonth.toISOString().slice(0, 10)
+      const { data: row } = await supabase
+        .from('reporting_cache')
+        .select('metrics')
+        .eq('geo_type', 'city')
+        .eq('geo_name', 'Bend')
+        .eq('period_type', 'monthly')
+        .eq('period_start', periodStart)
+        .order('computed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      const metrics = (row?.metrics as Record<string, unknown>) ?? {}
+      const result = classifyMarketCondition({
+        monthsOfInventory: metrics.inventory_months != null ? Number(metrics.inventory_months) : null,
+        avgDom: metrics.median_dom != null ? Number(metrics.median_dom) : null,
+        listToSoldRatio: null,
+      })
+      conditionLabel = result.label
+    }
+  } catch (err) {
+    console.error('[SellPage] market condition error:', err)
   }
 
   return (
