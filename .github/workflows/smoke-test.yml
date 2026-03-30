@@ -1,0 +1,186 @@
+name: Post-Deploy Smoke Tests
+
+on:
+  # Trigger after successful deployment to main
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+  # Allow manual triggering with custom URL
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: "Site URL to test (e.g. https://ryan-realty.com)"
+        required: false
+        default: ""
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    env:
+      SITE_URL: ${{ github.event.inputs.site_url || vars.SITE_URL || 'https://ryan-realty.com' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for deployment
+        if: github.event_name != 'workflow_dispatch'
+        run: sleep 60
+
+      - name: Run smoke tests
+        id: smoke
+        run: |
+          echo "## Smoke Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Testing: $SITE_URL" >> $GITHUB_STEP_SUMMARY
+          echo "Time: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          PASS=0
+          FAIL=0
+          RESULTS=""
+
+          # Function to test a URL
+          test_url() {
+            local path="$1"
+            local description="$2"
+            local url="${SITE_URL}${path}"
+            local status=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 30 "$url" 2>/dev/null || echo "000")
+
+            if [ "$status" = "200" ] || [ "$status" = "304" ]; then
+              RESULTS="${RESULTS}\n| ✅ | ${description} | \`${path}\` | ${status} |"
+              PASS=$((PASS + 1))
+            else
+              RESULTS="${RESULTS}\n| ❌ | ${description} | \`${path}\` | ${status} |"
+              FAIL=$((FAIL + 1))
+            fi
+          }
+
+          # Function to check meta tags
+          check_meta() {
+            local path="$1"
+            local tag="$2"
+            local url="${SITE_URL}${path}"
+            local body=$(curl -s -L --max-time 30 "$url" 2>/dev/null)
+
+            if echo "$body" | grep -qi "$tag"; then
+              return 0
+            else
+              return 1
+            fi
+          }
+
+          # Test key pages
+          test_url "/" "Homepage"
+          test_url "/homes-for-sale" "Listings browse"
+          test_url "/search/bend" "City search (Bend)"
+          test_url "/team" "Team page"
+          test_url "/about" "About page"
+          test_url "/admin/login" "Admin login"
+          test_url "/guides" "Guides"
+          test_url "/housing-market" "Housing market hub"
+          test_url "/open-houses" "Open houses"
+          test_url "/robots.txt" "robots.txt"
+          test_url "/sitemap.xml" "Sitemap"
+
+          # Check meta tags on key pages
+          META_PASS=0
+          META_FAIL=0
+          META_RESULTS=""
+
+          for path in "/" "/homes-for-sale" "/search/bend" "/team"; do
+            if check_meta "$path" "og:title"; then
+              META_RESULTS="${META_RESULTS}\n| ✅ | \`${path}\` | og:title present |"
+              META_PASS=$((META_PASS + 1))
+            else
+              META_RESULTS="${META_RESULTS}\n| ❌ | \`${path}\` | og:title missing |"
+              META_FAIL=$((META_FAIL + 1))
+            fi
+
+            if check_meta "$path" "canonical"; then
+              META_RESULTS="${META_RESULTS}\n| ✅ | \`${path}\` | canonical present |"
+              META_PASS=$((META_PASS + 1))
+            else
+              META_RESULTS="${META_RESULTS}\n| ❌ | \`${path}\` | canonical missing |"
+              META_FAIL=$((META_FAIL + 1))
+            fi
+          done
+
+          # Check sitemap validity
+          SITEMAP_BODY=$(curl -s -L --max-time 30 "${SITE_URL}/sitemap.xml" 2>/dev/null)
+          if echo "$SITEMAP_BODY" | grep -qi "<urlset\|<sitemapindex"; then
+            META_RESULTS="${META_RESULTS}\n| ✅ | \`/sitemap.xml\` | Valid XML structure |"
+            META_PASS=$((META_PASS + 1))
+          else
+            META_RESULTS="${META_RESULTS}\n| ❌ | \`/sitemap.xml\` | Invalid or empty |"
+            META_FAIL=$((META_FAIL + 1))
+          fi
+
+          # Output results
+          echo "| Status | Page | Path | HTTP |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo -e "$RESULTS" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Meta Tag Checks" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Path | Check |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo -e "$META_RESULTS" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          TOTAL_PASS=$((PASS + META_PASS))
+          TOTAL_FAIL=$((FAIL + META_FAIL))
+          TOTAL=$((TOTAL_PASS + TOTAL_FAIL))
+
+          echo "### Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**${TOTAL_PASS}/${TOTAL} checks passed**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "pass=$TOTAL_PASS" >> $GITHUB_OUTPUT
+          echo "fail=$TOTAL_FAIL" >> $GITHUB_OUTPUT
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+
+          if [ "$TOTAL_FAIL" -gt 0 ]; then
+            echo "::warning::${TOTAL_FAIL} smoke test(s) failed"
+            exit 1
+          fi
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Smoke test failure after deploy (${new Date().toISOString().slice(0, 10)})`;
+
+            // Check for existing open issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'smoke-test-failure',
+              per_page: 5,
+            });
+
+            if (issues.length > 0) {
+              // Update existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues[0].number,
+                body: `Smoke tests failed again at ${new Date().toISOString()}. See [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`,
+              });
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body: `## Smoke tests failed after deployment\n\nSee the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.\n\nFailed at: ${new Date().toISOString()}`,
+                labels: ['smoke-test-failure', 'bug'],
+              });
+            }

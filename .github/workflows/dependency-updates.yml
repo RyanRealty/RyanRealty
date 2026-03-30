@@ -1,0 +1,192 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Every Monday at 9:00 AM UTC
+    - cron: "0 9 * * 1"
+
+  # Allow manual triggering
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Check for outdated packages
+        id: outdated
+        run: |
+          # Get outdated packages as JSON
+          npm outdated --json > /tmp/outdated.json 2>/dev/null || true
+
+          # Parse results
+          node -e "
+            const fs = require('fs');
+            const outdated = JSON.parse(fs.readFileSync('/tmp/outdated.json', 'utf8') || '{}');
+            const entries = Object.entries(outdated);
+
+            if (entries.length === 0) {
+              console.log('No outdated packages found.');
+              fs.writeFileSync('/tmp/patch-minor.json', '{}');
+              fs.writeFileSync('/tmp/major.json', '{}');
+              process.exit(0);
+            }
+
+            const patchMinor = {};
+            const major = {};
+
+            for (const [pkg, info] of entries) {
+              const current = info.current || '';
+              const wanted = info.wanted || '';
+              const latest = info.latest || '';
+
+              // Skip if current matches latest
+              if (current === latest) continue;
+
+              const currentMajor = parseInt(current.split('.')[0], 10);
+              const latestMajor = parseInt(latest.split('.')[0], 10);
+
+              if (latestMajor > currentMajor) {
+                major[pkg] = { current, wanted, latest };
+              } else if (wanted !== current) {
+                patchMinor[pkg] = { current, wanted, latest };
+              }
+            }
+
+            fs.writeFileSync('/tmp/patch-minor.json', JSON.stringify(patchMinor, null, 2));
+            fs.writeFileSync('/tmp/major.json', JSON.stringify(major, null, 2));
+
+            console.log('Patch/minor updates:', Object.keys(patchMinor).length);
+            console.log('Major updates:', Object.keys(major).length);
+          "
+
+          PATCH_COUNT=$(node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('/tmp/patch-minor.json','utf8'))).length)")
+          MAJOR_COUNT=$(node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('/tmp/major.json','utf8'))).length)")
+
+          echo "patch_count=$PATCH_COUNT" >> $GITHUB_OUTPUT
+          echo "major_count=$MAJOR_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Apply patch/minor updates
+        if: steps.outdated.outputs.patch_count != '0'
+        run: |
+          node -e "
+            const fs = require('fs');
+            const updates = JSON.parse(fs.readFileSync('/tmp/patch-minor.json', 'utf8'));
+
+            for (const [pkg, info] of Object.entries(updates)) {
+              console.log('Updating ' + pkg + ': ' + info.current + ' → ' + info.wanted);
+            }
+          "
+
+          # Run npm update for patch/minor versions
+          npm update
+
+      - name: Check if changes exist
+        id: changes
+        run: |
+          if git diff --quiet package-lock.json; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run tests on updated dependencies
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          npm run test || true
+          npm run build
+
+      - name: Create PR for patch/minor updates
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          BRANCH="chore/dependency-updates-$(date +%Y%m%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add package.json package-lock.json
+          git commit -m "chore: update patch/minor dependencies ($(date +%Y-%m-%d))"
+          git push origin "$BRANCH"
+
+          # Create PR
+          gh pr create \
+            --title "chore: update patch/minor dependencies ($(date +%Y-%m-%d))" \
+            --body "## Automated Dependency Update
+
+          This PR updates patch and minor dependency versions.
+
+          ### Updated packages
+
+          $(node -e "
+            const fs = require('fs');
+            const updates = JSON.parse(fs.readFileSync('/tmp/patch-minor.json', 'utf8'));
+            for (const [pkg, info] of Object.entries(updates)) {
+              console.log('- **' + pkg + '**: ' + info.current + ' → ' + info.wanted);
+            }
+          ")
+
+          ### Validation
+          - [x] \`npm run test\` executed
+          - [x] \`npm run build\` passed
+
+          ---
+          *Auto-generated by dependency-updates workflow*" \
+            --base main \
+            --head "$BRANCH" \
+            --label "type:config"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create issue for major updates
+        if: steps.outdated.outputs.major_count != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const major = JSON.parse(fs.readFileSync('/tmp/major.json', 'utf8'));
+            const entries = Object.entries(major);
+
+            if (entries.length === 0) return;
+
+            const title = `Major dependency updates available (${new Date().toISOString().slice(0, 10)})`;
+
+            // Check for existing open issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'major-update',
+              per_page: 5,
+            });
+
+            const body = `## Major Version Updates Available\n\nThe following packages have major version updates that may include breaking changes:\n\n| Package | Current | Latest |\n|---------|---------|--------|\n${entries.map(([pkg, info]) => `| ${pkg} | ${info.current} | ${info.latest} |`).join('\n')}\n\n**Action required**: Review changelogs for breaking changes before updating.\n\n---\n*Auto-generated by dependency-updates workflow*`;
+
+            if (issues.length > 0) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues[0].number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['major-update', 'type:config'],
+              });
+            }

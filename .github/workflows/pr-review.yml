@@ -1,0 +1,152 @@
+name: PR Review Checklist
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review-checklist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate review checklist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              per_page: 300,
+            });
+
+            const changedPaths = files.map(f => f.filename);
+
+            // Detect areas affected
+            const areas = {
+              ui: changedPaths.some(f => f.startsWith('components/') || f.endsWith('.tsx')),
+              routes: changedPaths.some(f => f.includes('/page.') || f.includes('/layout.')),
+              migration: changedPaths.some(f => f.startsWith('supabase/migrations/')),
+              serverActions: changedPaths.some(f => f.startsWith('app/actions/')),
+              config: changedPaths.some(f => ['next.config.ts', 'package.json', 'tsconfig.json', 'vercel.json'].some(c => f.endsWith(c))),
+              seo: changedPaths.some(f => f.includes('sitemap') || f.includes('robots') || f.includes('seo')),
+              auth: changedPaths.some(f => f.includes('auth') || f.includes('supabase')),
+              sync: changedPaths.some(f => f.includes('sync') || f.includes('spark')),
+              admin: changedPaths.some(f => f.startsWith('app/admin/')),
+              tests: changedPaths.some(f => f.includes('.test.')),
+            };
+
+            let checklist = `## Automated Review Checklist\n\n`;
+            checklist += `> Auto-generated based on ${changedPaths.length} changed file(s)\n\n`;
+
+            // Always required
+            checklist += `### Required\n`;
+            checklist += `- [ ] \`npm run build\` passes\n`;
+            checklist += `- [ ] \`npm run test\` passes\n`;
+            checklist += `- [ ] Conventional commit messages used\n\n`;
+
+            // Conditional checks
+            if (areas.ui) {
+              checklist += `### UI Changes Detected\n`;
+              checklist += `- [ ] \`npm run lint:design-tokens\` passes\n`;
+              checklist += `- [ ] Uses shadcn/ui components only (no raw HTML elements)\n`;
+              checklist += `- [ ] Uses semantic color tokens only (no hex, no bg-white/bg-gray-*)\n`;
+              checklist += `- [ ] Mobile responsive (tested at 375px, 768px, 1024px)\n`;
+              checklist += `- [ ] Loading and error states handled\n\n`;
+            }
+
+            if (areas.routes) {
+              checklist += `### Route Changes Detected\n`;
+              checklist += `- [ ] \`npm run lint:seo-routes\` passes\n`;
+              checklist += `- [ ] Page has \`generateMetadata\` with og:title, og:description, og:image\n`;
+              checklist += `- [ ] Canonical URL is set correctly\n`;
+              checklist += `- [ ] Breadcrumbs consistent\n`;
+              checklist += `- [ ] Sitemap updated if new public route\n\n`;
+            }
+
+            if (areas.migration) {
+              checklist += `### Database Migration Detected\n`;
+              checklist += `- [ ] Migration is idempotent (IF NOT EXISTS, ON CONFLICT DO NOTHING)\n`;
+              checklist += `- [ ] \`npm run db:push\` succeeds\n`;
+              checklist += `- [ ] No data-dropping operations without two-step approach\n`;
+              checklist += `- [ ] RLS policies added for new tables if user-facing\n\n`;
+            }
+
+            if (areas.serverActions) {
+              checklist += `### Server Action Changes Detected\n`;
+              checklist += `- [ ] File starts with \`'use server'\`\n`;
+              checklist += `- [ ] Returns \`{ data, error }\` shape (never throws)\n`;
+              checklist += `- [ ] Uses correct Supabase client for context\n`;
+              checklist += `- [ ] Env vars null-guarded\n\n`;
+            }
+
+            if (areas.seo) {
+              checklist += `### SEO Changes Detected\n`;
+              checklist += `- [ ] URL canonicalization consistent\n`;
+              checklist += `- [ ] Sitemap accurate and within 5,000 per file\n`;
+              checklist += `- [ ] Structured data / JSON-LD present\n`;
+              checklist += `- [ ] 301 redirects for any URL changes\n\n`;
+            }
+
+            if (areas.sync) {
+              checklist += `### Sync/Data Pipeline Changes Detected\n`;
+              checklist += `- [ ] Spark field mapping verified\n`;
+              checklist += `- [ ] Error handling for API failures\n`;
+              checklist += `- [ ] Post-sync hooks still fire\n\n`;
+            }
+
+            if (areas.config) {
+              checklist += `### Configuration Changes Detected\n`;
+              checklist += `- [ ] No secrets committed\n`;
+              checklist += `- [ ] .env.example updated if new env var added\n`;
+              checklist += `- [ ] Vercel configuration compatible\n\n`;
+            }
+
+            if (areas.auth) {
+              checklist += `### Auth Changes Detected\n`;
+              checklist += `- [ ] Uses \`getSession()\` from \`@/app/actions/auth\`\n`;
+              checklist += `- [ ] Protected routes gated at top of component\n`;
+              checklist += `- [ ] No service role client in user-facing paths\n\n`;
+            }
+
+            // File summary
+            checklist += `### Changed Files (${changedPaths.length})\n\n`;
+            checklist += `<details>\n<summary>Click to expand</summary>\n\n`;
+            for (const f of changedPaths) {
+              checklist += `- \`${f}\`\n`;
+            }
+            checklist += `\n</details>\n`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c =>
+              c.user?.type === 'Bot' && c.body?.includes('Automated Review Checklist')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: checklist,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: checklist,
+              });
+            }
