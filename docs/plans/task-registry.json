@@ -159,7 +159,9 @@
             "refresh_market_pulse RPC exists and works",
             "refresh_current_period_stats RPC exists and works"
           ],
-          "dependsOn": ["1.1"]
+          "dependsOn": [
+            "1.1"
+          ]
         },
         {
           "id": "1.4",
@@ -172,7 +174,9 @@
             "0-100 score computed from absorption rate, speed, competition, supply, momentum, ratio",
             "Labels: Very Hot, Hot, Warm, Cool, Cold"
           ],
-          "dependsOn": ["1.3"]
+          "dependsOn": [
+            "1.3"
+          ]
         },
         {
           "id": "1.5",
@@ -187,7 +191,9 @@
             "generate_market_narrative produces overview, analysis, FAQ",
             "Narrative reads naturally with real numbers"
           ],
-          "dependsOn": ["1.3"]
+          "dependsOn": [
+            "1.3"
+          ]
         },
         {
           "id": "1.6",
@@ -202,7 +208,9 @@
             "backfill_all_historical_stats populates 12+ months of data per city",
             "Post-sync hook refreshes market_pulse_live"
           ],
-          "dependsOn": ["1.3"]
+          "dependsOn": [
+            "1.3"
+          ]
         },
         {
           "id": "1.7",
@@ -216,7 +224,9 @@
           "acceptanceCriteria": [
             "getCachedStats, getStatsTimeSeries, getLiveMarketPulse, getMarketNarrative, getMarketOverview, getHottestCommunities all return expected data shapes"
           ],
-          "dependsOn": ["1.3"]
+          "dependsOn": [
+            "1.3"
+          ]
         },
         {
           "id": "1.8",
@@ -235,7 +245,9 @@
             "Components render with mock data",
             "npm run build passes"
           ],
-          "dependsOn": ["1.7"]
+          "dependsOn": [
+            "1.7"
+          ]
         }
       ]
     },
@@ -279,7 +291,10 @@
             "City pages show LivePulseBanner + FreshnessBadge",
             "Stats sourced from getLiveMarketPulse() and getCachedStats()"
           ],
-          "dependsOn": ["1.7", "1.8"]
+          "dependsOn": [
+            "1.7",
+            "1.8"
+          ]
         },
         {
           "id": "2.3",
@@ -341,7 +356,9 @@
             "Shows price/sqft vs area median, price positioning, list-to-sale ratio, inventory count",
             "Data from getCachedStats()"
           ],
-          "dependsOn": ["1.7"]
+          "dependsOn": [
+            "1.7"
+          ]
         },
         {
           "id": "2.7",
@@ -357,7 +374,9 @@
             "Video Tours in [City] sections",
             "og:video tags for listings with videos"
           ],
-          "dependsOn": ["0.3"]
+          "dependsOn": [
+            "0.3"
+          ]
         },
         {
           "id": "2.8",
@@ -405,7 +424,10 @@
             "Section order matches spec",
             "Mobile responsive"
           ],
-          "dependsOn": ["2.1", "2.2"]
+          "dependsOn": [
+            "2.1",
+            "2.2"
+          ]
         },
         {
           "id": "2.11",
@@ -420,7 +442,11 @@
             "All new sections: About, MarketPulse, ActivityFeed, RecentlySold, Browse, PageCTA, NearbyCities",
             "City-scoped data"
           ],
-          "dependsOn": ["2.1", "2.2", "2.3"]
+          "dependsOn": [
+            "2.1",
+            "2.2",
+            "2.3"
+          ]
         },
         {
           "id": "2.12",
@@ -435,7 +461,11 @@
             "CommunityQuickFacts, MarketPulse, ActivityFeed, RecentlySold, CommunityCompare",
             "Subdivision-specific data"
           ],
-          "dependsOn": ["2.1", "2.2", "2.3"]
+          "dependsOn": [
+            "2.1",
+            "2.2",
+            "2.3"
+          ]
         },
         {
           "id": "2.13",
@@ -450,7 +480,12 @@
             "DemandIndicators, PriceHistoryChart, AreaMarketContext, ActivityFeed, RecentlySold present",
             "Section order per CR-9"
           ],
-          "dependsOn": ["2.1", "2.4", "2.5", "2.6"]
+          "dependsOn": [
+            "2.1",
+            "2.4",
+            "2.5",
+            "2.6"
+          ]
         }
       ]
     },
@@ -491,7 +526,9 @@
             "Ads placed per CR-9 agreed order",
             "npm run build passes"
           ],
-          "dependsOn": ["3.1"]
+          "dependsOn": [
+            "3.1"
+          ]
         },
         {
           "id": "3.3",
@@ -558,7 +595,9 @@
             "Unique content per page",
             "FAQ schema validates"
           ],
-          "dependsOn": ["3.5"]
+          "dependsOn": [
+            "3.5"
+          ]
         },
         {
           "id": "3.7",
@@ -574,7 +613,11 @@
             "Only filter pages with listings included",
             "No 404s from sitemap URLs"
           ],
-          "dependsOn": ["0.6", "3.3", "3.5"]
+          "dependsOn": [
+            "0.6",
+            "3.3",
+            "3.5"
+          ]
         },
         {
           "id": "3.8",
@@ -590,7 +633,9 @@
             "Links go to filter page routes",
             "All link targets are valid routes"
           ],
-          "dependsOn": ["3.3"]
+          "dependsOn": [
+            "3.3"
+          ]
         },
         {
           "id": "3.9",
@@ -605,7 +650,9 @@
             "All lead capture surfaces mapped to FUB events",
             "No lead capture surface is silent"
           ],
-          "dependsOn": ["3.4"]
+          "dependsOn": [
+            "3.4"
+          ]
         }
       ]
     },
@@ -630,7 +677,10 @@
             "City and community market pages render",
             "301 redirects from /reports/ to /housing-market/"
           ],
-          "dependsOn": ["1.7", "1.8"]
+          "dependsOn": [
+            "1.7",
+            "1.8"
+          ]
         },
         {
           "id": "4.2",
@@ -645,7 +695,9 @@
             "1200x630 OG images generated with stats",
             "Schema markup: FAQPage, Dataset, BreadcrumbList"
           ],
-          "dependsOn": ["4.1"]
+          "dependsOn": [
+            "4.1"
+          ]
         },
         {
           "id": "4.3",
@@ -704,7 +756,9 @@
             "Monthly snapshot pages with frozen data",
             "Auto-generated narrative"
           ],
-          "dependsOn": ["4.1"]
+          "dependsOn": [
+            "4.1"
+          ]
         },
         {
           "id": "4.7",
@@ -718,7 +772,9 @@
           "acceptanceCriteria": [
             "Regional hub aggregating all cities"
           ],
-          "dependsOn": ["4.1"]
+          "dependsOn": [
+            "4.1"
+          ]
         }
       ]
     },
@@ -741,7 +797,9 @@
             "Download produces valid PDF with correct data",
             "Excel export works"
           ],
-          "dependsOn": ["4.1"]
+          "dependsOn": [
+            "4.1"
+          ]
         },
         {
           "id": "5.2",
@@ -786,7 +844,9 @@
             "Appreciation calculator renders",
             "Each tool has ad units + lead capture CTAs"
           ],
-          "dependsOn": ["1.7"]
+          "dependsOn": [
+            "1.7"
+          ]
         }
       ]
     },
@@ -850,7 +910,10 @@
             "Ad revenue, lead volume, estimated lead value, blended revenue visible",
             "Admin dashboard views complete"
           ],
-          "dependsOn": ["6.1", "6.3"]
+          "dependsOn": [
+            "6.1",
+            "6.3"
+          ]
         }
       ]
     }
