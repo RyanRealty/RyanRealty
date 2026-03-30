@@ -32,6 +32,7 @@
     "db:add-team-image": "node scripts/add-team-image-column.mjs",
     "sync:full": "node scripts/run-full-sync.mjs",
     "sync:year": "node scripts/run-year-sync.mjs",
+    "sync:range": "node scripts/run-sync-range.mjs",
     "test": "vitest run",
     "test:history": "node scripts/test-listing-history.mjs",
     "vercel:env": "node scripts/sync-vercel-env.mjs",
