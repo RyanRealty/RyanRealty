@@ -6,16 +6,18 @@
     {
       "id": "tier-1",
       "name": "Critical — Blocks Everything",
-      "status": "open",
+      "status": "complete",
       "goal": "Fix broken pages and SEO fundamentals that prevent the site from functioning.",
       "tasks": [
         {
           "id": "T1-001",
           "title": "Fix sitemap.xml — returns 404 on production",
-          "status": "open",
+          "status": "complete",
           "priority": "critical",
           "owner": "seo",
-          "files": ["app/sitemap.ts"],
+          "files": [
+            "app/sitemap.ts"
+          ],
           "acceptanceCriteria": [
             "GET /sitemap.xml returns 200 with valid XML",
             "Sitemap contains all public page URLs",
@@ -23,30 +25,38 @@
             "UJ-070: Google Crawls Sitemap passes"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-070"]
+          "userJourneys": [
+            "UJ-070"
+          ]
         },
         {
           "id": "T1-002",
           "title": "Fix /about page — returns 500 error",
-          "status": "open",
+          "status": "complete",
           "priority": "critical",
           "owner": "engagement",
-          "files": ["app/about/page.tsx"],
+          "files": [
+            "app/about/page.tsx"
+          ],
           "acceptanceCriteria": [
             "GET /about returns 200",
             "Page renders with content",
             "UJ-019: Navigation works"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-019"]
+          "userJourneys": [
+            "UJ-019"
+          ]
         },
         {
           "id": "T1-003",
           "title": "Fix /sell page — returns 500 error",
-          "status": "open",
+          "status": "complete",
           "priority": "critical",
           "owner": "engagement",
-          "files": ["app/sell/page.tsx"],
+          "files": [
+            "app/sell/page.tsx"
+          ],
           "acceptanceCriteria": [
             "GET /sell returns 200",
             "Page renders with content and CTA"
@@ -57,24 +67,30 @@
         {
           "id": "T1-004",
           "title": "Allow AI crawlers in robots.txt",
-          "status": "open",
+          "status": "complete",
           "priority": "critical",
           "owner": "seo",
-          "files": ["app/robots.ts"],
+          "files": [
+            "app/robots.ts"
+          ],
           "acceptanceCriteria": [
             "robots.txt allows GPTBot, OAI-SearchBot, PerplexityBot, ClaudeBot, Google-Extended, Applebot-Extended",
             "UJ-073: AI Crawler Can Access Content passes"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-073"]
+          "userJourneys": [
+            "UJ-073"
+          ]
         },
         {
           "id": "T1-005",
           "title": "Verify all env vars are set in Vercel and document which are missing",
-          "status": "open",
+          "status": "complete",
           "priority": "critical",
           "owner": "devops",
-          "files": [".env.example"],
+          "files": [
+            ".env.example"
+          ],
           "acceptanceCriteria": [
             "Checklist produced of all required env vars with set/missing status",
             "All critical env vars documented in .env.example",
@@ -97,7 +113,10 @@
           "status": "open",
           "priority": "high",
           "owner": "engagement",
-          "files": ["components/SearchMapClustered.tsx", "components/search/SearchFilters.tsx"],
+          "files": [
+            "components/SearchMapClustered.tsx",
+            "components/search/SearchFilters.tsx"
+          ],
           "acceptanceCriteria": [
             "User can click a Draw button on the map",
             "User draws a polygon by clicking points",
@@ -106,8 +125,12 @@
             "Works on mobile with touch",
             "UJ-006: Draw Polygon on Map passes"
           ],
-          "dependsOn": ["T1-001"],
-          "userJourneys": ["UJ-006"]
+          "dependsOn": [
+            "T1-001"
+          ],
+          "userJourneys": [
+            "UJ-006"
+          ]
         },
         {
           "id": "T2-002",
@@ -115,7 +138,10 @@
           "status": "open",
           "priority": "high",
           "owner": "engagement",
-          "files": ["components/listing/WalkScore.tsx", "app/actions/walk-score.ts"],
+          "files": [
+            "components/listing/WalkScore.tsx",
+            "app/actions/walk-score.ts"
+          ],
           "acceptanceCriteria": [
             "Listing detail page shows Walk Score, Transit Score, Bike Score",
             "Data sourced from WalkScore API or similar",
@@ -123,7 +149,9 @@
             "Graceful fallback when API unavailable"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-007"]
+          "userJourneys": [
+            "UJ-007"
+          ]
         },
         {
           "id": "T2-003",
@@ -131,7 +159,10 @@
           "status": "open",
           "priority": "high",
           "owner": "engagement",
-          "files": ["components/listing/NearbySchools.tsx", "app/actions/schools.ts"],
+          "files": [
+            "components/listing/NearbySchools.tsx",
+            "app/actions/schools.ts"
+          ],
           "acceptanceCriteria": [
             "Listing detail page shows nearby schools",
             "Each school shows name, grade levels, distance, rating",
@@ -139,7 +170,9 @@
             "Grouped by Elementary, Middle, High"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-007"]
+          "userJourneys": [
+            "UJ-007"
+          ]
         },
         {
           "id": "T2-004",
@@ -147,7 +180,9 @@
           "status": "open",
           "priority": "high",
           "owner": "engagement",
-          "files": ["components/search/SearchFilters.tsx"],
+          "files": [
+            "components/search/SearchFilters.tsx"
+          ],
           "acceptanceCriteria": [
             "Monthly payment filter option alongside price filter",
             "Calculates from price + estimated rate + estimated taxes + estimated insurance",
@@ -155,7 +190,9 @@
             "User can set max monthly payment"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-003"]
+          "userJourneys": [
+            "UJ-003"
+          ]
         },
         {
           "id": "T2-005",
@@ -163,7 +200,10 @@
           "status": "open",
           "priority": "high",
           "owner": "engagement",
-          "files": ["components/chat/ChatWidget.tsx", "app/api/ai/chat/route.ts"],
+          "files": [
+            "components/chat/ChatWidget.tsx",
+            "app/api/ai/chat/route.ts"
+          ],
           "acceptanceCriteria": [
             "Chat widget can understand property search queries",
             "User asks 'Find 3 bedroom homes under 500K in Bend' → gets relevant results",
@@ -193,7 +233,9 @@
             "Components render on market report pages"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-014"]
+          "userJourneys": [
+            "UJ-014"
+          ]
         },
         {
           "id": "T2-007",
@@ -201,7 +243,9 @@
           "status": "open",
           "priority": "high",
           "owner": "engagement",
-          "files": ["components/PageCTA.tsx"],
+          "files": [
+            "components/PageCTA.tsx"
+          ],
           "acceptanceCriteria": [
             "Contextual mid-page CTA component",
             "Renders on city, community, listing pages",
@@ -210,7 +254,9 @@
             "Lead sent to FUB"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-011"]
+          "userJourneys": [
+            "UJ-011"
+          ]
         },
         {
           "id": "T2-008",
@@ -218,7 +264,9 @@
           "status": "open",
           "priority": "high",
           "owner": "monetization",
-          "files": ["lib/filter-pages.ts"],
+          "files": [
+            "lib/filter-pages.ts"
+          ],
           "acceptanceCriteria": [
             "Config defines ~17 filter types (price ranges, property types, bed counts, features)",
             "Each filter type generates a unique slug (e.g., /search/bend/under-300k)",
@@ -227,7 +275,9 @@
             "120-170 new indexable pages created",
             "Pages included in sitemap"
           ],
-          "dependsOn": ["T1-001"],
+          "dependsOn": [
+            "T1-001"
+          ],
           "userJourneys": []
         },
         {
@@ -236,7 +286,9 @@
           "status": "open",
           "priority": "high",
           "owner": "seo",
-          "files": ["components/AuthorByline.tsx"],
+          "files": [
+            "components/AuthorByline.tsx"
+          ],
           "acceptanceCriteria": [
             "Blog/guide pages show author name, photo, credentials",
             "Market reports show brokerage credentials and license numbers",
@@ -244,7 +296,10 @@
             "E-E-A-T signals present for YMYL compliance"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-015", "UJ-073"]
+          "userJourneys": [
+            "UJ-015",
+            "UJ-073"
+          ]
         },
         {
           "id": "T2-010",
@@ -260,7 +315,9 @@
             "UJ-071: Every Public Page Has Meta Tags passes"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-071"]
+          "userJourneys": [
+            "UJ-071"
+          ]
         }
       ]
     },
@@ -276,14 +333,18 @@
           "status": "open",
           "priority": "medium",
           "owner": "engagement",
-          "files": ["components/listing/TaxHistory.tsx"],
+          "files": [
+            "components/listing/TaxHistory.tsx"
+          ],
           "acceptanceCriteria": [
             "Listing detail shows multi-year tax assessment data",
             "Data sourced from Spark or public records",
             "Table format with year, assessed value, tax amount"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-007"]
+          "userJourneys": [
+            "UJ-007"
+          ]
         },
         {
           "id": "T3-002",
@@ -291,7 +352,9 @@
           "status": "open",
           "priority": "medium",
           "owner": "engagement",
-          "files": ["components/listing/ClimateRisk.tsx"],
+          "files": [
+            "components/listing/ClimateRisk.tsx"
+          ],
           "acceptanceCriteria": [
             "Listing detail shows flood zone designation",
             "Fire risk, wind risk, heat risk indicators",
@@ -299,7 +362,9 @@
             "Graceful fallback when data unavailable"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-007"]
+          "userJourneys": [
+            "UJ-007"
+          ]
         },
         {
           "id": "T3-003",
@@ -307,7 +372,10 @@
           "status": "open",
           "priority": "medium",
           "owner": "engagement",
-          "files": ["app/globals.css", "app/listing/[listingKey]/page.tsx"],
+          "files": [
+            "app/globals.css",
+            "app/listing/[listingKey]/page.tsx"
+          ],
           "acceptanceCriteria": [
             "@media print styles hide nav, footer, ads, interactive elements",
             "Listing prints on 1-2 pages with photos, key facts, description",
@@ -322,7 +390,9 @@
           "status": "open",
           "priority": "medium",
           "owner": "monetization",
-          "files": ["app/actions/auto-response.ts"],
+          "files": [
+            "app/actions/auto-response.ts"
+          ],
           "acceptanceCriteria": [
             "Within 5 minutes of inquiry submission, auto-reply email sent",
             "Email acknowledges the specific listing they asked about",
@@ -330,7 +400,10 @@
             "Uses Resend for delivery"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-011", "UJ-084"]
+          "userJourneys": [
+            "UJ-011",
+            "UJ-084"
+          ]
         },
         {
           "id": "T3-005",
@@ -338,7 +411,10 @@
           "status": "open",
           "priority": "medium",
           "owner": "monetization",
-          "files": ["app/actions/lead-scoring.ts", "lib/followupboss.ts"],
+          "files": [
+            "app/actions/lead-scoring.ts",
+            "lib/followupboss.ts"
+          ],
           "acceptanceCriteria": [
             "Score computed from: page views, listings viewed, saves, return visits, time on site",
             "Score sent to FUB as custom field",
@@ -346,7 +422,9 @@
             "Scoring logic documented"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-084"]
+          "userJourneys": [
+            "UJ-084"
+          ]
         },
         {
           "id": "T3-006",
@@ -354,7 +432,10 @@
           "status": "open",
           "priority": "medium",
           "owner": "engagement",
-          "files": ["app/collections/page.tsx", "app/actions/collections.ts"],
+          "files": [
+            "app/collections/page.tsx",
+            "app/actions/collections.ts"
+          ],
           "acceptanceCriteria": [
             "User can create a named collection of listings",
             "Collection has a shareable URL",
@@ -370,14 +451,19 @@
           "status": "open",
           "priority": "medium",
           "owner": "engagement",
-          "files": ["app/account/saved-homes/page.tsx", "app/actions/saved-listings.ts"],
+          "files": [
+            "app/account/saved-homes/page.tsx",
+            "app/actions/saved-listings.ts"
+          ],
           "acceptanceCriteria": [
             "User can add/edit personal notes on each saved listing",
             "Notes persist across sessions",
             "Notes visible in saved homes list and listing detail"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-031"]
+          "userJourneys": [
+            "UJ-031"
+          ]
         },
         {
           "id": "T3-008",
@@ -385,14 +471,18 @@
           "status": "open",
           "priority": "medium",
           "owner": "engagement",
-          "files": ["components/search/RecentSearches.tsx"],
+          "files": [
+            "components/search/RecentSearches.tsx"
+          ],
           "acceptanceCriteria": [
             "Search bar shows recent searches on focus",
             "Recent searches stored in localStorage or user account",
             "Clicking a recent search restores filters and navigates"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-002"]
+          "userJourneys": [
+            "UJ-002"
+          ]
         },
         {
           "id": "T3-009",
@@ -400,7 +490,9 @@
           "status": "open",
           "priority": "medium",
           "owner": "engagement",
-          "files": ["components/listing/ListingGallery.tsx"],
+          "files": [
+            "components/listing/ListingGallery.tsx"
+          ],
           "acceptanceCriteria": [
             "Full-screen lightbox on mobile",
             "Swipe left/right to navigate",
@@ -410,7 +502,9 @@
             "UJ-008: Browse Photo Gallery passes"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-008"]
+          "userJourneys": [
+            "UJ-008"
+          ]
         }
       ]
     },
@@ -426,14 +520,18 @@
           "status": "open",
           "priority": "medium",
           "owner": "engagement",
-          "files": ["components/compare/AICompare.tsx"],
+          "files": [
+            "components/compare/AICompare.tsx"
+          ],
           "acceptanceCriteria": [
             "User selects 2-3 listings to compare",
             "AI generates natural language comparison highlighting pros/cons of each",
             "Side-by-side data table with key metrics",
             "Recommendation based on user's stated preferences"
           ],
-          "dependsOn": ["T2-005"],
+          "dependsOn": [
+            "T2-005"
+          ],
           "userJourneys": []
         },
         {
@@ -442,7 +540,9 @@
           "status": "open",
           "priority": "medium",
           "owner": "engagement",
-          "files": ["app/page.tsx"],
+          "files": [
+            "app/page.tsx"
+          ],
           "acceptanceCriteria": [
             "Signed-in users see personalized sections based on browsing history",
             "Show 'New in [your browsed areas]' listings",
@@ -451,7 +551,10 @@
             "Anonymous users see generic homepage"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-001", "UJ-035"]
+          "userJourneys": [
+            "UJ-001",
+            "UJ-035"
+          ]
         },
         {
           "id": "T4-003",
@@ -459,7 +562,9 @@
           "status": "open",
           "priority": "medium",
           "owner": "content",
-          "files": ["scripts/generate-neighborhood-content.ts"],
+          "files": [
+            "scripts/generate-neighborhood-content.ts"
+          ],
           "acceptanceCriteria": [
             "Deep, data-grounded content for each community",
             "Structured with H2/H3 hierarchy for LLM extraction",
@@ -468,8 +573,13 @@
             "Includes real statistics from market data",
             "Author byline with broker credentials"
           ],
-          "dependsOn": ["T2-009"],
-          "userJourneys": ["UJ-018", "UJ-073"]
+          "dependsOn": [
+            "T2-009"
+          ],
+          "userJourneys": [
+            "UJ-018",
+            "UJ-073"
+          ]
         },
         {
           "id": "T4-004",
@@ -477,15 +587,22 @@
           "status": "open",
           "priority": "low",
           "owner": "engagement",
-          "files": ["components/community/LivabilityScore.tsx"],
+          "files": [
+            "components/community/LivabilityScore.tsx"
+          ],
           "acceptanceCriteria": [
             "Custom 0-100 score per community",
             "Components: outdoor access, walkability, schools, amenities, market health",
             "Score methodology documented and transparent",
             "Rendered on community pages and in search results"
           ],
-          "dependsOn": ["T2-002", "T2-003"],
-          "userJourneys": ["UJ-018"]
+          "dependsOn": [
+            "T2-002",
+            "T2-003"
+          ],
+          "userJourneys": [
+            "UJ-018"
+          ]
         },
         {
           "id": "T4-005",
@@ -493,7 +610,9 @@
           "status": "open",
           "priority": "low",
           "owner": "engagement",
-          "files": ["components/listing/InvestmentAnalysis.tsx"],
+          "files": [
+            "components/listing/InvestmentAnalysis.tsx"
+          ],
           "acceptanceCriteria": [
             "Show estimated rental income (vacation or long-term)",
             "Cap rate calculation",
@@ -509,15 +628,21 @@
           "status": "open",
           "priority": "low",
           "owner": "reporting",
-          "files": ["components/reports/PredictiveInsights.tsx"],
+          "files": [
+            "components/reports/PredictiveInsights.tsx"
+          ],
           "acceptanceCriteria": [
             "Market reports show trend direction and velocity",
             "AI-generated forward-looking commentary",
             "'This area prices trending up X% YoY, faster than regional average'",
             "Based on real historical data, not speculation"
           ],
-          "dependsOn": ["T2-006"],
-          "userJourneys": ["UJ-014"]
+          "dependsOn": [
+            "T2-006"
+          ],
+          "userJourneys": [
+            "UJ-014"
+          ]
         },
         {
           "id": "T4-007",
@@ -525,7 +650,9 @@
           "status": "open",
           "priority": "low",
           "owner": "monetization",
-          "files": ["app/actions/sms-alerts.ts"],
+          "files": [
+            "app/actions/sms-alerts.ts"
+          ],
           "acceptanceCriteria": [
             "Users can opt into SMS alerts for saved searches",
             "SMS sent when high-priority match found",
@@ -533,7 +660,9 @@
             "Opt-out/unsubscribe mechanism"
           ],
           "dependsOn": [],
-          "userJourneys": ["UJ-033"]
+          "userJourneys": [
+            "UJ-033"
+          ]
         }
       ]
     }
@@ -547,8 +676,13 @@
       "source": "USER_JOURNEYS.md",
       "status": "open",
       "owner": "qa",
-      "files": ["e2e/"],
-      "acceptanceCriteria": ["Every UJ-XXX journey has a corresponding Playwright test", "All critical journeys pass against production"],
+      "files": [
+        "e2e/"
+      ],
+      "acceptanceCriteria": [
+        "Every UJ-XXX journey has a corresponding Playwright test",
+        "All critical journeys pass against production"
+      ],
       "dependsOn": []
     },
     {
@@ -559,8 +693,13 @@
       "source": "audit",
       "status": "open",
       "owner": "qa",
-      "files": ["lib/**/*.test.ts"],
-      "acceptanceCriteria": ["Critical server actions have tests", "Coverage report shows 30%+"],
+      "files": [
+        "lib/**/*.test.ts"
+      ],
+      "acceptanceCriteria": [
+        "Critical server actions have tests",
+        "Coverage report shows 30%+"
+      ],
       "dependsOn": []
     },
     {
@@ -571,8 +710,17 @@
       "source": "PRODUCT_SPEC_V2.md",
       "status": "open",
       "owner": "seo",
-      "files": ["lib/structured-data.ts", "components/JsonLd.tsx"],
-      "acceptanceCriteria": ["Product+Offer schema on listing pages", "FAQPage on content pages", "BreadcrumbList on all pages", "LocalBusiness+RealEstateAgent on team pages", "Schema validates at schema.org validator"],
+      "files": [
+        "lib/structured-data.ts",
+        "components/JsonLd.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Product+Offer schema on listing pages",
+        "FAQPage on content pages",
+        "BreadcrumbList on all pages",
+        "LocalBusiness+RealEstateAgent on team pages",
+        "Schema validates at schema.org validator"
+      ],
       "dependsOn": []
     },
     {
@@ -584,8 +732,14 @@
       "status": "open",
       "owner": "content",
       "files": [],
-      "acceptanceCriteria": ["Each city has cluster: main page → neighborhoods → market report → guides → filter pages", "Internal linking connects all cluster pages", "Each cluster page links to parent and siblings"],
-      "dependsOn": ["T2-008"]
+      "acceptanceCriteria": [
+        "Each city has cluster: main page → neighborhoods → market report → guides → filter pages",
+        "Internal linking connects all cluster pages",
+        "Each cluster page links to parent and siblings"
+      ],
+      "dependsOn": [
+        "T2-008"
+      ]
     },
     {
       "id": "BL-005",
@@ -596,7 +750,13 @@
       "status": "open",
       "owner": "performance",
       "files": [],
-      "acceptanceCriteria": ["LCP < 2.5s on all page types", "CLS < 0.1 on all page types", "FID < 100ms", "Lighthouse Performance > 80 on all pages", "UJ-074 passes"],
+      "acceptanceCriteria": [
+        "LCP < 2.5s on all page types",
+        "CLS < 0.1 on all page types",
+        "FID < 100ms",
+        "Lighthouse Performance > 80 on all pages",
+        "UJ-074 passes"
+      ],
       "dependsOn": []
     }
   ]
