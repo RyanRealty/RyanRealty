@@ -110,7 +110,7 @@
         {
           "id": "T2-001",
           "title": "Draw-on-map polygon search",
-          "status": "open",
+          "status": "complete",
           "priority": "high",
           "owner": "engagement",
           "files": [
@@ -177,7 +177,7 @@
         {
           "id": "T2-004",
           "title": "Filter by monthly payment",
-          "status": "open",
+          "status": "complete",
           "priority": "high",
           "owner": "engagement",
           "files": [
@@ -304,7 +304,7 @@
         {
           "id": "T2-010",
           "title": "Verify and fix OG images on all page types",
-          "status": "open",
+          "status": "complete",
           "priority": "high",
           "owner": "seo",
           "files": [],
