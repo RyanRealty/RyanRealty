@@ -31,7 +31,7 @@ npx tsx scripts/orchestrate.ts complete <taskId>
 | Framework | Next.js 16.1.6, React 19, TypeScript 5 |
 | Database | Supabase (PostgreSQL), migrations in `supabase/migrations/` |
 | Styling | Tailwind v4, shadcn/ui components only |
-| Testing | Vitest (unit), Lighthouse CI (perf), pa11y-ci (a11y) |
+| Testing | Vitest (unit), Playwright (E2E + visual), Lighthouse CI (perf), pa11y-ci (a11y) |
 | Deployment | Vercel |
 | CRM | Follow Up Boss |
 | Data Feed | Spark/MLS API |
@@ -43,9 +43,12 @@ npm install                  # Install dependencies
 npm run dev:unix             # Start dev server (Linux/macOS)
 npm run build                # Production build verification
 npm run test                 # Run unit tests
+npm run test:e2e             # Run E2E tests (requires build first)
+npm run test:e2e:ui          # Open Playwright UI mode
 npm run lint                 # Run ESLint
 npm run lint:design-tokens   # Check for design system violations
 npm run lint:seo-routes      # Check SEO route authoring
+npm run docs:check           # Check documentation freshness
 ```
 
 ---
@@ -157,8 +160,28 @@ On PR to `main`:
 3. `npm run ci:design-tokens` — Design token compliance
 4. `npm run test` — Vitest unit tests
 5. `npm run build` — Production build
-6. `npm run ci:lighthouse` — Lighthouse performance/a11y/SEO scores
-7. `npm run ci:a11y` — pa11y accessibility audit
+6. Build health metrics recorded
+7. `npm run ci:lighthouse` — Lighthouse performance/a11y/SEO scores
+8. `npm run ci:a11y` — pa11y accessibility audit
+9. Bundle size report posted as PR comment
+10. **E2E tests** — Playwright critical flow tests
+11. **Visual regression** — Screenshot comparison against baselines
+12. **Security scan** — npm audit + secret leak detection
+13. **PR auto-labeling** — Labels by area and type
+14. **PR review checklist** — Context-aware review comment
+
+On merge to `main`:
+15. **Automated release** — Changelog generated, version tag created, GitHub Release published
+16. **Post-deploy smoke tests** — Key pages tested after Vercel deploy
+17. **Preview deploy testing** — Smoke tests on Vercel preview URLs
+
+Scheduled:
+18. **Dependency updates** — Weekly (Monday 9am UTC)
+19. **Security scan** — Weekly (Tuesday 8am UTC)
+20. **Optimization loop** — Weekly (Monday 6am UTC)
+21. **Stale branch cleanup** — Monthly (1st of month)
+22. **Saved search alerts** — Daily (2pm UTC)
+23. **Market report** — Weekly Saturday (2pm UTC)
 
 ---
 
