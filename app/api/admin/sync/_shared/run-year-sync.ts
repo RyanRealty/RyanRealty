@@ -394,7 +394,7 @@ export async function runYearSync(
       }
     }
     const isPastYear = year < currentYear
-    const shouldFinalize = hadSuccessfulFetch && row.ListNumber && (isPastYear || isTerminalStatus(row.StandardStatus))
+    const shouldFinalize = row.ListNumber && (isPastYear || (hadSuccessfulFetch && isTerminalStatus(row.StandardStatus)))
     if (shouldFinalize) {
       await supabase
         .from('listings')
@@ -894,7 +894,7 @@ export async function runYearSyncChunk(options: {
         }
       }
       const isPastYear = year < currentYear
-      const shouldFinalize = hadSuccessfulFetch && row.ListNumber && (isPastYear || isTerminalStatus(row.StandardStatus))
+      const shouldFinalize = row.ListNumber && (isPastYear || (hadSuccessfulFetch && isTerminalStatus(row.StandardStatus)))
       if (shouldFinalize) {
         await supabase
           .from('listings')
