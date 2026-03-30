@@ -24,6 +24,11 @@ export async function generateMetadata(): Promise<Metadata> {
       url: `${siteUrl}/team`,
       siteName: name,
       type: 'website',
+      images: [{ url: `${siteUrl}/api/og?type=default`, width: 1200, height: 630, alt: `Our Team | ${name}` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: [`${siteUrl}/api/og?type=default`],
     },
   }
 }

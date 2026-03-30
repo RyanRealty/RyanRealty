@@ -11,11 +11,20 @@ import { sanitizeHtml } from '@/lib/sanitize'
 import { Button } from '@/components/ui/button'
 import { listingsBrowsePath } from '@/lib/slug'
 
+const aboutOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')}/api/og?type=default`
+
 export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'About Us',
   description: 'Learn about Ryan Realty — Central Oregon\'s trusted real estate brokerage.',
+  openGraph: {
+    images: [{ url: aboutOgImage, width: 1200, height: 630, alt: 'About Ryan Realty' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: [aboutOgImage],
+  },
 }
 
 export default async function AboutPage() {

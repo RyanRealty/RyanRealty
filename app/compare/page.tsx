@@ -15,11 +15,13 @@ export const metadata: Metadata = {
     url: `${siteUrl}/compare`,
     type: 'website',
     siteName: 'Ryan Realty',
+    images: [{ url: `${siteUrl}/api/og?type=default`, width: 1200, height: 630, alt: 'Compare properties | Ryan Realty' }],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Compare Properties | Ryan Realty',
     description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
+    images: [`${siteUrl}/api/og?type=default`],
   },
 }
 

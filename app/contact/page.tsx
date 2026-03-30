@@ -10,13 +10,24 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
 
+const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')}/api/og?type=default`
+
 type PageProps = { searchParams: Promise<{ inquiry?: string }> }
 
 export const metadata: Metadata = {
   title: 'Contact Us | Ryan Realty',
   description: 'Get in touch with Ryan Realty. Office address, phone, email, and contact form for buying or selling in Central Oregon.',
   alternates: { canonical: `${getCanonicalSiteUrl()}/contact` },
-  openGraph: { title: 'Contact Us | Ryan Realty', url: `${getCanonicalSiteUrl()}/contact`, type: 'website' },
+  openGraph: {
+    title: 'Contact Us | Ryan Realty',
+    url: `${getCanonicalSiteUrl()}/contact`,
+    type: 'website',
+    images: [{ url: contactOgImage, width: 1200, height: 630, alt: 'Contact Ryan Realty' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: [contactOgImage],
+  },
 }
 
 export default async function ContactPage({ searchParams }: PageProps) {
