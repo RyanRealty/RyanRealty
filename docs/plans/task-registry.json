@@ -324,13 +324,13 @@
     {
       "id": "tier-3",
       "name": "Competitive Parity",
-      "status": "open",
+      "status": "complete",
       "goal": "Features needed to match what Zillow/Redfin users expect.",
       "tasks": [
         {
           "id": "T3-001",
           "title": "Tax history on listing detail",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "engagement",
           "files": [
@@ -349,7 +349,7 @@
         {
           "id": "T3-002",
           "title": "Climate and flood risk data",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "engagement",
           "files": [
@@ -369,7 +369,7 @@
         {
           "id": "T3-003",
           "title": "Print-friendly listing view",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "engagement",
           "files": [
@@ -387,7 +387,7 @@
         {
           "id": "T3-004",
           "title": "Speed-to-lead auto-response",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "monetization",
           "files": [
@@ -408,7 +408,7 @@
         {
           "id": "T3-005",
           "title": "Lead scoring based on behavior",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "monetization",
           "files": [
@@ -429,7 +429,7 @@
         {
           "id": "T3-006",
           "title": "Shared listing collections",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "engagement",
           "files": [
@@ -448,7 +448,7 @@
         {
           "id": "T3-007",
           "title": "Notes on saved homes",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "engagement",
           "files": [
@@ -468,7 +468,7 @@
         {
           "id": "T3-008",
           "title": "Recent searches history",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "engagement",
           "files": [
@@ -487,7 +487,7 @@
         {
           "id": "T3-009",
           "title": "Full-screen mobile photo gallery with swipe",
-          "status": "open",
+          "status": "complete",
           "priority": "medium",
           "owner": "engagement",
           "files": [
