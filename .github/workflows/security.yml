@@ -1,0 +1,176 @@
+name: Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly scan every Tuesday at 8:00 AM UTC
+    - cron: "0 8 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      # 1. npm audit for known vulnerabilities
+      - name: npm audit (high/critical)
+        id: audit
+        run: |
+          echo "## 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Run audit, capture output
+          AUDIT_OUTPUT=$(npm audit --audit-level=high 2>&1 || true)
+          AUDIT_EXIT=$(npm audit --audit-level=high > /dev/null 2>&1; echo $?)
+
+          if [ "$AUDIT_EXIT" = "0" ]; then
+            echo "✅ No high or critical vulnerabilities found." >> $GITHUB_STEP_SUMMARY
+            echo "has_vulnerabilities=false" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Vulnerabilities detected:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$AUDIT_OUTPUT" | tail -30 >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "has_vulnerabilities=true" >> $GITHUB_OUTPUT
+          fi
+
+      # 2. Scan for accidentally committed secrets
+      - name: Secret leak detection
+        id: secrets
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔑 Secret Leak Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          FOUND_SECRETS=0
+
+          # Patterns to check (exclude .env.example, docs, and this workflow)
+          PATTERNS=(
+            'sk_live_[a-zA-Z0-9]+'
+            'sk_test_[a-zA-Z0-9]+'
+            'SUPABASE_SERVICE_ROLE_KEY=[a-zA-Z0-9]'
+            'SPARK_API_KEY=[a-zA-Z0-9]'
+            'FOLLOWUPBOSS_API_KEY=[a-zA-Z0-9]'
+            'OPENAI_API_KEY=sk-[a-zA-Z0-9]'
+            'RESEND_API_KEY=re_[a-zA-Z0-9]'
+            'SENTRY_DSN=https://[a-z0-9]+@'
+            'password\s*[:=]\s*["\x27][^"\x27]{8,}'
+          )
+
+          EXCLUDE_PATHS=".env.example|.github/workflows/security.yml|docs/|node_modules/|.next/"
+
+          for pattern in "${PATTERNS[@]}"; do
+            MATCHES=$(grep -rn --include="*.ts" --include="*.tsx" --include="*.js" --include="*.json" --include="*.env" --include="*.yml" -E "$pattern" . 2>/dev/null | grep -vE "$EXCLUDE_PATHS" || true)
+            if [ -n "$MATCHES" ]; then
+              echo "⚠️ Potential secret pattern: \`$pattern\`" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              echo "$MATCHES" | head -5 >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              FOUND_SECRETS=$((FOUND_SECRETS + 1))
+            fi
+          done
+
+          if [ "$FOUND_SECRETS" = "0" ]; then
+            echo "✅ No hardcoded secrets detected." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "found_secrets=$FOUND_SECRETS" >> $GITHUB_OUTPUT
+
+      # 3. Check that service role key is never used in client components
+      - name: Service role client-side check
+        id: service_role
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🛡️ Service Role Key Usage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check for SUPABASE_SERVICE_ROLE_KEY usage in client components
+          CLIENT_USAGE=$(grep -rn "SUPABASE_SERVICE_ROLE_KEY\|createServiceClient" \
+            --include="*.tsx" --include="*.ts" \
+            components/ app/ \
+            2>/dev/null | \
+            grep -v "server" | \
+            grep -v "'use server'" | \
+            grep -v "// server" | \
+            grep -v "route.ts" | \
+            grep -v "actions/" || true)
+
+          if [ -n "$CLIENT_USAGE" ]; then
+            echo "⚠️ Service role key may be used in client-accessible code:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$CLIENT_USAGE" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "client_leak=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Service role key only used in server-side code." >> $GITHUB_STEP_SUMMARY
+            echo "client_leak=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 4. Check for .env files that shouldn't be committed
+      - name: Check for committed env files
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📄 Environment File Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          COMMITTED_ENV=$(git ls-files | grep -E "^\.env\." | grep -v ".env.example" || true)
+          if [ -n "$COMMITTED_ENV" ]; then
+            echo "⚠️ Environment files committed to repo:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$COMMITTED_ENV" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No .env files committed (only .env.example)." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Create issue for weekly scan findings
+      - name: Create issue on findings (scheduled only)
+        if: github.event_name == 'schedule' && (steps.audit.outputs.has_vulnerabilities == 'true' || steps.secrets.outputs.found_secrets != '0')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Security scan findings (${new Date().toISOString().slice(0, 10)})`;
+            const body = `## Weekly Security Scan Results\n\nThe automated security scan found issues that need attention.\n\nSee the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.\n\n- Vulnerabilities: ${process.env.HAS_VULNS === 'true' ? '⚠️ Found' : '✅ None'}\n- Secret leaks: ${process.env.FOUND_SECRETS !== '0' ? '⚠️ Found' : '✅ None'}\n\n---\n*Auto-generated by security scan workflow*`;
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security',
+              per_page: 5,
+            });
+
+            if (issues.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues[0].number,
+                body: `New scan at ${new Date().toISOString()}. See [run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['security', 'bug'],
+              });
+            }
+        env:
+          HAS_VULNS: ${{ steps.audit.outputs.has_vulnerabilities }}
+          FOUND_SECRETS: ${{ steps.secrets.outputs.found_secrets }}
