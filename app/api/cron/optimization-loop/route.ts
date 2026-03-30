@@ -25,7 +25,10 @@ function getServiceSupabase() {
   return createClient(url, key)
 }
 
-async function checkSyncFreshness(supabase: ReturnType<typeof createClient>): Promise<HealthCheck[]> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ServiceSupabase = ReturnType<typeof createClient<any>>
+
+async function checkSyncFreshness(supabase: ServiceSupabase): Promise<HealthCheck[]> {
   const checks: HealthCheck[] = []
 
   // Check last sync timestamp
@@ -81,7 +84,7 @@ async function checkSyncFreshness(supabase: ReturnType<typeof createClient>): Pr
   return checks
 }
 
-async function checkListingHealth(supabase: ReturnType<typeof createClient>): Promise<HealthCheck[]> {
+async function checkListingHealth(supabase: ServiceSupabase): Promise<HealthCheck[]> {
   const checks: HealthCheck[] = []
 
   // Count active listings
@@ -136,7 +139,7 @@ async function checkListingHealth(supabase: ReturnType<typeof createClient>): Pr
   return checks
 }
 
-async function checkMarketDataFreshness(supabase: ReturnType<typeof createClient>): Promise<HealthCheck[]> {
+async function checkMarketDataFreshness(supabase: ServiceSupabase): Promise<HealthCheck[]> {
   const checks: HealthCheck[] = []
 
   // Check market_pulse_live freshness
@@ -211,7 +214,7 @@ function checkConfiguration(): HealthCheck[] {
   return checks
 }
 
-async function checkLeadPipelineHealth(supabase: ReturnType<typeof createClient>): Promise<HealthCheck[]> {
+async function checkLeadPipelineHealth(supabase: ServiceSupabase): Promise<HealthCheck[]> {
   const checks: HealthCheck[] = []
 
   // Check recent inquiries
