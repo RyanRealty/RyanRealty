@@ -104,3 +104,56 @@ export async function submitExitIntentLead(input: {
 
   return result.ok ? { ok: true } : { ok: false, error: result.error ?? 'Lead capture failed' }
 }
+
+/**
+ * Submit a contextual page CTA lead (email/phone capture from city, community, or content pages).
+ * Creates a General Inquiry in FUB.
+ */
+export async function submitPageCTA(input: {
+  email?: string
+  phone?: string
+  leadType?: 'general' | 'buyer' | 'seller' | 'newsletter'
+  context?: string
+  area?: string
+}): Promise<{ error: string | null }> {
+  try {
+    const email = input.email?.trim().toLowerCase()
+    const phone = input.phone?.trim()
+
+    if (!email && !phone) {
+      return { error: 'Please provide an email or phone number' }
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return { error: 'Please enter a valid email address' }
+    }
+
+    let person: FubEventPerson
+    if (email) {
+      const existing = await findPersonByEmail(email)
+      person = existing
+        ? { id: existing.id }
+        : { emails: [{ value: email }], ...(phone ? { phones: [{ value: phone }] } : {}) }
+    } else if (phone) {
+      person = { phones: [{ value: phone }] }
+    } else {
+      return { error: 'Contact information required' }
+    }
+
+    const eventType = input.leadType === 'seller' ? 'Seller Inquiry' : 'General Inquiry'
+
+    await sendEvent({
+      type: eventType,
+      person,
+      source: websiteSource(),
+      sourceUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/`,
+      pageTitle: `Page CTA${input.area ? ` — ${input.area}` : ''}`,
+      message: input.context ?? 'page-cta',
+    })
+
+    return { error: null }
+  } catch (err) {
+    console.error('[submitPageCTA]', err)
+    return { error: 'Something went wrong. Please try again.' }
+  }
+}
