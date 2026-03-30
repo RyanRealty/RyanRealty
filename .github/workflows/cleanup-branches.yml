@@ -1,0 +1,108 @@
+name: Cleanup Stale Branches
+
+on:
+  schedule:
+    # First day of each month at 7:00 AM UTC
+    - cron: "0 7 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find and delete stale branches
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const STALE_DAYS = 30;
+            const PROTECTED = ['main', 'master', 'optimizer-swarm', 'develop', 'staging'];
+            const cutoff = new Date(Date.now() - STALE_DAYS * 24 * 60 * 60 * 1000);
+
+            console.log(`Looking for branches with no commits since ${cutoff.toISOString()}`);
+            console.log(`Protected branches: ${PROTECTED.join(', ')}`);
+
+            // Get all open PR branches
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const prBranches = new Set(prs.map(pr => pr.head.ref));
+            console.log(`Open PR branches (preserved): ${[...prBranches].join(', ') || 'none'}`);
+
+            // Get all branches
+            const branches = await github.paginate(github.rest.repos.listBranches, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+
+            const deleted = [];
+            const skipped = [];
+
+            for (const branch of branches) {
+              const name = branch.name;
+
+              // Skip protected
+              if (PROTECTED.includes(name)) {
+                skipped.push(`${name} (protected)`);
+                continue;
+              }
+
+              // Skip branches with open PRs
+              if (prBranches.has(name)) {
+                skipped.push(`${name} (has open PR)`);
+                continue;
+              }
+
+              // Check last commit date
+              try {
+                const { data: commit } = await github.rest.repos.getCommit({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: branch.commit.sha,
+                });
+
+                const commitDate = new Date(commit.commit.committer.date);
+                if (commitDate < cutoff) {
+                  // Delete stale branch
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `heads/${name}`,
+                  });
+                  deleted.push(`${name} (last commit: ${commitDate.toISOString().slice(0, 10)})`);
+                } else {
+                  skipped.push(`${name} (active: ${commitDate.toISOString().slice(0, 10)})`);
+                }
+              } catch (e) {
+                skipped.push(`${name} (error checking: ${e.message})`);
+              }
+            }
+
+            // Summary
+            let summary = `## 🧹 Branch Cleanup Summary\n\n`;
+            summary += `**Date**: ${new Date().toISOString().slice(0, 10)}\n`;
+            summary += `**Stale threshold**: ${STALE_DAYS} days\n\n`;
+
+            if (deleted.length > 0) {
+              summary += `### Deleted (${deleted.length})\n`;
+              for (const d of deleted) summary += `- 🗑️ ${d}\n`;
+            } else {
+              summary += `### No stale branches found\n`;
+            }
+
+            summary += `\n### Preserved (${skipped.length})\n`;
+            for (const s of skipped) summary += `- ✅ ${s}\n`;
+
+            console.log(summary);
+            core.summary.addRaw(summary);
+            await core.summary.write();

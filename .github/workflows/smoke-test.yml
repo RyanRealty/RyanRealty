@@ -7,6 +7,9 @@ on:
     types: [completed]
     branches: [main]
 
+  # Trigger on Vercel preview deployments
+  deployment_status:
+
   # Allow manual triggering with custom URL
   workflow_dispatch:
     inputs:
@@ -18,10 +21,21 @@ on:
 jobs:
   smoke-test:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        github.event.workflow_run.conclusion == 'success' ||
+        (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
+      }}
 
     env:
-      SITE_URL: ${{ github.event.inputs.site_url || vars.SITE_URL || 'https://ryan-realty.com' }}
+      SITE_URL: >-
+        ${{
+          github.event.inputs.site_url ||
+          github.event.deployment_status.target_url ||
+          vars.SITE_URL ||
+          'https://ryan-realty.com'
+        }}
 
     steps:
       - uses: actions/checkout@v4

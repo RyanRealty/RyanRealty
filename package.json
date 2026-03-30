@@ -49,6 +49,8 @@
     "test:e2e:all": "npx playwright test",
     "test:e2e:ui": "npx playwright test --ui",
     "test:e2e:update-snapshots": "npx playwright test --update-snapshots",
+    "docs:check": "npx tsx scripts/check-docs-freshness.ts",
+    "docs:check:summary": "npx tsx scripts/check-docs-freshness.ts --summary",
     "test:history": "node scripts/test-listing-history.mjs",
     "vercel:env": "node scripts/sync-vercel-env.mjs",
     "prepare": "husky"

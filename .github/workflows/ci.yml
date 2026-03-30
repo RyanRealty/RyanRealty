@@ -34,6 +34,12 @@ jobs:
           path: .next/
           retention-days: 1
 
+      # Build health tracking
+      - name: Record build health metrics
+        if: always()
+        run: |
+          npx tsx scripts/track-build-health.ts 2>/dev/null || true
+
       - run: npm run ci:lighthouse
       - run: npm run ci:a11y
 

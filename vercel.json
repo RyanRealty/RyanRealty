@@ -7,6 +7,18 @@
     {
       "path": "/api/cron/refresh-place-content",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/optimization-loop",
+      "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/cron/saved-search-alerts",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/market-report",
+      "schedule": "0 14 * * 6"
     }
   ]
 }
