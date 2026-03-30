@@ -1,0 +1,55 @@
+---
+description: Enforces the unified master plan. File ownership, active phase, and planning protocol.
+alwaysApply: true
+---
+
+# Master Plan Protocol
+
+## Active Phase
+
+**Current phase: Complete through Phase 6**
+**Phase brief: `docs/plans/phase-6-brief.md`**
+**Master plan: `docs/plans/master-plan.md`**
+
+## Before Modifying Any File
+
+1. Check the file ownership matrix below. If the file belongs to another workstream, do NOT modify it unless the matrix says you may.
+2. Read the current phase brief (`docs/plans/phase-6-brief.md`) before starting work.
+3. All planned phases through 6 are complete. New work should be scoped from follow-up directives or deferred backlog items in `docs/plans/master-plan.md`.
+
+## File Ownership Matrix
+
+| File / Area | Owner | Others May... |
+|---|---|---|
+| `supabase/migrations/*_market_stats*` | Reporting | Not touch |
+| `app/actions/market-stats.ts` | Reporting | Import and call |
+| `app/api/cron/sync-full/route.ts` | Reporting | Not touch |
+| `components/reports/*` | Reporting | Import and render |
+| `app/housing-market/*` | Reporting | Monetization adds AdUnit slots |
+| `app/search/[...slug]/page.tsx` section order | Engagement | Monetization adds ad slots + route segments |
+| `app/page.tsx` section order | Engagement | Monetization adds ad slots |
+| `app/listing/[listingKey]/page.tsx` sections | Engagement | Monetization adds ad slots |
+| `app/actions/activity-feed.ts` | Engagement | Not touch |
+| `components/PageCTA.tsx` | Engagement | Not touch |
+| `components/AdUnit.tsx` | Monetization | Others don't touch |
+| `app/layout.tsx` (site-wide banner) | Monetization | Engagement doesn't add global UI |
+| `app/sitemap.ts` | Monetization | Reporting may add report URLs |
+| `app/guides/*` | Monetization | Not touch |
+| `lib/followupboss.ts` | Shared | Extend carefully, don't break existing |
+| `components/ShareButton.tsx` | Shared | Extend carefully |
+| `app/admin/*` | Admin | Only superuser changes |
+
+## After Completing Work
+
+1. Mark completed tasks in the phase brief (change `[ ]` to `[x]`).
+2. When all tasks in a phase are done, update this rule: change the active phase number and phase brief path.
+3. Create the next phase brief (`docs/plans/phase-N-brief.md`) from the master plan.
+
+## Key Constraints
+
+- **SEO is a gate**: every phase must pass the SEO verification checklist in the master plan before shipping.
+- **Reporting data layer is the single source of truth**: use `getCachedStats()` and `getLiveMarketPulse()` from `app/actions/market-stats.ts`. Do NOT use old `getCityMarketStats()`.
+- **Lead capture stacking**: StickyMobileCTA and SiteLeadCaptureBanner must not both be visible simultaneously.
+- **Ad slot order on listing detail**: existing sections → AreaMarketContext → AdUnit → Similar Listings → ActivityFeedSlider → RecentlySoldRow → sidebar ad below CTA.
+- **Filter page links**: Browse-by UI components link to Monetization's `/search/{city}/{filter}` routes, not query-param URLs.
+- **`npm run build` must pass** before any work is considered complete.

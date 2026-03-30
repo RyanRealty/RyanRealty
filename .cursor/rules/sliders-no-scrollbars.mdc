@@ -1,0 +1,22 @@
+---
+description: Sliders and carousels must use arrow navigation only; no visible scrollbars.
+globs: ["**/*.tsx", "components/**/*", "app/**/*"]
+alwaysApply: true
+---
+
+# Sliders: Arrows only, no scrollbars
+
+**NEVER** add a horizontal slider or carousel that shows a scrollbar as the main way to navigate.
+
+## Required
+- **Arrow navigation:** Left and right buttons (or overlay buttons) that scroll the track. Disable at start/end when there is nothing to scroll.
+- **No visible scrollbar:** Use the `no-scrollbar` class on the scrollable track (see `app/globals.css`). Touch/swipe still works; the scrollbar must simply not be shown.
+
+## Do NOT
+- Use `overflow-x-auto` (or similar) on a slider track **without** also (1) adding arrow buttons and (2) applying `no-scrollbar` to the track.
+- Rely on a visible horizontal scrollbar as the only or primary way to move through slider content.
+
+## Reference
+- **Pattern:** `components/TilesSlider.tsx` (arrow overlays + `no-scrollbar` on track).
+
+When adding or changing any section that scrolls horizontally (listings, activity feed, city tiles, community tiles, etc.), use this pattern. No exceptions.

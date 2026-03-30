@@ -1,0 +1,49 @@
+---
+description: Run the full UI audit loop (research → audit → plan → implement → review) and repeat until goals are met. Do not stop after one pass.
+alwaysApply: true
+---
+
+# Continuous UI audit loop
+
+**When to run:** When improving this project; when the user asks for audit, review, "why doesn't X work," "homepage looks bad," or "keep working until we're happy"; or when the user is clearly frustrated about the site (e.g. "I have to keep saying the same thing"). In those cases, **run the audit loop first** (or in parallel with answering), then fix issues. Do not only explain—fix. Run the audit loop only on files within the current task scope, not unrelated pages.
+
+**Important:** Cursor does not run in the background. The audit runs only when you're in a chat. To get a full audit, the user can say: "Run the full UI audit from GOALS_AND_UI_AUDIT.md and fix everything." See **docs/WHY_AUDIT_AND_VIDEOS.md** for why "constant" auditing isn't possible and why videos might not work.
+
+When the loop applies, follow it and **repeat until goals are met**. Do not stop after one pass and wait for the user.
+
+## 1. Research and best practices
+
+- Look up current best practices for the areas you're auditing (e.g. admin dashboard UX, real estate listing pages, nav patterns). Use web search or docs as needed.
+- Use **docs/GOALS_AND_UI_AUDIT.md** and **MASTER_INSTRUCTION_SET.md** as the source of truth for goals. Do not rely on "compare to top real estate websites" as a one-off—instead, research what makes admin UIs, listing pages, and nav patterns effective and apply that.
+- You know what data the site has (listings, brokers, saved items, etc.). Use that to drive what the UI should show and how.
+
+## 2. Full UI audit
+
+- Work through every section of the audit checklist in **docs/GOALS_AND_UI_AUDIT.md** (nav, home, tiles, account, listing, resort, team/broker, video, admin, general).
+- For each item: verify in code (and by running the app or build if possible). If something fails or is missing, **fix it** in step 4; do not only report it.
+- Note 404s, broken links, missing avatar, or any runtime/UX issue and add them to the fix list.
+
+## 3. Implementation plan
+
+- Create a short, ordered list of changes (fix 404s, fix avatar, add admin sidebar, etc.).
+- Then **implement every item** in the same conversation. Do not stop after the first few.
+
+## 4. Implement
+
+- Implement the planned changes. Run `npm run build` and fix any errors.
+- Ensure no new linter errors on edited files.
+
+## 5. Review
+
+- Re-run the audit checklist on the areas you changed. Confirm the changes work (e.g. avatar shows, admin has sidebar, no 404 on known routes).
+- If something is still wrong or could be better, add it to the next iteration and fix it.
+- Then **go back to step 1** (or at least step 2) and run the loop again until:
+  - The build is green.
+  - The audit checklist passes for the scope you're addressing.
+  - There are no known 404s, missing avatar, or broken admin UX for the current feature set.
+
+## Important
+
+- You are not limited by the user telling you "what they think." Use research and best-practice sources to decide how the admin should look, how nav should behave, etc.
+- If you need a **setting** to be better: the user asked. Tell them: (1) Ensure **docs/GOALS_AND_UI_AUDIT.md** is up to date and that this rule is enabled. (2) In Cursor, you can add to **Cursor Settings → Rules** (or .cursor/rules) a rule that says "when working on Ryan Realty, run the continuous UI audit loop until the checklist passes." This rule file does that. (3) For auth (e.g. Google avatar): ensure Supabase → Authentication → URL Configuration has the correct **Redirect URL** (e.g. `https://yoursite.com/auth/callback` or `http://localhost:3000/auth/callback` for dev). Without it, OAuth can fail or metadata may not be saved.
+- Do not leave the loop with work left undone because "the user didn't ask for the next item." Keep iterating until the goals are met.

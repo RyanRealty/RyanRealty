@@ -1,0 +1,34 @@
+{
+  "plugins": {
+    "vercel": {
+      "enabled": true
+    },
+    "supabase": {
+      "enabled": true
+    },
+    "firecrawl": {
+      "enabled": true
+    },
+    "parallel": {
+      "enabled": true
+    },
+    "launchdarkly": {
+      "enabled": true
+    },
+    "superpowers": {
+      "enabled": true
+    },
+    "slack": {
+      "enabled": true
+    },
+    "cursor-team-kit": {
+      "enabled": true
+    },
+    "figma": {
+      "enabled": true
+    },
+    "linear": {
+      "enabled": true
+    }
+  }
+}

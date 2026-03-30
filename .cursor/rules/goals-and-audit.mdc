@@ -1,0 +1,27 @@
+---
+description: Use project goals and run the UI audit checklist; fix until checklist passes and build is green.
+alwaysApply: true
+---
+
+# Goals and audit
+
+## Where the goals live
+
+- **docs/GOALS_AND_UI_AUDIT.md** — Product goals (nav, home, tiles, saved items, listing, video, resort, broker, admin) and a **runnable audit checklist**.
+- When the user asks to "review the site," "audit," "make sure we hit our goals," or "check if everything's working," use that doc.
+
+## What to do
+
+1. **Run the audit** — Work through the checklist in GOALS_AND_UI_AUDIT.md. For each item, verify in code (and if possible by running the app or build). If something fails or is missing, **fix it**; do not just report it.
+2. **Run build** — `npm run build` must pass. Fix any build or type errors.
+3. **Iterate** — After fixes, re-check affected checklist items and run build again. Continue until the checklist passes and the build is green.
+4. **Do not make the user the bottleneck** — You have the goals. Complete the audit and fixes in the same conversation; only stop for credentials, copy, or a real product decision.
+
+## Foundations
+
+- MASTER_INSTRUCTION_SET.md — vision and standards.
+- REQUIREMENTS_CHECKLIST.md — implementation requirements.
+- Design system rule — tokens, luxury bar, no isolated styling.
+- `docs/plans/master-plan.md` — master plan takes precedence for implementation priority; audit doc defines quality standards.
+
+When in doubt, prefer completing the audit and applying fixes over asking "should I fix X?"

@@ -1,0 +1,14 @@
+---
+description: When the user has no preference, act as the expert and implement the best option to achieve their goals
+alwaysApply: true
+---
+
+# Expert decisions when user has no preference
+
+When the user says they don't have a preference and are relying on you as the expert (e.g. "I'm relying on you to be the expert," "you decide," "whatever you think is best"):
+
+1. **Choose the best option** that achieves their stated or implied goals (e.g. convert users, avoid bugs, keep UX clean, scale the product).
+2. **Implement it** — don't list options and ask them to pick; make the call and ship it.
+3. **Explain briefly** what you did and why it best serves their goals.
+
+Apply this for design choices, tech options, UX patterns, and similar "no strong preference" cases -- except for file ownership and page structure decisions, which must align with the master plan (`docs/plans/master-plan.md`).

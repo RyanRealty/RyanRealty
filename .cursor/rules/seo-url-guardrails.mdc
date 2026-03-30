@@ -1,0 +1,42 @@
+# SEO URL Guardrails (Canonical Navigation)
+
+When editing routes, links, metadata, sitemap, or structured data, follow these rules.
+
+## Canonical URL contracts
+
+- Listings browse hub: `/homes-for-sale` (use `listingsBrowsePath()` from `lib/slug.ts`)
+- City pages: `/cities/{city-slug}`
+- Neighborhood pages: `/cities/{city-slug}/{neighborhood-slug}`
+- Community pages: `/communities/{community-slug}`
+- Listing detail pages: `listingDetailPath(...)` from `lib/slug.ts`
+- Team pages: `/team` and `/team/{slug}` (use `teamPath()` from `lib/slug.ts`)
+- Home valuation: `/sell/valuation` (use `valuationPath()` from `lib/slug.ts`)
+
+## Hard requirements
+
+1. Never hardcode legacy paths in new code:
+   - Do not use `/listings` as the primary browse URL.
+   - Do not use `/agents` as canonical profile/team URL.
+   - Do not use `/home-valuation` as canonical valuation URL.
+2. Use `lib/slug.ts` helpers for all SEO-critical links and canonicals.
+3. Any new metadata canonical must match the canonical route contract above.
+4. Any URL emitted in structured data must match the canonical route.
+5. Any URL emitted in `app/sitemap.ts` must be canonical only.
+
+## Indexation policy
+
+- Paginated and filtered variants should generally be `noindex,follow` unless explicitly intended as indexable landing pages.
+- Canonical should point to the clean route without transient filter/sort/pagination query params.
+
+## Redirect policy
+
+- If a legacy URL still exists for compatibility, keep a permanent redirect to the canonical URL.
+- Do not remove existing SEO redirects without replacing with an equivalent canonical redirect.
+
+## PR review checklist (SEO routing)
+
+- [ ] No new hardcoded legacy SEO URLs
+- [ ] Canonical tags align with route contract
+- [ ] Structured data URLs align with canonical
+- [ ] Sitemap contains canonical URLs only
+- [ ] Pagination/filter indexation behavior reviewed
