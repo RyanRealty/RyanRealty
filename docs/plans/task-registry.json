@@ -747,7 +747,7 @@
       "priority": "high",
       "category": "performance",
       "source": "PRODUCT_SPEC_V2.md",
-      "status": "in-progress",
+      "status": "complete",
       "owner": "performance",
       "files": [],
       "acceptanceCriteria": [
