@@ -210,10 +210,24 @@ All checks must pass before marking a task complete.
 # After validation passes
 npx tsx scripts/orchestrate.ts complete <taskId>
 
-# Commit with conventional format
+# Commit with conventional format and push to main
 git add -A
 git commit -m "feat: <short description of what was done>"
-git push
+git push origin main
+```
+
+## CRITICAL: Push to Main
+
+**Always push directly to `main`.** Do NOT create feature branches. Do NOT create pull requests. Push to main and let CI validate. The orchestrator and task registry handle coordination — branches are unnecessary overhead.
+
+```bash
+# CORRECT
+git push origin main
+
+# WRONG — do not do this
+git checkout -b feat/some-branch
+git push origin feat/some-branch
+gh pr create
 ```
 
 The orchestrator automatically:
