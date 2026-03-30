@@ -6,6 +6,7 @@ import BrokerSocialProofCta from '@/components/broker/BrokerSocialProofCta'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
+import { generateBreadcrumbSchema } from '@/lib/structured-data'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -53,6 +54,40 @@ export default async function TeamPage() {
             url: `${siteUrl}/team`,
             publisher: { '@type': 'Organization', name: brokerageName },
           }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': ['LocalBusiness', 'RealEstateAgent'],
+            name: brokerageName,
+            url: siteUrl,
+            areaServed: {
+              '@type': 'GeoCircle',
+              geoMidpoint: { '@type': 'GeoCoordinates', latitude: 44.0582, longitude: -121.3153 },
+              geoRadius: '80000',
+            },
+            employee: agents.map((agent) => ({
+              '@type': 'Person',
+              name: agent.display_name,
+              jobTitle: agent.title ?? 'Real Estate Agent',
+              url: `${siteUrl}/team/${agent.slug}`,
+              ...(agent.photo_url ? { image: agent.photo_url } : {}),
+            })),
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateBreadcrumbSchema([
+              { name: 'Home', url: siteUrl },
+              { name: 'Team', url: `${siteUrl}/team` },
+            ])
+          ),
         }}
       />
       <ContentPageHero

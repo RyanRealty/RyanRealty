@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getPublishedGuides } from '@/app/actions/guides'
+import { generateBreadcrumbSchema } from '@/lib/structured-data'
 
 export const metadata: Metadata = {
   title: 'Real Estate Guides',
@@ -41,6 +42,17 @@ export default async function GuidesIndexPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateBreadcrumbSchema([
+              { name: 'Home', url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com' },
+              { name: 'Guides', url: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/guides` },
+            ])
+          ),
+        }}
       />
       <h1 className="text-3xl font-semibold text-foreground">Guides</h1>
       <p className="mt-2 text-muted-foreground">Local market explainers and step by step playbooks for buyers and sellers.</p>

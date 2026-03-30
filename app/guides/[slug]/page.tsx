@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import { getGuideBySlug, getPublishedGuides } from '@/app/actions/guides'
+import { generateBreadcrumbSchema } from '@/lib/structured-data'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -65,6 +66,18 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateBreadcrumbSchema([
+              { name: 'Home', url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com' },
+              { name: 'Guides', url: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/guides` },
+              { name: guide.title, url: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/guides/${guide.slug}` },
+            ])
+          ),
+        }}
       />
       <article className="rounded-lg border border-border bg-card p-6">
         <nav className="mb-4 text-sm text-muted-foreground" aria-label="Breadcrumb">

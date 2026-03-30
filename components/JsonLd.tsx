@@ -7,7 +7,7 @@ export default function JsonLd() {
 
   const organization = {
     '@context': 'https://schema.org',
-    '@type': 'RealEstateAgent',
+    '@type': ['RealEstateAgent', 'LocalBusiness'],
     name: 'Ryan Realty',
     description: 'Central Oregon real estate. Browse homes for sale, search by city and neighborhood, view maps and listing details.',
     url: baseUrl,
@@ -15,6 +15,12 @@ export default function JsonLd() {
       '@type': 'GeoCircle',
       geoMidpoint: { '@type': 'GeoCoordinates', latitude: 44.0582, longitude: -121.3153 },
       geoRadius: '80000',
+    },
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Bend',
+      addressRegion: 'OR',
+      addressCountry: 'US',
     },
     sameAs: [],
   }

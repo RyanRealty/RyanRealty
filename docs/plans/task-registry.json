@@ -708,7 +708,7 @@
       "priority": "high",
       "category": "seo",
       "source": "PRODUCT_SPEC_V2.md",
-      "status": "open",
+      "status": "in-progress",
       "owner": "seo",
       "files": [
         "lib/structured-data.ts",

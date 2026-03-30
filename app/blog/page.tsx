@@ -7,6 +7,7 @@ import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { shouldNoIndexBlogIndex } from '@/lib/seo-routing'
 import ShareButton from '@/components/ShareButton'
+import { generateBreadcrumbSchema } from '@/lib/structured-data'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
@@ -80,6 +81,17 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateBreadcrumbSchema([
+              { name: 'Home', url: siteUrl },
+              { name: 'Blog', url: `${siteUrl}/blog` },
+            ])
+          ),
+        }}
+      />
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-3xl font-bold text-foreground">Blog</h1>
         <ShareButton

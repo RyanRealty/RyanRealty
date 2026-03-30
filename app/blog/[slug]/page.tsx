@@ -6,7 +6,7 @@ import { getBlogPostBySlug } from '@/app/actions/blog'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
-import { generateBlogSchema } from '@/lib/structured-data'
+import { generateBlogSchema, generateBreadcrumbSchema } from '@/lib/structured-data'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -78,6 +78,18 @@ export default async function BlogPostPage({ params }: PageProps) {
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateBreadcrumbSchema([
+              { name: 'Home', url: siteUrl },
+              { name: 'Blog', url: `${siteUrl}/blog` },
+              { name: post.title, url: `${siteUrl}/blog/${encodeURIComponent(post.slug)}` },
+            ])
+          ),
+        }}
+      />
       <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">Home</Link>
         <span className="px-2">/</span>

@@ -46,6 +46,7 @@ import RecentlySoldRow from '@/components/RecentlySoldRow'
 import LivePulseBanner from '@/components/reports/LivePulseBanner'
 import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import VideoToursRow from '@/components/videos/VideoToursRow'
+import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -282,6 +283,45 @@ export default async function CityDetailPage({ params }: Props) {
             }),
             url: `${siteUrl}/cities/${slug}`,
           }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateBreadcrumbSchema([
+              { name: 'Home', url: siteUrl },
+              { name: 'Cities', url: `${siteUrl}/cities` },
+              { name: city.name, url: `${siteUrl}/cities/${slug}` },
+            ])
+          ),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateFAQSchema([
+              {
+                question: `How many homes are for sale in ${city.name}?`,
+                answer: city.activeCount > 0
+                  ? `There are currently ${city.activeCount} homes for sale in ${city.name}, Oregon.`
+                  : `Inventory in ${city.name} changes frequently. Check back or contact Ryan Realty for the latest listings.`,
+              },
+              {
+                question: `What is the median home price in ${city.name}?`,
+                answer: city.medianPrice != null
+                  ? `The current median home price in ${city.name} is $${city.medianPrice.toLocaleString()}.`
+                  : `Contact Ryan Realty for current pricing information in ${city.name}.`,
+              },
+              {
+                question: `How many communities are in ${city.name}?`,
+                answer: city.communityCount > 0
+                  ? `${city.name} has ${city.communityCount} communities and subdivisions with homes for sale.`
+                  : `Explore ${city.name} neighborhoods and communities on our city page.`,
+              },
+            ])
+          ),
         }}
       />
 

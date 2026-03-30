@@ -28,6 +28,7 @@ import BrokerContactForm from '@/components/broker/BrokerContactForm'
 import BrokerShare from '@/components/broker/BrokerShare'
 import BrokerPageTracker from '@/components/broker/BrokerPageTracker'
 import BrokerSocialProofCta from '@/components/broker/BrokerSocialProofCta'
+import { generateBreadcrumbSchema } from '@/lib/structured-data'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -125,6 +126,11 @@ export default async function TeamMemberPage({ params }: Props) {
             telephone: broker.phone ?? undefined,
             email: broker.email ?? undefined,
             areaServed: { '@type': 'Place', name: 'Central Oregon' },
+            worksFor: {
+              '@type': ['LocalBusiness', 'RealEstateAgent'],
+              name: siteName,
+              url: siteUrl,
+            },
             ...(broker.avgRating != null &&
               broker.reviewCount > 0 && {
                 aggregateRating: {
@@ -135,6 +141,18 @@ export default async function TeamMemberPage({ params }: Props) {
               }),
             url: `${siteUrl}/team/${slug}`,
           }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateBreadcrumbSchema([
+              { name: 'Home', url: siteUrl },
+              { name: 'Team', url: `${siteUrl}/team` },
+              { name: broker.display_name, url: `${siteUrl}/team/${slug}` },
+            ])
+          ),
         }}
       />
 

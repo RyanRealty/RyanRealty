@@ -42,6 +42,8 @@ import VacationRentalPotentialCard from '@/components/listing/VacationRentalPote
 import ActivityFeedSlider from '@/components/ActivityFeedSlider'
 import RecentlySoldRow from '@/components/RecentlySoldRow'
 import AdUnit from '@/components/AdUnit'
+import ListingJsonLd from '@/components/listing/ListingJsonLd'
+import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { getVacationRentalPotential } from '@/lib/vacation-rental-potential'
 
 type PageProps = { params: Promise<{ listingKey: string }> }
@@ -276,11 +278,48 @@ export default async function ListingDetailPage({ params }: PageProps) {
     }),
   }
 
+  const siteUrl = getCanonicalSiteUrl()
+  const breadcrumbItems = buildListingBreadcrumbItems(data)
+  const breadcrumbJsonLd = generateBreadcrumbSchema(
+    breadcrumbItems.map((item) => ({
+      name: item.label,
+      url: item.href ? `${siteUrl}${item.href}` : shareUrl,
+    }))
+  )
+  const firstPhotoUrl = photos.length > 0 ? (photos[0].cdn_url ?? photos[0].photo_url) : undefined
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ListingJsonLd
+        listingKey={listing.listing_key}
+        fields={{
+          ListingKey: listing.listing_key,
+          ListingId: listing.list_number ?? listing.listing_id ?? listing.listing_key,
+          ListPrice: listing.list_price ?? undefined,
+          StreetNumber: property?.street_number ?? undefined,
+          StreetName: property?.street_name ?? undefined,
+          City: property?.city ?? undefined,
+          StateOrProvince: property?.state ?? undefined,
+          PostalCode: property?.postal_code ?? undefined,
+          Latitude: property?.latitude ?? undefined,
+          Longitude: property?.longitude ?? undefined,
+          SubdivisionName: listing.subdivision_name ?? undefined,
+          BedroomsTotal: listing.beds_total ?? undefined,
+          BathroomsTotal: (listing.baths_full ?? listing.baths_total_integer) ?? undefined,
+          BuildingAreaTotal: listing.living_area != null ? Number(listing.living_area) : undefined,
+          PublicRemarks: listing.public_remarks ?? undefined,
+          ListAgentName: listingAgent?.agent_name ?? undefined,
+          ListOfficeName: listingAgent?.office_name ?? undefined,
+        }}
+        imageUrl={firstPhotoUrl}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <ListingTracker
         listingKey={listing.listing_key}

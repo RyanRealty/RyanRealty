@@ -9,6 +9,7 @@ import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
+import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 
 const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')}/api/og?type=default`
 
@@ -43,12 +44,31 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const defaultInquiry = params.inquiry ?? undefined
   const contactTitle = pageContent?.title?.trim() || 'Contact Us'
   const contactSubtitle = pageContent?.body_html?.trim() || '<p>Have a question or ready to get started? Reach out and we\'ll respond as soon as we can.</p>'
+  const baseUrl = getCanonicalSiteUrl()
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ContactPage',
     name: 'Contact Ryan Realty',
-    url: `${getCanonicalSiteUrl()}/contact`,
+    url: `${baseUrl}/contact`,
   }
+  const breadcrumbJsonLd = generateBreadcrumbSchema([
+    { name: 'Home', url: baseUrl },
+    { name: 'Contact', url: `${baseUrl}/contact` },
+  ])
+  const faqJsonLd = generateFAQSchema([
+    {
+      question: 'What areas does Ryan Realty serve?',
+      answer: 'Ryan Realty serves Central Oregon including Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and surrounding communities.',
+    },
+    {
+      question: 'How do I schedule a showing?',
+      answer: 'Fill out the contact form on this page or call us directly. A broker will reach out within one business day to arrange a showing at your convenience.',
+    },
+    {
+      question: 'How quickly will I hear back after contacting Ryan Realty?',
+      answer: 'We aim to respond to all inquiries within one business day. For urgent needs, call us directly for the fastest response.',
+    },
+  ])
 
   return (
     <main className="min-h-screen bg-background">
@@ -63,6 +83,8 @@ export default async function ContactPage({ searchParams }: PageProps) {
       />
       <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
         <div className="grid gap-10 lg:grid-cols-2">
           <div>
             <ContactForm defaultInquiryType={defaultInquiry} />

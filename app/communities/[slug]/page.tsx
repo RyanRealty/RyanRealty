@@ -44,6 +44,7 @@ import RecentlySoldRow from '@/components/RecentlySoldRow'
 import LivePulseBanner from '@/components/reports/LivePulseBanner'
 import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import VideoToursRow from '@/components/videos/VideoToursRow'
+import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -253,6 +254,43 @@ export default async function CommunityDetailPage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(resortSchema) }}
         />
       )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateBreadcrumbSchema([
+              { name: 'Home', url: siteUrl },
+              { name: 'Cities', url: `${siteUrl}/cities` },
+              { name: community.city, url: `${siteUrl}/cities/${citySlug}` },
+              ...(community.neighborhoodName && community.neighborhoodSlug
+                ? [{ name: community.neighborhoodName, url: `${siteUrl}${neighborhoodPagePath(citySlug, community.neighborhoodSlug)}` }]
+                : []),
+              { name: community.name, url: `${siteUrl}/communities/${slug}` },
+            ])
+          ),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            generateFAQSchema([
+              {
+                question: `How many homes are for sale in ${community.name}?`,
+                answer: community.activeCount > 0
+                  ? `There are currently ${community.activeCount} homes for sale in ${community.name}, ${community.city}.`
+                  : `Inventory in ${community.name} changes frequently. Check back or contact Ryan Realty for the latest listings.`,
+              },
+              {
+                question: `What is the median home price in ${community.name}?`,
+                answer: community.medianPrice != null
+                  ? `The current median home price in ${community.name} is $${community.medianPrice.toLocaleString()}.`
+                  : `Contact Ryan Realty for current pricing in ${community.name}.`,
+              },
+            ])
+          ),
+        }}
+      />
 
       <CommunityPageTracker
         communityName={community.name}
