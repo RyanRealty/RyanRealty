@@ -13,7 +13,7 @@ import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-da
 
 const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')}/api/og?type=default`
 
-type PageProps = { searchParams: Promise<{ inquiry?: string }> }
+type PageProps = { searchParams: Promise<{ inquiry?: string; listing?: string; reason?: string }> }
 
 export const metadata: Metadata = {
   title: 'Contact Us | Ryan Realty',
@@ -41,7 +41,9 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const pageUrl = `${getCanonicalSiteUrl()}/contact`
   const pageTitle = 'Contact Us | Ryan Realty'
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
-  const defaultInquiry = params.inquiry ?? undefined
+  const defaultInquiry = params.inquiry ?? (params.reason === 'tour' ? 'Buying' : undefined)
+  const listingKey = params.listing ?? undefined
+  const contactReason = params.reason ?? undefined
   const contactTitle = pageContent?.title?.trim() || 'Contact Us'
   const contactSubtitle = pageContent?.body_html?.trim() || '<p>Have a question or ready to get started? Reach out and we\'ll respond as soon as we can.</p>'
   const baseUrl = getCanonicalSiteUrl()
@@ -87,7 +89,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
         <div className="grid gap-10 lg:grid-cols-2">
           <div>
-            <ContactForm defaultInquiryType={defaultInquiry} />
+            <ContactForm defaultInquiryType={defaultInquiry} listingKey={listingKey} reason={contactReason} />
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight text-primary">Office</h2>
