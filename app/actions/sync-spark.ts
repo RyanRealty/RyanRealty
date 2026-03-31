@@ -41,6 +41,7 @@ function isLikelyVideoUrl(url: string): boolean {
 }
 
 async function syncListingVideosForRows(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   rows: Array<Record<string, unknown>>
 ): Promise<void> {

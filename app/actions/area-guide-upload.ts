@@ -204,6 +204,7 @@ async function getOrCreateEntity(
   const slug = slugify(canonicalName)
   type InsertRow = { id: string; name: string; slug: string }
   if (entityType === 'city') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('cities')
       .insert({ name: canonicalName, slug, state: 'OR' })
@@ -215,6 +216,7 @@ async function getOrCreateEntity(
   if (entityType === 'neighborhood') {
     const insertData: { name: string; slug: string; city_id?: string } = { name: canonicalName, slug }
     if (bendCityId) insertData.city_id = bendCityId
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('neighborhoods')
       .insert(insertData)
@@ -223,6 +225,7 @@ async function getOrCreateEntity(
     if (error) return null
     return { ...(data as InsertRow), type: 'neighborhood' }
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('communities')
     .insert({ name: canonicalName, slug })

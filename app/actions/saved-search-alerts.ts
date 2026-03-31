@@ -151,6 +151,7 @@ export async function runSavedSearchAlerts(options?: {
         continue
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const userResp = await (supabase as any).auth.admin.getUserById(search.user_id)
       const toEmail = userResp?.data?.user?.email?.trim()
       if (!toEmail) {

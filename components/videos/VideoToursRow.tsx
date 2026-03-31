@@ -41,6 +41,7 @@ export default function VideoToursRow({
         return (
           <TilesSliderItem key={listingKey}>
             <ListingTile
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               listing={listing as any}
               listingKey={listingKey}
               signedIn={signedIn}

@@ -212,6 +212,7 @@ export type RunYearSyncResult = {
  */
 export async function runYearSyncWithPersistence(
   year: number,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options: { supabase: any; token: string }
 ): Promise<RunYearSyncResult> {
   const { supabase } = options
