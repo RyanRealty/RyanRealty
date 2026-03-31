@@ -10,17 +10,85 @@ const ACTIVE_STATUS_OR =
  * Dynamic sitemap — generates at request time so it always has fresh data.
  * Next.js serves this at /sitemap.xml automatically.
  *
- * Note: we removed generateSitemaps() because it runs at build time
- * when Supabase env vars may not be available, resulting in empty sitemaps.
+ * Google's limit is 50,000 URLs per sitemap file. Next.js App Router
+ * returns a sitemap index when generateSitemaps() is used. We use it
+ * with force-dynamic so the data is always fresh.
+ *
+ * Each chunk is served at /sitemap/[id].xml.
+ * The sitemap index at /sitemap.xml references all chunks.
  */
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+/** Max URLs per sitemap chunk (Google limit is 50,000; we use 45,000 for safety). */
+const CHUNK_SIZE = 45_000
+
+/**
+ * Count total sitemap URLs to determine how many chunks we need.
+ * Runs at request time (force-dynamic).
+ */
+export async function generateSitemaps() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  if (!supabaseUrl || !supabaseKey) {
+    // Without DB, only static pages — fits in one chunk
+    return [{ id: '0' }]
+  }
+
+  try {
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    const presetCount = getAllPresetSlugs().length
+
+    // Count active listings
+    const { count: listingCount } = await supabase
+      .from('listings')
+      .select('ListingKey', { count: 'exact', head: true })
+      .or(ACTIVE_STATUS_OR)
+
+    // Count cities
+    const { data: cityRows } = await supabase
+      .from('listings')
+      .select('City')
+      .or(ACTIVE_STATUS_OR)
+      .not('City', 'is', null)
+      .limit(5000)
+    const cityCount = new Set(
+      ((cityRows ?? []) as Array<{ City?: string | null }>)
+        .map((r) => (r.City ?? '').trim())
+        .filter(Boolean)
+    ).size
+
+    // Rough estimate: static(~30) + cities(3 URLs each) + presets(cityCount * presetCount) +
+    // communities + subdivisions(~2*subs) + brokers + listings + zips + blog + guides + reports
+    // Listings dominate, so estimate conservatively:
+    const estimatedTotal = 30 + (cityCount * 3) + (cityCount * presetCount) + (listingCount ?? 0) + 500
+    const chunkCount = Math.max(1, Math.ceil(estimatedTotal / CHUNK_SIZE))
+
+    return Array.from({ length: chunkCount }, (_, i) => ({ id: String(i) }))
+  } catch {
+    return [{ id: '0' }]
+  }
+}
+
+export default async function sitemap(props: { id: Promise<string> }): Promise<MetadataRoute.Sitemap> {
+  const chunkId = Number(await props.id)
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')
   const now = new Date()
 
+  // Build the full URL list, then return only the chunk for this ID
+  const allUrls = await buildAllUrls(baseUrl, now)
+
+  const start = chunkId * CHUNK_SIZE
+  const end = start + CHUNK_SIZE
+  return allUrls.slice(start, end)
+}
+
+/**
+ * Build the complete list of sitemap URLs. Called once per chunk request.
+ * In production with caching (revalidate: 3600), this is efficient enough.
+ */
+async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.Sitemap> {
   // Static pages — always included even without database
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: now, changeFrequency: 'daily', priority: 1 },
