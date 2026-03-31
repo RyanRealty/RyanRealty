@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { generatePlaceContentSingle } from '@/app/actions/generate-place-content-single'
@@ -14,6 +15,7 @@ type Props = {
 
 export default function GenerateButton({ placeType, placeKey, placeName, cityName }: Props) {
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   function handleGenerate() {
     startTransition(async () => {
@@ -28,7 +30,7 @@ export default function GenerateButton({ placeType, placeKey, placeName, cityNam
         toast.error(`Failed: ${error}`)
       } else {
         toast.success(`Content generated for ${placeName}`)
-        window.location.reload()
+        router.refresh()
       }
     })
   }

@@ -368,7 +368,6 @@ export default async function CommunityDetailPage({ params }: Props) {
         <PlaceContentSection
           content={placeContent}
           placeName={community.name}
-          placeType="community"
         />
       )}
 

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { listPlaceContent, getContentCompletionStats } from '@/app/actions/place-content'
+import { listPlaceContent, getContentCompletionStats, type PlaceContentListItem } from '@/app/actions/place-content'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'

@@ -392,7 +392,6 @@ export default async function CityDetailPage({ params }: Props) {
         <PlaceContentSection
           content={placeContent}
           placeName={city.name}
-          placeType="city"
         />
       )}
 

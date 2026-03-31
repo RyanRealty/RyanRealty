@@ -98,6 +98,11 @@ export async function generatePlaceContentSingle(
       max_tokens: 600,
     })
 
+    const arts_culture = await generateGrokText({
+      prompt: `Write about arts, culture, and entertainment in and around ${location} in 1-2 paragraphs. Cover galleries, theaters, music, and cultural programs. ${TONE}`,
+      max_tokens: 600,
+    })
+
     const real_estate_overview = await generateGrokText({
       prompt: `Write a real estate overview for ${location} (a ${typeLabel}) in 2-3 paragraphs. Do not quote specific prices. ${TONE}`,
       max_tokens: 800,
@@ -125,7 +130,7 @@ export async function generatePlaceContentSingle(
       outdoor_recreation: outdoor_recreation || null,
       dining: dining || null,
       shopping: shopping || null,
-      arts_culture: null,
+      arts_culture: arts_culture || null,
       transportation: transportation || null,
       healthcare: healthcare || null,
       events_festivals: events_festivals || null,

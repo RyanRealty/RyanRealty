@@ -284,7 +284,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <PlaceContentSection
           content={placeContent}
           placeName={neighborhood.name}
-          placeType="neighborhood"
         />
       )}
 

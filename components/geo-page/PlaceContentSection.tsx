@@ -6,6 +6,14 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -38,7 +46,6 @@ import type {
 type Props = {
   content: PlaceContentRow
   placeName: string
-  placeType: 'city' | 'community' | 'neighborhood'
 }
 
 type ContentSection = {
@@ -66,29 +73,29 @@ function renderParagraphs(text: string) {
 function SchoolsTable({ items }: { items: SchoolItem[] }) {
   if (items.length === 0) return null
   return (
-    <div className="mt-4 overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="pb-2 text-left font-medium text-foreground">School</th>
-            <th className="pb-2 text-left font-medium text-foreground">Type</th>
-            <th className="pb-2 text-left font-medium text-foreground">Grades</th>
-            <th className="hidden pb-2 text-left font-medium text-foreground sm:table-cell">Notes</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="mt-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>School</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Grades</TableHead>
+            <TableHead className="hidden sm:table-cell">Notes</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {items.map((item, i) => (
-            <tr key={i} className="border-b border-border/50">
-              <td className="py-2 font-medium text-foreground">{item.name}</td>
-              <td className="py-2 text-muted-foreground">
+            <TableRow key={i}>
+              <TableCell className="font-medium">{item.name}</TableCell>
+              <TableCell>
                 {item.type && <Badge variant="outline" className="text-xs">{item.type}</Badge>}
-              </td>
-              <td className="py-2 text-muted-foreground">{item.grades ?? '—'}</td>
-              <td className="hidden py-2 text-muted-foreground sm:table-cell">{item.notes ?? ''}</td>
-            </tr>
+              </TableCell>
+              <TableCell>{item.grades ?? '—'}</TableCell>
+              <TableCell className="hidden sm:table-cell">{item.notes ?? ''}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -34,6 +35,7 @@ const CONTENT_FIELDS: { key: keyof PlaceContentRow; label: string; rows: number 
 ]
 
 export default function PlaceContentEditor({ content, userId }: Props) {
+  const router = useRouter()
   const [values, setValues] = useState<Record<string, string>>(
     Object.fromEntries(
       CONTENT_FIELDS.map((f) => [f.key, (content[f.key] as string) ?? ''])
@@ -134,7 +136,7 @@ export default function PlaceContentEditor({ content, userId }: Props) {
                   toast.error(`Failed: ${error}`)
                 } else {
                   toast.success('Content regenerated')
-                  window.location.reload()
+                  router.refresh()
                 }
               })
             }}

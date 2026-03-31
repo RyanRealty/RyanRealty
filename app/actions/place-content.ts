@@ -90,7 +90,9 @@ export async function getPlaceContent(
       .maybeSingle()
 
     if (error) {
-      console.error('[getPlaceContent]', error)
+      if (!error.message?.includes('place_content')) {
+        console.error('[getPlaceContent]', error)
+      }
       return null
     }
 
@@ -140,6 +142,22 @@ export async function upsertPlaceContent(
   }
 }
 
+const EDITABLE_FIELDS = new Set([
+  'overview',
+  'history',
+  'lifestyle',
+  'schools',
+  'outdoor_recreation',
+  'dining',
+  'shopping',
+  'arts_culture',
+  'transportation',
+  'healthcare',
+  'events_festivals',
+  'family_life',
+  'real_estate_overview',
+])
+
 export async function updatePlaceContentField(
   placeType: 'city' | 'community' | 'neighborhood',
   placeKey: string,
@@ -147,6 +165,10 @@ export async function updatePlaceContentField(
   value: string | null,
   editedBy?: string
 ): Promise<{ error: string | null }> {
+  if (!EDITABLE_FIELDS.has(field)) {
+    return { error: `Field "${field}" is not editable` }
+  }
+
   try {
     const sb = getServiceSupabase()
     if (!sb) return { error: 'Supabase service client not configured' }
@@ -173,15 +195,39 @@ export async function updatePlaceContentField(
   }
 }
 
+export type PlaceContentListItem = {
+  id: string
+  place_type: 'city' | 'community' | 'neighborhood'
+  place_key: string
+  place_name: string
+  city_name: string | null
+  overview: string | null
+  history: string | null
+  lifestyle: string | null
+  schools: string | null
+  outdoor_recreation: string | null
+  dining: string | null
+  shopping: string | null
+  arts_culture: string | null
+  transportation: string | null
+  healthcare: string | null
+  events_festivals: string | null
+  family_life: string | null
+  real_estate_overview: string | null
+  generated_at: string | null
+  last_edited_at: string | null
+}
+
 export async function listPlaceContent(
   placeType?: 'city' | 'community' | 'neighborhood'
-): Promise<PlaceContentRow[]> {
+): Promise<PlaceContentListItem[]> {
   try {
     const supabase = await createServerClient()
     let query = supabase
       .from('place_content')
-      .select('id, place_type, place_key, place_name, city_name, overview, history, lifestyle, schools, outdoor_recreation, dining, shopping, arts_culture, transportation, healthcare, events_festivals, family_life, real_estate_overview, schools_data, dining_data, recreation_data, events_data, seo_title, seo_description, seo_keywords, faqs, generated_at, generated_by, last_edited_at, last_edited_by')
+      .select('id, place_type, place_key, place_name, city_name, overview, history, lifestyle, schools, outdoor_recreation, dining, shopping, arts_culture, transportation, healthcare, events_festivals, family_life, real_estate_overview, generated_at, last_edited_at')
       .order('place_name')
+      .limit(500)
 
     if (placeType) {
       query = query.eq('place_type', placeType)
@@ -193,14 +239,7 @@ export async function listPlaceContent(
       return []
     }
 
-    return (data ?? []).map((row: Record<string, unknown>) => ({
-      ...row,
-      schools_data: parseJsonbArray<SchoolItem>(row.schools_data),
-      dining_data: parseJsonbArray<DiningItem>(row.dining_data),
-      recreation_data: parseJsonbArray<RecreationItem>(row.recreation_data),
-      events_data: parseJsonbArray<EventItem>(row.events_data),
-      faqs: parseJsonbArray<FaqItem>(row.faqs),
-    })) as PlaceContentRow[]
+    return (data ?? []) as PlaceContentListItem[]
   } catch (err) {
     console.error('[listPlaceContent]', err)
     return []
