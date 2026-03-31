@@ -1,0 +1,33 @@
+# Deploy to Vercel after every push to main
+
+## Rule
+
+After pushing to `main`, **always deploy to production**. Do not consider work done until the deploy succeeds.
+
+## How to deploy
+
+```bash
+vercel --token $VERCEL_TOKEN --prod --scope $VERCEL_SCOPE --yes
+```
+
+The token and scope are in `.env.local` (`VERCEL_TOKEN` and `VERCEL_SCOPE`).
+
+If the Vercel CLI is not installed:
+```bash
+npm install -g vercel
+```
+
+## After deploying
+
+1. Verify the production URL returns the expected content (not a 404 or old version)
+2. Only then is the task complete
+
+## Cron job limits
+
+Vercel Hobby plan only allows **one run per day** per cron. Do not set cron schedules more frequent than daily (e.g. no `*/15 * * * *`). The deploy will fail if any cron runs more than once per day.
+
+## Do NOT
+
+- Say "pushed to main, it will deploy automatically" — it won't unless Vercel auto-deploy is configured
+- Leave it to the user to deploy
+- Consider the task done before verifying production
