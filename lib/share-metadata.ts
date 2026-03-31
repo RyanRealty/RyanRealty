@@ -9,11 +9,14 @@ const MAX_DESC = 155
 /** Production site URL for canonical and share links. Never localhost so shared links work on social. */
 const PRODUCTION_SITE = 'https://ryan-realty.com'
 
-/** Base URL to use for all shared links and canonical URLs. Prefers env; never returns localhost. */
+/** Base URL to use for all shared links and canonical URLs. Prefers env; never returns localhost; always forces https. */
 export function getCanonicalSiteUrl(): string {
   const raw = typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_SITE_URL
   const fromEnv = typeof raw === 'string' ? raw.trim().replace(/\/$/, '') : ''
-  if (fromEnv && !fromEnv.includes('localhost')) return fromEnv
+  if (fromEnv && !fromEnv.includes('localhost')) {
+    // Always enforce https — http:// in canonical/OG tags breaks SEO
+    return fromEnv.replace(/^http:\/\//i, 'https://')
+  }
   return PRODUCTION_SITE
 }
 
