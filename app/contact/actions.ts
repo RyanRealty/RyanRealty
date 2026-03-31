@@ -26,22 +26,26 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   if (!email) return { error: 'Email is required' }
 
   // Always store in DB first so no lead is lost even if FUB is down
-  try {
-    const supabase = getServiceSupabase()
-    if (supabase) {
-      await supabase.from('listing_inquiries').insert({
-        name: name || null,
-        email,
-        phone: phone || null,
-        inquiry_type: inquiryType,
-        message: message || null,
-        listing_key: listingKey,
-        source: 'contact_form',
-      })
+  if (listingKey) {
+    try {
+      const supabase = getServiceSupabase()
+      if (supabase) {
+        const dbType = listingKey && (inquiryType === 'Buying' || message?.toLowerCase().includes('showing'))
+          ? 'showing'
+          : 'question'
+        await supabase.from('listing_inquiries').insert({
+          listing_key: listingKey,
+          type: dbType,
+          name: name || null,
+          email,
+          phone: phone || null,
+          message: `[${inquiryType}] ${message || '(no message)'}`,
+        })
+      }
+    } catch (err) {
+      console.error('[submitContactForm] DB insert error:', err)
+      // Don't fail the form — still try FUB
     }
-  } catch (err) {
-    console.error('[submitContactForm] DB insert error:', err)
-    // Don't fail the form — still try FUB
   }
 
   // Send to Follow Up Boss (CRM)
