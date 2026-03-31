@@ -97,6 +97,7 @@ export default async function AdminDashboardPage() {
           <li><Link href="/admin/sync" className="text-success hover:underline">Sync & history</Link></li>
           <li><Link href="/admin/geo" className="text-success hover:underline">Geo hierarchy</Link></li>
           <li><Link href="/admin/resort-communities" className="text-success hover:underline">Resort communities</Link></li>
+          <li><Link href="/admin/place-content" className="text-success hover:underline">Place content</Link></li>
           <li><Link href="/admin/banners" className="text-success hover:underline">Banners</Link></li>
           <li><Link href="/admin/reports" className="text-success hover:underline">Reports</Link></li>
           <li><Link href="/admin/spark-status" className="text-success hover:underline">Spark API status</Link></li>

@@ -14,7 +14,7 @@ export type CommunityHeroProps = {
 }
 
 const PLACEHOLDER_HERO =
-  'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=1920&q=80'
+  'https://images.unsplash.com/photo-1552678038-1fb7bb8d29be?w=1920&q=80'
 
 function formatPrice(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '—'

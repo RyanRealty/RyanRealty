@@ -20,8 +20,10 @@ import { getBuyingPreferences } from '@/app/actions/buying-preferences'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '@/lib/mortgage'
-import { homesForSalePath } from '@/lib/slug'
+import { homesForSalePath, slugify } from '@/lib/slug'
 import { buildDataDrivenNeighborhoodAbout } from '@/lib/city-content'
+import { getPlaceContent } from '@/app/actions/place-content'
+import { buildNeighborhoodHeroQuery } from '@/lib/hero-image-query'
 import NeighborhoodHero from '@/components/neighborhood/NeighborhoodHero'
 import NeighborhoodOverview from '@/components/neighborhood/NeighborhoodOverview'
 import NeighborhoodMarketStats from '@/components/neighborhood/NeighborhoodMarketStats'
@@ -36,6 +38,7 @@ import GeoSectionNewestListings from '@/components/geo-page/GeoSectionNewestList
 import CommunitiesSlider from '@/components/sliders/CommunitiesSlider'
 import GeoSectionFeaturedListings from '@/components/geo-page/GeoSectionFeaturedListings'
 import GeoSectionLatestActivity from '@/components/geo-page/GeoSectionLatestActivity'
+import PlaceContentSection from '@/components/geo-page/PlaceContentSection'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -85,7 +88,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const [placePhotoUrl, listings, soldListings, savedKeys, likedKeys, prefs, communitiesInNeighborhood, activityFeed, brokers, savedCommunityKeys, likedCommunityKeys] = await Promise.all([
     !neighborhood.heroImageUrl
-      ? fetchPlacePhoto(`${neighborhood.name} ${neighborhood.cityName} Oregon`).then((r) => r?.url ?? null).catch(() => null)
+      ? fetchPlacePhoto(buildNeighborhoodHeroQuery(neighborhood.name, neighborhood.cityName)).then((r) => r?.url ?? null).catch(() => null)
       : Promise.resolve(null),
     getNeighborhoodListings(neighborhood.id, 24),
     getNeighborhoodSoldListings(neighborhood.id, 6),
@@ -100,6 +103,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   ])
 
   const heroImageUrl = neighborhood.heroImageUrl ?? placePhotoUrl ?? null
+  const neighborhoodContentKey = `${slugify(neighborhood.cityName)}:${neighborhoodSlug}`
+  const placeContent = await getPlaceContent('neighborhood', neighborhoodContentKey)
 
   const displayPrefs = prefs ?? {
     downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
@@ -275,6 +280,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         priceRangeMin={priceRangeMin}
         priceRangeMax={priceRangeMax}
       />
+
+      {placeContent && (
+        <PlaceContentSection
+          content={placeContent}
+          placeName={neighborhood.name}
+        />
+      )}
 
       <NeighborhoodMarketStats
         neighborhoodName={neighborhood.name}

@@ -28,6 +28,7 @@ import { homesForSalePath, subdivisionEntityKey } from '@/lib/slug'
 import { slugify } from '@/lib/slug'
 import { getLiveMarketPulse } from '@/app/actions/market-stats'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
+import { getPlaceContent } from '@/app/actions/place-content'
 import CityHero from '@/components/city/CityHero'
 import CityOverview from '@/components/city/CityOverview'
 import CityMarketStats from '@/components/city/CityMarketStats'
@@ -48,6 +49,8 @@ import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import VideoToursRow from '@/components/videos/VideoToursRow'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import CityClusterNav from '@/components/CityClusterNav'
+import PlaceContentSection from '@/components/geo-page/PlaceContentSection'
+import { buildCityHeroQuery } from '@/lib/hero-image-query'
 import { getGuidesByCity } from '@/app/actions/guides'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -144,10 +147,8 @@ export default async function CityDetailPage({ params }: Props) {
   const pageUrl = `${siteUrl}/cities/${slug}`
   const pageTitle = `Homes for Sale in ${city.name}, Oregon | Ryan Realty`
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
-  const heroImageUrl =
-    city.heroImageUrl ?? null
-
   const [
+    placePhotoUrl,
     listings,
     soldListings,
     communities,
@@ -163,6 +164,9 @@ export default async function CityDetailPage({ params }: Props) {
     likedCommunityKeys,
     cityGuides,
   ] = await Promise.all([
+    !city.heroImageUrl
+      ? fetchPlacePhoto(buildCityHeroQuery(city.name)).then((r) => r?.url ?? null).catch(() => null)
+      : Promise.resolve(null),
     getCityListings(city.name, 24),
     getCitySoldListings(city.name, 6),
     getCommunitiesInCity(city.name),
@@ -181,6 +185,8 @@ export default async function CityDetailPage({ params }: Props) {
   const cityGuideSlug = cityGuides.length > 0 ? cityGuides[0]!.slug : null
   const cityPulse = await getLiveMarketPulse({ geoType: 'city', geoSlug: slugify(city.name) })
   const cityOpenHouses = await getOpenHousesWithListings({ city: city.name })
+  const placeContent = await getPlaceContent('city', slugify(city.name))
+  const heroImageUrl = city.heroImageUrl ?? placePhotoUrl ?? null
 
   const displayPrefs = prefs ?? {
     downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
@@ -325,6 +331,10 @@ export default async function CityDetailPage({ params }: Props) {
                   ? `${city.name} has ${city.communityCount} communities and subdivisions with homes for sale.`
                   : `Explore ${city.name} neighborhoods and communities on our city page.`,
               },
+              ...(placeContent?.faqs ?? []).map((faq) => ({
+                question: faq.question,
+                answer: faq.answer,
+              })),
             ])
           ),
         }}
@@ -380,6 +390,13 @@ export default async function CityDetailPage({ params }: Props) {
           guideSlug={cityGuideSlug}
         />
       </div>
+
+      {placeContent && (
+        <PlaceContentSection
+          content={placeContent}
+          placeName={city.name}
+        />
+      )}
 
       <CityMarketStats
         cityName={city.name}

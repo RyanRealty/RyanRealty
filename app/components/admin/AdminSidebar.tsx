@@ -37,6 +37,7 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
     main.push(
       navItem('/admin/geo', 'Communities & geo', '📍'),
       navItem('/admin/resort-communities', 'Resort & master plan', '🏘'),
+      navItem('/admin/place-content', 'Place content', '📝'),
       navItem('/admin/site-pages', 'Site pages', '📄'),
       navItem('/admin/media', 'Media', '🗂'),
       navItem('/admin/banners', 'Banners', '🖼'),

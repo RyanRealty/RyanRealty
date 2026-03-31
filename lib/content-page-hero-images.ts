@@ -24,7 +24,7 @@ export const CONTENT_HERO_IMAGES = {
   /** Reports: data, market, insight */
   reports: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1920&q=80',
   /** Area guides: place, community, lifestyle */
-  areaGuides: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=1920&q=80',
+  areaGuides: 'https://images.unsplash.com/photo-1552678038-1fb7bb8d29be?w=1920&q=80',
 } as const
 
 export type ContentHeroKey = keyof typeof CONTENT_HERO_IMAGES
