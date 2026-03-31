@@ -1,27 +1,22 @@
 ---
-description: Use project goals and run the UI audit checklist; fix until checklist passes and build is green.
+description: Run audit from GOALS_AND_UI_AUDIT.md, fix issues, iterate until passing. Applies on audit/review requests.
 alwaysApply: true
 ---
 
-# Goals and audit
+# Goals and Audit
 
-## Where the goals live
+## When the user asks to review, audit, or fix the site:
+1. Work through `docs/GOALS_AND_UI_AUDIT.md` checklist
+2. For each failure: **fix it**, don't just report it
+3. Run `npm run build` — must pass
+4. Re-check affected items after fixes
+5. Repeat until checklist passes and build is green
 
-- **docs/GOALS_AND_UI_AUDIT.md** — Product goals (nav, home, tiles, saved items, listing, video, resort, broker, admin) and a **runnable audit checklist**.
-- When the user asks to "review the site," "audit," "make sure we hit our goals," or "check if everything's working," use that doc.
+## Sources of truth
+- `docs/GOALS_AND_UI_AUDIT.md` — audit checklist
+- `docs/plans/master-plan.md` — implementation priority
+- `CLAUDE.md` — design system
 
-## What to do
-
-1. **Run the audit** — Work through the checklist in GOALS_AND_UI_AUDIT.md. For each item, verify in code (and if possible by running the app or build). If something fails or is missing, **fix it**; do not just report it.
-2. **Run build** — `npm run build` must pass. Fix any build or type errors.
-3. **Iterate** — After fixes, re-check affected checklist items and run build again. Continue until the checklist passes and the build is green.
-4. **Do not make the user the bottleneck** — You have the goals. Complete the audit and fixes in the same conversation; only stop for credentials, copy, or a real product decision.
-
-## Foundations
-
-- MASTER_INSTRUCTION_SET.md — vision and standards.
-- REQUIREMENTS_CHECKLIST.md — implementation requirements.
-- Design system rule — tokens, luxury bar, no isolated styling.
-- `docs/plans/master-plan.md` — master plan takes precedence for implementation priority; audit doc defines quality standards.
-
-When in doubt, prefer completing the audit and applying fixes over asking "should I fix X?"
+## Scope
+- Run audit only on files within current task scope, not unrelated pages
+- Do not stop after one pass — iterate until goals are met

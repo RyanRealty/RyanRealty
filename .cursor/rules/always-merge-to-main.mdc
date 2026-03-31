@@ -1,33 +1,7 @@
-# Always merge to main immediately
+# Always merge to main
 
-## Rule
-
-**Every change goes to `main` and gets pushed immediately.** No exceptions.
-
-## What to do
-
-1. Make your changes on whatever branch you're on.
-2. When the change is verified (build passes, tests pass), **immediately** merge to `main` and push:
-   ```bash
-   git checkout main
-   git pull origin main --no-rebase --no-edit
-   git merge <your-branch> --no-edit
-   git push origin main
-   ```
-3. The user checks work on the **production site**. If it's not on `main`, it doesn't exist.
-
-## Do NOT
-
-- Leave work sitting on a feature branch waiting for review.
-- Create a PR and wait for the user to merge it.
-- Say "the fix is on branch X" — that is not done. It is done when it is on `main` and pushed.
-- Ask the user if you should merge. Just merge.
-
-## Definition of done
-
-A task is **not complete** until:
-1. Code is on `main`
-2. `main` is pushed to origin
-3. The production deploy will pick it up
-
-If you created a PR for tracking purposes, that's fine, but the code must still be on `main` immediately. Do not wait.
+Every verified change goes to `main` and gets pushed immediately.
+```bash
+git checkout main && git pull origin main --no-rebase --no-edit && git merge <branch> --no-edit && git push origin main
+```
+Work is not done until it's on `main` and pushed. Do not leave work on feature branches.
