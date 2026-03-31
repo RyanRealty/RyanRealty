@@ -23,6 +23,7 @@ import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YE
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { buildDataDrivenNeighborhoodAbout } from '@/lib/city-content'
 import { getPlaceContent } from '@/app/actions/place-content'
+import { buildNeighborhoodHeroQuery } from '@/lib/hero-image-query'
 import NeighborhoodHero from '@/components/neighborhood/NeighborhoodHero'
 import NeighborhoodOverview from '@/components/neighborhood/NeighborhoodOverview'
 import NeighborhoodMarketStats from '@/components/neighborhood/NeighborhoodMarketStats'
@@ -87,7 +88,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const [placePhotoUrl, listings, soldListings, savedKeys, likedKeys, prefs, communitiesInNeighborhood, activityFeed, brokers, savedCommunityKeys, likedCommunityKeys] = await Promise.all([
     !neighborhood.heroImageUrl
-      ? fetchPlacePhoto(`${neighborhood.name} ${neighborhood.cityName} Oregon`).then((r) => r?.url ?? null).catch(() => null)
+      ? fetchPlacePhoto(buildNeighborhoodHeroQuery(neighborhood.name, neighborhood.cityName)).then((r) => r?.url ?? null).catch(() => null)
       : Promise.resolve(null),
     getNeighborhoodListings(neighborhood.id, 24),
     getNeighborhoodSoldListings(neighborhood.id, 6),

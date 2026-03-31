@@ -50,6 +50,7 @@ import VideoToursRow from '@/components/videos/VideoToursRow'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import CityClusterNav from '@/components/CityClusterNav'
 import PlaceContentSection from '@/components/geo-page/PlaceContentSection'
+import { buildCityHeroQuery } from '@/lib/hero-image-query'
 import { getGuidesByCity } from '@/app/actions/guides'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -164,7 +165,7 @@ export default async function CityDetailPage({ params }: Props) {
     cityGuides,
   ] = await Promise.all([
     !city.heroImageUrl
-      ? fetchPlacePhoto(`${city.name} Oregon`).then((r) => r?.url ?? null).catch(() => null)
+      ? fetchPlacePhoto(buildCityHeroQuery(city.name)).then((r) => r?.url ?? null).catch(() => null)
       : Promise.resolve(null),
     getCityListings(city.name, 24),
     getCitySoldListings(city.name, 6),

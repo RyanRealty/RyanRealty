@@ -25,6 +25,7 @@ import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YE
 import { homesForSalePath, neighborhoodPagePath } from '@/lib/slug'
 import { slugify } from '@/lib/slug'
 import { getResortCommunityContent, buildDataDrivenCommunityAbout } from '@/lib/community-content'
+import { buildCommunityHeroQuery } from '@/lib/hero-image-query'
 import { getLiveMarketPulse } from '@/app/actions/market-stats'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getPlaceContent } from '@/app/actions/place-content'
@@ -95,11 +96,8 @@ export default async function CommunityDetailPage({ params }: Props) {
   const pageTitle = `${community.name} Homes for Sale | ${community.city}, Oregon | Ryan Realty`
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const citySlug = community.city.toLowerCase().replace(/\s+/g, '-')
-  const [placePhotoUrl, listings, soldListings, priceHistory, marketStats, savedKeys, likedKeys, prefs, communitiesInCity, activityFeed, brokers, communitySaved, communityLiked, savedCommunityKeys, likedCommunityKeys, cityGuides] =
+  const [listings, soldListings, priceHistory, marketStats, savedKeys, likedKeys, prefs, communitiesInCity, activityFeed, brokers, communitySaved, communityLiked, savedCommunityKeys, likedCommunityKeys, cityGuides] =
     await Promise.all([
-      !community.heroImageUrl
-        ? fetchPlacePhoto(`${community.subdivision} ${community.city} Oregon`).then((r) => r?.url ?? null).catch(() => null)
-        : Promise.resolve(null),
       getCommunityListings(community.city, community.subdivision, 24),
       getCommunitySoldListings(community.city, community.subdivision, 6),
       getCommunityPriceHistory(community.city, community.subdivision),
@@ -152,6 +150,21 @@ export default async function CommunityDetailPage({ params }: Props) {
   const yearRange = years.length > 0 ? { min: Math.min(...years), max: Math.max(...years) } : null
   const hasHoa = listings.some((l) => (l as { AssociationYN?: boolean }).AssociationYN === true)
   const hasWaterfront = listings.some((l) => (l as { WaterfrontYN?: boolean }).WaterfrontYN === true)
+
+  const heroImageUrl = community.heroImageUrl ?? (
+    !community.heroImageUrl
+      ? await fetchPlacePhoto(buildCommunityHeroQuery({
+          city: community.city,
+          subdivision: community.subdivision,
+          isResort: community.isResort,
+          hasWaterfront,
+          propertyTypes,
+          avgLotAcres: avgLot,
+          medianPrice: community.medianPrice,
+          hasHoa,
+        })).then((r) => r?.url ?? null).catch(() => null)
+      : null
+  )
 
   const resortStaticContent = getResortCommunityContent(community.city, community.subdivision)
   const dataDrivenParagraphs =
@@ -316,7 +329,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       <CommunityHero
         name={community.name}
         city={community.city}
-        heroImageUrl={community.heroImageUrl ?? placePhotoUrl}
+        heroImageUrl={heroImageUrl}
         activeCount={community.activeCount}
         medianPrice={community.medianPrice}
         avgDom={community.avgDom}
