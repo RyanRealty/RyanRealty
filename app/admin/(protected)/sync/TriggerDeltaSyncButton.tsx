@@ -33,7 +33,7 @@ export default function TriggerDeltaSyncButton() {
         disabled={loading}
         className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success/85 disabled:opacity-50"
       >
-        {loading ? 'Startingâ€¦' : 'Run ingest now'}
+        {loading ? 'Starting…' : 'Run ingest now'}
       </Button>
       {message && (
         <span className={message.type === 'success' ? 'text-sm text-success' : 'text-sm text-destructive'}>

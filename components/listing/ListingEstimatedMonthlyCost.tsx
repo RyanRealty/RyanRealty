@@ -139,7 +139,7 @@ export default function ListingEstimatedMonthlyCost({ listPrice, initialPrefs, s
                   disabled={saving}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 >
-                  {saving ? 'Savingâ€¦' : 'Save to my profile'}
+                  {saving ? 'Saving…' : 'Save to my profile'}
                 </Button>
                 {saveMsg === 'saved' && <span className="text-sm text-success">Saved to your buying preferences.</span>}
                 {saveMsg === 'error' && <span className="text-sm text-destructive">Could not save.</span>}

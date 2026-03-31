@@ -298,7 +298,7 @@ export default function SearchMapClustered({
       const label = priceLabel(price)
       const isSaved = savedSet.has(listingKey)
       const hasVideo = Boolean(l.hasVideo)
-      const markerLabel = [label, hasVideo ? 'video' : null, isSaved ? 'â™¥' : null].filter(Boolean).join(' Â· ')
+      const markerLabel = [label, hasVideo ? 'video' : null, isSaved ? 'â™¥' : null].filter(Boolean).join(' · ')
 
       const marker = new google.maps.Marker({
         position: { lat: l.Latitude, lng: l.Longitude },
@@ -405,7 +405,7 @@ export default function SearchMapClustered({
           color: 'var(--muted-foreground)',
         }}
       >
-        Loading mapâ€¦
+        Loading map…
       </div>
     )
   }
@@ -503,7 +503,7 @@ export default function SearchMapClustered({
                 <div className="text-xs text-muted-foreground">
                   {[openListing.BedroomsTotal != null ? `${openListing.BedroomsTotal} bed` : null, openListing.BathroomsTotal != null ? `${openListing.BathroomsTotal} bath` : null]
                     .filter(Boolean)
-                    .join(' Â· ')}
+                    .join(' · ')}
                 </div>
               )}
               <Button

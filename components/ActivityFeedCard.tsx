@@ -134,7 +134,7 @@ export default function ActivityFeedCard({ item, saved = false, signedIn = false
               <span>{[item.BedroomsTotal, item.BathroomsTotal].filter(Boolean).join(' / ')}</span>
             )}
             {(item.City ?? item.SubdivisionName) && (
-              <span> Â· {[item.SubdivisionName, item.City].filter(Boolean).join(', ')}</span>
+              <span> · {[item.SubdivisionName, item.City].filter(Boolean).join(', ')}</span>
             )}
           </p>
         </div>

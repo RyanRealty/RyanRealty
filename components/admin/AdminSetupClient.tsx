@@ -69,7 +69,7 @@ export default function AdminSetupClient() {
             disabled={loading}
             className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
           >
-            {loading ? 'Completingâ€¦' : 'Finish setup'}
+            {loading ? 'Completing…' : 'Finish setup'}
           </Button>
         </section>
       )}

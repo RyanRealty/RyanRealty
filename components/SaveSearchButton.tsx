@@ -90,7 +90,7 @@ export default function SaveSearchButton({ user }: Props) {
                 disabled={status === 'saving'}
                 className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
-                {status === 'saving' ? 'Savingâ€¦' : 'Save'}
+                {status === 'saving' ? 'Saving…' : 'Save'}
               </Button>
               <Button
                 type="button"

@@ -107,7 +107,7 @@ export default function DashboardSettingsForm({ profile, buyingPrefs, userEmail 
             disabled={pending}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
           >
-            {pending ? 'Savingâ€¦' : 'Save profile'}
+            {pending ? 'Saving…' : 'Save profile'}
           </Button>
         </form>
       </section>
@@ -156,7 +156,7 @@ export default function DashboardSettingsForm({ profile, buyingPrefs, userEmail 
             disabled={pending}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
           >
-            {pending ? 'Savingâ€¦' : 'Save preferences'}
+            {pending ? 'Saving…' : 'Save preferences'}
           </Button>
         </form>
       </section>

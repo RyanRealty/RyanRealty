@@ -88,7 +88,7 @@ export default function CityTile({ city, signedIn = false, saved = false, engage
             <h3 className="text-xl font-bold drop-shadow-md">{city.name}</h3>
             <p className="mt-0.5 text-sm text-primary-foreground/90">{countLabel}</p>
             <p className="mt-0.5 text-xs text-primary-foreground/80">
-              Median {formatPrice(city.medianPrice)} Â· {city.communityCount} communities
+              Median {formatPrice(city.medianPrice)} · {city.communityCount} communities
             </p>
           </div>
         </Link>

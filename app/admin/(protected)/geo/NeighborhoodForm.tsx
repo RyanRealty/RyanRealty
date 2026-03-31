@@ -76,7 +76,7 @@ export default function NeighborhoodForm({
           disabled={loading || !name.trim()}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-60"
         >
-          {loading ? 'Creatingâ€¦' : 'Create'}
+          {loading ? 'Creating…' : 'Create'}
         </Button>
       </form>
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}

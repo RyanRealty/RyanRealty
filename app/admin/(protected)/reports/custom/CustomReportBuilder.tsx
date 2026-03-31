@@ -125,7 +125,7 @@ export default function CustomReportBuilder({ cities }: Props) {
       const endStr = dateTo
       const sub = subdivision.trim() || null
       const locationLabel = sub ? `${sub}, ${c}` : c
-      const periodLabel = `${dateFrom} â€“ ${dateTo}`
+      const periodLabel = `${dateFrom} – ${dateTo}`
       const months = Math.min(60, Math.max(1, timeSeriesMonths))
 
       if (breakDownByPropertyType) {
@@ -233,7 +233,7 @@ export default function CustomReportBuilder({ cities }: Props) {
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
-            {loadingSubdivisions && <span className="text-xs text-muted-foreground">Loadingâ€¦</span>}
+            {loadingSubdivisions && <span className="text-xs text-muted-foreground">Loading…</span>}
           </Label>
         </div>
       </section>
@@ -359,7 +359,7 @@ export default function CustomReportBuilder({ cities }: Props) {
           disabled={loading}
           className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {loading ? 'Generatingâ€¦' : 'Generate report'}
+          {loading ? 'Generating…' : 'Generate report'}
         </Button>
       </div>
 
@@ -535,7 +535,7 @@ export default function CustomReportBuilder({ cities }: Props) {
                         {item.price != null ? `$${Number(item.price).toLocaleString()}` : ''} {(item.description ?? '').slice(0, 50)}
                       </li>
                     ))}
-                    {result.pending.length > 25 && <li>â€¦ and {result.pending.length - 25} more</li>}
+                    {result.pending.length > 25 && <li>… and {result.pending.length - 25} more</li>}
                   </ul>
                 </div>
               )}
@@ -549,7 +549,7 @@ export default function CustomReportBuilder({ cities }: Props) {
                         {item.price != null ? `$${Number(item.price).toLocaleString()}` : ''} {(item.description ?? '').slice(0, 50)}
                       </li>
                     ))}
-                    {result.closed.length > 25 && <li>â€¦ and {result.closed.length - 25} more</li>}
+                    {result.closed.length > 25 && <li>… and {result.closed.length - 25} more</li>}
                   </ul>
                 </div>
               )}

@@ -13,10 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const PRICE_PRESETS = [
   { label: 'Any', min: undefined, max: undefined },
   { label: 'Under $300K', min: undefined, max: 300000 },
-  { label: '$300K â€“ $500K', min: 300000, max: 500000 },
-  { label: '$500K â€“ $750K', min: 500000, max: 750000 },
-  { label: '$750K â€“ $1M', min: 750000, max: 1000000 },
-  { label: '$1M â€“ $1.5M', min: 1000000, max: 1500000 },
+  { label: '$300K – $500K', min: 300000, max: 500000 },
+  { label: '$500K – $750K', min: 500000, max: 750000 },
+  { label: '$750K – $1M', min: 750000, max: 1000000 },
+  { label: '$1M – $1.5M', min: 1000000, max: 1500000 },
   { label: '$1.5M+', min: 1500000, max: undefined },
 ]
 

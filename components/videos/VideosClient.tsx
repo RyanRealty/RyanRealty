@@ -107,8 +107,8 @@ export default function VideosClient({ initialListings }: Props) {
                 </div>
                 <p className="text-sm text-muted-foreground">{listing.unparsed_address}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {listing.beds_total ?? '—'} bed Â· {listing.baths_full ?? '—'} bath
-                  {listing.living_area != null && ` Â· ${Number(listing.living_area).toLocaleString()} sq ft`}
+                  {listing.beds_total ?? '—'} bed · {listing.baths_full ?? '—'} bath
+                  {listing.living_area != null && ` · ${Number(listing.living_area).toLocaleString()} sq ft`}
                 </p>
                 <Link
                   href={listingDetailPath(
@@ -142,8 +142,8 @@ export default function VideosClient({ initialListings }: Props) {
                   <p className="font-semibold">${(listing.list_price ?? 0).toLocaleString()}</p>
                   <p className="text-sm">{listing.unparsed_address}</p>
                   <p className="text-xs opacity-90">
-                    {listing.beds_total ?? '—'} bed Â· {listing.baths_full ?? '—'} bath
-                    {listing.living_area != null && ` Â· ${Number(listing.living_area).toLocaleString()} sq ft`}
+                    {listing.beds_total ?? '—'} bed · {listing.baths_full ?? '—'} bath
+                    {listing.living_area != null && ` · ${Number(listing.living_area).toLocaleString()} sq ft`}
                   </p>
                 </div>
                 <Link
@@ -195,8 +195,8 @@ export default function VideosClient({ initialListings }: Props) {
               </div>
               <p className="text-muted-foreground">{selected.unparsed_address}</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                {selected.beds_total ?? '—'} bed Â· {selected.baths_full ?? '—'} bath
-                {selected.living_area != null && ` Â· ${Number(selected.living_area).toLocaleString()} sq ft`}
+                {selected.beds_total ?? '—'} bed · {selected.baths_full ?? '—'} bath
+                {selected.living_area != null && ` · ${Number(selected.living_area).toLocaleString()} sq ft`}
               </p>
               <Link
                 href={listingDetailPath(

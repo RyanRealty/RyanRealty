@@ -318,7 +318,7 @@ export default function CityReportSection({ cities }: { cities: string[] }) {
           disabled={loading}
           className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
         >
-          {loading ? 'Loadingâ€¦' : 'Generate report'}
+          {loading ? 'Loading…' : 'Generate report'}
         </Button>
       </div>
       {error && (

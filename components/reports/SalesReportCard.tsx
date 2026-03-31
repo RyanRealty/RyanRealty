@@ -18,7 +18,7 @@ function formatDateRange(startStr: string, endStr: string): string {
   const end = new Date(endStr.includes('Z') || /[+-]\d{2}/.test(endStr) ? endStr : endStr + 'Z')
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return ''
   const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }
-  return `${start.toLocaleDateString('en-US', opts)} â€“ ${end.toLocaleDateString('en-US', opts)}`
+  return `${start.toLocaleDateString('en-US', opts)} – ${end.toLocaleDateString('en-US', opts)}`
 }
 
 type Props = { card: SalesReportCardData }

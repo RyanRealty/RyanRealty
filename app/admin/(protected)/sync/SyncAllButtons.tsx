@@ -252,7 +252,7 @@ export default function SyncAllButtons() {
             disabled={listingsRunning || historyRunning || photosRunning}
             className="rounded-lg bg-success px-5 py-2.5 text-sm font-semibold text-success-foreground hover:bg-success/75 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {listingsRunning ? 'Syncing listingsâ€¦' : 'Sync all listings'}
+            {listingsRunning ? 'Syncing listings…' : 'Sync all listings'}
           </Button>
           {listingsRunning && (
             <Button
@@ -271,7 +271,7 @@ export default function SyncAllButtons() {
             disabled={listingsRunning || historyRunning || photosRunning}
             className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {historyRunning ? 'Syncing historyâ€¦' : 'Sync all history'}
+            {historyRunning ? 'Syncing history…' : 'Sync all history'}
           </Button>
           {historyRunning && (
             <Button
@@ -290,7 +290,7 @@ export default function SyncAllButtons() {
             disabled={listingsRunning || historyRunning || photosRunning}
             className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {photosRunning ? 'Syncing photosâ€¦' : 'Sync photos only'}
+            {photosRunning ? 'Syncing photos…' : 'Sync photos only'}
           </Button>
           {photosRunning && (
             <Button
@@ -309,9 +309,9 @@ export default function SyncAllButtons() {
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Listings sync</p>
           <p className="mt-1 font-mono text-sm text-foreground">
             {listingsState === 'idle' && '—'}
-            {listingsRunning && `${listingsPagesDone} pages Â· ${listingsUpserted.toLocaleString()} upserted`}
+            {listingsRunning && `${listingsPagesDone} pages · ${listingsUpserted.toLocaleString()} upserted`}
             {(listingsState === 'done' || listingsState === 'error') && (
-              <>{(listingsStart != null ? formatElapsed(listingsElapsed) : '')} Â· {listingsUpserted.toLocaleString()} upserted</>
+              <>{(listingsStart != null ? formatElapsed(listingsElapsed) : '')} · {listingsUpserted.toLocaleString()} upserted</>
             )}
           </p>
           {listingsPagesTotal != null && listingsRunning && (
@@ -323,9 +323,9 @@ export default function SyncAllButtons() {
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">History sync</p>
           <p className="mt-1 font-mono text-sm text-foreground">
             {historyState === 'idle' && '—'}
-            {historyRunning && `${historyListingsProcessed.toLocaleString()} listings Â· ${historyRows.toLocaleString()} rows`}
+            {historyRunning && `${historyListingsProcessed.toLocaleString()} listings · ${historyRows.toLocaleString()} rows`}
             {(historyState === 'done' || historyState === 'error') && (
-              <>{(historyStart != null ? formatElapsed(historyElapsed) : '')} Â· {historyRows.toLocaleString()} rows</>
+              <>{(historyStart != null ? formatElapsed(historyElapsed) : '')} · {historyRows.toLocaleString()} rows</>
             )}
           </p>
           {historyTotalListings != null && historyRunning && (
@@ -337,9 +337,9 @@ export default function SyncAllButtons() {
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Photos sync</p>
           <p className="mt-1 font-mono text-sm text-foreground">
             {photosState === 'idle' && '—'}
-            {photosRunning && `${photosPagesDone} pages Â· ${photosUpdated.toLocaleString()} updated`}
+            {photosRunning && `${photosPagesDone} pages · ${photosUpdated.toLocaleString()} updated`}
             {(photosState === 'done' || photosState === 'error') && (
-              <>{(photosStart != null ? formatElapsed(photosElapsed) : '')} Â· {photosUpdated.toLocaleString()} updated</>
+              <>{(photosStart != null ? formatElapsed(photosElapsed) : '')} · {photosUpdated.toLocaleString()} updated</>
             )}
           </p>
           {photosPagesTotal != null && photosRunning && (

@@ -170,7 +170,7 @@ export default function CommunityCard({
         <div className="p-3">
           <p className="text-sm text-muted-foreground">
             {activeCount} homes for sale
-            {medianPrice != null && ` Â· ${formatPrice(medianPrice)}`}
+            {medianPrice != null && ` · ${formatPrice(medianPrice)}`}
           </p>
         </div>
       )}

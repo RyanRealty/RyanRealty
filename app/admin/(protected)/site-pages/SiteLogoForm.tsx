@@ -98,7 +98,7 @@ export default function SiteLogoForm({ initialLogoUrl }: Props) {
               disabled={saving}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {saving ? 'Savingâ€¦' : 'Save URL'}
+              {saving ? 'Saving…' : 'Save URL'}
             </Button>
           </form>
 
@@ -115,7 +115,7 @@ export default function SiteLogoForm({ initialLogoUrl }: Props) {
               disabled={uploading}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-60"
             >
-              {uploading ? 'Uploadingâ€¦' : 'Upload & set'}
+              {uploading ? 'Uploading…' : 'Upload & set'}
             </Button>
           </form>
         </div>

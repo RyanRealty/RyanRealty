@@ -37,7 +37,7 @@ export default function RefreshActivePendingButton({ runInProgress = false, sync
         return
       }
 
-      setProgress('Startingâ€¦')
+      setProgress('Starting…')
 
       while (true) {
         const result = await runOneSyncChunk()
@@ -45,7 +45,7 @@ export default function RefreshActivePendingButton({ runInProgress = false, sync
         const cursor = status?.cursor
         const upserted = cursor?.runListingsUpserted ?? 0
         if (cursor?.phase === 'refresh_active_pending' && upserted > 0) {
-          setProgress(`${upserted} listings upserted so farâ€¦`)
+          setProgress(`${upserted} listings upserted so far…`)
         } else if (result.message) {
           setProgress(result.message)
         }
@@ -104,7 +104,7 @@ export default function RefreshActivePendingButton({ runInProgress = false, sync
           disabled={buttonDisabled}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
         >
-          {loading ? 'Refreshingâ€¦' : refreshRunningElsewhere ? 'Refresh in progress' : 'Refresh active & pending'}
+          {loading ? 'Refreshing…' : refreshRunningElsewhere ? 'Refresh in progress' : 'Refresh active & pending'}
         </Button>
         {loading && (
           <Button
@@ -113,7 +113,7 @@ export default function RefreshActivePendingButton({ runInProgress = false, sync
             disabled={stopPending}
             className="rounded-lg border-2 border-destructive bg-destructive/10 px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/15 disabled:opacity-50"
           >
-            {stopPending ? 'Stoppingâ€¦' : 'Stop'}
+            {stopPending ? 'Stopping…' : 'Stop'}
           </Button>
         )}
         {refreshRunningElsewhere && (

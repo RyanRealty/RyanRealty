@@ -59,7 +59,7 @@ export default function SitePageEditor({ page, onClose }: Props) {
   if (loading) {
     return (
       <div className="rounded-lg border border-border bg-card p-6">
-        <p className="text-muted-foreground">Loadingâ€¦</p>
+        <p className="text-muted-foreground">Loading…</p>
       </div>
     )
   }
@@ -119,7 +119,7 @@ export default function SitePageEditor({ page, onClose }: Props) {
             disabled={saving}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
           >
-            {saving ? 'Savingâ€¦' : 'Save'}
+            {saving ? 'Saving…' : 'Save'}
           </Button>
           <Button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted">
             Cancel

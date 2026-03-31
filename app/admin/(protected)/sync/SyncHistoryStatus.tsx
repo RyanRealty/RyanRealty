@@ -122,7 +122,7 @@ const SyncHistoryStatus = forwardRef<SyncHistoryStatusHandle>(function SyncHisto
           disabled={status === 'running'}
           className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {status === 'running' ? 'Syncing historyâ€¦' : 'Sync history'}
+          {status === 'running' ? 'Syncing history…' : 'Sync history'}
         </Button>
         {status === 'running' && (
           <Button

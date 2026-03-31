@@ -93,7 +93,7 @@ export default function SearchListingsToolbar({
       </div>
       <div className="flex flex-wrap items-center gap-4">
         <p className="text-sm text-muted-foreground">
-          {totalCount === 0 ? 'No listings' : `${start}â€“${end} of ${totalCount.toLocaleString()}`}
+          {totalCount === 0 ? 'No listings' : `${start}–${end} of ${totalCount.toLocaleString()}`}
         </p>
         {totalPages > 1 && (
           <nav className="flex flex-wrap items-center gap-2" aria-label="Pagination">

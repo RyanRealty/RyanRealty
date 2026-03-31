@@ -573,8 +573,8 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
           <div className="mt-4 flex items-center gap-4 rounded-lg border-2 border-warning/40 bg-warning/10 p-4" role="status" aria-live="polite">
             <span className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-warning border-t-transparent" aria-hidden />
             <div>
-              <p className="text-sm font-medium text-foreground">Generating professional headshotâ€¦</p>
-              <p className="text-xs text-warning">This usually takes 1â€“2 minutes. Please wait — do not leave or refresh.</p>
+              <p className="text-sm font-medium text-foreground">Generating professional headshot…</p>
+              <p className="text-xs text-warning">This usually takes 1–2 minutes. Please wait — do not leave or refresh.</p>
             </div>
           </div>
         )}
@@ -700,14 +700,14 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                 disabled={headshotUploading}
                 className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
               >
-                {headshotUploading ? 'Uploadingâ€¦' : 'Upload headshot'}
+                {headshotUploading ? 'Uploading…' : 'Upload headshot'}
               </Button>
             </div>
           </div>
           <div className="rounded-lg border border-border bg-muted/50 p-4">
             <p className="text-sm font-medium text-muted-foreground">2. Generate professional headshot with AI</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Choose a prompt, upload a source photo, then generate. The AI will create a headshot matching the prompt (e.g. studio, wardrobe, background). Takes 1â€“2 minutes. Then set as default, save, or generate another.
+              Choose a prompt, upload a source photo, then generate. The AI will create a headshot matching the prompt (e.g. studio, wardrobe, background). Takes 1–2 minutes. Then set as default, save, or generate another.
             </p>
             {replicateConfigured === false && (
               <p className="mt-2 text-sm text-warning">
@@ -859,7 +859,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                     disabled={promptsLoading}
                     className="mt-3 rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground hover:bg-success/85 disabled:opacity-50"
                   >
-                    {promptsLoading ? 'Savingâ€¦' : 'Save prompt'}
+                    {promptsLoading ? 'Saving…' : 'Save prompt'}
                   </Button>
                 </div>
               </div>
@@ -891,7 +891,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                 disabled={headshotGenerating}
                 className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
               >
-                {headshotGenerating ? 'Generatingâ€¦' : 'Generate professional headshot'}
+                {headshotGenerating ? 'Generating…' : 'Generate professional headshot'}
               </Button>
             </div>
           </div>
@@ -927,7 +927,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                 disabled={introVideoUploading}
                 className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
               >
-                {introVideoUploading ? 'Uploadingâ€¦' : 'Upload intro video'}
+                {introVideoUploading ? 'Uploading…' : 'Upload intro video'}
               </Button>
             </div>
           </div>
@@ -990,7 +990,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                 disabled={synthesiaGenerating}
                 className="rounded-lg bg-success px-3 py-1.5 text-sm font-medium text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
               >
-                {synthesiaGenerating ? 'Generatingâ€¦ (this may take a few minutes)' : 'Generate video'}
+                {synthesiaGenerating ? 'Generating… (this may take a few minutes)' : 'Generate video'}
               </Button>
             </div>
           </div>
@@ -1275,7 +1275,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
           disabled={loading}
           className="rounded-lg bg-success px-4 py-2.5 text-sm font-semibold text-success-foreground shadow-sm hover:bg-success/85 disabled:opacity-50"
         >
-          {loading ? 'Savingâ€¦' : 'Save changes'}
+          {loading ? 'Saving…' : 'Save changes'}
         </Button>
         <a
           href={`/team/${broker.slug}`}

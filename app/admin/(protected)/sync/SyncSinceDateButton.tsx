@@ -70,7 +70,7 @@ export default function SyncSinceDateButton() {
         disabled={loading}
         className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
       >
-        {loading ? 'Syncingâ€¦' : 'Sync since this date'}
+        {loading ? 'Syncing…' : 'Sync since this date'}
       </Button>
       {message && (
         <span className={message.type === 'success' ? 'text-sm text-success' : 'text-sm text-destructive'}>

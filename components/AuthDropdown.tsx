@@ -211,7 +211,7 @@ export default function AuthDropdown({ user }: Props) {
                   onClick={handleSignInGoogle}
                   className="flex w-full items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
                 >
-                  {loading === 'google' ? 'â€¦' : 'Google'}
+                  {loading === 'google' ? '…' : 'Google'}
                 </Button>
                 <Separator className="my-2" />
                 <Button
@@ -269,7 +269,7 @@ export default function AuthDropdown({ user }: Props) {
                   disabled={!!loading}
                   className="w-full rounded-lg bg-foreground py-2 text-sm font-medium text-primary-foreground hover:bg-muted-foreground disabled:opacity-50"
                 >
-                  {loading === 'email' ? 'â€¦' : mode === 'signup' ? 'Create account' : 'Sign in'}
+                  {loading === 'email' ? '…' : mode === 'signup' ? 'Create account' : 'Sign in'}
                 </Button>
               </form>
             )}

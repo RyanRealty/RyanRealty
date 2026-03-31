@@ -120,7 +120,7 @@ export default function SyncHistoryButtons({ compact = false }: Props) {
           disabled={running !== null}
           className="rounded-lg bg-success px-4 py-2.5 text-sm font-medium text-success-foreground hover:bg-success/75 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {running === 'active' ? 'Runningâ€¦' : 'Run all active listing histories'}
+          {running === 'active' ? 'Running…' : 'Run all active listing histories'}
         </Button>
         <Button
           type="button"
@@ -128,7 +128,7 @@ export default function SyncHistoryButtons({ compact = false }: Props) {
           disabled={running !== null}
           className="rounded-lg border-2 border-border bg-muted px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {running === 'closed' ? 'Runningâ€¦' : 'Backfill closed / expired / withdrawn / canceled'}
+          {running === 'closed' ? 'Running…' : 'Backfill closed / expired / withdrawn / canceled'}
         </Button>
         {running !== null && (
           <Button

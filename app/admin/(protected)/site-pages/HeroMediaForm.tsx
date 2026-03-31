@@ -114,7 +114,7 @@ export default function HeroMediaForm({ initialHeroVideoUrl, initialHeroImageUrl
             type="url"
             value={heroVideoUrl}
             onChange={(e) => setHeroVideoUrl(e.target.value)}
-            placeholder="https://â€¦/hero.mp4"
+            placeholder="https://…/hero.mp4"
             className="mt-1 w-full rounded-lg border border-primary/20 px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -131,7 +131,7 @@ export default function HeroMediaForm({ initialHeroVideoUrl, initialHeroImageUrl
             type="url"
             value={heroImageUrl}
             onChange={(e) => setHeroImageUrl(e.target.value)}
-            placeholder="https://â€¦/hero.jpg"
+            placeholder="https://…/hero.jpg"
             className="mt-1 w-full rounded-lg border border-primary/20 px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -144,7 +144,7 @@ export default function HeroMediaForm({ initialHeroVideoUrl, initialHeroImageUrl
           disabled={saving}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
         >
-          {saving ? 'Savingâ€¦' : 'Save hero media'}
+          {saving ? 'Saving…' : 'Save hero media'}
         </Button>
       </form>
 

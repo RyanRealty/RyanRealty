@@ -58,7 +58,7 @@ export default function ForgotPasswordForm() {
         disabled={loading}
         className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
       >
-        {loading ? 'Sendingâ€¦' : 'Send reset link'}
+        {loading ? 'Sending…' : 'Send reset link'}
       </Button>
     </form>
   )

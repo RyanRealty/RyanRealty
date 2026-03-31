@@ -184,7 +184,7 @@ export default function ChatWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about Central Oregon real estateâ€¦"
+                placeholder="Ask about Central Oregon real estate…"
                 rows={1}
                 className="flex-1 resize-none rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 style={{ maxHeight: '80px' }}

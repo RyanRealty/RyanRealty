@@ -169,8 +169,8 @@ export default function SearchResults({
                     {formatAddress(listing)}
                   </p>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {listing.BedroomsTotal ?? '—'} Beds Â· {listing.BathroomsTotal ?? '—'} Baths
-                    {listing.SubdivisionName && ` Â· ${listing.SubdivisionName}`}
+                    {listing.BedroomsTotal ?? '—'} Beds · {listing.BathroomsTotal ?? '—'} Baths
+                    {listing.SubdivisionName && ` · ${listing.SubdivisionName}`}
                   </p>
                 </div>
               </article>
@@ -180,7 +180,7 @@ export default function SearchResults({
       </div>
       {listings.length < total && (
         <div ref={sentinelRef} className="flex justify-center py-8">
-          {loading && <span className="text-muted-foreground">Loading moreâ€¦</span>}
+          {loading && <span className="text-muted-foreground">Loading more…</span>}
         </div>
       )}
         </>

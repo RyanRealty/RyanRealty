@@ -102,7 +102,7 @@ export default function ListingValuation({ listingKey, propertyId, valuation, si
           disabled={downloading}
           className="inline-flex items-center rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-accent/90 disabled:opacity-70"
         >
-          {downloading ? 'Preparingâ€¦' : 'Download Full Value Report'}
+          {downloading ? 'Preparing…' : 'Download Full Value Report'}
         </Button>
         {!signedIn && (
           <p className="mt-2 text-xs text-muted-foreground">

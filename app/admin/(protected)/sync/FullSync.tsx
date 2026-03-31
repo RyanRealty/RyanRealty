@@ -191,7 +191,7 @@ export default function FullSync() {
           disabled={isRunning}
           className="rounded-lg bg-success px-5 py-2.5 text-sm font-semibold text-success-foreground hover:bg-success/75 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isRunning ? (phase === 'listings' ? 'Syncing listingsâ€¦' : 'Syncing historyâ€¦') : 'Start full sync'}
+          {isRunning ? (phase === 'listings' ? 'Syncing listings…' : 'Syncing history…') : 'Start full sync'}
         </Button>
         {isRunning && (
           <Button

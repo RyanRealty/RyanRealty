@@ -230,7 +230,7 @@ function ListingTile({
 
   const shareTitle =
     price > 0
-      ? `$${price.toLocaleString()}${listing.City ? ` Â· ${listing.City}` : ''}`
+      ? `$${price.toLocaleString()}${listing.City ? ` · ${listing.City}` : ''}`
       : address || undefined
 
   const shareUrl = `${getCanonicalSiteUrl()}${href}`

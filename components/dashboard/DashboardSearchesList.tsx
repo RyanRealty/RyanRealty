@@ -38,7 +38,7 @@ function filterSummary(filters: Record<string, unknown>): string {
   if (typeof filters.minPrice === 'number' || typeof filters.maxPrice === 'number') {
     const min = typeof filters.minPrice === 'number' ? `$${Math.round(filters.minPrice / 1000)}K` : ''
     const max = typeof filters.maxPrice === 'number' ? `$${Math.round(filters.maxPrice / 1000)}K` : ''
-    parts.push([min, max].filter(Boolean).join('â€“') || 'Any price')
+    parts.push([min, max].filter(Boolean).join('–') || 'Any price')
   }
   if (typeof filters.city === 'string' && filters.city.trim()) parts.push(filters.city.trim())
   if (typeof filters.statusFilter === 'string' && filters.statusFilter) parts.push(filters.statusFilter)
@@ -96,7 +96,7 @@ export default function DashboardSearchesList({ searches, className = '' }: Prop
                     disabled={!!deletingId}
                     className="text-sm font-medium text-destructive hover:underline disabled:opacity-50"
                   >
-                    {deletingId === s.id ? 'Deletingâ€¦' : 'Yes, delete'}
+                    {deletingId === s.id ? 'Deleting…' : 'Yes, delete'}
                   </Button>
                   <Button
                     type="button"

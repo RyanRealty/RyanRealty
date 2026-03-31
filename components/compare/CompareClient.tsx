@@ -155,7 +155,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
             size="sm"
           >
             <HugeiconsIcon icon={Download01Icon} className="h-4 w-4" />
-            {pdfLoading ? 'Generatingâ€¦' : 'Download PDF'}
+            {pdfLoading ? 'Generating…' : 'Download PDF'}
           </Button>
         </div>
       </div>

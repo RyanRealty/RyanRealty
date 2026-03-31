@@ -44,7 +44,7 @@ export default function SyncHistoryTest({ defaultListingKey }: Props) {
           disabled={loading}
           className="rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-warning-foreground hover:bg-warning/85 disabled:opacity-50"
         >
-          {loading ? 'Testingâ€¦' : 'Test all 3'}
+          {loading ? 'Testing…' : 'Test all 3'}
         </Button>
       </div>
       {result && (
