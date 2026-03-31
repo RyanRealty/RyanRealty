@@ -96,7 +96,7 @@ function pulseToMarketStats(
 
 /**
  * Market stats for a city via cached pulse + stats tables.
- * Falls back to the legacy getCityMarketStats when pulse data is unavailable.
+ * Falls back to the legacy getCityMarketStats, then to a lightweight direct count.
  */
 export async function getMarketStatsForCity(
   cityName: string
@@ -107,13 +107,42 @@ export async function getMarketStatsForCity(
     getCachedStats({ geoType: 'city', geoSlug }),
   ])
   if (pulse) return pulseToMarketStats(pulse, cached)
-  const { getCityMarketStats } = await import('@/app/actions/listings')
-  return getCityMarketStats({ city: cityName })
+  // Fallback: try legacy, but with a timeout
+  try {
+    const { getCityMarketStats } = await import('@/app/actions/listings')
+    return await getCityMarketStats({ city: cityName })
+  } catch {
+    // Last resort: lightweight active count only
+    return getQuickCityCount(cityName)
+  }
+}
+
+/** Lightweight fallback — just count active listings, no complex aggregations */
+async function getQuickCityCount(cityName: string): Promise<CityMarketStats> {
+  try {
+    const supabase = createServiceClient()
+    const { count } = await supabase
+      .from('listings')
+      .select('ListingKey', { count: 'exact', head: true })
+      .ilike('City', cityName)
+      .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
+    return {
+      count: count ?? 0,
+      avgPrice: null,
+      medianPrice: null,
+      avgDom: null,
+      newListingsLast30Days: 0,
+      pendingCount: 0,
+      closedLast12Months: 0,
+    }
+  } catch {
+    return { count: 0, avgPrice: null, medianPrice: null, avgDom: null, newListingsLast30Days: 0, pendingCount: 0, closedLast12Months: 0 }
+  }
 }
 
 /**
  * Market stats for a subdivision via cached pulse + stats tables.
- * Falls back to the legacy getCityMarketStats when pulse data is unavailable.
+ * Falls back to the legacy getCityMarketStats, then to a lightweight direct count.
  */
 export async function getMarketStatsForSubdivision(
   city: string,
@@ -125,6 +154,10 @@ export async function getMarketStatsForSubdivision(
     getCachedStats({ geoType: 'subdivision', geoSlug }),
   ])
   if (pulse) return pulseToMarketStats(pulse, cached)
-  const { getCityMarketStats } = await import('@/app/actions/listings')
-  return getCityMarketStats({ city, subdivision })
+  try {
+    const { getCityMarketStats } = await import('@/app/actions/listings')
+    return await getCityMarketStats({ city, subdivision })
+  } catch {
+    return getQuickCityCount(city)
+  }
 }
