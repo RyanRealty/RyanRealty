@@ -100,7 +100,7 @@ export default function SalesReportCard({ card }: Props) {
           <span className="text-sm font-semibold text-primary group-hover:text-accent-foreground group-hover:underline">
             View full report
           </span>
-          <span className="ml-1.5 text-sm text-muted-foreground" aria-hidden>â†’</span>
+          <span className="ml-1.5 text-sm text-muted-foreground" aria-hidden>†’</span>
         </Link>
         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
           {hasData ? 'Addresses, sold dates, days on market, property types. Charts and PDF download.' : 'New sales data is added as listings close.'}

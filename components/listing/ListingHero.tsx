@@ -159,7 +159,7 @@ export default function ListingHero({ photos, videos }: Props) {
             rel="noopener noreferrer"
             className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground"
           >
-            <span className="rounded-lg bg-card/10 px-4 py-2">Watch video â†’</span>
+            <span className="rounded-lg bg-card/10 px-4 py-2">Watch video †’</span>
           </a>
         )
       }

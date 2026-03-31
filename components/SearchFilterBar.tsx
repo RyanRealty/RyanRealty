@@ -220,7 +220,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         >
           For Sale
           <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'status' ? 'â–´' : 'â–¾'}
+            {open === 'status' ? '▴' : '▾'}
           </span>
         </Button>
         {open === 'status' && (
@@ -285,7 +285,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         >
           Price
           <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'price' ? 'â–´' : 'â–¾'}
+            {open === 'price' ? '▴' : '▾'}
           </span>
         </Button>
         {open === 'price' && (
@@ -371,7 +371,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         >
           Beds & Baths
           <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'bedsbaths' ? 'â–´' : 'â–¾'}
+            {open === 'bedsbaths' ? '▴' : '▾'}
           </span>
         </Button>
         {open === 'bedsbaths' && (
@@ -451,7 +451,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         >
           Home Type
           <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'hometype' ? 'â–´' : 'â–¾'}
+            {open === 'hometype' ? '▴' : '▾'}
           </span>
         </Button>
         {open === 'hometype' && (
@@ -528,7 +528,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         >
           More
           <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'more' ? 'â–´' : 'â–¾'}
+            {open === 'more' ? '▴' : '▾'}
           </span>
         </Button>
         {open === 'more' && (

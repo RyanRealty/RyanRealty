@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import AppreciationCalculator from '@/components/tools/AppreciationCalculator'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
+import ContentPageHero from '@/components/layout/ContentPageHero'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -33,12 +34,17 @@ export default function AppreciationToolPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <main className="min-h-screen bg-background">
+      <ContentPageHero
+        title="Home Appreciation Calculator"
+        subtitle="Model different annual appreciation rates to understand long-term equity growth and plan your investment."
+        ctas={[
+          { label: 'Browse Listings', href: '/homes-for-sale', primary: true },
+          { label: 'Mortgage Calculator', href: '/tools/mortgage-calculator', primary: false },
+        ]}
+      />
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <h1 className="text-3xl font-semibold text-foreground">Home appreciation calculator</h1>
-      <p className="mt-2 text-muted-foreground">
-        Model different annual appreciation rates to understand long term equity growth.
-      </p>
       <div className="mt-8">
         <AppreciationCalculator />
       </div>
@@ -47,6 +53,7 @@ export default function AppreciationToolPage() {
       </div>
       <div className="mt-8">
         <HomeValuationCta />
+      </div>
       </div>
     </main>
   )

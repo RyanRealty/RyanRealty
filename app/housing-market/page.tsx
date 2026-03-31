@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { getReportCities } from '@/app/actions/reports'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import ContentPageHero from '@/components/layout/ContentPageHero'
+import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -52,13 +54,19 @@ export default async function HousingMarketHubPage() {
     },
   }
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+    <main className="min-h-screen bg-background">
+      <ContentPageHero
+        title="Housing Market Hub"
+        subtitle="Track local pricing, inventory, and market pace across Central Oregon cities and communities."
+        imageUrl={CONTENT_HERO_IMAGES.reports}
+        ctas={[
+          { label: 'View Reports', href: '/housing-market/reports', primary: true },
+          { label: 'Explore Data', href: '/housing-market/explore', primary: false },
+        ]}
+      />
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <h1 className="text-3xl font-semibold text-foreground">Housing Market Hub</h1>
-      <p className="mt-3 text-muted-foreground">
-        Track local pricing, inventory, and market pace across Central Oregon.
-      </p>
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3">
         <Link href="/housing-market/reports" className="rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted">
           View report index
         </Link>
@@ -147,6 +155,7 @@ export default async function HousingMarketHubPage() {
           </Link>
         </div>
       </section>
+      </div>
     </main>
   )
 }

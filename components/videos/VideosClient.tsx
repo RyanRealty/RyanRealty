@@ -30,11 +30,18 @@ export default function VideosClient({ initialListings }: Props) {
   const selected = selectedKey ? filtered.find((l) => l.listing_key === selectedKey) : null
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <h1 className="text-3xl font-bold text-primary">Video Tours</h1>
-      <p className="mt-2 text-muted-foreground">
-        Browse video tours of Central Oregon homes. Click to play in a lightbox.
-      </p>
+    <div>
+      <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-7xl text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
+            Video Tours
+          </h1>
+          <p className="mt-3 text-lg text-muted">
+            Watch video walkthroughs of homes for sale across Central Oregon.
+          </p>
+        </div>
+      </section>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
 
       <div className="mt-6 flex flex-wrap gap-4">
         <Select value={filterCommunity || '__all__'} onValueChange={(v) => setFilterCommunity(v === '__all__' ? '' : v)}>
@@ -216,6 +223,7 @@ export default function VideosClient({ initialListings }: Props) {
       {filtered.length === 0 && (
         <p className="mt-8 text-muted-foreground">No video tours match your filters.</p>
       )}
+      </div>
     </div>
   )
 }

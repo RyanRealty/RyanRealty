@@ -54,7 +54,7 @@ export default function RecentlySold({
               href="/reports"
               className="text-sm font-semibold text-accent-foreground hover:text-accent-foreground"
             >
-              View market reports â†’
+              View market reports †’
             </Link>
           }
         >

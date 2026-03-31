@@ -9,7 +9,7 @@ import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
 type Props = {
   cities: CityForIndex[]
   currentCitySlug: string
-  /** Optional CTA card at the end of the slider (e.g. "Homes for sale" â†’ /listings). */
+  /** Optional CTA card at the end of the slider (e.g. "Homes for sale" †’ /listings). */
   ctaCard?: { name: string; href: string }
 }
 

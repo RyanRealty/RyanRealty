@@ -236,7 +236,7 @@ export default function AuthDropdown({ user }: Props) {
                 className="px-4 py-2 space-y-2"
               >
                 <Button type="button" onClick={() => { setMode('choose'); setEmailError(null); }} className="text-xs text-muted-foreground hover:text-muted-foreground">
-                  â† Back
+                  † Back
                 </Button>
                 {mode === 'signup' && (
                   <Input

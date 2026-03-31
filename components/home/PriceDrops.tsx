@@ -93,7 +93,7 @@ export default function PriceDrops({
                     listing.originalPrice > listing.ListPrice && (
                       <div className="absolute bottom-2 left-2 right-2 rounded-lg bg-foreground/70 px-2 py-1.5 text-sm text-primary-foreground">
                         <span className="line-through">{formatPrice(listing.originalPrice)}</span>
-                        {' â†’ '}
+                        {' †’ '}
                         <span className="font-semibold">{formatPrice(listing.ListPrice)}</span>
                         {pct != null && pct > 0 && (
                           <span className="ml-1 text-success">âˆ’{pct}%</span>

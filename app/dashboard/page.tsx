@@ -120,7 +120,7 @@ export default async function DashboardOverviewPage() {
                 href="/dashboard/saved"
                 className="mt-2 inline-block text-sm font-medium text-accent-foreground hover:underline"
               >
-                View all saved homes â†’
+                View all saved homes †’
               </Link>
             </section>
           )
