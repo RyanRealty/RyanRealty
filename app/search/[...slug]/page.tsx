@@ -591,7 +591,7 @@ export default async function SearchPage({
       {city && (
         <section className="w-full" aria-label={`Hero: ${displayName}`}>
           {(heroVideoUrl || bannerUrl) ? (
-            <div className="relative h-[40vh] w-full min-h-[240px] overflow-hidden bg-foreground sm:h-[50vh]">
+            <div className="relative h-[200px] w-full overflow-hidden bg-foreground sm:h-[240px]">
               {heroVideoUrl ? (
                 <video
                   src={heroVideoUrl}
@@ -633,7 +633,7 @@ export default async function SearchPage({
               </div>
             </div>
           ) : (
-            <div className="flex min-h-[240px] h-[40vh] flex-col items-center justify-center gap-4 bg-muted sm:h-[50vh]">
+            <div className="flex h-[200px] flex-col items-center justify-center gap-4 bg-muted sm:h-[240px]">
               <p className="text-sm text-muted-foreground">No hero media yet.</p>
               <HeroRefreshButton
                 refreshAction={refreshHeroMedia}
@@ -748,6 +748,106 @@ export default async function SearchPage({
           variant="default"
         />
       </header>
+
+      {/* Filters + Listings — above the fold so users see what they came for */}
+      <div className="mb-6 flex flex-wrap items-center gap-4">
+        <Suspense fallback={<div className="h-14 rounded-lg border border-border bg-muted" />}>
+          <AdvancedSearchFilters
+            basePath={searchPagePath}
+            minPrice={sp.minPrice}
+            maxPrice={sp.maxPrice}
+            beds={sp.beds}
+            baths={sp.baths}
+            minSqFt={sp.minSqFt}
+            maxSqFt={sp.maxSqFt}
+            maxBeds={sp.maxBeds}
+            maxBaths={sp.maxBaths}
+            yearBuiltMin={sp.yearBuiltMin}
+            yearBuiltMax={sp.yearBuiltMax}
+            lotAcresMin={sp.lotAcresMin}
+            lotAcresMax={sp.lotAcresMax}
+            postalCode={sp.postalCode}
+            propertyType={sp.propertyType}
+            propertySubType={sp.propertySubType}
+            statusFilter={sp.statusFilter}
+            keywords={sp.keywords}
+            hasOpenHouse={sp.hasOpenHouse}
+            garageMin={sp.garageMin}
+            hasPool={sp.hasPool}
+            hasView={sp.hasView}
+            hasWaterfront={sp.hasWaterfront}
+            newListingsDays={sp.newListingsDays}
+            sort={sp.sort}
+            includeClosed={sp.includeClosed}
+            view={viewParam}
+            perPage={perPageParam}
+          />
+        </Suspense>
+        <SaveSearchButton user={!!session?.user} />
+      </div>
+
+      {!city && !hasFilterOnly ? (
+        <p className="text-muted-foreground">Select a city or subdivision to see listings.</p>
+      ) : listings.length === 0 ? (
+        <p className="text-muted-foreground">No active listings in this area yet.</p>
+      ) : (
+        <>
+          <SearchListingsToolbar
+            pathname={searchPagePath}
+            totalCount={totalCount}
+            page={page}
+            pageSize={pageSize}
+            viewParam={viewParam}
+            perPageParam={perPageParam}
+            searchParams={{
+              minPrice: sp.minPrice,
+              maxPrice: sp.maxPrice,
+              beds: sp.beds,
+              baths: sp.baths,
+              minSqFt: sp.minSqFt,
+              propertyType: sp.propertyType,
+              sort: sp.sort ?? 'newest',
+              statusFilter: sp.statusFilter ?? (sp.includeClosed === '1' ? 'all' : 'active'),
+              includeClosed: sp.includeClosed,
+              page: String(page),
+              view: viewParam,
+              perPage: perPageParam,
+            }}
+          />
+          <section
+            className={`grid gap-6 ${columns === 1 ? 'grid-cols-1 max-w-md' : columns === 2 ? 'grid-cols-1 sm:grid-cols-2' : columns === 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}
+          >
+            {listings.flatMap((listing, i) => {
+              const key = (listing.ListNumber ?? listing.ListingKey ?? `listing-${i}`).toString().trim()
+              const price = Number(listing.ListPrice ?? 0)
+              const displayPrefs = prefs ?? { downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT, interestRate: DEFAULT_DISPLAY_RATE, loanTermYears: DEFAULT_DISPLAY_TERM_YEARS }
+              const monthly = price > 0 ? estimatedMonthlyPayment(price, displayPrefs.downPaymentPercent, displayPrefs.interestRate, displayPrefs.loanTermYears) : null
+              const tiles = [
+                <ListingTile
+                  key={key}
+                  listing={listing}
+                  listingKey={key}
+                  hasRecentPriceChange={key ? priceChangeKeys.has(key) : false}
+                  saved={session?.user ? savedKeys.includes(key) : undefined}
+                  liked={session?.user ? likedKeys.includes(key) : undefined}
+                  monthlyPayment={monthly != null && monthly > 0 ? formatMonthlyPayment(monthly) : undefined}
+                  signedIn={!!session?.user}
+                  userEmail={session?.user?.email ?? null}
+                />
+              ]
+              if ((i + 1) % 8 === 0) {
+                tiles.push(
+                  <InFeedAdCard
+                    key={`ad-${i}`}
+                    slot="2002001002"
+                  />
+                )
+              }
+              return tiles
+            })}
+          </section>
+        </>
+      )}
 
       {/* About this community (subdivision pages with description) */}
       {subdivision && (subdivisionBlurb ?? subdivisionTabContent?.about) && (
@@ -1013,44 +1113,9 @@ export default async function SearchPage({
         </section>
       )}
 
-      <div className="mb-6 flex flex-wrap items-center gap-4">
-        <Suspense fallback={<div className="h-14 rounded-lg border border-border bg-muted" />}>
-          <AdvancedSearchFilters
-            basePath={searchPagePath}
-            minPrice={sp.minPrice}
-            maxPrice={sp.maxPrice}
-            beds={sp.beds}
-            baths={sp.baths}
-            minSqFt={sp.minSqFt}
-            maxSqFt={sp.maxSqFt}
-            maxBeds={sp.maxBeds}
-            maxBaths={sp.maxBaths}
-            yearBuiltMin={sp.yearBuiltMin}
-            yearBuiltMax={sp.yearBuiltMax}
-            lotAcresMin={sp.lotAcresMin}
-            lotAcresMax={sp.lotAcresMax}
-            postalCode={sp.postalCode}
-            propertyType={sp.propertyType}
-            propertySubType={sp.propertySubType}
-            statusFilter={sp.statusFilter}
-            keywords={sp.keywords}
-            hasOpenHouse={sp.hasOpenHouse}
-            garageMin={sp.garageMin}
-            hasPool={sp.hasPool}
-            hasView={sp.hasView}
-            hasWaterfront={sp.hasWaterfront}
-            newListingsDays={sp.newListingsDays}
-            sort={sp.sort}
-            includeClosed={sp.includeClosed}
-            view={viewParam}
-            perPage={perPageParam}
-          />
-        </Suspense>
-        <SaveSearchButton user={!!session?.user} />
-      </div>
-
+      {/* Map — below listings for context, not blocking content */}
       <section className="mb-10 overflow-hidden rounded-xl border border-border shadow-sm">
-        <div className="h-[320px] sm:h-[420px]">
+        <div className="h-[280px] sm:h-[360px]">
           <SearchMapClustered
             listings={mapListingsWithCoords.length > 0 ? mapListingsWithCoords : listingsWithCoords}
             savedListingKeys={savedKeys}
@@ -1061,90 +1126,30 @@ export default async function SearchPage({
         </div>
       </section>
 
-      {!city && !hasFilterOnly ? (
-        <p className="text-muted-foreground">Select a city or subdivision to see listings.</p>
-      ) : listings.length === 0 ? (
-        <p className="text-muted-foreground">No active listings in this area yet.</p>
-      ) : (
-        <>
-          <SearchListingsToolbar
-            pathname={searchPagePath}
-            totalCount={totalCount}
-            page={page}
-            pageSize={pageSize}
-            viewParam={viewParam}
-            perPageParam={perPageParam}
-            searchParams={{
-              minPrice: sp.minPrice,
-              maxPrice: sp.maxPrice,
-              beds: sp.beds,
-              baths: sp.baths,
-              minSqFt: sp.minSqFt,
-              propertyType: sp.propertyType,
-              sort: sp.sort ?? 'newest',
-              statusFilter: sp.statusFilter ?? (sp.includeClosed === '1' ? 'all' : 'active'),
-              includeClosed: sp.includeClosed,
-              page: String(page),
-              view: viewParam,
-              perPage: perPageParam,
-            }}
-          />
-          <section
-            className={`grid gap-6 ${columns === 1 ? 'grid-cols-1 max-w-md' : columns === 2 ? 'grid-cols-1 sm:grid-cols-2' : columns === 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}
-          >
-            {listings.flatMap((listing, i) => {
-              const key = (listing.ListNumber ?? listing.ListingKey ?? `listing-${i}`).toString().trim()
-              const price = Number(listing.ListPrice ?? 0)
-              const displayPrefs = prefs ?? { downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT, interestRate: DEFAULT_DISPLAY_RATE, loanTermYears: DEFAULT_DISPLAY_TERM_YEARS }
-              const monthly = price > 0 ? estimatedMonthlyPayment(price, displayPrefs.downPaymentPercent, displayPrefs.interestRate, displayPrefs.loanTermYears) : null
-              const tiles = [
-                <ListingTile
-                  key={key}
-                  listing={listing}
-                  listingKey={key}
-                  hasRecentPriceChange={key ? priceChangeKeys.has(key) : false}
-                  saved={session?.user ? savedKeys.includes(key) : undefined}
-                  liked={session?.user ? likedKeys.includes(key) : undefined}
-                  monthlyPayment={monthly != null && monthly > 0 ? formatMonthlyPayment(monthly) : undefined}
-                  signedIn={!!session?.user}
-                  userEmail={session?.user?.email ?? null}
-                />
-              ]
-              if ((i + 1) % 8 === 0) {
-                tiles.push(
-                  <InFeedAdCard
-                    key={`ad-${i}`}
-                    slot="2002001002"
-                  />
-                )
-              }
-              return tiles
-            })}
-          </section>
-          {subdivision && nearbyCommunities.length > 0 && (
-            <section className="mt-10">
-              <h2 className="mb-4 text-lg font-semibold text-foreground">Nearby communities</h2>
-              <p className="mb-4 text-sm text-muted-foreground">
-                Explore other communities in {city} near {getSubdivisionDisplayName(decodedSubdivision)}.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {nearbyCommunities.map((c) => (
-                  <Link
-                    key={c.subdivisionName}
-                    href={communityPagePath(city!, c.subdivisionName)}
-                    className="rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition hover:border-primary/20 hover:shadow"
-                  >
-                    {getSubdivisionDisplayName(c.subdivisionName)} <span className="text-muted-foreground">({c.count})</span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-          <section className="mt-10">
-            <AdUnit slot="2002001003" format="horizontal" />
-          </section>
-        </>
+      {subdivision && nearbyCommunities.length > 0 && (
+        <section className="mb-10">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Nearby communities</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Explore other communities in {city} near {getSubdivisionDisplayName(decodedSubdivision)}.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {nearbyCommunities.map((c) => (
+              <Link
+                key={c.subdivisionName}
+                href={communityPagePath(city!, c.subdivisionName)}
+                className="rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition hover:border-primary/20 hover:shadow"
+              >
+                {getSubdivisionDisplayName(c.subdivisionName)} <span className="text-muted-foreground">({c.count})</span>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
+
+      <section className="mb-10">
+        <AdUnit slot="2002001003" format="horizontal" />
+      </section>
+
       </div>
     </main>
   )
