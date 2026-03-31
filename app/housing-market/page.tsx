@@ -35,17 +35,11 @@ export default async function HousingMarketHubPage() {
     'Powell Butte', 'Eagle Crest', 'Black Butte Ranch',
   ])
   const browseCities = await getBrowseCities()
-  const centralOregonCities = browseCities
+  // Only show Central Oregon cities — this is a Central Oregon brokerage
+  const topCities = browseCities
     .filter((c) => c.count > 0 && CENTRAL_OREGON_CITIES.has(c.City))
     .sort((a, b) => b.count - a.count)
     .map((c) => c.City)
-  // Show Central Oregon cities first, then other cities with listings
-  const otherCities = browseCities
-    .filter((c) => c.count > 0 && !CENTRAL_OREGON_CITIES.has(c.City))
-    .sort((a, b) => b.count - a.count)
-    .map((c) => c.City)
-    .slice(0, Math.max(0, 12 - centralOregonCities.length))
-  const topCities = [...centralOregonCities, ...otherCities].slice(0, 12)
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
