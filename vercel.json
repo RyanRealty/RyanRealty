@@ -1,8 +1,12 @@
 {
   "crons": [
     {
+      "path": "/api/cron/sync-delta",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/sync-full",
-      "schedule": "0 2 * * *"
+      "schedule": "0 2 * * 0"
     },
     {
       "path": "/api/cron/refresh-place-content",

@@ -1,0 +1,50 @@
+# Sync Pipeline Rules — MANDATORY
+
+## Architecture
+
+The listing sync has TWO mechanisms. Both are critical. Do not disable either.
+
+### 1. Delta sync (every 15 minutes)
+- **Route**: `/api/cron/sync-delta`
+- **Purpose**: Catches ALL changes since last run — new listings, price changes, status changes, closings
+- **Photos**: Fetches photos for any listing that arrives without a PhotoURL
+- **Finalization**: When a listing closes (StandardStatus=Closed + CloseDate set), sets `is_finalized=true`. That listing is NEVER synced again.
+- **Activity events**: Emits events for new_listing, price_drop, price_increase, status_pending, status_closed
+
+### 2. Full sync (weekly Sunday 2am)
+- **Route**: `/api/cron/sync-full`
+- **Purpose**: Safety net that catches anything delta missed. Refreshes all non-finalized listings.
+- **MUST skip finalized listings** (`is_finalized=true`)
+
+## ABSOLUTE RULES
+
+### Never disable the sync
+- `SYNC_TERMINAL_ONLY_MODE` must default to `'0'` (enabled). NEVER change this default.
+- Both crons must be registered in `vercel.json`. NEVER remove them.
+
+### Always include Photos
+- Every Spark API call that upserts listings MUST include `_expand=Photos` (or `expand: 'Photos,...'`).
+- Every upsert MUST map `PhotoURL` from the first photo.
+- If a listing is upserted without a PhotoURL, immediately fetch the photo separately.
+
+### Finalization is permanent and requires ALL conditions
+- Once `is_finalized=true`, that listing is DONE. No sync touches it again.
+- **ALL THREE conditions** must be met before setting `is_finalized=true`:
+  1. StandardStatus contains "Closed"
+  2. CloseDate is not null
+  3. `history_finalized=true` (historical listing data has been captured)
+- **NEVER** set `is_finalized=true` without `history_finalized=true`. The history data is required for accurate market reports and analytics.
+- `media_finalized=true` can be set when a listing closes (media doesn't change after closing).
+- Never un-finalize a listing once properly finalized.
+
+### Activity events
+- Every status change, price change, and new listing MUST emit an activity_event.
+- Activity events power the activity feed, saved search alerts, and content engine.
+- Never skip event emission to "save time."
+
+## Do NOT
+- Remove or reduce the delta sync frequency (15 min is the minimum)
+- Skip photo fetching for "performance" — photos are the most important visual element
+- Re-sync finalized/closed listings — this wastes API calls and time
+- Default SYNC_TERMINAL_ONLY_MODE to '1' or 'true'
+- Remove any cron from vercel.json without explicit user permission

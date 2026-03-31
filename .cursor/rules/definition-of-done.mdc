@@ -1,0 +1,58 @@
+# Definition of Done — MANDATORY
+
+## A task is NOT done until ALL of the following are verified:
+
+### 1. The feature renders real data
+- Not "the component exists." The component renders ACTUAL DATA from the database.
+- If a component shows listings, verify listings with photos appear on the live site.
+- If a component shows market stats, verify real numbers appear, not zeros or placeholders.
+- "It builds" is NOT done. "It renders real data to a real user" is done.
+
+### 2. The data pipeline is connected
+- If a feature depends on data from Spark, verify the sync populates that data.
+- If a feature depends on a Supabase table, verify the table has rows.
+- If a feature depends on an API, verify the API returns data.
+- Query the database directly to confirm. Do not assume.
+
+### 3. The live site is verified
+- After pushing code, wait for Vercel to deploy.
+- Hit the live URL with curl or fetch and verify:
+  - Page returns 200
+  - Page contains the expected content (not empty sections, not "No data")
+  - Images/photos load (check for Spark CDN URLs or Supabase storage URLs in the HTML)
+  - Links work (not 404)
+
+### 4. The user flow works end to end
+- If adding a search feature, search for something and verify results appear.
+- If adding a save feature, save something and verify it appears in saved items.
+- If adding a contact form, submit it and verify the lead arrives in FUB.
+- Walk the ENTIRE flow, not just the component in isolation.
+
+## What "done" does NOT mean:
+- ❌ "The file exists"
+- ❌ "npm run build passes"
+- ❌ "The component renders with mock data"
+- ❌ "The type definitions are correct"
+- ❌ "The server action returns { data, error }"
+- ❌ "I checked the HTTP status code is 200"
+
+## What "done" DOES mean:
+- ✅ A real user visiting the live site sees the feature working with real data
+- ✅ Photos and videos load from real URLs
+- ✅ Interactions (save, share, contact, search, filter) complete successfully
+- ✅ The data pipeline that feeds the feature is running and populated
+- ✅ Edge cases are handled (empty data, missing photos, no results)
+
+## Before marking ANY task complete:
+1. Query the database to verify data exists
+2. Hit the live site to verify the page renders correctly
+3. Check that images/photos/videos load
+4. Test the user interaction (click, submit, navigate)
+5. If ANY of these fail, the task is NOT done — fix it first
+
+## Never:
+- Mark a task complete without verifying on the live site
+- Say "done" when you mean "the code exists but I haven't verified it works"
+- Assume data exists without querying
+- Skip verification "to save time"
+- Build components without confirming the data layer feeds them
