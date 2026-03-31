@@ -18,6 +18,8 @@ export type EventName =
   | 'generate_lead'
   | 'tour_requested'
   | 'schedule_tour_click'
+  | 'schedule_showing_click'
+  | 'ask_question_click'
   | 'contact_agent_click'
   | 'email_agent'
   | 'call_initiated'

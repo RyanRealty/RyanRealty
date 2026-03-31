@@ -19,7 +19,8 @@ type Props = {
   listingKey: string
   address: string
   agent: Agent | null
-  showContactInfo: boolean
+  /** @deprecated — no longer used. Contact info is never shown for listing agents. */
+  showContactInfo?: boolean
   shareUrl: string
 }
 
@@ -30,23 +31,31 @@ function initials(name: string | null): string {
   return name.slice(0, 2).toUpperCase()
 }
 
-export default function ShowcaseAgent({ listingKey, address, agent, showContactInfo, shareUrl }: Props) {
+/**
+ * Listing agent attribution card.
+ * Shows who listed the property (name + office) for transparency.
+ * All CTAs route to the site owner (Ryan Realty) — never to the listing agent.
+ */
+export default function ShowcaseAgent({ listingKey, address, agent, shareUrl }: Props) {
   if (!agent) return null
 
   const contactUrl = `/contact?listing=${encodeURIComponent(listingKey)}&reason=inquiry`
-  const trackContact = () => {
-    trackEvent('contact_agent_click', { listing_key: listingKey, listing_url: shareUrl })
+  const tourUrl = `/contact?listing=${encodeURIComponent(listingKey)}&reason=tour`
+
+  const trackSchedule = () => {
+    trackEvent('schedule_showing_click', { listing_key: listingKey, listing_url: shareUrl })
     trackCtaClick({
-      label: 'Contact agent',
-      destination: contactUrl,
+      label: 'Schedule a showing',
+      destination: tourUrl,
       context: `listing_showcase_agent:${listingKey}`,
     })
   }
-  const trackSchedule = () => {
-    trackEvent('schedule_tour_click', { listing_key: listingKey, listing_url: shareUrl })
+
+  const trackAsk = () => {
+    trackEvent('ask_question_click', { listing_key: listingKey, listing_url: shareUrl })
     trackCtaClick({
-      label: 'Schedule tour',
-      destination: `/contact?listing=${encodeURIComponent(listingKey)}&reason=tour`,
+      label: 'Ask a question',
+      destination: contactUrl,
       context: `listing_showcase_agent:${listingKey}`,
     })
   }
@@ -54,6 +63,8 @@ export default function ShowcaseAgent({ listingKey, address, agent, showContactI
   return (
     <Card className="border-border bg-card">
       <CardContent className="p-6">
+        {/* Attribution: who listed the property */}
+        <p className="text-xs text-muted-foreground mb-3">Listed by</p>
         <div className="flex items-center gap-4">
           <Avatar className="h-14 w-14 rounded-full border border-border">
             <AvatarFallback className="bg-muted text-sm font-medium text-muted-foreground">
@@ -67,62 +78,28 @@ export default function ShowcaseAgent({ listingKey, address, agent, showContactI
             )}
           </div>
         </div>
+
+        {/* CTAs route to site owner (Ryan Realty), never listing agent */}
         <div className="mt-4 flex flex-col gap-2">
           <Button
             asChild
             variant="default"
             size="default"
             className="w-full"
-            onClick={trackContact}
+            onClick={trackSchedule}
           >
-            <Link href={contactUrl}>Contact agent</Link>
+            <Link href={tourUrl}>Schedule a showing</Link>
           </Button>
           <Button
             asChild
             variant="outline"
             size="default"
             className="w-full"
-            onClick={trackSchedule}
+            onClick={trackAsk}
           >
-            <Link href={`/contact?listing=${encodeURIComponent(listingKey)}&reason=tour`}>Schedule tour</Link>
+            <Link href={contactUrl}>Ask a question</Link>
           </Button>
         </div>
-        {showContactInfo && (agent.agent_email ?? agent.agent_phone) && (
-          <div className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
-            {agent.agent_email && (
-              <a
-                href={`mailto:${agent.agent_email}?subject=Inquiry about ${encodeURIComponent(address || 'listing')}`}
-                className="block hover:text-foreground"
-                onClick={() => {
-                  trackEvent('email_agent', { listing_key: listingKey, agent_name: agent.agent_name ?? undefined })
-                  trackCtaClick({
-                    label: 'Email agent',
-                    destination: `mailto:${agent.agent_email}`,
-                    context: `listing_showcase_agent:${listingKey}`,
-                  })
-                }}
-              >
-                {agent.agent_email}
-              </a>
-            )}
-            {agent.agent_phone && (
-              <a
-                href={`tel:${agent.agent_phone?.replace(/\D/g, '') ?? ''}`}
-                className="mt-1 block hover:text-foreground"
-                onClick={() => {
-                  trackEvent('call_initiated', { listing_key: listingKey })
-                  trackCtaClick({
-                    label: 'Call agent',
-                    destination: `tel:${agent.agent_phone?.replace(/\D/g, '') ?? ''}`,
-                    context: `listing_showcase_agent:${listingKey}`,
-                  })
-                }}
-              >
-                {agent.agent_phone}
-              </a>
-            )}
-          </div>
-        )}
       </CardContent>
     </Card>
   )

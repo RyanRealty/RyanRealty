@@ -621,6 +621,36 @@ function extractOpenHousesFromRow(row: AnyRow): ListingDetailOpenHouse[] {
 }
 
 /**
+ * Extract a playable video URL from Spark's ObjectHtml field.
+ * ObjectHtml may be:
+ * - An iframe embed: `<iframe ... src="//www.youtube.com/embed/XYZ" ...>`
+ * - A direct URL: `https://s3.amazonaws.com/.../out.mp4`
+ * - A Vimeo player URL: `https://player.vimeo.com/video/12345...`
+ */
+function extractVideoUrlFromObjectHtml(html: string | null | undefined): string | null {
+  if (!html?.trim()) return null
+  const s = html.trim()
+
+  // If it's a direct URL (starts with http, no HTML tags)
+  if (/^https?:\/\//.test(s) && !s.includes('<')) return s
+
+  // Extract src from iframe
+  const srcMatch = s.match(/src=["']([^"']+)["']/i)
+  if (srcMatch?.[1]) {
+    let url = srcMatch[1]
+    // Fix protocol-relative URLs
+    if (url.startsWith('//')) url = `https:${url}`
+    return url
+  }
+
+  // Extract href from anchor tags
+  const hrefMatch = s.match(/href=["']([^"']+)["']/i)
+  if (hrefMatch?.[1]) return hrefMatch[1]
+
+  return null
+}
+
+/**
  * Extract videos from details JSONB.
  */
 function extractVideosFromRow(row: AnyRow): SparkVideo[] {
@@ -630,7 +660,8 @@ function extractVideosFromRow(row: AnyRow): SparkVideo[] {
 
   for (const v of videoArr) {
     const item = v as AnyRow
-    const uri = safeStr(item.Uri ?? item.URL ?? item.Url)
+    // Try direct Uri/URL fields first, then parse ObjectHtml
+    const uri = safeStr(item.Uri ?? item.URL ?? item.Url) ?? extractVideoUrlFromObjectHtml(safeStr(item.ObjectHtml))
     if (!uri) continue
     videos.push({
       Id: safeStr(item.Id) ?? `video-${videos.length}`,
@@ -778,34 +809,60 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
   const statusHistory = (statusRes.data ?? []) as ListingDetailStatusHistory[]
   const engagement = (engagementRes.data ?? null) as ListingDetailEngagement | null
 
-  // Resolve community from SubdivisionName
+  // Resolve community from SubdivisionName, including neighborhood if assigned
   let community: ListingDetailCommunity | null = null
   const subdivisionName = safeStr(listingRow.SubdivisionName)
   if (subdivisionName) {
     const communitySlug = slugify(subdivisionName)
     try {
+      // First try with neighborhood join via neighborhood_id FK
       const { data: comm } = await supabase
         .from('communities')
-        .select('id, name, slug, neighborhoods(name, slug), cities(slug)')
+        .select('id, name, slug, neighborhood_id, city_id')
         .eq('slug', communitySlug)
         .maybeSingle()
-      const commRow = comm as {
-        id: string
-        name: string
-        slug: string
-        neighborhoods?: { name?: string | null; slug?: string | null } | { name?: string | null; slug?: string | null }[] | null
-        cities?: { slug?: string | null } | { slug?: string | null }[] | null
-      } | null
-      if (commRow) {
-        const neighborhood = Array.isArray(commRow.neighborhoods) ? commRow.neighborhoods[0] : commRow.neighborhoods
-        const cityRef = Array.isArray(commRow.cities) ? commRow.cities[0] : commRow.cities
+      if (comm) {
+        let neighborhoodName: string | null = null
+        let neighborhoodSlug: string | null = null
+        let citySlugResolved: string | null = null
+
+        // Resolve neighborhood if community has one
+        if (comm.neighborhood_id) {
+          const { data: nh } = await supabase
+            .from('neighborhoods')
+            .select('name, slug')
+            .eq('id', comm.neighborhood_id)
+            .maybeSingle()
+          if (nh) {
+            neighborhoodName = nh.name ?? null
+            neighborhoodSlug = nh.slug ?? null
+          }
+        }
+
+        // Resolve city slug if community has city_id
+        if (comm.city_id) {
+          const { data: cityRow } = await supabase
+            .from('cities')
+            .select('slug')
+            .eq('id', comm.city_id)
+            .maybeSingle()
+          if (cityRow) {
+            citySlugResolved = cityRow.slug ?? null
+          }
+        }
+
+        // Fall back to city slug from listing data
+        if (!citySlugResolved && listingRow.City) {
+          citySlugResolved = slugify(listingRow.City)
+        }
+
         community = {
-          id: commRow.id,
-          name: commRow.name,
-          slug: commRow.slug,
-          neighborhood_name: neighborhood?.name ?? null,
-          neighborhood_slug: neighborhood?.slug ?? null,
-          city_slug: cityRef?.slug ?? null,
+          id: comm.id,
+          name: comm.name,
+          slug: comm.slug,
+          neighborhood_name: neighborhoodName,
+          neighborhood_slug: neighborhoodSlug,
+          city_slug: citySlugResolved,
         }
       }
     } catch { /* community lookup failed — continue without it */ }

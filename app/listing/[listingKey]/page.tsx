@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getListingDetailData, getSimilarListingsForDetailPage } from '@/app/actions/listing-detail'
 import type { ListingDetailData } from '@/app/actions/listing-detail'
-import { getBrokerageSettings } from '@/app/actions/brokerage'
+// getBrokerageSettings removed — CTAs always route to site owner, never listing agent
 import { getCanonicalSiteUrl, listingShareSummary, listingShareText, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/lib/share-metadata'
 import { isListingSaved } from '@/app/actions/saved-listings'
 import { isListingLiked } from '@/app/actions/likes'
@@ -166,7 +166,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
   if (!data) notFound()
 
   const { listing, property, photos, agents, priceHistory, openHouses, community, videos, virtualTours } = data
-  const [saved, liked, engagement, similarListings, brokerage, session] = await Promise.all([
+  const [saved, liked, engagement, similarListings, session] = await Promise.all([
     isListingSaved(listing.listing_key),
     isListingLiked(listing.listing_key),
     getEngagementForListingDetail(listing.listing_key),
@@ -177,19 +177,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
       listing.list_price ?? null,
       listing.beds_total ?? null
     ),
-    getBrokerageSettings(),
     getSession(),
   ])
 
   const address = buildFullAddress(data)
   const city = property?.city ?? null
   const listingAgent = agents[0] ?? null
-  const listOfficeName = listingAgent?.office_name?.trim() ?? ''
-  const brokerageName = brokerage?.name?.trim() ?? ''
-  const isOurBroker =
-    listOfficeName.length > 0 &&
-    brokerageName.length > 0 &&
-    listOfficeName.toLowerCase() === brokerageName.toLowerCase()
 
   const heroVideoUrl =
     videos.length > 0 && videos[0]?.Uri && directVideoExt.test(videos[0].Uri) ? videos[0].Uri : null
@@ -408,7 +401,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
                 listingKey={listing.listing_key}
                 address={address}
                 agent={listingAgent}
-                showContactInfo={isOurBroker}
+                showContactInfo={false}
                 shareUrl={shareUrl}
               />
               <AdUnit slot="1001001004" format="vertical" />
