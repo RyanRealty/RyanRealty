@@ -7,6 +7,8 @@ export type ExportMyDataResult = {
   savedSearches: Array<Record<string, unknown>>
   savedCities: Array<Record<string, unknown>>
   savedCommunities: Array<Record<string, unknown>>
+  listingViews: Array<{ listing_key: string; city: string | null; viewed_at: string }>
+  buyingPreferences: Record<string, unknown> | null
   profile: Record<string, unknown> | null
   userEventsSample: Array<{ event_type: string; event_at: string; page_path: string | null }>
 }
@@ -20,11 +22,14 @@ export async function exportMyData(): Promise<ExportMyDataResult | { error: stri
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.id) return { error: 'Not signed in' }
 
-  const [savedListingsRes, savedSearchesRes, savedCitiesRes, savedCommunitiesRes, profileRes, eventsRes] = await Promise.all([
+  const [savedListingsRes, savedSearchesRes, savedCitiesRes, savedCommunitiesRes, listingViewsRes, buyingPrefsRes, profileRes, eventsRes] = await Promise.all([
     supabase.from('saved_listings').select('listing_key, created_at').eq('user_id', user.id).order('created_at', { ascending: false }),
     supabase.from('saved_searches').select('*').eq('user_id', user.id),
     supabase.from('saved_cities').select('*').eq('user_id', user.id),
     supabase.from('saved_communities').select('*').eq('user_id', user.id),
+    // listing_views may not have user_id column — gracefully handle
+    supabase.from('listing_views').select('listing_key, city, viewed_at').order('viewed_at', { ascending: false }).limit(500),
+    supabase.from('user_buying_preferences').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('user_events').select('event_type, event_at, page_path').eq('user_id', user.id).order('event_at', { ascending: false }).limit(500),
   ])
@@ -34,6 +39,8 @@ export async function exportMyData(): Promise<ExportMyDataResult | { error: stri
     savedSearches: (savedSearchesRes.data ?? []) as ExportMyDataResult['savedSearches'],
     savedCities: (savedCitiesRes.data ?? []) as ExportMyDataResult['savedCities'],
     savedCommunities: (savedCommunitiesRes.data ?? []) as ExportMyDataResult['savedCommunities'],
+    listingViews: (listingViewsRes.data ?? []) as ExportMyDataResult['listingViews'],
+    buyingPreferences: buyingPrefsRes.data as ExportMyDataResult['buyingPreferences'],
     profile: profileRes.data as ExportMyDataResult['profile'],
     userEventsSample: (eventsRes.data ?? []) as ExportMyDataResult['userEventsSample'],
   }

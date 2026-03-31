@@ -23,9 +23,21 @@ const INQUIRY_OPTIONS = [
   { value: 'Relocation', label: 'Relocation' },
 ]
 
-export default function ContactForm({ defaultInquiryType }: { defaultInquiryType?: string }) {
+type ContactFormProps = {
+  defaultInquiryType?: string
+  listingKey?: string
+  reason?: string
+}
+
+export default function ContactForm({ defaultInquiryType, listingKey, reason }: ContactFormProps) {
   const [state, setState] = useState<{ error?: string; success?: boolean }>({})
   const [loading, setLoading] = useState(false)
+
+  const defaultMessage = listingKey
+    ? reason === 'tour'
+      ? `I'd like to schedule a showing for listing ${listingKey}.`
+      : `I have a question about listing ${listingKey}.`
+    : ''
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -113,8 +125,10 @@ export default function ContactForm({ defaultInquiryType }: { defaultInquiryType
           id="contact-message"
           name="message"
           rows={4}
+          defaultValue={defaultMessage}
           className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         />
+        {listingKey && <input type="hidden" name="listingKey" value={listingKey} />}
       </div>
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
       <Button

@@ -102,13 +102,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
 
-    // Communities
+    // Communities (deduplicated by slug)
     const { data: communityRows } = await supabase
       .from('communities')
       .select('slug')
       .limit(5000)
 
+    const communitySlugsSeen = new Set<string>()
     for (const c of (communityRows ?? []) as Array<{ slug: string }>) {
+      if (communitySlugsSeen.has(c.slug)) continue
+      communitySlugsSeen.add(c.slug)
       dynamicPages.push({
         url: `${baseUrl}/communities/${encodeURIComponent(c.slug)}`,
         lastModified: now,
@@ -266,5 +269,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Return static pages only if database query fails
   }
 
-  return [...staticPages, ...dynamicPages]
+  // Final dedup — ensure no URL appears twice
+  const all = [...staticPages, ...dynamicPages]
+  const seen = new Set<string>()
+  return all.filter((entry) => {
+    if (seen.has(entry.url)) return false
+    seen.add(entry.url)
+    return true
+  })
 }

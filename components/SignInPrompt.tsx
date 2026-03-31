@@ -8,7 +8,11 @@ import { Button } from '@/components/ui/button'
 import { GoogleIcon, AppleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
 
 const DISMISS_KEY = 'ryan_realty_signin_prompt_dismissed'
-const DISMISS_HOURS = 24
+const DISMISS_HOURS = 72
+const VISIT_COUNT_KEY = 'ryan_realty_page_views'
+const FIRST_VISIT_KEY = 'ryan_realty_first_visit'
+/** Minimum page views before showing the prompt (let visitors browse first) */
+const MIN_PAGE_VIEWS = 3
 
 function wasDismissed(): boolean {
   if (typeof localStorage === 'undefined') return true
@@ -31,6 +35,28 @@ function setDismissed() {
   }
 }
 
+/** Track page views and first visit time so we don't interrupt first-time visitors. */
+function hasEngagedEnough(): boolean {
+  if (typeof localStorage === 'undefined') return false
+  try {
+    // Record first visit
+    if (!localStorage.getItem(FIRST_VISIT_KEY)) {
+      localStorage.setItem(FIRST_VISIT_KEY, String(Date.now()))
+    }
+    // Increment page views
+    const views = Number(localStorage.getItem(VISIT_COUNT_KEY) || '0') + 1
+    localStorage.setItem(VISIT_COUNT_KEY, String(views))
+    // Must have viewed at least MIN_PAGE_VIEWS pages
+    if (views < MIN_PAGE_VIEWS) return false
+    // Must have been on site at least 60 seconds
+    const firstVisit = Number(localStorage.getItem(FIRST_VISIT_KEY) || '0')
+    if (firstVisit > 0 && Date.now() - firstVisit < 60_000) return false
+    return true
+  } catch {
+    return false
+  }
+}
+
 type InnerProps = { user: AuthUser | null; searchParams: ReturnType<typeof useSearchParams> }
 
 function SignInPromptInner({ user, searchParams }: InnerProps) {
@@ -42,15 +68,17 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
 
   useEffect(() => {
     if (user) return
+    // Always show immediately when there's a ?next= param (user was redirected to sign in)
     if (hasNextParam) {
       setShow(true)
       return
     }
-    if (!isHome) return
     if (wasDismissed()) return
-    const t = setTimeout(() => setShow(true), 800)
+    // Don't interrupt first-time visitors — wait until they've browsed a few pages
+    if (!hasEngagedEnough()) return
+    const t = setTimeout(() => setShow(true), 2000)
     return () => clearTimeout(t)
-  }, [user, hasNextParam, isHome])
+  }, [user, hasNextParam])
 
   async function handleSignIn(provider: 'google' | 'apple' | 'facebook') {
     setLoading(provider)

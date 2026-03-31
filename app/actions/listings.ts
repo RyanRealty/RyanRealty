@@ -1440,7 +1440,9 @@ export async function getCityMarketStats(options: {
   city?: string
   subdivision?: string
 }): Promise<CityMarketStats> {
-  const supabase = getAnonSupabase()
+  // Use service role client — anon key fails with .or() containing StandardStatus.is.null
+  // due to RLS policy interactions, returning null counts instead of actual numbers
+  const supabase = getServiceSupabase() ?? getAnonSupabase()
   if (!supabase) {
     return { count: 0, avgPrice: null, medianPrice: null, avgDom: null, newListingsLast30Days: 0, pendingCount: 0, closedLast12Months: 0 }
   }

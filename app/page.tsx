@@ -91,22 +91,23 @@ export default async function Home(props: HomeProps) {
     )
   }
 
-  let session: Awaited<ReturnType<typeof getSession>>
-  let brokerage: Awaited<ReturnType<typeof getBrokerageSettings>>
-  let marketSnapshot: Awaited<ReturnType<typeof getMarketSnapshot>>
-  let activityFeed: Awaited<ReturnType<typeof getActivityFeedWithFallbackMulti>>
-  let browseCities: Awaited<ReturnType<typeof getBrowseCities>>
-  let weekendOpenHouses: Awaited<ReturnType<typeof getOpenHousesWithListings>>
-  let justListed: Awaited<ReturnType<typeof getJustListed>>
+  // Critical data — needed for hero + search bar (above the fold)
+  const [session, brokerage, marketSnapshot] = await Promise.all([
+    getSession(),
+    getBrokerageSettings(),
+    getMarketSnapshot(),
+  ])
 
+  // Non-critical data — fetched in parallel but doesn't block hero render
+  let activityFeed: Awaited<ReturnType<typeof getActivityFeedWithFallbackMulti>> = []
+  let browseCities: Awaited<ReturnType<typeof getBrowseCities>> = []
+  let weekendOpenHouses: Awaited<ReturnType<typeof getOpenHousesWithListings>> = []
+  let justListed: Awaited<ReturnType<typeof getJustListed>> = []
   let activitySavedKeys: string[] = []
   let activityLikedKeys: string[] = []
 
   try {
-    ;[session, brokerage, marketSnapshot, activityFeed, browseCities, weekendOpenHouses, justListed] = await Promise.all([
-      getSession(),
-      getBrokerageSettings(),
-      getMarketSnapshot(),
+    ;[activityFeed, browseCities, weekendOpenHouses, justListed] = await Promise.all([
       getActivityFeedWithFallbackMulti({ cities: [...ACTIVITY_FEED_DEFAULT_CITIES], limit: 12 }),
       getBrowseCities(),
       getOpenHousesWithListings(),
@@ -119,15 +120,8 @@ export default async function Home(props: HomeProps) {
       ])
     }
   } catch (err) {
-    console.error('[Home] Data fetch failed:', err)
-    return (
-      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-foreground">
-          <h1 className="text-xl font-semibold">Something went wrong</h1>
-          <p className="mt-2 text-sm">We couldn&apos;t load this page. Please try again in a moment.</p>
-        </div>
-      </main>
-    )
+    console.error('[Home] Below-fold data fetch failed:', err)
+    // Hero still renders — below-fold sections will show empty/fallback
   }
 
   const marketForHero = {

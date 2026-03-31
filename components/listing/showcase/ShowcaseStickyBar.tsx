@@ -117,7 +117,7 @@ export default function ShowcaseStickyBar({
           {price != null && price > 0 && (
             <p className="text-2xl font-bold tracking-tight text-foreground">{formatPrice(price)}</p>
           )}
-          {location && <p className="text-sm text-muted-foreground">{location}</p>}
+          {location && <h1 className="text-sm font-normal text-muted-foreground">{location}</h1>}
           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
             {beds != null && <span>{beds} bd</span>}
             {baths != null && <span>{baths} ba</span>}

@@ -93,7 +93,7 @@ export default async function RootLayout({
       : null
 
   return (
-    <html lang="en" className={cn("font-sans", GeistSans.variable, GeistMono.variable)}>
+    <html lang="en" className={cn("font-sans overflow-x-hidden", GeistSans.variable, GeistMono.variable)}>
       <head>
         <GTMHead />
         <link rel="manifest" href="/manifest.json" />
