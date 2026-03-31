@@ -4,7 +4,6 @@ import {
   getNeighborhoodBySlug,
   getNeighborhoodListings,
   getNeighborhoodSoldListings,
-  getCommunitiesInCity,
   getCommunitiesInNeighborhood,
 } from '@/app/actions/cities'
 import { getActivityFeed } from '@/app/actions/activity-feed'
@@ -16,10 +15,8 @@ import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getLikedListingKeys } from '@/app/actions/likes'
 import { getSavedCommunityKeys } from '@/app/actions/saved-communities'
 import { getLikedCommunityKeys } from '@/app/actions/community-engagement'
-import { getBuyingPreferences } from '@/app/actions/buying-preferences'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
-import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '@/lib/mortgage'
 import { homesForSalePath } from '@/lib/slug'
 import { buildDataDrivenNeighborhoodAbout } from '@/lib/city-content'
 import NeighborhoodHero from '@/components/neighborhood/NeighborhoodHero'
@@ -83,7 +80,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const pageUrl = `${siteUrl}/cities/${citySlug}/${neighborhoodSlug}`
   const pageTitle = `${neighborhood.name} in ${neighborhood.cityName}, Oregon | Ryan Realty`
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
-  const [placePhotoUrl, listings, soldListings, savedKeys, likedKeys, prefs, communitiesInNeighborhood, activityFeed, brokers, savedCommunityKeys, likedCommunityKeys] = await Promise.all([
+  const [placePhotoUrl, listings, , savedKeys, likedKeys, communitiesInNeighborhood, activityFeed, brokers, savedCommunityKeys, likedCommunityKeys] = await Promise.all([
     !neighborhood.heroImageUrl
       ? fetchPlacePhoto(`${neighborhood.name} ${neighborhood.cityName} Oregon`).then((r) => r?.url ?? null).catch(() => null)
       : Promise.resolve(null),
@@ -91,7 +88,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     getNeighborhoodSoldListings(neighborhood.id, 6),
     session?.user ? getSavedListingKeys() : Promise.resolve([]),
     session?.user ? getLikedListingKeys() : Promise.resolve([]),
-    session?.user ? getBuyingPreferences().catch(() => null) : Promise.resolve(null),
     getCommunitiesInNeighborhood(neighborhood.id, neighborhood.cityName),
     getActivityFeed({ city: neighborhood.cityName, limit: 24 }),
     getActiveBrokers(),
@@ -100,12 +96,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   ])
 
   const heroImageUrl = neighborhood.heroImageUrl ?? placePhotoUrl ?? null
-
-  const displayPrefs = prefs ?? {
-    downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
-    interestRate: DEFAULT_DISPLAY_RATE,
-    loanTermYears: DEFAULT_DISPLAY_TERM_YEARS,
-  }
 
   const dataDrivenParagraphs =
     !neighborhood.description || neighborhood.description.trim().length < 180

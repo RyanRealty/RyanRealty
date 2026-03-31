@@ -3,7 +3,6 @@
  * Step 18.
  */
 
-import { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { pushToFub } from '@/lib/fub'
 
@@ -20,7 +19,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 /**
  * POST (from Inngest): query user_activities for property_view in last 5 min, group by user_id, send one FUB event per user.
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   const supabase = getSupabase()
   const since = new Date(Date.now() - 5 * 60 * 1000).toISOString()
   const { data: rows } = await supabase

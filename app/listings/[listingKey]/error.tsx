@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
 export default function ListingDetailError({
-  error: _error,
   reset,
 }: {
   error: Error & { digest?: string }

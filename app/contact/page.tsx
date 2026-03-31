@@ -43,7 +43,6 @@ export default async function ContactPage({ searchParams }: PageProps) {
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const defaultInquiry = params.inquiry ?? undefined
   const contactTitle = pageContent?.title?.trim() || 'Contact Us'
-  const contactSubtitle = pageContent?.body_html?.trim() || '<p>Have a question or ready to get started? Reach out and we\'ll respond as soon as we can.</p>'
   const baseUrl = getCanonicalSiteUrl()
   const jsonLd = {
     '@context': 'https://schema.org',

@@ -2,7 +2,6 @@
  * Core year sync logic. Runs in-process (background). Checks cancelRequested before each chunk.
  */
 
-import { createClient } from '@supabase/supabase-js'
 import {
   fetchSparkListingHistory,
   fetchSparkListingsPage,

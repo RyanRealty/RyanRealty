@@ -2,7 +2,6 @@ import Link from 'next/link'
 import {
   listGeoPlaces,
   ensureGeoPlacesFromListings,
-  type GeoPlaceRow,
 } from '@/app/actions/geo-places'
 import EnsureGeoButton from './EnsureGeoButton'
 import NeighborhoodForm from './NeighborhoodForm'

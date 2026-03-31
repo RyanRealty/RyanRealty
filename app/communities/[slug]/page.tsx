@@ -20,8 +20,6 @@ import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { getLikedListingKeys } from '@/app/actions/likes'
-import { getBuyingPreferences } from '@/app/actions/buying-preferences'
-import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '@/lib/mortgage'
 import { homesForSalePath, neighborhoodPagePath } from '@/lib/slug'
 import { slugify } from '@/lib/slug'
 import { getResortCommunityContent, buildDataDrivenCommunityAbout } from '@/lib/community-content'
@@ -32,7 +30,6 @@ import CommunityOverview from '@/components/community/CommunityOverview'
 import CommunityMarketStats from '@/components/community/CommunityMarketStats'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import BreadcrumbStrip from '@/components/layout/BreadcrumbStrip'
-import { fetchPlacePhoto } from '@/lib/photo-api'
 import CommunityPageActionBar from '@/components/geo-page/CommunityPageActionBar'
 import ListingsSlider from '@/components/geo-page/ListingsSlider'
 import GeoCTAWithBroker from '@/components/geo-page/GeoCTAWithBroker'
@@ -93,7 +90,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const pageTitle = `${community.name} Homes for Sale | ${community.city}, Oregon | Ryan Realty`
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const citySlug = community.city.toLowerCase().replace(/\s+/g, '-')
-  const [listings, soldListings, priceHistory, marketStats, savedKeys, likedKeys, prefs, communitiesInCity, activityFeed, brokers, communitySaved, communityLiked, savedCommunityKeys, likedCommunityKeys, cityGuides] =
+  const [listings, soldListings, priceHistory, , savedKeys, likedKeys, communitiesInCity, activityFeed, brokers, communitySaved, communityLiked, savedCommunityKeys, likedCommunityKeys, cityGuides] =
     await Promise.all([
       getCommunityListings(community.city, community.subdivision, 24),
       getCommunitySoldListings(community.city, community.subdivision, 6),
@@ -101,7 +98,6 @@ export default async function CommunityDetailPage({ params }: Props) {
       getCommunityMarketStats(community.city, community.subdivision),
       session?.user ? getSavedListingKeys() : Promise.resolve([]),
       session?.user ? getLikedListingKeys() : Promise.resolve([]),
-      session?.user ? getBuyingPreferences().catch(() => null) : Promise.resolve(null),
       getCommunitiesInCity(community.city),
       getActivityFeed({ city: community.city, subdivision: community.subdivision, limit: 24 }),
       getActiveBrokers(),
@@ -120,12 +116,6 @@ export default async function CommunityDetailPage({ params }: Props) {
     city: community.city,
     community: [community.subdivision],
   })
-
-  const displayPrefs = prefs ?? {
-    downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
-    interestRate: DEFAULT_DISPLAY_RATE,
-    loanTermYears: DEFAULT_DISPLAY_TERM_YEARS,
-  }
 
   const prices = listings
     .map((l) => l.ListPrice)

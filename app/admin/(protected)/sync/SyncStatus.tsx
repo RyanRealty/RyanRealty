@@ -34,7 +34,7 @@ export default function SyncStatus({ syncAction, onListingSyncComplete }: SyncSt
   const [totalFetched, setTotalFetched] = useState(0)
   const [totalUpserted, setTotalUpserted] = useState(0)
   const [totalPagesFromSpark, setTotalPagesFromSpark] = useState<number | null>(null)
-  const [pagesProcessed, setPagesProcessed] = useState(0)
+  const [, setPagesProcessed] = useState(0)
   const [currentPageStart, setCurrentPageStart] = useState(0)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

@@ -3,19 +3,14 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { getListingsWithAdvanced, getListingsForMap, getListingKeysWithRecentPriceChange } from '../actions/listings'
 import { getSession } from '../actions/auth'
-import { getSavedListingKeys } from '../actions/saved-listings'
-import { getLikedListingKeys } from '../actions/likes'
-import { getBuyingPreferences } from '../actions/buying-preferences'
 import { getCitiesForIndex } from '../actions/cities'
 import { estimatedMonthlyPayment, formatMonthlyPayment, DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '../../lib/mortgage'
-import SaveSearchButton from '../../components/SaveSearchButton'
 import { getGeocodedListings } from '../actions/geocode'
 import ListingTile from '../../components/ListingTile'
 import SearchFilterBar from '../../components/SearchFilterBar'
 import BreadcrumbStrip from '../../components/layout/BreadcrumbStrip'
 import ContentPageHero from '../../components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '../../lib/content-page-hero-images'
-import ListingsMapSplitView from './ListingsMapSplitView'
 import UnifiedMapListingsView from '../../components/UnifiedMapListingsView'
 import ListingsPagination from '../../components/ListingsPagination'
 import ListingsPageFooter from './ListingsPageFooter'
@@ -205,12 +200,12 @@ export default async function ListingsPage({
           import('../actions/buying-preferences').then((m) => m.getBuyingPreferences()),
         ])
       : [[], [] as string[], null] as [string[], string[], Awaited<ReturnType<typeof import('../actions/buying-preferences').getBuyingPreferences>>]
-  const [listingsWithCoords, mapListingsWithCoords] = isMapView
-    ? [listings, []]
-    : await Promise.all([
-        getGeocodedListings(listings),
-        mapListingsRaw.length > 0 ? getGeocodedListings(mapListingsRaw) : Promise.resolve([]),
-      ])
+  if (!isMapView) {
+    await Promise.all([
+      getGeocodedListings(listings),
+      mapListingsRaw.length > 0 ? getGeocodedListings(mapListingsRaw) : Promise.resolve([]),
+    ])
+  }
 
   if (isMapView) {
     const searchParamsForBar = {

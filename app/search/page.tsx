@@ -11,7 +11,6 @@ import SearchSplitView from '@/components/search/SearchSplitView'
 import SearchMapClustered from '@/components/LazySearchMapClustered'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 
-const PAGE_SIZE = 24
 const DEFAULT_VIEW = 'split'
 
 type SearchParams = {

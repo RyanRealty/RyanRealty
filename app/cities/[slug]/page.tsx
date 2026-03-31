@@ -12,10 +12,8 @@ import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/lib/share-m
 import { getSession } from '@/app/actions/auth'
 import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getLikedListingKeys } from '@/app/actions/likes'
-import { getBuyingPreferences } from '@/app/actions/buying-preferences'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
-import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '@/lib/mortgage'
 import { CITY_QUICK_FACTS } from '@/lib/cities'
 import { getCityContent, buildDataDrivenCityAbout } from '@/lib/city-content'
 import { getActivityFeed } from '@/app/actions/activity-feed'
@@ -33,7 +31,6 @@ import CityOverview from '@/components/city/CityOverview'
 import CityMarketStats from '@/components/city/CityMarketStats'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import BreadcrumbStrip from '@/components/layout/BreadcrumbStrip'
-import { fetchPlacePhoto } from '@/lib/photo-api'
 import CityPageActionBar from '@/components/geo-page/CityPageActionBar'
 import CommunitiesBar from '@/components/geo-page/CommunitiesBar'
 import ListingsSlider from '@/components/geo-page/ListingsSlider'
@@ -151,11 +148,10 @@ export default async function CityDetailPage({ params }: Props) {
     listings,
     soldListings,
     communities,
-    neighborhoods,
+    ,
     priceHistory,
     savedKeys,
     likedKeys,
-    prefs,
     activityFeed,
     brokers,
     citySaved,
@@ -170,7 +166,6 @@ export default async function CityDetailPage({ params }: Props) {
     getCityPriceHistory(city.name),
     session?.user ? getSavedListingKeys() : Promise.resolve([]),
     session?.user ? getLikedListingKeys() : Promise.resolve([]),
-    session?.user ? getBuyingPreferences().catch(() => null) : Promise.resolve(null),
     getActivityFeed({ city: city.name, limit: 24 }),
     getActiveBrokers(),
     session?.user ? isCitySaved(slug) : Promise.resolve(false),
@@ -181,12 +176,6 @@ export default async function CityDetailPage({ params }: Props) {
   const cityGuideSlug = cityGuides.length > 0 ? cityGuides[0]!.slug : null
   const cityPulse = await getLiveMarketPulse({ geoType: 'city', geoSlug: slugify(city.name) })
   const cityOpenHouses = await getOpenHousesWithListings({ city: city.name })
-
-  const displayPrefs = prefs ?? {
-    downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
-    interestRate: DEFAULT_DISPLAY_RATE,
-    loanTermYears: DEFAULT_DISPLAY_TERM_YEARS,
-  }
 
   const quickFacts = buildQuickFacts(city.name, listings)
   const hasRobustDbContent = city.description != null && city.description.trim().length >= 300

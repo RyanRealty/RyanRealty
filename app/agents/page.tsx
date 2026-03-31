@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { getAgentsForIndex } from '@/app/actions/agents'
 import BrokerCard from '@/components/broker/BrokerCard'
-import { fetchPlacePhoto } from '@/lib/photo-api'
 import { teamPath } from '@/lib/slug'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')

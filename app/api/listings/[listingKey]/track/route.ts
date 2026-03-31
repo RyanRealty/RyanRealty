@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const RATE_LIMIT_COOKIE = 'listing_track'
 const RATE_LIMIT_HOURS = 1
-
-function getVisitorId(request: NextRequest): string {
-  const cookie = request.cookies.get(RATE_LIMIT_COOKIE)?.value
-  if (cookie) return cookie
-  return `anon_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-}
 
 export async function POST(
   _request: NextRequest,
@@ -24,8 +17,7 @@ export async function POST(
     return NextResponse.json({ error: 'Server not configured' }, { status: 500 })
   }
 
-  const visitorId = getVisitorId(_request)
-  const cookieKey = `${RATE_LIMIT_COOKIE}_${key}`
+  const cookieKey = `listing_track_${key}`
   const last = _request.cookies.get(cookieKey)?.value
   if (last) {
     const lastTime = parseInt(last, 10)

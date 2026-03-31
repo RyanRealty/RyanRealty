@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import Link from 'next/link'
 import {
   getAreaGuideEntityMapping,
   uploadAreaGuideFolder,
@@ -77,7 +76,6 @@ export default function AreaGuideUploadClient() {
     setError(null)
     setSuccess(null)
     const groups = groupFilesByFolder(files)
-    const folderNames = groups.map((g) => ({ name: g.folderName, photoCount: g.photoCount, videoCount: g.videoCount }))
     const fileMap = new Map<string, { file: File; relativePath: string }[]>()
     for (const g of groups) fileMap.set(g.folderName, g.files)
     setFolderFiles(fileMap)

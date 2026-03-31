@@ -70,9 +70,7 @@ export const metadata: Metadata = {
   },
 }
 
-type HomeProps = { searchParams?: Promise<{ city?: string }> }
-
-export default async function Home(props: HomeProps) {
+export default async function Home() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 

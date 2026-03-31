@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     })
 
     if (!res.ok) {
-      const text = await res.text()
+      await res.text()
       return NextResponse.json(
         { error: `AI API error: ${res.status}` },
         { status: 502 }

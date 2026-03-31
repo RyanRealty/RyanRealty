@@ -14,8 +14,6 @@ import {
   getListingKeysWithRecentPriceChange,
   getCityFromSlug,
   getSubdivisionNameFromSlug,
-  getCityCentroid,
-  getCommunityCentroid,
   type AdvancedSort,
 } from '../../actions/listings'
 import { getSession } from '../../actions/auth'
@@ -26,7 +24,7 @@ import { getHeroVideoUrl, refreshHeroMedia } from '../../actions/hero-videos'
 import SaveSearchButton from '../../../components/SaveSearchButton'
 import { getGeocodedListings } from '../../actions/geocode'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
-import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, cityPagePath, homesForSalePath, listingDetailPath, listingsBrowsePath, slugify } from '../../../lib/slug'
+import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, listingsBrowsePath, slugify } from '../../../lib/slug'
 import { entityKeyToSlug } from '../../../lib/community-slug'
 import { getPresetBySlug, isPresetSlug } from '../../../lib/search-presets'
 import { communityPagePath } from '../../../lib/community-slug'
@@ -54,10 +52,9 @@ import { getFubPersonIdFromCookie } from '../../actions/fub-identity-bridge'
 import { getSavedListingKeys } from '../../actions/saved-listings'
 import { getLikedListingKeys } from '../../actions/likes'
 import { getBuyingPreferences } from '../../actions/buying-preferences'
-import { getCitiesForIndex, getCityBoundary, getCityPriceHistory } from '../../actions/cities'
+import { getCityBoundary, getCityPriceHistory } from '../../actions/cities'
 import { getCommunityBySlug } from '../../actions/communities'
 import { estimatedMonthlyPayment, formatMonthlyPayment, DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '../../../lib/mortgage'
-import ListingsMapSplitView from '../../listings/ListingsMapSplitView'
 import UnifiedMapListingsView from '../../../components/UnifiedMapListingsView'
 import SearchFilterBar from '../../../components/SearchFilterBar'
 import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
@@ -71,22 +68,6 @@ import AdUnit from '../../../components/AdUnit'
 import InFeedAdCard from '../../../components/search/InFeedAdCard'
 import CityClusterNav from '../../../components/CityClusterNav'
 import { getGuidesByCity } from '../../actions/guides'
-
-/** Fallback map center when no listing coords (Central Oregon cities). */
-const FALLBACK_CITY_CENTERS: Record<string, { latitude: number; longitude: number; zoom: number }> = {
-  bend: { latitude: 44.0582, longitude: -121.3153, zoom: 11 },
-  'la-pine': { latitude: 43.6704, longitude: -121.5036, zoom: 11 },
-  redmond: { latitude: 44.2726, longitude: -121.1739, zoom: 11 },
-  sisters: { latitude: 44.2912, longitude: -121.5492, zoom: 11 },
-  sunriver: { latitude: 43.8840, longitude: -121.4386, zoom: 12 },
-  prineville: { latitude: 44.2990, longitude: -120.8345, zoom: 11 },
-  madras: { latitude: 44.6335, longitude: -121.1295, zoom: 11 },
-  terrebonne: { latitude: 44.3529, longitude: -121.1778, zoom: 12 },
-  culver: { latitude: 44.5254, longitude: -121.2114, zoom: 12 },
-}
-
-/** Central Oregon default map center (filter-only search, no city). */
-const CENTRAL_OREGON_MAP_CENTER = { latitude: 44.0582, longitude: -121.3153, zoom: 9 }
 
 /** Resolve slug segments to city, subdivision (display name), and preset. */
 async function resolveSlug(slug: string[]): Promise<{
@@ -189,9 +170,6 @@ export async function generateMetadata({
   }
 }
 
-const PER_PAGE_OPTIONS = [6, 12, 24, 48] as const
-const COLUMN_OPTIONS = [1, 2, 3, 4] as const
-
 type SearchParams = {
   minPrice?: string
   maxPrice?: string
@@ -251,7 +229,7 @@ export default async function SearchPage({
   if (slug.length >= 3 && resolved.presetSlug && !resolved.preset) {
     notFound()
   }
-  const { city: cityResolved, subdivisionDisplayName: decodedSubdivisionFromSlug, preset } = resolved
+  const { city: cityResolved, preset } = resolved
   const city = cityResolved ?? undefined
   const subdivision = resolved.subdivisionSlug ?? undefined
   const decodedSubdivision = resolved.subdivisionDisplayName ?? (subdivision ? decodeURIComponent(subdivision) : undefined)
@@ -367,7 +345,7 @@ export default async function SearchPage({
     : filterOpts.includeClosed
       ? 'all'
       : 'active'
-  const [mapListingsRaw, nearbyCommunities, mapCenter] = await Promise.all([
+  const [mapListingsRaw, nearbyCommunities] = await Promise.all([
     getListingsForMap({
       city: city ?? undefined,
       subdivision: decodedSubdivision ?? undefined,
@@ -390,17 +368,11 @@ export default async function SearchPage({
     city && subdivision && decodedSubdivision
       ? getNearbyCommunities(city, decodedSubdivision)
       : Promise.resolve([]),
-    city
-      ? subdivision && decodedSubdivision
-        ? getCommunityCentroid(city, decodedSubdivision).then((c) => (c ? { latitude: c.lat, longitude: c.lng, zoom: 12 } as const : null))
-        : getCityCentroid(city).then((c) => (c ? { latitude: c.lat, longitude: c.lng, zoom: 11 } as const : null))
-      : Promise.resolve(null),
   ])
   const [listingsWithCoords, mapListingsWithCoords] = await Promise.all([
     getGeocodedListings(listings),
     mapListingsRaw.length > 0 ? getGeocodedListings(mapListingsRaw) : Promise.resolve([]),
   ])
-  const mapCenterResolved = mapCenter ?? (city ? FALLBACK_CITY_CENTERS[cityEntityKey(city)] ?? null : (mapListingsWithCoords.length > 0 || listingsResult.listings.length > 0 ? CENTRAL_OREGON_MAP_CENTER : null))
 
   const placeName = subdivision && decodedSubdivision ? getSubdivisionDisplayName(decodedSubdivision) : (city ?? 'Central Oregon')
   const displayName = preset ? `${placeName} ${preset.shortLabel}` : (presetLabel ?? placeName)

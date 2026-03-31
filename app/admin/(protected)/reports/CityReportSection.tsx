@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
