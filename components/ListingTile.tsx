@@ -84,9 +84,23 @@ function isDirectVideoUrl(uri: string): boolean {
 function getVideoUrls(listing: ListingTileListing): string[] {
   const videos = listing.details?.Videos
   if (!Array.isArray(videos)) return []
-  return videos
+
+  // First: try direct video URLs (.mp4, .webm, .mov) — these can auto-play on hover
+  const direct = videos
     .map((v) => (v?.Uri ?? '').trim())
     .filter((uri) => uri.length > 0 && isDirectVideoUrl(uri))
+  if (direct.length > 0) return direct
+
+  // Fallback: use ObjectHtml URLs (embed links like VisitHome.ai, YouTube, etc.)
+  // These can't auto-play on hover but indicate video content exists
+  return videos
+    .map((v) => (v?.ObjectHtml ?? v?.Uri ?? '').trim())
+    .filter((uri) => uri.length > 0)
+}
+
+/** Check if a URL is an embeddable video tour (not a direct .mp4) */
+function isEmbedVideoUrl(url: string): boolean {
+  return !isDirectVideoUrl(url) && url.length > 0
 }
 
 function hasVirtualTour(listing: ListingTileListing): boolean {
@@ -265,21 +279,58 @@ function ListingTile({
       onClick={handleTileClick}
       className="group flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10 transition hover:shadow-lg hover:-translate-y-1"
     >
-      {/* Photo / video area — overflow-hidden + rounded-t-xl so image fills to top with no gap */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl bg-muted">
-        {showVideoFirst ? (
-          <VideoSlider urls={videoUrls} address={address} previewSeconds={TILE_VIDEO_PREVIEW_SECONDS} />
-        ) : primaryPhoto ? (
+      {/* Photo / video area — photo first, video on hover for engagement */}
+      <div
+        className="relative aspect-[4/3] overflow-hidden rounded-t-xl bg-muted"
+        onMouseEnter={(e) => {
+          if (hasVideo) {
+            const video = e.currentTarget.querySelector('video')
+            if (video) { video.currentTime = 0; video.play().catch(() => {}) }
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (hasVideo) {
+            const video = e.currentTarget.querySelector('video')
+            if (video) { video.pause() }
+          }
+        }}
+      >
+        {/* Photo is always the base layer */}
+        {primaryPhoto ? (
           <Image
             src={primaryPhoto}
             alt={address || 'Property photo'}
             fill
-            className="object-cover object-top transition group-hover:scale-[1.02]"
+            className={cn(
+              'object-cover object-top transition duration-300',
+              hasVideo ? 'group-hover:opacity-0' : 'group-hover:scale-[1.02]'
+            )}
             sizes="(max-width: 640px) 85vw, 320px"
             priority={priority}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">No photo</div>
+        )}
+
+        {/* Video crossfades on top on hover — only for direct .mp4 files */}
+        {hasVideo && isDirectVideoUrl(videoUrls[0]) && (
+          <video
+            src={videoUrls[0]}
+            className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            muted
+            playsInline
+            loop
+            preload="none"
+            aria-hidden
+          />
+        )}
+
+        {/* Video tour badge — for embed URLs (VisitHome, YouTube, Google Drive) */}
+        {hasVideo && !isDirectVideoUrl(videoUrls[0]) && (
+          <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-md bg-foreground/70 px-2 py-1 text-xs font-medium text-background">
+            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Video Tour
+          </div>
         )}
 
         {/* Compare toggle: top-right */}

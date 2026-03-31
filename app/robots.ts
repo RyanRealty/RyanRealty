@@ -13,7 +13,9 @@ import type { MetadataRoute } from 'next'
  * - Apple Intelligence / Siri
  */
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://ryanrealty.vercel.app'
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://ryanrealty.vercel.app'
+  // Always use https for production sitemap reference
+  const baseUrl = envUrl.replace(/^http:\/\/localhost.*/, 'https://ryanrealty.vercel.app').replace(/^http:\/\//, 'https://')
   return {
     rules: [
       {

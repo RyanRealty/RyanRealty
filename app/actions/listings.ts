@@ -82,7 +82,7 @@ export type ListingTileRow = {
 
 /** Details from Spark/Supabase: Videos = playable/embed only; VirtualTours = 3D/tour links (not played in hero). */
 export type ListingDetailsMedia = {
-  Videos?: Array<{ Uri?: string; Id?: string }> | null
+  Videos?: Array<{ Uri?: string; Id?: string; ObjectHtml?: string; Name?: string; Type?: string }> | null
   VirtualTours?: Array<{ Uri?: string; Id?: string; Name?: string }> | null
 }
 
