@@ -78,6 +78,7 @@ async function fetchPhotoForListing(accessToken: string, listingKey: string): Pr
 type SparkStandardFields = {
   ListingKey?: string
   ListNumber?: string
+  ListingId?: string
   ListPrice?: number | null
   StandardStatus?: string | null
   MlsStatus?: string | null
@@ -121,9 +122,12 @@ function mapSparkToRow(fields: SparkStandardFields) {
   const status = (fields.StandardStatus ?? fields.MlsStatus ?? '').toString()
   const isClosed = /closed/i.test(status)
 
+  // Spark replication API uses ListingId as the MLS number (maps to ListNumber in our DB)
+  const listNumber = fields.ListNumber ?? fields.ListingId ?? null
+
   return {
     ListingKey: fields.ListingKey ?? null,
-    ListNumber: fields.ListNumber ?? null,
+    ListNumber: listNumber,
     ListPrice: fields.ListPrice ?? null,
     StandardStatus: fields.StandardStatus ?? null,
     StreetNumber: fields.StreetNumber ?? null,
@@ -207,7 +211,7 @@ export async function GET(request: Request) {
 
       // Get existing listings to detect changes
       const listNumbers = results
-        .map(r => r.StandardFields?.ListNumber)
+        .map(r => r.StandardFields?.ListNumber ?? r.StandardFields?.ListingId)
         .filter((n): n is string => !!n)
 
       const { data: existingRows } = await supabase
@@ -226,9 +230,10 @@ export async function GET(request: Request) {
 
       for (const result of results) {
         const f = result.StandardFields
-        if (!f?.ListNumber) continue
+        const listNumber = f?.ListNumber ?? f?.ListingId
+        if (!listNumber) continue
 
-        const existing = existingByNum.get(f.ListNumber)
+        const existing = existingByNum.get(listNumber)
 
         // Skip finalized listings — they're done forever
         if (existing?.is_finalized) continue
