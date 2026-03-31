@@ -1,3 +1,9 @@
+---
+description: SEO URL guardrails for routes, metadata, sitemap, and structured data
+globs: ["app/**/page.tsx", "app/**/layout.tsx", "app/sitemap.ts", "app/**/route.ts", "lib/slug.ts"]
+alwaysApply: false
+---
+
 # SEO URL Guardrails (Canonical Navigation)
 
 When editing routes, links, metadata, sitemap, or structured data, follow these rules.

@@ -1,7 +1,7 @@
 ---
 description: Supabase data layer rules — querying, migrations, and the reporting cache
 globs: ["app/actions/**/*.ts", "supabase/migrations/**/*.sql", "lib/**/*.ts"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Supabase Data Layer Rules

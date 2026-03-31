@@ -1,7 +1,7 @@
 ---
 description: Sliders and carousels must use arrow navigation only; no visible scrollbars.
 globs: ["**/*.tsx", "components/**/*", "app/**/*"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Sliders: Arrows only, no scrollbars
