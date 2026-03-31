@@ -46,9 +46,9 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
       setShow(true)
       return
     }
-    if (!isHome) return
     if (wasDismissed()) return
-    const t = setTimeout(() => setShow(true), 800)
+    // Only show after user has browsed for 30s (don't block first impression)
+    const t = setTimeout(() => setShow(true), 30_000)
     return () => clearTimeout(t)
   }, [user, hasNextParam, isHome])
 

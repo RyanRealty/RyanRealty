@@ -28,12 +28,24 @@ export const metadata: Metadata = {
 }
 
 export default async function HousingMarketHubPage() {
+  // Central Oregon cities only — the core market area
+  const CENTRAL_OREGON_CITIES = new Set([
+    'Bend', 'Redmond', 'Sisters', 'Sunriver', 'La Pine', 'Madras',
+    'Prineville', 'Terrebonne', 'Tumalo', 'Crooked River Ranch',
+    'Powell Butte', 'Eagle Crest', 'Black Butte Ranch',
+  ])
   const browseCities = await getBrowseCities()
-  const topCities = browseCities
-    .filter((c) => c.count > 0)
+  const centralOregonCities = browseCities
+    .filter((c) => c.count > 0 && CENTRAL_OREGON_CITIES.has(c.City))
     .sort((a, b) => b.count - a.count)
     .map((c) => c.City)
-    .slice(0, 12)
+  // Show Central Oregon cities first, then other cities with listings
+  const otherCities = browseCities
+    .filter((c) => c.count > 0 && !CENTRAL_OREGON_CITIES.has(c.City))
+    .sort((a, b) => b.count - a.count)
+    .map((c) => c.City)
+    .slice(0, Math.max(0, 12 - centralOregonCities.length))
+  const topCities = [...centralOregonCities, ...otherCities].slice(0, 12)
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
