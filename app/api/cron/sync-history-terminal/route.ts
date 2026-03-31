@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { syncListingHistory } from '@/app/actions/sync-spark'
 const RUN_STALE_MS = 2 * 60 * 1000
+const TERMINAL_CURSOR_ID = 'terminal-history'
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
     const { data: existingCursor } = await supabase
       .from('sync_cursor')
       .select('run_started_at, run_listings_upserted, run_history_rows, updated_at')
-      .eq('id', 'default')
+      .eq('id', TERMINAL_CURSOR_ID)
       .maybeSingle()
     const existing = existingCursor as {
       run_started_at?: string | null
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
     const shouldStartFreshRun = !existing?.run_started_at || !hasRecentRun
     await supabase.from('sync_cursor').upsert(
       {
-        id: 'default',
+        id: TERMINAL_CURSOR_ID,
         phase: 'history',
         run_started_at: shouldStartFreshRun ? runStartedAt : (existing?.run_started_at ?? runStartedAt),
         run_listings_upserted: shouldStartFreshRun ? 0 : (existing?.run_listings_upserted ?? 0),
@@ -99,7 +100,7 @@ export async function GET(request: Request) {
     const { data: latestCursor } = await supabase
       .from('sync_cursor')
       .select('run_started_at, run_listings_upserted, run_history_rows')
-      .eq('id', 'default')
+      .eq('id', TERMINAL_CURSOR_ID)
       .maybeSingle()
     const latest = latestCursor as {
       run_started_at?: string | null
@@ -115,7 +116,7 @@ export async function GET(request: Request) {
         run_history_rows: (latest?.run_history_rows ?? 0) + (result.historyRowsUpserted ?? 0),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', 'default')
+      .eq('id', TERMINAL_CURSOR_ID)
   }
   return NextResponse.json(result)
 }
