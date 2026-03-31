@@ -1482,15 +1482,24 @@ export async function getCityMarketStats(options: {
     .gte('CloseDate', twelveMonthsIso)
   const closedLast12Months = closedCount ?? 0
 
-  let qPrices = supabase.from('listings').select('ListPrice, ModificationTimestamp, days_on_market')
+  let qPrices = supabase.from('listings').select('ListPrice, ModificationTimestamp, OnMarketDate')
   qPrices = applyCitySub(qPrices)
   const { data: activeRows } = await qPrices.or(ACTIVE_STATUS_OR).limit(15000)
-  const rows = (activeRows ?? []) as { ListPrice?: number | null; ModificationTimestamp?: string | null; days_on_market?: number | null }[]
+  const rows = (activeRows ?? []) as { ListPrice?: number | null; ModificationTimestamp?: string | null; OnMarketDate?: string | null }[]
   const prices = rows.map((r) => Number(r.ListPrice)).filter((p) => Number.isFinite(p) && p > 0)
   const newListingsLast30Days = rows.filter(
     (r) => r.ModificationTimestamp && String(r.ModificationTimestamp) >= thirtyDaysIso
   ).length
-  const domValues = rows.map((r) => Number(r.days_on_market)).filter((d) => Number.isFinite(d) && d > 0)
+  // Compute days on market from OnMarketDate (days_on_market column doesn't exist in this schema)
+  const nowMs = Date.now()
+  const domValues = rows
+    .map((r) => {
+      if (!r.OnMarketDate) return null
+      const d = new Date(r.OnMarketDate)
+      if (Number.isNaN(d.getTime())) return null
+      return Math.max(0, Math.floor((nowMs - d.getTime()) / (24 * 60 * 60 * 1000)))
+    })
+    .filter((d): d is number => d != null && d > 0)
   const avgDom = domValues.length > 0 ? Math.round(domValues.reduce((a, b) => a + b, 0) / domValues.length) : null
 
   let avgPrice: number | null = null
