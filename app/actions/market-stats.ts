@@ -117,6 +117,93 @@ export async function getMarketStatsForCity(
   }
 }
 
+/**
+ * Populate market_pulse_live for a single city. Called from admin or cron.
+ * Uses simple, fast queries instead of the heavy RPC that times out.
+ */
+export async function populateMarketPulseForCity(cityName: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const supabase = createServiceClient()
+    const geoSlug = slugify(cityName)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+    // Active count + avg/median price
+    const { data: activeData } = await supabase
+      .from('listings')
+      .select('ListPrice')
+      .ilike('City', cityName)
+      .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
+      .not('ListPrice', 'is', null)
+      .limit(10000)
+    const prices = (activeData ?? []).map((r: { ListPrice?: number | null }) => Number(r.ListPrice)).filter((p) => Number.isFinite(p) && p > 0).sort((a, b) => a - b)
+    const activeCount = prices.length
+    const avgListPrice = prices.length > 0 ? Math.round(prices.reduce((s, p) => s + p, 0) / prices.length) : null
+    const medianListPrice = prices.length > 0 ? prices[Math.floor(prices.length / 2)]! : null
+
+    // Pending count
+    const { count: pendingCount } = await supabase
+      .from('listings')
+      .select('ListingKey', { count: 'exact', head: true })
+      .ilike('City', cityName)
+      .or('StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%Contingent%')
+
+    // New in last 7 days
+    const { count: new7d } = await supabase
+      .from('listings')
+      .select('ListingKey', { count: 'exact', head: true })
+      .ilike('City', cityName)
+      .or('StandardStatus.is.null,StandardStatus.ilike.%Active%')
+      .gte('OnMarketDate', sevenDaysAgo.toISOString().slice(0, 10))
+
+    // New in last 30 days
+    const { count: new30d } = await supabase
+      .from('listings')
+      .select('ListingKey', { count: 'exact', head: true })
+      .ilike('City', cityName)
+      .or('StandardStatus.is.null,StandardStatus.ilike.%Active%')
+      .gte('OnMarketDate', thirtyDaysAgo.toISOString().slice(0, 10))
+
+    // Upsert into market_pulse_live
+    const { error } = await supabase
+      .from('market_pulse_live')
+      .upsert({
+        geo_type: 'city',
+        geo_slug: geoSlug,
+        geo_label: cityName,
+        active_count: activeCount,
+        pending_count: pendingCount ?? 0,
+        new_count_7d: new7d ?? 0,
+        new_count_30d: new30d ?? 0,
+        median_list_price: medianListPrice,
+        avg_list_price: avgListPrice,
+        market_health_score: null,
+        market_health_label: null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'geo_type,geo_slug' })
+
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
+/**
+ * Populate market_pulse_live for all Central Oregon cities.
+ */
+export async function populateAllMarketPulse(): Promise<{ results: Array<{ city: string; ok: boolean; error?: string }> }> {
+  const cities = ['Bend', 'Redmond', 'Sisters', 'Sunriver', 'La Pine', 'Madras', 'Prineville', 'Terrebonne', 'Tumalo', 'Crooked River Ranch', 'Powell Butte']
+  const results = []
+  for (const city of cities) {
+    const result = await populateMarketPulseForCity(city)
+    results.push({ city, ...result })
+  }
+  return { results }
+}
+
 /** Lightweight fallback — just count active listings, no complex aggregations */
 async function getQuickCityCount(cityName: string): Promise<CityMarketStats> {
   try {
