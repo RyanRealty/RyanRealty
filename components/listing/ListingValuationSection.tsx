@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { getCachedCMA } from '@/lib/cma'
+import { getCachedCMA, computeCMA } from '@/lib/cma'
 import ListingValuation from './ListingValuation'
 
 function getServiceSupabase() {
@@ -12,40 +12,56 @@ function getServiceSupabase() {
 type Props = {
   listingKey: string
   signedIn: boolean
-  /** If provided, skip fetch (from parent). */
   propertyId?: string | null
-  /** If provided, skip fetch (from parent). */
-  vowAvmDisplayYn?: boolean | null
 }
 
-/** Fetches valuation and listing (vow flag). Renders ListingValuation only when valuation exists and vow_avm_display_yn is true. */
+/**
+ * Fetches valuation for a listing. Looks up the property by matching address,
+ * then checks for cached CMA or computes one.
+ */
 export default async function ListingValuationSection({
   listingKey,
   signedIn,
   propertyId: propIdFromParent,
-  vowAvmDisplayYn: vowFromParent,
 }: Props) {
   const supabase = getServiceSupabase()
   if (!supabase) return null
 
-  let propertyId = propIdFromParent
-  let vowAvmDisplayYn = vowFromParent
-  if (propertyId == null || vowAvmDisplayYn == null) {
+  let propertyId = propIdFromParent ?? null
+
+  if (!propertyId) {
     const { data: listing } = await supabase
       .from('listings')
-      .select('property_id, vow_avm_display_yn')
-      .eq('listing_key', listingKey)
-      .order('modification_timestamp', { ascending: false })
+      .select('StreetNumber, StreetName, City, PostalCode')
+      .eq('ListingKey', listingKey)
       .limit(1)
       .maybeSingle()
-    const row = listing as { property_id?: string; vow_avm_display_yn?: boolean } | null
-    if (propertyId == null) propertyId = row?.property_id ?? null
-    if (vowAvmDisplayYn == null) vowAvmDisplayYn = row?.vow_avm_display_yn ?? false
+
+    if (!listing) return null
+    const row = listing as { StreetNumber?: string; StreetName?: string; City?: string; PostalCode?: string }
+    if (!row.City) return null
+
+    let query = supabase
+      .from('properties')
+      .select('id')
+      .ilike('city', row.City)
+    if (row.StreetNumber) query = query.eq('street_number', row.StreetNumber)
+    if (row.PostalCode) query = query.eq('postal_code', row.PostalCode)
+    const { data: props } = await query.limit(1)
+    propertyId = (props as { id: string }[] | null)?.[0]?.id ?? null
   }
 
-  if (!propertyId || !vowAvmDisplayYn) return null
-  const cma = await getCachedCMA(propertyId)
-  if (!cma) return null
+  if (!propertyId) return null
+
+  let cma = await getCachedCMA(propertyId)
+  if (!cma) {
+    try {
+      cma = await computeCMA(propertyId)
+    } catch {
+      return null
+    }
+  }
+  if (!cma || cma.comps.length === 0) return null
 
   return (
     <ListingValuation

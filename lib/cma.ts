@@ -102,89 +102,156 @@ function parseCompRow(r: Record<string, unknown>): CMACompRow {
   }
 }
 
-/** Fetch subject property and its active listing (for stats and VOW flag). */
+/** Fetch subject property and its active listing using actual RESO column names. */
 async function getSubject(
   supabase: SupabaseClient,
   propertyId: string
 ): Promise<CMASubject | null> {
   const { data: prop, error: propErr } = await supabase
     .from('properties')
-    .select('id, unparsed_address, community_id')
+    .select('id, unparsed_address, community_id, street_number, street_name, city, postal_code')
     .eq('id', propertyId)
     .single()
   if (propErr || !prop) return null
 
-  const { data: listing } = await supabase
-    .from('listings')
-    .select(
-      'listing_key, beds_total, baths_full, living_area, lot_size_acres, year_built, garage_spaces, pool_features, property_type, vow_avm_display_yn'
-    )
-    .eq('property_id', propertyId)
-    .or('standard_status.ilike.%Active%,standard_status.ilike.%Pending%,standard_status.ilike.%For Sale%')
-    .order('modification_timestamp', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  const p = prop as { id: string; unparsed_address: string; community_id?: string; street_number?: string; city?: string; postal_code?: string }
 
-  const subListing = listing as Record<string, unknown> | null
-  const poolFeatures = subListing?.pool_features as string | null | undefined
+  // Find the matching listing by address (no property_id FK in listings table)
+  let listing: Record<string, unknown> | null = null
+  if (p.city) {
+    let query = supabase
+      .from('listings')
+      .select('ListingKey, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, StandardStatus')
+      .ilike('City', p.city)
+    if (p.street_number) query = query.eq('StreetNumber', p.street_number)
+    if (p.postal_code) query = query.eq('PostalCode', p.postal_code)
+    const { data: matches } = await query
+      .or('StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%For Sale%')
+      .order('ModificationTimestamp', { ascending: false })
+      .limit(1)
+    listing = (matches as Record<string, unknown>[] | null)?.[0] ?? null
+  }
+
   return {
-    propertyId: (prop as { id: string }).id,
-    address: (prop as { unparsed_address: string }).unparsed_address ?? '',
-    beds: num(subListing?.beds_total) ?? null,
-    baths: num(subListing?.baths_full) ?? null,
-    sqft: num(subListing?.living_area) ?? null,
-    lotAcres: num(subListing?.lot_size_acres) ?? null,
-    yearBuilt: num(subListing?.year_built) ?? null,
-    garageSpaces: num(subListing?.garage_spaces) ?? null,
-    poolYn: Boolean(poolFeatures && String(poolFeatures).trim() !== ''),
-    propertyType: subListing?.property_type != null ? String(subListing.property_type) : null,
-    communityId: (prop as { community_id?: string }).community_id ?? null,
-    listingKey: subListing?.listing_key != null ? String(subListing.listing_key) : null,
-    vowAvmDisplayYn: Boolean(subListing?.vow_avm_display_yn),
+    propertyId: p.id,
+    address: p.unparsed_address ?? '',
+    beds: num(listing?.BedroomsTotal) ?? null,
+    baths: num(listing?.BathroomsTotal) ?? null,
+    sqft: num(listing?.TotalLivingAreaSqFt) ?? null,
+    lotAcres: null,
+    yearBuilt: null,
+    garageSpaces: null,
+    poolYn: false,
+    propertyType: listing?.PropertyType != null ? String(listing.PropertyType) : null,
+    communityId: p.community_id ?? null,
+    listingKey: listing?.ListingKey != null ? String(listing.ListingKey) : null,
+    vowAvmDisplayYn: true, // Always show CMA when available
   }
 }
 
-/** Fetch comp candidates: radius first, then community fallback. */
+/**
+ * Direct query fallback for finding comps — queries listings table
+ * directly using RESO column names when the PostGIS RPC is unavailable.
+ */
+async function getCompsDirectQuery(
+  supabase: SupabaseClient,
+  city: string,
+  subdivision: string | null,
+  monthsBack: number,
+  maxCount: number
+): Promise<CMACompRow[]> {
+  const cutoff = new Date()
+  cutoff.setMonth(cutoff.getMonth() - monthsBack)
+  const cutoffStr = cutoff.toISOString().slice(0, 10)
+
+  let query = supabase
+    .from('listings')
+    .select('ListingKey, ListNumber, StreetNumber, StreetName, City, ClosePrice, CloseDate, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, SubdivisionName')
+    .not('ClosePrice', 'is', null)
+    .gt('ClosePrice', 0)
+    .not('CloseDate', 'is', null)
+    .gte('CloseDate', cutoffStr)
+    .ilike('City', city)
+
+  if (subdivision) {
+    query = query.ilike('SubdivisionName', subdivision)
+  }
+
+  const { data } = await query
+    .order('CloseDate', { ascending: false })
+    .limit(maxCount)
+
+  if (!data?.length) return []
+
+  return (data as Record<string, unknown>[]).map((r) => ({
+    listing_key: String(r.ListingKey ?? ''),
+    listing_id: r.ListNumber != null ? String(r.ListNumber) : null,
+    address: [r.StreetNumber, r.StreetName].filter(Boolean).join(' ') + (r.City ? `, ${r.City}` : ''),
+    close_price: num(r.ClosePrice),
+    close_date: r.CloseDate != null ? String(r.CloseDate).slice(0, 10) : null,
+    beds_total: num(r.BedroomsTotal) != null ? Math.round(Number(r.BedroomsTotal)) : null,
+    baths_full: num(r.BathroomsTotal),
+    living_area: num(r.TotalLivingAreaSqFt),
+    lot_size_acres: null,
+    year_built: null,
+    garage_spaces: null,
+    pool_yn: false,
+    property_type: r.PropertyType != null ? String(r.PropertyType) : null,
+    distance_miles: 0,
+  }))
+}
+
+/** Fetch comp candidates: try RPC first, fall back to direct query. */
 async function getCompCandidates(
   supabase: SupabaseClient,
   propertyId: string,
-  communityId: string | null
+  communityId: string | null,
+  subject: CMASubject
 ): Promise<CMACompRow[]> {
-  const rows = await supabase.rpc('get_cma_comps', {
-    p_subject_property_id: propertyId,
-    p_radius_miles: 1,
-    p_months_back: 6,
-    p_max_count: 10,
-  }).then((r) => (r.data ?? []).map((row: Record<string, unknown>) => parseCompRow(row)))
-
-  if (rows.length < 3) {
-    const expanded = await supabase.rpc('get_cma_comps', {
+  // Try the PostGIS RPC first (may fail if RPC has schema mismatch)
+  let rows: CMACompRow[] = []
+  try {
+    const rpcResult = await supabase.rpc('get_cma_comps', {
       p_subject_property_id: propertyId,
       p_radius_miles: 2,
       p_months_back: 12,
       p_max_count: 10,
-    }).then((r) => (r.data ?? []).map((row: Record<string, unknown>) => parseCompRow(row)))
-    const seen = new Set(rows.map((c: CMACompRow) => c.listing_key))
-    for (const row of expanded) {
-      if (!seen.has(row.listing_key)) {
-        seen.add(row.listing_key)
-        rows.push(row)
+    })
+    if (!rpcResult.error && rpcResult.data?.length) {
+      rows = (rpcResult.data as Record<string, unknown>[]).map(parseCompRow)
+    }
+  } catch {
+    // RPC unavailable — fall through to direct query
+  }
+
+  // If RPC returned no results, use direct query fallback
+  if (rows.length < 3 && subject.address) {
+    const addressParts = subject.address.split(',').map((s) => s.trim())
+    const city = addressParts[1] || addressParts[0] || ''
+    if (city) {
+      const directComps = await getCompsDirectQuery(supabase, city, null, 12, 15)
+      const seen = new Set(rows.map((c) => c.listing_key))
+      for (const comp of directComps) {
+        if (!seen.has(comp.listing_key)) {
+          seen.add(comp.listing_key)
+          rows.push(comp)
+        }
       }
     }
   }
 
-  if (rows.length < 3 && communityId) {
-    const byCommunity = await supabase.rpc('get_cma_comps_by_community', {
-      p_community_id: communityId,
-      p_exclude_property_id: propertyId,
-      p_months_back: 12,
-      p_max_count: 10,
-    }).then((r) => (r.data ?? []).map((row: Record<string, unknown>) => parseCompRow(row)))
-    const seen = new Set(rows.map((c: CMACompRow) => c.listing_key))
-    for (const row of byCommunity) {
-      if (!seen.has(row.listing_key)) {
-        seen.add(row.listing_key)
-        rows.push(row)
+  // Broader search if still not enough
+  if (rows.length < 3 && subject.address) {
+    const addressParts = subject.address.split(',').map((s) => s.trim())
+    const city = addressParts[1] || ''
+    if (city) {
+      const broader = await getCompsDirectQuery(supabase, city, null, 24, 20)
+      const seen = new Set(rows.map((c) => c.listing_key))
+      for (const comp of broader) {
+        if (!seen.has(comp.listing_key)) {
+          seen.add(comp.listing_key)
+          rows.push(comp)
+        }
       }
     }
   }
@@ -319,7 +386,7 @@ export async function computeCMA(propertyId: string): Promise<CMAResult | null> 
   const subject = await getSubject(supabase, propertyId)
   if (!subject) return null
 
-  const candidates = await getCompCandidates(supabase, propertyId, subject.communityId)
+  const candidates = await getCompCandidates(supabase, propertyId, subject.communityId, subject)
   const compsFiltered = filterComps(subject, candidates)
   if (compsFiltered.length === 0) return null
 

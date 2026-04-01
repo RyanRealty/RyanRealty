@@ -44,44 +44,41 @@ export async function POST(request: Request) {
   }
 
   const supabase = getServiceSupabase()
-  const { data: prop } = await supabase.from('properties').select('unparsed_address').eq('id', propertyId).single()
-  const { data: listing } = await supabase
-    .from('listings')
-    .select('beds_total, baths_full, living_area, lot_size_acres, year_built, listing_key, list_price, standard_status, days_on_market, listing_id')
-    .eq('property_id', propertyId)
-    .order('modification_timestamp', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  const listingKey = (listing as { listing_key?: string } | null)?.listing_key ?? ''
-  const { data: photo } = await supabase
-    .from('listing_photos')
-    .select('photo_url')
-    .eq('listing_key', listingKey)
-    .eq('is_hero', true)
-    .limit(1)
-    .maybeSingle()
-  const { data: agent } = await supabase
-    .from('listing_agents')
-    .select('agent_name, agent_email, agent_phone')
-    .eq('listing_key', listingKey)
-    .in('agent_role', ['list', 'listing'])
-    .limit(1)
-    .maybeSingle()
+  const { data: prop } = await supabase
+    .from('properties')
+    .select('unparsed_address, street_number, city, postal_code')
+    .eq('id', propertyId)
+    .single()
+  const p = prop as { unparsed_address?: string; street_number?: string; city?: string; postal_code?: string } | null
 
-  const listingRow = listing as { beds_total?: number; baths_full?: number; living_area?: number; lot_size_acres?: number; year_built?: number } | null
-  const listingHref = listingDetailPath(listingKey)
+  // Find listing by matching address (RESO columns, no property_id FK)
+  type CmaPdfListingRow = { ListingKey?: string; BedroomsTotal?: number; BathroomsTotal?: number; TotalLivingAreaSqFt?: number; PhotoURL?: string; ListAgentName?: string }
+  let listingRow: CmaPdfListingRow | null = null
+  if (p?.city) {
+    let q = supabase
+      .from('listings')
+      .select('ListingKey, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PhotoURL, ListAgentName')
+      .ilike('City', p.city)
+    if (p.street_number) q = q.eq('StreetNumber', p.street_number)
+    if (p.postal_code) q = q.eq('PostalCode', p.postal_code)
+    const { data: matches } = await q.order('ModificationTimestamp', { ascending: false }).limit(1)
+    listingRow = (matches as CmaPdfListingRow[] | null)?.[0] ?? null
+  }
+
+  const resolvedListingKey = listingRow?.ListingKey ?? ''
+  const listingHref = listingDetailPath(resolvedListingKey)
   const pdfData = {
     cma,
-    address: (prop as { unparsed_address?: string } | null)?.unparsed_address ?? '',
-    beds: listingRow?.beds_total ?? null,
-    baths: listingRow?.baths_full ?? null,
-    sqft: listingRow?.living_area ?? null,
-    lotAcres: listingRow?.lot_size_acres ?? null,
-    yearBuilt: listingRow?.year_built ?? null,
-    heroPhotoUrl: (photo as { photo_url?: string } | null)?.photo_url ?? null,
-    agentName: (agent as { agent_name?: string } | null)?.agent_name ?? null,
-    agentEmail: (agent as { agent_email?: string } | null)?.agent_email ?? null,
-    agentPhone: (agent as { agent_phone?: string } | null)?.agent_phone ?? null,
+    address: p?.unparsed_address ?? '',
+    beds: listingRow?.BedroomsTotal ?? null,
+    baths: listingRow?.BathroomsTotal ?? null,
+    sqft: listingRow?.TotalLivingAreaSqFt ?? null,
+    lotAcres: null,
+    yearBuilt: null,
+    heroPhotoUrl: listingRow?.PhotoURL ?? null,
+    agentName: listingRow?.ListAgentName ?? null,
+    agentEmail: null,
+    agentPhone: null,
   }
 
   const doc = React.createElement(CMAPdfDocument, { data: pdfData })
