@@ -1,9 +1,21 @@
-export default function ListingLoading() {
+import { Skeleton } from '@/components/ui/skeleton'
+
+export default function Loading() {
   return (
-    <div className="mx-auto max-w-7xl animate-pulse px-4 py-8 sm:px-6">
-      <div className="aspect-[4/3] w-full max-w-4xl rounded-lg bg-border" />
-      <div className="mt-6 h-8 w-2/3 rounded bg-border" />
-      <div className="mt-2 h-4 w-1/2 rounded bg-muted" />
+    <div className="min-h-screen bg-background">
+      <Skeleton className="h-[60vh] w-full" />
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        <Skeleton className="h-8 w-48 mb-2" />
+        <Skeleton className="h-12 w-72 mb-4" />
+        <Skeleton className="h-6 w-64 mb-8" />
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-32 w-full rounded-lg" />
+            <Skeleton className="h-48 w-full rounded-lg" />
+          </div>
+          <Skeleton className="h-64 w-full rounded-lg" />
+        </div>
+      </div>
     </div>
   )
 }
