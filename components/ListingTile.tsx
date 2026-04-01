@@ -289,42 +289,70 @@ function ListingTile({
           }
         }}
       >
-        {/* Photo is always the base layer */}
-        {primaryPhoto ? (
-          <Image
-            src={primaryPhoto}
-            alt={address || 'Property photo'}
-            fill
-            className={cn(
-              'object-cover object-top transition duration-300',
-              hasVideo ? 'group-hover:opacity-0' : 'group-hover:scale-[1.02]'
+        {/* VIDEO-FIRST: when listing has direct video, show it as primary with photo fallback */}
+        {hasVideo && isDirectVideoUrl(videoUrls[0]!) ? (
+          <>
+            {/* Photo as fallback/poster while video loads */}
+            {primaryPhoto && (
+              <Image
+                src={primaryPhoto}
+                alt={address || 'Property photo'}
+                fill
+                className="object-cover object-top"
+                sizes="(max-width: 640px) 85vw, 320px"
+                priority={priority}
+              />
             )}
-            sizes="(max-width: 640px) 85vw, 320px"
-            priority={priority}
-          />
+            {/* Video autoplays (muted, short preview) — fades in over photo */}
+            <video
+              src={videoUrls[0]}
+              className="absolute inset-0 h-full w-full object-cover"
+              muted
+              playsInline
+              loop
+              preload="metadata"
+              autoPlay
+              aria-hidden
+              style={{ opacity: 0 }}
+              onCanPlay={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transition = 'opacity 0.5s' }}
+            />
+            {/* Play icon overlay */}
+            <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-md bg-foreground/70 px-2 py-1 text-xs font-medium text-background">
+              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              Video
+            </div>
+          </>
         ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">No photo</div>
-        )}
-
-        {/* Video crossfades on top on hover — only for direct .mp4 files */}
-        {hasVideo && isDirectVideoUrl(videoUrls[0]) && (
-          <video
-            src={videoUrls[0]}
-            className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-            muted
-            playsInline
-            loop
-            preload="none"
-            aria-hidden
-          />
-        )}
-
-        {/* Video tour badge — for embed URLs (VisitHome, YouTube, Google Drive) */}
-        {hasVideo && !isDirectVideoUrl(videoUrls[0]) && (
-          <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-md bg-foreground/70 px-2 py-1 text-xs font-medium text-background">
-            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            Video Tour
-          </div>
+          <>
+            {/* Standard photo tile */}
+            {primaryPhoto ? (
+              <Image
+                src={primaryPhoto}
+                alt={address || 'Property photo'}
+                fill
+                className="object-cover object-top transition duration-300 group-hover:scale-[1.02]"
+                sizes="(max-width: 640px) 85vw, 320px"
+                priority={priority}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground">
+                <Image
+                  src="https://images.unsplash.com/photo-1653930796811-84d446f9e221?w=640&q=60"
+                  alt="Central Oregon"
+                  fill
+                  className="object-cover opacity-50"
+                  sizes="(max-width: 640px) 85vw, 320px"
+                />
+              </div>
+            )}
+            {/* Video tour badge for embed URLs */}
+            {hasVideo && (
+              <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-md bg-foreground/70 px-2 py-1 text-xs font-medium text-background">
+                <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                Video Tour
+              </div>
+            )}
+          </>
         )}
 
         {/* Compare toggle: top-right */}
