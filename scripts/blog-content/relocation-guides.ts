@@ -26,7 +26,7 @@ export const posts: BlogPostSeed[] = [
 <h3>What Bend Gets Right</h3>
 
 <ul>
-<li><strong>Outdoor access is genuinely exceptional.</strong> Mt. Bachelor is 22 minutes from downtown. The Deschutes River Trail starts in the middle of town. Phil's Trail complex offers world-class mountain biking five minutes from most neighborhoods. You can ski in the morning and paddle the river in the afternoon for about five months of the year.</li>
+<li><strong>Outdoor access is genuinely exceptional.</strong> Mt. Bachelor is 22 minutes from downtown. The Deschutes River Trail starts in the middle of town. Phil's Trail complex offers some of the best mountain biking in the Pacific Northwest, five minutes from most neighborhoods. You can ski in the morning and paddle the river in the afternoon for about five months of the year.</li>
 <li><strong>300 days of sunshine per year.</strong> This stat gets thrown around a lot, and it's roughly accurate. Central Oregon sits in a high desert on the east side of the Cascades, so you get dramatically more sun than Portland or Seattle. Even winter days are frequently clear and cold rather than gray and drizzly.</li>
 <li><strong>The food and beer scene punches above its weight.</strong> For a city of about 105,000, Bend has a remarkable density of breweries (around 30), solid restaurants, and a growing coffee roaster community. You won't mistake it for Portland, but you also won't feel like you're in a culinary desert.</li>
 <li><strong>Community feel despite growth.</strong> Bend still operates like a town where people know each other. Neighborhood events, trail running groups, cycling clubs, and volunteer organizations are genuinely active and welcoming.</li>
@@ -282,7 +282,7 @@ export const posts: BlogPostSeed[] = [
 <p>Redmond's outdoor access is different from Bend's but still strong:</p>
 
 <ul>
-<li><strong>Smith Rock State Park:</strong> 15 minutes north. World-class rock climbing, excellent hiking, and one of the most photographed spots in Oregon. You can walk to the base of the Crooked River canyon in under an hour from leaving your driveway.</li>
+<li><strong>Smith Rock State Park:</strong> 15 minutes north. Internationally renowned rock climbing, excellent hiking, and one of the most photographed spots in Oregon. You can walk to the base of the Crooked River canyon in under an hour from leaving your driveway.</li>
 <li><strong>Mt. Bachelor:</strong> About 40 minutes from central Redmond. Farther than from Bend, but close enough for regular skiing.</li>
 <li><strong>Cline Falls and the Deschutes River:</strong> Several river access points are within ten minutes of town for fishing, paddling, and floating.</li>
 <li><strong>Dry Canyon:</strong> A walking and running trail that cuts through the middle of town, offering a quick outdoor break without leaving city limits.</li>
