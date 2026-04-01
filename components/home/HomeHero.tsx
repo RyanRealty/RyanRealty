@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 // No stock photography — fallback is empty; hero renders a navy gradient when no brokerage image is set.
-const DEFAULT_HERO_IMAGE = ''
+const DEFAULT_HERO_IMAGE = '/images/hero-poster.webp'
 
 type MarketSnapshot = {
   count: number
@@ -158,17 +158,30 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
     <section ref={sectionRef} className="relative min-h-[60vh] flex items-center justify-center overflow-hidden w-full" aria-label="Hero">
       <div className="absolute inset-0">
         {useVideo ? (
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            className="h-full w-full object-cover bg-primary"
-            aria-hidden
-          >
-            <source src={heroVideoUrl!} type="video/mp4" />
-          </video>
+          <>
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              poster={backgroundImage || undefined}
+              className="h-full w-full object-cover bg-primary"
+              aria-hidden
+            >
+              <source src={heroVideoUrl!} type="video/mp4" />
+            </video>
+            {backgroundImage && (
+              <Image
+                src={backgroundImage}
+                alt=""
+                fill
+                className="object-cover pointer-events-none"
+                sizes="100vw"
+                priority
+              />
+            )}
+          </>
         ) : backgroundImage ? (
           <Image
             src={backgroundImage}

@@ -36,11 +36,11 @@ function getTeamImageSrc(brokerage: BrokerageSettingsRow | null): string {
   const fromAdmin = brokerage?.team_image_url?.trim() || brokerage?.hero_image_url?.trim()
   if (fromAdmin) return fromAdmin
   try {
-    const p = path.join(process.cwd(), 'public', 'images', 'team.png')
-    const stat = fs.statSync(p)
-    return `/images/team.png?v=${stat.mtimeMs}`
+    const webp = path.join(process.cwd(), 'public', 'images', 'team.webp')
+    const stat = fs.statSync(webp)
+    return `/images/team.webp?v=${stat.mtimeMs}`
   } catch {
-    return '/images/team.png'
+    return '/images/team.webp'
   }
 }
 
