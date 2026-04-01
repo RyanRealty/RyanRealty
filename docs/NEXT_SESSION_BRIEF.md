@@ -154,21 +154,34 @@ These must be configured in `vercel.json` or Vercel dashboard:
 ## PROMPT FOR NEXT SESSION
 
 ```
-I need a thorough launch readiness audit of my real estate website (Ryan Realty). Read docs/NEXT_SESSION_BRIEF.md first — it has the current state and known issues.
+Read docs/NEXT_SESSION_BRIEF.md — it has the full audit from the last session. Then execute.
 
-My priorities:
-1. Fix the 5 issues listed in the "ISSUES TO FIX BEFORE LAUNCH" section
-2. Do a full end-to-end test of every feature — especially:
-   - Submit the home valuation form and verify the lead shows in valuation_requests table
-   - Test save/like/share a listing (logged in)
-   - Test the contact form → verify FUB event
-   - Test CMA PDF download from a listing page
-   - Verify market reports load with data
-3. Verify all tracking fires correctly (GA4, FUB, Meta Pixel)
-4. Create a launch checklist of everything I need to do on my end (DNS, env vars, Supabase auth config, Vercel crons)
-5. Fix any bugs found during testing
+BEHAVIORAL RULES (non-negotiable):
+- ALWAYS push directly to main. Never create feature branches. Never create PRs. Just push to main. Use SKIP_LOCAL_GATES=1 if pre-push hooks block you.
+- NEVER wait or ask permission. Execute immediately. If something needs doing, do it. Don't list options and wait for me to pick — make the expert decision and ship it.
+- NEVER say something is "done" or "complete" without verifying it actually works on production (ryanrealty.vercel.app). Take screenshots. Curl the endpoints. Check the HTTP status codes. If you didn't verify it on production, it's not done.
+- NEVER do the bare minimum. Be thorough. When fixing something, check for the same pattern everywhere, not just the one file you found. When testing, test all the edge cases, not just the happy path.
+- NEVER stop working and summarize "next steps" — just do those steps. Keep going until the work is actually complete.
+- Always run npm run build before committing. Fix any build errors before pushing.
+- Commit frequently with conventional commit messages (feat:, fix:, chore:). Small commits, push immediately after each one.
+- When you encounter a problem, fix it. Don't report it and wait. Fix it, verify the fix on production, then move on.
+- Research best practices when you're unsure. Use web search. Don't guess.
 
-This is my business — thoroughness matters more than speed.
+PRIORITIES:
+1. Fix the 5 issues in "ISSUES TO FIX BEFORE LAUNCH" section of NEXT_SESSION_BRIEF.md
+2. Full end-to-end test of every feature on production:
+   - Home valuation form submission → verify lead in valuation_requests DB table
+   - Save/like/share a listing (requires auth flow test)
+   - Contact form → verify FUB event fires
+   - CMA PDF download from a listing page
+   - Market reports with real data
+   - Open houses
+   - Compare listings
+3. Verify tracking: GA4, FUB events, Meta Pixel — check the code paths, not just "the code exists"
+4. Create a concrete launch checklist for ME (the owner) — DNS steps, env vars to set, Supabase config, Vercel crons, Google OAuth, domain verification
+5. Fix every bug you find along the way — don't skip anything
+
+This is my entire business. Thoroughness over speed. Never cut corners.
 ```
 
 ---
