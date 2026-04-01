@@ -36,6 +36,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url)
   const yearParam = url.searchParams.get('year')
+  const laneParam = url.searchParams.get('lane')
   let targetYear: number | undefined
   if (yearParam) {
     const parsed = Number(yearParam)
@@ -46,8 +47,13 @@ export async function GET(request: Request) {
     targetYear = Math.floor(parsed)
   }
 
+  const cursorId =
+    laneParam === 'current-year'
+      ? 'current-year'
+      : 'default'
+
   const supabase = createClient(supabaseUrl, serviceKey)
-  const result = await runYearSyncChunk({ supabase, token: accessToken, targetYear })
+  const result = await runYearSyncChunk({ supabase, token: accessToken, targetYear, cursorId })
 
   if (!result.ok) {
     return NextResponse.json(

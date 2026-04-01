@@ -26,7 +26,7 @@ function syncYear(year) {
     console.log(`  Starting sync for ${year}`)
     console.log(`${'='.repeat(50)}\n`)
 
-    const child = spawn('node', ['scripts/run-year-sync.mjs', String(year)], {
+    const child = spawn('node', ['scripts/run-year-sync.mjs', String(year), '--lane=historical-backfill'], {
       stdio: 'inherit',
       cwd: process.cwd(),
     })

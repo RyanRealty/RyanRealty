@@ -502,12 +502,12 @@ export async function runYearSyncChunk(options: {
   supabase: any
   token: string
   targetYear?: number
+  cursorId?: string
 }): Promise<RunYearSyncChunkResult> {
   const { supabase, token, targetYear } = options
   const currentYear = new Date().getUTCFullYear()
   const nowIso = new Date().toISOString()
-
-  const cursorId = 'default'
+  const cursorId = options.cursorId?.trim() || 'default'
 
   const { data: cursorRow } = await supabase
     .from('sync_year_cursor')

@@ -5,9 +5,10 @@
  * Requires: dev server running (npm run dev) or pass deployed URL. .env.local with CRON_SECRET.
  *
  * Usage:
- *   npm run sync:year            # sync all years (newest first)
- *   npm run sync:year 2024       # sync only 2024
- *   npm run sync:year 2024 http://localhost:3000  # sync 2024 against a specific URL
+ *   npm run sync:year                           # sync all years (newest first) on default lane
+ *   npm run sync:year 2024                      # sync only 2024 on default lane
+ *   npm run sync:year 2024 http://localhost:3000 # sync 2024 against a specific URL
+ *   SYNC_YEAR_LANE=current-year npm run sync:year 2026 http://localhost:3000
  */
 
 import { readFileSync } from 'fs'
@@ -57,14 +58,14 @@ if (!secret?.trim()) {
   process.exit(1)
 }
 
-const yearParam = targetYear ? `?year=${targetYear}` : ''
-const url = `${baseUrl}/api/cron/sync-year-by-year${yearParam}`
-let run = 0
+const lane = (process.env.SYNC_YEAR_LANE ?? 'default').trim() || 'default'
+const params = new URLSearchParams()
+if (targetYear) params.set('year', String(targetYear))
+if (lane !== 'default') params.set('lane', lane)
+const url = `${baseUrl}/api/cron/sync-year-by-year${params.toString() ? `?${params.toString()}` : ''}`
 let lastYear = null
 let lastPhase = null
 let totalListingsUpserted = 0
-let totalHistoryRows = 0
-let totalFinalized = 0
 
 function statusLine(msg) {
   const ts = new Date().toLocaleTimeString()
@@ -78,7 +79,6 @@ function fmt(n) {
 }
 
 async function oneRun() {
-  run++
   let res
   try {
     res = await fetch(url, {
@@ -141,8 +141,6 @@ async function oneRun() {
     const inserted = data.historyInserted ?? 0
     const finalized = data.listingsFinalized ?? 0
     if (inserted > 0 || finalized > 0) {
-      totalHistoryRows += inserted
-      totalFinalized += finalized
       const proc = data.processedListings ?? 0
       const total = data.totalListings ?? 0
       const pct = total > 0 ? Math.round((proc / total) * 100) : 0
