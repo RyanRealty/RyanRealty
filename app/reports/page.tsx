@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
@@ -13,6 +14,7 @@ import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import ReportsByCityView from '@/components/reports/ReportsByCityView'
 import ReportsIndexContent from './ReportsIndexContent'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
@@ -56,17 +58,53 @@ function parseReportsParams(params: { [key: string]: string | string[] | undefin
   return { cities, rangeDays, periodStart, periodEnd }
 }
 
-export default async function ReportsIndexPage({ searchParams }: PageProps) {
-  const params = await searchParams
-  const { cities: selectedCities, rangeDays, periodStart, periodEnd } = parseReportsParams(params ?? null)
+function ReportsSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-64" />
+      <Skeleton className="h-6 w-48" />
+      <div className="mt-4 space-y-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-12 w-full" />
+        ))}
+      </div>
+    </div>
+  )
+}
 
-  const [reports, salesCardsRaw, session, fubPersonId, reportData, allCitiesRes] = await Promise.all([
-    listMarketReports(30),
-    getSalesReportCardsData(PRIMARY_CITIES),
-    getSession(),
-    getFubPersonIdFromCookie(),
+/** Heavy data section — streamed via Suspense so the hero renders instantly. */
+async function ReportsDataSection({
+  selectedCities,
+  rangeDays,
+  periodStart,
+  periodEnd,
+}: {
+  selectedCities: string[]
+  rangeDays: number
+  periodStart: string
+  periodEnd: string
+}) {
+  const [reportData, allCitiesRes] = await Promise.all([
     getMarketReportData({ periodStart, periodEnd, cities: selectedCities }),
     getReportCities(),
+  ])
+  const allCities = allCitiesRes.cities ?? []
+
+  return (
+    <ReportsByCityView
+      data={reportData}
+      selectedCities={selectedCities}
+      allCities={allCities}
+      rangeDays={rangeDays}
+    />
+  )
+}
+
+/** Sales reports section — also streamed separately. */
+async function SalesReportsSection() {
+  const [reports, salesCardsRaw] = await Promise.all([
+    listMarketReports(30),
+    getSalesReportCardsData(PRIMARY_CITIES),
   ])
   const allListingKeys = salesCardsRaw.flatMap((c) => c.listingKeys)
   const engagementMap = allListingKeys.length > 0 ? await getEngagementCountsBatch(allListingKeys) : {}
@@ -76,7 +114,19 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
     saveCount: card.listingKeys.reduce((s, k) => s + (engagementMap[k]?.save_count ?? 0), 0),
     shareCount: card.listingKeys.reduce((s, k) => s + (engagementMap[k]?.share_count ?? 0), 0),
   }))
-  const allCities = allCitiesRes.cities ?? []
+
+  return <ReportsIndexContent reports={reports} salesCards={salesCards} />
+}
+
+export default async function ReportsIndexPage({ searchParams }: PageProps) {
+  const params = await searchParams
+  const { cities: selectedCities, rangeDays, periodStart, periodEnd } = parseReportsParams(params ?? null)
+
+  // Light queries — don't block the page
+  const [session, fubPersonId] = await Promise.all([
+    getSession(),
+    getFubPersonIdFromCookie(),
+  ])
   const pageUrl = `${siteUrl}/reports`
   const pageTitle = 'Market Reports | Ryan Realty'
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
@@ -102,16 +152,20 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
             Housing Market Report
           </h2>
         </div>
-        <ReportsByCityView
-          data={reportData}
-          selectedCities={selectedCities}
-          allCities={allCities}
-          rangeDays={rangeDays}
-        />
+        <Suspense fallback={<ReportsSkeleton />}>
+          <ReportsDataSection
+            selectedCities={selectedCities}
+            rangeDays={rangeDays}
+            periodStart={periodStart}
+            periodEnd={periodEnd}
+          />
+        </Suspense>
       </section>
 
       <section className="mx-auto max-w-6xl border-t border-border px-4 py-10 sm:px-6 sm:py-12">
-        <ReportsIndexContent reports={reports} salesCards={salesCards} />
+        <Suspense fallback={<ReportsSkeleton />}>
+          <SalesReportsSection />
+        </Suspense>
       </section>
     </main>
   )
