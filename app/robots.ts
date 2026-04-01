@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 
 /**
  * Dynamic robots.txt for SEO and AI/LLM discoverability.
@@ -13,9 +14,7 @@ import type { MetadataRoute } from 'next'
  * - Apple Intelligence / Siri
  */
 export default function robots(): MetadataRoute.Robots {
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://ryanrealty.vercel.app'
-  // Always use https for production sitemap reference
-  const baseUrl = envUrl.replace(/^http:\/\/localhost.*/, 'https://ryanrealty.vercel.app').replace(/^http:\/\//, 'https://')
+  const baseUrl = getCanonicalSiteUrl()
   return {
     rules: [
       {

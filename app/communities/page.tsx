@@ -13,6 +13,7 @@ import CommunitiesFilter from '@/components/community/CommunitiesFilter'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 60
 
 export const metadata: Metadata = {
