@@ -159,28 +159,33 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
       <div className="absolute inset-0">
         {useVideo ? (
           <>
+            {/* Image loads instantly (priority) for fast LCP, video fades in on top after loading */}
+            {backgroundImage && (
+              <Image
+                src={backgroundImage}
+                alt="Central Oregon landscape"
+                fill
+                className="object-cover"
+                sizes="100vw"
+                priority
+              />
+            )}
             <video
               autoPlay
               muted
               loop
               playsInline
-              preload="auto"
-              poster={backgroundImage || undefined}
-              className="h-full w-full object-cover bg-primary"
+              preload="none"
+              className="absolute inset-0 h-full w-full object-cover bg-transparent"
               aria-hidden
+              onCanPlay={(e) => {
+                const el = e.currentTarget
+                el.style.opacity = '1'
+              }}
+              style={{ opacity: 0, transition: 'opacity 0.5s ease-in' }}
             >
               <source src={heroVideoUrl!} type="video/mp4" />
             </video>
-            {backgroundImage && (
-              <Image
-                src={backgroundImage}
-                alt=""
-                fill
-                className="object-cover pointer-events-none"
-                sizes="100vw"
-                priority
-              />
-            )}
           </>
         ) : backgroundImage ? (
           <Image
