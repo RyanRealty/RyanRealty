@@ -106,6 +106,7 @@ export default function ListingMap({ latitude, longitude, price, address }: Prop
       <div
         ref={containerRef}
         className="rounded-lg overflow-hidden bg-border aspect-video min-h-[200px]"
+        role="region"
         aria-label="Property map"
       />
       {/* What's Nearby section hidden until data is available */}
