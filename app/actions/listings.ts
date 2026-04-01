@@ -285,7 +285,18 @@ export async function getCityFromSlug(slug: string | undefined): Promise<string 
       .replace(/[^a-z0-9-]/g, '')
   const key = slugify(decoded)
   const match = cities.find((c) => slugify(c.City) === key || c.City === decoded)
-  return match ? match.City : null
+  if (match) return match.City
+
+  // Fallback: direct DB lookup when getBrowseCities cache doesn't have this city
+  const supabase = getAnonSupabase()
+  if (!supabase) return null
+  const { data } = await supabase
+    .from('listings')
+    .select('City')
+    .ilike('City', decoded.replace(/-/g, ' '))
+    .limit(1)
+  const directCity = (data as Array<{ City?: string }>)?.[0]?.City?.trim()
+  return directCity || null
 }
 
 export type SearchSuggestionAddress = { label: string; href: string }
