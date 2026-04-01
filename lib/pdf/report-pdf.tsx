@@ -7,9 +7,6 @@
 import React from 'react'
 import { Document, Page, View, Text, Image, StyleSheet, Font } from '@react-pdf/renderer'
 
-const siteUrlRaw = typeof process !== 'undefined' ? process.env?.NEXT_PUBLIC_SITE_URL : undefined
-const baseUrl = (typeof siteUrlRaw === 'string' ? siteUrlRaw.replace(/\/$/, '') : '') || 'https://ryan-realty.com'
-
 // Use Inter from CDN as a fallback since custom fonts (Amboqia, AzoSans) are not bundled.
 Font.register({
   family: 'Amboqia',

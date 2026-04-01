@@ -21,6 +21,7 @@ import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../.
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/share-metadata'
 import { getBestListingHeroForGeography } from '../../actions/photo-classification'
 import { getHeroVideoUrl, refreshHeroMedia } from '../../actions/hero-videos'
+import { getCommunityProfile } from '@/lib/community-profiles'
 import SaveSearchButton from '../../../components/SaveSearchButton'
 import { getGeocodedListings } from '../../actions/geocode'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
@@ -732,7 +733,6 @@ export default async function SearchPage({
 
       {/* About this community — show rich profile if available, else subdivision blurb */}
       {subdivision && (() => {
-        const { getCommunityProfile } = require('@/lib/community-profiles') as typeof import('@/lib/community-profiles')
         const profile = decodedSubdivision ? getCommunityProfile(decodedSubdivision) : null
         const aboutText = profile?.description ?? subdivisionBlurb ?? subdivisionTabContent?.about
         if (!aboutText) return null
