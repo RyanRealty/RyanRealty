@@ -4,7 +4,7 @@
 
 **Sources**: PRODUCT_SPEC_V2.md, master-plan.md, FEATURES.md, CODEBASE_AUDIT_REPORT.md, PERFORMANCE_AUDIT.md
 
-**Last audited**: _not yet_
+**Last audited**: April 1, 2026
 
 ---
 
@@ -21,12 +21,12 @@
 
 ## 1. Build & Infrastructure Health
 
-- [ ] `npm run build` passes with zero errors
-- [ ] `npm run test` — all tests pass
-- [ ] `npm run lint` — zero errors (warnings acceptable if non-blocking)
-- [ ] `npm run lint:design-tokens` — no violations
-- [ ] `npm run lint:seo-routes` — no violations
-- [ ] TypeScript strict mode: `npx tsc --noEmit` passes clean
+- [x] `npm run build` passes with zero errors
+- [x] `npm run test` — all 251 tests pass
+- [x] `npm run lint` — zero errors (67 warnings in scripts only)
+- [x] `npm run lint:design-tokens` — no violations
+- [x] `npm run lint:seo-routes` — no violations
+- [x] TypeScript strict mode: `npx tsc --noEmit` passes clean
 - [ ] No circular dependencies in imports
 - [ ] All env vars set and working (run `npx tsx scripts/verify-env.ts`)
 
