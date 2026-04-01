@@ -97,6 +97,8 @@ export default async function RootLayout({
       <head>
         <GTMHead />
         <link rel="manifest" href="/manifest.json" />
+        {/* Preload hero poster for instant LCP — browser starts fetching before HTML stream delivers the <img> */}
+        <link rel="preload" as="image" href="/images/hero-poster.webp" fetchPriority="high" />
       </head>
       <body className="min-h-screen overflow-x-hidden antialiased">
         <ComparisonProvider>
