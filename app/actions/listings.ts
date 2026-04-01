@@ -290,13 +290,21 @@ export async function getCityFromSlug(slug: string | undefined): Promise<string 
   // Fallback: direct DB lookup when getBrowseCities cache doesn't have this city
   const supabase = getAnonSupabase()
   if (!supabase) return null
+  // Try case-insensitive exact match (no wildcards — fast with index)
+  const cityGuess = decoded.replace(/-/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
   const { data } = await supabase
     .from('listings')
     .select('City')
-    .ilike('City', decoded.replace(/-/g, ' '))
+    .eq('City', cityGuess)
     .limit(1)
-  const directCity = (data as Array<{ City?: string }>)?.[0]?.City?.trim()
-  return directCity || null
+  if (data && data.length > 0) return (data as Array<{ City?: string }>)[0]?.City?.trim() || null
+  // Try ilike without wildcards (case-insensitive exact)
+  const { data: d2 } = await supabase
+    .from('listings')
+    .select('City')
+    .ilike('City', cityGuess)
+    .limit(1)
+  return (d2 as Array<{ City?: string }>)?.[0]?.City?.trim() || null
 }
 
 export type SearchSuggestionAddress = { label: string; href: string }
