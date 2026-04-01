@@ -58,6 +58,9 @@ export async function getBannerUrl(
   const path = (data as { storage_path?: string } | null)?.storage_path
   if (!path) return null
 
+  // External URLs (Unsplash, etc.) stored directly — return as-is
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+
   return `${url}/storage/v1/object/public/${BUCKET}/${path}`
 }
 
