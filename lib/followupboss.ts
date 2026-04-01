@@ -40,15 +40,20 @@ export type FubPerson = {
 export async function findPersonByEmail(email: string): Promise<FubPerson | null> {
   const auth = getAuth()
   if (!auth) return null
-  const q = new URLSearchParams({ email: email.trim(), limit: '1', fields: 'id,firstName,lastName,name,emails' })
-  const res = await fetch(`${FUB_BASE}/people?${q}`, {
-    headers: fubHeaders(auth),
-    next: { revalidate: 0 },
-  })
-  if (!res.ok) return null
-  const data = (await res.json()) as { people?: FubPerson[] }
-  const people = data.people
-  return Array.isArray(people) && people.length > 0 ? people[0] : null
+  try {
+    const q = new URLSearchParams({ email: email.trim(), limit: '1', fields: 'id,firstName,lastName,name,emails' })
+    const res = await fetch(`${FUB_BASE}/people?${q}`, {
+      headers: fubHeaders(auth),
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { people?: FubPerson[] }
+    const people = data.people
+    return Array.isArray(people) && people.length > 0 ? people[0] : null
+  } catch (err) {
+    console.error('[findPersonByEmail] Network error:', err)
+    return null
+  }
 }
 
 export type FubEventPerson = {
@@ -135,19 +140,24 @@ function isBrokerAssignmentGuardrailEnabled(): boolean {
 async function findUserByEmail(email: string): Promise<FubUser | null> {
   const auth = getAuth()
   if (!auth) return null
-  const q = new URLSearchParams({
-    email: email.trim(),
-    limit: '1',
-    fields: 'id,email,name',
-  })
-  const res = await fetch(`${FUB_BASE}/users?${q}`, {
-    headers: fubHeaders(auth),
-    next: { revalidate: 0 },
-  })
-  if (!res.ok) return null
-  const data = (await res.json()) as { users?: FubUser[] }
-  const users = data.users
-  return Array.isArray(users) && users.length > 0 ? users[0] : null
+  try {
+    const q = new URLSearchParams({
+      email: email.trim(),
+      limit: '1',
+      fields: 'id,email,name',
+    })
+    const res = await fetch(`${FUB_BASE}/users?${q}`, {
+      headers: fubHeaders(auth),
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { users?: FubUser[] }
+    const users = data.users
+    return Array.isArray(users) && users.length > 0 ? users[0] : null
+  } catch (err) {
+    console.error('[findUserByEmail] Network error:', err)
+    return null
+  }
 }
 
 async function getBrokerEmailBySlug(slug: string): Promise<string | null> {
@@ -328,12 +338,18 @@ export async function sendEvent(params: SendEventParams): Promise<{ ok: true; st
     ...(params.pageTitle && { pageTitle: params.pageTitle }),
     ...(params.campaign && Object.values(params.campaign).some(Boolean) && { campaign: params.campaign }),
   }
-  const res = await fetch(`${FUB_BASE}/events`, {
-    method: 'POST',
-    headers: fubHeaders(auth),
-    body: JSON.stringify(body),
-    next: { revalidate: 0 },
-  })
+  let res: Response
+  try {
+    res = await fetch(`${FUB_BASE}/events`, {
+      method: 'POST',
+      headers: fubHeaders(auth),
+      body: JSON.stringify(body),
+      next: { revalidate: 0 },
+    })
+  } catch (err) {
+    console.error('[sendEvent] Network error:', err)
+    return { ok: false, error: 'FUB network error' }
+  }
   if (res.status === 204) {
     if (params.brokerAttribution?.brokerSlug) {
       const attribution = await applyBrokerAttribution({
