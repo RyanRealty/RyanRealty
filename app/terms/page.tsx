@@ -2,11 +2,16 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description: 'Terms of service and use for Ryan Realty website and MLS data.',
   alternates: { canonical: `${siteUrl}/terms` },
+  openGraph: {
+    images: [{ url: ogImage, width: 1200, height: 630 }],
+  },
+  twitter: { card: 'summary_large_image', images: [ogImage] },
   robots: 'noindex, follow',
 }
 

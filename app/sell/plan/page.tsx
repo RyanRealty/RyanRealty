@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator'
 import BrokerSocialProofCta from '@/components/broker/BrokerSocialProofCta'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
   title: 'Our Plan | How We Sell Your Home | Ryan Realty',
@@ -16,7 +17,9 @@ export const metadata: Metadata = {
     title: 'Our Plan | Ryan Realty — Selling Your Home',
     url: `${siteUrl}/sell/plan`,
     type: 'website',
+    images: [{ url: ogImage, width: 1200, height: 630 }],
   },
+  twitter: { card: 'summary_large_image', images: [ogImage] },
 }
 
 const PLAN_STEPS = [

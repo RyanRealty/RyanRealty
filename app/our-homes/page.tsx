@@ -5,6 +5,7 @@ import { ArrowRightHugeIcon } from '@/components/icons/HugeIcons'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
   title: 'Our Homes | Listings by Ryan Realty | Ryan Realty',
@@ -15,7 +16,9 @@ export const metadata: Metadata = {
     title: 'Our Homes | Ryan Realty',
     url: `${siteUrl}/our-homes`,
     type: 'website',
+    images: [{ url: ogImage, width: 1200, height: 630 }],
   },
+  twitter: { card: 'summary_large_image', images: [ogImage] },
 }
 
 export const revalidate = 60
