@@ -239,10 +239,12 @@ export default async function Home() {
         }}
       />
 
-      {/* Hero streams in with market data — fast because getMarketSnapshot is cached */}
-      <Suspense fallback={<div className="min-h-[600px] bg-muted/30" />}>
-        <HeroWithMarket brokerage={brokerage} />
-      </Suspense>
+      {/* Hero renders IMMEDIATELY with placeholder stats — no Suspense blocking LCP */}
+      <HomeHero
+        marketSnapshot={{ count: 0, medianPrice: null, avgDom: null }}
+        heroVideoUrl={brokerage?.hero_video_url?.trim() || '/videos/hero.mp4'}
+        heroImageUrl={brokerage?.hero_image_url ?? null}
+      />
 
       <div className="mx-auto mt-4 flex w-full max-w-7xl justify-end px-4 sm:px-6">
         <ShareButton
