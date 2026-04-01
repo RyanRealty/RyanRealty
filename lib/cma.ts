@@ -150,8 +150,33 @@ async function getSubject(
 }
 
 /**
+ * Resolve the close price using the canonical fallback chain:
+ * ClosePrice → details->>'ClosePrice' → ListPrice (last resort)
+ * See .cursor/rules/cma-data-model.mdc
+ */
+function resolveClosePrice(row: Record<string, unknown>): number | null {
+  // 1. Explicit ClosePrice column
+  const explicit = num(row.ClosePrice)
+  if (explicit != null && explicit > 0) return explicit
+
+  // 2. ClosePrice from details JSON
+  const details = row.details as Record<string, unknown> | null | undefined
+  if (details) {
+    const fromDetails = num(details.ClosePrice)
+    if (fromDetails != null && fromDetails > 0) return fromDetails
+  }
+
+  // 3. Last resort: ListPrice
+  const listPrice = num(row.ListPrice)
+  if (listPrice != null && listPrice > 0) return listPrice
+
+  return null
+}
+
+/**
  * Direct query fallback for finding comps — queries listings table
  * directly using RESO column names when the PostGIS RPC is unavailable.
+ * Uses the canonical ClosePrice fallback chain.
  */
 async function getCompsDirectQuery(
   supabase: SupabaseClient,
@@ -164,11 +189,11 @@ async function getCompsDirectQuery(
   cutoff.setMonth(cutoff.getMonth() - monthsBack)
   const cutoffStr = cutoff.toISOString().slice(0, 10)
 
+  // Query closed listings — include details for ClosePrice fallback, and ListPrice as last resort
   let query = supabase
     .from('listings')
-    .select('ListingKey, ListNumber, StreetNumber, StreetName, City, ClosePrice, CloseDate, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, SubdivisionName')
-    .not('ClosePrice', 'is', null)
-    .gt('ClosePrice', 0)
+    .select('ListingKey, ListNumber, StreetNumber, StreetName, City, ClosePrice, CloseDate, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, SubdivisionName, ListPrice, details')
+    .ilike('StandardStatus', '%Closed%')
     .not('CloseDate', 'is', null)
     .gte('CloseDate', cutoffStr)
     .ilike('City', city)
@@ -179,26 +204,36 @@ async function getCompsDirectQuery(
 
   const { data } = await query
     .order('CloseDate', { ascending: false })
-    .limit(maxCount)
+    .limit(maxCount * 2) // Fetch extra to account for rows where fallback still yields null
 
   if (!data?.length) return []
 
-  return (data as Record<string, unknown>[]).map((r) => ({
-    listing_key: String(r.ListingKey ?? ''),
-    listing_id: r.ListNumber != null ? String(r.ListNumber) : null,
-    address: [r.StreetNumber, r.StreetName].filter(Boolean).join(' ') + (r.City ? `, ${r.City}` : ''),
-    close_price: num(r.ClosePrice),
-    close_date: r.CloseDate != null ? String(r.CloseDate).slice(0, 10) : null,
-    beds_total: num(r.BedroomsTotal) != null ? Math.round(Number(r.BedroomsTotal)) : null,
-    baths_full: num(r.BathroomsTotal),
-    living_area: num(r.TotalLivingAreaSqFt),
-    lot_size_acres: null,
-    year_built: null,
-    garage_spaces: null,
-    pool_yn: false,
-    property_type: r.PropertyType != null ? String(r.PropertyType) : null,
-    distance_miles: 0,
-  }))
+  const results: CMACompRow[] = []
+  for (const r of data as Record<string, unknown>[]) {
+    const closePrice = resolveClosePrice(r)
+    if (closePrice == null || closePrice <= 0) continue
+
+    results.push({
+      listing_key: String(r.ListingKey ?? ''),
+      listing_id: r.ListNumber != null ? String(r.ListNumber) : null,
+      address: [r.StreetNumber, r.StreetName].filter(Boolean).join(' ') + (r.City ? `, ${r.City}` : ''),
+      close_price: closePrice,
+      close_date: r.CloseDate != null ? String(r.CloseDate).slice(0, 10) : null,
+      beds_total: num(r.BedroomsTotal) != null ? Math.round(Number(r.BedroomsTotal)) : null,
+      baths_full: num(r.BathroomsTotal),
+      living_area: num(r.TotalLivingAreaSqFt),
+      lot_size_acres: null,
+      year_built: null,
+      garage_spaces: null,
+      pool_yn: false,
+      property_type: r.PropertyType != null ? String(r.PropertyType) : null,
+      distance_miles: 0,
+    })
+
+    if (results.length >= maxCount) break
+  }
+
+  return results
 }
 
 /** Fetch comp candidates: try RPC first, fall back to direct query. */

@@ -54,7 +54,8 @@ BEGIN
     l."ListNumber"::text,
     COALESCE(NULLIF(CONCAT_WS(' ', l."StreetNumber", l."StreetName"), ''), '')
       || CASE WHEN l."City" IS NOT NULL THEN ', ' || l."City" ELSE '' END,
-    l."ClosePrice"::numeric,
+    -- Canonical ClosePrice fallback chain: explicit col → details JSON → ListPrice
+    COALESCE(l."ClosePrice", (l.details->>'ClosePrice')::numeric, l."ListPrice")::numeric,
     l."CloseDate"::date,
     l."BedroomsTotal"::integer,
     l."BathroomsTotal"::integer,
@@ -70,8 +71,8 @@ BEGIN
     ) / 1609.34)::numeric
   FROM listings l
   WHERE l."StandardStatus" ILIKE '%Closed%'
-    AND l."ClosePrice" IS NOT NULL
-    AND l."ClosePrice" > 0
+    AND COALESCE(l."ClosePrice", (l.details->>'ClosePrice')::numeric, l."ListPrice") IS NOT NULL
+    AND COALESCE(l."ClosePrice", (l.details->>'ClosePrice')::numeric, l."ListPrice") > 0
     AND l."CloseDate" IS NOT NULL
     AND l."CloseDate" >= (CURRENT_DATE - (p_months_back || ' months')::interval)
     AND l."Latitude" IS NOT NULL
@@ -137,7 +138,8 @@ BEGIN
     l."ListNumber"::text,
     COALESCE(NULLIF(CONCAT_WS(' ', l."StreetNumber", l."StreetName"), ''), '')
       || CASE WHEN l."City" IS NOT NULL THEN ', ' || l."City" ELSE '' END,
-    l."ClosePrice"::numeric,
+    -- Canonical ClosePrice fallback chain
+    COALESCE(l."ClosePrice", (l.details->>'ClosePrice')::numeric, l."ListPrice")::numeric,
     l."CloseDate"::date,
     l."BedroomsTotal"::integer,
     l."BathroomsTotal"::integer,
@@ -151,8 +153,8 @@ BEGIN
   FROM listings l
   WHERE l."SubdivisionName" = v_subdivision
     AND l."StandardStatus" ILIKE '%Closed%'
-    AND l."ClosePrice" IS NOT NULL
-    AND l."ClosePrice" > 0
+    AND COALESCE(l."ClosePrice", (l.details->>'ClosePrice')::numeric, l."ListPrice") IS NOT NULL
+    AND COALESCE(l."ClosePrice", (l.details->>'ClosePrice')::numeric, l."ListPrice") > 0
     AND l."CloseDate" IS NOT NULL
     AND l."CloseDate" >= (CURRENT_DATE - (p_months_back || ' months')::interval)
   ORDER BY l."CloseDate" DESC

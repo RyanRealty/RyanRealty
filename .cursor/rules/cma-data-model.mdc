@@ -1,0 +1,40 @@
+# CMA Closed-Price Data Model
+
+## Canonical close price
+The canonical closed sale price is `listings."ClosePrice"` — an explicit column, not just JSON.
+
+## Price fallback chain (always use this order)
+```sql
+COALESCE(
+  "ClosePrice",
+  (details->>'ClosePrice')::numeric,
+  "ListPrice"
+) AS close_price
+```
+
+1. `ClosePrice` — explicit column, primary source
+2. `(details->>'ClosePrice')::numeric` — from Spark payload JSON
+3. `ListPrice` — last resort only
+
+## How close price enters the DB
+- Spark listing sync writes the row via `sparkListingToSupabaseRow()` which maps `CloseDate` and stores the full Spark payload in `details`
+- `ClosePrice` may come primarily from `details` + backfill on older rows
+- A backfill migration copies `details->>'ClosePrice'` into the explicit column
+
+## Price / status history
+Timeline events live in `listing_history`:
+- `listing_key`, `event_date`, `event`, `price`, `price_change`, `description`
+- Comes from Spark `/history` first, then `/historical/pricehistory` fallback
+- Use `listing_history` for chronology, use `listings.ClosePrice` for the actual final sold price
+
+## Data quality
+- ~291 closed listings have explicit `ClosePrice` populated
+- ~374,050 closed listings have `ClosePrice = NULL` but may have the value in `details`
+- Always use the COALESCE fallback chain above
+- Do NOT assume every closed listing has the explicit column populated
+
+## Key rules
+- Use `listing_history` for chronology/timeline
+- Use `listings.ClosePrice` (with fallback) for the actual final sold price
+- For CMA comp filtering: treat a listing as a valid comp if `StandardStatus ILIKE '%Closed%'` AND the COALESCE chain produces a non-null, positive price
+- Never compute stats from `listing_history.price` alone — it may be a mid-timeline snapshot
