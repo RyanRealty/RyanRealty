@@ -209,6 +209,11 @@ export const getCommunityHighlights = unstable_cache(
 
 /** Market snapshot for Bend — uses RPC for single-scan aggregation instead of 4 queries + 15k row JS median. */
 async function _getMarketSnapshotUncached(): Promise<CityMarketStats & { avgDom?: number | null }> {
+  // Fast path: use pre-computed cache (populated by populateMarketPulseForCity)
+  const stats = await getMarketStatsForCity('Bend')
+  if (stats.count > 0) return { ...stats, avgDom: stats.avgDom ?? null }
+
+  // Slow fallback: RPC (only if cache is empty)
   try {
     const sb = supabase()
     const { data, error } = await sb.rpc('get_homepage_market_stats', { p_city: 'Bend' })
@@ -225,11 +230,9 @@ async function _getMarketSnapshotUncached(): Promise<CityMarketStats & { avgDom?
       }
     }
   } catch {
-    // Fall through to legacy path
+    // Fall through
   }
-  // Fallback to cached pulse/stats path
-  const stats = await getMarketStatsForCity('Bend')
-  return { ...stats, avgDom: stats.avgDom ?? null }
+  return { count: 0, avgPrice: null, medianPrice: null, avgDom: null, newListingsLast30Days: 0, pendingCount: 0, closedLast12Months: 0 }
 }
 
 export const getMarketSnapshot = unstable_cache(

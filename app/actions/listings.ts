@@ -213,7 +213,21 @@ async function _getBrowseCitiesUncached(): Promise<BrowseCity[]> {
   const supabase = getAnonSupabase()
   if (!supabase) return DEFAULT_BROWSE_CITIES
 
-  // 1) Prefer direct query so we never depend on report_listings_breakdown cache being populated
+  // 0) Fast path: use market_pulse_live cache (populated by populateMarketPulseForCity)
+  const { data: pulseData } = await supabase
+    .from('market_pulse_live')
+    .select('geo_label, active_count')
+    .eq('geo_type', 'city')
+    .gt('active_count', 0)
+    .order('active_count', { ascending: false })
+  if (pulseData && pulseData.length > 3) {
+    return (pulseData as Array<{ geo_label: string; active_count: number }>).map((r) => ({
+      City: r.geo_label,
+      count: r.active_count,
+    }))
+  }
+
+  // 1) Fallback: direct query on listings
   const { data: directData, error: directError } = await supabase
     .from('listings')
     .select('City')
