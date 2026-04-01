@@ -730,15 +730,56 @@ export default async function SearchPage({
         />
       </header>
 
-      {/* About this community (subdivision pages with description) */}
-      {subdivision && (subdivisionBlurb ?? subdivisionTabContent?.about) && (
-        <section className="mb-10 rounded-lg border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-foreground">About {displayName}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
-            {subdivisionBlurb ?? subdivisionTabContent?.about ?? ''}
-          </p>
-        </section>
-      )}
+      {/* About this community — show rich profile if available, else subdivision blurb */}
+      {subdivision && (() => {
+        const { getCommunityProfile } = require('@/lib/community-profiles') as typeof import('@/lib/community-profiles')
+        const profile = decodedSubdivision ? getCommunityProfile(decodedSubdivision) : null
+        const aboutText = profile?.description ?? subdivisionBlurb ?? subdivisionTabContent?.about
+        if (!aboutText) return null
+        return (
+          <section className="mb-10 rounded-lg border border-border bg-card p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-foreground">
+              {profile ? profile.name : `About ${displayName}`}
+            </h2>
+            {profile?.tagline && (
+              <p className="mt-1 text-sm font-medium text-primary">{profile.tagline}</p>
+            )}
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+              {aboutText}
+            </p>
+            {profile?.amenities && profile.amenities.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-medium text-foreground">Amenities</h3>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {profile.amenities.map((a) => (
+                    <span key={a} className="rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">{a}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {profile?.lifestyle && profile.lifestyle.length > 0 && (
+              <div className="mt-3">
+                <h3 className="text-sm font-medium text-foreground">Lifestyle</h3>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {profile.lifestyle.map((l) => (
+                    <span key={l} className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs text-primary">{l}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {profile?.priceRange && (
+              <p className="mt-3 text-sm text-muted-foreground">Typical price range: <span className="font-medium text-foreground">{profile.priceRange}</span></p>
+            )}
+            {profile?.highlights && profile.highlights.length > 0 && (
+              <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                {profile.highlights.map((h) => (
+                  <li key={h}>{h}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )
+      })()}
 
       {/* Amenities & lifestyle (resort communities — section always shown when flagged; content or placeholder) */}
       {subdivision && city && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys) && (
