@@ -441,7 +441,10 @@ export default async function SearchPage({
           getOrCreatePlaceBanner(entityType, entityKey, bannerSearchQuery),
         ])
       : [null, null, { url: null, attribution: null }]
-  const bannerUrl = listingHero?.url ?? bannerResult?.url ?? null
+  // Prefer curated Central Oregon lifestyle image over generic Unsplash/AI banner
+  const { getCityHeroImage, CITY_HERO_IMAGES } = await import('@/lib/central-oregon-images')
+  const curatedCityImage = city ? (CITY_HERO_IMAGES[city.toLowerCase().replace(/\s+/g, '-')] ?? null) : null
+  const bannerUrl = curatedCityImage ?? listingHero?.url ?? bannerResult?.url ?? null
   const bannerAttribution = listingHero?.attribution ?? bannerResult?.attribution ?? null
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || ''
