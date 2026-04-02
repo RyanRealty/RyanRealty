@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.5 (2026-04-02)
+
+### Other
+- Update ci.yml
+
+---
+
+
 ## v1.0.4 (2026-04-02)
 
 ### Bug Fixes
