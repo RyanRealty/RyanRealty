@@ -633,7 +633,14 @@ export async function runYearSyncChunk(options: {
       cache.updatedAt = nowIso
       await supabase.from('sync_state').upsert({ id: 'default', year_sync_matrix_cache: cache, updated_at: nowIso }, { onConflict: 'id' })
       await updateCursor({ phase: 'idle', current_year: null })
-      return { ok: true, done: false, year: pickedYear, phase: 'idle', message: `Year ${pickedYear} skipped (vacant).` }
+      // Single-year CLI (?year=) should exit; otherwise we'd reset runStatus next request and loop forever on vacant years.
+      return {
+        ok: true,
+        done: targetYear != null,
+        year: pickedYear,
+        phase: 'idle',
+        message: `Year ${pickedYear} skipped (no listings in Spark).`,
+      }
     }
 
     for (const k of Object.keys(cache.rows)) {

@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "powershell -ExecutionPolicy Bypass -File scripts/run-dev.ps1",
+    "dev": "node scripts/run-dev.mjs",
+    "dev:win": "powershell -ExecutionPolicy Bypass -File scripts/run-dev.ps1",
     "dev:unix": "next dev",
     "install:macos": "PUPPETEER_SKIP_DOWNLOAD=1 npm ci",
     "restart": "npm run dev",

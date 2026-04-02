@@ -4,10 +4,12 @@
  * Uses same logic as cron: if listings match, skips to history only.
  * Requires: dev server running (npm run dev) or pass deployed URL. .env.local with CRON_SECRET.
  *
- * Usage:
- *   npm run sync:year            # sync all years (newest first)
- *   npm run sync:year 2024       # sync only 2024
- *   npm run sync:year 2024 http://localhost:3000  # sync 2024 against a specific URL
+ * Usage (npm needs -- before script args):
+ *   npm run sync:year                         # sync all years (newest first)
+ *   npm run sync:year -- 2024                 # sync only 2024
+ *   npm run sync:year -- 2024 http://localhost:3000
+ *   npm run sync:year -- 2024 https://ryanrealty.vercel.app  # production
+ * Or set NEXT_PUBLIC_SITE_URL in .env.local so you can omit the URL argument.
  */
 
 import { readFileSync } from 'fs'
@@ -92,7 +94,13 @@ async function oneRun() {
   }
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    statusLine(`HTTP ${res.status}: ${data.error || JSON.stringify(data)}`)
+    if (res.status === 401) {
+      statusLine(
+        'HTTP 401: Server rejected the Bearer token. Use the same CRON_SECRET in .env.local as Next.js loads, then restart npm run dev.',
+      )
+    } else {
+      statusLine(`HTTP ${res.status}: ${data.error || JSON.stringify(data)}`)
+    }
     return { ok: false, done: false }
   }
 
@@ -159,12 +167,45 @@ async function oneRun() {
   return { ok: true, done: false }
 }
 
+async function assertCronRouteReachable() {
+  const probe = `${baseUrl}/api/cron/sync-year-by-year`
+  try {
+    const res = await fetch(probe, {
+      method: 'GET',
+      signal: AbortSignal.timeout(15000),
+    })
+    // 401 without Bearer means the app is up and the cron route exists (expected).
+    if (res.status === 401) return
+    if (res.status === 404) {
+      console.error(`Cron route not found at ${probe}. Check NEXT_PUBLIC_SITE_URL / base URL.`)
+      process.exit(1)
+    }
+    if (res.status === 403) {
+      console.error(`Blocked (${res.status}) at ${probe}.`)
+      process.exit(1)
+    }
+  } catch (err) {
+    const msg = err.cause?.code || err.message
+    console.error(
+      `Cannot reach ${baseUrl} (${msg}). Start the app first (npm run dev) or pass your site URL as the last argument:\n` +
+        `  npm run sync:year -- 2017 https://ryanrealty.vercel.app`,
+    )
+    process.exit(1)
+  }
+}
+
 async function main() {
   console.log(targetYear
     ? `Year sync – syncing ${targetYear} until done.`
     : 'Year sync – runs continuously until all years are done.')
   console.log('Skips listings when counts match; syncs history only.')
   console.log('URL:', url)
+  if (targetYear == null) {
+    console.log('Tip: pass a year after -- so npm forwards it: npm run sync:year -- 2017')
+  } else {
+    console.log('Args:', process.argv.slice(2).join(' ') || '(none)')
+  }
+  await assertCronRouteReachable()
   console.log('Open /admin/sync to see progress. Status streams below.\n')
   while (true) {
     const { ok, done } = await oneRun()

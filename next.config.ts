@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { withSentryConfig } from '@sentry/nextjs'
 import path from 'path'
 import fs from 'fs'
 
@@ -115,4 +116,10 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+  org: 'ryan-realty-llc',
+  project: 'ryan-realty-platform',
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  automaticVercelMonitors: true,
+})

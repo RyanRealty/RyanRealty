@@ -23,10 +23,13 @@ const optional = [
   'INNGEST_SIGNING_KEY',
   'INNGEST_EVENT_KEY',
   'SENTRY_DSN',
+  'NEXT_PUBLIC_SENTRY_DSN',
   'NEXT_PUBLIC_VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
   'RESEND_API_KEY',
   'FOLLOWUPBOSS_API_KEY',
+  'UPSTASH_REDIS_REST_URL',
+  'UPSTASH_REDIS_REST_TOKEN',
 ] as const
 
 function getEnv(name: string): string | undefined {
