@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.1 (2026-04-02)
+
+### Bug Fixes
+- fix: downgrade no-explicit-any to warning for Supabase query callbacks
+
+---
+
+
 ## v1.0.0 (2026-04-02)
 
 ### Features
