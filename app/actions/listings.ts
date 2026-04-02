@@ -2244,11 +2244,14 @@ const BROKERAGE_TILE_SELECT =
  * Get listings from Ryan Realty's brokerage.
  * Returns listings across all statuses (Active first, then Pending, then Closed).
  * Canceled listings are excluded from display.
+ *
+ * Uses service role client because the ListOfficeName ILIKE query on 586K rows
+ * exceeds the anon client's statement timeout. This is a public read-only query.
  */
 export async function getBrokerageListings(
   officeName: string = 'Ryan Realty'
 ): Promise<HomeTileRow[]> {
-  const supabase = getAnonSupabase()
+  const supabase = getServiceSupabase()
   if (!supabase) return []
 
   const { data, error } = await supabase

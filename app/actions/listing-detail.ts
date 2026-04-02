@@ -27,6 +27,18 @@ function safeNum(v: unknown): number | null {
 
 function safeStr(v: unknown): string | null {
   if (v == null) return null
+  // Spark stores many fields as objects like {"Frame": true, "Composition": true}
+  // Convert to comma-separated string of truthy keys
+  if (typeof v === 'object' && !Array.isArray(v)) {
+    const keys = Object.entries(v as Record<string, unknown>)
+      .filter(([, val]) => val === true)
+      .map(([key]) => key)
+    if (keys.length > 0) return keys.join(', ')
+    // If no truthy keys, try to get string values
+    const vals = Object.values(v as Record<string, unknown>).filter(Boolean).map(String)
+    if (vals.length > 0) return vals.join(', ')
+    return null
+  }
   const s = String(v).trim()
   if (!s || /^\*+$/.test(s)) return null
   return s
