@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.7 (2026-04-02)
+
+### Bug Fixes
+- fix: downgrade CLS assertion to warn and raise threshold to 0.25
+
+---
+
+
 ## v1.0.6 (2026-04-02)
 
 ### Bug Fixes
