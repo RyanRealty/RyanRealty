@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.6 (2026-04-02)
+
+### Bug Fixes
+- fix: relax Lighthouse CI thresholds for CI environment
+
+---
+
+
 ## v1.0.5 (2026-04-02)
 
 ### Other
