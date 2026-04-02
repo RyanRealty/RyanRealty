@@ -2234,3 +2234,50 @@ export async function getListingKeysWithRecentPriceChange(withinDays = PRICE_CHA
   }
   return keys
 }
+
+/* ---------- Brokerage (Ryan Realty) listings ---------- */
+
+const BROKERAGE_TILE_SELECT =
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, ClosePrice, CloseDate, details'
+
+/**
+ * Get listings from Ryan Realty's brokerage.
+ * Returns listings across all statuses (Active first, then Pending, then Closed).
+ * Canceled listings are excluded from display.
+ *
+ * Uses service role client because the ListOfficeName ILIKE query on 586K rows
+ * exceeds the anon client's statement timeout. This is a public read-only query.
+ */
+export async function getBrokerageListings(
+  officeName: string = 'Ryan Realty'
+): Promise<HomeTileRow[]> {
+  const supabase = getServiceSupabase()
+  if (!supabase) return []
+
+  const { data, error } = await supabase
+    .from('listings')
+    .select(BROKERAGE_TILE_SELECT)
+    .ilike('ListOfficeName', `%${officeName}%`)
+    .not('StandardStatus', 'ilike', '%Cancel%')
+    .not('StandardStatus', 'ilike', '%Withdraw%')
+    .order('ModificationTimestamp', { ascending: false })
+    .limit(30)
+
+  if (error) {
+    console.error('[getBrokerageListings]', error.message)
+    return []
+  }
+
+  const rows = (data ?? []) as HomeTileRow[]
+
+  // Sort: Active first, then Pending, then Closed
+  return rows.sort((a, b) => {
+    const order = (s: string | null | undefined): number => {
+      if (isActiveStatus(s)) return 1
+      if (isPendingStatus(s)) return 2
+      if (isClosedStatus(s)) return 3
+      return 4
+    }
+    return order(a.StandardStatus) - order(b.StandardStatus)
+  })
+}

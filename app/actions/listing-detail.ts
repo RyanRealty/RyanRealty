@@ -27,6 +27,18 @@ function safeNum(v: unknown): number | null {
 
 function safeStr(v: unknown): string | null {
   if (v == null) return null
+  // Spark stores many fields as objects like {"Frame": true, "Composition": true}
+  // Convert to comma-separated string of truthy keys
+  if (typeof v === 'object' && !Array.isArray(v)) {
+    const keys = Object.entries(v as Record<string, unknown>)
+      .filter(([, val]) => val === true)
+      .map(([key]) => key)
+    if (keys.length > 0) return keys.join(', ')
+    // If no truthy keys, try to get string values
+    const vals = Object.values(v as Record<string, unknown>).filter(Boolean).map(String)
+    if (vals.length > 0) return vals.join(', ')
+    return null
+  }
   const s = String(v).trim()
   if (!s || /^\*+$/.test(s)) return null
   return s
@@ -36,6 +48,13 @@ function safeBool(v: unknown): boolean | null {
   if (v === true || v === 'true' || v === 'Y' || v === 'Yes') return true
   if (v === false || v === 'false' || v === 'N' || v === 'No') return false
   return null
+}
+
+/* ---------- Price formatting for history events ---------- */
+
+function formatHistoryPrice(price: number | null | undefined): string {
+  if (price == null || !Number.isFinite(price)) return 'N/A'
+  return `$${Number(price).toLocaleString()}`
 }
 
 /* ---------- Exported types (unchanged — page components depend on these) ---------- */
@@ -92,6 +111,8 @@ export type ListingDetailListing = {
   association_fee: number | null
   association_fee_frequency: string | null
   tax_amount: number | null
+  tax_year: number | null
+  tax_assessed_value: number | null
   elementary_school: string | null
   middle_school: string | null
   high_school: string | null
@@ -187,6 +208,19 @@ export type ListingDetailCommunity = {
   city_slug?: string | null
 }
 
+/** A user-facing listing lifecycle event derived from listing_history. */
+export type ListingHistoryEvent = {
+  id: string
+  listing_key: string
+  event_date: string
+  event_type: 'new_listing' | 'price_change' | 'status_change' | 'back_on_market' | 'closed'
+  label: string
+  price: number | null
+  old_value: string | null
+  new_value: string | null
+  change_pct: number | null
+}
+
 export type ListingDetailData = {
   listing: ListingDetailListing
   property: ListingDetailProperty | null
@@ -194,6 +228,7 @@ export type ListingDetailData = {
   agents: ListingDetailAgent[]
   priceHistory: ListingDetailPriceHistory[]
   statusHistory: ListingDetailStatusHistory[]
+  listingHistory: ListingHistoryEvent[]
   engagement: ListingDetailEngagement | null
   openHouses: ListingDetailOpenHouse[]
   community: ListingDetailCommunity | null
@@ -474,6 +509,8 @@ function mapRowToListing(row: AnyRow): ListingDetailListing {
     association_fee: safeNum(d.AssociationFee),
     association_fee_frequency: safeStr(d.AssociationFeeFrequency),
     tax_amount: safeNum(d.TaxAmount),
+    tax_year: safeNum(d.TaxYear),
+    tax_assessed_value: safeNum(d.TaxAssessedValue),
     elementary_school: safeStr(d.ElementarySchool),
     middle_school: safeStr(d.MiddleOrJuniorSchool),
     high_school: safeStr(d.HighSchool),
@@ -814,60 +851,164 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
 
   const virtualTours = extractVirtualToursFromRow(listingRow)
 
-  // Price/status history: try dedicated tables first, fall back to listing_history
-  const [priceRes, statusRes, historyRes, engagementRes] = await Promise.all([
-    supabase.from('price_history').select('*').eq('listing_key', canonicalKey).order('changed_at', { ascending: false }),
-    supabase.from('status_history').select('*').eq('listing_key', canonicalKey).order('changed_at', { ascending: false }),
-    supabase.from('listing_history').select('*').eq('listing_key', canonicalKey).order('event_date', { ascending: false }).limit(50),
+  // Fetch listing_history (2M+ rows available — this is the real data source)
+  // Also fetch engagement metrics
+  const [historyRes, engagementRes] = await Promise.all([
+    supabase
+      .from('listing_history')
+      .select('id, listing_key, event, event_date, price, price_change, description, raw')
+      .eq('listing_key', canonicalKey)
+      .order('event_date', { ascending: true })
+      .limit(100),
     supabase.from('engagement_metrics').select('*').eq('listing_key', canonicalKey).maybeSingle(),
   ])
 
-  // Use dedicated price_history if available; otherwise derive from listing_history
-  let priceHistory = (priceRes.data ?? []) as ListingDetailPriceHistory[]
-  if (priceHistory.length === 0 && (historyRes.data ?? []).length > 0) {
-    const histRows = (historyRes.data ?? []) as Array<{
-      event_date?: string | null
-      event?: string | null
-      description?: string | null
-      price?: number | null
-      price_change?: number | null
-    }>
-    // Extract price-related events from listing_history
-    priceHistory = histRows
-      .filter((h) => h.price != null && h.price > 0)
-      .map((h) => ({
-        id: '',
-        listing_key: canonicalKey,
-        changed_at: h.event_date ?? '',
-        old_price: null,
-        new_price: h.price ?? null,
-        change_amount: h.price_change ?? null,
-        change_pct: null,
-        source: h.event ?? 'MLS',
-      }))
-      // Deduplicate by date+price
-      .filter((item, idx, arr) => arr.findIndex((a) => a.changed_at === item.changed_at && a.new_price === item.new_price) === idx)
-  }
+  const histRows = (historyRes.data ?? []) as Array<{
+    id?: string
+    listing_key?: string
+    event?: string
+    event_date?: string
+    price?: number | null
+    price_change?: number | null
+    description?: string | null
+    raw?: AnyRow | null
+  }>
 
-  let statusHistory = (statusRes.data ?? []) as ListingDetailStatusHistory[]
-  if (statusHistory.length === 0 && (historyRes.data ?? []).length > 0) {
-    const histRows = (historyRes.data ?? []) as Array<{
-      event_date?: string | null
-      event?: string | null
-      description?: string | null
-    }>
-    // Extract status-related events from listing_history
-    statusHistory = histRows
-      .filter((h) => h.event === 'StatusChange' || h.event === 'FieldChange' || (h.description ?? '').toLowerCase().includes('status'))
-      .map((h) => ({
-        id: '',
+  // --- Extract price history from listing_history raw JSONB ---
+  // raw.Field = 'ListPrice' has PreviousValue (old price) and NewValue (new price)
+  const priceHistory: ListingDetailPriceHistory[] = histRows
+    .filter((h) => {
+      const field = (h.raw ?? {}).Field
+      return field === 'ListPrice'
+    })
+    .map((h, idx) => {
+      const raw = h.raw ?? {}
+      const oldPrice = safeNum(raw.PreviousValue)
+      const newPrice = safeNum(raw.NewValue)
+      const changePct = oldPrice && newPrice ? ((newPrice - oldPrice) / oldPrice) * 100 : (h.price_change != null ? h.price_change * 100 : null)
+      return {
+        id: h.id ?? `ph-${idx}`,
         listing_key: canonicalKey,
+        old_price: oldPrice,
+        new_price: newPrice,
+        change_pct: changePct,
         changed_at: h.event_date ?? '',
-        old_status: null,
-        new_status: h.description ?? h.event ?? '',
-        source: 'MLS',
-      }))
-      .filter((item, idx, arr) => arr.findIndex((a) => a.changed_at === item.changed_at && a.new_status === item.new_status) === idx)
+      }
+    })
+    .filter((p) => p.old_price != null || p.new_price != null)
+
+  // --- Extract status history from listing_history raw JSONB ---
+  // raw.Field = 'MlsStatus' has PreviousValue (old status) and NewValue (new status)
+  const statusHistory: ListingDetailStatusHistory[] = histRows
+    .filter((h) => {
+      const field = (h.raw ?? {}).Field
+      return field === 'MlsStatus'
+    })
+    .map((h, idx) => {
+      const raw = h.raw ?? {}
+      return {
+        id: h.id ?? `sh-${idx}`,
+        listing_key: canonicalKey,
+        old_status: safeStr(raw.PreviousValue),
+        new_status: safeStr(raw.NewValue),
+        changed_at: h.event_date ?? '',
+      }
+    })
+
+  // --- Build full listing timeline for user-facing display ---
+  // Filter to events a buyer cares about: new listing, price changes, status changes, close, back on market
+  const listingHistory: ListingHistoryEvent[] = []
+  const seenEvents = new Set<string>()
+
+  for (const h of histRows) {
+    const raw = h.raw ?? {}
+    const field = String(raw.Field ?? '')
+    const eventDate = h.event_date ?? ''
+    let evt: ListingHistoryEvent | null = null
+
+    if (h.event === 'NewListing') {
+      evt = {
+        id: h.id ?? `lh-new-${listingHistory.length}`,
+        listing_key: canonicalKey,
+        event_date: eventDate,
+        event_type: 'new_listing',
+        label: `Listed at ${formatHistoryPrice(h.price)}`,
+        price: h.price ?? null,
+        old_value: null,
+        new_value: null,
+        change_pct: null,
+      }
+    } else if (h.event === 'BackOnMarket') {
+      evt = {
+        id: h.id ?? `lh-bom-${listingHistory.length}`,
+        listing_key: canonicalKey,
+        event_date: eventDate,
+        event_type: 'back_on_market',
+        label: `Back on market at ${formatHistoryPrice(h.price)}`,
+        price: h.price ?? null,
+        old_value: null,
+        new_value: null,
+        change_pct: null,
+      }
+    } else if (field === 'ListPrice') {
+      const oldP = safeNum(raw.PreviousValue)
+      const newP = safeNum(raw.NewValue)
+      if (oldP != null && newP != null) {
+        const pct = oldP > 0 ? ((newP - oldP) / oldP) * 100 : null
+        const direction = newP < oldP ? 'reduced' : 'increased'
+        evt = {
+          id: h.id ?? `lh-price-${listingHistory.length}`,
+          listing_key: canonicalKey,
+          event_date: eventDate,
+          event_type: 'price_change',
+          label: `Price ${direction} to ${formatHistoryPrice(newP)}`,
+          price: newP,
+          old_value: String(oldP),
+          new_value: String(newP),
+          change_pct: pct,
+        }
+      }
+    } else if (field === 'MlsStatus') {
+      const oldS = safeStr(raw.PreviousValue)
+      const newS = safeStr(raw.NewValue)
+      if (newS === 'Closed') {
+        // For closed events, find the ClosePrice if available
+        const closePriceRow = histRows.find((r) => (r.raw ?? {}).Field === 'ClosePrice' && r.event_date === eventDate)
+        const closePrice = closePriceRow ? safeNum((closePriceRow.raw ?? {}).NewValue) : h.price
+        evt = {
+          id: h.id ?? `lh-closed-${listingHistory.length}`,
+          listing_key: canonicalKey,
+          event_date: eventDate,
+          event_type: 'closed',
+          label: `Sold for ${formatHistoryPrice(closePrice)}`,
+          price: closePrice ?? h.price ?? null,
+          old_value: oldS,
+          new_value: newS,
+          change_pct: h.price_change != null ? h.price_change * 100 : null,
+        }
+      } else if (oldS && newS) {
+        evt = {
+          id: h.id ?? `lh-status-${listingHistory.length}`,
+          listing_key: canonicalKey,
+          event_date: eventDate,
+          event_type: 'status_change',
+          label: `${oldS} → ${newS}`,
+          price: h.price ?? null,
+          old_value: oldS,
+          new_value: newS,
+          change_pct: null,
+        }
+      }
+    }
+
+    if (evt) {
+      // Deduplicate by date + type + label
+      const key = `${evt.event_date}-${evt.event_type}-${evt.label}`
+      if (!seenEvents.has(key)) {
+        seenEvents.add(key)
+        listingHistory.push(evt)
+      }
+    }
   }
 
   const engagement = (engagementRes.data ?? null) as ListingDetailEngagement | null
@@ -938,6 +1079,7 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
     agents,
     priceHistory,
     statusHistory,
+    listingHistory,
     engagement,
     openHouses,
     community,

@@ -47,6 +47,9 @@ import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { getVacationRentalPotential } from '@/lib/vacation-rental-potential'
 import { Suspense } from 'react'
 import ListingValuationSection from '@/components/listing/ListingValuationSection'
+import ListingTimeline from '@/components/listing/ListingTimeline'
+import TaxHistory from '@/components/listing/TaxHistory'
+import type { TaxRecord } from '@/components/listing/TaxHistory'
 
 type PageProps = { params: Promise<{ listingKey: string }> }
 
@@ -167,7 +170,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const data = await getListingDetailData(listingKey)
   if (!data) notFound()
 
-  const { listing, property, photos, agents, priceHistory, openHouses, community, videos, virtualTours } = data
+  const { listing, property, photos, agents, priceHistory, listingHistory, openHouses, community, videos, virtualTours } = data
   const subdivisionName = community?.name ?? listing.subdivision_name ?? null
   const [saved, liked, engagement, similarListings, subdivisionListings, session] = await Promise.all([
     isListingSaved(listing.listing_key),
@@ -408,8 +411,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
                 associationFee={listing.association_yn ? listing.association_fee ?? undefined : undefined}
                 associationYn={listing.association_yn ?? null}
               />
+              {listing.tax_amount != null && listing.tax_amount > 0 && (
+                <TaxHistory
+                  records={[
+                    {
+                      year: listing.tax_year ?? new Date().getFullYear(),
+                      assessedValue: listing.tax_assessed_value ?? null,
+                      taxAmount: listing.tax_amount,
+                    } satisfies TaxRecord,
+                  ]}
+                />
+              )}
               <VacationRentalPotentialCard potential={rentalPotential} />
               <PriceHistoryChart priceHistory={priceHistory} />
+              <ListingTimeline events={listingHistory} />
             </div>
             <div className="space-y-8 lg:col-span-1">
               <ShowcaseAgent
