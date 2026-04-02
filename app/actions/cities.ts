@@ -102,19 +102,17 @@ async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
   // Legacy fallback: fetch from listings table directly
   const [browse, listingRows] = await Promise.all([
     getBrowseCities(),
-    sb
-      .from('listings')
-      .select('City, SubdivisionName, ListPrice, StandardStatus')
-      .or(ACTIVE_OR)
-      .limit(10000)
-      .then((r) =>
-        (r.data ?? []) as {
-          City?: string
-          SubdivisionName?: string
-          ListPrice?: number | null
-          StandardStatus?: string | null
-        }[]
-      ),
+    import('@/lib/supabase/paginate').then((m) =>
+      m.fetchAllRows<{
+        City?: string
+        SubdivisionName?: string
+        ListPrice?: number | null
+        StandardStatus?: string | null
+      }>(
+        sb, 'listings', 'City, SubdivisionName, ListPrice, StandardStatus',
+        (q: any) => q.or(ACTIVE_OR),
+      )
+    ),
   ])
   const byCity = new Map<string, { prices: number[]; subdivisions: Set<string> }>()
   for (const row of listingRows) {

@@ -6,36 +6,7 @@ import { getAllPresetSlugs } from '../lib/search-presets'
 const ACTIVE_STATUS_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
 
-/**
- * Supabase caps results at 1,000 rows per request (default PGRST_MAX_ROWS).
- * This helper paginates through ALL rows using range-based fetching.
- */
-const PAGE_SIZE = 1000
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchAllRows<T = any>(
-  supabase: SupabaseClient,
-  table: string,
-  selectCols: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  buildQuery?: (q: any) => any,
-): Promise<T[]> {
-  const allRows: T[] = []
-  let offset = 0
-  let hasMore = true
-
-  while (hasMore) {
-    const base = supabase.from(table).select(selectCols).range(offset, offset + PAGE_SIZE - 1)
-    const q = buildQuery ? buildQuery(base) : base
-    const { data } = await q
-    const rows = (data ?? []) as T[]
-    allRows.push(...rows)
-    hasMore = rows.length === PAGE_SIZE
-    offset += PAGE_SIZE
-  }
-
-  return allRows
-}
+import { fetchAllRows } from '@/lib/supabase/paginate'
 
 /**
  * Dynamic sitemap — generates at request time so it always has fresh data.

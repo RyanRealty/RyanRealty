@@ -227,14 +227,15 @@ async function _getBrowseCitiesUncached(): Promise<BrowseCity[]> {
     }))
   }
 
-  // 1) Fallback: direct query on listings
-  const { data: directData, error: directError } = await supabase
-    .from('listings')
-    .select('City')
-    .or(ACTIVE_STATUS_OR)
-    .limit(50000)
+  // 1) Fallback: direct query on listings — paginate to get ALL rows (Supabase caps at 1,000)
+  const { fetchAllRows } = await import('@/lib/supabase/paginate')
+  const directData = await fetchAllRows<{ City?: string }>(
+    supabase, 'listings', 'City',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (q: any) => q.or(ACTIVE_STATUS_OR),
+  )
 
-  if (!directError && directData && directData.length > 0) {
+  if (directData.length > 0) {
     const byCity = new Map<string, number>()
     for (const row of directData as { City?: string; city?: string }[]) {
       const c = (row.City ?? row.city ?? '').toString().trim()

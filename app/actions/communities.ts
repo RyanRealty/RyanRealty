@@ -37,12 +37,12 @@ async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
   const [rows, resortSet, listingRows] = await Promise.all([
     listSubdivisionsWithFlags(),
     import('@/app/actions/subdivision-flags').then((m) => m.getResortEntityKeys()),
-    supabase()
-      .from('listings')
-      .select('City, SubdivisionName, ListPrice, StandardStatus')
-      .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
-      .limit(8000)
-      .then((r) => (r.data ?? []) as { City?: string; SubdivisionName?: string; ListPrice?: number | null; StandardStatus?: string | null }[]),
+    import('@/lib/supabase/paginate').then((m) =>
+      m.fetchAllRows<{ City?: string; SubdivisionName?: string; ListPrice?: number | null; StandardStatus?: string | null }>(
+        supabase(), 'listings', 'City, SubdivisionName, ListPrice, StandardStatus',
+        (q: any) => q.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'),
+      )
+    ),
   ])
   const byKey = new Map<
     string,
