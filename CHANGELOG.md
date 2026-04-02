@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.11 (2026-04-02)
+
+### Bug Fixes
+- fix: make e2e job self-contained instead of using broken artifact transfer
+
+---
+
+
 ## v1.0.10 (2026-04-02)
 
 ### Maintenance
