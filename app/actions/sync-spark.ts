@@ -20,6 +20,7 @@ export type SyncDeltaResult = {
   totalFetched?: number
   totalUpserted?: number
   eventsEmitted?: number
+  historyRowsUpserted?: number
   pagesProcessed?: number
   error?: string
 }
@@ -646,9 +647,11 @@ export async function syncSparkListingsDelta(options?: {
   let totalFetched = 0
   let totalUpserted = 0
   let eventsEmitted = 0
+  let historyRowsUpserted = 0
   let pagesProcessed = 0
   let currentPage = 1
   let totalPages = 1
+  const deltaListingKeys: string[] = []
 
   try {
     while (currentPage <= totalPages && pagesProcessed < maxPages) {
@@ -700,6 +703,12 @@ export async function syncSparkListingsDelta(options?: {
         const chunk = rows.slice(i, i + UPSERT_CHUNK_SIZE)
         const { error } = await supabase.from('listings').upsert(chunk, { onConflict: 'ListNumber' })
         if (!error) totalUpserted += chunk.length
+      }
+
+      // Collect listing keys for history refresh after all pages
+      for (const row of rows) {
+        const key = (row.ListingKey ?? row.ListNumber ?? '').toString().trim()
+        if (key) deltaListingKeys.push(key)
       }
 
       const nowIso = new Date().toISOString()
@@ -762,16 +771,71 @@ export async function syncSparkListingsDelta(options?: {
       currentPage += 1
     }
 
+    // --- History refresh for delta-synced listings ---
+    // Fetch history for each listing that was just updated, so listing_history stays current.
+    // This ensures the listing detail page always has timeline data for active listings.
+    if (deltaListingKeys.length > 0 && accessToken) {
+      const HISTORY_CONCURRENCY = 5
+      const uniqueKeys = [...new Set(deltaListingKeys)]
+      let keyIndex = 0
+
+      const historyWorker = async () => {
+        while (keyIndex < uniqueKeys.length) {
+          const idx = keyIndex
+          keyIndex++
+          if (idx >= uniqueKeys.length) break
+          const key = uniqueKeys[idx]!
+          try {
+            let historyItems = await fetchSparkListingHistory(accessToken, key)
+            // Fallback to price history if main history is empty
+            if (historyItems.ok && historyItems.items.length === 0) {
+              historyItems = await fetchSparkPriceHistory(accessToken, key)
+            }
+            if (historyItems.items.length > 0) {
+              const historyRows = historyItems.items.map((item) => ({
+                listing_key: key,
+                event_date: item.ModificationTimestamp ?? item.Date ?? new Date().toISOString(),
+                event: item.Event ?? 'FieldChange',
+                description: null,
+                price: typeof item.PriceAtEvent === 'number' ? item.PriceAtEvent : (typeof item.Price === 'number' ? item.Price : null),
+                price_change: typeof item.PriceChange === 'number' ? item.PriceChange : null,
+                raw: item,
+              }))
+              // Delete existing history for this listing and re-insert fresh
+              // (no unique constraint on listing_history, so upsert won't work)
+              await supabase.from('listing_history').delete().eq('listing_key', key)
+              const { error: insertErr } = await supabase
+                .from('listing_history')
+                .insert(historyRows)
+              if (!insertErr) historyRowsUpserted += historyRows.length
+            }
+            // Mark history as finalized for this listing
+            await supabase
+              .from('listings')
+              .update({ history_finalized: true })
+              .eq('ListingKey', key)
+          } catch {
+            // Don't fail the delta sync if history fetch fails for one listing
+          }
+        }
+      }
+
+      await Promise.all(
+        Array.from({ length: Math.min(HISTORY_CONCURRENCY, uniqueKeys.length) }, () => historyWorker())
+      )
+    }
+
     await supabase.from('sync_state').upsert(
       { id: 'default', last_delta_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() },
       { onConflict: 'id' }
     )
     return {
       success: true,
-      message: `Delta sync done. ${totalUpserted} updated, ${eventsEmitted} events.`,
+      message: `Delta sync done. ${totalUpserted} updated, ${eventsEmitted} events, ${historyRowsUpserted} history rows.`,
       totalFetched,
       totalUpserted,
       eventsEmitted,
+      historyRowsUpserted,
       pagesProcessed,
     }
   } catch (err) {
@@ -782,6 +846,7 @@ export async function syncSparkListingsDelta(options?: {
       totalFetched,
       totalUpserted,
       eventsEmitted,
+      historyRowsUpserted,
       pagesProcessed,
       error: message,
     }
