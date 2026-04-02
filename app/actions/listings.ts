@@ -2267,6 +2267,7 @@ async function _getBrokerageListingsUncached(
     .ilike('ListOfficeName', `%${officeName}%`)
     .not('StandardStatus', 'ilike', '%Cancel%')
     .not('StandardStatus', 'ilike', '%Withdraw%')
+    .not('PhotoURL', 'is', null)
     .order('ModificationTimestamp', { ascending: false })
     .limit(30)
 
