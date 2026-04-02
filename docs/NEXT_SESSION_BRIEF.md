@@ -1,104 +1,132 @@
 # Next Session Brief
 
 **Date:** April 2, 2026
-**PR:** #15 — 21 commits, ready to merge
+**PR:** #15 — 22 commits, needs merge to main
 **Branch:** `cursor/launch-readiness-audit-14c9`
 
 ---
 
-## DONE (this session)
+## RULES FOR THE NEXT AGENT (READ THIS FIRST)
 
-### Critical Fixes
-- **Sitemap:** Was showing 74 listings. Now shows all 6,580. Root cause: Supabase caps queries at 1,000 rows. Created `lib/supabase/paginate.ts` helper and paginated every query in the sitemap.
-- **Data truncation everywhere:** The same 1,000-row cap was silently truncating listing counts, median prices, community stats, subdivision counts, and status breakdowns across 15+ server actions. All fixed with pagination or count queries.
-- **Property type "A":** Was showing raw MLS code. Now shows "Single Family Residence" from `details.PropertySubType`.
-- **Listing agent card:** Was prominently featuring competitor agents. Now shows "Interested in this home?" CTA as primary, listing agent as small attribution line.
-- **Listing history:** `price_history` and `status_history` tables were empty. Wired fallback to `listing_history` table (2M rows) for price/status history on listing detail.
+### How to not be a piece of shit
 
-### SEO Fixes
-- Sitemap returns 200 with 25,125 URLs (was 3,709, actually missing most listings)
-- OG images added to 22 pages that were missing them
-- Canonical URLs fixed on `/open-houses`, `/about`
-- sr-only h1 added to search/listings page
-- All 6 redirect routes working (sign-in, search, agents, reports, home-valuation, listings)
+1. **NEVER say something is done without verifying it with real data.** Don't grep for a string and call it verified. Actually query the database, count the rows, compare to what the page shows. If you say "all 6,580 listings are in the sitemap," you better have run `curl /sitemap.xml | grep -c "<url>"` and seen 6,580.
 
-### UX Fixes
-- Reports page wrapped in Suspense (hero renders instantly)
-- Loading skeletons for search, listing detail, buy, reviews pages
-- ListingHero thumbnail strip scrollbar hidden
-- "Other homes in [subdivision]" section added to listing detail
-- Open house section wired to city search pages (renders when data exists)
+2. **Supabase returns MAX 1,000 rows per query.** This is the single biggest gotcha in this codebase. Every `.limit(5000)` or `.limit(10000)` is a LIE — you get 1,000 rows max regardless. Use `lib/supabase/paginate.ts` → `fetchAllRows()` for any query that could return >1,000 rows. Use `{ count: 'exact', head: true }` for counts.
 
-### Infrastructure
-- `@tailwindcss/typography` installed for blog content
-- FUB API calls wrapped in try/catch (was crashing on network errors)
-- CMA PDF and listing inquiry FUB tracking made fire-and-forget
-- Sitemap contract test updated
-- TypeScript strict mode passes clean
+3. **Before you say a page "works," open it in a real browser and scroll the entire thing.** Take a screenshot. Check that real data renders — not skeletons, not empty sections, not placeholder text. Check mobile too.
+
+4. **When you find a bug in one place, search for the same pattern everywhere.** The 1,000-row truncation was in 15+ files. The missing OG images were on 22 pages. The `ryanrealty.vercel.app` fallback was in 3 files. ONE instance is never the whole story.
+
+5. **Don't report issues and ask permission. Fix them.** The owner doesn't want a list of problems — he wants them fixed. If you find it, fix it, verify it, commit it, push it.
+
+6. **Commit after EVERY change. Push immediately.** Not in batches. Every single fix gets its own commit with a descriptive message.
+
+7. **The owner has spent $1,000+ on agents who keep finding problems they should have caught the first time.** Don't be that agent. Do it right the first time or don't do it at all.
 
 ---
 
-## NOT DONE (for next session)
+## WHAT'S BEEN DONE (PR #15)
 
-### Data Pipeline Issues
-- `open_houses` table: 0 rows. MLS sync doesn't populate open house data. Component is wired but no data to show.
-- `listing_agents` table: 0 rows. Agent data comes from listing row columns, not separate table.
-- `listing_videos` table: 0 rows. Video data comes from `details` JSON, not separate table.
-- `listing_history`: Has 2M rows but only for older/closed listings. Recent active listings have 0 history rows (expected — they haven't changed yet).
+### Merge PR #15 first, then continue.
 
-### Feature Gaps vs Zillow
-- No school information section on listing detail
+The PR has 22 commits. Key changes:
+
+- **Sitemap pagination:** All Supabase queries in `app/sitemap.ts` use `fetchAllRows()`. Went from 74 listing URLs to 6,580 (all active listings). Total sitemap: 25,125 URLs.
+- **Data truncation fix:** 15+ server actions across `listings.ts`, `cities.ts`, `communities.ts`, `market-stats.ts` now paginate or use count queries instead of hitting the 1,000-row cap.
+- **Property type:** Shows "Single Family Residence" not "A" (MLS code). Fixed in `ShowcaseKeyFacts.tsx` + `listing-detail page.tsx`.
+- **Agent card:** Ryan Realty CTA is primary. Listing agent is small attribution text at bottom. Fixed in `ShowcaseAgent.tsx`.
+- **Listing detail:** Added "Other homes in [subdivision]" section. Wired `listing_history` fallback for price/status history.
+- **SEO:** OG images on all 22 pages that were missing them. Canonical URLs fixed. All redirects working.
+- **FUB:** try/catch on all API calls. CMA PDF and listing inquiry tracking are fire-and-forget.
+- **Reports:** Suspense wrappers for instant hero render.
+- **Loading states:** Added for search, listing detail, buy, reviews pages.
+- **Open houses:** Section wired on city pages (renders when data exists).
+
+### Shared utility created
+`lib/supabase/paginate.ts` — `fetchAllRows<T>(supabase, table, selectCols, buildQuery?)` — use this for ANY query that might return >1,000 rows.
+
+---
+
+## WHAT'S NOT DONE
+
+### Data Pipeline (can't be fixed with code alone)
+- `open_houses` table: **0 rows**. MLS sync doesn't populate it. Components are wired but there's no data.
+- `listing_agents` table: **0 rows**. Agent data comes from listing row columns instead.
+- `listing_videos` table: **0 rows**. Video data is in `details` JSON.
+- `listing_history`: **2M rows** but only for older/closed listings. New active listings have 0 history (expected — they haven't changed yet).
+
+### Feature Gaps (compared to Zillow)
+- No school information on listing detail
 - No walkability/transit/bike scores
-- No climate/flood risk data
-- No tax history section (component exists at `components/listing/TaxHistory.tsx` but not wired — needs tax data)
-- No "Our listings" slider showing Ryan Realty's own listings with status badges
-- Community pages need content audit — verify each has unique description
-- No neighborhood-level data beyond what's in `communities` table
+- No climate/flood risk
+- No tax history (component exists at `components/listing/TaxHistory.tsx` — needs tax data from MLS)
+- No "Our listings" slider showing Ryan Realty's own listings across statuses
+- Community page content needs audit — verify each has unique description
 
 ### Performance
-- Homepage: FCP 112ms (good), total stream 10s (many Supabase queries)
-- Reports page: FCP fast with Suspense, total stream 16s
-- City pages: 5-10s total (pagination queries make it slower but data is correct now)
-- On Vercel (closer to Supabase), these will be 2-4x faster than on this VM
+- FCP/LCP are fast (112ms/192ms) — Suspense streaming works
+- Total page stream time: 10-16s on this VM, expect 2-4x faster on Vercel
+- The pagination queries make total stream time longer but data is now CORRECT
 
-### Cron Schedule
-- `vercel.json` has `sync-full` weekly, `sync-delta` daily
-- Owner needs to increase frequency for a live site (daily full sync minimum)
-
-### Owner Actions (in docs/LAUNCH_CHECKLIST.md)
-1. Set `NEXT_PUBLIC_SITE_URL` to production domain
-2. Confirm domain: `ryan-realty.com` (with hyphen) vs `ryanrealty.com` (no hyphen)
-3. Update Supabase Auth redirect URLs
-4. Set `ADMIN_EMAIL`, `CRON_SECRET`, GA4 ID, Maps API key
-5. Increase MLS sync frequency
+### Owner Actions (documented in docs/LAUNCH_CHECKLIST.md)
+1. Set `NEXT_PUBLIC_SITE_URL` in Vercel (confirm: `ryan-realty.com` vs `ryanrealty.com`)
+2. Update Supabase Auth redirect URLs for production domain
+3. Update Google OAuth redirect URIs
+4. Set `ADMIN_EMAIL`, `CRON_SECRET`, `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+5. Increase MLS sync frequency in `vercel.json` (currently weekly full sync — should be daily minimum)
 
 ---
 
-## KEY FILES CHANGED
+## HOW TO VERIFY THINGS ACTUALLY WORK
 
+### Sitemap
+```bash
+npm run build && npx next start --port 3000 &
+sleep 10
+curl -s http://localhost:3000/sitemap.xml | grep -c "<url>"
+# Should be ~25,000+
 ```
-app/sitemap.ts                              — Pagination for all queries
-lib/supabase/paginate.ts                     — Shared fetchAllRows helper
-lib/followupboss.ts                          — try/catch on all fetch calls
-lib/property-type-labels.ts                  — MLS code A→Residential mapping
-app/actions/listings.ts                      — 6 queries paginated
-app/actions/cities.ts                        — 3 queries paginated
-app/actions/communities.ts                   — 1 query paginated
-app/actions/market-stats.ts                  — 1 query paginated
-app/actions/listing-detail.ts                — History fallback + nav optimization
-app/actions/track-contact-agent.ts           — Fire-and-forget FUB
-app/api/pdf/cma/route.ts                     — Fire-and-forget FUB
-app/listing/[listingKey]/page.tsx             — PropertySubType, subdivision section
-app/search/[...slug]/page.tsx                — Open houses section
-app/reports/page.tsx                         — Suspense wrapping
-components/listing/showcase/ShowcaseAgent.tsx — Redesigned CTA
-components/listing/showcase/ShowcaseKeyFacts.tsx — Property type label
-components/listing/showcase/ShowcaseSimilar.tsx  — Title prop
-components/listing/ListingHero.tsx           — no-scrollbar
-next.config.ts                               — /sign-in redirect
-app/robots.ts                                — getCanonicalSiteUrl()
-22 page files                                — OG images + twitter cards
-4 page files                                 — Loading skeletons
-docs/LAUNCH_CHECKLIST.md                     — New
-docs/audits/lead-capture-tracking-audit.md   — New
+
+### Listing counts match database
+```bash
+node -e "
+const { createClient } = require('@supabase/supabase-js');
+const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+(async () => {
+  const { count } = await sb.from('listings').select('ListingKey', { count: 'exact', head: true }).or('StandardStatus.is.null,StandardStatus.ilike.%Active%');
+  console.log('DB active listings:', count);
+})();
+"
+# Then check the sitemap listing count matches
 ```
+
+### Page renders real data
+```bash
+# Check a city page shows correct count
+curl -s http://localhost:3000/homes-for-sale/bend | grep -oP '\d[\d,]+ listing'
+# Should show 1,000+ listings, not 0
+```
+
+### No truncated queries remain
+```bash
+# Search for any .limit() > 500 without pagination
+rg '\.limit\([2-9][0-9]{2,}\)|\.limit\([1-9][0-9]{3,}\)' app/actions/ lib/ --glob '*.ts'
+# Each result should either use fetchAllRows OR be an intentional display limit
+```
+
+---
+
+## KEY FILES
+
+| File | What it does |
+|------|-------------|
+| `lib/supabase/paginate.ts` | `fetchAllRows()` — paginate past 1,000-row cap |
+| `app/sitemap.ts` | Dynamic sitemap with all URLs |
+| `app/actions/listings.ts` | Main listing queries — browse, search, counts, stats |
+| `app/actions/listing-detail.ts` | Single listing data + similar + subdivision + history |
+| `app/actions/cities.ts` | City page data — subdivisions, communities, stats |
+| `app/actions/communities.ts` | Community index — listing counts, median prices |
+| `app/actions/market-stats.ts` | Market pulse — active count, median price, DOM |
+| `docs/LAUNCH_CHECKLIST.md` | Step-by-step launch instructions for the owner |
+| `docs/GOALS_AND_UI_AUDIT.md` | Full audit checklist (18 sections, 200+ items) |
