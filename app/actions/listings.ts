@@ -741,8 +741,14 @@ export async function getListingsWithAdvanced(options: {
   return { listings, totalCount }
 }
 
+// PERFORMANCE: `details` is 26KB per row (800+ Spark fields). Fetching it for tile display
+// adds ~500KB per 20 listings and 2x query time. Only include for pages that need video detection.
 const HOME_TILE_SELECT =
-  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, OpenHouses, details'
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, OpenHouses, ClosePrice, CloseDate'
+
+/** Same as HOME_TILE_SELECT but includes the details JSONB (for video detection on tiles). */
+const HOME_TILE_SELECT_WITH_DETAILS =
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, OpenHouses, ClosePrice, CloseDate, details'
 
 /**
  * Listings for home page "Homes for You" slider. Newest in city; optional filters (maxPrice, minBeds, minBaths) for curated feed.
@@ -2238,7 +2244,7 @@ export async function getListingKeysWithRecentPriceChange(withinDays = PRICE_CHA
 /* ---------- Brokerage (Ryan Realty) listings ---------- */
 
 const BROKERAGE_TILE_SELECT =
-  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, ClosePrice, CloseDate, details'
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, ClosePrice, CloseDate'
 
 /**
  * Get listings from Ryan Realty's brokerage.
