@@ -1,143 +1,104 @@
-# Launch Readiness Audit — Session Report
+# Next Session Brief
 
-**Date:** April 1, 2026
-**Site:** ryanrealty.vercel.app
-**Status:** Launch-ready. All 5 blocking issues fixed, all routes returning 200, lead capture flows audited and hardened.
-
----
-
-## WHAT WAS DONE IN THIS SESSION
-
-### 5 Pre-Launch Issues — All Fixed
-
-#### 1. ✅ Sitemap 404 → Fixed
-**Root cause:** Next.js 16 with `generateSitemaps()` creates chunked sitemaps at `/sitemap/[id].xml` but does NOT auto-generate a `/sitemap.xml` index. This is a known Next.js bug (#77304).
-
-**Fix:** Removed `generateSitemaps()` from `app/sitemap.ts`. For a Central Oregon regional site, total URLs are well under Google's 50,000 limit per sitemap file, so a single sitemap works perfectly. Next.js now serves it directly at `/sitemap.xml`.
-
-**Verified:** `curl /sitemap.xml` returns 200 with valid XML containing all pages, listings, cities, communities, and more.
-
-#### 2. ✅ /sign-in 404 → Fixed
-**Fix:** Added permanent redirect in `next.config.ts`: `/sign-in` → `/login` (also handles `/sign-in/:path*` → `/login/:path*` for query params).
-
-**Verified:** `curl -I /sign-in` returns 308 redirect to `/login`.
-
-#### 3. ✅ Site URL Consistency → Fixed
-**Fix:**
-- `app/robots.ts` now uses `getCanonicalSiteUrl()` instead of hardcoded `ryanrealty.vercel.app` fallback
-- `app/videos/page.tsx` fallback changed from `ryanrealty.vercel.app` to `ryan-realty.com`
-- All fallback domains now consistently use `ryan-realty.com`
-
-**⚠️ Owner action required:** Set `NEXT_PUBLIC_SITE_URL` in Vercel production env to your actual production domain (e.g. `https://ryan-realty.com`). See `docs/LAUNCH_CHECKLIST.md`.
-
-#### 4. ✅ Communities Prerender → Fixed
-**Fix:** Added `export const dynamic = 'force-dynamic'` to `app/communities/page.tsx`. The page was already rendering dynamically (calls `getSession()` → `cookies()`), but the explicit declaration prevents CI build edge cases.
-
-#### 5. ✅ Google Maps Key → Fixed
-**Fix:** Changed `components/compare/CompareClient.tsx` from `NEXT_PUBLIC_GOOGLE_MAPS_KEY` to `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (matching all other files and `.env.example`).
+**Date:** April 2, 2026
+**PR:** #15 — 21 commits, ready to merge
+**Branch:** `cursor/launch-readiness-audit-14c9`
 
 ---
 
-### Lead Capture & Tracking Audit — Bugs Found and Fixed
+## DONE (this session)
 
-Performed a complete code-path audit of all lead capture flows. Found and fixed critical bugs:
+### Critical Fixes
+- **Sitemap:** Was showing 74 listings. Now shows all 6,580. Root cause: Supabase caps queries at 1,000 rows. Created `lib/supabase/paginate.ts` helper and paginated every query in the sitemap.
+- **Data truncation everywhere:** The same 1,000-row cap was silently truncating listing counts, median prices, community stats, subdivision counts, and status breakdowns across 15+ server actions. All fixed with pagination or count queries.
+- **Property type "A":** Was showing raw MLS code. Now shows "Single Family Residence" from `details.PropertySubType`.
+- **Listing agent card:** Was prominently featuring competitor agents. Now shows "Interested in this home?" CTA as primary, listing agent as small attribution line.
+- **Listing history:** `price_history` and `status_history` tables were empty. Wired fallback to `listing_history` table (2M rows) for price/status history on listing detail.
 
-1. **FUB API calls lacked try/catch** — `sendEvent()`, `findPersonByEmail()`, and `findUserByEmail()` in `lib/followupboss.ts` had no error handling around `fetch()`. A network error (DNS failure, timeout, etc.) would crash the entire lead flow. Fixed: all three functions now have try/catch with console.error logging.
+### SEO Fixes
+- Sitemap returns 200 with 25,125 URLs (was 3,709, actually missing most listings)
+- OG images added to 22 pages that were missing them
+- Canonical URLs fixed on `/open-houses`, `/about`
+- sr-only h1 added to search/listings page
+- All 6 redirect routes working (sign-in, search, agents, reports, home-valuation, listings)
 
-2. **CMA PDF download blocked by FUB** — The `/api/pdf/cma` route was `await`-ing `sendEvent()` before returning the PDF. If FUB was slow or down, the user would get a timeout or 500 instead of their CMA. Fixed: FUB tracking is now fire-and-forget (`.catch()` logged, response returned immediately).
+### UX Fixes
+- Reports page wrapped in Suspense (hero renders instantly)
+- Loading skeletons for search, listing detail, buy, reviews pages
+- ListingHero thumbnail strip scrollbar hidden
+- "Other homes in [subdivision]" section added to listing detail
+- Open house section wired to city search pages (renders when data exists)
 
-3. **Listing inquiry error after successful save** — `submitListingInquiry()` was `await`-ing FUB tracking after a successful database insert. If FUB failed, the user would see an error even though their inquiry was saved. Fixed: FUB tracking is now fire-and-forget.
-
-Full audit report: `docs/audits/lead-capture-tracking-audit.md`
-
----
-
-### End-to-End Testing Results
-
-**All 35+ routes tested and returning 200:**
-- Homepage, all city pages, community pages, listing detail pages
-- About, Team, Contact, Reviews, Buy, Sell, Join
-- Home Valuation, Mortgage Calculator, Appreciation Tool
-- Market Reports, Housing Market hub, Explore, Central Oregon
-- Communities, Open Houses, Compare, Videos, Activity Feed
-- Blog, Guides, Resources, Our Homes
-- Login, Signup, Dashboard pages (auth-gated)
-- Legal pages (Privacy, Terms, Accessibility, Fair Housing, DMCA)
-- Admin pages (auth-gated, superuser-only)
-
-**All redirects working:**
-- `/sign-in` → `/login` (308)
-- `/search` → `/homes-for-sale` (308)
-- `/agents` → `/team` (308)
-- `/reports` → `/housing-market/reports` (308)
-- `/home-valuation` → `/sell/valuation` (308)
-
-**Visual verification (browser):**
-- Homepage: Hero with real aerial photo, search bar, Google reviews, listing activity feed with real prices
-- Home Valuation: Form renders with all fields (address, name, email, phone)
-- Contact: Form with inquiry type dropdown, office info
-- Market Reports: Live data table with real MLS metrics (sold count, median price, DOM, inventory)
-- Login: Google OAuth, Facebook OAuth, email/password options
-- Sitemap.xml: Valid XML with all page URLs
-- Robots.txt: Correct disallows, AI bot user agents, correct sitemap URL
-- Communities: Resort and master-planned communities with cards
-- Listing detail: Photo gallery, breadcrumbs, price, key facts, demand indicators, agent CTA
-- Compare: Clean empty state with "Browse Homes" CTA
+### Infrastructure
+- `@tailwindcss/typography` installed for blog content
+- FUB API calls wrapped in try/catch (was crashing on network errors)
+- CMA PDF and listing inquiry FUB tracking made fire-and-forget
+- Sitemap contract test updated
+- TypeScript strict mode passes clean
 
 ---
 
-### Build & Test Results
+## NOT DONE (for next session)
 
-- `npm run build` ✅ (passes clean)
-- `npm run test` ✅ (251 tests, all passing)
-- All routes marked as `ƒ (Dynamic)` or `○ (Static)` — correct rendering modes
+### Data Pipeline Issues
+- `open_houses` table: 0 rows. MLS sync doesn't populate open house data. Component is wired but no data to show.
+- `listing_agents` table: 0 rows. Agent data comes from listing row columns, not separate table.
+- `listing_videos` table: 0 rows. Video data comes from `details` JSON, not separate table.
+- `listing_history`: Has 2M rows but only for older/closed listings. Recent active listings have 0 history rows (expected — they haven't changed yet).
+
+### Feature Gaps vs Zillow
+- No school information section on listing detail
+- No walkability/transit/bike scores
+- No climate/flood risk data
+- No tax history section (component exists at `components/listing/TaxHistory.tsx` but not wired — needs tax data)
+- No "Our listings" slider showing Ryan Realty's own listings with status badges
+- Community pages need content audit — verify each has unique description
+- No neighborhood-level data beyond what's in `communities` table
+
+### Performance
+- Homepage: FCP 112ms (good), total stream 10s (many Supabase queries)
+- Reports page: FCP fast with Suspense, total stream 16s
+- City pages: 5-10s total (pagination queries make it slower but data is correct now)
+- On Vercel (closer to Supabase), these will be 2-4x faster than on this VM
+
+### Cron Schedule
+- `vercel.json` has `sync-full` weekly, `sync-delta` daily
+- Owner needs to increase frequency for a live site (daily full sync minimum)
+
+### Owner Actions (in docs/LAUNCH_CHECKLIST.md)
+1. Set `NEXT_PUBLIC_SITE_URL` to production domain
+2. Confirm domain: `ryan-realty.com` (with hyphen) vs `ryanrealty.com` (no hyphen)
+3. Update Supabase Auth redirect URLs
+4. Set `ADMIN_EMAIL`, `CRON_SECRET`, GA4 ID, Maps API key
+5. Increase MLS sync frequency
 
 ---
 
-## LAUNCH CHECKLIST
+## KEY FILES CHANGED
 
-A complete, step-by-step launch checklist has been created at:
-
-**`docs/LAUNCH_CHECKLIST.md`**
-
-Covers:
-1. Domain & DNS setup
-2. All Vercel environment variables (what each one does, where to get it)
-3. Supabase Auth configuration (redirect URLs, Google OAuth)
-4. Vercel Cron Jobs (current schedules + recommended changes)
-5. Google Services (Maps, GA4, Search Console)
-6. Resend email domain verification
-7. Rate limiting setup (Upstash Redis)
-8. Post-launch verification steps
-9. Ongoing monitoring
-
----
-
-## KNOWN ITEMS (Not Bugs — Design Decisions)
-
-1. **Contact form has no database persistence.** Other lead flows (valuation, listing inquiry, RSVP) write to DB tables first, then send to FUB. Contact form goes directly to FUB. If FUB is down, the contact notification email is the only backup. This is low risk since FUB has 99.9%+ uptime, but if you want belt-and-suspenders, a `contact_submissions` table could be added.
-
-2. **Cron schedule mismatch.** `vercel.json` has `sync-full` weekly and `sync-delta` daily. For a live site with active listings, you may want more frequent sync. See the launch checklist for recommended schedules.
-
-3. **Domain ambiguity.** The codebase defaults to `ryan-realty.com` (with hyphen). The session brief mentions `ryanrealty.com` (no hyphen). Make sure `NEXT_PUBLIC_SITE_URL` matches your actual domain.
-
----
-
-## FILES CHANGED THIS SESSION
-
-### Pre-Launch Fixes
-- `app/sitemap.ts` — Removed `generateSitemaps()`, switched to single sitemap served at `/sitemap.xml`
-- `next.config.ts` — Added `/sign-in` → `/login` redirect
-- `app/robots.ts` — Uses `getCanonicalSiteUrl()` instead of hardcoded fallback
-- `app/videos/page.tsx` — Fixed fallback domain to `ryan-realty.com`
-- `app/communities/page.tsx` — Added `export const dynamic = 'force-dynamic'`
-- `components/compare/CompareClient.tsx` — Fixed env var name `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-
-### Bug Fixes
-- `lib/followupboss.ts` — Added try/catch to `sendEvent()`, `findPersonByEmail()`, `findUserByEmail()`
-- `app/api/pdf/cma/route.ts` — Made FUB tracking fire-and-forget
-- `app/actions/track-contact-agent.ts` — Made FUB tracking fire-and-forget in `submitListingInquiry()`
-
-### Documentation
-- `docs/LAUNCH_CHECKLIST.md` — New: comprehensive launch checklist
-- `docs/audits/lead-capture-tracking-audit.md` — New: detailed audit of all lead flows
+```
+app/sitemap.ts                              — Pagination for all queries
+lib/supabase/paginate.ts                     — Shared fetchAllRows helper
+lib/followupboss.ts                          — try/catch on all fetch calls
+lib/property-type-labels.ts                  — MLS code A→Residential mapping
+app/actions/listings.ts                      — 6 queries paginated
+app/actions/cities.ts                        — 3 queries paginated
+app/actions/communities.ts                   — 1 query paginated
+app/actions/market-stats.ts                  — 1 query paginated
+app/actions/listing-detail.ts                — History fallback + nav optimization
+app/actions/track-contact-agent.ts           — Fire-and-forget FUB
+app/api/pdf/cma/route.ts                     — Fire-and-forget FUB
+app/listing/[listingKey]/page.tsx             — PropertySubType, subdivision section
+app/search/[...slug]/page.tsx                — Open houses section
+app/reports/page.tsx                         — Suspense wrapping
+components/listing/showcase/ShowcaseAgent.tsx — Redesigned CTA
+components/listing/showcase/ShowcaseKeyFacts.tsx — Property type label
+components/listing/showcase/ShowcaseSimilar.tsx  — Title prop
+components/listing/ListingHero.tsx           — no-scrollbar
+next.config.ts                               — /sign-in redirect
+app/robots.ts                                — getCanonicalSiteUrl()
+22 page files                                — OG images + twitter cards
+4 page files                                 — Loading skeletons
+docs/LAUNCH_CHECKLIST.md                     — New
+docs/audits/lead-capture-tracking-audit.md   — New
+```
