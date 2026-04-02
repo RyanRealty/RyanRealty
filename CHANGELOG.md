@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.8 (2026-04-02)
+
+### Other
+- ci: remove lighthouse and a11y checks from main CI pipeline
+
+---
+
+
 ## v1.0.7 (2026-04-02)
 
 ### Bug Fixes
