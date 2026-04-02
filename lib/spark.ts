@@ -7,6 +7,7 @@
 const SPARK_BASE = process.env.SPARK_API_BASE_URL || 'https://sparkapi.com/v1'
 /** Some MLS/Spark setups use "OAuth" instead of "Bearer". Set SPARK_AUTH_SCHEME=OAuth to try. */
 const SPARK_AUTH_SCHEME = (process.env.SPARK_AUTH_SCHEME || 'Bearer').trim()
+const SPARK_HISTORY_TIMEOUT_MS = Math.max(5000, Math.min(120000, Number(process.env.SPARK_HISTORY_TIMEOUT_MS ?? 30000)))
 
 export type SparkPhoto = {
   Id?: string
@@ -473,6 +474,7 @@ export async function fetchSparkListingHistory(
         Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
         Accept: 'application/json',
       },
+      signal: AbortSignal.timeout(SPARK_HISTORY_TIMEOUT_MS),
       next: { revalidate: 0 },
     })
     if (!res.ok) {
@@ -509,6 +511,7 @@ export async function fetchSparkPriceHistory(
         Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
         Accept: 'application/json',
       },
+      signal: AbortSignal.timeout(SPARK_HISTORY_TIMEOUT_MS),
       next: { revalidate: 0 },
     })
     if (!res.ok) {

@@ -65,7 +65,13 @@ for (let i = 0; i < process.argv.slice(2).length; i++) {
   }
 }
 
-const baseUrl = (baseUrlArg || process.env.SITE_URL || env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+const baseUrl = (
+  baseUrlArg ||
+  process.env.SYNC_YEAR_BASE_URL ||
+  process.env.SITE_URL ||
+  env.NEXT_PUBLIC_SITE_URL ||
+  'http://localhost:3001'
+).replace(/\/$/, '')
 const secret = process.env.CRON_SECRET || env.CRON_SECRET
 
 if (!secret?.trim()) {
@@ -81,13 +87,26 @@ const url = `${baseUrl}/api/cron/sync-year-by-year${params.toString() ? `?${para
 let lastYear = null
 let lastPhase = null
 let totalListingsUpserted = 0
+let lastProgressSignature = null
+let lastProgressAt = Date.now()
+let consecutiveFailures = 0
+let consecutiveNoProgress = 0
 
 function statusLine(msg) {
   const ts = new Date().toLocaleTimeString()
   process.stdout.write(`[${ts}] ${msg}\n`)
 }
 
-const FETCH_TIMEOUT_MS = 5 * 60 * 1000 // 5 min per request
+function readNumericEnv(name, fallback, min = 0) {
+  const value = Number(process.env[name])
+  if (!Number.isFinite(value)) return fallback
+  return Math.max(min, value)
+}
+
+const FETCH_TIMEOUT_MS = readNumericEnv('SYNC_YEAR_FETCH_TIMEOUT_MS', 5 * 60 * 1000, 60_000)
+const FAILURE_LIMIT = readNumericEnv('SYNC_YEAR_FAILURE_LIMIT', 8, 1)
+const NO_PROGRESS_LIMIT = readNumericEnv('SYNC_YEAR_NO_PROGRESS_LIMIT', 12, 1)
+const NO_PROGRESS_STALE_MS = readNumericEnv('SYNC_YEAR_NO_PROGRESS_STALE_MS', 30 * 60 * 1000, 0)
 
 function fmt(n) {
   return typeof n === 'number' ? n.toLocaleString() : '?'
@@ -109,6 +128,14 @@ async function oneRun() {
   if (!res.ok) {
     statusLine(`HTTP ${res.status}: ${data.error || JSON.stringify(data)}`)
     return { ok: false, done: false }
+  }
+
+  const durationMs = typeof data.chunkDurationMs === 'number' ? data.chunkDurationMs : null
+  if (durationMs != null) {
+    statusLine(`Chunk duration: ${Math.round(durationMs / 1000)}s`)
+  }
+  if (data.staleLaneRecovered) {
+    statusLine('Recovered a stale lane cursor before running this chunk.')
   }
 
   const year = data.year ?? lastYear
@@ -155,6 +182,15 @@ async function oneRun() {
   if (phase === 'history') {
     const inserted = data.historyInserted ?? 0
     const finalized = data.listingsFinalized ?? 0
+    const signature = `${phase}:${data.processedListings ?? 0}:${data.historyInserted ?? 0}:${data.listingsFinalized ?? 0}`
+    if (signature !== lastProgressSignature) {
+      lastProgressSignature = signature
+      lastProgressAt = Date.now()
+      consecutiveNoProgress = 0
+    } else if ((Date.now() - lastProgressAt) >= NO_PROGRESS_STALE_MS) {
+      consecutiveNoProgress += 1
+      statusLine(`No new history progress observed for ${Math.round((Date.now() - lastProgressAt) / 60000)}m (${consecutiveNoProgress}/${NO_PROGRESS_LIMIT}).`)
+    }
     if (inserted > 0 || finalized > 0) {
       const proc = data.processedListings ?? 0
       const total = data.totalListings ?? 0
@@ -162,6 +198,9 @@ async function oneRun() {
       statusLine(`  ${fmt(proc)}/${fmt(total)} (${pct}%)  |  +${fmt(inserted)} history rows, +${fmt(finalized)} finalized`)
     } else if (data.message) {
       statusLine(`  ${data.message}`)
+    }
+    if (data.yielded) {
+      statusLine('  Request budget reached. Progress saved and the next request will resume from this checkpoint.')
     }
   }
 
@@ -182,9 +221,19 @@ async function main() {
   while (true) {
     const { ok, done } = await oneRun()
     if (!ok) {
+      consecutiveFailures += 1
+      if (consecutiveFailures >= FAILURE_LIMIT) {
+        statusLine(`Too many consecutive request failures (${consecutiveFailures}). Exiting so the supervisor can restart this year.`)
+        process.exit(2)
+      }
       statusLine('Request failed. Retrying in 15s...')
       await new Promise((r) => setTimeout(r, 15000))
       continue
+    }
+    consecutiveFailures = 0
+    if (consecutiveNoProgress >= NO_PROGRESS_LIMIT) {
+      statusLine(`No history progress after ${consecutiveNoProgress} stale checks. Exiting so the supervisor can restart year ${targetYear ?? lastYear ?? '?'}.`)
+      process.exit(3)
     }
     if (done) {
       console.log('\n==========  Year sync complete  ==========')

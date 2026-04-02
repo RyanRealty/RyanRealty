@@ -58,6 +58,19 @@ function hasPartialHistoryProgress(row: YearCacheRow | undefined): boolean {
   return processed > 0 && total > processed
 }
 
+function hasFinishedHistory(row: YearCacheRow | undefined): boolean {
+  if (!row) return false
+  if (row.runStatus === 'completed') return true
+  const sparkListings = Number(row.sparkListings ?? 0)
+  const finalizedListings = Number(row.finalizedListings ?? 0)
+  if (sparkListings > 0 && finalizedListings >= sparkListings) return true
+  return false
+}
+
+function isTimeoutLikeError(message: string | null | undefined): boolean {
+  return /statement timeout|canceling statement|timeout|57014/i.test(String(message ?? ''))
+}
+
 function yearBounds(year: number) {
   const fromIso = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0)).toISOString()
   const toIsoExclusive = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0)).toISOString()
@@ -166,26 +179,39 @@ async function fetchSupabaseYearListingsBatch(
   year: number,
   offset: number,
   limit: number
-): Promise<{ rows: YearListingRow[]; error?: string }> {
+): Promise<{ rows: YearListingRow[]; error?: string; limitUsed: number }> {
   const { fromIso, toIsoExclusive } = yearBounds(year)
-  const { data, error } = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, StandardStatus')
-    .gte('OnMarketDate', fromIso)
-    .lt('OnMarketDate', toIsoExclusive)
-    .order('ListNumber', { ascending: true, nullsFirst: false })
-    .range(offset, offset + limit - 1)
-  if (error) return { rows: [], error: error.message }
-  const rows = (data ?? []) as YearListingRow[]
-  const seen = new Set<string>()
-  const deduped: YearListingRow[] = []
-  for (const row of rows) {
-    const key = String(row.ListNumber ?? row.ListingKey ?? '').trim()
-    if (!key || seen.has(key)) continue
-    seen.add(key)
-    deduped.push(row)
+  let currentLimit = Math.max(MIN_HISTORY_CHUNK_SIZE, limit)
+  while (true) {
+    const { data, error } = await supabase
+      .from('listings')
+      .select('ListingKey, ListNumber, StandardStatus')
+      .gte('OnMarketDate', fromIso)
+      .lt('OnMarketDate', toIsoExclusive)
+      .order('ListNumber', { ascending: true, nullsFirst: false })
+      .range(offset, offset + currentLimit - 1)
+    if (error) {
+      if (!isTimeoutLikeError(error.message) || currentLimit <= MIN_HISTORY_CHUNK_SIZE) {
+        return { rows: [], error: error.message, limitUsed: currentLimit }
+      }
+      const nextLimit = Math.max(MIN_HISTORY_CHUNK_SIZE, Math.floor(currentLimit / 2))
+      if (nextLimit >= currentLimit) {
+        return { rows: [], error: error.message, limitUsed: currentLimit }
+      }
+      currentLimit = nextLimit
+      continue
+    }
+    const rows = (data ?? []) as YearListingRow[]
+    const seen = new Set<string>()
+    const deduped: YearListingRow[] = []
+    for (const row of rows) {
+      const key = String(row.ListNumber ?? row.ListingKey ?? '').trim()
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      deduped.push(row)
+    }
+    return { rows: deduped, limitUsed: currentLimit }
   }
-  return { rows: deduped }
 }
 
 async function checkCancelRequested(
@@ -475,6 +501,11 @@ export async function runYearSync(
 }
 
 const HISTORY_CHUNK_SIZE = Math.max(20, Math.min(80, Number(process.env.SYNC_YEAR_HISTORY_CHUNK ?? 40)))
+const MIN_HISTORY_CHUNK_SIZE = Math.max(5, Math.min(HISTORY_CHUNK_SIZE, Number(process.env.SYNC_YEAR_HISTORY_MIN_CHUNK ?? 10)))
+const HISTORY_REQUEST_BUDGET_MS = Math.max(
+  30_000,
+  Math.min(290_000, Number(process.env.SYNC_YEAR_REQUEST_BUDGET_MS ?? 240_000))
+)
 const LISTINGS_PAGE_SIZE = 500
 
 export type RunYearSyncChunkResult = {
@@ -490,6 +521,8 @@ export type RunYearSyncChunkResult = {
   totalListings?: number
   sparkListings?: number
   supabaseListings?: number
+  yielded?: boolean
+  chunkDurationMs?: number
   error?: string
 }
 
@@ -506,7 +539,8 @@ export async function runYearSyncChunk(options: {
 }): Promise<RunYearSyncChunkResult> {
   const { supabase, token, targetYear } = options
   const currentYear = new Date().getUTCFullYear()
-  const nowIso = new Date().toISOString()
+  const startedAtMs = Date.now()
+  const nowIso = new Date(startedAtMs).toISOString()
   const cursorId = options.cursorId?.trim() || 'default'
 
   const { data: cursorRow } = await supabase
@@ -604,13 +638,14 @@ export async function runYearSyncChunk(options: {
     next_history_offset?: number
     total_listings?: number | null
   }) {
+    const updatedAt = new Date().toISOString()
     await supabase
       .from('sync_year_cursor')
       .upsert(
         {
           id: cursorId,
           ...patch,
-          updated_at: nowIso,
+          updated_at: updatedAt,
         },
         { onConflict: 'id' }
       )
@@ -636,7 +671,7 @@ export async function runYearSyncChunk(options: {
 
       for (const y of years) {
         const row = cache.rows[String(y)]
-        if (row?.runStatus === 'completed') continue
+        if (hasFinishedHistory(row)) continue
         pickedYear = y
         break
       }
@@ -990,6 +1025,7 @@ export async function runYearSyncChunk(options: {
       }
     }
     const batch = batchResult.rows
+    const batchLimitUsed = batchResult.limitUsed
     const historyConcurrency = Math.max(1, Math.min(8, Number(process.env.SYNC_HISTORY_CONCURRENCY ?? 3)))
     let sparkHistoryRows = 0
     let listingsFinalized = 0
@@ -1050,34 +1086,14 @@ export async function runYearSyncChunk(options: {
     for (let i = 0; i < batch.length; i += historyConcurrency) {
       chunked.push(batch.slice(i, i + historyConcurrency))
     }
-    for (const chunk of chunked) {
-      await Promise.all(chunk.map((row) => processListing(row)))
-    }
-
     const yearKey = String(year)
     const existing = cache.rows[yearKey] ?? {}
     const prevProcessed = existing.processedListings ?? 0
     const prevHistory = existing.historyInserted ?? 0
     const prevFinalized = existing.listingsFinalized ?? 0
-    const newProcessed = prevProcessed + batch.length
-    const newHistory = prevHistory + sparkHistoryRows
-    const newFinalized = prevFinalized + listingsFinalized
-
-    cache.rows[yearKey] = {
-      ...existing,
-      runStatus: 'running',
-      runPhase: 'Syncing history',
-      processedListings: newProcessed,
-      historyInserted: newHistory,
-      listingsFinalized: newFinalized,
-      finalizedListings: newFinalized,
-      runUpdatedAt: nowIso,
-    }
-    cache.updatedAt = nowIso
-    await supabase.from('sync_state').upsert({ id: 'default', year_sync_matrix_cache: cache, updated_at: nowIso }, { onConflict: 'id' })
-
     const effectiveTotal = totalListings ?? 0
     if (batch.length === 0) {
+      const completedAt = new Date().toISOString()
       const [supabaseListings, finalizedListings] = await Promise.all([
         countSupabaseListingsForYear(supabase, year),
         countFinalizedClosedForYear(supabase, year),
@@ -1088,23 +1104,23 @@ export async function runYearSyncChunk(options: {
         runPhase: null,
         supabaseListings,
         finalizedListings,
-        lastSyncedAt: nowIso,
+        lastSyncedAt: completedAt,
         lastError: null,
         processedListings: Math.max(prevProcessed, effectiveTotal),
         historyInserted: prevHistory,
         listingsFinalized: prevFinalized,
         cancelRequested: false,
-        runUpdatedAt: nowIso,
+        runUpdatedAt: completedAt,
       }
-      cache.updatedAt = nowIso
-      await supabase.from('sync_state').upsert({ id: 'default', year_sync_matrix_cache: cache, updated_at: nowIso }, { onConflict: 'id' })
+      cache.updatedAt = completedAt
+      await supabase.from('sync_state').upsert({ id: 'default', year_sync_matrix_cache: cache, updated_at: completedAt }, { onConflict: 'id' })
       await supabase.from('year_sync_log').insert({
         year,
         status: 'completed',
         listings_upserted: existing.listingsUpserted ?? 0,
         history_inserted: prevHistory,
         listings_finalized: prevFinalized,
-        completed_at: nowIso,
+        completed_at: completedAt,
       })
       await updateCursor({ phase: 'idle', current_year: null, next_listing_page: 1, next_history_offset: 0, total_listings: null })
       return {
@@ -1117,13 +1133,83 @@ export async function runYearSyncChunk(options: {
         listingsFinalized: 0,
         processedListings: Math.max(prevProcessed, effectiveTotal),
         totalListings: effectiveTotal,
+        chunkDurationMs: Date.now() - startedAtMs,
       }
     }
+    async function persistHistoryProgress(processedDelta: number) {
+      const progressIso = new Date().toISOString()
+      const processedListings = prevProcessed + processedDelta
+      const historyInserted = prevHistory + sparkHistoryRows
+      const finalizedListings = prevFinalized + listingsFinalized
+      const effectiveProgressTotal =
+        typeof totalListings === 'number'
+          ? totalListings
+          : cache.rows[yearKey]?.totalListings
+      cache.rows[yearKey] = {
+        ...cache.rows[yearKey],
+        runStatus: 'running',
+        runPhase: 'Syncing history',
+        totalListings: effectiveProgressTotal,
+        processedListings,
+        historyInserted,
+        listingsFinalized: finalizedListings,
+        finalizedListings,
+        cancelRequested: false,
+        runUpdatedAt: progressIso,
+      }
+      cache.updatedAt = progressIso
+      await Promise.all([
+        supabase.from('sync_state').upsert(
+          { id: 'default', year_sync_matrix_cache: cache, updated_at: progressIso },
+          { onConflict: 'id' }
+        ),
+        updateCursor({
+          current_year: year,
+          phase: 'history',
+          next_listing_page: 1,
+          next_history_offset: processedListings,
+          total_listings: totalListings,
+        }),
+      ])
+    }
+
+    let processedInRequest = 0
+    for (const chunk of chunked) {
+      await Promise.all(chunk.map((row) => processListing(row)))
+      processedInRequest += chunk.length
+      await persistHistoryProgress(processedInRequest)
+      if (processedInRequest < batch.length && (Date.now() - startedAtMs) >= HISTORY_REQUEST_BUDGET_MS) {
+        const newProcessed = prevProcessed + processedInRequest
+        const newHistory = prevHistory + sparkHistoryRows
+        const newFinalized = prevFinalized + listingsFinalized
+        const batchNote = batchLimitUsed < HISTORY_CHUNK_SIZE
+          ? ` Batch size reduced to ${batchLimitUsed} after a timeout-safe retry.`
+          : ''
+        return {
+          ok: true,
+          done: false,
+          year,
+          phase: 'history',
+          message: `Year ${year} history checkpoint saved at ${newProcessed}/${totalListings ?? '?'}.${batchNote}`,
+          historyInserted: sparkHistoryRows,
+          listingsFinalized,
+          processedListings: newProcessed,
+          totalListings: totalListings ?? 0,
+          yielded: true,
+          chunkDurationMs: Date.now() - startedAtMs,
+        }
+      }
+    }
+
+    const newProcessed = prevProcessed + processedInRequest
+    const newHistory = prevHistory + sparkHistoryRows
+    const newFinalized = prevFinalized + listingsFinalized
     const historyDone =
       effectiveTotal > 0 &&
       newProcessed > 0 &&
-      (batch.length < HISTORY_CHUNK_SIZE || newProcessed >= effectiveTotal)
+      (batch.length < batchLimitUsed || newProcessed >= effectiveTotal)
     if (historyDone) {
+      const completedAt = new Date().toISOString()
       const [supabaseListings, finalizedListings] = await Promise.all([
         countSupabaseListingsForYear(supabase, year),
         countFinalizedClosedForYear(supabase, year),
@@ -1135,28 +1221,28 @@ export async function runYearSyncChunk(options: {
         sparkListings: existing.sparkListings ?? 0,
         supabaseListings,
         finalizedListings,
-        lastSyncedAt: nowIso,
+        lastSyncedAt: completedAt,
         lastError: null,
         processedListings: newProcessed,
         historyInserted: newHistory,
         listingsFinalized: newFinalized,
         cancelRequested: false,
-        runUpdatedAt: nowIso,
+        runUpdatedAt: completedAt,
       }
-      cache.updatedAt = nowIso
+      cache.updatedAt = completedAt
       const allYears = Object.keys(cache.rows).map((k) => Number(k)).filter(Number.isFinite)
       if (allYears.length > 0) {
         cache.sparkMinYear = Math.min(1990, ...allYears)
         cache.sparkMaxYear = Math.max(currentYear, ...allYears)
       }
-      await supabase.from('sync_state').upsert({ id: 'default', year_sync_matrix_cache: cache, updated_at: nowIso }, { onConflict: 'id' })
+      await supabase.from('sync_state').upsert({ id: 'default', year_sync_matrix_cache: cache, updated_at: completedAt }, { onConflict: 'id' })
       await supabase.from('year_sync_log').insert({
         year,
         status: 'completed',
         listings_upserted: existing.listingsUpserted ?? 0,
         history_inserted: newHistory,
         listings_finalized: newFinalized,
-        completed_at: nowIso,
+        completed_at: completedAt,
       })
       await updateCursor({ phase: 'idle', current_year: null, next_listing_page: 1, next_history_offset: 0, total_listings: null })
       return {
@@ -1169,24 +1255,24 @@ export async function runYearSyncChunk(options: {
         listingsFinalized,
         processedListings: newProcessed,
         totalListings: totalListings ?? newProcessed,
+        chunkDurationMs: Date.now() - startedAtMs,
       }
     }
 
-    await updateCursor({
-      phase: 'history',
-      next_history_offset: nextHistoryOffset + batch.length,
-      total_listings: totalListings,
-    })
+    const batchNote = batchLimitUsed < HISTORY_CHUNK_SIZE
+      ? ` Batch size reduced to ${batchLimitUsed} after a timeout-safe retry.`
+      : ''
     return {
       ok: true,
       done: false,
       year,
       phase: 'history',
-      message: `Year ${year} history: ${newProcessed}/${totalListings ?? '?'} processed. ${sparkHistoryRows} rows, ${listingsFinalized} finalized this chunk.`,
+      message: `Year ${year} history: ${newProcessed}/${totalListings ?? '?'} processed. ${sparkHistoryRows} rows, ${listingsFinalized} finalized this chunk.${batchNote}`,
       historyInserted: sparkHistoryRows,
       listingsFinalized,
       processedListings: newProcessed,
       totalListings: totalListings ?? 0,
+      chunkDurationMs: Date.now() - startedAtMs,
     }
   }
 

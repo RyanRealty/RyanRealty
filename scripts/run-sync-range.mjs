@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Sync a range of years in ascending order, one at a time.
+ * Sync a range of years in descending order, one at a time.
  * Waits for each year to fully complete before starting the next.
  *
  * Usage:
- *   node scripts/run-sync-range.mjs 2016 2025
- *   node scripts/run-sync-range.mjs 2016        # 2016 → current year
+ *   node scripts/run-sync-range.mjs 1990 2014
+ *   node scripts/run-sync-range.mjs 1990        # current backlog range down to 1990
  */
 
 import { spawn } from 'child_process'
@@ -47,6 +47,7 @@ const baseUrl = (
   envLocal.NEXT_PUBLIC_SITE_URL ||
   'http://localhost:3001'
 ).replace(/\/$/, '')
+const MAX_RESTARTS_PER_YEAR = Math.max(1, Number(process.env.SYNC_YEAR_MAX_RESTARTS ?? 8))
 
 if (fromYear > toYear) {
   console.error(`Start year (${fromYear}) must be <= end year (${toYear})`)
@@ -73,6 +74,9 @@ function syncYear(year) {
       if (code === 0) {
         console.log(`\n✓ Year ${year} complete.\n`)
         resolve()
+      } else if (code === 3 || code === 75) {
+        console.log(`\n↺ Year ${year} helper went stale. Restarting from saved cursor...\n`)
+        resolve('restart')
       } else {
         reject(new Error(`sync for ${year} exited with code ${code}`))
       }
@@ -84,17 +88,26 @@ function syncYear(year) {
 
 async function main() {
   const years = []
-  for (let y = fromYear; y <= toYear; y++) years.push(y)
+  for (let y = toYear; y >= fromYear; y--) years.push(y)
 
-  console.log(`Syncing years ${fromYear} → ${toYear} (${years.length} year${years.length === 1 ? '' : 's'}) in order.`)
+  console.log(`Syncing years ${toYear} → ${fromYear} (${years.length} year${years.length === 1 ? '' : 's'}) in order.`)
   console.log('Each year must complete before the next starts.\n')
 
   for (const year of years) {
-    await syncYear(year)
+    let restartCount = 0
+    // If the helper exits because it stopped making progress, restart the same year
+    // and let the server resume from the last saved cursor/checkpoint.
+    while ((await syncYear(year)) === 'restart') {
+      restartCount += 1
+      if (restartCount >= MAX_RESTARTS_PER_YEAR) {
+        throw new Error(`year ${year} exceeded ${MAX_RESTARTS_PER_YEAR} automatic restarts`)
+      }
+      console.log(`Restart ${restartCount}/${MAX_RESTARTS_PER_YEAR} for year ${year}...\n`)
+    }
   }
 
   console.log(`\n${'='.repeat(50)}`)
-  console.log(`  All years ${fromYear}–${toYear} synced.`)
+  console.log(`  All years ${toYear}–${fromYear} synced.`)
   console.log(`${'='.repeat(50)}\n`)
 }
 

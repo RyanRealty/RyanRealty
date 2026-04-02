@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { runYearSyncChunk } from '@/app/api/admin/sync/_shared/run-year-sync'
 
+export const dynamic = 'force-dynamic'
+export const maxDuration = 300
+
+const STALE_LANE_MS = Math.max(5 * 60 * 1000, Math.min(60 * 60 * 1000, Number(process.env.SYNC_YEAR_STALE_LANE_MS ?? 20 * 60 * 1000)))
+
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET
   if (secret?.trim()) {
@@ -53,6 +58,47 @@ export async function GET(request: Request) {
       : 'default'
 
   const supabase = createClient(supabaseUrl, serviceKey)
+  let staleLaneRecovered = false
+  if (targetYear != null) {
+    const { data: activeCursor } = await supabase
+      .from('sync_year_cursor')
+      .select('current_year, phase, updated_at')
+      .eq('id', cursorId)
+      .maybeSingle()
+
+    const active = activeCursor as { current_year?: number | null; phase?: string | null; updated_at?: string | null } | null
+    const activeYear = active?.current_year ?? null
+    const activePhase = active?.phase ?? null
+    const laneBusy = activeYear != null && activePhase != null && activePhase !== 'idle'
+    const updatedAtMs = active?.updated_at ? new Date(active.updated_at).getTime() : Number.NaN
+    const isStale = Number.isFinite(updatedAtMs) && (Date.now() - updatedAtMs) > STALE_LANE_MS
+    if (laneBusy && activeYear !== targetYear && !isStale) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Lane ${cursorId} is already running year ${activeYear}.`,
+          year: activeYear,
+          phase: activePhase,
+        },
+        { status: 409 }
+      )
+    }
+    if (laneBusy && isStale) {
+      await supabase.from('sync_year_cursor').upsert(
+        {
+          id: cursorId,
+          current_year: null,
+          phase: 'idle',
+          next_listing_page: 1,
+          next_history_offset: 0,
+          total_listings: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      )
+      staleLaneRecovered = true
+    }
+  }
   const result = await runYearSyncChunk({ supabase, token: accessToken, targetYear, cursorId })
 
   if (!result.ok) {
@@ -75,5 +121,8 @@ export async function GET(request: Request) {
     listingsFinalized: result.listingsFinalized,
     processedListings: result.processedListings,
     totalListings: result.totalListings,
+    yielded: result.yielded ?? false,
+    chunkDurationMs: result.chunkDurationMs,
+    staleLaneRecovered,
   })
 }
