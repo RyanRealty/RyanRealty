@@ -27,6 +27,7 @@ import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import VideoToursRow from '@/components/videos/VideoToursRow'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
+import BrokerageListingsSlider from '@/components/home/BrokerageListingsSlider'
 import { Skeleton } from '@/components/ui/skeleton'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -258,6 +259,11 @@ export default async function Home() {
 
       {/* Static — renders immediately, no data fetch */}
       <SocialProofSection testimonials={TESTIMONIALS} teamImageSrc={getTeamImageSrc(brokerage)} />
+
+      {/* Streams in: Ryan Realty brokerage listings */}
+      <Suspense fallback={<SectionSkeleton height="min-h-[280px]" />}>
+        <BrokerageListingsSlider />
+      </Suspense>
 
       {/* Streams in: activity feed (heaviest section) */}
       <Suspense fallback={<SectionSkeleton />}>

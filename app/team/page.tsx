@@ -7,6 +7,8 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
+import BrokerageListingsSlider from '@/components/home/BrokerageListingsSlider'
+import { Suspense } from 'react'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -110,6 +112,9 @@ export default async function TeamPage() {
           </div>
         )}
       </section>
+      <Suspense fallback={null}>
+        <BrokerageListingsSlider />
+      </Suspense>
       <BrokerSocialProofCta
         title="Work With a Proven Local Team"
         subtitle="Each broker page includes reviews, track record, and direct contact options so buyers and sellers can move forward with confidence."
