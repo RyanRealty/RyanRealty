@@ -37,6 +37,14 @@ const PROPERTY_TYPE_LABELS: Record<string, string> = {
   // Numeric or alternate codes some MLS use
   '433': 'Manufactured Home',
   '434': 'Mobile Home',
+  // Single-letter MLS codes (Central Oregon / Spark)
+  A: 'Residential',
+  B: 'Multi-Family',
+  C: 'Commercial',
+  D: 'Land',
+  E: 'Farm & Ranch',
+  F: 'Manufactured',
+  G: 'Rental',
 }
 
 /**

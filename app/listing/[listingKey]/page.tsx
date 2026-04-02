@@ -360,7 +360,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
                 sqft={listing.living_area != null ? Number(listing.living_area) : null}
                 lotAcres={listing.lot_size_acres ?? null}
                 lotSqft={listing.lot_size_sqft ?? null}
-                propertyType={listing.property_type ?? listing.property_sub_type ?? null}
+                propertyType={listing.property_sub_type ?? listing.property_type ?? null}
                 yearBuilt={listing.year_built ?? null}
                 price={listing.list_price ?? null}
                 daysOnMarket={listing.days_on_market ?? listing.cumulative_days_on_market ?? null}

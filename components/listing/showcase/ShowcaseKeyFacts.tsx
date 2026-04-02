@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+import { getPropertyTypeLabel } from '@/lib/property-type-labels'
 
 function formatNum(n: number | null | undefined): string {
   if (n == null) return '—'
@@ -44,7 +45,7 @@ export default function ShowcaseKeyFacts({
     { label: 'Bathrooms', value: formatNum(baths) },
     { label: 'Square feet', value: sqft != null && sqft > 0 ? formatNum(sqft) : '—' },
     { label: 'Lot', value: lotAcres != null && lotAcres > 0 ? `${lotAcres} acres` : lotSqft != null && lotSqft > 0 ? `${formatNum(lotSqft)} sqft` : '—' },
-    { label: 'Type', value: propertyType?.trim() || '—' },
+    { label: 'Type', value: getPropertyTypeLabel(propertyType) },
     { label: 'Year built', value: yearBuilt != null ? String(yearBuilt) : '—' },
     { label: 'List price', value: formatPrice(price) },
     { label: 'Days on market', value: daysOnMarket != null ? String(daysOnMarket) : '—' },
