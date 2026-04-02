@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Separator } from '@/components/ui/separator'
 import { trackEvent } from '@/lib/tracking'
 import { trackCtaClick } from '@/lib/cta-tracking'
 
@@ -24,21 +24,12 @@ type Props = {
   shareUrl: string
 }
 
-function initials(name: string | null): string {
-  if (!name?.trim()) return '?'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length >= 2) return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase()
-  return name.slice(0, 2).toUpperCase()
-}
-
 /**
- * Listing agent attribution card.
- * Shows who listed the property (name + office) for transparency.
- * All CTAs route to the site owner (Ryan Realty) — never to the listing agent.
+ * Listing sidebar CTA card.
+ * Ryan Realty CTAs are PRIMARY and prominent — the whole point is to capture the lead.
+ * Listing agent attribution is a small, secondary line at the bottom for MLS compliance.
  */
 export default function ShowcaseAgent({ listingKey, agent, shareUrl }: Props) {
-  if (!agent) return null
-
   const contactUrl = `/contact?listing=${encodeURIComponent(listingKey)}&reason=inquiry`
   const tourUrl = `/contact?listing=${encodeURIComponent(listingKey)}&reason=tour`
 
@@ -63,23 +54,12 @@ export default function ShowcaseAgent({ listingKey, agent, shareUrl }: Props) {
   return (
     <Card className="border-border bg-card">
       <CardContent className="p-6">
-        {/* Attribution: who listed the property */}
-        <p className="text-xs text-muted-foreground mb-3">Listed by</p>
-        <div className="flex items-center gap-4">
-          <Avatar className="h-14 w-14 rounded-full border border-border">
-            <AvatarFallback className="bg-muted text-sm font-medium text-muted-foreground">
-              {initials(agent.agent_name)}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-semibold text-foreground">{agent.agent_name ?? 'Listing agent'}</p>
-            {agent.office_name && (
-              <p className="text-sm text-muted-foreground">{agent.office_name}</p>
-            )}
-          </div>
-        </div>
+        {/* Ryan Realty CTAs — primary and prominent */}
+        <p className="text-lg font-semibold text-foreground">Interested in this home?</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Our team can schedule a showing or answer any questions.
+        </p>
 
-        {/* CTAs route to site owner (Ryan Realty), never listing agent */}
         <div className="mt-4 flex flex-col gap-2">
           <Button
             asChild
@@ -100,6 +80,17 @@ export default function ShowcaseAgent({ listingKey, agent, shareUrl }: Props) {
             <Link href={contactUrl}>Ask a question</Link>
           </Button>
         </div>
+
+        {/* Listing agent attribution — small, secondary, MLS compliance */}
+        {agent?.agent_name && (
+          <>
+            <Separator className="my-4" />
+            <p className="text-xs text-muted-foreground">
+              Listed by {agent.agent_name}
+              {agent.office_name ? ` · ${agent.office_name}` : ''}
+            </p>
+          </>
+        )}
       </CardContent>
     </Card>
   )
