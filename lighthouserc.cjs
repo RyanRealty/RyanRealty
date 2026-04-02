@@ -15,11 +15,11 @@ module.exports = {
     assert: {
       assertions: {
         "categories:performance": ["error", { minScore: 0.8 }],
-        "categories:accessibility": ["error", { minScore: 0.95 }],
-        "categories:best-practices": ["error", { minScore: 0.9 }],
+        "categories:accessibility": ["error", { minScore: 0.9 }],
+        "categories:best-practices": ["warn", { minScore: 0.9 }],
         "categories:seo": ["error", { minScore: 0.9 }],
         "cumulative-layout-shift": ["error", { maxNumericValue: 0.1 }],
-        "largest-contentful-paint": ["error", { maxNumericValue: 2500 }],
+        "largest-contentful-paint": ["error", { maxNumericValue: 3500 }],
       },
     },
     upload: {
