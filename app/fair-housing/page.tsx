@@ -3,6 +3,7 @@ import Link from 'next/link'
 import EqualHousing from '@/components/legal/EqualHousing'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
 const HUD_URL = 'https://www.hud.gov/program_offices/fair_housing_equal_opp'
 const HUD_PHONE = '1-800-669-9777'
 
@@ -10,6 +11,10 @@ export const metadata: Metadata = {
   title: 'Fair Housing',
   description: 'Ryan Realty commitment to Equal Housing Opportunity and fair housing laws.',
   alternates: { canonical: `${siteUrl}/fair-housing` },
+  openGraph: {
+    images: [{ url: ogImage, width: 1200, height: 630 }],
+  },
+  twitter: { card: 'summary_large_image', images: [ogImage] },
   robots: 'noindex, follow',
 }
 

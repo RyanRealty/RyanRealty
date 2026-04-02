@@ -1,87 +1,30 @@
 import type { MetadataRoute } from 'next'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { cityEntityKey, listingDetailPath, listingsBrowsePath, slugify, teamPath, valuationPath } from '../lib/slug'
 import { getAllPresetSlugs } from '../lib/search-presets'
 
 const ACTIVE_STATUS_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
 
+import { fetchAllRows } from '@/lib/supabase/paginate'
+
 /**
  * Dynamic sitemap — generates at request time so it always has fresh data.
  * Next.js serves this at /sitemap.xml automatically.
  *
- * Google's limit is 50,000 URLs per sitemap file. Next.js App Router
- * returns a sitemap index when generateSitemaps() is used. We use it
- * with force-dynamic so the data is always fresh.
- *
- * Each chunk is served at /sitemap/[id].xml.
- * The sitemap index at /sitemap.xml references all chunks.
+ * For a Central Oregon regional site, total URLs are well under Google's
+ * 50,000 limit per sitemap file, so we serve a single sitemap without chunking.
+ * This avoids the Next.js 16 bug (#77304) where generateSitemaps() creates
+ * chunks at /sitemap/[id].xml but never generates the /sitemap.xml index.
  */
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600
 
-/** Max URLs per sitemap chunk (Google limit is 50,000; we use 45,000 for safety). */
-const CHUNK_SIZE = 45_000
-
-/**
- * Count total sitemap URLs to determine how many chunks we need.
- * Runs at request time (force-dynamic).
- */
-export async function generateSitemaps() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
-  if (!supabaseUrl || !supabaseKey) {
-    // Without DB, only static pages — fits in one chunk
-    return [{ id: '0' }]
-  }
-
-  try {
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    const presetCount = getAllPresetSlugs().length
-
-    // Count active listings
-    const { count: listingCount } = await supabase
-      .from('listings')
-      .select('ListingKey', { count: 'exact', head: true })
-      .or(ACTIVE_STATUS_OR)
-
-    // Count cities
-    const { data: cityRows } = await supabase
-      .from('listings')
-      .select('City')
-      .or(ACTIVE_STATUS_OR)
-      .not('City', 'is', null)
-      .limit(5000)
-    const cityCount = new Set(
-      ((cityRows ?? []) as Array<{ City?: string | null }>)
-        .map((r) => (r.City ?? '').trim())
-        .filter(Boolean)
-    ).size
-
-    // Rough estimate: static(~30) + cities(3 URLs each) + presets(cityCount * presetCount) +
-    // communities + subdivisions(~2*subs) + brokers + listings + zips + blog + guides + reports
-    // Listings dominate, so estimate conservatively:
-    const estimatedTotal = 30 + (cityCount * 3) + (cityCount * presetCount) + (listingCount ?? 0) + 500
-    const chunkCount = Math.max(1, Math.ceil(estimatedTotal / CHUNK_SIZE))
-
-    return Array.from({ length: chunkCount }, (_, i) => ({ id: String(i) }))
-  } catch {
-    return [{ id: '0' }]
-  }
-}
-
-export default async function sitemap(props: { id: Promise<string> }): Promise<MetadataRoute.Sitemap> {
-  const chunkId = Number(await props.id)
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const now = new Date()
-
-  // Build the full URL list, then return only the chunk for this ID
-  const allUrls = await buildAllUrls(baseUrl, now)
-
-  const start = chunkId * CHUNK_SIZE
-  const end = start + CHUNK_SIZE
-  return allUrls.slice(start, end)
+  return buildAllUrls(baseUrl, now)
 }
 
 /**
@@ -134,13 +77,11 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
   const dynamicPages: MetadataRoute.Sitemap = []
 
   try {
-    // Cities
-    const { data: cityRows } = await supabase
-      .from('listings')
-      .select('City')
-      .or(ACTIVE_STATUS_OR)
-      .not('City', 'is', null)
-      .limit(5000)
+    // Cities — paginate to get ALL cities (Supabase caps at 1,000 per request)
+    const cityRows = await fetchAllRows<{ City?: string | null }>(
+      supabase, 'listings', 'City',
+      (q) => q.or(ACTIVE_STATUS_OR).not('City', 'is', null),
+    )
 
     const cities = Array.from(
       new Set(
@@ -170,13 +111,12 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       }
     }
 
-    // Communities
-    const { data: communityRows } = await supabase
-      .from('communities')
-      .select('slug')
-      .limit(5000)
+    // Communities — paginate
+    const communityRows = await fetchAllRows<{ slug: string }>(
+      supabase, 'communities', 'slug',
+    )
 
-    for (const c of (communityRows ?? []) as Array<{ slug: string }>) {
+    for (const c of communityRows) {
       dynamicPages.push({
         url: `${baseUrl}/communities/${encodeURIComponent(c.slug)}`,
         lastModified: now,
@@ -187,16 +127,14 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
 
     // Subdivisions per city
     for (const city of cities) {
-      const { data: subRows } = await supabase
-        .from('listings')
-        .select('SubdivisionName')
-        .eq('City', city)
-        .not('SubdivisionName', 'is', null)
-        .limit(5000)
+      const subRows = await fetchAllRows<{ SubdivisionName?: string | null }>(
+        supabase, 'listings', 'SubdivisionName',
+        (q) => q.eq('City', city).not('SubdivisionName', 'is', null),
+      )
 
       const subs = Array.from(
         new Set(
-          ((subRows ?? []) as Array<{ SubdivisionName?: string | null }>)
+          subRows
             .map((r) => (r.SubdivisionName ?? '').trim())
             .filter((n) => n.length > 0)
         )
@@ -213,13 +151,12 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     }
 
     // Team members
-    const { data: brokers } = await supabase
-      .from('brokers')
-      .select('slug, updated_at')
-      .eq('is_active', true)
-      .limit(500)
+    const brokers = await fetchAllRows<{ slug: string; updated_at?: string }>(
+      supabase, 'brokers', 'slug, updated_at',
+      (q) => q.eq('is_active', true),
+    )
 
-    for (const b of (brokers ?? []) as Array<{ slug: string; updated_at?: string }>) {
+    for (const b of brokers) {
       dynamicPages.push({
         url: `${baseUrl}${teamPath(b.slug)}`,
         lastModified: b.updated_at ? new Date(b.updated_at) : now,
@@ -228,14 +165,24 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       })
     }
 
-    // Listings
-    const { data: listings } = await supabase
-      .from('listings')
-      .select('ListingKey, ListNumber, SubdivisionName, City, State, PostalCode, StreetNumber, StreetName, ModificationTimestamp')
-      .or(ACTIVE_STATUS_OR)
-      .limit(50000)
+    // Listings — paginate to get ALL active listings (Supabase caps at 1,000 per request)
+    const listings = await fetchAllRows<{
+      ListingKey: string
+      ListNumber?: string | null
+      SubdivisionName?: string | null
+      City?: string | null
+      State?: string | null
+      PostalCode?: string | null
+      StreetNumber?: string | null
+      StreetName?: string | null
+      ModificationTimestamp?: string | null
+    }>(
+      supabase, 'listings',
+      'ListingKey, ListNumber, SubdivisionName, City, State, PostalCode, StreetNumber, StreetName, ModificationTimestamp',
+      (q) => q.or(ACTIVE_STATUS_OR),
+    )
 
-    for (const r of (listings ?? []) as Array<{
+    for (const r of listings as Array<{
       ListingKey: string
       ListNumber?: string | null
       SubdivisionName?: string | null
@@ -259,17 +206,15 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       })
     }
 
-    // ZIP codes
-    const { data: zipRows } = await supabase
-      .from('listings')
-      .select('PostalCode')
-      .or(ACTIVE_STATUS_OR)
-      .not('PostalCode', 'is', null)
-      .limit(10000)
+    // ZIP codes — paginate
+    const zipRows = await fetchAllRows<{ PostalCode?: string | null }>(
+      supabase, 'listings', 'PostalCode',
+      (q) => q.or(ACTIVE_STATUS_OR).not('PostalCode', 'is', null),
+    )
 
     const zips = Array.from(
       new Set(
-        ((zipRows ?? []) as Array<{ PostalCode?: string | null }>)
+        zipRows
           .map((r) => (r.PostalCode ?? '').replace(/\D/g, '').slice(0, 5))
           .filter((z) => z.length === 5)
       )
@@ -283,14 +228,13 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       })
     }
 
-    // Blog posts
-    const { data: posts } = await supabase
-      .from('blog_posts')
-      .select('slug, published_at')
-      .eq('status', 'published')
-      .limit(500)
+    // Blog posts — paginate
+    const posts = await fetchAllRows<{ slug: string; published_at?: string | null }>(
+      supabase, 'blog_posts', 'slug, published_at',
+      (q) => q.eq('status', 'published'),
+    )
 
-    for (const p of (posts ?? []) as Array<{ slug: string; published_at?: string | null }>) {
+    for (const p of posts) {
       dynamicPages.push({
         url: `${baseUrl}/blog/${p.slug}`,
         lastModified: p.published_at ? new Date(p.published_at) : now,
@@ -299,14 +243,13 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       })
     }
 
-    // Guides
-    const { data: guides } = await supabase
-      .from('guides')
-      .select('slug, published_at, updated_at')
-      .eq('status', 'published')
-      .limit(1000)
+    // Guides — paginate
+    const guides = await fetchAllRows<{ slug: string; published_at?: string | null; updated_at?: string | null }>(
+      supabase, 'guides', 'slug, published_at, updated_at',
+      (q) => q.eq('status', 'published'),
+    )
 
-    for (const g of (guides ?? []) as Array<{ slug: string; published_at?: string | null; updated_at?: string | null }>) {
+    for (const g of guides) {
       dynamicPages.push({
         url: `${baseUrl}/guides/${g.slug}`,
         lastModified: g.updated_at ? new Date(g.updated_at) : g.published_at ? new Date(g.published_at) : now,
@@ -315,13 +258,12 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       })
     }
 
-    // Market reports
-    const { data: reports } = await supabase
-      .from('market_reports')
-      .select('slug, created_at')
-      .limit(500)
+    // Market reports — paginate
+    const reports = await fetchAllRows<{ slug: string; created_at?: string | null }>(
+      supabase, 'market_reports', 'slug, created_at',
+    )
 
-    for (const r of (reports ?? []) as Array<{ slug: string; created_at?: string | null }>) {
+    for (const r of reports) {
       dynamicPages.push({
         url: `${baseUrl}/housing-market/reports/${r.slug}`,
         lastModified: r.created_at ? new Date(r.created_at) : now,

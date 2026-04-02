@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
 const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'privacy@ryanrealty.com'
 
 export const metadata: Metadata = {
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
     description: 'Privacy policy and cookie use for Ryan Realty.',
     url: `${siteUrl}/privacy`,
     type: 'website',
+    images: [{ url: ogImage, width: 1200, height: 630 }],
   },
+  twitter: { card: 'summary_large_image', images: [ogImage] },
   robots: 'noindex, follow',
 }
 

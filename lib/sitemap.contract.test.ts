@@ -12,7 +12,7 @@ describe('sitemap canonical contract', () => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = ''
 
     try {
-      const entries = await sitemap({ id: Promise.resolve('0') })
+      const entries = await sitemap()
       const urls = entries.map((entry) => entry.url)
 
       expect(urls).toContain('https://example.com/homes-for-sale')

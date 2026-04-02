@@ -94,12 +94,13 @@ export async function generateMetadata({
   Object.entries(sp).forEach(([k, v]) => {
     if (v != null && v !== '') canonical.searchParams.set(k, String(v))
   })
+  const ogImage = `${siteUrl}/api/og?type=default`
   return {
     title,
     description,
     alternates: { canonical: canonical.toString() },
-    openGraph: { title, description, url: canonical.toString() },
-    twitter: { card: 'summary_large_image', title, description },
+    openGraph: { title, description, url: canonical.toString(), images: [{ url: ogImage, width: 1200, height: 630 }] },
+    twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
   }
 }
 
@@ -174,8 +175,13 @@ export default async function SearchPage({
     postalCode: sp.postalCode ?? '',
   }
 
+  const h1Text = [filters.subdivision, filters.city ? `${filters.city}` : null, 'Homes for Sale']
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <div className="min-h-screen w-full bg-muted">
+      <h1 className="sr-only">{h1Text}</h1>
       <TrackSearchView
         city={filters.city ?? undefined}
         subdivision={filters.subdivision ?? undefined}

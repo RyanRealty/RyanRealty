@@ -8,6 +8,7 @@ import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
 
 const resources = [
   {
@@ -51,11 +52,13 @@ export const metadata: Metadata = {
     description: 'Guides, market tools, and report resources for Central Oregon buyers and sellers.',
     url: `${siteUrl}/resources`,
     type: 'website',
+    images: [{ url: ogImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary',
     title: 'Buyer and Seller Resources | Ryan Realty',
     description: 'Guides, market tools, and report resources for Central Oregon buyers and sellers.',
+    images: [ogImage],
   },
 }
 

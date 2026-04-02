@@ -130,15 +130,15 @@ export async function populateMarketPulseForCity(cityName: string): Promise<{ ok
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-    // Active count + avg/median price
-    const { data: activeData } = await supabase
-      .from('listings')
-      .select('ListPrice')
-      .ilike('City', cityName)
-      .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
-      .not('ListPrice', 'is', null)
-      .limit(10000)
-    const prices = (activeData ?? []).map((r: { ListPrice?: number | null }) => Number(r.ListPrice)).filter((p) => Number.isFinite(p) && p > 0).sort((a, b) => a - b)
+    // Active count + avg/median price — paginate to get ALL rows (Supabase caps at 1,000)
+    const { fetchAllRows } = await import('@/lib/supabase/paginate')
+    const activeData = await fetchAllRows<{ ListPrice?: number | null }>(
+      supabase, 'listings', 'ListPrice',
+      (q: any) => q.ilike('City', cityName)
+        .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
+        .not('ListPrice', 'is', null),
+    )
+    const prices = activeData.map((r) => Number(r.ListPrice)).filter((p) => Number.isFinite(p) && p > 0).sort((a, b) => a - b)
     const activeCount = prices.length
     const avgListPrice = prices.length > 0 ? Math.round(prices.reduce((s, p) => s + p, 0) / prices.length) : null
     const medianListPrice = prices.length > 0 ? prices[Math.floor(prices.length / 2)]! : null

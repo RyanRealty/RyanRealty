@@ -256,12 +256,12 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
           <h2 className="text-lg font-semibold text-primary mb-3">Locations</h2>
           <div className="rounded-lg overflow-hidden border border-border h-[300px] sm:h-[400px]">
             {/* Google Static Map with pins */}
-            {process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ? (
+            {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
               <iframe
                 title="Comparison map"
                 className="w-full h-full border-0"
                 loading="lazy"
-                src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}&q=${listings.filter((l) => l.latitude && l.longitude).map((l) => `${l.latitude},${l.longitude}`).join('|')}&zoom=11`}
+                src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${listings.filter((l) => l.latitude && l.longitude).map((l) => `${l.latitude},${l.longitude}`).join('|')}&zoom=11`}
               />
             ) : (
               <div className="flex h-full items-center justify-center bg-muted text-muted-foreground text-sm">

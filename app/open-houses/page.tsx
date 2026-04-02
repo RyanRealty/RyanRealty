@@ -6,14 +6,17 @@ import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
 
-const openHousesOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')}/api/og?type=default`
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const openHousesOgImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Open Houses in Bend, Oregon — This Weekend & Upcoming | Ryan Realty',
+  title: 'Open Houses in Bend, Oregon — This Weekend & Upcoming',
   description: 'Browse open houses this weekend and upcoming in Bend, Redmond, Sisters and Central Oregon. Map, list and calendar views.',
+  alternates: { canonical: `${siteUrl}/open-houses` },
   openGraph: {
-    title: 'Open Houses in Bend, Oregon — This Weekend & Upcoming | Ryan Realty',
+    title: 'Open Houses in Central Oregon',
     description: 'Browse open houses this weekend and upcoming in Central Oregon.',
+    url: `${siteUrl}/open-houses`,
     images: [{ url: openHousesOgImage, width: 1200, height: 630, alt: 'Open houses in Central Oregon | Ryan Realty' }],
   },
   twitter: {

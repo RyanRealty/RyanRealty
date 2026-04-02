@@ -6,6 +6,7 @@ import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
 import CityTilesGrid from '@/components/city/CityTilesGrid'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
 
 export const revalidate = 60
 
@@ -20,7 +21,9 @@ export const metadata: Metadata = {
     url: `${siteUrl}/cities`,
     siteName: 'Ryan Realty',
     type: 'website',
+    images: [{ url: ogImage, width: 1200, height: 630 }],
   },
+  twitter: { card: 'summary_large_image', images: [ogImage] },
 }
 
 export default async function CitiesPage() {

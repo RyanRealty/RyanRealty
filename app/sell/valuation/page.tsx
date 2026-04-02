@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     title: 'Home Valuation | Ryan Realty',
     url: `${siteUrl}/sell/valuation`,
     type: 'website',
+    images: [{ url: `${siteUrl}/api/og?type=default`, width: 1200, height: 630, alt: 'Home Valuation | Ryan Realty' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: [`${siteUrl}/api/og?type=default`],
   },
 }
 

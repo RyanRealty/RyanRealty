@@ -58,7 +58,8 @@ export async function submitListingInquiry(params: SubmitListingInquiryParams): 
     mls_number: params.mlsNumber ?? null,
   })
   if (error) return { ok: false, error: error.message }
-  await trackContactAgentInquiry({
+  // Fire-and-forget: FUB tracking must never cause the user to see an error after successful DB write
+  trackContactAgentInquiry({
     listingUrl: params.listingUrl,
     userEmail: params.userEmail ?? params.email ?? null,
     fubPersonId: params.fubPersonId ?? null,
@@ -68,6 +69,6 @@ export async function submitListingInquiry(params: SubmitListingInquiryParams): 
       price: params.listPrice ?? undefined,
     },
     message: params.type === 'showing' ? 'Schedule a showing' : `Ask a question: ${(params.message ?? '').slice(0, 200)}`,
-  })
+  }).catch((err) => console.error('[submitListingInquiry] FUB tracking failed:', err))
   return { ok: true }
 }

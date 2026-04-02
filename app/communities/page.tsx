@@ -13,6 +13,7 @@ import CommunitiesFilter from '@/components/community/CommunitiesFilter'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 60
 
 export const metadata: Metadata = {
@@ -26,6 +27,11 @@ export const metadata: Metadata = {
     url: `${siteUrl}/communities`,
     siteName: 'Ryan Realty',
     type: 'website',
+    images: [{ url: `${siteUrl}/api/og?type=default`, width: 1200, height: 630, alt: 'Communities in Central Oregon' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: [`${siteUrl}/api/og?type=default`],
   },
 }
 

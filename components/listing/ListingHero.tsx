@@ -269,7 +269,7 @@ export default function ListingHero({ photos, videos }: Props) {
         {/* Thumbnail strip: full-bleed with horizontal padding only */}
         {mediaItems.length > 1 && (
           <div className={`border-t px-4 py-3 ${thumbStripBg}`}>
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               {mediaItems.map((item, i) => {
                 const sel = i === selectedIndex
                 if (item.type === 'video') {

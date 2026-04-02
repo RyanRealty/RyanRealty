@@ -102,19 +102,17 @@ async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
   // Legacy fallback: fetch from listings table directly
   const [browse, listingRows] = await Promise.all([
     getBrowseCities(),
-    sb
-      .from('listings')
-      .select('City, SubdivisionName, ListPrice, StandardStatus')
-      .or(ACTIVE_OR)
-      .limit(10000)
-      .then((r) =>
-        (r.data ?? []) as {
-          City?: string
-          SubdivisionName?: string
-          ListPrice?: number | null
-          StandardStatus?: string | null
-        }[]
-      ),
+    import('@/lib/supabase/paginate').then((m) =>
+      m.fetchAllRows<{
+        City?: string
+        SubdivisionName?: string
+        ListPrice?: number | null
+        StandardStatus?: string | null
+      }>(
+        sb, 'listings', 'City, SubdivisionName, ListPrice, StandardStatus',
+        (q: any) => q.or(ACTIVE_OR),
+      )
+    ),
   ])
   const byCity = new Map<string, { prices: number[]; subdivisions: Set<string> }>()
   for (const row of listingRows) {
@@ -184,12 +182,12 @@ export async function getCityBySlug(slug: string): Promise<CityDetail | null> {
       .select('name, slug, description, hero_image_url')
       .ilike('name', cityName)
       .maybeSingle(),
-    supabase()
-      .from('listings')
-      .select('SubdivisionName')
-      .ilike('City', cityName)
-      .or(ACTIVE_OR)
-      .limit(5000),
+    import('@/lib/supabase/paginate').then((m) =>
+      m.fetchAllRows<{ SubdivisionName?: string | null }>(
+        supabase(), 'listings', 'SubdivisionName',
+        (q: any) => q.ilike('City', cityName).or(ACTIVE_OR),
+      ).then((rows) => ({ data: rows, error: null }))
+    ),
   ])
   // Use count from query; if it returns 0 but market stats show listings, use stats count as fallback
   let activeCount = countRes.count ?? 0
@@ -247,13 +245,12 @@ export async function getCommunitiesInCity(cityName: string): Promise<CommunityF
   const [hot, flags, listingRows] = await Promise.all([
     getHotCommunitiesInCity(cityName),
     listSubdivisionsWithFlags(),
-    supabase()
-      .from('listings')
-      .select('SubdivisionName, ListPrice, StandardStatus')
-      .ilike('City', cityName)
-      .or(ACTIVE_OR)
-      .limit(5000)
-      .then((r) => (r.data ?? []) as { SubdivisionName?: string; ListPrice?: number | null }[]),
+    import('@/lib/supabase/paginate').then((m) =>
+      m.fetchAllRows<{ SubdivisionName?: string; ListPrice?: number | null }>(
+        supabase(), 'listings', 'SubdivisionName, ListPrice, StandardStatus',
+        (q: any) => q.ilike('City', cityName).or(ACTIVE_OR),
+      )
+    ),
   ])
   const bySub = new Map<string, number[]>()
   for (const row of listingRows) {
@@ -574,13 +571,11 @@ export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityN
 
   // Get listing data for the specific subdivisions in this neighborhood
   const communityNames = communityRows.map((c) => c.name)
-  const { data: listingData } = await sb
-    .from('listings')
-    .select('SubdivisionName, ListPrice, StandardStatus')
-    .in('SubdivisionName', communityNames)
-    .or(ACTIVE_OR)
-    .limit(5000)
-  const listingRows = (listingData ?? []) as { SubdivisionName?: string; ListPrice?: number | null }[]
+  const { fetchAllRows: fetchAll } = await import('@/lib/supabase/paginate')
+  const listingRows = await fetchAll<{ SubdivisionName?: string; ListPrice?: number | null }>(
+    sb, 'listings', 'SubdivisionName, ListPrice, StandardStatus',
+    (q: any) => q.in('SubdivisionName', communityNames).or(ACTIVE_OR),
+  )
 
   const bySub = new Map<string, number[]>()
   for (const row of listingRows) {

@@ -3,6 +3,8 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
+import { getOpenHousesWithListings } from '../../actions/open-houses'
+import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import {
   getListingsWithAdvanced,
   getListingsForMap,
@@ -298,7 +300,7 @@ export default async function SearchPage({
     : filterOptsBase
 
   // Fetch ALL independent data in a single parallel batch (was 3 sequential waterfalls)
-  const [listingsResult, marketStats, statusCounts, subdivisions, hotCommunities, priceChangeKeys, session, resortEntityKeys, searchPulse, searchActivityFeed, searchRecentlySold, cityPriceHistory, cityGuidesForCluster] = await Promise.all([
+  const [listingsResult, marketStats, statusCounts, subdivisions, hotCommunities, priceChangeKeys, session, resortEntityKeys, searchPulse, searchActivityFeed, searchRecentlySold, cityPriceHistory, cityGuidesForCluster, cityOpenHouses] = await Promise.all([
     getListingsWithAdvanced({ ...filterOpts, limit: pageSize, offset }),
     decodedSubdivision && city
       ? getMarketStatsForSubdivision(city, decodedSubdivision)
@@ -332,6 +334,8 @@ export default async function SearchPage({
     // These were in sequential block 2 — now parallel
     city ? getCityPriceHistory(city) : Promise.resolve([]),
     city && !subdivision ? getGuidesByCity(city) : Promise.resolve([]),
+    // Open houses for this city
+    city ? getOpenHousesWithListings({ city }).catch(() => []) : Promise.resolve([]),
   ])
   const hotCommunitiesSlice = city && !subdivision ? hotCommunities.slice(0, 10) : []
   const cityGuideSlug = (cityGuidesForCluster as Array<{ slug: string }>).length > 0 ? (cityGuidesForCluster as Array<{ slug: string }>)[0]!.slug : null
@@ -989,6 +993,17 @@ export default async function SearchPage({
               </Link>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* Open houses in this city */}
+      {city && !subdivision && (cityOpenHouses as any[]).length > 0 && (
+        <section className="mb-10">
+          <OpenHouseSection
+            title={`Open houses in ${displayName}`}
+            items={(cityOpenHouses as any[]).slice(0, 10)}
+            viewAllHref={`/open-houses/${cityEntityKey(city)}`}
+          />
         </section>
       )}
 

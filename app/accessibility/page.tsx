@@ -2,12 +2,17 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
 const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'info@ryanrealty.com'
 
 export const metadata: Metadata = {
   title: 'Accessibility',
   description: 'Ryan Realty commitment to web accessibility and how to report issues.',
   alternates: { canonical: `${siteUrl}/accessibility` },
+  openGraph: {
+    images: [{ url: ogImage, width: 1200, height: 630 }],
+  },
+  twitter: { card: 'summary_large_image', images: [ogImage] },
   robots: 'noindex, follow',
 }
 

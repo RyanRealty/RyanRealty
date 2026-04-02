@@ -24,6 +24,8 @@ type Similar = {
 type Props = {
   listingKey: string
   listings: Similar[]
+  /** Override section title. Default: "Similar homes" */
+  title?: string
 }
 
 function formatPrice(n: number | null | undefined): string {
@@ -31,7 +33,7 @@ function formatPrice(n: number | null | undefined): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 
-export default function ShowcaseSimilar({ listingKey, listings }: Props) {
+export default function ShowcaseSimilar({ listingKey, listings, title = 'Similar homes' }: Props) {
   useEffect(() => {
     if (listings.length > 0) {
       trackEvent('view_similar_listings', { listing_key: listingKey, count: listings.length })
@@ -43,7 +45,7 @@ export default function ShowcaseSimilar({ listingKey, listings }: Props) {
   return (
     <section className="mt-12" aria-labelledby="similar-heading">
       <h2 id="similar-heading" className="mb-6 text-xl font-semibold text-foreground">
-        Similar homes
+        {title}
       </h2>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {listings.map((item) => (

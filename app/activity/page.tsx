@@ -6,6 +6,7 @@ import HomeValuationCta from '@/components/HomeValuationCta'
 import { listingsBrowsePath } from '@/lib/slug'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
   title: 'Live Market Activity',
@@ -16,11 +17,13 @@ export const metadata: Metadata = {
     description: 'Track listing activity signals across Central Oregon neighborhoods.',
     url: `${siteUrl}/activity`,
     type: 'website',
+    images: [{ url: ogImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary',
     title: 'Live Market Activity | Ryan Realty',
     description: 'Track listing activity signals across Central Oregon neighborhoods.',
+    images: [ogImage],
   },
 }
 

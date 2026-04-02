@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getListingDetailData, getSimilarListingsForDetailPage } from '@/app/actions/listing-detail'
+import { getListingDetailData, getSimilarListingsForDetailPage, getSubdivisionListings } from '@/app/actions/listing-detail'
 import type { ListingDetailData } from '@/app/actions/listing-detail'
 // getBrokerageSettings removed — CTAs always route to site owner, never listing agent
 import { getCanonicalSiteUrl, listingShareSummary, listingShareText, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/lib/share-metadata'
@@ -168,16 +168,23 @@ export default async function ListingDetailPage({ params }: PageProps) {
   if (!data) notFound()
 
   const { listing, property, photos, agents, priceHistory, openHouses, community, videos, virtualTours } = data
-  const [saved, liked, engagement, similarListings, session] = await Promise.all([
+  const subdivisionName = community?.name ?? listing.subdivision_name ?? null
+  const [saved, liked, engagement, similarListings, subdivisionListings, session] = await Promise.all([
     isListingSaved(listing.listing_key),
     isListingLiked(listing.listing_key),
     getEngagementForListingDetail(listing.listing_key),
     getSimilarListingsForDetailPage(
       listing.listing_key,
-      community?.name ?? listing.subdivision_name ?? null,
+      subdivisionName,
       property?.city ?? null,
       listing.list_price ?? null,
       listing.beds_total ?? null
+    ),
+    getSubdivisionListings(
+      listing.listing_key,
+      subdivisionName,
+      property?.city ?? null,
+      8,
     ),
     getSession(),
   ])
@@ -360,7 +367,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
                 sqft={listing.living_area != null ? Number(listing.living_area) : null}
                 lotAcres={listing.lot_size_acres ?? null}
                 lotSqft={listing.lot_size_sqft ?? null}
-                propertyType={listing.property_type ?? listing.property_sub_type ?? null}
+                propertyType={listing.property_sub_type ?? listing.property_type ?? null}
                 yearBuilt={listing.year_built ?? null}
                 price={listing.list_price ?? null}
                 daysOnMarket={listing.days_on_market ?? listing.cumulative_days_on_market ?? null}
@@ -435,6 +442,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
           <div className="mt-8">
             <AdUnit slot="1001001003" format="horizontal" />
           </div>
+          {subdivisionListings.length > 0 && subdivisionName && (
+            <div className="mt-8">
+              <ShowcaseSimilar
+                listingKey={listing.listing_key}
+                listings={subdivisionListings}
+                title={`Other homes in ${subdivisionName}`}
+              />
+            </div>
+          )}
           <ShowcaseSimilar listingKey={listing.listing_key} listings={similarListings} />
           <div className="mt-8">
             <ActivityFeedSlider

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { getListingsWithVideos } from '@/app/actions/videos'
 import VideosClient from '@/components/videos/VideosClient'
 
-const videosOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')}/api/og?type=default`
+const videosOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
 export const metadata: Metadata = {
   title: 'Video Tours — Central Oregon Homes | Ryan Realty',

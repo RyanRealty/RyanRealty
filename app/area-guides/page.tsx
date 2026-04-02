@@ -13,6 +13,7 @@ import ExploreByCitySlider from '@/components/area-guides/ExploreByCitySlider'
 import ResortCommunitiesSlider from '@/components/area-guides/ResortCommunitiesSlider'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ogImage = `${siteUrl}/api/og?type=default`
 
 export const revalidate = 60
 
@@ -25,7 +26,9 @@ export const metadata: Metadata = {
     title: 'Area Guides | Ryan Realty — Central Oregon',
     url: `${siteUrl}/area-guides`,
     type: 'website',
+    images: [{ url: ogImage, width: 1200, height: 630 }],
   },
+  twitter: { card: 'summary_large_image', images: [ogImage] },
 }
 
 export default async function AreaGuidesPage() {

@@ -84,8 +84,10 @@ export async function POST(request: Request) {
   const doc = React.createElement(CMAPdfDocument, { data: pdfData })
   type DocElement = Parameters<typeof renderToBuffer>[0]
   const buffer = await renderToBuffer(doc as DocElement)
+
+  // Fire-and-forget: FUB tracking must never block the PDF response
   const source = siteUrl.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com'
-  await sendEvent({
+  sendEvent({
     type: 'Property Inquiry',
     person: { emails: [{ value: session.user.email }] },
     source,
@@ -95,7 +97,7 @@ export async function POST(request: Request) {
       street: pdfData.address,
       url: `${siteUrl}${listingHref}`,
     },
-  })
+  }).catch((err) => console.error('[cma-pdf] FUB tracking failed:', err))
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,

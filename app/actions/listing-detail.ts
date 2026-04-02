@@ -262,11 +262,16 @@ export async function resolveListingKeyFromBreadcrumbPath(input: {
   const cityLike = decodeURIComponent(input.citySlug || '').replace(/-/g, ' ').trim()
   if (!cityLike) return null
 
-  const { data } = await supabase
+  // Try to narrow search by extracting street number from address slug
+  const streetNumMatch = addressSlug.match(/^(\d+)/)
+  let query = supabase
     .from('listings')
     .select('ListingKey, ListNumber, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, ModificationTimestamp')
     .ilike('City', cityLike)
-    .limit(5000)
+  if (streetNumMatch) {
+    query = query.eq('StreetNumber', streetNumMatch[1]!)
+  }
+  const { data } = await query.limit(1000)
 
   const rows = (data ?? []) as Array<{
     ListingKey?: string | null
@@ -338,11 +343,22 @@ export async function resolveListingKeyFromCanonicalPath(input: {
   const cityLike = decodeURIComponent(input.citySlug || '').replace(/-/g, ' ').trim()
   if (!cityLike) return null
 
+  // Try direct lookup by key/MLS number first (avoids fetching all city listings)
+  const { data: directByKey } = await supabase
+    .from('listings')
+    .select('ListingKey, ListNumber, City, PostalCode, SubdivisionName, ModificationTimestamp')
+    .or(`ListingKey.eq.${keyOrMls},ListNumber.eq.${keyOrMls}`)
+    .limit(5)
+  if (directByKey && directByKey.length > 0) {
+    return (directByKey[0] as { ListingKey?: string }).ListingKey ?? null
+  }
+
+  // Fallback: search within city
   const { data } = await supabase
     .from('listings')
     .select('ListingKey, ListNumber, City, PostalCode, SubdivisionName, ModificationTimestamp')
     .ilike('City', cityLike)
-    .limit(5000)
+    .limit(1000)
 
   const rows = (data ?? []) as Array<{
     ListingKey?: string | null
@@ -798,15 +814,62 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
 
   const virtualTours = extractVirtualToursFromRow(listingRow)
 
-  // Price history & status history from DB tables (may be empty)
-  const [priceRes, statusRes, engagementRes] = await Promise.all([
+  // Price/status history: try dedicated tables first, fall back to listing_history
+  const [priceRes, statusRes, historyRes, engagementRes] = await Promise.all([
     supabase.from('price_history').select('*').eq('listing_key', canonicalKey).order('changed_at', { ascending: false }),
     supabase.from('status_history').select('*').eq('listing_key', canonicalKey).order('changed_at', { ascending: false }),
+    supabase.from('listing_history').select('*').eq('listing_key', canonicalKey).order('event_date', { ascending: false }).limit(50),
     supabase.from('engagement_metrics').select('*').eq('listing_key', canonicalKey).maybeSingle(),
   ])
 
-  const priceHistory = (priceRes.data ?? []) as ListingDetailPriceHistory[]
-  const statusHistory = (statusRes.data ?? []) as ListingDetailStatusHistory[]
+  // Use dedicated price_history if available; otherwise derive from listing_history
+  let priceHistory = (priceRes.data ?? []) as ListingDetailPriceHistory[]
+  if (priceHistory.length === 0 && (historyRes.data ?? []).length > 0) {
+    const histRows = (historyRes.data ?? []) as Array<{
+      event_date?: string | null
+      event?: string | null
+      description?: string | null
+      price?: number | null
+      price_change?: number | null
+    }>
+    // Extract price-related events from listing_history
+    priceHistory = histRows
+      .filter((h) => h.price != null && h.price > 0)
+      .map((h) => ({
+        id: '',
+        listing_key: canonicalKey,
+        changed_at: h.event_date ?? '',
+        old_price: null,
+        new_price: h.price ?? null,
+        change_amount: h.price_change ?? null,
+        change_pct: null,
+        source: h.event ?? 'MLS',
+      }))
+      // Deduplicate by date+price
+      .filter((item, idx, arr) => arr.findIndex((a) => a.changed_at === item.changed_at && a.new_price === item.new_price) === idx)
+  }
+
+  let statusHistory = (statusRes.data ?? []) as ListingDetailStatusHistory[]
+  if (statusHistory.length === 0 && (historyRes.data ?? []).length > 0) {
+    const histRows = (historyRes.data ?? []) as Array<{
+      event_date?: string | null
+      event?: string | null
+      description?: string | null
+    }>
+    // Extract status-related events from listing_history
+    statusHistory = histRows
+      .filter((h) => h.event === 'StatusChange' || h.event === 'FieldChange' || (h.description ?? '').toLowerCase().includes('status'))
+      .map((h) => ({
+        id: '',
+        listing_key: canonicalKey,
+        changed_at: h.event_date ?? '',
+        old_status: null,
+        new_status: h.description ?? h.event ?? '',
+        source: 'MLS',
+      }))
+      .filter((item, idx, arr) => arr.findIndex((a) => a.changed_at === item.changed_at && a.new_status === item.new_status) === idx)
+  }
+
   const engagement = (engagementRes.data ?? null) as ListingDetailEngagement | null
 
   // Resolve community from SubdivisionName, including neighborhood if assigned
@@ -974,6 +1037,66 @@ export async function getSimilarListingsForDetailPage(
   }>
 
   return rows.slice(0, 6).map((r) => {
+    const address = [
+      [r.StreetNumber, r.StreetName].filter(Boolean).join(' '),
+      r.City,
+      r.State,
+      r.PostalCode,
+    ].filter(Boolean).join(', ')
+    return {
+      listing_key: r.ListingKey,
+      list_price: r.ListPrice,
+      beds_total: r.BedroomsTotal,
+      baths_full: r.BathroomsTotal,
+      living_area: r.TotalLivingAreaSqFt,
+      subdivision_name: r.SubdivisionName,
+      address,
+      photo_url: r.PhotoURL ?? null,
+      city: r.City ?? null,
+      state: r.State ?? null,
+      postal_code: r.PostalCode ?? null,
+    }
+  })
+}
+
+/** Get other active listings in the same subdivision (for "Other homes in [Subdivision]" section). */
+export async function getSubdivisionListings(
+  excludeListingKey: string,
+  subdivisionName: string | null,
+  city: string | null,
+  limit = 8,
+): Promise<SimilarListingForDetail[]> {
+  const supabase = getSupabase()
+  if (!subdivisionName?.trim() || !city?.trim()) return []
+
+  const { data } = await supabase
+    .from('listings')
+    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
+    .neq('ListingKey', excludeListingKey)
+    .ilike('SubdivisionName', subdivisionName.trim())
+    .ilike('City', city.trim())
+    .not('PhotoURL', 'is', null)
+    .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
+    .order('ListPrice', { ascending: false })
+    .limit(limit)
+
+  const rows = (data ?? []) as Array<{
+    ListingKey: string
+    ListNumber?: string | null
+    ListPrice: number | null
+    BedroomsTotal: number | null
+    BathroomsTotal: number | null
+    TotalLivingAreaSqFt: number | null
+    SubdivisionName: string | null
+    StreetNumber?: string | null
+    StreetName?: string | null
+    City?: string | null
+    State?: string | null
+    PostalCode?: string | null
+    PhotoURL?: string | null
+  }>
+
+  return rows.map((r) => {
     const address = [
       [r.StreetNumber, r.StreetName].filter(Boolean).join(' '),
       r.City,

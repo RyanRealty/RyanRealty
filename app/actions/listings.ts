@@ -227,14 +227,15 @@ async function _getBrowseCitiesUncached(): Promise<BrowseCity[]> {
     }))
   }
 
-  // 1) Fallback: direct query on listings
-  const { data: directData, error: directError } = await supabase
-    .from('listings')
-    .select('City')
-    .or(ACTIVE_STATUS_OR)
-    .limit(50000)
+  // 1) Fallback: direct query on listings — paginate to get ALL rows (Supabase caps at 1,000)
+  const { fetchAllRows } = await import('@/lib/supabase/paginate')
+  const directData = await fetchAllRows<{ City?: string }>(
+    supabase, 'listings', 'City',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (q: any) => q.or(ACTIVE_STATUS_OR),
+  )
 
-  if (!directError && directData && directData.length > 0) {
+  if (directData.length > 0) {
     const byCity = new Map<string, number>()
     for (const row of directData as { City?: string; city?: string }[]) {
       const c = (row.City ?? row.city ?? '').toString().trim()
@@ -1439,17 +1440,24 @@ export async function getCityStatusCounts(options: {
   }
   const supabase = getAnonSupabase()
   if (!supabase) return { active: 0, pending: 0, closed: 0, other: 0 }
-  let query = supabase.from('listings').select('StandardStatus').ilike('City', options.city.trim())
-  if (options.subdivision?.trim()) query = query.ilike('SubdivisionName', options.subdivision.trim())
-  const { data: rows } = await query.limit(10000)
-  const list = (rows ?? []) as { StandardStatus?: string | null }[]
-  let active = 0, pending = 0, closed = 0, other = 0
-  for (const row of list) {
-    if (isActiveStatus(row.StandardStatus)) active += 1
-    else if (isPendingStatus(row.StandardStatus)) pending += 1
-    else if (isClosedStatus(row.StandardStatus)) closed += 1
-    else other += 1
+  // Use count queries instead of fetching rows — avoids 1,000-row truncation
+  const cityFilter = options.city.trim()
+  const subFilter = options.subdivision?.trim()
+  const applyGeo = (q: any) => {
+    let r = q.ilike('City', cityFilter)
+    if (subFilter) r = r.ilike('SubdivisionName', subFilter)
+    return r
   }
+  const [activeRes, pendingRes, closedRes, totalRes] = await Promise.all([
+    applyGeo(supabase.from('listings').select('ListingKey', { count: 'exact', head: true })).or(ACTIVE_STATUS_OR),
+    applyGeo(supabase.from('listings').select('ListingKey', { count: 'exact', head: true })).or('StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%Contingent%'),
+    applyGeo(supabase.from('listings').select('ListingKey', { count: 'exact', head: true })).or('StandardStatus.ilike.%Closed%,StandardStatus.ilike.%Sold%'),
+    applyGeo(supabase.from('listings').select('ListingKey', { count: 'exact', head: true })),
+  ])
+  const active = activeRes.count ?? 0
+  const pending = pendingRes.count ?? 0
+  const closed = closedRes.count ?? 0
+  const other = Math.max(0, (totalRes.count ?? 0) - active - pending - closed)
   return { active, pending, closed, other }
 }
 
@@ -1515,10 +1523,17 @@ export async function getCityMarketStats(options: {
     .gte('CloseDate', twelveMonthsIso)
   const closedLast12Months = closedCount ?? 0
 
-  let qPrices = supabase.from('listings').select('ListPrice, ModificationTimestamp, OnMarketDate')
-  qPrices = applyCitySub(qPrices)
-  const { data: activeRows } = await qPrices.or(ACTIVE_STATUS_OR).limit(15000)
-  const rows = (activeRows ?? []) as { ListPrice?: number | null; ModificationTimestamp?: string | null; OnMarketDate?: string | null }[]
+  // Paginate to get ALL active listings for price/DOM stats (Supabase caps at 1,000)
+  const { fetchAllRows } = await import('@/lib/supabase/paginate')
+  const rows = await fetchAllRows<{ ListPrice?: number | null; ModificationTimestamp?: string | null; OnMarketDate?: string | null }>(
+    supabase, 'listings', 'ListPrice, ModificationTimestamp, OnMarketDate',
+    (q: any) => {
+      let r = q.or(ACTIVE_STATUS_OR)
+      if (options.city?.trim()) r = r.ilike('City', options.city.trim())
+      if (options.subdivision?.trim()) r = r.ilike('SubdivisionName', options.subdivision.trim())
+      return r
+    },
+  )
   const prices = rows.map((r) => Number(r.ListPrice)).filter((p) => Number.isFinite(p) && p > 0)
   const newListingsLast30Days = rows.filter(
     (r) => r.ModificationTimestamp && String(r.ModificationTimestamp) >= thirtyDaysIso
@@ -1590,13 +1605,11 @@ export async function getHotCommunitiesInCity(city: string): Promise<HotCommunit
       if (subNames.length > 0) {
         const supabase = getAnonSupabase()
         if (supabase) {
-          const { data: priceRows } = await supabase
-            .from('listings')
-            .select('SubdivisionName, ListPrice')
-            .ilike('City', city.trim())
-            .or(ACTIVE_STATUS_OR)
-            .limit(8000)
-          const rows = (priceRows ?? []) as { SubdivisionName?: string | null; ListPrice?: number | null }[]
+          const { fetchAllRows: fetchAll } = await import('@/lib/supabase/paginate')
+          const rows = await fetchAll<{ SubdivisionName?: string | null; ListPrice?: number | null }>(
+            supabase, 'listings', 'SubdivisionName, ListPrice',
+            (q: any) => q.ilike('City', city.trim()).or(ACTIVE_STATUS_OR),
+          )
           const bySub = new Map<string, number[]>()
           for (const row of rows) {
             const name = (row.SubdivisionName ?? '').trim()
@@ -1624,17 +1637,16 @@ export async function getHotCommunitiesInCity(city: string): Promise<HotCommunit
   }
   const supabase = getAnonSupabase()
   if (!supabase) return []
-  const { data } = await supabase
-    .from('listings')
-    .select('SubdivisionName, ListPrice, StandardStatus, ModificationTimestamp')
-    .ilike('City', city)
-    .limit(5000)
-  const rows = (data ?? []) as {
+  const { fetchAllRows: fetchAll } = await import('@/lib/supabase/paginate')
+  const rows = await fetchAll<{
     SubdivisionName?: string | null
     ListPrice?: number | null
     StandardStatus?: string | null
     ModificationTimestamp?: string | null
-  }[]
+  }>(
+    supabase, 'listings', 'SubdivisionName, ListPrice, StandardStatus, ModificationTimestamp',
+    (q: any) => q.ilike('City', city),
+  )
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const bySub = new Map<
     string,
@@ -1780,12 +1792,11 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 export async function getSubdivisionsInCity(city: string): Promise<SubdivisionInCity[]> {
   const supabase = getAnonSupabase()
   if (!supabase || !city?.trim()) return []
-  const { data } = await supabase
-    .from('listings')
-    .select('SubdivisionName, StandardStatus')
-    .ilike('City', city)
-    .limit(5000)
-  const rows = (data ?? []) as { SubdivisionName?: string | null; StandardStatus?: string | null }[]
+  const { fetchAllRows: fetchAll } = await import('@/lib/supabase/paginate')
+  const rows = await fetchAll<{ SubdivisionName?: string | null; StandardStatus?: string | null }>(
+    supabase, 'listings', 'SubdivisionName, StandardStatus',
+    (q: any) => q.ilike('City', city),
+  )
   const bySub = new Map<string, number>()
   for (const row of rows) {
     const name = (row.SubdivisionName ?? '').trim()

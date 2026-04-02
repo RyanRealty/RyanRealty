@@ -88,6 +88,8 @@ const nextConfig: NextConfig = {
       { source: '/homes-for-sale/in/listing/:listingKey', destination: '/homes-for-sale/listing/:listingKey', permanent: true },
       { source: '/homes-for-sale/in/:path*', destination: '/homes-for-sale/:path*', permanent: true },
       { source: '/home-valuation', destination: '/sell/valuation', permanent: true },
+      { source: '/sign-in', destination: '/login', permanent: true },
+      { source: '/sign-in/:path*', destination: '/login/:path*', permanent: true },
       { source: '/agents', destination: '/team', permanent: true },
       { source: '/agents/:slug', destination: '/team/:slug', permanent: true },
       { source: '/reports', destination: '/housing-market/reports', permanent: true },
