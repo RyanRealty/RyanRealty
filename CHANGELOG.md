@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.2 (2026-04-02)
+
+### Maintenance
+- chore: update branch strategy to push-to-main workflow
+
+---
+
+
 ## v1.0.1 (2026-04-02)
 
 ### Bug Fixes
