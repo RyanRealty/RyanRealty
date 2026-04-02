@@ -5,7 +5,13 @@ import { test, expect } from '@playwright/test'
  *
  * These tests verify that the most important pages and interactions
  * work correctly. They run on every PR to prevent regressions.
+ *
+ * Note: Data-dependent pages (e.g. /homes-for-sale/bend) use a longer
+ * timeout because SSR + Supabase queries can be slow on CI cold starts.
  */
+
+// Longer timeout for pages that do SSR with database queries
+const DATA_PAGE_TIMEOUT = 60_000
 
 test.describe('Homepage', () => {
   test('loads and shows hero section', async ({ page }) => {
@@ -31,14 +37,18 @@ test.describe('Homepage', () => {
 
   test('footer is present', async ({ page }) => {
     await page.goto('/')
-    const footer = page.locator('footer')
+    // Use role selector — the site footer uses role="contentinfo"
+    const footer = page.getByRole('contentinfo')
     await expect(footer).toBeVisible()
   })
 })
 
 test.describe('Search', () => {
+  // These pages do SSR with Supabase queries — allow extra time
+  test.setTimeout(DATA_PAGE_TIMEOUT)
+
   test('city search page loads with listings', async ({ page }) => {
-    await page.goto('/homes-for-sale/bend')
+    await page.goto('/homes-for-sale/bend', { timeout: DATA_PAGE_TIMEOUT })
     await expect(page).toHaveTitle(/bend/i)
 
     // Page should render without errors
@@ -46,20 +56,22 @@ test.describe('Search', () => {
   })
 
   test('search page has filter/sort controls', async ({ page }) => {
-    await page.goto('/homes-for-sale/bend')
+    await page.goto('/homes-for-sale/bend', { timeout: DATA_PAGE_TIMEOUT })
 
     // Should have some form of listing grid or results
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('networkidle', { timeout: DATA_PAGE_TIMEOUT })
     const main = page.locator('main')
     await expect(main).toBeVisible()
   })
 })
 
 test.describe('Listing Detail', () => {
+  test.setTimeout(DATA_PAGE_TIMEOUT)
+
   test('listing page structure loads correctly', async ({ page }) => {
     // Navigate to search first, then click a listing
-    await page.goto('/homes-for-sale/bend')
-    await page.waitForLoadState('networkidle')
+    await page.goto('/homes-for-sale/bend', { timeout: DATA_PAGE_TIMEOUT })
+    await page.waitForLoadState('networkidle', { timeout: DATA_PAGE_TIMEOUT })
 
     // Try to find a listing link
     const listingLink = page.locator('a[href*="/listing/"]').first()
@@ -117,10 +129,11 @@ test.describe('404 Handling', () => {
 
 test.describe('Mobile Responsive', () => {
   test.use({ viewport: { width: 375, height: 812 } })
+  test.setTimeout(DATA_PAGE_TIMEOUT)
 
   test('homepage has no horizontal overflow on mobile', async ({ page }) => {
-    await page.goto('/')
-    await page.waitForLoadState('networkidle')
+    await page.goto('/', { timeout: DATA_PAGE_TIMEOUT })
+    await page.waitForLoadState('networkidle', { timeout: DATA_PAGE_TIMEOUT })
 
     // Check that the page doesn't overflow horizontally
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth)
@@ -136,6 +149,8 @@ test.describe('Mobile Responsive', () => {
 })
 
 test.describe('Key Pages Return 200', () => {
+  test.setTimeout(DATA_PAGE_TIMEOUT)
+
   const pages = [
     { path: '/', name: 'Homepage' },
     { path: '/homes-for-sale', name: 'Listings browse' },
@@ -147,18 +162,20 @@ test.describe('Key Pages Return 200', () => {
 
   for (const { path, name } of pages) {
     test(`${name} (${path}) returns 200`, async ({ page }) => {
-      const response = await page.goto(path)
+      const response = await page.goto(path, { timeout: DATA_PAGE_TIMEOUT })
       expect(response?.status()).toBe(200)
     })
   }
 })
 
 test.describe('SEO Essentials', () => {
+  test.setTimeout(DATA_PAGE_TIMEOUT)
+
   const pages = ['/', '/homes-for-sale/bend', '/team', '/about']
 
   for (const path of pages) {
     test(`${path} has meta description`, async ({ page }) => {
-      await page.goto(path)
+      await page.goto(path, { timeout: DATA_PAGE_TIMEOUT })
       const meta = page.locator('meta[name="description"]')
       const content = await meta.getAttribute('content').catch(() => null)
       // Should have a non-empty description
