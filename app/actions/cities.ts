@@ -571,13 +571,11 @@ export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityN
 
   // Get listing data for the specific subdivisions in this neighborhood
   const communityNames = communityRows.map((c) => c.name)
-  const { data: listingData } = await sb
-    .from('listings')
-    .select('SubdivisionName, ListPrice, StandardStatus')
-    .in('SubdivisionName', communityNames)
-    .or(ACTIVE_OR)
-    .limit(5000)
-  const listingRows = (listingData ?? []) as { SubdivisionName?: string; ListPrice?: number | null }[]
+  const { fetchAllRows: fetchAll } = await import('@/lib/supabase/paginate')
+  const listingRows = await fetchAll<{ SubdivisionName?: string; ListPrice?: number | null }>(
+    sb, 'listings', 'SubdivisionName, ListPrice, StandardStatus',
+    (q: any) => q.in('SubdivisionName', communityNames).or(ACTIVE_OR),
+  )
 
   const bySub = new Map<string, number[]>()
   for (const row of listingRows) {

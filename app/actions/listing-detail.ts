@@ -262,11 +262,16 @@ export async function resolveListingKeyFromBreadcrumbPath(input: {
   const cityLike = decodeURIComponent(input.citySlug || '').replace(/-/g, ' ').trim()
   if (!cityLike) return null
 
-  const { data } = await supabase
+  // Try to narrow search by extracting street number from address slug
+  const streetNumMatch = addressSlug.match(/^(\d+)/)
+  let query = supabase
     .from('listings')
     .select('ListingKey, ListNumber, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, ModificationTimestamp')
     .ilike('City', cityLike)
-    .limit(5000)
+  if (streetNumMatch) {
+    query = query.eq('StreetNumber', streetNumMatch[1]!)
+  }
+  const { data } = await query.limit(1000)
 
   const rows = (data ?? []) as Array<{
     ListingKey?: string | null
@@ -338,11 +343,22 @@ export async function resolveListingKeyFromCanonicalPath(input: {
   const cityLike = decodeURIComponent(input.citySlug || '').replace(/-/g, ' ').trim()
   if (!cityLike) return null
 
+  // Try direct lookup by key/MLS number first (avoids fetching all city listings)
+  const { data: directByKey } = await supabase
+    .from('listings')
+    .select('ListingKey, ListNumber, City, PostalCode, SubdivisionName, ModificationTimestamp')
+    .or(`ListingKey.eq.${keyOrMls},ListNumber.eq.${keyOrMls}`)
+    .limit(5)
+  if (directByKey && directByKey.length > 0) {
+    return (directByKey[0] as { ListingKey?: string }).ListingKey ?? null
+  }
+
+  // Fallback: search within city
   const { data } = await supabase
     .from('listings')
     .select('ListingKey, ListNumber, City, PostalCode, SubdivisionName, ModificationTimestamp')
     .ilike('City', cityLike)
-    .limit(5000)
+    .limit(1000)
 
   const rows = (data ?? []) as Array<{
     ListingKey?: string | null
