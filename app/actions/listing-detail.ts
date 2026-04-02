@@ -995,3 +995,63 @@ export async function getSimilarListingsForDetailPage(
     }
   })
 }
+
+/** Get other active listings in the same subdivision (for "Other homes in [Subdivision]" section). */
+export async function getSubdivisionListings(
+  excludeListingKey: string,
+  subdivisionName: string | null,
+  city: string | null,
+  limit = 8,
+): Promise<SimilarListingForDetail[]> {
+  const supabase = getSupabase()
+  if (!subdivisionName?.trim() || !city?.trim()) return []
+
+  const { data } = await supabase
+    .from('listings')
+    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
+    .neq('ListingKey', excludeListingKey)
+    .ilike('SubdivisionName', subdivisionName.trim())
+    .ilike('City', city.trim())
+    .not('PhotoURL', 'is', null)
+    .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
+    .order('ListPrice', { ascending: false })
+    .limit(limit)
+
+  const rows = (data ?? []) as Array<{
+    ListingKey: string
+    ListNumber?: string | null
+    ListPrice: number | null
+    BedroomsTotal: number | null
+    BathroomsTotal: number | null
+    TotalLivingAreaSqFt: number | null
+    SubdivisionName: string | null
+    StreetNumber?: string | null
+    StreetName?: string | null
+    City?: string | null
+    State?: string | null
+    PostalCode?: string | null
+    PhotoURL?: string | null
+  }>
+
+  return rows.map((r) => {
+    const address = [
+      [r.StreetNumber, r.StreetName].filter(Boolean).join(' '),
+      r.City,
+      r.State,
+      r.PostalCode,
+    ].filter(Boolean).join(', ')
+    return {
+      listing_key: r.ListingKey,
+      list_price: r.ListPrice,
+      beds_total: r.BedroomsTotal,
+      baths_full: r.BathroomsTotal,
+      living_area: r.TotalLivingAreaSqFt,
+      subdivision_name: r.SubdivisionName,
+      address,
+      photo_url: r.PhotoURL ?? null,
+      city: r.City ?? null,
+      state: r.State ?? null,
+      postal_code: r.PostalCode ?? null,
+    }
+  })
+}
