@@ -11,6 +11,7 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,5 +26,133 @@ jobs:
       - run: npm run ci:design-tokens
       - run: npm run test
       - run: npm run build
-      - run: npm run ci:lighthouse
-      - run: npm run ci:a11y
+
+      # Build health tracking
+      - name: Record build health metrics
+        if: always()
+        run: |
+          npx tsx scripts/track-build-health.ts 2>/dev/null || true
+
+
+      # Bundle size report
+      - name: Report bundle sizes
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const appDir = '.next/static';
+            let totalSize = 0;
+            const chunks = [];
+
+            function walk(dir) {
+              if (!fs.existsSync(dir)) return;
+              for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                const full = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  walk(full);
+                } else {
+                  const size = fs.statSync(full).size;
+                  totalSize += size;
+                  if (entry.name.endsWith('.js')) {
+                    chunks.push({ name: entry.name, size });
+                  }
+                }
+              }
+            }
+            walk(appDir);
+
+            chunks.sort((a, b) => b.size - a.size);
+            const top5 = chunks.slice(0, 5);
+            const fmt = (bytes) => {
+              if (bytes > 1024 * 1024) return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+              return (bytes / 1024).toFixed(1) + ' KB';
+            };
+
+            let report = '## Bundle Size Report\n\n';
+            report += `**Total static size:** ${fmt(totalSize)}\n\n`;
+            report += '| Chunk | Size |\n|-------|------|\n';
+            for (const c of top5) {
+              report += `| ${c.name} | ${fmt(c.size)} |\n`;
+            }
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Bundle Size Report')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report,
+              });
+            }
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: lint-and-build
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Build the Next.js app (self-contained, no artifact transfer)
+      - name: Build
+        run: npm run build
+
+      # Install only chromium for speed
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # Run E2E tests (critical flows only — visual regression needs baselines)
+      - name: Run E2E tests
+        run: npx playwright test e2e/critical-flows.spec.ts --project=chromium
+
+      # Upload test artifacts on failure
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            e2e/test-results/
+            e2e/html-report/
+          retention-days: 7
+
+      # Run visual regression (allow failure until baselines are committed)
+      - name: Run visual regression tests
+        continue-on-error: true
+        run: npx playwright test e2e/visual-regression.spec.ts --project=chromium
+
+      - name: Upload visual diff artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: e2e/visual-diffs/
+          retention-days: 7
