@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.4 (2026-04-02)
+
+### Bug Fixes
+- fix: add SUPABASE_SERVICE_ROLE_KEY to CI env for Lighthouse and e2e
+
+---
+
+
 ## v1.0.3 (2026-04-02)
 
 ### Bug Fixes
