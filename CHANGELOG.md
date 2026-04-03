@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.20 (2026-04-03)
+
+### Maintenance
+- chore: enforce deploy-and-verify before completion claims
+
+---
+
+
 ## v1.0.19 (2026-04-03)
 
 ### Bug Fixes
