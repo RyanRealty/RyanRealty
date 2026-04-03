@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.25 (2026-04-03)
+
+### Bug Fixes
+- fix: enforce strict terminal finalization gating
+
+---
+
+
 ## v1.0.24 (2026-04-03)
 
 ### Bug Fixes
