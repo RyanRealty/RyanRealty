@@ -122,8 +122,6 @@ type YearListingRow = {
   PhotoURL?: string | null
   details?: unknown
   ListAgentName?: string | null
-  ListAgentFirstName?: string | null
-  ListAgentLastName?: string | null
   ListOfficeName?: string | null
 }
 
@@ -141,7 +139,7 @@ async function fetchSupabaseYearListings(
   while (keepGoing) {
     const { data, error } = await supabase
       .from('listings')
-      .select('ListingKey, ListNumber, StandardStatus, PhotoURL, details, ListAgentName, ListAgentFirstName, ListAgentLastName, ListOfficeName')
+      .select('ListingKey, ListNumber, StandardStatus, PhotoURL, details, ListAgentName, ListOfficeName')
       .gte('OnMarketDate', fromIso)
       .lt('OnMarketDate', toIsoExclusive)
       .order('ListNumber', { ascending: true, nullsFirst: false })
@@ -175,7 +173,7 @@ async function fetchSupabaseYearListingsBatch(
   const { fromIso, toIsoExclusive } = yearBounds(year)
   const { data, error } = await supabase
     .from('listings')
-    .select('ListingKey, ListNumber, StandardStatus, PhotoURL, details, ListAgentName, ListAgentFirstName, ListAgentLastName, ListOfficeName')
+    .select('ListingKey, ListNumber, StandardStatus, PhotoURL, details, ListAgentName, ListOfficeName')
     .gte('OnMarketDate', fromIso)
     .lt('OnMarketDate', toIsoExclusive)
     .order('ListNumber', { ascending: true, nullsFirst: false })
@@ -411,8 +409,6 @@ export async function runYearSync(
         photoUrl: row.PhotoURL ?? null,
         details: row.details ?? null,
         listAgentName: row.ListAgentName ?? null,
-        listAgentFirstName: row.ListAgentFirstName ?? null,
-        listAgentLastName: row.ListAgentLastName ?? null,
         listOfficeName: row.ListOfficeName ?? null,
       },
       items
@@ -923,8 +919,6 @@ export async function runYearSyncChunk(options: {
           photoUrl: row.PhotoURL ?? null,
           details: row.details ?? null,
           listAgentName: row.ListAgentName ?? null,
-          listAgentFirstName: row.ListAgentFirstName ?? null,
-          listAgentLastName: row.ListAgentLastName ?? null,
           listOfficeName: row.ListOfficeName ?? null,
         },
         items

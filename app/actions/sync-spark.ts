@@ -814,7 +814,7 @@ export async function syncSparkListingsDelta(options?: {
             }
             const { data: listingContext } = await supabase
               .from('listings')
-              .select('ListingKey, PhotoURL, details, ListAgentName, ListAgentFirstName, ListAgentLastName, ListOfficeName')
+              .select('ListingKey, PhotoURL, details, ListAgentName, ListOfficeName')
               .eq('ListingKey', key)
               .maybeSingle()
             const auxSync = await syncAuxiliaryTablesForFinalization(
@@ -824,8 +824,6 @@ export async function syncSparkListingsDelta(options?: {
                 photoUrl: (listingContext as { PhotoURL?: string | null } | null)?.PhotoURL ?? null,
                 details: (listingContext as { details?: unknown } | null)?.details ?? null,
                 listAgentName: (listingContext as { ListAgentName?: string | null } | null)?.ListAgentName ?? null,
-                listAgentFirstName: (listingContext as { ListAgentFirstName?: string | null } | null)?.ListAgentFirstName ?? null,
-                listAgentLastName: (listingContext as { ListAgentLastName?: string | null } | null)?.ListAgentLastName ?? null,
                 listOfficeName: (listingContext as { ListOfficeName?: string | null } | null)?.ListOfficeName ?? null,
               },
               historyItems.items
@@ -1243,7 +1241,7 @@ export async function syncListingHistory(options?: {
       : limit
     let dataQuery = supabase
       .from('listings')
-      .select('ListingKey, ListNumber, StandardStatus, CloseDate, ListDate, OnMarketDate, ModificationTimestamp, PhotoURL, details, ListAgentName, ListAgentFirstName, ListAgentLastName, ListOfficeName')
+      .select('ListingKey, ListNumber, StandardStatus, CloseDate, ListDate, OnMarketDate, ModificationTimestamp, PhotoURL, details, ListAgentName, ListOfficeName')
       .eq('history_finalized', false)
       .range(effectiveOffset, effectiveOffset + rangeLimit - 1)
     if (activeAndPendingOnly) {
@@ -1301,7 +1299,7 @@ export async function syncListingHistory(options?: {
       const fallbackLimit = Math.max(rangeLimit * 5, 300)
       const { data: fallbackRows, error: fallbackError } = await supabase
         .from('listings')
-      .select('ListingKey, ListNumber, StandardStatus, CloseDate, ListDate, OnMarketDate, ModificationTimestamp, PhotoURL, details, ListAgentName, ListAgentFirstName, ListAgentLastName, ListOfficeName')
+      .select('ListingKey, ListNumber, StandardStatus, CloseDate, ListDate, OnMarketDate, ModificationTimestamp, PhotoURL, details, ListAgentName, ListOfficeName')
         .eq('history_finalized', false)
         .or(TERMINAL_STATUS_OR)
         .limit(fallbackLimit)
@@ -1330,8 +1328,6 @@ export async function syncListingHistory(options?: {
       PhotoURL?: string | null
       details?: unknown
       ListAgentName?: string | null
-      ListAgentFirstName?: string | null
-      ListAgentLastName?: string | null
       ListOfficeName?: string | null
     }[]
     const shardedRows = useWorkerShard
@@ -1372,8 +1368,6 @@ export async function syncListingHistory(options?: {
       PhotoURL?: string | null
       details?: unknown
       ListAgentName?: string | null
-      ListAgentFirstName?: string | null
-      ListAgentLastName?: string | null
       ListOfficeName?: string | null
     }): Promise<ListingWorkResult> => {
       const key1 = (row.ListingKey ?? '').toString().trim()
@@ -1431,8 +1425,6 @@ export async function syncListingHistory(options?: {
           photoUrl: row.PhotoURL ?? null,
           details: row.details ?? null,
           listAgentName: row.ListAgentName ?? null,
-          listAgentFirstName: row.ListAgentFirstName ?? null,
-          listAgentLastName: row.ListAgentLastName ?? null,
           listOfficeName: row.ListOfficeName ?? null,
         },
         items
