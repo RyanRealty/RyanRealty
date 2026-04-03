@@ -1,22 +1,28 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import {
+  fetchSparkListingHistory,
+  fetchSparkPriceHistory,
+  type SparkListingHistoryItem,
+} from '@/lib/spark'
 
 /**
  * Delta Sync Cron — runs every 15 minutes.
  *
+ * SCOPE: NON-FINALIZED LISTINGS ONLY.
+ *
  * This is the primary sync mechanism for keeping listings fresh.
  * It fetches only listings modified since the last run, which means:
  * - New listings appear within 15 minutes
- * - Price changes are captured within 15 minutes
- * - Status changes (Active → Pending → Closed) are captured within 15 minutes
- * - Activity events are emitted for each change
+ * - Price changes are captured with full history records
+ * - Status changes are captured with full history records
+ * - Listings reaching terminal status get finalized (never synced again)
  *
- * When a listing closes (StandardStatus = Closed + CloseDate set):
- * - is_finalized = true
+ * When a listing reaches terminal status (Closed, Expired, Withdrawn, Canceled):
+ * - Fetches full listing history from Spark API
+ * - Inserts listing_history records
+ * - Sets history_finalized = true, is_finalized = true
  * - That listing is NEVER synced again
- *
- * For new listings that arrive without photos:
- * - Immediately fetches the photo from Spark and sets PhotoURL
  *
  * Auth: Authorization: Bearer CRON_SECRET
  */
@@ -24,6 +30,10 @@ import { createClient } from '@supabase/supabase-js'
 const SPARK_EXPAND = 'Photos,Videos,OpenHouses'
 const UPSERT_CHUNK = 25
 const MAX_PAGES = 100
+/** Max terminal listings to finalize per run (avoid timeout) */
+const MAX_FINALIZE_PER_RUN = 30
+/** Max photo fixes per run */
+const MAX_PHOTO_FIXES = 20
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET
@@ -38,6 +48,11 @@ function getSupabase() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url?.trim() || !key?.trim()) return null
   return createClient(url, key)
+}
+
+function isTerminalStatus(s: string | null | undefined): boolean {
+  const t = String(s ?? '').toLowerCase()
+  return /closed/.test(t) || /expired/.test(t) || /withdrawn/.test(t) || /cancel/.test(t)
 }
 
 async function fetchSparkDelta(accessToken: string, sinceIso: string, page: number) {
@@ -122,7 +137,6 @@ function mapSparkToRow(fields: SparkStandardFields) {
   const status = (fields.StandardStatus ?? fields.MlsStatus ?? '').toString()
   const isClosed = /closed/i.test(status)
 
-  // Spark replication API uses ListingId as the MLS number (maps to ListNumber in our DB)
   const listNumber = fields.ListNumber ?? fields.ListingId ?? null
 
   return {
@@ -159,11 +173,75 @@ function mapSparkToRow(fields: SparkStandardFields) {
     },
     // Media finalization: closed listings don't need media re-synced
     media_finalized: isClosed ? true : undefined,
-    // NOTE: is_finalized is NOT set here. A listing is only fully finalized
-    // when history_finalized=true (set by the history sync pipeline after
-    // all historical listing data has been captured for accurate reports).
-    // Setting is_finalized prematurely would skip history data collection.
   }
+}
+
+/** Convert one Spark history item to a row for listing_history table. */
+function sparkHistoryItemToRow(listingKey: string, item: SparkListingHistoryItem) {
+  const dateRaw = item.ModificationTimestamp ?? item.Date
+  let eventDate: string | null = null
+  if (typeof dateRaw === 'string' && dateRaw.trim()) {
+    const d = new Date(dateRaw.trim())
+    if (!isNaN(d.getTime())) eventDate = d.toISOString()
+  }
+  const priceNum =
+    typeof item.Price === 'number' ? item.Price
+    : typeof item.PriceAtEvent === 'number' ? item.PriceAtEvent
+    : typeof item.Price === 'string' ? parseFloat(String(item.Price)) : null
+  const priceVal = priceNum ?? (typeof item.PriceAtEvent === 'string' ? parseFloat(String(item.PriceAtEvent)) : null)
+  const description =
+    typeof item.Description === 'string' ? item.Description
+    : item.Field != null && item.PreviousValue != null && item.NewValue != null
+      ? `${item.Field}: ${String(item.PreviousValue)} → ${String(item.NewValue)}`
+      : null
+  return {
+    listing_key: listingKey,
+    event_date: eventDate,
+    event: typeof item.Event === 'string' ? item.Event : null,
+    description: description ?? null,
+    price: typeof priceVal === 'number' && !Number.isNaN(priceVal) ? priceVal : null,
+    price_change: typeof item.PriceChange === 'number' ? item.PriceChange : typeof item.PriceChange === 'string' ? parseFloat(String(item.PriceChange)) : null,
+    raw: item as Record<string, unknown>,
+  }
+}
+
+/**
+ * Fetch listing history from Spark and insert into listing_history table.
+ * Tries /history first, falls back to /historical/pricehistory.
+ * Returns number of rows inserted.
+ */
+async function fetchAndInsertHistory(
+  supabase: SupabaseClient,
+  accessToken: string,
+  listingKey: string
+): Promise<{ inserted: number; ok: boolean }> {
+  // Try /history endpoint first
+  let response = await fetchSparkListingHistory(accessToken, listingKey)
+
+  // Fallback to /historical/pricehistory if /history returned empty or failed
+  if (response.items.length === 0) {
+    const fallback = await fetchSparkPriceHistory(accessToken, listingKey)
+    if (fallback.items.length > 0) {
+      response = fallback
+    }
+  }
+
+  const hadSuccessfulFetch = response.ok || response.items.length > 0
+
+  if (response.items.length > 0) {
+    const rows = response.items.map(item => sparkHistoryItemToRow(listingKey, item))
+
+    // Delete existing history for this listing to avoid duplicates, then insert fresh
+    await supabase.from('listing_history').delete().eq('listing_key', listingKey)
+    const { error } = await supabase.from('listing_history').insert(rows)
+    if (error) {
+      console.error(`[sync-delta] listing_history insert error for ${listingKey}:`, error.message)
+      return { inserted: 0, ok: hadSuccessfulFetch }
+    }
+    return { inserted: rows.length, ok: hadSuccessfulFetch }
+  }
+
+  return { inserted: 0, ok: hadSuccessfulFetch }
 }
 
 export async function GET(request: Request) {
@@ -197,8 +275,10 @@ export async function GET(request: Request) {
   let newListings = 0
   let priceChanges = 0
   let statusChanges = 0
-  let finalized = 0
+  let listingsFinalized = 0
+  let historyRowsInserted = 0
   let photosFixed = 0
+  let skippedFinalized = 0
   let page = 1
   let totalPages = 1
 
@@ -218,17 +298,44 @@ export async function GET(request: Request) {
 
       const { data: existingRows } = await supabase
         .from('listings')
-        .select('ListNumber, StandardStatus, ListPrice, is_finalized')
+        .select('ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized')
         .in('ListNumber', listNumbers)
 
-      const existingByNum = new Map<string, { StandardStatus?: string | null; ListPrice?: number | null; is_finalized?: boolean }>()
-      for (const r of (existingRows ?? []) as Array<{ ListNumber: string; StandardStatus?: string | null; ListPrice?: number | null; is_finalized?: boolean }>) {
+      const existingByNum = new Map<string, {
+        ListNumber: string
+        ListingKey?: string | null
+        StandardStatus?: string | null
+        ListPrice?: number | null
+        is_finalized?: boolean
+      }>()
+      for (const r of (existingRows ?? []) as Array<{
+        ListNumber: string
+        ListingKey?: string | null
+        StandardStatus?: string | null
+        ListPrice?: number | null
+        is_finalized?: boolean
+      }>) {
         existingByNum.set(r.ListNumber, r)
       }
 
       // Process each listing
       const rowsToUpsert: Array<Record<string, unknown>> = []
       const activityEvents: Array<{ listing_key: string; event_type: string; payload: Record<string, unknown> }> = []
+      const priceHistoryRows: Array<{
+        listing_key: string
+        old_price: number | null
+        new_price: number | null
+        change_pct: number | null
+        changed_at: string
+      }> = []
+      const statusHistoryRows: Array<{
+        listing_key: string
+        old_status: string | null
+        new_status: string | null
+        changed_at: string
+      }> = []
+      // Track listings that just became terminal and need finalization
+      const toFinalize: Array<{ listingKey: string; listNumber: string }> = []
 
       for (const result of results) {
         const f = result.StandardFields
@@ -238,7 +345,10 @@ export async function GET(request: Request) {
         const existing = existingByNum.get(listNumber)
 
         // Skip finalized listings — they're done forever
-        if (existing?.is_finalized) continue
+        if (existing?.is_finalized) {
+          skippedFinalized++
+          continue
+        }
 
         const row = mapSparkToRow(f)
         // Remove undefined fields
@@ -249,13 +359,16 @@ export async function GET(request: Request) {
         rowsToUpsert.push(cleanRow)
 
         const listingKey = (f.ListingKey ?? f.ListNumber ?? '').toString()
-        const newStatus = (f.StandardStatus ?? '').toLowerCase()
-        const oldStatus = (existing?.StandardStatus ?? '').toLowerCase()
+        const newStatus = (f.StandardStatus ?? '').toString()
+        const oldStatus = (existing?.StandardStatus ?? '').toString()
         const newPrice = f.ListPrice ?? null
         const oldPrice = existing?.ListPrice ?? null
+        const now = new Date().toISOString()
 
-        // Detect changes and emit activity events
+        // === Detect changes and create history records ===
+
         if (!existing) {
+          // Brand new listing
           newListings++
           activityEvents.push({
             listing_key: listingKey,
@@ -263,50 +376,70 @@ export async function GET(request: Request) {
             payload: { ListNumber: f.ListNumber, City: f.City, SubdivisionName: f.SubdivisionName, ListPrice: newPrice },
           })
         } else {
-          // Status change: Active → Pending
-          if (!/pending/i.test(oldStatus) && /pending/i.test(newStatus)) {
+          // --- Status changes ---
+          const oldStatusLower = oldStatus.toLowerCase()
+          const newStatusLower = newStatus.toLowerCase()
+
+          if (oldStatusLower !== newStatusLower && newStatus) {
             statusChanges++
-            activityEvents.push({
+
+            // Insert status_history record
+            statusHistoryRows.push({
               listing_key: listingKey,
-              event_type: 'status_pending',
-              payload: { ListNumber: f.ListNumber, previousStatus: existing.StandardStatus },
+              old_status: oldStatus || null,
+              new_status: newStatus,
+              changed_at: now,
             })
+
+            // Specific activity events
+            if (/pending/i.test(newStatus) && !/pending/i.test(oldStatus)) {
+              activityEvents.push({
+                listing_key: listingKey,
+                event_type: 'status_pending',
+                payload: { ListNumber: f.ListNumber, previousStatus: oldStatus },
+              })
+            }
+
+            if (isTerminalStatus(newStatus) && !isTerminalStatus(oldStatus)) {
+              activityEvents.push({
+                listing_key: listingKey,
+                event_type: `status_${newStatusLower.replace(/\s+/g, '_')}`,
+                payload: { ListNumber: f.ListNumber, ClosePrice: f.ClosePrice, ListPrice: newPrice },
+              })
+
+              // Queue for finalization
+              toFinalize.push({ listingKey, listNumber })
+            }
           }
 
-          // Status change: → Closed (finalize)
-          if (!/closed/i.test(oldStatus) && /closed/i.test(newStatus)) {
-            statusChanges++
-            finalized++
-            activityEvents.push({
-              listing_key: listingKey,
-              event_type: 'status_closed',
-              payload: { ListNumber: f.ListNumber, ClosePrice: f.ClosePrice, ListPrice: newPrice },
-            })
-          }
-
-          // Price drop
-          if (newPrice != null && oldPrice != null && newPrice < oldPrice) {
+          // --- Price changes ---
+          if (newPrice != null && oldPrice != null && newPrice !== oldPrice) {
             priceChanges++
-            activityEvents.push({
-              listing_key: listingKey,
-              event_type: 'price_drop',
-              payload: { ListNumber: f.ListNumber, previous_price: oldPrice, new_price: newPrice },
-            })
-          }
 
-          // Price increase
-          if (newPrice != null && oldPrice != null && newPrice > oldPrice) {
-            priceChanges++
+            const changePct = oldPrice > 0 ? Math.round(((newPrice - oldPrice) / oldPrice) * 10000) / 100 : null
+
+            // Insert price_history record
+            priceHistoryRows.push({
+              listing_key: listingKey,
+              old_price: oldPrice,
+              new_price: newPrice,
+              change_pct: changePct,
+              changed_at: now,
+            })
+
+            // Activity event
             activityEvents.push({
               listing_key: listingKey,
-              event_type: 'price_increase',
+              event_type: newPrice < oldPrice ? 'price_drop' : 'price_increase',
               payload: { ListNumber: f.ListNumber, previous_price: oldPrice, new_price: newPrice },
             })
           }
         }
       }
 
-      // Upsert listings in chunks
+      // === Persist everything ===
+
+      // 1. Upsert listings in chunks
       for (let i = 0; i < rowsToUpsert.length; i += UPSERT_CHUNK) {
         const chunk = rowsToUpsert.slice(i, i + UPSERT_CHUNK)
         const { error } = await supabase.from('listings').upsert(chunk, { onConflict: 'ListNumber' })
@@ -314,7 +447,19 @@ export async function GET(request: Request) {
         else console.error('[sync-delta] upsert error:', error.message)
       }
 
-      // Insert activity events
+      // 2. Insert price_history records
+      if (priceHistoryRows.length > 0) {
+        const { error } = await supabase.from('price_history').insert(priceHistoryRows)
+        if (error) console.error('[sync-delta] price_history insert error:', error.message)
+      }
+
+      // 3. Insert status_history records
+      if (statusHistoryRows.length > 0) {
+        const { error } = await supabase.from('status_history').insert(statusHistoryRows)
+        if (error) console.error('[sync-delta] status_history insert error:', error.message)
+      }
+
+      // 4. Insert activity events
       if (activityEvents.length > 0) {
         const eventRows = activityEvents.map(e => ({
           ...e,
@@ -323,11 +468,39 @@ export async function GET(request: Request) {
         await supabase.from('activity_events').insert(eventRows).then(() => {})
       }
 
-      // Fix photos for listings that got upserted without PhotoURL
+      // 5. Finalize terminal listings — fetch full history, then mark finalized
+      const finalizeSlice = toFinalize.slice(0, MAX_FINALIZE_PER_RUN - listingsFinalized)
+      for (const { listingKey, listNumber } of finalizeSlice) {
+        if (listingsFinalized >= MAX_FINALIZE_PER_RUN) break
+
+        const { inserted, ok: hadSuccessfulFetch } = await fetchAndInsertHistory(
+          supabase,
+          accessToken,
+          listingKey
+        )
+        historyRowsInserted += inserted
+
+        // Finalize: we have a terminal listing AND we successfully fetched from Spark
+        // (even if Spark returned 0 history items, we still finalize — the listing is terminal)
+        if (hadSuccessfulFetch) {
+          const { error } = await supabase
+            .from('listings')
+            .update({ history_finalized: true, is_finalized: true })
+            .eq('ListNumber', listNumber)
+
+          if (!error) {
+            listingsFinalized++
+          } else {
+            console.error(`[sync-delta] finalization error for ${listNumber}:`, error.message)
+          }
+        }
+      }
+
+      // 6. Fix photos for listings that got upserted without PhotoURL
       const upsertedKeys = rowsToUpsert
         .filter(r => !r.PhotoURL && r.ListingKey)
         .map(r => r.ListingKey as string)
-        .slice(0, 20) // Limit per batch to avoid timeout
+        .slice(0, MAX_PHOTO_FIXES)
 
       for (const key of upsertedKeys) {
         const photoUrl = await fetchPhotoForListing(accessToken, key)
@@ -358,9 +531,11 @@ export async function GET(request: Request) {
       `${newListings} new`,
       `${priceChanges} price changes`,
       `${statusChanges} status changes`,
-      `${finalized} finalized`,
+      `${listingsFinalized} finalized`,
+      `${historyRowsInserted} history rows`,
       `${photosFixed} photos fixed`,
-    ].join(', ')
+      skippedFinalized > 0 ? `${skippedFinalized} skipped (already finalized)` : null,
+    ].filter(Boolean).join(', ')
 
     return NextResponse.json({
       ok: true,
@@ -370,8 +545,10 @@ export async function GET(request: Request) {
       newListings,
       priceChanges,
       statusChanges,
-      finalized,
+      listingsFinalized,
+      historyRowsInserted,
       photosFixed,
+      skippedFinalized,
       pages: page - 1,
       sinceIso,
     })
