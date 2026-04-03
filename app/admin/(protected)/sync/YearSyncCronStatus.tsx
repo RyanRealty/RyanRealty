@@ -67,9 +67,7 @@ export default function YearSyncCronStatus() {
       <CardHeader>
         <CardTitle className="text-lg">Year sync status</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Skips listings when counts match; syncs history only. 2026 may sync listings if needed.           Run{' '}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">npm run sync:year</code> to run
-          continuously until all years are done. This page shows live progress.
+          Latest run results by year. This is your quick confirmation that history rows are being added and listings are being finalized.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">

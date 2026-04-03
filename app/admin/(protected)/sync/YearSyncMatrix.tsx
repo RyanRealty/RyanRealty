@@ -261,7 +261,7 @@ export default function YearSyncMatrix() {
               </>
             ) : (
               <p className="mt-1 text-sm text-muted-foreground">
-                Run <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">npm run sync:year</code> or <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">npm run sync:year 2024</code> from the terminal to start a sync.
+                This section tracks year-by-year history backfill progress. The goal is to move each year to complete so all terminal listings can be finalized.
               </p>
             )}
           </div>

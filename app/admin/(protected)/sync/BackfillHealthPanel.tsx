@@ -82,12 +82,17 @@ function stateLabel(state: BackfillHealthPayload['status']['state']): string {
 export default function BackfillHealthPanel() {
   const [payload, setPayload] = useState<BackfillHealthPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     const load = async () => {
       try {
         const res = await fetch('/api/admin/sync/backfill-health', { cache: 'no-store' })
+        if (res.status === 429) {
+          const retryAfter = Number(res.headers.get('Retry-After') ?? '60')
+          throw new Error(`Rate limited while loading dashboard data. Retrying automatically in about ${retryAfter} seconds.`)
+        }
         const data = (await res.json()) as BackfillHealthPayload | { error?: string }
         if (!res.ok || !('ok' in data && data.ok)) {
           throw new Error(('error' in data && data.error) ? data.error : `Request failed (${res.status})`)
@@ -95,9 +100,19 @@ export default function BackfillHealthPanel() {
         if (!cancelled) {
           setPayload(data as BackfillHealthPayload)
           setError(null)
+          setRateLimitMessage(null)
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err))
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : String(err)
+          if (message.toLowerCase().includes('rate limited')) {
+            setRateLimitMessage(message)
+            setError(null)
+          } else {
+            setError(message)
+            setRateLimitMessage(null)
+          }
+        }
       }
     }
     void load()
@@ -125,12 +140,35 @@ export default function BackfillHealthPanel() {
     return warnings
   }, [payload])
 
+  const progressSummary = useMemo(() => {
+    if (!payload) return null
+    const total = payload.totals.finalizedTerminalListings + payload.totals.terminalRemainingListings
+    const pct = total > 0
+      ? Math.round((payload.totals.finalizedTerminalListings / total) * 1000) / 10
+      : 0
+    return { total, pct }
+  }, [payload])
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Backfill health</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <Alert>
+          <AlertTitle>Goal</AlertTitle>
+          <AlertDescription>
+            Keep current listings fresh while backfilling historical listings until every terminal listing is finalized with complete data.
+          </AlertDescription>
+        </Alert>
+
+        {rateLimitMessage && (
+          <Alert>
+            <AlertTitle>Dashboard request rate limit</AlertTitle>
+            <AlertDescription>{rateLimitMessage}</AlertDescription>
+          </Alert>
+        )}
+
         {error && (
           <Alert variant="destructive">
             <AlertTitle>Health check unavailable</AlertTitle>
@@ -153,44 +191,50 @@ export default function BackfillHealthPanel() {
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <p className="text-xs text-muted-foreground">Terminal remaining</p>
+                <p className="text-xs text-muted-foreground">Still needs finalization</p>
                 <p className="font-mono text-sm text-foreground">{formatNumber(payload.totals.terminalRemainingListings)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Finalized terminal</p>
+                <p className="text-xs text-muted-foreground">Already finalized</p>
                 <p className="font-mono text-sm text-foreground">{formatNumber(payload.totals.finalizedTerminalListings)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Year sync progress</p>
+                <p className="text-xs text-muted-foreground">Current year in progress</p>
                 <p className="font-mono text-sm text-foreground">
                   {payload.yearCursor.currentYear ?? '—'} {payload.yearCursor.nextHistoryOffset ?? 0}/{payload.yearCursor.totalListings ?? '—'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Cursor heartbeat</p>
+                <p className="text-xs text-muted-foreground">Last sync heartbeat</p>
                 <p className="font-mono text-sm text-foreground">
                   {payload.cursor.minutesSinceUpdate != null ? `${Math.round(payload.cursor.minutesSinceUpdate)} min ago` : '—'}
                 </p>
               </div>
             </div>
 
+            {progressSummary && (
+              <p className="text-sm text-muted-foreground">
+                Finalization progress: {progressSummary.pct}% ({formatNumber(payload.totals.finalizedTerminalListings)} of {formatNumber(progressSummary.total)} terminal listings).
+              </p>
+            )}
+
             <Separator />
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <p className="text-xs text-muted-foreground">Photos rows</p>
+                <p className="text-xs text-muted-foreground">Photos synced rows</p>
                 <p className="font-mono text-sm text-foreground">{formatNumber(payload.mediaCoverage.listingPhotosRows)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Videos rows</p>
+                <p className="text-xs text-muted-foreground">Videos synced rows</p>
                 <p className="font-mono text-sm text-foreground">{formatNumber(payload.mediaCoverage.listingVideosRows)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Agents rows</p>
+                <p className="text-xs text-muted-foreground">Agents synced rows</p>
                 <p className="font-mono text-sm text-foreground">{formatNumber(payload.mediaCoverage.listingAgentsRows)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Open houses rows</p>
+                <p className="text-xs text-muted-foreground">Open houses synced rows</p>
                 <p className="font-mono text-sm text-foreground">{formatNumber(payload.mediaCoverage.openHousesRows)}</p>
               </div>
               <div>
