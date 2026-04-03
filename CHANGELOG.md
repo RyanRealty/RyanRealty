@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.19 (2026-04-03)
+
+### Bug Fixes
+- fix: clarify history-finalized labels on sync dashboard
+
+---
+
+
 ## v1.0.18 (2026-04-03)
 
 ### Bug Fixes
