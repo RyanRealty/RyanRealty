@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.16 (2026-04-03)
+
+### Other
+- Upgrade delta sync: full history capture, finalization, 15-min schedule
+
+---
+
+
 ## v1.0.15 (2026-04-03)
 
 ### Bug Fixes
