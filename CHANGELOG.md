@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.18 (2026-04-03)
+
+### Bug Fixes
+- fix: clarify sync dashboard language and rate-limit messaging
+
+---
+
+
 ## v1.0.17 (2026-04-03)
 
 ### Bug Fixes
