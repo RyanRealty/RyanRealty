@@ -411,7 +411,8 @@ export async function runYearSync(
         listAgentName: row.ListAgentName ?? null,
         listOfficeName: row.ListOfficeName ?? null,
       },
-      items
+      items,
+      { accessToken: token }
     )
     const shouldFinalize = row.ListNumber && hadSuccessfulFetch && isTerminalStatus(row.StandardStatus) && auxSync.ok
     if (shouldFinalize) {
@@ -921,7 +922,8 @@ export async function runYearSyncChunk(options: {
           listAgentName: row.ListAgentName ?? null,
           listOfficeName: row.ListOfficeName ?? null,
         },
-        items
+        items,
+        { accessToken: token }
       )
       const shouldFinalize = row.ListNumber && hadSuccessfulFetch && isTerminalStatus(row.StandardStatus) && auxSync.ok
       if (shouldFinalize) {

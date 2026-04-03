@@ -499,7 +499,8 @@ export async function GET(request: Request) {
             listAgentLastName: typeof sourceRow?.ListAgentLastName === 'string' ? sourceRow.ListAgentLastName : null,
             listOfficeName: typeof sourceRow?.ListOfficeName === 'string' ? sourceRow.ListOfficeName : null,
           },
-          items
+          items,
+          { accessToken }
         )
 
         // Strict finalization: only finalize when history fetch succeeded and auxiliary tables are synced.

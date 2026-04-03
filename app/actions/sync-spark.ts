@@ -826,7 +826,8 @@ export async function syncSparkListingsDelta(options?: {
                 listAgentName: (listingContext as { ListAgentName?: string | null } | null)?.ListAgentName ?? null,
                 listOfficeName: (listingContext as { ListOfficeName?: string | null } | null)?.ListOfficeName ?? null,
               },
-              historyItems.items
+              historyItems.items,
+              { accessToken }
             )
             // Only finalize terminal listings (Closed/Expired/Withdrawn/Canceled)
             // Active/Pending listings should NEVER be finalized — they need ongoing history refresh.
@@ -1427,7 +1428,8 @@ export async function syncListingHistory(options?: {
           listAgentName: row.ListAgentName ?? null,
           listOfficeName: row.ListOfficeName ?? null,
         },
-        items
+        items,
+        { accessToken }
       )
       if (shouldFinalizeTerminal && auxSync.ok && isTerminalStatus(row.StandardStatus) && row.ListNumber) {
         await supabase
