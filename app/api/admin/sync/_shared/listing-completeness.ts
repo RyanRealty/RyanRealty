@@ -136,9 +136,13 @@ function contextFromSparkFields(listingKey: string, fields: Record<string, unkno
     listingKey,
     photoUrl,
     details: {
+      ...fields,
       Photos: Array.isArray(fields.Photos) ? fields.Photos : [],
+      FloorPlans: Array.isArray(fields.FloorPlans) ? fields.FloorPlans : [],
       Videos: Array.isArray(fields.Videos) ? fields.Videos : [],
+      VirtualTours: Array.isArray(fields.VirtualTours) ? fields.VirtualTours : [],
       OpenHouses: Array.isArray(fields.OpenHouses) ? fields.OpenHouses : [],
+      Documents: Array.isArray(fields.Documents) ? fields.Documents : [],
     },
     listAgentName,
     listAgentFirstName: agentFirstName,
@@ -194,11 +198,25 @@ async function hydrateContextFromSpark(
   if (!shouldHydrate) return { context, hydratedFromSpark: false }
 
   try {
-    const response = await fetchSparkListingByKey(token, context.listingKey, 'Photos,Videos,OpenHouses')
+    const response = await fetchSparkListingByKey(
+      token,
+      context.listingKey,
+      'Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents'
+    )
     const fields = response?.D?.Results?.[0]?.StandardFields as Record<string, unknown> | undefined
     if (!fields) return { context, hydratedFromSpark: false }
+    const hydratedContext = contextFromSparkFields(context.listingKey, fields)
+    await supabase
+      .from('listings')
+      .update({
+        details: hydratedContext.details ?? null,
+        PhotoURL: hydratedContext.photoUrl ?? null,
+        ListAgentName: hydratedContext.listAgentName ?? null,
+        ListOfficeName: hydratedContext.listOfficeName ?? null,
+      })
+      .eq('ListingKey', context.listingKey)
     return {
-      context: contextFromSparkFields(context.listingKey, fields),
+      context: hydratedContext,
       hydratedFromSpark: true,
     }
   } catch {
