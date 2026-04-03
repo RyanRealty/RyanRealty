@@ -1,0 +1,35 @@
+name: Sync Runner
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-runner
+  cancel-in-progress: false
+
+jobs:
+  run-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set base URL
+        run: echo "BASE_URL=${{ secrets.SYNC_BASE_URL || 'https://ryanrealty.vercel.app' }}" >> "$GITHUB_ENV"
+
+      - name: Trigger delta sync
+        run: |
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "$BASE_URL/api/cron/sync-delta"
+
+      - name: Trigger year sync chunk
+        run: |
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "$BASE_URL/api/cron/sync-year-by-year"
+
+      - name: Trigger terminal history chunk
+        run: |
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "$BASE_URL/api/cron/sync-history-terminal?worker_count=1&worker_index=0&limit=20"
