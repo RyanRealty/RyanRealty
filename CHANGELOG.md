@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.21 (2026-04-03)
+
+### Maintenance
+- chore: remove PR review checklist process
+
+---
+
+
 ## v1.0.20 (2026-04-03)
 
 ### Maintenance
