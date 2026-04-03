@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.1 (2026-04-03)
+
+### Bug Fixes
+- fix: hydrate full Spark listing payload during strict finalization
+
+---
+
+
 ## v1.1.0 (2026-04-03)
 
 ### Features
