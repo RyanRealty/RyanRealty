@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.17 (2026-04-03)
+
+### Bug Fixes
+- fix: stabilize admin sync monitoring and dedupe year log
+
+---
+
+
 ## v1.0.16 (2026-04-03)
 
 ### Other
