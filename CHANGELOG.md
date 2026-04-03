@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.26 (2026-04-03)
+
+### Bug Fixes
+- fix: repair strict finalization query columns
+
+---
+
+
 ## v1.0.25 (2026-04-03)
 
 ### Bug Fixes
