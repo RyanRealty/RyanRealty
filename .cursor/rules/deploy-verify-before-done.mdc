@@ -1,0 +1,28 @@
+---
+description: Enforce push deploy and production verification before completion claims
+alwaysApply: true
+---
+
+# Push Deploy Verify Protocol
+
+Never report a task as done until all steps below are complete in order.
+
+1. Implement and validate locally (`npm run build` and any task-specific checks).
+2. Commit only the intended changes.
+3. Push to `main` and confirm remote contains the commit (`origin/main` includes SHA).
+4. Confirm a production deployment has been created for the updated `main` commit.
+5. Wait until deployment state is `READY`.
+6. Verify production behavior for the changed path/feature (not just local).
+7. Only then report completion to the user.
+
+## Required status language
+
+- If local is fixed but not deployed: explicitly say "fixed locally, not deployed yet."
+- If pushed but not live: explicitly say "pushed to main, deployment pending."
+- If live but not verified: explicitly say "live status unknown until production check is complete."
+
+## Never do
+
+- Never claim "done" based only on local build/tests.
+- Never imply production includes a fix without deployment evidence.
+- Never skip the production verification step for user-facing changes.
