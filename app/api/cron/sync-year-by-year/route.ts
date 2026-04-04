@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { runYearSyncChunk } from '@/app/api/admin/sync/_shared/run-year-sync'
 
+const MAX_CHUNKS_PER_REQUEST = Math.max(
+  1,
+  Math.min(24, Number(process.env.SYNC_YEAR_MAX_CHUNKS_PER_REQUEST ?? 8))
+)
+
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET
   if (secret?.trim()) {
@@ -47,11 +52,24 @@ export async function GET(request: Request) {
   }
 
   const supabase = createClient(supabaseUrl, serviceKey)
-  const result = await runYearSyncChunk({ supabase, token: accessToken, targetYear })
+  let chunksExecuted = 0
+  let result = await runYearSyncChunk({ supabase, token: accessToken, targetYear })
+  chunksExecuted += 1
+
+  while (result.ok && !result.done && chunksExecuted < MAX_CHUNKS_PER_REQUEST) {
+    result = await runYearSyncChunk({ supabase, token: accessToken, targetYear })
+    chunksExecuted += 1
+  }
 
   if (!result.ok) {
     return NextResponse.json(
-      { ok: false, error: result.error ?? result.message, year: result.year, phase: result.phase },
+      {
+        ok: false,
+        error: result.error ?? result.message,
+        year: result.year,
+        phase: result.phase,
+        chunksExecuted,
+      },
       { status: 500 }
     )
   }
@@ -62,6 +80,7 @@ export async function GET(request: Request) {
     year: result.year,
     phase: result.phase,
     message: result.message,
+    chunksExecuted,
     sparkListings: result.sparkListings,
     supabaseListings: result.supabaseListings,
     listingsUpserted: result.listingsUpserted,

@@ -67,7 +67,7 @@ export default function YearSyncCronStatus() {
       <CardHeader>
         <CardTitle className="text-lg">Year sync status</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Latest run results by year. This is your quick confirmation that history rows are being added and listings are being finalized.
+          Latest run results for the historical backfill lane. It processes newest year first, then moves down to older years, while fresh sync continues separately.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">

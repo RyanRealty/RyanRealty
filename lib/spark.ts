@@ -427,6 +427,8 @@ export type SparkListingHistoryItem = {
 export type SparkListingHistoryResponse = {
   items: SparkListingHistoryItem[]
   ok: boolean
+  /** True when Spark pagination could not be fully traversed. */
+  partial?: boolean
   /** HTTP status when ok is false (e.g. 400, 403) */
   status?: number
   /** Response body when !ok (for 400/403 diagnosis) */
@@ -441,6 +443,99 @@ function parseHistoryItems(data: unknown): SparkListingHistoryItem[] {
     if (Array.isArray(d.Collection)) return d.Collection as SparkListingHistoryItem[]
   }
   return []
+}
+
+type SparkPagination = {
+  TotalRows?: number
+  PageSize?: number
+  TotalPages?: number
+  CurrentPage?: number
+}
+
+function parseSparkPagination(data: Record<string, unknown>): SparkPagination | null {
+  const d = data?.D as Record<string, unknown> | undefined
+  const p = d?.Pagination as Record<string, unknown> | undefined
+  if (!p || typeof p !== 'object') return null
+  return {
+    TotalRows: typeof p.TotalRows === 'number' ? p.TotalRows : undefined,
+    PageSize: typeof p.PageSize === 'number' ? p.PageSize : undefined,
+    TotalPages: typeof p.TotalPages === 'number' ? p.TotalPages : undefined,
+    CurrentPage: typeof p.CurrentPage === 'number' ? p.CurrentPage : undefined,
+  }
+}
+
+async function fetchSparkHistoryEndpoint(
+  accessToken: string,
+  listingKey: string,
+  pathSuffix: 'history' | 'historical/pricehistory'
+): Promise<SparkListingHistoryResponse> {
+  const token = accessToken.trim()
+  const baseUrl = `${SPARK_BASE}/listings/${encodeURIComponent(listingKey)}/${pathSuffix}`
+  const headers = {
+    Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
+    Accept: 'application/json',
+  }
+
+  try {
+    const firstRes = await fetch(baseUrl, {
+      headers,
+      next: { revalidate: 0 },
+    })
+    if (!firstRes.ok) {
+      const errorBody = await firstRes.text()
+      return { items: [], ok: false, status: firstRes.status, errorBody: errorBody || undefined }
+    }
+
+    const firstData = (await firstRes.json()) as Record<string, unknown>
+    const firstErr = sparkErrorFromBody(firstData)
+    if (firstErr) return { items: [], ok: false, status: firstRes.status, errorBody: firstErr }
+
+    const firstD = firstData?.D as Record<string, unknown> | undefined
+    const firstRaw = firstD?.Results ?? firstD ?? firstData.Results ?? firstData
+    const allItems = parseHistoryItems(firstRaw)
+    const pagination = parseSparkPagination(firstData)
+    const totalPages = pagination?.TotalPages ?? 1
+    if (totalPages <= 1) {
+      return { items: allItems, ok: true, partial: false, status: firstRes.status }
+    }
+
+    const pageSize = pagination?.PageSize && pagination.PageSize > 0 ? pagination.PageSize : 200
+    for (let page = 2; page <= totalPages; page++) {
+      const url = `${baseUrl}?_pagination=1&_limit=${pageSize}&_page=${page}`
+      const pageRes = await fetch(url, {
+        headers,
+        next: { revalidate: 0 },
+      })
+      if (!pageRes.ok) {
+        const errorBody = await pageRes.text()
+        return {
+          items: allItems,
+          ok: false,
+          partial: true,
+          status: pageRes.status,
+          errorBody: errorBody || undefined,
+        }
+      }
+      const pageData = (await pageRes.json()) as Record<string, unknown>
+      const pageErr = sparkErrorFromBody(pageData)
+      if (pageErr) {
+        return {
+          items: allItems,
+          ok: false,
+          partial: true,
+          status: pageRes.status,
+          errorBody: pageErr,
+        }
+      }
+      const pageD = pageData?.D as Record<string, unknown> | undefined
+      const pageRaw = pageD?.Results ?? pageD ?? pageData.Results ?? pageData
+      allItems.push(...parseHistoryItems(pageRaw))
+    }
+
+    return { items: allItems, ok: true, partial: false, status: firstRes.status }
+  } catch {
+    return { items: [], ok: false, partial: true }
+  }
 }
 
 /** Spark can return 200 with D.Success = false and D.Message (e.g. Code 1500 permission denied). */
@@ -465,30 +560,7 @@ export async function fetchSparkListingHistory(
   accessToken: string,
   listingKey: string
 ): Promise<SparkListingHistoryResponse> {
-  const token = accessToken.trim()
-  const url = `${SPARK_BASE}/listings/${encodeURIComponent(listingKey)}/history`
-  try {
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
-        Accept: 'application/json',
-      },
-      next: { revalidate: 0 },
-    })
-    if (!res.ok) {
-      const errorBody = await res.text()
-      return { items: [], ok: false, status: res.status, errorBody: errorBody || undefined }
-    }
-    const data = (await res.json()) as Record<string, unknown>
-    const err = sparkErrorFromBody(data)
-    if (err) return { items: [], ok: false, status: res.status, errorBody: err }
-    const d = data?.D as Record<string, unknown> | undefined
-    const raw = d?.Results ?? d ?? data.Results ?? data
-    const items = parseHistoryItems(raw)
-    return { items, ok: true, status: res.status }
-  } catch {
-    return { items: [], ok: false }
-  }
+  return fetchSparkHistoryEndpoint(accessToken, listingKey, 'history')
 }
 
 /**
@@ -501,30 +573,7 @@ export async function fetchSparkPriceHistory(
   accessToken: string,
   listingKey: string
 ): Promise<SparkListingHistoryResponse> {
-  const token = accessToken.trim()
-  const url = `${SPARK_BASE}/listings/${encodeURIComponent(listingKey)}/historical/pricehistory`
-  try {
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
-        Accept: 'application/json',
-      },
-      next: { revalidate: 0 },
-    })
-    if (!res.ok) {
-      const errorBody = await res.text()
-      return { items: [], ok: false, status: res.status, errorBody: errorBody || undefined }
-    }
-    const data = (await res.json()) as Record<string, unknown>
-    const err = sparkErrorFromBody(data)
-    if (err) return { items: [], ok: false, status: res.status, errorBody: err }
-    const d = data?.D as Record<string, unknown> | undefined
-    const raw = d?.Results ?? d ?? data.Results ?? data
-    const items = parseHistoryItems(raw)
-    return { items, ok: true, status: res.status }
-  } catch {
-    return { items: [], ok: false }
-  }
+  return fetchSparkHistoryEndpoint(accessToken, listingKey, 'historical/pricehistory')
 }
 
 /**

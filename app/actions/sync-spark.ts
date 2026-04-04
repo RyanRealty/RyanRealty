@@ -791,7 +791,7 @@ export async function syncSparkListingsDelta(options?: {
           try {
             let historyItems = await fetchSparkListingHistory(accessToken, key)
             // Fallback to price history if main history is empty
-            if (historyItems.ok && historyItems.items.length === 0) {
+            if (historyItems.ok && historyItems.partial !== true && historyItems.items.length === 0) {
               historyItems = await fetchSparkPriceHistory(accessToken, key)
             }
             if (historyItems.items.length > 0) {
@@ -833,10 +833,10 @@ export async function syncSparkListingsDelta(options?: {
             // Active/Pending listings should NEVER be finalized — they need ongoing history refresh.
             // Terminal listings finalize only when history fetch succeeded and all auxiliary tables synced.
             const listingStatus = byKey.get(key)
-            if (listingStatus && isTerminalStatus(listingStatus) && historyItems.ok && auxSync.ok) {
+            if (listingStatus && isTerminalStatus(listingStatus) && historyItems.ok && historyItems.partial !== true && auxSync.ok) {
               await supabase
                 .from('listings')
-                .update({ history_finalized: true, is_finalized: true })
+                .update({ history_finalized: true, history_verified_full: true, is_finalized: true })
                 .eq('ListingKey', key)
             }
           } catch {
@@ -1375,12 +1375,30 @@ export async function syncListingHistory(options?: {
       const key2 = (row.ListNumber ?? '').toString().trim()
       const keysToTry = [...new Set([key1, key2].filter((k) => k.length > 0))]
       if (keysToTry.length === 0) return { historyRowsUpserted: 0, listingsWithHistory: 0 }
+      const listingKey = keysToTry[0]!
+      const terminalStatus = isTerminalStatus(row.StandardStatus)
+
+      // Fast path: if terminal listing already has history rows in DB, finalize without hitting Spark again.
+      if (terminalStatus && row.ListNumber) {
+        const { data: existingHistory } = await supabase
+          .from('listing_history')
+          .select('listing_key')
+          .in('listing_key', keysToTry)
+          .limit(1)
+        if ((existingHistory ?? []).length > 0) {
+          await supabase
+            .from('listings')
+            .update({ history_finalized: true, is_finalized: true })
+            .eq('ListNumber', row.ListNumber)
+          return { historyRowsUpserted: 0, listingsWithHistory: 1 }
+        }
+      }
 
       let items: Awaited<ReturnType<typeof fetchSparkListingHistory>>['items'] = []
       let hadSuccessfulHistoryFetch = false
       for (const key of keysToTry) {
         const result = await fetchSparkListingHistory(accessToken, key)
-        if (result.ok) hadSuccessfulHistoryFetch = true
+        if (result.ok && result.partial !== true) hadSuccessfulHistoryFetch = true
         if (result.ok && result.items.length > 0) {
           items = result.items
           break
@@ -1390,7 +1408,7 @@ export async function syncListingHistory(options?: {
       if (items.length === 0) {
         for (const key of keysToTry) {
           const result = await fetchSparkPriceHistory(accessToken, key)
-          if (result.ok) hadSuccessfulHistoryFetch = true
+          if (result.ok && result.partial !== true) hadSuccessfulHistoryFetch = true
           if (result.ok && result.items.length > 0) {
             items = result.items
             break
@@ -1399,7 +1417,6 @@ export async function syncListingHistory(options?: {
         }
       }
 
-      const listingKey = keysToTry[0]!
       let shouldFinalizeTerminal = false
       let localRowsUpserted = 0
       let localListingsWithHistory = 0
@@ -1434,7 +1451,7 @@ export async function syncListingHistory(options?: {
       if (shouldFinalizeTerminal && auxSync.ok && isTerminalStatus(row.StandardStatus) && row.ListNumber) {
         await supabase
           .from('listings')
-          .update({ history_finalized: true, is_finalized: true })
+          .update({ history_finalized: true, history_verified_full: true, is_finalized: true })
           .eq('ListNumber', row.ListNumber)
       }
       return {

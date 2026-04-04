@@ -21,6 +21,38 @@ npx tsx scripts/orchestrate.ts validate <taskId>
 npx tsx scripts/orchestrate.ts complete <taskId>
 ```
 
+## Sync Status Handoff (Mandatory for sync questions)
+
+When a user asks about sync/backfill status, run this first:
+
+```bash
+node scripts/sync-status-report.mjs --json
+```
+
+Then use:
+
+- `docs/SYNC_HANDOFF_PLAYBOOK.md` for decision flow and command options
+- `/admin/sync` for visual confirmation
+
+### Natural language trigger phrases (treat as equivalent)
+
+If the user says any variation of these, the agent MUST execute the sync-status flow above before asking follow-ups:
+
+- "what's the sync like"
+- "what is sync status"
+- "where are we at on sync"
+- "research sync procedures"
+- "research sync status"
+- "tell me what options I have"
+- "what can I run right now"
+- "what should I run next"
+
+Required response format for these prompts:
+1. Current snapshot (key counts + cursor state)
+2. Health callout (moving, stalled, or rate-limited)
+3. Top 2-3 commands to run now (from `docs/SYNC_HANDOFF_PLAYBOOK.md`)
+4. Wait for user selection ("run option 1/2/3")
+
 ---
 
 ## Development Environment

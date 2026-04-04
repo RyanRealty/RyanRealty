@@ -148,6 +148,8 @@ export async function GET() {
           totalListings: adminCounts.totalListings,
           totalHistoryRows: adminCounts.historyCount,
           finalizedTerminalListings: adminCounts.historyFinalizedCount,
+          verifiedFullHistoryListings: adminCounts.historyVerifiedFullCount,
+          finalizedUnverifiedListings: adminCounts.historyFinalizedUnverifiedCount,
           terminalRemainingListings: terminalRemaining,
           terminalFinalizedBreakdown: {
             closed: adminCounts.closedFinalizedCount,

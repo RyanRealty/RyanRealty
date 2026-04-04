@@ -1060,6 +1060,10 @@ export type AdminSyncCounts = {
   activeNeedingHistoryCount: number
   /** Listings with history_finalized = true (excluded from history sync; we do not re-sync these). */
   historyFinalizedCount: number
+  /** Listings with strict Spark-verified full history completion. */
+  historyVerifiedFullCount: number
+  /** Listings finalized via fast path but not yet strict-verified. */
+  historyFinalizedUnverifiedCount: number
   /** Per-status counts for Final sync report (terminal statuses only). */
   closedFinalizedCount: number
   closedNotFinalizedCount: number
@@ -1104,6 +1108,8 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
       historyCount: 0,
       activeNeedingHistoryCount: 0,
       historyFinalizedCount: 0,
+      historyVerifiedFullCount: 0,
+      historyFinalizedUnverifiedCount: 0,
       closedFinalizedCount: 0,
       closedNotFinalizedCount: 0,
       expiredFinalizedCount: 0,
@@ -1119,12 +1125,14 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
   const expiredOr = 'StandardStatus.ilike.%Expired%'
   const withdrawnOr = 'StandardStatus.ilike.%Withdrawn%'
   const canceledOr = 'StandardStatus.ilike.%Cancel%'
-  const [listingsRes, totalRes, historyRes, activeNeedingHistoryRes, finalizedRes, closedTotal, closedF, expiredTotal, expiredF, withdrawnTotal, withdrawnF, canceledTotal, canceledF] = await Promise.all([
+  const [listingsRes, totalRes, historyRes, activeNeedingHistoryRes, finalizedRes, verifiedRes, finalizedUnverifiedRes, closedTotal, closedF, expiredTotal, expiredF, withdrawnTotal, withdrawnF, canceledTotal, canceledF] = await Promise.all([
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(ACTIVE_STATUS_OR)),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true })),
     countExactWithRetry(async () => await supabase.from('listing_history').select('listing_key', { count: 'exact', head: true })),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(ACTIVE_OR_PENDING_OR).eq('history_finalized', false)),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_finalized', true)),
+    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_verified_full', true)),
+    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_finalized', true).eq('history_verified_full', false)),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(closedOr)),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(closedOr).eq('history_finalized', true)),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(expiredOr)),
@@ -1156,6 +1164,8 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     listingsRes.error,
     activeNeedingHistoryRes.error,
     finalizedRes.error,
+    verifiedRes.error,
+    finalizedUnverifiedRes.error,
     closedTotal.error,
     closedF.error,
     expiredTotal.error,
@@ -1178,6 +1188,8 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     historyCount: historyRes.count,
     activeNeedingHistoryCount: activeNeedingHistoryRes.count,
     historyFinalizedCount: finalizedRes.count,
+    historyVerifiedFullCount: verifiedRes.count,
+    historyFinalizedUnverifiedCount: finalizedUnverifiedRes.count,
     closedFinalizedCount,
     closedNotFinalizedCount,
     expiredFinalizedCount,

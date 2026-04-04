@@ -261,7 +261,7 @@ export default function YearSyncMatrix() {
               </>
             ) : (
               <p className="mt-1 text-sm text-muted-foreground">
-                This section tracks year-by-year history backfill progress. The goal is to move each year to complete so all terminal listings can be finalized.
+                This section tracks the historical backfill lane. It starts from the newest year and works down through older years while the fresh sync lane keeps current listings updated.
               </p>
             )}
           </div>
@@ -295,7 +295,10 @@ export default function YearSyncMatrix() {
       {!initialLoading && !bootstrapping && hasRows && (
         <>
           <p className="mb-2 text-xs text-muted-foreground">
-            History finalized means listing history is present for that listing. It does not yet guarantee all media, agents, open houses, and normalized history tables are complete.
+            History finalized means terminal listing history fetch completed successfully (including pagination) and finalization checks passed for that listing.
+          </p>
+          <p className="mb-2 text-xs text-muted-foreground">
+            A separate strict flag tracks Spark-verified full history. Finalized listings without that strict flag can be re-verified later without blocking current progress.
           </p>
           <Table>
           <TableHeader>

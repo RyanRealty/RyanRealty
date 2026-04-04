@@ -1,0 +1,29 @@
+# Sync Status Trigger Protocol
+
+When the user asks any natural-language sync question, do not ask for clarification first.
+Immediately run the sync status snapshot workflow and return options.
+
+## Trigger examples
+
+- "What's the sync like?"
+- "Where are we at on sync?"
+- "Research the sync procedures."
+- "Research sync status and tell me what I can do."
+- "What can I run right now?"
+
+## Required workflow
+
+1. Run:
+   - `node scripts/sync-status-report.mjs --json`
+2. Read:
+   - `docs/SYNC_HANDOFF_PLAYBOOK.md`
+3. Respond with:
+   - Current metrics (listings, history rows, terminal remaining, finalized, strict-verified)
+   - Cursor phase/year
+   - Health assessment (moving, stalled, rate-limited, or erroring)
+   - Top 2-3 command options to execute now
+4. After user picks an option, execute it immediately and report results.
+
+## Purpose
+
+Prevent repeated re-explanation across sessions and keep sync operations actionable in one exchange.

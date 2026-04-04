@@ -33,6 +33,8 @@ type BackfillHealthPayload = {
     totalListings: number
     totalHistoryRows: number
     finalizedTerminalListings: number
+    verifiedFullHistoryListings: number
+    finalizedUnverifiedListings: number
     terminalRemainingListings: number
     terminalFinalizedBreakdown: {
       closed: number
@@ -158,7 +160,7 @@ export default function BackfillHealthPanel() {
         <Alert>
           <AlertTitle>Goal</AlertTitle>
           <AlertDescription>
-            Keep current listings fresh while backfilling historical listings until every terminal listing is finalized with complete data.
+            Two lanes run together: fresh sync keeps current listings updated, and historical backfill processes newest year first then moves down through older years until terminal listings are finalized with complete Spark history.
           </AlertDescription>
         </Alert>
 
@@ -199,6 +201,10 @@ export default function BackfillHealthPanel() {
                 <p className="font-mono text-sm text-foreground">{formatNumber(payload.totals.finalizedTerminalListings)}</p>
               </div>
               <div>
+                <p className="text-xs text-muted-foreground">Strict verified full history</p>
+                <p className="font-mono text-sm text-foreground">{formatNumber(payload.totals.verifiedFullHistoryListings)}</p>
+              </div>
+              <div>
                 <p className="text-xs text-muted-foreground">Current year in progress</p>
                 <p className="font-mono text-sm text-foreground">
                   {payload.yearCursor.currentYear ?? '—'} {payload.yearCursor.nextHistoryOffset ?? 0}/{payload.yearCursor.totalListings ?? '—'}
@@ -217,6 +223,9 @@ export default function BackfillHealthPanel() {
                 Finalization progress: {progressSummary.pct}% ({formatNumber(payload.totals.finalizedTerminalListings)} of {formatNumber(progressSummary.total)} terminal listings).
               </p>
             )}
+            <p className="text-sm text-muted-foreground">
+              Strict verification backlog: {formatNumber(payload.totals.finalizedUnverifiedListings)} finalized listings still need full Spark verification.
+            </p>
 
             <Separator />
 

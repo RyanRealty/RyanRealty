@@ -366,11 +366,31 @@ export async function runYearSync(
     const key2 = String(row.ListNumber ?? '').trim()
     const keys = [...new Set([key1, key2].filter(Boolean))]
     if (keys.length === 0) return
+    const listingKey = keys[0]!
+    const terminalStatus = isTerminalStatus(row.StandardStatus)
+
+    // Fast path: terminal listing already has history rows, so finalize directly.
+    if (terminalStatus && row.ListNumber) {
+      const { data: existingHistory } = await supabase
+        .from('listing_history')
+        .select('listing_key')
+        .in('listing_key', keys)
+        .limit(1)
+      if ((existingHistory ?? []).length > 0) {
+        await supabase
+          .from('listings')
+          .update({ history_finalized: true, is_finalized: true })
+          .eq('ListNumber', row.ListNumber)
+        listingsFinalized += 1
+        return
+      }
+    }
+
     let items: SparkListingHistoryItem[] = []
     let hadSuccessfulFetch = false
     for (const key of keys) {
       const response = await fetchSparkListingHistory(token, key)
-      if (response.ok) hadSuccessfulFetch = true
+      if (response.ok && response.partial !== true) hadSuccessfulFetch = true
       if (response.ok && response.items.length > 0) {
         items = response.items
         break
@@ -379,14 +399,13 @@ export async function runYearSync(
     if (items.length === 0) {
       for (const key of keys) {
         const response = await fetchSparkPriceHistory(token, key)
-        if (response.ok) hadSuccessfulFetch = true
+        if (response.ok && response.partial !== true) hadSuccessfulFetch = true
         if (response.ok && response.items.length > 0) {
           items = response.items
           break
         }
       }
     }
-    const listingKey = keys[0]!
     await supabase
       .from('listing_history')
       .delete()
@@ -418,7 +437,7 @@ export async function runYearSync(
     if (shouldFinalize) {
       await supabase
         .from('listings')
-        .update({ history_finalized: true, is_finalized: true })
+        .update({ history_finalized: true, history_verified_full: true, is_finalized: true })
         .eq('ListNumber', row.ListNumber)
       listingsFinalized += 1
     }
@@ -490,6 +509,10 @@ export async function runYearSync(
 
 const HISTORY_CHUNK_SIZE = Math.max(20, Math.min(80, Number(process.env.SYNC_YEAR_HISTORY_CHUNK ?? 40)))
 const LISTINGS_PAGE_SIZE = 500
+const YEAR_BACKFILL_START = Math.max(
+  1990,
+  Math.min(new Date().getUTCFullYear(), Number(process.env.SYNC_YEAR_BACKFILL_START ?? new Date().getUTCFullYear()))
+)
 
 export type RunYearSyncChunkResult = {
   ok: boolean
@@ -612,8 +635,8 @@ export async function runYearSyncChunk(options: {
       const sparkMin = typeof cache.sparkMinYear === 'number' ? cache.sparkMinYear : 1990
       const sparkMax = typeof cache.sparkMaxYear === 'number' ? cache.sparkMaxYear : currentYear
       const minYear = Math.max(sparkMin, 1990)
-      const maxYear = Math.min(sparkMax, currentYear)
-      const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i)
+      const maxYear = Math.min(sparkMax, YEAR_BACKFILL_START)
+      const years = Array.from({ length: Math.max(0, maxYear - minYear + 1) }, (_, i) => maxYear - i)
 
       for (const y of years) {
         const row = cache.rows[String(y)]
@@ -877,11 +900,31 @@ export async function runYearSyncChunk(options: {
       const key2 = String(row.ListNumber ?? '').trim()
       const keys = [...new Set([key1, key2].filter(Boolean))]
       if (keys.length === 0) return
+      const listingKey = keys[0]!
+      const terminalStatus = isTerminalStatus(row.StandardStatus)
+
+      // Fast path: terminal listing already has history rows, so finalize directly.
+      if (terminalStatus && row.ListNumber) {
+        const { data: existingHistory } = await supabase
+          .from('listing_history')
+          .select('listing_key')
+          .in('listing_key', keys)
+          .limit(1)
+        if ((existingHistory ?? []).length > 0) {
+          await supabase
+            .from('listings')
+            .update({ history_finalized: true, is_finalized: true })
+            .eq('ListNumber', row.ListNumber)
+          listingsFinalized += 1
+          return
+        }
+      }
+
       let items: SparkListingHistoryItem[] = []
       let hadSuccessfulFetch = false
       for (const key of keys) {
         const response = await fetchSparkListingHistory(token, key)
-        if (response.ok) hadSuccessfulFetch = true
+        if (response.ok && response.partial !== true) hadSuccessfulFetch = true
         if (response.ok && response.items.length > 0) {
           items = response.items
           break
@@ -890,14 +933,13 @@ export async function runYearSyncChunk(options: {
       if (items.length === 0) {
         for (const key of keys) {
           const response = await fetchSparkPriceHistory(token, key)
-          if (response.ok) hadSuccessfulFetch = true
+          if (response.ok && response.partial !== true) hadSuccessfulFetch = true
           if (response.ok && response.items.length > 0) {
             items = response.items
             break
           }
         }
       }
-      const listingKey = keys[0]!
       await supabase
         .from('listing_history')
         .delete()
@@ -929,7 +971,7 @@ export async function runYearSyncChunk(options: {
       if (shouldFinalize) {
         await supabase
           .from('listings')
-          .update({ history_finalized: true, is_finalized: true })
+          .update({ history_finalized: true, history_verified_full: true, is_finalized: true })
           .eq('ListNumber', row.ListNumber)
         listingsFinalized += 1
       }

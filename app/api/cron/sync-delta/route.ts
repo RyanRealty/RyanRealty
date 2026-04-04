@@ -228,7 +228,7 @@ async function fetchAndInsertHistory(
     }
   }
 
-  const hadSuccessfulFetch = response.ok || response.items.length > 0
+  const hadSuccessfulFetch = response.ok && response.partial !== true
 
   if (response.items.length > 0) {
     const rows = response.items.map(item => sparkHistoryItemToRow(listingKey, item))
@@ -507,7 +507,7 @@ export async function GET(request: Request) {
         if (hadSuccessfulFetch && auxSync.ok) {
           const { error } = await supabase
             .from('listings')
-            .update({ history_finalized: true, is_finalized: true })
+            .update({ history_finalized: true, history_verified_full: true, is_finalized: true })
             .eq('ListNumber', listNumber)
 
           if (!error) {
