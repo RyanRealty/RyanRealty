@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.2 (2026-04-04)
+
+### Bug Fixes
+- fix: remove denormalized table gating from sync finalization
+
+---
+
+
 ## v1.1.1 (2026-04-03)
 
 ### Bug Fixes
