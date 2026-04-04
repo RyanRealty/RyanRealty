@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.0 (2026-04-04)
+
+### Features
+- feat: require detailed sync status reporting with ETA
+
+---
+
+
 ## v1.2.1 (2026-04-04)
 
 ### Bug Fixes
