@@ -26,15 +26,47 @@ const STATUS_FILTERS = {
   canceled: 'StandardStatus.ilike.%Cancel%',
 }
 
-async function countExact(run, label) {
+function formatError(error) {
+  if (!error) return 'unknown error'
+  const parts = [error.message, error.code, error.details, error.hint].filter(Boolean)
+  return parts.length > 0 ? parts.join(' | ') : 'unknown error'
+}
+
+async function countWithRetry(run, label, attempts = 5) {
   let lastErr = null
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < attempts; i++) {
     const { count, error } = await run()
     if (!error) return count ?? 0
     lastErr = error
     await new Promise((r) => setTimeout(r, 200 * (i + 1)))
   }
-  throw new Error(`${label}: ${lastErr?.message ?? 'unknown error'}`)
+  throw new Error(`${label}: ${formatError(lastErr)}`)
+}
+
+async function countExact(run, label) {
+  return countWithRetry(run, label, 5)
+}
+
+async function countWithFallback(runExact, runFallback, label) {
+  try {
+    const count = await countWithRetry(runExact, `${label} exact`, 3)
+    return { count, mode: 'exact', error: null }
+  } catch (exactError) {
+    try {
+      const count = await countWithRetry(runFallback, `${label} fallback`, 2)
+      return {
+        count,
+        mode: 'fallback',
+        error: `${label}: exact failed (${exactError?.message ?? 'unknown'}), using fallback count`,
+      }
+    } catch (fallbackError) {
+      return {
+        count: null,
+        mode: 'unavailable',
+        error: `${label}: exact and fallback failed (${exactError?.message ?? 'unknown'} | ${fallbackError?.message ?? 'unknown'})`,
+      }
+    }
+  }
 }
 
 async function countMaybe(run, label) {
@@ -81,7 +113,11 @@ async function main() {
   const targetYear = Number(argValue('year', '0') || '0')
   const [totalListings, totalHistoryRowsRes, finalizedAllRes, verifiedAllRes, cursorRes, yearCursorRes, stateRes] = await Promise.all([
     countExact(() => supabase.from('listings').select('ListingKey', { count: 'exact', head: true }), 'count total listings'),
-    countMaybe(() => supabase.from('listing_history').select('listing_key', { count: 'exact', head: true }), 'count listing_history'),
+    countWithFallback(
+      () => supabase.from('listing_history').select('listing_key', { count: 'exact', head: true }),
+      () => supabase.from('listing_history').select('listing_key', { count: 'planned', head: true }),
+      'count listing_history'
+    ),
     countMaybe(
       () => supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_finalized', true),
       'count history_finalized'
@@ -178,6 +214,9 @@ async function main() {
       },
     },
     totals,
+    metricQuality: {
+      historyRowsCountMode: totalHistoryRowsRes.mode,
+    },
     statusByTerminal: { closed, expired, withdrawn, canceled },
     warnings,
     cursors: {
