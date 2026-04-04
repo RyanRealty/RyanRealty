@@ -19,7 +19,7 @@ function isAuthorized(request: Request): boolean {
  * Supports worker sharding via query params:
  * - worker_count (default 1)
  * - worker_index (default 0)
- * - limit (default 20, max 200)
+ * - limit (default 200, max 200)
  * - from_year (optional, inclusive)
  * - to_year (optional, inclusive)
  */
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const workerCount = Math.max(1, Math.min(16, parseInt(searchParams.get('worker_count') ?? '1', 10) || 1))
   const workerIndex = Math.max(0, Math.min(workerCount - 1, parseInt(searchParams.get('worker_index') ?? '0', 10) || 0))
-  const limit = Math.max(1, Math.min(200, parseInt(searchParams.get('limit') ?? '20', 10) || 20))
+  const limit = Math.max(1, Math.min(200, parseInt(searchParams.get('limit') ?? '200', 10) || 200))
   const fromYearRaw = parseInt(searchParams.get('from_year') ?? '0', 10)
   const toYearRaw = parseInt(searchParams.get('to_year') ?? '0', 10)
   const fromYear = Number.isFinite(fromYearRaw) && fromYearRaw > 0 ? fromYearRaw : undefined
