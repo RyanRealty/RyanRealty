@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.15.3 (2026-04-05)
+
+### Bug Fixes
+- fix: make activity feed city filtering case-insensitive
+
+---
+
+
 ## v1.15.2 (2026-04-05)
 
 ### Bug Fixes
