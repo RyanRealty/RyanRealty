@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.15.7 (2026-04-05)
+
+### Bug Fixes
+- fix: remove app-shell and search render bottlenecks
+
+---
+
+
 ## v1.15.6 (2026-04-05)
 
 ### Bug Fixes
