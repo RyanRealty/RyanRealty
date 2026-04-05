@@ -1,9 +1,9 @@
-import { notFound, permanentRedirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import ListingDetailPage from '@/app/listing/[listingKey]/page'
 import { generateMetadata as generateListingMetadata } from '@/app/listing/[listingKey]/page'
-import { getListingDetailData, resolveListingKeyFromBreadcrumbPath, resolveListingKeyFromCanonicalPath } from '@/app/actions/listing-detail'
+import { resolveListingKeyFromBreadcrumbPath, resolveListingKeyFromCanonicalPath } from '@/app/actions/listing-detail'
 import type { Metadata } from 'next'
-import { listingDetailPath, listingKeyFromSlug } from '@/lib/slug'
+import { listingKeyFromSlug } from '@/lib/slug'
 
 type PageProps = {
   params: Promise<{ slug: string[] }>
@@ -60,32 +60,6 @@ export default async function ListingByAddressPage({ params }: PageProps) {
   const { slug = [] } = await params
   const listingKey = await resolveListingKeyFromPathSegments(slug)
   if (!listingKey) notFound()
-  const data = await getListingDetailData(listingKey)
-  if (data?.listing) {
-    const canonicalPath = listingDetailPath(
-      data.listing.listing_key,
-      {
-        streetNumber: data.property?.street_number ?? null,
-        streetName: data.property?.street_name ?? null,
-        city: data.property?.city ?? null,
-        state: data.property?.state ?? null,
-        postalCode: data.property?.postal_code ?? null,
-      },
-      {
-        city: data.property?.city ?? null,
-        neighborhood: data.community?.neighborhood_name ?? null,
-        subdivision: data.listing.subdivision_name ?? null,
-      },
-      {
-        mlsNumber: data.listing.list_number ?? null,
-      }
-    )
-    const requestedPath = `/homes-for-sale/${slug.map((segment) => encodeURIComponent(segment)).join('/')}`
-    if (canonicalPath !== requestedPath) {
-      permanentRedirect(canonicalPath)
-    }
-  }
-
   return <ListingDetailPage params={Promise.resolve({ listingKey })} />
 }
 
