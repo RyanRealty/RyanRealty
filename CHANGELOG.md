@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.7.0 (2026-04-05)
+
+### Features
+- feat: enable live autosuggest in header search
+
+---
+
+
 ## v1.6.16 (2026-04-05)
 
 ### Bug Fixes
