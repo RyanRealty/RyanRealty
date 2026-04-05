@@ -149,6 +149,32 @@ export async function getActivityFeed(options?: {
   return result
 }
 
+async function _getActivityFeedByCityUncached(
+  city: string,
+  subdivision: string | null,
+  limit: number
+): Promise<ActivityFeedItem[]> {
+  return getActivityFeed({
+    city,
+    subdivision: subdivision ?? undefined,
+    limit,
+  })
+}
+
+const _getActivityFeedByCityCached = unstable_cache(
+  _getActivityFeedByCityUncached,
+  ['activity-feed-city-v1'],
+  { revalidate: 120, tags: ['activity-feed'] }
+)
+
+export async function getActivityFeedByCityCached(
+  city: string,
+  subdivision?: string | null,
+  limit: number = 24
+): Promise<ActivityFeedItem[]> {
+  return _getActivityFeedByCityCached(city.trim(), subdivision?.trim() || null, Math.min(50, Math.max(1, limit)))
+}
+
 /**
  * Activity feed for homepage: events first, then fill with newest listings (so feed always has content).
  * Dedupes by listing_key. Limit is total items returned.

@@ -8,8 +8,8 @@ import {
   getNeighborhoodSoldListings,
   getCommunitiesInNeighborhood,
 } from '@/app/actions/cities'
-import { getActivityFeed } from '@/app/actions/activity-feed'
-import { getEngagementCountsBatch } from '@/app/actions/engagement'
+import { getActivityFeedByCityCached } from '@/app/actions/activity-feed'
+import { getEngagementCountsBatchCached } from '@/app/actions/engagement'
 import { getActiveBrokers } from '@/app/actions/brokers'
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/lib/share-metadata'
 import { getSession } from '@/app/actions/auth'
@@ -38,7 +38,7 @@ import RecentlySoldRow from '@/components/RecentlySoldRow'
 import { getNeighborhoodInventoryBreakdown } from '@/app/actions/inventory-breakdown'
 import InventoryTypeSlider from '@/components/geo-page/InventoryTypeSlider'
 import VideoToursRow from '@/components/videos/VideoToursRow'
-import { getListingsWithVideos } from '@/app/actions/videos'
+import { getListingsWithVideosCached } from '@/app/actions/videos'
 import { getHomeTileRowsByKeys } from '@/app/actions/listings'
 import type { YearSeriesPoint } from '@/lib/report-year-compare'
 
@@ -96,12 +96,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     session?.user ? getSavedListingKeys() : Promise.resolve([]),
     session?.user ? getLikedListingKeys() : Promise.resolve([]),
     getCommunitiesInNeighborhood(neighborhood.id, neighborhood.cityName),
-    getActivityFeed({ city: neighborhood.cityName, limit: 24 }),
+    getActivityFeedByCityCached(neighborhood.cityName, null, 24),
     getActiveBrokers(),
     session?.user ? getSavedCommunityKeys() : Promise.resolve([]),
     session?.user ? getLikedCommunityKeys() : Promise.resolve([]),
     getNeighborhoodInventoryBreakdown(neighborhood.id),
-    getListingsWithVideos({ city: neighborhood.cityName, sort: 'price_desc', status: 'active', limit: 20 }),
+    getListingsWithVideosCached({ city: neighborhood.cityName, sort: 'price_desc', status: 'active', limit: 20 }),
   ])
 
   const heroImageUrl = neighborhood.heroImageUrl ?? null
@@ -120,7 +120,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     .map((l) => (l.ListingKey ?? l.ListNumber ?? '').toString().trim())
     .filter(Boolean)
   const engagementMap = listingKeys.length > 0
-    ? await getEngagementCountsBatch(listingKeys)
+    ? await getEngagementCountsBatchCached(listingKeys)
     : ({} as Record<string, { view_count: number; like_count: number; save_count: number; share_count: number }>)
   const engagementScore = (key: string) => {
     const e = engagementMap[key]

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 
 function serviceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -52,6 +53,18 @@ export async function getEngagementCountsBatch(listingKeys: string[]): Promise<R
     }
   }
   return result
+}
+
+const _getEngagementCountsBatchCached = unstable_cache(
+  async (listingKeys: string[]) => getEngagementCountsBatch(listingKeys),
+  ['engagement-counts-batch-v1'],
+  { revalidate: 120, tags: ['engagement-metrics'] }
+)
+
+export async function getEngagementCountsBatchCached(
+  listingKeys: string[]
+): Promise<Record<string, EngagementCounts>> {
+  return _getEngagementCountsBatchCached(listingKeys)
 }
 
 export type ListingDetailEngagement = {

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 
 /** Community metrics table (not yet in generated Supabase types). Use for insert/update/select. */
 function communityMetrics(supabase: SupabaseClient) {
@@ -57,6 +58,18 @@ export async function getCommunityEngagementBatch(
     }
   }
   return result
+}
+
+const _getCommunityEngagementBatchCached = unstable_cache(
+  async (entityKeys: string[]) => getCommunityEngagementBatch(entityKeys),
+  ['community-engagement-batch-v1'],
+  { revalidate: 120, tags: ['community-engagement-metrics'] }
+)
+
+export async function getCommunityEngagementBatchCached(
+  entityKeys: string[]
+): Promise<Record<string, CommunityEngagementCounts>> {
+  return _getCommunityEngagementBatchCached(entityKeys)
 }
 
 export async function getLikedCommunityKeys(): Promise<string[]> {

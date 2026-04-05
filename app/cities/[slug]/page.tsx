@@ -16,12 +16,12 @@ import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { CITY_QUICK_FACTS } from '@/lib/cities'
 import { getCityContent, buildDataDrivenCityAbout } from '@/lib/city-content'
-import { getActivityFeed } from '@/app/actions/activity-feed'
-import { getEngagementCountsBatch, type EngagementCounts } from '@/app/actions/engagement'
+import { getActivityFeedByCityCached } from '@/app/actions/activity-feed'
+import { getEngagementCountsBatchCached, type EngagementCounts } from '@/app/actions/engagement'
 import { getActiveBrokers } from '@/app/actions/brokers'
 import { isCitySaved } from '@/app/actions/saved-cities'
 import { getSavedCommunityKeys } from '@/app/actions/saved-communities'
-import { getLikedCommunityKeys, getCommunityEngagementBatch } from '@/app/actions/community-engagement'
+import { getLikedCommunityKeys, getCommunityEngagementBatchCached } from '@/app/actions/community-engagement'
 import { homesForSalePath, subdivisionEntityKey } from '@/lib/slug'
 import { slugify } from '@/lib/slug'
 import { getLiveMarketPulse } from '@/app/actions/market-stats'
@@ -43,7 +43,7 @@ import RecentlySoldRow from '@/components/RecentlySoldRow'
 import LivePulseBanner from '@/components/reports/LivePulseBanner'
 import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import VideoToursRow from '@/components/videos/VideoToursRow'
-import { getListingsWithVideos } from '@/app/actions/videos'
+import { getListingsWithVideosCached } from '@/app/actions/videos'
 import { getHomeTileRowsByKeys } from '@/app/actions/listings'
 import { getReportMetricsTimeSeries } from '@/app/actions/reports'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
@@ -176,7 +176,7 @@ export default async function CityDetailPage({ params }: Props) {
     getCityPriceHistory(city.name),
     session?.user ? getSavedListingKeys() : Promise.resolve([]),
     session?.user ? getLikedListingKeys() : Promise.resolve([]),
-    getActivityFeed({ city: city.name, limit: 24 }),
+    getActivityFeedByCityCached(city.name, null, 24),
     getActiveBrokers(),
     session?.user ? isCitySaved(slug) : Promise.resolve(false),
     session?.user ? getSavedCommunityKeys() : Promise.resolve([]),
@@ -185,7 +185,7 @@ export default async function CityDetailPage({ params }: Props) {
     getLiveMarketPulse({ geoType: 'city', geoSlug: slugify(city.name) }),
     getOpenHousesWithListings({ city: city.name }),
     getCityInventoryBreakdown(city.name),
-    getListingsWithVideos({ city: city.name, sort: 'price_desc', status: 'active', limit: 12 }),
+    getListingsWithVideosCached({ city: city.name, sort: 'price_desc', status: 'active', limit: 12 }),
     getReportMetricsTimeSeries(city.name, 60),
   ])
   const cityGuideSlug = cityGuides.length > 0 ? cityGuides[0]!.slug : null
@@ -219,8 +219,8 @@ export default async function CityDetailPage({ params }: Props) {
     .filter(Boolean)
   const communityEntityKeys = communities.map((c) => subdivisionEntityKey(c.city, c.subdivision))
   const [engagementMap, communityEngagementMap] = await Promise.all([
-    listingKeys.length > 0 ? getEngagementCountsBatch(listingKeys) : Promise.resolve({} as Record<string, EngagementCounts>),
-    communityEntityKeys.length > 0 ? getCommunityEngagementBatch(communityEntityKeys) : Promise.resolve({}),
+    listingKeys.length > 0 ? getEngagementCountsBatchCached(listingKeys) : Promise.resolve({} as Record<string, EngagementCounts>),
+    communityEntityKeys.length > 0 ? getCommunityEngagementBatchCached(communityEntityKeys) : Promise.resolve({}),
   ])
   const engagementScore = (key: string) => {
     const e = engagementMap[key]

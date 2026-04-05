@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -203,4 +204,42 @@ export async function getListingsWithVideos(filters?: {
     rows.sort((a, b) => (b.list_price ?? 0) - (a.list_price ?? 0))
   }
   return rows.slice(0, maxRows)
+}
+
+async function _getListingsWithVideosCachedUncached(
+  city: string | null,
+  community: string | null,
+  sort: 'newest' | 'most_viewed' | 'price_desc',
+  status: 'active' | 'all',
+  limit: number
+): Promise<VideoListingRow[]> {
+  return getListingsWithVideos({
+    city: city ?? undefined,
+    community: community ?? undefined,
+    sort,
+    status,
+    limit,
+  })
+}
+
+const _getListingsWithVideosCached = unstable_cache(
+  _getListingsWithVideosCachedUncached,
+  ['listings-with-videos-v1'],
+  { revalidate: 300, tags: ['listings-videos'] }
+)
+
+export async function getListingsWithVideosCached(filters?: {
+  community?: string
+  city?: string
+  sort?: 'newest' | 'most_viewed' | 'price_desc'
+  status?: 'active' | 'all'
+  limit?: number
+}): Promise<VideoListingRow[]> {
+  return _getListingsWithVideosCached(
+    filters?.city?.trim() || null,
+    filters?.community?.trim() || null,
+    filters?.sort ?? 'newest',
+    filters?.status ?? 'active',
+    Math.min(Math.max(filters?.limit ?? 24, 1), 60)
+  )
 }

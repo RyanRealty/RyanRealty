@@ -9,8 +9,8 @@ import {
   getCommunityMarketStats,
 } from '@/app/actions/communities'
 import { getCommunitiesInCity } from '@/app/actions/cities'
-import { getActivityFeed } from '@/app/actions/activity-feed'
-import { getEngagementCountsBatch } from '@/app/actions/engagement'
+import { getActivityFeedByCityCached } from '@/app/actions/activity-feed'
+import { getEngagementCountsBatchCached } from '@/app/actions/engagement'
 import { getActiveBrokers } from '@/app/actions/brokers'
 import { isCommunitySaved, getSavedCommunityKeys } from '@/app/actions/saved-communities'
 import { isCommunityLiked, getLikedCommunityKeys } from '@/app/actions/community-engagement'
@@ -46,7 +46,7 @@ import CityClusterNav from '@/components/CityClusterNav'
 import { getGuidesByCity } from '@/app/actions/guides'
 import { getCommunityInventoryBreakdown } from '@/app/actions/inventory-breakdown'
 import InventoryTypeSlider from '@/components/geo-page/InventoryTypeSlider'
-import { getListingsWithVideos } from '@/app/actions/videos'
+import { getListingsWithVideosCached } from '@/app/actions/videos'
 import { getHomeTileRowsByKeys } from '@/app/actions/listings'
 import { getReportMetricsTimeSeries } from '@/app/actions/reports'
 
@@ -105,7 +105,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       session?.user ? getSavedListingKeys() : Promise.resolve([]),
       session?.user ? getLikedListingKeys() : Promise.resolve([]),
       getCommunitiesInCity(community.city),
-      getActivityFeed({ city: community.city, subdivision: community.subdivision, limit: 24 }),
+      getActivityFeedByCityCached(community.city, community.subdivision, 24),
       getActiveBrokers(),
       session?.user ? isCommunitySaved(community.entityKey) : Promise.resolve(false),
       session?.user ? isCommunityLiked(community.entityKey) : Promise.resolve(false),
@@ -121,7 +121,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         community: [community.subdivision],
       }),
       getCommunityInventoryBreakdown(community.city, community.subdivision),
-      getListingsWithVideos({ city: community.city, community: community.subdivision, sort: 'price_desc', status: 'active', limit: 12 }),
+      getListingsWithVideosCached({ city: community.city, community: community.subdivision, sort: 'price_desc', status: 'active', limit: 12 }),
       getReportMetricsTimeSeries(community.city, 60, community.subdivision),
     ])
   const cityGuideSlug = cityGuides.length > 0 ? cityGuides[0]!.slug : null
@@ -192,7 +192,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const listingKeys = listings
     .map((l) => (l.ListingKey ?? l.ListNumber ?? '').toString().trim())
     .filter(Boolean)
-  const engagementMap = listingKeys.length > 0 ? await getEngagementCountsBatch(listingKeys) : {}
+  const engagementMap = listingKeys.length > 0 ? await getEngagementCountsBatchCached(listingKeys) : {}
   const engagementScore = (key: string) => {
     const e = engagementMap[key]
     return (e?.view_count ?? 0) + (e?.like_count ?? 0) + (e?.save_count ?? 0) + (e?.share_count ?? 0)

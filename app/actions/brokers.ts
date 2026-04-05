@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, unstable_cache } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { logAdminAction } from '@/app/actions/log-admin-action'
@@ -52,8 +52,11 @@ export type BrokerRow = {
 const BROKER_SELECT =
   'id, slug, display_name, title, license_number, bio, photo_url, email, phone, google_review_url, zillow_review_url, sort_order, is_active, created_at, updated_at, tagline, specialties, designations, years_experience, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, mls_id, zillow_id, realtor_id, yelp_id, google_business_id, intro_video_url, saved_headshot_urls'
 
-export async function getActiveBrokers(): Promise<BrokerRow[]> {
-  const supabase = await createServerClient()
+async function _getActiveBrokersUncached(): Promise<BrokerRow[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url?.trim() || !anonKey?.trim()) return []
+  const supabase = createClient(url, anonKey)
   const { data } = await supabase
     .from('brokers')
     .select(BROKER_SELECT)
@@ -61,6 +64,16 @@ export async function getActiveBrokers(): Promise<BrokerRow[]> {
     .order('sort_order', { ascending: true })
     .order('display_name', { ascending: true })
   return (data ?? []) as BrokerRow[]
+}
+
+const _getActiveBrokersCached = unstable_cache(
+  _getActiveBrokersUncached,
+  ['active-brokers-v1'],
+  { revalidate: 900, tags: ['brokers'] }
+)
+
+export async function getActiveBrokers(): Promise<BrokerRow[]> {
+  return _getActiveBrokersCached()
 }
 
 export async function getBrokerBySlug(slug: string): Promise<BrokerRow | null> {

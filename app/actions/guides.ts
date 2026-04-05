@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { cityEntityKey } from '@/lib/slug'
 
@@ -142,7 +143,7 @@ export async function getGuideBySlug(slug: string): Promise<GuideRow | null> {
  * Returns DB guides first; falls back to generated guides if none exist.
  * Used by CityClusterNav for topic-cluster interlinking.
  */
-export async function getGuidesByCity(city: string): Promise<GuideRow[]> {
+async function _getGuidesByCityUncached(city: string): Promise<GuideRow[]> {
   if (!city?.trim()) return []
   const supabase = getPublicClient()
   if (!supabase) return []
@@ -160,6 +161,16 @@ export async function getGuidesByCity(city: string): Promise<GuideRow[]> {
   return generated.filter(
     (g) => g.city?.trim().toLowerCase() === city.trim().toLowerCase()
   )
+}
+
+const _getGuidesByCityCached = unstable_cache(
+  _getGuidesByCityUncached,
+  ['guides-by-city-v1'],
+  { revalidate: 900, tags: ['guides'] }
+)
+
+export async function getGuidesByCity(city: string): Promise<GuideRow[]> {
+  return _getGuidesByCityCached(city.trim())
 }
 
 export async function getAdminGuides(): Promise<GuideRow[]> {
