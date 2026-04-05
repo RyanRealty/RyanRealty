@@ -65,6 +65,13 @@ export const viewport: Viewport = {
   themeColor: "#102742",
 };
 
+function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 1200): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ])
+}
+
 /* Async components that fetch their own data — layout doesn't block on them */
 async function HeaderAsync({
   sessionPromise,
@@ -123,8 +130,8 @@ export default function RootLayout({
   if (!envCheck.ok) {
     console.error('[env] Missing required build vars:', envCheck.missing.join(', '));
   }
-  const sessionPromise = getSession()
-  const brokeragePromise = getBrokerageSettings()
+  const sessionPromise = withTimeout(getSession(), null, 700)
+  const brokeragePromise = withTimeout(getBrokerageSettings(), null, 1200)
 
   return (
     <html lang="en" className={cn("font-sans", GeistSans.variable, GeistMono.variable)}>
