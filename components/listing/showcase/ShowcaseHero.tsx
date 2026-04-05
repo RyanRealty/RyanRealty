@@ -20,6 +20,10 @@ function isDirectVideoUrl(url: string): boolean {
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url)
 }
 
+function isEmbeddableVideoUrl(url: string): boolean {
+  return /youtube\.com|youtu\.be|vimeo\.com|player\.vimeo\.com/i.test(url)
+}
+
 function getEmbedUrl(url: string): string {
   if (url.includes('youtube.com/watch')) {
     const id = new URL(url).searchParams.get('v')
@@ -38,7 +42,7 @@ function getEmbedUrl(url: string): string {
     const id = parts[parts.length - 1]?.split('?')[0]
     if (id) return `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&background=1&loop=1&byline=0&title=0&portrait=0`
   }
-  return url
+  return ''
 }
 
 /* ─── Fullscreen Lightbox ─── */
@@ -227,7 +231,7 @@ export default function ShowcaseHero({ listingKey, heroVideoUrl, photos }: Props
                   onPlay={handleVideoPlay}
                   aria-label="Listing video tour"
                 />
-              ) : (
+              ) : isEmbeddableVideoUrl(heroVideoUrl) ? (
                 <iframe
                   src={getEmbedUrl(heroVideoUrl)}
                   className="h-full w-full border-0"
@@ -236,6 +240,14 @@ export default function ShowcaseHero({ listingKey, heroVideoUrl, photos }: Props
                   title="Listing video tour"
                   onLoad={handleVideoPlay}
                 />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-muted">
+                  <Button asChild variant="secondary" size="lg">
+                    <a href={heroVideoUrl} target="_blank" rel="noopener noreferrer">
+                      Open video tour
+                    </a>
+                  </Button>
+                </div>
               )}
 
               {/* Video overlay controls */}
