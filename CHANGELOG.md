@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.8.0 (2026-04-05)
+
+### Features
+- feat: unify dashboard likes and add removable view history
+
+---
+
+
 ## v1.7.0 (2026-04-05)
 
 ### Features
