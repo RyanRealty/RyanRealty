@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.9.1 (2026-04-05)
+
+### Bug Fixes
+- fix: reduce geo page query latency and improve hero loading
+
+---
+
+
 ## v1.9.0 (2026-04-05)
 
 ### Features
