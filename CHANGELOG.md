@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.15.2 (2026-04-05)
+
+### Bug Fixes
+- fix: restore activity feed data loading across pages
+
+---
+
+
 ## v1.15.1 (2026-04-05)
 
 ### Maintenance
