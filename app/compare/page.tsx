@@ -57,7 +57,9 @@ export default async function ComparePage({
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const key = serviceKey?.trim() ? serviceKey : anonKey
   let listings: CompareListingData[] = []
 
   if (url?.trim() && key?.trim()) {
