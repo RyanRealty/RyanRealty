@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.12 (2026-04-05)
+
+### Bug Fixes
+- fix: decode compare ids query payload before lookup
+
+---
+
+
 ## v1.6.11 (2026-04-05)
 
 ### Bug Fixes
