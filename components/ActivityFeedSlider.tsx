@@ -19,6 +19,7 @@ function mapToTileListing(item: ActivityFeedItem): ListingTileListing {
   return {
     ListingKey: item.listing_key,
     ListNumber: item.ListNumber ?? null,
+    mls_source: item.mls_source ?? null,
     ListPrice: item.ListPrice ?? null,
     BedroomsTotal: item.BedroomsTotal ?? null,
     BathroomsTotal: item.BathroomsTotal ?? null,

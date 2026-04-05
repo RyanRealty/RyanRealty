@@ -16,6 +16,7 @@ export type ActivityFeedItem = {
   id: string
   listing_key: string
   ListNumber?: string | null
+  mls_source?: string | null
   event_type:
     | 'new_listing'
     | 'price_drop'

@@ -6,7 +6,6 @@ import { Suspense } from 'react'
 import { getOpenHousesWithListings } from '../../actions/open-houses'
 import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import {
-  getListingsWithAdvanced,
   getListingsForMap,
   getCityStatusCounts,
   getSubdivisionsInCity,
@@ -71,6 +70,7 @@ import AdUnit from '../../../components/AdUnit'
 import InFeedAdCard from '../../../components/search/InFeedAdCard'
 import CityClusterNav from '../../../components/CityClusterNav'
 import { getGuidesByCity } from '../../actions/guides'
+import { getCachedSearchListings } from '../../actions/search-cache'
 
 /** Resolve slug segments to city, subdivision (display name), and preset. */
 async function resolveSlug(slug: string[]): Promise<{
@@ -301,7 +301,7 @@ export default async function SearchPage({
 
   // Fetch ALL independent data in a single parallel batch (was 3 sequential waterfalls)
   const [listingsResult, marketStats, statusCounts, subdivisions, hotCommunities, priceChangeKeys, session, resortEntityKeys, searchPulse, searchActivityFeed, searchRecentlySold, cityPriceHistory, cityGuidesForCluster, cityOpenHouses] = await Promise.all([
-    getListingsWithAdvanced({ ...filterOpts, limit: pageSize, offset }),
+    getCachedSearchListings(filterOpts, page, pageSize),
     decodedSubdivision && city
       ? getMarketStatsForSubdivision(city, decodedSubdivision)
       : city

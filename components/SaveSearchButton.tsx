@@ -6,6 +6,7 @@ import { createSavedSearch } from '@/app/actions/saved-searches'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from '@/components/ui/checkbox'
 
 type Props = { user: boolean }
 
@@ -14,6 +15,7 @@ export default function SaveSearchButton({ user }: Props) {
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
+  const [isPublic, setIsPublic] = useState(false)
   const [status, setStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle')
 
   if (!user) return null
@@ -51,10 +53,15 @@ export default function SaveSearchButton({ user }: Props) {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setStatus('saving')
-    const result = await createSavedSearch(name.trim() || 'My search', buildFilters())
+    const trimmedName = name.trim() || 'My search'
+    const result = await createSavedSearch(trimmedName, buildFilters(), {
+      isPublic,
+      publicTitle: isPublic ? trimmedName : undefined,
+    })
     setStatus(result.error ? 'error' : 'done')
     if (!result.error) {
       setName('')
+      setIsPublic(false)
       setOpen(false)
     }
   }
@@ -84,6 +91,16 @@ export default function SaveSearchButton({ user }: Props) {
               className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
               autoFocus
             />
+            <div className="mt-3 flex items-start gap-2">
+              <Checkbox
+                id="save-search-public"
+                checked={isPublic}
+                onCheckedChange={(checked) => setIsPublic(checked === true)}
+              />
+              <Label htmlFor="save-search-public" className="text-sm text-muted-foreground">
+                Make this search public for the Popular Searches section
+              </Label>
+            </div>
             <div className="mt-3 flex gap-2">
               <Button
                 type="submit"

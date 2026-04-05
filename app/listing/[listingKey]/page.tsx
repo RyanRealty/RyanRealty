@@ -377,7 +377,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
                 yearBuilt={listing.year_built ?? null}
                 price={listing.list_price ?? null}
                 daysOnMarket={listing.days_on_market ?? listing.cumulative_days_on_market ?? null}
-                mlsNumber={listing.list_number ?? listing.listing_id ?? listing.listing_key}
+                mlsNumber={listing.list_number ?? null}
+                mlsSource={listing.mls_source ?? null}
               />
               <DemandIndicators
                 listingKey={listing.listing_key}

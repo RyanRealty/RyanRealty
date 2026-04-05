@@ -63,6 +63,7 @@ export type ListingDetailListing = {
   id: string
   listing_key: string
   list_number: string | null
+  mls_source: string | null
   listing_id: string | null
   property_id: string | null
   standard_status: string | null
@@ -475,6 +476,7 @@ function mapRowToListing(row: AnyRow): ListingDetailListing {
     id: listingKey,
     listing_key: listingKey,
     list_number: safeStr(row.ListNumber),
+    mls_source: safeStr(row.mls_source),
     listing_id: safeStr(row.ListingKey),
     property_id: null,
     standard_status: safeStr(row.StandardStatus),
@@ -782,7 +784,7 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
   // Query the actual PascalCase listings table — NO properties(*) join
   let listingRow: AnyRow | null = null
   const DETAIL_LISTING_SELECT =
-    'ListingKey, ListNumber, ListPrice, OriginalListPrice, ClosePrice, StandardStatus, OnMarketDate, CloseDate, ModificationTimestamp, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, PropertyType, StreetNumber, StreetName, City, State, PostalCode, Latitude, Longitude, PhotoURL, OpenHouses, details'
+    'ListingKey, ListNumber, mls_source, ListPrice, OriginalListPrice, ClosePrice, StandardStatus, OnMarketDate, CloseDate, ModificationTimestamp, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, PropertyType, StreetNumber, StreetName, City, State, PostalCode, Latitude, Longitude, PhotoURL, OpenHouses, details'
 
   const { data: byKey } = await supabase
     .from('listings')
@@ -1108,6 +1110,8 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
 
 export type SimilarListingForDetail = {
   listing_key: string
+  list_number: string | null
+  mls_source: string | null
   list_price: number | null
   beds_total: number | null
   baths_full: number | null
@@ -1145,7 +1149,7 @@ export async function getSimilarListingsForDetailPage(
   // Query using actual PascalCase columns — only listings with photos
   let query = supabase
     .from('listings')
-    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
+    .select('ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
     .neq('ListingKey', key)
     .not('PhotoURL', 'is', null)
     .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
@@ -1168,7 +1172,7 @@ export async function getSimilarListingsForDetailPage(
   if ((!data || data.length < 4) && communityName?.trim() && city?.trim()) {
     let fallbackQuery = supabase
       .from('listings')
-      .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
+      .select('ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
       .neq('ListingKey', key)
       .not('PhotoURL', 'is', null)
       .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
@@ -1185,6 +1189,7 @@ export async function getSimilarListingsForDetailPage(
   const rows = (data ?? []) as Array<{
     ListingKey: string
     ListNumber?: string | null
+    mls_source?: string | null
     ListPrice: number | null
     BedroomsTotal: number | null
     BathroomsTotal: number | null
@@ -1207,6 +1212,8 @@ export async function getSimilarListingsForDetailPage(
     ].filter(Boolean).join(', ')
     return {
       listing_key: r.ListingKey,
+      list_number: r.ListNumber ?? null,
+      mls_source: r.mls_source ?? null,
       list_price: r.ListPrice,
       beds_total: r.BedroomsTotal,
       baths_full: r.BathroomsTotal,
@@ -1233,7 +1240,7 @@ export async function getSubdivisionListings(
 
   const { data } = await supabase
     .from('listings')
-    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
+    .select('ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
     .neq('ListingKey', excludeListingKey)
     .ilike('SubdivisionName', subdivisionName.trim())
     .ilike('City', city.trim())
@@ -1245,6 +1252,7 @@ export async function getSubdivisionListings(
   const rows = (data ?? []) as Array<{
     ListingKey: string
     ListNumber?: string | null
+    mls_source?: string | null
     ListPrice: number | null
     BedroomsTotal: number | null
     BathroomsTotal: number | null
@@ -1267,6 +1275,8 @@ export async function getSubdivisionListings(
     ].filter(Boolean).join(', ')
     return {
       listing_key: r.ListingKey,
+      list_number: r.ListNumber ?? null,
+      mls_source: r.mls_source ?? null,
       list_price: r.ListPrice,
       beds_total: r.BedroomsTotal,
       baths_full: r.BathroomsTotal,

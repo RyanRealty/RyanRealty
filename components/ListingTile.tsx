@@ -20,8 +20,8 @@ import { trackListingClick } from '@/lib/tracking'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeftRightIcon } from '@hugeicons/core-free-icons'
-
-const LISTING_PROVIDED_BY = 'Oregon Data Share'
+import { normalizeMlsDisplayNumber } from '@/lib/mls-source'
+import MlsSourceBadge from '@/components/legal/MlsSourceBadge'
 
 function daysOnMarket(
   onMarketDate: string | null | undefined,
@@ -142,14 +142,6 @@ function hasFloorPlans(listing: ListingTileListing): boolean {
   return Array.isArray(plans) && plans.length > 0
 }
 
-function normalizeMlsId(value: unknown): string | null {
-  const raw = String(value ?? '').trim()
-  if (!raw) return null
-  // MLS list numbers are numeric IDs; reject embedded HTML or malformed values.
-  if (!/^\d{5,16}$/.test(raw)) return null
-  return raw
-}
-
 export type ListingTileProps = {
   listing: ListingTileListing
   listingKey: string
@@ -233,11 +225,15 @@ function ListingTile({
     listing.SubdivisionName != null &&
     isResortCommunity(listing.City, listing.SubdivisionName)
   const row = listing as { ListNumber?: string | null; ListingKey?: string | null; list_number?: string | null; listing_key?: string | null }
-  const safeListNumber = normalizeMlsId(row.ListNumber ?? row.list_number ?? null)
+  const safeListNumber = normalizeMlsDisplayNumber(row.ListNumber ?? row.list_number ?? null)
   const canonicalListingKey = (row.ListingKey ?? row.listing_key ?? listingKey ?? safeListNumber ?? '').toString().trim()
   const linkKey = safeListNumber ?? canonicalListingKey
-  /** MLS# shown to users: prefer ListNumber (actual MLS list number); fall back to link key for routing. */
-  const mlsDisplay = safeListNumber ?? canonicalListingKey
+  /** MLS# shown to users: only true ListNumber values, never long internal keys. */
+  const mlsDisplay = safeListNumber
+  const mlsSource =
+    (listing as { mls_source?: string | null; MlsSource?: string | null }).mls_source ??
+    (listing as { mls_source?: string | null; MlsSource?: string | null }).MlsSource ??
+    null
   const neighborhood = getNeighborhoodName(listing)
   const href = linkKey
     ? listingDetailPath(
@@ -298,7 +294,7 @@ function ListingTile({
       sourcePage,
       price: price > 0 ? price : undefined,
       city: listing.City ?? undefined,
-      mlsNumber: mlsDisplay,
+      mlsNumber: mlsDisplay ?? undefined,
     })
     trackListingTileClick({
       listingKey: canonicalListingKey,
@@ -310,7 +306,7 @@ function ListingTile({
         street: address || undefined,
         city: listing.City ?? undefined,
         state: listing.State ?? undefined,
-        mlsNumber: mlsDisplay,
+        mlsNumber: mlsDisplay ?? undefined,
         price: price > 0 ? price : undefined,
         bedrooms: listing.BedroomsTotal ?? undefined,
         bathrooms: listing.BathroomsTotal ?? undefined,
@@ -504,10 +500,10 @@ function ListingTile({
         </div>
         {address && <p className="mt-2 text-sm font-medium text-foreground">{address}</p>}
         <div className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
-          <p>MLS# {mlsDisplay}</p>
+          <p>MLS# {mlsDisplay ?? '—'}</p>
           {listing.ListOfficeName && <p>{listing.ListOfficeName}</p>}
           {listing.ListAgentName && <p>{listing.ListAgentName}</p>}
-          <p className="mt-1">Listing provided by {LISTING_PROVIDED_BY}</p>
+          <MlsSourceBadge source={mlsSource} className="mt-1" />
         </div>
       </div>
     </Link>

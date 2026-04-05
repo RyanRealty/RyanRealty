@@ -2,7 +2,7 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
-import { getListingsWithAdvanced } from '@/app/actions/listings'
+import { getCachedSearchListings } from '@/app/actions/search-cache'
 import { listingDetailPath } from '@/lib/slug'
 
 type SavedSearchAlertRow = {
@@ -119,22 +119,24 @@ export async function runSavedSearchAlerts(options?: {
       }
 
       const filters = (search.filters ?? {}) as Record<string, unknown>
-      const results = await getListingsWithAdvanced({
-        city: parseString(filters.city),
-        subdivision: parseString(filters.subdivision),
-        minPrice: parseNumber(filters.minPrice),
-        maxPrice: parseNumber(filters.maxPrice),
-        minBeds: parseNumber(filters.beds),
-        minBaths: parseNumber(filters.baths),
-        minSqFt: parseNumber(filters.minSqFt),
-        propertyType: parseString(filters.propertyType),
-        statusFilter: parseString(filters.statusFilter) as 'active' | 'pending' | 'closed' | 'all' | undefined,
-        keywords: parseString(filters.keywords),
-        postalCode: parseString(filters.postalCode),
-        limit: 5,
-        offset: 0,
-        sort: 'newest',
-      })
+      const results = await getCachedSearchListings(
+        {
+          city: parseString(filters.city),
+          subdivision: parseString(filters.subdivision),
+          minPrice: parseNumber(filters.minPrice),
+          maxPrice: parseNumber(filters.maxPrice),
+          beds: parseNumber(filters.beds),
+          baths: parseNumber(filters.baths),
+          minSqFt: parseNumber(filters.minSqFt),
+          propertyType: parseString(filters.propertyType),
+          statusFilter: parseString(filters.statusFilter) as 'active' | 'pending' | 'closed' | 'all' | undefined,
+          keywords: parseString(filters.keywords),
+          postalCode: parseString(filters.postalCode),
+          sort: 'newest',
+        },
+        1,
+        5
+      )
       if (!results.listings.length) {
         summary.skipped += 1
         continue

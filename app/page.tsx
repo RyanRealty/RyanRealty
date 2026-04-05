@@ -29,6 +29,7 @@ import VideoToursRow from '@/components/videos/VideoToursRow'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import BrokerageListingsSlider from '@/components/home/BrokerageListingsSlider'
+import PopularSearchesSection from '@/components/home/PopularSearchesSection'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -312,6 +313,10 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <Suspense fallback={<SectionSkeleton height="min-h-[240px]" />}>
+        <PopularSearchesSection />
+      </Suspense>
 
       <section className="px-4 py-12 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-7xl">

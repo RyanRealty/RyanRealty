@@ -7,6 +7,8 @@ import type { ListingTileListing } from '@/components/ListingTile'
 
 type Similar = {
   listing_key: string
+  list_number: string | null
+  mls_source: string | null
   list_price: number | null
   beds_total: number | null
   baths_full: number | null
@@ -35,6 +37,8 @@ function mapToTileListing(item: Similar): ListingTileListing {
   // Parse address parts back out — address is "123 Main St, Bend, OR, 97701"
   return {
     ListingKey: item.listing_key,
+    ListNumber: item.list_number,
+    mls_source: item.mls_source,
     ListPrice: item.list_price,
     BedroomsTotal: item.beds_total,
     BathroomsTotal: item.baths_full,

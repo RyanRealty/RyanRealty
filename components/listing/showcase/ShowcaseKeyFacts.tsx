@@ -2,6 +2,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { getPropertyTypeLabel } from '@/lib/property-type-labels'
+import { normalizeMlsDisplayNumber } from '@/lib/mls-source'
+import MlsSourceBadge from '@/components/legal/MlsSourceBadge'
 
 function formatNum(n: number | null | undefined): string {
   if (n == null) return '—'
@@ -26,6 +28,7 @@ type Props = {
   price: number | null
   daysOnMarket: number | null
   mlsNumber: string | null
+  mlsSource?: string | null
 }
 
 export default function ShowcaseKeyFacts({
@@ -39,7 +42,9 @@ export default function ShowcaseKeyFacts({
   price,
   daysOnMarket,
   mlsNumber,
+  mlsSource = null,
 }: Props) {
+  const displayMls = normalizeMlsDisplayNumber(mlsNumber)
   const facts: Fact[] = [
     { label: 'Bedrooms', value: formatNum(beds) },
     { label: 'Bathrooms', value: formatNum(baths) },
@@ -49,7 +54,7 @@ export default function ShowcaseKeyFacts({
     { label: 'Year built', value: yearBuilt != null ? String(yearBuilt) : '—' },
     { label: 'List price', value: formatPrice(price) },
     { label: 'Days on market', value: daysOnMarket != null ? String(daysOnMarket) : '—' },
-    { label: 'MLS number', value: mlsNumber?.trim() || '—' },
+    { label: 'MLS number', value: displayMls ?? '—' },
   ].filter((f) => f.value !== '—' || f.label === 'MLS number')
 
   return (
@@ -67,6 +72,7 @@ export default function ShowcaseKeyFacts({
             </div>
           ))}
         </dl>
+        <MlsSourceBadge source={mlsSource} className="mt-4" />
       </CardContent>
     </Card>
   )

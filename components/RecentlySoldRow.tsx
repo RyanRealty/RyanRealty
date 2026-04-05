@@ -17,6 +17,7 @@ function mapToTileListing(item: RecentlySoldListing): ListingTileListing {
   return {
     ListingKey: item.listingKey,
     ListNumber: item.listNumber,
+    mls_source: item.mlsSource,
     ListPrice: item.listPrice,
     BedroomsTotal: item.beds,
     BathroomsTotal: item.baths,
