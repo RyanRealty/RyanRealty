@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.9.4 (2026-04-05)
+
+### Bug Fixes
+- fix: support absolute banner URLs in direct banner lookup
+
+---
+
+
 ## v1.9.3 (2026-04-05)
 
 ### Bug Fixes
