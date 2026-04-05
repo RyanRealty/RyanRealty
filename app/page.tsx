@@ -143,7 +143,7 @@ async function OpenHouseAsync() {
 
 async function VideoToursAsync({ session }: { session: Awaited<ReturnType<typeof getSession>> }) {
   const [videoRows, savedKeys, likedKeys] = await Promise.all([
-    getListingsWithVideos({ city: 'Bend', sort: 'price_desc', status: 'active', limit: 10 }),
+    getListingsWithVideos({ sort: 'price_desc', status: 'active', limit: 10 }),
     session?.user ? getSavedListingKeys() : Promise.resolve([] as string[]),
     session?.user ? getLikedListingKeys() : Promise.resolve([] as string[]),
   ])
