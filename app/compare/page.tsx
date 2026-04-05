@@ -42,7 +42,11 @@ export default async function ComparePage({
 }) {
   const params = await searchParams
   const idsRaw = typeof params.ids === 'string' ? params.ids : ''
-  const ids = idsRaw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 4)
+  const ids = decodeURIComponent(idsRaw)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 4)
 
   if (ids.length === 0) {
     return (
