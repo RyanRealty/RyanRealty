@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.10.2 (2026-04-05)
+
+### Bug Fixes
+- fix: source video listings from MLS details payload
+
+---
+
+
 ## v1.10.1 (2026-04-05)
 
 ### Bug Fixes
