@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.14.0 (2026-04-05)
+
+### Features
+- feat: unify map boundary search with saved polygon filters
+
+---
+
+
 ## v1.13.2 (2026-04-05)
 
 ### Bug Fixes
