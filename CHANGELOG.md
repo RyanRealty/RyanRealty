@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.11 (2026-04-05)
+
+### Bug Fixes
+- fix: restore slider data fidelity and compare flow
+
+---
+
+
 ## v1.6.10 (2026-04-05)
 
 ### Bug Fixes
