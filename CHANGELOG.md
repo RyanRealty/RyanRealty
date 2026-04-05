@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.10.0 (2026-04-05)
+
+### Features
+- feat: improve lifestyle and video home sliders
+
+---
+
+
 ## v1.9.7 (2026-04-05)
 
 ### Maintenance
