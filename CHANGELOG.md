@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.10.4 (2026-04-05)
+
+### Bug Fixes
+- fix: keep home video slider visible during media lag
+
+---
+
+
 ## v1.10.3 (2026-04-05)
 
 ### Bug Fixes
