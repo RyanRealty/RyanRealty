@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.13.2 (2026-04-05)
+
+### Bug Fixes
+- fix: defer admin role gate until protected layout
+
+---
+
+
 ## v1.13.1 (2026-04-05)
 
 ### Bug Fixes
