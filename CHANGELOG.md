@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.15.9 (2026-04-05)
+
+### Bug Fixes
+- fix: use image-only hero on geo search pages
+
+---
+
+
 ## v1.15.8 (2026-04-05)
 
 ### Bug Fixes
