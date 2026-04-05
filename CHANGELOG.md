@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.13.0 (2026-04-05)
+
+### Features
+- feat: add targeted lead landing pages with FUB routing
+
+---
+
+
 ## v1.12.0 (2026-04-05)
 
 ### Features
