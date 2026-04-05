@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.9.7 (2026-04-05)
+
+### Maintenance
+- perf: make autocomplete feel instant and fix dropdown contrast
+
+---
+
+
 ## v1.9.6 (2026-04-05)
 
 ### Bug Fixes
