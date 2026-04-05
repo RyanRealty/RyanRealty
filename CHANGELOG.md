@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.15.11 (2026-04-05)
+
+### Bug Fixes
+- fix: cap initial cities index payload
+
+---
+
+
 ## v1.15.10 (2026-04-05)
 
 ### Bug Fixes
