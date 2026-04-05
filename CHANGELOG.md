@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.13.1 (2026-04-05)
+
+### Bug Fixes
+- fix: replace expired listing hero with valid source
+
+---
+
+
 ## v1.13.0 (2026-04-05)
 
 ### Features
