@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.14 (2026-04-05)
+
+### Bug Fixes
+- fix: remove invalid compare listing select columns
+
+---
+
+
 ## v1.6.13 (2026-04-05)
 
 ### Bug Fixes
