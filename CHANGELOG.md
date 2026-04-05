@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.10.3 (2026-04-05)
+
+### Bug Fixes
+- fix: add dual-schema fallback for video listings
+
+---
+
+
 ## v1.10.2 (2026-04-05)
 
 ### Bug Fixes
