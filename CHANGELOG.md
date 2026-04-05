@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.9.6 (2026-04-05)
+
+### Bug Fixes
+- fix: restore search autocomplete and refresh geo hero imagery
+
+---
+
+
 ## v1.9.5 (2026-04-05)
 
 ### Bug Fixes
