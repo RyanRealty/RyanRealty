@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.16.4 (2026-04-05)
+
+### Other
+- build: raise static generation timeout for production deploy stability
+
+---
+
+
 ## v1.16.3 (2026-04-05)
 
 ### Maintenance
