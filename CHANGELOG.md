@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.1 (2026-04-05)
+
+### Maintenance
+- docs: mark phases 1-11 complete in data architecture plan
+
+---
+
+
 ## v1.6.0 (2026-04-05)
 
 ### Features
