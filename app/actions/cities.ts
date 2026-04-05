@@ -15,6 +15,7 @@ import { entityKeyToSlug } from '@/lib/community-slug'
 import type { CommunityForIndex } from '@/lib/communities'
 import { listSubdivisionsWithFlags } from '@/app/actions/subdivision-flags'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
+import { getResortCommunityImage } from '@/lib/resort-community-images'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -38,8 +39,10 @@ function normalizeBannerLikeUrl(value: string | null | undefined): string | null
 
 const ACTIVE_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
+const PENDING_OR =
+  'StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%Contingent%'
 const HOME_TILE_SELECT =
-  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, OpenHouses, has_virtual_tour, lot_size_acres, lot_size_sqft'
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, OpenHouses, has_virtual_tour, lot_size_acres, lot_size_sqft, details'
 
 export type CityListingRow = {
   ListingKey: string | null
@@ -64,6 +67,7 @@ export type CityListingRow = {
   OnMarketDate?: string | null
   OpenHouses?: unknown
   has_virtual_tour?: boolean | null
+  details?: unknown
   lot_size_acres?: number | null
   lot_size_sqft?: number | null
 }
@@ -151,7 +155,7 @@ export const getCitiesForIndex = unstable_cache(
 )
 
 /** Get city by slug; returns null if not found. */
-export async function getCityBySlug(slug: string): Promise<CityDetail | null> {
+async function _getCityBySlugUncached(slug: string): Promise<CityDetail | null> {
   const cityName = await getCityFromSlug(slug)
   if (!cityName) return null
   const [stats, cityRow, activeRows] = await Promise.all([
@@ -198,8 +202,14 @@ export async function getCityBySlug(slug: string): Promise<CityDetail | null> {
   }
 }
 
+export const getCityBySlug = unstable_cache(
+  _getCityBySlugUncached,
+  ['city-by-slug-v1'],
+  { revalidate: 300, tags: ['city-detail'] }
+)
+
 /** Active listings in a city, newest first, limit 24. */
-export async function getCityListings(
+async function _getCityListingsUncached(
   cityName: string,
   limit: number
 ): Promise<CityListingRow[]> {
@@ -213,8 +223,14 @@ export async function getCityListings(
   return (data ?? []) as CityListingRow[]
 }
 
+export const getCityListings = unstable_cache(
+  _getCityListingsUncached,
+  ['city-listings-v1'],
+  { revalidate: 120, tags: ['city-listings'] }
+)
+
 /** Recently sold in city, limit 6. */
-export async function getCitySoldListings(
+async function _getCitySoldListingsUncached(
   cityName: string,
   limit: number
 ): Promise<(CityListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]> {
@@ -228,6 +244,33 @@ export async function getCitySoldListings(
     .limit(limit)
   return (data ?? []) as (CityListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]
 }
+
+export const getCitySoldListings = unstable_cache(
+  _getCitySoldListingsUncached,
+  ['city-sold-listings-v1'],
+  { revalidate: 300, tags: ['city-sold-listings'] }
+)
+
+/** Pending/under contract listings in a city, newest first, limit 12. */
+async function _getCityPendingListingsUncached(
+  cityName: string,
+  limit: number
+): Promise<CityListingRow[]> {
+  const { data } = await supabase()
+    .from('listings')
+    .select(HOME_TILE_SELECT)
+    .ilike('City', cityName)
+    .or(PENDING_OR)
+    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
+    .limit(limit)
+  return (data ?? []) as CityListingRow[]
+}
+
+export const getCityPendingListings = unstable_cache(
+  _getCityPendingListingsUncached,
+  ['city-pending-listings-v1'],
+  { revalidate: 120, tags: ['city-pending-listings'] }
+)
 
 /** Communities (subdivisions) in this city for CityCommunities section. */
 async function getCommunitiesInCityUncached(cityName: string): Promise<CommunityForIndex[]> {
@@ -244,6 +287,8 @@ async function getCommunitiesInCityUncached(cityName: string): Promise<Community
   ])
   const bySubdivision = new Map<string, number[]>()
   const countBySubdivision = new Map<string, number>()
+  const pendingBySubdivision = new Map<string, number>()
+  const hotBySubdivision = new Map(hot.map((entry) => [entry.subdivisionName, entry]))
   for (const row of listingRows) {
     if (!isResidentialInventoryType(row.PropertyType ?? null)) continue
     const sub = (row.SubdivisionName ?? '').trim()
@@ -256,34 +301,56 @@ async function getCommunitiesInCityUncached(cityName: string): Promise<Community
       bySubdivision.set(sub, prices)
     }
   }
+  const { data: pendingRows } = await supabase()
+    .from('listings')
+    .select('SubdivisionName')
+    .ilike('City', cityName)
+    .or(PENDING_OR)
+    .limit(4000)
+  for (const row of pendingRows ?? []) {
+    const sub = String((row as { SubdivisionName?: string | null }).SubdivisionName ?? '').trim()
+    if (!sub) continue
+    pendingBySubdivision.set(sub, (pendingBySubdivision.get(sub) ?? 0) + 1)
+  }
   const resortSet = new Set(
     (await import('@/app/actions/subdivision-flags').then((m) => m.getResortEntityKeys()))
   )
   const entityKey = (c: string, s: string) => `${slugify(c)}:${slugify(s)}`
-  const entityKeys = hot.map((h) => entityKey(cityName, h.subdivisionName))
+  const subdivisionNames = Array.from(new Set([...countBySubdivision.keys(), ...pendingBySubdivision.keys()]))
+  const entityKeys = subdivisionNames.map((name) => entityKey(cityName, name))
   const bannerMap = await getBannersBatch('subdivision', entityKeys)
   const result: CommunityForIndex[] = []
-  for (const h of hot) {
-    const key = entityKey(cityName, h.subdivisionName)
+  for (const subdivisionName of subdivisionNames) {
+    const h = hotBySubdivision.get(subdivisionName)
+    const key = entityKey(cityName, subdivisionName)
     const isResort = flags.some((f) => f.entity_key === key && f.is_resort) || resortSet.has(key)
     const heroUrl = bannerMap.get(key)?.url ?? null
+    const resortHeroUrl = isResort ? getResortCommunityImage(cityName, subdivisionName) : null
     result.push({
       slug: entityKeyToSlug(key),
       entityKey: key,
       city: cityName,
-      subdivision: h.subdivisionName,
-      activeCount: countBySubdivision.get(h.subdivisionName) ?? h.forSale,
+      subdivision: subdivisionName,
+      activeCount: countBySubdivision.get(subdivisionName) ?? h?.forSale ?? 0,
       medianPrice: (() => {
-        const prices = bySubdivision.get(h.subdivisionName) ?? []
-        if (prices.length === 0) return h.medianListPrice ?? null
+        const prices = bySubdivision.get(subdivisionName) ?? []
+        if (prices.length === 0) return h?.medianListPrice ?? null
         prices.sort((a, b) => a - b)
         const mid = Math.floor(prices.length / 2)
         return prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
       })(),
-      heroImageUrl: heroUrl ?? null,
+      heroImageUrl: heroUrl ?? resortHeroUrl ?? null,
       isResort,
     })
   }
+  result.sort((a, b) => {
+    if ((b.isResort ? 1 : 0) !== (a.isResort ? 1 : 0)) return (b.isResort ? 1 : 0) - (a.isResort ? 1 : 0)
+    const pendingDelta = (pendingBySubdivision.get(b.subdivision) ?? 0) - (pendingBySubdivision.get(a.subdivision) ?? 0)
+    if (pendingDelta !== 0) return pendingDelta
+    const activeDelta = b.activeCount - a.activeCount
+    if (activeDelta !== 0) return activeDelta
+    return a.subdivision.localeCompare(b.subdivision)
+  })
   return result
 }
 
@@ -358,7 +425,7 @@ export async function getNeighborhoodsInCity(cityName: string): Promise<
 }
 
 /** Price history for city (reporting_cache; fallback from closed listings by month when cache has fewer than 2 points). */
-export async function getCityPriceHistory(cityName: string): Promise<{ month: string; medianPrice: number }[]> {
+export async function getCityPriceHistory(cityName: string): Promise<{ month: string; medianPrice: number; soldCount?: number }[]> {
   const sb = supabase()
   const { data } = await sb
     .from('reporting_cache')
@@ -368,10 +435,14 @@ export async function getCityPriceHistory(cityName: string): Promise<{ month: st
     .eq('period_type', 'monthly')
     .order('period_start', { ascending: true })
     .limit(12)
-  const rows = (data ?? []) as { period_start?: string; metrics?: { median_price?: number } }[]
+  const rows = (data ?? []) as { period_start?: string; metrics?: { median_price?: number; sold_count?: number } }[]
   const fromCache = rows
     .filter((r) => r.metrics?.median_price != null)
-    .map((r) => ({ month: r.period_start ?? '', medianPrice: r.metrics!.median_price! }))
+    .map((r) => ({
+      month: r.period_start ?? '',
+      medianPrice: r.metrics!.median_price!,
+      soldCount: Number(r.metrics?.sold_count ?? 0),
+    }))
   if (fromCache.length >= 2) return fromCache
   const twelveMonthsAgo = new Date()
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
@@ -384,6 +455,7 @@ export async function getCityPriceHistory(cityName: string): Promise<{ month: st
     .gte('CloseDate', twelveMonthsAgo.toISOString().slice(0, 7))
     .limit(2000)
   const byMonth = new Map<string, number[]>()
+  const byMonthCount = new Map<string, number>()
   for (const r of (closed ?? []) as { ListPrice?: number | null; CloseDate?: string }[]) {
     const p = Number(r.ListPrice)
     const d = r.CloseDate?.slice(0, 7)
@@ -391,13 +463,14 @@ export async function getCityPriceHistory(cityName: string): Promise<{ month: st
     const arr = byMonth.get(d) ?? []
     arr.push(p)
     byMonth.set(d, arr)
+    byMonthCount.set(d, (byMonthCount.get(d) ?? 0) + 1)
   }
   const fallback = Array.from(byMonth.entries())
     .map(([month, prices]) => {
       prices.sort((a, b) => a - b)
       const mid = Math.floor(prices.length / 2)
       const medianPrice = prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
-      return { month, medianPrice }
+      return { month, medianPrice, soldCount: byMonthCount.get(month) ?? 0 }
     })
     .sort((a, b) => a.month.localeCompare(b.month))
   return fallback.length >= 2 ? fallback : fromCache
@@ -420,7 +493,7 @@ export type NeighborhoodDetail = {
   medianPrice: number | null
 }
 
-export async function getNeighborhoodBySlug(
+async function _getNeighborhoodBySlugUncached(
   citySlug: string,
   neighborhoodSlug: string
 ): Promise<NeighborhoodDetail | null> {
@@ -488,6 +561,12 @@ export async function getNeighborhoodBySlug(
   }
 }
 
+export const getNeighborhoodBySlug = unstable_cache(
+  _getNeighborhoodBySlugUncached,
+  ['neighborhood-by-slug-v1'],
+  { revalidate: 300, tags: ['neighborhood-detail'] }
+)
+
 /** Boundary GeoJSON for a city (for map overlay on city/community search). Returns null if not found. */
 export async function getCityBoundary(cityName: string): Promise<unknown | null> {
   if (!cityName?.trim()) return null
@@ -502,7 +581,7 @@ export async function getCityBoundary(cityName: string): Promise<unknown | null>
 }
 
 /** Active listings in a neighborhood (property_id in properties with neighborhood_id), limit 24. Uses RPC when available for one-query performance. */
-export async function getNeighborhoodListings(
+async function _getNeighborhoodListingsUncached(
   neighborhoodId: string,
   limit: number
 ): Promise<CityListingRow[]> {
@@ -531,8 +610,14 @@ export async function getNeighborhoodListings(
   return (data ?? []) as CityListingRow[]
 }
 
+export const getNeighborhoodListings = unstable_cache(
+  _getNeighborhoodListingsUncached,
+  ['neighborhood-listings-v1'],
+  { revalidate: 120, tags: ['neighborhood-listings'] }
+)
+
 /** Recently sold in neighborhood, limit 6. */
-export async function getNeighborhoodSoldListings(
+async function _getNeighborhoodSoldListingsUncached(
   neighborhoodId: string,
   limit: number
 ): Promise<(CityListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]> {
@@ -550,6 +635,89 @@ export async function getNeighborhoodSoldListings(
     .limit(limit)
   return (data ?? []) as (CityListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]
 }
+
+export const getNeighborhoodSoldListings = unstable_cache(
+  _getNeighborhoodSoldListingsUncached,
+  ['neighborhood-sold-listings-v1'],
+  { revalidate: 300, tags: ['neighborhood-sold-listings'] }
+)
+
+/** Median sold price by month for neighborhood for last 12 months. */
+async function _getNeighborhoodPriceHistoryUncached(
+  neighborhoodId: string
+): Promise<{ month: string; medianPrice: number; soldCount?: number }[]> {
+  const sb = supabase()
+  const { data: propIds } = await sb.from('properties').select('id').eq('neighborhood_id', neighborhoodId).limit(5000)
+  const ids = (propIds ?? []).map((p: { id: string }) => p.id)
+  if (ids.length === 0) return []
+
+  const twelveMonthsAgo = new Date()
+  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
+  const minMonth = twelveMonthsAgo.toISOString().slice(0, 7)
+
+  const { data: closedRows } = await sb
+    .from('listings')
+    .select('ListPrice, CloseDate')
+    .in('property_id', ids)
+    .or('StandardStatus.ilike.%Closed%')
+    .not('CloseDate', 'is', null)
+    .gte('CloseDate', minMonth)
+    .limit(4000)
+
+  const byMonth = new Map<string, number[]>()
+  const byMonthCount = new Map<string, number>()
+  for (const row of (closedRows ?? []) as { ListPrice?: number | null; CloseDate?: string | null }[]) {
+    const month = String(row.CloseDate ?? '').slice(0, 7)
+    const price = Number(row.ListPrice)
+    if (!month || !Number.isFinite(price) || price <= 0) continue
+    const arr = byMonth.get(month) ?? []
+    arr.push(price)
+    byMonth.set(month, arr)
+    byMonthCount.set(month, (byMonthCount.get(month) ?? 0) + 1)
+  }
+
+  return Array.from(byMonth.entries())
+    .map(([month, prices]) => {
+      prices.sort((a, b) => a - b)
+      const mid = Math.floor(prices.length / 2)
+      const medianPrice =
+        prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
+      return { month, medianPrice, soldCount: byMonthCount.get(month) ?? 0 }
+    })
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .slice(-12)
+}
+
+export const getNeighborhoodPriceHistory = unstable_cache(
+  _getNeighborhoodPriceHistoryUncached,
+  ['neighborhood-price-history-v1'],
+  { revalidate: 3600, tags: ['neighborhood-price-history'] }
+)
+
+/** Pending/under contract listings in a neighborhood, newest first, limit 12. */
+async function _getNeighborhoodPendingListingsUncached(
+  neighborhoodId: string,
+  limit: number
+): Promise<CityListingRow[]> {
+  const sb = supabase()
+  const { data: propIds } = await sb.from('properties').select('id').eq('neighborhood_id', neighborhoodId).limit(5000)
+  const ids = (propIds ?? []).map((p: { id: string }) => p.id)
+  if (ids.length === 0) return []
+  const { data } = await sb
+    .from('listings')
+    .select(HOME_TILE_SELECT)
+    .in('property_id', ids)
+    .or(PENDING_OR)
+    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
+    .limit(limit)
+  return (data ?? []) as CityListingRow[]
+}
+
+export const getNeighborhoodPendingListings = unstable_cache(
+  _getNeighborhoodPendingListingsUncached,
+  ['neighborhood-pending-listings-v1'],
+  { revalidate: 120, tags: ['neighborhood-pending-listings'] }
+)
 
 /** Communities (subdivisions) within a specific neighborhood. */
 export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityName: string): Promise<CommunityForIndex[]> {
@@ -608,6 +776,7 @@ export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityN
     const key = entityKey(cityName, comm.name)
     const isResort = flags.some((f) => f.entity_key === key && f.is_resort) || resortSet.has(key)
     const heroUrl = comm.hero_image_url ?? bannerMap.get(key)?.url ?? null
+    const resortHeroUrl = isResort ? getResortCommunityImage(cityName, comm.name) : null
 
     result.push({
       slug: comm.slug,
@@ -616,7 +785,7 @@ export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityN
       subdivision: comm.name,
       activeCount: prices.length,
       medianPrice,
-      heroImageUrl: heroUrl ?? null,
+      heroImageUrl: heroUrl ?? resortHeroUrl ?? null,
       isResort,
     })
   }

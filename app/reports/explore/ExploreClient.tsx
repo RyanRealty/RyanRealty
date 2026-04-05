@@ -43,6 +43,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  buildYtdComparisonRows,
+  getAvailableYears,
+  summarizeInterpretation,
+} from '@/lib/report-year-compare'
 
 function toYMD(d: Date): string {
   return (
@@ -82,7 +87,7 @@ const PRESETS: { id: string; label: string; getRange: () => { start: string; end
   ]
 })()
 
-const NUM_MONTHS_TREND = 12
+const NUM_MONTHS_TREND = 60
 
 function locationLabel(loc: { city: string; subdivision?: string } | null): string {
   if (!loc?.city) return ''
@@ -386,6 +391,49 @@ export default function ExploreClient({
     [timeSeries]
   )
 
+  const availableYears = useMemo(() => getAvailableYears(trendChartData), [trendChartData])
+  const currentYear = availableYears[0] ?? new Date().getUTCFullYear()
+  const [compareYears, setCompareYears] = useState<number[]>(
+    availableYears.filter((year) => year !== currentYear).slice(0, 3)
+  )
+  const chartYears = [currentYear, ...compareYears.filter((year) => year !== currentYear)].slice(0, 4)
+  const monthCap = new Date().getUTCMonth() + 1
+  const ytdRows = useMemo(
+    () =>
+      buildYtdComparisonRows(
+        trendChartData.map((point) => ({
+          period_start: point.period_start,
+          sold_count: point.sold_count,
+          median_price: point.median_price,
+        })),
+        chartYears,
+        monthCap
+      ),
+    [trendChartData, chartYears, monthCap]
+  )
+  const ytdInterpretation = useMemo(
+    () => summarizeInterpretation(ytdRows, currentYear, chartYears.filter((year) => year !== currentYear)),
+    [ytdRows, currentYear, chartYears]
+  )
+
+  const updateCompareYear = useCallback((slot: number, value: string) => {
+    const parsed = Number(value)
+    if (!Number.isFinite(parsed)) return
+    setCompareYears((prev) => {
+      const next = [...prev]
+      next[slot] = parsed
+      return Array.from(new Set(next)).filter((year) => year !== currentYear).slice(0, 3)
+    })
+  }, [currentYear])
+
+  useEffect(() => {
+    setCompareYears((prev) => {
+      const valid = prev.filter((year) => availableYears.includes(year) && year !== currentYear)
+      if (valid.length > 0) return valid.slice(0, 3)
+      return availableYears.filter((year) => year !== currentYear).slice(0, 3)
+    })
+  }, [availableYears, currentYear])
+
   return (
     <div className="space-y-8">
       <Card className="border-border bg-card shadow-sm">
@@ -679,29 +727,64 @@ export default function ExploreClient({
             </div>
           </section>
 
-          {trendChartData.length > 0 && (
+          {ytdRows.length > 0 && (
             <div className="grid gap-8 lg:grid-cols-2">
               <Card className="overflow-hidden border-border bg-card shadow-sm" aria-labelledby="sales-trend-heading">
                 <CardHeader className="border-b border-border/60 bg-muted/20 pb-3">
                   <CardTitle id="sales-trend-heading" className="text-base font-semibold text-foreground">
-                    Sales over time
+                    Sales by year YTD
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">Monthly sales (last {NUM_MONTHS_TREND} months)</p>
+                  <p className="text-sm text-muted-foreground">Current year to date vs up to three comparison years</p>
                 </CardHeader>
                 <CardContent className="p-4">
+                  <div className="mb-4 grid gap-3 sm:grid-cols-3">
+                    {[0, 1, 2].map((slot) => (
+                      <Label key={`sales-year-${slot}`} className="flex flex-col gap-1.5">
+                        <span className="text-sm text-muted-foreground">Compare year {slot + 1}</span>
+                        <Select
+                          value={String(compareYears[slot] ?? '')}
+                          onValueChange={(value) => updateCompareYear(slot, value)}
+                        >
+                          <SelectTrigger aria-label={`Select comparison year ${slot + 1}`}>
+                            <SelectValue placeholder="Select year" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableYears
+                              .filter((year) => year !== currentYear)
+                              .map((year) => (
+                                <SelectItem key={`sales-opt-${slot}-${year}`} value={String(year)}>
+                                  {year}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </Label>
+                    ))}
+                  </div>
                   <ChartContainer
                     config={{
-                      sold_count: { label: 'Sales', color: 'var(--primary)' },
+                      sold_count: { label: 'Sales index', color: 'var(--primary)' },
                       month_label: { label: 'Month' },
                     } satisfies ChartConfig}
                     className="h-[280px] w-full"
                   >
-                    <LineChart data={trendChartData} margin={{ top: 8, right: 8, left: 8, bottom: 24 }} accessibilityLayer>
+                    <LineChart data={ytdRows} margin={{ top: 8, right: 8, left: 8, bottom: 24 }} accessibilityLayer>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
-                      <XAxis dataKey="month_label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+                      <XAxis dataKey="monthLabel" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
                       <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} width={36} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line type="monotone" dataKey="sold_count" stroke="var(--color-sold_count)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                      {chartYears.map((year, index) => (
+                        <Line
+                          key={`sales-year-line-${year}`}
+                          type="monotone"
+                          dataKey={`sales_${year}`}
+                          name={index === 0 ? `${year} YTD` : String(year)}
+                          stroke={index === 0 ? 'var(--primary)' : 'var(--muted-foreground)'}
+                          strokeWidth={index === 0 ? 2.5 : 1.8}
+                          dot={{ r: 2 }}
+                          connectNulls
+                        />
+                      ))}
                     </LineChart>
                   </ChartContainer>
                 </CardContent>
@@ -709,24 +792,35 @@ export default function ExploreClient({
               <Card className="overflow-hidden border-border bg-card shadow-sm" aria-labelledby="price-trend-heading">
                 <CardHeader className="border-b border-border/60 bg-muted/20 pb-3">
                   <CardTitle id="price-trend-heading" className="text-base font-semibold text-foreground">
-                    Median price over time
+                    Median price by year YTD
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">Monthly median price (last {NUM_MONTHS_TREND} months)</p>
+                  <p className="text-sm text-muted-foreground">Monthly median sold price for each selected year</p>
                 </CardHeader>
                 <CardContent className="p-4">
                   <ChartContainer
                     config={{
-                      median_price: { label: 'Median price', color: 'var(--chart-1)' },
+                      median_price: { label: 'Price index', color: 'var(--chart-1)' },
                       month_label: { label: 'Month' },
                     } satisfies ChartConfig}
                     className="h-[280px] w-full"
                   >
-                    <LineChart data={trendChartData} margin={{ top: 8, right: 8, left: 8, bottom: 24 }} accessibilityLayer>
+                    <LineChart data={ytdRows} margin={{ top: 8, right: 8, left: 8, bottom: 24 }} accessibilityLayer>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
-                      <XAxis dataKey="month_label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+                      <XAxis dataKey="monthLabel" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
                       <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)} width={44} />
                       <ChartTooltip content={<ChartTooltipContent formatter={(v) => (typeof v === 'number' ? [`$${Number(v).toLocaleString()}`, 'Median price'] : [v, ''])} />} />
-                      <Line type="monotone" dataKey="median_price" stroke="var(--color-median_price)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                      {chartYears.map((year, index) => (
+                        <Line
+                          key={`price-year-line-${year}`}
+                          type="monotone"
+                          dataKey={`price_${year}`}
+                          name={index === 0 ? `${year} YTD` : String(year)}
+                          stroke={index === 0 ? 'var(--chart-1)' : 'var(--muted-foreground)'}
+                          strokeWidth={index === 0 ? 2.5 : 1.8}
+                          dot={{ r: 2 }}
+                          connectNulls
+                        />
+                      ))}
                     </LineChart>
                   </ChartContainer>
                 </CardContent>
@@ -734,42 +828,29 @@ export default function ExploreClient({
             </div>
           )}
 
-          {trendChartData.length > 0 && (
+          {ytdRows.length > 0 && (
             <Card className="overflow-hidden border-border bg-card shadow-sm" aria-labelledby="combined-trend-heading">
               <CardHeader className="border-b border-border/60 bg-muted/20 pb-3">
                 <CardTitle id="combined-trend-heading" className="text-base font-semibold text-foreground">
-                  Sales and median price (combined)
+                  Chart index definitions and interpretation
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">Dual-axis view for the last {NUM_MONTHS_TREND} months</p>
+                <p className="text-sm text-muted-foreground">How to read the selected year comparisons</p>
               </CardHeader>
               <CardContent className="p-4">
-                <ChartContainer
-                  config={{
-                    sold_count: { label: 'Sales', color: 'var(--primary)' },
-                    median_price: { label: 'Median price', color: 'var(--chart-1)' },
-                    month_label: { label: 'Month' },
-                  } satisfies ChartConfig}
-                  className="h-[320px] w-full"
-                >
-                  <LineChart data={trendChartData} margin={{ top: 8, right: 8, left: 8, bottom: 24 }} accessibilityLayer>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
-                    <XAxis dataKey="month_label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                    <YAxis yAxisId="left" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} width={36} />
-                    <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)} width={44} />
-                    <ChartTooltip
-                      content={
-                        <ChartTooltipContent
-                          formatter={(v, name) =>
-                            name === 'median_price' ? [`$${Number(v).toLocaleString()}`, 'Median price'] : [v, 'Sales']
-                          }
-                        />
-                      }
-                    />
-                    <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="sold_count" name="Sales" stroke="var(--color-sold_count)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                    <Line yAxisId="right" type="monotone" dataKey="median_price" name="Median price" stroke="var(--color-median_price)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                  </LineChart>
-                </ChartContainer>
+                <div className="space-y-3">
+                  <p className="text-sm text-foreground">
+                    <strong>Sales index:</strong> monthly closed sales count for each selected year, shown year to date.
+                  </p>
+                  <p className="text-sm text-foreground">
+                    <strong>Price index:</strong> monthly median sold price for each selected year, shown year to date.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {ytdInterpretation}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    This interpretation is our view of the current trend and should be treated as analysis, not a guarantee of future market performance.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           )}

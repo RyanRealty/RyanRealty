@@ -46,9 +46,6 @@ export default function ContentPageHero({ title, subtitle, imageUrl, ctas }: Con
         className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/50 to-primary/30"
         aria-hidden
       />
-      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
-        <div className="absolute top-0 left-0 h-full w-[60%] bg-gradient-to-r from-transparent via-primary-foreground/10 to-transparent animate-hero-shine" />
-      </div>
       <div className="relative z-10 flex min-h-[40vh] sm:min-h-[50vh] flex-col justify-center px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto w-full max-w-4xl text-center">
           <h1 className="text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl lg:text-6xl">

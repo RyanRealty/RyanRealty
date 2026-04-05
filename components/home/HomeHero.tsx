@@ -9,9 +9,9 @@ import { cityPagePath } from '@/lib/slug'
 import { communityPagePath } from '@/lib/community-slug'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { getHomeHeroImage, resolveUnsplashHeroImage } from '@/lib/hero-media'
 
-// No stock photography — fallback is empty; hero renders a navy gradient when no brokerage image is set.
-const DEFAULT_HERO_IMAGE = '/images/hero-poster.webp'
+const DEFAULT_HERO_IMAGE = getHomeHeroImage()
 const SEARCH_DEBOUNCE_MS = 90
 
 type MarketSnapshot = {
@@ -29,7 +29,7 @@ type Props = {
 }
 
 export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }: Props) {
-  const backgroundImage = heroImageUrl?.trim() || DEFAULT_HERO_IMAGE
+  const backgroundImage = resolveUnsplashHeroImage(heroImageUrl, DEFAULT_HERO_IMAGE)
   const useVideo = Boolean(heroVideoUrl?.trim())
   const [enableVideo, setEnableVideo] = useState(false)
   const router = useRouter()
@@ -235,7 +235,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
             src={backgroundImage}
             alt="Central Oregon landscape"
             fill
-            className="object-cover animate-hero-ken-burns"
+            className="object-cover"
             sizes="100vw"
             priority
           />

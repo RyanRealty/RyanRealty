@@ -20,7 +20,10 @@ type Props = {
 
 function hasVideo(listing: ListingTileRow & { details?: unknown }): boolean {
   const details = listing.details as { Videos?: Array<{ Uri?: string | null }> } | null | undefined
-  return Array.isArray(details?.Videos) && details.Videos.some((video) => String(video?.Uri ?? '').trim().length > 0)
+  const fromDetails = Array.isArray(details?.Videos) && details.Videos.some((video) => String(video?.Uri ?? '').trim().length > 0)
+  const fromVirtualTourFlag =
+    (listing as { has_virtual_tour?: boolean | null }).has_virtual_tour === true
+  return fromDetails || fromVirtualTourFlag
 }
 
 export default function VideoToursRow({

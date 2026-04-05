@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import {
   getNeighborhoodBySlug,
   getNeighborhoodListings,
+  getNeighborhoodPendingListings,
+  getNeighborhoodPriceHistory,
   getNeighborhoodSoldListings,
   getCommunitiesInNeighborhood,
 } from '@/app/actions/cities'
@@ -25,7 +27,6 @@ import NeighborhoodMarketStats from '@/components/neighborhood/NeighborhoodMarke
 import NeighborhoodMap from '@/components/neighborhood/NeighborhoodMap'
 import NeighborhoodPageTracker from '@/components/neighborhood/NeighborhoodPageTracker'
 import BreadcrumbStrip from '@/components/layout/BreadcrumbStrip'
-import { fetchPlacePhoto } from '@/lib/photo-api'
 import NeighborhoodPageActionBar from '@/components/geo-page/NeighborhoodPageActionBar'
 import ListingsSlider from '@/components/geo-page/ListingsSlider'
 import GeoCTAWithBroker from '@/components/geo-page/GeoCTAWithBroker'
@@ -36,6 +37,10 @@ import GeoSectionLatestActivity from '@/components/geo-page/GeoSectionLatestActi
 import RecentlySoldRow from '@/components/RecentlySoldRow'
 import { getNeighborhoodInventoryBreakdown } from '@/app/actions/inventory-breakdown'
 import InventoryTypeSlider from '@/components/geo-page/InventoryTypeSlider'
+import VideoToursRow from '@/components/videos/VideoToursRow'
+import { getListingsWithVideos } from '@/app/actions/videos'
+import { getHomeTileRowsByKeys } from '@/app/actions/listings'
+import type { YearSeriesPoint } from '@/lib/report-year-compare'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -83,12 +88,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const pageUrl = `${siteUrl}/cities/${citySlug}/${neighborhoodSlug}`
   const pageTitle = `${neighborhood.name} in ${neighborhood.cityName}, Oregon | Ryan Realty`
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
-  const [placePhotoUrl, listings, soldListings, savedKeys, likedKeys, communitiesInNeighborhood, activityFeed, brokers, savedCommunityKeys, likedCommunityKeys, inventoryBreakdown] = await Promise.all([
-    !neighborhood.heroImageUrl
-      ? fetchPlacePhoto(`${neighborhood.name} ${neighborhood.cityName} Oregon`).then((r) => r?.url ?? null).catch(() => null)
-      : Promise.resolve(null),
+  const [listings, pendingListings, soldListings, neighborhoodPriceHistory, savedKeys, likedKeys, communitiesInNeighborhood, activityFeedRaw, brokers, savedCommunityKeys, likedCommunityKeys, inventoryBreakdown, cityVideoRows] = await Promise.all([
     getNeighborhoodListings(neighborhood.id, 24),
+    getNeighborhoodPendingListings(neighborhood.id, 12),
     getNeighborhoodSoldListings(neighborhood.id, 6),
+    getNeighborhoodPriceHistory(neighborhood.id),
     session?.user ? getSavedListingKeys() : Promise.resolve([]),
     session?.user ? getLikedListingKeys() : Promise.resolve([]),
     getCommunitiesInNeighborhood(neighborhood.id, neighborhood.cityName),
@@ -97,9 +101,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     session?.user ? getSavedCommunityKeys() : Promise.resolve([]),
     session?.user ? getLikedCommunityKeys() : Promise.resolve([]),
     getNeighborhoodInventoryBreakdown(neighborhood.id),
+    getListingsWithVideos({ city: neighborhood.cityName, sort: 'price_desc', status: 'active', limit: 20 }),
   ])
 
-  const heroImageUrl = neighborhood.heroImageUrl ?? placePhotoUrl ?? null
+  const heroImageUrl = neighborhood.heroImageUrl ?? null
 
   const dataDrivenParagraphs =
     !neighborhood.description || neighborhood.description.trim().length < 180
@@ -133,6 +138,27 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       return priceB - priceA
     })
     .slice(0, 12)
+  const neighborhoodListingKeys = new Set(
+    listings
+      .map((item) => (item.ListingKey ?? item.ListNumber ?? '').toString().trim())
+      .filter((key) => key.length > 0)
+  )
+  const activityFeed = activityFeedRaw.filter((item) => neighborhoodListingKeys.has(item.listing_key))
+  const neighborhoodVideoRows = cityVideoRows.filter((row) => neighborhoodListingKeys.has(row.listing_key))
+  const neighborhoodVideoKeys = neighborhoodVideoRows.map((row) => row.listing_key).filter((key) => key.trim().length > 0)
+  const neighborhoodVideoListingRows = neighborhoodVideoKeys.length > 0 ? await getHomeTileRowsByKeys(neighborhoodVideoKeys) : []
+  const neighborhoodVideoByKey = new Map(neighborhoodVideoRows.map((row) => [row.listing_key, row.video_url]))
+  const listingsWithVideo = neighborhoodVideoListingRows.map((row) => {
+    const listingKey = (row.ListingKey ?? '').toString().trim()
+    const listNumber = (row.ListNumber ?? '').toString().trim()
+    const videoUrl = neighborhoodVideoByKey.get(listingKey) ?? neighborhoodVideoByKey.get(listNumber)
+    if (!videoUrl) return row
+    return {
+      ...row,
+      details: { Videos: [{ Uri: videoUrl }] },
+      has_virtual_tour: true,
+    }
+  })
 
   const prices = listings
     .map((l) => l.ListPrice)
@@ -267,6 +293,19 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         }
       />
 
+      <NeighborhoodMarketStats
+        neighborhoodName={neighborhood.name}
+        cityName={neighborhood.cityName}
+        citySlug={citySlug}
+        stats={neighborhoodStats}
+        priceHistory={neighborhoodPriceHistory}
+        salesHistory={neighborhoodPriceHistory.map((point): YearSeriesPoint => ({
+          period_start: `${point.month}-01`,
+          sold_count: Number(point.soldCount ?? 0),
+          median_price: point.medianPrice,
+        }))}
+      />
+
       <BreadcrumbStrip
         items={[
           { label: 'Home', href: '/' },
@@ -288,32 +327,28 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         priceRangeMax={priceRangeMax}
       />
 
-      <NeighborhoodMarketStats
-        neighborhoodName={neighborhood.name}
-        cityName={neighborhood.cityName}
-        citySlug={citySlug}
-        stats={neighborhoodStats}
-        priceHistory={[]}
-      />
-
       <InventoryTypeSlider placeLabel={neighborhood.name} breakdown={inventoryBreakdown} />
 
       <GeoSectionLatestActivity
-        title="Latest activity"
+        title={`What is happening in ${neighborhood.name}`}
         items={activityFeed}
         signedIn={!!session?.user}
         savedKeys={session?.user ? savedKeys : []}
         likedKeys={session?.user ? likedKeys : []}
       />
 
-      <div className="px-4 py-10 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <RecentlySoldRow title={`Recently sold in ${neighborhood.name}`} listings={recentlySoldRows} />
-        </div>
-      </div>
+      <CommunitiesSlider
+        title="Popular communities"
+        communities={communitiesInNeighborhood.slice(0, 12)}
+        viewAllHref={`/cities/${citySlug}`}
+        viewAllLabel="View all communities"
+        signedIn={!!session?.user}
+        savedEntityKeys={savedCommunityKeys}
+        likedEntityKeys={likedCommunityKeys}
+      />
 
       <GeoSectionFeaturedListings
-        title="Featured homes"
+        title="Top popular active listings"
         listings={featuredListings}
         viewAllHref={homesForSalePath(neighborhood.cityName)}
         viewAllLabel="View all"
@@ -323,6 +358,38 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         userEmail={session?.user?.email ?? null}
         engagementMap={engagementMap}
       />
+
+      {pendingListings.length > 0 && (
+        <ListingsSlider
+          title={`Pending listings in ${neighborhood.name}`}
+          listings={pendingListings}
+          savedKeys={session?.user ? savedKeys : []}
+          likedKeys={session?.user ? likedKeys : []}
+          signedIn={!!session?.user}
+          userEmail={session?.user?.email ?? null}
+          placeName={neighborhood.name}
+          engagementMap={engagementMap}
+        />
+      )}
+
+      <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
+        <VideoToursRow
+          title={`Video tours in ${neighborhood.name}`}
+          listings={listingsWithVideo}
+          signedIn={!!session?.user}
+          savedKeys={session?.user ? savedKeys : []}
+          likedKeys={session?.user ? likedKeys : []}
+          userEmail={session?.user?.email ?? null}
+          engagementMap={engagementMap}
+          viewAllHref={`/videos?city=${encodeURIComponent(neighborhood.cityName)}`}
+        />
+      </div>
+
+      <div className="px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <RecentlySoldRow title={`Recently sold in ${neighborhood.name}`} listings={recentlySoldRows} />
+        </div>
+      </div>
 
       <ListingsSlider
         title="Homes for sale in this neighborhood"
@@ -345,16 +412,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         signedIn={!!session?.user}
         userEmail={session?.user?.email ?? null}
         engagementMap={engagementMap}
-      />
-
-      <CommunitiesSlider
-        title="Popular communities"
-        communities={communitiesInNeighborhood}
-        viewAllHref={`/cities/${citySlug}`}
-        viewAllLabel="View all communities"
-        signedIn={!!session?.user}
-        savedEntityKeys={savedCommunityKeys}
-        likedEntityKeys={likedCommunityKeys}
       />
 
       <GeoCTAWithBroker

@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import {
   getCityBySlug,
   getCityListings,
+  getCityPendingListings,
   getCitySoldListings,
   getCityPriceHistory,
   getCommunitiesInCity,
@@ -42,6 +43,9 @@ import RecentlySoldRow from '@/components/RecentlySoldRow'
 import LivePulseBanner from '@/components/reports/LivePulseBanner'
 import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import VideoToursRow from '@/components/videos/VideoToursRow'
+import { getListingsWithVideos } from '@/app/actions/videos'
+import { getHomeTileRowsByKeys } from '@/app/actions/listings'
+import { getReportMetricsTimeSeries } from '@/app/actions/reports'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import CityClusterNav from '@/components/CityClusterNav'
 import { getGuidesByCity } from '@/app/actions/guides'
@@ -147,6 +151,7 @@ export default async function CityDetailPage({ params }: Props) {
 
   const [
     listings,
+    pendingListings,
     soldListings,
     communities,
     priceHistory,
@@ -161,8 +166,11 @@ export default async function CityDetailPage({ params }: Props) {
     cityPulse,
     cityOpenHouses,
     inventoryBreakdown,
+    cityVideoRows,
+    citySalesSeries,
   ] = await Promise.all([
     getCityListings(city.name, 24),
+    getCityPendingListings(city.name, 12),
     getCitySoldListings(city.name, 6),
     getCommunitiesInCity(city.name),
     getCityPriceHistory(city.name),
@@ -177,6 +185,8 @@ export default async function CityDetailPage({ params }: Props) {
     getLiveMarketPulse({ geoType: 'city', geoSlug: slugify(city.name) }),
     getOpenHousesWithListings({ city: city.name }),
     getCityInventoryBreakdown(city.name),
+    getListingsWithVideos({ city: city.name, sort: 'price_desc', status: 'active', limit: 12 }),
+    getReportMetricsTimeSeries(city.name, 60),
   ])
   const cityGuideSlug = cityGuides.length > 0 ? cityGuides[0]!.slug : null
 
@@ -228,6 +238,20 @@ export default async function CityDetailPage({ params }: Props) {
       return priceB - priceA
     })
     .slice(0, 12)
+  const cityVideoKeys = cityVideoRows.map((row) => row.listing_key).filter((key) => key.trim().length > 0)
+  const cityVideoListingRows = cityVideoKeys.length > 0 ? await getHomeTileRowsByKeys(cityVideoKeys) : []
+  const cityVideoByKey = new Map(cityVideoRows.map((row) => [row.listing_key, row.video_url]))
+  const listingsWithVideo = cityVideoListingRows.map((row) => {
+    const listingKey = (row.ListingKey ?? '').toString().trim()
+    const listNumber = (row.ListNumber ?? '').toString().trim()
+    const videoUrl = cityVideoByKey.get(listingKey) ?? cityVideoByKey.get(listNumber)
+    if (!videoUrl) return row
+    return {
+      ...row,
+      details: { Videos: [{ Uri: videoUrl }] },
+      has_virtual_tour: true,
+    }
+  })
   const recentlySoldRows = soldListings
     .map((item) => ({
       listingKey: (item.ListingKey ?? item.ListNumber ?? '').toString().trim(),
@@ -348,6 +372,18 @@ export default async function CityDetailPage({ params }: Props) {
         }
       />
 
+      <CityMarketStats
+        cityName={city.name}
+        slug={slug}
+        stats={stats}
+        priceHistory={priceHistory}
+        salesHistory={(citySalesSeries.data ?? []).map((point) => ({
+          period_start: point.period_start,
+          sold_count: point.sold_count,
+          median_price: point.median_price,
+        }))}
+      />
+
       <BreadcrumbStrip
         items={[
           { label: 'Home', href: '/' },
@@ -373,13 +409,6 @@ export default async function CityDetailPage({ params }: Props) {
         />
       </div>
 
-      <CityMarketStats
-        cityName={city.name}
-        slug={slug}
-        stats={stats}
-        priceHistory={priceHistory}
-      />
-
       <InventoryTypeSlider placeLabel={city.name} breakdown={inventoryBreakdown} />
 
       {cityPulse && (
@@ -402,34 +431,26 @@ export default async function CityDetailPage({ params }: Props) {
         />
       </div>
 
-      <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
-        <VideoToursRow
-          title={`Video tours in ${city.name}`}
-          listings={listings}
-          signedIn={!!session?.user}
-          savedKeys={session?.user ? savedKeys : []}
-          likedKeys={session?.user ? likedKeys : []}
-          userEmail={session?.user?.email ?? null}
-          engagementMap={engagementMap}
-        />
-      </div>
-
       <GeoSectionLatestActivity
-        title="Latest activity"
+        title={`What is happening in ${city.name}`}
         items={activityFeed}
         signedIn={!!session?.user}
         savedKeys={session?.user ? savedKeys : []}
         likedKeys={session?.user ? likedKeys : []}
       />
 
-      <div className="px-4 py-10 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <RecentlySoldRow title={`Recently sold in ${city.name}`} listings={recentlySoldRows} />
-        </div>
-      </div>
+      <CommunitiesSlider
+        title="Popular communities"
+        communities={communities.slice(0, 12)}
+        viewAllHref={`/cities/${slug}`}
+        viewAllLabel="View all communities"
+        signedIn={!!session?.user}
+        savedEntityKeys={savedCommunityKeys}
+        likedEntityKeys={likedCommunityKeys}
+      />
 
       <GeoSectionFeaturedListings
-        title="Featured homes"
+        title="Top popular active listings"
         listings={featuredListings}
         viewAllHref={homesForSalePath(city.name)}
         viewAllLabel="View all"
@@ -439,6 +460,38 @@ export default async function CityDetailPage({ params }: Props) {
         userEmail={session?.user?.email ?? null}
         engagementMap={engagementMap}
       />
+
+      {pendingListings.length > 0 && (
+        <ListingsSlider
+          title={`Pending listings in ${city.name}`}
+          listings={pendingListings}
+          placeName={city.name}
+          savedKeys={session?.user ? savedKeys : []}
+          likedKeys={session?.user ? likedKeys : []}
+          signedIn={!!session?.user}
+          userEmail={session?.user?.email ?? null}
+          engagementMap={engagementMap}
+        />
+      )}
+
+      <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
+        <VideoToursRow
+          title={`Video tours in ${city.name}`}
+          listings={listingsWithVideo}
+          signedIn={!!session?.user}
+          savedKeys={session?.user ? savedKeys : []}
+          likedKeys={session?.user ? likedKeys : []}
+          userEmail={session?.user?.email ?? null}
+          engagementMap={engagementMap}
+          viewAllHref={`/videos?city=${encodeURIComponent(city.name)}`}
+        />
+      </div>
+
+      <div className="px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <RecentlySoldRow title={`Recently sold in ${city.name}`} listings={recentlySoldRows} />
+        </div>
+      </div>
 
       <CommunitiesBar
         cityName={city.name}
@@ -470,16 +523,6 @@ export default async function CityDetailPage({ params }: Props) {
         signedIn={!!session?.user}
         userEmail={session?.user?.email ?? null}
         engagementMap={engagementMap}
-      />
-
-      <CommunitiesSlider
-        title="Popular communities"
-        communities={communities}
-        viewAllHref={`/cities/${slug}`}
-        viewAllLabel="View all communities"
-        signedIn={!!session?.user}
-        savedEntityKeys={savedCommunityKeys}
-        likedEntityKeys={likedCommunityKeys}
       />
 
       <GeoCTAWithBroker

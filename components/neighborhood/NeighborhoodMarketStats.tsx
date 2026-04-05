@@ -2,6 +2,7 @@
 
 import GeoMarketOverview from '@/components/geo-page/GeoMarketOverview'
 import { reportsExploreYtdPath } from '@/lib/slug'
+import type { YearSeriesPoint } from '@/lib/report-year-compare'
 
 type Props = {
   neighborhoodName: string
@@ -13,7 +14,8 @@ type Props = {
     avgDom: number | null
     closedLast12Months: number
   }
-  priceHistory: { month: string; medianPrice: number }[]
+  priceHistory: { month: string; medianPrice: number; soldCount?: number }[]
+  salesHistory?: YearSeriesPoint[]
 }
 
 /**
@@ -25,6 +27,7 @@ export default function NeighborhoodMarketStats({
   cityName,
   stats,
   priceHistory,
+  salesHistory,
 }: Props) {
   return (
     <GeoMarketOverview
@@ -32,6 +35,7 @@ export default function NeighborhoodMarketStats({
       headingId="neighborhood-market-heading"
       stats={stats}
       priceHistory={priceHistory}
+      salesHistory={salesHistory}
       fullReportHref={`/reports/city/${encodeURIComponent(cityName)}`}
       ytdReportHref={reportsExploreYtdPath(cityName)}
       trackContext="neighborhood_market_stats"

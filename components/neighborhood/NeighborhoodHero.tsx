@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { getNeighborhoodHeroUnsplash, resolveUnsplashHeroImage } from '@/lib/hero-media'
 
 export type NeighborhoodHeroProps = {
   name: string
@@ -12,9 +13,6 @@ export type NeighborhoodHeroProps = {
   /** Optional: Share (and future Save) actions rendered in hero top-right (overlay). */
   actions?: React.ReactNode
 }
-
-const PLACEHOLDER_HERO =
-  'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=1920&q=80'
 
 function formatPrice(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '—'
@@ -30,7 +28,7 @@ export default function NeighborhoodHero({
   avgDom,
   actions,
 }: NeighborhoodHeroProps) {
-  const src = heroImageUrl ?? PLACEHOLDER_HERO
+  const src = resolveUnsplashHeroImage(heroImageUrl, getNeighborhoodHeroUnsplash(cityName, name))
 
   return (
     <section className="relative min-h-[40vh] sm:min-h-[50vh] overflow-hidden w-full" aria-label="Neighborhood hero">
@@ -44,16 +42,12 @@ export default function NeighborhoodHero({
           src={src}
           alt={`${name} neighborhood in ${cityName}`}
           fill
-          className="object-cover animate-hero-ken-burns"
+          className="object-cover"
           sizes="100vw"
           priority
         />
       </div>
-      {/* Splash overlay: gradient for readability + one-time light sweep */}
       <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/55 to-primary/25" aria-hidden />
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]" aria-hidden>
-        <div className="absolute top-0 left-0 h-full w-[60%] bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent animate-hero-shine" />
-      </div>
       <div className="relative z-10 flex min-h-[320px] sm:min-h-[400px] flex-col justify-end px-4 pt-14 pb-8 md:pt-16 sm:px-6 sm:pb-12">
         <div className="mx-auto w-full max-w-7xl">
           <h1 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl drop-shadow-md">

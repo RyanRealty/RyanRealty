@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import {
   getCommunityBySlug,
   getCommunityListings,
+  getCommunityPendingListings,
   getCommunitySoldListings,
   getCommunityPriceHistory,
   getCommunityMarketStats,
@@ -45,6 +46,9 @@ import CityClusterNav from '@/components/CityClusterNav'
 import { getGuidesByCity } from '@/app/actions/guides'
 import { getCommunityInventoryBreakdown } from '@/app/actions/inventory-breakdown'
 import InventoryTypeSlider from '@/components/geo-page/InventoryTypeSlider'
+import { getListingsWithVideos } from '@/app/actions/videos'
+import { getHomeTileRowsByKeys } from '@/app/actions/listings'
+import { getReportMetricsTimeSeries } from '@/app/actions/reports'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -91,9 +95,10 @@ export default async function CommunityDetailPage({ params }: Props) {
   const pageTitle = `${community.name} Homes for Sale | ${community.city}, Oregon | Ryan Realty`
   trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const citySlug = community.city.toLowerCase().replace(/\s+/g, '-')
-  const [listings, soldListings, priceHistory, , savedKeys, likedKeys, communitiesInCity, activityFeed, brokers, communitySaved, communityLiked, savedCommunityKeys, likedCommunityKeys, cityGuides, communityPulse, communityOpenHouses, inventoryBreakdown] =
+  const [listings, pendingListings, soldListings, priceHistory, , savedKeys, likedKeys, communitiesInCity, activityFeed, brokers, communitySaved, communityLiked, savedCommunityKeys, likedCommunityKeys, cityGuides, communityPulse, communityOpenHouses, inventoryBreakdown, communityVideoRows, communitySalesSeries] =
     await Promise.all([
       getCommunityListings(community.city, community.subdivision, 24),
+      getCommunityPendingListings(community.city, community.subdivision, 12),
       getCommunitySoldListings(community.city, community.subdivision, 6),
       getCommunityPriceHistory(community.city, community.subdivision),
       getCommunityMarketStats(community.city, community.subdivision),
@@ -116,6 +121,8 @@ export default async function CommunityDetailPage({ params }: Props) {
         community: [community.subdivision],
       }),
       getCommunityInventoryBreakdown(community.city, community.subdivision),
+      getListingsWithVideos({ city: community.city, community: community.subdivision, sort: 'price_desc', status: 'active', limit: 12 }),
+      getReportMetricsTimeSeries(community.city, 60, community.subdivision),
     ])
   const cityGuideSlug = cityGuides.length > 0 ? cityGuides[0]!.slug : null
 
@@ -202,6 +209,20 @@ export default async function CommunityDetailPage({ params }: Props) {
       return priceB - priceA
     })
     .slice(0, 12)
+  const communityVideoKeys = communityVideoRows.map((row) => row.listing_key).filter((key) => key.trim().length > 0)
+  const communityVideoListingRows = communityVideoKeys.length > 0 ? await getHomeTileRowsByKeys(communityVideoKeys) : []
+  const communityVideoByKey = new Map(communityVideoRows.map((row) => [row.listing_key, row.video_url]))
+  const listingsWithVideo = communityVideoListingRows.map((row) => {
+    const listingKey = (row.ListingKey ?? '').toString().trim()
+    const listNumber = (row.ListNumber ?? '').toString().trim()
+    const videoUrl = communityVideoByKey.get(listingKey) ?? communityVideoByKey.get(listNumber)
+    if (!videoUrl) return row
+    return {
+      ...row,
+      details: { Videos: [{ Uri: videoUrl }] },
+      has_virtual_tour: true,
+    }
+  })
   const recentlySoldRows = soldListings
     .map((item) => ({
       listingKey: (item.ListingKey ?? item.ListNumber ?? '').toString().trim(),
@@ -316,6 +337,25 @@ export default async function CommunityDetailPage({ params }: Props) {
         }
       />
 
+      <CommunityMarketStats
+        communityName={community.name}
+        city={community.city}
+        subdivision={community.subdivision}
+        slug={slug}
+        stats={{
+          medianPrice: community.medianPrice,
+          count: community.activeCount,
+          avgDom: community.avgDom,
+          closedLast12Months: community.closedLast12Months,
+        }}
+        priceHistory={priceHistory}
+        salesHistory={(communitySalesSeries.data ?? []).map((point) => ({
+          period_start: point.period_start,
+          sold_count: point.sold_count,
+          median_price: point.median_price,
+        }))}
+      />
+
       <BreadcrumbStrip
         items={[
           { label: 'Home', href: '/' },
@@ -348,20 +388,6 @@ export default async function CommunityDetailPage({ params }: Props) {
         />
       </div>
 
-      <CommunityMarketStats
-        communityName={community.name}
-        city={community.city}
-        subdivision={community.subdivision}
-        slug={slug}
-        stats={{
-          medianPrice: community.medianPrice,
-          count: community.activeCount,
-          avgDom: community.avgDom,
-          closedLast12Months: community.closedLast12Months,
-        }}
-        priceHistory={priceHistory}
-      />
-
       <InventoryTypeSlider placeLabel={community.name} breakdown={inventoryBreakdown} />
 
       {communityPulse && (
@@ -384,34 +410,27 @@ export default async function CommunityDetailPage({ params }: Props) {
         />
       </div>
 
-      <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
-        <VideoToursRow
-          title={`Video tours in ${community.name}`}
-          listings={listings}
-          signedIn={!!session?.user}
-          savedKeys={session?.user ? savedKeys : []}
-          likedKeys={session?.user ? likedKeys : []}
-          userEmail={session?.user?.email ?? null}
-          engagementMap={engagementMap}
-        />
-      </div>
-
       <GeoSectionLatestActivity
-        title="Latest activity"
+        title={`What is happening in ${community.name}`}
         items={activityFeed}
         signedIn={!!session?.user}
         savedKeys={session?.user ? savedKeys : []}
         likedKeys={session?.user ? likedKeys : []}
       />
 
-      <div className="px-4 py-10 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <RecentlySoldRow title={`Recently sold in ${community.name}`} listings={recentlySoldRows} />
-        </div>
-      </div>
+      <CommunitiesSlider
+        title="Popular communities"
+        communities={communitiesInCity.slice(0, 12)}
+        viewAllHref={`/cities/${citySlug}`}
+        viewAllLabel="View all communities"
+        excludeSlug={slug}
+        signedIn={!!session?.user}
+        savedEntityKeys={savedCommunityKeys}
+        likedEntityKeys={likedCommunityKeys}
+      />
 
       <GeoSectionFeaturedListings
-        title="Featured homes"
+        title="Top popular active listings"
         listings={featuredListings}
         viewAllHref={homesForSalePath(community.city, community.subdivision)}
         viewAllLabel="View all"
@@ -421,6 +440,38 @@ export default async function CommunityDetailPage({ params }: Props) {
         userEmail={session?.user?.email ?? null}
         engagementMap={engagementMap}
       />
+
+      {pendingListings.length > 0 && (
+        <ListingsSlider
+          title={`Pending listings in ${community.name}`}
+          listings={pendingListings}
+          savedKeys={session?.user ? savedKeys : []}
+          likedKeys={session?.user ? likedKeys : []}
+          signedIn={!!session?.user}
+          userEmail={session?.user?.email ?? null}
+          placeName={community.name}
+          engagementMap={engagementMap}
+        />
+      )}
+
+      <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
+        <VideoToursRow
+          title={`Video tours in ${community.name}`}
+          listings={listingsWithVideo}
+          signedIn={!!session?.user}
+          savedKeys={session?.user ? savedKeys : []}
+          likedKeys={session?.user ? likedKeys : []}
+          userEmail={session?.user?.email ?? null}
+          engagementMap={engagementMap}
+          viewAllHref={`/videos?city=${encodeURIComponent(community.city)}`}
+        />
+      </div>
+
+      <div className="px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <RecentlySoldRow title={`Recently sold in ${community.name}`} listings={recentlySoldRows} />
+        </div>
+      </div>
 
       <ListingsSlider
         title="Homes for sale in this community"
@@ -443,17 +494,6 @@ export default async function CommunityDetailPage({ params }: Props) {
         signedIn={!!session?.user}
         userEmail={session?.user?.email ?? null}
         engagementMap={engagementMap}
-      />
-
-      <CommunitiesSlider
-        title="Popular communities"
-        communities={communitiesInCity}
-        viewAllHref={`/cities/${citySlug}`}
-        viewAllLabel="View all communities"
-        excludeSlug={slug}
-        signedIn={!!session?.user}
-        savedEntityKeys={savedCommunityKeys}
-        likedEntityKeys={likedCommunityKeys}
       />
 
       <GeoCTAWithBroker

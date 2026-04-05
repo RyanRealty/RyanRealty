@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { getCityHeroImage } from '@/lib/central-oregon-images'
+import { getCityHeroUnsplash, resolveUnsplashHeroImage } from '@/lib/hero-media'
 
 export type CityHeroProps = {
   name: string
@@ -24,8 +24,7 @@ export default function CityHero({
   communityCount,
   actions,
 }: CityHeroProps) {
-  // Prefer curated Central Oregon image when available
-  const src = getCityHeroImage(name)
+  const src = resolveUnsplashHeroImage(heroImageUrl, getCityHeroUnsplash(name))
 
   return (
     <section className="relative min-h-[40vh] sm:min-h-[50vh] overflow-hidden w-full" aria-label="City hero">
@@ -39,16 +38,12 @@ export default function CityHero({
           src={src}
           alt={`${name}, Oregon — city hero`}
           fill
-          className="object-cover animate-hero-ken-burns"
+          className="object-cover"
           sizes="100vw"
           priority
         />
       </div>
-      {/* Splash overlay: gradient for readability + one-time light sweep */}
       <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/55 to-primary/25" aria-hidden />
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]" aria-hidden>
-        <div className="absolute top-0 left-0 h-full w-[60%] bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent animate-hero-shine" />
-      </div>
       <div className="relative z-10 flex min-h-[320px] sm:min-h-[400px] flex-col justify-end px-4 pt-14 pb-8 md:pt-16 sm:px-6 sm:pb-12">
         <div className="mx-auto w-full max-w-7xl">
           <h1 className="text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl drop-shadow-md">

@@ -130,7 +130,7 @@ export const getCommunitiesForIndex = unstable_cache(
 )
 
 /** Get community by slug; returns null if not found. */
-export async function getCommunityBySlug(slug: string): Promise<CommunityDetail | null> {
+async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetail | null> {
   const citySlugs = await getCitySlugs()
   const parsed = parseCommunitySlug(slug, citySlugs)
   if (!parsed) return null
@@ -206,6 +206,12 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
   }
 }
 
+export const getCommunityBySlug = unstable_cache(
+  _getCommunityBySlugUncached,
+  ['community-by-slug-v1'],
+  { revalidate: 300, tags: ['community-detail'] }
+)
+
 /**
  * Lightweight lookup: given a subdivision name, return its neighborhood and city slug.
  * Used by listing detail page to build the full breadcrumb hierarchy.
@@ -237,7 +243,9 @@ export async function getSubdivisionNeighborhood(subdivisionName: string): Promi
 }
 
 const HOME_TILE_SELECT =
-  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, OpenHouses, has_virtual_tour, AssociationYN, AssociationFee, AssociationFeeFrequency'
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, OpenHouses, has_virtual_tour, AssociationYN, AssociationFee, AssociationFeeFrequency, details'
+const PENDING_OR =
+  'StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%Contingent%'
 
 export type ListingRow = {
   ListingKey: string | null
@@ -262,13 +270,14 @@ export type ListingRow = {
   OnMarketDate?: string | null
   OpenHouses?: unknown
   has_virtual_tour?: boolean | null
+  details?: unknown
   AssociationYN?: boolean | null
   AssociationFee?: number | null
   AssociationFeeFrequency?: string | null
 }
 
 /** Active listings in a community (city + subdivision), newest first, limit 24. */
-export async function getCommunityListings(
+async function _getCommunityListingsUncached(
   city: string,
   subdivision: string,
   limit: number
@@ -288,8 +297,14 @@ export async function getCommunityListings(
   return (data ?? []) as ListingRow[]
 }
 
+export const getCommunityListings = unstable_cache(
+  _getCommunityListingsUncached,
+  ['community-listings-v1'],
+  { revalidate: 120, tags: ['community-listings'] }
+)
+
 /** Recently sold in community (last 12 months), limit 6. */
-export async function getCommunitySoldListings(
+async function _getCommunitySoldListingsUncached(
   city: string,
   subdivision: string,
   limit: number
@@ -310,11 +325,44 @@ export async function getCommunitySoldListings(
   return (data ?? []) as (ListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]
 }
 
+export const getCommunitySoldListings = unstable_cache(
+  _getCommunitySoldListingsUncached,
+  ['community-sold-listings-v1'],
+  { revalidate: 300, tags: ['community-sold-listings'] }
+)
+
+/** Pending/under contract listings in a community (city + subdivision), newest first, limit 12. */
+async function _getCommunityPendingListingsUncached(
+  city: string,
+  subdivision: string,
+  limit: number
+): Promise<ListingRow[]> {
+  const sb = supabase()
+  const names = getSubdivisionMatchNames(subdivision)
+  let query = sb
+    .from('listings')
+    .select(HOME_TILE_SELECT)
+    .ilike('City', city)
+    .or(PENDING_OR)
+    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
+    .limit(limit)
+  if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+  else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
+  const { data } = await query
+  return (data ?? []) as ListingRow[]
+}
+
+export const getCommunityPendingListings = unstable_cache(
+  _getCommunityPendingListingsUncached,
+  ['community-pending-listings-v1'],
+  { revalidate: 120, tags: ['community-pending-listings'] }
+)
+
 /** Median price per month for last 12 months (reporting_cache; fallback from closed listings when cache has fewer than 2 points). */
 export async function getCommunityPriceHistory(
   city: string,
   subdivision: string
-): Promise<{ month: string; medianPrice: number }[]> {
+): Promise<{ month: string; medianPrice: number; soldCount?: number }[]> {
   const sb = supabase()
   const { data } = await sb
     .from('reporting_cache')
@@ -324,10 +372,14 @@ export async function getCommunityPriceHistory(
     .eq('period_type', 'monthly')
     .order('period_start', { ascending: true })
     .limit(12)
-  const rows = (data ?? []) as { period_start?: string; metrics?: { median_price?: number } }[]
+  const rows = (data ?? []) as { period_start?: string; metrics?: { median_price?: number; sold_count?: number } }[]
   const fromCache = rows
     .filter((r) => r.metrics?.median_price != null)
-    .map((r) => ({ month: r.period_start ?? '', medianPrice: r.metrics!.median_price! }))
+    .map((r) => ({
+      month: r.period_start ?? '',
+      medianPrice: r.metrics!.median_price!,
+      soldCount: Number(r.metrics?.sold_count ?? 0),
+    }))
   if (fromCache.length >= 2) return fromCache
   const twelveMonthsAgo = new Date()
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
@@ -344,6 +396,7 @@ export async function getCommunityPriceHistory(
   else if (names.length > 1) closedQuery = closedQuery.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
   const { data: closed } = await closedQuery
   const byMonth = new Map<string, number[]>()
+  const byMonthCount = new Map<string, number>()
   for (const r of (closed ?? []) as { ListPrice?: number | null; CloseDate?: string }[]) {
     const p = Number(r.ListPrice)
     const d = r.CloseDate?.slice(0, 7)
@@ -351,13 +404,14 @@ export async function getCommunityPriceHistory(
     const arr = byMonth.get(d) ?? []
     arr.push(p)
     byMonth.set(d, arr)
+    byMonthCount.set(d, (byMonthCount.get(d) ?? 0) + 1)
   }
   const fallback = Array.from(byMonth.entries())
     .map(([month, prices]) => {
       prices.sort((a, b) => a - b)
       const mid = Math.floor(prices.length / 2)
       const medianPrice = prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
-      return { month, medianPrice }
+      return { month, medianPrice, soldCount: byMonthCount.get(month) ?? 0 }
     })
     .sort((a, b) => a.month.localeCompare(b.month))
   return fallback.length >= 2 ? fallback : fromCache
