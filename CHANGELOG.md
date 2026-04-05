@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.16.1 (2026-04-05)
+
+### Bug Fixes
+- fix: remove duplicate listing detail fetch on by-address route
+
+---
+
+
 ## v1.16.0 (2026-04-05)
 
 ### Features
