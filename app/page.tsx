@@ -282,7 +282,7 @@ export default async function Home() {
             {[
               { href: '/search/bend/luxury', label: 'Luxury homes', image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1200&q=80' },
               { href: '/search/bend/water-view', label: 'Water view homes', image: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=80' },
-              { href: '/search/bend/on-golf-course', label: 'Golf course homes', image: 'https://images.unsplash.com/photo-1595274459742-4a41d35784b6?auto=format&fit=crop&w=1200&q=80' },
+              { href: '/search/bend/on-golf-course', label: 'Golf course homes', image: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80' },
               { href: '/search/bend/new-listings', label: 'New listings', image: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80' },
               { href: '/search/bend/open-house', label: 'Open house homes', image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80' },
               { href: '/search/bend/mountain-view', label: 'Mountain view homes', image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80' },
