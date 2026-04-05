@@ -110,9 +110,14 @@ export async function getOrCreatePlaceBanner(
 
   const row = data as { storage_path?: string; attribution?: string | null } | null
   if (!row?.storage_path) return { url: null, attribution: null }
+  const rawPath = row.storage_path.trim()
+  const resolvedUrl =
+    rawPath.startsWith('http://') || rawPath.startsWith('https://')
+      ? rawPath
+      : `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${rawPath}`
 
   return {
-    url: `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${row.storage_path}`,
+    url: resolvedUrl,
     attribution: row.attribution?.trim() ?? null,
   }
 }
