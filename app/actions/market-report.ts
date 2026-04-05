@@ -12,9 +12,9 @@ import {
 } from '@/app/actions/market-report-types'
 import { getCitiesForIndex } from '@/app/actions/cities'
 
-/** Residential-only filters: single-family homes. No condo/town, manufactured, or acreage/lots. */
+/** Industry-standard residential filters: include condos/townhomes, exclude manufactured/mobile and land/acreage. */
 const RESIDENTIAL_ONLY = {
-  includeCondoTown: false,
+  includeCondoTown: true,
   includeManufactured: false,
   includeAcreage: false,
 } as const

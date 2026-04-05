@@ -7,12 +7,37 @@ import {
   getPeriodLabel,
   type SalesPeriodSlug,
 } from '@/lib/sales-report-periods'
+import { getPropertyTypeSegmentKey } from '@/lib/property-type'
 
 function median(values: number[]): number | null {
   if (values.length === 0) return null
   const sorted = [...values].sort((a, b) => a - b)
   const mid = Math.floor(sorted.length / 2)
   return sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
+}
+
+/**
+ * Market report baseline:
+ * - include residential + condo/town
+ * - exclude land/vacant land/lot inventory
+ * - exclude mobile/manufactured homes
+ */
+function isIndustryStandardReportPropertyType(propertyType: string | null | undefined): boolean {
+  const raw = (propertyType ?? '').trim()
+  if (!raw) return true
+  const segment = getPropertyTypeSegmentKey(raw)
+  if (segment === 'acreage' || segment === 'manufactured') return false
+  const lower = raw.toLowerCase()
+  if (lower.includes('vacant')) return false
+  if (lower.includes('lot')) return false
+  if (lower.includes('mobile')) return false
+  return true
+}
+
+function isValidEventDate(value: string | null | undefined): boolean {
+  const raw = (value ?? '').trim()
+  if (!raw) return false
+  return !Number.isNaN(new Date(raw).getTime())
 }
 
 export type ReportListing = {
@@ -117,6 +142,8 @@ async function getClosedSalesFromListings(
 
   const byCity = new Map<string, ReportListing[]>()
   for (const r of list) {
+    if (!isIndustryStandardReportPropertyType(r.PropertyType)) continue
+    if (!isValidEventDate(r.CloseDate)) continue
     const city = (r.City ?? '').trim() || 'Other'
     if (!byCity.has(city)) byCity.set(city, [])
     byCity.get(city)!.push(closedListingToReportListing(r))
@@ -127,7 +154,7 @@ async function getClosedSalesFromListings(
     city,
     pending: [],
     closed: (byCity.get(city) ?? []).sort((a, b) =>
-      (a.event_date ?? '').localeCompare(b.event_date ?? '')
+      (b.event_date ?? '').localeCompare(a.event_date ?? '')
     ),
   }))
 }
@@ -172,6 +199,8 @@ async function getPendingFromHistory(
   }
   const byCity = new Map<string, ReportListing[]>()
   for (const row of rows) {
+    if (!isIndustryStandardReportPropertyType(keyToPropertyType.get(row.listing_key) ?? null)) continue
+    if (!isValidEventDate(row.event_date)) continue
     const city = keyToCity.get(row.listing_key) ?? 'Other'
     if (!byCity.has(city)) byCity.set(city, [])
     byCity.get(city)!.push({
@@ -190,7 +219,7 @@ async function getPendingFromHistory(
   if (byCity.has('Other')) cities.push('Other')
   return cities.map((city) => ({
     city,
-    pending: (byCity.get(city) ?? []).sort((a, b) => (a.event_date ?? '').localeCompare(b.event_date ?? '')),
+    pending: (byCity.get(city) ?? []).sort((a, b) => (b.event_date ?? '').localeCompare(a.event_date ?? '')),
     closed: [],
   }))
 }
@@ -250,7 +279,11 @@ async function getClosedSalesForLocation(
   if (subdivision?.trim()) q = q.ilike('SubdivisionName', subdivision.trim())
   const { data: rows } = await q
   const list = (rows ?? []) as ListingRow[]
-  return list.map(closedListingToReportListing).sort((a, b) => (a.event_date ?? '').localeCompare(b.event_date ?? ''))
+  return list
+    .filter((row) => isIndustryStandardReportPropertyType(row.PropertyType))
+    .filter((row) => isValidEventDate(row.CloseDate))
+    .map(closedListingToReportListing)
+    .sort((a, b) => (b.event_date ?? '').localeCompare(a.event_date ?? ''))
 }
 
 /**
@@ -311,6 +344,9 @@ export async function getMarketReportDataForLocation(
   const pending: ReportListing[] = []
   for (const row of pendingRows) {
     if (!keyToMatch.get(row.listing_key)) continue
+    const propertyType = keyToPropertyType.get(row.listing_key) ?? null
+    if (!isIndustryStandardReportPropertyType(propertyType)) continue
+    if (!isValidEventDate(row.event_date)) continue
     pending.push({
       listing_key: row.listing_key,
       event: row.event,
@@ -318,12 +354,12 @@ export async function getMarketReportDataForLocation(
       city: city.trim(),
       price: row.price,
       description: row.description,
-      property_type: keyToPropertyType.get(row.listing_key) ?? null,
+      property_type: propertyType,
       days_on_market: null,
       photo_url: null,
     })
   }
-  pending.sort((a, b) => (a.event_date ?? '').localeCompare(b.event_date ?? ''))
+  pending.sort((a, b) => (b.event_date ?? '').localeCompare(a.event_date ?? ''))
   return { pending, closed }
 }
 

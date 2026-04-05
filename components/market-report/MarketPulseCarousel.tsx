@@ -230,7 +230,7 @@ export default function MarketPulseCarousel({ data, className }: Props) {
                         href={exploreHref}
                         className={cn(
                           'block overflow-hidden rounded-xl border border-border bg-card shadow-sm',
-                          'transition-all duration-200 hover:border-primary/20 hover:shadow-md',
+                          'transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md',
                           'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
                         )}
                       >
@@ -258,12 +258,17 @@ export default function MarketPulseCarousel({ data, className }: Props) {
                                 Market Reports
                               </p>
                             </div>
-                            <span
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20"
-                              aria-hidden
-                            >
-                              <HugeiconsIcon icon={ArrowUp01Icon} className="h-4 w-4" />
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                                Top {metricsByCity.findIndex((m) => m.city === city.city) + 1}
+                              </Badge>
+                              <span
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20"
+                                aria-hidden
+                              >
+                                <HugeiconsIcon icon={ArrowUp01Icon} className="h-4 w-4" />
+                              </span>
+                            </div>
                           </div>
                           <p className="mt-2 text-xs text-primary-foreground/85">
                             {periodLabel}
@@ -273,9 +278,11 @@ export default function MarketPulseCarousel({ data, className }: Props) {
                           </div>
                         </div>
                         <div className="border-t border-border bg-card px-4 py-3">
-                          <div className="mb-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                            <span>Sold: {city.metrics.sold_count.toLocaleString()}</span>
-                            <span>Median: {city.metrics.median_price > 0 ? `$${Math.round(city.metrics.median_price).toLocaleString()}` : '—'}</span>
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <Badge variant="outline">Sold {city.metrics.sold_count.toLocaleString()}</Badge>
+                            <Badge variant="outline">
+                              Median {city.metrics.median_price > 0 ? `$${Math.round(city.metrics.median_price).toLocaleString()}` : '—'}
+                            </Badge>
                           </div>
                           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
                             View full report
