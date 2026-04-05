@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.10 (2026-04-05)
+
+### Bug Fixes
+- fix: stop non-embeddable tour URLs from loading as iframes
+
+---
+
+
 ## v1.6.9 (2026-04-05)
 
 ### Bug Fixes
