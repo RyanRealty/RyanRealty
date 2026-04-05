@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.16.9 (2026-04-05)
+
+### Maintenance
+- perf: reprocess hero video and switch to optimized fallback
+
+---
+
+
 ## v1.16.8 (2026-04-05)
 
 ### Maintenance
