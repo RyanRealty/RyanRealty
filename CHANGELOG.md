@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.4.2 (2026-04-05)
+
+### Bug Fixes
+- fix: finalize terminal listings even without transition event
+
+---
+
+
 ## v1.4.1 (2026-04-04)
 
 ### Bug Fixes
