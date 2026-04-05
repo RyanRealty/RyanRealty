@@ -381,13 +381,27 @@ No A/B framework was ever specced. With 36 tasks "complete" and all phases done,
 These are zero-code-risk fixes that make all other work clearer:
 
 1. **Update `PRODUCT_SPEC_V2.md`** to remove stale `❌ MISSING` markers for features that now exist (C-1).
-2. **Update `master-plan.md`** header to reflect current phase status (C-2).
-3. **Update or delete `FEATURES.md`** — it's 13 months stale (C-4).
+2. ~~**Update `master-plan.md`** header to reflect current phase status (C-2).~~ **DONE 2026-04-05** — header updated to "Complete through Phase 6; Data Architecture Optimization in progress".
+3. ~~**Update or delete `FEATURES.md`** — it's 13 months stale (C-4).~~ **DONE 2026-04-05** — updated with note about stale routes, corrected route references.
 4. **Resolve Gap #12** (Sentry) and **Gap #21** (email alerts) as done (C-5, C-6).
 5. **Add `lastVerified` field** to `task-registry.json` entries.
 6. **Honestly re-status** T3-006 (shared collections), T3-007 (notes on homes), T4-007 (SMS alerts) — verify end-to-end or downgrade to `code_complete_awaiting_verification` (C-1, C-9).
 7. **Clarify CR-7** redirect target to match `next.config.ts` (C-10).
 8. **Add data-dependency tracking** for features that depend on MLS table population (C-7).
+
+**Additional documentation work completed 2026-04-05 (Data Architecture Optimization, Phase 0A):**
+- `AGENTS.md` Key Architecture Decisions updated with geographic hierarchy, geo_slug format, and data architecture rule reference
+- `docs/SEO.md` sitemap and listing structured data sections corrected
+- `docs/URL_ARCHITECTURE.md` marked as superseded; active URL spec is in `.cursor/rules/data-architecture.mdc`
+- `docs/plans/master-plan.md` Phase 0.1 listing URL spec updated to MLS + address format
+- `docs/plans/phase-0-brief.md` Task 0.1 marked as superseded by Data Architecture plan Phase 3
+- `docs/GOALS_AND_UI_AUDIT.md` listing detail page checklist updated for new URL format
+- `docs/ENTITY_OPTIMIZATION.md` listing structured data note added re: URL alignment
+- `docs/FEATURES.md` route references corrected
+- `.cursor/rules/data-architecture.mdc` created as the authoritative data architecture rule
+- `.cursor/rules/seo-url-guardrails.mdc` updated to MLS + address canonical listing URL contract
+- `.cursor/rules/supabase-data-layer.mdc` updated with ClosePrice + percentile-based stats requirements and `geo_slug` format
+- `.cursor/rules/master-plan-protocol.mdc` updated for current data architecture optimization phase and constraints
 
 ### Tier 1: Quick Wins — Code Consolidation (1-2 Days)
 

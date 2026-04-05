@@ -17,6 +17,22 @@ import { getCachedStats, getLiveMarketPulse } from '@/app/actions/market-stats'
 import { getCityMarketStats } from '@/app/actions/market-stats'
 ```
 
+## Stats computation requirements
+
+- Closed-sale metrics must use closed rows only: `StandardStatus ILIKE '%Closed%'`.
+- Closed-sale period filtering must use `CloseDate` windows.
+- Sold price metrics must use:
+  - `COALESCE("ClosePrice", (details->>'ClosePrice')::numeric, "ListPrice")`
+- Median metrics must use true medians with `percentile_cont`.
+- Do not label averages as medians.
+- `sale_to_list_ratio` must be computed from close/list price values, not hardcoded.
+
+## Geography keying rules
+
+- Community/subdivision cache keys use `geo_slug = citySlug:communitySlug`.
+- Always generate this with `subdivisionEntityKey()`.
+- Never use hyphen-separated `city-community` values for stats cache keys.
+
 ## Writing migrations
 - File naming: `YYYYMMDDHHMMSS_description_snake_case.sql` (match existing pattern)
 - Run via: `npm run db:migration` to scaffold, then fill in the SQL
@@ -43,6 +59,9 @@ if (error) {
   return { data: null, error: error.message }
 }
 ```
+
+- Do not project wide `details` JSONB on tile/card/map queries.
+- Promote hot `details` fields into first-class columns when repeated access is needed.
 
 ## Status filtering
 Use these pre-defined OR filters for listing status — do not write your own:

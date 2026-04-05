@@ -7,15 +7,15 @@ alwaysApply: true
 
 ## Active Phase
 
-**Current phase: Complete through Phase 6**
-**Phase brief: `docs/plans/phase-6-brief.md`**
+**Current phase: Data Architecture Optimization (Phase 1 next)**
+**Phase brief: `docs/plans/data-architecture-plan.md`**
 **Master plan: `docs/plans/master-plan.md`**
 
 ## Before Modifying Any File
 
 1. Check the file ownership matrix below. If the file belongs to another workstream, do NOT modify it unless the matrix says you may.
-2. Read the current phase brief (`docs/plans/phase-6-brief.md`) before starting work.
-3. All planned phases through 6 are complete. New work should be scoped from follow-up directives or deferred backlog items in `docs/plans/master-plan.md`.
+2. Read `docs/plans/data-architecture-plan.md` before starting data architecture tasks.
+3. All baseline phases through 6 are complete; active follow-up work is tracked in the data architecture plan and master plan backlog.
 
 ## File Ownership Matrix
 
@@ -29,6 +29,7 @@ alwaysApply: true
 | `app/search/[...slug]/page.tsx` section order | Engagement | Monetization adds ad slots + route segments |
 | `app/page.tsx` section order | Engagement | Monetization adds ad slots |
 | `app/listing/[listingKey]/page.tsx` sections | Engagement | Monetization adds ad slots |
+| `app/listing/by-address/[...slug]/page.tsx` | Engagement | Reporting may consume stats data only |
 | `app/actions/activity-feed.ts` | Engagement | Not touch |
 | `components/PageCTA.tsx` | Engagement | Not touch |
 | `components/AdUnit.tsx` | Monetization | Others don't touch |
@@ -49,6 +50,9 @@ alwaysApply: true
 
 - **SEO is a gate**: every phase must pass the SEO verification checklist in the master plan before shipping.
 - **Reporting data layer is the single source of truth**: use `getCachedStats()` and `getLiveMarketPulse()` from `app/actions/market-stats.ts`. Do NOT use old `getCityMarketStats()`.
+- **Canonical listing URL**: `/homes-for-sale/{city}/[{neighborhood}/]{community}/{address-slug}-{mlsNumber}` with fallback `/homes-for-sale/listing/{mlsNumber}`.
+- **Geographic hierarchy**: City > optional Neighborhood > Community (MLS `SubdivisionName`).
+- **Community `geo_slug` format**: always `citySlug:communitySlug` (colon-separated) via `subdivisionEntityKey()`.
 - **Lead capture stacking**: StickyMobileCTA and SiteLeadCaptureBanner must not both be visible simultaneously.
 - **Ad slot order on listing detail**: existing sections → AreaMarketContext → AdUnit → Similar Listings → ActivityFeedSlider → RecentlySoldRow → sidebar ad below CTA.
 - **Filter page links**: Browse-by UI components link to Monetization's `/search/{city}/{filter}` routes, not query-param URLs.

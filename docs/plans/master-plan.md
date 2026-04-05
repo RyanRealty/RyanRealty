@@ -1,9 +1,9 @@
 # Ryan Realty Unified Master Plan
 
 **Status**: Active
-**Current Phase**: Phase 0 (Critical Fixes)
-**Branch**: `unified-plan`
-**Last Updated**: 2026-03-18
+**Current Phase**: Complete through Phase 6; Data Architecture Optimization Phase 1 pending (Phase 0A/0B complete)
+**Branch**: `main`
+**Last Updated**: 2026-04-05
 
 This document merges the three canonical plan files (Market Data Platform, Comprehensive Page Optimization, Monetization Strategy) into a single phased execution plan. All conflict resolutions, gap mitigations, and new requirements (R1-R10) from the unified plan brief are incorporated.
 
@@ -145,9 +145,10 @@ Nudge-to-sign-in UX strategy, cookie consent alignment, consistent FUB Registrat
 **Goal**: Fix data integrity and SEO issues that undermine everything built on top.
 
 ### 0.1 Listing URL Canonical Consistency (R1)
-- **Files**: `app/sitemap.ts`, `components/ListingTile.tsx`, `app/listing/[listingKey]/page.tsx` (canonical tag)
-- **Change**: Pick key+slug as canonical form. Update sitemap to emit `/listing/{key}-{slug}`. Update `ListingTile` links to match. Set explicit `<link rel="canonical">` to the key+slug form regardless of how the user arrived.
-- **Verify**: `npm run build` passes. Sitemap URLs match internal link hrefs match canonical tags.
+- **Status**: Being replaced by Data Architecture Optimization plan (`.cursor/plans/data_architecture_optimization_*.plan.md`, Phase 3)
+- **Updated decision (2026-04-05)**: Canonical listing URLs use MLS number (ListNumber) + full address slug: `/homes-for-sale/{city}/[{neighborhood}/]{community}/{address-slug}-{mlsNumber}`. Fallback: `/homes-for-sale/listing/{mlsNumber}`. This replaces the earlier `/listing/{key}-{slug}` spec. Old ListingKey-based URLs 301-redirect to canonical.
+- **Files**: `lib/slug.ts`, `app/sitemap.ts`, `components/ListingTile.tsx`, `app/listing/[listingKey]/page.tsx`, `next.config.ts`, plus 12 additional test/config files that form an atomic URL change unit (documented in the Data Architecture plan Part K).
+- **Verify**: All 16 files in the atomic URL unit are consistent. `npm run quality:full` passes.
 
 ### 0.2 Add Missing Spark Select Fields (R9)
 - **Files**: `lib/spark-odata.ts`

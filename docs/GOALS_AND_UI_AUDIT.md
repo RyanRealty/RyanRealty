@@ -66,9 +66,9 @@
 
 ## 4. Search & Listings
 
-- [ ] `/listings` page loads with paginated grid
-- [ ] Search by city works (`/search/bend`)
-- [ ] Search by community works (`/search/bend/tetherow`)
+- [ ] `/homes-for-sale` page loads with paginated grid
+- [ ] Search by city works (`/homes-for-sale/bend`)
+- [ ] Search by community works (`/homes-for-sale/bend/tetherow`)
 - [ ] Price filter works (min/max)
 - [ ] Beds/baths filter works
 - [ ] Property type filter works
@@ -94,8 +94,11 @@
 
 ## 5. Listing Detail Page
 
-- [ ] Page loads at `/listing/[listingKey]`
-- [ ] SEO slug URLs work (e.g., `/listing/20241234-123-main-st-bend`)
+- [ ] Listing detail pages load at canonical URL: `/homes-for-sale/{city}/{community}/{address-slug}-{mlsNumber}`
+- [ ] Listing detail pages include optional neighborhood segment when defined: `/homes-for-sale/{city}/{neighborhood}/{community}/{address-slug}-{mlsNumber}`
+- [ ] Fallback URL works: `/homes-for-sale/listing/{mlsNumber}`
+- [ ] Old ListingKey-based URLs 301-redirect to canonical MLS-based URL
+- [ ] Legacy `/listing/[listingKey]` routes redirect correctly
 - [ ] Photo gallery renders with correct images
 - [ ] Lightbox opens, keyboard nav works (arrows, Escape)
 - [ ] Mobile gallery: full-screen, swipe, pinch-to-zoom
@@ -158,8 +161,8 @@
 
 ## 7. City & Community Pages
 
-- [ ] City pages load (`/search/bend`, `/cities/bend`)
-- [ ] Community pages load (`/search/bend/tetherow`, `/communities/tetherow`)
+- [ ] City pages load (`/homes-for-sale/bend`, `/cities/bend`)
+- [ ] Community pages load (`/homes-for-sale/bend/tetherow`, `/communities/tetherow`)
 - [ ] City page shows: About section, listings grid, market pulse
 - [ ] Community page shows: About section, listings grid, amenities
 - [ ] Market stats display correctly on city pages
@@ -262,7 +265,7 @@
 - [ ] JSON-LD breadcrumbs (BreadcrumbList) on all pages
 - [ ] JSON-LD on team pages (LocalBusiness, RealEstateAgent)
 - [ ] Author/expertise bylines on content pages (E-E-A-T)
-- [ ] 301 redirects work for all route changes (`/listings/` → `/listing/`, `/agents/` → `/team/`, `/reports/` → `/housing-market/`)
+- [ ] 301 redirects work for all route changes (`/listings/` → `/homes-for-sale/`, legacy ListingKey URLs → MLS canonical URLs, `/agents/` → `/team/`, `/reports/` → `/housing-market/`)
 - [ ] No duplicate content between routes
 - [ ] Internal linking: new pages link to parents and siblings
 - [ ] Filter pages included in sitemap with appropriate priority

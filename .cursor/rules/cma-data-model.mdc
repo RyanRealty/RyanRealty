@@ -38,3 +38,4 @@ Timeline events live in `listing_history`:
 - Use `listings.ClosePrice` (with fallback) for the actual final sold price
 - For CMA comp filtering: treat a listing as a valid comp if `StandardStatus ILIKE '%Closed%'` AND the COALESCE chain produces a non-null, positive price
 - Never compute stats from `listing_history.price` alone — it may be a mid-timeline snapshot
+- For median-style reporting in comp analytics, use `percentile_cont` (true median), not `avg()`.

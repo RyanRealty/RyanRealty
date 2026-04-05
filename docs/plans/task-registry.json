@@ -758,6 +758,295 @@
         "UJ-074 passes"
       ],
       "dependsOn": []
+    },
+    {
+      "id": "BL-006",
+      "title": "Create authoritative data architecture cursor rule",
+      "priority": "high",
+      "category": "architecture",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "complete",
+      "owner": "shared",
+      "files": [
+        ".cursor/rules/data-architecture.mdc"
+      ],
+      "acceptanceCriteria": [
+        "Rule defines canonical listing URL format with optional neighborhood segment",
+        "Rule codifies stats computation requirements using closed sales and ClosePrice",
+        "Rule codifies geo_slug format as citySlug:communitySlug",
+        "Rule codifies JSONB and query performance constraints"
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "BL-007",
+      "title": "Reconcile URL and stats documentation conflicts",
+      "priority": "high",
+      "category": "documentation",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "complete",
+      "owner": "shared",
+      "files": [
+        "AGENTS.md",
+        "docs/plans/master-plan.md",
+        "docs/plans/phase-0-brief.md",
+        "docs/FEATURES.md",
+        "docs/SEO.md",
+        "docs/URL_ARCHITECTURE.md",
+        "docs/ENTITY_OPTIMIZATION.md",
+        "docs/GOALS_AND_UI_AUDIT.md",
+        "docs/CONSOLIDATED_AUDIT_AND_PLAN.md"
+      ],
+      "acceptanceCriteria": [
+        "All listed documents reference the same canonical listing URL contract",
+        "Geographic hierarchy terminology is standardized to city, optional neighborhood, community",
+        "Stats guidance references cache-backed ClosePrice and percentile-based metrics"
+      ],
+      "dependsOn": [
+        "BL-006"
+      ]
+    },
+    {
+      "id": "BL-008",
+      "title": "Align rule files with data architecture decisions",
+      "priority": "high",
+      "category": "documentation",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "complete",
+      "owner": "shared",
+      "files": [
+        ".cursor/rules/seo-url-guardrails.mdc",
+        ".cursor/rules/master-plan-protocol.mdc",
+        ".cursor/rules/supabase-data-layer.mdc",
+        ".cursor/rules/cma-data-model.mdc",
+        ".cursor/rules/blog-voice.mdc"
+      ],
+      "acceptanceCriteria": [
+        "Rules no longer conflict on URL structure, stats computation, or hierarchy terms",
+        "ListingKey is treated as internal and MLS number is public URL identifier",
+        "Community cache key format is documented as colon-separated"
+      ],
+      "dependsOn": [
+        "BL-006"
+      ]
+    },
+    {
+      "id": "BL-009",
+      "title": "Phase 1 schema foundation for stats cache hardening",
+      "priority": "high",
+      "category": "data",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "open",
+      "owner": "reporting",
+      "files": [
+        "supabase/migrations/*",
+        "app/actions/market-stats.ts"
+      ],
+      "acceptanceCriteria": [
+        "Summary table DDL is idempotent",
+        "ClosePrice backfill migration is applied safely",
+        "Indexes supporting closed-sale analytics are present"
+      ],
+      "dependsOn": [
+        "BL-008"
+      ]
+    },
+    {
+      "id": "BL-010",
+      "title": "Phase 2 rewrite stats computation RPCs",
+      "priority": "high",
+      "category": "data",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "open",
+      "owner": "reporting",
+      "files": [
+        "supabase/migrations/*_market_rpcs*.sql"
+      ],
+      "acceptanceCriteria": [
+        "Closed metrics filter on StandardStatus and CloseDate",
+        "Median metrics use percentile_cont",
+        "sale_to_list_ratio is calculated from numeric inputs"
+      ],
+      "dependsOn": [
+        "BL-009"
+      ]
+    },
+    {
+      "id": "BL-011",
+      "title": "Phase 3 migrate listing URLs to MLS and address",
+      "priority": "high",
+      "category": "seo",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "open",
+      "owner": "engagement",
+      "files": [
+        "lib/slug.ts",
+        "next.config.ts",
+        "app/sitemap.ts",
+        "app/listing/by-address/[...slug]/page.tsx",
+        "components/ListingTile.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Canonical listing URLs include MLS number and address slug",
+        "Legacy ListingKey URLs 301 redirect to canonical URLs",
+        "Canonical tags and sitemap output match helper output"
+      ],
+      "dependsOn": [
+        "BL-010"
+      ]
+    },
+    {
+      "id": "BL-012",
+      "title": "Phase 4 standardize geographic hierarchy and geo_slug",
+      "priority": "high",
+      "category": "data",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "open",
+      "owner": "reporting",
+      "files": [
+        "app/actions/market-stats.ts",
+        "app/actions/listings.ts",
+        "app/actions/communities.ts"
+      ],
+      "acceptanceCriteria": [
+        "All community-level cache access uses citySlug:communitySlug",
+        "Neighborhood is treated as optional parent of community",
+        "No hyphen-separated geo_slug usage remains on hot paths"
+      ],
+      "dependsOn": [
+        "BL-011"
+      ]
+    },
+    {
+      "id": "BL-013",
+      "title": "Phase 5 align breadcrumbs with URL and JSON-LD",
+      "priority": "high",
+      "category": "seo",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "open",
+      "owner": "engagement",
+      "files": [
+        "app/listing/[listingKey]/page.tsx",
+        "app/search/[...slug]/page.tsx",
+        "lib/structured-data.ts"
+      ],
+      "acceptanceCriteria": [
+        "Visible breadcrumbs start with Home",
+        "BreadcrumbList JSON-LD matches visible breadcrumb order and links",
+        "No duplicate BreadcrumbList blocks on page templates"
+      ],
+      "dependsOn": [
+        "BL-012"
+      ]
+    },
+    {
+      "id": "BL-014",
+      "title": "Phase 6 optimize listing detail server data path",
+      "priority": "high",
+      "category": "performance",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "open",
+      "owner": "engagement",
+      "files": [
+        "app/actions/listing-detail.ts",
+        "app/listing/[listingKey]/page.tsx"
+      ],
+      "acceptanceCriteria": [
+        "No select(*) on listing detail hot path",
+        "Independent listing detail queries run in parallel",
+        "generateMetadata avoids duplicate heavy reads"
+      ],
+      "dependsOn": [
+        "BL-013"
+      ]
+    },
+    {
+      "id": "BL-015",
+      "title": "Phase 7 optimize search city and community paths",
+      "priority": "high",
+      "category": "performance",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "open",
+      "owner": "engagement",
+      "files": [
+        "app/actions/listings.ts",
+        "app/actions/cities.ts",
+        "app/actions/communities.ts",
+        "app/actions/geocode.ts"
+      ],
+      "acceptanceCriteria": [
+        "Tile/map selects avoid details JSONB",
+        "List and count operations are parallelized or combined",
+        "External geocode fan-out is bounded"
+      ],
+      "dependsOn": [
+        "BL-014"
+      ]
+    },
+    {
+      "id": "BL-016",
+      "title": "Phase 8 and 9 refresh cache and historical coverage",
+      "priority": "medium",
+      "category": "data",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "open",
+      "owner": "reporting",
+      "files": [
+        "supabase/migrations/*",
+        "app/api/cron/sync-full/route.ts"
+      ],
+      "acceptanceCriteria": [
+        "Current-period cache refresh runs after sync",
+        "Community-level pulse rows are populated",
+        "Yearly historical rows exist for active geographies"
+      ],
+      "dependsOn": [
+        "BL-015"
+      ]
+    },
+    {
+      "id": "BL-017",
+      "title": "Phase 10 and 11 improve CMA and reporting alignment",
+      "priority": "medium",
+      "category": "feature",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "open",
+      "owner": "reporting",
+      "files": [
+        "lib/cma.ts",
+        "app/actions/market-reports.ts",
+        "app/actions/reports.ts"
+      ],
+      "acceptanceCriteria": [
+        "CMA path supports listing-key-based lookup without properties join dependency",
+        "Report transforms use close-price fallback chain consistently",
+        "Timeseries reads from cache-backed source where planned"
+      ],
+      "dependsOn": [
+        "BL-016"
+      ]
+    },
+    {
+      "id": "BL-018",
+      "title": "Phase 12 and 13 cleanup and full verification",
+      "priority": "high",
+      "category": "qa",
+      "source": "docs/plans/data-architecture-plan.md",
+      "status": "open",
+      "owner": "shared",
+      "files": [
+        "docs/plans/data-architecture-plan.md",
+        "e2e/",
+        "scripts/"
+      ],
+      "acceptanceCriteria": [
+        "Legacy stats fallbacks are removed from public paths",
+        "quality gates pass including seo route checks and build",
+        "Phase 13 verification checklist is completed with evidence"
+      ],
+      "dependsOn": [
+        "BL-017"
+      ]
     }
   ]
 }

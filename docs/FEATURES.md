@@ -2,7 +2,9 @@
 
 This document describes the features **currently implemented** in the website and app, for product handoff, professional documentation, and onboarding.
 
-**Last updated:** March 2025
+**Last updated:** April 2026
+
+> **Note**: This document was originally written in March 2025 and contained stale route references (`/listings`, `/search/...`). The canonical route structure is now `/homes-for-sale/...` for listings browse, `/cities/...` for city pages, `/communities/...` for community pages, and `/team` for team pages. Listing detail URLs use MLS number + address slug. See `.cursor/rules/data-architecture.mdc` and `AGENTS.md` Key Architecture Decisions for the authoritative URL spec.
 
 ---
 
@@ -10,7 +12,7 @@ This document describes the features **currently implemented** in the website an
 
 You can run and review the site using **only the data already in Supabase** (no `SPARK_API_KEY`):
 
-- **Homepage, /listings, /search/…, /listing/[key]** — All read from Supabase. If your database has listings, these pages work as normal.
+- **Homepage, /homes-for-sale, /homes-for-sale/... and canonical listing detail URLs** — All read from Supabase. If your database has listings, these pages work as normal.
 - **/listings/template** — Redirects to the most recent listing using Supabase when the Spark key is not set (Spark is used when the key is present).
 - **Admin → Sync** — Shows “Not configured (no API key)” and disables the Smart Sync button until `SPARK_API_KEY` is set. Data summary (counts, breakdown) still shows what’s in the database.
 - **Admin → Spark status** — Shows “Not connected” / “SPARK_API_KEY is not set”.
@@ -35,22 +37,25 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 
 ### 1.2 Listings and search
 
-- **All listings:** `/listings` — paginated grid of active listings from Supabase (synced from Spark).
-- **Search by place:** `/search/[city]` and `/search/[city]/[subdivision]` (e.g. `/search/bend`, `/search/bend/tetherow`). Uses `cityEntityKey` and `subdivisionEntityKey` slugs (`lib/slug.ts`). Filters listings by City and optional SubdivisionName; same card grid and save/share as main listings.
-- **URLs:** See `docs/URL_ARCHITECTURE.md` for current paths and future migration plan.
+- **All listings:** `/homes-for-sale` — paginated grid of active listings from Supabase (synced from Spark). Legacy `/listings` 301-redirects here.
+- **Search by place:** `/homes-for-sale/{city}` and `/homes-for-sale/{city}/{community}` (e.g. `/homes-for-sale/bend`, `/homes-for-sale/bend/tetherow`). Uses `cityEntityKey` and `subdivisionEntityKey` slugs (`lib/slug.ts`). Filters listings by City and optional SubdivisionName. Internally implemented by `app/search/[...slug]/page.tsx` via Next.js rewrites.
+- **Listing detail:** Canonical URL uses MLS number + address: `/homes-for-sale/{city}/{community}/{address-slug}-{mlsNumber}`. See `AGENTS.md` Key Architecture Decisions.
+- **URLs:** See `.cursor/rules/data-architecture.mdc` for the authoritative URL specification. `docs/URL_ARCHITECTURE.md` contains a superseded future-state spec for historical reference only.
 
 ### 1.3 Listing detail page
 
-**URL:** `/listing/[listingKey]`  
-Listing key can be:
+**Canonical URLs:**
 
-- **Stable key:** `ListNumber` or `ListingKey` from the database (used for canonical and all lookups).
-- **SEO slug:** Optional address-based slug, e.g. `/listing/20241234-123-main-st-bend`. The app resolves the key via `listingKeyFromSlug` and uses the stable key for data; canonical URL uses the slug when available (`lib/slug.ts`, `getListingByKey` in `app/actions/listings.ts`).
+- `/homes-for-sale/{city}/[{neighborhood}/]{community}/{address-slug}-{mlsNumber}`
+- `/homes-for-sale/{city}/{address-slug}-{mlsNumber}` when community data is missing
+- `/homes-for-sale/listing/{mlsNumber}` fallback when location data is insufficient
+
+`ListNumber` (MLS number) is the public identifier in canonical listing URLs. Legacy ListingKey-based URL variants resolve and redirect to canonical.
 
 **Sections (order):**
 
 1. **Media (ListingHero):** Full-width gallery; **light background for photos** (zinc-100), dark for video; photo count (“1 of N”); keyboard nav (arrows, Escape in lightbox); first image priority; lazy load below fold. Photos and videos normalized from Spark or Supabase details (casing handled). “Videos & virtual tours” section below uses same normalized data.
-2. **Sticky header:** “Back to search results” (when referrer is `/search/` or `?return=...` via `BackToSearchLink`), “All listings”, prev/next listing nav.
+2. **Sticky header:** “Back to search results” (when referrer is search/browse context or `?return=...` via `BackToSearchLink`), “All listings”, prev/next listing nav.
 3. **Breadcrumb:** For hierarchy/navigation.
 4. **Area banner:** Optional “Explore homes in {area}” link.
 5. **Title row:** MLS#, address, city/state/zip, **price** (dominant), monthly payment link, Save, Share (copy link, email, text).

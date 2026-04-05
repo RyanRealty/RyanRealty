@@ -1,6 +1,8 @@
 # URL Architecture and Migration Plan
 
-## Target (future)
+> **NOTE (2026-04-05):** The `/real-estate/...` future URL scheme described below has been **superseded**. The canonical URL architecture is now defined in `.cursor/rules/data-architecture.mdc` and `docs/plans/data-architecture-plan.md`. The active URL scheme uses `/homes-for-sale/{city}/[{neighborhood}/]{community}/{address-slug}-{mlsNumber}` (or `/homes-for-sale/{city}/{address-slug}-{mlsNumber}` when community is missing), with fallback `/homes-for-sale/listing/{mlsNumber}`. MLS number (ListNumber) is the public identifier. The `/real-estate/...` hierarchy below is preserved for historical reference only. Do NOT implement it.
+
+## Target (SUPERSEDED — see note above)
 
 - **Place hierarchy:** `/real-estate/{country}/{state}/{city}/[{neighborhood}/]{community}/`
 - **Listing:** `/real-estate/{country}/{state}/{city}/[{neighborhood}/]{community}/listing/{slug}`

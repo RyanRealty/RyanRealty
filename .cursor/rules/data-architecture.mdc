@@ -1,0 +1,81 @@
+---
+description: Data architecture source of truth for URLs, stats, hierarchy, and performance rules
+alwaysApply: true
+---
+
+# Data Architecture Rules
+
+This is the authoritative rule for data architecture decisions. If any older document conflicts with this file, follow this file.
+
+## 1) Stats computation (required)
+
+- Closed-sale stats must use closed listings only: `StandardStatus ILIKE '%Closed%'`.
+- Closed-sale period filtering must use `CloseDate` windows, not listing on-market dates.
+- Sold price metrics must use `ClosePrice` with fallback chain:
+  - `COALESCE("ClosePrice", (details->>'ClosePrice')::numeric, "ListPrice")`
+- Median metrics must use true medians with ordered-set aggregates:
+  - `percentile_cont(0.5) WITHIN GROUP (...)`
+- Do not label averages as medians.
+- `sale_to_list_ratio` must be computed from price data, never hardcoded.
+- Prefer pre-computed summary tables (`market_stats_cache`, `market_pulse_live`) over live scans.
+
+## 2) Geo slug and hierarchy (required)
+
+- Community-level cache keys must use colon-separated slugs:
+  - `citySlug:communitySlug`
+- Use `subdivisionEntityKey()` for community geo slug generation.
+- Never use hyphen-separated `city-community` values for stats cache keys.
+- Geography model:
+  - City > optional Neighborhood > Community
+  - Community equals MLS `SubdivisionName` in user-facing terms.
+  - Neighborhood is the broader parent area and may be absent.
+
+## 3) Listing URL contract (required)
+
+- Canonical listing URL:
+  - `/homes-for-sale/{city}/[{neighborhood}/]{community}/{address-slug}-{mlsNumber}`
+- Segment behavior:
+  - Include neighborhood only when defined for the community.
+  - Omit community segment when community data is unavailable:
+    - `/homes-for-sale/{city}/{address-slug}-{mlsNumber}`
+  - Fallback when location data is insufficient:
+    - `/homes-for-sale/listing/{mlsNumber}`
+- Public listing identifier is `ListNumber` (MLS number).
+- `ListingKey` is internal and not canonical in URLs.
+- Legacy ListingKey URL shapes must 301 redirect to canonical MLS + address URLs.
+
+## 4) JSONB strategy (required)
+
+- Do not include `details` JSONB in tile/card/list map selects on hot paths.
+- Promote frequently queried listing fields to first-class columns when needed.
+- Use explicit projection lists; no `select(*)` for user-facing listing queries.
+
+## 5) Query patterns (required)
+
+- Parallelize independent queries with `Promise.all`.
+- Do not run sequential waterfalls when queries are independent.
+- Deduplicate repeated per-request data reads by sharing fetches.
+- Use `React.cache()` where metadata + page fetches share the same dataset.
+- Avoid `fetchAllRows` in user-facing hot paths.
+
+## 6) Caching and rendering (required)
+
+- Public pages must define ISR behavior (`revalidate`) unless truly dynamic by requirement.
+- Stats and pulse reads must come from cache tables, not ad-hoc aggregations.
+- Community-to-neighborhood mapping can be cached and refreshed periodically.
+
+## 7) Performance non-negotiables
+
+- No `select(*)` on listing-heavy paths.
+- Cap expensive batch operations (for example geocoding fan-out).
+- Keep DB round-trips minimal and avoid duplicated fetches.
+- Keep structured data URLs, canonical tags, sitemap URLs, and visible routes aligned.
+
+## 8) Documentation alignment
+
+- Keep these references aligned with this rule:
+  - `AGENTS.md` Key Architecture Decisions
+  - `.cursor/rules/seo-url-guardrails.mdc`
+  - `.cursor/rules/supabase-data-layer.mdc`
+  - `.cursor/rules/master-plan-protocol.mdc`
+  - `docs/plans/master-plan.md`

@@ -12,27 +12,11 @@ This is the working document for Phase 0. Complete every task, verify each one, 
 
 **Requirement**: R1 (SEO gate)
 
-**Problem**: Sitemap uses key-only (`/listing/2504654`), ListingTile links to key+slug (`/listing/2504654-56355-twin-rivers...`), canonical tag uses whatever format the user landed on.
+**Status**: Superseded by Data Architecture Optimization plan, Phase 3.
 
-**Decision**: Use key+slug as canonical form everywhere.
+**Updated Decision (2026-04-05)**: Canonical listing URLs use MLS number (ListNumber) + full address slug: `/homes-for-sale/{city}/[{neighborhood}/]{community}/{address-slug}-{mlsNumber}`. Fallback: `/homes-for-sale/listing/{mlsNumber}`. This replaces the earlier `/listing/{key}-{slug}` spec. See `docs/plans/data-architecture-plan.md` for the full 16-file atomic URL change unit and execution safety protocol.
 
-**Files to modify**:
-- `app/sitemap.ts` -- change listing URL generation to include slug
-- `components/ListingTile.tsx` -- confirm links use key+slug (likely already correct)
-- `app/listing/[listingKey]/page.tsx` -- set explicit `<link rel="canonical" href="/listing/{key}-{slug}" />` in metadata, not derived from request URL
-
-**Changes**:
-1. In `app/sitemap.ts`, update the listing URL builder to emit `/listing/{listingKey}-{slug}` format
-2. In `app/listing/[listingKey]/page.tsx` `generateMetadata`, build canonical URL from listing data (key + slugified address), not from the request path
-3. Verify `ListingTile` href matches the canonical form
-
-**Verification**:
-```bash
-npm run build
-# Then check sitemap output:
-curl -s http://localhost:3000/sitemap.xml | grep "/listing/" | head -5
-# Confirm URLs include slugs and match ListingTile hrefs
-```
+Old ListingKey-based URLs 301-redirect to canonical MLS-based URLs.
 
 ---
 

@@ -15,6 +15,10 @@ When editing routes, links, metadata, sitemap, or structured data, follow these 
 - Neighborhood pages: `/cities/{city-slug}/{neighborhood-slug}`
 - Community pages: `/communities/{community-slug}`
 - Listing detail pages: `listingDetailPath(...)` from `lib/slug.ts`
+  - Canonical pattern: `/homes-for-sale/{city}/[{neighborhood}/]{community}/{address-slug}-{mlsNumber}`
+  - When community is missing: `/homes-for-sale/{city}/{address-slug}-{mlsNumber}`
+  - Fallback when location is insufficient: `/homes-for-sale/listing/{mlsNumber}`
+  - `ListNumber` (MLS ID) is canonical. `ListingKey` is internal.
 - Team pages: `/team` and `/team/{slug}` (use `teamPath()` from `lib/slug.ts`)
 - Home valuation: `/sell/valuation` (use `valuationPath()` from `lib/slug.ts`)
 
@@ -28,6 +32,7 @@ When editing routes, links, metadata, sitemap, or structured data, follow these 
 3. Any new metadata canonical must match the canonical route contract above.
 4. Any URL emitted in structured data must match the canonical route.
 5. Any URL emitted in `app/sitemap.ts` must be canonical only.
+6. Breadcrumb JSON-LD must match visible breadcrumbs and URL hierarchy.
 
 ## Indexation policy
 
@@ -38,6 +43,7 @@ When editing routes, links, metadata, sitemap, or structured data, follow these 
 
 - If a legacy URL still exists for compatibility, keep a permanent redirect to the canonical URL.
 - Do not remove existing SEO redirects without replacing with an equivalent canonical redirect.
+- Legacy ListingKey-based listing URLs must 301 redirect to MLS + address canonical URLs.
 
 ## Implementation checks (SEO routing)
 
