@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.11.0 (2026-04-05)
+
+### Features
+- feat: keep market report slider visible during refresh
+
+---
+
+
 ## v1.10.5 (2026-04-05)
 
 ### Bug Fixes
