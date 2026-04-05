@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.15.12 (2026-04-05)
+
+### Bug Fixes
+- fix: restore core homepage slider sections
+
+---
+
+
 ## v1.15.11 (2026-04-05)
 
 ### Bug Fixes
