@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.15.6 (2026-04-05)
+
+### Bug Fixes
+- fix: reduce public page render latency with fail-fast data loading
+
+---
+
+
 ## v1.15.5 (2026-04-05)
 
 ### Maintenance
