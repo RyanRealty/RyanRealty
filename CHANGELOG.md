@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.16.3 (2026-04-05)
+
+### Maintenance
+- perf: fail fast global session and market pulse fetches
+
+---
+
+
 ## v1.16.2 (2026-04-05)
 
 ### Maintenance
