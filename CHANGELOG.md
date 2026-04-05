@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.9 (2026-04-05)
+
+### Bug Fixes
+- fix: gate listing hero embeds to trusted providers
+
+---
+
+
 ## v1.6.8 (2026-04-05)
 
 ### Bug Fixes
