@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.0 (2026-04-05)
+
+### Features
+- feat: complete cache-first stats and breadcrumb normalization pass
+
+---
+
+
 ## v1.5.0 (2026-04-05)
 
 ### Features
