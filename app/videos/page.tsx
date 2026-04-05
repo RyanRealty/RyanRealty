@@ -17,7 +17,16 @@ export const metadata: Metadata = {
   },
 }
 
+export const dynamic = 'force-dynamic'
+
+async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ])
+}
+
 export default async function VideosPage() {
-  const listings = await getListingsWithVideos({})
+  const listings = await withTimeout(getListingsWithVideos({}), [])
   return <VideosClient initialListings={listings} />
 }

@@ -12,6 +12,13 @@ function getSupabase() {
   return createClient(url, anonKey)
 }
 
+async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ])
+}
+
 /* ---------- Sanitise helpers for Spark masked values ("********") ---------- */
 
 function safeNum(v: unknown): number | null {
@@ -871,17 +878,33 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
 
   // Fetch listing_history (2M+ rows available — this is the real data source)
   // Also fetch engagement metrics
-  const [historyRes, engagementRes] = await Promise.all([
-    supabase
-      .from('listing_history')
-      .select('id, listing_key, event, event_date, price, price_change, description, raw')
-      .eq('listing_key', canonicalKey)
-      .order('event_date', { ascending: true })
-      .limit(100),
-    supabase.from('engagement_metrics').select('listing_key, view_count, like_count, save_count, share_count').eq('listing_key', canonicalKey).maybeSingle(),
+  const [histRowsRaw, engagementRaw] = await Promise.all([
+    withTimeout(
+      Promise.resolve(
+        supabase
+          .from('listing_history')
+          .select('id, listing_key, event, event_date, price, price_change, description, raw')
+          .eq('listing_key', canonicalKey)
+          .order('event_date', { ascending: true })
+          .limit(100)
+      ).then((res) => res.data ?? []),
+      [],
+      2500
+    ),
+    withTimeout(
+      Promise.resolve(
+        supabase
+          .from('engagement_metrics')
+          .select('listing_key, view_count, like_count, save_count, share_count')
+          .eq('listing_key', canonicalKey)
+          .maybeSingle()
+      ).then((res) => res.data ?? null),
+      null,
+      1200
+    ),
   ])
 
-  const histRows = (historyRes.data ?? []) as Array<{
+  const histRows = (histRowsRaw ?? []) as Array<{
     id?: string
     listing_key?: string
     event?: string
@@ -1029,7 +1052,7 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
     }
   }
 
-  const engagement = (engagementRes.data ?? null) as ListingDetailEngagement | null
+  const engagement = (engagementRaw ?? null) as ListingDetailEngagement | null
 
   // Resolve community from SubdivisionName, including neighborhood if assigned
   let community: ListingDetailCommunity | null = null

@@ -36,6 +36,8 @@ jobs:
           vars.SITE_URL ||
           'https://ryan-realty.com'
         }}
+      PERF_TTFB_MAX: "1.50"
+      PERF_TOTAL_MAX: "6.00"
 
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +58,9 @@ jobs:
           PASS=0
           FAIL=0
           RESULTS=""
+          PERF_PASS=0
+          PERF_FAIL=0
+          PERF_RESULTS=""
 
           # Function to test a URL
           test_url() {
@@ -70,6 +75,37 @@ jobs:
             else
               RESULTS="${RESULTS}\n| ❌ | ${description} | \`${path}\` | ${status} |"
               FAIL=$((FAIL + 1))
+            fi
+          }
+
+          # Function to test status + perf budget
+          test_perf_url() {
+            local path="$1"
+            local description="$2"
+            local url="${SITE_URL}${path}"
+            local metrics
+            metrics=$(curl -s -o /dev/null -w "%{http_code} %{time_starttransfer} %{time_total}" -L --max-time 30 "$url" 2>/dev/null || echo "000 99 99")
+            local status=$(echo "$metrics" | awk '{print $1}')
+            local ttfb=$(echo "$metrics" | awk '{print $2}')
+            local total=$(echo "$metrics" | awk '{print $3}')
+
+            if [ "$status" != "200" ] && [ "$status" != "304" ]; then
+              PERF_RESULTS="${PERF_RESULTS}\n| ❌ | ${description} | \`${path}\` | ${status} | ${ttfb}s | ${total}s | HTTP failure |"
+              PERF_FAIL=$((PERF_FAIL + 1))
+              return
+            fi
+
+            local ttfb_ok
+            local total_ok
+            ttfb_ok=$(awk -v t="$ttfb" -v max="$PERF_TTFB_MAX" 'BEGIN { if (t <= max) print "1"; else print "0" }')
+            total_ok=$(awk -v t="$total" -v max="$PERF_TOTAL_MAX" 'BEGIN { if (t <= max) print "1"; else print "0" }')
+
+            if [ "$ttfb_ok" = "1" ] && [ "$total_ok" = "1" ]; then
+              PERF_RESULTS="${PERF_RESULTS}\n| ✅ | ${description} | \`${path}\` | ${status} | ${ttfb}s | ${total}s | Within budget |"
+              PERF_PASS=$((PERF_PASS + 1))
+            else
+              PERF_RESULTS="${PERF_RESULTS}\n| ❌ | ${description} | \`${path}\` | ${status} | ${ttfb}s | ${total}s | Exceeds budget |"
+              PERF_FAIL=$((PERF_FAIL + 1))
             fi
           }
 
@@ -99,6 +135,12 @@ jobs:
           test_url "/open-houses" "Open houses"
           test_url "/robots.txt" "robots.txt"
           test_url "/sitemap.xml" "Sitemap"
+
+          # Performance budgets on core user pages
+          test_perf_url "/" "Homepage"
+          test_perf_url "/search/bend" "Search page"
+          test_perf_url "/cities/bend" "City page"
+          test_perf_url "/communities" "Communities page"
 
           # Check meta tags on key pages
           META_PASS=0
@@ -146,8 +188,17 @@ jobs:
           echo -e "$META_RESULTS" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          TOTAL_PASS=$((PASS + META_PASS))
-          TOTAL_FAIL=$((FAIL + META_FAIL))
+          echo "### Performance Budget Checks" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Budget:** TTFB <= ${PERF_TTFB_MAX}s and total <= ${PERF_TOTAL_MAX}s" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Page | Path | HTTP | TTFB | Total | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|------|------|------|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo -e "$PERF_RESULTS" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          TOTAL_PASS=$((PASS + META_PASS + PERF_PASS))
+          TOTAL_FAIL=$((FAIL + META_FAIL + PERF_FAIL))
           TOTAL=$((TOTAL_PASS + TOTAL_FAIL))
 
           echo "### Summary" >> $GITHUB_STEP_SUMMARY

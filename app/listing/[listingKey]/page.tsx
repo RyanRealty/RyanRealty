@@ -56,6 +56,13 @@ type PageProps = { params: Promise<{ listingKey: string }> }
 export const revalidate = 60
 const getListingDetailDataCached = cache(getListingDetailData)
 
+async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ])
+}
+
 function buildFullAddress(data: Awaited<ReturnType<typeof getListingDetailData>>): string {
   if (!data?.property) return ''
   const p = data.property
@@ -176,23 +183,23 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const { listing, property, photos, agents, priceHistory, listingHistory, openHouses, community, videos, virtualTours } = data
   const subdivisionName = community?.name ?? listing.subdivision_name ?? null
   const [saved, liked, engagement, similarListings, subdivisionListings, session] = await Promise.all([
-    isListingSaved(listing.listing_key),
-    isListingLiked(listing.listing_key),
-    getEngagementForListingDetail(listing.listing_key),
-    getSimilarListingsForDetailPage(
+    withTimeout(isListingSaved(listing.listing_key), false, 1200),
+    withTimeout(isListingLiked(listing.listing_key), false, 1200),
+    withTimeout(getEngagementForListingDetail(listing.listing_key), { view_count: 0, like_count: 0, save_count: 0, share_count: 0 }, 1500),
+    withTimeout(getSimilarListingsForDetailPage(
       listing.listing_key,
       subdivisionName,
       property?.city ?? null,
       listing.list_price ?? null,
       listing.beds_total ?? null
-    ),
-    getSubdivisionListings(
+    ), [], 2200),
+    withTimeout(getSubdivisionListings(
       listing.listing_key,
       subdivisionName,
       property?.city ?? null,
       8,
-    ),
-    getSession(),
+    ), [], 2200),
+    withTimeout(getSession(), null, 700),
   ])
 
   const address = buildFullAddress(data)
@@ -231,23 +238,23 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const citySlug = city ? slugify(city) : ''
   const [areaStats, marketPulse, nearbyActivity, nearbySold, nearbySavedKeys, nearbyLikedKeys] = await Promise.all([
-    citySlug ? getCachedStats({ geoType: 'city', geoSlug: citySlug }) : Promise.resolve(null),
-    citySlug ? getLiveMarketPulse({ geoType: 'city', geoSlug: citySlug }) : Promise.resolve(null),
-    getActivityFeed({
+    citySlug ? withTimeout(getCachedStats({ geoType: 'city', geoSlug: citySlug }), null, 1800) : Promise.resolve(null),
+    citySlug ? withTimeout(getLiveMarketPulse({ geoType: 'city', geoSlug: citySlug }), null, 1800) : Promise.resolve(null),
+    withTimeout(getActivityFeed({
       city: city ?? undefined,
       subdivision: community?.name ?? listing.subdivision_name ?? undefined,
       limit: 12,
       eventTypes: ['new_listing', 'price_drop', 'status_pending', 'status_closed', 'status_expired', 'back_on_market'],
-    }),
-    getRecentlySold({
+    }), [], 2000),
+    withTimeout(getRecentlySold({
       city: city ?? undefined,
       subdivision: community?.name ?? listing.subdivision_name ?? undefined,
       limit: 12,
-    }),
-    session?.user ? getSavedListingKeys() : Promise.resolve([]),
-    session?.user ? getLikedListingKeys() : Promise.resolve([]),
+    }), [], 2000),
+    session?.user ? withTimeout(getSavedListingKeys(), [], 1200) : Promise.resolve([]),
+    session?.user ? withTimeout(getLikedListingKeys(), [], 1200) : Promise.resolve([]),
   ])
-  const rentalPotential = await getVacationRentalPotential({
+  const rentalPotential = await withTimeout(getVacationRentalPotential({
     city: property?.city ?? null,
     state: property?.state ?? null,
     beds: listing.beds_total ?? null,
@@ -255,7 +262,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     listPrice: listing.list_price ?? null,
     medianListPrice: marketPulse?.median_list_price ?? null,
     associationYn: listing.association_yn ?? null,
-  })
+  }), null, 1800)
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -426,7 +433,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
                   ]}
                 />
               )}
-              <VacationRentalPotentialCard potential={rentalPotential} />
+              {rentalPotential ? <VacationRentalPotentialCard potential={rentalPotential} /> : null}
               <PriceHistoryChart priceHistory={priceHistory} />
               <ListingTimeline events={listingHistory} />
             </div>
