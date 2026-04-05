@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.16.0 (2026-04-05)
+
+### Features
+- feat: reorder homepage with market snapshot and top city slider
+
+---
+
+
 ## v1.15.13 (2026-04-05)
 
 ### Maintenance
