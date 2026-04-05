@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.9.0 (2026-04-05)
+
+### Features
+- feat: cache searches and add MLS source branding
+
+---
+
+
 ## v1.8.0 (2026-04-05)
 
 ### Features
