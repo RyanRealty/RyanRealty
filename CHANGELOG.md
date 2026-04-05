@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.6 (2026-04-05)
+
+### Bug Fixes
+- fix: strengthen listing key resolution for MLS canonical routes
+
+---
+
+
 ## v1.6.5 (2026-04-05)
 
 ### Bug Fixes
