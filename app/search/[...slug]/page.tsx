@@ -46,8 +46,6 @@ import HotCommunitiesSection from '../../../components/search/HotCommunitiesSect
 import MarketSnapshotChart from '../../../components/search/MarketSnapshotChart'
 import TrackSearchView from '../../../components/tracking/TrackSearchView'
 import { getSavedCommunityKeys } from '../../actions/saved-communities'
-import { trackPageViewIfPossible } from '../../../lib/followupboss'
-import { getFubPersonIdFromCookie } from '../../actions/fub-identity-bridge'
 import { getSavedListingKeys } from '../../actions/saved-listings'
 import { getLikedListingKeys } from '../../actions/likes'
 import { getBuyingPreferences } from '../../actions/buying-preferences'
@@ -69,6 +67,13 @@ import CityClusterNav from '../../../components/CityClusterNav'
 import { getGuidesByCity } from '../../actions/guides'
 import { getCachedSearchListings } from '../../actions/search-cache'
 import { decodeMapPolygon } from '@/lib/map-polygon'
+
+async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ])
+}
 
 /** Resolve slug segments to city, subdivision (display name), and preset. */
 async function resolveSlug(slug: string[]): Promise<{
@@ -127,7 +132,9 @@ export async function generateMetadata({
   const displayName = preset ? `${placeName} ${preset.shortLabel}` : placeName
   const content = city ? getCityContent(city) : null
   const subdivisionDesc =
-    subdivisionDisplayName && city ? await getSubdivisionDescription(city, subdivisionDisplayName) : null
+    subdivisionDisplayName && city
+      ? await withTimeout(getSubdivisionDescription(city, subdivisionDisplayName), null, 1200)
+      : null
   const rawMetaDesc =
     (subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
     content?.metaDescription ??
@@ -138,8 +145,8 @@ export async function generateMetadata({
   const bannerUrl =
     city &&
     (subdivisionDisplayName
-      ? await getBannerUrl('subdivision', subdivisionEntityKey(city, subdivisionDisplayName))
-      : await getBannerUrl('city', cityEntityKey(city)))
+      ? await withTimeout(getBannerUrl('subdivision', subdivisionEntityKey(city, subdivisionDisplayName)), null, 1200)
+      : await withTimeout(getBannerUrl('city', cityEntityKey(city)), null, 1200))
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const defaultOgImage = `${siteUrl}/api/og?type=default`
   const canonicalPath = buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
@@ -217,13 +224,6 @@ function hasFilterOnlySearch(sp: SearchParams): boolean {
 }
 
 export const revalidate = 60
-
-async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
-  ])
-}
 
 export default async function SearchPage({
   params,
@@ -363,7 +363,7 @@ export default async function SearchPage({
     city && !subdivision && hotCommunitiesSlice.length > 0
       ? Promise.all(
           hotCommunitiesSlice.map((c) =>
-            getBannerUrl('subdivision', subdivisionEntityKey(city, c.subdivisionName))
+            withTimeout(getBannerUrl('subdivision', subdivisionEntityKey(city, c.subdivisionName)), null, 1200)
           )
         )
       : Promise.resolve([]),
@@ -383,7 +383,7 @@ export default async function SearchPage({
   const displayName = preset ? `${placeName} ${preset.shortLabel}` : (presetLabel ?? placeName)
   const cityContent = city ? getCityContent(city) : null
   const subdivisionTabContent =
-    subdivision && city ? await getSubdivisionTabContent(city, decodedSubdivision!) : null
+    subdivision && city ? await withTimeout(getSubdivisionTabContent(city, decodedSubdivision!), null, 1200) : null
   const subdivisionBlurb =
     subdivision
       ? (subdivisionTabContent?.about ?? getSubdivisionBlurb(decodedSubdivision!))
@@ -420,7 +420,7 @@ export default async function SearchPage({
 
   const entityType = subdivision ? ('subdivision' as const) : ('city' as const)
   const entityKey = subdivision ? subdivisionEntityKey(city!, decodedSubdivision!) : cityEntityKey(city!)
-  const resortKeys = city && subdivision ? await getResortEntityKeys() : new Set<string>()
+  const resortKeys = city && subdivision ? await withTimeout(getResortEntityKeys(), new Set<string>(), 1200) : new Set<string>()
   const isResortSubdivision = subdivision && city && decodedSubdivision ? resortKeys.has(entityKey) : false
   const bannerSearchQuery = city
     ? getBannerSearchQuery(
@@ -433,8 +433,8 @@ export default async function SearchPage({
   const [listingHero, bannerResult] =
     city
       ? await Promise.all([
-          getBestListingHeroForGeography(city, decodedSubdivision ?? null),
-          getOrCreatePlaceBanner(entityType, entityKey, bannerSearchQuery),
+          withTimeout(getBestListingHeroForGeography(city, decodedSubdivision ?? null), null, 1500),
+          withTimeout(getOrCreatePlaceBanner(entityType, entityKey, bannerSearchQuery), { url: null, attribution: null }, 1500),
         ])
       : [null, { url: null, attribution: null }]
   const heroVideoUrl = null
@@ -446,20 +446,13 @@ export default async function SearchPage({
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || ''
   const searchPagePath = buildCanonicalPath(city ?? null, decodedSubdivision ?? null, subdivision ?? null, resolved.presetSlug)
-  const searchPageUrl = `${siteUrl}${searchPagePath}`
-  const fubPersonId = session?.user ? null : await getFubPersonIdFromCookie()
-  if (city || subdivision) {
-    trackPageViewIfPossible({
-      sessionUser: session?.user ?? undefined,
-      fubPersonId: fubPersonId ?? undefined,
-      pageUrl: searchPageUrl,
-      pageTitle: `Homes for Sale in ${displayName}`,
-    })
-  }
-
   const [savedKeys, likedKeys, prefs] =
     session?.user
-      ? await Promise.all([getSavedListingKeys(), getLikedListingKeys(), getBuyingPreferences()])
+      ? await Promise.all([
+          withTimeout(getSavedListingKeys(), [], 600),
+          withTimeout(getLikedListingKeys(), [], 600),
+          withTimeout(getBuyingPreferences(), null, 600),
+        ])
       : ([[], [] as string[], null] as [string[], string[], Awaited<ReturnType<typeof getBuyingPreferences>>])
 
   const searchBreadcrumbItems: { label: string; href?: string }[] = [
@@ -481,8 +474,8 @@ export default async function SearchPage({
       : 'Bend Oregon'
     const mapBoundaryGeojson = city
       ? decodedSubdivision
-        ? (await getCommunityBySlug(entityKeyToSlug(subdivisionEntityKey(city, decodedSubdivision))))?.boundaryGeojson ?? null
-        : await getCityBoundary(city)
+        ? (await withTimeout(getCommunityBySlug(entityKeyToSlug(subdivisionEntityKey(city, decodedSubdivision))), null, 1000))?.boundaryGeojson ?? null
+        : await withTimeout(getCityBoundary(city), null, 1000)
       : null
     return (
       <main className="flex flex-col h-[calc(100vh-120px)] min-h-[400px] overflow-hidden">
