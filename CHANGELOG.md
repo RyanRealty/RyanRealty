@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.15.0 (2026-04-05)
+
+### Features
+- feat: add multi-year YTD market chart comparisons
+
+---
+
+
 ## v1.14.0 (2026-04-05)
 
 ### Features
