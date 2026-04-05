@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.15.1 (2026-04-05)
+
+### Maintenance
+- perf: cache geo page data pipelines for faster server render
+
+---
+
+
 ## v1.15.0 (2026-04-05)
 
 ### Features
