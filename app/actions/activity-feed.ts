@@ -97,17 +97,18 @@ export async function getActivityFeed(options?: {
     }
   }
   const citySet = options?.cities?.length
-    ? new Set(options.cities.map((c) => c.trim()).filter(Boolean))
+    ? new Set(options.cities.map((c) => c.trim().toLowerCase()).filter(Boolean))
     : null
-  const singleCity = options?.city?.trim() || null
+  const singleCity = options?.city?.trim().toLowerCase() || null
   const result: ActivityFeedItem[] = []
   const subdivisionFilter = options?.subdivision?.trim().toLowerCase()
   for (const e of events as { id: string; listing_key: string; event_type: string; event_at: string; payload?: unknown }[]) {
     const listing = byKey.get(e.listing_key)
     const listingCity = (listing?.City ?? '').toString().trim()
+    const listingCityNormalized = listingCity.toLowerCase()
     const listingSubdivision = (listing?.SubdivisionName ?? '').toString().trim()
-    if (citySet && !citySet.has(listingCity)) continue
-    if (singleCity && !citySet && listingCity !== singleCity) continue
+    if (citySet && !citySet.has(listingCityNormalized)) continue
+    if (singleCity && !citySet && listingCityNormalized !== singleCity) continue
     if (subdivisionFilter) {
       const sub = listingSubdivision.toLowerCase()
       if (!sub || (!sub.includes(subdivisionFilter) && sub !== subdivisionFilter)) continue
