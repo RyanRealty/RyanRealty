@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.16 (2026-04-05)
+
+### Bug Fixes
+- fix: use stable Unsplash source for lifestyle golf card
+
+---
+
+
 ## v1.6.15 (2026-04-05)
 
 ### Bug Fixes
