@@ -340,28 +340,14 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   const safeQ = q.replace(/%/g, '').replace(/\\/g, '')
   const like = `%${safeQ}%`
 
-  const [citiesRes, subdivisionsRes, addressesRes, zipsRes, brokersRes, neighborhoodsRes] = await Promise.all([
-    getBrowseCities().then((list) =>
-      list.filter((c) => (c.City ?? '').toLowerCase().includes(q.toLowerCase())).slice(0, 8)
-    ),
+  const qLower = q.toLowerCase()
+  const [listingsRes, brokersRes, neighborhoodsRes] = await Promise.all([
     supabase
       .from('listings')
-      .select('City, SubdivisionName')
-      .or(ACTIVE_STATUS_OR)
-      .or(`SubdivisionName.ilike.${like},City.ilike.${like}`)
-      .limit(400),
-    supabase
-      .from('listings')
-      .select('ListNumber, ListingKey, StreetNumber, StreetName, City, State, PostalCode')
-      .or(ACTIVE_STATUS_OR)
-      .or(`StreetNumber.ilike.${like},StreetName.ilike.${like},City.ilike.${like}`)
-      .limit(40),
-    supabase
-      .from('listings')
-      .select('PostalCode, City')
-      .or(ACTIVE_STATUS_OR)
-      .ilike('PostalCode', like)
-      .limit(300),
+      .select('ListNumber, ListingKey, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, ModificationTimestamp')
+      .or(`StreetNumber.ilike.${like},StreetName.ilike.${like},City.ilike.${like},SubdivisionName.ilike.${like},PostalCode.ilike.${like}`)
+      .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
+      .limit(250),
     supabase
       .from('brokers')
       .select('slug, display_name')
@@ -375,9 +361,28 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
       .limit(15),
   ])
 
-  const cities: SearchSuggestionCity[] = citiesRes.map((c) => ({ city: c.City, count: c.count }))
-
-  const subRows = (subdivisionsRes.data ?? []) as { City?: string; SubdivisionName?: string }[]
+  const listingRows = (listingsRes.data ?? []) as {
+    ListNumber?: string | null
+    ListingKey?: string | null
+    StreetNumber?: string | null
+    StreetName?: string | null
+    City?: string | null
+    State?: string | null
+    PostalCode?: string | null
+    SubdivisionName?: string | null
+  }[]
+  const cityCounts = new Map<string, number>()
+  for (const row of listingRows) {
+    const city = (row.City ?? '').toString().trim()
+    if (!city) continue
+    if (!city.toLowerCase().includes(qLower)) continue
+    cityCounts.set(city, (cityCounts.get(city) ?? 0) + 1)
+  }
+  const cities: SearchSuggestionCity[] = Array.from(cityCounts.entries())
+    .map(([city, count]) => ({ city, count }))
+    .sort((a, b) => b.count - a.count || a.city.localeCompare(b.city))
+    .slice(0, 8)
+  const subRows = listingRows
   const subByKey = new Map<string, { city: string; subdivisionName: string; count: number }>()
   for (const row of subRows) {
     const city = (row.City ?? '').trim()
@@ -392,15 +397,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     .sort((a, b) => b.count - a.count || a.subdivisionName.localeCompare(b.subdivisionName))
     .slice(0, 12)
 
-  const addrRows = (addressesRes.data ?? []) as {
-    ListNumber?: string | null
-    ListingKey?: string | null
-    StreetNumber?: string | null
-    StreetName?: string | null
-    City?: string | null
-    State?: string | null
-    PostalCode?: string | null
-  }[]
+  const addrRows = listingRows
   const seenAddr = new Set<string>()
   const addresses: SearchSuggestionAddress[] = []
   for (const row of addrRows) {
@@ -430,7 +427,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     if (addresses.length >= 10) break
   }
 
-  const zipRows = (zipsRes.data ?? []) as { PostalCode?: string | null; City?: string | null }[]
+  const zipRows = listingRows
   const zipMap = new Map<string, { postalCode: string; city?: string; count: number }>()
   for (const row of zipRows) {
     const postalCode = (row.PostalCode ?? '').toString().trim().replace(/\D/g, '')
@@ -477,7 +474,6 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     })
     .slice(0, 10)
 
-  const qLower = q.toLowerCase()
   const reports: SearchSuggestionReport[] = []
   if (/\b(report|market)\b/.test(qLower)) {
     reports.push({ label: 'Market reports', href: '/reports' })

@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getSearchSuggestions } from '@/app/actions/listings'
 import type { SearchSuggestionsResult } from '@/app/actions/listings'
 import { cityPagePath } from '@/lib/slug'
 import { communityPagePath } from '@/lib/community-slug'
@@ -35,7 +34,10 @@ export default function SmartSearch({ onClose }: SmartSearchProps = {}) {
     }
     setLoading(true)
     try {
-      const result = await getSearchSuggestions(q)
+      const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(q)}`, {
+        cache: 'no-store',
+      })
+      const result = (await response.json()) as SearchSuggestionsResult
       setSuggestions(result)
       setHighlight(0)
     } catch {

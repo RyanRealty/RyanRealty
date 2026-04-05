@@ -123,7 +123,7 @@ async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
 
 export const getCommunitiesForIndex = unstable_cache(
   _getCommunitiesForIndexUncached,
-  ['communities-index'],
+  ['communities-index-v2'],
   { revalidate: 1800, tags: ['communities-index'] }
 )
 

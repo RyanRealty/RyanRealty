@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { getSearchSuggestions, type SearchSuggestionsResult } from '@/app/actions/listings'
+import type { SearchSuggestionsResult } from '@/app/actions/listings'
 import { trackEvent } from '@/lib/tracking'
 import { cityPagePath } from '@/lib/slug'
 import { communityPagePath } from '@/lib/community-slug'
@@ -34,6 +34,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<SearchSuggestionsResult | null>(null)
+  const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const [highlight, setHighlight] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -58,15 +59,34 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
   }, [marketSnapshot.count, marketSnapshot.medianPrice])
 
   useEffect(() => {
-    if (query.trim().length < 2) {
+    const q = query.trim()
+    if (q.length < 2) {
       setSuggestions(null)
+      setLoading(false)
       setOpen(false)
       return
     }
-    const t = setTimeout(() => {
-      getSearchSuggestions(query).then(setSuggestions)
+    const controller = new AbortController()
+    const t = setTimeout(async () => {
+      setOpen(true)
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/search/suggestions?q=${encodeURIComponent(q)}`, {
+          signal: controller.signal,
+          cache: 'no-store',
+        })
+        const data = (await res.json()) as SearchSuggestionsResult
+        setSuggestions(data)
+      } catch {
+        setSuggestions(null)
+      } finally {
+        setLoading(false)
+      }
     }, 220)
-    return () => clearTimeout(t)
+    return () => {
+      clearTimeout(t)
+      controller.abort()
+    }
   }, [query])
 
   useEffect(() => {
@@ -145,7 +165,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
     }
     if (query.trim()) {
       trackEvent('hero_search', { query: query.trim(), cta_location: 'hero_search' })
-      router.push(`/homes-for-sale?keywords=${encodeURIComponent(query.trim())}`)
+      router.push(`/search?keywords=${encodeURIComponent(query.trim())}`)
     }
     setOpen(false)
   }
@@ -242,9 +262,16 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
               Search
             </Button>
           </div>
-          {open && suggestions && totalItems > 0 && (
+          {open && (
             <div role="listbox" className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border bg-card shadow-lg max-h-[min(70vh,400px)] overflow-auto z-20 py-2">
-              {suggestions.addresses.length > 0 && (
+              {query.trim().length < 2 ? (
+                <p className="px-4 py-2 text-sm text-muted-foreground">Type at least 2 characters</p>
+              ) : loading ? (
+                <p className="px-4 py-2 text-sm text-muted-foreground">Searching...</p>
+              ) : suggestions && totalItems === 0 ? (
+                <p className="px-4 py-2 text-sm text-muted-foreground">No matches found</p>
+              ) : null}
+              {suggestions && suggestions.addresses.length > 0 && (
                 <div className="mb-1">
                   <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Listings</p>
                   {suggestions.addresses.slice(0, 6).map((a, i) => (
@@ -261,7 +288,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
                   ))}
                 </div>
               )}
-              {suggestions.cities.length > 0 && (
+              {suggestions && suggestions.cities.length > 0 && (
                 <div className="mb-1">
                   <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cities</p>
                   {suggestions.cities.slice(0, 6).map((c, i) => {
@@ -281,7 +308,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
                   })}
                 </div>
               )}
-              {suggestions.subdivisions.length > 0 && (
+              {suggestions && suggestions.subdivisions.length > 0 && (
                 <div className="mb-1">
                   <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Communities</p>
                   {suggestions.subdivisions.slice(0, 6).map((s, i) => {
@@ -301,7 +328,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
                   })}
                 </div>
               )}
-              {suggestions.neighborhoods.length > 0 && (
+              {suggestions && suggestions.neighborhoods.length > 0 && (
                 <div className="mb-1">
                   <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Neighborhoods</p>
                   {suggestions.neighborhoods.slice(0, 5).map((n, i) => {
@@ -321,7 +348,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
                   })}
                 </div>
               )}
-              {suggestions.zips.length > 0 && (
+              {suggestions && suggestions.zips.length > 0 && (
                 <div className="mb-1">
                   <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Zip codes</p>
                   {suggestions.zips.slice(0, 5).map((z, i) => {
@@ -341,7 +368,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
                   })}
                 </div>
               )}
-              {suggestions.brokers.length > 0 && (
+              {suggestions && suggestions.brokers.length > 0 && (
                 <div className="mb-1">
                   <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Agents &amp; brokers</p>
                   {suggestions.brokers.slice(0, 5).map((b, i) => {
@@ -361,7 +388,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
                   })}
                 </div>
               )}
-              {suggestions.reports.length > 0 && (
+              {suggestions && suggestions.reports.length > 0 && (
                 <div>
                   <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Market reports</p>
                   {suggestions.reports.slice(0, 5).map((r, i) => {

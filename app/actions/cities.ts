@@ -182,7 +182,7 @@ async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
 
 export const getCitiesForIndex = unstable_cache(
   _getCitiesForIndexUncached,
-  ['cities-index'],
+  ['cities-index-v2'],
   { revalidate: 1800, tags: ['cities-index'] }
 )
 
@@ -293,7 +293,7 @@ async function getCommunitiesInCityUncached(cityName: string): Promise<Community
 
 export const getCommunitiesInCity = unstable_cache(
   getCommunitiesInCityUncached,
-  ['communities-in-city'],
+  ['communities-in-city-v2'],
   { revalidate: 300, tags: ['communities-in-city'] }
 )
 
