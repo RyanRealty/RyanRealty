@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
-import CityTilesGrid from '@/components/city/CityTilesGrid'
+import CityTilesGridStatic from '@/components/city/CityTilesGridStatic'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -59,7 +59,7 @@ export default async function CitiesPage() {
         <h2 id="cities-heading" className="sr-only">
           Cities
         </h2>
-        <CityTilesGrid cities={sortedCities} savedSlugs={[]} signedIn={false} />
+        <CityTilesGridStatic cities={sortedCities} />
       </section>
     </main>
   )
