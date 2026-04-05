@@ -254,8 +254,16 @@ async function resolveListingKeyFromSlug(supabase: ReturnType<typeof getSupabase
 
     // Try ListNumber first (canonical URL id), then ListingKey
     try {
-      const { data } = await supabase.from('listings').select('ListingKey').eq('ListNumber', c).limit(1)
-      if (data?.[0]?.ListingKey) return String(data[0].ListingKey).trim()
+      const { data } = await supabase
+        .from('listings')
+        .select('ListingKey, ModificationTimestamp')
+        .eq('ListNumber', c)
+        .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
+        .limit(5)
+      const match = (data ?? []).find((row) => String((row as { ListingKey?: string | null }).ListingKey ?? '').trim().length > 0) as
+        | { ListingKey?: string | null }
+        | undefined
+      if (match?.ListingKey) return String(match.ListingKey).trim()
     } catch { /* ignore */ }
 
     try {
@@ -383,9 +391,13 @@ export async function resolveListingKeyFromCanonicalPath(input: {
     .from('listings')
     .select('ListingKey, ListNumber, City, PostalCode, SubdivisionName, ModificationTimestamp')
     .or(`ListingKey.eq.${keyOrMls},ListNumber.eq.${keyOrMls}`)
+    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
     .limit(5)
   if (directByKey && directByKey.length > 0) {
-    return (directByKey[0] as { ListingKey?: string }).ListingKey ?? null
+    const preferred = (directByKey as Array<{ ListingKey?: string | null }>)
+      .map((row) => String(row.ListingKey ?? '').trim())
+      .find((value) => value.length > 0)
+    if (preferred) return preferred
   }
 
   // Fallback: search within city
@@ -430,7 +442,9 @@ export async function resolveListingKeyFromCanonicalPath(input: {
     return bTime - aTime
   })
   const top = matches[0]
-  return top.ListingKey ?? top.ListNumber ?? null
+  const topKey = String(top.ListingKey ?? '').trim()
+  if (topKey) return topKey
+  return null
 }
 
 /* ---------- Main listing detail fetch ---------- */
