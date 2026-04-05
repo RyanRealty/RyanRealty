@@ -5,6 +5,7 @@ import type { ListingTileRow } from '@/app/actions/listings'
 import type { EngagementCounts } from '@/app/actions/engagement'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
 import ListingTile from '@/components/ListingTile'
+import { Card, CardContent } from '@/components/ui/card'
 
 type Props = {
   title: string
@@ -33,7 +34,31 @@ export default function VideoToursRow({
   viewAllHref,
 }: Props) {
   const withVideo = listings.filter(hasVideo).slice(0, 12)
-  if (withVideo.length === 0) return null
+  if (withVideo.length === 0) {
+    return (
+      <TilesSlider
+        title={title}
+        headerRight={
+          viewAllHref ? (
+            <Link href={viewAllHref} className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              View all videos →
+            </Link>
+          ) : null
+        }
+      >
+        <TilesSliderItem>
+          <Card className="h-full border-border bg-card">
+            <CardContent className="p-6">
+              <p className="text-sm font-semibold text-foreground">Video tours are still syncing for active listings.</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Check back shortly or open the full videos page for newly processed tours.
+              </p>
+            </CardContent>
+          </Card>
+        </TilesSliderItem>
+      </TilesSlider>
+    )
+  }
 
   return (
     <TilesSlider
