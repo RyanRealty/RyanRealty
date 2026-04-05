@@ -336,8 +336,9 @@ export async function GET(request: Request) {
         new_status: string | null
         changed_at: string
       }> = []
-      // Track listings that just became terminal and need finalization
+      // Track terminal listings that need finalization
       const toFinalize: Array<{ listingKey: string; listNumber: string }> = []
+      const queuedForFinalization = new Set<string>()
 
       for (const result of results) {
         const f = result.StandardFields
@@ -408,9 +409,6 @@ export async function GET(request: Request) {
                 event_type: `status_${newStatusLower.replace(/\s+/g, '_')}`,
                 payload: { ListNumber: f.ListNumber, ClosePrice: f.ClosePrice, ListPrice: newPrice },
               })
-
-              // Queue for finalization
-              toFinalize.push({ listingKey, listNumber })
             }
           }
 
@@ -436,6 +434,14 @@ export async function GET(request: Request) {
               payload: { ListNumber: f.ListNumber, previous_price: oldPrice, new_price: newPrice },
             })
           }
+        }
+
+        // Tighten terminal handling:
+        // if a listing is currently terminal and not finalized, queue it now.
+        // This catches cases where the terminal transition event was missed.
+        if (listingKey && isTerminalStatus(newStatus) && !queuedForFinalization.has(listNumber)) {
+          queuedForFinalization.add(listNumber)
+          toFinalize.push({ listingKey, listNumber })
         }
       }
 
