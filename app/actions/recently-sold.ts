@@ -36,7 +36,7 @@ export async function getRecentlySold(options: {
 
   let query = supabase
     .from('listings')
-    .select('ListingKey, ListNumber, mls_source, ListPrice, ClosePrice, CloseDate, BedroomsTotal, BathroomsTotal, LivingArea, StreetNumber, StreetName, City, State, PostalCode, PhotoURL, SubdivisionName, StandardStatus')
+    .select('ListingKey, ListNumber, ListPrice, ClosePrice, CloseDate, BedroomsTotal, BathroomsTotal, LivingArea, StreetNumber, StreetName, City, State, PostalCode, PhotoURL, SubdivisionName, StandardStatus')
     .or('StandardStatus.ilike.%Closed%,StandardStatus.ilike.%Sold%')
     .order('CloseDate', { ascending: false, nullsFirst: false })
     .order('ModificationTimestamp', { ascending: false })
@@ -52,7 +52,7 @@ export async function getRecentlySold(options: {
     .map((row) => ({
       listingKey: String(row.ListingKey ?? row.ListNumber ?? '').trim(),
       listNumber: row.ListNumber == null ? null : String(row.ListNumber),
-      mlsSource: row.mls_source == null ? null : String(row.mls_source),
+      mlsSource: row.mls_source == null ? (row.MlsSource == null ? null : String(row.MlsSource)) : String(row.mls_source),
       listPrice: row.ListPrice == null ? null : Number(row.ListPrice),
       closePrice: row.ClosePrice == null ? null : Number(row.ClosePrice),
       closeDate: row.CloseDate == null ? null : String(row.CloseDate),

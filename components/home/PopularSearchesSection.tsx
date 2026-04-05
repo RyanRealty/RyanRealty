@@ -3,8 +3,15 @@ import { getPopularPublicSearches } from '@/app/actions/saved-searches'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
+async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 1500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ])
+}
+
 export default async function PopularSearchesSection() {
-  const searches = await getPopularPublicSearches(12)
+  const searches = await withTimeout(getPopularPublicSearches(12), [])
   if (searches.length === 0) return null
 
   return (

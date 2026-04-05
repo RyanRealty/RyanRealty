@@ -9,19 +9,12 @@ import {
   getCommunitiesInCity,
 } from '@/app/actions/cities'
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/lib/share-metadata'
-import { getSession } from '@/app/actions/auth'
-import { getSavedListingKeys } from '@/app/actions/saved-listings'
-import { getLikedListingKeys } from '@/app/actions/likes'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { CITY_QUICK_FACTS } from '@/lib/cities'
 import { getCityContent, buildDataDrivenCityAbout } from '@/lib/city-content'
 import { getActivityFeedByCityCached } from '@/app/actions/activity-feed'
 import { getEngagementCountsBatchCached, type EngagementCounts } from '@/app/actions/engagement'
 import { getActiveBrokers } from '@/app/actions/brokers'
-import { isCitySaved } from '@/app/actions/saved-cities'
-import { getSavedCommunityKeys } from '@/app/actions/saved-communities'
-import { getLikedCommunityKeys, getCommunityEngagementBatchCached } from '@/app/actions/community-engagement'
+import { getCommunityEngagementBatchCached } from '@/app/actions/community-engagement'
 import { homesForSalePath, subdivisionEntityKey } from '@/lib/slug'
 import { slugify } from '@/lib/slug'
 import { getLiveMarketPulse } from '@/app/actions/market-stats'
@@ -49,7 +42,7 @@ import { getReportMetricsTimeSeries } from '@/app/actions/reports'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import CityClusterNav from '@/components/CityClusterNav'
 import { getGuidesByCity } from '@/app/actions/guides'
-import { getCityInventoryBreakdown } from '@/app/actions/inventory-breakdown'
+import { getCityInventoryBreakdown, type InventoryBreakdown } from '@/app/actions/inventory-breakdown'
 import InventoryTypeSlider from '@/components/geo-page/InventoryTypeSlider'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -85,6 +78,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export const revalidate = 60
+
+async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ])
+}
+
+const EMPTY_INVENTORY: InventoryBreakdown = {
+  singleFamily: 0,
+  condoTownhome: 0,
+  manufacturedMobile: 0,
+  landLot: 0,
+}
 
 function buildQuickFacts(
   cityName: string,
@@ -141,11 +148,6 @@ export default async function CityDetailPage({ params }: Props) {
   const { slug } = await params
   const city = await getCityBySlug(slug)
   if (!city) notFound()
-
-  const [session, fubPersonId] = await Promise.all([getSession(), getFubPersonIdFromCookie()])
-  const pageUrl = `${siteUrl}/cities/${slug}`
-  const pageTitle = `Homes for Sale in ${city.name}, Oregon | Ryan Realty`
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const heroImageUrl =
     city.heroImageUrl ?? null
 
@@ -169,24 +171,24 @@ export default async function CityDetailPage({ params }: Props) {
     cityVideoRows,
     citySalesSeries,
   ] = await Promise.all([
-    getCityListings(city.name, 24),
-    getCityPendingListings(city.name, 12),
-    getCitySoldListings(city.name, 6),
-    getCommunitiesInCity(city.name),
-    getCityPriceHistory(city.name),
-    session?.user ? getSavedListingKeys() : Promise.resolve([]),
-    session?.user ? getLikedListingKeys() : Promise.resolve([]),
-    getActivityFeedByCityCached(city.name, null, 24),
-    getActiveBrokers(),
-    session?.user ? isCitySaved(slug) : Promise.resolve(false),
-    session?.user ? getSavedCommunityKeys() : Promise.resolve([]),
-    session?.user ? getLikedCommunityKeys() : Promise.resolve([]),
-    getGuidesByCity(city.name),
-    getLiveMarketPulse({ geoType: 'city', geoSlug: slugify(city.name) }),
-    getOpenHousesWithListings({ city: city.name }),
-    getCityInventoryBreakdown(city.name),
-    getListingsWithVideosCached({ city: city.name, sort: 'price_desc', status: 'active', limit: 12 }),
-    getReportMetricsTimeSeries(city.name, 60),
+    withTimeout(getCityListings(city.name, 24), []),
+    withTimeout(getCityPendingListings(city.name, 12), []),
+    withTimeout(getCitySoldListings(city.name, 6), []),
+    withTimeout(getCommunitiesInCity(city.name), []),
+    withTimeout(getCityPriceHistory(city.name), []),
+    Promise.resolve([] as string[]),
+    Promise.resolve([] as string[]),
+    withTimeout(getActivityFeedByCityCached(city.name, null, 24), []),
+    withTimeout(getActiveBrokers(), []),
+    Promise.resolve(false),
+    Promise.resolve([] as string[]),
+    Promise.resolve([] as string[]),
+    withTimeout(getGuidesByCity(city.name), []),
+    withTimeout(getLiveMarketPulse({ geoType: 'city', geoSlug: slugify(city.name) }), null),
+    withTimeout(getOpenHousesWithListings({ city: city.name }), []),
+    withTimeout(getCityInventoryBreakdown(city.name), EMPTY_INVENTORY),
+    withTimeout(getListingsWithVideosCached({ city: city.name, sort: 'price_desc', status: 'active', limit: 12 }), []),
+    withTimeout(getReportMetricsTimeSeries(city.name, 60), { data: [], error: undefined }),
   ])
   const cityGuideSlug = cityGuides.length > 0 ? cityGuides[0]!.slug : null
 
@@ -365,7 +367,7 @@ export default async function CityDetailPage({ params }: Props) {
             citySlug={slug}
             cityName={city.name}
             initialSaved={citySaved}
-            signedIn={!!session?.user}
+            signedIn={false}
             shareUrl={`${siteUrl}/cities/${slug}`}
             variant="overlay"
           />
@@ -434,9 +436,9 @@ export default async function CityDetailPage({ params }: Props) {
       <GeoSectionLatestActivity
         title={`What is happening in ${city.name}`}
         items={activityFeed}
-        signedIn={!!session?.user}
-        savedKeys={session?.user ? savedKeys : []}
-        likedKeys={session?.user ? likedKeys : []}
+        signedIn={false}
+        savedKeys={savedKeys}
+        likedKeys={likedKeys}
       />
 
       <CommunitiesSlider
@@ -444,7 +446,7 @@ export default async function CityDetailPage({ params }: Props) {
         communities={communities.slice(0, 12)}
         viewAllHref={`/cities/${slug}`}
         viewAllLabel="View all communities"
-        signedIn={!!session?.user}
+        signedIn={false}
         savedEntityKeys={savedCommunityKeys}
         likedEntityKeys={likedCommunityKeys}
       />
@@ -454,10 +456,10 @@ export default async function CityDetailPage({ params }: Props) {
         listings={featuredListings}
         viewAllHref={homesForSalePath(city.name)}
         viewAllLabel="View all"
-        savedKeys={session?.user ? savedKeys : []}
-        likedKeys={session?.user ? likedKeys : []}
-        signedIn={!!session?.user}
-        userEmail={session?.user?.email ?? null}
+        savedKeys={savedKeys}
+        likedKeys={likedKeys}
+        signedIn={false}
+        userEmail={null}
         engagementMap={engagementMap}
       />
 
@@ -466,10 +468,10 @@ export default async function CityDetailPage({ params }: Props) {
           title={`Pending listings in ${city.name}`}
           listings={pendingListings}
           placeName={city.name}
-          savedKeys={session?.user ? savedKeys : []}
-          likedKeys={session?.user ? likedKeys : []}
-          signedIn={!!session?.user}
-          userEmail={session?.user?.email ?? null}
+          savedKeys={savedKeys}
+          likedKeys={likedKeys}
+          signedIn={false}
+          userEmail={null}
           engagementMap={engagementMap}
         />
       )}
@@ -478,10 +480,10 @@ export default async function CityDetailPage({ params }: Props) {
         <VideoToursRow
           title={`Video tours in ${city.name}`}
           listings={listingsWithVideo}
-          signedIn={!!session?.user}
-          savedKeys={session?.user ? savedKeys : []}
-          likedKeys={session?.user ? likedKeys : []}
-          userEmail={session?.user?.email ?? null}
+          signedIn={false}
+          savedKeys={savedKeys}
+          likedKeys={likedKeys}
+          userEmail={null}
           engagementMap={engagementMap}
           viewAllHref={`/videos?city=${encodeURIComponent(city.name)}`}
         />
@@ -496,7 +498,7 @@ export default async function CityDetailPage({ params }: Props) {
       <CommunitiesBar
         cityName={city.name}
         communities={communities}
-        signedIn={!!session?.user}
+        signedIn={false}
         savedEntityKeys={savedCommunityKeys}
         likedEntityKeys={likedCommunityKeys}
         engagementMap={communityEngagementMap}
@@ -506,10 +508,10 @@ export default async function CityDetailPage({ params }: Props) {
         title="Homes for sale in this city"
         listings={listings}
         placeName={city.name}
-        savedKeys={session?.user ? savedKeys : []}
-        likedKeys={session?.user ? likedKeys : []}
-        signedIn={!!session?.user}
-        userEmail={session?.user?.email ?? null}
+        savedKeys={savedKeys}
+        likedKeys={likedKeys}
+        signedIn={false}
+        userEmail={null}
         engagementMap={engagementMap}
       />
 
@@ -518,10 +520,10 @@ export default async function CityDetailPage({ params }: Props) {
         listings={listings}
         viewAllHref={homesForSalePath(city.name)}
         viewAllLabel="View all"
-        savedKeys={session?.user ? savedKeys : []}
-        likedKeys={session?.user ? likedKeys : []}
-        signedIn={!!session?.user}
-        userEmail={session?.user?.email ?? null}
+        savedKeys={savedKeys}
+        likedKeys={likedKeys}
+        signedIn={false}
+        userEmail={null}
         engagementMap={engagementMap}
       />
 

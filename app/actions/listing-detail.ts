@@ -476,7 +476,7 @@ function mapRowToListing(row: AnyRow): ListingDetailListing {
     id: listingKey,
     listing_key: listingKey,
     list_number: safeStr(row.ListNumber),
-    mls_source: safeStr(row.mls_source),
+    mls_source: safeStr((row as { mls_source?: unknown; MlsSource?: unknown }).mls_source ?? (row as { MlsSource?: unknown }).MlsSource),
     listing_id: safeStr(row.ListingKey),
     property_id: null,
     standard_status: safeStr(row.StandardStatus),
@@ -784,7 +784,7 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
   // Query the actual PascalCase listings table — NO properties(*) join
   let listingRow: AnyRow | null = null
   const DETAIL_LISTING_SELECT =
-    'ListingKey, ListNumber, mls_source, ListPrice, OriginalListPrice, ClosePrice, StandardStatus, OnMarketDate, CloseDate, ModificationTimestamp, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, PropertyType, StreetNumber, StreetName, City, State, PostalCode, Latitude, Longitude, PhotoURL, OpenHouses, details'
+    'ListingKey, ListNumber, ListPrice, OriginalListPrice, ClosePrice, StandardStatus, OnMarketDate, CloseDate, ModificationTimestamp, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, PropertyType, StreetNumber, StreetName, City, State, PostalCode, Latitude, Longitude, PhotoURL, OpenHouses, details'
 
   const { data: byKey } = await supabase
     .from('listings')
@@ -1149,7 +1149,7 @@ export async function getSimilarListingsForDetailPage(
   // Query using actual PascalCase columns — only listings with photos
   let query = supabase
     .from('listings')
-    .select('ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
+    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
     .neq('ListingKey', key)
     .not('PhotoURL', 'is', null)
     .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
@@ -1172,7 +1172,7 @@ export async function getSimilarListingsForDetailPage(
   if ((!data || data.length < 4) && communityName?.trim() && city?.trim()) {
     let fallbackQuery = supabase
       .from('listings')
-      .select('ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
+      .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
       .neq('ListingKey', key)
       .not('PhotoURL', 'is', null)
       .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
@@ -1213,7 +1213,7 @@ export async function getSimilarListingsForDetailPage(
     return {
       listing_key: r.ListingKey,
       list_number: r.ListNumber ?? null,
-      mls_source: r.mls_source ?? null,
+      mls_source: r.mls_source ?? (r as { MlsSource?: string | null }).MlsSource ?? null,
       list_price: r.ListPrice,
       beds_total: r.BedroomsTotal,
       baths_full: r.BathroomsTotal,
@@ -1240,7 +1240,7 @@ export async function getSubdivisionListings(
 
   const { data } = await supabase
     .from('listings')
-    .select('ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
+    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
     .neq('ListingKey', excludeListingKey)
     .ilike('SubdivisionName', subdivisionName.trim())
     .ilike('City', city.trim())
@@ -1276,7 +1276,7 @@ export async function getSubdivisionListings(
     return {
       listing_key: r.ListingKey,
       list_number: r.ListNumber ?? null,
-      mls_source: r.mls_source ?? null,
+      mls_source: r.mls_source ?? (r as { MlsSource?: string | null }).MlsSource ?? null,
       list_price: r.ListPrice,
       beds_total: r.BedroomsTotal,
       baths_full: r.BathroomsTotal,

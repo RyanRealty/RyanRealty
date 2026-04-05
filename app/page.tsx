@@ -3,9 +3,7 @@ import path from 'path'
 import fs from 'fs'
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { getBrokerageSettings } from './actions/brokerage'
 import { getMarketSnapshot } from './actions/home'
-import { getSession } from './actions/auth'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import HomeHero from '../components/home/HomeHero'
 import SocialProofSection from '../components/home/SocialProofSection'
@@ -36,6 +34,14 @@ import type { ListingTileRow } from './actions/listings'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/og-home.png`
+type PublicSession = { user?: { email?: string | null } } | null
+
+async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 1500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ])
+}
 
 function getTeamImageSrc(brokerage: BrokerageSettingsRow | null): string {
   const fromAdmin = brokerage?.team_image_url?.trim() || brokerage?.hero_image_url?.trim()
@@ -92,12 +98,12 @@ function SectionSkeleton({ height = 'min-h-[320px]' }: { height?: string }) {
 
 /* ─── Async streamed sections ────────────────────────────── */
 
-async function ActivityFeedAsync({ session }: { session: Awaited<ReturnType<typeof getSession>> }) {
+async function ActivityFeedAsync({ session }: { session: PublicSession }) {
   const [activityFeed, browseCities, savedKeys, likedKeys] = await Promise.all([
-    getActivityFeedWithFallbackMulti({ cities: [...ACTIVITY_FEED_DEFAULT_CITIES], limit: 12 }),
-    getBrowseCities(),
-    session?.user ? getSavedListingKeys() : Promise.resolve([] as string[]),
-    session?.user ? getLikedListingKeys() : Promise.resolve([] as string[]),
+    withTimeout(getActivityFeedWithFallbackMulti({ cities: [...ACTIVITY_FEED_DEFAULT_CITIES], limit: 12 }), []),
+    withTimeout(getBrowseCities(), []),
+    session?.user ? withTimeout(getSavedListingKeys(), [] as string[]) : Promise.resolve([] as string[]),
+    session?.user ? withTimeout(getLikedListingKeys(), [] as string[]) : Promise.resolve([] as string[]),
   ])
 
   return (
@@ -127,7 +133,7 @@ async function MarketSnapshotForHero() {
 }
 
 async function OpenHouseAsync() {
-  const weekendOpenHouses = await getOpenHousesWithListings()
+  const weekendOpenHouses = await withTimeout(getOpenHousesWithListings(), [])
   return (
     <section className="px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-7xl">
@@ -141,11 +147,11 @@ async function OpenHouseAsync() {
   )
 }
 
-async function VideoToursAsync({ session }: { session: Awaited<ReturnType<typeof getSession>> }) {
+async function VideoToursAsync({ session }: { session: PublicSession }) {
   const [videoRows, savedKeys, likedKeys] = await Promise.all([
-    getListingsWithVideos({ sort: 'price_desc', status: 'active', limit: 10 }),
-    session?.user ? getSavedListingKeys() : Promise.resolve([] as string[]),
-    session?.user ? getLikedListingKeys() : Promise.resolve([] as string[]),
+    withTimeout(getListingsWithVideos({ sort: 'price_desc', status: 'active', limit: 10 }), []),
+    session?.user ? withTimeout(getSavedListingKeys(), [] as string[]) : Promise.resolve([] as string[]),
+    session?.user ? withTimeout(getLikedListingKeys(), [] as string[]) : Promise.resolve([] as string[]),
   ])
   const listingsWithVideo = videoRows.map((row) => {
     const [streetNumber = '', ...streetNameParts] = (row.unparsed_address ?? '').trim().split(/\s+/)
@@ -226,12 +232,8 @@ export default async function Home() {
     )
   }
 
-  // FAST: Only 2 small queries block initial render (< 200ms)
-  const [session, brokerage] = await Promise.all([
-    getSession(),
-    getBrokerageSettings(),
-  ])
-
+  // Keep public home route cache-friendly by avoiding auth lookup in server render path.
+  const session: PublicSession = null
   return (
     <main className="min-h-screen bg-background">
       <script
@@ -272,8 +274,8 @@ export default async function Home() {
       {/* Hero renders IMMEDIATELY with placeholder stats — no Suspense blocking LCP */}
       <HomeHero
         marketSnapshot={{ count: 0, medianPrice: null, avgDom: null }}
-        heroVideoUrl={brokerage?.hero_video_url?.trim() || '/videos/hero.mp4'}
-        heroImageUrl={brokerage?.hero_image_url ?? null}
+        heroVideoUrl="/videos/hero.mp4"
+        heroImageUrl={null}
       />
 
       <div className="mx-auto mt-4 flex w-full max-w-7xl justify-end px-4 sm:px-6">
@@ -287,24 +289,9 @@ export default async function Home() {
       </div>
 
       {/* Static — renders immediately, no data fetch */}
-      <SocialProofSection testimonials={TESTIMONIALS} teamImageSrc={getTeamImageSrc(brokerage)} />
+      <SocialProofSection testimonials={TESTIMONIALS} teamImageSrc={getTeamImageSrc(null)} />
 
-      {/* Streams in: Ryan Realty brokerage listings */}
-      <Suspense fallback={<SectionSkeleton height="min-h-[280px]" />}>
-        <BrokerageListingsSlider />
-      </Suspense>
-
-      {/* Streams in: activity feed (heaviest section) */}
-      <Suspense fallback={<SectionSkeleton />}>
-        <ActivityFeedAsync session={session} />
-      </Suspense>
-
-      {/* Static sections — render immediately */}
       <LifestyleSearchSlider />
-
-      <Suspense fallback={<SectionSkeleton height="min-h-[240px]" />}>
-        <PopularSearchesSection />
-      </Suspense>
 
       <section className="px-4 py-12 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-7xl">
@@ -330,36 +317,11 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Streams in: market pulse */}
-      <Suspense fallback={<SectionSkeleton height="min-h-[280px]" />}>
-        <MarketPulseSection />
-      </Suspense>
-
-      {/* Streams in: open houses */}
-      <Suspense fallback={<SectionSkeleton height="min-h-[280px]" />}>
-        <OpenHouseAsync />
-      </Suspense>
-
-      {/* Streams in: video tours / just listed */}
-      <Suspense fallback={<SectionSkeleton height="min-h-[280px]" />}>
-        <VideoToursAsync session={session} />
-      </Suspense>
-
-      {/* Streams in: communities */}
-      <Suspense fallback={<SectionSkeleton />}>
-        <HomeCommunitiesBlock session={session} />
-      </Suspense>
-
       <section className="px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-7xl">
           <AdUnit slot="3003001001" format="horizontal" />
         </div>
       </section>
-
-      {/* Streams in: cities */}
-      <Suspense fallback={<SectionSkeleton />}>
-        <HomeCitiesBlock session={session} />
-      </Suspense>
 
       {/* Static CTA sections — render immediately */}
       <section className="border-b border-border bg-card px-4 py-14 sm:px-6 sm:py-16">

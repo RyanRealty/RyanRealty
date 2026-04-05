@@ -135,7 +135,7 @@ export async function getOtherListingsInSubdivision(
   if (!supabase) return []
   const { data } = await supabase
     .from('listings')
-    .select('ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, OnMarketDate, OpenHouses, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, has_virtual_tour')
+    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, OnMarketDate, OpenHouses, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, has_virtual_tour')
     .ilike('SubdivisionName', subdivisionName)
     .neq('ListingKey', excludeListingKey)
     .neq('ListNumber', excludeListingKey)
@@ -144,7 +144,7 @@ export async function getOtherListingsInSubdivision(
   return (data ?? []) as SimilarListingRow[]
 }
 
-const SIMILAR_SELECT = 'ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, OnMarketDate, OpenHouses, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, has_virtual_tour'
+const SIMILAR_SELECT = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, OnMarketDate, OpenHouses, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, has_virtual_tour'
 
 /**
  * Similar listings for detail page: same subdivision first, then fill to minCount with recent in city.
@@ -558,7 +558,7 @@ export async function getListings(options: {
   const supabase = getAnonSupabase()
   if (!supabase) return []
   // Exclude heavy `details` JSONB from basic listing queries — only needed for advanced RPC path
-  const select = 'ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, OnMarketDate'
+  const select = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, OnMarketDate'
   let query = supabase.from('listings').select(select)
 
   if (options.city) query = query.ilike('City', options.city)
@@ -741,7 +741,7 @@ export async function getListingsWithAdvanced(options: {
 
 // PERFORMANCE: keep tile selects narrow and exclude wide JSONB fields.
 const HOME_TILE_SELECT =
-  'ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, OpenHouses, ClosePrice, CloseDate, has_virtual_tour'
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, OpenHouses, ClosePrice, CloseDate, has_virtual_tour'
 
 /**
  * Listings for home page "Homes for You" slider. Newest in city; optional filters (maxPrice, minBeds, minBaths) for curated feed.
@@ -1824,7 +1824,7 @@ export async function getListingByKey(listingKeyOrSlug: string): Promise<Listing
 }
 
 const LISTING_TILE_SELECT =
-  'ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, OnMarketDate, ClosePrice, CloseDate'
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, OnMarketDate, ClosePrice, CloseDate'
 
 export type ListingsAtAddressOptions = {
   streetNumber: string | null
@@ -2157,7 +2157,7 @@ export async function getListingKeysWithRecentPriceChange(withinDays = PRICE_CHA
 /* ---------- Brokerage (Ryan Realty) listings ---------- */
 
 const BROKERAGE_TILE_SELECT =
-  'ListingKey, ListNumber, mls_source, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, ClosePrice, CloseDate'
+  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, OnMarketDate, ClosePrice, CloseDate'
 
 /**
  * Get listings from Ryan Realty's brokerage.
@@ -2174,6 +2174,9 @@ async function _getBrokerageListingsUncached(
   const supabase = getServiceSupabase()
   if (!supabase) return []
 
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 1500)
+
   const { data, error } = await supabase
     .from('listings')
     .select(BROKERAGE_TILE_SELECT)
@@ -2183,8 +2186,11 @@ async function _getBrokerageListingsUncached(
     .not('PhotoURL', 'is', null)
     .order('ModificationTimestamp', { ascending: false })
     .limit(30)
+    .abortSignal(controller.signal)
+  clearTimeout(timeout)
 
   if (error) {
+    if (error.message?.toLowerCase().includes('aborted')) return []
     console.error('[getBrokerageListings]', error.message)
     return []
   }

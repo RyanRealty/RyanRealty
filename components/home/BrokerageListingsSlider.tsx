@@ -1,7 +1,4 @@
 import { getBrokerageListings } from '@/app/actions/listings'
-import { getSession } from '@/app/actions/auth'
-import { getSavedListingKeys } from '@/app/actions/saved-listings'
-import { getLikedListingKeys } from '@/app/actions/likes'
 import TilesSlider from '@/components/TilesSlider'
 import ListingTile from '@/components/ListingTile'
 import type { HomeTileRow } from '@/app/actions/listings'
@@ -15,20 +12,9 @@ import type { HomeTileRow } from '@/app/actions/listings'
  * Returns null if no listings found (section hidden).
  */
 export default async function BrokerageListingsSlider() {
-  const [listings, session] = await Promise.all([
-    getBrokerageListings(),
-    getSession(),
-  ])
+  const listings = await getBrokerageListings()
 
   if (listings.length === 0) return null
-
-  const [savedKeys, likedKeys] = await Promise.all([
-    session?.user ? getSavedListingKeys() : Promise.resolve([] as string[]),
-    session?.user ? getLikedListingKeys() : Promise.resolve([] as string[]),
-  ])
-
-  const savedSet = new Set(savedKeys)
-  const likedSet = new Set(likedKeys)
 
   return (
     <section className="px-4 py-12 sm:px-6">
@@ -47,10 +33,10 @@ export default async function BrokerageListingsSlider() {
                 <ListingTile
                   listing={listing}
                   listingKey={key}
-                  signedIn={!!session?.user}
-                  saved={savedSet.has(key)}
-                  liked={likedSet.has(key)}
-                  userEmail={session?.user?.email ?? null}
+                  signedIn={false}
+                  saved={false}
+                  liked={false}
+                  userEmail={null}
                 />
               </div>
             )

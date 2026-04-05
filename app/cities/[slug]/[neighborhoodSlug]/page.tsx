@@ -12,13 +12,6 @@ import { getActivityFeedByCityCached } from '@/app/actions/activity-feed'
 import { getEngagementCountsBatchCached } from '@/app/actions/engagement'
 import { getActiveBrokers } from '@/app/actions/brokers'
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/lib/share-metadata'
-import { getSession } from '@/app/actions/auth'
-import { getSavedListingKeys } from '@/app/actions/saved-listings'
-import { getLikedListingKeys } from '@/app/actions/likes'
-import { getSavedCommunityKeys } from '@/app/actions/saved-communities'
-import { getLikedCommunityKeys } from '@/app/actions/community-engagement'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { homesForSalePath } from '@/lib/slug'
 import { buildDataDrivenNeighborhoodAbout } from '@/lib/city-content'
 import NeighborhoodHero from '@/components/neighborhood/NeighborhoodHero'
@@ -35,7 +28,7 @@ import CommunitiesSlider from '@/components/sliders/CommunitiesSlider'
 import GeoSectionFeaturedListings from '@/components/geo-page/GeoSectionFeaturedListings'
 import GeoSectionLatestActivity from '@/components/geo-page/GeoSectionLatestActivity'
 import RecentlySoldRow from '@/components/RecentlySoldRow'
-import { getNeighborhoodInventoryBreakdown } from '@/app/actions/inventory-breakdown'
+import { getNeighborhoodInventoryBreakdown, type InventoryBreakdown } from '@/app/actions/inventory-breakdown'
 import InventoryTypeSlider from '@/components/geo-page/InventoryTypeSlider'
 import VideoToursRow from '@/components/videos/VideoToursRow'
 import { getListingsWithVideosCached } from '@/app/actions/videos'
@@ -79,29 +72,38 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export const revalidate = 60
 
+async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ])
+}
+
+const EMPTY_INVENTORY: InventoryBreakdown = {
+  singleFamily: 0,
+  condoTownhome: 0,
+  manufacturedMobile: 0,
+  landLot: 0,
+}
+
 export default async function NeighborhoodDetailPage({ params }: Props) {
   const { slug: citySlug, neighborhoodSlug } = await params
   const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)
   if (!neighborhood) notFound()
-
-  const [session, fubPersonId] = await Promise.all([getSession(), getFubPersonIdFromCookie()])
-  const pageUrl = `${siteUrl}/cities/${citySlug}/${neighborhoodSlug}`
-  const pageTitle = `${neighborhood.name} in ${neighborhood.cityName}, Oregon | Ryan Realty`
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
   const [listings, pendingListings, soldListings, neighborhoodPriceHistory, savedKeys, likedKeys, communitiesInNeighborhood, activityFeedRaw, brokers, savedCommunityKeys, likedCommunityKeys, inventoryBreakdown, cityVideoRows] = await Promise.all([
-    getNeighborhoodListings(neighborhood.id, 24),
-    getNeighborhoodPendingListings(neighborhood.id, 12),
-    getNeighborhoodSoldListings(neighborhood.id, 6),
-    getNeighborhoodPriceHistory(neighborhood.id),
-    session?.user ? getSavedListingKeys() : Promise.resolve([]),
-    session?.user ? getLikedListingKeys() : Promise.resolve([]),
-    getCommunitiesInNeighborhood(neighborhood.id, neighborhood.cityName),
-    getActivityFeedByCityCached(neighborhood.cityName, null, 24),
-    getActiveBrokers(),
-    session?.user ? getSavedCommunityKeys() : Promise.resolve([]),
-    session?.user ? getLikedCommunityKeys() : Promise.resolve([]),
-    getNeighborhoodInventoryBreakdown(neighborhood.id),
-    getListingsWithVideosCached({ city: neighborhood.cityName, sort: 'price_desc', status: 'active', limit: 20 }),
+    withTimeout(getNeighborhoodListings(neighborhood.id, 24), []),
+    withTimeout(getNeighborhoodPendingListings(neighborhood.id, 12), []),
+    withTimeout(getNeighborhoodSoldListings(neighborhood.id, 6), []),
+    withTimeout(getNeighborhoodPriceHistory(neighborhood.id), []),
+    Promise.resolve([] as string[]),
+    Promise.resolve([] as string[]),
+    withTimeout(getCommunitiesInNeighborhood(neighborhood.id, neighborhood.cityName), []),
+    withTimeout(getActivityFeedByCityCached(neighborhood.cityName, null, 24), []),
+    withTimeout(getActiveBrokers(), []),
+    Promise.resolve([] as string[]),
+    Promise.resolve([] as string[]),
+    withTimeout(getNeighborhoodInventoryBreakdown(neighborhood.id), EMPTY_INVENTORY),
+    withTimeout(getListingsWithVideosCached({ city: neighborhood.cityName, sort: 'price_desc', status: 'active', limit: 20 }), []),
   ])
 
   const heroImageUrl = neighborhood.heroImageUrl ?? null
@@ -332,9 +334,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       <GeoSectionLatestActivity
         title={`What is happening in ${neighborhood.name}`}
         items={activityFeed}
-        signedIn={!!session?.user}
-        savedKeys={session?.user ? savedKeys : []}
-        likedKeys={session?.user ? likedKeys : []}
+        signedIn={false}
+        savedKeys={savedKeys}
+        likedKeys={likedKeys}
       />
 
       <CommunitiesSlider
@@ -342,7 +344,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         communities={communitiesInNeighborhood.slice(0, 12)}
         viewAllHref={`/cities/${citySlug}`}
         viewAllLabel="View all communities"
-        signedIn={!!session?.user}
+        signedIn={false}
         savedEntityKeys={savedCommunityKeys}
         likedEntityKeys={likedCommunityKeys}
       />
@@ -352,10 +354,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         listings={featuredListings}
         viewAllHref={homesForSalePath(neighborhood.cityName)}
         viewAllLabel="View all"
-        savedKeys={session?.user ? savedKeys : []}
-        likedKeys={session?.user ? likedKeys : []}
-        signedIn={!!session?.user}
-        userEmail={session?.user?.email ?? null}
+        savedKeys={savedKeys}
+        likedKeys={likedKeys}
+        signedIn={false}
+        userEmail={null}
         engagementMap={engagementMap}
       />
 
@@ -363,10 +365,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <ListingsSlider
           title={`Pending listings in ${neighborhood.name}`}
           listings={pendingListings}
-          savedKeys={session?.user ? savedKeys : []}
-          likedKeys={session?.user ? likedKeys : []}
-          signedIn={!!session?.user}
-          userEmail={session?.user?.email ?? null}
+          savedKeys={savedKeys}
+          likedKeys={likedKeys}
+          signedIn={false}
+          userEmail={null}
           placeName={neighborhood.name}
           engagementMap={engagementMap}
         />
@@ -376,10 +378,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <VideoToursRow
           title={`Video tours in ${neighborhood.name}`}
           listings={listingsWithVideo}
-          signedIn={!!session?.user}
-          savedKeys={session?.user ? savedKeys : []}
-          likedKeys={session?.user ? likedKeys : []}
-          userEmail={session?.user?.email ?? null}
+          signedIn={false}
+          savedKeys={savedKeys}
+          likedKeys={likedKeys}
+          userEmail={null}
           engagementMap={engagementMap}
           viewAllHref={`/videos?city=${encodeURIComponent(neighborhood.cityName)}`}
         />
@@ -394,10 +396,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       <ListingsSlider
         title="Homes for sale in this neighborhood"
         listings={listings}
-        savedKeys={session?.user ? savedKeys : []}
-        likedKeys={session?.user ? likedKeys : []}
-        signedIn={!!session?.user}
-        userEmail={session?.user?.email ?? null}
+        savedKeys={savedKeys}
+        likedKeys={likedKeys}
+        signedIn={false}
+        userEmail={null}
         placeName={neighborhood.name}
         engagementMap={engagementMap}
       />
@@ -407,10 +409,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         listings={listings}
         viewAllHref={homesForSalePath(neighborhood.cityName)}
         viewAllLabel="View all"
-        savedKeys={session?.user ? savedKeys : []}
-        likedKeys={session?.user ? likedKeys : []}
-        signedIn={!!session?.user}
-        userEmail={session?.user?.email ?? null}
+        savedKeys={savedKeys}
+        likedKeys={likedKeys}
+        signedIn={false}
+        userEmail={null}
         engagementMap={engagementMap}
       />
 
