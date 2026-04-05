@@ -323,6 +323,39 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Restore core home sliders with streaming + fallbacks */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <BrokerageListingsSlider />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <ActivityFeedAsync session={session} />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <PopularSearchesSection />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <MarketPulseSection />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <OpenHouseAsync />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <VideoToursAsync session={session} />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <HomeCommunitiesBlock session={null} />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <HomeCitiesBlock session={null} />
+      </Suspense>
+
       {/* Static CTA sections — render immediately */}
       <section className="border-b border-border bg-card px-4 py-14 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl">
