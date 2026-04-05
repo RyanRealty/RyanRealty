@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { signOut } from '@/app/actions/auth'
 import type { AuthUser } from '@/app/actions/auth'
@@ -14,10 +14,10 @@ import {
   ArrowDown01Icon,
   MapsIcon,
 } from '@hugeicons/core-free-icons'
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { listingsBrowsePath, valuationPath } from '@/lib/slug'
+import SmartSearch from '@/components/SmartSearch'
 
 /** Main nav: Home, Home Valuation, Buyers dropdown, Sellers dropdown, About dropdown, then Reports/Map */
 const NAV_HOME = { href: '/', label: 'Home' } as const
@@ -84,13 +84,11 @@ export default function Header({
   onSearchClick,
 }: HeaderProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [desktopDropdown, setDesktopDropdown] = useState<'buyers' | 'sellers' | 'about' | null>(null)
   const [mobileExpanded, setMobileExpanded] = useState<'buyers' | 'sellers' | 'about' | null>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
   const accountRef = useRef<HTMLDivElement>(null)
   const navRef = useRef<HTMLElement>(null)
 
@@ -100,10 +98,6 @@ export default function Header({
   }
   const isMenuActive = (links: readonly { href: string }[]) =>
     links.some((l) => isActive(l.href))
-
-  useEffect(() => {
-    if (searchOpen) searchInputRef.current?.focus()
-  }, [searchOpen])
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -124,14 +118,6 @@ export default function Header({
     if (accountOpen || desktopDropdown) document.addEventListener('click', onClickOutside)
     return () => document.removeEventListener('click', onClickOutside)
   }, [accountOpen, desktopDropdown])
-
-
-  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const q = new FormData(e.currentTarget).get('q') as string
-    if (q?.trim()) router.push(`/homes-for-sale?keywords=${encodeURIComponent(q.trim())}`)
-    setSearchOpen(false)
-  }
 
   return (
     <header className="sticky top-0 z-50 bg-primary text-primary-foreground">
@@ -332,21 +318,8 @@ export default function Header({
             role="search"
           aria-label="Site search"
         >
-          <form onSubmit={handleSearchSubmit} className="mx-auto flex max-w-xl gap-2">
-            <Input
-              ref={searchInputRef}
-              type="search"
-              name="q"
-              placeholder="City, community, zip, address, or broker…"
-              className="min-w-0 flex-1 rounded-lg border border-primary-foreground/20 bg-card/10 px-4 py-2 text-muted placeholder:text-muted/70 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-              aria-label="Search query"
-            />
-            <Button
-              type="submit"
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary hover:opacity-90"
-            >
-              Search
-            </Button>
+          <div className="mx-auto flex max-w-xl items-center gap-2">
+            <SmartSearch onClose={() => setSearchOpen(false)} />
             <Button
               type="button"
               onClick={() => setSearchOpen(false)}
@@ -355,7 +328,7 @@ export default function Header({
             >
               Cancel
             </Button>
-          </form>
+          </div>
           </div>
         </>
       )}
