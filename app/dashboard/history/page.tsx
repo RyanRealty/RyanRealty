@@ -14,6 +14,7 @@ import {
   DEFAULT_DISPLAY_TERM_YEARS,
 } from '@/lib/mortgage'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
+import RemoveViewedButton from '@/components/dashboard/RemoveViewedButton'
 
 export const metadata: Metadata = {
   title: 'Viewing History',
@@ -110,7 +111,12 @@ export default async function DashboardHistoryPage() {
                       {[listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ').trim() || listing.City || key}
                     </Link>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(v.created_at).toLocaleDateString()}
+                      {new Date(v.created_at).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
                     </span>
                     <Link
                       href={listingDetailPath(key, { streetNumber: listing.StreetNumber, streetName: listing.StreetName, city: listing.City, state: listing.State, postalCode: listing.PostalCode })}
@@ -118,6 +124,7 @@ export default async function DashboardHistoryPage() {
                     >
                       View again
                     </Link>
+                    <RemoveViewedButton activityId={v.id} />
                   </li>
                 )
               })}

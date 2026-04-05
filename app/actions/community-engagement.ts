@@ -90,6 +90,22 @@ export async function isCommunityLiked(entityKey: string): Promise<boolean> {
   return !!data
 }
 
+export async function removeCommunityLike(entityKey: string): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not signed in' }
+  const key = entityKey.trim().toLowerCase()
+  if (!key || !key.includes(':')) return { error: 'Invalid entity_key' }
+  const { error } = await supabase
+    .from('liked_communities')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('entity_key', key)
+  return { error: error?.message ?? null }
+}
+
 async function ensureCommunityMetricsRow(serviceSupabase: SupabaseClient, entityKey: string) {
   const { data } = await communityMetrics(serviceSupabase)
     .select('id')

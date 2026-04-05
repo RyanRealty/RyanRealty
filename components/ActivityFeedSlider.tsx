@@ -91,6 +91,7 @@ export default function ActivityFeedSlider({
               liked={likedSet.has(item.listing_key)}
               hasRecentPriceChange={badges.hasRecentPriceChange}
               priceDropAmount={getPriceDropAmount(item)}
+              activityAt={item.event_at}
               hotBadge={badges.hotBadge}
               priority={idx < 3}
             />

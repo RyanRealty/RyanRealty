@@ -279,6 +279,7 @@ export default function ActivityFeedSection({
                   liked={likedKeys.includes(item.listing_key)}
                   hasRecentPriceChange={item.event_type === 'price_drop'}
                   priceDropAmount={getPriceDropAmount(item)}
+                  activityAt={item.event_at}
                   priority={i < 3}
                 />
               </div>

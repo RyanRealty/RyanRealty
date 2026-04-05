@@ -25,3 +25,19 @@ export async function getRecentListingViews(limit = 100): Promise<ViewListingRow
 
   return (data ?? []) as ViewListingRow[]
 }
+
+export async function removeRecentListingView(activityId: string): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not signed in' }
+  const { error } = await supabase
+    .from('user_activities')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('id', activityId.trim())
+    .eq('activity_type', 'view_listing')
+    .eq('entity_type', 'listing')
+  return { error: error?.message ?? null }
+}

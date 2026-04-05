@@ -19,7 +19,7 @@ type DashboardShellProps = {
 
 const navItems: { href: string; label: string; icon: string }[] = [
   { href: '/dashboard', label: 'Overview', icon: '◉' },
-  { href: '/dashboard/saved', label: 'Saved Homes', icon: '♥' },
+  { href: '/dashboard/likes', label: 'Things I Like', icon: '♥' },
   { href: '/dashboard/searches', label: 'Saved Searches', icon: '🔍' },
   { href: '/dashboard/collections', label: 'My Collections', icon: '📁' },
   { href: '/dashboard/history', label: 'Viewing History', icon: '🕐' },

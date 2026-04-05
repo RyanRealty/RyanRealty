@@ -46,6 +46,18 @@ function formatListedDate(dateText: string | null | undefined): string | null {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function formatActivityDateTime(dateText: string | null | undefined): string | null {
+  if (!dateText) return null
+  const d = new Date(dateText)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 function statusLabel(s: string | null | undefined): string {
   const t = (s ?? '').toLowerCase()
   if (!t || t.includes('active') || t.includes('for sale') || t.includes('coming soon')) return 'Active'
@@ -151,6 +163,8 @@ export type ListingTileProps = {
   hasRecentPriceChange?: boolean
   /** Amount reduced for explicit price-drop events when known. */
   priceDropAmount?: number | null
+  /** Activity timestamp for event-driven sliders (price drop, status change, etc.). */
+  activityAt?: string | null
   /** When true, show "Hot" badge (e.g. Trending section). */
   hotBadge?: boolean
   /** When true, preload image (e.g. above-the-fold tiles). */
@@ -177,6 +191,7 @@ function ListingTile({
   userEmail,
   hasRecentPriceChange = false,
   priceDropAmount = null,
+  activityAt = null,
   hotBadge = false,
   priority = false,
   fubPersonId,
@@ -211,6 +226,7 @@ function ListingTile({
     listing.StandardStatus ?? null
   )
   const listedDate = formatListedDate(listing.OnMarketDate ?? null)
+  const activityDateTime = formatActivityDateTime(activityAt)
   const hasOpenHouse = Array.isArray(listing.OpenHouses) && listing.OpenHouses.length > 0
   const isResort =
     listing.City != null &&
@@ -478,6 +494,7 @@ function ListingTile({
             Days on market: {dom != null && dom >= 0 ? (dom === 0 ? 'New' : `${dom} day${dom !== 1 ? 's' : ''}`) : '—'}
           </span>
           <span>Listed: {listedDate ?? '—'}</span>
+          {activityDateTime && <span>Activity: {activityDateTime}</span>}
           {hasRecentPriceChange && priceDropAmount && priceDropAmount > 0 && (
             <span className="text-warning">Price drop: ${Math.round(priceDropAmount).toLocaleString()}</span>
           )}
