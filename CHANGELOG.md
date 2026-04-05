@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.10.5 (2026-04-05)
+
+### Bug Fixes
+- fix: standardize market report residential filters
+
+---
+
+
 ## v1.10.4 (2026-04-05)
 
 ### Bug Fixes
