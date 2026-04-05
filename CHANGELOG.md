@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.16.2 (2026-04-05)
+
+### Maintenance
+- perf: add fail-fast listing rendering and post-deploy speed budgets
+
+---
+
+
 ## v1.16.1 (2026-04-05)
 
 ### Bug Fixes
