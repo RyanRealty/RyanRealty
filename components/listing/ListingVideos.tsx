@@ -5,11 +5,36 @@ import { getVideoEmbedHtml } from '@/lib/video-embed'
 import { sanitizeHtmlWithEmbeds } from '@/lib/sanitize'
 
 const DIRECT_VIDEO_EXT = /\.(mp4|webm|ogg|mov)(\?|$)/i
+const TRUSTED_EMBED_HOSTS = new Set([
+  'www.youtube.com',
+  'youtube.com',
+  'youtu.be',
+  'player.vimeo.com',
+  'vimeo.com',
+  'my.matterport.com',
+  'matterport.com',
+])
 
 function isDirectVideoUrl(uri: string): boolean {
   try {
     const path = new URL(uri).pathname
     return DIRECT_VIDEO_EXT.test(path)
+  } catch {
+    return false
+  }
+}
+
+function getIframeSrc(html: string): string | null {
+  const match = html.match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i)
+  return match?.[1] ?? null
+}
+
+function isTrustedEmbedHtml(html: string): boolean {
+  const src = getIframeSrc(html)
+  if (!src) return false
+  try {
+    const host = new URL(src).hostname.toLowerCase()
+    return TRUSTED_EMBED_HOSTS.has(host)
   } catch {
     return false
   }
@@ -36,10 +61,25 @@ export default function ListingVideos({ videos, virtualTours }: Props) {
                 className="overflow-hidden rounded-lg border border-border bg-card p-2 shadow-sm"
               >
                 {v.ObjectHtml ? (
+                  isTrustedEmbedHtml(v.ObjectHtml) ? (
                   <div
                     className="aspect-video w-full overflow-hidden rounded-lg [&>iframe]:h-full [&>iframe]:w-full"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtmlWithEmbeds(v.ObjectHtml) }}
                   />
+                  ) : v.Uri ? (
+                    <a
+                      href={v.Uri}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block aspect-video rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:bg-border"
+                    >
+                      Watch: {v.Name ?? v.Caption ?? 'Video'}
+                    </a>
+                  ) : (
+                    <div className="flex aspect-video items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                      {v.Name ?? 'Video'}
+                    </div>
+                  )
                 ) : v.Uri && isDirectVideoUrl(v.Uri) ? (
                   <video
                     src={v.Uri}
