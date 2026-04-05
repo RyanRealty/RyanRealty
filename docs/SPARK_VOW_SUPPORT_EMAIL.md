@@ -1,4 +1,6 @@
-# Draft email: Spark/FlexMLS support — VOW subscription & history/historical errors
+# Spark/FlexMLS support email template — VOW subscription & history/historical errors
+
+**Status:** Reviewed and ready to send
 
 **Send to:** Your Spark Platform support contact or MLS technology contact (adjust greeting as needed).
 
