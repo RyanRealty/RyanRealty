@@ -75,7 +75,7 @@ export const SELL_INTENT_PAGES: Record<string, LeadLandingConfig> = {
     subtitle: 'Most expired listings do not fail because the home is bad. They fail because pricing positioning and exposure miss the buyer pool.',
     seoTitle: 'Expired Listing Help in Central Oregon | Ryan Realty',
     seoDescription: 'Relist your expired home with a stronger pricing and marketing strategy built for Central Oregon buyers.',
-    heroImageUrl: 'https://images.unsplash.com/photo-1560518883-03f0e6ff7be4?auto=format&fit=crop&w=2200&q=80',
+    heroImageUrl: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=2200&q=80',
     imageAlt: 'Residential home exterior in evening light',
     primaryCtaLabel: 'Get my relaunch plan',
     secondaryCtaLabel: 'Request a valuation',
