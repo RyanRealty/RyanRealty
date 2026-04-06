@@ -17,6 +17,11 @@ type Props = {
   userEmail?: string | null
   engagementMap?: Record<string, EngagementCounts>
   viewAllHref?: string
+  /**
+   * When true, listings were returned from getListingsWithVideos* (each row already has a tour URL).
+   * Skips client-side re-filtering so a slow or partial timeout does not double-drop tiles.
+   */
+  listingsAreVideoCurated?: boolean
 }
 
 export default function VideoToursRow({
@@ -28,8 +33,11 @@ export default function VideoToursRow({
   userEmail,
   engagementMap,
   viewAllHref,
+  listingsAreVideoCurated = false,
 }: Props) {
-  const withVideo = listings.filter(listingRowShowsVideoTile).slice(0, 12)
+  const withVideo = (
+    listingsAreVideoCurated ? listings : listings.filter(listingRowShowsVideoTile)
+  ).slice(0, 12)
   if (withVideo.length === 0) {
     return (
       <TilesSlider

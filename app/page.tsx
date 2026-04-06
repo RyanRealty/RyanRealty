@@ -29,7 +29,7 @@ import BrokerageListingsSlider from '@/components/home/BrokerageListingsSlider'
 import PopularSearchesSection from '@/components/home/PopularSearchesSection'
 import { Skeleton } from '@/components/ui/skeleton'
 import LifestyleSearchSlider from '@/components/home/LifestyleSearchSlider'
-import { getListingsWithVideos } from './actions/videos'
+import { getListingsWithVideosCached } from './actions/videos'
 import type { ListingTileRow } from './actions/listings'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -42,6 +42,8 @@ type PublicSession = { user?: { email?: string | null } } | null
 
 /** Home streams many heavy Supabase scans; allow time and never reject the Suspense boundary. */
 const HOME_FETCH_MS = 12_000
+/** Video tour query can scan listings + listing_videos; 12s was timing out and yielded an empty slider. */
+const HOME_VIDEO_TOURS_MS = 45_000
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = HOME_FETCH_MS, label?: string): Promise<T> {
   return withTimeoutFallback(promise, fallback, timeoutMs, label)
@@ -254,7 +256,12 @@ async function MarketSnapshotSection() {
 
 async function VideoToursAsync({ session }: { session: PublicSession }) {
   const [videoRows, savedKeys, likedKeys] = await Promise.all([
-    withTimeout(getListingsWithVideos({ sort: 'price_desc', status: 'active', limit: 10 }), [], HOME_FETCH_MS, 'home-video-listings'),
+    withTimeout(
+      getListingsWithVideosCached({ sort: 'price_desc', status: 'active', limit: 10 }),
+      [],
+      HOME_VIDEO_TOURS_MS,
+      'home-video-listings'
+    ),
     session?.user ? withTimeout(getSavedListingKeys(), [] as string[], HOME_FETCH_MS, 'home-video-saved') : Promise.resolve([] as string[]),
     session?.user ? withTimeout(getLikedListingKeys(), [] as string[], HOME_FETCH_MS, 'home-video-liked') : Promise.resolve([] as string[]),
   ])
@@ -278,8 +285,13 @@ async function VideoToursAsync({ session }: { session: PublicSession }) {
       Longitude: null,
       StandardStatus: 'Active',
       TotalLivingAreaSqFt: row.living_area,
+      has_virtual_tour: true,
       details: { Videos: [{ Uri: row.video_url }] },
-    } as ListingTileRow & { TotalLivingAreaSqFt?: number | null; details?: { Videos?: Array<{ Uri?: string }> } }
+    } as ListingTileRow & {
+      TotalLivingAreaSqFt?: number | null
+      has_virtual_tour?: boolean
+      details?: { Videos?: Array<{ Uri?: string }> }
+    }
   })
 
   return (
@@ -293,6 +305,7 @@ async function VideoToursAsync({ session }: { session: PublicSession }) {
           likedKeys={likedKeys}
           userEmail={session?.user?.email ?? null}
           viewAllHref="/videos"
+          listingsAreVideoCurated
         />
       </div>
     </section>

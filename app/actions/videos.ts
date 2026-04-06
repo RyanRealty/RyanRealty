@@ -84,6 +84,85 @@ function unparsedFromRow(row: Record<string, unknown>): string | null {
   return line || null
 }
 
+/**
+ * Prefer small listing_videos + keyed listing lookups over scanning hundreds of listings (home page, /videos).
+ */
+async function getListingsWithVideosFromListingVideosTable(
+  supabase: ReturnType<typeof getSupabase>,
+  maxRows: number,
+  priceDesc: boolean
+): Promise<VideoListingRow[]> {
+  const { data: lvRows, error: lvErr } = await supabase
+    .from('listing_videos')
+    .select('listing_key, video_url')
+    .order('created_at', { ascending: false })
+    .limit(150)
+
+  if (lvErr) {
+    console.error('[getListingsWithVideos] listing_videos fast path', lvErr)
+    return []
+  }
+  if (!lvRows?.length) return []
+
+  const urlByKey = new Map<string, string>()
+  for (const lv of lvRows) {
+    const lk = String((lv as { listing_key?: string }).listing_key ?? '').trim()
+    const vu = String((lv as { video_url?: string }).video_url ?? '').trim()
+    if (lk && vu && !urlByKey.has(lk)) urlByKey.set(lk, vu)
+  }
+  const keys = [...urlByKey.keys()]
+  if (keys.length === 0) return []
+
+  const byKey = new Map<string, Record<string, unknown>>()
+  const chunkSize = 40
+  for (let i = 0; i < keys.length; i += chunkSize) {
+    const slice = keys.slice(i, i + chunkSize)
+    const [ea, eb] = await Promise.all([
+      supabase.from('listings').select(LISTING_VIDEO_SELECT_MAIN).or(ACTIVE_STATUS_OR).in('ListingKey', slice),
+      supabase.from('listings').select(LISTING_VIDEO_SELECT_MAIN).or(ACTIVE_STATUS_OR).in('listing_key', slice),
+    ])
+    if (ea.error && !/column|ListingKey/i.test(ea.error.message ?? '')) {
+      console.error('[getListingsWithVideos] fast path ListingKey', ea.error)
+    }
+    if (eb.error && !/column|listing_key/i.test(eb.error.message ?? '')) {
+      console.error('[getListingsWithVideos] fast path listing_key', eb.error)
+    }
+    for (const row of [...(ea.data ?? []), ...(eb.data ?? [])]) {
+      const rec = row as Record<string, unknown>
+      const k = resolveListingKeyFromRow(rec)
+      if (k && !byKey.has(k)) byKey.set(k, rec)
+    }
+  }
+
+  const rows: VideoListingRow[] = []
+  for (const lk of keys) {
+    if (rows.length >= maxRows) break
+    const rec = byKey.get(lk)
+    const vurl = urlByKey.get(lk)
+    if (!rec || !vurl) continue
+    if (!rowMeetsStatusFilter(rec, false)) continue
+
+    rows.push({
+      listing_key: lk,
+      list_price: rowListPrice(rec),
+      beds_total: (rec.BedroomsTotal ?? rec.beds_total) as number | null,
+      baths_full: (rec.BathroomsTotal ?? rec.baths_full) as number | null,
+      living_area: (rec.TotalLivingAreaSqFt ?? rec.living_area) as number | null,
+      subdivision_name: rowSubdivision(rec),
+      city: rowCity(rec),
+      unparsed_address: unparsedFromRow(rec),
+      photo_url: (rec.PhotoURL ?? rec.photo_url) as string | null,
+      video_url: vurl,
+      video_source: 'listing_video',
+    })
+  }
+
+  if (priceDesc) {
+    rows.sort((a, b) => (b.list_price ?? 0) - (a.list_price ?? 0))
+  }
+  return rows.slice(0, maxRows)
+}
+
 export async function getListingsWithVideos(filters?: {
   community?: string
   city?: string
@@ -97,6 +176,23 @@ export async function getListingsWithVideos(filters?: {
   const maxRows = Math.min(Math.max(filters?.limit ?? 24, 1), 60)
   const candidateLimit = Math.min(Math.max(maxRows * 25, 200), 900)
   const statusAll = filters?.status === 'all'
+
+  const geoOrPriceScoped =
+    Boolean(filters?.city?.trim()) ||
+    Boolean(filters?.community?.trim()) ||
+    filters?.minPrice != null ||
+    filters?.maxPrice != null
+
+  if (!geoOrPriceScoped && !statusAll) {
+    const fastRows = await getListingsWithVideosFromListingVideosTable(
+      supabase,
+      maxRows,
+      filters?.sort === 'price_desc'
+    )
+    if (fastRows.length > 0) {
+      return fastRows
+    }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function applyFiltersAndOrder(q: any) {
