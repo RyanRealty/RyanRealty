@@ -8,7 +8,14 @@ import {
   getHotCommunitiesInCity,
 } from '@/app/actions/listings'
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
-import { getMarketStatsForCity } from '@/app/actions/market-stats'
+import { getLiveMarketPulse } from '@/app/actions/market-stats'
+import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
+import {
+  getReportMetrics,
+  getReportMetricsTimeSeries,
+  type ReportMetricsTimeSeriesPoint,
+} from '@/app/actions/reports'
+import { slugify } from '@/lib/slug'
 import { getTrendingListingKeys } from '@/app/actions/listing-views'
 import { sendEvent } from '@/lib/followupboss'
 import type { HomeTileRow } from '@/app/actions/listings'
@@ -211,17 +218,145 @@ export const getCommunityHighlights = unstable_cache(
   { revalidate: 300, tags: ['community-highlights'] }
 )
 
-/** Market snapshot for Bend — uses RPC for single-scan aggregation instead of 4 queries + 15k row JS median. */
-async function _getMarketSnapshotUncached(): Promise<CityMarketStats & { avgDom?: number | null }> {
-  // Use pre-computed cache-backed stats only.
-  const stats = await getMarketStatsForCity('Bend')
-  if (stats.count > 0) return { ...stats, avgDom: stats.avgDom ?? null }
-  return { count: 0, avgPrice: null, medianPrice: null, avgDom: null, newListingsLast30Days: 0, pendingCount: 0, closedLast12Months: 0 }
+/** Same filters as `getMarketReportData` (condo or townhome allowed, no manufactured, land, or commercial). */
+const SNAPSHOT_RESIDENTIAL: {
+  includeCondoTown: boolean
+  includeManufactured: boolean
+  includeAcreage: boolean
+  includeCommercial: boolean
+} = {
+  includeCondoTown: true,
+  includeManufactured: false,
+  includeAcreage: false,
+  includeCommercial: false,
+}
+
+function mergeRegionalSalesTimeseries(
+  rows: { timeseries: ReportMetricsTimeSeriesPoint[] | null }[]
+): ReportMetricsTimeSeriesPoint[] {
+  const byPeriod = new Map<string, { sold: number; monthLabel: string }>()
+  for (const { timeseries } of rows) {
+    for (const p of timeseries ?? []) {
+      const key = p.period_start
+      const prev = byPeriod.get(key)
+      const sold = (p.sold_count ?? 0) + (prev?.sold ?? 0)
+      byPeriod.set(key, { sold, monthLabel: prev?.monthLabel ?? p.month_label })
+    }
+  }
+  return [...byPeriod.entries()]
+    .map(([period_start, v]) => ({
+      period_start,
+      period_end: period_start,
+      month_label: v.monthLabel,
+      sold_count: v.sold,
+      median_price: null,
+    }))
+    .sort((a, b) => a.period_start.localeCompare(b.period_start))
+}
+
+export type MarketSnapshotResult = CityMarketStats & {
+  avgDom?: number | null
+  /** Combined monthly closed sales (sum across Central Oregon cities), residential filters applied. */
+  regionSalesSeries: ReportMetricsTimeSeriesPoint[]
+  /** Closed residential sales in the current calendar year through today (same period as cards). */
+  closedYtdResidential: number
+}
+
+/** Central Oregon residential snapshot across MARKET_REPORT_DEFAULT_CITIES. */
+async function _getMarketSnapshotUncached(): Promise<MarketSnapshotResult> {
+  const empty: MarketSnapshotResult = {
+    count: 0,
+    avgPrice: null,
+    medianPrice: null,
+    avgDom: null,
+    newListingsLast30Days: 0,
+    pendingCount: 0,
+    closedLast12Months: 0,
+    regionSalesSeries: [],
+    closedYtdResidential: 0,
+  }
+
+  const end = new Date()
+  const start = new Date(end.getFullYear(), 0, 1)
+  const periodStart = start.toISOString().slice(0, 10)
+  const periodEnd = end.toISOString().slice(0, 10)
+  const cities = [...MARKET_REPORT_DEFAULT_CITIES]
+
+  try {
+    const perCity = await Promise.all(
+      cities.map(async (city) => {
+        const [metricsRes, pulse, tsRes] = await Promise.all([
+          getReportMetrics(city, periodStart, periodEnd, null, null, SNAPSHOT_RESIDENTIAL),
+          getLiveMarketPulse({ geoType: 'city', geoSlug: slugify(city) }),
+          getReportMetricsTimeSeries(city, 12, null, SNAPSHOT_RESIDENTIAL),
+        ])
+        return {
+          city,
+          metrics: metricsRes.data,
+          pulse,
+          timeseries: tsRes.data,
+        }
+      })
+    )
+
+    let activeSum = 0
+    let pendingSum = 0
+    let new30Sum = 0
+    let closedYtd = 0
+    let sales12Sum = 0
+    let weightedMedianNumerator = 0
+    let weightedMedianDenominator = 0
+    let weightedDomNumerator = 0
+    let weightedDomDenominator = 0
+
+    for (const row of perCity) {
+      const m = row.metrics
+      if (!m) continue
+      activeSum += m.current_listings
+      closedYtd += m.sold_count
+      sales12Sum += m.sales_12mo
+      const sc = m.sold_count
+      if (sc > 0 && m.median_price > 0) {
+        weightedMedianNumerator += m.median_price * sc
+        weightedMedianDenominator += sc
+      }
+      if (sc > 0 && m.median_dom > 0) {
+        weightedDomNumerator += m.median_dom * sc
+        weightedDomDenominator += sc
+      }
+      if (row.pulse) {
+        pendingSum += row.pulse.pending_count
+        new30Sum += row.pulse.new_count_30d
+      }
+    }
+
+    const regionSalesSeries = mergeRegionalSalesTimeseries(perCity)
+
+    return {
+      count: activeSum,
+      avgPrice: null,
+      medianPrice:
+        weightedMedianDenominator > 0
+          ? Math.round(weightedMedianNumerator / weightedMedianDenominator)
+          : null,
+      avgDom:
+        weightedDomDenominator > 0
+          ? Math.round(weightedDomNumerator / weightedDomDenominator)
+          : null,
+      newListingsLast30Days: new30Sum,
+      pendingCount: pendingSum,
+      closedLast12Months: sales12Sum,
+      regionSalesSeries,
+      closedYtdResidential: closedYtd,
+    }
+  } catch {
+    return empty
+  }
 }
 
 export const getMarketSnapshot = unstable_cache(
   _getMarketSnapshotUncached,
-  ['market-snapshot'],
+  ['central-oregon-market-snapshot-v2'],
   { revalidate: 300, tags: ['market-snapshot'] }
 )
 

@@ -3,6 +3,8 @@ import MarketPulseCarousel from '@/components/market-report/MarketPulseCarousel'
 
 type Props = {
   className?: string
+  omitCityCharts?: boolean
+  headingVariant?: 'default' | 'nested'
 }
 
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2000): Promise<T> {
@@ -12,7 +14,11 @@ async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2000
   ])
 }
 
-export default async function MarketPulseSection({ className }: Props = {}) {
+export default async function MarketPulseSection({
+  className,
+  omitCityCharts,
+  headingVariant,
+}: Props = {}) {
   const end = new Date()
   const start = new Date(end.getFullYear(), 0, 1)
   const periodStart = start.toISOString().slice(0, 10)
@@ -29,5 +35,12 @@ export default async function MarketPulseSection({ className }: Props = {}) {
       timeseriesSampleCity: null,
     }
   )
-  return <MarketPulseCarousel data={data} className={className} />
+  return (
+    <MarketPulseCarousel
+      data={data}
+      className={className}
+      omitCityCharts={omitCityCharts}
+      headingVariant={headingVariant}
+    />
+  )
 }

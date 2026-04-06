@@ -20,9 +20,9 @@ const RESIDENTIAL_ONLY = {
 } as const
 
 /**
- * Fetch market report data for the last 7 days (or given range) across multiple cities.
- * Always residential data only (no lots, commercial, condo, manufactured).
- * Returns per-city metrics for the home page slider cards and reports page.
+ * Fetch market report data for the given range across multiple cities.
+ * Residential focus: condos and townhomes included; manufactured, land or acreage, and commercial excluded unless flags change.
+ * Returns per-city metrics for the home page city carousel and reports page.
  */
 export async function getMarketReportData(options?: {
   periodStart?: string

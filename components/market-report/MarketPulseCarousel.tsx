@@ -128,11 +128,22 @@ function CityMiniChart({ city }: { city: CityReport }) {
 type Props = {
   data: MarketReportData
   className?: string
+  /** Hide per-city charts when the home page already shows one regional sales chart. */
+  omitCityCharts?: boolean
+  /** Lighter heading when this block sits under the Central Oregon snapshot. */
+  headingVariant?: 'default' | 'nested'
 }
 
-export default function MarketPulseCarousel({ data, className }: Props) {
+export default function MarketPulseCarousel({
+  data,
+  className,
+  omitCityCharts = false,
+  headingVariant = 'default',
+}: Props) {
   const { periodStart, periodEnd, metricsByCity } = data
   const periodLabel = formatPeriodLabel(periodStart, periodEnd)
+  const headingId =
+    headingVariant === 'nested' ? 'housing-market-by-city-heading' : 'housing-market-report-heading'
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
@@ -167,26 +178,36 @@ export default function MarketPulseCarousel({ data, className }: Props) {
   return (
     <section
         className={cn('w-full bg-card px-4 py-16 sm:px-6 sm:py-20', className)}
-        aria-labelledby="housing-market-report-heading"
+        aria-labelledby={headingId}
       >
         <div className="mx-auto max-w-7xl">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="soft-trending" className="rounded-md px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest">
-              Year to date
-            </Badge>
-            <Badge variant="soft-neutral" className="rounded-md px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
-              Residential only
-            </Badge>
-          </div>
-          <h2
-            id="housing-market-report-heading"
-            className="mt-3 text-2xl text-primary sm:text-3xl"
-          >
-            Housing Market Report
-          </h2>
-          <p className="mt-2 text-muted-foreground">
-            Residential home sales by city. Click a card to open the report generator with that city and year-to-date range.
-          </p>
+          {headingVariant === 'default' ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="soft-trending" className="rounded-md px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest">
+                  Year to date
+                </Badge>
+                <Badge variant="soft-neutral" className="rounded-md px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
+                  Residential only
+                </Badge>
+              </div>
+              <h2 id={headingId} className="mt-3 text-2xl text-primary sm:text-3xl">
+                Housing Market Report
+              </h2>
+              <p className="mt-2 text-muted-foreground">
+                Residential home sales by city. Click a card to open the report generator with that city and year-to-date range.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 id={headingId} className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                Browse by city
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Same residential scope as the snapshot above (no land or manufactured). Each card shows active inventory for that city. Open the report tool to change dates or add communities.
+              </p>
+            </>
+          )}
 
           {metricsByCity.length === 0 ? (
             <div className="mt-6 rounded-xl border border-border bg-background p-6">
@@ -279,15 +300,18 @@ export default function MarketPulseCarousel({ data, className }: Props) {
                           <p className="mt-2 text-xs text-primary-foreground/85">
                             {periodLabel}
                           </p>
-                          <div className="mt-3 h-[100px] [&_.recharts-cartesian-axis-tick_text]:fill-primary-foreground [&_.recharts-cartesian-grid_line]:stroke-primary-foreground/20 [&_.recharts-line]:stroke-primary-foreground/90 [&_.recharts-curve]:stroke-primary-foreground/90">
-                            <CityMiniChart city={city} />
-                          </div>
+                          {!omitCityCharts ? (
+                            <div className="mt-3 h-[100px] [&_.recharts-cartesian-axis-tick_text]:fill-primary-foreground [&_.recharts-cartesian-grid_line]:stroke-primary-foreground/20 [&_.recharts-line]:stroke-primary-foreground/90 [&_.recharts-curve]:stroke-primary-foreground/90">
+                              <CityMiniChart city={city} />
+                            </div>
+                          ) : (
+                            <div className="mt-3 min-h-[1rem]" aria-hidden />
+                          )}
                         </div>
                         <div className="border-t border-border bg-card px-4 py-3">
                           <div className="mb-2 flex flex-wrap items-center gap-2">
-                            <Badge variant="soft-neutral">Sold {city.metrics.sold_count.toLocaleString()}</Badge>
                             <Badge variant="soft-neutral">
-                              Median {city.metrics.median_price > 0 ? `$${Math.round(city.metrics.median_price).toLocaleString()}` : '—'}
+                              Active {city.metrics.current_listings.toLocaleString()}
                             </Badge>
                           </div>
                           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
@@ -295,7 +319,7 @@ export default function MarketPulseCarousel({ data, className }: Props) {
                             <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" />
                           </span>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            New sales data is added as listings close.
+                            Deeper sold trends and price bands live in the report explorer.
                           </p>
                         </div>
                     </Link>

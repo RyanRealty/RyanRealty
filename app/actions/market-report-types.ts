@@ -4,6 +4,7 @@ import type {
   ReportMetricsTimeSeriesPoint,
 } from '@/app/actions/reports'
 
+/** Central Oregon cities included in the home page snapshot, market pulse carousel, and default multi-city report pulls. */
 export const MARKET_REPORT_DEFAULT_CITIES = [
   'Bend',
   'Redmond',
@@ -14,6 +15,7 @@ export const MARKET_REPORT_DEFAULT_CITIES = [
   'Terrebonne',
   'Madras',
   'Prineville',
+  'Powell Butte',
   'Crooked River Ranch',
 ] as const
 

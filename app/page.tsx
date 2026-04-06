@@ -32,6 +32,8 @@ import LifestyleSearchSlider from '@/components/home/LifestyleSearchSlider'
 import { getListingsWithVideos } from './actions/videos'
 import type { ListingTileRow } from './actions/listings'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import CentralOregonSalesChart from '@/components/home/CentralOregonSalesChart'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -126,15 +128,6 @@ async function ActivityFeedAsync({ session }: { session: PublicSession }) {
   )
 }
 
-async function MarketSnapshotForHero() {
-  const snapshot = await getMarketSnapshot()
-  return {
-    count: snapshot.count,
-    medianPrice: snapshot.medianPrice,
-    avgDom: snapshot.avgDom ?? null,
-  }
-}
-
 async function OpenHouseAsync() {
   const weekendOpenHouses = await withTimeout(getOpenHousesWithListings(), [], HOME_FETCH_MS, 'home-open-houses')
   return (
@@ -161,73 +154,100 @@ async function MarketSnapshotSection() {
       newListingsLast30Days: 0,
       pendingCount: 0,
       closedLast12Months: 0,
+      regionSalesSeries: [],
+      closedYtdResidential: 0,
     },
     HOME_FETCH_MS,
     'home-market-snapshot'
   )
   return (
-    <section className="px-4 py-12 sm:px-6 sm:py-14">
+    <section className="px-4 py-12 sm:px-6 sm:py-14" aria-labelledby="central-oregon-snapshot-heading">
       <div className="mx-auto max-w-7xl">
-        <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Market snapshot</h2>
-        <p className="mt-2 text-muted-foreground">
-          Live housing signals to show what is happening right now, plus deeper market reports by city.
+        <h2
+          id="central-oregon-snapshot-heading"
+          className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
+        >
+          Central Oregon Market Snapshot
+        </h2>
+        <p className="mt-2 max-w-3xl text-muted-foreground">
+          Active residential inventory across Bend, Redmond, Sunriver, La Pine, Sisters, Tumalo, Madras, Prineville,
+          Powell Butte, Terrebonne, and Crooked River Ranch. Condos and townhomes are included. Land, manufactured
+          homes, and commercial listings are excluded. Under-contract counts follow MLS status by city and can
+          include other property types.
         </p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <p className="mt-3 text-base font-medium text-foreground">
+          Closed year to date{' '}
+          <span className="tabular-nums">{snapshot.closedYtdResidential.toLocaleString()}</span> residential sales
+          region-wide (same cities and filters).
+        </p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Active listings</CardTitle>
+              <CardTitle className="text-base">Active residential listings</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-foreground">{snapshot.count.toLocaleString()}</p>
+              <p className="text-3xl font-bold tabular-nums text-foreground">{snapshot.count.toLocaleString()}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Pending listings</CardTitle>
+              <CardTitle className="text-base">Under contract</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-foreground">{snapshot.pendingCount.toLocaleString()}</p>
+              <p className="text-3xl font-bold tabular-nums text-foreground">
+                {snapshot.pendingCount.toLocaleString()}
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Median list price</CardTitle>
+              <CardTitle className="text-base">Median sale price YTD</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-foreground">
+              <p className="text-3xl font-bold tabular-nums text-foreground">
                 {snapshot.medianPrice != null ? `$${Math.round(snapshot.medianPrice).toLocaleString()}` : '—'}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Average days on market</CardTitle>
+              <CardTitle className="text-base">Typical days to sell</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-foreground">
+              <p className="text-3xl font-bold tabular-nums text-foreground">
                 {snapshot.avgDom != null ? Math.round(snapshot.avgDom).toLocaleString() : '—'}
               </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">New listings in 30 days</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-foreground">{snapshot.newListingsLast30Days.toLocaleString()}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Closed in 12 months</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-foreground">{snapshot.closedLast12Months.toLocaleString()}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Median days on market for closed sales YTD</p>
             </CardContent>
           </Card>
         </div>
+
+        <div className="mt-10">
+          <h3 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+            Regional closed sales by month
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Each point is the sum of closed residential sales across the cities above. For price bands, absorption,
+            and custom ranges, use the report tools below.
+          </p>
+          <div className="mt-4 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
+            <CentralOregonSalesChart series={snapshot.regionSalesSeries} />
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button variant="outline" size="default" asChild>
+                <Link href="/reports/explore">Explore market reports</Link>
+              </Button>
+              <Button variant="ghost" size="default" asChild>
+                <Link href="/housing-market">Housing market hub</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
-      <MarketPulseSection className="!px-0 !pt-10 !pb-0" />
+      <MarketPulseSection
+        className="!px-0 !pt-12 !pb-0"
+        omitCityCharts
+        headingVariant="nested"
+      />
     </section>
   )
 }
@@ -276,23 +296,6 @@ async function VideoToursAsync({ session }: { session: PublicSession }) {
         />
       </div>
     </section>
-  )
-}
-
-async function HeroWithMarket({ brokerage }: { brokerage: BrokerageSettingsRow | null }) {
-  const snapshot = await getMarketSnapshot()
-  const marketForHero = {
-    count: snapshot.count,
-    medianPrice: snapshot.medianPrice,
-    avgDom: snapshot.avgDom ?? null,
-  }
-
-  return (
-    <HomeHero
-      marketSnapshot={marketForHero}
-      heroVideoUrl={brokerage?.hero_video_url?.trim() || '/videos/hero-optimized.mp4'}
-      heroImageUrl={brokerage?.hero_image_url ?? null}
-    />
   )
 }
 

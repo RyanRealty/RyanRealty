@@ -188,7 +188,19 @@ export async function populateMarketPulseForCity(cityName: string): Promise<{ ok
  * Populate market_pulse_live for all Central Oregon cities.
  */
 export async function populateAllMarketPulse(): Promise<{ results: Array<{ city: string; ok: boolean; error?: string }> }> {
-  const cities = ['Bend', 'Redmond', 'Sisters', 'Sunriver', 'La Pine', 'Madras', 'Prineville', 'Terrebonne', 'Tumalo', 'Crooked River Ranch', 'Powell Butte']
+  const cities = [
+    'Bend',
+    'Redmond',
+    'Sisters',
+    'Sunriver',
+    'La Pine',
+    'Madras',
+    'Prineville',
+    'Terrebonne',
+    'Tumalo',
+    'Powell Butte',
+    'Crooked River Ranch',
+  ]
   const results = []
   for (const city of cities) {
     const result = await populateMarketPulseForCity(city)
