@@ -19,17 +19,26 @@ if (!supabaseUrl?.trim() || !serviceRole?.trim()) {
 
 const supabase = createClient(supabaseUrl, serviceRole)
 
-const STATUS_FILTERS = {
-  closed: 'StandardStatus.ilike.%Closed%',
-  expired: 'StandardStatus.ilike.%Expired%',
-  withdrawn: 'StandardStatus.ilike.%Withdrawn%',
-  canceled: 'StandardStatus.ilike.%Cancel%',
+/**
+ * Use .ilike('StandardStatus', pattern) for terminal buckets — not .or('StandardStatus.ilike.%Withdrawn%').
+ * PostgREST percent-decodes inside OR filter strings; `%Withdrawn%` breaks when chained with `.eq('history_finalized', true)`.
+ */
+const STATUS_ILIKE_PATTERNS = {
+  closed: '%Closed%',
+  expired: '%Expired%',
+  withdrawn: '%Withdrawn%',
+  canceled: '%Cancel%',
 }
 
 function formatError(error) {
   if (!error) return 'unknown error'
   const parts = [error.message, error.code, error.details, error.hint].filter(Boolean)
   return parts.length > 0 ? parts.join(' | ') : 'unknown error'
+}
+
+function omitTerminalQueryMeta(row) {
+  const { queryErrors: _qe, ...rest } = row
+  return rest
 }
 
 async function countWithRetry(run, label, attempts = 5) {
@@ -77,35 +86,30 @@ async function countMaybe(run, label) {
   }
 }
 
-async function byStatus(orExpr) {
+async function byStatus(pattern) {
+  const base = () =>
+    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', pattern)
   const [totalRes, finalizedRes, verifiedRes] = await Promise.all([
-    countMaybe(
-      () => supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(orExpr),
-      `count total ${orExpr}`
-    ),
-    countMaybe(
-      () => supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(orExpr).eq('history_finalized', true),
-      `count finalized ${orExpr}`
-    ),
-    countMaybe(
-      () =>
-        supabase
-          .from('listings')
-          .select('ListingKey', { count: 'exact', head: true })
-          .or(orExpr)
-          .eq('history_verified_full', true),
-      `count verified ${orExpr}`
-    ),
+    countMaybe(() => base(), `count total status ilike ${pattern}`),
+    countMaybe(() => base().eq('history_finalized', true), `count finalized ${pattern}`),
+    countMaybe(() => base().eq('history_verified_full', true), `count verified ${pattern}`),
   ])
   const t = totalRes.count ?? 0
   const f = finalizedRes.count ?? 0
   const v = verifiedRes.count ?? 0
+  const queryErrors = [totalRes.error, finalizedRes.error, verifiedRes.error].filter(Boolean)
+  if (v > f && t > 0 && queryErrors.length === 0) {
+    queryErrors.push(
+      `terminal bucket invariant: verified_full (${v}) > finalized (${f}) for pattern ${pattern} — check listings flags`
+    )
+  }
   return {
     total: t,
     finalized: f,
     verifiedFull: v,
     remaining: Math.max(0, t - f),
     finalizedUnverified: Math.max(0, f - v),
+    queryErrors,
   }
 }
 
@@ -180,11 +184,17 @@ async function main() {
   ])
 
   const [closed, expired, withdrawn, canceled] = await Promise.all([
-    byStatus(STATUS_FILTERS.closed),
-    byStatus(STATUS_FILTERS.expired),
-    byStatus(STATUS_FILTERS.withdrawn),
-    byStatus(STATUS_FILTERS.canceled),
+    byStatus(STATUS_ILIKE_PATTERNS.closed),
+    byStatus(STATUS_ILIKE_PATTERNS.expired),
+    byStatus(STATUS_ILIKE_PATTERNS.withdrawn),
+    byStatus(STATUS_ILIKE_PATTERNS.canceled),
   ])
+  const terminalBucketWarnings = [
+    ...closed.queryErrors,
+    ...expired.queryErrors,
+    ...withdrawn.queryErrors,
+    ...canceled.queryErrors,
+  ].map((e) => (typeof e === 'string' ? e : formatError(e)))
 
   const totalListings = totalListingsRes.count ?? 0
   const totalHistoryRows = totalHistoryRowsRes.count
@@ -244,6 +254,7 @@ async function main() {
       ? `on-market year breakdown: ${formatError(onMarketYearStatsRes.error)}`
       : null,
     noListDateRes.error,
+    ...terminalBucketWarnings,
   ].filter(Boolean)
   const totals = {
     totalListings,
@@ -345,7 +356,12 @@ async function main() {
       totalListingsCountMode: totalListingsRes.mode,
       historyRowsCountMode: totalHistoryRowsRes.mode,
     },
-    statusByTerminal: { closed, expired, withdrawn, canceled },
+    statusByTerminal: {
+      closed: omitTerminalQueryMeta(closed),
+      expired: omitTerminalQueryMeta(expired),
+      withdrawn: omitTerminalQueryMeta(withdrawn),
+      canceled: omitTerminalQueryMeta(canceled),
+    },
     warnings,
     cursors: {
       syncCursor: cursorRes.data ?? null,

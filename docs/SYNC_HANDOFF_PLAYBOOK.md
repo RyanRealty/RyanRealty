@@ -6,6 +6,7 @@ This is the persistent handoff for future agents and future sessions.
 
 - Visual dashboard: `/admin/sync`
 - Machine-readable snapshot: `node scripts/sync-status-report.mjs --json`
+  - Terminal status counts (closed, expired, withdrawn, canceled) must use **`.ilike('StandardStatus', '%Withdrawn%')`** (or equivalent per column). Do **not** chain **`.or('StandardStatus.ilike.%Withdrawn%')`** with **`.eq('history_finalized', true)`** — PostgREST treats `%` inside OR filter strings as percent-encoding, which produced bogus withdrawn finalized counts (0) until fixed.
   - `yearsFinalization` uses **`listing_year_on_market_finalization_stats`** when the view exists (OnMarketDate calendar year, same scope as year-by-year sync), plus job fields (`processedListings`, `listingsFinalizedThisPass`) from the matrix cache
   - `listingYearsBreakdown` is **`coalesce(ListDate, OnMarketDate)`** cohorts (can differ from OnMarketDate-only when those dates fall in different years)
   - `listingYearsOnMarketBreakdown` is the full OnMarketDate-only table (newest first), for parity checks against the year sync job

@@ -1140,10 +1140,8 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
       listingsCountError: 'Supabase not configured (missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY).',
     }
   }
-  const closedOr = 'StandardStatus.ilike.%Closed%'
-  const expiredOr = 'StandardStatus.ilike.%Expired%'
-  const withdrawnOr = 'StandardStatus.ilike.%Withdrawn%'
-  const canceledOr = 'StandardStatus.ilike.%Cancel%'
+  // Use .ilike on StandardStatus for terminal buckets. Do not use .or('StandardStatus.ilike.%Withdrawn%') with .eq():
+  // PostgREST percent-decodes % inside OR filter strings, which mis-binds filters and yields wrong finalized counts.
   const [listingsRes, totalRes, historyRes, activeNeedingHistoryRes, finalizedRes, verifiedRes, finalizedUnverifiedRes, closedTotal, closedF, expiredTotal, expiredF, withdrawnTotal, withdrawnF, canceledTotal, canceledF] = await Promise.all([
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(ACTIVE_STATUS_OR)),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true })),
@@ -1152,14 +1150,22 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_finalized', true)),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_verified_full', true)),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_finalized', true).eq('history_verified_full', false)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(closedOr)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(closedOr).eq('history_finalized', true)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(expiredOr)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(expiredOr).eq('history_finalized', true)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(withdrawnOr)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(withdrawnOr).eq('history_finalized', true)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(canceledOr)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(canceledOr).eq('history_finalized', true)),
+    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Closed%')),
+    countExactWithRetry(async () =>
+      await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Closed%').eq('history_finalized', true)
+    ),
+    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Expired%')),
+    countExactWithRetry(async () =>
+      await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Expired%').eq('history_finalized', true)
+    ),
+    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Withdrawn%')),
+    countExactWithRetry(async () =>
+      await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Withdrawn%').eq('history_finalized', true)
+    ),
+    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Cancel%')),
+    countExactWithRetry(async () =>
+      await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Cancel%').eq('history_finalized', true)
+    ),
   ])
   let historyError = historyRes.error
   if (historyError) {
