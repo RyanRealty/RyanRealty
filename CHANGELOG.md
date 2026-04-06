@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.21.1 (2026-04-06)
+
+### Bug Fixes
+- fix: video tours use MLS details when listing_videos is empty
+
+---
+
+
 ## v1.21.0 (2026-04-06)
 
 ### Features
