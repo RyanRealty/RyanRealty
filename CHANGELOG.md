@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.17.1 (2026-04-06)
+
+### Bug Fixes
+- fix: restore home sliders when db columns lag or queries are slow
+
+---
+
+
 ## v1.17.0 (2026-04-06)
 
 ### Features
