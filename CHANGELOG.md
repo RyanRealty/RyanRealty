@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.17.4 (2026-04-06)
+
+### Maintenance
+- chore(cursor): align rules with trunk workflow, deploy parity, and token scope
+
+---
+
+
 ## v1.17.3 (2026-04-06)
 
 ### Maintenance
