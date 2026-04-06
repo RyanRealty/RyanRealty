@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { fetchSparkListingHistory, fetchSparkPriceHistory, type SparkListingHistoryItem } from '@/lib/spark'
 
+/** Spark history per listing can exceed default serverless limits; raise on Vercel Pro+. */
+export const maxDuration = 300
+
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET
   if (secret?.trim()) {
