@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.20.2 (2026-04-06)
+
+### Bug Fixes
+- fix: allow up to 300s for sync-verify-full-history cron
+
+---
+
+
 ## v1.20.1 (2026-04-06)
 
 ### Maintenance
