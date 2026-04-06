@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.16.11 (2026-04-06)
+
+### Maintenance
+- chore: sync status year finalization in report and align architecture docs
+
+---
+
+
 ## v1.16.10 (2026-04-06)
 
 ### Maintenance
