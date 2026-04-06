@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.20.4 (2026-04-06)
+
+### Bug Fixes
+- fix: home video tours fall back when details lack URLs
+
+---
+
+
 ## v1.20.3 (2026-04-06)
 
 ### Bug Fixes
