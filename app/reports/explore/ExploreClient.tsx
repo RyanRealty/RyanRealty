@@ -33,9 +33,12 @@ import {
 import { getHousingWireMarketContext } from '@/app/actions/housingwire'
 import HousingWireMarketContextCard from '@/components/reports/HousingWireMarketContextCard'
 import ShareButton from '../../../components/ShareButton'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -443,9 +446,9 @@ export default function ExploreClient({
             Start with location and date range, then refine by property type and price.
           </p>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div ref={containerRef} className="relative flex flex-col gap-1.5">
+        <CardContent className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
+            <div ref={containerRef} className="relative flex flex-col gap-1.5 lg:col-span-5">
               <Label htmlFor="location-input" className="text-sm text-muted-foreground">
                 Location
               </Label>
@@ -492,104 +495,119 @@ export default function ExploreClient({
               )}
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-              {!customMode ? (
-                <Label className="flex flex-col gap-1.5">
-                  <span className="text-sm text-muted-foreground">Date range</span>
-                  <Select value={presetId} onValueChange={applyPreset}>
-                    <SelectTrigger aria-label="Date range preset">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PRESETS.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Label>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Label className="flex flex-col gap-1.5">
-                    <span className="text-sm text-muted-foreground">Start</span>
-                    <Input
-                      type="date"
-                      value={start}
-                      onChange={(e) => setStart(e.target.value)}
-                      aria-label="Start date"
-                    />
-                  </Label>
-                  <Label className="flex flex-col gap-1.5">
-                    <span className="text-sm text-muted-foreground">End</span>
-                    <Input
-                      type="date"
-                      value={end}
-                      onChange={(e) => setEnd(e.target.value)}
-                      aria-label="End date"
-                    />
+            <div className="flex flex-col gap-4 lg:col-span-7">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  {!customMode ? (
+                    <Label className="flex flex-col gap-1.5">
+                      <span className="text-sm text-muted-foreground">Date range</span>
+                      <Select value={presetId} onValueChange={applyPreset}>
+                        <SelectTrigger aria-label="Date range preset" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PRESETS.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Label>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Label className="flex flex-col gap-1.5">
+                        <span className="text-sm text-muted-foreground">Start</span>
+                        <Input
+                          type="date"
+                          value={start}
+                          onChange={(e) => setStart(e.target.value)}
+                          aria-label="Start date"
+                        />
+                      </Label>
+                      <Label className="flex flex-col gap-1.5">
+                        <span className="text-sm text-muted-foreground">End</span>
+                        <Input
+                          type="date"
+                          value={end}
+                          onChange={(e) => setEnd(e.target.value)}
+                          aria-label="End date"
+                        />
+                      </Label>
+                    </div>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-2 sm:pb-0.5">
+                  <Switch
+                    id="report-custom-dates"
+                    checked={customMode}
+                    onCheckedChange={(on) => {
+                      setCustomMode(on)
+                      if (!on) applyPreset(presetId)
+                    }}
+                  />
+                  <Label htmlFor="report-custom-dates" className="text-sm font-normal text-muted-foreground">
+                    Custom dates
                   </Label>
                 </div>
-              )}
-              <Label className="flex items-center gap-2 pb-2">
-                <Input
-                  type="checkbox"
-                  checked={customMode}
-                  onChange={(e) => {
-                    setCustomMode(e.target.checked)
-                    if (!e.target.checked) applyPreset(presetId)
-                  }}
-                  className="rounded border-border"
-                />
-                <span className="text-sm text-muted-foreground">Custom range</span>
-              </Label>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Property types</p>
-            <p className="text-xs text-muted-foreground">
-              Default is residential homes only. Add categories below when needed.
-            </p>
+          <Separator />
+
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Property types</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Default is residential homes only. Add categories below when needed.
+              </p>
+            </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Label className="flex items-center gap-2">
-                <Input
-                  type="checkbox"
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="report-type-condo"
                   checked={includeCondoTown}
-                  onChange={(e) => setIncludeCondoTown(e.target.checked)}
-                  className="rounded border-border"
+                  onCheckedChange={(c) => setIncludeCondoTown(c === true)}
                 />
-                <span className="text-sm text-muted-foreground">Condos and townhomes</span>
-              </Label>
-              <Label className="flex items-center gap-2">
-                <Input
-                  type="checkbox"
+                <Label htmlFor="report-type-condo" className="text-sm font-normal text-muted-foreground">
+                  Condos and townhomes
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="report-type-mfg"
                   checked={includeManufactured}
-                  onChange={(e) => setIncludeManufactured(e.target.checked)}
-                  className="rounded border-border"
+                  onCheckedChange={(c) => setIncludeManufactured(c === true)}
                 />
-                <span className="text-sm text-muted-foreground">Manufactured</span>
-              </Label>
-              <Label className="flex items-center gap-2">
-                <Input
-                  type="checkbox"
+                <Label htmlFor="report-type-mfg" className="text-sm font-normal text-muted-foreground">
+                  Manufactured
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="report-type-acreage"
                   checked={includeAcreage}
-                  onChange={(e) => setIncludeAcreage(e.target.checked)}
-                  className="rounded border-border"
+                  onCheckedChange={(c) => setIncludeAcreage(c === true)}
                 />
-                <span className="text-sm text-muted-foreground">Acreage and land</span>
-              </Label>
-              <Label className="flex items-center gap-2">
-                <Input
-                  type="checkbox"
+                <Label htmlFor="report-type-acreage" className="text-sm font-normal text-muted-foreground">
+                  Acreage and land
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="report-type-commercial"
                   checked={includeCommercial}
-                  onChange={(e) => setIncludeCommercial(e.target.checked)}
-                  className="rounded border-border"
+                  onCheckedChange={(c) => setIncludeCommercial(c === true)}
                 />
-                <span className="text-sm text-muted-foreground">Commercial</span>
-              </Label>
+                <Label htmlFor="report-type-commercial" className="text-sm font-normal text-muted-foreground">
+                  Commercial
+                </Label>
+              </div>
             </div>
           </div>
+
+          <Separator />
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Label className="flex flex-col gap-1.5">
@@ -616,7 +634,9 @@ export default function ExploreClient({
             </Label>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <Separator />
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <Button
               type="button"
               onClick={handleApply}

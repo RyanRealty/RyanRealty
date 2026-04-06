@@ -4,10 +4,11 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTransition, useState } from 'react'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import { listingsBrowsePath } from '@/lib/slug'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest first' },
@@ -170,22 +171,22 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
   const labelClass = 'text-xs font-medium text-muted-foreground'
 
   return (
-    <form onSubmit={applyFilters} className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-      {/* Quick filters — always visible */}
-      <div className="p-4 flex flex-wrap items-end gap-3">
-        <Label className="flex flex-col gap-1">
+    <form onSubmit={applyFilters} className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+      <div className="space-y-4 p-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+        <Label className="flex min-w-0 flex-col gap-1">
           <span className={labelClass}>Min price</span>
-          <Input type="number" name="minPrice" placeholder="Any" min={0} step={25000} defaultValue={minPrice} className="w-28" />
+          <Input type="number" name="minPrice" placeholder="Any" min={0} step={25000} defaultValue={minPrice} className="min-w-0" />
         </Label>
-        <Label className="flex flex-col gap-1">
+        <Label className="flex min-w-0 flex-col gap-1">
           <span className={labelClass}>Max price</span>
-          <Input type="number" name="maxPrice" placeholder="Any" min={0} step={25000} defaultValue={maxPrice} className="w-28" />
+          <Input type="number" name="maxPrice" placeholder="Any" min={0} step={25000} defaultValue={maxPrice} className="min-w-0" />
         </Label>
         {/* 1. Beds */}
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
           <span className={labelClass}>Beds</span>
           <Select value={beds || '__all__'} onValueChange={(v) => setBeds(v === '__all__' ? '' : v)}>
-            <SelectTrigger className="w-20">
+            <SelectTrigger className="w-full min-w-0">
               <SelectValue placeholder="Any" />
             </SelectTrigger>
             <SelectContent>
@@ -197,10 +198,10 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
           </Select>
         </div>
         {/* 2. Baths */}
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
           <span className={labelClass}>Baths</span>
           <Select value={baths || '__all__'} onValueChange={(v) => setBaths(v === '__all__' ? '' : v)}>
-            <SelectTrigger className="w-20">
+            <SelectTrigger className="w-full min-w-0">
               <SelectValue placeholder="Any" />
             </SelectTrigger>
             <SelectContent>
@@ -211,15 +212,15 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
             </SelectContent>
           </Select>
         </div>
-        <Label className="flex flex-col gap-1">
+        <Label className="flex min-w-0 flex-col gap-1">
           <span className={labelClass}>Sq ft (min)</span>
-          <Input type="number" name="minSqFt" placeholder="Any" min={0} step={100} defaultValue={minSqFt} className="w-24" />
+          <Input type="number" name="minSqFt" placeholder="Any" min={0} step={100} defaultValue={minSqFt} className="min-w-0" />
         </Label>
         {/* 3. Property type */}
-        <div className="flex flex-col gap-1">
+        <div className="col-span-2 flex min-w-0 flex-col gap-1 sm:col-span-1">
           <span className={labelClass}>Property type</span>
           <Select value={propertyType || '__all__'} onValueChange={(v) => setPropertyType(v === '__all__' ? '' : v)}>
-            <SelectTrigger className="min-w-[120px]">
+            <SelectTrigger className="w-full min-w-0">
               <SelectValue placeholder="Any" />
             </SelectTrigger>
             <SelectContent>
@@ -230,10 +231,10 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
           </Select>
         </div>
         {/* 4. Status (quick filters) */}
-        <div className="flex flex-col gap-1">
+        <div className="col-span-2 flex min-w-0 flex-col gap-1 md:col-span-1">
           <span className={labelClass}>Status</span>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="min-w-[160px]">
+            <SelectTrigger className="w-full min-w-0">
               <SelectValue placeholder="Active only" />
             </SelectTrigger>
             <SelectContent>
@@ -244,10 +245,10 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
           </Select>
         </div>
         {/* 5. Sort by */}
-        <div className="flex flex-col gap-1">
+        <div className="col-span-2 flex min-w-0 flex-col gap-1 xl:col-span-1">
           <span className={labelClass}>Sort by</span>
           <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger className="min-w-[160px]">
+            <SelectTrigger className="w-full min-w-0">
               <SelectValue placeholder="Newest first" />
             </SelectTrigger>
             <SelectContent>
@@ -257,31 +258,41 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
             </SelectContent>
           </Select>
         </div>
-        <Label className="flex items-center gap-2 self-end pb-2">
-          <Input type="checkbox" name="includeClosed" defaultChecked={includeClosed === '1'} className="h-4 w-4 rounded border-primary/20" />
-          <span className="text-sm text-muted-foreground">Include closed</span>
-        </Label>
-        <Button
-          type="button"
-          onClick={() => setAdvancedOpen((o) => !o)}
-          className="self-end pb-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-        >
-          {advancedOpen ? 'Fewer filters' : 'More filters'}
-        </Button>
-        <Button type="submit" disabled={isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-70 ml-auto">
-          {isPending ? 'Applying\u2026' : 'Apply'}
-        </Button>
+        </div>
+
+        <Separator />
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <Label className="flex cursor-pointer items-center gap-2">
+            <Input
+              type="checkbox"
+              name="includeClosed"
+              defaultChecked={includeClosed === '1'}
+              className="size-4 rounded border-input"
+            />
+            <span className="text-sm text-muted-foreground">Include closed</span>
+          </Label>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setAdvancedOpen((o) => !o)}>
+              {advancedOpen ? 'Fewer filters' : 'More filters'}
+            </Button>
+            <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+              {isPending ? 'Applying\u2026' : 'Apply'}
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Advanced filters — collapsible */}
       {advancedOpen && (
-        <div className="border-t border-border bg-muted p-4 flex flex-wrap items-end gap-4">
-          <span className="w-full text-xs font-semibold text-muted-foreground uppercase tracking-wider">More filters</span>
-          {/* 6. Max beds */}
-          <div className="flex flex-col gap-1">
+        <>
+          <Separator />
+          <div className="space-y-4 bg-muted/40 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">More filters</p>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="flex min-w-0 flex-col gap-1">
             <span className={labelClass}>Max beds</span>
             <Select value={maxBeds || '__all__'} onValueChange={(v) => setMaxBeds(v === '__all__' ? '' : v)}>
-              <SelectTrigger className="w-20">
+              <SelectTrigger className="w-full min-w-0">
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
@@ -292,11 +303,10 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
               </SelectContent>
             </Select>
           </div>
-          {/* 7. Max baths */}
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-0 flex-col gap-1">
             <span className={labelClass}>Max baths</span>
             <Select value={maxBaths || '__all__'} onValueChange={(v) => setMaxBaths(v === '__all__' ? '' : v)}>
-              <SelectTrigger className="w-20">
+              <SelectTrigger className="w-full min-w-0">
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
@@ -307,39 +317,38 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
               </SelectContent>
             </Select>
           </div>
-          <Label className="flex flex-col gap-1">
+          <Label className="flex min-w-0 flex-col gap-1">
             <span className={labelClass}>Sq ft (max)</span>
-            <Input type="number" name="maxSqFt" placeholder="Any" min={0} step={100} defaultValue={maxSqFt} className="w-24" />
+            <Input type="number" name="maxSqFt" placeholder="Any" min={0} step={100} defaultValue={maxSqFt} className="min-w-0" />
           </Label>
-          <Label className="flex flex-col gap-1">
+          <Label className="flex min-w-0 flex-col gap-1">
             <span className={labelClass}>Year built (min)</span>
-            <Input type="number" name="yearBuiltMin" placeholder="Any" min={1800} max={2100} step={1} defaultValue={yearBuiltMin} className="w-24" />
+            <Input type="number" name="yearBuiltMin" placeholder="Any" min={1800} max={2100} step={1} defaultValue={yearBuiltMin} className="min-w-0" />
           </Label>
-          <Label className="flex flex-col gap-1">
+          <Label className="flex min-w-0 flex-col gap-1">
             <span className={labelClass}>Year built (max)</span>
-            <Input type="number" name="yearBuiltMax" placeholder="Any" min={1800} max={2100} step={1} defaultValue={yearBuiltMax} className="w-24" />
+            <Input type="number" name="yearBuiltMax" placeholder="Any" min={1800} max={2100} step={1} defaultValue={yearBuiltMax} className="min-w-0" />
           </Label>
-          <Label className="flex flex-col gap-1">
+          <Label className="flex min-w-0 flex-col gap-1">
             <span className={labelClass}>Lot (acres min)</span>
-            <Input type="number" name="lotAcresMin" placeholder="Any" min={0} step={0.1} defaultValue={lotAcresMin} className="w-24" />
+            <Input type="number" name="lotAcresMin" placeholder="Any" min={0} step={0.1} defaultValue={lotAcresMin} className="min-w-0" />
           </Label>
-          <Label className="flex flex-col gap-1">
+          <Label className="flex min-w-0 flex-col gap-1">
             <span className={labelClass}>Lot (acres max)</span>
-            <Input type="number" name="lotAcresMax" placeholder="Any" min={0} step={0.1} defaultValue={lotAcresMax} className="w-24" />
+            <Input type="number" name="lotAcresMax" placeholder="Any" min={0} step={0.1} defaultValue={lotAcresMax} className="min-w-0" />
           </Label>
-          <Label className="flex flex-col gap-1">
+          <Label className="flex min-w-0 flex-col gap-1">
             <span className={labelClass}>Zip code</span>
-            <Input type="text" name="postalCode" placeholder="e.g. 97702" maxLength={10} defaultValue={postalCode} className="w-28" />
+            <Input type="text" name="postalCode" placeholder="e.g. 97702" maxLength={10} defaultValue={postalCode} className="min-w-0" />
           </Label>
-          <Label className="flex flex-col gap-1">
+          <Label className="col-span-2 flex min-w-0 flex-col gap-1 md:col-span-1">
             <span className={labelClass}>Property subtype</span>
-            <Input type="text" name="propertySubType" placeholder="e.g. Single Family" defaultValue={propertySubType} className="min-w-[140px]" />
+            <Input type="text" name="propertySubType" placeholder="e.g. Single Family" defaultValue={propertySubType} className="min-w-0" />
           </Label>
-          {/* 8. New listings */}
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-0 flex-col gap-1">
             <span className={labelClass}>New listings</span>
             <Select value={newListingsDays || '__all__'} onValueChange={(v) => setNewListingsDays(v === '__all__' ? '' : v)}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-full min-w-0">
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
@@ -350,11 +359,10 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
               </SelectContent>
             </Select>
           </div>
-          {/* 9. Garage min */}
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-0 flex-col gap-1">
             <span className={labelClass}>Garage (min spaces)</span>
             <Select value={garageMin || '__all__'} onValueChange={(v) => setGarageMin(v === '__all__' ? '' : v)}>
-              <SelectTrigger className="w-24">
+              <SelectTrigger className="w-full min-w-0">
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
@@ -365,25 +373,28 @@ export default function AdvancedSearchFilters(props: AdvancedSearchFiltersProps)
               </SelectContent>
             </Select>
           </div>
-          <div className="flex flex-wrap items-center gap-6 self-end pb-2">
-            <Label className="flex items-center gap-2">
-              <Input type="checkbox" name="hasOpenHouse" defaultChecked={hasOpenHouse === '1'} className="h-4 w-4 rounded border-primary/20" />
+          </div>
+
+          <div className="flex flex-wrap gap-x-6 gap-y-3">
+            <Label className="flex cursor-pointer items-center gap-2">
+              <Input type="checkbox" name="hasOpenHouse" defaultChecked={hasOpenHouse === '1'} className="size-4 rounded border-input" />
               <span className="text-sm text-muted-foreground">Open house</span>
             </Label>
-            <Label className="flex items-center gap-2">
-              <Input type="checkbox" name="hasPool" defaultChecked={hasPool === '1'} className="h-4 w-4 rounded border-primary/20" />
+            <Label className="flex cursor-pointer items-center gap-2">
+              <Input type="checkbox" name="hasPool" defaultChecked={hasPool === '1'} className="size-4 rounded border-input" />
               <span className="text-sm text-muted-foreground">Pool</span>
             </Label>
-            <Label className="flex items-center gap-2">
-              <Input type="checkbox" name="hasView" defaultChecked={hasView === '1'} className="h-4 w-4 rounded border-primary/20" />
+            <Label className="flex cursor-pointer items-center gap-2">
+              <Input type="checkbox" name="hasView" defaultChecked={hasView === '1'} className="size-4 rounded border-input" />
               <span className="text-sm text-muted-foreground">View</span>
             </Label>
-            <Label className="flex items-center gap-2">
-              <Input type="checkbox" name="hasWaterfront" defaultChecked={hasWaterfront === '1'} className="h-4 w-4 rounded border-primary/20" />
+            <Label className="flex cursor-pointer items-center gap-2">
+              <Input type="checkbox" name="hasWaterfront" defaultChecked={hasWaterfront === '1'} className="size-4 rounded border-input" />
               <span className="text-sm text-muted-foreground">Waterfront</span>
             </Label>
           </div>
         </div>
+        </>
       )}
     </form>
   )

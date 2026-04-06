@@ -7,12 +7,15 @@ import { useTransition } from 'react'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import SaveSearchButton from '@/components/SaveSearchButton'
 import { listingsBrowsePath } from '@/lib/slug'
+import { cn } from '@/lib/utils'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Location01Icon } from '@hugeicons/core-free-icons'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { ArrowDown01Icon, Location01Icon } from '@hugeicons/core-free-icons'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'For Sale' },
@@ -189,49 +192,47 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
     })
   }
 
-  const btnBase =
-    'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition whitespace-nowrap'
-  const btnDefault =
-    'border-border bg-card text-foreground hover:bg-card hover:border-primary/20'
-  const btnActive =
-    'border-accent bg-accent/10 text-primary'
-  const dropdownPanel =
-    'absolute left-0 right-0 top-full z-50 mt-1 w-[min(92vw,360px)] rounded-lg border border-border bg-card p-4 shadow-lg sm:right-auto sm:min-w-[280px]'
+  const dropdownAnchor = 'absolute left-0 top-full z-50 mt-1.5'
+  const dropdownSurface = 'rounded-lg border border-border bg-card shadow-lg'
 
   return (
-    <div ref={barRef} className="flex flex-wrap items-center gap-2">
-      {/* Location search bar — shows current area and keeps map/search in sync (like reference: "Bend OR" at top) */}
+    <div ref={barRef} className="flex w-full min-w-0 flex-col gap-3">
       {props.locationLabel != null && props.locationLabel !== '' && (
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <Link
             href={props.locationHref ?? pathname}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-sm hover:bg-card hover:border-primary/30 min-w-[140px]"
+            className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground shadow-sm sm:max-w-md sm:px-4 sm:py-2.5"
             aria-label={`Search area: ${props.locationLabel}. Click to change.`}
           >
-            <span className="text-primary" aria-hidden>
-              <HugeiconsIcon icon={Location01Icon} className="h-4 w-4" aria-hidden />
-            </span>
+            <HugeiconsIcon icon={Location01Icon} className="size-4 shrink-0 text-primary" aria-hidden />
             <span className="truncate">{props.locationLabel}</span>
           </Link>
-          <span className="text-muted-foreground hidden sm:inline" aria-hidden>|</span>
         </div>
       )}
+
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div
+          className={cn(
+            'flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5',
+            '[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
+          )}
+        >
       {/* For Sale (status) */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <Button
           type="button"
+          variant={open === 'status' || hasStatusActive(props) ? 'secondary' : 'outline'}
+          size="sm"
           onClick={() => setOpen(open === 'status' ? null : 'status')}
-          className={`${btnBase} ${open === 'status' || hasStatusActive(props) ? btnActive : btnDefault}`}
+          className="gap-1"
           aria-expanded={open === 'status'}
           aria-haspopup="true"
         >
           For Sale
-          <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'status' ? '▴' : '▾'}
-          </span>
+          <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-70" aria-hidden />
         </Button>
         {open === 'status' && (
-          <div className={dropdownPanel}>
+          <div className={cn(dropdownAnchor, dropdownSurface, 'w-[min(calc(100vw-2rem),20rem)] p-4')}>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               Property status
             </p>
@@ -261,7 +262,8 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                   <span className="text-sm text-foreground">{label}</span>
                 </Label>
               ))}
-              <Label className="flex cursor-pointer items-center gap-2 pt-2 border-t border-border">
+              <Separator />
+              <Label className="flex cursor-pointer items-center gap-2">
                 <Input
                   type="checkbox"
                   name="includeClosed"
@@ -270,11 +272,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                 />
                 <span className="text-sm text-muted-foreground">Include closed/sold</span>
               </Label>
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-accent/90 disabled:opacity-70"
-              >
+              <Button type="submit" disabled={isPending} className="w-full">
                 {isPending ? 'Applying…' : 'Apply'}
               </Button>
             </form>
@@ -283,20 +281,20 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
       </div>
 
       {/* Price */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <Button
           type="button"
+          variant={open === 'price' || hasPriceActive(props) ? 'secondary' : 'outline'}
+          size="sm"
           onClick={() => setOpen(open === 'price' ? null : 'price')}
-          className={`${btnBase} ${open === 'price' || hasPriceActive(props) ? btnActive : btnDefault}`}
+          className="gap-1"
           aria-expanded={open === 'price'}
         >
           Price
-          <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'price' ? '▴' : '▾'}
-          </span>
+          <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-70" aria-hidden />
         </Button>
         {open === 'price' && (
-          <div className={dropdownPanel}>
+          <div className={cn(dropdownAnchor, dropdownSurface, 'w-[min(calc(100vw-2rem),20rem)] p-4')}>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               Price range
             </p>
@@ -321,7 +319,6 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                     min={0}
                     step={25000}
                     defaultValue={props.minPrice}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
                   />
                 </Label>
                 <Label className="flex flex-col gap-1">
@@ -333,15 +330,17 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                     min={0}
                     step={25000}
                     defaultValue={props.maxPrice}
-                    className="rounded-lg border border-border px-3 py-2 text-sm"
                   />
                 </Label>
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 {PRICE_PRESETS.map(({ label, min, max }) => (
                   <Button
                     key={label}
                     type="button"
+                    variant="outline"
+                    size="xs"
+                    className="shrink-0"
                     onClick={() => {
                       apply(
                         buildParams({
@@ -350,17 +349,12 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                         })
                       )
                     }}
-                    className="rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-foreground hover:bg-card"
                   >
                     {label}
                   </Button>
                 ))}
               </div>
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-accent/90 disabled:opacity-70"
-              >
+              <Button type="submit" disabled={isPending} className="w-full">
                 {isPending ? 'Applying…' : 'Apply'}
               </Button>
             </form>
@@ -369,20 +363,20 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
       </div>
 
       {/* Beds & Baths */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <Button
           type="button"
+          variant={open === 'bedsbaths' || hasBedsBathsActive(props) ? 'secondary' : 'outline'}
+          size="sm"
           onClick={() => setOpen(open === 'bedsbaths' ? null : 'bedsbaths')}
-          className={`${btnBase} ${open === 'bedsbaths' || hasBedsBathsActive(props) ? btnActive : btnDefault}`}
+          className="gap-1"
           aria-expanded={open === 'bedsbaths'}
         >
           Beds & Baths
-          <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'bedsbaths' ? '▴' : '▾'}
-          </span>
+          <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-70" aria-hidden />
         </Button>
         {open === 'bedsbaths' && (
-          <div className={dropdownPanel}>
+          <div className={cn(dropdownAnchor, dropdownSurface, 'w-[min(calc(100vw-2rem),22rem)] p-4')}>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -398,7 +392,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                   Bedrooms
                 </p>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-nowrap gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                   {BEDS_OPTIONS.map(({ value, label }) => (
                     <Label key={value || 'any'} className="cursor-pointer">
                       <Input
@@ -419,7 +413,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                   Bathrooms
                 </p>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-nowrap gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                   {BATHS_OPTIONS.map(({ value, label }) => (
                     <Label key={value || 'any'} className="cursor-pointer">
                       <Input
@@ -436,11 +430,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                   ))}
                 </div>
               </div>
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-accent/90 disabled:opacity-70"
-              >
+              <Button type="submit" disabled={isPending} className="w-full">
                 {isPending ? 'Applying…' : 'Apply'}
               </Button>
             </form>
@@ -449,20 +439,20 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
       </div>
 
       {/* Home Type */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <Button
           type="button"
+          variant={open === 'hometype' || hasHomeTypeActive(props) ? 'secondary' : 'outline'}
+          size="sm"
           onClick={() => setOpen(open === 'hometype' ? null : 'hometype')}
-          className={`${btnBase} ${open === 'hometype' || hasHomeTypeActive(props) ? btnActive : btnDefault}`}
+          className="gap-1"
           aria-expanded={open === 'hometype'}
         >
           Home Type
-          <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'hometype' ? '▴' : '▾'}
-          </span>
+          <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-70" aria-hidden />
         </Button>
         {open === 'hometype' && (
-          <div className={dropdownPanel}>
+          <div className={cn(dropdownAnchor, dropdownSurface, 'w-[min(calc(100vw-2rem),20rem)] p-4')}>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -478,7 +468,9 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                 </p>
                 <Button
                   type="button"
-                  className="text-xs font-medium text-accent-foreground hover:underline"
+                  variant="link"
+                  size="xs"
+                  className="h-auto p-0 text-xs"
                   onClick={(e) => {
                     const form = (e.target as HTMLElement).closest('form')
                     form?.querySelectorAll<HTMLInputElement>('input[name="propertyType"]').forEach((el) => {
@@ -513,11 +505,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                   <span className="text-sm text-foreground">All types</span>
                 </Label>
               </div>
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-accent/90 disabled:opacity-70"
-              >
+              <Button type="submit" disabled={isPending} className="w-full">
                 {isPending ? 'Applying…' : 'Apply'}
               </Button>
             </form>
@@ -526,20 +514,28 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
       </div>
 
       {/* More */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <Button
           type="button"
+          variant={open === 'more' || hasMoreActive(props) ? 'secondary' : 'outline'}
+          size="sm"
           onClick={() => setOpen(open === 'more' ? null : 'more')}
-          className={`${btnBase} ${open === 'more' || hasMoreActive(props) ? btnActive : btnDefault}`}
+          className="gap-1"
           aria-expanded={open === 'more'}
         >
           More
-          <span className="text-[10px] opacity-80" aria-hidden>
-            {open === 'more' ? '▴' : '▾'}
-          </span>
+          <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-70" aria-hidden />
         </Button>
         {open === 'more' && (
-          <div className={`${dropdownPanel} min-w-[320px] max-w-[90vw]`}>
+          <div
+            className={cn(
+              dropdownAnchor,
+              dropdownSurface,
+              'w-[min(calc(100vw-1.5rem),24rem)] sm:w-[28rem]'
+            )}
+          >
+            <ScrollArea className="max-h-[min(65vh,28rem)]">
+            <div className="p-4">
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -700,7 +696,8 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                   <input type="hidden" name="newListingsDays" value={newListingsDaysValue} readOnly />
                 </Label>
               </div>
-              <div className="flex flex-wrap gap-4 border-t border-border pt-3">
+              <Separator />
+              <div className="flex flex-wrap gap-4">
                 <Label className="flex cursor-pointer items-center gap-2">
                   <Input
                     type="checkbox"
@@ -738,36 +735,46 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                   <span className="text-sm text-muted-foreground">Waterfront</span>
                 </Label>
               </div>
-              <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+              <Separator />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <Button
                   type="button"
-                  onClick={() => apply(new URLSearchParams({ page: '1', ...(props.view && { view: props.view }), ...(props.perPage && { perPage: props.perPage }) }))}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground hover:underline"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-center sm:w-auto"
+                  onClick={() =>
+                    apply(
+                      new URLSearchParams({
+                        page: '1',
+                        ...(props.view ? { view: props.view } : {}),
+                        ...(props.perPage ? { perPage: props.perPage } : {}),
+                      })
+                    )
+                  }
                 >
                   Reset all filters
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-accent/90 disabled:opacity-70"
-                >
+                <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
                   {isPending ? 'Applying…' : 'Apply'}
                 </Button>
               </div>
             </form>
+            </div>
+            </ScrollArea>
           </div>
         )}
       </div>
 
-      {/* Sort */}
-      <div className="ml-2">
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
         <Select
           value={props.sort ?? 'newest'}
           onValueChange={(sort) => {
             apply(buildParams({ sort: sort || undefined }))
           }}
         >
-          <SelectTrigger className={`${btnBase} ${btnDefault}`} aria-label="Sort results">
+          <SelectTrigger className="h-8 w-[min(11rem,46vw)]" aria-label="Sort results">
             <SelectValue placeholder="Newest first" />
           </SelectTrigger>
           <SelectContent>
@@ -777,9 +784,10 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
             <SelectItem value="price_desc">Price: high to low</SelectItem>
           </SelectContent>
         </Select>
-      </div>
 
       {props.signedIn && <SaveSearchButton user={true} />}
+        </div>
+      </div>
     </div>
   )
 }
