@@ -43,7 +43,7 @@ type PublicSession = { user?: { email?: string | null } } | null
 /** Home streams many heavy Supabase scans; allow time and never reject the Suspense boundary. */
 const HOME_FETCH_MS = 12_000
 /** Video tour query can scan listings + listing_videos; 12s was timing out and yielded an empty slider. */
-const HOME_VIDEO_TOURS_MS = 45_000
+const HOME_VIDEO_TOURS_MS = 90_000
 
 function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = HOME_FETCH_MS, label?: string): Promise<T> {
   return withTimeoutFallback(promise, fallback, timeoutMs, label)

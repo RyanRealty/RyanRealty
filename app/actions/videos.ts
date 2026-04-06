@@ -84,88 +84,21 @@ function rowInCitiesList(row: Record<string, unknown>, citiesLower: Set<string>)
 }
 
 /**
- * Walk active listings in `cities` from highest ListPrice down; keep the first `maxRows` that have a playable
- * or embeddable video in `details` (same rules as pickFirstVideoFromListingRow). This matches the product rule
- * "most expensive Central Oregon homes that actually have a video," not "any home flagged has_virtual_tour."
- */
-async function fetchPriceFirstListingsWithVideoInCities(
-  supabase: ReturnType<typeof getSupabase>,
-  cities: string[],
-  maxRows: number,
-  statusAll: boolean,
-  community: string | null,
-  minPrice: number | undefined,
-  maxPrice: number | undefined
-): Promise<VideoListingRow[]> {
-  const scanLimit = Math.min(Math.max(maxRows * 80, 400), 1200)
-  const citiesLower = new Set(cities.map((c) => c.toLowerCase()))
-
-  let q = supabase
-    .from('listings')
-    .select(LISTING_VIDEO_SELECT_MAIN)
-    .in('City', cities)
-    .order('ListPrice', { ascending: false, nullsFirst: false })
-    .limit(scanLimit)
-
-  if (!statusAll) {
-    q = q.or(ACTIVE_STATUS_OR)
-  }
-
-  const { data, error } = await q
-  if (error) {
-    console.error('[getListingsWithVideos] price-first by city', error)
-    return []
-  }
-
-  const rows: VideoListingRow[] = []
-  for (const row of data ?? []) {
-    if (rows.length >= maxRows) break
-    const r = row as Record<string, unknown>
-    if (!rowInCitiesList(r, citiesLower)) continue
-    if (!rowMeetsStatusFilter(r, statusAll)) continue
-    if (community?.trim() && rowSubdivision(r) !== community.trim()) continue
-    const price = rowListPrice(r)
-    if (minPrice != null && (price == null || price < minPrice)) continue
-    if (maxPrice != null && (price == null || price > maxPrice)) continue
-
-    const video = pickFirstVideoFromListingRow(r)
-    if (!video) continue
-
-    const listingKey = resolveListingKeyFromRow(r)
-    if (!listingKey) continue
-
-    rows.push({
-      listing_key: listingKey,
-      list_number: (r.ListNumber ?? r.list_number ?? null) as string | null,
-      list_price: price,
-      beds_total: (r.BedroomsTotal ?? r.beds_total ?? null) as number | null,
-      baths_full: (r.BathroomsTotal ?? r.baths_full ?? null) as number | null,
-      living_area: (r.TotalLivingAreaSqFt ?? r.living_area ?? null) as number | null,
-      subdivision_name: rowSubdivision(r),
-      city: rowCity(r),
-      unparsed_address: unparsedFromRow(r),
-      photo_url: (r.PhotoURL ?? r.photo_url ?? null) as string | null,
-      video_url: video.url,
-      video_source: video.source,
-    })
-  }
-
-  return rows
-}
-
-/**
  * Prefer small listing_videos + keyed listing lookups over scanning hundreds of listings (home page, /videos).
  */
 async function getListingsWithVideosFromListingVideosTable(
   supabase: ReturnType<typeof getSupabase>,
   maxRows: number,
-  priceDesc: boolean
+  priceDesc: boolean,
+  /** When set, only keep rows whose listing city is in this set (lowercase city names). */
+  citiesLower: Set<string> | null = null
 ): Promise<VideoListingRow[]> {
+  const lvLimit = citiesLower != null && citiesLower.size > 0 ? 400 : 150
   const { data: lvRows, error: lvErr } = await supabase
     .from('listing_videos')
     .select('listing_key, video_url')
     .order('created_at', { ascending: false })
-    .limit(150)
+    .limit(lvLimit)
 
   if (lvErr) {
     console.error('[getListingsWithVideos] listing_videos fast path', lvErr)
@@ -184,13 +117,16 @@ async function getListingsWithVideosFromListingVideosTable(
 
   const byKey = new Map<string, Record<string, unknown>>()
   const chunkSize = 40
+  const slices: string[][] = []
   for (let i = 0; i < keys.length; i += chunkSize) {
-    const slice = keys.slice(i, i + chunkSize)
-    const ea = await supabase
-      .from('listings')
-      .select(LISTING_VIDEO_SELECT_MAIN)
-      .or(ACTIVE_STATUS_OR)
-      .in('ListingKey', slice)
+    slices.push(keys.slice(i, i + chunkSize))
+  }
+  // Fetch by key only; filter active status in memory. Combining .in(ListingKey) with .or(ACTIVE_STATUS_OR)
+  // in PostgREST can drop rows that should match, leaving the fast path empty while legacy paths still work.
+  const chunkResults = await Promise.all(
+    slices.map((slice) => supabase.from('listings').select(LISTING_VIDEO_SELECT_MAIN).in('ListingKey', slice))
+  )
+  for (const ea of chunkResults) {
     if (ea.error && !/column|ListingKey/i.test(ea.error.message ?? '')) {
       console.error('[getListingsWithVideos] fast path ListingKey', ea.error)
     }
@@ -203,11 +139,11 @@ async function getListingsWithVideosFromListingVideosTable(
 
   const rows: VideoListingRow[] = []
   for (const lk of keys) {
-    if (rows.length >= maxRows) break
     const rec = byKey.get(lk)
     const vurl = urlByKey.get(lk)
     if (!rec || !vurl) continue
     if (!rowMeetsStatusFilter(rec, false)) continue
+    if (citiesLower && !rowInCitiesList(rec, citiesLower)) continue
 
     rows.push({
       listing_key: lk,
@@ -268,21 +204,18 @@ export async function getListingsWithVideos(filters?: {
   const citiesLowerForFilter =
     citiesList && citiesList.length > 0 ? new Set(citiesList.map((c) => c.toLowerCase())) : null
 
-  // Price-first walk only considers videos inside `details` (pickFirstVideoFromListingRow). Many active
-  // tours live only in `listing_videos` until backfill; if this returns zero, fall through so the paths
-  // below can merge `listing_videos` + `has_virtual_tour` (home Popular Tours depends on this).
+  // Home uses region + price_desc. The price-first ListPrice walk often hits statement_timeout on large
+  // listings tables; try listing_videos + keyed lookups first. If that yields nothing, fall through
+  // (legacy listing_videos + listings merge) instead of awaiting another doomed full scan.
   if (citiesList && citiesList.length > 0 && filters?.sort === 'price_desc') {
-    const priceFirst = await fetchPriceFirstListingsWithVideoInCities(
+    const fromVideos = await getListingsWithVideosFromListingVideosTable(
       supabase,
-      citiesList,
       maxRows,
-      statusAll,
-      filters?.community?.trim() || null,
-      filters?.minPrice,
-      filters?.maxPrice
+      true,
+      citiesLowerForFilter
     )
-    if (priceFirst.length > 0) {
-      return priceFirst.slice(0, maxRows)
+    if (fromVideos.length > 0) {
+      return fromVideos.slice(0, maxRows)
     }
   }
 
@@ -551,7 +484,7 @@ async function _getListingsWithVideosCachedUncached(
 
 const _getListingsWithVideosCached = unstable_cache(
   _getListingsWithVideosCachedUncached,
-  ['listings-with-videos-v6'],
+  ['listings-with-videos-v8'],
   { revalidate: 300, tags: ['listings-videos'] }
 )
 
