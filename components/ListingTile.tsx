@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useState, useMemo, memo } from 'react'
+import { useState, useMemo, useEffect, memo } from 'react'
 import type { HomeTileRow, ListingTileRow } from '@/app/actions/listings'
 import { isResortCommunity } from '@/lib/resort-communities'
 import { toggleSavedListing } from '@/app/actions/saved-listings'
@@ -22,6 +22,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeftRightIcon } from '@hugeicons/core-free-icons'
 import { normalizeMlsDisplayNumber } from '@/lib/mls-source'
 import MlsSourceBadge from '@/components/legal/MlsSourceBadge'
+import { isDirectListingVideoFileUrl, parseListingVideoEmbedForTile } from '@/lib/video-embed'
 
 function daysOnMarket(
   onMarketDate: string | null | undefined,
@@ -103,13 +104,6 @@ function formatAddress(listing: ListingTileListing): string {
   return parts.join(', ')
 }
 
-function isDirectVideoUrl(uri: string): boolean {
-  const u = uri.trim().toLowerCase()
-  if (!u || u.includes('<') || u.includes('>')) return false
-  if (!u.startsWith('http://') && !u.startsWith('https://')) return false
-  return /\.(mp4|webm|mov)(\?|$)/.test(u)
-}
-
 function getVideoUrls(listing: ListingTileListing): string[] {
   const videos = listing.details?.Videos
   if (!Array.isArray(videos)) return []
@@ -117,7 +111,7 @@ function getVideoUrls(listing: ListingTileListing): string[] {
   // First: try direct video URLs (.mp4, .webm, .mov) — these can auto-play on hover
   const direct = videos
     .map((v) => (v?.Uri ?? '').trim())
-    .filter((uri) => uri.length > 0 && isDirectVideoUrl(uri))
+    .filter((uri) => uri.length > 0 && isDirectListingVideoFileUrl(uri))
   if (direct.length > 0) return direct
 
   // Fallback: use ObjectHtml URLs (embed links like VisitHome.ai, YouTube, etc.)
@@ -247,8 +241,24 @@ function ListingTile({
       )
     : listingsBrowsePath()
   const videoUrls = useMemo(() => getVideoUrls(listing), [listing.details])
+  const tileVideoEmbed = useMemo(
+    () => (videoUrls[0] ? parseListingVideoEmbedForTile(videoUrls[0]) : null),
+    [videoUrls]
+  )
+  const [hoverTileEmbed, setHoverTileEmbed] = useState(false)
+  const [mp4TileReady, setMp4TileReady] = useState(false)
+  const [mp4TileFailed, setMp4TileFailed] = useState(false)
   const primaryPhoto = listing.PhotoURL?.trim() || null
   const hasVideo = videoUrls.length > 0
+  const firstVideoUrl = videoUrls[0] ?? ''
+  const directMp4Tile = Boolean(firstVideoUrl && isDirectListingVideoFileUrl(firstVideoUrl))
+  const embeddableTile = tileVideoEmbed != null
+
+  useEffect(() => {
+    setHoverTileEmbed(false)
+    setMp4TileReady(false)
+    setMp4TileFailed(false)
+  }, [listingKey])
   const hasVirtTour = hasVirtualTour(listing)
   const hasPlans = hasFloorPlans(listing)
   const isPopular = viewCount >= POPULAR_VIEW_THRESHOLD || likeCount >= POPULAR_LIKE_THRESHOLD || saveCount >= POPULAR_SAVE_THRESHOLD
@@ -326,26 +336,75 @@ function ListingTile({
       onClick={handleTileClick}
       className="group flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10 transition hover:shadow-lg hover:-translate-y-1"
     >
-      {/* Photo / video area — photo first, video on hover for engagement */}
+      {/* Photo / video area — YouTube/Vimeo/Matterport embed on hover; MP4 in video tag; else photo + badge */}
       <div
         className="relative aspect-[4/3] overflow-hidden rounded-t-xl bg-muted"
-        onMouseEnter={(e) => {
-          if (hasVideo) {
+        onPointerEnter={(e) => {
+          if (embeddableTile) setHoverTileEmbed(true)
+          if (hasVideo && directMp4Tile) {
             const video = e.currentTarget.querySelector('video')
-            if (video) { video.currentTime = 0; video.play().catch(() => {}) }
+            if (video) {
+              video.currentTime = 0
+              void video.play().catch(() => {})
+            }
           }
         }}
-        onMouseLeave={(e) => {
-          if (hasVideo) {
-            const video = e.currentTarget.querySelector('video')
-            if (video) { video.pause() }
+        onPointerLeave={(ev) => {
+          setHoverTileEmbed(false)
+          if (hasVideo && directMp4Tile) {
+            const video = ev.currentTarget.querySelector('video')
+            if (video) video.pause()
           }
         }}
       >
-        {/* VIDEO-FIRST: when listing has direct video, show it as primary with photo fallback */}
-        {hasVideo && isDirectVideoUrl(videoUrls[0]!) ? (
+        {hasVideo && embeddableTile && tileVideoEmbed ? (
           <>
-            {/* Poster or neutral fallback so the tile is never an empty dark box while video loads */}
+            {primaryPhoto ? (
+              <Image
+                src={primaryPhoto}
+                alt={address || 'Property photo'}
+                fill
+                className="object-cover object-top"
+                sizes="(max-width: 640px) 85vw, 320px"
+                priority={priority}
+              />
+            ) : tileVideoEmbed.posterUrl ? (
+              <Image
+                src={tileVideoEmbed.posterUrl}
+                alt={address || 'Video thumbnail'}
+                fill
+                unoptimized
+                className="object-cover object-top"
+                sizes="(max-width: 640px) 85vw, 320px"
+                priority={priority}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground">
+                <Image
+                  src="https://images.unsplash.com/photo-1653930796811-84d446f9e221?w=640&q=60"
+                  alt="Central Oregon"
+                  fill
+                  className="object-cover opacity-50"
+                  sizes="(max-width: 640px) 85vw, 320px"
+                />
+              </div>
+            )}
+            {hoverTileEmbed ? (
+              <iframe
+                title="Listing video preview"
+                src={tileVideoEmbed.src}
+                className="absolute inset-0 z-[2] h-full w-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                allowFullScreen
+              />
+            ) : null}
+            <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-md bg-foreground/70 px-2 py-1 text-xs font-medium text-background">
+              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              Video
+            </div>
+          </>
+        ) : hasVideo && directMp4Tile && firstVideoUrl ? (
+          <>
             {primaryPhoto ? (
               <Image
                 src={primaryPhoto}
@@ -366,20 +425,22 @@ function ListingTile({
                 />
               </div>
             )}
-            {/* Video autoplays (muted, short preview) — fades in over photo */}
-            <video
-              src={videoUrls[0]}
-              className="absolute inset-0 h-full w-full object-cover"
-              muted
-              playsInline
-              loop
-              preload="metadata"
-              poster={primaryPhoto ?? undefined}
-              aria-hidden
-              style={{ opacity: 0 }}
-              onCanPlay={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transition = 'opacity 0.5s' }}
-            />
-            {/* Play icon overlay */}
+            {!mp4TileFailed ? (
+              <video
+                src={firstVideoUrl}
+                className="absolute inset-0 z-[2] h-full w-full object-cover"
+                muted
+                playsInline
+                loop
+                preload="metadata"
+                poster={primaryPhoto ?? undefined}
+                aria-hidden
+                style={{ opacity: mp4TileReady ? 1 : 0, transition: 'opacity 0.4s' }}
+                onLoadedData={() => setMp4TileReady(true)}
+                onCanPlay={() => setMp4TileReady(true)}
+                onError={() => setMp4TileFailed(true)}
+              />
+            ) : null}
             <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-md bg-foreground/70 px-2 py-1 text-xs font-medium text-background">
               <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
               Video
@@ -387,7 +448,6 @@ function ListingTile({
           </>
         ) : (
           <>
-            {/* Standard photo tile */}
             {primaryPhoto ? (
               <Image
                 src={primaryPhoto}
@@ -408,7 +468,6 @@ function ListingTile({
                 />
               </div>
             )}
-            {/* Video tour badge for embed URLs */}
             {hasVideo && (
               <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 rounded-md bg-foreground/70 px-2 py-1 text-xs font-medium text-background">
                 <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
