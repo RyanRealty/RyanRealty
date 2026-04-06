@@ -50,8 +50,8 @@ If the user says any variation of these, the agent MUST execute the sync-status 
 
 Required response format for these prompts:
 1. Current snapshot (key counts + cursor state)
-2. Full year-by-year cohort breakdown from `listingYearsBreakdown` in `node scripts/sync-status-report.mjs --json` (all years present in the database), unless the user asks for a short summary only
-3. Year finalization status (which years are fully finalized vs remaining)
+2. Full `listingYearsBreakdown` from `node scripts/sync-status-report.mjs --json` (coalesce ListDate or OnMarketDate cohorts), unless the user asks for a short summary only. When discussing year-by-year sync scope, also reference `yearsFinalization` or `listingYearsOnMarketBreakdown` (OnMarketDate only)
+3. Year finalization status from `yearsFinalization` (DB on-market stats + job progress; see `yearsFinalizationNote` in JSON)
 4. Health callout (moving, stalled, or rate-limited)
 5. Top 2-3 commands to run now (from `docs/SYNC_HANDOFF_PLAYBOOK.md`)
 6. Wait for user selection ("run option 1/2/3")
@@ -68,8 +68,8 @@ When the user says exactly or approximately "Give me a sync status", agents MUST
 
 Required details:
 1. Current totals (listings, history rows, terminal remaining, finalized, verified full)
-2. Complete `listingYearsBreakdown` (every cohort year in the DB from the status report JSON)
-3. Year finalization status (finalized/total/remaining for years currently in scope)
+2. Complete `listingYearsBreakdown` and, for year-lane alignment, `listingYearsOnMarketBreakdown` or `yearsFinalization` from the status report JSON
+3. Year finalization status (`yearsFinalization` finalized/total/remaining; `processedListings` vs `totalListings` for active year)
 4. What is running right now (cursor phase, updated timestamps, paused/abort flags if available)
 5. Last things that ran (recent year log entries + latest lane activity)
 6. Approximate time to parity (ETA) with a clearly stated method and assumptions

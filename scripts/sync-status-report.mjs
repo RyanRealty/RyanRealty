@@ -121,6 +121,7 @@ async function main() {
     yearLogRes,
     stateRes,
     yearStatsRes,
+    onMarketYearStatsRes,
     noListDateRes,
   ] = await Promise.all([
     countWithFallback(
@@ -163,6 +164,10 @@ async function main() {
       .from('listing_year_finalization_stats')
       .select('list_year, total_listings, finalized_listings, verified_full_listings')
       .order('list_year', { ascending: false }),
+    supabase
+      .from('listing_year_on_market_finalization_stats')
+      .select('list_year, total_listings, finalized_listings, verified_full_listings')
+      .order('list_year', { ascending: false }),
     countMaybe(
       () =>
         supabase
@@ -203,6 +208,27 @@ async function main() {
     }
   }
 
+  const listingYearsOnMarketBreakdown = []
+  const onMarketByYear = new Map()
+  if (!onMarketYearStatsRes.error) {
+    for (const r of onMarketYearStatsRes.data ?? []) {
+      const yr = Number(r.list_year)
+      const total = Number(r.total_listings) || 0
+      const finalized = Number(r.finalized_listings) || 0
+      const verifiedFull = Number(r.verified_full_listings) || 0
+      onMarketByYear.set(yr, { total, finalized, verifiedFull })
+      listingYearsOnMarketBreakdown.push({
+        year: yr,
+        total,
+        finalized,
+        verifiedFull,
+        remaining: Math.max(0, total - finalized),
+        finalizedUnverified: Math.max(0, finalized - verifiedFull),
+        fullyFinalized: total > 0 && finalized === total,
+      })
+    }
+  }
+
   const listingYearsWithoutDate = {
     totalListings: noListDateRes.count ?? 0,
     note: 'Rows where both ListDate and OnMarketDate are null',
@@ -214,6 +240,9 @@ async function main() {
     finalizedAllRes.error,
     verifiedAllRes.error,
     yearStatsRes.error ? `listing year breakdown: ${formatError(yearStatsRes.error)}` : null,
+    onMarketYearStatsRes.error
+      ? `on-market year breakdown: ${formatError(onMarketYearStatsRes.error)}`
+      : null,
     noListDateRes.error,
   ].filter(Boolean)
   const totals = {
@@ -265,20 +294,26 @@ async function main() {
   })
 
   const yearsFinalization = yearSummary.map((y) => {
-    const total = Number(y.supabaseListings ?? y.totalListings ?? 0) || 0
-    const finalized = Number(y.finalizedListings ?? 0) || 0
+    const om = onMarketByYear.get(y.year)
+    const total = om ? om.total : Number(y.supabaseListings ?? y.totalListings ?? 0) || 0
+    const finalized = om ? om.finalized : Number(y.finalizedListings ?? 0) || 0
+    const verifiedFull = om ? om.verifiedFull : null
     const remaining = Math.max(0, total - finalized)
     const finalizedPct = total > 0 ? Math.round((finalized / total) * 10000) / 100 : null
     return {
       year: y.year,
       totalListings: total,
       finalizedListings: finalized,
+      verifiedFullListings: verifiedFull,
       remainingListings: remaining,
       finalizedPct,
       fullyFinalized: total > 0 ? remaining === 0 : false,
       runStatus: y.runStatus,
       runPhase: y.runPhase,
       lastSyncedAt: y.lastSyncedAt,
+      processedListings: y.processedListings ?? 0,
+      listingsFinalizedThisPass: y.listingsFinalized ?? 0,
+      countsSource: om ? 'listing_year_on_market_finalization_stats' : 'matrix_cache_fallback',
     }
   })
 
@@ -321,9 +356,14 @@ async function main() {
     },
     yearSummary,
     yearsFinalization,
+    yearsFinalizationNote:
+      'Counts use listing_year_on_market_finalization_stats when available (OnMarketDate calendar year, same scope as year-by-year sync). processedListings and listingsFinalizedThisPass come from the matrix job state.',
     listingYearsBreakdown,
     listingYearsCohortNote:
-      'Cohort year is the calendar year of coalesce(ListDate, OnMarketDate). Sparse years are expected when the feed contains rare dates.',
+      'Cohort year is the calendar year of coalesce(ListDate, OnMarketDate). This can differ from OnMarketDate-only counts when list date and on-market date fall in different years.',
+    listingYearsOnMarketBreakdown,
+    listingYearsOnMarketCohortNote:
+      'OnMarketDate calendar year only. Aligns with Spark filters and sync-year-by-year. Compare to listingYearsBreakdown when diagnosing year mismatches.',
     listingYearsWithoutDate,
     recommendedActions: [
       {
@@ -369,11 +409,17 @@ async function main() {
   console.log(`History verified full: ${totals.historyVerifiedFullAll.toLocaleString()}`)
   console.log(`Finalized but unverified: ${totals.historyFinalizedUnverifiedAll.toLocaleString()}`)
   console.log(`Terminal remaining: ${totals.terminal.remaining.toLocaleString()}`)
-  console.log('\nYears finalized status (newest shown):')
+  console.log('\nYears finalized status (OnMarketDate year, matches year-by-year sync; newest shown):')
   for (const y of yearsFinalization) {
     const pct = y.finalizedPct == null ? 'n/a' : `${y.finalizedPct}%`
+    const vf =
+      typeof y.verifiedFullListings === 'number' ? `, strict-verified ${y.verifiedFullListings.toLocaleString()}` : ''
+    const prog =
+      y.runStatus === 'running' && y.totalListings > 0
+        ? `, job processed ${y.processedListings.toLocaleString()}/${y.totalListings.toLocaleString()}`
+        : ''
     console.log(
-      `- ${y.year}: ${y.finalizedListings.toLocaleString()}/${y.totalListings.toLocaleString()} finalized (${pct}), remaining ${y.remainingListings.toLocaleString()}`
+      `- ${y.year}: ${y.finalizedListings.toLocaleString()}/${y.totalListings.toLocaleString()} finalized (${pct}), remaining ${y.remainingListings.toLocaleString()}${vf}${prog} [${y.countsSource}]`
     )
   }
   console.log('\nListing year cohorts (calendar year of ListDate or OnMarketDate, newest first):')

@@ -6,7 +6,9 @@ This is the persistent handoff for future agents and future sessions.
 
 - Visual dashboard: `/admin/sync`
 - Machine-readable snapshot: `node scripts/sync-status-report.mjs --json`
-  - Includes `listingYearsBreakdown`, every cohort year present in the database (calendar year of `ListDate` or `OnMarketDate`), with finalized and strict-verified counts
+  - `yearsFinalization` uses **`listing_year_on_market_finalization_stats`** when the view exists (OnMarketDate calendar year, same scope as year-by-year sync), plus job fields (`processedListings`, `listingsFinalizedThisPass`) from the matrix cache
+  - `listingYearsBreakdown` is **`coalesce(ListDate, OnMarketDate)`** cohorts (can differ from OnMarketDate-only when those dates fall in different years)
+  - `listingYearsOnMarketBreakdown` is the full OnMarketDate-only table (newest first), for parity checks against the year sync job
 - Runtime cursors in DB:
   - `sync_cursor` (fresh/full lane state)
   - `sync_year_cursor` (year backfill lane state)

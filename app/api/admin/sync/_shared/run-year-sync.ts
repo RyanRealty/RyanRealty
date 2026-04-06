@@ -994,6 +994,11 @@ export async function runYearSyncChunk(options: {
     const newHistory = prevHistory + sparkHistoryRows
     const newFinalized = prevFinalized + listingsFinalized
 
+    const [dbSupabaseListings, dbFinalizedListings] = await Promise.all([
+      countSupabaseListingsForYear(supabase, year),
+      countFinalizedClosedForYear(supabase, year),
+    ])
+
     cache.rows[yearKey] = {
       ...existing,
       runStatus: 'running',
@@ -1001,7 +1006,8 @@ export async function runYearSyncChunk(options: {
       processedListings: newProcessed,
       historyInserted: newHistory,
       listingsFinalized: newFinalized,
-      finalizedListings: newFinalized,
+      supabaseListings: dbSupabaseListings,
+      finalizedListings: dbFinalizedListings,
       runUpdatedAt: nowIso,
     }
     cache.updatedAt = nowIso
