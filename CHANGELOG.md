@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.17.6 (2026-04-06)
+
+### Bug Fixes
+- fix(geo): inventory type counts via SQL RPC, slider images and search links
+
+---
+
+
 ## v1.17.5 (2026-04-06)
 
 ### Bug Fixes
