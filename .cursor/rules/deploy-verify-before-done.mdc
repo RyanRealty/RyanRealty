@@ -10,15 +10,17 @@ Never report a task as done until all steps below are complete in order.
 1. Implement and validate locally (`npm run build` and any task-specific checks).
 2. Commit only the intended changes.
 3. Push to `main` and confirm remote contains the commit (`origin/main` includes SHA).
-4. Confirm a production deployment has been created for the updated `main` commit.
-5. Wait until deployment state is `READY`.
-6. Verify production behavior for the changed path/feature (not just local).
-7. Only then report completion to the user.
+4. **Hosted Supabase:** If the shipped code needs new schema, apply migrations to the **production** database the app uses (same release as this push). See `.cursor/rules/production-parity.mdc` and `.cursor/rules/supabase-migrations-auto.mdc`. If the task did not touch schema, skip.
+5. Confirm a production deployment has been created for the updated `main` commit.
+6. Wait until deployment state is `READY`.
+7. Verify production behavior for the changed path/feature (not just local), including DB-dependent behavior when relevant.
+8. Only then report completion to the user.
 
 ## Required status language
 
 - If local is fixed but not deployed: explicitly say "fixed locally, not deployed yet."
 - If pushed but not live: explicitly say "pushed to main, deployment pending."
+- If code is live but migrations were not applied: explicitly say "production app deployed, database schema not yet migrated."
 - If live but not verified: explicitly say "live status unknown until production check is complete."
 
 ## Never do

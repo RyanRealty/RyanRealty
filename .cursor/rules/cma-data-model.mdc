@@ -1,3 +1,8 @@
+---
+description: CMA and closed-sale price source of truth (ClosePrice column + JSON fallback).
+alwaysApply: false
+---
+
 # CMA Closed-Price Data Model
 
 ## Canonical close price

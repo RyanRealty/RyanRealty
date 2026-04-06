@@ -13,6 +13,6 @@ alwaysApply: true
 
 When work touches schema or depends on new columns, functions, or tables, **apply hosted migrations in the same delivery effort** as the code push. Do not ask whether to migrate. Use `.cursor/rules/supabase-migrations-auto.mdc` (MCP or `npm run db:push` after `supabase link`).
 
-After deploy, **verify the production URL** for the changed behavior. Follow `.cursor/rules/deploy-verify-before-done.mdc`.
+**Ordered checklist** (local build → push → migrations when needed → deploy READY → prod verify): `.cursor/rules/deploy-verify-before-done.mdc`.
 
 If anything lags, state which layer is behind (Git, Vercel, or Supabase). Never tell the user production shows the full latest state unless all three are aligned.

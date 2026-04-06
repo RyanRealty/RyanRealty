@@ -8,9 +8,12 @@ alwaysApply: true
 ## A task is done when:
 1. `npm run build` passes
 2. The page renders **real data** (not placeholders, not zeros, not empty sections)
-3. You have a **screenshot** proving it renders correctly (Playwright: `npx playwright screenshot --browser chromium "http://localhost:PORT/page" /path/to/screenshot.png --viewport-size 1400,900`)
-4. For UI changes: mobile screenshot too (390x844)
-5. No console errors in the browser
+3. **Ship and parity:** `main` pushed, Vercel production **READY**, hosted Supabase migrations applied when the change needs them (see `.cursor/rules/deploy-verify-before-done.mdc` and `.cursor/rules/production-parity.mdc`)
+4. You have a **screenshot** proving it renders correctly (Playwright: `npx playwright screenshot --browser chromium "http://localhost:PORT/page" /path/to/screenshot.png --viewport-size 1400,900`)
+5. For UI changes: mobile screenshot too (390x844)
+6. No console errors in the browser
+
+Screenshots document quality; they **do not replace** production verification or schema parity when the feature depends on deploy or database state.
 
 ## Visual confirmation is mandatory for any change users can see
 - Screenshot BEFORE presenting work as done

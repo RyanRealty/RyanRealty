@@ -1,6 +1,6 @@
 ---
-description: Run audit from GOALS_AND_UI_AUDIT.md, fix issues, iterate until passing. Applies on audit requests.
-alwaysApply: true
+description: Run audit from GOALS_AND_UI_AUDIT.md, fix issues, iterate until passing. Use when auditing the site or fixing against the goals checklist.
+alwaysApply: false
 ---
 
 # Goals and Audit

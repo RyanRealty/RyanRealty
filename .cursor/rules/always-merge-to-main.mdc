@@ -1,7 +1,13 @@
-# Always merge to main
+---
+description: Ship verified work on main only; no long-lived feature branches (aligns with AGENTS.md).
+alwaysApply: false
+---
 
-Every verified change goes to `main` and gets pushed immediately.
-```bash
-git checkout main && git pull origin main --no-rebase --no-edit && git merge <branch> --no-edit && git push origin main
-```
-Work is not done until it's on `main` and pushed. Do not leave work on feature branches.
+# Trunk workflow (main only)
+
+Verified work belongs on **`main`** and must be **pushed** so CI and Vercel can run.
+
+- Follow **AGENTS.md** and **master-plan-protocol.mdc**: push directly to `main`, do not open PRs for routine work, do not leave finished changes stranded on a branch.
+- If you used a local branch for safety, **merge or rebase into `main` and push**; do not treat the branch as the source of truth.
+
+Do **not** use a separate “release branch” model. See also `.cursor/rules/production-parity.mdc` and `.cursor/rules/deploy-verify-before-done.mdc`.

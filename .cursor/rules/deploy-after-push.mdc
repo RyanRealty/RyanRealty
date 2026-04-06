@@ -1,11 +1,21 @@
-# Deploy and verify after push
+---
+description: Vercel production deploy notes; default is Git-triggered deploy from main.
+alwaysApply: false
+---
 
-After pushing to `main`, deploy and verify production:
+# Deploy after push
+
+**Default:** Pushing to **`main`** triggers Vercel production deploy via Git integration. You do not need `vercel --prod` unless that integration is broken or you are doing an exceptional manual deploy.
+
+**Done** still requires **production verification** and **production parity** (including hosted migrations when schema changed). See `.cursor/rules/deploy-verify-before-done.mdc` and `.cursor/rules/production-parity.mdc`.
+
+## Optional manual deploy
+
 ```bash
 vercel --token $VERCEL_TOKEN --prod --scope $VERCEL_SCOPE --yes
 ```
-Task is not done until production shows the change.
 
 ## Vercel Hobby limits
+
 - Cron: max one run per day per job (no `*/15 * * * *`)
 - If deploy fails due to cron frequency, reduce to daily

@@ -1,3 +1,8 @@
+---
+description: Sync status handoff — run sync-status-report and playbook when user asks about sync.
+alwaysApply: false
+---
+
 # Sync Status Trigger Protocol
 
 When the user asks any natural-language sync question, do not ask for clarification first.

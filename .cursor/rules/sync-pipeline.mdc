@@ -1,3 +1,8 @@
+---
+description: Listing sync architecture (delta + full), crons, photos, finalization — mandatory for sync work.
+alwaysApply: false
+---
+
 # Sync Pipeline Rules — MANDATORY
 
 ## Architecture
