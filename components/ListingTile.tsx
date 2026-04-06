@@ -345,8 +345,8 @@ function ListingTile({
         {/* VIDEO-FIRST: when listing has direct video, show it as primary with photo fallback */}
         {hasVideo && isDirectVideoUrl(videoUrls[0]!) ? (
           <>
-            {/* Photo as fallback/poster while video loads */}
-            {primaryPhoto && (
+            {/* Poster or neutral fallback so the tile is never an empty dark box while video loads */}
+            {primaryPhoto ? (
               <Image
                 src={primaryPhoto}
                 alt={address || 'Property photo'}
@@ -355,6 +355,16 @@ function ListingTile({
                 sizes="(max-width: 640px) 85vw, 320px"
                 priority={priority}
               />
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground">
+                <Image
+                  src="https://images.unsplash.com/photo-1653930796811-84d446f9e221?w=640&q=60"
+                  alt="Central Oregon"
+                  fill
+                  className="object-cover opacity-50"
+                  sizes="(max-width: 640px) 85vw, 320px"
+                />
+              </div>
             )}
             {/* Video autoplays (muted, short preview) — fades in over photo */}
             <video
@@ -363,7 +373,8 @@ function ListingTile({
               muted
               playsInline
               loop
-              preload="none"
+              preload="metadata"
+              poster={primaryPhoto ?? undefined}
               aria-hidden
               style={{ opacity: 0 }}
               onCanPlay={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transition = 'opacity 0.5s' }}
