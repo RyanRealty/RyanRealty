@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.19.0 (2026-04-06)
+
+### Features
+- feat: default home hero to Bend Unsplash image, optional video from brokerage settings
+
+---
+
+
 ## v1.18.0 (2026-04-06)
 
 ### Features
