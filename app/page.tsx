@@ -303,7 +303,7 @@ async function VideoToursAsync({ session }: { session: PublicSession }) {
     <section className="px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-7xl">
         <VideoToursRow
-          title="Priciest Central Oregon homes with a video tour"
+          title="Popular Tours"
           listings={listingsWithVideo}
           signedIn={!!session?.user}
           savedKeys={savedKeys}
