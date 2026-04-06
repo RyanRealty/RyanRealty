@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.16.10 (2026-04-06)
+
+### Maintenance
+- perf: narrow listing selects for tiles and sliders
+
+---
+
+
 ## v1.16.9 (2026-04-05)
 
 ### Maintenance
