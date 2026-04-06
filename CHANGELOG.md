@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.17.3 (2026-04-06)
+
+### Maintenance
+- docs: production parity rule for code, migrations, and Vercel
+
+---
+
+
 ## v1.17.2 (2026-04-06)
 
 ### Bug Fixes
