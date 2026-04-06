@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.17.8 (2026-04-06)
+
+### Bug Fixes
+- fix: align sync status reporting with on-market year stats and matrix cache
+
+---
+
+
 ## v1.17.7 (2026-04-06)
 
 ### Maintenance
