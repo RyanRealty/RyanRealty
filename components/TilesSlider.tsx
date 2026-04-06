@@ -110,7 +110,7 @@ export default function TilesSlider({ title, subtitle, titleId, headerRight, chi
           <div
             ref={scrollRef}
             onScroll={updateScrollState}
-            className="flex gap-4 overflow-x-auto pb-2 scroll-smooth no-scrollbar [scroll-snap-type:x_mandatory]"
+            className="flex gap-4 overflow-x-auto pb-2 scroll-smooth no-scrollbar snap-x snap-mandatory"
           >
             {children}
           </div>
@@ -137,7 +137,7 @@ export function TilesSliderItem({
 }) {
   return (
     <div
-      className={`shrink-0 scroll-snap-align-start w-[85vw] min-w-[260px] max-w-[320px] sm:w-[50vw] sm:min-w-[280px] sm:max-w-[360px] lg:w-[33.333vw] lg:min-w-[300px] lg:max-w-[420px] ${className}`}
+      className={`shrink-0 snap-start w-[85vw] min-w-[260px] max-w-[320px] sm:w-[50vw] sm:min-w-[280px] sm:max-w-[360px] lg:w-[33.333vw] lg:min-w-[300px] lg:max-w-[420px] ${className}`}
       style={style}
     >
       {children}

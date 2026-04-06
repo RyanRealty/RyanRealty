@@ -268,8 +268,11 @@ export async function getListingsWithVideos(filters?: {
   const citiesLowerForFilter =
     citiesList && citiesList.length > 0 ? new Set(citiesList.map((c) => c.toLowerCase())) : null
 
+  // Price-first walk only considers videos inside `details` (pickFirstVideoFromListingRow). Many active
+  // tours live only in `listing_videos` until backfill; if this returns zero, fall through so the paths
+  // below can merge `listing_videos` + `has_virtual_tour` (home Popular Tours depends on this).
   if (citiesList && citiesList.length > 0 && filters?.sort === 'price_desc') {
-    return fetchPriceFirstListingsWithVideoInCities(
+    const priceFirst = await fetchPriceFirstListingsWithVideoInCities(
       supabase,
       citiesList,
       maxRows,
@@ -278,6 +281,9 @@ export async function getListingsWithVideos(filters?: {
       filters?.minPrice,
       filters?.maxPrice
     )
+    if (priceFirst.length > 0) {
+      return priceFirst.slice(0, maxRows)
+    }
   }
 
   const geoOrPriceScoped =
@@ -545,7 +551,7 @@ async function _getListingsWithVideosCachedUncached(
 
 const _getListingsWithVideosCached = unstable_cache(
   _getListingsWithVideosCachedUncached,
-  ['listings-with-videos-v5'],
+  ['listings-with-videos-v6'],
   { revalidate: 300, tags: ['listings-videos'] }
 )
 
