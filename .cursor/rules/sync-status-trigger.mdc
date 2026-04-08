@@ -30,11 +30,11 @@ Immediately run the sync status snapshot workflow and return options.
    - Current metrics (listings, history rows, terminal remaining, finalized, strict-verified)
    - **Strict verification (mandatory):** Summarize the JSON object `strictVerification` from the same report. Include at least `counts.allListingsHistoryVerifiedFull`, `counts.allListingsFinalizedNotStrictVerified`, `counts.terminalStrictVerifyBacklog`, and `counts.terminalHistoryVerifiedFull`, plus `adminDashboardForLiveDeltas` so the user knows where to watch live 15s deltas. State that the terminal backlog is what `sync-verify-full-history` processes.
    - Full `listingYearsBreakdown` (coalesce ListDate or OnMarketDate cohorts) from the JSON, newest first, or a compact summary plus offer the full table on request
-   - `yearsFinalization` and/or `listingYearsOnMarketBreakdown` for OnMarketDate-aligned counts (matches year-by-year sync); do not equate them to `listingYearsBreakdown` without stating the cohort definition
+   - `yearsFinalization` and/or `listingYearsOnMarketBreakdown` for OnMarketDate-aligned counts; do not equate them to `listingYearsBreakdown` without stating the cohort definition
    - Year finalization status (which years are fully finalized vs still remaining, using the correct breakdown)
-   - Cursor phase/year
+   - Cursor phase (main sync cursor; legacy `sync_year_cursor` may be stale)
    - Health assessment (moving, stalled, rate-limited, or erroring)
-   - Last run checkpoints (recent logs and lane activity timestamps)
+   - Last run checkpoints (strict verify telemetry and cursor timestamps)
    - Approximate ETA to parity (with explicit assumptions)
    - Top 2-3 command options to execute now
 4. After user picks an option, execute it immediately and report results.
@@ -44,7 +44,7 @@ For "start sync":
 1. Immediately execute `GET /api/cron/start-sync` with cron authorization.
 2. Confirm response includes:
    - blocker flags cleared
-   - lane kick results for full, terminal, delta, and year
+   - lane kick results for full, terminal, and delta
 3. Return a concise "sync is running now" confirmation with timestamps.
 
 ## Purpose
@@ -56,7 +56,7 @@ Prevent repeated re-explanation across sessions and keep sync operations actiona
 For any sync status reply ("where are we with sync", "what's happening in sync", "what's up with the sync", "where are we at with the sync", etc), include:
 
 - The **`strictVerification`** object from the same JSON report (see workflow step 3). Do not skip this in favor of year tables only.
-- The complete per-year table from `listingYearsBreakdown` in the report JSON (all years present), unless the user explicitly asks for a short summary only, and call out `yearsFinalization` / `listingYearsOnMarketBreakdown` when the question is about the year-by-year job
+- The complete per-year table from `listingYearsBreakdown` in the report JSON (all years present), unless the user explicitly asks for a short summary only, and call out `yearsFinalization` / `listingYearsOnMarketBreakdown` when the question is about per-year finalization or strict coverage
 - A short list of years currently in scope with `finalized/total` and remaining count when a full table would be redundant
 - Explicit callout of any year that is fully finalized (`remaining = 0`)
 - Explicit callout of the oldest/newest year currently being processed

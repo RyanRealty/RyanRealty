@@ -146,17 +146,12 @@ export async function GET() {
     const cursorMinutes = minutesSince(cursor?.updated_at ?? null)
     const yearCursorMinutes = minutesSince(yearCursor?.updated_at ?? null)
     const hasRecentListingHeartbeat = cursorMinutes != null && cursorMinutes <= 20
-    const hasRecentYearHeartbeat = yearCursorMinutes != null && yearCursorMinutes <= 20
 
     const isLikelyRunning =
-      (cursor?.phase === 'history' || cursor?.phase === 'listings') && hasRecentListingHeartbeat ||
-      (yearCursor?.phase != null && yearCursor.phase !== 'idle' && hasRecentYearHeartbeat)
+      (cursor?.phase === 'history' || cursor?.phase === 'listings') && hasRecentListingHeartbeat
 
     const isStalled =
-      terminalRemaining > 0 &&
-      !isLikelyRunning &&
-      (cursorMinutes == null || cursorMinutes > 45) &&
-      (yearCursorMinutes == null || yearCursorMinutes > 45)
+      terminalRemaining > 0 && !isLikelyRunning && (cursorMinutes == null || cursorMinutes > 45)
 
     const mediaCoverage = {
       listingPhotosRows: photosRows,

@@ -9,10 +9,6 @@
       "schedule": "*/15 * * * *"
     },
     {
-      "path": "/api/cron/sync-year-by-year",
-      "schedule": "* * * * *"
-    },
-    {
       "path": "/api/cron/sync-history-terminal",
       "schedule": "* * * * *"
     },

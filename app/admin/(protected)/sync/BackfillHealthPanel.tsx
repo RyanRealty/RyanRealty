@@ -386,7 +386,7 @@ export default function BackfillHealthPanel() {
                 <p className="font-mono text-sm text-foreground">{formatNumber(payload.totals.verifiedFullHistoryListings)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Current year in progress</p>
+                <p className="text-xs text-muted-foreground">Legacy year cursor (lane removed)</p>
                 <p className="font-mono text-sm text-foreground">
                   {payload.yearCursor.currentYear ?? '—'} {payload.yearCursor.nextHistoryOffset ?? 0}/{payload.yearCursor.totalListings ?? '—'}
                 </p>

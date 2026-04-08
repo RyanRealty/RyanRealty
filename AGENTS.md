@@ -53,8 +53,8 @@ If the user says any variation of these, the agent MUST execute the sync-status 
 Required response format for these prompts:
 1. Current snapshot (key counts + cursor state)
 2. **Strict verification:** Always summarize the `strictVerification` object from the same JSON report (`counts` for global and terminal-only backlog, `adminDashboardForLiveDeltas` for live activity on `/admin/sync`). This is distinct from terminal finalization remaining (`totals.terminal.remaining`).
-3. Full `listingYearsBreakdown` from `node scripts/sync-status-report.mjs --json` (coalesce ListDate or OnMarketDate cohorts), unless the user asks for a short summary only. When discussing year-by-year sync scope, also reference `yearsFinalization` or `listingYearsOnMarketBreakdown` (OnMarketDate only)
-4. Year finalization status from `yearsFinalization` (DB on-market stats + job progress; see `yearsFinalizationNote` in JSON)
+3. Full `listingYearsBreakdown` from `node scripts/sync-status-report.mjs --json` (coalesce ListDate or OnMarketDate cohorts), unless the user asks for a short summary only. Also reference `yearsFinalization` or `listingYearsOnMarketBreakdown` (OnMarketDate only)
+4. Year finalization status from `yearsFinalization` (DB on-market stats; see `yearsFinalizationNote` in JSON; year-by-year Spark chunk sync was removed)
 5. Health callout (moving, stalled, or rate-limited)
 6. Top 2-3 commands to run now (from `docs/SYNC_HANDOFF_PLAYBOOK.md`)
 7. Wait for user selection ("run option 1/2/3")
@@ -62,7 +62,7 @@ Required response format for these prompts:
 For "start sync", do not ask follow-up questions first:
 1. Execute: `curl -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/start-sync"`
 2. Confirm blockers cleared (`paused=false`, `abort_requested=false`, `cron_enabled=true`)
-3. Confirm lane kick responses (`fullChunk`, `terminalChunk`, `deltaChunk`, `yearChunk`)
+3. Confirm lane kick responses (`fullChunk`, `terminalChunk`, `deltaChunk`)
 4. Report "sync running" confirmation with latest cursor timestamps
 
 ### Exact trigger: "Give me a sync status"
@@ -73,9 +73,9 @@ Required details:
 1. Current totals (listings, history rows, terminal remaining, finalized, verified full)
 2. Full **`strictVerification`** block from the same JSON (all-listing vs terminal-only strict backlog, verified full counts, `adminDashboardForLiveDeltas`; clarify that terminal strict backlog is what `sync-verify-full-history` drains)
 3. Complete `listingYearsBreakdown` and, for year-lane alignment, `listingYearsOnMarketBreakdown` or `yearsFinalization` from the status report JSON
-4. Year finalization status (`yearsFinalization` finalized/total/remaining; `processedListings` vs `totalListings` for active year)
+4. Year finalization status (`yearsFinalization` finalized/total/remaining; year lane retired so matrix job progress fields are not live)
 5. What is running right now (cursor phase, updated timestamps, paused/abort flags if available)
-6. Last things that ran (recent year log entries + latest lane activity)
+6. Latest lane activity (cursors, `strictVerification.runTelemetry` recent runs)
 7. Approximate time to parity (ETA) with a clearly stated method and assumptions
 8. 2-3 concrete run options the user can choose immediately
 

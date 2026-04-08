@@ -218,8 +218,6 @@ async function main() {
     verifiedAllRes,
     cursorRes,
     yearCursorRes,
-    yearLogRes,
-    stateRes,
     yearStatsRes,
     onMarketYearStatsRes,
     noListDateRes,
@@ -255,12 +253,6 @@ async function main() {
       .select('current_year, phase, next_history_offset, total_listings, updated_at')
       .eq('id', 'default')
       .maybeSingle(),
-    supabase
-      .from('year_sync_log')
-      .select('year, status, listings_upserted, history_inserted, listings_finalized, completed_at, error')
-      .order('completed_at', { ascending: false, nullsFirst: false })
-      .limit(6),
-    supabase.from('sync_state').select('year_sync_matrix_cache').eq('id', 'default').maybeSingle(),
     supabase
       .from('listing_year_finalization_stats')
       .select('list_year, total_listings, finalized_listings, verified_full_listings')
@@ -409,33 +401,26 @@ async function main() {
     strictVerifyRunHealth.status === 'degraded' ? `Strict verify degraded: ${strictVerifyRunHealth.summary}` : null,
   ].filter(Boolean)
 
-  const yearCache =
-    stateRes.data?.year_sync_matrix_cache && typeof stateRes.data.year_sync_matrix_cache === 'object'
-      ? stateRes.data.year_sync_matrix_cache
-      : null
-  const cacheRows = yearCache?.rows && typeof yearCache.rows === 'object' ? yearCache.rows : {}
-  const yearKeys = Object.keys(cacheRows)
-    .map((k) => Number(k))
+  const onMarketYearRows = !onMarketYearStatsRes.error ? (onMarketYearStatsRes.data ?? []) : []
+  const onMarketYearsSorted = onMarketYearRows
+    .map((r) => Number(r.list_year))
     .filter((n) => Number.isFinite(n))
     .sort((a, b) => b - a)
-
-  const yearSummary = (targetYear > 0 ? [targetYear] : yearKeys.slice(0, 10)).map((year) => {
-    const r = cacheRows[String(year)] || {}
-    return {
-      year,
-      runStatus: r.runStatus ?? 'idle',
-      runPhase: r.runPhase ?? null,
-      sparkListings: r.sparkListings ?? null,
-      supabaseListings: r.supabaseListings ?? null,
-      finalizedListings: r.finalizedListings ?? null,
-      processedListings: r.processedListings ?? 0,
-      totalListings: r.totalListings ?? 0,
-      historyInserted: r.historyInserted ?? 0,
-      listingsFinalized: r.listingsFinalized ?? 0,
-      lastSyncedAt: r.lastSyncedAt ?? null,
-      lastError: r.lastError ?? null,
-    }
-  })
+  const summaryYearList = targetYear > 0 ? [targetYear] : onMarketYearsSorted.slice(0, 15)
+  const yearSummary = summaryYearList.map((year) => ({
+    year,
+    runStatus: 'retired',
+    runPhase: null,
+    sparkListings: null,
+    supabaseListings: null,
+    finalizedListings: null,
+    processedListings: 0,
+    totalListings: 0,
+    historyInserted: 0,
+    listingsFinalized: 0,
+    lastSyncedAt: null,
+    lastError: null,
+  }))
 
   const yearsFinalization = yearSummary.map((y) => {
     const om = onMarketByYear.get(y.year)
@@ -457,7 +442,7 @@ async function main() {
       lastSyncedAt: y.lastSyncedAt,
       processedListings: y.processedListings ?? 0,
       listingsFinalizedThisPass: y.listingsFinalized ?? 0,
-      countsSource: om ? 'listing_year_on_market_finalization_stats' : 'matrix_cache_fallback',
+      countsSource: om ? 'listing_year_on_market_finalization_stats' : 'on_market_stats_missing',
     }
   })
 
@@ -472,16 +457,12 @@ async function main() {
         path: '/api/cron/sync-parity',
         cadence: 'manual or frequent cron',
       },
-      yearBackfill: {
-        path: '/api/cron/sync-year-by-year',
-        strategy: 'newest year to oldest year',
-      },
       terminalBackfill: {
         path: '/api/cron/sync-history-terminal',
       },
       startSync: {
         path: '/api/cron/start-sync',
-        purpose: 'clear blockers and kick all lanes',
+        purpose: 'clear blockers and kick full, terminal, and delta lanes',
       },
       strictVerify: {
         path: '/api/cron/sync-verify-full-history',
@@ -537,19 +518,16 @@ async function main() {
       syncCursor: cursorRes.data ?? null,
       yearCursor: yearCursorRes.data ?? null,
     },
-    lastRuns: {
-      recentYearSync: yearLogRes.data ?? [],
-    },
     yearSummary,
     yearsFinalization,
     yearsFinalizationNote:
-      'Counts use listing_year_on_market_finalization_stats when available (OnMarketDate calendar year, same scope as year-by-year sync). processedListings and listingsFinalizedThisPass come from the matrix job state.',
+      'OnMarketDate calendar year from listing_year_on_market_finalization_stats. Year-by-year Spark chunk sync was removed; runStatus in yearSummary is retired. Use strictVerification for strict verify progress.',
     listingYearsBreakdown,
     listingYearsCohortNote:
       'Cohort year is the calendar year of coalesce(ListDate, OnMarketDate). This can differ from OnMarketDate-only counts when list date and on-market date fall in different years.',
     listingYearsOnMarketBreakdown,
     listingYearsOnMarketCohortNote:
-      'OnMarketDate calendar year only. Aligns with Spark filters and sync-year-by-year. Compare to listingYearsBreakdown when diagnosing year mismatches.',
+      'OnMarketDate calendar year only. Compare to listingYearsBreakdown when diagnosing year mismatches.',
     listingYearsWithoutDate,
     recommendedActions: [
       {
@@ -563,10 +541,6 @@ async function main() {
       {
         when: 'Run one parity chunk (all lanes)',
         run: `curl -H "Authorization: Bearer $CRON_SECRET" "${siteUrl}/api/cron/sync-parity"`,
-      },
-      {
-        when: 'Force one specific year chunk',
-        run: `curl -H "Authorization: Bearer $CRON_SECRET" "${siteUrl}/api/cron/sync-year-by-year?year=2025"`,
       },
       {
         when: 'Strictly verify finalized-but-unverified listings',
@@ -628,7 +602,7 @@ async function main() {
       )
     }
   }
-  console.log('\nYears finalized status (OnMarketDate year, matches year-by-year sync; newest shown):')
+  console.log('\nYears finalized status (OnMarketDate year from DB stats; newest shown):')
   for (const y of yearsFinalization) {
     const pct = y.finalizedPct == null ? 'n/a' : `${y.finalizedPct}%`
     const vf =

@@ -31,8 +31,6 @@
     "db:migration": "supabase migration new",
     "db:add-team-image": "node scripts/add-team-image-column.mjs",
     "sync:full": "node scripts/run-full-sync.mjs",
-    "sync:year": "node scripts/run-year-sync.mjs",
-    "sync:range": "node scripts/run-sync-range.mjs",
     "test": "vitest run",
     "orchestrate": "npx tsx scripts/orchestrate.ts",
     "orchestrate:status": "npx tsx scripts/orchestrate.ts status",
