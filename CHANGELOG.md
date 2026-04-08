@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.25.2 (2026-04-08)
+
+### Maintenance
+- chore: Vercel/GitHub wiring for SkySlope and safer env sync
+
+---
+
+
 ## v1.25.1 (2026-04-08)
 
 ### Maintenance
