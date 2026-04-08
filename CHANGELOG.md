@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.25.1 (2026-04-08)
+
+### Maintenance
+- docs: add SkySlope env example (ACCESS_KEY, ACCESS_SECRET, optional OAuth)
+
+---
+
+
 ## v1.25.0 (2026-04-08)
 
 ### Features
