@@ -1083,6 +1083,11 @@ export type AdminSyncCounts = {
   historyVerifiedFullCount: number
   /** Listings finalized via fast path but not yet strict-verified. */
   historyFinalizedUnverifiedCount: number
+  /**
+   * Terminal listings (closed, expired, withdrawn, canceled) with history_finalized and not history_verified_full.
+   * Matches the sync-verify-full-history cron backlog.
+   */
+  terminalStrictVerifyBacklogCount: number
   /** Per-status counts for Final sync report (terminal statuses only). */
   closedFinalizedCount: number
   closedNotFinalizedCount: number
@@ -1129,6 +1134,7 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
       historyFinalizedCount: 0,
       historyVerifiedFullCount: 0,
       historyFinalizedUnverifiedCount: 0,
+      terminalStrictVerifyBacklogCount: 0,
       closedFinalizedCount: 0,
       closedNotFinalizedCount: 0,
       expiredFinalizedCount: 0,
@@ -1142,7 +1148,27 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
   }
   // Use .ilike on StandardStatus for terminal buckets. Do not use .or('StandardStatus.ilike.%Withdrawn%') with .eq():
   // PostgREST percent-decodes % inside OR filter strings, which mis-binds filters and yields wrong finalized counts.
-  const [listingsRes, totalRes, historyRes, activeNeedingHistoryRes, finalizedRes, verifiedRes, finalizedUnverifiedRes, closedTotal, closedF, expiredTotal, expiredF, withdrawnTotal, withdrawnF, canceledTotal, canceledF] = await Promise.all([
+  const [
+    listingsRes,
+    totalRes,
+    historyRes,
+    activeNeedingHistoryRes,
+    finalizedRes,
+    verifiedRes,
+    finalizedUnverifiedRes,
+    closedTotal,
+    closedF,
+    expiredTotal,
+    expiredF,
+    withdrawnTotal,
+    withdrawnF,
+    canceledTotal,
+    canceledF,
+    closedStrictBacklogRes,
+    expiredStrictBacklogRes,
+    withdrawnStrictBacklogRes,
+    canceledStrictBacklogRes,
+  ] = await Promise.all([
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(ACTIVE_STATUS_OR)),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true })),
     countExactWithRetry(async () => await supabase.from('listing_history').select('listing_key', { count: 'exact', head: true })),
@@ -1166,6 +1192,38 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     countExactWithRetry(async () =>
       await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Cancel%').eq('history_finalized', true)
     ),
+    countExactWithRetry(async () =>
+      await supabase
+        .from('listings')
+        .select('ListingKey', { count: 'exact', head: true })
+        .ilike('StandardStatus', '%Closed%')
+        .eq('history_finalized', true)
+        .eq('history_verified_full', false)
+    ),
+    countExactWithRetry(async () =>
+      await supabase
+        .from('listings')
+        .select('ListingKey', { count: 'exact', head: true })
+        .ilike('StandardStatus', '%Expired%')
+        .eq('history_finalized', true)
+        .eq('history_verified_full', false)
+    ),
+    countExactWithRetry(async () =>
+      await supabase
+        .from('listings')
+        .select('ListingKey', { count: 'exact', head: true })
+        .ilike('StandardStatus', '%Withdrawn%')
+        .eq('history_finalized', true)
+        .eq('history_verified_full', false)
+    ),
+    countExactWithRetry(async () =>
+      await supabase
+        .from('listings')
+        .select('ListingKey', { count: 'exact', head: true })
+        .ilike('StandardStatus', '%Cancel%')
+        .eq('history_finalized', true)
+        .eq('history_verified_full', false)
+    ),
   ])
   let historyError = historyRes.error
   if (historyError) {
@@ -1184,6 +1242,12 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
   const withdrawnNotFinalizedCount = Math.max(0, withdrawnTotal.count - withdrawnFinalizedCount)
   const canceledNotFinalizedCount = Math.max(0, canceledTotal.count - canceledFinalizedCount)
 
+  const terminalStrictVerifyBacklogCount =
+    closedStrictBacklogRes.count +
+    expiredStrictBacklogRes.count +
+    withdrawnStrictBacklogRes.count +
+    canceledStrictBacklogRes.count
+
   const countErrors = [
     totalRes.error,
     listingsRes.error,
@@ -1199,6 +1263,10 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     withdrawnF.error,
     canceledTotal.error,
     canceledF.error,
+    closedStrictBacklogRes.error,
+    expiredStrictBacklogRes.error,
+    withdrawnStrictBacklogRes.error,
+    canceledStrictBacklogRes.error,
   ]
     .filter(Boolean)
     .map((e) => String(e))
@@ -1215,6 +1283,7 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     historyFinalizedCount: finalizedRes.count,
     historyVerifiedFullCount: verifiedRes.count,
     historyFinalizedUnverifiedCount: finalizedUnverifiedRes.count,
+    terminalStrictVerifyBacklogCount,
     closedFinalizedCount,
     closedNotFinalizedCount,
     expiredFinalizedCount,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -35,6 +35,8 @@ type BackfillHealthPayload = {
     finalizedTerminalListings: number
     verifiedFullHistoryListings: number
     finalizedUnverifiedListings: number
+    /** Terminal listings the strict verify cron actually processes. */
+    terminalStrictVerifyBacklogListings?: number
     terminalRemainingListings: number
     terminalFinalizedBreakdown: {
       closed: number
@@ -81,10 +83,18 @@ function stateLabel(state: BackfillHealthPayload['status']['state']): string {
   return 'Idle'
 }
 
+type StrictActivity = {
+  lastPoll: { verified: number; backlogAll: number; backlogTerminal: number } | null
+  sinceLoad: { verified: number; backlogAll: number; backlogTerminal: number }
+}
+
 export default function BackfillHealthPanel() {
   const [payload, setPayload] = useState<BackfillHealthPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null)
+  const [strictActivity, setStrictActivity] = useState<StrictActivity | null>(null)
+  const strictPrevRef = useRef<{ v: number; b: number; t: number } | null>(null)
+  const strictBaselineRef = useRef<{ v: number; b: number; t: number } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -100,7 +110,34 @@ export default function BackfillHealthPanel() {
           throw new Error(('error' in data && data.error) ? data.error : `Request failed (${res.status})`)
         }
         if (!cancelled) {
-          setPayload(data as BackfillHealthPayload)
+          const p = data as BackfillHealthPayload
+          const v = p.totals.verifiedFullHistoryListings
+          const b = p.totals.finalizedUnverifiedListings
+          const t =
+            typeof p.totals.terminalStrictVerifyBacklogListings === 'number'
+              ? p.totals.terminalStrictVerifyBacklogListings
+              : b
+          const prev = strictPrevRef.current
+          const lastPoll =
+            prev != null
+              ? {
+                  verified: v - prev.v,
+                  backlogAll: prev.b - b,
+                  backlogTerminal: prev.t - t,
+                }
+              : null
+          if (strictBaselineRef.current == null) {
+            strictBaselineRef.current = { v, b, t }
+          }
+          const base = strictBaselineRef.current!
+          const sinceLoad = {
+            verified: v - base.v,
+            backlogAll: base.b - b,
+            backlogTerminal: base.t - t,
+          }
+          strictPrevRef.current = { v, b, t }
+          setStrictActivity({ lastPoll, sinceLoad })
+          setPayload(p)
           setError(null)
           setRateLimitMessage(null)
         }
@@ -151,6 +188,12 @@ export default function BackfillHealthPanel() {
     return { total, pct }
   }, [payload])
 
+  const strictMakingProgress = useMemo(() => {
+    const lp = strictActivity?.lastPoll
+    if (!lp) return false
+    return lp.verified > 0 || lp.backlogTerminal > 0 || lp.backlogAll > 0
+  }, [strictActivity])
+
   return (
     <Card>
       <CardHeader>
@@ -163,6 +206,70 @@ export default function BackfillHealthPanel() {
             Two lanes run together: fresh sync keeps current listings updated, and historical backfill processes newest year first then moves down through older years until terminal listings are finalized with complete Spark history.
           </AlertDescription>
         </Alert>
+
+        {payload && strictActivity && (
+          <Card>
+            <CardHeader className="space-y-1 pb-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle>Strict verification</CardTitle>
+                <Badge variant={strictMakingProgress ? 'default' : 'secondary'}>
+                  {strictMakingProgress ? 'Moving' : 'Flat'}
+                </Badge>
+              </div>
+              <p className="text-sm font-normal text-muted-foreground">
+                Cron <span className="font-mono text-foreground">sync-verify-full-history</span> raises strict verified
+                counts for terminal listings. This page refreshes every {POLL_MS / 1000} seconds so you can see numbers
+                change.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-0">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Terminal strict queue</p>
+                  <p className="font-mono text-sm text-foreground">
+                    {formatNumber(
+                      payload.totals.terminalStrictVerifyBacklogListings ?? payload.totals.finalizedUnverifiedListings
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Strict verified (all listings)</p>
+                  <p className="font-mono text-sm text-foreground">
+                    {formatNumber(payload.totals.verifiedFullHistoryListings)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Last refresh delta</p>
+                  <p className="font-mono text-sm text-foreground">
+                    {strictActivity.lastPoll == null
+                      ? '—'
+                      : strictActivity.lastPoll.verified === 0 &&
+                          strictActivity.lastPoll.backlogTerminal === 0 &&
+                          strictActivity.lastPoll.backlogAll === 0
+                        ? 'No change'
+                        : `${strictActivity.lastPoll.verified >= 0 ? '+' : ''}${strictActivity.lastPoll.verified.toLocaleString()} verified, terminal queue ${strictActivity.lastPoll.backlogTerminal >= 0 ? '−' : '+'}${
+                            Math.abs(strictActivity.lastPoll.backlogTerminal).toLocaleString()
+                          }`}
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Since this page loaded:{' '}
+                <span className="font-mono text-foreground">
+                  {strictActivity.sinceLoad.verified >= 0 ? '+' : ''}
+                  {strictActivity.sinceLoad.verified.toLocaleString()} verified
+                </span>
+                , terminal queue{' '}
+                <span className="font-mono text-foreground">
+                  {strictActivity.sinceLoad.backlogTerminal >= 0 ? '−' : '+'}
+                  {Math.abs(strictActivity.sinceLoad.backlogTerminal).toLocaleString()}
+                </span>
+                . If deltas stay flat for several minutes while the queue is large, check Vercel cron logs for 504 or 401
+                on that path.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {rateLimitMessage && (
           <Alert>
@@ -223,9 +330,6 @@ export default function BackfillHealthPanel() {
                 Finalization progress: {progressSummary.pct}% ({formatNumber(payload.totals.finalizedTerminalListings)} of {formatNumber(progressSummary.total)} terminal listings).
               </p>
             )}
-            <p className="text-sm text-muted-foreground">
-              Strict verification backlog: {formatNumber(payload.totals.finalizedUnverifiedListings)} finalized listings still need full Spark verification.
-            </p>
 
             <Separator />
 
