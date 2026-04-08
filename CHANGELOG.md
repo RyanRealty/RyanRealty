@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.22.2 (2026-04-08)
+
+### Maintenance
+- chore: bump strict verify cron batch to 50 listings per run
+
+---
+
+
 ## v1.22.1 (2026-04-08)
 
 ### Maintenance
