@@ -155,7 +155,52 @@ async function runWithConcurrency(
   return parts.reduce(addSum, emptySum())
 }
 
+type TelemetryPayload = {
+  startedAtIso: string
+  ok: boolean
+  querySucceeded: boolean
+  processed: number
+  markedVerified: number
+  fetchFailures: number
+  historyRowsInserted: number
+  limitParam: number
+  concurrencyParam: number
+  yearFilter: number | null
+  errorMessage: string | null
+}
+
+async function recordStrictVerifyRun(supabase: SupabaseClient, startedAtMs: number, row: TelemetryPayload) {
+  const durationMs = Date.now() - startedAtMs
+  const { error } = await supabase.from('strict_verify_runs').insert({
+    started_at: row.startedAtIso,
+    completed_at: new Date().toISOString(),
+    ok: row.ok,
+    query_succeeded: row.querySucceeded,
+    processed: row.processed,
+    marked_verified: row.markedVerified,
+    fetch_failures: row.fetchFailures,
+    history_rows_inserted: row.historyRowsInserted,
+    limit_param: row.limitParam,
+    concurrency_param: row.concurrencyParam,
+    year_filter: row.yearFilter,
+    duration_ms: durationMs,
+    error_message: row.errorMessage,
+  } as never)
+  if (error) {
+    console.error('[sync-verify-full-history] strict_verify_runs insert failed', error.message)
+  }
+}
+
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const limit = Math.max(1, Math.min(500, Number.parseInt(searchParams.get('limit') ?? '200', 10) || 200))
+  const envConc = Number.parseInt(process.env.STRICT_VERIFY_CONCURRENCY ?? '3', 10)
+  const concRaw = Number.parseInt(searchParams.get('concurrency') ?? String(Number.isFinite(envConc) ? envConc : 3), 10)
+  const concurrency = Math.max(1, Math.min(6, Number.isFinite(concRaw) ? concRaw : 3))
+  const year = Number.parseInt(searchParams.get('year') ?? '0', 10)
+  const hasYear = Number.isFinite(year) && year >= 1990 && year <= new Date().getUTCFullYear()
+  const yearFilter = hasYear ? year : null
+
   if (!isAuthorized(request)) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
   }
@@ -170,17 +215,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: 'SPARK_API_KEY not configured' }, { status: 503 })
   }
 
-  const { searchParams } = new URL(request.url)
-  const limit = Math.max(1, Math.min(500, Number.parseInt(searchParams.get('limit') ?? '200', 10) || 200))
-  const envConc = Number.parseInt(process.env.STRICT_VERIFY_CONCURRENCY ?? '3', 10)
-  const concRaw = Number.parseInt(searchParams.get('concurrency') ?? String(Number.isFinite(envConc) ? envConc : 3), 10)
-  const concurrency = Math.max(1, Math.min(6, Number.isFinite(concRaw) ? concRaw : 3))
-  const year = Number.parseInt(searchParams.get('year') ?? '0', 10)
-  const hasYear = Number.isFinite(year) && year >= 1990 && year <= new Date().getUTCFullYear()
+  const supabase = createClient(supabaseUrl, serviceKey)
+  const startedAtMs = Date.now()
+  const startedAtIso = new Date().toISOString()
+
   const fromIso = hasYear ? new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0)).toISOString() : null
   const toIso = hasYear ? new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0)).toISOString() : null
-
-  const supabase = createClient(supabaseUrl, serviceKey)
 
   let query = supabase
     .from('listings')
@@ -193,30 +233,75 @@ export async function GET(request: Request) {
     query = query.gte('OnMarketDate', fromIso).lt('OnMarketDate', toIso)
   }
 
-  const { data, error } = await query
-  if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  try {
+    const { data, error } = await query
+    if (error) {
+      await recordStrictVerifyRun(supabase, startedAtMs, {
+        startedAtIso,
+        ok: false,
+        querySucceeded: false,
+        processed: 0,
+        markedVerified: 0,
+        fetchFailures: 0,
+        historyRowsInserted: 0,
+        limitParam: limit,
+        concurrencyParam: concurrency,
+        yearFilter,
+        errorMessage: error.message,
+      })
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+    }
+
+    const terminalRows = (data ?? []).filter((r) =>
+      isTerminalStatus((r as { StandardStatus?: string | null }).StandardStatus)
+    ) as ListingRow[]
+
+    const { processed, markedVerified, historyRowsInserted, fetchFailures } = await runWithConcurrency(
+      supabase,
+      token,
+      terminalRows,
+      concurrency
+    )
+
+    await recordStrictVerifyRun(supabase, startedAtMs, {
+      startedAtIso,
+      ok: true,
+      querySucceeded: true,
+      processed,
+      markedVerified,
+      fetchFailures,
+      historyRowsInserted,
+      limitParam: limit,
+      concurrencyParam: concurrency,
+      yearFilter,
+      errorMessage: null,
+    })
+
+    return NextResponse.json({
+      ok: true,
+      processed,
+      markedVerified,
+      historyRowsInserted,
+      fetchFailures,
+      year: yearFilter,
+      limit,
+      concurrency,
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    await recordStrictVerifyRun(supabase, startedAtMs, {
+      startedAtIso,
+      ok: false,
+      querySucceeded: true,
+      processed: 0,
+      markedVerified: 0,
+      fetchFailures: 0,
+      historyRowsInserted: 0,
+      limitParam: limit,
+      concurrencyParam: concurrency,
+      yearFilter,
+      errorMessage: message,
+    })
+    return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
-
-  const terminalRows = (data ?? []).filter((r) =>
-    isTerminalStatus((r as { StandardStatus?: string | null }).StandardStatus)
-  ) as ListingRow[]
-
-  const { processed, markedVerified, historyRowsInserted, fetchFailures } = await runWithConcurrency(
-    supabase,
-    token,
-    terminalRows,
-    concurrency
-  )
-
-  return NextResponse.json({
-    ok: true,
-    processed,
-    markedVerified,
-    historyRowsInserted,
-    fetchFailures,
-    year: hasYear ? year : null,
-    limit,
-    concurrency,
-  })
 }

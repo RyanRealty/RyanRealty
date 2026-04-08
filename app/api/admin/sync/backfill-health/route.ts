@@ -3,6 +3,11 @@ import { createServerClient } from '@/lib/supabase'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getAdminSyncCounts } from '@/app/actions/listings'
 import { createClient } from '@supabase/supabase-js'
+import {
+  summarizeStrictVerifyHealth,
+  type StrictVerifyHealthSummary,
+  type StrictVerifyRunRow,
+} from '@/lib/strict-verify-run-health'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +31,38 @@ function minutesSince(iso: string | null): number | null {
   const ts = new Date(iso).getTime()
   if (!Number.isFinite(ts)) return null
   return Math.max(0, (Date.now() - ts) / 60000)
+}
+
+type DbStrictVerifyRow = {
+  completed_at: string
+  ok: boolean | null
+  query_succeeded: boolean | null
+  processed: number | null
+  marked_verified: number | null
+  fetch_failures: number | null
+  history_rows_inserted: number | null
+  limit_param: number | null
+  concurrency_param: number | null
+  year_filter: number | null
+  duration_ms: number | null
+  error_message: string | null
+}
+
+function mapStrictVerifyRow(r: DbStrictVerifyRow): StrictVerifyRunRow {
+  return {
+    completed_at: r.completed_at,
+    ok: Boolean(r.ok),
+    query_succeeded: Boolean(r.query_succeeded),
+    processed: Number(r.processed) || 0,
+    marked_verified: Number(r.marked_verified) || 0,
+    fetch_failures: Number(r.fetch_failures) || 0,
+    history_rows_inserted: Number(r.history_rows_inserted) || 0,
+    limit_param: r.limit_param ?? null,
+    concurrency_param: r.concurrency_param ?? null,
+    year_filter: r.year_filter ?? null,
+    duration_ms: r.duration_ms ?? null,
+    error_message: r.error_message ?? null,
+  }
 }
 
 async function countTableRows(
@@ -59,26 +96,43 @@ export async function GET() {
     }
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    const [cursorRes, yearCursorRes, adminCounts, photosRows, videosRows, agentsRows, openHousesRows, statusHistoryRows, priceHistoryRows] =
-      await Promise.all([
-        supabase
-          .from('sync_cursor')
-          .select('phase, updated_at, run_started_at, error')
-          .eq('id', 'default')
-          .maybeSingle(),
-        supabase
-          .from('sync_year_cursor')
-          .select('current_year, phase, next_history_offset, total_listings, updated_at')
-          .eq('id', 'default')
-          .maybeSingle(),
-        getAdminSyncCounts(),
-        countTableRows(supabase, 'listing_photos'),
-        countTableRows(supabase, 'listing_videos'),
-        countTableRows(supabase, 'listing_agents'),
-        countTableRows(supabase, 'open_houses'),
-        countTableRows(supabase, 'status_history'),
-        countTableRows(supabase, 'price_history'),
-      ])
+    const [
+      cursorRes,
+      yearCursorRes,
+      adminCounts,
+      photosRows,
+      videosRows,
+      agentsRows,
+      openHousesRows,
+      statusHistoryRows,
+      priceHistoryRows,
+      strictVerifyRunsRes,
+    ] = await Promise.all([
+      supabase
+        .from('sync_cursor')
+        .select('phase, updated_at, run_started_at, error')
+        .eq('id', 'default')
+        .maybeSingle(),
+      supabase
+        .from('sync_year_cursor')
+        .select('current_year, phase, next_history_offset, total_listings, updated_at')
+        .eq('id', 'default')
+        .maybeSingle(),
+      getAdminSyncCounts(),
+      countTableRows(supabase, 'listing_photos'),
+      countTableRows(supabase, 'listing_videos'),
+      countTableRows(supabase, 'listing_agents'),
+      countTableRows(supabase, 'open_houses'),
+      countTableRows(supabase, 'status_history'),
+      countTableRows(supabase, 'price_history'),
+      supabase
+        .from('strict_verify_runs')
+        .select(
+          'completed_at, ok, query_succeeded, processed, marked_verified, fetch_failures, history_rows_inserted, limit_param, concurrency_param, year_filter, duration_ms, error_message'
+        )
+        .order('completed_at', { ascending: false })
+        .limit(20),
+    ])
 
     const cursor = (cursorRes.data ?? null) as CursorRow | null
     const yearCursor = (yearCursorRes.data ?? null) as YearCursorRow | null
@@ -118,6 +172,46 @@ export async function GET() {
         (openHousesRows ?? 0) > 0 &&
         (statusHistoryRows ?? 0) > 0 &&
         (priceHistoryRows ?? 0) > 0,
+    }
+
+    const terminalStrictBacklog = adminCounts.terminalStrictVerifyBacklogCount
+    let strictVerifyTelemetry: {
+      tableReady: boolean
+      tableError: string | null
+      health: StrictVerifyHealthSummary | null
+      recentRuns: StrictVerifyRunRow[]
+      etaMinutesRough: number | null
+      etaNote: string
+    }
+    if (strictVerifyRunsRes.error) {
+      strictVerifyTelemetry = {
+        tableReady: false,
+        tableError: strictVerifyRunsRes.error.message,
+        health: null,
+        recentRuns: [],
+        etaMinutesRough: null,
+        etaNote:
+          'Apply migration 20260408190000_strict_verify_run_log.sql so cron runs are logged, or fix database permissions.',
+      }
+    } else {
+      const recentRuns = (strictVerifyRunsRes.data ?? []).map((row) =>
+        mapStrictVerifyRow(row as DbStrictVerifyRow)
+      )
+      const health = summarizeStrictVerifyHealth(recentRuns, terminalStrictBacklog)
+      const avg = health.avgMarkedVerifiedLast5
+      const etaMinutesRough =
+        terminalStrictBacklog > 0 && avg != null && avg > 0.05
+          ? Math.round(terminalStrictBacklog / avg)
+          : null
+      strictVerifyTelemetry = {
+        tableReady: true,
+        tableError: null,
+        health,
+        recentRuns: recentRuns.slice(0, 5),
+        etaMinutesRough,
+        etaNote:
+          'Rough ETA assumes about one successful cron per minute and recent average marked_verified. Actual time varies with Spark latency and failures.',
+      }
     }
 
     return NextResponse.json(
@@ -167,6 +261,7 @@ export async function GET() {
           historyCountError: adminCounts.historyError ?? null,
         },
         mediaCoverage,
+        strictVerifyTelemetry,
       },
       {
         headers: {

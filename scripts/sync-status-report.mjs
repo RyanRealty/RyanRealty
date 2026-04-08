@@ -86,6 +86,102 @@ async function countMaybe(run, label) {
   }
 }
 
+function summarizeStrictVerifyRuns(runs, terminalStrictBacklog) {
+  if (!runs || runs.length === 0) {
+    return {
+      status: 'unknown',
+      summary:
+        terminalStrictBacklog > 0
+          ? 'No strict verify runs logged yet (apply migration or wait for cron).'
+          : 'No strict verify runs logged; backlog clear.',
+      minutesSinceLastRun: null,
+      successRateLast10: null,
+      avgMarkedVerifiedLast5: null,
+      avgFetchFailuresLast5: null,
+    }
+  }
+  const last = runs[0]
+  const lastTs = new Date(last.completed_at).getTime()
+  const minutesSinceLastRun = Number.isFinite(lastTs) ? Math.max(0, (Date.now() - lastTs) / 60000) : null
+  const last10 = runs.slice(0, 10)
+  const okCount = last10.filter((r) => r.ok && r.query_succeeded).length
+  const successRateLast10 = last10.length > 0 ? Math.round((okCount / last10.length) * 1000) / 10 : null
+  const last5 = runs.slice(0, 5)
+  const avgMarkedVerifiedLast5 =
+    last5.length > 0 ? Math.round((last5.reduce((s, r) => s + r.marked_verified, 0) / last5.length) * 10) / 10 : null
+  const avgFetchFailuresLast5 =
+    last5.length > 0 ? Math.round((last5.reduce((s, r) => s + r.fetch_failures, 0) / last5.length) * 10) / 10 : null
+
+  if (terminalStrictBacklog === 0) {
+    return {
+      status: 'healthy',
+      summary: 'Terminal strict verify backlog is clear.',
+      minutesSinceLastRun,
+      successRateLast10,
+      avgMarkedVerifiedLast5,
+      avgFetchFailuresLast5,
+    }
+  }
+  if (minutesSinceLastRun != null && minutesSinceLastRun > 15) {
+    return {
+      status: 'stalled',
+      summary: `No strict verify run in about ${Math.round(minutesSinceLastRun)} minutes with backlog remaining.`,
+      minutesSinceLastRun,
+      successRateLast10,
+      avgMarkedVerifiedLast5,
+      avgFetchFailuresLast5,
+    }
+  }
+  if (!last.query_succeeded) {
+    return {
+      status: 'degraded',
+      summary: last.error_message ? `Listing query failed: ${last.error_message}` : 'Listing query failed.',
+      minutesSinceLastRun,
+      successRateLast10,
+      avgMarkedVerifiedLast5,
+      avgFetchFailuresLast5,
+    }
+  }
+  if (!last.ok) {
+    return {
+      status: 'degraded',
+      summary: last.error_message ? `Run not ok: ${last.error_message}` : 'Run completed with ok=false.',
+      minutesSinceLastRun,
+      successRateLast10,
+      avgMarkedVerifiedLast5,
+      avgFetchFailuresLast5,
+    }
+  }
+  if (last.processed > 5 && last.fetch_failures / last.processed > 0.25) {
+    return {
+      status: 'degraded',
+      summary: `High fetch failure rate last run (${last.fetch_failures}/${last.processed}).`,
+      minutesSinceLastRun,
+      successRateLast10,
+      avgMarkedVerifiedLast5,
+      avgFetchFailuresLast5,
+    }
+  }
+  if (successRateLast10 != null && successRateLast10 < 70 && last10.length >= 5) {
+    return {
+      status: 'degraded',
+      summary: `Only ${successRateLast10}% of last ${last10.length} runs succeeded.`,
+      minutesSinceLastRun,
+      successRateLast10,
+      avgMarkedVerifiedLast5,
+      avgFetchFailuresLast5,
+    }
+  }
+  return {
+    status: 'healthy',
+    summary: `Last batch verified ${last.marked_verified} listings (${last.fetch_failures} fetch failures).`,
+    minutesSinceLastRun,
+    successRateLast10,
+    avgMarkedVerifiedLast5,
+    avgFetchFailuresLast5,
+  }
+}
+
 async function byStatus(pattern) {
   const base = () =>
     supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', pattern)
@@ -127,6 +223,7 @@ async function main() {
     yearStatsRes,
     onMarketYearStatsRes,
     noListDateRes,
+    strictVerifyRunsRes,
   ] = await Promise.all([
     countWithFallback(
       () => supabase.from('listings').select('ListingKey', { count: 'exact', head: true }),
@@ -181,6 +278,13 @@ async function main() {
           .is('OnMarketDate', null),
       'count listings missing list dates'
     ),
+    supabase
+      .from('strict_verify_runs')
+      .select(
+        'completed_at, ok, query_succeeded, processed, marked_verified, fetch_failures, history_rows_inserted, limit_param, concurrency_param, year_filter, duration_ms, error_message'
+      )
+      .order('completed_at', { ascending: false })
+      .limit(20),
   ])
 
   const [closed, expired, withdrawn, canceled] = await Promise.all([
@@ -244,18 +348,6 @@ async function main() {
     note: 'Rows where both ListDate and OnMarketDate are null',
   }
 
-  const warnings = [
-    totalListingsRes.error,
-    totalHistoryRowsRes.error,
-    finalizedAllRes.error,
-    verifiedAllRes.error,
-    yearStatsRes.error ? `listing year breakdown: ${formatError(yearStatsRes.error)}` : null,
-    onMarketYearStatsRes.error
-      ? `on-market year breakdown: ${formatError(onMarketYearStatsRes.error)}`
-      : null,
-    noListDateRes.error,
-    ...terminalBucketWarnings,
-  ].filter(Boolean)
   const totals = {
     totalListings,
     totalHistoryRows,
@@ -275,6 +367,47 @@ async function main() {
         canceled.finalizedUnverified,
     },
   }
+
+  const strictRunsRaw = strictVerifyRunsRes.error ? [] : (strictVerifyRunsRes.data ?? [])
+  const strictRuns = strictRunsRaw.map((r) => ({
+    completed_at: r.completed_at,
+    ok: Boolean(r.ok),
+    query_succeeded: Boolean(r.query_succeeded),
+    processed: Number(r.processed) || 0,
+    marked_verified: Number(r.marked_verified) || 0,
+    fetch_failures: Number(r.fetch_failures) || 0,
+    history_rows_inserted: Number(r.history_rows_inserted) || 0,
+    limit_param: r.limit_param ?? null,
+    concurrency_param: r.concurrency_param ?? null,
+    year_filter: r.year_filter ?? null,
+    duration_ms: r.duration_ms ?? null,
+    error_message: r.error_message ?? null,
+  }))
+  const strictVerifyRunHealth = summarizeStrictVerifyRuns(strictRuns, totals.terminal.finalizedUnverified)
+  const backlogTerminal = totals.terminal.finalizedUnverified
+  const avgMarked = strictVerifyRunHealth.avgMarkedVerifiedLast5
+  const strictVerifyEtaMinutes =
+    backlogTerminal > 0 && avgMarked != null && avgMarked > 0.05
+      ? Math.round(backlogTerminal / avgMarked)
+      : null
+  const strictVerifyEtaNote =
+    'Rough ETA assumes about one successful cron per minute and the average marked_verified from the last five logged runs. Spark failures, timeouts, or overlapping invocations change actual time.'
+
+  const warnings = [
+    totalListingsRes.error,
+    totalHistoryRowsRes.error,
+    finalizedAllRes.error,
+    verifiedAllRes.error,
+    yearStatsRes.error ? `listing year breakdown: ${formatError(yearStatsRes.error)}` : null,
+    onMarketYearStatsRes.error
+      ? `on-market year breakdown: ${formatError(onMarketYearStatsRes.error)}`
+      : null,
+    noListDateRes.error,
+    ...terminalBucketWarnings,
+    strictVerifyRunsRes.error ? `strict_verify_runs: ${formatError(strictVerifyRunsRes.error)}` : null,
+    strictVerifyRunHealth.status === 'stalled' ? `Strict verify stalled: ${strictVerifyRunHealth.summary}` : null,
+    strictVerifyRunHealth.status === 'degraded' ? `Strict verify degraded: ${strictVerifyRunHealth.summary}` : null,
+  ].filter(Boolean)
 
   const yearCache =
     stateRes.data?.year_sync_matrix_cache && typeof stateRes.data.year_sync_matrix_cache === 'object'
@@ -380,6 +513,14 @@ async function main() {
         withdrawn: withdrawn.finalizedUnverified,
         canceled: canceled.finalizedUnverified,
       },
+      runTelemetry: {
+        tableReady: !strictVerifyRunsRes.error,
+        tableError: strictVerifyRunsRes.error ? formatError(strictVerifyRunsRes.error) : null,
+        health: strictVerifyRunHealth,
+        recentRuns: strictRuns.slice(0, 10),
+        etaMinutesRough: strictVerifyEtaMinutes,
+        etaNote: strictVerifyEtaNote,
+      },
     },
     metricQuality: {
       totalListingsCountMode: totalListingsRes.mode,
@@ -460,6 +601,33 @@ async function main() {
   console.log(`  Terminal strict verify backlog: ${totals.terminal.finalizedUnverified.toLocaleString()}`)
   console.log(`  Terminal verified full: ${totals.terminal.verifiedFull.toLocaleString()}`)
   console.log(`  Live deltas: ${String(siteUrl).replace(/\/$/, '')}/admin/sync`)
+  if (strictVerifyRunsRes.error) {
+    console.log(`  strict_verify_runs table: unreadable (${formatError(strictVerifyRunsRes.error)})`)
+  } else {
+    console.log(`  Cron run health: ${strictVerifyRunHealth.status} — ${strictVerifyRunHealth.summary}`)
+    const mins = strictVerifyRunHealth.minutesSinceLastRun
+    console.log(
+      `  Last logged run: ${mins == null ? 'n/a' : `${Math.round(mins)} min ago`}` +
+        (strictVerifyRunHealth.successRateLast10 != null
+          ? `; success rate last 10 runs: ${strictVerifyRunHealth.successRateLast10}%`
+          : '')
+    )
+    if (strictRuns[0]) {
+      const r = strictRuns[0]
+      console.log(
+        `  Most recent batch: processed ${r.processed}, marked_verified ${r.marked_verified}, fetch_failures ${r.fetch_failures}, duration_ms ${r.duration_ms ?? 'n/a'}`
+      )
+    }
+    if (strictVerifyEtaMinutes != null) {
+      console.log(
+        `  Rough ETA to drain terminal strict queue: ~${strictVerifyEtaMinutes} min (${strictVerifyEtaNote})`
+      )
+    } else if (backlogTerminal > 0) {
+      console.log(
+        `  Rough ETA: not estimated yet (need a few successful logged runs with marked_verified > 0).`
+      )
+    }
+  }
   console.log('\nYears finalized status (OnMarketDate year, matches year-by-year sync; newest shown):')
   for (const y of yearsFinalization) {
     const pct = y.finalizedPct == null ? 'n/a' : `${y.finalizedPct}%`

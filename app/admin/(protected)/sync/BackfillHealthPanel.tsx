@@ -61,6 +61,21 @@ type BackfillHealthPayload = {
     priceHistoryRows: number | null
     allAuxiliaryTablesPopulated: boolean
   }
+  strictVerifyTelemetry: {
+    tableReady: boolean
+    tableError: string | null
+    health: {
+      status: 'healthy' | 'degraded' | 'stalled' | 'unknown'
+      summary: string
+      minutesSinceLastRun: number | null
+      successRateLast10: number | null
+      avgMarkedVerifiedLast5: number | null
+      avgFetchFailuresLast5: number | null
+    } | null
+    recentRuns: Array<{ completed_at: string; marked_verified: number; fetch_failures: number; ok: boolean }>
+    etaMinutesRough: number | null
+    etaNote: string
+  }
 }
 
 const POLL_MS = 15000
@@ -81,6 +96,23 @@ function stateLabel(state: BackfillHealthPayload['status']['state']): string {
   if (state === 'stalled') return 'Stalled'
   if (state === 'complete') return 'Complete'
   return 'Idle'
+}
+
+function strictCronBadgeVariant(
+  status: NonNullable<BackfillHealthPayload['strictVerifyTelemetry']['health']>['status']
+): 'default' | 'secondary' | 'destructive' {
+  if (status === 'healthy') return 'default'
+  if (status === 'stalled' || status === 'degraded') return 'destructive'
+  return 'secondary'
+}
+
+function strictCronLabel(
+  status: NonNullable<BackfillHealthPayload['strictVerifyTelemetry']['health']>['status']
+): string {
+  if (status === 'healthy') return 'Cron healthy'
+  if (status === 'degraded') return 'Cron degraded'
+  if (status === 'stalled') return 'Cron stalled'
+  return 'Cron unknown'
 }
 
 type StrictActivity = {
@@ -176,6 +208,16 @@ export default function BackfillHealthPanel() {
       warnings.push(payload.integrity.historyCountError)
     }
     if (payload.cursor.error) warnings.push(`Sync cursor error: ${payload.cursor.error}`)
+    const sv = payload.strictVerifyTelemetry
+    if (sv && !sv.tableReady && sv.tableError) {
+      warnings.push(`Strict verify run log unavailable: ${sv.tableError}`)
+    }
+    if (sv?.health?.status === 'stalled') {
+      warnings.push(`Strict verify cron stalled: ${sv.health.summary}`)
+    }
+    if (sv?.health?.status === 'degraded') {
+      warnings.push(`Strict verify cron degraded: ${sv.health.summary}`)
+    }
     return warnings
   }, [payload])
 
@@ -215,6 +257,11 @@ export default function BackfillHealthPanel() {
                 <Badge variant={strictMakingProgress ? 'default' : 'secondary'}>
                   {strictMakingProgress ? 'Moving' : 'Flat'}
                 </Badge>
+                {payload.strictVerifyTelemetry.health && (
+                  <Badge variant={strictCronBadgeVariant(payload.strictVerifyTelemetry.health.status)}>
+                    {strictCronLabel(payload.strictVerifyTelemetry.health.status)}
+                  </Badge>
+                )}
               </div>
               <p className="text-sm font-normal text-muted-foreground">
                 Cron <span className="font-mono text-foreground">sync-verify-full-history</span> raises strict verified
@@ -223,6 +270,33 @@ export default function BackfillHealthPanel() {
               </p>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
+              {!payload.strictVerifyTelemetry.tableReady && (
+                <Alert variant="destructive">
+                  <AlertTitle>Strict verify telemetry missing</AlertTitle>
+                  <AlertDescription>
+                    {payload.strictVerifyTelemetry.tableError ?? 'Could not read strict_verify_runs.'}{' '}
+                    {payload.strictVerifyTelemetry.etaNote}
+                  </AlertDescription>
+                </Alert>
+              )}
+              {payload.strictVerifyTelemetry.tableReady && payload.strictVerifyTelemetry.health && (
+                <p className="text-sm text-muted-foreground">
+                  {payload.strictVerifyTelemetry.health.summary}
+                  {payload.strictVerifyTelemetry.health.minutesSinceLastRun != null
+                    ? ` Last logged run about ${Math.round(payload.strictVerifyTelemetry.health.minutesSinceLastRun)} min ago.`
+                    : ''}
+                  {payload.strictVerifyTelemetry.health.successRateLast10 != null
+                    ? ` Success rate over the last ten runs is ${payload.strictVerifyTelemetry.health.successRateLast10}%.`
+                    : ''}
+                </p>
+              )}
+              {payload.strictVerifyTelemetry.tableReady &&
+                payload.strictVerifyTelemetry.etaMinutesRough != null && (
+                  <p className="text-xs text-muted-foreground">
+                    Rough ETA to clear terminal strict queue about {payload.strictVerifyTelemetry.etaMinutesRough} min.{' '}
+                    {payload.strictVerifyTelemetry.etaNote}
+                  </p>
+                )}
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Terminal strict queue</p>
