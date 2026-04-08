@@ -17,7 +17,7 @@
       "schedule": "* * * * *"
     },
     {
-      "path": "/api/cron/sync-verify-full-history?limit=35",
+      "path": "/api/cron/sync-verify-full-history?limit=50",
       "schedule": "* * * * *"
     },
     {
