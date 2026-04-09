@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.25.3 (2026-04-09)
+
+### Maintenance
+- chore: clearer gh install/auth errors for github secrets sync
+
+---
+
+
 ## v1.25.2 (2026-04-08)
 
 ### Maintenance
