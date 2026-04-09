@@ -17,6 +17,10 @@
       "schedule": "* * * * *"
     },
     {
+      "path": "/api/cron/refresh-listing-year-stats",
+      "schedule": "*/30 * * * *"
+    },
+    {
       "path": "/api/cron/sync-full",
       "schedule": "0 2 * * 0"
     },

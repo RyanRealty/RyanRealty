@@ -506,6 +506,8 @@ async function main() {
     metricQuality: {
       totalListingsCountMode: totalListingsRes.mode,
       historyRowsCountMode: totalHistoryRowsRes.mode,
+      listingYearCohortStats:
+        'materialized_views_refreshed_by_cron_/api/cron/refresh-listing-year-stats',
     },
     statusByTerminal: {
       closed: omitTerminalQueryMeta(closed),
@@ -521,10 +523,10 @@ async function main() {
     yearSummary,
     yearsFinalization,
     yearsFinalizationNote:
-      'OnMarketDate calendar year from listing_year_on_market_finalization_stats. Year-by-year Spark chunk sync was removed; runStatus in yearSummary is retired. Use strictVerification for strict verify progress.',
+      'OnMarketDate calendar year from listing_year_on_market_finalization_stats (materialized view; cron /api/cron/refresh-listing-year-stats). Year-by-year Spark chunk sync was removed; runStatus in yearSummary is retired. Use strictVerification for strict verify progress.',
     listingYearsBreakdown,
     listingYearsCohortNote:
-      'Cohort year is the calendar year of coalesce(ListDate, OnMarketDate). This can differ from OnMarketDate-only counts when list date and on-market date fall in different years.',
+      'Cohort year is the calendar year of coalesce(ListDate, OnMarketDate). This can differ from OnMarketDate-only counts when list date and on-market date fall in different years. Year tables read materialized views (refreshed about every 30 minutes), not live scans.',
     listingYearsOnMarketBreakdown,
     listingYearsOnMarketCohortNote:
       'OnMarketDate calendar year only. Compare to listingYearsBreakdown when diagnosing year mismatches.',
@@ -545,6 +547,10 @@ async function main() {
       {
         when: 'Strictly verify finalized-but-unverified listings',
         run: `curl -H "Authorization: Bearer $CRON_SECRET" "${siteUrl}/api/cron/sync-verify-full-history?limit=200"`,
+      },
+      {
+        when: 'Refresh listing year cohort stats (materialized views for reports)',
+        run: `curl -H "Authorization: Bearer $CRON_SECRET" "${siteUrl}/api/cron/refresh-listing-year-stats"`,
       },
       {
         when: 'Open visual dashboard',
