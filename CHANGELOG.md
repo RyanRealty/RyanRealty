@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.27.1 (2026-04-09)
+
+### Maintenance
+- chore: add always-applied rule for active inventory sync and status reports
+
+---
+
+
 ## v1.27.0 (2026-04-09)
 
 ### Features
