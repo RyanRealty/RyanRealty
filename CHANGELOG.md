@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.27.0 (2026-04-09)
+
+### Features
+- feat: active listing freshness in sync status report and handoff docs
+
+---
+
+
 ## v1.26.0 (2026-04-09)
 
 ### Features
