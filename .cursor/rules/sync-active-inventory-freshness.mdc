@@ -1,0 +1,20 @@
+---
+description: How live listings stay fresh in sync, terminal closeout, and what status reports must include.
+alwaysApply: true
+---
+
+# Active inventory freshness and terminal closeout
+
+## Live (non-finalized) listings
+
+- **`/api/cron/sync-delta`** keeps active inventory current. It uses Spark **`ModificationTimestamp`** after **`sync_state.last_delta_sync_at`**, upserts listing fields, maintains **`price_history`** and **`status_history`**, emits **`activity_events`**, and may fix photos.
+- Rows with **`is_finalized = true`** are skipped by ongoing delta refresh (they are treated as closed out for that lane).
+
+## When a listing goes terminal (closed, expired, withdrawn, canceled, etc.)
+
+- Delta and related lanes aim to **finalize history** and, when the fetch succeeds, align **`history_finalized`**, **`history_verified_full`**, and **`is_finalized`** so the row is verified and not churned forever.
+- Backlog for **strict full-history verify** is tracked in **`strictVerification`** (for example **`terminalStrictVerifyBacklog`**) and drained by **`sync-verify-full-history`**.
+
+## Sync status answers
+
+- Run **`node scripts/sync-status-report.mjs --json`** (with project env). Always summarize **`activeListingFreshness`** and **`strictVerification`** together when the user asks about sync, active listings, freshness, or what is changing. Full handoff steps live in **`AGENTS.md`** and **`.cursor/rules/sync-status-trigger.mdc`**.
