@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.25.4 (2026-04-09)
+
+### Bug Fixes
+- fix(sync): materialize year cohort stats and index strict-verify backlog
+
+---
+
+
 ## v1.25.3 (2026-04-09)
 
 ### Maintenance
