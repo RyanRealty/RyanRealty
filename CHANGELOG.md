@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.27.9 (2026-04-10)
+
+### Maintenance
+- docs: define fully executed for SkySlope/OREF and clarify audit limits
+
+---
+
+
 ## v1.27.8 (2026-04-10)
 
 ### Maintenance
