@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.27.14 (2026-04-10)
+
+### Maintenance
+- chore: add SkySlope Forms comprehensive PDF log script and snapshot
+
+---
+
+
 ## v1.27.13 (2026-04-10)
 
 ### Maintenance
