@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.27.8 (2026-04-10)
+
+### Maintenance
+- chore: add SkySlope forms folder master audit script and report
+
+---
+
+
 ## v1.27.7 (2026-04-10)
 
 ### Maintenance
