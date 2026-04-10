@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.27.5 (2026-04-10)
+
+### Maintenance
+- docs: clarify SkySlope env names (SKYSLOPE_CLIENT_SECRET underscore)
+
+---
+
+
 ## v1.27.4 (2026-04-10)
 
 ### Maintenance
