@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.27.11 (2026-04-10)
+
+### Maintenance
+- docs: scope SkySlope Forms vs Suite and exclude archived file rows
+
+---
+
+
 ## v1.27.10 (2026-04-10)
 
 ### Maintenance
