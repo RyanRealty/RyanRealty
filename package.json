@@ -53,8 +53,8 @@
     "test:history": "node scripts/test-listing-history.mjs",
     "video:reprocess:hero": "node scripts/reprocess-hero-video.mjs",
     "vercel:env": "node scripts/sync-vercel-env.mjs",
-    "vercel:env:skyslope": "node scripts/sync-vercel-env.mjs production --only=SKYSLOPE_ACCESS_KEY,SKYSLOPE_ACCESS_SECRET && node scripts/sync-vercel-env.mjs preview --only=SKYSLOPE_ACCESS_KEY,SKYSLOPE_ACCESS_SECRET",
-    "github:secrets:skyslope": "node scripts/sync-github-secrets-from-local.mjs SKYSLOPE_ACCESS_KEY SKYSLOPE_ACCESS_SECRET",
+    "vercel:env:skyslope": "node scripts/sync-vercel-env.mjs production --only=SKYSLOPE_ACCESS_KEY,SKYSLOPE_ACCESS_SECRET,SKYSLOPE_CLIENT_ID,SKYSLOPE_CLIENT_SECRET && node scripts/sync-vercel-env.mjs preview --only=SKYSLOPE_ACCESS_KEY,SKYSLOPE_ACCESS_SECRET,SKYSLOPE_CLIENT_ID,SKYSLOPE_CLIENT_SECRET",
+    "github:secrets:skyslope": "node scripts/sync-github-secrets-from-local.mjs SKYSLOPE_ACCESS_KEY SKYSLOPE_ACCESS_SECRET --optional SKYSLOPE_CLIENT_ID SKYSLOPE_CLIENT_SECRET",
     "prepare": "husky"
   },
   "dependencies": {

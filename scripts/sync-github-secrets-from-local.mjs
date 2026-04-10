@@ -7,7 +7,8 @@
  *
  * Fallback: `gh secret set` when `gh` is installed and authenticated.
  *
- * Usage: node scripts/sync-github-secrets-from-local.mjs KEY1 KEY2 ...
+ * Usage: node scripts/sync-github-secrets-from-local.mjs KEY1 KEY2 ... [--optional OPT1 OPT2 ...]
+ * Optional keys are skipped (not uploaded) when missing or empty in .env.local.
  */
 import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
@@ -119,9 +120,22 @@ function setViaGh(name, value) {
   }
 }
 
-const keys = process.argv.slice(2).filter(Boolean)
-if (keys.length === 0) {
-  console.error('Usage: node scripts/sync-github-secrets-from-local.mjs KEY1 KEY2 ...')
+const rawArgs = process.argv.slice(2).filter(Boolean)
+const optIdx = rawArgs.indexOf('--optional')
+/** @type {string[]} */
+let requiredKeys = []
+/** @type {string[]} */
+let optionalKeys = []
+if (optIdx === -1) {
+  requiredKeys = rawArgs
+} else {
+  requiredKeys = rawArgs.slice(0, optIdx)
+  optionalKeys = rawArgs.slice(optIdx + 1).filter((a) => a !== '--optional')
+}
+if (requiredKeys.length === 0) {
+  console.error(
+    'Usage: node scripts/sync-github-secrets-from-local.mjs KEY1 [KEY2 ...] [--optional OPT1 [OPT2 ...]]'
+  )
   process.exit(1)
 }
 
@@ -140,11 +154,21 @@ const token = (
   ''
 ).trim()
 
-for (const key of keys) {
+for (const key of requiredKeys) {
   const val = fileEnv[key]
   if (val == null || String(val).trim() === '') {
     console.error(`Missing or empty ${key} in .env.local`)
     process.exit(1)
+  }
+}
+
+const keysToSet = [...requiredKeys]
+for (const key of optionalKeys) {
+  const val = fileEnv[key]
+  if (val != null && String(val).trim() !== '') {
+    keysToSet.push(key)
+  } else {
+    console.log(`Skipping optional (missing or empty in .env.local): ${key}`)
   }
 }
 
@@ -156,7 +180,7 @@ async function main() {
       process.exit(1)
     }
     const { key, key_id } = await getRepoPublicKey(repo.owner, repo.repo, token)
-    for (const name of keys) {
+    for (const name of keysToSet) {
       await putRepoSecret(repo.owner, repo.repo, token, name, fileEnv[name], key_id, key)
       console.log(`GitHub Actions secret set (API): ${name}`)
     }
@@ -164,7 +188,7 @@ async function main() {
   }
 
   assertGhReady()
-  for (const name of keys) {
+  for (const name of keysToSet) {
     setViaGh(name, fileEnv[name])
     console.log(`GitHub Actions secret set (gh): ${name}`)
   }
