@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.27.10 (2026-04-10)
+
+### Maintenance
+- docs: party-specific rules for fully executed (listing, buyer, mutual)
+
+---
+
+
 ## v1.27.9 (2026-04-10)
 
 ### Maintenance
