@@ -105,6 +105,34 @@ async function countListingHistoryForReport(supabaseClient) {
   )
 }
 
+/**
+ * PostgREST double .is(null) on listings can error at scale; use DB COUNT with a raised timeout.
+ */
+async function countListingsMissingBothDatesForReport(supabaseClient) {
+  const { data, error: rpcError } = await supabaseClient.rpc('report_listings_missing_both_dates_count')
+  if (!rpcError && data != null) {
+    const n = typeof data === 'string' ? Number(data) : Number(data)
+    if (Number.isFinite(n) && n >= 0) {
+      return { count: n, mode: 'rpc_exact', error: null }
+    }
+  }
+  return countWithFallback(
+    () =>
+      supabaseClient
+        .from('listings')
+        .select('ListingKey', { count: 'exact', head: true })
+        .is('ListDate', null)
+        .is('OnMarketDate', null),
+    () =>
+      supabaseClient
+        .from('listings')
+        .select('ListingKey', { count: 'planned', head: true })
+        .is('ListDate', null)
+        .is('OnMarketDate', null),
+    'count listings missing both dates'
+  )
+}
+
 function summarizeStrictVerifyRuns(runs, terminalStrictBacklog) {
   if (!runs || runs.length === 0) {
     return {
@@ -279,15 +307,7 @@ async function main() {
       .from('listing_year_on_market_finalization_stats')
       .select('list_year, total_listings, finalized_listings, verified_full_listings')
       .order('list_year', { ascending: false }),
-    countMaybe(
-      () =>
-        supabase
-          .from('listings')
-          .select('ListingKey', { count: 'exact', head: true })
-          .is('ListDate', null)
-          .is('OnMarketDate', null),
-      'count listings missing list dates'
-    ),
+    countListingsMissingBothDatesForReport(supabase),
     supabase
       .from('strict_verify_runs')
       .select(
@@ -366,6 +386,7 @@ async function main() {
 
   const listingYearsWithoutDate = {
     totalListings: noListDateRes.count ?? 0,
+    countMode: noListDateRes.mode,
     note: 'Rows where both ListDate and OnMarketDate are null',
   }
 
@@ -594,6 +615,7 @@ async function main() {
     metricQuality: {
       totalListingsCountMode: totalListingsRes.mode,
       historyRowsCountMode: totalHistoryRowsRes.mode,
+      listingsMissingBothDatesCountMode: noListDateRes.mode,
       listingYearCohortStats:
         'materialized_views_refreshed_by_cron_/api/cron/refresh-listing-year-stats',
     },
