@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.27.6 (2026-04-10)
+
+### Maintenance
+- chore: add Cursor skills for Oregon OREF workflows and SkySlope API
+
+---
+
+
 ## v1.27.5 (2026-04-10)
 
 ### Maintenance
