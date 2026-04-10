@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.27.4 (2026-04-10)
+
+### Maintenance
+- chore: sync SkySlope OAuth envs to Vercel scripts, CI, and GitHub secrets flow
+
+---
+
+
 ## v1.27.3 (2026-04-10)
 
 ### Bug Fixes
