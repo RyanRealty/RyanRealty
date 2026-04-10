@@ -429,14 +429,14 @@ async function main() {
   lines.push(`### What “fully executed” means here (Ryan Realty standard)`)
   lines.push(``)
   lines.push(
-    `A document is **fully executed** only when a **qualified human reviewer** (transaction coordinator, principal broker, or compliance) confirms **all** of the following for that specific instrument and property:`
+    `A document is **fully executed** only when a **qualified human reviewer** (transaction coordinator, principal broker, or compliance) confirms **all** of the following for that specific instrument and property. **First classify the document**: listing agreements need **seller** (and firm/agent per form) signatures, not buyers; buyer agreements need **buyer** (and firm per form) signatures, not sellers; **mutual** instruments (RSA and many addenda/counters) need **both sides** signed where the form requires it—then judge completeness against **that** obligation pattern.`
   )
   lines.push(``)
   lines.push(
-    `1. **Correct parties** — Buyers and sellers (or entities) are identified and match the deal and the signature blocks.`
+    `1. **Correct obligated parties** — The parties who **should** sign this document type are identified and match the deal, property, and (for mutual docs) the offer/counter context.`
   )
   lines.push(
-    `2. **Complete signing** — Every required signature, initial, and date on that form (and attached pages) is present for the **right** parties, not placeholders or wrong signers.`
+    `2. **Complete signing for that pattern** — Every required signature, initial, and date for **sellers only**, **buyers only**, or **both** (as the form requires) is present—not placeholders or wrong signers.`
   )
   lines.push(
     `3. **OREF / Oregon / brokerage completeness** — Statutory and contractual requirements for this transaction are satisfied: required advisories, addenda referenced by the RSA, disclosures, and any brokerage-specific checklist items are present and the **correct OREF versions** are used where version matters.`

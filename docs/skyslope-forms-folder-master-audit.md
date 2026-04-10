@@ -4,7 +4,7 @@
 
 # SkySlope Forms file folders master audit
 
-Generated (UTC): 2026-04-10T23:38:37.418Z
+Generated (UTC): 2026-04-10T23:40:00.573Z
 
 This report inventories **every listing file** and **every sale file** returned by the SkySlope **Listings/Sales** API in this account, including checklist activity scaffolding and the flat **Documents** library timeline.
 
@@ -15,10 +15,10 @@ This report inventories **every listing file** and **every sale file** returned 
 
 ### What “fully executed” means here (Ryan Realty standard)
 
-A document is **fully executed** only when a **qualified human reviewer** (transaction coordinator, principal broker, or compliance) confirms **all** of the following for that specific instrument and property:
+A document is **fully executed** only when a **qualified human reviewer** (transaction coordinator, principal broker, or compliance) confirms **all** of the following for that specific instrument and property. **First classify the document**: listing agreements need **seller** (and firm/agent per form) signatures, not buyers; buyer agreements need **buyer** (and firm per form) signatures, not sellers; **mutual** instruments (RSA and many addenda/counters) need **both sides** signed where the form requires it—then judge completeness against **that** obligation pattern.
 
-1. **Correct parties** — Buyers and sellers (or entities) are identified and match the deal and the signature blocks.
-2. **Complete signing** — Every required signature, initial, and date on that form (and attached pages) is present for the **right** parties, not placeholders or wrong signers.
+1. **Correct obligated parties** — The parties who **should** sign this document type are identified and match the deal, property, and (for mutual docs) the offer/counter context.
+2. **Complete signing for that pattern** — Every required signature, initial, and date for **sellers only**, **buyers only**, or **both** (as the form requires) is present—not placeholders or wrong signers.
 3. **OREF / Oregon / brokerage completeness** — Statutory and contractual requirements for this transaction are satisfied: required advisories, addenda referenced by the RSA, disclosures, and any brokerage-specific checklist items are present and the **correct OREF versions** are used where version matters.
 4. **SkySlope file alignment** — Checklist activities and uploaded PDFs match what escrow and the brokerage expect for this stage.
 

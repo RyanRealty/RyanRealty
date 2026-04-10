@@ -60,7 +60,7 @@ Successful responses use fields such as **`Session`** and **`Expiration`** (use 
 
 ### “Fully executed” (do not conflate with automation)
 
-**Fully executed** means the **correct buyers and sellers** have **fully and correctly signed** the instrument, **and** required Oregon / OREF / brokerage items are **not missing**. That judgment needs a **licensed human workflow** (TC, PB, compliance) who knows **OREF**, **SkySlope**, and **Oregon real estate practice**. API fields and PDF text clues (DigiSign counts, word “Accepted”, etc.) are **not** proof of full execution. See [reference.md — Fully executed](reference.md#fully-executed-what-that-means-for-ryan-realty-work).
+**Fully executed** depends on **which parties the form binds**: listing agreements need **seller** (and firm) execution as the form says; buyer agreements need **buyer** (and firm) execution; **mutual** docs (RSA and many addenda/counters) need **both sides** where the form requires it. Required Oregon / OREF / brokerage items must still be present. That judgment needs a **human workflow** (TC, PB, compliance) who knows **OREF**, **SkySlope**, and **Oregon practice**. API fields and PDF text clues are **not** proof of full execution. See [reference.md — Fully executed](reference.md#fully-executed-what-that-means-for-ryan-realty-work).
 
 ## What not to do
 

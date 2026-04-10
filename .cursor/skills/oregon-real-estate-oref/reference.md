@@ -12,7 +12,7 @@ Use these instead of copying form text into chat or code.
 
 ## Fully executed (OREF context)
 
-OREF forms use numbered lines, signature blocks, and cross-references between the RSA, addenda, and advisories. **Fully executed** for file compliance means the **intended parties** completed **every** required signature, initial, and date for **that** transaction, and **all referenced and required** companion forms are present and correct—not merely that a PDF contains an e-sign vendor stamp. Automated tools cannot replace a **human OREF + SkySlope + Oregon practice** review. Align with the brokerage definition in [skyslope-api/reference.md](../skyslope-api/reference.md#fully-executed-what-that-means-for-ryan-realty-work).
+OREF forms use numbered lines, signature blocks, and cross-references between the RSA, addenda, and advisories. **Fully executed** for file compliance means the **obligated parties for that form** completed every required signature, initial, and date (e.g. **sellers only** on a listing agreement, **buyers only** on a buyer agency form, **both sides** where the RSA or addendum requires mutual assent), and **all referenced and required** companion forms are present and correct—not merely that a PDF contains an e-sign vendor stamp. Automated tools cannot replace a **human OREF + SkySlope + Oregon practice** review. Align with the brokerage definition in [skyslope-api/reference.md](../skyslope-api/reference.md#fully-executed-what-that-means-for-ryan-realty-work).
 
 ## Notes for agents
 
