@@ -58,6 +58,10 @@ Successful responses use fields such as **`Session`** and **`Expiration`** (use 
 3. Respect **rate limits** and **data handling** (PII); do not log tokens or full responses to public CI output.
 4. **Support:** https://support.skyslope.com/hc/en-us — for entitlement and endpoint access.
 
+### “Fully executed” (do not conflate with automation)
+
+**Fully executed** means the **correct buyers and sellers** have **fully and correctly signed** the instrument, **and** required Oregon / OREF / brokerage items are **not missing**. That judgment needs a **licensed human workflow** (TC, PB, compliance) who knows **OREF**, **SkySlope**, and **Oregon real estate practice**. API fields and PDF text clues (DigiSign counts, word “Accepted”, etc.) are **not** proof of full execution. See [reference.md — Fully executed](reference.md#fully-executed-what-that-means-for-ryan-realty-work).
+
 ## What not to do
 
 - Do not assume **Offers** or **Forms** tokens work on **Listings/Sales** hosts (or vice versa).

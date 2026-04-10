@@ -243,7 +243,8 @@ function listingPipelineRead(listing) {
   return `Listing status is **${st}** (interpret using your brokerage’s SkySlope stage definitions).`
 }
 
-function executionSignalsFromText(text) {
+/** PDF text-layer hints only — never treated as “fully executed” proof (see report preamble). */
+function pdfTextCluesFromExtract(text) {
   const t = (text || '').replace(/\s+/g, ' ')
   const signals = []
   const push = (label) => signals.push(label)
@@ -252,11 +253,11 @@ function executionSignalsFromText(text) {
   if (/Adobe Sign|DocuSign|HelloSign/i.test(t)) push('alt_e_sign_vendor_possible')
   if (/\bACCEPTED\b|\bAccepted\b/i.test(t)) push('word_accepted_present')
   if (/\bREJECTED\b|\bDeclined\b|\bWithdrawn\b|\bTerminated\b/i.test(t)) push('negative_outcome_word_present')
-  if (/\bFULLY EXECUTED\b|\bfully executed\b/i.test(t)) push('fully_executed_phrase_present')
+  if (/\bFULLY EXECUTED\b|\bfully executed\b/i.test(t)) push('pdf_contains_fully_executed_phrase_not_proof')
   if (/Seller Initial|Buyer Initial|Signature/i.test(t)) push('signature_labels_present')
 
   const digi = (t.match(/DigiSign Verified/gi) || []).length
-  if (digi >= 6) push('many_digisign_markers_high_execution_likelihood')
+  if (digi >= 6) push('many_digisign_markers_still_not_proof_of_full_execution')
 
   return { signals, digiSignHits: digi, excerpt: redactContacts(t.slice(0, 900)) }
 }
@@ -391,7 +392,7 @@ async function main() {
           console.log = log
           console.error = err
         }
-        const sig = executionSignalsFromText(data.text || '')
+        const sig = pdfTextCluesFromExtract(data.text || '')
         deepByKey.set(`${job.folderKey}::${job.docId}`, {
           ok: true,
           pages: data.numpages,
@@ -424,8 +425,28 @@ async function main() {
   lines.push(
     `- **${totalDocs} documents** existed at generation time across **${listingRows.length}** listing files + **${saleRows.length}** sale files. Fully OCR-reading every scanned PDF is a batch job; this report uses **API metadata for 100% of documents** and **PDF text extraction for a prioritized subset** (${selected.length} PDFs) focused on offers, counters, RSA/sale agreement language, and termination/release patterns.`
   )
+  lines.push(``)
+  lines.push(`### What “fully executed” means here (Ryan Realty standard)`)
+  lines.push(``)
   lines.push(
-    `- **Execution status** is inferred from **SkySlope status fields + checklist activity statuses + PDF text signals**. It is **not** a legal conclusion. When in doubt, open the PDF in SkySlope.`
+    `A document is **fully executed** only when a **qualified human reviewer** (transaction coordinator, principal broker, or compliance) confirms **all** of the following for that specific instrument and property:`
+  )
+  lines.push(``)
+  lines.push(
+    `1. **Correct parties** — Buyers and sellers (or entities) are identified and match the deal and the signature blocks.`
+  )
+  lines.push(
+    `2. **Complete signing** — Every required signature, initial, and date on that form (and attached pages) is present for the **right** parties, not placeholders or wrong signers.`
+  )
+  lines.push(
+    `3. **OREF / Oregon / brokerage completeness** — Statutory and contractual requirements for this transaction are satisfied: required advisories, addenda referenced by the RSA, disclosures, and any brokerage-specific checklist items are present and the **correct OREF versions** are used where version matters.`
+  )
+  lines.push(
+    `4. **SkySlope file alignment** — Checklist activities and uploaded PDFs match what escrow and the brokerage expect for this stage.`
+  )
+  lines.push(``)
+  lines.push(
+    `**This script does not perform (1)–(4).** The “PDF text clues” column reports **extracted text-layer hints** (e.g. e-sign vendor strings). Those hints are **not** evidence of full execution and are **not** an OREF compliance audit.`
   )
   lines.push(
     `- **PII is redacted** in excerpts (emails/phones). Do not commit live SkySlope session artifacts or presigned URLs.`
@@ -444,10 +465,14 @@ async function main() {
   lines.push(`3. **MLS** (if known) as \`MLS-{number}\` else \`MLS-none\`.`)
   lines.push(`4. **Doc class** (machine token): examples \`OREF-042\`, \`OREF-015\`, \`OREF-101\`, \`OFFER\`, \`CO-SLR-01\`, \`CO-BYR-01\`, \`ADD\`, \`AMD\`, \`SPD\`, \`LENDER\`, \`TITLE\`, \`EMD\`, \`MISC\`. Derive OREF numbers from the filename when present.`)
   lines.push(`5. **Round index** (offers only): \`R01\`, \`R02\`… increment whenever a new buyer offer package begins (heuristic: new "Offer" PDF with later date).`)
-  lines.push(`6. **Execution hint** (suffix, optional): \`PARTIAL\` vs \`EXECUTED\` vs \`UNKNOWN\` based on e-sign markers + whether the doc is a template with blanks vs completed counters (still heuristic).`)
+  lines.push(
+    `6. **Human review token** (suffix, optional): use \`TC-PENDING\`, \`TC-OK\`, or \`UNKNOWN\` **only** after a human applies the “fully executed” standard above. **Do not** derive \`TC-OK\` from e-sign marker counts.`
+  )
   lines.push(`7. **Original stem preserved** at the end for traceability: \`__orig-{sanitized}\`.`)
   lines.push(``)
-  lines.push(`**Example (illustrative):** \`2026-03-17__LIST__MLS-220199105__OREF-015__LISTING-AGREEMENT__EXECUTED__orig-Listing-Agreement-Exclusive-015-OREF.pdf\``)
+  lines.push(
+    `**Example (illustrative):** \`2026-03-17__LIST__MLS-220199105__OREF-015__LISTING-AGREEMENT__TC-OK__orig-Listing-Agreement-Exclusive-015-OREF.pdf\` (TC-OK only if a reviewer signed off).`
+  )
   lines.push(``)
   lines.push(`## Folder index`)
   lines.push(``)
@@ -468,7 +493,7 @@ async function main() {
   lines.push(`## Executive summaries (one paragraph per folder)`)
   lines.push(``)
   lines.push(
-    `These paragraphs are **machine-assisted** from SkySlope API fields + filename heuristics + (where available) PDF text signals. They are meant as an **orientation map**, not a substitute for reading the PDFs that matter legally.`
+    `These paragraphs are **machine-assisted** from SkySlope API fields + filename heuristics + (where available) **PDF text clues** (not full execution review). They are an **orientation map** only; OREF completeness and signatory correctness require a **human expert**.`
   )
   lines.push(``)
   for (const f of folders) {
@@ -547,10 +572,10 @@ async function main() {
     lines.push(`### Documents library (chronological)`)
     lines.push(``)
     lines.push(
-      `Sorted by **uploadDate** (fallback **modifiedDate**). Each row includes an inferred **doc class** from the filename and optional **PDF text signals** when this document was selected for deep read.`
+      `Sorted by **uploadDate** (fallback **modifiedDate**). Each row includes an inferred **doc class** from the filename and optional **PDF text clues** when this document was selected for text extraction (still **not** a full execution review).`
     )
     lines.push(``)
-    lines.push(`| # | Upload | Modified | Inferred class | File name | Deep read |`)
+    lines.push(`| # | Upload | Modified | Inferred class | File name | PDF text clues |`)
     lines.push(`|---:|---|---|---|---|---|`)
     const docs = [...f.documents].sort((a, b) => {
       const ta = parseDate(a.uploadDate) ?? parseDate(a.modifiedDate) ?? 0
@@ -562,7 +587,7 @@ async function main() {
       const inferred = inferKind(d.fileName, d.name)
       const k = `${f.kind}:${f.guid}::${d.id}`
       const deep = deepByKey.get(k)
-      let deepCell = '_skipped_'
+      let deepCell = '_no_text_extract_'
       if (!pdfParse) deepCell = '_pdf-parse not installed; metadata only_'
       else if (deep && deep.ok)
         deepCell = `pages=${deep.pages}, textLen=${deep.textLen}, signals=${(deep.signals || []).join(', ')}`
@@ -603,11 +628,11 @@ async function main() {
     )
     if (!pdfParse) {
       bullets.push(
-        `- **Deep read**: skipped because \`pdf-parse\` was not available in this Node environment. Install it locally if you want automatic text signals: \`npm i pdf-parse\` then re-run.`
+        `- **PDF text extraction**: skipped because \`pdf-parse\` was not available in this Node environment. Install it locally if you want text-layer clues: \`npm i pdf-parse\` then re-run.`
       )
     } else {
       bullets.push(
-        `- **Deep read coverage**: ${selected.filter((j) => j.folderKey === `${f.kind}:${f.guid}`).length} PDFs in this folder were text-extracted (global cap ${MAX_DEEP_READS}).`
+        `- **PDF text extraction coverage**: ${selected.filter((j) => j.folderKey === `${f.kind}:${f.guid}`).length} PDFs in this folder were text-extracted (global cap ${MAX_DEEP_READS}).`
       )
     }
 
@@ -622,10 +647,10 @@ async function main() {
   }
 
   lines.push(``)
-  lines.push(`## Appendix: deep-read selection stats`)
+  lines.push(`## Appendix: PDF text extraction selection stats`)
   lines.push(``)
   lines.push(`- **Queued PDFs**: ${deepQueue.length}`)
-  lines.push(`- **Deep read attempts**: ${selected.length}`)
+  lines.push(`- **PDF text extraction attempts**: ${selected.length}`)
   lines.push(`- **pdf-parse installed**: ${Boolean(pdfParse)}`)
 
   process.stdout.write(lines.join('\n'))
