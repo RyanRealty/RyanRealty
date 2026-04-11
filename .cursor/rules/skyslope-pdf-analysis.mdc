@@ -12,7 +12,7 @@ There is **one** analysis path for every PDF the scripts open. No conditional �
 Module: `scripts/skyslope-pdf-insight.mjs`
 
 1. **pdf.js (legacy build)** — `getTextContent` and `getAnnotations` per page (widgets, links, etc.).
-2. **Mandatory OCR on every page** the script reads (same count as the text pass), except pages **past `SKYSLOPE_PDF_OCR_MAX_PAGES`** when that env var is set lower than the read depth. Those tail pages still get the dual layout; the OCR section states the cap in plain language (no silent skip).
+2. **Mandatory OCR on every page** the script reads (same count as the text pass), except when **`SKYSLOPE_PDF_OCR_MAX_PAGES`** or the programmatic **`ocrMaxPages`** option (used by log/workbook/audit scripts) caps the OCR engine below the read depth. Those tail pages still get the dual layout; the OCR section states the cap in plain language (no silent skip).
 3. **Fixed page layout** — each page string is always:
 
    - `<<< Page N >>>`
@@ -31,6 +31,9 @@ Module: `scripts/skyslope-pdf-insight.mjs`
 |----------|------|
 | `SKYSLOPE_PDF_MAX_PAGES` | Max pages read per PDF (text + OCR layout for each). |
 | `SKYSLOPE_PDF_OCR_MAX_PAGES` | Optional cap on how many pages run the **OCR engine**; default equals pages read. Lower values label skipped tail pages in the OCR block. |
+| `SKYSLOPE_LOG_PDF_MAX_PAGES` | Comprehensive log: max pages per PDF for both text read and OCR (default 2). |
+| `SKYSLOPE_WORKBOOK_PDF_MAX_PAGES` | Transaction workbook `PDF_sample`: max pages per PDF when `SKYSLOPE_WORKBOOK_PDF_SAMPLE=1` (default 8). |
+| `SKYSLOPE_AUDIT_PDF_MAX_PAGES` | Master folder audit: max pages per prioritized PDF (default 12). |
 | `SKYSLOPE_PDF_OCR_DPI` | Render resolution for the tesseract.js path (default 200, clamped 144 to 300). |
 | `SKYSLOPE_BRIEF_MAX_PDFS` | Brief only: how many files get this pipeline. |
 | `SKYSLOPE_MAX_PDF_BYTES` | Download size cap. |

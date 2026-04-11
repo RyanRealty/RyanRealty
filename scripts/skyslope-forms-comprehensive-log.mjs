@@ -8,9 +8,10 @@
  *   Multi-sheet Excel (parties, docs, checklist, dates): npm run skyslope:forms-workbook
  *   (add npm --silent if your npm prints lifecycle lines into the redirected file)
  *
- * Requires .env.local SKYSLOPE_* and devDependency pdf-parse.
- * Optional: SKYSLOPE_INCLUDE_ARCHIVED=1, SKYSLOPE_LOG_CONCURRENCY=6,
- * SKYSLOPE_PAGE_PACE_MS (default 250) between folder-list pages to reduce 429s.
+ * Requires .env.local SKYSLOPE_*. PDFs use \`skyslope-pdf-insight\` (pdf.js dual
+ * pipeline plus mandatory OCR). Default \`SKYSLOPE_LOG_PDF_MAX_PAGES=2\` per file
+ * for runtime (raise for deeper reads). Optional: SKYSLOPE_INCLUDE_ARCHIVED=1,
+ * SKYSLOPE_LOG_CONCURRENCY (default 2), SKYSLOPE_PAGE_PACE_MS (default 250).
  */
 import fs from 'fs'
 import crypto from 'crypto'
@@ -24,6 +25,13 @@ import {
   parseDate,
   suggestStandardName,
 } from './skyslope-forms-document-taxonomy.mjs'
+import {
+  analyzePdfBuffer,
+  buildExecutionAssessment,
+  emptyPdfInsight,
+  extractSignatoryHints,
+  registerExcerpt,
+} from './skyslope-pdf-insight.mjs'
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -35,7 +43,11 @@ const INCLUDE_ARCHIVED = process.env.SKYSLOPE_INCLUDE_ARCHIVED === '1'
 const MAX_PDF_BYTES = Number(process.env.SKYSLOPE_MAX_PDF_BYTES || 9_000_000)
 const CONCURRENCY = Math.min(
   12,
-  Math.max(1, Number.parseInt(String(process.env.SKYSLOPE_LOG_CONCURRENCY || '6'), 10) || 6)
+  Math.max(1, Number.parseInt(String(process.env.SKYSLOPE_LOG_CONCURRENCY || '2'), 10) || 2)
+)
+const LOG_PDF_MAX_PAGES = Math.min(
+  120,
+  Math.max(1, Number.parseInt(String(process.env.SKYSLOPE_LOG_PDF_MAX_PAGES || '2'), 10) || 2)
 )
 
 function loadEnvLocal(envPath) {
@@ -142,48 +154,6 @@ function negotiationOutcomeHint(text, fileName) {
   return 'no_strong_outcome_keyword'
 }
 
-function extractSignatoryHints(text, max = 12) {
-  const t = redactContacts(String(text || '').replace(/\s+/g, ' '))
-  const names = new Set()
-  const reDigi = /DigiSign Verified[^\n]{0,80}?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/g
-  let m
-  while ((m = reDigi.exec(t)) !== null) {
-    const n = m[1]?.trim()
-    if (n && n.length < 50 && !/Verified|DigiSign/i.test(n)) names.add(n)
-    if (names.size >= max) break
-  }
-  return [...names].slice(0, max)
-}
-
-function executionFirstPass(kind, text, fileName) {
-  const t = `${text || ''} ${fileName || ''}`
-  const digi = (t.match(/DigiSign Verified/gi) || []).length
-  const hasSigLabels = /Seller Initial|Buyer Initial|Signature|By:/i.test(t)
-  const thin = String(text || '').replace(/\s+/g, '').length < 80
-
-  if (kind === 'listing_agreement' || kind === 'agency_disclosure_pamphlet') {
-    if (thin) return { label: 'partial_or_scanned', detail: 'Little extractable text; seller-side completeness needs visual.' }
-    if (digi >= 2 || hasSigLabels) return { label: 'likely_seller_executed', detail: 'E-sign or signature labels present; confirm seller/firm lines visually.' }
-    return { label: 'unknown', detail: 'Confirm seller and firm signatures on PDF.' }
-  }
-  if (kind === 'buyer_offer_or_package' || kind === 'sale_agreement_or_rsa' || kind === 'numbered_counter' || kind === 'counter_or_counteroffer' || kind === 'addendum') {
-    if (thin) return { label: 'partial_or_scanned', detail: 'Offer stack often image-heavy; mutual execution needs visual.' }
-    if (digi >= 4 && hasSigLabels) return { label: 'likely_mutual_or_in_progress', detail: 'Multiple e-sign markers; map to buyer vs seller blocks in PDF.' }
-    if (digi >= 1) return { label: 'partial_e_sign', detail: 'Some e-sign markers; check all required initials.' }
-    return { label: 'unknown', detail: 'Open PDF for mutual vs single-party obligations.' }
-  }
-  if (kind === 'lender_financing') {
-    return { label: 'buyer_side_doc', detail: 'Expect buyer/lender execution only if applicable.' }
-  }
-  return { label: 'see_pdf', detail: 'Classify obligations by form type; verify in viewer.' }
-}
-
-function contentDigest(text, maxLen = 900) {
-  const raw = redactContacts(String(text || '').replace(/\s+/g, ' ').trim())
-  if (!raw) return '_no extractable text (likely image PDF or empty layer)_'
-  return raw.length > maxLen ? `${raw.slice(0, maxLen)}…` : raw
-}
-
 function offerNumberFromFilename(fn) {
   const s = String(fn || '')
   const m =
@@ -250,14 +220,6 @@ async function mapPool(items, concurrency, fn) {
 }
 
 async function main() {
-  let pdfParse = null
-  try {
-    pdfParse = require('pdf-parse')
-  } catch {
-    console.error('Install pdf-parse: npm i pdf-parse')
-    process.exit(1)
-  }
-
   const env = loadEnvLocal(ENV_PATH)
   const session = await login(env)
 
@@ -337,6 +299,7 @@ async function main() {
       doc._parseReason = !isPdf ? 'not_pdf' : 'no_url'
       doc._text = ''
       doc._pages = 0
+      doc._insight = emptyPdfInsight(!isPdf ? 'not_pdf' : 'no_download_url')
       return
     }
     try {
@@ -347,6 +310,7 @@ async function main() {
         doc._parseReason = `oversize_${buf.length}`
         doc._text = ''
         doc._pages = 0
+        doc._insight = emptyPdfInsight(`oversize_${buf.length}`)
         return
       }
       if (buf.slice(0, 4).toString() !== '%PDF') {
@@ -354,27 +318,24 @@ async function main() {
         doc._parseReason = 'not_pdf_bytes'
         doc._text = ''
         doc._pages = 0
+        doc._insight = emptyPdfInsight('not_pdf_bytes')
         return
       }
-      const log = console.log
-      const err = console.error
-      console.log = () => {}
-      console.error = () => {}
-      let data
-      try {
-        data = await pdfParse(buf)
-      } finally {
-        console.log = log
-        console.error = err
-      }
-      doc._parseOk = true
-      doc._text = data.text || ''
-      doc._pages = data.numpages || 0
+      const insight = await analyzePdfBuffer(buf, {
+        maxPages: LOG_PDF_MAX_PAGES,
+        ocrMaxPages: LOG_PDF_MAX_PAGES,
+      })
+      doc._insight = insight
+      doc._parseOk = insight.ok
+      doc._parseReason = insight.ok ? '' : insight.reason || 'insight_fail'
+      doc._text = insight.text || ''
+      doc._pages = insight.pageCount || 0
     } catch (e) {
       doc._parseOk = false
       doc._parseReason = e.message || String(e)
       doc._text = ''
       doc._pages = 0
+      doc._insight = emptyPdfInsight(e.message || String(e))
     }
   })
 
@@ -391,7 +352,7 @@ async function main() {
     `**Inventory accuracy:** Folder lists use swagger-correct query params (\`earliestDate\` / \`latestDate\` as Unix seconds, \`pageNumber\`, **10 rows per page**). Older scripts that used \`fromDate\` / \`page\` / \`pageSize\` stopped after the first page and under-counted folders.`
   )
   lines.push(
-    `**You are the final say** on whether a document is fully executed and on any rename. This log is an **educated first pass** from PDF text plus filenames.`
+    `**You are the final say** on whether a document is fully executed and on any rename. PDF rows use the **dual pipeline** (pdf.js text layer plus mandatory OCR) via \`skyslope-pdf-insight.mjs\`, capped at **${LOG_PDF_MAX_PAGES}** page(s) per file for this run (\`SKYSLOPE_LOG_PDF_MAX_PAGES\`).`
   )
   lines.push(``)
   lines.push(`## Standardized naming (for the upcoming rename pass)`)
@@ -464,20 +425,24 @@ async function main() {
     lines.push(`### Full document register`)
     lines.push(``)
     lines.push(
-      `| # | Upload | Category | Suggested filename | Pages | Execution (first pass) | Signatory hints | Parse | Content digest |`
+      `| # | Upload | Category | Suggested filename | Pages | Assessment | Signatory hints | Read | OCR and pipeline | Content digest |`
     )
-    lines.push(`|---:|---|---|---|---:|---|---|---|---|`)
+    lines.push(`|---:|---|---|---|---:|---|---|---|---|---|`)
     let n = 1
     for (const d of sorted) {
       const fn = redactContacts(d.fileName || d.name || '')
-      const ex = executionFirstPass(d._kind, d._text, fn)
-      const hints = extractSignatoryHints(d._text).join('; ') || '—'
+      const ins = d._insight || emptyPdfInsight(d._parseReason || 'unknown')
+      const ex = buildExecutionAssessment(d._kind, ins, fn)
+      const hints = extractSignatoryHints(`${d._text || ''}\n${ins.ocrSnippet || ''}`).join('; ') || '—'
       const parseCell = d._parseOk
         ? 'ok'
         : redactContacts(String(d._parseReason || 'fail')).replace(/\|/g, '\\|')
-      const digest = redactContacts(contentDigest(d._text, 700)).replace(/\|/g, '\\|')
+      const ocrCell = redactContacts(String(ins.flagsLine || '—').replace(/\|/g, '\\|'))
+      const digest = redactContacts(
+        registerExcerpt(ins, 750) || '_no extractable text in read window after dual pipeline_'
+      ).replace(/\|/g, '\\|')
       lines.push(
-        `| ${n} | ${fmtDate(d.uploadDate || d.modifiedDate)} | ${d._kind} | \`${redactContacts(d._suggestedName).replace(/`/g, "'")}\` | ${d._pages || '—'} | **${ex.label}** — ${redactContacts(ex.detail).replace(/\|/g, '\\|')} | ${hints.replace(/\|/g, '\\|')} | ${parseCell} | ${digest} |`
+        `| ${n} | ${fmtDate(d.uploadDate || d.modifiedDate)} | ${d._kind} | \`${redactContacts(d._suggestedName).replace(/`/g, "'")}\` | ${d._pages || '—'} | **${ex.label}** — ${redactContacts(ex.detail).replace(/\|/g, '\\|')} | ${hints.replace(/\|/g, '\\|')} | ${parseCell} | ${ocrCell} | ${digest} |`
       )
       n += 1
     }

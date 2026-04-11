@@ -202,6 +202,14 @@ const FONT_H1 = 36
 const FONT_H2 = 30
 const FONT_H3 = 26
 
+function trimCell(s, max) {
+  const t = String(s || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!t) return '—'
+  return t.length > max ? `${t.slice(0, max)}…` : t
+}
+
 function kindFriendlyLabel(kind) {
   const m = {
     listing_agreement: 'Listing agreement',
@@ -274,39 +282,131 @@ function glossaryParagraphs() {
     ),
     pBoldLead(
       'Tables.',
-      'Each property or sale agreement block uses a table with clear columns so you can scan down one row per document. The Flags column summarizes page count, text density, low-text pages, form widgets, and vendor hits in one line.'
+      'Each group uses a two level header. Document identity lists date, MLS, folder lane, file, and form. Automated PDF read lists status, parties, short notes, and the full pipeline line including dual OCR stats and pdf.js text layer hints.'
     ),
     new Paragraph({ spacing: { after: 280 }, children: [] }),
   ]
 }
 
-function tableForDocuments(rows) {
+function tableExecutiveSummary(meta) {
   const pct = (n) => ({ size: n, type: WidthType.PERCENTAGE })
-  const headers = ['Date', 'File name', 'Form type', 'Automated signature check', 'Names in text', 'Flags']
-  const widths = [9, 22, 12, 22, 14, 21]
-  const headerRow = new TableRow({
-    tableHeader: true,
-    children: headers.map(
-      (text, i) =>
-        new TableCell({
-          width: pct(widths[i]),
-          margins: { top: 100, bottom: 100, left: 140, right: 140 },
-          shading: { fill: 'EEEEEE', type: ShadingType.CLEAR },
+  const rows = [
+    ['Generated (UTC)', meta.generatedUtc],
+    ['Buyer representation rows', String(meta.buyerRows)],
+    ['Listing and agency rows', String(meta.listingRows)],
+    ['Transaction document rows', String(meta.transactionRows)],
+    ['Part 3 property groups', String(meta.part3Addresses)],
+    ['PDFs in deep read budget', String(meta.pdfSampleBudget)],
+    ['Max pages read per sampled PDF', String(meta.pagesPerPdfCap)],
+  ]
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: rows.map(
+      ([k, v]) =>
+        new TableRow({
           children: [
-            new Paragraph({
-              children: [new TextRun({ text, bold: true, size: FONT_SMALL })],
+            new TableCell({
+              width: pct(34),
+              margins: { top: 100, bottom: 100, left: 140, right: 120 },
+              shading: { fill: 'EEEEEE', type: ShadingType.CLEAR },
+              children: [new Paragraph({ children: [new TextRun({ text: k, bold: true, size: FONT_SMALL })] })],
+            }),
+            new TableCell({
+              width: pct(66),
+              margins: { top: 100, bottom: 100, left: 120, right: 140 },
+              children: [new Paragraph({ children: [new TextRun({ text: v, size: FONT_SMALL })] })],
             }),
           ],
         })
     ),
   })
+}
+
+/**
+ * @param {{ label: string, value: string }[]} rows
+ */
+function kvSnapshotTable(rows) {
+  const pct = (n) => ({ size: n, type: WidthType.PERCENTAGE })
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: rows.map(
+      (r) =>
+        new TableRow({
+          children: [
+            new TableCell({
+              width: pct(30),
+              margins: { top: 100, bottom: 100, left: 140, right: 100 },
+              shading: { fill: 'EEEEEE', type: ShadingType.CLEAR },
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: r.label, bold: true, size: FONT_SMALL })],
+                }),
+              ],
+            }),
+            new TableCell({
+              width: pct(70),
+              margins: { top: 100, bottom: 100, left: 100, right: 140 },
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: String(r.value), size: FONT_SMALL })],
+                }),
+              ],
+            }),
+          ],
+        })
+    ),
+  })
+}
+
+function tableProfessionalBrief(rows) {
+  const pct = (n) => ({ size: n, type: WidthType.PERCENTAGE })
+  const w = [10, 8, 9, 22, 11, 11, 12, 9, 8]
+  const groupRow = new TableRow({
+    tableHeader: true,
+    children: [
+      new TableCell({
+        columnSpan: 5,
+        width: { size: 60, type: WidthType.PERCENTAGE },
+        margins: { top: 120, bottom: 80, left: 140, right: 120 },
+        shading: { fill: 'D9D9D9', type: ShadingType.CLEAR },
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: 'Document identity', bold: true, size: FONT_SMALL })],
+          }),
+        ],
+      }),
+      new TableCell({
+        columnSpan: 4,
+        width: { size: 40, type: WidthType.PERCENTAGE },
+        margins: { top: 120, bottom: 80, left: 120, right: 140 },
+        shading: { fill: 'D9D9D9', type: ShadingType.CLEAR },
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: 'Automated PDF read', bold: true, size: FONT_SMALL })],
+          }),
+        ],
+      }),
+    ],
+  })
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: ['Date', 'MLS', 'Folder', 'File', 'Form', 'Status', 'Parties', 'Notes', 'Pipeline'].map(
+      (text, i) =>
+        new TableCell({
+          width: pct(w[i]),
+          margins: { top: 100, bottom: 100, left: 130, right: 130 },
+          shading: { fill: 'EEEEEE', type: ShadingType.CLEAR },
+          children: [new Paragraph({ children: [new TextRun({ text, bold: true, size: FONT_SMALL })] })],
+        })
+    ),
+  })
   function cell(text, i) {
     return new TableCell({
-      width: pct(widths[i]),
-      margins: { top: 90, bottom: 90, left: 140, right: 140 },
+      width: pct(w[i]),
+      margins: { top: 90, bottom: 90, left: 130, right: 130 },
       children: [
         new Paragraph({
-          children: [new TextRun({ text: String(text).slice(0, 4000), size: FONT_SMALL })],
+          children: [new TextRun({ text: String(text).slice(0, 8000), size: FONT_SMALL })],
         }),
       ],
     })
@@ -316,17 +416,20 @@ function tableForDocuments(rows) {
       new TableRow({
         children: [
           cell(fmtDate(r.uploadIso), 0),
-          cell(r.fileName, 1),
-          cell(kindFriendlyLabel(r.kind), 2),
-          cell(`${r.execLabel}. ${r.execDetail}`, 3),
-          cell(r.signers, 4),
-          cell(r.pdfFlags || '—', 5),
+          cell(r.mls || '—', 1),
+          cell(r.folderDisplay || '—', 2),
+          cell(r.fileName, 3),
+          cell(kindFriendlyLabel(r.kind), 4),
+          cell(r.execLabel, 5),
+          cell(r.signers, 6),
+          cell(r.execNotes || '—', 7),
+          cell(r.pipelineCell || r.pdfFlags || '—', 8),
         ],
       })
   )
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: [headerRow, ...dataRows],
+    rows: [groupRow, headerRow, ...dataRows],
   })
 }
 
@@ -406,9 +509,13 @@ async function main() {
         kind,
         execLabel: '',
         execDetail: '',
+        execNotes: '',
         signers: '',
         saHint: extractSaFromFilename(fn),
         pdfFlags: '',
+        folderDisplay: f.kind === 'listing' ? 'Listing' : 'Sale',
+        textLayerNote: '',
+        pipelineCell: '',
       })
     }
   }
@@ -467,8 +574,11 @@ async function main() {
     if (!isPdf) {
       row.execLabel = 'Not a PDF'
       row.execDetail = 'Open the attachment in SkySlope. Automated read targets PDF text and fields.'
+      row.execNotes = row.execDetail
       row.signers = '—'
       row.pdfFlags = 'n/a'
+      row.textLayerNote = ''
+      row.pipelineCell = 'n/a'
       continue
     }
 
@@ -481,11 +591,17 @@ async function main() {
     const ex = buildExecutionAssessment(row.kind, insight, row.fileName)
     row.execLabel = ex.label
     row.execDetail = ex.detail
+    row.execNotes = trimCell(ex.detail, 560)
     const hintText = `${insight.text || ''}\n${insight.ocrSnippet || ''}`
     row.signers = extractSignatoryHints(hintText).join(', ') || '—'
     const fromPdf = extractSaleAgreementNumber(insight.combinedForSa || insight.text || '')
     row.saHint = fromPdf || row.saHint || ''
     row.pdfFlags = insight.flagsLine || '—'
+    row.textLayerNote = insight.lowTextPageRanges || ''
+    row.pipelineCell = trimCell(
+      [insight.flagsLine, row.textLayerNote].filter((x) => x && String(x).trim()).join(' · '),
+      920
+    )
   }
 
   const listingRows_ = enriched.filter((r) => r.section === 'listing').sort((a, b) => {
@@ -529,14 +645,31 @@ async function main() {
     return maxB - maxA
   })
 
+  const generatedUtc = new Date().toISOString()
+  const pagesPerPdfCap = Math.min(
+    120,
+    Math.max(1, Number.parseInt(String(process.env.SKYSLOPE_PDF_MAX_PAGES || '80'), 10) || 80)
+  )
+
   const children = []
 
   children.push(
     h(1, 'SkySlope Forms principal brief'),
     p(
-      'This Word file is generated from your SkySlope Forms listing and sale file cabinets. It is not SkySlope Suite. Tables use larger type and spacing so you can read it quickly. Always confirm money, dates, and signatures in SkySlope and with escrow.',
+      'This Word file is generated from your SkySlope Forms listing and sale file cabinets. It is not SkySlope Suite. Part 1 groups buyer representation PDFs by property. Part 2 groups listing agreements and agency pamphlets by property. Part 3 groups transaction PDFs by property then by SkySlope folder and sale agreement number. Every sampled PDF uses the dual text layer plus mandatory OCR standard described in How to read this brief. Confirm money, dates, and signatures in SkySlope and with escrow.',
       { italics: true }
     ),
+    h(2, 'Run summary'),
+    tableExecutiveSummary({
+      generatedUtc,
+      buyerRows: buyerRows.length,
+      listingRows: listingRows_.length,
+      transactionRows: txRows.length,
+      part3Addresses: addressKeysSorted.length,
+      pdfSampleBudget: MAX_PDFS,
+      pagesPerPdfCap,
+    }),
+    new Paragraph({ spacing: { after: 320 }, children: [] }),
     ...glossaryParagraphs(),
     new Paragraph({ children: [new PageBreak()] }),
 
@@ -559,7 +692,7 @@ async function main() {
     const buyerAddrOrder = [...new Set(buyerRows.map((r) => r.address || 'Unknown address'))]
     for (const addr of buyerAddrOrder) {
       children.push(h(2, addr))
-      children.push(tableForDocuments(buyerByAddr.get(addr) || []))
+      children.push(tableProfessionalBrief(buyerByAddr.get(addr) || []))
       children.push(new Paragraph({ spacing: { after: 280 }, children: [] }))
     }
   }
@@ -584,7 +717,7 @@ async function main() {
     const listingAddrOrder = [...new Set(listingRows_.map((r) => r.address || 'Unknown address'))]
     for (const addr of listingAddrOrder) {
       children.push(h(2, addr))
-      children.push(tableForDocuments(listingByAddr.get(addr) || []))
+      children.push(tableProfessionalBrief(listingByAddr.get(addr) || []))
       children.push(new Paragraph({ spacing: { after: 280 }, children: [] }))
     }
   }
@@ -670,19 +803,20 @@ async function main() {
     }
 
     children.push(
-      pBoldLead('Overview', offerNarrative),
-      pBoldLead(
-        'API snapshot (confirm in SkySlope and escrow)',
-        `Listing price ${listingPrice || 'n/a'}. Sale price ${salePrice || 'n/a'}. Contract acceptance ${accept || 'n/a'}. Closing ${close || 'n/a'}. Listing expiration ${exp || 'n/a'}. Escrow number ${escrowNo || 'n/a'}.`
-      ),
-      pBoldLead(
-        'Title and escrow labels from the sale file API',
-        `Title company: ${titleCompany || 'n/a'}. Escrow contact label: ${escrowOfficer || 'n/a'}. Confirm with recorded instruments and escrow.`
-      ),
-      pBoldLead(
-        'Parties on the sale file API',
-        `Sellers: ${[...sellers].join('; ') || 'n/a'}. Buyers: ${[...buyers].join('; ') || 'n/a'}.`
-      ),
+      h(3, 'Snapshot for this address'),
+      kvSnapshotTable([
+        { label: 'Offer and RSA file context', value: offerNarrative.trim() },
+        { label: 'Listing price', value: listingPrice || 'n/a' },
+        { label: 'Sale price', value: salePrice || 'n/a' },
+        { label: 'Contract acceptance', value: accept || 'n/a' },
+        { label: 'Closing', value: close || 'n/a' },
+        { label: 'Listing expiration', value: exp || 'n/a' },
+        { label: 'Escrow number', value: escrowNo || 'n/a' },
+        { label: 'Title company (sale API)', value: titleCompany || 'n/a' },
+        { label: 'Escrow contact label (sale API)', value: escrowOfficer || 'n/a' },
+        { label: 'Sellers (sale API)', value: [...sellers].join('; ') || 'n/a' },
+        { label: 'Buyers (sale API)', value: [...buyers].join('; ') || 'n/a' },
+      ]),
       new Paragraph({ spacing: { after: 280 }, children: [] })
     )
 
@@ -713,7 +847,7 @@ async function main() {
 
       for (const sa of saKeys) {
         children.push(h4(`Sale agreement number ${sa}`))
-        children.push(tableForDocuments(bySa.get(sa) || []))
+        children.push(tableProfessionalBrief(bySa.get(sa) || []))
         children.push(new Paragraph({ spacing: { after: 200 }, children: [] }))
       }
     }

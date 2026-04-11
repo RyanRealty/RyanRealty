@@ -46,7 +46,7 @@ const DEFAULT_MAX_PAGES = Math.min(
 
 /**
  * @param {Buffer} buf
- * @param {{ maxPages?: number }} [opts]
+ * @param {{ maxPages?: number, ocrMaxPages?: number }} [opts]
  * @returns {Promise<PdfInsight>}
  */
 export async function analyzePdfBuffer(buf, opts = {}) {
@@ -127,7 +127,7 @@ export async function analyzePdfBuffer(buf, opts = {}) {
   let ocrSnippet = ''
   let ocrEngineNote = ''
   try {
-    const ocrOut = await runMandatoryPageOcr(buf, doc, pagesToRead, pageTexts)
+    const ocrOut = await runMandatoryPageOcr(buf, doc, pagesToRead, pageTexts, opts.ocrMaxPages)
     mergedPageTexts = ocrOut.mergedPageTexts
     ocrPageCount = ocrOut.ocrPageCount
     ocrPagesAttempted = ocrOut.ocrPagesAttempted
@@ -351,13 +351,16 @@ function commandOnPath(cmd) {
  * @param {unknown} doc pdf.js document (still open)
  * @param {number} pagesToRead
  * @param {string[]} pageTexts raw extractText per page (same length as pagesToRead)
+ * @param {number} [ocrMaxPagesOverride] when set (e.g. log scripts), caps OCR engine passes without relying on env
  */
-async function runMandatoryPageOcr(buf, doc, pagesToRead, pageTexts) {
+async function runMandatoryPageOcr(buf, doc, pagesToRead, pageTexts, ocrMaxPagesOverride) {
   const envCap = process.env.SKYSLOPE_PDF_OCR_MAX_PAGES
-  const ocrEngineLimit =
-    envCap != null && String(envCap).trim() !== ''
-      ? Math.min(pagesToRead, Math.max(1, Number.parseInt(String(envCap), 10) || pagesToRead))
-      : pagesToRead
+  let ocrEngineLimit = pagesToRead
+  if (ocrMaxPagesOverride != null && Number.isFinite(ocrMaxPagesOverride)) {
+    ocrEngineLimit = Math.min(pagesToRead, Math.max(1, Math.floor(ocrMaxPagesOverride)))
+  } else if (envCap != null && String(envCap).trim() !== '') {
+    ocrEngineLimit = Math.min(pagesToRead, Math.max(1, Number.parseInt(String(envCap), 10) || pagesToRead))
+  }
 
   /** @type {string[]} */
   const merged = []
@@ -616,6 +619,18 @@ function redactContacts(s) {
 /**
  * @param {string} text
  */
+/**
+ * Collapses whitespace for markdown or spreadsheet digest cells. Still
+ * includes dual-pipeline section markers when present.
+ * @param {PdfInsight | null | undefined} insight
+ * @param {number} [maxLen]
+ */
+export function registerExcerpt(insight, maxLen = 700) {
+  const raw = String(insight?.text || '').replace(/\s+/g, ' ').trim()
+  if (!raw) return ''
+  return raw.length > maxLen ? `${raw.slice(0, maxLen)}…` : raw
+}
+
 export function extractSaleAgreementNumber(text) {
   const t = String(text || '').replace(/\s+/g, ' ')
   const patterns = [

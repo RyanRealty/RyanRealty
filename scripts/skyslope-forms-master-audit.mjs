@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 /**
  * SkySlope Listings/Sales "file folder" master audit.
- * Reads API metadata + optional PDF text (prioritized, capped) and emits Markdown.
+ * Reads API metadata plus prioritized PDF dual pipeline reads (pdf.js + OCR,
+ * capped pages per file) and emits Markdown.
  *
  * Usage:
  *   npm run skyslope:forms-audit > docs/skyslope-forms-folder-master-audit.md
  *
  * Requires .env.local with SKYSLOPE_* credentials (not committed).
  * Optional: SKYSLOPE_INCLUDE_ARCHIVED=1 to include archived file rows.
+ * PDF read depth: SKYSLOPE_AUDIT_PDF_MAX_PAGES (default 12, max 120).
  */
 import fs from 'fs'
 import crypto from 'crypto'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { createRequire } from 'module'
 import { fetchSkyslopeFileFolderRows, skyslopeFetchWithRetry } from './skyslope-files-api.mjs'
-
-const require = createRequire(import.meta.url)
+import { analyzePdfBuffer } from './skyslope-pdf-insight.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.join(__dirname, '..')
@@ -29,6 +29,10 @@ const MAX_DEEP_READS = 420
 /** Large signed offer packages often exceed 3–5 MB. */
 const MAX_PDF_BYTES = 9_000_000
 const CONCURRENCY = 4
+const AUDIT_PDF_MAX_PAGES = Math.min(
+  120,
+  Math.max(1, Number.parseInt(String(process.env.SKYSLOPE_AUDIT_PDF_MAX_PAGES || '12'), 10) || 12)
+)
 
 function loadEnvLocal(envPath) {
   const raw = fs.readFileSync(envPath, 'utf8')
@@ -273,13 +277,6 @@ async function mapPool(items, concurrency, fn) {
 }
 
 async function main() {
-  let pdfParse = null
-  try {
-    pdfParse = require('pdf-parse')
-  } catch {
-    pdfParse = null
-  }
-
   const env = loadEnvLocal(ENV_PATH)
   const session = await login(env)
 
@@ -373,45 +370,49 @@ async function main() {
   const selected = deepQueue.slice(0, MAX_DEEP_READS)
   const deepByKey = new Map()
 
-  if (pdfParse) {
-    await mapPool(selected, CONCURRENCY, async (job) => {
-      try {
-        const r = await fetch(job.url)
-        const buf = Buffer.from(await r.arrayBuffer())
-        if (buf.length > MAX_PDF_BYTES) {
-          deepByKey.set(`${job.folderKey}::${job.docId}`, {
-            ok: false,
-            reason: `pdf too large (${buf.length} bytes)`,
-          })
-          return
-        }
-        if (buf.slice(0, 4).toString() !== '%PDF') {
-          deepByKey.set(`${job.folderKey}::${job.docId}`, { ok: false, reason: 'not_pdf_bytes' })
-          return
-        }
-        const log = console.log
-        const err = console.error
-        console.log = () => {}
-        console.error = () => {}
-        let data
-        try {
-          data = await pdfParse(buf)
-        } finally {
-          console.log = log
-          console.error = err
-        }
-        const sig = pdfTextCluesFromExtract(data.text || '')
+  await mapPool(selected, CONCURRENCY, async (job) => {
+    try {
+      const r = await fetch(job.url)
+      const buf = Buffer.from(await r.arrayBuffer())
+      if (buf.length > MAX_PDF_BYTES) {
         deepByKey.set(`${job.folderKey}::${job.docId}`, {
-          ok: true,
-          pages: data.numpages,
-          textLen: (data.text || '').length,
-          ...sig,
+          ok: false,
+          reason: `pdf too large (${buf.length} bytes)`,
         })
-      } catch (err) {
-        deepByKey.set(`${job.folderKey}::${job.docId}`, { ok: false, reason: err.message || String(err) })
+        return
       }
-    })
-  }
+      if (buf.slice(0, 4).toString() !== '%PDF') {
+        deepByKey.set(`${job.folderKey}::${job.docId}`, { ok: false, reason: 'not_pdf_bytes' })
+        return
+      }
+      const insight = await analyzePdfBuffer(buf, {
+        maxPages: AUDIT_PDF_MAX_PAGES,
+        ocrMaxPages: AUDIT_PDF_MAX_PAGES,
+      })
+      if (!insight.ok) {
+        deepByKey.set(`${job.folderKey}::${job.docId}`, {
+          ok: false,
+          reason: insight.reason || 'insight_fail',
+          flagsLine: insight.flagsLine,
+        })
+        return
+      }
+      const sig = pdfTextCluesFromExtract(insight.text || '')
+      deepByKey.set(`${job.folderKey}::${job.docId}`, {
+        ok: true,
+        pages: insight.pageCount,
+        pagesAnalyzed: insight.pagesAnalyzed,
+        textLen: (insight.text || '').length,
+        flagsLine: insight.flagsLine,
+        ...sig,
+      })
+    } catch (err) {
+      deepByKey.set(`${job.folderKey}::${job.docId}`, {
+        ok: false,
+        reason: err.message || String(err),
+      })
+    }
+  })
 
   const now = new Date().toISOString()
   const totalDocs = folders.reduce((n, f) => n + (f.documents?.length || 0), 0)
@@ -443,7 +444,7 @@ async function main() {
     `- **Pagination (API contract):** Folder lists use \`earliestDate\` / \`latestDate\` (**Unix seconds**), \`pageNumber\` (1-based), and return **10 rows per page** per SkySlope swagger. Query params like \`fromDate\` / \`page\` / \`pageSize\` are not documented for these endpoints and will **under-fetch** (often stopping after the first page).`
   )
   lines.push(
-    `- **${totalDocs} documents** existed at generation time across **${listingRows.length}** listing files + **${saleRows.length}** sale files. Fully OCR-reading every scanned PDF is a batch job; this report uses **API metadata for 100% of documents** and **PDF text extraction for a prioritized subset** (${selected.length} PDFs) focused on offers, counters, RSA/sale agreement language, and termination/release patterns.`
+    `- **${totalDocs} documents** existed at generation time across **${listingRows.length}** listing files + **${saleRows.length}** sale files. Fully reading every page of every PDF is a batch job; this report uses **API metadata for 100% of documents** and the **dual PDF pipeline** (pdf.js text layer plus mandatory OCR in the same read window, up to **${AUDIT_PDF_MAX_PAGES}** pages per file) for a **prioritized subset** (${selected.length} PDFs) focused on offers, counters, RSA/sale agreement language, and termination/release patterns.`
   )
   lines.push(``)
   lines.push(`### What “fully executed” means here (Ryan Realty standard)`)
@@ -592,10 +593,10 @@ async function main() {
     lines.push(`### Documents library (chronological)`)
     lines.push(``)
     lines.push(
-      `Sorted by **uploadDate** (fallback **modifiedDate**). Each row includes an inferred **doc class** from the filename and optional **PDF text clues** when this document was selected for text extraction (still **not** a full execution review).`
+      `Sorted by **uploadDate** (fallback **modifiedDate**). Each row includes an inferred **doc class** from the filename and optional **dual pipeline PDF clues** when this document was selected for analysis (still **not** a full execution review).`
     )
     lines.push(``)
-    lines.push(`| # | Upload | Modified | Inferred class | File name | PDF text clues |`)
+    lines.push(`| # | Upload | Modified | Inferred class | File name | PDF dual pipeline clues |`)
     lines.push(`|---:|---|---|---|---|---|`)
     const docs = [...f.documents].sort((a, b) => {
       const ta = parseDate(a.uploadDate) ?? parseDate(a.modifiedDate) ?? 0
@@ -607,11 +608,12 @@ async function main() {
       const inferred = inferKind(d.fileName, d.name)
       const k = `${f.kind}:${f.guid}::${d.id}`
       const deep = deepByKey.get(k)
-      let deepCell = '_no_text_extract_'
-      if (!pdfParse) deepCell = '_pdf-parse not installed; metadata only_'
-      else if (deep && deep.ok)
-        deepCell = `pages=${deep.pages}, textLen=${deep.textLen}, signals=${(deep.signals || []).join(', ')}`
-      else if (deep && !deep.ok) deepCell = `error: ${redactContacts(deep.reason || '')}`
+      let deepCell = '_not in prioritized subset for this run_'
+      if (deep && deep.ok) {
+        const pa = deep.pagesAnalyzed != null ? `read=${deep.pagesAnalyzed}` : ''
+        deepCell = `pages=${deep.pages}${pa ? `, ${pa}` : ''}, textLen=${deep.textLen}, ${deep.flagsLine || ''}, signals=${(deep.signals || []).join(', ')}`
+      } else if (deep && !deep.ok)
+        deepCell = `error: ${redactContacts(deep.reason || '')}${deep.flagsLine ? `; ${deep.flagsLine}` : ''}`
 
       lines.push(
         `| ${n} | ${fmtDate(d.uploadDate)} | ${fmtDate(d.modifiedDate)} | ${inferred} | ${redactContacts(d.fileName || d.name || '').replace(/\|/g, '\\|')} | ${String(deepCell).replace(/\|/g, '\\|')} |`
@@ -646,15 +648,9 @@ async function main() {
     bullets.push(
       `- **Offer-like PDFs detected by filename heuristics**: ${offerish.length} ("offer" family). **Counter-like**: ${counters.length + numbered.length} (includes OREF counter forms when matched). **Termination/release-like**: ${terms.length}. **RSA / sale agreement-like**: ${rsa.length}.`
     )
-    if (!pdfParse) {
-      bullets.push(
-        `- **PDF text extraction**: skipped because \`pdf-parse\` was not available in this Node environment. Install it locally if you want text-layer clues: \`npm i pdf-parse\` then re-run.`
-      )
-    } else {
-      bullets.push(
-        `- **PDF text extraction coverage**: ${selected.filter((j) => j.folderKey === `${f.kind}:${f.guid}`).length} PDFs in this folder were text-extracted (global cap ${MAX_DEEP_READS}).`
-      )
-    }
+    bullets.push(
+      `- **PDF dual pipeline coverage**: ${selected.filter((j) => j.folderKey === `${f.kind}:${f.guid}`).length} PDF(s) in this folder were analyzed (global cap ${MAX_DEEP_READS}, up to ${AUDIT_PDF_MAX_PAGES} page(s) per file).`
+    )
 
     lines.push(...bullets)
 
@@ -671,7 +667,7 @@ async function main() {
   lines.push(``)
   lines.push(`- **Queued PDFs**: ${deepQueue.length}`)
   lines.push(`- **PDF text extraction attempts**: ${selected.length}`)
-  lines.push(`- **pdf-parse installed**: ${Boolean(pdfParse)}`)
+  lines.push(`- **PDF pipeline**: pdf.js text layer plus mandatory OCR (\`scripts/skyslope-pdf-insight.mjs\`), \`SKYSLOPE_AUDIT_PDF_MAX_PAGES=${AUDIT_PDF_MAX_PAGES}\``)
 
   process.stdout.write(lines.join('\n'))
 }

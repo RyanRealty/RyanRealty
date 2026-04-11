@@ -3,9 +3,9 @@
  * SkySlope Forms — multi-sheet Excel workbook for principal broker review.
  *
  * Pulls listing/sale **API** data (parties, property, escrow number, checklist,
- * contacts) plus every **document** row. Optionally samples PDF text for key
- * docs (sale agreement #, title file # hints) — excerpts are **not** proof of
- * execution; verify originals in SkySlope.
+ * contacts) plus every **document** row. Optional PDF sampling uses
+ * `skyslope-pdf-insight.mjs` (pdf.js text layer plus mandatory OCR per read
+ * window). Excerpts are **not** proof of execution; verify originals in SkySlope.
  *
  *   npm run skyslope:forms-workbook
  *   npm run skyslope:forms-workbook -- --out docs/custom.xlsx
@@ -13,18 +13,17 @@
  * Env: same SKYSLOPE_* as other scripts; SKYSLOPE_INCLUDE_ARCHIVED=1 optional.
  * PDF sampling: SKYSLOPE_WORKBOOK_PDF_SAMPLE=1 (default 0 = metadata only, fast).
  * Cap: SKYSLOPE_WORKBOOK_MAX_PDFS (default 180), SKYSLOPE_MAX_PDF_BYTES (default 9MB).
+ * Read window when sampling: SKYSLOPE_WORKBOOK_PDF_MAX_PAGES (default 8, max 120).
  */
 import fs from 'fs'
 import crypto from 'crypto'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { createRequire } from 'module'
 import XLSX from 'xlsx'
 
 import { fetchSkyslopeFileFolderRows, skyslopeFetchWithRetry } from './skyslope-files-api.mjs'
 import { inferKind, parseDate } from './skyslope-forms-document-taxonomy.mjs'
-
-const require = createRequire(import.meta.url)
+import { analyzePdfBuffer, emptyPdfInsight, registerExcerpt } from './skyslope-pdf-insight.mjs'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.join(__dirname, '..')
 const DEFAULT_OUT = path.join(ROOT, 'docs', 'skyslope-forms-transaction-workbook.xlsx')
@@ -38,6 +37,10 @@ const MAX_PDFS = Math.min(
   Math.max(0, Number.parseInt(String(process.env.SKYSLOPE_WORKBOOK_MAX_PDFS || '180'), 10) || 180)
 )
 const MAX_PDF_BYTES = Number(process.env.SKYSLOPE_MAX_PDF_BYTES || 9_000_000)
+const WORKBOOK_PDF_MAX_PAGES = Math.min(
+  120,
+  Math.max(1, Number.parseInt(String(process.env.SKYSLOPE_WORKBOOK_PDF_MAX_PAGES || '8'), 10) || 8)
+)
 
 function loadEnvLocal(envPath) {
   const raw = fs.readFileSync(envPath, 'utf8')
@@ -273,7 +276,7 @@ function appendGuideSheet(wb) {
     ['SkySlope Forms transaction workbook'],
     [''],
     ['Generated from api-latest.skyslope.com listing/sale Files API + document library.'],
-    ['This is NOT SkySlope Suite data. Parties come from API contact blocks; PDF excerpts are text-layer samples only.'],
+    ['This is NOT SkySlope Suite data. Parties come from API contact blocks; PDF_sample uses pdf.js plus OCR (see skyslope-pdf-insight.mjs), not proof of execution.'],
     [''],
     ['Sheets:'],
     ['  Folders — one row per listing file or sale file (transaction cabinet).'],
@@ -282,10 +285,10 @@ function appendGuideSheet(wb) {
     ['  Dates_index — flattened date-like fields from listing/sale JSON (cross-check UI).'],
     ['  Checklist — checklist activities when API returns them.'],
     ['  Negotiation_docs — offer, counter, RSA-shaped documents in upload order.'],
-    ['  PDF_sample — optional text extracts (enable SKYSLOPE_WORKBOOK_PDF_SAMPLE=1).'],
+    ['  PDF_sample — optional dual pipeline extracts (SKYSLOPE_WORKBOOK_PDF_SAMPLE=1; cap pages with SKYSLOPE_WORKBOOK_PDF_MAX_PAGES).'],
     [''],
     ['Appraiser / inspection outcomes:'],
-    ['  Prefer checklist activity names and Documents rows. PDF_sample (optional) adds text hints only.'],
+    ['  Prefer checklist activity names and Documents rows. PDF_sample (optional) adds merged text and pipeline summary only.'],
     [''],
     ['Sale agreement / transaction numbers:'],
     ['  API exposes escrow_number on sales. RSA serial on the form is often only in the PDF; use PDF_sample or open the file.'],
@@ -723,17 +726,7 @@ async function main() {
 
   /** @type {object[]} */
   const pdfOut = []
-  let pdfParse = null
   if (PDF_SAMPLE && pdfJobs.length) {
-    try {
-      pdfParse = require('pdf-parse')
-    } catch {
-      console.error('pdf-parse missing; install pdf-parse or set SKYSLOPE_WORKBOOK_PDF_SAMPLE=0')
-    }
-  }
-  if (pdfParse) {
-    const log = console.log
-    const err = console.error
     let done = 0
     for (const job of pdfJobs.slice(0, MAX_PDFS)) {
       const { folder, doc, kind, fn } = job
@@ -746,32 +739,33 @@ async function main() {
       let inspHint = ''
       let ok = false
       let reason = ''
+      let insight = emptyPdfInsight('')
       try {
         const r = await fetch(doc.url)
         const buf = Buffer.from(await r.arrayBuffer())
         if (buf.length > MAX_PDF_BYTES) {
           reason = `oversize_${buf.length}`
+          insight = emptyPdfInsight(reason)
         } else if (buf.slice(0, 4).toString() !== '%PDF') {
           reason = 'not_pdf'
+          insight = emptyPdfInsight('not_pdf_bytes')
         } else {
-          console.log = () => {}
-          console.error = () => {}
-          try {
-            const data = await pdfParse(buf)
-            const text = data.text || ''
-            ok = true
-            excerpt = oneLine(text.slice(0, 1200))
-            saleNo = extractSaleAgreementNumber(text)
-            titleHint = extractTitleFileHint(text)
-            apprHint = extractAppraisalHint(text)
-            inspHint = extractInspectionHint(text)
-          } finally {
-            console.log = log
-            console.error = err
-          }
+          insight = await analyzePdfBuffer(buf, {
+            maxPages: WORKBOOK_PDF_MAX_PAGES,
+            ocrMaxPages: WORKBOOK_PDF_MAX_PAGES,
+          })
+          ok = insight.ok
+          if (!insight.ok) reason = insight.reason || 'insight_fail'
+          const text = insight.text || ''
+          excerpt = oneLine(registerExcerpt(insight, 1200))
+          saleNo = extractSaleAgreementNumber(text)
+          titleHint = extractTitleFileHint(text)
+          apprHint = extractAppraisalHint(text)
+          inspHint = extractInspectionHint(text)
         }
       } catch (e) {
         reason = e.message || String(e)
+        insight = emptyPdfInsight(reason)
       }
       pdfOut.push({
         file_folder_type: folder.folderType,
@@ -782,6 +776,9 @@ async function main() {
         inferred_category: kind,
         pdf_parse_ok: ok ? 'yes' : 'no',
         parse_note: reason,
+        pdf_page_count: insight.pageCount || 0,
+        pdf_pages_read: insight.pagesAnalyzed || 0,
+        pdf_pipeline_summary: insight.flagsLine || '',
         sale_agreement_or_transaction_id_text_guess: saleNo,
         title_file_or_order_number_text_guess: titleHint,
         appraisal_excerpt_hint: apprHint,
