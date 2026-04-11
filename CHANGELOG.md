@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.28.0 (2026-04-11)
+
+### Features
+- feat(skyslope): add Excel transaction workbook for parties, docs, checklist
+
+---
+
+
 ## v1.27.15 (2026-04-11)
 
 ### Bug Fixes
