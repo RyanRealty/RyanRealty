@@ -71,3 +71,4 @@ public/videos/hero-original.mp4
 
 # SkySlope generated Excel workbooks (PII; run npm run skyslope:forms-workbook locally)
 docs/skyslope-forms-transaction-workbook.xlsx
+docs/skyslope-forms-principal-brief.docx

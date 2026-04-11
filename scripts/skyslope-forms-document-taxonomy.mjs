@@ -19,6 +19,10 @@ export function inferKind(fileName, name) {
     [/counter|counteroffer/i, 'counter_or_counteroffer'],
     [/addendum/i, 'addendum'],
     [
+      /buyer\s*representation|buyer\s*agency|exclusive\s+buyer|non[-\s]?exclusive\s+buyer|buyer.?broker|oref\s*0?40|brbc|buyer.?broker\s*compensation/i,
+      'buyer_representation_agreement',
+    ],
+    [
       /residential sale agreement|sale agreement|rsa\b|oref 101|oref101|oref.?001|residential_real_estate_sale|rrea|sale_agreement\.pdf/i,
       'sale_agreement_or_rsa',
     ],
@@ -47,6 +51,15 @@ export function sanitizeStem(s) {
     .replace(/[^\w.-]+/g, '-')
     .replace(/-+/g, '-')
     .slice(0, 72)
+}
+
+/**
+ * Grouping for principal-brief Word output: listing-only block, buyer-agency block, or transaction block.
+ */
+export function wordSectionForKind(kind) {
+  if (kind === 'listing_agreement' || kind === 'agency_disclosure_pamphlet') return 'listing'
+  if (kind === 'buyer_representation_agreement') return 'buyer'
+  return 'transaction'
 }
 
 export function suggestStandardName({ lane, uploadIso, mls, category, seq, origName }) {
