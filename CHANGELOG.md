@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.30.0 (2026-04-11)
+
+### Features
+- feat: deep PDF analysis for SkySlope principal brief
+
+---
+
+
 ## v1.29.0 (2026-04-11)
 
 ### Features
