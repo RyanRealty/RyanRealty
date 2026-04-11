@@ -82,6 +82,14 @@ Any LLM step should use **schema-constrained output** (e.g. Zod + tool/JSON mode
 3. **Measure** on a fixed sample of OREF PDFs: false positives on “executed” language, cost per file, latency.  
 4. **Then** consider LiteParse or selective vision if metrics justify it.
 
+## Implemented advisory agent (principal brief)
+
+Module: `scripts/skyslope-pdf-advisory-agent.mjs`. Steps: **observe** (stats from `PdfInsight`) → **curate** (capped dual-pipeline excerpt) → **synthesize** (one xAI Grok completion, JSON only) → **validate** (clamp fields).
+
+Enable when generating the Word brief: set **`SKYSLOPE_PDF_AGENT=1`** and **`XAI_API_KEY`** in `.env.local` (same key as the site’s generate-text route). Optional: **`SKYSLOPE_PDF_AGENT_MAX_CALLS`** (default 48), **`SKYSLOPE_PDF_AGENT_PACE_MS`** (default 400), **`SKYSLOPE_PDF_AGENT_MAX_INPUT_CHARS`**, **`SKYSLOPE_PDF_AGENT_MODEL`**.
+
+The brief adds optional paragraphs per document for agent triage notes, risk signals, suggested focus, and confidence. This remains **advisory**; it does not replace principal broker review.
+
 ## References (external)
 
 - LiteParse (LlamaIndex): spatial PDF parse, optional OCR servers, screenshot path for agents — `https://github.com/run-llama/liteparse`  

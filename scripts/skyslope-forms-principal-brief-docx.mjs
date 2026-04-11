@@ -16,6 +16,11 @@
  * SKYSLOPE_PDF_MAX_PAGES (default 80) caps pages per file. Every read page
  * gets the dual labeled pipeline (pdf.js text layer plus mandatory OCR).
  * See SKYSLOPE_PDF_OCR_MAX_PAGES to cap OCR engine passes only.
+ *
+ * Optional multi step advisory agent (observe then curate then one xAI JSON pass):
+ * SKYSLOPE_PDF_AGENT=1 and XAI_API_KEY in .env.local. Tune SKYSLOPE_PDF_AGENT_MAX_CALLS
+ * (default 48), SKYSLOPE_PDF_AGENT_PACE_MS (default 400), SKYSLOPE_PDF_AGENT_MAX_INPUT_CHARS,
+ * SKYSLOPE_PDF_AGENT_MODEL (default grok-2-1212).
  */
 import fs from 'fs'
 import crypto from 'crypto'
@@ -29,6 +34,7 @@ import {
   skyslopeFetchWithRetry,
 } from './skyslope-files-api.mjs'
 import { inferKind, parseDate, fmtDate, wordSectionForKind } from './skyslope-forms-document-taxonomy.mjs'
+import { runPdfAdvisoryAgent } from './skyslope-pdf-advisory-agent.mjs'
 import {
   analyzePdfBuffer,
   buildExecutionAssessment,
@@ -190,6 +196,10 @@ async function mapPool(items, concurrency, fn) {
   return ret
 }
 
+function sleepMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 /** Half-points: Word `w:sz` (20 = 10 pt). */
 const FONT_BODY = 24
 const FONT_SMALL = 22
@@ -266,7 +276,19 @@ function h4(text) {
   })
 }
 
-function glossaryParagraphs() {
+/**
+ * @param {{ pdfAgentEnabled?: boolean }} [opts]
+ */
+function glossaryParagraphs(opts = {}) {
+  const agentNote =
+    opts.pdfAgentEnabled === true
+      ? [
+          pBoldLead(
+            'Advisory agent (optional).',
+            'When SKYSLOPE_PDF_AGENT=1 and XAI_API_KEY are set, a short multi step agent runs after pdf.js plus OCR. It observes file stats, curates a capped text excerpt, asks one structured model pass for triage notes, then validates JSON. It is still not execution proof. You confirm signatures and initials in SkySlope.'
+          ),
+        ]
+      : []
   return [
     h(2, 'How to read this brief'),
     pBoldLead(
@@ -281,6 +303,7 @@ function glossaryParagraphs() {
       'Document blocks.',
       'Each uploaded file is plain paragraphs only. A small bold field name sits on its own line and the value follows on the next line at the full page width. There are no Word tables in the body of this brief so nothing is trapped in grid cells.'
     ),
+    ...agentNote,
     new Paragraph({ spacing: { after: 280 }, children: [] }),
   ]
 }
@@ -322,6 +345,10 @@ function executiveSummaryParagraphs(meta) {
     ['PDFs in deep read budget', String(meta.pdfSampleBudget)],
     ['Max pages read per sampled PDF', String(meta.pagesPerPdfCap)],
   ]
+  if (meta.pdfAgentEnabled) {
+    rows.push(['Advisory agent on this run', 'yes · curated excerpt plus one xAI JSON pass per selected PDF'])
+    rows.push(['Advisory agent PDF calls', String(meta.pdfAgentCalls ?? 0)])
+  }
   /** @type {Paragraph[]} */
   const out = []
   rows.forEach(([k, v], idx) => {
@@ -344,6 +371,18 @@ function documentDetailParagraphs(r) {
     { label: 'Signatory hints', value: trimCell(r.signers || '—', 2500), longValue: true },
     { label: 'PDF pipeline', value: trimCell(r.pipelineCell || r.pdfFlags || '—', 4500), longValue: true },
   ]
+  const agentRan = r.agentOk === 'yes' || r.agentOk === 'no'
+  if (agentRan) {
+    pairs.push(
+      { label: 'Advisory agent triage notes', value: trimCell(String(r.agentReviewNotes || '—'), 2000), longValue: true },
+      { label: 'Advisory agent risk signals', value: trimCell(String(r.agentRiskSignals || '—'), 1200), longValue: true },
+      { label: 'Advisory agent suggested focus', value: trimCell(String(r.agentSuggestedFocus || '—'), 400) },
+      {
+        label: 'Advisory agent confidence 0 to 1',
+        value: trimCell(String(r.agentConfidence ?? '—'), 20),
+      }
+    )
+  }
   /** @type {Paragraph[]} */
   const out = []
   pairs.forEach((pair, idx) => {
@@ -483,6 +522,11 @@ async function main() {
         folderDisplay: f.kind === 'listing' ? 'Listing' : 'Sale',
         textLayerNote: '',
         pipelineCell: '',
+        agentOk: '',
+        agentReviewNotes: '',
+        agentRiskSignals: '',
+        agentSuggestedFocus: '',
+        agentConfidence: '',
       })
     }
   }
@@ -529,6 +573,53 @@ async function main() {
       insightByKey.set(key, emptyPdfInsight(e?.message || String(e)))
     }
   })
+
+  const pdfAgentEnabled = env.SKYSLOPE_PDF_AGENT === '1' && Boolean(String(env.XAI_API_KEY || '').trim())
+  let pdfAgentCalls = 0
+  if (pdfAgentEnabled) {
+    const maxAgent = Math.min(
+      200,
+      Math.max(
+        1,
+        Number.parseInt(String(env.SKYSLOPE_PDF_AGENT_MAX_CALLS || process.env.SKYSLOPE_PDF_AGENT_MAX_CALLS || '48'), 10) ||
+          48
+      )
+    )
+    const paceMs = Math.max(
+      0,
+      Number.parseInt(
+        String(env.SKYSLOPE_PDF_AGENT_PACE_MS || process.env.SKYSLOPE_PDF_AGENT_PACE_MS || '400'),
+        10
+      ) || 400
+    )
+    /** @type {{ row: Record<string, unknown>, doc: unknown, pr: number }[]} */
+    const agentJobs = []
+    for (const job of slice) {
+      const key = `${job.row.folderGuid}::${job.row.fileName}`
+      const ins = insightByKey.get(key)
+      if (ins?.ok && agentJobs.length < maxAgent) agentJobs.push(job)
+    }
+    await mapPool(agentJobs, 1, async (job) => {
+      const key = `${job.row.folderGuid}::${job.row.fileName}`
+      const ins = insightByKey.get(key)
+      if (!ins?.ok) return
+      const out = await runPdfAdvisoryAgent({
+        insight: ins,
+        kind: String(job.row.kind || ''),
+        fileName: String(job.row.fileName || ''),
+        section: String(job.row.section || ''),
+        kindLabel: kindFriendlyLabel(job.row.kind),
+        xaiKey: String(env.XAI_API_KEY || '').trim(),
+      })
+      job.row.agentOk = out.ok ? 'yes' : 'no'
+      job.row.agentReviewNotes = out.ok ? out.review_notes || '—' : trimCell(String(out.error || 'agent failed'), 400)
+      job.row.agentRiskSignals = out.ok ? (out.risk_signals || []).join(' · ') || '—' : '—'
+      job.row.agentSuggestedFocus = out.ok ? out.suggested_focus || '—' : '—'
+      job.row.agentConfidence = out.ok && out.confidence != null ? String(out.confidence) : '—'
+      pdfAgentCalls += 1
+      if (paceMs > 0) await sleepMs(paceMs)
+    })
+  }
 
   for (const row of enriched) {
     const key = `${row.folderGuid}::${row.fileName}`
@@ -635,9 +726,11 @@ async function main() {
       part3Addresses: addressKeysSorted.length,
       pdfSampleBudget: MAX_PDFS,
       pagesPerPdfCap,
+      pdfAgentEnabled,
+      pdfAgentCalls,
     }),
     new Paragraph({ spacing: { after: 320 }, children: [] }),
-    ...glossaryParagraphs(),
+    ...glossaryParagraphs({ pdfAgentEnabled }),
     new Paragraph({ spacing: { after: 200 }, children: [] })
   )
 
@@ -858,6 +951,8 @@ async function main() {
       listing_docs: listingRows_.length,
       transaction_doc_rows: txRows.length,
       addresses_in_part3: addressKeysSorted.length,
+      pdf_agent_enabled: pdfAgentEnabled,
+      pdf_agent_calls: pdfAgentCalls,
     })
   )
 }
