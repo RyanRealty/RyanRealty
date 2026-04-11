@@ -61,6 +61,7 @@
     "skyslope:forms-workbook": "node scripts/skyslope-forms-transaction-workbook.mjs",
     "skyslope:forms-brief": "node scripts/skyslope-forms-principal-brief-docx.mjs",
     "geocode:easy-missing": "node scripts/geocode-easy-missing-listings.mjs",
+    "geocode:easy-missing:report": "node scripts/geocode-easy-progress-report.mjs",
     "prepare": "husky"
   },
   "dependencies": {
