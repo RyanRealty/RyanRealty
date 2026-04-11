@@ -467,7 +467,7 @@ async function main() {
   )
   lines.push(``)
   lines.push(
-    `**This script does not perform (1)–(4).** The “PDF text clues” column reports **extracted text-layer hints** (e.g. e-sign vendor strings). Those hints are **not** evidence of full execution and are **not** an OREF compliance audit.`
+    `**This script does not perform (1)–(4).** The **PDF dual pipeline clues** column reports **merged machine text plus OCR hints** (e.g. e-sign vendor strings). Those hints are **not** evidence of full execution and are **not** an OREF compliance audit.`
   )
   lines.push(
     `- **PII is redacted** in excerpts (emails/phones). Do not commit live SkySlope session artifacts or presigned URLs.`
@@ -514,7 +514,7 @@ async function main() {
   lines.push(`## Executive summaries (one paragraph per folder)`)
   lines.push(``)
   lines.push(
-    `These paragraphs are **machine-assisted** from SkySlope API fields + filename heuristics + (where available) **PDF text clues** (not full execution review). They are an **orientation map** only; OREF completeness and signatory correctness require a **human expert**.`
+    `These paragraphs are **machine-assisted** from SkySlope API fields + filename heuristics + (where available) **dual pipeline PDF clues** (not full execution review). They are an **orientation map** only; OREF completeness and signatory correctness require a **human expert**.`
   )
   lines.push(``)
   for (const f of folders) {
@@ -663,7 +663,7 @@ async function main() {
   }
 
   lines.push(``)
-  lines.push(`## Appendix: PDF text extraction selection stats`)
+  lines.push(`## Appendix: PDF dual pipeline selection stats`)
   lines.push(``)
   lines.push(`- **Queued PDFs**: ${deepQueue.length}`)
   lines.push(`- **PDF text extraction attempts**: ${selected.length}`)

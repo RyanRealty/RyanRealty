@@ -17,7 +17,6 @@ import fs from 'fs'
 import crypto from 'crypto'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { createRequire } from 'module'
 import { fetchSkyslopeFileFolderRows, skyslopeFetchWithRetry } from './skyslope-files-api.mjs'
 import {
   fmtDate,
@@ -33,7 +32,6 @@ import {
   registerExcerpt,
 } from './skyslope-pdf-insight.mjs'
 
-const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.join(__dirname, '..')
 const ENV_PATH = path.join(ROOT, '.env.local')
