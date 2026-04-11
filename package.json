@@ -58,6 +58,7 @@
     "skyslope:forms-audit": "node scripts/skyslope-forms-master-audit.mjs",
     "skyslope:forms-comprehensive-log": "node scripts/skyslope-forms-comprehensive-log.mjs",
     "skyslope:forms-rename-documents": "node scripts/skyslope-forms-rename-documents.mjs",
+    "skyslope:forms-workbook": "node scripts/skyslope-forms-transaction-workbook.mjs",
     "prepare": "husky"
   },
   "dependencies": {

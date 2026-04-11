@@ -5,6 +5,7 @@
  * execution and renames.
  *
  *   npm run skyslope:forms-comprehensive-log > docs/skyslope-forms-comprehensive-file-log.md
+ *   Multi-sheet Excel (parties, docs, checklist, dates): npm run skyslope:forms-workbook
  *   (add npm --silent if your npm prints lifecycle lines into the redirected file)
  *
  * Requires .env.local SKYSLOPE_* and devDependency pdf-parse.
