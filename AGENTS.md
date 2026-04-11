@@ -2,6 +2,10 @@
 
 This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to autonomously pick up, execute, validate, and complete development tasks on this project.
 
+## Execution (non-negotiable)
+
+Run every needed command yourself (`npm run …`, scripts, git, deploy checks, SkySlope generators). **Never** tell the owner to run something in a terminal. The only exception is when something cannot run without secrets or access you do not have, in which case state exactly what is missing.
+
 ---
 
 ## Quick Start
