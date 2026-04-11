@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.29.0 (2026-04-11)
+
+### Features
+- feat: SkySlope Forms principal Word brief with readable tables
+
+---
+
+
 ## v1.28.0 (2026-04-11)
 
 ### Features
