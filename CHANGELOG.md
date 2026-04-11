@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.32.5 (2026-04-11)
+
+### Bug Fixes
+- fix(skyslope): principal brief uses per-document label-value tables
+
+---
+
+
 ## v1.32.4 (2026-04-11)
 
 ### Maintenance
