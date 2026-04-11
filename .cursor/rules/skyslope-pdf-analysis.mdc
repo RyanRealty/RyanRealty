@@ -42,6 +42,10 @@ Module: `scripts/skyslope-pdf-insight.mjs`
 
 Principal Broker execution judgment and line-by-line review in SkySlope.
 
+## Optional AI reasoning layer (not part of the mandatory path)
+
+Industry practice is **parser or OCR first**, then **LLMs for structure or interpretation** on extracted evidence, not raw vision-as-OCR for every page. If you add summaries, classification, or checklist mapping, read **`docs/skyslope-pdf-ai-research.md`** first and keep any model step **env-gated**, schema-bounded, and advisory.
+
 ## Agent behavior
 
 Extend **`skyslope-pdf-insight.mjs`** only when changing the standard. Do not fork parallel PDF logic inside one-off scripts.
