@@ -9,9 +9,9 @@
  * Omits internal SkySlope document GUIDs. Sale agreement numbers come from PDF
  * text when extractable (verify in forms). Env: SKYSLOPE_*; optional
  * SKYSLOPE_BRIEF_MAX_PDFS (default 320) for how many PDFs get deep read;
- * SKYSLOPE_PDF_MAX_PAGES (default 80) caps pages per file. Mandatory OCR uses
- * Poppler plus Tesseract when installed, otherwise bundled tesseract.js with
- * pdf.js page render. See SKYSLOPE_PDF_OCR_MAX_PAGES, SKYSLOPE_PDF_THIN_PAGE_CHARS.
+ * SKYSLOPE_PDF_MAX_PAGES (default 80) caps pages per file. Every read page
+ * gets the dual labeled pipeline (pdf.js text layer plus mandatory OCR).
+ * See SKYSLOPE_PDF_OCR_MAX_PAGES to cap OCR engine passes only.
  */
 import fs from 'fs'
 import crypto from 'crypto'
@@ -266,7 +266,7 @@ function glossaryParagraphs() {
     h(2, 'How to read this brief'),
     pBoldLead(
       'What is the automated signature check?',
-      'Each sampled PDF is parsed with Mozilla pdf.js in Node for text and form widgets, then mandatory OCR on image-heavy pages and on the full page range when the text layer is globally thin. OCR prefers Poppler pdftoppm plus the Tesseract CLI when those are on PATH; otherwise it renders each needed page with pdf.js and reads it with tesseract.js bundled in this repo. Output is still a filing aid so you can triage faster. It is not a determination that a form is fully executed under Oregon practice, and it is not a substitute for you confirming every required signature and initial in SkySlope.'
+      'Every sampled PDF uses the same dual pipeline. For each page in the read window you get two labeled blocks in order. First block is the machine text layer from pdf.js extractText plus form widget names from annotations. Second block is mandatory rendered page OCR using Poppler pdftoppm plus Tesseract when installed, otherwise pdf.js canvas render plus bundled tesseract.js. If a page exceeds SKYSLOPE_PDF_OCR_MAX_PAGES the OCR block states the cap explicitly. Output is still a filing aid. It is not a determination that a form is fully executed under Oregon practice, and it is not a substitute for you confirming every required signature and initial in SkySlope.'
     ),
     pBoldLead(
       'Why you do not see internal document IDs here.',

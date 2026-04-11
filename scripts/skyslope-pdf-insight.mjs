@@ -1,14 +1,14 @@
 /**
  * Structured PDF analysis for SkySlope Forms scripts (Node, ESM).
  *
- * Uses Mozilla pdf.js (legacy build) for per-page text, annotations, and
- * e-sign vendor markers, then **mandatory OCR** on image-heavy pages (and
- * on every page when the whole document text layer is thin) so scanned
- * contracts are read the same way as text-born PDFs.
+ * **Standard for every PDF we analyze:** (1) Mozilla pdf.js per-page
+ * extractText plus annotation inventory, (2) **OCR on every page** in the
+ * read window (same page range), merged into a fixed two-part layout so
+ * machine text and image text are never conflated. (3) Vendor and signature
+ * heuristics run on the combined string.
  *
- * OCR engines (first that works per page): Poppler `pdftoppm` + Tesseract
- * CLI when on PATH; otherwise pdf.js canvas render + `tesseract.js` (ships
- * with the repo). See `.cursor/rules/skyslope-pdf-analysis.mdc`.
+ * OCR engines per page (first success): Poppler `pdftoppm` + Tesseract CLI;
+ * else pdf.js render + `tesseract.js`. See `.cursor/rules/skyslope-pdf-analysis.mdc`.
  */
 import { spawnSync } from 'child_process'
 import fs from 'fs'
@@ -37,6 +37,7 @@ const DEFAULT_MAX_PAGES = Math.min(
  *   esign: Record<string, number>
  *   ocrSnippet: string
  *   ocrPageCount: number
+ *   ocrPagesAttempted: number
  *   ocrEngineNote: string
  *   flagsLine: string
  *   combinedForSa: string
@@ -122,12 +123,14 @@ export async function analyzePdfBuffer(buf, opts = {}) {
 
   let mergedPageTexts = pageTexts
   let ocrPageCount = 0
+  let ocrPagesAttempted = 0
   let ocrSnippet = ''
   let ocrEngineNote = ''
   try {
-    const ocrOut = await runMandatoryPageOcr(buf, doc, perPageChars, pagesToRead, pageTexts)
+    const ocrOut = await runMandatoryPageOcr(buf, doc, pagesToRead, pageTexts)
     mergedPageTexts = ocrOut.mergedPageTexts
     ocrPageCount = ocrOut.ocrPageCount
+    ocrPagesAttempted = ocrOut.ocrPagesAttempted
     ocrSnippet = ocrOut.ocrSnippet
     ocrEngineNote = ocrOut.ocrEngineNote
   } catch (e) {
@@ -143,11 +146,11 @@ export async function analyzePdfBuffer(buf, opts = {}) {
   }
 
   const text = mergedPageTexts.join('\n\n')
-  const mergedPerPageChars = mergedPageTexts.map((s) => s.replace(/\s/g, '').length)
   const nonWhitespaceCharCount = text.replace(/\s/g, '').length
   const charCount = text.length
   const textDensity = densityLabel(nonWhitespaceCharCount, pageCount || pagesToRead)
-  const lowTextPageRanges = formatLowTextPages(mergedPerPageChars)
+  /** Text-layer only: where pdf.js saw little extractable text (diagnostic). */
+  const lowTextPageRanges = formatLowTextPages(perPageChars)
   const esign = scanEsignMarkers(text)
   const combinedForSa = text
 
@@ -160,6 +163,7 @@ export async function analyzePdfBuffer(buf, opts = {}) {
     widgetSignLikeCount,
     esign,
     ocrPageCount,
+    ocrPagesAttempted,
     ocrEngineNote,
     hasOcrSnippet: Boolean(ocrSnippet),
   })
@@ -179,6 +183,7 @@ export async function analyzePdfBuffer(buf, opts = {}) {
     esign,
     ocrSnippet,
     ocrPageCount,
+    ocrPagesAttempted,
     ocrEngineNote,
     flagsLine,
     combinedForSa,
@@ -211,6 +216,7 @@ export function emptyPdfInsight(reason) {
     esign: {},
     ocrSnippet: '',
     ocrPageCount: 0,
+    ocrPagesAttempted: 0,
     ocrEngineNote: '',
     flagsLine:
       reason === 'not_in_pdf_sample_for_this_run'
@@ -268,7 +274,7 @@ function collapseRanges(sortedUnique) {
     start = cur
     prev = cur
   }
-  return `Low extractable text on page(s) ${parts.join(', ')} (often signatures, stamps, or scans)`
+  return `Low pdf.js text layer on page(s) ${parts.join(', ')} (see dual OCR block per page below)`
 }
 
 /**
@@ -310,7 +316,11 @@ function buildFlagsLine(p) {
   if (e.genericSignedBy) hits.push(`SignedBy×${e.genericSignedBy}`)
   if (e.digitalCert) hits.push(`DigCert×${e.digitalCert}`)
   if (hits.length) parts.push(hits.join(' '))
-  if (p.ocrPageCount > 0) parts.push(`OCR ${p.ocrPageCount} pg`)
+  const ocrAtt = p.ocrPagesAttempted ?? 0
+  if (ocrAtt > 0) {
+    parts.push(`dual pipeline ${ocrAtt} pg`)
+    if ((p.ocrPageCount ?? 0) !== ocrAtt) parts.push(`OCR nonempty ${p.ocrPageCount ?? 0}/${ocrAtt} pg`)
+  }
   if (p.ocrEngineNote) parts.push(shorten(p.ocrEngineNote, 100))
   else if (p.hasOcrSnippet) parts.push('OCR text merged')
   const line = parts.join(' · ')
@@ -333,45 +343,32 @@ function commandOnPath(cmd) {
 }
 
 /**
- * Mandatory OCR: all pages when the document text layer is globally thin;
- * otherwise every page whose extractable text falls below the threshold.
+ * Unambiguous dual pipeline for **every** analyzed page: pdf.js text layer
+ * plus mandatory rendered-page OCR (same page index). No conditional skip
+ * based on text density. Page cap = min(pages read, SKYSLOPE_PDF_OCR_MAX_PAGES
+ * when set; otherwise every page we read).
  * @param {Buffer} buf
- * @param {unknown} doc pdf.js document
- * @param {number[]} perPageChars non-whitespace char count per page from text layer
+ * @param {unknown} doc pdf.js document (still open)
  * @param {number} pagesToRead
- * @param {string[]} pageTexts
+ * @param {string[]} pageTexts raw extractText per page (same length as pagesToRead)
  */
-async function runMandatoryPageOcr(buf, doc, perPageChars, pagesToRead, pageTexts) {
-  const thinTh = Math.max(
-    20,
-    Number.parseInt(String(process.env.SKYSLOPE_PDF_THIN_PAGE_CHARS || '45'), 10) || 45
-  )
-  const ocrMax = Math.min(
-    pagesToRead,
-    Math.max(1, Number.parseInt(String(process.env.SKYSLOPE_PDF_OCR_MAX_PAGES || '60'), 10) || 60)
-  )
-  const docTotal = perPageChars.reduce((a, b) => a + b, 0)
-  const allThin = perPageChars.length > 0 && perPageChars.every((c) => c < thinTh)
-  const docWideThin = docTotal < 220 || allThin
+async function runMandatoryPageOcr(buf, doc, pagesToRead, pageTexts) {
+  const envCap = process.env.SKYSLOPE_PDF_OCR_MAX_PAGES
+  const ocrEngineLimit =
+    envCap != null && String(envCap).trim() !== ''
+      ? Math.min(pagesToRead, Math.max(1, Number.parseInt(String(envCap), 10) || pagesToRead))
+      : pagesToRead
 
-  /** @type {number[]} */
-  let pagesToOcr = []
-  if (docWideThin) {
-    for (let p = 1; p <= ocrMax; p++) pagesToOcr.push(p)
-  } else {
-    for (let i = 0; i < perPageChars.length; i++) {
-      if (perPageChars[i] < thinTh) pagesToOcr.push(i + 1)
-    }
-    if (pagesToOcr.length > ocrMax) pagesToOcr = pagesToOcr.slice(0, ocrMax)
-  }
+  /** @type {string[]} */
+  const merged = []
 
-  const merged = [...pageTexts]
-  if (pagesToOcr.length === 0) {
+  if (pagesToRead === 0) {
     return {
-      mergedPageTexts: merged,
+      mergedPageTexts: [],
       ocrPageCount: 0,
+      ocrPagesAttempted: 0,
       ocrSnippet: '',
-      ocrEngineNote: 'no OCR pages (text layer dense on every page)',
+      ocrEngineNote: 'zero pages in PDF read window',
     }
   }
 
@@ -393,12 +390,26 @@ async function runMandatoryPageOcr(buf, doc, perPageChars, pagesToRead, pageText
   if (!useCli) {
     await ensureWorker()
   }
+
+  const engineMissingNote =
+    'OCR engine unavailable (install Poppler + Tesseract CLI, or reinstall node deps for tesseract.js).'
+
   if (!useCli && !worker) {
+    for (let p = 1; p <= pagesToRead; p++) {
+      merged.push(
+        formatPageDualPipeline(
+          p,
+          pageTexts[p - 1] || '',
+          `${engineMissingNote} Render OCR did not run.`
+        )
+      )
+    }
     return {
       mergedPageTexts: merged,
       ocrPageCount: 0,
+      ocrPagesAttempted: pagesToRead,
       ocrSnippet: '',
-      ocrEngineNote: 'OCR unavailable (install Poppler + Tesseract CLI, or reinstall node deps for tesseract.js)',
+      ocrEngineNote: engineMissingNote,
     }
   }
 
@@ -412,7 +423,20 @@ async function runMandatoryPageOcr(buf, doc, perPageChars, pagesToRead, pageText
   let usedRender = 0
 
   try {
-    for (const pageNum of pagesToOcr) {
+    for (let pageNum = 1; pageNum <= pagesToRead; pageNum++) {
+      const layer = pageTexts[pageNum - 1] || ''
+
+      if (pageNum > ocrEngineLimit) {
+        merged.push(
+          formatPageDualPipeline(
+            pageNum,
+            layer,
+            `(OCR engine not run on this page: SKYSLOPE_PDF_OCR_MAX_PAGES caps passes at ${ocrEngineLimit} of ${pagesToRead} pages read)`
+          )
+        )
+        continue
+      }
+
       let ocrText = ''
       if (useCli) {
         ocrText = ocrOnePageWithCli(pdfPath, tmp, pageNum)
@@ -425,14 +449,10 @@ async function runMandatoryPageOcr(buf, doc, perPageChars, pagesToRead, pageText
           if (ocrText.trim()) usedRender += 1
         }
       }
-      if (!ocrText.trim()) continue
+      if (ocrText.trim()) ocrPageCount += 1
 
-      const idx = pageNum - 1
-      const wasThin = perPageChars[idx] < thinTh
-      const prev = merged[idx] || ''
-      merged[idx] = wasThin ? ocrText.trim() : `${prev}\n\n[OCR]\n${ocrText.trim()}`
-      ocrChunks.push(`[p${pageNum}] ${ocrText.replace(/\s+/g, ' ').trim().slice(0, 1500)}`)
-      ocrPageCount += 1
+      merged.push(formatPageDualPipeline(pageNum, layer, ocrText))
+      ocrChunks.push(`[p${pageNum}] ${String(ocrText).replace(/\s+/g, ' ').trim().slice(0, 1500)}`)
     }
   } finally {
     try {
@@ -458,14 +478,38 @@ async function runMandatoryPageOcr(buf, doc, perPageChars, pagesToRead, pageText
         ? 'Poppler + Tesseract CLI'
         : usedRender > 0
           ? 'tesseract.js (pdf.js render)'
-          : 'OCR ran but no text returned'
+          : 'OCR engine ran; no nonempty OCR text'
+
+  const capNote =
+    ocrEngineLimit < pagesToRead
+      ? ` Cap left ${pagesToRead - ocrEngineLimit} page(s) with engine-skip message in OCR block.`
+      : ''
 
   return {
     mergedPageTexts: merged,
     ocrPageCount,
+    ocrPagesAttempted: pagesToRead,
     ocrSnippet: trimmedSnippet,
-    ocrEngineNote: `${engine} · ${ocrPageCount} page(s)`,
+    ocrEngineNote: `${engine} · nonempty OCR ${ocrPageCount}/${ocrEngineLimit} engine page(s).${capNote}`,
   }
+}
+
+/**
+ * Fixed layout so machine text and image OCR are never mixed without labels.
+ * @param {number} pageNum 1-based
+ * @param {string} layerText
+ * @param {string} ocrText
+ */
+function formatPageDualPipeline(pageNum, layerText, ocrText) {
+  const layer = String(layerText || '').trim()
+  const ocr = String(ocrText || '').trim()
+  return [
+    `<<< Page ${pageNum} >>>`,
+    '--- MACHINE TEXT LAYER (pdf.js extractText) ---',
+    layer.length ? layer : '(no extractable characters in text layer)',
+    '--- RENDERED IMAGE OCR (mandatory same-page pass) ---',
+    ocr.length ? ocr : '(no OCR characters returned for this page)',
+  ].join('\n')
 }
 
 /**
