@@ -468,11 +468,27 @@ function mapRowToListing(row: AnyRow): ListingDetailListing {
   const now = new Date().toISOString()
   const listingKey = String(row.ListingKey ?? '').trim()
 
-  // Compute days on market from OnMarketDate if not in details
-  let dom = safeNum(d.DaysOnMarket)
-  let cdom = safeNum(d.CumulativeDaysOnMarket)
-  if (dom == null && row.OnMarketDate) {
-    const onMarket = new Date(row.OnMarketDate)
+  // Prefer typed columns, then Spark details, then derive for closed (CloseDate − on market) or active (vs now).
+  let dom =
+    safeNum(row.DaysOnMarket) ??
+    safeNum(d.DaysOnMarket)
+  let cdom =
+    safeNum(row.CumulativeDaysOnMarket) ??
+    safeNum(d.CumulativeDaysOnMarket)
+
+  const statusLower = String(row.StandardStatus ?? '').toLowerCase()
+  const isClosed = statusLower.includes('closed')
+  const onMarketIso = row.OnMarketDate ?? row.ListDate ?? d.OnMarketDate ?? d.ListDate
+  const closeIso = row.CloseDate ?? d.CloseDate
+
+  if (dom == null && isClosed && closeIso && onMarketIso) {
+    const end = new Date(closeIso)
+    const start = new Date(onMarketIso)
+    if (!Number.isNaN(end.getTime()) && !Number.isNaN(start.getTime()) && end >= start) {
+      dom = Math.max(0, Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)))
+    }
+  } else if (dom == null && onMarketIso && !isClosed) {
+    const onMarket = new Date(onMarketIso)
     if (!Number.isNaN(onMarket.getTime())) {
       dom = Math.max(0, Math.floor((Date.now() - onMarket.getTime()) / (24 * 60 * 60 * 1000)))
     }

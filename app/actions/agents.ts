@@ -228,7 +228,7 @@ export async function getAgentPendingListings(
   return (data ?? []) as HomeTileRow[]
 }
 
-/** Performance stats from sold listings: avg sale price, avg DOM (uses days_on_market when present, else ListDate/CloseDate). */
+/** Performance stats from sold listings: avg sale price, avg DOM (typed DaysOnMarket when present, else CloseDate minus on-market). */
 async function getAgentPerformanceStats(
   licenseNumber: string | null,
   brokerEmail?: string | null
@@ -240,7 +240,7 @@ async function getAgentPerformanceStats(
   const since = twentyFourMoAgo.toISOString().slice(0, 10)
   const { data } = await supabase()
     .from('listings')
-    .select('ClosePrice, CloseDate, ListDate, days_on_market')
+    .select('ClosePrice, CloseDate, ListDate, "DaysOnMarket", "OnMarketDate"')
     .in('ListingKey', keys.slice(0, 5000))
     .or('StandardStatus.ilike.%Closed%')
     .not('CloseDate', 'is', null)
@@ -249,23 +249,26 @@ async function getAgentPerformanceStats(
     ClosePrice?: number | null
     CloseDate?: string | null
     ListDate?: string | null
-    days_on_market?: number | null
+    DaysOnMarket?: number | null
+    OnMarketDate?: string | null
   }[]
   const prices = rows.map((r) => Number(r.ClosePrice)).filter((p) => Number.isFinite(p) && p > 0)
   const avgSalePrice = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null
   const domFromColumn = rows
-    .map((r) => (r.days_on_market != null && Number.isFinite(Number(r.days_on_market)) ? Number(r.days_on_market) : null))
-    .filter((d): d is number => d != null && d > 0 && d < 10000)
+    .map((r) =>
+      r.DaysOnMarket != null && Number.isFinite(Number(r.DaysOnMarket)) ? Number(r.DaysOnMarket) : null
+    )
+    .filter((d): d is number => d != null && d >= 0 && d < 10000)
   const domFromDates =
     domFromColumn.length > 0
       ? []
       : rows
-          .filter((r) => r.CloseDate && r.ListDate)
+          .filter((r) => r.CloseDate && (r.OnMarketDate || r.ListDate))
           .map((r) => {
             const close = new Date(r.CloseDate!).getTime()
-            const list = new Date(r.ListDate!).getTime()
-            const days = Math.round((close - list) / (24 * 60 * 60 * 1000))
-            return days > 0 && days < 10000 ? days : null
+            const start = new Date((r.OnMarketDate || r.ListDate)!).getTime()
+            const days = Math.round((close - start) / (24 * 60 * 60 * 1000))
+            return days >= 0 && days < 10000 ? days : null
           })
           .filter((d): d is number => d != null)
   const allDoms = domFromColumn.length > 0 ? domFromColumn : domFromDates

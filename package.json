@@ -64,6 +64,7 @@
     "geocode:easy-missing:report": "node scripts/geocode-easy-progress-report.mjs",
     "backfill:close-price:history": "node scripts/backfill-close-price-from-history.mjs",
     "backfill:close-price:spark": "npx tsx scripts/backfill-close-price-from-spark.ts",
+    "backfill:listing-dom": "node scripts/backfill-listing-dom-metrics.mjs",
     "prepare": "husky"
   },
   "dependencies": {

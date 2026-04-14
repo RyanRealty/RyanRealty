@@ -102,6 +102,8 @@ type SparkStandardFields = {
   CloseDate?: string | null
   ClosePrice?: number | null
   OriginalListPrice?: number | null
+  DaysOnMarket?: number | null
+  CumulativeDaysOnMarket?: number | null
   StreetNumber?: string | null
   StreetName?: string | null
   City?: string | null
@@ -164,6 +166,8 @@ function mapSparkToRow(fields: SparkStandardFields) {
     CloseDate: fields.CloseDate ?? null,
     ClosePrice: fields.ClosePrice ?? null,
     OriginalListPrice: fields.OriginalListPrice ?? null,
+    DaysOnMarket: fields.DaysOnMarket ?? null,
+    CumulativeDaysOnMarket: fields.CumulativeDaysOnMarket ?? null,
     ListOfficeName: fields.ListOfficeName ?? null,
     ListAgentName: listAgentName,
     OpenHouses: fields.OpenHouses ?? null,

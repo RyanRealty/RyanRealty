@@ -57,6 +57,10 @@ export type SparkStandardFields = {
   ClosePrice?: number
   /** Original list at contract; used for sale-to-list. */
   OriginalListPrice?: number
+  /** MLS days on market (current spell or at close). */
+  DaysOnMarket?: number
+  /** MLS cumulative days on market across relists. */
+  CumulativeDaysOnMarket?: number
   StreetNumber?: string
   StreetName?: string
   StreetDirPrefix?: string | null
@@ -686,6 +690,14 @@ function toTimestamp(v: unknown): string | null {
   return Number.isNaN(d.getTime()) ? null : v
 }
 
+/** Integer MLS counters (DOM); null if missing or not finite. */
+function toInt(v: unknown): number | null {
+  const n = toNum(v)
+  if (n == null) return null
+  const r = Math.round(n)
+  return Number.isFinite(r) ? r : null
+}
+
 /**
  * Map Spark StandardFields to our Supabase listings row shape.
  * Sanitizes numeric and timestamp fields so masked values like "********" become null.
@@ -720,6 +732,8 @@ export function sparkListingToSupabaseRow(
     ListPrice: toNum(f.ListPrice),
     ClosePrice: toNum(f.ClosePrice),
     OriginalListPrice: toNum(f.OriginalListPrice),
+    DaysOnMarket: toInt(f.DaysOnMarket),
+    CumulativeDaysOnMarket: toInt(f.CumulativeDaysOnMarket),
     StreetNumber: f.StreetNumber ?? null,
     StreetName: f.StreetName ?? null,
     City: f.City ?? null,

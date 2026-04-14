@@ -11,6 +11,8 @@ function closedFixture(closePrice: number, originalListPrice?: number): SparkLis
       ListPrice: 599000,
       ClosePrice: closePrice,
       OriginalListPrice: originalListPrice ?? 625000,
+      DaysOnMarket: 42,
+      CumulativeDaysOnMarket: 55,
       StandardStatus: 'Closed',
       CloseDate: '2025-11-01T00:00:00Z',
       ListDate: '2025-06-01T00:00:00Z',
@@ -27,6 +29,8 @@ describe('sparkListingToSupabaseRow', () => {
     expect(row.ClosePrice).toBe(575000)
     expect(row.OriginalListPrice).toBe(599000)
     expect(row.ListPrice).toBe(599000)
+    expect(row.DaysOnMarket).toBe(42)
+    expect(row.CumulativeDaysOnMarket).toBe(55)
   })
 
   it('maps ClosePrice when OriginalListPrice is absent', () => {
