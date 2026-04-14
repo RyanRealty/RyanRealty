@@ -57,6 +57,11 @@ export const metadata: Metadata = {
   },
   robots: "index, follow",
   alternates: { canonical: getCanonicalSiteUrl() },
+  other: {
+    // Meta Business Portfolio (Ryan Realty LLC) domain verification for ryan-realty.com
+    // Required for Meta Pixel/CAPI on owned domain + ads attribution + AEM priority events.
+    "facebook-domain-verification": "u2o7h6orbfu10vsgp4rmihm91j3atf",
+  },
 };
 
 export const viewport: Viewport = {
