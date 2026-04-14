@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.36.2 (2026-04-14)
+
+### Bug Fixes
+- fix: wrap PageViewTracker in Suspense to unblock static generation
+
+---
+
+
 ## v1.36.1 (2026-04-14)
 
 ### Other
