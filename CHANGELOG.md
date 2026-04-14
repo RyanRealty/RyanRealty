@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.35.2 (2026-04-14)
+
+### Bug Fixes
+- fix: map ClosePrice and OriginalListPrice from Spark; history backfill RPCs
+
+---
+
+
 ## v1.35.1 (2026-04-12)
 
 ### Maintenance
