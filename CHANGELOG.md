@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.39.0 (2026-04-15)
+
+### Features
+- feat: phases 9-19 — cron consolidation, index cleanup, server fixes, docs
+
+---
+
+
 ## v1.38.0 (2026-04-15)
 
 ### Features
