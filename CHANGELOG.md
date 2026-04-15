@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.38.0 (2026-04-15)
+
+### Features
+- feat: unified mapper integration + SELECT projection updates (phases 6-8)
+
+---
+
+
 ## v1.37.1 (2026-04-15)
 
 ### Maintenance
