@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.40.2 (2026-04-15)
+
+### Bug Fixes
+- fix: wire fireplace/heating/cooling resolve functions into mapper body
+
+---
+
+
 ## v1.40.1 (2026-04-15)
 
 ### Bug Fixes
