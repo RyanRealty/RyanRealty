@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.37.1 (2026-04-15)
+
+### Maintenance
+- chore: regenerate types/database.ts with 98 new listing columns
+
+---
+
+
 ## v1.37.0 (2026-04-14)
 
 ### Features
