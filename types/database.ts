@@ -1924,48 +1924,102 @@ export type Database = {
       }
       market_pulse_live: {
         Row: {
+          absorption_rate_pct: number | null
           active_count: number
           avg_list_price: number | null
+          avg_price_drops_active: number | null
+          expired_rate_90d: number | null
           geo_label: string
           geo_slug: string
           geo_type: string
           id: string
           market_health_label: string | null
           market_health_score: number | null
+          median_active_dom: number | null
+          median_close_price_90d: number | null
+          median_days_to_pending: number | null
           median_list_price: number | null
+          median_sale_to_list: number | null
+          months_of_supply: number | null
+          net_inventory_change_30d: number | null
+          new_construction_share: number | null
           new_count_30d: number
           new_count_7d: number
+          pct_sold_at_asking: number | null
+          pct_sold_over_asking: number | null
+          pct_sold_under_asking: number | null
           pending_count: number
+          pending_to_active_ratio: number | null
+          price_reduction_share: number | null
+          sell_through_rate_90d: number | null
+          sold_count_30d: number | null
+          sold_count_90d: number | null
           updated_at: string
         }
         Insert: {
+          absorption_rate_pct?: number | null
           active_count?: number
           avg_list_price?: number | null
+          avg_price_drops_active?: number | null
+          expired_rate_90d?: number | null
           geo_label: string
           geo_slug: string
           geo_type: string
           id?: string
           market_health_label?: string | null
           market_health_score?: number | null
+          median_active_dom?: number | null
+          median_close_price_90d?: number | null
+          median_days_to_pending?: number | null
           median_list_price?: number | null
+          median_sale_to_list?: number | null
+          months_of_supply?: number | null
+          net_inventory_change_30d?: number | null
+          new_construction_share?: number | null
           new_count_30d?: number
           new_count_7d?: number
+          pct_sold_at_asking?: number | null
+          pct_sold_over_asking?: number | null
+          pct_sold_under_asking?: number | null
           pending_count?: number
+          pending_to_active_ratio?: number | null
+          price_reduction_share?: number | null
+          sell_through_rate_90d?: number | null
+          sold_count_30d?: number | null
+          sold_count_90d?: number | null
           updated_at?: string
         }
         Update: {
+          absorption_rate_pct?: number | null
           active_count?: number
           avg_list_price?: number | null
+          avg_price_drops_active?: number | null
+          expired_rate_90d?: number | null
           geo_label?: string
           geo_slug?: string
           geo_type?: string
           id?: string
           market_health_label?: string | null
           market_health_score?: number | null
+          median_active_dom?: number | null
+          median_close_price_90d?: number | null
+          median_days_to_pending?: number | null
           median_list_price?: number | null
+          median_sale_to_list?: number | null
+          months_of_supply?: number | null
+          net_inventory_change_30d?: number | null
+          new_construction_share?: number | null
           new_count_30d?: number
           new_count_7d?: number
+          pct_sold_at_asking?: number | null
+          pct_sold_over_asking?: number | null
+          pct_sold_under_asking?: number | null
           pending_count?: number
+          pending_to_active_ratio?: number | null
+          price_reduction_share?: number | null
+          sell_through_rate_90d?: number | null
+          sold_count_30d?: number | null
+          sold_count_90d?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -2008,24 +2062,34 @@ export type Database = {
       }
       market_stats_cache: {
         Row: {
+          affordability_monthly_piti: number | null
+          avg_listing_quality_score: number | null
           avg_sale_price: number | null
           avg_sale_to_list_ratio: number | null
           bedroom_breakdown: Json
+          cash_purchase_pct: number | null
           computed_at: string
           created_at: string
+          dom_distribution: Json | null
           geo_label: string
           geo_slug: string
           geo_type: string
           id: string
           market_health_label: string | null
           market_health_score: number | null
+          median_concessions_amount: number | null
           median_dom: number | null
           median_ppsf: number | null
+          median_price_per_sqft_closed: number | null
           median_sale_price: number | null
+          median_tax_rate: number | null
+          mom_inventory_change_pct: number | null
+          mom_median_price_change_pct: number | null
           period_end: string
           period_start: string
           period_type: string
           price_band_counts: Json
+          price_tier_breakdown: Json | null
           property_type_breakdown: Json
           sold_count: number
           speed_p25: number | null
@@ -2033,28 +2097,41 @@ export type Database = {
           speed_p75: number | null
           total_volume: number | null
           updated_at: string
+          yoy_dom_change: number | null
+          yoy_inventory_change_pct: number | null
           yoy_median_price_delta_pct: number | null
+          yoy_ppsf_change_pct: number | null
           yoy_sold_delta_pct: number | null
         }
         Insert: {
+          affordability_monthly_piti?: number | null
+          avg_listing_quality_score?: number | null
           avg_sale_price?: number | null
           avg_sale_to_list_ratio?: number | null
           bedroom_breakdown?: Json
+          cash_purchase_pct?: number | null
           computed_at?: string
           created_at?: string
+          dom_distribution?: Json | null
           geo_label: string
           geo_slug: string
           geo_type: string
           id?: string
           market_health_label?: string | null
           market_health_score?: number | null
+          median_concessions_amount?: number | null
           median_dom?: number | null
           median_ppsf?: number | null
+          median_price_per_sqft_closed?: number | null
           median_sale_price?: number | null
+          median_tax_rate?: number | null
+          mom_inventory_change_pct?: number | null
+          mom_median_price_change_pct?: number | null
           period_end: string
           period_start: string
           period_type: string
           price_band_counts?: Json
+          price_tier_breakdown?: Json | null
           property_type_breakdown?: Json
           sold_count?: number
           speed_p25?: number | null
@@ -2062,28 +2139,41 @@ export type Database = {
           speed_p75?: number | null
           total_volume?: number | null
           updated_at?: string
+          yoy_dom_change?: number | null
+          yoy_inventory_change_pct?: number | null
           yoy_median_price_delta_pct?: number | null
+          yoy_ppsf_change_pct?: number | null
           yoy_sold_delta_pct?: number | null
         }
         Update: {
+          affordability_monthly_piti?: number | null
+          avg_listing_quality_score?: number | null
           avg_sale_price?: number | null
           avg_sale_to_list_ratio?: number | null
           bedroom_breakdown?: Json
+          cash_purchase_pct?: number | null
           computed_at?: string
           created_at?: string
+          dom_distribution?: Json | null
           geo_label?: string
           geo_slug?: string
           geo_type?: string
           id?: string
           market_health_label?: string | null
           market_health_score?: number | null
+          median_concessions_amount?: number | null
           median_dom?: number | null
           median_ppsf?: number | null
+          median_price_per_sqft_closed?: number | null
           median_sale_price?: number | null
+          median_tax_rate?: number | null
+          mom_inventory_change_pct?: number | null
+          mom_median_price_change_pct?: number | null
           period_end?: string
           period_start?: string
           period_type?: string
           price_band_counts?: Json
+          price_tier_breakdown?: Json | null
           property_type_breakdown?: Json
           sold_count?: number
           speed_p25?: number | null
@@ -2091,7 +2181,10 @@ export type Database = {
           speed_p75?: number | null
           total_volume?: number | null
           updated_at?: string
+          yoy_dom_change?: number | null
+          yoy_inventory_change_pct?: number | null
           yoy_median_price_delta_pct?: number | null
+          yoy_ppsf_change_pct?: number | null
           yoy_sold_delta_pct?: number | null
         }
         Relationships: []
@@ -3850,6 +3943,7 @@ export type Database = {
         Returns: unknown
       }
       _st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      _to_smallint: { Args: { val: string }; Returns: number }
       _unmask: { Args: { val: string }; Returns: string }
       addauth: { Args: { "": string }; Returns: boolean }
       addgeometrycolumn:

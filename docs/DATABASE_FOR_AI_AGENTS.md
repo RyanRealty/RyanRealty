@@ -111,11 +111,38 @@ LIMIT 20;
 ### Market health snapshot
 ```sql
 SELECT geo_slug, active_count, pending_count, median_list_price,
+       months_of_supply, absorption_rate_pct, pending_to_active_ratio,
+       median_sale_to_list, pct_sold_over_asking, price_reduction_share,
+       sell_through_rate_90d, median_active_dom, sold_count_90d,
        market_health_score, market_health_label
 FROM market_pulse_live
 WHERE geo_type = 'city'
 ORDER BY active_count DESC;
 ```
+
+### Market pulse columns (refreshed every 10 min)
+| Column | Description |
+|--------|-------------|
+| `months_of_supply` | Active / (sold_90d/3). <3 seller, >6 buyer market |
+| `absorption_rate_pct` | % of active inventory sold monthly |
+| `pending_to_active_ratio` | Pending/Active — demand signal |
+| `median_sale_to_list` | Median ClosePrice/OriginalListPrice (90d) |
+| `pct_sold_over_asking` | % sold above list (90d) |
+| `pct_sold_under_asking` | % sold below list (90d) |
+| `pct_sold_at_asking` | % sold at list (90d) |
+| `median_days_to_pending` | Median days listing→pending (90d) |
+| `avg_price_drops_active` | Avg price reductions on active listings |
+| `price_reduction_share` | % of active with price drops |
+| `expired_rate_90d` | Expired/(Expired+Closed) — overpricing rate |
+| `sell_through_rate_90d` | Closed/(Closed+Expired+Withdrawn) |
+| `net_inventory_change_30d` | New−Sold−Expired−Withdrawn (30d) |
+| `median_active_dom` | Median DOM for active listings |
+| `new_construction_share` | % active that are new construction |
+| `sold_count_30d` | Closings last 30 days |
+| `sold_count_90d` | Closings last 90 days |
+| `median_close_price_90d` | Median close price (90d) |
+| `market_health_score` | 0–100 composite (DOM + competition + demand) |
+| `market_health_label` | Cold/Cool/Warm/Hot/Very Hot |
 
 ### Recent sales with analytics
 ```sql
