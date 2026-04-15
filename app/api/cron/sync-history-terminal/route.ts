@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { syncListingHistory } from '@/app/actions/sync-spark'
+import { fetchSparkListingHistory, fetchSparkPriceHistory, type SparkListingHistoryItem } from '@/lib/spark'
+import { sparkHistoryItemToRow, type SparkHistoryItem } from '@/lib/listing-mapper'
+
 const RUN_STALE_MS = 2 * 60 * 1000
+
+/** PostgREST OR filter for terminal statuses (closed/expired/withdrawn/canceled). */
+const TERMINAL_STATUS_OR_FILTER =
+  'StandardStatus.ilike.%closed%,StandardStatus.ilike.%expired%,StandardStatus.ilike.%withdrawn%,StandardStatus.ilike.%cancel%'
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET
@@ -13,9 +20,137 @@ function isAuthorized(request: Request): boolean {
   return false
 }
 
+// ---------------------------------------------------------------------------
+// Verification pass helpers
+// ---------------------------------------------------------------------------
+
+type VerifyListingRow = {
+  ListingKey?: string | null
+  ListNumber?: string | null
+  StandardStatus?: string | null
+}
+
+type VerifyOneResult = {
+  processed: number
+  markedVerified: number
+  historyRowsInserted: number
+  fetchFailures: number
+}
+
+async function verifyOneListing(
+  supabase: SupabaseClient,
+  token: string,
+  row: VerifyListingRow
+): Promise<VerifyOneResult> {
+  const key1 = String(row.ListingKey ?? '').trim()
+  const key2 = String(row.ListNumber ?? '').trim()
+  const keys = [...new Set([key1, key2].filter(Boolean))]
+  if (keys.length === 0 || !row.ListNumber) {
+    return { processed: 0, markedVerified: 0, historyRowsInserted: 0, fetchFailures: 0 }
+  }
+  const listingKey = keys[0]!
+
+  let items: SparkListingHistoryItem[] = []
+  let hadStrictSuccess = false
+
+  try {
+    for (const key of keys) {
+      const h = await fetchSparkListingHistory(token, key)
+      if (h.ok && h.partial !== true) hadStrictSuccess = true
+      if (h.ok && h.partial !== true && h.items.length > 0) {
+        items = h.items
+        break
+      }
+    }
+
+    if (items.length === 0) {
+      for (const key of keys) {
+        const p = await fetchSparkPriceHistory(token, key)
+        if (p.ok && p.partial !== true) hadStrictSuccess = true
+        if (p.ok && p.partial !== true && p.items.length > 0) {
+          items = p.items
+          break
+        }
+      }
+    }
+
+    if (!hadStrictSuccess) {
+      return { processed: 1, markedVerified: 0, historyRowsInserted: 0, fetchFailures: 1 }
+    }
+
+    let historyRowsInserted = 0
+    if (items.length > 0) {
+      await supabase.from('listing_history').delete().eq('listing_key', listingKey)
+      const historyRows = items.map((item) =>
+        sparkHistoryItemToRow(listingKey, item as SparkHistoryItem)
+      )
+      const { error: insertError } = await supabase.from('listing_history').insert(historyRows as never[])
+      if (!insertError) historyRowsInserted = historyRows.length
+    }
+
+    const { error: updateError } = await supabase
+      .from('listings')
+      .update({ history_verified_full: true, is_finalized: true } as never)
+      .eq('ListNumber', row.ListNumber)
+
+    return {
+      processed: 1,
+      markedVerified: updateError ? 0 : 1,
+      historyRowsInserted,
+      fetchFailures: 0,
+    }
+  } catch {
+    return { processed: 1, markedVerified: 0, historyRowsInserted: 0, fetchFailures: 1 }
+  }
+}
+
+function emptyVerifySum(): VerifyOneResult {
+  return { processed: 0, markedVerified: 0, historyRowsInserted: 0, fetchFailures: 0 }
+}
+
+function addVerifySum(a: VerifyOneResult, b: VerifyOneResult): VerifyOneResult {
+  return {
+    processed: a.processed + b.processed,
+    markedVerified: a.markedVerified + b.markedVerified,
+    historyRowsInserted: a.historyRowsInserted + b.historyRowsInserted,
+    fetchFailures: a.fetchFailures + b.fetchFailures,
+  }
+}
+
+async function runVerificationPass(
+  supabase: SupabaseClient,
+  token: string,
+  limit = 30
+): Promise<VerifyOneResult> {
+  const { data, error } = await supabase
+    .from('listings')
+    .select('ListingKey, ListNumber, StandardStatus')
+    .eq('history_finalized', true)
+    .eq('history_verified_full', false)
+    .or(TERMINAL_STATUS_OR_FILTER)
+    .order('OnMarketDate', { ascending: false, nullsFirst: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('[sync-history-terminal] verification query failed', error.message)
+    return emptyVerifySum()
+  }
+
+  const rows = (data ?? []) as VerifyListingRow[]
+  let total = emptyVerifySum()
+  for (const row of rows) {
+    const result = await verifyOneListing(supabase, token, row)
+    total = addVerifySum(total, result)
+  }
+  return total
+}
+
 /**
  * GET /api/cron/sync-history-terminal
  * Run one terminal-history chunk (closed/expired/withdrawn/canceled only).
+ * After the main sync, runs a verification pass on up to 30 already-finalized
+ * terminal listings that have not yet been verified (history_verified_full = false).
+ *
  * Supports worker sharding via query params:
  * - worker_count (default 1)
  * - worker_index (default 0)
@@ -95,6 +230,7 @@ export async function GET(request: Request) {
     }
     return NextResponse.json(result, { status: 500 })
   }
+
   if (supabase) {
     const { data: latestCursor } = await supabase
       .from('sync_cursor')
@@ -117,5 +253,24 @@ export async function GET(request: Request) {
       })
       .eq('id', 'default')
   }
-  return NextResponse.json(result)
+
+  // ---------------------------------------------------------------------------
+  // Verification pass: re-fetch and stamp history_verified_full on already-
+  // finalized terminal listings that haven't been verified yet.
+  // ---------------------------------------------------------------------------
+  let verifyResult: VerifyOneResult = emptyVerifySum()
+  const sparkToken = process.env.SPARK_API_KEY
+  if (supabase && sparkToken?.trim()) {
+    verifyResult = await runVerificationPass(supabase, sparkToken, 30)
+  }
+
+  return NextResponse.json({
+    ...result,
+    verify: {
+      processed: verifyResult.processed,
+      markedVerified: verifyResult.markedVerified,
+      historyRowsInserted: verifyResult.historyRowsInserted,
+      fetchFailures: verifyResult.fetchFailures,
+    },
+  })
 }

@@ -2,27 +2,23 @@
   "crons": [
     {
       "path": "/api/cron/sync-delta",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/refresh-video-tours-cache",
-      "schedule": "*/15 * * * *"
+      "schedule": "*/10 * * * *"
     },
     {
       "path": "/api/cron/sync-history-terminal",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/sync-verify-full-history?limit=150&concurrency=5",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/refresh-listing-year-stats",
-      "schedule": "*/30 * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/sync-full",
       "schedule": "0 2 * * 0"
+    },
+    {
+      "path": "/api/cron/refresh-video-tours-cache",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh-listing-year-stats",
+      "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/refresh-place-content",

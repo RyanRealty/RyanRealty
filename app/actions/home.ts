@@ -162,14 +162,13 @@ export async function getPriceDrops(city?: string): Promise<(HomeTileRow & { ori
       .select(`${HOME_TILE_SELECT}, OriginalListPrice`)
       .or(ACTIVE_OR)
       .not('ListPrice', 'is', null)
-      .limit(300)
+      .gt('price_drop_count', 0)
+      .order('total_price_change_pct', { ascending: true })
+      .limit(6)
     if (city?.trim()) query = query.ilike('City', city.trim())
     const { data } = await query
     const rows = (data ?? []) as (HomeTileRow & { OriginalListPrice?: number | null })[]
-    const withDrop = rows.filter(
-      (r) => r.OriginalListPrice != null && r.ListPrice != null && r.OriginalListPrice > r.ListPrice
-    )
-    return withDrop.slice(0, 6).map((r) => ({
+    return rows.map((r) => ({
       ...r,
       originalPrice: r.OriginalListPrice ?? undefined,
       savings: r.OriginalListPrice != null && r.ListPrice != null ? r.OriginalListPrice - r.ListPrice : undefined,
@@ -182,17 +181,13 @@ export async function getPriceDrops(city?: string): Promise<(HomeTileRow & { ori
         .select(`${HOME_TILE_SELECT}, original_list_price`)
         .or(ACTIVE_OR)
         .not('list_price', 'is', null)
-        .limit(300)
+        .gt('price_drop_count', 0)
+        .order('total_price_change_pct', { ascending: true })
+        .limit(6)
       if (city?.trim()) query = query.ilike('City', city.trim())
       const { data } = await query
       const rows = (data ?? []) as (HomeTileRow & { original_list_price?: number | null })[]
-      const withDrop = rows.filter(
-        (r) =>
-          (r as { original_list_price?: number }).original_list_price != null &&
-          r.ListPrice != null &&
-          (r as { original_list_price: number }).original_list_price > r.ListPrice!
-      )
-      return withDrop.slice(0, 6).map((r) => ({
+      return rows.map((r) => ({
         ...r,
         originalPrice: (r as { original_list_price?: number }).original_list_price ?? undefined,
         savings:

@@ -220,7 +220,7 @@ export async function getReportCities(): Promise<{ cities: string[]; error?: str
     return { cities: [] }
   }
   const supabase = createClient(url, key)
-  const { data, error } = await supabase.from('listings').select('City').not('City', 'is', null)
+  const { data, error } = await supabase.from('listings').select('City').not('City', 'is', null).limit(10000)
   if (error) {
     return { cities: [], error: error.message }
   }
