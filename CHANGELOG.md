@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.40.3 (2026-04-16)
+
+### Bug Fixes
+- fix: remove last sparkListingToSupabaseRow references from sync-spark.ts
+
+---
+
+
 ## v1.40.2 (2026-04-15)
 
 ### Bug Fixes
