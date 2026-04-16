@@ -6,7 +6,6 @@ import {
   fetchSparkListingHistory,
   fetchSparkPriceHistory,
   fetchSparkHistoricalListings,
-  sparkListingToSupabaseRow,
   type SparkListingHistoryItem,
 } from '../../lib/spark'
 import { fetchListings } from '@/lib/spark-odata'
@@ -97,8 +96,8 @@ async function syncListingVideosForRows(
 // Local sparkHistoryItemToRow removed — using unifiedHistoryItemToRow from @/lib/listing-mapper
 const sparkHistoryItemToRow = unifiedHistoryItemToRow
 
-/** Wrap unified mapper to accept SparkListingResult (same signature as old sparkListingToSupabaseRow) */
-function unifiedSparkToRow(result: Parameters<typeof sparkListingToSupabaseRow>[0]): Record<string, unknown> {
+/** Wrap unified mapper to accept a Spark API result object (with StandardFields and Id). */
+function unifiedSparkToRow(result: { StandardFields?: Record<string, unknown>; Id?: string }): Record<string, unknown> {
   return sparkToListingRow(result.StandardFields ?? {}, result.Id) as unknown as Record<string, unknown>
 }
 
@@ -949,7 +948,7 @@ export async function syncPhotosOnly(options?: {
       const pagination = D.Pagination
       if (pagination) totalPages = pagination.TotalPages
 
-      const results = D.Results as Parameters<typeof sparkListingToSupabaseRow>[0][]
+      const results = D.Results as { StandardFields?: Record<string, unknown>; Id?: string }[]
       totalFetched += results.length
 
       const updateResults = await Promise.all(
