@@ -46,9 +46,8 @@ SKIP_DB_GUARD=1 git push         # skip migration drift check only
 ```
 
 ## Branch strategy
-- `main` — production; push to main = live deploy via Vercel
-- Feature branches: `feat/short-description` (optional for large isolated features)
-- No other long-lived branches. `optimizer-swarm` has been merged and deleted.
+- `main` only. Pushing to `main` triggers a Vercel production deploy.
+- No feature branches, no PRs, no worktrees — pre-commit hook at `.git/hooks/pre-commit` rejects commits on any other branch. See `.cursor/rules/always-merge-to-main.mdc`.
 
 ## Do NOT
 - Commit `.env.local` or any file containing secrets

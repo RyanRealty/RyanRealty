@@ -9,7 +9,7 @@ alwaysApply: false
 
 The listing sync has TWO mechanisms. Both are critical. Do not disable either.
 
-### 1. Delta sync (every 15 minutes)
+### 1. Delta sync (every 10 minutes — see `vercel.json`)
 - **Route**: `/api/cron/sync-delta`
 - **Purpose**: Catches ALL changes since last run — new listings, price changes, status changes, closings
 - **Photos**: Fetches photos for any listing that arrives without a PhotoURL
@@ -48,7 +48,7 @@ The listing sync has TWO mechanisms. Both are critical. Do not disable either.
 - Never skip event emission to "save time."
 
 ## Do NOT
-- Remove or reduce the delta sync frequency (15 min is the minimum)
+- Reduce the delta sync frequency below what `vercel.json` defines (currently 10 minutes). Stay aligned with the production cron schedule — if Vercel plan limits ever require a change, update `vercel.json` and this rule together.
 - Skip photo fetching for "performance" — photos are the most important visual element
 - Re-sync finalized/closed listings — this wastes API calls and time
 - Default SYNC_TERMINAL_ONLY_MODE to '1' or 'true'

@@ -22,7 +22,7 @@ COALESCE(
 3. `ListPrice` — last resort only
 
 ## How close price enters the DB
-- Spark listing sync writes the row via `sparkListingToSupabaseRow()` which maps `CloseDate` and stores the full Spark payload in `details`
+- Spark listing sync writes the row via `sparkToListingRow()` in `lib/listing-mapper.ts`. It maps `CloseDate` + `ClosePrice` into explicit columns and stores the full Spark payload in `details`. (Legacy `sparkListingToSupabaseRow()` in `lib/spark.ts` is deprecated and no longer used by the active sync path.)
 - `ClosePrice` may come primarily from `details` + backfill on older rows
 - A backfill migration copies `details->>'ClosePrice'` into the explicit column
 

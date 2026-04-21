@@ -5,17 +5,19 @@ alwaysApply: true
 
 # Master Plan Protocol
 
-## Active Phase
+## Active Phase — check the registry, not this file
 
-**Current phase: Data Architecture Optimization (Phase 1 next)**
-**Phase brief: `docs/plans/data-architecture-plan.md`**
-**Master plan: `docs/plans/master-plan.md`**
+**Canonical phase/task status: `docs/plans/task-registry.json`.**
+Run `npx tsx scripts/orchestrate.ts next` to see the next open task. Do not trust status blocks in any plan markdown file without cross-checking code. If the registry and the code disagree, the code wins — update the registry, do not redo the work.
+
+**Workstream plan (scope + ownership only, not status): `docs/plans/master-plan.md`.**
+**Data architecture reference (body content only — the status block at the top of that file is known stale): `docs/plans/data-architecture-plan.md`.**
 
 ## Before Modifying Any File
 
 1. Check the file ownership matrix below. If the file belongs to another workstream, do NOT modify it unless the matrix says you may.
 2. Read `docs/plans/data-architecture-plan.md` before starting data architecture tasks.
-3. All baseline phases through 6 are complete; active follow-up work is tracked in the data architecture plan and master plan backlog.
+3. Status of any phase or backlog item is authoritative only in `docs/plans/task-registry.json`, verified against code. Never rely on a status marker inside a plan's body to decide whether work is done.
 
 ## File Ownership Matrix
 

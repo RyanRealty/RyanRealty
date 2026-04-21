@@ -15,7 +15,3 @@ alwaysApply: false
 vercel --token $VERCEL_TOKEN --prod --scope $VERCEL_SCOPE --yes
 ```
 
-## Vercel Hobby limits
-
-- Cron: max one run per day per job (no `*/15 * * * *`)
-- If deploy fails due to cron frequency, reduce to daily
