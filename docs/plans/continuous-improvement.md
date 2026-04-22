@@ -1,6 +1,6 @@
 # Continuous Improvement Report
 
-**Generated**: 2026-03-31
+**Generated**: 2026-04-22
 **Registry version**: 2.0
 
 ---
@@ -9,10 +9,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Total tasks | 36 |
-| Complete | 36 (100%) |
+| Total tasks | 49 |
+| Complete | 45 (92%) |
 | In progress | 0 |
-| Open (ready) | 0 |
+| Open (ready) | 3 |
 | Blocked | 0 |
 
 ## Phase Progress
@@ -25,29 +25,37 @@
 ## Work by Owner
 
 | seo | 5/5 complete | 0 open |
-| engagement | 19/19 complete | 0 open |
+| engagement | 21/23 complete | 2 open |
 | devops | 1/1 complete | 0 open |
-| reporting | 2/2 complete | 0 open |
+| reporting | 6/7 complete | 1 open |
 | monetization | 4/4 complete | 0 open |
 | content | 2/2 complete | 0 open |
 | qa | 2/2 complete | 0 open |
 | performance | 1/1 complete | 0 open |
+| shared | 3/4 complete | 1 open |
 
 ## Current Priorities
 
-_No open tasks remaining._
+1. **BL-011**: Phase 3 migrate listing URLs to MLS and address (high priority, owner: engagement)
+2. **BL-015**: Phase 7 optimize search city and community paths (high priority, owner: engagement)
+3. **BL-018**: Phase 12 and 13 cleanup and full verification (high priority, owner: shared)
 
 
 
 ## Open Backlog by Category
 
-_No open backlog items._
+| seo | 1 items |
+| performance | 1 items |
+| data | 1 items |
+| qa | 1 items |
 
 ---
 
 ## Recommended Next Actions
 
-1. All tasks complete. Consider adding new backlog items based on user feedback or audit findings.
+1. **BL-011 — Phase 3 migrate listing URLs to MLS and address**: Canonical listing URLs include MLS number and address slug
+2. **BL-015 — Phase 7 optimize search city and community paths**: Tile/map selects avoid details JSONB
+3. **BL-018 — Phase 12 and 13 cleanup and full verification**: Legacy stats fallbacks are removed from public paths
 
 ---
 

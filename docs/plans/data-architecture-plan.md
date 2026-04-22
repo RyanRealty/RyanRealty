@@ -1,32 +1,28 @@
-<!-- 
+<!--
   DATA ARCHITECTURE PLAN - Ryan Realty
-  Status: ACTIVE - Phases 0A through 13
-  Last updated: 2026-04-05
-  
-  EXECUTION INSTRUCTIONS FOR AGENTS:
-  1. Read this ENTIRE document before starting any phase
-  2. Check which phases are marked [COMPLETE] vs [PENDING]  
-  3. Execute the next [PENDING] phase
-  4. After completing a phase, mark it [COMPLETE] in this file
-  5. Verify: npm run quality:full must pass after every phase
-  6. Commit the phase changes + this file's status update together
-  
-  PHASE STATUS:
-  - Phase 0A: [COMPLETE] Documentation reconciliation
-  - Phase 0B: [COMPLETE] Cursor rules  
-- Phase 1:  [COMPLETE] Schema foundation
-- Phase 2:  [COMPLETE] Stats computation fix
-- Phase 3:  [COMPLETE] URL structure (MLS + address)
-- Phase 4:  [COMPLETE] Geographic hierarchy
-- Phase 5:  [COMPLETE] Breadcrumbs
-- Phase 6:  [COMPLETE] Listing detail performance
-- Phase 7:  [COMPLETE] Search + city + community performance
-- Phase 8:  [COMPLETE] Cache layer
-- Phase 9:  [COMPLETE] Historical data
-- Phase 10: [COMPLETE] CMA engine
-- Phase 11: [COMPLETE] Reports alignment
-- Phase 12: [COMPLETE] Legacy cleanup + CI enforcement
-- Phase 13: [COMPLETE] Full verification
+  Last content update: 2026-04-05 (architecture narrative in body below)
+  Header reconciled: 2026-04-22 — execution status removed from this header
+
+  IMPORTANT - STATUS IS NOT MAINTAINED IN THIS FILE.
+
+  Phase/task status lives in `docs/plans/task-registry.json` (BL-009 through
+  BL-018 correspond to Phases 1-13 in this document, see mapping below).
+  Use `npx tsx scripts/orchestrate.ts next` to see the next open task.
+  Do not trust any status stamp in this file's body - the body is the
+  architecture reference, not the tracker.
+
+  PHASE-TO-BACKLOG MAPPING:
+  - Phase 0A/0B: Documentation + cursor rules (complete; task-registry: BL-006, BL-007, BL-008)
+  - Phase 1:  Schema foundation        -> BL-009
+  - Phase 2:  Stats computation RPCs   -> BL-010
+  - Phase 3:  URL migration            -> BL-011
+  - Phase 4:  Geographic hierarchy     -> BL-012
+  - Phase 5:  Breadcrumbs              -> BL-013
+  - Phase 6:  Listing detail perf      -> BL-014
+  - Phase 7:  Search/city/community    -> BL-015
+  - Phase 8+9: Cache + historical      -> BL-016
+  - Phase 10+11: CMA + reports         -> BL-017
+  - Phase 12+13: Cleanup + verify      -> BL-018
 -->
 
 # Data Architecture, Performance, and SEO Optimization Plan

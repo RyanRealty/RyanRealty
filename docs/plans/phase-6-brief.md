@@ -1,3 +1,5 @@
+> **This brief is a historical work artifact.** It describes what was specified for this phase; it does not track live status. Authoritative status is in `docs/plans/task-registry.json`. Do not update this file to reflect later code changes — create a new brief or update the registry.
+
 # Phase 6: Later Backlog
 
 **Status**: Complete

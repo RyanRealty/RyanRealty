@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-03-30",
+  "lastUpdated": "2026-04-22",
   "source": "PRODUCT_SPEC_V2.md",
   "phases": [
     {
@@ -836,7 +836,7 @@
       "priority": "high",
       "category": "data",
       "source": "docs/plans/data-architecture-plan.md",
-      "status": "open",
+      "status": "complete",
       "owner": "reporting",
       "files": [
         "supabase/migrations/*",
@@ -857,7 +857,7 @@
       "priority": "high",
       "category": "data",
       "source": "docs/plans/data-architecture-plan.md",
-      "status": "open",
+      "status": "complete",
       "owner": "reporting",
       "files": [
         "supabase/migrations/*_market_rpcs*.sql"
@@ -901,7 +901,7 @@
       "priority": "high",
       "category": "data",
       "source": "docs/plans/data-architecture-plan.md",
-      "status": "open",
+      "status": "complete",
       "owner": "reporting",
       "files": [
         "app/actions/market-stats.ts",
@@ -914,7 +914,7 @@
         "No hyphen-separated geo_slug usage remains on hot paths"
       ],
       "dependsOn": [
-        "BL-011"
+        "BL-010"
       ]
     },
     {
@@ -923,7 +923,7 @@
       "priority": "high",
       "category": "seo",
       "source": "docs/plans/data-architecture-plan.md",
-      "status": "open",
+      "status": "complete",
       "owner": "engagement",
       "files": [
         "app/listing/[listingKey]/page.tsx",
@@ -945,7 +945,7 @@
       "priority": "high",
       "category": "performance",
       "source": "docs/plans/data-architecture-plan.md",
-      "status": "open",
+      "status": "complete",
       "owner": "engagement",
       "files": [
         "app/actions/listing-detail.ts",
@@ -1010,7 +1010,7 @@
       "priority": "medium",
       "category": "feature",
       "source": "docs/plans/data-architecture-plan.md",
-      "status": "open",
+      "status": "complete",
       "owner": "reporting",
       "files": [
         "lib/cma.ts",
@@ -1023,7 +1023,7 @@
         "Timeseries reads from cache-backed source where planned"
       ],
       "dependsOn": [
-        "BL-016"
+        "BL-014"
       ]
     },
     {

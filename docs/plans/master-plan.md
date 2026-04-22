@@ -1,9 +1,14 @@
 # Ryan Realty Unified Master Plan
 
-**Status**: Active
-**Current Phase**: Complete through Phase 6; Data Architecture Optimization Phase 1 pending (Phase 0A/0B complete)
+**Status**: Active — workstream plan (scope + ownership). NOT a status tracker.
+**Phase status**: See `docs/plans/task-registry.json`. Run `npx tsx scripts/orchestrate.ts next`.
 **Branch**: `main`
-**Last Updated**: 2026-04-05
+**Last content update**: 2026-04-05
+
+> Naming note: "Phase 1" in this file refers to the original baseline Reporting
+> Data Layer phase (T2-006). "Phase 1" in `docs/plans/data-architecture-plan.md`
+> refers to the schema-foundation phase tracked as BL-009. These are not the
+> same thing. When in doubt, refer to the task ID (T-*** or BL-***).
 
 This document merges the three canonical plan files (Market Data Platform, Comprehensive Page Optimization, Monetization Strategy) into a single phased execution plan. All conflict resolutions, gap mitigations, and new requirements (R1-R10) from the unified plan brief are incorporated.
 
