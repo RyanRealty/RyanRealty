@@ -33,9 +33,10 @@ chore: update supabase-js to 2.98.0
 
 ## Workflow
 1. Make changes
-2. `git add -A`
+2. `git add -A` (or stage intentionally — never commit secrets)
 3. `git commit -m "type: description"`
-4. `git push`
+4. **`git push origin main` in the same session** — do not leave `main` ahead of `origin/main` with finished work. Matt uses Claude Code and Cursor interchangeably; unpushed commits are invisible to the other tool and are not “shipped.”
+5. If the push is non-fast-forward: `git pull --rebase origin main`, resolve, push again.
 
 Pre-commit runs `npm test`. Pre-push runs the full quality gate.
 

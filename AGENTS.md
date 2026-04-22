@@ -8,6 +8,33 @@ Run every needed command yourself (`npm run …`, scripts, git, deploy checks, S
 
 ---
 
+## Claude Code ↔ Cursor (one pipeline)
+
+Matt alternates between **Claude Code** and **Cursor**. Both are the same repo and the same bar: **no divergent rules, no mystery state in the other tool.**
+
+### Start of every session (any tool)
+
+1. `git fetch origin && git pull --rebase origin main` so work always sits on current remote `main`.
+2. If you are picking up mid-thread from the other surface, read the newest `~/.claude/plans/HANDOFF-*.md` when one exists (narrative); otherwise **`git log origin/main -5`** is enough.
+
+### Ship discipline (non-negotiable)
+
+1. **No saved-but-unpushed work on `main`.** If you commit, you **push to `origin/main` in the same session** (resolve rebase/stash conflicts yourself). Do not end with `main` ahead of `origin/main` unless the network failed — and then say that explicitly; do not call the work “live.”
+2. **Production follows Git.** Pushing `main` triggers Vercel production; “shipped” means remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`).
+3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
+
+### What the other environment should read
+
+| Layer | Source |
+|-------|--------|
+| What actually shipped | `git log origin/main` |
+| Backlog / next task | `docs/plans/task-registry.json` and `npx tsx scripts/orchestrate.ts next` |
+| Optional handoff notes | `~/.claude/plans/HANDOFF-*.md` — add or update when switching tools with context the repo does not carry |
+
+**Cursor:** `.cursor/rules/` as usual. **Claude Code:** `CLAUDE.md` in this repo mirrors ship discipline; stay aligned with this section.
+
+---
+
 ## Quick Start
 
 ```bash

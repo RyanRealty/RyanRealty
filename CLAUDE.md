@@ -1,3 +1,35 @@
+# Data Accuracy — ABSOLUTE, NON-NEGOTIABLE (READ FIRST)
+
+**Every number that leaves this shop must be verified against the source of truth before it goes in front of a human, a social feed, an email, an MLS, a website, a video, a chart, a report, or a listing document.** No exceptions. Matt is a licensed principal broker. Publishing inaccurate data — price, inventory, DOM, YoY, sale-to-list, absorption, neighborhood stats, anything — is a compliance risk to Ryan Realty's license. This rule outranks speed, style, cost, and every other instruction in this file.
+
+## What "verified" means (mandatory checklist before publish, send, or render)
+
+1. **Name the source.** Every stat must trace to one of: live Supabase (`ryan-realty-platform`, table + filter documented), MLS direct pull, official agency data (ORMLS, NAR, Case-Shiller, OHCS, Census, BLS, FRED), or a linked primary-source URL. "I remember" is not a source. LLM-recall numbers are not a source.
+2. **Pull the query fresh.** Re-run the SQL/API call in this session. Never reuse a hard-coded value from a prior script without re-confirming.
+3. **Print the raw result.** Show the row counts, the date window, the filter (`PropertyType='A'` for SFR, geography, status, close-date range). The number in the deliverable must equal the number in the printout.
+4. **Cross-check math.** Derived stats (months of supply, YoY %, absorption, median, price/sqft) get recomputed and the computation is shown. Market classification (seller/balanced/buyer) must match the actual months-of-supply number against the ≤4 / 4–6 / ≥6 thresholds.
+5. **Reconcile narrative to data.** Every sentence, subhead, verdict, and pill has to be consistent with the number it sits next to. A "seller's market" verdict next to 4.3 months of supply is a fail.
+6. **QA the rendered output.** For video or image deliverables, capture stills of every scene and visually confirm the displayed number matches the verified number. For text, grep the draft for every figure and map each to the source row.
+7. **If a stat can't be verified, it doesn't ship.** Cut it. Don't estimate. Don't round-fill. Don't "approximate." The deliverable goes out with fewer numbers rather than one wrong one.
+
+## What triggers this rule
+
+Any deliverable containing market statistics, listing data, financial figures, neighborhood claims, competitive comparisons, or historical comparisons — including market reports, social video, email newsletters, blog posts, landing pages, listing descriptions, IG/TikTok/FB captions, printed flyers, video thumbnails, open-house signage, CMAs, seller net sheets, and anything else that goes to a consumer, client, lead, or public audience.
+
+## What's forbidden
+
+- Hard-coding numbers from a previous version of a deliverable into a new version without re-verifying.
+- Trusting CountUp targets, chart values, or pill text that came from memory, prior chats, or another AI system.
+- Using "about," "roughly," or "approximately" as a substitute for pulling the actual data.
+- Shipping a deliverable when any stat has a question mark next to it in the source trace.
+- Letting narrative voice override data — if the data contradicts the pre-written story, the story changes, not the data.
+
+## Enforcement
+
+Before any market-data deliverable is sent, rendered, posted, or committed: produce a one-line verification trace per figure ("$475K median — Supabase listings, PropertyType='A', City='Redmond', CloseDate 2026-01-01..2026-04-19, median(ClosePrice) = $475,000 over 188 rows"). Matt or a reviewer can audit the trace. No trace, no ship.
+
+---
+
 # Design System Rules — MANDATORY
 
 ## shadcn/ui is the ONLY styling authority
@@ -82,9 +114,16 @@ Launch parallel subagents in a single message when work is independent. Use `iso
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact unless you've confirmed it. If you got something wrong, own it immediately.
 - **No partial answers.** When asked about status, where things stand, or how something works, go all the way through to the end to figure out the exact answer. There are never any assumptions being made — always confirm.
 - **Always push directly to main.** No worktrees, no feature branches unless explicitly asked.
+- **Same pipeline as Cursor.** Matt switches between Claude Code and Cursor on one repo. Before work: `git pull --rebase origin main`. After every commit on `main`: **push to `origin` immediately** — no “saved locally” commits. **Migrations:** apply to hosted Supabase in the same delivery as code that depends on them (see `AGENTS.md` *Claude Code ↔ Cursor*, `.cursor/rules/production-parity.mdc`, `.cursor/rules/supabase-migrations-auto.mdc`). Optional continuity: `~/.claude/plans/HANDOFF-*.md` + `docs/plans/task-registry.json`.
 - **Never ask Matt to run anything manually.** You handle ALL git operations, ALL terminal commands, ALL deployments, everything. Matt never touches the terminal. If something needs to be done, you do it.
 - **Proactively clear git locks.** Before ANY git operation (commit, merge, rebase, pull, push), check for .git/index.lock and remove it if it's stale. Never let a lock file block progress. Never report a lock file to Matt as a blocker — just fix it.
 - **No blocked builds or commits.** Builds must never back up. Commits must never be blocked. If something is in the way, fix it yourself. Exhaust every option before reporting an issue.
+
+---
+
+## Persistent memory (repo)
+
+Durable cross-session notes live in **`.auto-memory/`** (same pattern as Cowork `feedback_*.md` references in video skills). **Cascade Peaks video (in flight):** append status to `.auto-memory/memory_cascade_peaks_video_handoff.md` — do not let handoff notes live only in chat.
 
 ---
 
