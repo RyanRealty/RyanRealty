@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.41.4 (2026-04-22)
+
+### Maintenance
+- chore: document env vars and add vercel-to-local merge tooling
+
+---
+
+
 ## v1.41.3 (2026-04-22)
 
 ### Maintenance
