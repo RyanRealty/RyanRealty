@@ -63,6 +63,11 @@ next-env.d.ts
 # Local sync status deltas (Matt / agent — not committed)
 .cursor/local/
 
+# Remotion cascade-peaks — deps, local env, rendered MP4s (keep source in git)
+video/cascade-peaks/node_modules/
+video/cascade-peaks/out/
+video/cascade-peaks/.env
+
 # Legacy style backup — old design system (hex, .btn-cta, .card-base); do not use or import
 _style_backup
 
