@@ -1,9 +1,14 @@
 /**
  * Environment Variable Verification Script
  * Tests all 29 env vars — connectivity for APIs, format for client-side keys, presence for secrets.
- * Run: npx tsx scripts/verify-env.ts
+ * Run: npm run env:verify   (loads `.env.local` via dotenv)
  * Non-destructive: no writes, no emails, no video generation.
  */
+
+import { config as loadEnv } from 'dotenv'
+import { resolve } from 'node:path'
+
+loadEnv({ path: resolve(process.cwd(), '.env.local') })
 
 type CheckResult = {
   name: string
