@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.42.3 (2026-04-22)
+
+### Maintenance
+- docs(plans): hand off to Claude Code — Cursor BL-011 pickup scrapped
+
+---
+
+
 ## v1.42.2 (2026-04-22)
 
 ### Maintenance
