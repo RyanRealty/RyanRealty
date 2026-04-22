@@ -32,6 +32,7 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 | Backlog / next task | `docs/plans/task-registry.json` and `npx tsx scripts/orchestrate.ts next` |
 | Optional handoff notes | `~/.claude/plans/HANDOFF-*.md` — add or update when switching tools with context the repo does not carry |
 | **Cross-agent continuity (required when switching)** | **`docs/plans/CROSS_AGENT_HANDOFF.md`** — update the **Current** table before you stop or when Matt moves to the other tool. The other agent must **read it after `git pull`** before deep work. |
+| **Global skill index (Cursor + Claude)** | **`~/.claude/GLOBAL_SKILLS_REGISTRY.md`** — full path list of every `SKILL.md` on this machine (plugins, repo, TC, Cowork notes). **Git mirror:** `docs/plans/GLOBAL_SKILLS_REGISTRY.md`. **Cursor stub:** `~/.cursor/GLOBAL_SKILLS_REGISTRY.md`. |
 
 **Cursor:** `.cursor/rules/` as usual. **Claude Code:** `CLAUDE.md` in this repo mirrors ship discipline; stay aligned with this section.
 
@@ -47,9 +48,11 @@ If a workspace **skill** might apply—even slightly—**read its `SKILL.md` fir
 
 **Where to look**
 
+- **Master index:** `~/.claude/GLOBAL_SKILLS_REGISTRY.md` or **`docs/plans/GLOBAL_SKILLS_REGISTRY.md`** (same content) — scan here first so you do not miss a plugin or TC-only skill.
 - **This repo:** `.cursor/skills/**/SKILL.md` (e.g. Oregon OREF, OREA PB, SkySlope, professional Word, etc.)
 - **Cursor-bundled / plugin skills:** paths under `~/.cursor/plugins/.../skills/**/SKILL.md` when the task matches their description (Next.js, Vercel, Supabase, TDD, debugging, etc.)
 - **Repo `video_production_skills/**/SKILL.md`** when the task is video production
+- **Cowork-only skills** (e.g. mounted **docx** under `mnt/.claude/skills/`): see section **E** in the global registry; copy into `~/.claude/skills/` if you need the same skill in Claude Code CLI.
 
 **Heuristic:** Task mentions migrations → read Supabase skill; task mentions ship → read deploy / verification skills; task mentions rules → read `create-rule` skill before authoring rules. When unsure, grep `SKILL.md` titles or ask once; prefer loading an extra skill over skipping.
 
