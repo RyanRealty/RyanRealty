@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.42.4 (2026-04-22)
+
+### Other
+- Recover INDEX Master Deal pipeline docs; remove wrong canonical regen
+
+---
+
+
 ## v1.42.3 (2026-04-22)
 
 ### Maintenance
