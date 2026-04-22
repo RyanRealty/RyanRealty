@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.41.2 (2026-04-22)
+
+### Maintenance
+- docs: align Claude Code and Cursor on push-first ship pipeline
+
+---
+
+
 ## v1.41.1 (2026-04-22)
 
 ### Maintenance
