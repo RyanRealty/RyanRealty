@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.41.1 (2026-04-22)
+
+### Maintenance
+- chore(plans): reconcile task registry + plan headers with code reality (governance purge ch.2)
+
+---
+
+
 ## v1.41.0 (2026-04-21)
 
 ### Features
