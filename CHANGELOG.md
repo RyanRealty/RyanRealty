@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.41.7 (2026-04-22)
+
+### Other
+- Add master-deal regeneration from TC canonical v3 JSON
+
+---
+
+
 ## v1.41.6 (2026-04-22)
 
 ### Other
