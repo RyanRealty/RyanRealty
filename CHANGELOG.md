@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.44.2 (2026-04-23)
+
+### Maintenance
+- docs(cascade-peaks): how to watch studio vs rendered mp4
+
+---
+
+
 ## v1.44.1 (2026-04-23)
 
 ### Bug Fixes
