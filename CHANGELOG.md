@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.46.5 (2026-04-23)
+
+### Bug Fixes
+- fix: restore admin stock-photos route for production
+
+---
+
+
 ## v1.46.4 (2026-04-23)
 
 ### Other
