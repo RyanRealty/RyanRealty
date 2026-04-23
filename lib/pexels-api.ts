@@ -21,8 +21,11 @@ export async function searchPexelsPhotos(
   const q = (query || '').trim()
   if (!q) return { ok: false, error: 'Missing query' }
 
-  const key = process.env.PEXELS_API_KEY?.trim()
-  if (!key) return { ok: false, error: 'PEXELS_API_KEY not set' }
+  const key =
+    process.env.PEXELS_API_KEY?.trim() ||
+    process.env.PEXELS_ACCESS_KEY?.trim() ||
+    process.env.PEXEL_API_KEY?.trim()
+  if (!key) return { ok: false, error: 'PEXELS_API_KEY not set (optional aliases: PEXELS_ACCESS_KEY, PEXEL_API_KEY)' }
 
   const perPage = Math.min(15, Math.max(1, opts?.perPage ?? 12))
   const url = new URL('https://api.pexels.com/v1/search')
