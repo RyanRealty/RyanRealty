@@ -20,8 +20,8 @@ import type { Peak } from './peaks';
 // want the summit to sit around y=600 — roughly the vertical center of the
 // 3D hero area that's visible between the title (ends ~y=230) and panel top
 // (y=1050). With 1920-tall frame, summit at y=600 = 360px above center,
-// which corresponds to a view offset of 360 * 2 = 720px.
-const DEFAULT_VIEW_OFFSET_Y = 720;
+// Wide / high orbit: less offset so more summit + ridgeline stay in frame.
+const DEFAULT_VIEW_OFFSET_Y = 520;
 
 type Props = {
   peak: Peak;
@@ -41,9 +41,9 @@ export const PeakOrbit: React.FC<Props> = ({ peak, displayOrder, frameOffset }) 
           summit itself at local [0, 0, summitElevM]. */}
       <TilesScene
         origin={{ lat: peak.lat, lon: peak.lon, height: 0 }}
-        fov={36}
-        near={50}
-        far={60_000}
+        fov={50}
+        near={80}
+        far={280_000}
       >
         <OrbitCameraRig
           target={[0, 0, summitElevM]}
@@ -53,9 +53,12 @@ export const PeakOrbit: React.FC<Props> = ({ peak, displayOrder, frameOffset }) 
           sweepDeg={peak.camera.sweepDeg}
           durationSec={PER_PEAK_SEC}
           frameOffset={0}
-          zoomStart={1.48}
-          approachSec={2.4}
-          approachRadiusMult={2.65}
+          zoomStart={1.12}
+          approachSec={2.2}
+          approachRadiusMult={1.38}
+          fov={50}
+          near={80}
+          far={240_000}
           viewOffsetYPx={DEFAULT_VIEW_OFFSET_Y}
         />
       </TilesScene>

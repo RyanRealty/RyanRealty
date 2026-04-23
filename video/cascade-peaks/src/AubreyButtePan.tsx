@@ -28,7 +28,7 @@ import { clamp, easeInOutQuart, easeOutCubic } from './easing';
 import { projectEnuToScreen } from './project';
 
 const FT_TO_M = 0.3048;
-// Aubrey Butte summit ~4290 ft ≈ 1307 m. Add 120 m drone height → ~1427 m.
+// Aubrey Butte summit ~4290 ft ≈ 1307 m; extra height from AUBREY_BUTTE.cameraHeightM.
 const AUBREY_BASE_ELEV_M = 1307;
 const CAMERA_ALT_M = AUBREY_BASE_ELEV_M + AUBREY_BUTTE.cameraHeightM;
 
@@ -95,7 +95,7 @@ export const AubreyButtePan: React.FC<Props> = ({ frameOffset }) => {
         <PanCameraRig
           startAzimuthDeg={PAN_START_AZ}
           endAzimuthDeg={PAN_END_AZ}
-          pitchDeg={-1.05}
+          pitchDeg={-2.75}
           heightM={CAMERA_ALT_M}
           durationSec={AUBREY_PAN_SEC}
           fov={AUBREY_PAN_FOV}
@@ -116,7 +116,7 @@ export const AubreyButtePan: React.FC<Props> = ({ frameOffset }) => {
           cameraAzimuthDeg: currentAz,
           // MUST match the pitch passed to <PanCameraRig/> above, or the JS-
           // projected dots will sit at a different y than the rendered peaks.
-          cameraPitchDeg: -1.05,
+          cameraPitchDeg: -2.75,
           cameraHeightM: CAMERA_ALT_M,
           target: [e, n, u],
         });

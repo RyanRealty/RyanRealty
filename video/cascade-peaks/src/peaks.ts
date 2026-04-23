@@ -46,11 +46,12 @@ export type Peak = {
   facts: string[];
   /** Local knowledge line — "the one that [does the thing]". */
   localKnowledge: string;
-  /** Camera hints for the 3D orbit. Values are tuned after tile QA. */
+  /** Camera hints for the 3D orbit — wide radius + high camera (oblique) so
+   *  the full volcano and neighbors read; tuned after tile QA. */
   camera: {
-    /** Orbit radius in meters around the peak summit. */
+    /** Horizontal orbit radius in meters (camera arcs at this distance). */
     orbitRadiusM: number;
-    /** Elevation offset above the summit for the camera, in meters. */
+    /** Camera Z above the summit in meters (steep look-down onto massif). */
     cameraHeightM: number;
     /** Orbit start angle in degrees (0 = east, 90 = north). */
     startAzimuthDeg: number;
@@ -90,10 +91,10 @@ export const PEAKS: Peak[] = [
     localKnowledge:
       'The paved summit road has views across 5 states on a clear day.',
     camera: {
-      orbitRadiusM: 2400,
-      cameraHeightM: 560,
+      orbitRadiusM: 7800,
+      cameraHeightM: 2800,
       startAzimuthDeg: 225,
-      sweepDeg: 92,
+      sweepDeg: 88,
     },
   },
   {
@@ -124,10 +125,10 @@ export const PEAKS: Peak[] = [
     // Symmetrical cone — close orbit showing off the manufactured-looking form.
     // Start NE (facing Bend viewers), sweep clockwise across the N/NW side.
     camera: {
-      orbitRadiusM: 2650,
-      cameraHeightM: 460,
+      orbitRadiusM: 9200,
+      cameraHeightM: 3200,
       startAzimuthDeg: 45,
-      sweepDeg: 128,
+      sweepDeg: 118,
     },
   },
   {
@@ -158,10 +159,10 @@ export const PEAKS: Peak[] = [
     // Shattered caldera — elevated orbit so viewer can see into the jagged
     // crater. Start NNE, sweep clockwise to reveal the crater opening to the E.
     camera: {
-      orbitRadiusM: 2650,
-      cameraHeightM: 620,
+      orbitRadiusM: 9200,
+      cameraHeightM: 3300,
       startAzimuthDeg: 20,
-      sweepDeg: 128,
+      sweepDeg: 118,
     },
   },
   {
@@ -193,10 +194,10 @@ export const PEAKS: Peak[] = [
     // to frame the summit crater + Teardrop Pool. Start ESE (facing Bend),
     // sweep clockwise to reveal the Prouty Glacier on the N flank.
     camera: {
-      orbitRadiusM: 3250,
-      cameraHeightM: 780,
+      orbitRadiusM: 10500,
+      cameraHeightM: 3800,
       startAzimuthDeg: 110,
-      sweepDeg: 138,
+      sweepDeg: 125,
     },
   },
   {
@@ -228,10 +229,10 @@ export const PEAKS: Peak[] = [
     // glacier is hero at scene open, then sweep clockwise across S to show
     // the asymmetric silhouette that distinguishes her from South & North.
     camera: {
-      orbitRadiusM: 2850,
-      cameraHeightM: 620,
+      orbitRadiusM: 9800,
+      cameraHeightM: 3500,
       startAzimuthDeg: 90,
-      sweepDeg: 138,
+      sweepDeg: 125,
     },
   },
   {
@@ -263,10 +264,10 @@ export const PEAKS: Peak[] = [
     // ~1000m above summit, so photogrammetry resolves the jagged summit as
     // silhouette against sky. Start ESE, sweep around the south face.
     camera: {
-      orbitRadiusM: 4300,
-      cameraHeightM: 1120,
+      orbitRadiusM: 11800,
+      cameraHeightM: 4200,
       startAzimuthDeg: 100,
-      sweepDeg: 74,
+      sweepDeg: 70,
     },
   },
   {
@@ -299,10 +300,10 @@ export const PEAKS: Peak[] = [
     // trying to frame the spire tight. Higher+further orbit reads the
     // distinctive silhouette against the wilderness shoulder.
     camera: {
-      orbitRadiusM: 4050,
-      cameraHeightM: 1230,
+      orbitRadiusM: 11200,
+      cameraHeightM: 4100,
       startAzimuthDeg: 140,
-      sweepDeg: 82,
+      sweepDeg: 76,
     },
   },
   {
@@ -338,10 +339,10 @@ export const PEAKS: Peak[] = [
     // iconic three-in-a-row silhouette. Start due WEST, sweep 60° across the
     // SW face — shows all three pinnacles separated against sky.
     camera: {
-      orbitRadiusM: 4150,
-      cameraHeightM: 900,
+      orbitRadiusM: 11500,
+      cameraHeightM: 4000,
       startAzimuthDeg: 260,
-      sweepDeg: 64,
+      sweepDeg: 60,
     },
   },
   {
@@ -377,10 +378,10 @@ export const PEAKS: Peak[] = [
     // cone's standalone profile. Start SSE (Hwy 20 driver's angle), sweep
     // clockwise 100°.
     camera: {
-      orbitRadiusM: 4050,
-      cameraHeightM: 680,
+      orbitRadiusM: 11000,
+      cameraHeightM: 3800,
       startAzimuthDeg: 150,
-      sweepDeg: 92,
+      sweepDeg: 85,
     },
   },
   {
@@ -412,10 +413,10 @@ export const PEAKS: Peak[] = [
     // glaciers. Higher elevated orbit so the glaciated upper pyramid fills
     // frame. Start SE, sweep to show the Jefferson Park glaciers on the N face.
     camera: {
-      orbitRadiusM: 3250,
-      cameraHeightM: 900,
+      orbitRadiusM: 10500,
+      cameraHeightM: 3800,
       startAzimuthDeg: 130,
-      sweepDeg: 138,
+      sweepDeg: 125,
     },
   },
 ];
@@ -436,6 +437,6 @@ export const AUBREY_BUTTE = {
   /** Approximate summit coords per Matt's spec. */
   lat: 44.0631,
   lon: -121.3283,
-  /** Camera height above the ground in meters (adds a slight drone feel). */
-  cameraHeightM: 120,
+  /** Extra meters above Aubrey summit — higher = more aerial, less “flat” horizon. */
+  cameraHeightM: 520,
 };

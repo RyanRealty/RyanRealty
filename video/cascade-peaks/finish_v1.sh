@@ -36,18 +36,18 @@ echo "== Extracting scene thumbnails =="
 # (OPENING_CARD_SEC, AUBREY_PAN_SEC, PER_PEAK_SEC, CLOSING_CARD_SEC).
 declare -A SCENES=(
   ["thumb_open.jpg"]=1.60
-  ["thumb_aubrey.jpg"]=7.20
-  ["thumb_paulina.jpg"]=16.20
-  ["thumb_bachelor.jpg"]=26.20
-  ["thumb_broken_top.jpg"]=36.20
-  ["thumb_south.jpg"]=46.20
-  ["thumb_middle.jpg"]=56.20
-  ["thumb_north.jpg"]=66.20
-  ["thumb_wash.jpg"]=76.20
-  ["thumb_jack.jpg"]=86.20
-  ["thumb_black.jpg"]=96.20
-  ["thumb_jeff.jpg"]=106.20
-  ["thumb_close.jpg"]=112.80
+  ["thumb_aubrey.jpg"]=10.70
+  ["thumb_paulina.jpg"]=23.20
+  ["thumb_bachelor.jpg"]=33.20
+  ["thumb_broken_top.jpg"]=43.20
+  ["thumb_south.jpg"]=53.20
+  ["thumb_middle.jpg"]=63.20
+  ["thumb_north.jpg"]=73.20
+  ["thumb_wash.jpg"]=83.20
+  ["thumb_jack.jpg"]=93.20
+  ["thumb_black.jpg"]=103.20
+  ["thumb_jeff.jpg"]=113.20
+  ["thumb_close.jpg"]=119.80
 )
 
 for name in "${!SCENES[@]}"; do

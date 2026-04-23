@@ -20,13 +20,15 @@ export const HEIGHT = 1920;
 
 // Scene durations (in seconds)
 export const OPENING_CARD_SEC = 3.2;
-export const AUBREY_PAN_SEC = 8.0;
+/** Aubrey skyline pan — slower so HUD labels and peaks read clearly. */
+export const AUBREY_PAN_SEC = 15.0;
 /** Per-peak 3D + FactCard — longer so fly-in, orbit, and on-screen copy read calmly. */
 export const PER_PEAK_SEC = 10;
 export const CLOSING_CARD_SEC = 3.2;
 
 /** Must match `PanCameraRig` / `TilesScene` FOV in AubreyButtePan (HUD projection uses this). */
-export const AUBREY_PAN_FOV = 26;
+/** Slightly tight FOV from raised vantage so silhouettes read larger. */
+export const AUBREY_PAN_FOV = 24;
 
 // Derived totals
 export const PEAK_COUNT = 10;
