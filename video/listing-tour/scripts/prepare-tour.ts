@@ -30,6 +30,8 @@ type Args = {
   voice: boolean;
   /** Ken-burns-only escape hatch (not recommended for Reels). */
   allowStills: boolean;
+  /** Optional JSON of neighborhood B-roll (e.g. Caldera Springs). See `public/broll/caldera-springs.json`. */
+  brollJsonPath: string | null;
 };
 
 function parseArgs(argv: string[]): Args {
@@ -38,9 +40,13 @@ function parseArgs(argv: string[]): Args {
   let i2v = true;
   let voice = true;
   let allowStills = false;
+  let brollJsonPath: string | null = null;
   for (const a of argv) {
     if (a.startsWith('--listing-key='))
       listingKey = a.slice('--listing-key='.length).replace(/^["']|["']$/g, '');
+    if (a.startsWith('--broll-json=')) {
+      brollJsonPath = a.slice('--broll-json='.length).replace(/^["']|["']$/g, '').trim() || null;
+    }
     if (a === '--unbranded') branded = false;
     if (a === '--no-i2v') {
       i2v = false;
@@ -51,11 +57,71 @@ function parseArgs(argv: string[]): Args {
   }
   if (!listingKey) {
     console.error(
-      'Usage: prepare-tour.ts --listing-key="KEY" [--unbranded] [--no-i2v|--allow-stills] [--skip-voice]',
+      'Usage: prepare-tour.ts --listing-key="KEY" [--broll-json=path/to.json] [--unbranded] [--no-i2v|--allow-stills] [--skip-voice]',
     );
     process.exit(1);
   }
-  return { listingKey, branded, i2v, voice, allowStills };
+  return { listingKey, branded, i2v, voice, allowStills, brollJsonPath };
+}
+
+type BrollPhotoRow = { id: string; url: string; sortOrder: number };
+
+function loadBrollPhotos(
+  repoRoot: string,
+  listingTourRoot: string,
+  explicitPath: string | null,
+): BrollPhotoRow[] {
+  const candidates: string[] = [];
+  if (explicitPath) {
+    candidates.push(
+      path.isAbsolute(explicitPath)
+        ? explicitPath
+        : path.join(repoRoot, explicitPath),
+    );
+  }
+  candidates.push(
+    path.join(listingTourRoot, 'public', 'broll', 'caldera-springs.json'),
+  );
+  const jsonPath = candidates.find((p) => fs.existsSync(p));
+  if (!jsonPath) return [];
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+  } catch (e) {
+    console.warn('[prepare-tour] B-roll JSON parse failed:', jsonPath, e);
+    return [];
+  }
+
+  const rawList = Array.isArray(parsed)
+    ? parsed
+    : parsed &&
+        typeof parsed === 'object' &&
+        Array.isArray((parsed as { photos?: unknown }).photos)
+      ? (parsed as { photos: unknown[] }).photos
+      : null;
+  if (!rawList) {
+    console.warn('[prepare-tour] B-roll JSON must be an array or { "photos": [...] }:', jsonPath);
+    return [];
+  }
+
+  const out: BrollPhotoRow[] = [];
+  for (let i = 0; i < rawList.length; i++) {
+    const row = rawList[i];
+    if (!row || typeof row !== 'object') continue;
+    const o = row as { id?: unknown; url?: unknown; sortOrder?: unknown };
+    const url = typeof o.url === 'string' ? o.url.trim() : '';
+    if (!url) continue;
+    const id = typeof o.id === 'string' && o.id.trim() ? o.id.trim() : `broll-${i}`;
+    const sortOrder =
+      typeof o.sortOrder === 'number' && Number.isFinite(o.sortOrder) ? o.sortOrder : i;
+    out.push({ id, url, sortOrder });
+  }
+  out.sort((a, b) => a.sortOrder - b.sortOrder);
+  if (out.length) {
+    console.log(`[prepare-tour] B-roll stills (${out.length}) from`, path.relative(repoRoot, jsonPath));
+  }
+  return out;
 }
 
 /** Keys prepare reads — file first, then fill gaps from `process.env` (CI / exported vars). */
@@ -322,6 +388,7 @@ async function main() {
   }
 
   const listingTourRoot = path.resolve(__dirname, '..');
+  const repoRoot = path.resolve(listingTourRoot, '..', '..');
   const publicDir = path.join(listingTourRoot, 'public');
   const outDir = path.join(listingTourRoot, 'out');
   fs.mkdirSync(outDir, { recursive: true });
@@ -615,10 +682,13 @@ async function main() {
     medianPricePerSqft: median(ppsfs),
   };
 
+  const brollPhotos = loadBrollPhotos(repoRoot, listingTourRoot, args.brollJsonPath);
+
   const props = {
     branded: args.branded,
     voiceStaticPath: voiceRel,
     viral,
+    brollPhotos,
     listing: {
       ListingKey: String(listing.ListingKey ?? args.listingKey),
       ListNumber: String(listing.ListNumber ?? ''),

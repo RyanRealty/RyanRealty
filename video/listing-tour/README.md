@@ -4,14 +4,16 @@
 
 **Setup (once per machine / after pulling):** `npm run video:listing-tour:setup` — installs deps, copies fonts + logo from `video/cascade-peaks/public/`, creates `out/`.
 
-**Prepare + render:** keys are read from repo-root `.env.local`, then **any missing** of `REPLICATE_API_TOKEN`, `ELEVENLABS_*`, etc. are filled from **`process.env`** (so exports / CI work). Supabase URL + service role must be set one way or the other. If the listing has **no** `listing_photos` / Spark photos / `PhotoURL`, prepare can still run by setting **`UNSPLASH_ACCESS_KEY`** (same as the main app) — it pulls **portrait Unsplash search results** as placeholders (not the subject home; sync real photos before client-facing deliverables).
+**Prepare + render:** keys are read from repo-root `.env.local`, then **any missing** of `REPLICATE_API_TOKEN`, `ELEVENLABS_*`, etc. are filled from **`process.env`** (so exports / CI work). Supabase URL + service role must be set one way or the other. If the listing has **no** MLS photos at all, optional **`UNSPLASH_ACCESS_KEY`** can still let prepare run with generic portrait placeholders (last resort — not for Caldera B-roll).
+
+**Caldera Springs / neighborhood stock (the usual case):** keep **MLS photos** for hero + interiors. For **extra** verified stills (Unsplash / Shutterstock / etc.), add them to `public/broll/caldera-springs.json` as `{ "photos": [ { "id": "S-…", "url": "https://…", "sortOrder": 0 }, … ] }` — **two or more** entries. `prepare-tour` merges them into `tour-props.json` as **`brollPhotos`**, and **Act4** uses those URLs for the tail slideshow only. See `public/caldera-springs-broll-review.html` for sourcing notes. Override path: `--broll-json=relative/or/absolute.json`.
 
 ```bash
 npm run video:listing-tour:prepare -- --listing-key="YOUR_LISTING_KEY"
 npm run video:listing-tour:render
 ```
 
-Flags: `--unbranded`, `--no-i2v`, `--skip-voice`. Studio: `npm run video:listing-tour:studio`.
+Flags: `--unbranded`, `--no-i2v`, `--skip-voice`, `--broll-json=…`. Studio: `npm run video:listing-tour:studio`.
 
 Outputs: `out/tour-props.json`, `out/tour_render.mp4`, `public/tour-cache/<slug>/`.
 
