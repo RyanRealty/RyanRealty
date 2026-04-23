@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.46.4 (2026-04-23)
+
+### Other
+- Stock env: Vercel sync npm script and Pexels key aliases.
+
+---
+
+
 ## v1.46.3 (2026-04-23)
 
 ### Other
