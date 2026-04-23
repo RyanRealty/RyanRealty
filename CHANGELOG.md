@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.49.0 (2026-04-23)
+
+### Features
+- feat: script to fetch Caldera-area Unsplash b-roll into caldera-springs.json
+
+---
+
+
 ## v1.48.0 (2026-04-23)
 
 ### Features
