@@ -63,6 +63,7 @@
     "video:listing-tour:studio": "npm run start --prefix video/listing-tour",
     "video:listing-tour:render": "npm run render --prefix video/listing-tour",
     "video:listing-tour:preview:storyboard": "npm run preview:storyboard --prefix video/listing-tour",
+    "video:listing-tour:fetch-caldera-broll": "node video/listing-tour/scripts/fetch-caldera-unsplash-broll.mjs",
     "env:verify": "npx tsx scripts/verify-env.ts",
     "env:pull-merge": "npx vercel env pull .env.vercel.pull --environment=production --yes && node scripts/merge-vercel-env-into-local.mjs",
     "vercel:env": "node scripts/sync-vercel-env.mjs",

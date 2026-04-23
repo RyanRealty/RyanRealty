@@ -1,4 +1,51 @@
 {
-  "note": "Neighborhood B-roll only (Act4 tail). Paste 2+ image URLs from your stock workflow — does not replace MLS listing photos.",
-  "photos": []
+  "note": "Auto-fetched Unsplash portrait results for Caldera / Sunriver area tone — vet each frame before client use; follow Unsplash license.",
+  "sourceQueries": [
+    "Caldera Springs Sunriver Oregon",
+    "Caldera Links golf Sunriver Oregon",
+    "Sunriver Oregon resort golf community"
+  ],
+  "fetchedAt": "2026-04-23T20:30:34.133Z",
+  "photos": [
+    {
+      "id": "unsplash-jEERCBQO4ho",
+      "url": "https://images.unsplash.com/photo-1684263653513-a80d3d4832ac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4ODc3NDZ8MHwxfHNlYXJjaHwxfHxTdW5yaXZlciUyME9yZWdvbiUyMHJlc29ydCUyMGdvbGYlMjBjb21tdW5pdHl8ZW58MHwxfHx8MTc3Njk3NjIzNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "sortOrder": 0
+    },
+    {
+      "id": "unsplash-sD5u-H60lq0",
+      "url": "https://images.unsplash.com/photo-1666584511292-73b47950d3a0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4ODc3NDZ8MHwxfHNlYXJjaHwyfHxTdW5yaXZlciUyME9yZWdvbiUyMHJlc29ydCUyMGdvbGYlMjBjb21tdW5pdHl8ZW58MHwxfHx8MTc3Njk3NjIzNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "sortOrder": 1
+    },
+    {
+      "id": "unsplash-n8eoPZswoWo",
+      "url": "https://images.unsplash.com/photo-1655224678707-1d5f259ebbcc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4ODc3NDZ8MHwxfHNlYXJjaHwzfHxTdW5yaXZlciUyME9yZWdvbiUyMHJlc29ydCUyMGdvbGYlMjBjb21tdW5pdHl8ZW58MHwxfHx8MTc3Njk3NjIzNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "sortOrder": 2
+    },
+    {
+      "id": "unsplash-I9DPYDpSjMs",
+      "url": "https://images.unsplash.com/photo-1661886224619-81b517ccecdd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4ODc3NDZ8MHwxfHNlYXJjaHw0fHxTdW5yaXZlciUyME9yZWdvbiUyMHJlc29ydCUyMGdvbGYlMjBjb21tdW5pdHl8ZW58MHwxfHx8MTc3Njk3NjIzNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "sortOrder": 3
+    },
+    {
+      "id": "unsplash-6diCYTrQB40",
+      "url": "https://images.unsplash.com/photo-1750010486865-6eb51a2e5fb0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4ODc3NDZ8MHwxfHNlYXJjaHw1fHxTdW5yaXZlciUyME9yZWdvbiUyMHJlc29ydCUyMGdvbGYlMjBjb21tdW5pdHl8ZW58MHwxfHx8MTc3Njk3NjIzNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "sortOrder": 4
+    },
+    {
+      "id": "unsplash-ghTt2roOTb0",
+      "url": "https://images.unsplash.com/photo-1750010903315-3552183353cd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4ODc3NDZ8MHwxfHNlYXJjaHw2fHxTdW5yaXZlciUyME9yZWdvbiUyMHJlc29ydCUyMGdvbGYlMjBjb21tdW5pdHl8ZW58MHwxfHx8MTc3Njk3NjIzNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "sortOrder": 5
+    },
+    {
+      "id": "unsplash-xg_V_VUiBX0",
+      "url": "https://images.unsplash.com/photo-1654559602329-86f9de71b53d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4ODc3NDZ8MHwxfHNlYXJjaHw3fHxTdW5yaXZlciUyME9yZWdvbiUyMHJlc29ydCUyMGdvbGYlMjBjb21tdW5pdHl8ZW58MHwxfHx8MTc3Njk3NjIzNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "sortOrder": 6
+    },
+    {
+      "id": "unsplash-qnO6GPpROcg",
+      "url": "https://images.unsplash.com/photo-1733109212904-2b2704192e50?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4ODc3NDZ8MHwxfHNlYXJjaHw4fHxTdW5yaXZlciUyME9yZWdvbiUyMHJlc29ydCUyMGdvbGYlMjBjb21tdW5pdHl8ZW58MHwxfHx8MTc3Njk3NjIzNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "sortOrder": 7
+    }
+  ]
 }

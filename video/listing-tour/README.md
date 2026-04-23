@@ -6,7 +6,7 @@
 
 **Prepare + render:** keys are read from repo-root `.env.local`, then **any missing** of `REPLICATE_API_TOKEN`, `ELEVENLABS_*`, etc. are filled from **`process.env`** (so exports / CI work). Supabase URL + service role must be set one way or the other. If the listing has **no** MLS photos at all, optional **`UNSPLASH_ACCESS_KEY`** can still let prepare run with generic portrait placeholders (last resort — not for Caldera B-roll).
 
-**Caldera Springs / neighborhood stock (the usual case):** keep **MLS photos** for hero + interiors. For **extra** verified stills (Unsplash / Shutterstock / etc.), add them to `public/broll/caldera-springs.json` as `{ "photos": [ { "id": "S-…", "url": "https://…", "sortOrder": 0 }, … ] }` — **two or more** entries. `prepare-tour` merges them into `tour-props.json` as **`brollPhotos`**, and **Act4** uses those URLs for the tail slideshow only. See `public/caldera-springs-broll-review.html` for sourcing notes. Override path: `--broll-json=relative/or/absolute.json`.
+**Caldera Springs / neighborhood stock (the usual case):** keep **MLS photos** for hero + interiors. For **extra** stills, either run **`npm run video:listing-tour:fetch-caldera-broll`** (writes `public/broll/caldera-springs.json` from Unsplash using `UNSPLASH_ACCESS_KEY` — **vet** hits; not every result is literally Caldera), or hand-edit that JSON. **Two or more** URLs → `prepare-tour` puts them in **`brollPhotos`** and **Act4** uses them for the tail only. See `public/caldera-springs-broll-review.html`. Override path: `--broll-json=…`.
 
 ```bash
 npm run video:listing-tour:prepare -- --listing-key="YOUR_LISTING_KEY"
