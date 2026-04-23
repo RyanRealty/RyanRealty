@@ -68,6 +68,9 @@ video/cascade-peaks/node_modules/
 video/cascade-peaks/out/
 video/cascade-peaks/.env
 video/cascade-peaks/.brand-attachments/
+# Commercial brand fonts — keep local only (see video/cascade-peaks/README.md)
+video/cascade-peaks/public/Amboqia_Boriango.otf
+video/cascade-peaks/public/AzoSans-Medium.ttf
 
 # Legacy style backup — old design system (hex, .btn-cta, .card-base); do not use or import
 _style_backup
