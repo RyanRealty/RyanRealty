@@ -142,8 +142,8 @@ export const TilesScene: React.FC<TilesSceneProps> = ({
 
       <TilesRenderer
         url="https://tile.googleapis.com/v1/3dtiles/root.json"
-        errorTarget={2.5}
-        errorThreshold={48}
+        errorTarget={2}
+        errorThreshold={40}
         lruCache-minBytesSize={50 * 1024 * 1024}
         lruCache-maxBytesSize={180 * 1024 * 1024}
         downloadQueue-maxJobs={20}

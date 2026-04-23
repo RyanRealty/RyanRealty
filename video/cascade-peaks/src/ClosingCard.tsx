@@ -6,8 +6,6 @@
 
 import React from 'react';
 import { staticFile, useCurrentFrame, Img } from 'remotion';
-
-import { RyanRealtyClosingLogo } from './RyanRealtyClosingLogo';
 import {
   DOMAIN,
   FONT_BODY,
@@ -51,29 +49,36 @@ export const ClosingCard: React.FC<ClosingCardProps> = ({ frameOffset }) => {
           objectFit: 'cover',
         }}
       />
-      {/* Navy fade — heavy at top & bottom for contact-bar legibility */}
+      {/* Light scrim — keep photo visible; white logo needs local contrast */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
           background:
-            'linear-gradient(to bottom, rgba(10,23,40,0.65) 0%, rgba(10,23,40,0.12) 35%, rgba(10,23,40,0.18) 60%, rgba(10,23,40,0.92) 100%)',
+            'linear-gradient(to bottom, rgba(10,23,40,0.35) 0%, rgba(10,23,40,0.08) 40%, rgba(10,23,40,0.2) 58%, rgba(10,23,40,0.75) 100%)',
         }}
       />
-      {/* Logo — inline SVG (Remotion headless + staticFile SVG is unreliable). */}
       <div
         style={{
           position: 'absolute',
           left: SAFE_LEFT,
           right: 1080 - SAFE_RIGHT,
-          top: 380,
+          top: 340,
           display: 'flex',
           justifyContent: 'center',
           opacity: tLogo,
           transform: `translateY(${(1 - tLogo) * 16}px)`,
         }}
       >
-        <RyanRealtyClosingLogo width="min(92%, 480px)" maxHeight={130} />
+        <Img
+          src={staticFile('ryan_realty_logo_white.png')}
+          style={{
+            width: 'min(78%, 420px)',
+            height: 'auto',
+            maxHeight: 200,
+            objectFit: 'contain',
+          }}
+        />
       </div>
       {/* Contact block — sits above TikTok / IG bottom UI */}
       <div

@@ -171,11 +171,11 @@ export const AubreyButtePan: React.FC<Props> = ({ frameOffset }) => {
           zIndex: 1,
           padding: '22px 26px 26px',
           borderRadius: 8,
-          border: `1px solid rgba(212,175,55,0.55)`,
-          background: 'rgba(10,26,46,0.78)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: '0 12px 40px rgba(0,0,0,0.45)',
+          border: `1px solid rgba(212,175,55,0.45)`,
+          background: 'rgba(10,26,46,0.48)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          boxShadow: '0 8px 28px rgba(0,0,0,0.35)',
         }}
       >
         <div
@@ -210,28 +210,16 @@ export const AubreyButtePan: React.FC<Props> = ({ frameOffset }) => {
         </div>
       </div>
 
-      {/* Tile-floor blackout — fade starts slightly higher when FOV is
-          tighter so skyline silhouettes stay crisp above the stat deck. */}
+      {/* Soft lower read — no solid navy wall so tiles stay visible */}
       <div
         style={{
           position: 'absolute',
           left: 0,
           right: 0,
-          top: 900,
-          height: 110,
-          background:
-            'linear-gradient(to bottom, rgba(10,26,46,0) 0%, rgba(10,26,46,1) 100%)',
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 1010,
+          top: 760,
           bottom: 0,
-          background: '#0a1a2e',
+          background:
+            'linear-gradient(to bottom, rgba(10,26,46,0) 0%, rgba(10,26,46,0.22) 35%, rgba(10,26,46,0.5) 70%, rgba(10,26,46,0.72) 100%)',
           pointerEvents: 'none',
         }}
       />
@@ -300,11 +288,11 @@ const AubreyStatRow: React.FC<{ alpha: number }> = ({ alpha }) => {
           display: 'grid',
           gridTemplateColumns: '1fr 1fr 1fr',
           gap: 10,
-          background: 'rgba(10,23,40,0.82)',
+          background: 'rgba(10,23,40,0.42)',
           border: `1px solid ${GOLD}`,
           borderRadius: 6,
-          padding: '28px 20px',
-          backdropFilter: 'blur(6px)',
+          padding: '22px 16px',
+          backdropFilter: 'blur(5px)',
         }}
       >
         {stats.map((s, i) => (

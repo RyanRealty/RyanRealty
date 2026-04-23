@@ -1,13 +1,6 @@
-// FactCard — HERO + INFO PANEL layout.
-//
-// New architecture (Matt feedback: need to see the 3D terrain, not obscure it):
-//   [0-300]     Top floating header over 3D: order badge + peak name
-//                 (no scrim — text shadow only for legibility)
-//   [300-1050]  3D hero stays fully visible
-//   [1050-1920] Solid navy info panel with stats, hook, bullets, local knowledge
-//
-// This gets the gorgeous Photorealistic 3D Tiles terrain front-and-center
-// while still delivering all the playful-teaching content underneath.
+// FactCard — IG/TikTok-first: full-bleed 3D, minimal copy in the safe zone.
+// Only: peak name + elevation + one “hook” fact + how to spot it
+// (distinguishing feature). Large type, short lines, bottom gradient legibility.
 
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
@@ -16,11 +9,9 @@ import {
   FONT_SERIF,
   GOLD,
   GOLD_SOFT,
-  NAVY_DEEP,
   SAFE_BOTTOM_INSET,
   SAFE_LEFT,
   SAFE_RIGHT,
-  SAFE_TOP,
   TEXT_SHADOW,
   WHITE,
 } from './brand';
@@ -30,16 +21,17 @@ import { clamp, easeOutCubic, easeOutQuart } from './easing';
 
 type FactCardProps = {
   peak: Peak;
-  /** Total scene duration (for late-phase local-knowledge reveal timing). */
   durationSec: number;
-  /** Frame offset where this card becomes visible. */
   frameOffset: number;
-  /** 1-10 index for the "01/10" badge. */
   displayOrder: number;
 };
 
-// More 3D hero + panel stops higher above TikTok/IG caption + side controls.
-const PANEL_TOP = 1080;
+/** Keep on-screen lines short for 1080×1920 @ thumb distance (IG best practice). */
+function briefLine(s: string, maxChars: number): string {
+  const t = s.replace(/\s+/g, ' ').trim();
+  if (t.length <= maxChars) return t;
+  return `${t.slice(0, maxChars - 1).trim()}…`;
+}
 
 export const FactCard: React.FC<FactCardProps> = ({
   peak,
@@ -50,33 +42,25 @@ export const FactCard: React.FC<FactCardProps> = ({
   const frame = useCurrentFrame();
   const local = frame - frameOffset;
 
-  // Entry envelope: 0.6s slide+fade in
-  const entryFrames = 0.6 * FPS;
+  const entryFrames = 0.55 * FPS;
   const tEntry = clamp(local / entryFrames, 0, 1);
   const entryAlpha = easeOutCubic(tEntry);
-  const entryY = (1 - easeOutQuart(tEntry)) * 30;
+  const entryY = (1 - easeOutQuart(tEntry)) * 16;
 
-  // Exit envelope: last 0.5s
   const totalFrames = durationSec * FPS;
-  const exitStart = totalFrames - 0.5 * FPS;
-  const tExit = clamp((local - exitStart) / (0.5 * FPS), 0, 1);
-  const exitAlpha = 1 - tExit;
+  const exitStart = totalFrames - 0.45 * FPS;
+  const tExit = clamp((local - exitStart) / (0.45 * FPS), 0, 1);
+  const alpha = entryAlpha * (1 - tExit);
 
-  const alpha = entryAlpha * exitAlpha;
+  const base = 0.35 * FPS;
+  const step = 0.55 * FPS;
+  const line = (i: number) =>
+    clamp((local - (base + i * step)) / (0.38 * FPS), 0, 1);
+  const tBadge = clamp((local - 4) / (0.32 * FPS), 0, 1);
 
-  // Sequential reveal for facts — one bullet per 0.7s after stats arrive
-  const panelArriveFrame = 0.8 * FPS;
-  const perFactFrames = 0.88 * FPS;
-  const factAlpha = (i: number) => {
-    const start = panelArriveFrame + i * perFactFrames;
-    return clamp((local - start) / (0.4 * FPS), 0, 1);
-  };
-  const factY = (i: number) => (1 - easeOutQuart(factAlpha(i))) * 20;
-
-  // Local-knowledge line arrives in the back half
-  const lkStart =
-    panelArriveFrame + peak.facts.length * perFactFrames + 0.3 * FPS;
-  const tLk = clamp((local - lkStart) / (0.5 * FPS), 0, 1);
+  const elevLine = `${peak.elevationFt.toLocaleString()} ft`;
+  const coolFact = briefLine(peak.hook, 150);
+  const spotIt = briefLine(peak.distinguishingFeature, 160);
 
   return (
     <div
@@ -87,234 +71,122 @@ export const FactCard: React.FC<FactCardProps> = ({
         pointerEvents: 'none',
       }}
     >
-      {/* ========================================================== */}
-      {/* TOP FLOATING HEADER — sits over 3D, no scrim, text shadow only */}
-      {/* ========================================================== */}
-      <div
-        style={{
-          position: 'absolute',
-          left: SAFE_LEFT,
-          right: 1080 - SAFE_RIGHT,
-          top: SAFE_TOP - 24 + entryY,
-        }}
-      >
-        {/* Order badge */}
-        <div
-          style={{
-            display: 'inline-block',
-            padding: '8px 18px',
-            background: GOLD,
-            color: NAVY_DEEP,
-            fontFamily: FONT_BODY,
-            fontWeight: 800,
-            fontSize: 28,
-            letterSpacing: 3,
-            borderRadius: 3,
-            marginBottom: 14,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-          }}
-        >
-          {String(displayOrder).padStart(2, '0')} / 10
-        </div>
-        {/* Peak name — HUGE, over 3D, with heavy shadow so it reads */}
-        <div
-          style={{
-            fontFamily: FONT_SERIF,
-            fontSize: 112,
-            lineHeight: 1.0,
-            color: WHITE,
-            textShadow:
-              '0 0 18px rgba(10,23,40,1), 0 0 34px rgba(10,23,40,0.9), 0 3px 6px rgba(0,0,0,0.95)',
-          }}
-        >
-          {peak.name}
-        </div>
-      </div>
-
-      {/* ========================================================== */}
-      {/* BOTTOM INFO PANEL — solid navy with stats, hook, bullets */}
-      {/* ========================================================== */}
+      {/* Light bottom scrim only — keeps terrain visible full-frame */}
       <div
         style={{
           position: 'absolute',
           left: 0,
           right: 0,
-          top: PANEL_TOP,
           bottom: 0,
-          background: `linear-gradient(to bottom, rgba(10,23,40,0.92) 0%, ${NAVY_DEEP} 8%, ${NAVY_DEEP} 100%)`,
-          padding: `32px ${SAFE_LEFT}px ${SAFE_BOTTOM_INSET + 36}px ${SAFE_LEFT}px`,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 14,
+          height: '46%',
+          background:
+            'linear-gradient(to top, rgba(10,23,40,0.92) 0%, rgba(10,23,40,0.55) 42%, rgba(10,23,40,0.12) 78%, transparent 100%)',
+        }}
+      />
+
+      <div
+        style={{
+          position: 'absolute',
+          left: SAFE_LEFT,
+          right: 1080 - SAFE_RIGHT,
+          bottom: SAFE_BOTTOM_INSET + 8,
+          transform: `translateY(${entryY}px)`,
         }}
       >
-        {/* Thin gold divider at the top edge */}
         <div
           style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 0,
-            height: 3,
-            background: `linear-gradient(to right, transparent 0%, ${GOLD} 20%, ${GOLD} 80%, transparent 100%)`,
-            boxShadow: `0 0 12px ${GOLD_SOFT}`,
-          }}
-        />
-
-        {/* Stats row */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 14,
-            flexWrap: 'wrap',
+            fontFamily: FONT_BODY,
+            fontSize: 15,
+            fontWeight: 700,
+            letterSpacing: 3,
+            color: GOLD,
+            marginBottom: 6,
+            opacity: tBadge,
           }}
         >
-          <StatPill label="ELEV" value={`${peak.elevationFt.toLocaleString()} ft`} />
-          <StatPill
-            label="DIST"
-            value={`${peak.distanceMi.toFixed(1)} mi ${peak.bearing}`}
-          />
-          {peak.lastEruption ? (
-            <StatPill label="ERUPTED" value={peak.lastEruption} />
-          ) : null}
+          {String(displayOrder).padStart(2, '0')} / 10
         </div>
 
-        {/* Hook — gold italic feel */}
         <div
           style={{
             fontFamily: FONT_SERIF,
-            fontSize: 34,
-            lineHeight: 1.25,
-            color: GOLD_SOFT,
-            marginTop: 2,
+            fontSize: 56,
+            lineHeight: 1.05,
+            color: WHITE,
+            textShadow: TEXT_SHADOW,
+            marginBottom: 14,
+            opacity: line(0),
+            transform: `translateY(${(1 - easeOutQuart(line(0))) * 10}px)`,
           }}
         >
-          {peak.hook}
+          {peak.name}
         </div>
 
-        {/* Fact bullets */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10,
-            marginTop: 4,
-          }}
-        >
-          {peak.facts.map((f, i) => (
-            <div
-              key={i}
-              style={{
-                opacity: factAlpha(i),
-                transform: `translateY(${factY(i)}px)`,
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 14,
-              }}
-            >
-              <div
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  background: GOLD,
-                  marginTop: 14,
-                  flexShrink: 0,
-                  boxShadow: `0 0 10px ${GOLD_SOFT}`,
-                }}
-              />
-                <div
-                style={{
-                  fontFamily: FONT_BODY,
-                  fontSize: 26,
-                  fontWeight: 500,
-                  lineHeight: 1.32,
-                  color: WHITE,
-                }}
-              >
-                {f}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Local knowledge — pinned bottom */}
-        <div
-          style={{
-            marginTop: 'auto',
-            padding: '14px 20px',
-            background: 'rgba(255,255,255,0.08)',
-            borderLeft: `3px solid ${GOLD}`,
-            opacity: tLk,
-            transform: `translateY(${(1 - tLk) * 12}px)`,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: FONT_BODY,
-              fontSize: 20,
-              fontWeight: 700,
-              letterSpacing: 2.4,
-              textTransform: 'uppercase',
-              color: GOLD_SOFT,
-              marginBottom: 3,
-            }}
-          >
-            Local knowledge
-          </div>
-          <div
-            style={{
-              fontFamily: FONT_SERIF,
-              fontSize: 25,
-              lineHeight: 1.32,
-              color: WHITE,
-            }}
-          >
-            {peak.localKnowledge}
-          </div>
-        </div>
+        <FactLine
+          label="Elevation"
+          text={elevLine}
+          t={line(1)}
+          size={30}
+        />
+        <div style={{ height: 10 }} />
+        <FactLine
+          label="Did you know"
+          text={coolFact}
+          t={line(2)}
+          size={28}
+        />
+        <div style={{ height: 10 }} />
+        <FactLine
+          label="How to spot it"
+          text={spotIt}
+          t={line(3)}
+          size={28}
+        />
       </div>
     </div>
   );
 };
 
-const StatPill: React.FC<{ label: string; value: string }> = ({
-  label,
-  value,
-}) => (
-  <div
-    style={{
-      padding: '8px 14px',
-      background: 'rgba(212,175,55,0.08)',
-      border: `1px solid ${GOLD}`,
-      borderRadius: 4,
-      display: 'flex',
-      flexDirection: 'column',
-      lineHeight: 1.05,
-    }}
-  >
+const FactLine: React.FC<{
+  label: string;
+  text: string;
+  t: number;
+  size: number;
+}> = ({ label, text, t, size }) => {
+  const o = easeOutQuart(t);
+  return (
     <div
       style={{
-        fontFamily: FONT_BODY,
-        fontSize: 13,
-        fontWeight: 700,
-        letterSpacing: 2.2,
-        color: GOLD_SOFT,
-        marginBottom: 3,
+        opacity: o,
+        transform: `translateY(${(1 - o) * 12}px)`,
       }}
     >
-      {label}
+      <div
+        style={{
+          fontFamily: FONT_BODY,
+          fontSize: 13,
+          fontWeight: 700,
+          letterSpacing: 2.4,
+          textTransform: 'uppercase',
+          color: GOLD_SOFT,
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: FONT_BODY,
+          fontSize: size,
+          fontWeight: 600,
+          lineHeight: 1.28,
+          color: WHITE,
+          textShadow: TEXT_SHADOW,
+          maxWidth: 980,
+        }}
+      >
+        {text}
+      </div>
     </div>
-    <div
-      style={{
-        fontFamily: FONT_BODY,
-        fontSize: 24,
-        fontWeight: 700,
-        color: WHITE,
-        textShadow: TEXT_SHADOW,
-      }}
-    >
-      {value}
-    </div>
-  </div>
-);
+  );
+};

@@ -91,10 +91,10 @@ export const PEAKS: Peak[] = [
     localKnowledge:
       'The paved summit road has views across 5 states on a clear day.',
     camera: {
-      orbitRadiusM: 7800,
-      cameraHeightM: 2800,
+      orbitRadiusM: 10400,
+      cameraHeightM: 3100,
       startAzimuthDeg: 225,
-      sweepDeg: 88,
+      sweepDeg: 85,
     },
   },
   {
@@ -125,10 +125,10 @@ export const PEAKS: Peak[] = [
     // Symmetrical cone — close orbit showing off the manufactured-looking form.
     // Start NE (facing Bend viewers), sweep clockwise across the N/NW side.
     camera: {
-      orbitRadiusM: 9200,
-      cameraHeightM: 3200,
+      orbitRadiusM: 12200,
+      cameraHeightM: 3520,
       startAzimuthDeg: 45,
-      sweepDeg: 118,
+      sweepDeg: 112,
     },
   },
   {
@@ -159,10 +159,10 @@ export const PEAKS: Peak[] = [
     // Shattered caldera — elevated orbit so viewer can see into the jagged
     // crater. Start NNE, sweep clockwise to reveal the crater opening to the E.
     camera: {
-      orbitRadiusM: 9200,
-      cameraHeightM: 3300,
+      orbitRadiusM: 12200,
+      cameraHeightM: 3630,
       startAzimuthDeg: 20,
-      sweepDeg: 118,
+      sweepDeg: 112,
     },
   },
   {
@@ -194,10 +194,10 @@ export const PEAKS: Peak[] = [
     // to frame the summit crater + Teardrop Pool. Start ESE (facing Bend),
     // sweep clockwise to reveal the Prouty Glacier on the N flank.
     camera: {
-      orbitRadiusM: 10500,
-      cameraHeightM: 3800,
+      orbitRadiusM: 14000,
+      cameraHeightM: 4180,
       startAzimuthDeg: 110,
-      sweepDeg: 125,
+      sweepDeg: 118,
     },
   },
   {
@@ -229,10 +229,10 @@ export const PEAKS: Peak[] = [
     // glacier is hero at scene open, then sweep clockwise across S to show
     // the asymmetric silhouette that distinguishes her from South & North.
     camera: {
-      orbitRadiusM: 9800,
-      cameraHeightM: 3500,
+      orbitRadiusM: 13100,
+      cameraHeightM: 3850,
       startAzimuthDeg: 90,
-      sweepDeg: 125,
+      sweepDeg: 118,
     },
   },
   {
@@ -264,10 +264,10 @@ export const PEAKS: Peak[] = [
     // ~1000m above summit, so photogrammetry resolves the jagged summit as
     // silhouette against sky. Start ESE, sweep around the south face.
     camera: {
-      orbitRadiusM: 11800,
-      cameraHeightM: 4200,
+      orbitRadiusM: 15800,
+      cameraHeightM: 4620,
       startAzimuthDeg: 100,
-      sweepDeg: 70,
+      sweepDeg: 66,
     },
   },
   {
@@ -300,10 +300,10 @@ export const PEAKS: Peak[] = [
     // trying to frame the spire tight. Higher+further orbit reads the
     // distinctive silhouette against the wilderness shoulder.
     camera: {
-      orbitRadiusM: 11200,
-      cameraHeightM: 4100,
+      orbitRadiusM: 15000,
+      cameraHeightM: 4510,
       startAzimuthDeg: 140,
-      sweepDeg: 76,
+      sweepDeg: 72,
     },
   },
   {
@@ -339,10 +339,10 @@ export const PEAKS: Peak[] = [
     // iconic three-in-a-row silhouette. Start due WEST, sweep 60° across the
     // SW face — shows all three pinnacles separated against sky.
     camera: {
-      orbitRadiusM: 11500,
-      cameraHeightM: 4000,
+      orbitRadiusM: 15400,
+      cameraHeightM: 4400,
       startAzimuthDeg: 260,
-      sweepDeg: 60,
+      sweepDeg: 56,
     },
   },
   {
@@ -378,10 +378,10 @@ export const PEAKS: Peak[] = [
     // cone's standalone profile. Start SSE (Hwy 20 driver's angle), sweep
     // clockwise 100°.
     camera: {
-      orbitRadiusM: 11000,
-      cameraHeightM: 3800,
+      orbitRadiusM: 14700,
+      cameraHeightM: 4180,
       startAzimuthDeg: 150,
-      sweepDeg: 85,
+      sweepDeg: 80,
     },
   },
   {
@@ -413,10 +413,10 @@ export const PEAKS: Peak[] = [
     // glaciers. Higher elevated orbit so the glaciated upper pyramid fills
     // frame. Start SE, sweep to show the Jefferson Park glaciers on the N face.
     camera: {
-      orbitRadiusM: 10500,
-      cameraHeightM: 3800,
+      orbitRadiusM: 14000,
+      cameraHeightM: 4180,
       startAzimuthDeg: 130,
-      sweepDeg: 125,
+      sweepDeg: 118,
     },
   },
 ];

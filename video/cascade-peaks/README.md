@@ -58,7 +58,7 @@ Or from this directory: `npm run start`, `npm run build`.
 
 ## Closing card logo
 
-`ClosingCard` renders **`src/RyanRealtyClosingLogo.tsx`** (inline SVG) so headless `remotion render` does not depend on loading `.svg` through `<Img>` (that path often fails in Chromium offscreen). The file `public/ryan_realty_closing_logo.svg` is kept as a design reference; swap the React SVG for a raster only if you switch to a pattern Remotion supports reliably (e.g. embedded PNG via `staticFile('*.png')`).
+`ClosingCard` uses **`public/ryan_realty_logo_white.png`** (white mark on transparent) via `staticFile` + `<Img>` — reliable in headless render. Replace that file to swap the end card lockup.
 
 ## Post-render pipeline
 
