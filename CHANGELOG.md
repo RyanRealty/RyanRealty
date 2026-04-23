@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.46.2 (2026-04-23)
+
+### Other
+- Add admin Stock photos page and Sunriver Cascades Commons pick gallery.
+
+---
+
+
 ## v1.46.1 (2026-04-23)
 
 ### Other
