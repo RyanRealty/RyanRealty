@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.46.3 (2026-04-23)
+
+### Other
+- Use Shutterstock, Pexels, and Unsplash only for stock preview; drop Commons gallery.
+
+---
+
+
 ## v1.46.2 (2026-04-23)
 
 ### Other
