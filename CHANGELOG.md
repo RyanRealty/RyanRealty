@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.45.0 (2026-04-23)
+
+### Features
+- feat(cascade-peaks): wide mile-scale orbits, slower Aubrey pan, aerial pan angle
+
+---
+
+
 ## v1.44.2 (2026-04-23)
 
 ### Maintenance
