@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Stock photos — Ryan Realty</title>
+  <style>
+    :root {
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      line-height: 1.5;
+      color: #0a0a0a;
+      background: #fafafa;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { color: #fafafa; background: #0a0a0a; }
+      .card { background: #171717; border-color: #262626; }
+      .muted { color: #a3a3a3; }
+      a.primary { background: #fafafa; color: #0a0a0a; }
+    }
+    body { margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); }
+    .card { width: 100%; max-width: 420px; background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 28px 24px; box-shadow: 0 1px 3px rgb(0 0 0 / 08%); }
+    h1 { margin: 0 0 8px; font-size: 1.25rem; font-weight: 700; }
+    .muted { margin: 0 0 20px; font-size: 0.875rem; color: #525252; }
+    a.primary {
+      display: block; text-align: center; text-decoration: none;
+      font-weight: 600; font-size: 1rem; padding: 14px 18px; border-radius: 10px;
+      background: #0a0a0a; color: #fafafa;
+    }
+    a.primary:active { opacity: 0.9; }
+    .alt { margin-top: 16px; font-size: 0.8125rem; text-align: center; }
+    .alt a { color: inherit; }
+    ul { margin: 16px 0 0; padding-left: 1.15rem; font-size: 0.8125rem; color: #525252; }
+    @media (prefers-color-scheme: dark) {
+      ul { color: #a3a3a3; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Stock photos</h1>
+    <p class="muted">Shutterstock, Pexels, Unsplash preview grid (superuser). Opens the live app on Vercel.</p>
+    <a class="primary" href="https://ryanrealty.vercel.app/admin/stock-photos">Open on ryanrealty.vercel.app</a>
+    <p class="alt muted">Alternate host: <a href="https://ryan-realty.vercel.app/admin/stock-photos">ryan-realty.vercel.app</a></p>
+    <ul>
+      <li>Sign in if prompted (same account as admin).</li>
+      <li>After results load, use <strong>HTML review</strong> on that page for a printable sheet.</li>
+    </ul>
+  </div>
+</body>
+</html>
