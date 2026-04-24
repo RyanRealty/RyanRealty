@@ -51,7 +51,9 @@ type Props = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const city = await withTimeout(getCityBySlug(slug), null, 1200)
+  // Longer timeout on cold cache (5s); metadata fallback is OK if genuinely slow,
+  // but 1.2s was masking real Bend/Redmond pages as "City Not Found".
+  const city = await withTimeout(getCityBySlug(slug), null, 5000)
   if (!city) return { title: 'City Not Found' }
   const title = `Homes for Sale in ${city.name}, Oregon | Ryan Realty`
   const rawDesc =
@@ -146,7 +148,11 @@ function buildQuickFacts(
 
 export default async function CityDetailPage({ params }: Props) {
   const { slug } = await params
-  const city = await withTimeout(getCityBySlug(slug), null, 1200)
+  // NEVER timeout the page-side city lookup. A timeout here silently turned a
+  // slow DB response into a 404 ("City Not Found") on /cities/bend — the #1
+  // SEO page. If the DB is genuinely slow, let React Suspense + loading.tsx
+  // handle it; return notFound() only for truly missing rows.
+  const city = await getCityBySlug(slug)
   if (!city) notFound()
   const heroImageUrl =
     city.heroImageUrl ?? null
