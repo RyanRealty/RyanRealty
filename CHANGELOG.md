@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.51.0 (2026-04-24)
+
+### Features
+- feat(seo): permanent 301 from /listing/[key] to canonical homes-for-sale URL (BL-011)
+
+---
+
+
 ## v1.50.0 (2026-04-24)
 
 ### Features
