@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.49.4 (2026-04-24)
+
+### Maintenance
+- docs(architecture): add root ARCHITECTURE.md as single canonical source (governance purge ch.6)
+
+---
+
+
 ## v1.49.3 (2026-04-24)
 
 ### Bug Fixes
