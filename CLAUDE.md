@@ -81,8 +81,8 @@ Always use `cn()` from `@/lib/utils` for conditional/merged classes. Never strin
 ### Custom CSS Classes:
 DO NOT use `card-base`, `btn-cta`, or any custom CSS class from globals.css. Use shadcn components directly.
 
-### Legacy backup (do not use):
-The `_style_backup/` directory contains retired styling artifacts and is excluded from the TypeScript build. Never import from `_style_backup/`; use only `@/components/ui/` and `app/globals.css`.
+### Legacy backup (removed — no-op rule):
+The `_style_backup/` directory was removed from the repo. Never recreate it. Use only `@/components/ui/` and `app/globals.css`. (The entry remains in `tsconfig.json`'s `exclude` array for historical reasons — harmless.)
 
 ---
 
