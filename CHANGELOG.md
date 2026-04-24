@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.51.5 (2026-04-24)
+
+### Maintenance
+- chore(docs): update README index for three merged doc files
+
+---
+
+
 ## v1.51.4 (2026-04-24)
 
 ### Maintenance
