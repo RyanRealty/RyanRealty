@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.49.8 (2026-04-24)
+
+### Bug Fixes
+- fix: getLiveMarketPulse returns residential row, not null (city pages 0-listings)
+
+---
+
+
 ## v1.49.7 (2026-04-24)
 
 ### Bug Fixes
