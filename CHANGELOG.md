@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.49.7 (2026-04-24)
+
+### Bug Fixes
+- fix: add npm run deploy:verify so build errors stop being silent (BL-018)
+
+---
+
+
 ## v1.49.6 (2026-04-24)
 
 ### Bug Fixes
