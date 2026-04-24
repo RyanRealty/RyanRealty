@@ -40,7 +40,7 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 - **All listings:** `/homes-for-sale` — paginated grid of active listings from Supabase (synced from Spark). Legacy `/listings` 301-redirects here.
 - **Search by place:** `/homes-for-sale/{city}` and `/homes-for-sale/{city}/{community}` (e.g. `/homes-for-sale/bend`, `/homes-for-sale/bend/tetherow`). Uses `cityEntityKey` and `subdivisionEntityKey` slugs (`lib/slug.ts`). Filters listings by City and optional SubdivisionName. Internally implemented by `app/search/[...slug]/page.tsx` via Next.js rewrites.
 - **Listing detail:** Canonical URL uses MLS number + address: `/homes-for-sale/{city}/{community}/{address-slug}-{mlsNumber}`. See `AGENTS.md` Key Architecture Decisions.
-- **URLs:** See `.cursor/rules/data-architecture.mdc` for the authoritative URL specification. `docs/URL_ARCHITECTURE.md` contains a superseded future-state spec for historical reference only.
+- **URLs:** See `.cursor/rules/data-architecture.mdc` and `.cursor/rules/seo-url-guardrails.mdc` for the authoritative URL specification. A superseded `/real-estate/{country}/{state}/{city}/` proposal lives in `docs/archive/_stale-refs/URL_ARCHITECTURE.md` for historical reference only.
 
 ### 1.3 Listing detail page
 
@@ -105,7 +105,7 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 ## 2. Authentication and account
 
 - **Provider:** Supabase Auth; **Google OAuth** implemented (sign-in/sign-out, callback).
-- **Redirect URLs:** Must be configured in Supabase (see `docs/SUPABASE_AUTH_URLS.md`).
+- **Redirect URLs:** Must be configured in Supabase → Authentication → URL Configuration. Legacy setup notes in `docs/archive/_stale-refs/SUPABASE_AUTH_URLS.md` (some values outdated — production domain is ryanrealty.vercel.app / ryan-realty.com).
 - **Account area (when signed in):**
   - **Account home:** `/account`
   - **Profile:** `/account/profile`
@@ -135,7 +135,7 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 
 ### 4.2 Spark (MLS)
 
-- **Purpose:** Listing and history data. Replication endpoint required for production (see `docs/SPARK_VOW_SUPPORT_EMAIL.md`, `docs/SPARK_API_REFERENCE.md`).
+- **Purpose:** Listing and history data. Replication endpoint required for production (see `docs/SPARK_API_REFERENCE.md`; VOW-access correspondence archived at `docs/archive/_stale-refs/SPARK_VOW_SUPPORT_EMAIL.md`).
 - **History:** Requires **Private** role key for full listing history; see `docs/SYNC.md`.
 
 ### 4.3 Google Maps
@@ -167,7 +167,7 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 
 ## 6. Environment and deployment
 
-- **Env vars:** See `.env.example` in project root; copy to `.env.local` for local development. Production: set same variables in Vercel → Project → Settings → Environment Variables. See `docs/WHAT_I_NEED_TO_COMPLETE.md` for where to obtain each value.
+- **Env vars:** See `.env.example` in project root; copy to `.env.local` for local development. Production: set same variables in Vercel → Project → Settings → Environment Variables. Acquisition notes in `docs/archive/_stale-refs/WHAT_I_NEED_TO_COMPLETE.md` (historical — verify each value is still correct).
 - **Deployment:** Vercel; deploy on push. See `docs/VERCEL_DEPLOY.md` for steps, env checklist, and Supabase redirect URL configuration.
 
 ### Tiles (consistent site-wide)
@@ -184,8 +184,10 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 
 ## 7. Documentation reference
 
-- **URLs and future migration:** `docs/URL_ARCHITECTURE.md`
-- **All docs index:** `docs/DOCUMENTATION_INDEX.md`
+- **Canonical URL spec:** `.cursor/rules/seo-url-guardrails.mdc` + `.cursor/rules/data-architecture.mdc`
+- **Docs index:** `docs/README.md`
+- **Plans + task registry:** `docs/plans/`
+- **Historical snapshots:** `docs/archive/`
 
 ---
 

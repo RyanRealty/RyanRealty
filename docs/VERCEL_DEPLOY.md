@@ -73,7 +73,7 @@ So: if your latest work isn’t committed and pushed, Vercel will keep serving t
    On localhost you may be signed in (header shows “Account”); on production you’re usually not (header shows “Sign in”). That’s expected.
 
 4. **Supabase redirect URLs**  
-   For sign-in to work in production, add your Vercel URL to Supabase → Authentication → URL Configuration → Redirect URLs (see `docs/SUPABASE_AUTH_URLS.md`).
+   For sign-in to work in production, add your Vercel URL to Supabase → Authentication → URL Configuration → Redirect URLs. Historical setup notes at `docs/archive/_stale-refs/SUPABASE_AUTH_URLS.md` (some values outdated).
 
 ---
 
@@ -97,4 +97,4 @@ In Vercel: **Project → Settings → Cron Jobs** (or `vercel.json`), add each U
 - [ ] Code committed (`git status` clean or only intended changes).
 - [ ] Code pushed (`git push origin main` or your branch).
 - [ ] Vercel env vars set (especially `NEXT_PUBLIC_SITE_URL` = your Vercel URL).
-- [ ] Supabase Redirect URLs include your Vercel URL (see `docs/SUPABASE_AUTH_URLS.md`).
+- [ ] Supabase Redirect URLs include your Vercel URL (Supabase → Authentication → URL Configuration).

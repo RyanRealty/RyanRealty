@@ -6,16 +6,20 @@ alwaysApply: false
 # Goals and Audit
 
 ## When the user asks to audit or fix the site:
-1. Work through `docs/GOALS_AND_UI_AUDIT.md` checklist
-2. For each failure: **fix it**, don't just report it
-3. Run `npm run build` — must pass
-4. Re-check affected items after fixes
-5. Repeat until checklist passes and build is green
+1. Start with `npx tsx scripts/orchestrate.ts next` to see the current open task. The task registry is the authoritative source of open work.
+2. For the page/journey in scope: trace data query → component → render → real data → mobile → interaction. Fix what is broken; don't just report it.
+3. Run `npm run build` — must pass.
+4. Re-check affected items after fixes.
+5. Repeat until the specific task's acceptance criteria pass and the build is green.
 
 ## Sources of truth
-- `docs/GOALS_AND_UI_AUDIT.md` — audit checklist
-- `docs/plans/master-plan.md` — implementation priority
-- `CLAUDE.md` — design system
+- `docs/plans/task-registry.json` — authoritative task status
+- `docs/plans/master-plan.md` — workstream scope + file ownership
+- `.cursor/rules/data-architecture.mdc` — canonical data architecture
+- `CLAUDE.md` — design system + work standards
+
+## Historical context (not live checklists)
+- `docs/archive/_audit-2026-04/GOALS_AND_UI_AUDIT.md` — April 2026 snapshot; reference only.
 
 ## Scope
 - Run audit only on files within current task scope, not unrelated pages
