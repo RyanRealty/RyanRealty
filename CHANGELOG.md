@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.51.3 (2026-04-24)
+
+### Maintenance
+- chore(docs): merge GOOGLE_APIS_WHERE_TO_GET + GOOGLE_VERIFICATION into GOOGLE_SETUP.md
+
+---
+
+
 ## v1.51.2 (2026-04-24)
 
 ### Maintenance
