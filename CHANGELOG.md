@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.50.0 (2026-04-24)
+
+### Features
+- feat: wire engagement counter triggers (likes/saves/views/shares/inquiries → listings counters)
+
+---
+
+
 ## v1.49.8 (2026-04-24)
 
 ### Bug Fixes
