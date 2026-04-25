@@ -128,7 +128,8 @@ export const PhotoBeat: React.FC<Props> = ({
     : 0;
   const photoAlpha = easeOutCubic(tEntry) * (1 - tExit);
 
-  const tTitle = clamp((local - 0.7) / 0.7, 0, 1);
+  // Title fade-in: lands by 0.5s per VIRAL_VIDEO_CONSTRAINTS hook rule.
+  const tTitle = clamp((local - 0.05) / 0.40, 0, 1);
   const titleAlpha = easeOutCubic(tTitle) * (1 - tExit);
   const titleY = (1 - easeOutQuart(tTitle)) * 26;
 
@@ -444,12 +445,12 @@ export const PhotoBeat: React.FC<Props> = ({
           {sub ? (
             <div
               style={{
-                marginTop: 18,
+                marginTop: 22,
                 fontFamily: FONT_BODY,
                 fontWeight: 700,
-                fontSize: 28,
+                fontSize: 50,
                 color: subColor,
-                letterSpacing: 4,
+                letterSpacing: 5,
                 textTransform: 'uppercase',
                 textShadow: SUB_SHADOW,
               }}
