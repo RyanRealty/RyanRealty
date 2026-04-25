@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.56.9 (2026-04-25)
+
+### Bug Fixes
+- fix(listing-video-v5): boundary draw v9 — hero text + overlapping boundary
+
+---
+
+
 ## v1.56.8 (2026-04-25)
 
 ### Bug Fixes
