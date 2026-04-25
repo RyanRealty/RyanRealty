@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.63.0 (2026-04-25)
+
+### Features
+- feat(cron): wire cache refresh schedules for market_stats_cache + reporting_cache
+
+---
+
+
 ## v1.62.0 (2026-04-25)
 
 ### Features
