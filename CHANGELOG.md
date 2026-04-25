@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.56.3 (2026-04-25)
+
+### Bug Fixes
+- fix(listing-video-v5): boundary draw v6 — correct subdivision polygon + fill animation
+
+---
+
+
 ## v1.56.2 (2026-04-25)
 
 ### Maintenance
