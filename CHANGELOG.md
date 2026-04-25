@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.56.0 (2026-04-25)
+
+### Features
+- feat(listing-v5): Gate 3 setup — parcel boundary, voice test, music bed, boundary render
+
+---
+
+
 ## v1.55.0 (2026-04-25)
 
 ### Features
