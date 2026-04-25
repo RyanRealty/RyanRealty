@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.60.1 (2026-04-25)
+
+### Maintenance
+- docs(listing-video-v5): complete hand-off doc for v5.2 successor agent
+
+---
+
+
 ## v1.60.0 (2026-04-25)
 
 ### Features
