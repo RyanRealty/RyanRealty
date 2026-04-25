@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.63.1 (2026-04-25)
+
+### Maintenance
+- docs(memory): add 2026-04-25 cache layer rewrite handoff note
+
+---
+
+
 ## v1.63.0 (2026-04-25)
 
 ### Features
