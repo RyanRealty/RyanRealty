@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.64.0 (2026-04-25)
+
+### Features
+- feat(listing-video-v5): v5.4 — blurred vignette, looking glass, smoother flame, fixed framing
+
+---
+
+
 ## v1.63.1 (2026-04-25)
 
 ### Maintenance
