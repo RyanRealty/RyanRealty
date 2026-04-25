@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.65.0 (2026-04-25)
+
+### Features
+- feat(listing-video-v5): v5.5 — full script pass, brighter blurred backdrop, elk fixed
+
+---
+
+
 ## v1.64.0 (2026-04-25)
 
 ### Features
