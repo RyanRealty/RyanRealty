@@ -1,10 +1,20 @@
-// Camera-move primitives — v3 PHOTO-TO-CINEMA MOTION
-// Replaces "Ken Burns on every photo" with film-grade motion:
-//   - push_counter: scale + counter-translate (highest ROI interior move)
-//   - slow_pan_lr / slow_pan_tb: REAL pan (translate at fixed scale)
-//   - multi_point_pan: 3-anchor cinematic path with eased dwell
-//   - parallax_3layer: fake 3D depth via 3D-transform stacks
-//   - cinemagraph: legacy multi-axis sine drift (kept for hero stills only)
+// Camera-move primitives — v5.3 PHOTO-TO-CINEMA MOTION
+//
+// Two render contexts:
+//   wide-mode (set by PhotoBeat): IMG sized at height:100% width:auto so
+//     image natural width exceeds frame width. Translate dx in px shifts
+//     within the wide image. Used for: slow_pan_*, multi_point_pan,
+//     gimbal_walk. Allows real pan distance with no black space.
+//   cover-mode (default): IMG at width:100% height:100% objectFit:cover.
+//     Translate moves the box. Used for: push_in, pull_out, push_counter
+//     (where pan distance is small).
+//
+// Direction convention:
+//   L→R camera pan = camera reveals LEFT side first, RIGHT side last.
+//   In wide-mode, that means the IMG translates from +dx (right shift,
+//   exposing left of image) to -dx (left shift, exposing right of image).
+//   So L→R uses anchors [+x, 0, -x] or slow_pan_lr.
+//   R→L uses anchors [-x, 0, +x] or slow_pan_rl.
 
 import { easeInOutCubic, easeOutCubic, easeOutQuart } from './easing';
 
@@ -28,7 +38,9 @@ type Move =
   | 'slow_pan_rl'
   | 'slow_pan_tb'
   | 'slow_pan_bt'
-  | 'multi_point_pan';
+  | 'multi_point_pan'
+  | 'gimbal_walk'
+  | 'still';
 
 const focalToOrigin = (f: FocalPoint): string => {
   if (f === 'center') return '50% 50%';
@@ -45,7 +57,9 @@ export type CameraMoveOpts = {
   intensity?: number;
   /** push_counter: which way the counter-translate goes (default 'right') */
   counterDir?: 'left' | 'right' | 'up' | 'down';
-  /** multi_point_pan: 3 anchors as { x, y, scale } in viewport-percent units */
+  /** slow_pan / gimbal_walk direction override */
+  direction?: 'lr' | 'rl';
+  /** multi_point_pan: 3 anchors as { x, y, scale } in % units (x ~ ±40 max) */
   anchors?: Array<{ x: number; y: number; scale: number }>;
 };
 
@@ -55,12 +69,16 @@ export type CameraResult = {
   /** Optional brightness/saturation modulation overlay multiplier (1.0 = no change). */
   brightnessMod?: number;
   saturationMod?: number;
+  /** True if this motion expects wide-mode IMG sizing (height:100%, width:auto). */
+  wideMode: boolean;
 };
 
+// Move kinds that pan across a wide image and need wide-mode rendering
+const WIDE_MOVES: Move[] = ['slow_pan_lr', 'slow_pan_rl', 'multi_point_pan', 'gimbal_walk'];
+
 // 3-anchor eased interpolation. Each segment is eased so the move dwells at
-// each anchor. Spring-ish without the import.
+// each anchor briefly. Velocity is 0 at the midpoint anchor (smooth).
 function tripleEase(t: number): { seg: number; u: number } {
-  // 0..0.5 = anchor1->anchor2, 0.5..1 = anchor2->anchor3
   if (t < 0.5) return { seg: 0, u: easeInOutCubic(t / 0.5) };
   return { seg: 1, u: easeInOutCubic((t - 0.5) / 0.5) };
 }
@@ -73,17 +91,29 @@ export function cameraTransform(
   const { move, focal = 'center', intensity = 1 } = opts;
   const origin = focalToOrigin(focal);
   const t = Math.max(0, Math.min(1, localFrame / Math.max(1, totalFrames)));
+  const wideMode = WIDE_MOVES.includes(move);
 
   switch (move) {
+    case 'still': {
+      return { transform: 'scale(1)', transformOrigin: origin, wideMode: false };
+    }
+
     case 'push_in': {
       const eased = easeOutCubic(t);
       const scale = 1.0 + 0.08 * intensity * eased;
-      return { transform: `scale(${scale.toFixed(4)})`, transformOrigin: origin };
+      return { transform: `scale(${scale.toFixed(4)})`, transformOrigin: origin, wideMode: false };
     }
     case 'pull_out': {
       const eased = easeOutQuart(t);
       const scale = 1.12 - 0.12 * intensity * eased;
-      return { transform: `scale(${scale.toFixed(4)})`, transformOrigin: origin };
+      // Add a tiny horizontal drift while pulling out, so it feels like a
+      // camera reveal rather than a flat zoom.
+      const dx = -8 * intensity * eased;
+      return {
+        transform: `translate(${dx.toFixed(2)}px, 0px) scale(${scale.toFixed(4)})`,
+        transformOrigin: origin,
+        wideMode: false,
+      };
     }
     case 'parallax': {
       const eased = easeInOutCubic(t);
@@ -92,6 +122,7 @@ export function cameraTransform(
       return {
         transform: `translateX(${dx.toFixed(2)}px) scale(${scale})`,
         transformOrigin: origin,
+        wideMode: false,
       };
     }
     case 'vertical_reveal': {
@@ -101,6 +132,7 @@ export function cameraTransform(
       return {
         transform: `translateY(${dy.toFixed(2)}px) scale(${scale})`,
         transformOrigin: origin,
+        wideMode: false,
       };
     }
     case 'orbit_fake': {
@@ -110,23 +142,19 @@ export function cameraTransform(
       return {
         transform: `rotate(${rot.toFixed(3)}deg) scale(${scale.toFixed(4)})`,
         transformOrigin: origin,
+        wideMode: false,
       };
     }
 
-    // ─── PHOTO-TO-CINEMA MOTION primitives ────────────────────────────────
-
     case 'push_counter': {
-      // The single highest-ROI interior move: scale 1.00→1.12 plus a
-      // 1.5% counter-translate to fake camera parallax. Phase-shift so
-      // scale peaks slightly after translate.
+      // Scale 1.00→1.12 plus a counter-translate to fake camera parallax.
       const scaleEase = easeOutCubic(t);
       const transEase = easeInOutCubic(Math.min(1, t * 1.05));
       const scale = 1.0 + 0.12 * intensity * scaleEase;
       const dir = opts.counterDir ?? 'right';
-      const px = 28 * intensity * transEase; // ~1.5% of 1920px = 28-29px
+      const px = 28 * intensity * transEase;
       const tx = dir === 'left' ? -px : dir === 'right' ? px : 0;
       const ty = dir === 'up' ? -px : dir === 'down' ? px : 0;
-      // Subtle hand-held shake at <1px amplitude
       const u = localFrame;
       const shakeX = Math.sin(u / 12) * 0.6;
       const shakeY = Math.cos(u / 14) * 0.4;
@@ -135,63 +163,77 @@ export function cameraTransform(
           2,
         )}px) scale(${scale.toFixed(4)})`,
         transformOrigin: origin,
+        wideMode: false,
       };
     }
 
+    // ─── WIDE-MODE pan moves ──────────────────────────────────────────────
+    // These assume IMG renders at height:100% width:auto so img natural
+    // width >> frame width. Translate dx in px shifts the visible window.
+
     case 'slow_pan_lr': {
-      // Real horizontal pan. Hold scale at 1.15 (so the translate has
-      // headroom without revealing letterbox), translate left→right.
+      // L→R camera: starts showing LEFT of image (img translated +panRange),
+      // ends showing RIGHT (img translated -panRange).
+      // panRange scales with intensity; default 1.0 = ±320px traverse (640px range).
       const eased = easeInOutCubic(t);
-      const scale = 1.15;
-      const dx = -60 + 120 * intensity * eased; // -60..+60px = ~6% pan range
+      const panRange = 320 * intensity;
+      const dx = panRange - 2 * panRange * eased; // +panRange → -panRange
+      const scale = 1.04;
       const u = localFrame;
-      const shakeY = Math.cos(u / 14) * 0.4;
+      const shakeY = Math.cos(u / 16) * 0.4;
       return {
-        transform: `translate(${dx.toFixed(2)}px, ${shakeY.toFixed(2)}px) scale(${scale})`,
+        transform: `translate(${dx.toFixed(2)}px, ${shakeY.toFixed(2)}px) scale(${scale.toFixed(4)})`,
         transformOrigin: origin,
+        wideMode: true,
       };
     }
     case 'slow_pan_rl': {
+      // R→L camera
       const eased = easeInOutCubic(t);
-      const scale = 1.15;
-      const dx = 60 - 120 * intensity * eased;
+      const panRange = 320 * intensity;
+      const dx = -panRange + 2 * panRange * eased;
+      const scale = 1.04;
       const u = localFrame;
-      const shakeY = Math.cos(u / 14) * 0.4;
+      const shakeY = Math.cos(u / 16) * 0.4;
       return {
-        transform: `translate(${dx.toFixed(2)}px, ${shakeY.toFixed(2)}px) scale(${scale})`,
+        transform: `translate(${dx.toFixed(2)}px, ${shakeY.toFixed(2)}px) scale(${scale.toFixed(4)})`,
         transformOrigin: origin,
+        wideMode: true,
       };
     }
+
     case 'slow_pan_tb': {
       const eased = easeInOutCubic(t);
-      const scale = 1.15;
+      const scale = 1.10;
       const dy = -50 + 100 * intensity * eased;
       const u = localFrame;
       const shakeX = Math.sin(u / 12) * 0.5;
       return {
-        transform: `translate(${shakeX.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${scale})`,
+        transform: `translate(${shakeX.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${scale.toFixed(4)})`,
         transformOrigin: origin,
+        wideMode: false,
       };
     }
     case 'slow_pan_bt': {
       const eased = easeInOutCubic(t);
-      const scale = 1.15;
+      const scale = 1.10;
       const dy = 50 - 100 * intensity * eased;
       const u = localFrame;
       const shakeX = Math.sin(u / 12) * 0.5;
       return {
-        transform: `translate(${shakeX.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${scale})`,
+        transform: `translate(${shakeX.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${scale.toFixed(4)})`,
         transformOrigin: origin,
+        wideMode: false,
       };
     }
 
     case 'multi_point_pan': {
-      // 3-anchor cinematic path: anchor1 → anchor2 → anchor3.
-      // anchors expressed in % offset from center (negative = left/up).
+      // 3-anchor cinematic path. anchor.x in % offset, dx scaled to px.
+      // For wide-mode, dx of ±400 = real traverse across a wide image.
       const a = opts.anchors ?? [
-        { x: -3, y: -2, scale: 1.08 },
-        { x: 1, y: 0, scale: 1.14 },
-        { x: 4, y: 2, scale: 1.18 },
+        { x: 30, y: 0, scale: 1.04 },
+        { x: 0, y: 0, scale: 1.06 },
+        { x: -30, y: 0, scale: 1.04 },
       ];
       const { seg, u } = tripleEase(t);
       const A = a[seg];
@@ -200,24 +242,56 @@ export function cameraTransform(
       const fx = lerp(A.x, B.x);
       const fy = lerp(A.y, B.y);
       const fs = lerp(A.scale, B.scale);
-      // Convert % to px (assuming 1920×1920 canvas reference)
-      const dx = fx * 19.2 * intensity;
-      const dy = fy * 19.2 * intensity;
+      // Translate scale: anchor.x in [-40, +40] maps to dx [-700, +700] at
+      // intensity=1 — wide enough to traverse 1.6-aspect photos.
+      const dx = fx * 17.5 * intensity;
+      const dy = fy * 17.5 * intensity;
       const localF = localFrame;
-      const shakeX = Math.sin(localF / 12) * 0.6;
-      const shakeY = Math.cos(localF / 14) * 0.4;
+      const shakeX = Math.sin(localF / 14) * 0.5;
+      const shakeY = Math.cos(localF / 16) * 0.35;
       return {
         transform: `translate(${(dx + shakeX).toFixed(2)}px, ${(dy + shakeY).toFixed(
           2,
         )}px) scale(${fs.toFixed(4)})`,
         transformOrigin: origin,
+        wideMode: true,
+      };
+    }
+
+    case 'gimbal_walk': {
+      // Compound walkthrough motion: slow horizontal pan + slow forward push
+      // + slight vertical bob + counter-translate. Phase-shifted so motion
+      // feels like a person walking through a room with a gimbal, not a zoom.
+      const dir = opts.direction ?? 'lr';
+      const eased = easeInOutCubic(t);
+      // Horizontal pan range scales with intensity (default = 280px = good gimbal traverse)
+      const panRange = 280 * intensity;
+      const dxBase = dir === 'lr'
+        ? panRange - 2 * panRange * eased
+        : -panRange + 2 * panRange * eased;
+      // Forward push (camera-like z): scale 1.02 → 1.08 over duration
+      const scaleEase = easeOutCubic(t);
+      const scale = 1.02 + 0.06 * scaleEase;
+      // Vertical bob — gentle sine, like a steady-cam floor
+      const u = localFrame;
+      const bobY = Math.sin(u / 24) * 1.4;
+      // Slight counter-translate that lags pan: opposes pan slightly so
+      // perspective parallax feels real
+      const counterX = -dxBase * 0.04;
+      const shakeX = Math.sin(u / 14) * 0.4;
+      const dx = dxBase + counterX + shakeX;
+      const dy = bobY;
+      return {
+        transform: `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${scale.toFixed(4)})`,
+        transformOrigin: origin,
+        wideMode: true,
       };
     }
 
     case 'cinemagraph': {
-      // Legacy "breathing photograph" — kept for hero stills where you
-      // want gentle organic drift across the whole frame. New rule:
-      // do NOT use this for interiors (use push_counter or multi_point_pan).
+      // Legacy "breathing photograph". Multi-axis sin drift.
+      // Use sparingly — produces the cropped-edge sin wave that drops
+      // off-center subjects out of frame.
       const u = t * Math.PI * 2;
       const baseScale = 1.04 + 0.04 * easeInOutCubic(t) * intensity;
       const dx = Math.sin(u * 0.6) * 14 * intensity;
@@ -234,6 +308,7 @@ export function cameraTransform(
         transformOrigin: origin,
         brightnessMod,
         saturationMod,
+        wideMode: false,
       };
     }
   }

@@ -178,7 +178,8 @@ export const OpenSequence: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: '#0a0a08', overflow: 'hidden' }}>
 
-      {/* Satellite tile: 1280x1280 at 1080px wide, centered vertically */}
+      {/* Satellite tile: 1280x1280 at 1080px wide, centered vertically.
+          v5.3: B&W + deeper contrast so the gold boundary glow + line pop. */}
       <div style={{
         position: 'absolute',
         left: 0,
@@ -193,7 +194,7 @@ export const OpenSequence: React.FC = () => {
             width: DISPLAY_W,
             height: DISPLAY_W,
             objectFit: 'cover',
-            filter: 'sepia(0.05) saturate(1.08) brightness(0.96) contrast(1.06) hue-rotate(-3deg)',
+            filter: 'grayscale(1) brightness(0.78) contrast(1.18)',
           }}
         />
       </div>
@@ -208,10 +209,10 @@ export const OpenSequence: React.FC = () => {
         height: TILE_TOP_OFFSET, background: '#0a0a08',
       }} />
 
-      {/* Dark overlay for legibility */}
+      {/* Dark overlay for legibility — v5.3: deeper vignette so gold pops */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'rgba(0,0,0,0.20)',
+        background: 'rgba(0,0,0,0.32)',
         pointerEvents: 'none',
       }} />
 
@@ -256,6 +257,21 @@ export const OpenSequence: React.FC = () => {
             clipPath="url(#subdivisionClipOpen)"
           />
         </g>
+
+        {/* v5.3: faint gold stroke lines on the actual boundary so it's a
+            visible line, not just a glow. Draws along with the fill via
+            stroke-dasharray animation. */}
+        <g
+          fill="none"
+          stroke={GOLD}
+          strokeWidth={1.3}
+          strokeOpacity={Math.max(0, Math.min(0.85, boundaryProg * 0.95))}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        >
+          <path d={PATH2} />
+          <path d={PATH1} />
+        </g>
       </svg>
 
       {/* "1892." cover frame */}
@@ -273,7 +289,7 @@ export const OpenSequence: React.FC = () => {
           textShadow: '0 4px 40px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.95)',
           lineHeight: 1,
         }}>
-          1892.
+          1892
         </div>
       </div>
 
@@ -319,10 +335,10 @@ export const OpenSequence: React.FC = () => {
         </div>
       </div>
 
-      {/* Vignette */}
+      {/* Vignette — v5.3: deeper to cradle the boundary glow */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)',
+        background: 'radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 28%, rgba(0,0,0,0.72) 100%)',
         pointerEvents: 'none',
       }} />
     </AbsoluteFill>
