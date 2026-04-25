@@ -1,194 +1,204 @@
-// BoundaryDrawTest.tsx — Gate 3 boundary draw test clip
-// 6s, 1080x1920. Shows satellite tile + animated SVG parcel polygon.
-// Cover frame text (2.5s) → dissolve → boundary draw (2.5-6s) → subtitle at 5s.
+// BoundaryDrawTest.tsx — Gate 3 boundary test clip v6
+// 6s, 1080x1920. Satellite tile + animated SVG subdivision fill.
+// Cover frame text (0-2.5s) → boundary fill fade-in (2.5-4.5s) → subtitle at 4.5s.
 //
-// Parcel: Taxlot 201117C001000 at 56111 School House Rd, Vandevert Ranch
-// Source: Deschutes County GIS, maps.deschutes.org/arcgis/rest/services/OpenData/LandFD/MapServer/2
-// Queried 2026-04-24 via spatial intersect at lat=43.8383243, lng=-121.4428004
+// Polygon: Vandevert Ranch Phase I + Phase II subdivision boundaries
+// Source: Deschutes County GIS, OpenData/BoundaryFD/MapServer/4
+//         queried 2026-04-24 with NAME LIKE '%VANDEVERT RANCH%'
+// Phase I OBJECTID 133: 316 acres, 55 vertices
+// Phase II OBJECTID 132: 461 acres, 129 vertices
+//
+// Projection: Web Mercator zoom 14, tile 1280x1280 displayed at 1080px wide.
+// Property center 43.8383243, -121.4428004 projects exactly to tile center (540,540).
+// Verified 2026-04-24.
 
 import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Img, staticFile } from 'remotion';
-import { easeOutCubic } from './easing';
-import { CREAM, FONT_SANS } from './brand';
+import { CREAM, GOLD, FONT_SANS } from './brand';
 
 // ─── Projection helpers ───────────────────────────────────────────────────────
-// maps_z14.png is 1280x1280, displayed at 1080px wide in the SVG coordinate space.
-// Display scale: 1080/1280 = 0.84375
-// Tile center is at the property lat/lng (same as AerialMap origin in AerialMap.tsx)
-// We project lng/lat → tile pixel → display pixel.
+// maps_z14.png: 1280x1280 tile centered on property, displayed at 1080px wide.
+// TILE_DISPLAY_SCALE = 1080/1280 = 0.84375
 
 const MAP_CENTER_LNG = -121.4428004;
 const MAP_CENTER_LAT = 43.8383243;
 const MAP_ZOOM = 14;
 const TILE_SIZE = 256;
-const TILE_PX = 1280;    // physical resolution of maps_z14.png
-const DISPLAY_W = 1080;  // displayed width in canvas
-const TILE_DISPLAY_SCALE = DISPLAY_W / TILE_PX; // 0.84375
+const TILE_PX = 1280;
+const DISPLAY_W = 1080;
+const TILE_DISPLAY_SCALE = DISPLAY_W / TILE_PX;
+const TILE_TOP_OFFSET = (1920 - DISPLAY_W) / 2; // 420px — tile top in 1920 canvas
 
-function lngToX(lng: number): number {
+function lngToNorm(lng: number): number {
   return (lng + 180) / 360;
 }
-
-function latToY(lat: number): number {
+function latToNorm(lat: number): number {
   const sinLat = Math.sin((lat * Math.PI) / 180);
   return 0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI);
 }
 
-// Returns [displayX, displayY] in canvas pixels (0,0 = top-left of 1080px-wide tile display)
-function toDisplay(lng: number, lat: number): [number, number] {
+// Returns [canvasX, canvasY] in 1080x1920 canvas pixels
+function toCanvas(lng: number, lat: number): [number, number] {
   const scale = TILE_SIZE * Math.pow(2, MAP_ZOOM);
-  const cx = lngToX(MAP_CENTER_LNG) * scale;
-  const cy = latToY(MAP_CENTER_LAT) * scale;
-  const tilePx = lngToX(lng) * scale - cx + TILE_PX / 2;
-  const tilePy = latToY(lat) * scale - cy + TILE_PX / 2;
-  // Convert tile pixels to display pixels
-  return [tilePx * TILE_DISPLAY_SCALE, tilePy * TILE_DISPLAY_SCALE];
+  const cx = lngToNorm(MAP_CENTER_LNG) * scale;
+  const cy = latToNorm(MAP_CENTER_LAT) * scale;
+  const tilePx = lngToNorm(lng) * scale - cx + TILE_PX / 2;
+  const tilePy = latToNorm(lat) * scale - cy + TILE_PX / 2;
+  return [tilePx * TILE_DISPLAY_SCALE, tilePy * TILE_DISPLAY_SCALE + TILE_TOP_OFFSET];
 }
 
-// ─── Parcel coordinates (GeoJSON outer ring, 98 vertices) ─────────────────────
-// Source: Deschutes County GIS taxlots, taxlot 201117C001000
-// Retrieved 2026-04-24 via REST query with spatial intersect at property lat/lng
-const RAW_COORDS: [number, number][] = [
-  [-121.44226757,43.83796437],[-121.44226607,43.83797067],[-121.44226481,43.83797608],
-  [-121.44226359,43.83798149],[-121.44226240,43.83798691],[-121.44226123,43.83799233],
-  [-121.44226010,43.83799776],[-121.44225900,43.83800318],[-121.44225793,43.83800862],
-  [-121.44225689,43.83801405],[-121.44225589,43.83801949],[-121.44225491,43.83802493],
-  [-121.44225397,43.83803037],[-121.44225305,43.83803582],[-121.44225217,43.83804127],
-  [-121.44225132,43.83804672],[-121.44225051,43.83805218],[-121.44224972,43.83805763],
-  [-121.44224896,43.83806309],[-121.44224824,43.83806855],[-121.44224755,43.83807402],
-  [-121.44224688,43.83807948],[-121.44224626,43.83808495],[-121.44224566,43.83809042],
-  [-121.44224509,43.83809589],[-121.44224456,43.83810137],[-121.44224405,43.83810684],
-  [-121.44224358,43.83811232],[-121.44224314,43.83811779],[-121.44224273,43.83812327],
-  [-121.44224235,43.83812875],[-121.44224201,43.83813423],[-121.44224169,43.83813972],
-  [-121.44224141,43.83814520],[-121.44224116,43.83815068],[-121.44224094,43.83815617],
-  [-121.44224075,43.83816165],[-121.44224060,43.83816714],[-121.44224047,43.83817262],
-  [-121.44224038,43.83817811],[-121.44224032,43.83818360],[-121.44224029,43.83818908],
-  [-121.44224029,43.83819457],[-121.44224032,43.83820006],[-121.44224039,43.83820554],
-  [-121.44224048,43.83821103],[-121.44224061,43.83821652],[-121.44224077,43.83822200],
-  [-121.44224096,43.83822749],[-121.44224118,43.83823297],[-121.44224144,43.83823845],
-  [-121.44224172,43.83824394],[-121.44224204,43.83824942],[-121.44224239,43.83825490],
-  [-121.44224277,43.83826038],[-121.44224318,43.83826586],[-121.44224363,43.83827133],
-  [-121.44224410,43.83827681],[-121.44224461,43.83828228],[-121.44224515,43.83828776],
-  [-121.44224572,43.83829323],[-121.44224632,43.83829870],[-121.44224695,43.83830417],
-  [-121.44224762,43.83830963],[-121.44224831,43.83831509],[-121.44224904,43.83832056],
-  [-121.44224980,43.83832602],[-121.44225059,43.83833147],[-121.44225141,43.83833693],
-  [-121.44225226,43.83834238],[-121.44225315,43.83834783],[-121.44225406,43.83835327],
-  [-121.44225501,43.83835872],[-121.44225599,43.83836416],[-121.44225700,43.83836960],
-  [-121.44225804,43.83837503],[-121.44225911,43.83838046],[-121.44230116,43.83858953],
-  [-121.44230256,43.83859727],[-121.44230335,43.83860273],[-121.44230397,43.83860820],
-  [-121.44230443,43.83861367],[-121.44230473,43.83861916],[-121.44230486,43.83862464],
-  [-121.44230483,43.83863013],[-121.44230463,43.83863561],[-121.44230427,43.83864109],
-  [-121.44230375,43.83864657],[-121.44230307,43.83865203],[-121.44230222,43.83865748],
-  [-121.44230121,43.83866292],[-121.44230003,43.83866834],[-121.44229870,43.83867374],
-  [-121.44229720,43.83867912],[-121.44305338,43.83874191],[-121.44316818,43.83808943],
-  [-121.44233053,43.83770250],[-121.44226757,43.83796437]
+// ─── Vandevert Ranch Phase II (129 vertices) ─────────────────────────────────
+// Deschutes County GIS OBJECTID 132, 461 acres
+const PHASE2_COORDS: [number, number][] = [
+  [-121.453381,43.830412],[-121.453758,43.830408],[-121.454129,43.830405],
+  [-121.454502,43.830402],[-121.454885,43.830399],[-121.455258,43.830396],
+  [-121.455635,43.830393],[-121.456014,43.830390],[-121.456399,43.830387],
+  [-121.456501,43.830386],[-121.456501,43.830257],[-121.456498,43.829818],
+  [-121.456499,43.829609],[-121.456497,43.829392],[-121.456496,43.829181],
+  [-121.456496,43.828968],[-121.456494,43.828743],[-121.456493,43.828666],
+  [-121.456494,43.828588],[-121.456492,43.828364],[-121.456493,43.828146],
+  [-121.456491,43.827927],[-121.456489,43.827700],[-121.456489,43.827471],
+  [-121.456488,43.827249],[-121.456486,43.827011],[-121.456486,43.826793],
+  [-121.456486,43.826755],[-121.456485,43.826578],[-121.456483,43.826361],
+  [-121.456484,43.826146],[-121.456482,43.825919],[-121.456482,43.825697],
+  [-121.456481,43.825488],[-121.456479,43.825265],[-121.456480,43.825050],
+  [-121.456478,43.824829],[-121.456478,43.824612],[-121.456477,43.824395],
+  [-121.456475,43.824171],[-121.456476,43.823982],[-121.456475,43.823901],
+  [-121.456475,43.823820],[-121.456472,43.823125],[-121.451472,43.823139],
+  [-121.448575,43.823148],[-121.448138,43.823151],[-121.446472,43.823154],
+  [-121.446474,43.823612],[-121.446475,43.823707],[-121.446464,43.825884],
+  [-121.446463,43.826080],[-121.446461,43.826404],[-121.446459,43.826575],
+  [-121.446459,43.826801],[-121.446459,43.827546],[-121.446456,43.827800],
+  [-121.446454,43.827920],[-121.446455,43.828111],[-121.446458,43.828445],
+  [-121.446329,43.828512],[-121.446196,43.828620],[-121.446132,43.828791],
+  [-121.446084,43.828981],[-121.446078,43.829199],[-121.446075,43.829365],
+  [-121.446026,43.829528],[-121.445985,43.829671],[-121.445982,43.829851],
+  [-121.445952,43.830011],[-121.446005,43.830118],[-121.446112,43.830176],
+  [-121.446271,43.830275],[-121.446345,43.830407],[-121.446333,43.830509],
+  [-121.446221,43.830579],[-121.446217,43.830584],[-121.445926,43.830756],
+  [-121.445693,43.830867],[-121.445574,43.830923],[-121.445530,43.831150],
+  [-121.445961,43.831672],[-121.446259,43.831671],[-121.447178,43.831668],
+  [-121.447076,43.832429],[-121.447070,43.832538],[-121.446973,43.833233],
+  [-121.446952,43.833357],[-121.446464,43.837054],[-121.446447,43.837177],
+  [-121.446377,43.837692],[-121.447797,43.837696],[-121.448575,43.837688],
+  [-121.449009,43.837685],[-121.449203,43.837683],[-121.451382,43.837676],
+  [-121.451382,43.837646],[-121.451384,43.837568],[-121.451386,43.837350],
+  [-121.451390,43.837070],[-121.451393,43.836800],[-121.451396,43.836528],
+  [-121.451399,43.836255],[-121.451403,43.835976],[-121.451406,43.835706],
+  [-121.451409,43.835442],[-121.451413,43.835170],[-121.451418,43.834869],
+  [-121.451420,43.834566],[-121.451425,43.834259],[-121.451427,43.834047],
+  [-121.451428,43.833972],[-121.451429,43.833881],[-121.451431,43.833789],
+  [-121.451434,43.833528],[-121.451438,43.833250],[-121.451441,43.832978],
+  [-121.451447,43.832428],[-121.451455,43.831829],[-121.451458,43.831531],
+  [-121.451463,43.831230],[-121.451463,43.831145],[-121.451464,43.831059],
+  [-121.451473,43.830418],[-121.451867,43.830424],[-121.452244,43.830421],
+  [-121.452619,43.830418],[-121.452992,43.830415],[-121.453381,43.830412],
 ];
 
-// Project all coords to display pixels
-const DISPLAY_COORDS = RAW_COORDS.map(([lng, lat]) => toDisplay(lng, lat));
+// ─── Vandevert Ranch Phase I (55 vertices) ───────────────────────────────────
+// Deschutes County GIS OBJECTID 133, 316 acres
+const PHASE1_COORDS: [number, number][] = [
+  [-121.441496,43.834811],[-121.441497,43.834994],[-121.441440,43.841205],
+  [-121.441576,43.841204],[-121.441807,43.841203],[-121.443697,43.841195],
+  [-121.444150,43.841193],[-121.445630,43.841187],[-121.445808,43.841186],
+  [-121.446033,43.841185],[-121.446462,43.841183],[-121.446531,43.840668],
+  [-121.446548,43.840544],[-121.447037,43.836848],[-121.447057,43.836724],
+  [-121.447154,43.836029],[-121.447160,43.835919],[-121.447262,43.835159],
+  [-121.446343,43.835162],[-121.446046,43.835163],[-121.445615,43.834641],
+  [-121.445659,43.834413],[-121.445777,43.834357],[-121.446010,43.834247],
+  [-121.446302,43.834075],[-121.446305,43.834069],[-121.446418,43.834000],
+  [-121.446526,43.833952],[-121.446541,43.832089],[-121.446543,43.831936],
+  [-121.446540,43.831601],[-121.446538,43.831411],[-121.446540,43.831291],
+  [-121.446544,43.831037],[-121.446544,43.830292],[-121.446544,43.830066],
+  [-121.446545,43.829895],[-121.446548,43.829571],[-121.446548,43.829374],
+  [-121.446560,43.827198],[-121.446558,43.827103],[-121.446557,43.826644],
+  [-121.444018,43.826652],[-121.443893,43.826654],[-121.443054,43.826660],
+  [-121.442868,43.826660],[-121.442076,43.826658],[-121.441873,43.826660],
+  [-121.441547,43.826660],[-121.441542,43.827565],[-121.441538,43.828154],
+  [-121.441522,43.831030],[-121.441516,43.832340],[-121.441507,43.833955],
+  [-121.441496,43.834811],
+];
 
-// Build SVG path in display pixel space (SVG coordinate space = display pixels)
+// Project to canvas coordinates
+const P2_CANVAS = PHASE2_COORDS.map(([lng, lat]) => toCanvas(lng, lat));
+const P1_CANVAS = PHASE1_COORDS.map(([lng, lat]) => toCanvas(lng, lat));
+
+// Compute combined centroid for gradient center
+const allCanvas = [...P2_CANVAS, ...P1_CANVAS];
+const centroidX = allCanvas.reduce((s, [x]) => s + x, 0) / allCanvas.length;
+const centroidY = allCanvas.reduce((s, [, y]) => s + y, 0) / allCanvas.length;
+
+// Build SVG path string
 function buildPath(coords: [number, number][]): string {
   return coords
     .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`)
     .join(' ') + ' Z';
 }
+const PATH2 = buildPath(P2_CANVAS);
+const PATH1 = buildPath(P1_CANVAS);
 
-const PATH_D = buildPath(DISPLAY_COORDS);
+// Compute bounding box for gradient sizing
+const allXs = allCanvas.map(([x]) => x);
+const allYs = allCanvas.map(([, y]) => y);
+const bboxW = Math.max(...allXs) - Math.min(...allXs);
+const bboxH = Math.max(...allYs) - Math.min(...allYs);
+const gradRadius = Math.max(bboxW, bboxH) * 0.65;
 
-// Parcel bounding box in display pixels
-const XS = DISPLAY_COORDS.map(([x]) => x);
-const YS = DISPLAY_COORDS.map(([, y]) => y);
-const MIN_X = Math.min(...XS);
-const MAX_X = Math.max(...XS);
-const MIN_Y = Math.min(...YS);
-const MAX_Y = Math.max(...YS);
-const PARCEL_W = MAX_X - MIN_X; // ~8.9px
-const PARCEL_H = MAX_Y - MIN_Y; // ~14.2px
-
-// To make the parcel visible we render the SVG at 1080x1920 using the full canvas
-// coordinate space, then use CSS transform to scale/center the parcel region.
-// Strategy: render SVG at canvas size (1080x1920), use a viewBox that zooms in ~30x
-// on the parcel center, so the 8x14px parcel becomes ~240x420px on screen.
-
-const VIEW_MARGIN_PX = 8; // margin around parcel in display pixels
-const VIEW_SIZE = Math.max(PARCEL_W, PARCEL_H) + VIEW_MARGIN_PX * 2; // ~30px view
-const VIEW_CX = (MIN_X + MAX_X) / 2;
-const VIEW_CY = (MIN_Y + MAX_Y) / 2;
-// The tile image is displayed centered in 1080x1920 (vertically centered = 1920/2=960 midpoint)
-// The tile itself is 1080x1080 starting at y=420 (since (1920-1080)/2 = 420)
-// Wait — we're using scaleY(1.778) to fill height, so it's a transform, not an offset.
-// Simpler: both the Img and SVG use the same 1080-wide coordinate space.
-// The SVG viewBox centers on the parcel coords. The tile occupies y=(1920-1080)/2 to y=(1920+1080)/2
-// But we're scaling the tile to fill 1920 height via scaleY transform.
-// For the SVG overlay, we need to account for the fact that the parcel y-coord
-// refers to the tile coordinate system where the tile center is at (540, 540) in display px,
-// which corresponds to y=(1920-1080*TILE_DISPLAY_SCALE... actually the tile is displayed at
-// width=1080, height=1080 displayed, centered in the 1920-tall canvas.
-// Center of displayed tile in 1920px canvas = (1920-1080)/2 = 420px from top.
-// So parcel Y in canvas = MIN_Y + 420 (approximately), but scaleY(1.778) applies to tile display.
-// For simplicity: use the SVG with overflow=visible at the same 1080-wide space,
-// and shift the SVG vertically to account for the tile vertical centering offset.
-
-const TILE_TOP_OFFSET = (1920 - 1080) / 2; // 420px — tile top in 1920 canvas
-const VIEW_CY_CANVAS = VIEW_CY + TILE_TOP_OFFSET; // parcel center in full 1920 canvas
-
-// SVG viewBox in canvas coordinate space (1080 wide, 1920 tall)
-// We zoom to the parcel region using a small viewBox
-const VB_X = VIEW_CX - VIEW_SIZE / 2;
-const VB_Y = VIEW_CY_CANVAS - VIEW_SIZE / 2;
-
-// PATH_D uses tile display coords (y=0 at tile top). Offset path to canvas space.
-function buildPathOffset(coords: [number, number][], yOffset: number): string {
-  return coords
-    .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${(y + yOffset).toFixed(2)}`)
-    .join(' ') + ' Z';
+// Subtle cubic ease: matches cubic-bezier(0.4, 0, 0.2, 1)
+function easeFill(t: number): number {
+  // Approximate cubic-bezier(0.4, 0, 0.2, 1) — ease-out-ish
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
-const PATH_D_CANVAS = buildPathOffset(DISPLAY_COORDS, TILE_TOP_OFFSET);
-
-// Approx path length in the ZOOMED SVG coordinate system
-// At VIEW_SIZE~30px displayed at 1080 SVG pixels, scale factor = 1080/VIEW_SIZE = ~36
-// Path perimeter in display coords ≈ 2*(PARCEL_W+PARCEL_H) ≈ 46px
-// In SVG display units = 46 * (1080/VIEW_SIZE... but SVG path uses raw coords.
-// strokeDasharray must match the path in raw SVG coordinate units (display pixels).
-// Estimated perimeter in display pixels:
-const PERIMETER_DISPLAY_PX = 2 * (PARCEL_W + PARCEL_H) * 1.3; // rough estimate with shape factor
 
 export const BoundaryDrawTest: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
 
-  // Phase 1: cover frame (0-2.5s) — text visible, full opacity
-  // Phase 2: text dissolves (2.0-2.8s)
-  // Phase 3: boundary draws (2.5-6.0s, 3.5s draw)
-  // Phase 4: subtitle appears at 5.0s
+  // ── Timing ────────────────────────────────────────────────────────────────
+  // 0.0-1.0s: "1892." appears
+  // 1.0-2.0s: "1892." holds, "VANDEVERT RANCH" fades in at 1.0s
+  // 2.0-2.5s: text dissolves out
+  // 2.5-4.5s: boundary fill + stroke fade in (2.0s fade, cubic ease)
+  // 4.5-6.0s: boundary holds, "REPRESENTED BY RYAN REALTY" appears at 4.5s
 
-  const textAlpha = interpolate(t, [2.0, 2.8], [1, 0], {
+  // "1892." text
+  const year1892Alpha = interpolate(t, [0, 0.4, 1.8, 2.5], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
   });
 
-  const pathAlpha = interpolate(t, [2.3, 2.8], [0, 1], {
+  // "VANDEVERT RANCH" tagline under 1892.
+  const vanchTagAlpha = interpolate(t, [1.0, 1.6, 1.8, 2.5], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
   });
 
-  const drawProgress = interpolate(t, [2.5, 6.0], [0, 1], {
+  // Boundary fill + stroke — 2.0s fade, cubic eased, holds after
+  const rawBoundaryProg = interpolate(t, [2.5, 4.5], [0, 1], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
   });
-  const drawEased = easeOutCubic(drawProgress);
-  const strokeDashoffset = PERIMETER_DISPLAY_PX * (1 - drawEased);
+  const boundaryProg = easeFill(rawBoundaryProg);
 
-  const subtitleAlpha = interpolate(t, [5.0, 5.6], [0, 1], {
+  // Fill alpha: 0 → 0.18 (center) for radial gradient inner stop
+  const fillAlphaCenter = boundaryProg * 0.18;
+  const fillAlphaEdge = boundaryProg * 0.06;
+
+  // Stroke alpha: 0 → 0.75
+  const strokeAlpha = boundaryProg * 0.75;
+
+  // Subtle scale breathe on boundary: 1.00 → 1.015 over 6s
+  const breatheScale = 1 + interpolate(t, [2.5, 6.0], [0, 0.015], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
   });
 
-  // Stroke width in display pixels — 2px will be visible at zoomed viewBox
-  const STROKE_W = 0.6; // display px — maps_z14 parcel is ~8x14 display px
+  // "REPRESENTED BY RYAN REALTY" subtitle at 4.5s
+  const subtitleAlpha = interpolate(t, [4.5, 5.2], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  });
 
   return (
     <AbsoluteFill style={{ background: '#0a0a08', overflow: 'hidden' }}>
 
-      {/* ── Satellite tile: 1280x1280 displayed at 1080x1080, centered in 1920 frame ── */}
+      {/* ── Satellite tile: 1280x1280 at 1080px wide, centered vertically ── */}
       <div style={{
         position: 'absolute',
         left: 0,
@@ -208,7 +218,7 @@ export const BoundaryDrawTest: React.FC = () => {
         />
       </div>
 
-      {/* ── Black bars (above/below satellite tile) ── */}
+      {/* ── Black bars top/bottom ── */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0,
         height: TILE_TOP_OFFSET, background: '#0a0a08',
@@ -221,11 +231,12 @@ export const BoundaryDrawTest: React.FC = () => {
       {/* ── Dark overlay for legibility ── */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'rgba(0,0,0,0.25)',
+        background: 'rgba(0,0,0,0.20)',
         pointerEvents: 'none',
       }} />
 
-      {/* ── SVG parcel boundary overlay (full canvas, viewBox zooms to parcel) ── */}
+      {/* ── SVG boundary overlay: full canvas 1080x1920, no viewBox zoom ── */}
+      {/* Uses real canvas coordinates so no projection offset needed */}
       <svg
         style={{
           position: 'absolute',
@@ -233,15 +244,35 @@ export const BoundaryDrawTest: React.FC = () => {
           left: 0,
           width: 1080,
           height: 1920,
-          opacity: pathAlpha,
           overflow: 'visible',
+          transformOrigin: `${centroidX.toFixed(2)}px ${centroidY.toFixed(2)}px`,
+          transform: `scale(${breatheScale})`,
         }}
-        viewBox={`${VB_X} ${VB_Y} ${VIEW_SIZE} ${VIEW_SIZE}`}
+        viewBox="0 0 1080 1920"
       >
         <defs>
-          <filter id="goldGlow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation={STROKE_W * 2.5} result="blur" />
-            <feFlood floodColor="#C8A864" floodOpacity="0.7" result="color" />
+          {/* Radial gradient centered on subdivision centroid */}
+          <radialGradient
+            id="vandevertFill"
+            cx={centroidX}
+            cy={centroidY}
+            r={gradRadius}
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0%" stopColor={GOLD} stopOpacity={fillAlphaCenter} />
+            <stop offset="100%" stopColor={GOLD} stopOpacity={fillAlphaEdge} />
+          </radialGradient>
+
+          {/* Clip path: only fill inside the union of both polygons */}
+          <clipPath id="subdivisionClip">
+            <path d={PATH2} />
+            <path d={PATH1} />
+          </clipPath>
+
+          {/* Gold glow filter for stroke */}
+          <filter id="goldGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feFlood floodColor={GOLD} floodOpacity="0.45" result="color" />
             <feComposite in="color" in2="blur" operator="in" result="glow" />
             <feMerge>
               <feMergeNode in="glow" />
@@ -250,52 +281,72 @@ export const BoundaryDrawTest: React.FC = () => {
           </filter>
         </defs>
 
-        {/* Glow pass */}
+        {/* Fill: radial gradient clipped to subdivision polygons */}
+        <rect
+          x={0} y={0} width={1080} height={1920}
+          fill="url(#vandevertFill)"
+          clipPath="url(#subdivisionClip)"
+        />
+
+        {/* Phase II boundary stroke — thin gold, glow filter */}
         <path
-          d={PATH_D_CANVAS}
+          d={PATH2}
           fill="none"
-          stroke="#C8A864"
-          strokeWidth={STROKE_W * 3}
-          strokeOpacity={0.4}
+          stroke={GOLD}
+          strokeWidth={0.5}
+          strokeOpacity={strokeAlpha}
           strokeLinecap="round"
           strokeLinejoin="round"
           filter="url(#goldGlow)"
         />
 
-        {/* Animated draw pass */}
+        {/* Phase I boundary stroke */}
         <path
-          d={PATH_D_CANVAS}
-          fill="rgba(200,168,100,0.05)"
-          stroke="#C8A864"
-          strokeWidth={STROKE_W}
+          d={PATH1}
+          fill="none"
+          stroke={GOLD}
+          strokeWidth={0.5}
+          strokeOpacity={strokeAlpha}
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeDasharray={PERIMETER_DISPLAY_PX}
-          strokeDashoffset={strokeDashoffset}
+          filter="url(#goldGlow)"
         />
       </svg>
 
-      {/* ── Cover frame text: "1892." (Option A hook, Gate 3 placeholder) ── */}
+      {/* ── "1892." cover frame text ── */}
       <div style={{
         position: 'absolute', inset: 0,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        opacity: textAlpha, pointerEvents: 'none',
+        opacity: year1892Alpha, pointerEvents: 'none',
       }}>
         <div style={{
           fontFamily: 'Georgia, serif',
           fontSize: 200,
           fontWeight: 700,
-          color: '#C8A864',
+          color: GOLD,
           letterSpacing: '0.02em',
           textShadow: '0 4px 40px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.95)',
           lineHeight: 1,
         }}>
           1892.
         </div>
+        <div style={{
+          fontFamily: 'Georgia, serif',
+          fontSize: 36,
+          fontWeight: 400,
+          color: GOLD,
+          letterSpacing: '0.35em',
+          textTransform: 'uppercase',
+          textShadow: '0 2px 16px rgba(0,0,0,0.9)',
+          marginTop: 24,
+          opacity: vanchTagAlpha,
+        }}>
+          VANDEVERT RANCH
+        </div>
       </div>
 
-      {/* ── Subtitle: VANDEVERT RANCH (appears at 5s) ── */}
+      {/* ── "REPRESENTED BY RYAN REALTY" subtitle at 4.5s ── */}
       <div style={{
         position: 'absolute',
         bottom: 280,
@@ -305,14 +356,14 @@ export const BoundaryDrawTest: React.FC = () => {
       }}>
         <div style={{
           fontFamily: FONT_SANS || 'Montserrat, sans-serif',
-          fontSize: 36,
+          fontSize: 24,
           fontWeight: 600,
           color: CREAM,
-          letterSpacing: '0.25em',
+          letterSpacing: '0.22em',
           textTransform: 'uppercase',
           textShadow: '0 2px 16px rgba(0,0,0,0.9)',
         }}>
-          VANDEVERT RANCH
+          REPRESENTED BY RYAN REALTY
         </div>
       </div>
 
