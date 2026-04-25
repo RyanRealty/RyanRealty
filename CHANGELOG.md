@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.61.0 (2026-04-25)
+
+### Features
+- feat(listing-video-v5): v5.3 — gimbal walk interiors, cinemagraph masks, full punch list cleared
+
+---
+
+
 ## v1.60.2 (2026-04-25)
 
 ### Maintenance
