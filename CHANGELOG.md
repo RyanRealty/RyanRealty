@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.53.1 (2026-04-25)
+
+### Bug Fixes
+- fix(listing-video-v5): copy missing historic thumbs to public/ for Vercel
+
+---
+
+
 ## v1.53.0 (2026-04-25)
 
 ### Features
