@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.60.2 (2026-04-25)
+
+### Maintenance
+- docs(data): add authoritative cache-table field spec
+
+---
+
+
 ## v1.60.1 (2026-04-25)
 
 ### Maintenance
