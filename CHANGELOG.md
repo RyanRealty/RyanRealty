@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.52.0 (2026-04-25)
+
+### Features
+- feat(listing-video-v5): Gate 1 photo contact sheet for Schoolhouse v5
+
+---
+
+
 ## v1.51.5 (2026-04-24)
 
 ### Maintenance
