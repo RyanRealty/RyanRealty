@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.56.1 (2026-04-25)
+
+### Maintenance
+- docs(listing-video-v5): lock Option A cover frame hook + reference Gate 3 KML
+
+---
+
+
 ## v1.56.0 (2026-04-25)
 
 ### Features
