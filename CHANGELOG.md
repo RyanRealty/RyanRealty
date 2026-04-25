@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.56.4 (2026-04-25)
+
+### Maintenance
+- chore(listing-video-v5): mirror boundary_draw_test_v6 to Vercel public/
+
+---
+
+
 ## v1.56.3 (2026-04-25)
 
 ### Bug Fixes
