@@ -1,0 +1,21 @@
+{
+  "name": "listing_video",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "remotion studio",
+    "render:portrait": "remotion render src/index.ts SchoolhousePortrait out/schoolhouse_portrait_raw.mp4 --codec h264 --concurrency 2 --crf 18 --image-format=jpeg --jpeg-quality=94"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.290",
+    "@remotion/cli": "4.0.290",
+    "@remotion/renderer": "4.0.290",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "4.0.290"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.5.3"
+  }
+}
