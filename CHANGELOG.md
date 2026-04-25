@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.62.0 (2026-04-25)
+
+### Features
+- feat(data): rewrite cache layer per field-by-field spec
+
+---
+
+
 ## v1.61.0 (2026-04-25)
 
 ### Features
