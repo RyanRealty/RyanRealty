@@ -189,8 +189,8 @@ export const OpenSequence: React.FC = () => {
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          filter: 'grayscale(1) blur(34px) brightness(0.55) contrast(1.05)',
-          transform: 'scale(1.15)',
+          filter: 'grayscale(1) blur(26px) brightness(0.85) contrast(1.05)',
+          transform: 'scale(1.30)',
         }}
       />
 
@@ -215,10 +215,11 @@ export const OpenSequence: React.FC = () => {
         />
       </div>
 
-      {/* Dark overlay for legibility — v5.3: deeper vignette so gold pops */}
+      {/* v5.6: dark overlay reduced — was reading as black bars over the
+          blurred backdrop. Gold still pops against the brighter backdrop. */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'rgba(0,0,0,0.32)',
+        background: 'rgba(0,0,0,0.12)',
         pointerEvents: 'none',
       }} />
 
@@ -322,10 +323,11 @@ export const OpenSequence: React.FC = () => {
 
       {/* v5.4: REPRESENTED BY RYAN REALTY subtitle removed per Matt. */}
 
-      {/* Vignette — deeper to cradle the boundary glow */}
+      {/* v5.6: vignette dialed back so corners are not darkened to black.
+          Gradient now stops at 0.30 alpha at corners (was 0.72). */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 28%, rgba(0,0,0,0.72) 100%)',
+        background: 'radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.30) 100%)',
         pointerEvents: 'none',
       }} />
     </AbsoluteFill>

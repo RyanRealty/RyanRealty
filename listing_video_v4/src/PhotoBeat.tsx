@@ -122,8 +122,10 @@ export const PhotoBeat: React.FC<Props> = ({
   const localFrame = Math.round(local * fps);
   const cam = cameraTransform(localFrame, totalFrames, move);
 
-  const tEntry = clamp(local / crossfadeIn, 0, 1);
-  const tExit = clamp((local - (durationSec - crossfadeOut)) / crossfadeOut, 0, 1);
+  const tEntry = crossfadeIn > 0 ? clamp(local / crossfadeIn, 0, 1) : 1;
+  const tExit = crossfadeOut > 0
+    ? clamp((local - (durationSec - crossfadeOut)) / crossfadeOut, 0, 1)
+    : 0;
   const photoAlpha = easeOutCubic(tEntry) * (1 - tExit);
 
   const tTitle = clamp((local - 0.7) / 0.7, 0, 1);
@@ -165,8 +167,8 @@ export const PhotoBeat: React.FC<Props> = ({
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              filter: `${finalFilter} blur(34px) brightness(0.62) saturate(0.95)`,
-              transform: 'scale(1.12)',
+              filter: `${finalFilter} blur(28px) brightness(0.95) saturate(1.05)`,
+              transform: 'scale(1.30)',
               opacity: photoAlpha,
             }}
           />
@@ -361,23 +363,31 @@ export const PhotoBeat: React.FC<Props> = ({
       style={{
         position: 'absolute',
         inset: 0,
-        background: '#0a0805',
+        // v5.6 final: parent ALWAYS transparent. With Sequence overlap pattern
+        // (each beat's Sequence starts 0.5s before the previous ends), the
+        // previous beat must be visible through this beat during fade-in. An
+        // opaque dark parent here blocks the previous layer and creates a
+        // brief dark frame at every transition.
+        background: 'transparent',
         overflow: 'hidden',
       }}
     >
       {renderPhoto()}
       {renderCinemagraph()}
 
-      {/* Shared vignette */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: SHARED_VIGNETTE,
-          opacity: 0.85 * photoAlpha,
-          pointerEvents: 'none',
-        }}
-      />
+      {/* Shared vignette — skip on vignetteLetterbox so the corners don't dim
+          the blurred backdrop into looking like black bars. */}
+      {!vignetteLetterbox && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: SHARED_VIGNETTE,
+            opacity: 0.85 * photoAlpha,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
 
       {/* Subtle film-grain noise */}
       <div

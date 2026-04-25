@@ -46,7 +46,7 @@ import { CameraMoveOpts } from './cameraMoves';
 import { clamp, easeOutCubic } from './easing';
 
 const FPS = 30;
-export const LISTING_TOTAL_SEC = 123.0;
+export const LISTING_TOTAL_SEC = 127.0;
 
 const VR_CREDIT = 'Photo: Vandevert Ranch family archive / vandevertranch.org';
 const VR_HAYNES_CREDIT = 'Photo: Ted Haynes / vandevertranch.org';
@@ -64,6 +64,9 @@ type BeatDef = {
   vignetteLetterbox?: boolean;
   credit?: string;
   objectPosition?: string;
+  /** Per-beat crossfade overrides (default 0.5 each) */
+  crossfadeIn?: number;
+  crossfadeOut?: number;
 };
 
 const BEATS: BeatDef[] = [
@@ -99,9 +102,9 @@ const BEATS: BeatDef[] = [
     credit: VR_CREDIT },
 
   // === Act 3: Subdivision bridge ==============================================
-  // Beat 6 — barn / Newberry Crater. Carries the v55_s04 1970-subdivision line.
+  // Beat 6 — barn / Newberry Crater. v5.6: extended to 8s for longer s04.
   { photo: 'v5_library/historic/vr_barn_newberry_crater.jpg',
-    startSec: 38, durationSec: 7,
+    startSec: 38, durationSec: 8,
     move: { move: 'push_in', focal: 'center', intensity: 0.5 },
     historic: false,
     cinemagraph: { mask: 'v5_library/masks/mask_barn_sky.png', type: 'sky_drift' },
@@ -109,110 +112,114 @@ const BEATS: BeatDef[] = [
 
   // === Act 4: Architect & entry ===============================================
   { photo: 'v5_library/historic/architect_locati.jpg',
-    startSec: 45, durationSec: 5,
+    startSec: 46, durationSec: 5,
     move: { move: 'push_counter', focal: 'center', intensity: 1.0, counterDir: 'left' },
     historic: true,
     credit: LOCATI_CREDIT },
   { photo: 'v5_library/modern/5-web-or-mls-_DSC0771.jpg',
-    startSec: 50, durationSec: 4,
+    startSec: 51, durationSec: 4,
     move: { move: 'push_in', focal: 'center', intensity: 1.5 },
     historic: false },
 
   // === Act 5: Modern home tour ================================================
   // Beat 9 — hero exterior, vignetteLetterbox (blurred photo backdrop fills dead space).
   { photo: 'v5_library/modern/2-web-or-mls-_DSC1055.jpg',
-    startSec: 54, durationSec: 4,
+    startSec: 55, durationSec: 4.5,
     move: { move: 'push_in', focal: 'center', intensity: 0.3 },
     historic: false,
     vignetteLetterbox: true },
   // Beat 10 — window + Mt. Bachelor. Cinemagraph sky_drift on upper sky.
   { photo: 'v5_library/modern/11-web-or-mls-_DSC0950.jpg',
-    startSec: 58, durationSec: 5,
+    startSec: 59.5, durationSec: 5.5,
     move: { move: 'push_in', focal: 'center', intensity: 1.6 },
     historic: false,
     cinemagraph: { mask: 'v5_library/masks/mask_window_sky.png', type: 'sky_drift' } },
   // Beat 11 — hearth. gimbal_walk.
   { photo: 'v5_library/modern/13-web-or-mls-_DSC0810.jpg',
-    startSec: 63, durationSec: 4.5,
+    startSec: 65, durationSec: 4.5,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 1.0, direction: 'lr' },
     historic: false },
-  // Beat 12 — dining/kitchen. v55: extended to 6.5s for the new s06c finishes line.
+  // Beat 12 — dining/kitchen. v5.6: 7s for the longer s06c finishes line.
   { photo: 'v5_library/modern/17-web-or-mls-_DSC0836.jpg',
-    startSec: 67.5, durationSec: 6.5,
+    startSec: 69.5, durationSec: 7,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 1.0, direction: 'lr' },
     historic: false },
-  // Beat 13 — primary bedroom. gimbal_walk RL.
+  // Beat 13 — primary bedroom.
   { photo: 'v5_library/modern/25-web-or-mls-_DSC0898.jpg',
-    startSec: 74, durationSec: 4,
+    startSec: 76.5, durationSec: 4,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 0.9, direction: 'rl' },
     historic: false },
   // Beat 14 — view doors HERO push.
   { photo: 'v5_library/modern/27-web-or-mls-_DSC0961.jpg',
-    startSec: 78, durationSec: 4,
+    startSec: 80.5, durationSec: 4,
     move: { move: 'push_in', focal: 'center', intensity: 1.3 },
     historic: false },
-  // Beat 15 — sunroom. gimbal_walk LR.
+  // Beat 15 — sunroom.
   { photo: 'v5_library/modern/28-web-or-mls-_DSC1010.jpg',
-    startSec: 82, durationSec: 4,
+    startSec: 84.5, durationSec: 4,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 0.9, direction: 'lr' },
     historic: false },
-  // Beat 16 — primary bath, walk-in shower w/ stonework. gimbal_walk LR.
+  // Beat 16 — primary bath walk-in shower.
   { photo: 'v5_library/modern/30-web-or-mls-_DSC0930.jpg',
-    startSec: 86, durationSec: 4,
+    startSec: 88.5, durationSec: 4,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 0.8, direction: 'lr' },
     historic: false },
   // Beat 17 — fire patio. objectPosition right-bias so fireplace is in frame.
   { photo: 'v5_library/modern/52-web-or-mls-_DSC1022.jpg',
-    startSec: 90, durationSec: 5,
+    startSec: 92.5, durationSec: 5,
     move: { move: 'push_in', focal: 'center', intensity: 0.4 },
     historic: false,
     cinemagraph: { mask: 'v5_library/masks/mask_fire_patio.png', type: 'flame_flicker' },
     objectPosition: '88% 50%' },
 
   // === Act 6: Outdoor / wildlife ==============================================
-  // Beat 18 — elk fording the river. v5.5: STILL motion + vignetteLetterbox so the
-  // whole photo stays in frame for the duration (both herd left + lone elk middle
-  // visible). Blurred backdrop fills dead space top + bottom. No pan.
+  // Beat 18 — elk fording the river. STILL motion + vignetteLetterbox so the
+  // whole photo stays in frame (both herd + lone elk visible). Cinemagraph
+  // water_flow on the river.
   { photo: 'v5_library/historic/vr_elk_ford_little_deschutes.jpg',
-    startSec: 95, durationSec: 4.5,
+    startSec: 97.5, durationSec: 5.5,
     move: { move: 'still', focal: 'center', intensity: 1.0 },
     historic: false,
     cinemagraph: { mask: 'v5_library/masks/mask_elk_river.png', type: 'water_flow' },
     vignetteLetterbox: true,
     credit: ELK_CREDIT },
-  // Beat 19 — elk herd in the meadow.
-  { photo: 'v5_library/modern/86-web-or-mls-_DSC1090.jpg',
-    startSec: 99.5, durationSec: 4,
-    move: { move: 'slow_pan_lr', focal: 'center', intensity: 0.9 },
-    historic: false },
+  // v5.6: Beat 19 (elk herd #86) DROPPED — only one elk photo.
 
   // === Act 7: River and aerial close ==========================================
   // Beat 20 — Snowdrift area guide.
   { photo: 'v5_library/snowdrift/Area Guide - Vandevert Ranch - 02.JPG',
-    startSec: 103.5, durationSec: 6.5,
+    startSec: 103, durationSec: 7,
     move: { move: 'push_in', focal: 'center', intensity: 0.4 },
     historic: false,
     credit: SNOWDRIFT_CREDIT },
-  // Beat 21 — pond-facing aerial of the home. gimbal_walk pan.
+  // Beat 21 — pond-facing aerial. v5.6: 8s long final hold. crossfadeOut 0 so
+  // the photo stays at full opacity until the Reveal Sequence (started earlier
+  // with overlap) has already faded its navy fully opaque on top. Eliminates
+  // the dark/black flash that v5.6 v1 had at the Beat 21 → Reveal transition.
   { photo: 'v5_library/modern/62-web-or-mls-DJI_20260127142754_0088_D.jpg',
-    startSec: 110, durationSec: 5,
-    move: { move: 'gimbal_walk', focal: 'center', intensity: 0.7, direction: 'lr' },
-    historic: false },
+    startSec: 110, durationSec: 8,
+    move: { move: 'gimbal_walk', focal: 'center', intensity: 0.5, direction: 'lr' },
+    historic: false,
+    crossfadeOut: 0 },
 ];
 
-// ─── ClosingReveal staged text (with address per Matt) ───────────────────────
+// ─── ClosingReveal staged text — v5.6: starts overlapped with Beat 21 so navy
+// fades in fully on top of the still-visible photo (no charcoal flash). ──────
 const RevealInner: React.FC<{ durationSec: number }> = ({ durationSec }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
-  const navyAlpha = clamp(t / 0.4, 0, 1);
-  const pendingAlpha = clamp((t - 0.3) / 0.4, 0, 1);
-  const pendingScale = 1.2 - 0.2 * easeOutCubic(clamp((t - 0.3) / 0.4, 0, 1));
-  const priceAlpha = clamp((t - 0.7) / 0.6, 0, 1);
-  const priceTranslate = (1 - easeOutCubic(clamp((t - 0.7) / 0.6, 0, 1))) * 16;
-  const addressAlpha = clamp((t - 1.5) / 0.6, 0, 1);
-  const addressTranslate = (1 - easeOutCubic(clamp((t - 1.5) / 0.6, 0, 1))) * 12;
-  const brokerageAlpha = clamp((t - 2.4) / 0.7, 0, 1);
+  // Navy fades in over 0.5s. Reveal Sequence starts 0.5s before Beat 21 ends,
+  // so navy is fully opaque exactly when Beat 21's photo would otherwise vanish.
+  const navyAlpha = clamp(t / 0.5, 0, 1);
+  // All staged text shifted later by 0.5s to compensate for the earlier start.
+  const pendingAlpha = clamp((t - 1.0) / 0.7, 0, 1);
+  const pendingScale = 1.2 - 0.2 * easeOutCubic(clamp((t - 1.0) / 0.7, 0, 1));
+  const priceAlpha = clamp((t - 1.8) / 0.9, 0, 1);
+  const priceTranslate = (1 - easeOutCubic(clamp((t - 1.8) / 0.9, 0, 1))) * 16;
+  const addressAlpha = clamp((t - 2.9) / 0.8, 0, 1);
+  const addressTranslate = (1 - easeOutCubic(clamp((t - 2.9) / 0.8, 0, 1))) * 12;
+  const brokerageAlpha = clamp((t - 4.1) / 0.9, 0, 1);
   return (
     <AbsoluteFill style={{ background: NAVY, opacity: navyAlpha }}>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -245,44 +252,45 @@ const BeatWrapper: React.FC<{ beat: BeatDef }> = ({ beat }) => {
       credit={beat.credit}
       objectPosition={beat.objectPosition}
       scrim="none"
-      crossfadeIn={0.5}
-      crossfadeOut={0.5}
+      crossfadeIn={beat.crossfadeIn ?? 0.5}
+      crossfadeOut={beat.crossfadeOut ?? 0}
     />
   );
 };
 
 // ─── Main composition ────────────────────────────────────────────────────────
 export const Listing: React.FC = () => {
-  // Music volume curve for v5.5 (~123s)
+  // Music volume curve for v5.6 (~127s) — slower swell into the reveal.
   const musicVolume = (frame: number) => {
     const t = frame / FPS;
     if (t < 7) return interpolate(t, [0, 7], [0.30, 0.55], { extrapolateRight: 'clamp' });
     if (t < 8) return interpolate(t, [7, 8], [0.55, 0.20]);
-    if (t < 113.5) return 0.20;
-    if (t < 115) return interpolate(t, [113.5, 115], [0.20, 0.45]);
-    if (t < 117.5) return 0.45;
-    if (t < 119.5) return interpolate(t, [117.5, 119.5], [0.45, 0.0], { extrapolateRight: 'clamp' });
+    if (t < 115) return 0.20;
+    if (t < 118) return interpolate(t, [115, 118], [0.20, 0.50]);
+    if (t < 121.5) return 0.50;
+    if (t < 124) return interpolate(t, [121.5, 124], [0.50, 0.0], { extrapolateRight: 'clamp' });
     return 0;
   };
 
-  // v5.5 VO sequencing — 7 sentences re-synthed (s04, s05, s05b, s06, s06c, s10, s11),
-  // 2 new beats with VO (Beat 12 dining finishes line). All adjacent gaps verified positive.
+  // v5.6 VO sequencing — re-synthed s04/s05/s05b/s06/s06c/s10/s11 with previous_text
+  // chaining for prosody continuity. Beat 19 (second elk photo) dropped.
+  // All adjacent gaps verified positive (no overlap).
   const VO = [
     { src: 'audio/v51_s01.mp3',  startSec: 7.5   },  // 8.62s — Beats 1+2
     { src: 'audio/v51_s02.mp3',  startSec: 19.8  },  // 2.46s — Beat 3
     { src: 'audio/v53_s03a.mp3', startSec: 26.5  },  // 4.49s — Beat 4 surrey
     { src: 'audio/v54_s03b.mp3', startSec: 31.5  },  // 2.69s — Beat 5 footbridge
-    { src: 'audio/v55_s04.mp3',  startSec: 38.5  },  // 6.03s — Beat 6 barn (1970 subdivision)
-    { src: 'audio/v55_s05.mp3',  startSec: 45.7  },  // 7.78s — Beats 7+8 architect+entry
-    { src: 'audio/v55_s05b.mp3', startSec: 54.5  },  // 1.49s — Beat 9 hero ext "Made to wear in"
-    { src: 'audio/v55_s06.mp3',  startSec: 58.5  },  // 8.91s — Beats 10+11 modern intro (Cascades)
-    { src: 'audio/v55_s06c.mp3', startSec: 68.0  },  // 6.27s — Beat 12 dining finishes
-    { src: 'audio/v54_s06b.mp3', startSec: 78.5  },  // 3.11s — Beat 14 view doors "looking glass"
-    { src: 'audio/v51_s07.mp3',  startSec: 82.5  },  // 4.60s — Beat 15 sunroom
-    { src: 'audio/v51_s08.mp3',  startSec: 90.5  },  // 3.16s — Beat 17 fire patio
-    { src: 'audio/v53_s09.mp3',  startSec: 95.5  },  // 2.82s — Beat 18 elk river
-    { src: 'audio/v55_s10.mp3',  startSec: 104.0 },  // 4.91s — Beat 20 Snowdrift (Deschutes phoneme)
-    { src: 'audio/v55_s11.mp3',  startSec: 111.0 },  // 2.17s — Beat 21 "honored to be a part of it"
+    { src: 'audio/v56_s04.mp3',  startSec: 38.5  },  // 7.34s — Beat 6 barn (1970 subdivision)
+    { src: 'audio/v56_s05.mp3',  startSec: 46.5  },  // 8.80s — Beats 7+8 architect+entry
+    { src: 'audio/v56_s05b.mp3', startSec: 56.0  },  // 1.49s — Beat 9 hero ext "Made to wear in"
+    { src: 'audio/v56_s06.mp3',  startSec: 60.0  },  // 10.89s — Beats 10+11 modern intro (Cascades)
+    { src: 'audio/v56_s06c.mp3', startSec: 71.5  },  // 7.89s — Beat 12 dining finishes
+    { src: 'audio/v54_s06b.mp3', startSec: 81.0  },  // 3.11s — Beat 14 view doors "looking glass"
+    { src: 'audio/v51_s07.mp3',  startSec: 85.0  },  // 4.60s — Beat 15 sunroom
+    { src: 'audio/v51_s08.mp3',  startSec: 93.0  },  // 3.16s — Beat 17 fire patio
+    { src: 'audio/v53_s09.mp3',  startSec: 98.0  },  // 2.82s — Beat 18 elk river
+    { src: 'audio/v56_s10.mp3',  startSec: 103.5 },  // 7.37s — Beat 20 Snowdrift (Deschutes literal)
+    { src: 'audio/v56_s11.mp3',  startSec: 113.0 },  // 2.04s — Beat 21 "honored to be a part of it"
   ];
 
   return (
@@ -295,21 +303,32 @@ export const Listing: React.FC = () => {
         </Sequence>
       ))}
 
-      <Sequence from={0} durationInFrames={Math.round(7 * FPS)}>
+      {/* OpenSequence runs 0.5s longer (7.5s) so Beat 1's fade-in (6.5–7.0)
+          overlaps the open's final state. No charcoal flash at the transition. */}
+      <Sequence from={0} durationInFrames={Math.round(7.5 * FPS)}>
         <OpenSequence />
       </Sequence>
 
+      {/* Every beat Sequence starts 0.5s before its declared startSec and
+          runs 0.5s longer. Combined with default crossfadeOut=0, the previous
+          beat stays at full opacity while the next beat's crossfadeIn fades in
+          on top of it — no AbsoluteFill background ever shows through during
+          transitions. */}
       {BEATS.map((beat, i) => (
-        <Sequence key={i} from={Math.round(beat.startSec * FPS)} durationInFrames={Math.round(beat.durationSec * FPS)}>
+        <Sequence
+          key={i}
+          from={Math.round(Math.max(0, beat.startSec - 0.5) * FPS)}
+          durationInFrames={Math.round((beat.durationSec + 0.5) * FPS)}
+        >
           <BeatWrapper beat={beat} />
         </Sequence>
       ))}
 
-      <Sequence from={Math.round(115 * FPS)} durationInFrames={Math.round(5 * FPS)}>
-        <RevealInner durationSec={5} />
+      <Sequence from={Math.round(117.5 * FPS)} durationInFrames={Math.round(6.5 * FPS)}>
+        <RevealInner durationSec={6.5} />
       </Sequence>
 
-      <BrandOutro startFrame={Math.round(120 * FPS)} durationSec={3} />
+      <BrandOutro startFrame={Math.round(124 * FPS)} durationSec={3} />
     </AbsoluteFill>
   );
 };
