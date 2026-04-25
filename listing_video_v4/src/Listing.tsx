@@ -46,7 +46,7 @@ import { CameraMoveOpts } from './cameraMoves';
 import { clamp, easeOutCubic } from './easing';
 
 const FPS = 30;
-export const LISTING_TOTAL_SEC = 122.5;
+export const LISTING_TOTAL_SEC = 123.0;
 
 const VR_CREDIT = 'Photo: Vandevert Ranch family archive / vandevertranch.org';
 const VR_HAYNES_CREDIT = 'Photo: Ted Haynes / vandevertranch.org';
@@ -67,21 +67,17 @@ type BeatDef = {
 };
 
 const BEATS: BeatDef[] = [
-  // === Act 1: Family (3 beats, brief) =========================================
-  // Beat 1 — Sadie young
+  // === Act 1: Family (3 beats) ================================================
   { photo: 'v5_library/historic/vr_sadie_girl.jpg',
     startSec: 7, durationSec: 6,
     move: { move: 'push_counter', focal: 'center', intensity: 0.6, counterDir: 'left' },
     historic: true,
     credit: VR_CREDIT },
-  // Beat 2 — William YOUNGER (was 03_william_p_with_cane). Same age range as Sadie.
   { photo: 'v5_library/historic/02_william_plutarch_vandevert.jpg',
     startSec: 13, durationSec: 6,
     move: { move: 'push_counter', focal: 'center', intensity: 0.6, counterDir: 'right' },
     historic: true,
     credit: VR_CREDIT },
-  // Beat 3 — Family rockpile WIDE-MODE pan, L→R, traverses every face
-  // anchors [+30, 0, -30] = camera reveals LEFT→CENTER→RIGHT
   { photo: 'v5_library/historic/09_family_rockpile.jpg',
     startSec: 19, durationSec: 7,
     move: { move: 'multi_point_pan', focal: 'center', intensity: 1.0,
@@ -89,25 +85,23 @@ const BEATS: BeatDef[] = [
     historic: true,
     credit: VR_CREDIT },
 
-  // === Act 2: Ranch life (2 beats) ============================================
-  // Beat 4 — surrey, slow_pan_lr WIDE-MODE, real traverse across the family
+  // === Act 2: Ranch life ======================================================
   { photo: 'v5_library/historic/vr_people_with_surrey.jpg',
     startSec: 26, durationSec: 5,
     move: { move: 'slow_pan_lr', focal: 'center', intensity: 1.4 },
     historic: true,
     credit: VR_CREDIT },
-  // Beat 5 — footbridge (replaces sheep_dip). Cinemagraph: water ripple under bridge.
   { photo: 'v5_library/historic/vr_people_on_footbridge.jpg',
-    startSec: 31, durationSec: 7.5,
+    startSec: 31, durationSec: 7,
     move: { move: 'push_in', focal: 'center', intensity: 0.6 },
     historic: true,
     cinemagraph: { mask: 'v5_library/masks/mask_footbridge_water.png', type: 'water_ripple' },
     credit: VR_CREDIT },
 
-  // === Act 3: Bridge to modern ================================================
-  // Beat 6 — barn / Newberry Crater. Cinemagraph: slow cloud drift in sky.
+  // === Act 3: Subdivision bridge ==============================================
+  // Beat 6 — barn / Newberry Crater. Carries the v55_s04 1970-subdivision line.
   { photo: 'v5_library/historic/vr_barn_newberry_crater.jpg',
-    startSec: 38.5, durationSec: 5.5,
+    startSec: 38, durationSec: 7,
     move: { move: 'push_in', focal: 'center', intensity: 0.5 },
     historic: false,
     cinemagraph: { mask: 'v5_library/masks/mask_barn_sky.png', type: 'sky_drift' },
@@ -115,94 +109,93 @@ const BEATS: BeatDef[] = [
 
   // === Act 4: Architect & entry ===============================================
   { photo: 'v5_library/historic/architect_locati.jpg',
-    startSec: 44, durationSec: 5,
+    startSec: 45, durationSec: 5,
     move: { move: 'push_counter', focal: 'center', intensity: 1.0, counterDir: 'left' },
     historic: true,
     credit: LOCATI_CREDIT },
   { photo: 'v5_library/modern/5-web-or-mls-_DSC0771.jpg',
-    startSec: 49, durationSec: 4,
+    startSec: 50, durationSec: 4,
     move: { move: 'push_in', focal: 'center', intensity: 1.5 },
     historic: false },
 
   // === Act 5: Modern home tour ================================================
-  // Beat 9 — hero exterior in VIGNETTE-LETTERBOX mode (show the whole horizontal house).
+  // Beat 9 — hero exterior, vignetteLetterbox (blurred photo backdrop fills dead space).
   { photo: 'v5_library/modern/2-web-or-mls-_DSC1055.jpg',
-    startSec: 53, durationSec: 4,
+    startSec: 54, durationSec: 4,
     move: { move: 'push_in', focal: 'center', intensity: 0.3 },
     historic: false,
     vignetteLetterbox: true },
-  // Beat 10 — window + Mt. Bachelor. Cinemagraph: subtle cloud drift in upper sky region.
+  // Beat 10 — window + Mt. Bachelor. Cinemagraph sky_drift on upper sky.
   { photo: 'v5_library/modern/11-web-or-mls-_DSC0950.jpg',
-    startSec: 57, durationSec: 5,
+    startSec: 58, durationSec: 5,
     move: { move: 'push_in', focal: 'center', intensity: 1.6 },
     historic: false,
     cinemagraph: { mask: 'v5_library/masks/mask_window_sky.png', type: 'sky_drift' } },
-  // Beat 11 — hearth. gimbal_walk for real walkthrough register.
+  // Beat 11 — hearth. gimbal_walk.
   { photo: 'v5_library/modern/13-web-or-mls-_DSC0810.jpg',
-    startSec: 62, durationSec: 4.5,
+    startSec: 63, durationSec: 4.5,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 1.0, direction: 'lr' },
     historic: false },
-  // Beat 12 — dining/kitchen. gimbal_walk.
+  // Beat 12 — dining/kitchen. v55: extended to 6.5s for the new s06c finishes line.
   { photo: 'v5_library/modern/17-web-or-mls-_DSC0836.jpg',
-    startSec: 66.5, durationSec: 4.5,
+    startSec: 67.5, durationSec: 6.5,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 1.0, direction: 'lr' },
     historic: false },
   // Beat 13 — primary bedroom. gimbal_walk RL.
   { photo: 'v5_library/modern/25-web-or-mls-_DSC0898.jpg',
-    startSec: 71, durationSec: 4,
+    startSec: 74, durationSec: 4,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 0.9, direction: 'rl' },
     historic: false },
-  // Beat 14 — view doors HERO push (this is the money shot).
+  // Beat 14 — view doors HERO push.
   { photo: 'v5_library/modern/27-web-or-mls-_DSC0961.jpg',
-    startSec: 75, durationSec: 4,
+    startSec: 78, durationSec: 4,
     move: { move: 'push_in', focal: 'center', intensity: 1.3 },
     historic: false },
   // Beat 15 — sunroom. gimbal_walk LR.
   { photo: 'v5_library/modern/28-web-or-mls-_DSC1010.jpg',
-    startSec: 79, durationSec: 4.5,
+    startSec: 82, durationSec: 4,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 0.9, direction: 'lr' },
     historic: false },
-  // Beat 16 — primary bath SWAPPED to #30 walk-in shower w/ stonework. gimbal_walk LR.
+  // Beat 16 — primary bath, walk-in shower w/ stonework. gimbal_walk LR.
   { photo: 'v5_library/modern/30-web-or-mls-_DSC0930.jpg',
-    startSec: 83.5, durationSec: 4,
+    startSec: 86, durationSec: 4,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 0.8, direction: 'lr' },
     historic: false },
-  // Beat 17 — fire patio. v5.4: objectPosition '88% 50%' biases the cover crop
-  // hard right so the fireplace (right edge of source) actually shows on screen.
-  // Smoothed flame_flicker (no longer jerky).
+  // Beat 17 — fire patio. objectPosition right-bias so fireplace is in frame.
   { photo: 'v5_library/modern/52-web-or-mls-_DSC1022.jpg',
-    startSec: 87.5, durationSec: 5,
+    startSec: 90, durationSec: 5,
     move: { move: 'push_in', focal: 'center', intensity: 0.4 },
     historic: false,
     cinemagraph: { mask: 'v5_library/masks/mask_fire_patio.png', type: 'flame_flicker' },
     objectPosition: '88% 50%' },
 
   // === Act 6: Outdoor / wildlife ==============================================
-  // Beat 18 — elk fording the river. v5.4: gimbal_walk lr so camera traverses
-  // herd (left of source) to lone elk + bank (right). Cinemagraph water_flow
-  // stays on the river band.
+  // Beat 18 — elk fording the river. v5.5: STILL motion + vignetteLetterbox so the
+  // whole photo stays in frame for the duration (both herd left + lone elk middle
+  // visible). Blurred backdrop fills dead space top + bottom. No pan.
   { photo: 'v5_library/historic/vr_elk_ford_little_deschutes.jpg',
-    startSec: 92.5, durationSec: 4.5,
-    move: { move: 'gimbal_walk', focal: 'center', intensity: 0.6, direction: 'lr' },
+    startSec: 95, durationSec: 4.5,
+    move: { move: 'still', focal: 'center', intensity: 1.0 },
     historic: false,
     cinemagraph: { mask: 'v5_library/masks/mask_elk_river.png', type: 'water_flow' },
+    vignetteLetterbox: true,
     credit: ELK_CREDIT },
   // Beat 19 — elk herd in the meadow.
   { photo: 'v5_library/modern/86-web-or-mls-_DSC1090.jpg',
-    startSec: 97, durationSec: 4,
+    startSec: 99.5, durationSec: 4,
     move: { move: 'slow_pan_lr', focal: 'center', intensity: 0.9 },
     historic: false },
 
   // === Act 7: River and aerial close ==========================================
   // Beat 20 — Snowdrift area guide.
   { photo: 'v5_library/snowdrift/Area Guide - Vandevert Ranch - 02.JPG',
-    startSec: 101, durationSec: 8.5,
+    startSec: 103.5, durationSec: 6.5,
     move: { move: 'push_in', focal: 'center', intensity: 0.4 },
     historic: false,
     credit: SNOWDRIFT_CREDIT },
-  // Beat 21 — POND-side aerial of the home (was front-facing #60). gimbal_walk pan.
+  // Beat 21 — pond-facing aerial of the home. gimbal_walk pan.
   { photo: 'v5_library/modern/62-web-or-mls-DJI_20260127142754_0088_D.jpg',
-    startSec: 109.5, durationSec: 5,
+    startSec: 110, durationSec: 5,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 0.7, direction: 'lr' },
     historic: false },
 ];
@@ -260,36 +253,36 @@ const BeatWrapper: React.FC<{ beat: BeatDef }> = ({ beat }) => {
 
 // ─── Main composition ────────────────────────────────────────────────────────
 export const Listing: React.FC = () => {
-  // Music volume curve for v5.3 (122.5s)
+  // Music volume curve for v5.5 (~123s)
   const musicVolume = (frame: number) => {
     const t = frame / FPS;
     if (t < 7) return interpolate(t, [0, 7], [0.30, 0.55], { extrapolateRight: 'clamp' });
     if (t < 8) return interpolate(t, [7, 8], [0.55, 0.20]);
-    if (t < 113) return 0.20;
-    if (t < 114.5) return interpolate(t, [113, 114.5], [0.20, 0.45]);
-    if (t < 117) return 0.45;
-    if (t < 119) return interpolate(t, [117, 119], [0.45, 0.0], { extrapolateRight: 'clamp' });
+    if (t < 113.5) return 0.20;
+    if (t < 115) return interpolate(t, [113.5, 115], [0.20, 0.45]);
+    if (t < 117.5) return 0.45;
+    if (t < 119.5) return interpolate(t, [117.5, 119.5], [0.45, 0.0], { extrapolateRight: 'clamp' });
     return 0;
   };
 
-  // VO sequencing — start times tuned so no two adjacent sentences overlap.
-  // v5.4 VO sequencing — 5 sentences re-synthed, 1 new (Beat 14 looking-glass).
-  // All adjacent gaps verified positive to prevent overlap.
+  // v5.5 VO sequencing — 7 sentences re-synthed (s04, s05, s05b, s06, s06c, s10, s11),
+  // 2 new beats with VO (Beat 12 dining finishes line). All adjacent gaps verified positive.
   const VO = [
-    { src: 'audio/v51_s01.mp3',  startSec: 7.5  },   // 8.62s — Beats 1+2 family
-    { src: 'audio/v51_s02.mp3',  startSec: 19.8 },   // 2.46s — Beat 3 rockpile
-    { src: 'audio/v53_s03a.mp3', startSec: 26.5 },   // 4.49s — Beat 4 surrey
-    { src: 'audio/v54_s03b.mp3', startSec: 31.5 },   // 3.06s — Beat 5 footbridge (shorter)
-    { src: 'audio/v54_s04.mp3',  startSec: 38.5 },   // 5.15s — Beat 6 barn (anchor century to 1892)
-    { src: 'audio/v51_s05.mp3',  startSec: 44.5 },   // 8.67s — Beats 7+8 architect+entry
-    { src: 'audio/v53_s05b.mp3', startSec: 54.0 },   // 1.75s — Beat 9 hero ext
-    { src: 'audio/v51_s06.mp3',  startSec: 57.0 },   // 10.68s — Beats 10+11 modern intro
-    { src: 'audio/v54_s06b.mp3', startSec: 75.5 },   // 3.34s — Beat 14 view doors HERO "looking glass"
-    { src: 'audio/v51_s07.mp3',  startSec: 79.7 },   // 4.60s — Beat 15 sunroom
-    { src: 'audio/v51_s08.mp3',  startSec: 88.0 },   // 3.16s — Beat 17 fire patio
-    { src: 'audio/v53_s09.mp3',  startSec: 93.0 },   // 2.82s — Beat 18 elk river
-    { src: 'audio/v54_s10.mp3',  startSec: 101.5 },  // 7.60s — Beat 20 Snowdrift (Dish Shoots phonetic)
-    { src: 'audio/v54_s11.mp3',  startSec: 110.0 },  // 3.76s — Beat 21 "changes hands once a generation"
+    { src: 'audio/v51_s01.mp3',  startSec: 7.5   },  // 8.62s — Beats 1+2
+    { src: 'audio/v51_s02.mp3',  startSec: 19.8  },  // 2.46s — Beat 3
+    { src: 'audio/v53_s03a.mp3', startSec: 26.5  },  // 4.49s — Beat 4 surrey
+    { src: 'audio/v54_s03b.mp3', startSec: 31.5  },  // 2.69s — Beat 5 footbridge
+    { src: 'audio/v55_s04.mp3',  startSec: 38.5  },  // 6.03s — Beat 6 barn (1970 subdivision)
+    { src: 'audio/v55_s05.mp3',  startSec: 45.7  },  // 7.78s — Beats 7+8 architect+entry
+    { src: 'audio/v55_s05b.mp3', startSec: 54.5  },  // 1.49s — Beat 9 hero ext "Made to wear in"
+    { src: 'audio/v55_s06.mp3',  startSec: 58.5  },  // 8.91s — Beats 10+11 modern intro (Cascades)
+    { src: 'audio/v55_s06c.mp3', startSec: 68.0  },  // 6.27s — Beat 12 dining finishes
+    { src: 'audio/v54_s06b.mp3', startSec: 78.5  },  // 3.11s — Beat 14 view doors "looking glass"
+    { src: 'audio/v51_s07.mp3',  startSec: 82.5  },  // 4.60s — Beat 15 sunroom
+    { src: 'audio/v51_s08.mp3',  startSec: 90.5  },  // 3.16s — Beat 17 fire patio
+    { src: 'audio/v53_s09.mp3',  startSec: 95.5  },  // 2.82s — Beat 18 elk river
+    { src: 'audio/v55_s10.mp3',  startSec: 104.0 },  // 4.91s — Beat 20 Snowdrift (Deschutes phoneme)
+    { src: 'audio/v55_s11.mp3',  startSec: 111.0 },  // 2.17s — Beat 21 "honored to be a part of it"
   ];
 
   return (
@@ -312,11 +305,11 @@ export const Listing: React.FC = () => {
         </Sequence>
       ))}
 
-      <Sequence from={Math.round(114.5 * FPS)} durationInFrames={Math.round(5 * FPS)}>
+      <Sequence from={Math.round(115 * FPS)} durationInFrames={Math.round(5 * FPS)}>
         <RevealInner durationSec={5} />
       </Sequence>
 
-      <BrandOutro startFrame={Math.round(119.5 * FPS)} durationSec={3} />
+      <BrandOutro startFrame={Math.round(120 * FPS)} durationSec={3} />
     </AbsoluteFill>
   );
 };

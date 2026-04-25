@@ -165,7 +165,7 @@ export const PhotoBeat: React.FC<Props> = ({
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              filter: `${finalFilter} blur(38px) brightness(0.42) saturate(0.85)`,
+              filter: `${finalFilter} blur(34px) brightness(0.62) saturate(0.95)`,
               transform: 'scale(1.12)',
               opacity: photoAlpha,
             }}

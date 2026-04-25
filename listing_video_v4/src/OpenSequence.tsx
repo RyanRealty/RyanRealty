@@ -189,7 +189,7 @@ export const OpenSequence: React.FC = () => {
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          filter: 'grayscale(1) blur(38px) brightness(0.32) contrast(1.05)',
+          filter: 'grayscale(1) blur(34px) brightness(0.55) contrast(1.05)',
           transform: 'scale(1.15)',
         }}
       />
