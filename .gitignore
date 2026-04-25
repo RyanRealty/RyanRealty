@@ -83,3 +83,4 @@ docs/skyslope-forms-transaction-workbook.xlsx
 docs/skyslope-forms-principal-brief.docx
 # Tesseract default English data downloaded to repo root during local OCR
 /eng.traineddata
+listing_video_v4/out/*.mp4
