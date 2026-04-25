@@ -1,16 +1,21 @@
-// BoundaryDrawTest.tsx — Gate 3 boundary test clip v6
-// 6s, 1080x1920. Satellite tile + animated SVG subdivision fill.
-// Cover frame text (0-2.5s) → boundary fill fade-in (2.5-4.5s) → subtitle at 4.5s.
+// BoundaryDrawTest.tsx — Gate 3 boundary test clip v7
+// 6s, 1080x1920. Satellite tile + soft gold glow over Vandevert Ranch area.
+// Cover frame text (0-2.5s) → boundary glow fade-in (2.5-4.5s) → subtitle at 4.5s.
 //
-// Polygon: Vandevert Ranch Phase I + Phase II subdivision boundaries
+// v7 Matt feedback: NO visible boundary lines, just fill the area with a soft glow.
+//   - Removed both stroke paths
+//   - Bumped fill opacity (was 0.18/0.06, now 0.45/0.18)
+//   - Added heavy gaussian blur (stdDeviation 22) so polygon edges read as a
+//     soft gold haze rather than a hard outlined region
+//   - Switched tile from z14 to z15 (Static Maps API now enabled, fresh tile)
+//
+// Polygon: Vandevert Ranch Phase I + Phase II subdivision boundaries (Matt picked D)
 // Source: Deschutes County GIS, OpenData/BoundaryFD/MapServer/4
-//         queried 2026-04-24 with NAME LIKE '%VANDEVERT RANCH%'
 // Phase I OBJECTID 133: 316 acres, 55 vertices
 // Phase II OBJECTID 132: 461 acres, 129 vertices
 //
-// Projection: Web Mercator zoom 14, tile 1280x1280 displayed at 1080px wide.
+// Projection: Web Mercator zoom 15, tile 1280x1280 displayed at 1080px wide.
 // Property center 43.8383243, -121.4428004 projects exactly to tile center (540,540).
-// Verified 2026-04-24.
 
 import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Img, staticFile } from 'remotion';
@@ -22,7 +27,7 @@ import { CREAM, GOLD, FONT_SANS } from './brand';
 
 const MAP_CENTER_LNG = -121.4428004;
 const MAP_CENTER_LAT = 43.8383243;
-const MAP_ZOOM = 14;
+const MAP_ZOOM = 15;
 const TILE_SIZE = 256;
 const TILE_PX = 1280;
 const DISPLAY_W = 1080;
@@ -178,12 +183,9 @@ export const BoundaryDrawTest: React.FC = () => {
   });
   const boundaryProg = easeFill(rawBoundaryProg);
 
-  // Fill alpha: 0 → 0.18 (center) for radial gradient inner stop
-  const fillAlphaCenter = boundaryProg * 0.18;
-  const fillAlphaEdge = boundaryProg * 0.06;
-
-  // Stroke alpha: 0 → 0.75
-  const strokeAlpha = boundaryProg * 0.75;
+  // Fill alpha: 0 → 0.45 (center) for radial gradient inner stop (v7 heavier per Matt)
+  const fillAlphaCenter = boundaryProg * 0.45;
+  const fillAlphaEdge = boundaryProg * 0.18;
 
   // Subtle scale breathe on boundary: 1.00 → 1.015 over 6s
   const breatheScale = 1 + interpolate(t, [2.5, 6.0], [0, 0.015], {
@@ -208,7 +210,7 @@ export const BoundaryDrawTest: React.FC = () => {
         overflow: 'hidden',
       }}>
         <Img
-          src={staticFile('images/maps_z14.png')}
+          src={staticFile('images/maps_z15.png')}
           style={{
             width: DISPLAY_W,
             height: DISPLAY_W,
@@ -269,48 +271,21 @@ export const BoundaryDrawTest: React.FC = () => {
             <path d={PATH1} />
           </clipPath>
 
-          {/* Gold glow filter for stroke */}
-          <filter id="goldGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feFlood floodColor={GOLD} floodOpacity="0.45" result="color" />
-            <feComposite in="color" in2="blur" operator="in" result="glow" />
-            <feMerge>
-              <feMergeNode in="glow" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
+          {/* Heavy gaussian blur to soften polygon edges into a glow with NO visible boundary line */}
+          <filter id="softGlow" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="22" />
           </filter>
         </defs>
 
-        {/* Fill: radial gradient clipped to subdivision polygons */}
-        <rect
-          x={0} y={0} width={1080} height={1920}
-          fill="url(#vandevertFill)"
-          clipPath="url(#subdivisionClip)"
-        />
-
-        {/* Phase II boundary stroke — thin gold, glow filter */}
-        <path
-          d={PATH2}
-          fill="none"
-          stroke={GOLD}
-          strokeWidth={0.5}
-          strokeOpacity={strokeAlpha}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          filter="url(#goldGlow)"
-        />
-
-        {/* Phase I boundary stroke */}
-        <path
-          d={PATH1}
-          fill="none"
-          stroke={GOLD}
-          strokeWidth={0.5}
-          strokeOpacity={strokeAlpha}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          filter="url(#goldGlow)"
-        />
+        {/* Fill: radial gradient clipped to subdivision polygons, then blurred soft */}
+        {/* No stroke. The blur turns the polygon edge into a soft fade, not a line. */}
+        <g filter="url(#softGlow)">
+          <rect
+            x={0} y={0} width={1080} height={1920}
+            fill="url(#vandevertFill)"
+            clipPath="url(#subdivisionClip)"
+          />
+        </g>
       </svg>
 
       {/* ── "1892." cover frame text ── */}
