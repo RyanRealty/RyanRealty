@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.56.2 (2026-04-25)
+
+### Maintenance
+- chore(listing-video-v5): mirror boundary draw test mp4 to Vercel public/
+
+---
+
+
 ## v1.56.1 (2026-04-25)
 
 ### Maintenance
