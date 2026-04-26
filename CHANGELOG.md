@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.81.1 (2026-04-26)
+
+### Bug Fixes
+- fix(listing-video): Tumalo v3 — real 3D YOUR MORNING text (v4.2.1)
+
+---
+
+
 ## v1.81.0 (2026-04-26)
 
 ### Features
