@@ -1,0 +1,58 @@
+---
+description: Required reading before any video production / Remotion composition work. Points at the master skill + quick-reference card.
+alwaysApply: true
+---
+
+# Video Production — REQUIRED reading
+
+**Before writing any video code, any Remotion composition, any Listing.tsx rewrite, any video synth or render: read these two files.** This is non-negotiable.
+
+## The two files
+
+1. **`video_production_skills/VIDEO_PRODUCTION_SKILL.md`** — the master skill. Hard constraints, creative direction, render pipeline, AI video tier guide, brand rules, common-failure fixes, full Schoolhouse v5 lesson log.
+
+2. **`video_production_skills/VIRAL_VIDEO_CONSTRAINTS.md`** — 30-second quick-reference card. Hard constraints as a pre-render and post-render checklist.
+
+## The non-negotiables (summary — full detail in the skill file)
+
+- **Length:** 30-45s target, never over 60s.
+- **Hook:** motion engaged by frame 12 (0.4s), address text by 1s, VO content by 2s. No logo, no title card on black.
+- **Cuts:** 2-3s standard, 4s max. 12+ photo beats in a 45s video.
+- **Re-hooks at 25% and 50%, reveal in final 15%.**
+- **Text safe zone:** 900×1400 inside 1080×1920. Body 48 px+, headline 64-80 px.
+- **No brand elements in the video frame** (no logo, no "Ryan Realty," no phone, no agent name, no "REPRESENTED BY"). Brokerage attribution lives in the IG caption + bio.
+- **Gimbal/parallax motion on every photo beat.** No static photos.
+- **Three movement types per video minimum.**
+- **Banned words:** stunning, nestled, boasts, gorgeous, breathtaking, must-see, "welcome to your dream home." No em-dashes, no hyphens in prose.
+- **All numbers carry units.** "$3,025,000" not "3,025,000."
+- **AI photo-to-video is OFF for interiors.** Reserved for aerials and exterior depth shots only, with strict slop checks.
+
+## The render hygiene rules
+
+- Remotion only. No Playwright video, no PIL composition.
+- 1080×1920 portrait, 30 fps minimum.
+- `concurrency=1` in render command.
+- PhotoBeat parent div is `transparent` (so previous Sequence shows through fade-in).
+- Default `crossfadeOut: 0` and Sequence overlap by 0.5s (so AbsoluteFill background never exposed).
+- After render: `ffmpeg blackdetect d=0.03:pix_th=0.05` returns ZERO black sequences.
+- Compress to under 100 MB with `-crf 24 -preset medium -movflags +faststart` before delivery.
+
+## The quality gate
+
+Before pushing or emailing, every item in `VIRAL_VIDEO_CONSTRAINTS.md` post-render checklist must be green. Self-enforce — don't wait for Matt to find an obvious bug.
+
+## Common failures + fixes
+
+The skill file has a full troubleshooting section. The greatest hits:
+
+- **Black bars at transitions** → parent div transparent + crossfadeOut 0 + Sequence overlap (`PhotoBeat.tsx`).
+- **Audio mismatch** → `previous_text` chained synth (`scripts/synth_vo_*.py`).
+- **Deschutes pronunciation** → IPA `<phoneme>` tag on `eleven_v3` model.
+- **Missing assets at render time** → run `build_v5_library.py` + verify symlinks BEFORE render, not after.
+- **Generic feel** → re-read Section 2 (Creative direction) before scaffolding BEATS array.
+
+## Schoolhouse v5 lesson log
+
+The v1 → v5.9 sequence is the case study. Each major rule in the skill file is anchored to a specific round where the failure shipped. Reading the change log of `feat(listing-video-v5):` commits is the fastest way to internalize WHY each rule exists.
+
+Most important inflection: **v5.7 (133s cinematic short film) → v5.8 (45s viral cut)**. A brokerage-credibility cinematic piece and a viral Reel are different products with different rules. Don't conflate them.

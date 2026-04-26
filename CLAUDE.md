@@ -140,3 +140,15 @@ Durable cross-session notes live in **`.auto-memory/`** (same pattern as Cowork 
 **Data work:** `data:*` skills fire automatically on any Supabase / SQL / analytics task.
 
 Everything else (debugging, architecture, testing-strategy, documentation, incident-response, tech-debt, accessibility-review, ux-copy, web-artifacts-builder) fires on trigger match — no table needed.
+
+---
+
+## Video Production — REQUIRED
+
+**Read `video_production_skills/VIDEO_PRODUCTION_SKILL.md` before writing any video code or Remotion composition. This is non-negotiable.**
+
+The master skill file codifies the hard constraints (length, hook, cuts, retention, branding rules), creative direction (formula, pacing, shot sequence by price tier), AI video pipeline (when warranted, when banned), brand rules, the pre-render asset audit, and the post-render quality gate. Every Schoolhouse v5 round (v1 through v5.9) is logged with the specific failure that produced each rule.
+
+For quick reference during work, also keep `video_production_skills/VIRAL_VIDEO_CONSTRAINTS.md` open — it's the 30-second checklist version of the master skill.
+
+Every video build opens both files before scaffolding the BEATS array. Every render runs the quality gate (ffmpeg blackdetect strict + frame extraction + visual scrub) before push. Self-enforce — don't wait for Matt to find an obvious bug.

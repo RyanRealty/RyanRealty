@@ -1,142 +1,143 @@
-# Viral Video Constraints — Mandatory for All Ryan Realty Videos
+# Viral Video Constraints — Quick Reference
 
-**Status: HARD CONSTRAINTS. Every video composition in this repo must conform.**
-**Last updated: 2026-04-25 (locked after Schoolhouse v5 series review).**
-
-These rules supersede any per-skill spec. If a skill's spec conflicts with this
-file, this file wins. The cinematic-short-film register Matt explored in
-Schoolhouse v5.0–v5.7 (110-130s) is **archived for reference only** and does
-not ship to social channels.
+**This is the 30-second scan card.** The full master skill is in `VIDEO_PRODUCTION_SKILL.md` — read that before scaffolding. This file is for double-checking work in progress.
 
 ---
 
-## 1. Length
+## Hard constraints (each is a ship blocker)
 
-| Platform | Target | Hard cap |
+### Length
+- [ ] **30-45s target. Never over 60s.**
+- [ ] Default for new builds: **45s**.
+
+### Hook (first 2s)
+- [ ] **Frame 0 has motion engaged** by frame 12 (0.4s). Never static.
+- [ ] **Address text on screen by 1s.** Centered, ≥48 px body / 64-80 px headline.
+- [ ] **VO content begins by 2s.** No greetings, no "today I'm going to."
+- [ ] **No logo, no brokerage name, no title card on black** in the open.
+
+### Cuts
+- [ ] **Standard 2-3s per beat.** Luxury drone 3-4s **MAX**.
+- [ ] **No beat over 4s. Period.**
+- [ ] **12-15 beats minimum** in a 45s video.
+
+### Re-hooks
+- [ ] **25% mark:** new visual register or text shock.
+- [ ] **50% mark:** pattern interrupt (exterior cut into interior tour, drone wide cut into closeups, sepia cut into color, etc.).
+- [ ] **Final 15%:** kinetic stat reveal.
+
+### Text overlays
+- [ ] **Safe zone 900×1400** centered in 1080×1920.
+- [ ] **Min 2s display per block.**
+- [ ] **Body 48 px+, headline 64-80 px.**
+- [ ] **Max 5-7 words per block.**
+- [ ] **Numbers carry units** ("$3,025,000" not "3,025,000").
+- [ ] **High contrast** — white + shadow OR dark pill under text.
+
+### Retention
+- [ ] **70%+ retention** through first 30s is the target.
+- [ ] **Always include captions** — ~40% IG / ~85% FB views are muted.
+- [ ] **No filler** — every second earns its place.
+
+### Motion
+- [ ] **Gimbal/parallax on every photo beat.** No static photos.
+- [ ] **Three movement types minimum** per video.
+
+### Branding (zero in frame)
+- [ ] **No logo, no "Ryan Realty" text, no phone, no agent name** anywhere in the video frame.
+- [ ] **No "REPRESENTED BY" line in the reveal.**
+- [ ] Brokerage attribution lives in the IG caption + bio, never the frame.
+
+### Audio
+- [ ] **Music starts frame 1** (when music is in scope; some viral cuts ship VO-only).
+- [ ] **Music ducks under VO** to ~-18 dB.
+- [ ] **Music swells into the reveal.**
+- [ ] **Adjacent VO lines have positive gaps** (no overlap).
+- [ ] **`previous_text` chained** when synthing multi-line scripts (prosody continuity).
+
+### Render hygiene
+- [ ] **Resolution: 1080×1920 portrait, 30 fps.**
+- [ ] **Remotion only.** No Playwright video, no PIL composition.
+- [ ] **`concurrency=1`** in render command (Chrome OOMs higher).
+- [ ] **PhotoBeat parent div is transparent** (so the previous Sequence shows through fade-in).
+- [ ] **`crossfadeOut: 0`** by default; each Sequence overlaps the previous by 0.5s so AbsoluteFill never exposed.
+- [ ] **Final encode: x264, CRF 24, faststart.** Compressed file under 100 MB.
+
+---
+
+## Pre-render checklist
+
+Run this BEFORE every render:
+
+```
+[ ] All photo paths exist (modern/, historic/, snowdrift/, masks/)
+[ ] All VO files in public/audio/ referenced by Listing.tsx
+[ ] public/images/maps_z15.png exists (if open uses satellite tile)
+[ ] public/brand/stacked_logo_white.png exists (only if outro uses it — viral cuts skip this)
+[ ] public/fonts/AzoSans-Medium.ttf, Amboqia_Boriango.otf
+[ ] node_modules/@remotion present (npm install if not)
+[ ] BEATS array uses 3+ different motion types
+[ ] No banned words in VO or on-screen text
+[ ] Reveal contains kinetic stat only (no brokerage line, no logo)
+```
+
+## Post-render quality gate
+
+Run this BEFORE pushing or emailing:
+
+```
+[ ] ffprobe Duration: between 30s and 60s
+[ ] ffmpeg blackdetect strict (pix_th=0.05) returns ZERO black sequences
+[ ] Frame at 0s has motion, address overlay, photo content (not black)
+[ ] Frame at 25% has new visual register or text overlay
+[ ] Frame at 50% has pattern-interrupt visual
+[ ] Frame at final 15% is kinetic reveal text on navy
+[ ] No frozen frames at any beat boundary
+[ ] Audio probe: VO clear, no overlap between lines
+[ ] File size < 100 MB after CRF 24 compress
+```
+
+---
+
+## When something fails
+
+| Symptom | Fix | Where |
 |---|---|---|
-| Instagram Reels | **30-60s, sweet spot 45s** | 60s |
-| TikTok | **21-34s optimal** | 60s |
-| YouTube Shorts | **30-58s** | 60s |
-| **Default for any new build** | **45s** | **60s** |
-
-A video over 60s ships nowhere. Don't render past it.
-
-## 2. Hook — first 2 seconds
-
-- **Must stop the scroll in under 2 seconds.**
-- **Frame 1 = the most visually striking shot** in the deliverable. NOT a title card, NOT a slow boundary draw, NOT a logo bumper, NOT a black-then-fade-in. The strongest image is on screen at frame 0.
-- **Text hook on screen by 0.5s.** White text with shadow OR dark pill background. Comprehensive, not shorthand.
-- For real estate: open with **hero exterior** or the most dramatic interior. Address text overlay on the opening frame.
-- VO begins within first 2 seconds. First spoken word is content (no greetings, no "today I'm going to...").
-
-## 3. Scene pacing
-
-- **Standard cuts: every 2-3 seconds.**
-- Luxury real estate drone / cinematic: **3-4 seconds per scene max.**
-- **Never hold a single scene longer than 4 seconds.**
-- **Minimum 12-15 scenes in a 45-second video.**
-- Pattern interrupt at the **25% mark** (different content register or visual shock).
-- Pattern interrupt at the **50% mark**.
-- Payoff / reveal in the **final 15%** of runtime.
-
-## 4. Text overlays
-
-- **Safe zone**: 900×1400 px centered inside 1080×1920 (90px margin on every edge — accounts for IG/TikTok UI chrome).
-- **Display time**: minimum 2 seconds per text block.
-- **Font size**: minimum 48px body, **headline 64-80px**.
-- **Contrast**: white text with shadow, or dark pill/scrim under the text. Never white text on a white wall.
-- **Word count**: max 5-7 words per text block.
-- Numbers always carry units or framing ("$3,025,000", not "3,025,000"; "4 bedrooms", not "4 BR").
-
-## 5. Audio
-
-- **Music starts frame 1.** No silence at the open.
-- **VO starts within first 2 seconds.**
-- Background music **-18 dB** under VO during VO.
-- **Music swell at the reveal / ending.**
-- VO synthed with `previous_text` chaining when multi-line, so prosody is continuous.
-
-## 6. Retention beats
-
-- **Re-hook at 25%** of runtime — new visual surprise or text hook.
-- **Re-hook at 50%** — pattern interrupt anchored to a content beat (not a gimmick).
-- **Payoff in final 15%** — kinetic stat moment, satisfying resolution, or rhetorical close.
-- **Target: 70% average view duration** (TikTok algorithmic minimum for distribution).
-
-## 7. Branding rule
-
-**Zero branding inside the video frame.** Per `feedback_no_branding_in_viral_video.md`:
-
-- No logo
-- No "Ryan Realty" text
-- No phone number
-- No website URL
-- No agent name
-- No "REPRESENTED BY" line on the reveal
-
-Brokerage attribution lives in the **post caption + the IG handle**, not the video.
-
-The reveal/end card is one of:
-- Silent hold on the final visual
-- Kinetic stat moment (price, address, status)
-- Question / provocation
-
-## 8. Frame composition
-
-- **Resolution**: 1080×1920 portrait, 30fps.
-- **Zero black bars / charcoal flashes anywhere.** Every frame is content.
-  - When a photo doesn't fill 9:16, render a **blurred copy of the same photo as backdrop** filling the dead space (vignetteLetterbox mode in PhotoBeat).
-  - Beat-to-beat transitions overlap by 0.5s (next beat's fade-in covers previous beat at full opacity, never AbsoluteFill exposed).
-  - Verified via `ffmpeg blackdetect` at strict pix_th=0.05 — zero true-black sequences.
-
-## 9. Movement rules (carries forward from listing video spec)
-
-- **Three movement types per video minimum** — variety beats AutoReel-tier zoom-only.
-- AI photo-to-video is **OFF**. Remotion + ffmpeg deterministic motion only.
-- Per-photo motion is judgment work — picks differ by content (push_in, push_counter, slow_pan_lr/rl, gimbal_walk, multi_point_pan, cinemagraph mask overlay).
-- Cinemagraph masks animate ONE organic element (water, sky, flame) at sub-pixel amplitudes. Never AI i2v.
-
-## 10. CTA / payoff
-
-- Reveal text appears in **final 5-8 seconds** of runtime.
-- Stage smoothly: PENDING → price → address (no "REPRESENTED BY").
-- Music swells under the reveal then ducks to zero.
-- Caption delivers the social CTA ("DM me 'BEND' to talk" or platform-appropriate prompt).
+| Black bars at transitions | Parent div transparent + crossfadeOut 0 + Sequence overlap | `PhotoBeat.tsx` |
+| Black at open → Beat 1 | OpenSequence Sequence runs 0.5s past Beat 1 startSec | `Listing.tsx` |
+| Audio mismatch | `previous_text` chained synth | `synth_vo_*.py` |
+| Deschutes pronunciation | IPA `<phoneme>` tag on `eleven_v3` | `synth_vo_*.py` |
+| Missing assets | Run `build_v5_library.py` + verify symlinks | pre-render |
+| Generic feel | Re-read VIDEO_PRODUCTION_SKILL.md Section 2 | before BEATS rewrite |
 
 ---
 
-## Pre-render compliance checklist
+## Banned (each is a hard rule)
 
-Before any video composition is rendered:
-
-```
-[ ] Total runtime ≤ 60s (target 45s)
-[ ] Frame 0 is the strongest visual (no title card / boundary draw open)
-[ ] Text hook on screen by frame 15 (0.5s)
-[ ] First VO word is content by frame 60 (2s)
-[ ] At least 12 photo beats in the body
-[ ] No single beat > 4s
-[ ] Pattern interrupt at 25% mark
-[ ] Pattern interrupt at 50% mark
-[ ] Reveal in final 15%
-[ ] Zero brand elements in frame (logo, name, phone, "REPRESENTED BY")
-[ ] Three movement types minimum
-[ ] Music plays from frame 1
-[ ] ffmpeg blackdetect strict (pix_th=0.05) returns zero black sequences
-```
-
-If any item is unchecked, the video is not ready to ship.
+- Length over 60s
+- Static frame 0
+- Logo / brokerage / phone / agent name in frame
+- Pure-black letterbox bars
+- AI photo-to-video on interior architecture
+- Generic VO ("welcome to your dream home", "stunning", "nestled")
+- Em-dashes or hyphens in prose copy
+- Reusing a clip or photo within a single video
+- "Approximately," "roughly," "about" in numbers
+- Reveal that includes contact info
 
 ---
 
-## Schoolhouse v5 specific notes
+## Shipped patterns that work
 
-- **Open frame**: address text "56111 SCHOOLHOUSE ROAD / VANDEVERT RANCH" over hero exterior #2, vignetteLetterbox mode (blurred photo backdrop fills dead space).
-- **History block**: pattern interrupt at 25% mark (~11s into a 45s cut). Sepia historic photos cutting in sharply against luxury color photos.
-- **Reveal**: PENDING / $3,025,000 / address. No "REPRESENTED BY RYAN REALTY".
+- Address overlay on hero exterior (vignetteLetterbox + blurred photo backdrop) at frame 0
+- Hook VO that combines architect + location in one short line
+- Pattern interrupt at 50% via drone aerial after interior closeups
+- Kinetic stat reveal: PENDING / price / address (no brokerage)
+- ffmpeg blackdetect verification before push
+- `previous_text` prosody chaining for VO consistency
+- Per-photo motion as judgment work (not delegated to Sonnet)
+- 14 photo beats at 2.5-3s each in a 45s frame
 
 ---
 
-How to apply: every Listing.tsx, every video composition, every video skill in
-this repo opens this file before scaffolding. Validate against the checklist
-before render. Don't wait for review.
+Full reasoning, history, and lesson log: `VIDEO_PRODUCTION_SKILL.md`.
