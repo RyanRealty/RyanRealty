@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.76.0 (2026-04-26)
+
+### Features
+- feat(news-video): three 30s data-driven news clips, every stat verified
+
+---
+
+
 ## v1.75.0 (2026-04-26)
 
 ### Features
