@@ -1,5 +1,7 @@
 // Tumalo.tsx — 19496 Tumalo Reservoir Rd VIRAL CUT v3 ("Blonde Waterfall" build)
-// 1080x1920 portrait, 30fps, 45.0s. List price $1,350,000, Active.
+// 1080x1920 portrait, 30fps, 42.6s. List price $1,350,000, Active.
+// (Was 45.0s — eagle beat removed per Matt 2026-04-26, closing aerials
+// shifted left by 2.4s, reveal moved 40.0s → 37.6s, total trimmed by 2.4s.)
 //
 // v3 changes vs v2:
 //   - DepthParallaxBeat on every photo beat using REAL MiDaS depth maps
@@ -35,9 +37,10 @@
 //                null on this row but the agent has direct MLS access; this
 //                trace stands as the verification of record.
 //
-// Photo set (16 unique, no reuse):
+// Photo set (15 unique, no reuse):
 //   13 MLS picks: 1, 2, 9, 14, 16, 22, 26, 28, 30, 31, 45, 56, 58
-//   3 personal:   water_feature, wildflowers, eagle (deer cut per v2 brief)
+//   2 personal:   water_feature, wildflowers (eagle cut per Matt 2026-04-26;
+//                 deer cut per v2 brief)
 //
 // All depth maps live in public/v5_library/depth/tumalo/<photo_slug>/.
 
@@ -59,7 +62,7 @@ import { CameraMoveOpts } from './cameraMoves';
 import { clamp, easeOutCubic, easeOutQuart } from './easing';
 
 const FPS = 30;
-export const TUMALO_TOTAL_SEC = 45.0;
+export const TUMALO_TOTAL_SEC = 42.6;
 
 // 100 BPM = 1.667 beats/second = 0.6s per sub-beat.
 // Cuts snap to multiples of SUB_BEAT_SEC.
@@ -165,47 +168,36 @@ const BEATS: BeatDef[] = [
     startSec: 23.4, durationSec: 2.4,
     move: { move: 'push_in', focal: 'center', intensity: 0.8 },
     objectPosition: '60% 50%' },
-  // Beat 11: slow_pan_rl — wildflower garden.
+  // Beat 11: slow_pan_rl — wildflower garden. (Eagle beat removed per Matt
+  // 2026-04-26 — closing aerials now start at 28.2s instead of 30.6s.)
   { photo: lib('lifestyle_wildflowers.jpg'),
     depthDir: depth('lifestyle_wildflowers'),
     startSec: 25.8, durationSec: 2.4,
     move: { move: 'slow_pan_rl', focal: 'center', intensity: 1.0 } },
-  // Beat 12: pull_out — bald eagle silhouette (portrait orientation, mild).
-  // FLAT: high-contrast silhouette against bright sky → MiDaS produces a
-  // sharp depth boundary; the 4-px feathered alpha cut + 1.6× fg vs 0.4× bg
-  // displacement creates a visible ghost halo around the eagle. Per
-  // depth_parallax/SKILL.md "When NOT to use" — recognizable wildlife
-  // subjects need plain PhotoBeat.
-  { photo: lib('lifestyle_eagle.jpg'),
-    depthDir: depth('lifestyle_eagle'),
-    startSec: 28.2, durationSec: 2.4,
-    move: { move: 'pull_out', focal: 'center', intensity: 0.4 },
-    objectPosition: '50% 35%',
-    flat: true },
 
-  // === CLOSING AERIALS (30.6 - 40.2s) ====================================
-  // Beat 13: push_in — aerial 3/4 angle.
+  // === CLOSING AERIALS (28.2 - 37.8s) ====================================
+  // Beat 12 (was 13): push_in — aerial 3/4 angle.
   { photo: lib('56-DJI_aerial_5.jpg'),
     depthDir: depth('56-DJI_aerial_5'),
-    startSec: 30.6, durationSec: 2.4,
+    startSec: 28.2, durationSec: 2.4,
     move: { move: 'push_in', focal: 'center', intensity: 0.6 } },
-  // Beat 14: orbit_fake — top-down geometry, subtle rotation.
+  // Beat 13 (was 14): orbit_fake — top-down geometry, subtle rotation.
   { photo: lib('58-DJI_aerial_4.jpg'),
     depthDir: depth('58-DJI_aerial_4'),
-    startSec: 33.0, durationSec: 2.4,
+    startSec: 30.6, durationSec: 2.4,
     move: { move: 'orbit_fake', focal: 'center', intensity: 0.5 } },
-  // Beat 15: gimbal_walk rl — daytime back facade.
+  // Beat 14 (was 15): gimbal_walk rl — daytime back facade.
   { photo: lib('2-DJI_aerial_2.jpg'),
     depthDir: depth('2-DJI_aerial_2'),
-    startSec: 35.4, durationSec: 2.4,
+    startSec: 33.0, durationSec: 2.4,
     move: { move: 'gimbal_walk', focal: 'center', intensity: 0.8, direction: 'rl' } },
-  // Beat 16: slow_pan_rl — dusk wide w/ Sisters silhouette into reveal.
+  // Beat 15 (was 16): slow_pan_rl — dusk wide w/ Sisters silhouette into reveal.
   // FLAT: dusk sky has soft gradients that MiDaS struggles to layer cleanly;
   // produced a dark crescent artifact on the left at slow_pan_rl with the
   // bg layer's translation exposing a hole. Plain PhotoBeat reads cleanly.
   { photo: lib('9-DJI_aerial_3.jpg'),
     depthDir: depth('9-DJI_aerial_3'),
-    startSec: 37.8, durationSec: 2.4,
+    startSec: 35.4, durationSec: 2.4,
     move: { move: 'slow_pan_rl', focal: 'center', intensity: 0.9 },
     flat: true,
     crossfadeOut: 0 },
@@ -717,8 +709,9 @@ export const Tumalo: React.FC = () => {
         <SpecsFlash />
       </Sequence>
 
-      {/* Reveal — final 5.0s on navy */}
-      <Sequence from={Math.round(40.0 * FPS)} durationInFrames={Math.round(5.0 * FPS)}>
+      {/* Reveal — final 5.0s on navy (was 40.0s; shifted to 37.6s after
+          eagle beat removal trimmed 2.4s from the closing block). */}
+      <Sequence from={Math.round(37.6 * FPS)} durationInFrames={Math.round(5.0 * FPS)}>
         <RevealInner />
       </Sequence>
     </AbsoluteFill>
