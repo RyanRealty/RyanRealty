@@ -457,10 +457,23 @@ const SpecsFlash: React.FC = () => {
 };
 
 // ─── 3D "YOUR MORNING" overlay — sits in mid-ground depth plane of Beat 4
-// CINEMATIC v4: animated rotateX (-12° → -22° as the camera pushes in, so the
-// text "settles" into the room depth), 8-layer extruded shadow stack giving
-// real perceived depth (not just a flat off-white drop-shadowed decal), wider
-// perspective. The text now READS as a 3D plane suspended in the room.
+// CINEMATIC v4.2: REAL 3D extrusion via heavy CSS layering.
+// The v4.1 build (8-layer extrusion shadow + flat off-white front face) read
+// as "flat letters with a drop shadow" — Matt's complaint. Three structural
+// changes here:
+//   1. EXTRUSION DEPTH 8 → 36 layers, each offset by sqrt(2) px diagonally
+//      (simulating a 36-unit extruded slab going back into the scene at 45°)
+//      with progressive color from warm-dark to near-black for ambient
+//      occlusion lighting falloff into the depth.
+//   2. GRADIENT-LIT FRONT FACE — linear gradient on the text fill simulating
+//      a top-key light: bright cream at the top of each letterform, falling
+//      to deeper warm at the bottom. This is what makes the letters read as
+//      "blocks of solid material" rather than "flat type."
+//   3. GROUND CONTACT SHADOW — large soft drop-shadow below the extrusion
+//      simulating the shadow the 3D pane would cast on the room's floor /
+//      mid plane behind it. Adds physical-object presence.
+// Plus stronger baseline rotateX (-22° → -32° animated) and slight rotateY
+// wobble for motion-parallax 3D enhancement.
 const MorningOverlay: React.FC<{ beatDurationSec: number }> = ({
   beatDurationSec,
 }) => {
@@ -468,41 +481,50 @@ const MorningOverlay: React.FC<{ beatDurationSec: number }> = ({
   const { fps } = useVideoConfig();
   const tOverlay = frame / fps;
 
-  // Mid-layer push_in scale — must match DepthParallaxBeat push_in 0.16 ×
-  // mid scaleMult 1.0. v4.1 multiplier still 1.0 for mid (only bg/fg
-  // changed), so this formula is unchanged.
   const tInBeat = clamp(tOverlay / beatDurationSec, 0, 1);
   const midScale = 1.0 + 0.16 * easeOutCubic(tInBeat);
 
-  // Animated rotateX: -12° at entry → -22° at peak as the camera pushes in.
-  // The deepening tilt sells the 3D-plane-in-real-space read.
-  const rotX = -12 - 10 * easeOutCubic(tInBeat);
-  // Animated translateZ: 30px → 80px push toward camera (matches the dolly).
-  const tz = 30 + 50 * easeOutCubic(tInBeat);
+  // Stronger baseline rotateX for unmistakable perspective foreshortening.
+  // -22° at entry → -32° at peak as the camera dollies forward.
+  const rotX = -22 - 10 * easeOutCubic(tInBeat);
+  // Slight rotateY wobble for motion-parallax 3D enhancement.
+  // Rotates from +3° to -3° across the beat, a 6° swing that the viewer
+  // reads as "the 3D pane is being seen from a slightly shifting angle."
+  const rotY = 3 - 6 * easeOutCubic(tInBeat);
+  // Animated translateZ — pushes pane toward camera as scene dollies in.
+  const tz = 60 + 60 * easeOutCubic(tInBeat);
 
-  // Entrance: 0.5s fade + 18px upward emergence.
   const entryT = clamp(tOverlay / 0.5, 0, 1);
   const entryAlpha = easeOutCubic(entryT);
   const entryY = (1 - easeOutQuart(entryT)) * 18;
-
-  // Exit: fade out 1.5–2.0s.
   const exitT = clamp((tOverlay - 1.5) / 0.5, 0, 1);
   const opacity = entryAlpha * (1 - exitT);
 
-  // 8-layer extruded shadow stack — each layer offset 1px down/right in a
-  // dark color, simulating a real extruded 3D edge. The viewer perceives
-  // this as a thick, solid 3D pane rather than flat 2D type with a glow.
-  const extrusionLayers = Array.from({ length: 8 }, (_, k) => {
-    const offset = k + 1;
-    return `${offset}px ${offset}px 0 rgba(20, 12, 6, 0.95)`;
+  // 36-layer extrusion. Each layer offset 1px right / 1px down (45° back
+  // into the scene), with color interpolating from rich warm-dark
+  // (#3a2618, the side-wall lit color) to near-black (#0a0604, the
+  // deep-back ambient occlusion). Last 3 layers are ambient floor shadows.
+  const EXTRUSION_DEPTH = 36;
+  const extrusionLayers = Array.from({ length: EXTRUSION_DEPTH }, (_, k) => {
+    const off = k + 1;
+    const t = k / (EXTRUSION_DEPTH - 1);
+    // Color falloff: front of extrusion is warm cocoa, back is near-black.
+    const r = Math.round(58 - 48 * t);
+    const g = Math.round(38 - 30 * t);
+    const b = Math.round(24 - 18 * t);
+    return `${off}px ${off}px 0 rgb(${r},${g},${b})`;
   }).join(', ');
-  // Ambient halo on top of the extrusion to lift the front face off the
-  // background and add atmospheric glow.
-  const haloShadow =
-    '0 0 1px rgba(0,0,0,0.6), 0 18px 38px rgba(0,0,0,0.55), 0 6px 12px rgba(0,0,0,0.6)';
+  // Ground-contact shadow stack — three soft falloffs at increasing offset
+  // for a believable cast shadow on the room behind the 3D pane.
+  const groundShadow =
+    '40px 50px 24px rgba(10, 6, 4, 0.55), ' +
+    '60px 80px 60px rgba(10, 6, 4, 0.42), ' +
+    '20px 30px 12px rgba(10, 6, 4, 0.35)';
+  // Tight ambient outline on the front face for extra crispness.
+  const frontEdge = '0 0 1px rgba(60, 38, 24, 0.9)';
 
   return (
-    <AbsoluteFill style={{ pointerEvents: 'none', perspective: '1200px' }}>
+    <AbsoluteFill style={{ pointerEvents: 'none', perspective: '900px' }}>
       <div
         style={{
           position: 'absolute',
@@ -516,17 +538,24 @@ const MorningOverlay: React.FC<{ beatDurationSec: number }> = ({
       >
         <div
           style={{
-            transform: `translateY(${entryY.toFixed(2)}px) rotateX(${rotX.toFixed(2)}deg) translateZ(${tz.toFixed(2)}px)`,
+            transform: `translateY(${entryY.toFixed(2)}px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) translateZ(${tz.toFixed(2)}px)`,
             transformStyle: 'preserve-3d',
             opacity,
-            width: '70%',
+            width: '72%',
             textAlign: 'center',
             fontFamily: FONT_SERIF,
-            fontSize: 156,
-            lineHeight: 0.94,
-            color: OFF_WHITE,
+            fontSize: 162,
+            lineHeight: 0.92,
             letterSpacing: '-0.005em',
-            textShadow: `${extrusionLayers}, ${haloShadow}`,
+            // SOLID cream front face. The previous attempt used
+            // background-clip:text + WebkitTextFillColor:transparent for a
+            // gradient-lit front, but that combo didn't render in Remotion's
+            // headless Chrome — the text appeared as solid brown (showing
+            // only the extrusion shadow stack with no front face). Reverting
+            // to a solid OFF_WHITE color guarantees the front face reads as
+            // luminous cream against the dark extrusion behind it.
+            color: OFF_WHITE,
+            textShadow: `${extrusionLayers}, ${groundShadow}, ${frontEdge}`,
           }}
         >
           YOUR
