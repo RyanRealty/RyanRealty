@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.70.0 (2026-04-26)
+
+### Features
+- feat(listing-video): Tumalo Reservoir 43s viral cut (v1)
+
+---
+
+
 ## v1.69.2 (2026-04-26)
 
 ### Other
