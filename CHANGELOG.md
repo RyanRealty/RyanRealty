@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.69.1 (2026-04-26)
+
+### Maintenance
+- docs(video): master video production skill + quick-ref + CLAUDE.md hook
+
+---
+
+
 ## v1.69.0 (2026-04-25)
 
 ### Features
