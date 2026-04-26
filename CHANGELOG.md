@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.79.0 (2026-04-26)
+
+### Features
+- feat(news-clips): viral rebuild — gradient bg, kinetic captions, animated stats
+
+---
+
+
 ## v1.78.3 (2026-04-26)
 
 ### Bug Fixes
