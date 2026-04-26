@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.83.0 (2026-04-26)
+
+### Features
+- feat(memes): meme_lord rebuild — real templates, classic Impact text, canonical logo
+
+---
+
+
 ## v1.82.0 (2026-04-26)
 
 ### Features
