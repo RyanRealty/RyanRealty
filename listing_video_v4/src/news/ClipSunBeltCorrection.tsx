@@ -1,12 +1,10 @@
-// ClipSunBeltCorrection — 30s news clip, 1080×1920 portrait.
+// ClipSunBeltCorrection — VIRAL REBUILD
+// 28s, 1080×1920 portrait. TikTok / Reel register: animated cool-blue gradient
+// bg, kinetic captions, comparison stat cards with growing bars, source pills.
 //
-// Original spec was "Sun Belt Collapse — Bend is the stable safe haven."
-// VERIFICATION FLIPPED THE LOCAL ANGLE: Bend median sale price is DOWN ~10%
-// YoY in April 2026 per Supabase market_stats_cache; trailing-12-month
-// median-of-monthly-medians is -3.6%. Bend is correcting along with the Sun
-// Belt, not contrasting with it. The honest narrative is: "pandemic-era
-// boom markets are giving back, and Central Oregon is in the same correction.
-// The pattern is cycle position, not geography."
+// The honest narrative is: "pandemic-era boom markets are giving back, and
+// Central Oregon is in the same correction. Pattern is cycle position, not
+// geography."
 //
 // Verification trace per figure:
 //   - Cape Coral -9.6% (Feb 2025 → Feb 2026, AEI Housing Center via Fortune
@@ -18,229 +16,252 @@
 //     2026-04-26 (current month -10.0% YoY, prior month -12.2% YoY)
 //
 // CUT (per CLAUDE.md data accuracy rule):
-//   - "Austin -4.1%" — not in cited Fortune source. Other outlets cite -3.6%
-//     to -6.8% but with different indices. Without a clean primary source,
-//     the specific number is dropped.
+//   - "Austin -4.1%" — not in cited Fortune source.
 
 import React from 'react';
-import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion';
-import { CREAM, GOLD, FONT_BODY, FONT_SERIF, TEXT_SHADOW } from '../brand';
+import { AbsoluteFill, Sequence } from 'remotion';
 import {
-  ScrimText,
-  SourceLine,
-  ComparisonBar,
-  BrandOutroCard,
-  DarkBackdrop,
-} from './primitives';
+  AnimatedGradientBg,
+  ParticleField,
+  BreakingPill,
+  KineticCaption,
+  Headline,
+  StatCard,
+  SourcePill,
+  NewsTicker,
+  BrandEndCard,
+  BigStat,
+  RED_ALERT,
+  WHITE,
+  FONT_BODY,
+  FONT_HEAD,
+} from './viral_primitives';
 
 const FPS = 30;
-export const CLIP_SBC_TOTAL_SEC = 30.0;
+export const CLIP_SBC_TOTAL_SEC = 28.0;
 
-// Beat 1 — Hook
+const SRC_FORTUNE = 'Fortune / AEI Housing Center · April 2026';
+const SRC_BEND = 'ryan-realty-platform · MLS pull · 2026-04-26';
+
+// Beat 1 — Hook: BREAKING + "Boom markets are giving back".
 const BeatHook: React.FC = () => (
   <AbsoluteFill>
-    <DarkBackdrop />
-    <ScrimText
-      startFrame={4}
+    <AnimatedGradientBg variant="cool" />
+    <ParticleField count={40} color="rgba(120, 160, 220, 0.55)" />
+    <BreakingPill startFrame={0} text="MARKET CORRECTION" color={RED_ALERT} />
+    <KineticCaption
+      startFrame={6}
+      words={['THE', 'BOOM', 'MARKETS']}
+      cadenceFrames={8}
+      position="upper-third"
+      fontSize={72}
+      fontFamily={FONT_HEAD}
+      fontWeight={700}
+      letterSpacing="-0.005em"
+    />
+    <KineticCaption
+      startFrame={36}
+      words={['ARE', 'GIVING', 'IT', 'BACK.']}
+      cadenceFrames={9}
       position="center"
-      text="The cities everyone moved TO are giving back."
-      style={{
-        fontFamily: FONT_SERIF,
-        fontWeight: 400,
-        fontSize: 76,
-        color: CREAM,
-        lineHeight: 1.18,
-        textShadow: TEXT_SHADOW,
-        letterSpacing: '-0.01em',
-      }}
-      maxWidth={920}
+      fontSize={96}
+      fontFamily={FONT_HEAD}
+      fontWeight={700}
+      letterSpacing="-0.01em"
+      highlightWord={2}
+    />
+    <KineticCaption
+      startFrame={84}
+      words={['HOME', 'PRICES', 'FEB', '2025', '→', 'FEB', '2026']}
+      cadenceFrames={5}
+      position="lower-third"
+      fontSize={36}
+      fontFamily={FONT_BODY}
     />
   </AbsoluteFill>
 );
 
-// Beat 2 — Comparison bars: Cape Coral -9.6%, Kansas City +8.6%
-const BeatBars: React.FC = () => {
-  const { fps } = useVideoConfig();
-  return (
-    <AbsoluteFill>
-      <DarkBackdrop />
-      <ScrimText
-        startFrame={4}
-        position="top"
-        text="HOME PRICES, FEB 2025 TO FEB 2026"
-        style={{
-          fontFamily: FONT_BODY,
-          fontWeight: 900,
-          fontSize: 36,
-          color: GOLD,
-          letterSpacing: 4,
-          textShadow: TEXT_SHADOW,
-        }}
-        maxWidth={900}
-      />
-      <ComparisonBar label="Cape Coral, FL" pct={-9.6} startFrame={Math.round(fps * 0.6)} yOffset={-110} />
-      <ComparisonBar label="Bend, OR" pct={-3.6} startFrame={Math.round(fps * 1.2)} yOffset={0} />
-      <ComparisonBar label="Kansas City" pct={8.6} startFrame={Math.round(fps * 1.8)} yOffset={110} />
-      <SourceLine startFrame={Math.round(fps * 2.6)} text="Fortune / AEI Housing Center; Bend per ryan-realty-platform" />
-    </AbsoluteFill>
-  );
-};
+// Beat 2 — Comparison cards: Cape Coral / Bend / Kansas City.
+const BeatBars: React.FC = () => (
+  <AbsoluteFill>
+    <AnimatedGradientBg variant="cool" />
+    <ParticleField count={28} color="rgba(120, 160, 220, 0.35)" />
+    <Headline
+      text="Same year. Different cycles."
+      startFrame={4}
+      position="top"
+      fontSize={48}
+    />
+    <StatCard
+      startFrame={20}
+      delayCard={0}
+      city="Cape Coral, FL"
+      pct={-9.6}
+      yPct={36}
+    />
+    <StatCard
+      startFrame={20}
+      delayCard={18}
+      city="Bend, OR"
+      pct={-3.6}
+      yPct={52}
+    />
+    <StatCard
+      startFrame={20}
+      delayCard={36}
+      city="Kansas City, MO"
+      pct={8.6}
+      yPct={68}
+    />
+    <SourcePill text={SRC_FORTUNE} startFrame={70} />
+  </AbsoluteFill>
+);
 
-// Beat 3 — The pattern: editorial framing, then a single number reveal
-const BeatPattern: React.FC = () => {
-  return (
-    <AbsoluteFill>
-      <DarkBackdrop />
-      <ScrimText
-        startFrame={4}
-        position="upper-third"
-        text="The pattern is not geography."
-        style={{
-          fontFamily: FONT_SERIF,
-          fontWeight: 400,
-          fontSize: 64,
-          color: CREAM,
-          lineHeight: 1.2,
-          textShadow: TEXT_SHADOW,
-          letterSpacing: '-0.005em',
-        }}
-        maxWidth={900}
-      />
-      <ScrimText
-        startFrame={36}
-        position="lower-third"
-        text="It is cycle position."
-        style={{
-          fontFamily: FONT_SERIF,
-          fontWeight: 700,
-          fontSize: 88,
-          color: GOLD,
-          lineHeight: 1.2,
-          textShadow: TEXT_SHADOW,
-          letterSpacing: '-0.01em',
-        }}
-        maxWidth={900}
-      />
-    </AbsoluteFill>
-  );
-};
+// Beat 3 — The pattern: cycle position.
+const BeatPattern: React.FC = () => (
+  <AbsoluteFill>
+    <AnimatedGradientBg variant="mixed" />
+    <ParticleField count={36} color="rgba(212, 175, 55, 0.40)" />
+    <KineticCaption
+      startFrame={4}
+      words={['THE', 'PATTERN', 'IS', 'NOT']}
+      cadenceFrames={7}
+      position="upper-third"
+      fontSize={56}
+      fontFamily={FONT_BODY}
+    />
+    <KineticCaption
+      startFrame={36}
+      words={['GEOGRAPHY.']}
+      cadenceFrames={1}
+      position="center"
+      fontSize={92}
+      fontFamily={FONT_HEAD}
+      fontWeight={700}
+      letterSpacing="-0.01em"
+    />
+    <KineticCaption
+      startFrame={64}
+      words={['IT', 'IS', 'CYCLE', 'POSITION.']}
+      cadenceFrames={9}
+      position="lower-third"
+      fontSize={72}
+      fontFamily={FONT_HEAD}
+      fontWeight={700}
+      letterSpacing="-0.01em"
+      highlightWord={3}
+    />
+  </AbsoluteFill>
+);
 
-// Beat 4 — Bend localization (honest): abstract dark backdrop + number.
-// Deliberately NOT using a property photo here. A city-level market stat
-// over a specific identifiable home reads as a per-property claim, which
-// would violate the CLAUDE.md data accuracy rule (the stat is Bend median,
-// not that home's value).
-const BeatBendLocal: React.FC = () => {
-  const { fps } = useVideoConfig();
-  return (
-    <AbsoluteFill>
-      <DarkBackdrop />
-      <ScrimText
-        startFrame={4}
-        position="upper-third"
-        text="BEND, OREGON"
-        style={{
-          fontFamily: FONT_BODY,
-          fontWeight: 900,
-          fontSize: 56,
-          color: GOLD,
-          letterSpacing: 8,
-          textShadow: TEXT_SHADOW,
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          textAlign: 'center',
-        }}
-      >
-        <div
-          style={{
-            fontFamily: FONT_SERIF,
-            fontSize: 220,
-            fontWeight: 700,
-            color: '#E07474',
-            lineHeight: 1,
-            letterSpacing: '-0.04em',
-            textShadow: '0 6px 28px rgba(0,0,0,0.85)',
-          }}
-        >
-          -3.6%
-        </div>
-        <div
-          style={{
-            marginTop: 28,
-            fontFamily: FONT_BODY,
-            fontWeight: 600,
-            fontSize: 36,
-            color: CREAM,
-            letterSpacing: 2.4,
-            textTransform: 'uppercase',
-            textShadow: TEXT_SHADOW,
-          }}
-        >
-          Median sale price
-          <br />
-          trailing 12 months
-        </div>
-      </div>
-      <SourceLine startFrame={Math.round(fps * 1.4)} text="ryan-realty-platform · MLS pull, computed 2026-04-26" />
-    </AbsoluteFill>
-  );
-};
+// Beat 4 — Bend localization with the -3.6% number front and center.
+const BeatBendLocal: React.FC = () => (
+  <AbsoluteFill>
+    <AnimatedGradientBg variant="cool" />
+    <ParticleField count={36} color="rgba(180, 80, 80, 0.45)" />
+    <Headline
+      text="Bend, Oregon"
+      startFrame={4}
+      position="upper-third"
+      fontSize={64}
+      color={WHITE}
+    />
+    <BigStat
+      startFrame={16}
+      durationFrames={32}
+      from={0}
+      to={-3.6}
+      format={(v) => `${v.toFixed(1)}%`}
+      fontSize={300}
+      color={RED_ALERT}
+      glowColor="rgba(230, 57, 70, 0.55)"
+      position={{ top: '52%', left: '50%' }}
+    />
+    <KineticCaption
+      startFrame={56}
+      words={['MEDIAN', 'SALE', 'PRICE']}
+      cadenceFrames={6}
+      position="lower-third"
+      fontSize={46}
+      fontFamily={FONT_BODY}
+    />
+    <KineticCaption
+      startFrame={84}
+      words={['TRAILING', '12', 'MONTHS']}
+      cadenceFrames={6}
+      position="bottom"
+      fontSize={36}
+      fontFamily={FONT_BODY}
+    />
+    <SourcePill text={SRC_BEND} startFrame={88} />
+  </AbsoluteFill>
+);
 
-// Beat 5 — The takeaway
+// Beat 5 — Takeaway: kinetic punchline + ticker.
 const BeatTakeaway: React.FC = () => (
   <AbsoluteFill>
-    <DarkBackdrop />
-    <ScrimText
+    <AnimatedGradientBg variant="mixed" />
+    <ParticleField count={36} color="rgba(212, 175, 55, 0.45)" />
+    <KineticCaption
       startFrame={4}
-      position="center"
-      text="Boom markets correct. Stable markets gain. Where you bought into the cycle matters more than where you bought."
-      style={{
-        fontFamily: FONT_SERIF,
-        fontWeight: 400,
-        fontSize: 50,
-        color: CREAM,
-        lineHeight: 1.3,
-        textShadow: TEXT_SHADOW,
-        letterSpacing: '-0.005em',
-      }}
-      maxWidth={900}
+      words={['BOOM', 'MARKETS', 'CORRECT.']}
+      cadenceFrames={8}
+      position="upper-third"
+      fontSize={64}
+      fontFamily={FONT_HEAD}
+      fontWeight={700}
+      letterSpacing="-0.005em"
     />
+    <KineticCaption
+      startFrame={42}
+      words={['STABLE', 'MARKETS', 'GAIN.']}
+      cadenceFrames={8}
+      position="center"
+      fontSize={64}
+      fontFamily={FONT_HEAD}
+      fontWeight={700}
+      letterSpacing="-0.005em"
+    />
+    <KineticCaption
+      startFrame={84}
+      words={['WHEN', 'YOU', 'BOUGHT', 'MATTERS', 'MORE', 'THAN', 'WHERE.']}
+      cadenceFrames={5}
+      position="lower-third"
+      fontSize={42}
+      fontFamily={FONT_BODY}
+      highlightWord={3}
+    />
+    <NewsTicker text="CAPE CORAL -9.6% · BEND -3.6% · KANSAS CITY +8.6% · CYCLE POSITION OVER GEOGRAPHY" />
   </AbsoluteFill>
 );
 
 export const ClipSunBeltCorrection: React.FC = () => {
-  // Beat layout:
-  //   0–80     (0–2.7s)   Hook
-  //   80–270   (2.7–9s)   Bars: Cape Coral / Bend / Kansas City
-  //   270–420  (9–14s)    Pattern: cycle position
-  //   420–600  (14–20s)   Bend local: -3.6% over Tumalo aerial
-  //   600–780  (20–26s)   Takeaway
-  //   780–900  (26–30s)   Brand outro
+  // Beat layout (frames at 30fps, 28s total):
+  //   0–150    (0–5s)     Hook
+  //   150–300  (5–10s)    Comparison cards
+  //   300–450  (10–15s)   Pattern: cycle position
+  //   450–600  (15–20s)   Bend -3.6%
+  //   600–750  (20–25s)   Takeaway + ticker
+  //   750–840  (25–28s)   Brand end card
   return (
-    <AbsoluteFill style={{ background: '#0a0805' }}>
-      <Sequence from={0} durationInFrames={90}>
+    <AbsoluteFill style={{ background: '#050d18' }}>
+      <Sequence from={0} durationInFrames={156}>
         <BeatHook />
       </Sequence>
-      <Sequence from={80} durationInFrames={200}>
+      <Sequence from={150} durationInFrames={156}>
         <BeatBars />
       </Sequence>
-      <Sequence from={270} durationInFrames={160}>
+      <Sequence from={300} durationInFrames={156}>
         <BeatPattern />
       </Sequence>
-      <Sequence from={420} durationInFrames={190}>
+      <Sequence from={450} durationInFrames={156}>
         <BeatBendLocal />
       </Sequence>
-      <Sequence from={600} durationInFrames={190}>
+      <Sequence from={600} durationInFrames={156}>
         <BeatTakeaway />
       </Sequence>
-      <Sequence from={780} durationInFrames={120}>
-        <BrandOutroCard startFrame={0} />
+      <Sequence from={750} durationInFrames={90}>
+        <BrandEndCard startFrame={0} />
       </Sequence>
     </AbsoluteFill>
   );
