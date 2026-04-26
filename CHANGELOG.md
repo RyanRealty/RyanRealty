@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.78.2 (2026-04-26)
+
+### Bug Fixes
+- fix(listing-video): Tumalo v3 — remove eagle beat per Matt 2026-04-26
+
+---
+
+
 ## v1.78.1 (2026-04-26)
 
 ### Bug Fixes
