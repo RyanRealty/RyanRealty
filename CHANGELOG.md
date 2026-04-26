@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.73.0 (2026-04-26)
+
+### Features
+- feat(video): unify all video production skills into single library
+
+---
+
+
 ## v1.72.0 (2026-04-26)
 
 ### Features
