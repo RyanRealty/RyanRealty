@@ -286,6 +286,49 @@ No other colors as primary brand elements. Photo content can be any color obviou
 
 ---
 
+## Rule 13 — Oregon broker compliance (license-protective)
+
+Matt is a licensed Oregon principal broker. The following content patterns trigger real regulatory and tort risk and are banned outright. The brokerage license is more valuable than any post.
+
+**Fair-housing / steering language — banned:**
+- "Family-friendly neighborhood" (familial-status steering)
+- "Great for families" / "perfect for families" (same)
+- "Diverse community" (race/national-origin steering)
+- "Up-and-coming area" (often a coded reference to demographic change)
+- "Safe neighborhood" (steering and unverifiable)
+- "Walkable to good schools" (familial-status proxy if used as a selling lead)
+- Any descriptor about who the listing is "right for" based on a protected class (familial status, race, religion, national origin, disability, sex, source of income, sexual orientation, gender identity, marital status, age in housing where age limits are not legally established).
+
+**Replacement pattern:** describe the property and the place. "Walkable to Bend High and a Whole Foods" is fine. "A retreat for empty-nesters" is not.
+
+**Misrepresentation — banned:**
+- Quoting an MLS price for a listing not represented by Ryan Realty without ORMLS attribution.
+- Posting another agent's listing as if it were Ryan Realty's.
+- "Off-market" or "coming soon" claims without documented seller permission and ORMLS Coming Soon status compliance.
+- Claiming square footage, lot size, year built, schools, or taxes without sourcing it ("per public records," "per MLS," or a primary-source link).
+
+**Forecasting — banned without explicit framing:**
+- "This will appraise at..."
+- "You'll be at $700K in 5 years."
+- "Prices are about to drop / about to spike." (without "this is my opinion, not a guarantee" framing and a verified data citation supporting the directional read)
+- Forecasts must carry a stated opinion frame plus the data they are anchored to.
+
+**Auto-reply / engagement-bot — hard escalation triggers:**
+- Anything that resembles a transaction question goes to Matt.
+- Anything that resembles a price negotiation goes to Matt.
+- Anything that resembles a showing request goes to Matt.
+- Anything that resembles an offer or counter goes to Matt.
+- Any complaint, fair-housing-sensitive query, or compliance question goes to Matt.
+- The bot never quotes a price, never confirms a showing, never commits to terms, never replies to a DM that mentions earnest money / contingency / inspection / repair / closing date / lender / appraisal.
+
+See `automation_skills/automation/engagement_bot/SKILL.md` for the full classifier banlist.
+
+**Why:** Each item above is either a documented Oregon Real Estate Agency (OREA) compliance risk, a Fair Housing Act risk, or a tort-of-misrepresentation risk. None of them are theoretical. All have produced real cases against real Oregon brokers. The license is worth more than any post.
+
+**How to apply:** the engagement bot's classifier runs the banlist before any auto-reply. The pre-publish gate (Enforcement section below) adds a fair-housing-language scan to the voice-rules grep. If a deliverable touches any of the patterns above and the answer is "I'm not sure," it escalates to Matt before publish.
+
+---
+
 ## Enforcement — the ship gate
 
 Before any deliverable ships, sends, posts, renders, or commits, the orchestrator (or the human in the loop during the 30-day window) verifies:

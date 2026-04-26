@@ -133,7 +133,7 @@ Durable cross-session notes live in **`.auto-memory/`** (same pattern as Cowork 
 
 **Global index:** Before loading skills ad hoc, open **`~/.claude/GLOBAL_SKILLS_REGISTRY.md`** (or the git mirror **`docs/plans/GLOBAL_SKILLS_REGISTRY.md`**) for the full inventory: repo skills, Cursor plugins (Vercel, Supabase, Figma, Superpowers, etc.), `skills-cursor`, TRANSACTION COORDINATOR skills, and Cowork-mounted skills (section E). **`~/.cursor/GLOBAL_SKILLS_REGISTRY.md`** is a stub that points at the canonical file.
 
-**Load skills first:** If a task might match any **`SKILL.md`** in this repo (`.cursor/skills/`, `video_production_skills/`) or in Cursor’s bundled skill paths, **read that skill file before doing the work**—same bar as Cursor agents (`AGENTS.md` *Skills*).
+**Load skills first:** If a task might match any **`SKILL.md`** in this repo (`.cursor/skills/`, `video_production_skills/`, `social_media_skills/`, `automation_skills/`) or in Cursor’s bundled skill paths, **read that skill file before doing the work**—same bar as Cursor agents (`AGENTS.md` *Skills*).
 
 **Mandatory:** `engineering:code-review` on every meaningful change before ship. `engineering:deploy-checklist` before any production deploy. `design:design-system` audits whenever shadcn/ui compliance is in question.
 
