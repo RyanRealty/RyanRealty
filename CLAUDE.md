@@ -147,10 +147,22 @@ Everything else (debugging, architecture, testing-strategy, documentation, incid
 
 **Read `video_production_skills/VIDEO_PRODUCTION_SKILL.md` before writing any video code or Remotion composition. This is non-negotiable.**
 
+**Pair-required: `video_production_skills/ANTI_SLOP_MANIFESTO.md`.** This is the ship/no-ship gate for every piece of content Ryan Realty publishes — video, image, copy, caption, comment, DM, ad, email, automated post. Twelve rules, every one a ship-blocker. Banned generic real estate language, banned AI-passed-as-real photos, ElevenLabs-only VO with pronunciation overrides, banned openings, AI disclosure requirements, beat-synced music or none, source-verified data only, 30-day human review on every new format, no AI humor, no engagement bait, voice rules (no semicolons, no em-dashes, no AI filler), and brand visual standards. Every skill in `video_production_skills/`, `social_media_skills/`, and `automation_skills/` references it.
+
 The master skill file codifies the hard constraints (length, hook, cuts, retention, branding rules), creative direction (formula, pacing, shot sequence by price tier), AI video pipeline (when warranted, when banned), brand rules, the pre-render asset audit, and the post-render quality gate. Every Schoolhouse v5 round (v1 through v5.9) is logged with the specific failure that produced each rule.
 
 For quick reference during work, also keep `video_production_skills/VIRAL_VIDEO_CONSTRAINTS.md` open — it's the 30-second checklist version of the master skill.
 
 Every video build opens both files before scaffolding the BEATS array. Every render runs the quality gate (ffmpeg blackdetect strict + frame extraction + visual scrub) before push. Self-enforce — don't wait for Matt to find an obvious bug.
 
-The full sub-skill index (depth_parallax, gaussian_splat, cinematic_transitions, audio_sync, social_calendar, market_report_video, news_video, google_maps_flyover, brand_assets, listing_launch, area_guides, ai_platforms, content_pipeline, quality_gate) is in §10 of the master skill. Operations manual is `video_production_skills/AGENT_HANDOFF.md`; rendered MP4 inventory is `video_production_skills/ASSET_LOCATIONS.md`.
+The full master sub-skill index (depth_parallax, gaussian_splat, cinematic_transitions, audio_sync, social_calendar, market_report_video, news_video, google_maps_flyover, brand_assets, listing_launch, area_guides, ai_platforms, content_pipeline, quality_gate) is in §10 of the master skill. Operations manual is `video_production_skills/AGENT_HANDOFF.md`; rendered MP4 inventory is `video_production_skills/ASSET_LOCATIONS.md`.
+
+### Sister skill libraries
+
+Three sibling directories at the repo root carry the autonomous viral content engine:
+
+- **`video_production_skills/`** — master skill, manifesto, plus the format and capability skills above PLUS six viral format skills added in §11: `earth_zoom`, `data_viz_video`, `listing_reveal`, `meme_content`, `avatar_market_update`, `neighborhood_tour`. Some of the §11 skills overlap conceptually with earlier ones (`earth_zoom` ↔ `google_maps_flyover`, `neighborhood_tour` ↔ `area_guides`, `listing_reveal` ↔ `listing_launch`, `data_viz_video` ↔ `market_report_video`) — both sets coexist while the team chooses which is canonical per format. Read the relevant SKILL.md before invoking.
+- **`social_media_skills/`** — platforms (algorithm briefs, channel specs, viral hooks, trending audio, profile optimization, audits), content (calendar, creation, repurposing, animation rules, AI video, Synthesia, quality gate, Remotion), ops (analytics, API wrappers, community management, ads, lead nurture), intelligence (Paid Ads, Organic Growth, Marketing, Canva/CapCut). Index at `social_media_skills/README.md`.
+- **`automation_skills/`** — three triggers (`listing_trigger`, `market_trigger`, `trend_trigger`) + six pipelines (`post_scheduler`, `performance_loop`, `repurpose_engine`, `engagement_bot`, `thumbnail_generator`, `ab_testing`). Defines 19 database tables, the OAuth flow for Meta/TikTok/YouTube/LinkedIn, the post queue with first-30-days human review gate, format performance scoring, and FUB lead capture from inbound DMs/comments.
+
+Every skill in all three libraries references `ANTI_SLOP_MANIFESTO.md` and refuses to ship content that violates it.

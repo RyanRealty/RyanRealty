@@ -2,6 +2,8 @@
 
 **This is non-negotiable. Every agent reads this BEFORE writing any video code or Remotion composition. No exceptions.**
 
+**Pair-required reading: `video_production_skills/ANTI_SLOP_MANIFESTO.md`.** The manifesto is the ship/no-ship gate for every piece of content Ryan Realty publishes. This file (the master skill) codifies the *how* of video production. The manifesto codifies the *what's banned* across video, image, copy, caption, comment, DM, ad, email, and automated post. Both files are loaded before any build.
+
 This file replaces ad-hoc decisions across the v5 series of Schoolhouse listing videos and codifies what shipped vs what didn't. Every cinematic-short-film instinct that ate 130 seconds of a 45-second slot is documented here as a banned pattern. Every viral retention rule that landed is locked.
 
 ---
@@ -368,8 +370,46 @@ All sub-skills live under `video_production_skills/`. None replace the rules abo
 
 ---
 
+## 11. Viral content format skills
+
+The six format skills below pair the production rules above with specific viral formats. Each ships with a SKILL.md that lays out tool chain, step-by-step workflow, anti-slop guardrails, brand rules, data verification, and a quality gate. All six reference `ANTI_SLOP_MANIFESTO.md` and obey every rule in this master skill.
+
+**Note on overlap with §10 skills.** Several §11 skills overlap conceptually with skills introduced in §10: `earth_zoom` ↔ `google_maps_flyover`, `neighborhood_tour` ↔ `area_guides`, `listing_reveal` ↔ `listing_launch`, `data_viz_video` ↔ `market_report_video`. The two sets currently coexist. When invoking, pick the version whose tool chain and length-target match the deliverable; do not run both for the same output.
+
+### `earth_zoom/` — Google Earth zoom-to-listing
+A "from space to front door" cinematic intro for new listings. Earth Studio scripted descent → Remotion composite with logo, address, hook, ElevenLabs VO. Works as a 6-10s opener for `listing_reveal` or as a stand-alone 15s teaser. Anti-slop: no fake satellite imagery, no AI-generated landscapes, terminal frame must match the actual address (overlay-on-MLS-photo QA). Skill file: `video_production_skills/earth_zoom/SKILL.md`.
+
+### `data_viz_video/` — animated market stats from Supabase
+30-60s vertical video where every CountUp number traces to a freshly-pulled `market_pulse_live` query. JSON snapshot per render is the single source of truth — citations pill bottom-right names the source and pull date. Anti-slop: no "approximately", no rounded marketing numbers, every figure has a citation, audio cuts beat-synced via `audio_sync`. Skill file: `video_production_skills/data_viz_video/SKILL.md`.
+
+### `listing_reveal/` — formalized Tumalo-style photo-to-cinematic
+The Tumalo Reservoir 16-beat formula codified for every new listing. 16 beats × 2.5-3s = 40-48s reel using `depth_parallax` on hero shots, Ken Burns on detail shots, `audio_sync` to a beat-detected score. Anti-slop: no generic real estate words (manifesto rule 1), every still in the render is a still in the actual MLS photo set, no AI-generated photos. Skill file: `video_production_skills/listing_reveal/SKILL.md`.
+
+### `meme_content/` — trend-jacking with vlipsy clips
+Real-time meme + trend response format. vlipsy clip + Matt's voice on-screen text + 15-25s caption-driven cut (no VO by default). Anti-slop: no AI humor (manifesto rule 9), no clips without fair-use review, no trend that contradicts data we just published. Voice grader pass before render — does this sound like a 40-something Bend broker, or like ChatGPT trying to be funny? Skill file: `video_production_skills/meme_content/SKILL.md`.
+
+### `avatar_market_update/` — Synthesia weekly stats avatar
+Weekly Mon-AM 60s video, Synthesia avatar delivering market pulse over branded intro/outro and stat overlays. AI-disclosure pill required (manifesto rule 5) for the entire avatar segment. Script enforced against voice rules, numbers traced to Supabase. Human review gate ON for first 4 weeks (manifesto rule 8). Skill file: `video_production_skills/avatar_market_update/SKILL.md`.
+
+### `neighborhood_tour/` — 19 area guides with Earth Studio + data overlay
+Library generator: 19 named Bend-area neighborhoods (11 cities + 8 communities, sourced from `scripts/seed.ts`). Each tour: 60-90s vertical with Earth Studio polygon flythrough → Remotion overlays (median price, schools, drive-time, demographics) → ElevenLabs VO from per-neighborhood script template. Every claim mapped to a source in the per-city `citations` array. Anti-slop: no demographic stereotyping, no school rankings without authoritative source, no AI-generated neighborhood photos, fair-housing safe. Skill file: `video_production_skills/neighborhood_tour/SKILL.md`.
+
+---
+
+## 12. Sister skill libraries
+
+Two sibling directories at the repo root extend this skill library with social/brand intelligence and end-to-end automation:
+
+### `social_media_skills/` — platforms, content production, ops, intelligence
+The social and brand intelligence layer. Platform algorithm briefs, channel specs, viral hook library, content calendar, cross-platform repurposing rules, analytics feedback loop, community management playbook, ads + lead nurture. Plus four intelligence docs (Paid Ads, Organic Growth, Marketing, Canva/CapCut) that codify what we know about each surface. Read `social_media_skills/README.md` for the index. Every video skill that crosses into a platform-specific concern (caption format, hashtag set, posting cadence, thumbnail spec) reads the relevant file in `social_media_skills/platforms/` first.
+
+### `automation_skills/` — triggers + automation pipelines
+The autonomous content engine. Three triggers (`listing_trigger`, `market_trigger`, `trend_trigger`) and six automation skills (`post_scheduler`, `performance_loop`, `repurpose_engine`, `engagement_bot`, `thumbnail_generator`, `ab_testing`). Defines 19 database tables, the OAuth token flow for Meta/TikTok/YouTube/LinkedIn, the post queue with first-30-days human review gate, the format performance scoring formula, and the FUB lead capture path from inbound DMs/comments. Every automation references `ANTI_SLOP_MANIFESTO.md` and refuses to publish content that violates it.
+
+---
+
 ## How to use this index
 
-Every video skill invocation, every Remotion composition, every `Listing.tsx` rewrite opens THIS file (the master) FIRST. Then read the relevant sub-skill for the capability you're reaching for. Don't wait for review — self-enforce on every build.
+Every video skill invocation, every Remotion composition, every `Listing.tsx` rewrite opens THIS file (the master) FIRST, then `ANTI_SLOP_MANIFESTO.md`, then the relevant sub-skill for the capability you're reaching for. Don't wait for review — self-enforce on every build.
 
-The index is the contract. If a sub-skill claims a capability that contradicts §1–§9 above, the master wins. Sub-skills extend; they do not override.
+The index is the contract. If a sub-skill claims a capability that contradicts §1–§9 above, the master wins. Sub-skills extend; they do not override. The manifesto outranks the master where the two intersect on content gating.
