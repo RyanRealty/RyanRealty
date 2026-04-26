@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.69.2 (2026-04-26)
+
+### Other
+- Add Tumalo listing photo picker page
+
+---
+
+
 ## v1.69.1 (2026-04-26)
 
 ### Maintenance
