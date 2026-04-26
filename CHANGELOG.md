@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.78.0 (2026-04-26)
+
+### Features
+- feat(listing-video): Tumalo v3 — real MiDaS depth maps + 3D YOUR MORNING text
+
+---
+
+
 ## v1.77.0 (2026-04-26)
 
 ### Features
