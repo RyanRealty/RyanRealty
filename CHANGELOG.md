@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.72.0 (2026-04-26)
+
+### Features
+- feat(video): Skills 1+2+3 — depth parallax, gaussian splat, transitions
+- feat(social-calendar): add Skill 5 - Social Calendar Automation
+- feat(video): Skill 4 — beat detection + audio sync for Remotion cuts
+
+---
+
+
 ## v1.71.0 (2026-04-26)
 
 ### Features
