@@ -1,0 +1,136 @@
+{
+  "version": "1.0",
+  "updated": "2026-04-18",
+  "description": "Reusable media asset catalog for Ryan Realty market report videos. All assets categorized by city, scene type, and animation status for cross-video reuse.",
+  "cities": {
+    "bend": {
+      "photos": {
+        "directory": "bend_unsplash/",
+        "count": 7,
+        "source": "Unsplash",
+        "landmarks": ["Tumalo Falls", "Smith Rock", "Broken Top", "North Sister", "Three Fingered Jack"]
+      },
+      "animated_clips": {
+        "directory": "bend_unsplash/animated/",
+        "count": 10,
+        "model": "Kling (via Replicate, now deprecated)",
+        "format": "mp4, 780x1176, 10s, 24fps",
+        "clips": [
+          {"file": "slide1_tumalo_falls.mp4", "scene": "waterfall", "motion": "water flowing"},
+          {"file": "slide2_smith_rock.mp4", "scene": "desert_canyon", "motion": "clouds drifting"},
+          {"file": "slide3_lone_tree_lake.mp4", "scene": "lake", "motion": "water ripples"},
+          {"file": "slide4_broken_top.mp4", "scene": "mountain", "motion": "clouds rushing"},
+          {"file": "slide5_north_sister.mp4", "scene": "mountain", "motion": "clouds drifting"},
+          {"file": "slide6_three_fingered_jack.mp4", "scene": "mountain", "motion": "clouds, wind"},
+          {"file": "slide7_tumalo_falls_fall.mp4", "scene": "waterfall", "motion": "water flowing"}
+        ]
+      },
+      "overlays": {
+        "directory": "bend_unsplash/overlays_v6/",
+        "format": "PNG, 1080x1920"
+      },
+      "final_videos": {
+        "directory": "bend_unsplash/",
+        "files": ["Bend_Market_Reel_v5.mp4"]
+      }
+    },
+    "redmond": {
+      "photos": {
+        "directory": "redmond_unsplash/photos/",
+        "count": 9,
+        "source": "Unsplash",
+        "landmarks": ["Smith Rock", "Deschutes River", "Central Oregon desert"]
+      },
+      "animated_clips": {
+        "directory": "redmond_unsplash/animated/",
+        "count": 0,
+        "status": "PENDING — needs API credit (Replicate or fal.ai)",
+        "model": "Wan 2.7 i2v (planned)"
+      },
+      "overlays": {"directory": "redmond_unsplash/overlays/", "count": 0, "status": "PENDING"},
+      "final_videos": {"directory": "redmond_unsplash/final/", "count": 0, "status": "PENDING"}
+    },
+    "sisters": {
+      "photos": {
+        "directory": "sisters_unsplash/photos/",
+        "count": 9,
+        "source": "Unsplash",
+        "landmarks": ["Three Sisters peaks", "Broken Top", "Tumalo Falls", "Cascade meadows"]
+      },
+      "animated_clips": {
+        "directory": "sisters_unsplash/animated/",
+        "count": 0,
+        "status": "PENDING",
+        "model": "Wan 2.7 i2v (planned)"
+      },
+      "overlays": {"directory": "sisters_unsplash/overlays/", "count": 0, "status": "PENDING"},
+      "final_videos": {"directory": "sisters_unsplash/final/", "count": 0, "status": "PENDING"}
+    },
+    "sunriver": {
+      "photos": {
+        "directory": "sunriver_unsplash/photos/",
+        "count": 7,
+        "source": "Unsplash",
+        "landmarks": ["Mt Bachelor", "Cascade Mountains", "Forest", "Mountain lakes"]
+      },
+      "animated_clips": {
+        "directory": "sunriver_unsplash/animated/",
+        "count": 0,
+        "status": "PENDING",
+        "model": "Wan 2.7 i2v (planned)"
+      },
+      "overlays": {"directory": "sunriver_unsplash/overlays/", "count": 0, "status": "PENDING"},
+      "final_videos": {"directory": "sunriver_unsplash/final/", "count": 0, "status": "PENDING"}
+    },
+    "lapine": {
+      "photos": {
+        "directory": "lapine_unsplash/photos/",
+        "count": 11,
+        "source": "Unsplash",
+        "landmarks": ["Newberry Volcano", "Pine forest", "Waterfalls", "Volcanic landscape", "Meadows"]
+      },
+      "animated_clips": {
+        "directory": "lapine_unsplash/animated/",
+        "count": 0,
+        "status": "PENDING",
+        "model": "Wan 2.7 i2v (planned)"
+      },
+      "overlays": {"directory": "lapine_unsplash/overlays/", "count": 0, "status": "PENDING"},
+      "final_videos": {"directory": "lapine_unsplash/final/", "count": 0, "status": "PENDING"}
+    },
+    "prineville": {
+      "photos": {
+        "directory": "prineville_unsplash/photos/",
+        "count": 7,
+        "source": "Unsplash",
+        "landmarks": ["Painted Hills", "High desert", "Canyons", "Rolling hills"]
+      },
+      "animated_clips": {
+        "directory": "prineville_unsplash/animated/",
+        "count": 0,
+        "status": "PENDING",
+        "model": "Wan 2.7 i2v (planned)"
+      },
+      "overlays": {"directory": "prineville_unsplash/overlays/", "count": 0, "status": "PENDING"},
+      "final_videos": {"directory": "prineville_unsplash/final/", "count": 0, "status": "PENDING"}
+    }
+  },
+  "scene_types": {
+    "mountain": {"description": "Mountain peak with sky", "animation": "clouds drifting, wind on snow"},
+    "waterfall": {"description": "Waterfall with surrounding forest", "animation": "water flowing, mist rising"},
+    "lake": {"description": "Still lake with mountain reflection", "animation": "subtle ripples, clouds shifting"},
+    "forest": {"description": "Dense pine/evergreen forest", "animation": "branches swaying, light shifting"},
+    "desert_canyon": {"description": "Rock formations, high desert", "animation": "clouds, heat shimmer, dust"},
+    "river": {"description": "Flowing river/creek", "animation": "water flowing over rocks"},
+    "meadow": {"description": "Open field with distant peaks", "animation": "grass swaying, clouds"},
+    "sunset": {"description": "Golden hour landscape", "animation": "clouds shifting, warm light play"},
+    "volcanic": {"description": "Lava fields, crater landscapes", "animation": "steam, clouds, heat shimmer"},
+    "snow": {"description": "Snow-covered peaks", "animation": "powder blowing, clouds past peak"}
+  },
+  "reuse_rules": {
+    "cross_city": "Mountain and landscape shots shared across Central Oregon can be reused. City-specific landmarks (Smith Rock=Redmond, Painted Hills=Prineville) should NOT be reused for other cities.",
+    "animation_reuse": "Once a photo is animated, the clip can be reused in any video for that city. Store animated clips in {city}_unsplash/animated/ for permanent access.",
+    "overlay_reuse": "Stat overlay templates are parameterized — swap city name and numbers. Font, layout, and brand elements are shared.",
+    "seasonal": "Landscape photos may be season-specific. Tag with season if obvious (snow=winter, wildflowers=spring). Prefer season-neutral shots for reuse."
+  }
+}

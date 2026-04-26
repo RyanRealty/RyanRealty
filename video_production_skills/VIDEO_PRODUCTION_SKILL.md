@@ -327,25 +327,49 @@ If the quality gate is green, the video ships. If anything is red, fix it before
 
 ---
 
-## 10. Extension skills (optional capabilities)
+## 10. Skill index — the unified library
 
-The five sub-skills under `video_production_skills/` plug into the same Remotion pipeline. None replace the rules above — they extend what's possible inside them. Each ships with its own SKILL.md. Read the relevant one before reaching for the capability.
+All sub-skills live under `video_production_skills/`. None replace the rules above — they extend what's possible inside them. Each ships with its own `SKILL.md`. Read the relevant one before reaching for the capability.
 
-### `depth_parallax/` — 3D Ken Burns
-MiDaS depth map → bg / mid / fg alpha layers → `<DepthParallaxBeat>` renders with per-layer translate + scale so the foreground tracks the camera faster than the background. Drop-in replacement for `<PhotoBeat>` on hero exteriors and shots with strong depth (kitchen island looking through to mountains, trees in front of the house). Banned on flat photos and faces. Run `python video_production_skills/depth_parallax/generate_depth_map.py --input photo.jpg --output-dir public/images/v5_library/depth/<key>/` once per photo, then point the BeatDef at the depth dir. Skill file: `video_production_skills/depth_parallax/SKILL.md`.
+### Operations & reference (top-level files)
 
-### `gaussian_splat/` — flythrough renders for premium listings
-COLMAP camera poses → nerfstudio splatfacto training → camera-path render → 5–10s MP4 clip dropped into the comp via `<OffthreadVideo>`. For $1M+ listings with 30+ photos or a phone walkthrough video. Apple Silicon training is experimental — recommended path is `--cloud-gpu` (rent a 4090 on RunPod / vast.ai for ~$0.40/scene). **Inherited rule: any clip used in a viral cut must obey the 4-second per-beat cap.** Splat is reserved for the cinematic-cut deliverables, not the 45s viral reels. Wrapper: `python scripts/gaussian_flythrough.py --photos ./photos --output flythrough.mp4 [--cloud-gpu]`. Skill file: `video_production_skills/gaussian_splat/SKILL.md`.
+- **[`AGENT_HANDOFF.md`](AGENT_HANDOFF.md)** — operations manual. API key inventory, ENV vars, DB schemas, priority tasks, mount instructions for the Cowork agent flow. The "first read on a fresh session" file.
+- **[`ASSET_LOCATIONS.md`](ASSET_LOCATIONS.md)** — index of where rendered MP4s live on disk (BRAND MANAGER, SOCIAL MEDIA MANAGER folders). Updated 2026-04-26.
+- **[`VIRAL_VIDEO_CONSTRAINTS.md`](VIRAL_VIDEO_CONSTRAINTS.md)** — 30-second checklist version of this master skill. Pin next to the editor.
 
-### `cinematic_transitions/` — Crossfade / LightLeak / WhipPan / Push / Slide
-Five drop-in Remotion transition components under `listing_video_v4/src/components/` exported via `./components/index`. Each runs 0.3–0.5s. **Default to Crossfade.** LightLeak and WhipPan are register-changing transitions — once or twice per video maximum, anchored to the 25% and 50% pattern interrupts. WhipPan banned on $1M+ register; LightLeak banned on $1M+ (too "gram-y"). All transitions render over a transparent background so the existing Sequence-overlap pattern in Section 7 #1 keeps working — they do NOT paint solid black or charcoal at any point. Skill file: `video_production_skills/cinematic_transitions/SKILL.md`.
+### Hard gate (mandatory on every AI clip)
 
-### `audio_sync/` — beat-aligned cuts
-`librosa` beat-tracker writes `beats.json`. The Remotion comp loads it via `listing_video_v4/src/lib/beats.ts` and snaps `BeatDef.startSec` to the nearest detected beat within ±0.15s tolerance. `enforceBeatBounds()` keeps the snapped sequence inside the 2s–4s per-beat constraint from Section 1. Use loosely on luxury (snap re-hooks only); use aggressively on sub-$500K (snap every cut). Skip entirely on VO-only cuts. Run: `python scripts/detect_beats.py --audio music_bed.mp3 --output beats.json`. Skill file: `video_production_skills/audio_sync/SKILL.md`.
+- **[`quality_gate/SKILL.md`](quality_gate/SKILL.md)** — 6-phase hard gate (Concept, Prompt, Generation, Post-Processing, Viral Architecture, Post-Publish). All AI video must pass every phase before stitch. Web-verified creator references and statistics with inline source URLs (verified 2026-04-15).
 
-### `social_calendar/` — 3 posts/week per active listing
-`scripts/generate_content_calendar.py` reads a listing manifest (or inline flags) and produces a JSON calendar of 3 posts/week × N weeks. Mix per week: 1 full-tour video, 1 single-room highlight (15s), 1 lifestyle moment. Captions are template-based (no LLM call), brand-voice compliant, and fail loudly if any banned word slips in. Numbers come from the manifest — never invented (Section 0 of `CLAUDE.md`, data accuracy rule). Skill file: `video_production_skills/social_calendar/SKILL.md`.
+### Production capabilities — Remotion pipeline extensions
+
+- **[`depth_parallax/SKILL.md`](depth_parallax/SKILL.md)** — 3D Ken Burns. MiDaS depth map → bg/mid/fg alpha layers → `<DepthParallaxBeat>` with per-layer translate + scale. Drop-in replacement for `<PhotoBeat>` on hero exteriors and shots with strong depth. Banned on flat photos and faces. `python video_production_skills/depth_parallax/generate_depth_map.py --input photo.jpg --output-dir public/images/v5_library/depth/<key>/`.
+- **[`gaussian_splat/SKILL.md`](gaussian_splat/SKILL.md)** — flythrough renders for premium listings. COLMAP camera poses → nerfstudio splatfacto training → camera-path render → 5–10s MP4 via `<OffthreadVideo>`. $1M+ listings with 30+ photos. **Inherited rule: any clip in a viral cut obeys the 4s/beat cap.** Recommended path `--cloud-gpu` ($0.40/scene on RunPod / vast.ai 4090). Wrapper: `python scripts/gaussian_flythrough.py --photos ./photos --output flythrough.mp4 [--cloud-gpu]`.
+- **[`cinematic_transitions/SKILL.md`](cinematic_transitions/SKILL.md)** — Crossfade / LightLeak / WhipPan / Push / Slide drop-in Remotion components under `listing_video_v4/src/components/`. 0.3–0.5s each. Default Crossfade. LightLeak + WhipPan are register-changing — 1–2 per video max, anchored to 25% / 50% pattern interrupts. WhipPan + LightLeak banned on $1M+ register. All render over transparent background (preserves §7 #1 Sequence-overlap pattern).
+- **[`audio_sync/SKILL.md`](audio_sync/SKILL.md)** — beat-aligned cuts. `librosa` writes `beats.json`; comp loads via `listing_video_v4/src/lib/beats.ts` and snaps `BeatDef.startSec` to nearest beat ±0.15s. `enforceBeatBounds()` keeps snapped sequence inside 2–4s/beat (§1). Loose on luxury (re-hooks only); aggressive sub-$500K (every cut); skip on VO-only. `python scripts/detect_beats.py --audio music_bed.mp3 --output beats.json`.
+
+### Production capabilities — alternative renderers
+
+- **[`market_report_video/SKILL.md`](market_report_video/SKILL.md)** — pure-ffmpeg 9:16 stat-card generator. The lighter-weight sibling of `listing_video_v4/` (Remotion). Default for monthly market data drops where the visual is "stat in the middle, photo Ken-Burnsing behind it." Ships with `generate_market_report.sh`, `market_report_config_example.json`, `media_asset_catalog.json`. Hard rules baked in (1.08× max zoom, 4s/beat cap).
+- **[`news_video/SKILL.md`](news_video/SKILL.md)** — Synthesia avatar workflow. Talking-head video where the speaker is Matt's avatar (or stock approved). Right fit: weekly market update, listing first-look, FAQ series, neighborhood mini-tour, lead-magnet promo. Wrong fit: viral video, testimonials, controversial topics, cold-audience paid ads. Synthesia handles mouth-sync — the carve-out from "no AI faces."
+- **[`google_maps_flyover/SKILL.md`](google_maps_flyover/SKILL.md)** — Google Earth Studio + 3D Tiles cinematic aerials. The "impossible drone shot" and "zoom from space → land at the front door" register. Workflow: Earth Studio camera path → 4K image sequence + 3D tracking JSX → After Effects compositing (birds, clouds, haze, color grade, lens effects) → music sync. Verified creator playbooks (@andras.ra, @ai.otiv, Emberlite, AI Earth Zoom-Out trend, April 2026). Half-day to full-day production cost — reserve for hero deliverables.
+
+### Creative & strategy
+
+- **[`brand_assets/SKILL.md`](brand_assets/SKILL.md)** — visual system, photo selection, creative intelligence. Two color registers (light-forward editorial for static / print, dark-forward feed-native for video). Typography hierarchy (Butcher / AzoSans / Amboqia). Photo selection workflow + per-purpose evaluation criteria + Tumalo Reservoir Rd canonical asset reference. Real-estate creators worth studying. Run the QA checklist before every commit.
+- **[`listing_launch/SKILL.md`](listing_launch/SKILL.md)** — per-property full launch package (MLS description, 3 Reel scripts, 7-frame Story sequence, IG static, FB post, sphere email). Features → Lifestyle → Benefits framework. Banned-words enforcement.
+- **[`area_guides/SKILL.md`](area_guides/SKILL.md)** — 19-neighborhood Reel format. 30–45s text-on-B-roll cut with rotating overlay stats, no VO. Ships with `scripts.md` (per-neighborhood hooks + overlay rotations).
+- **[`ai_platforms/SKILL.md`](ai_platforms/SKILL.md)** — AI generation tool selection, current pricing, API access status, mandatory block-format prompt template, banned vocabulary. Photo-to-video pre-flight checklist. Replicate Node example. Cost-control strategy (scout-then-hero). Companion file [`ai_platforms/platform_research.md`](ai_platforms/platform_research.md) for the competitive research dump (Veo, Kling, Runway, Pika, Luma, Sora-sunsetting, ElevenLabs, Suno, Synthesia, fal.ai).
+
+### Pipeline orchestration
+
+- **[`content_pipeline/SKILL.md`](content_pipeline/SKILL.md)** — master 6-stage operating system: DIRECT → GENERATE → PRODUCE → DRAFT → PUBLISH → MONITOR. Matt never touches a tool. Read first for any content task. Format library (Friday Hype Reel, Listing Launch Package, Market Commentary, Neighborhood Spotlight, Quick Tip, Trending Format). Per-platform publish APIs (Meta Graph, TikTok Content Posting, YouTube Data, GBP Local Posts).
+- **[`social_calendar/SKILL.md`](social_calendar/SKILL.md)** — 3 posts/week per active listing. `scripts/generate_content_calendar.py` reads a listing manifest and produces a JSON calendar. Mix: 1 full-tour video, 1 single-room highlight (15s), 1 lifestyle moment. Template-based captions (no LLM), brand-voice compliant, fails loudly on banned words. Numbers come from the manifest — never invented (per `CLAUDE.md` §0).
 
 ---
 
-How to apply: every video skill invocation, every Remotion composition, every `Listing.tsx` rewrite opens this file. No exceptions. Don't wait for review — self-enforce on every build.
+## How to use this index
+
+Every video skill invocation, every Remotion composition, every `Listing.tsx` rewrite opens THIS file (the master) FIRST. Then read the relevant sub-skill for the capability you're reaching for. Don't wait for review — self-enforce on every build.
+
+The index is the contract. If a sub-skill claims a capability that contradicts §1–§9 above, the master wins. Sub-skills extend; they do not override.

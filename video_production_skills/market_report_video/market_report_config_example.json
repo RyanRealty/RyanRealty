@@ -1,0 +1,116 @@
+{
+  "_comment": "Ryan Realty Market Report Video Generator — Config File Format",
+  "_version": "1.0",
+  "_usage": "Pass this file to generate_market_report.sh via: ./generate_market_report.sh --config this_file.json",
+
+  "city": "Redmond",
+  "date_label": "YTD 2026",
+  "phone": "541.213.6706",
+  "logo_path": "/path/to/ryan_realty_logo_white.png",
+  "output_file": "/path/to/output/redmond_market_report_ytd2026.mp4",
+
+  "_photos_comment": "Provide 3-10 high-quality photos. Script cycles through them if more stat cards than photos.",
+  "photos": [
+    "/path/to/photos/redmond_neighborhood_1.jpg",
+    "/path/to/photos/redmond_neighborhood_2.jpg",
+    "/path/to/photos/redmond_downtown.jpg",
+    "/path/to/photos/redmond_aerial.jpg",
+    "/path/to/photos/redmond_home_exterior.jpg"
+  ],
+
+  "_stat_cards_comment": "Each card = headline (top), value (center, in gold), context (bottom). Ordered by viral tier — lead with the strongest stat. Recommend 5-8 cards for a 23-35 second video.",
+  "stat_cards": [
+    {
+      "_note": "Tier 1 — lead stat",
+      "headline": "Seller Concessions",
+      "value": "48%",
+      "context": "Nearly half of closings include seller help"
+    },
+    {
+      "_note": "Tier 1 — market balance",
+      "headline": "Months of Supply",
+      "value": "5.8",
+      "context": "Balanced market — buyer has options"
+    },
+    {
+      "_note": "Tier 1 — value comparison",
+      "headline": "Price Per Sq Ft",
+      "value": "$318",
+      "context": "vs $401/sqft in Bend — same Central Oregon life"
+    },
+    {
+      "_note": "Tier 2 — anchor stat",
+      "headline": "Median Home Price",
+      "value": "$475,000",
+      "context": "188 sales closed YTD 2026"
+    },
+    {
+      "_note": "Tier 2 — cash presence",
+      "headline": "Cash Buyers",
+      "value": "1 in 5",
+      "context": "21% of Redmond sales — all cash"
+    },
+    {
+      "_note": "Tier 2 — affordability",
+      "headline": "Monthly Payment",
+      "value": "~$2,977",
+      "context": "PITI estimate at today's rates (20% down)"
+    },
+    {
+      "_note": "Tier 2 — FHA/VA",
+      "headline": "FHA or VA Financing",
+      "value": "23%",
+      "context": "First-timers and veterans closing every week"
+    },
+    {
+      "_note": "Tier 3 — timing",
+      "headline": "Days to Pending",
+      "value": "31.5 days",
+      "context": "Average time from list to under contract"
+    }
+  ],
+
+  "_video_specs": {
+    "resolution": "1080x1920 (9:16 vertical, Instagram/TikTok Reels)",
+    "fps": 30,
+    "stat_card_duration_seconds": 4,
+    "intro_outro_duration_seconds": 3,
+    "total_runtime_seconds": "3 + (N_stats × 4) + 3 = e.g. 8 cards = 38 seconds",
+    "ken_burns_max_zoom": 1.08,
+    "text_fade_in_seconds": 0.5
+  },
+
+  "_city_configs": {
+    "_comment": "Copy this block and update for each city. Use one config file per city.",
+    "available_configs": [
+      "redmond_config.json",
+      "lapine_config.json",
+      "sisters_config.json",
+      "sunriver_config.json",
+      "prineville_config.json",
+      "bend_config.json"
+    ]
+  },
+
+  "_photo_sources": {
+    "_comment": "Recommended photo sources for each city",
+    "redmond": "Snowdrift Visuals — Redmond neighborhood folder in Drive",
+    "lapine": "Snowdrift Visuals — La Pine neighborhood folder in Drive",
+    "sisters": "Snowdrift Visuals — Sisters neighborhood folder in Drive",
+    "sunriver": "Snowdrift Visuals — Sunriver neighborhood folder in Drive",
+    "prineville": "Snowdrift Visuals — Prineville neighborhood folder in Drive",
+    "bend": "Snowdrift Visuals — Bend neighborhood folders (19 neighborhoods) in Drive",
+    "google_drive_path": "06_Marketing & Brand → Marketing → Media → Web Site → Area Guides"
+  },
+
+  "_stat_selection_guide": {
+    "_comment": "Pull stat values from the corresponding *_ytd_stats.md file in this folder",
+    "redmond": "redmond_ytd_stats.md",
+    "lapine": "lapine_ytd_stats.md",
+    "sisters": "sisters_ytd_stats.md",
+    "sunriver": "sunriver_ytd_stats.md",
+    "prineville": "prineville_ytd_stats.md",
+    "bend": "bend_ytd_stats.md",
+    "tier_order": "Lead with Tier 1 stats from the Recommended Video Stats section of each .md file"
+  }
+}

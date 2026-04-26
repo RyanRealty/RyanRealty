@@ -152,3 +152,5 @@ The master skill file codifies the hard constraints (length, hook, cuts, retenti
 For quick reference during work, also keep `video_production_skills/VIRAL_VIDEO_CONSTRAINTS.md` open — it's the 30-second checklist version of the master skill.
 
 Every video build opens both files before scaffolding the BEATS array. Every render runs the quality gate (ffmpeg blackdetect strict + frame extraction + visual scrub) before push. Self-enforce — don't wait for Matt to find an obvious bug.
+
+The full sub-skill index (depth_parallax, gaussian_splat, cinematic_transitions, audio_sync, social_calendar, market_report_video, news_video, google_maps_flyover, brand_assets, listing_launch, area_guides, ai_platforms, content_pipeline, quality_gate) is in §10 of the master skill. Operations manual is `video_production_skills/AGENT_HANDOFF.md`; rendered MP4 inventory is `video_production_skills/ASSET_LOCATIONS.md`.
