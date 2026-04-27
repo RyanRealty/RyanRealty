@@ -1,0 +1,49 @@
+{
+  "city": "Sunriver",
+  "segments": [
+    {
+      "id": "intro",
+      "text": "Sun River homes, year-to-date 2026. At nine point five months of supply, buyers hold the cards."
+    },
+    {
+      "id": "price-lbl",
+      "text": "Median sale price."
+    },
+    {
+      "id": "price-val",
+      "text": "seven sixty-eight thousand dollars this year, down 3 point 4 percent from last year."
+    },
+    {
+      "id": "supply-lbl",
+      "text": "Months of supply."
+    },
+    {
+      "id": "supply-val",
+      "text": "nine point five months. a buyer's market."
+    },
+    {
+      "id": "dom-lbl",
+      "text": "Median days on market."
+    },
+    {
+      "id": "dom-val",
+      "text": "fifty-five days to contract. five days slower than last year."
+    },
+    {
+      "id": "stl-lbl",
+      "text": "Sale to list ratio."
+    },
+    {
+      "id": "stl-val",
+      "text": "Sellers getting 95 percent of ask. There is room to negotiate, but not much."
+    },
+    {
+      "id": "active",
+      "text": "114 homes active. A lot of supply, not enough buyers pulling the trigger."
+    },
+    {
+      "id": "outro",
+      "text": "Full report at ryan-realty.com. Subscribe for monthly updates."
+    }
+  ]
+}

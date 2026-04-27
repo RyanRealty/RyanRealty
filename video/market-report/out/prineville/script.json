@@ -1,0 +1,49 @@
+{
+  "city": "Prineville",
+  "segments": [
+    {
+      "id": "intro",
+      "text": "Prineville homes, year-to-date 2026. At twelve months of supply, buyers hold the cards."
+    },
+    {
+      "id": "price-lbl",
+      "text": "Median sale price."
+    },
+    {
+      "id": "price-val",
+      "text": "four twenty-nine thousand dollars this year, up 4 point 6 percent from last year."
+    },
+    {
+      "id": "supply-lbl",
+      "text": "Months of supply."
+    },
+    {
+      "id": "supply-val",
+      "text": "twelve months. a buyer's market."
+    },
+    {
+      "id": "dom-lbl",
+      "text": "Median days on market."
+    },
+    {
+      "id": "dom-val",
+      "text": "sixty-eight days to contract. six days slower than last year."
+    },
+    {
+      "id": "stl-lbl",
+      "text": "Sale to list ratio."
+    },
+    {
+      "id": "stl-val",
+      "text": "Sellers getting 97 point 8 percent of ask. Negotiation is limited. Pricing has been firm."
+    },
+    {
+      "id": "active",
+      "text": "412 homes active. A lot of supply, not enough buyers pulling the trigger."
+    },
+    {
+      "id": "outro",
+      "text": "Full report at ryan-realty.com. Subscribe for monthly updates."
+    }
+  ]
+}

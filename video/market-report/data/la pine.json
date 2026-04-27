@@ -1,0 +1,71 @@
+{
+  "city": "La Pine",
+  "period": {
+    "ytd_start": "2026-01-01",
+    "ytd_end": "2026-04-27",
+    "prior_start": "2025-01-01",
+    "prior_end": "2025-04-27"
+  },
+  "verified_at": "2026-04-27T21:20:07.695Z",
+  "sources": {
+    "live": "Supabase market_pulse_live (geo_type=city, property_type=A, residential SFR aggregate)",
+    "ytd_closed": "Supabase listings (StandardStatus ilike %Closed%, CloseDate window, SFR filter applied client-side)"
+  },
+  "sfr_filter": "PropertyType IS NULL OR not matching /(condo|townhouse|manufactured|mobile|acreage|land|farm|ranch|commercial|multi-family|business|industrial)/i",
+  "pulse": {
+    "active_count": 303,
+    "pending_count": 70,
+    "new_count_7d": 21,
+    "new_count_30d": 78,
+    "median_list_price": 399900,
+    "avg_list_price": 543866.2162162162,
+    "months_of_supply": 13.47,
+    "absorption_rate_pct": 5.61,
+    "pending_to_active_ratio": 0.231,
+    "median_sale_to_list": 0.9508,
+    "pct_sold_over_asking": 11.48,
+    "pct_sold_under_asking": 73.77,
+    "pct_sold_at_asking": 14.75,
+    "median_days_to_pending": 55.5,
+    "median_active_dom": 63,
+    "sold_count_30d": 17,
+    "sold_count_90d": 61,
+    "median_close_price_90d": 365000,
+    "price_reduction_share": 26.4,
+    "net_inventory_change_30d": 54,
+    "pulse_updated_at": "2026-04-25T16:28:16.16214+00:00"
+  },
+  "ytd_2026": {
+    "count": 62,
+    "medianSalePrice": 381200,
+    "avgSalePrice": 400158,
+    "medianOriginalListPrice": 397000,
+    "medianDOM": 98.5,
+    "medianPPSF": 259,
+    "medianSaleToOriginalListRatio": 0.9546365914786967,
+    "saleToListSampleSize": 62,
+    "totalVolume": 24809820,
+    "raw_count_pre_sfr": 76
+  },
+  "ytd_2025": {
+    "count": 90,
+    "medianSalePrice": 384950,
+    "avgSalePrice": 413765,
+    "medianOriginalListPrice": 409450,
+    "medianDOM": 86.5,
+    "medianPPSF": 254,
+    "medianSaleToOriginalListRatio": 0.9686870928859664,
+    "saleToListSampleSize": 90,
+    "totalVolume": 37238840,
+    "raw_count_pre_sfr": 110
+  },
+  "derived": {
+    "yoy_median_sale_price": -0.009741524873360177,
+    "yoy_median_dom": 0.13872832369942195,
+    "yoy_median_ppsf": 0.01968503937007874,
+    "yoy_closed_count": -0.3111111111111111,
+    "yoy_sale_to_list": -0.014504685269842582,
+    "market_classification": "buyer",
+    "market_classification_basis": "months_of_supply (≤4 seller / 4-6 balanced / ≥6 buyer)"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "city": "Prineville",
+  "period": {
+    "ytd_start": "2026-01-01",
+    "ytd_end": "2026-04-27",
+    "prior_start": "2025-01-01",
+    "prior_end": "2025-04-27"
+  },
+  "verified_at": "2026-04-27T21:20:07.695Z",
+  "sources": {
+    "live": "Supabase market_pulse_live (geo_type=city, property_type=A, residential SFR aggregate)",
+    "ytd_closed": "Supabase listings (StandardStatus ilike %Closed%, CloseDate window, SFR filter applied client-side)"
+  },
+  "sfr_filter": "PropertyType IS NULL OR not matching /(condo|townhouse|manufactured|mobile|acreage|land|farm|ranch|commercial|multi-family|business|industrial)/i",
+  "pulse": {
+    "active_count": 412,
+    "pending_count": 78,
+    "new_count_7d": 26,
+    "new_count_30d": 89,
+    "median_list_price": 399900,
+    "avg_list_price": 671002.2211018711,
+    "months_of_supply": 12,
+    "absorption_rate_pct": 7.28,
+    "pending_to_active_ratio": 0.1893,
+    "median_sale_to_list": 0.9675,
+    "pct_sold_over_asking": 8.16,
+    "pct_sold_under_asking": 66.33,
+    "pct_sold_at_asking": 25.51,
+    "median_days_to_pending": 23,
+    "median_active_dom": 80,
+    "sold_count_30d": 30,
+    "sold_count_90d": 97,
+    "median_close_price_90d": 387400,
+    "price_reduction_share": 28.4,
+    "net_inventory_change_30d": 54,
+    "pulse_updated_at": "2026-04-25T16:28:16.16214+00:00"
+  },
+  "ytd_2026": {
+    "count": 95,
+    "medianSalePrice": 428900,
+    "avgSalePrice": 486632,
+    "medianOriginalListPrice": 438900,
+    "medianDOM": 68,
+    "medianPPSF": 292,
+    "medianSaleToOriginalListRatio": 0.9777777777777777,
+    "saleToListSampleSize": 95,
+    "totalVolume": 46229999,
+    "raw_count_pre_sfr": 123
+  },
+  "ytd_2025": {
+    "count": 100,
+    "medianSalePrice": 410000,
+    "avgSalePrice": 432129,
+    "medianOriginalListPrice": 413900,
+    "medianDOM": 62,
+    "medianPPSF": 278,
+    "medianSaleToOriginalListRatio": 0.9907417260827924,
+    "saleToListSampleSize": 99,
+    "totalVolume": 43212854,
+    "raw_count_pre_sfr": 150
+  },
+  "derived": {
+    "yoy_median_sale_price": 0.046097560975609755,
+    "yoy_median_dom": 0.0967741935483871,
+    "yoy_median_ppsf": 0.050359712230215826,
+    "yoy_closed_count": -0.05,
+    "yoy_sale_to_list": -0.013085093686597526,
+    "market_classification": "buyer",
+    "market_classification_basis": "months_of_supply (≤4 seller / 4-6 balanced / ≥6 buyer)"
+  }
+}

@@ -1,0 +1,574 @@
+{
+  "city": "Sisters",
+  "total_duration_sec": 39.366531,
+  "segments": [
+    {
+      "id": "intro",
+      "text": "Sisters homes, year-to-date 2026. At ten months of supply, buyers hold the cards.",
+      "startSec": 0,
+      "endSec": 6.164898,
+      "duration": 6.164898,
+      "wordCount": 13
+    },
+    {
+      "id": "price-lbl",
+      "text": "Median sale price.",
+      "startSec": 6.164898,
+      "endSec": 7.4971429999999994,
+      "duration": 1.332245,
+      "wordCount": 3
+    },
+    {
+      "id": "price-val",
+      "text": "six eighty-seven thousand dollars this year, down 5 point 3 percent from last year.",
+      "startSec": 7.4971429999999994,
+      "endSec": 13.00898,
+      "duration": 5.511837,
+      "wordCount": 14
+    },
+    {
+      "id": "supply-lbl",
+      "text": "Months of supply.",
+      "startSec": 13.00898,
+      "endSec": 14.262858,
+      "duration": 1.253878,
+      "wordCount": 3
+    },
+    {
+      "id": "supply-val",
+      "text": "ten months. a buyer's market.",
+      "startSec": 14.262858,
+      "endSec": 16.117552,
+      "duration": 1.854694,
+      "wordCount": 5
+    },
+    {
+      "id": "dom-lbl",
+      "text": "Median days on market.",
+      "startSec": 16.117552,
+      "endSec": 17.684899,
+      "duration": 1.567347,
+      "wordCount": 4
+    },
+    {
+      "id": "dom-val",
+      "text": "seventy-five days to contract. twenty-six days faster than last year.",
+      "startSec": 17.684899,
+      "endSec": 21.681634000000003,
+      "duration": 3.996735,
+      "wordCount": 10
+    },
+    {
+      "id": "stl-lbl",
+      "text": "Sale to list ratio.",
+      "startSec": 21.681634000000003,
+      "endSec": 23.196736,
+      "duration": 1.515102,
+      "wordCount": 4
+    },
+    {
+      "id": "stl-val",
+      "text": "Sellers getting 96 point 5 percent of ask. There is room to negotiate, but not much.",
+      "startSec": 23.196736,
+      "endSec": 28.865307,
+      "duration": 5.668571,
+      "wordCount": 16
+    },
+    {
+      "id": "active",
+      "text": "156 homes active. A lot of supply, not enough buyers pulling the trigger.",
+      "startSec": 28.865307,
+      "endSec": 34.324899,
+      "duration": 5.459592,
+      "wordCount": 13
+    },
+    {
+      "id": "outro",
+      "text": "Full report at ryan-realty.com. Subscribe for monthly updates.",
+      "startSec": 34.324899,
+      "endSec": 39.758368000000004,
+      "duration": 5.433469,
+      "wordCount": 8
+    }
+  ],
+  "words": [
+    {
+      "text": "Sisters",
+      "startSec": 0,
+      "endSec": 0.43
+    },
+    {
+      "text": "homes,",
+      "startSec": 0.476,
+      "endSec": 0.906
+    },
+    {
+      "text": "year-to-date",
+      "startSec": 1.08,
+      "endSec": 1.637
+    },
+    {
+      "text": "2026.",
+      "startSec": 1.718,
+      "endSec": 2.786
+    },
+    {
+      "text": "At",
+      "startSec": 3.065,
+      "endSec": 3.239
+    },
+    {
+      "text": "ten",
+      "startSec": 3.286,
+      "endSec": 3.46
+    },
+    {
+      "text": "months",
+      "startSec": 3.518,
+      "endSec": 3.727
+    },
+    {
+      "text": "of",
+      "startSec": 3.75,
+      "endSec": 3.808
+    },
+    {
+      "text": "supply,",
+      "startSec": 3.855,
+      "endSec": 4.435
+    },
+    {
+      "text": "buyers",
+      "startSec": 4.679,
+      "endSec": 5.074
+    },
+    {
+      "text": "hold",
+      "startSec": 5.132,
+      "endSec": 5.317
+    },
+    {
+      "text": "the",
+      "startSec": 5.352,
+      "endSec": 5.422
+    },
+    {
+      "text": "cards.",
+      "startSec": 5.457,
+      "endSec": 6.13
+    },
+    {
+      "text": "Median",
+      "startSec": 6.164898,
+      "endSec": 6.547898
+    },
+    {
+      "text": "sale",
+      "startSec": 6.605898,
+      "endSec": 6.791898
+    },
+    {
+      "text": "price.",
+      "startSec": 6.814898,
+      "endSec": 7.464898
+    },
+    {
+      "text": "six",
+      "startSec": 7.4971429999999994,
+      "endSec": 7.7871429999999995
+    },
+    {
+      "text": "eighty-seven",
+      "startSec": 7.903142999999999,
+      "endSec": 8.519143
+    },
+    {
+      "text": "thousand",
+      "startSec": 8.588142999999999,
+      "endSec": 8.948143
+    },
+    {
+      "text": "dollars",
+      "startSec": 8.995142999999999,
+      "endSec": 9.320143
+    },
+    {
+      "text": "this",
+      "startSec": 9.378143,
+      "endSec": 9.529143
+    },
+    {
+      "text": "year,",
+      "startSec": 9.587143,
+      "endSec": 9.970143
+    },
+    {
+      "text": "down",
+      "startSec": 10.214143,
+      "endSec": 10.458143
+    },
+    {
+      "text": "5",
+      "startSec": 10.574143,
+      "endSec": 10.817143
+    },
+    {
+      "text": "point",
+      "startSec": 10.887143,
+      "endSec": 11.108143
+    },
+    {
+      "text": "3",
+      "startSec": 11.224143,
+      "endSec": 11.433143
+    },
+    {
+      "text": "percent",
+      "startSec": 11.491143,
+      "endSec": 11.874143
+    },
+    {
+      "text": "from",
+      "startSec": 11.920143,
+      "endSec": 12.060143
+    },
+    {
+      "text": "last",
+      "startSec": 12.129143,
+      "endSec": 12.385143
+    },
+    {
+      "text": "year.",
+      "startSec": 12.443143,
+      "endSec": 12.977143
+    },
+    {
+      "text": "Months",
+      "startSec": 13.00898,
+      "endSec": 13.298979999999998
+    },
+    {
+      "text": "of",
+      "startSec": 13.333979999999999,
+      "endSec": 13.38098
+    },
+    {
+      "text": "supply.",
+      "startSec": 13.426979999999999,
+      "endSec": 14.21598
+    },
+    {
+      "text": "ten",
+      "startSec": 14.262858,
+      "endSec": 14.494857999999999
+    },
+    {
+      "text": "months.",
+      "startSec": 14.552857999999999,
+      "endSec": 14.877858
+    },
+    {
+      "text": "a",
+      "startSec": 14.959857999999999,
+      "endSec": 15.028858
+    },
+    {
+      "text": "buyer's",
+      "startSec": 15.110858,
+      "endSec": 15.423858
+    },
+    {
+      "text": "market.",
+      "startSec": 15.469858,
+      "endSec": 16.073858
+    },
+    {
+      "text": "Median",
+      "startSec": 16.117552,
+      "endSec": 16.512552
+    },
+    {
+      "text": "days",
+      "startSec": 16.570552,
+      "endSec": 16.790551999999998
+    },
+    {
+      "text": "on",
+      "startSec": 16.848552,
+      "endSec": 16.930552
+    },
+    {
+      "text": "market.",
+      "startSec": 16.988552,
+      "endSec": 17.650552
+    },
+    {
+      "text": "seventy-five",
+      "startSec": 17.684899,
+      "endSec": 18.276899
+    },
+    {
+      "text": "days",
+      "startSec": 18.311899,
+      "endSec": 18.520899
+    },
+    {
+      "text": "to",
+      "startSec": 18.566899000000003,
+      "endSec": 18.624899000000003
+    },
+    {
+      "text": "contract.",
+      "startSec": 18.682899000000003,
+      "endSec": 19.251899
+    },
+    {
+      "text": "twenty-six",
+      "startSec": 19.495899,
+      "endSec": 19.971899
+    },
+    {
+      "text": "days",
+      "startSec": 20.029899,
+      "endSec": 20.227899
+    },
+    {
+      "text": "faster",
+      "startSec": 20.285899,
+      "endSec": 20.610899000000003
+    },
+    {
+      "text": "than",
+      "startSec": 20.656899000000003,
+      "endSec": 20.772899000000002
+    },
+    {
+      "text": "last",
+      "startSec": 20.819899,
+      "endSec": 21.016899000000002
+    },
+    {
+      "text": "year.",
+      "startSec": 21.051899000000002,
+      "endSec": 21.631899
+    },
+    {
+      "text": "Sale",
+      "startSec": 21.681634000000003,
+      "endSec": 22.006634000000002
+    },
+    {
+      "text": "to",
+      "startSec": 22.029634,
+      "endSec": 22.099634000000002
+    },
+    {
+      "text": "list",
+      "startSec": 22.157634,
+      "endSec": 22.354634000000004
+    },
+    {
+      "text": "ratio.",
+      "startSec": 22.401634,
+      "endSec": 23.167634000000003
+    },
+    {
+      "text": "Sellers",
+      "startSec": 23.196736,
+      "endSec": 23.591736
+    },
+    {
+      "text": "getting",
+      "startSec": 23.637736,
+      "endSec": 23.869736000000003
+    },
+    {
+      "text": "96",
+      "startSec": 23.951736,
+      "endSec": 24.438736000000002
+    },
+    {
+      "text": "point",
+      "startSec": 24.531736000000002,
+      "endSec": 24.763736
+    },
+    {
+      "text": "5",
+      "startSec": 24.879736,
+      "endSec": 25.123736
+    },
+    {
+      "text": "percent",
+      "startSec": 25.181736,
+      "endSec": 25.541736
+    },
+    {
+      "text": "of",
+      "startSec": 25.576736,
+      "endSec": 25.622736000000003
+    },
+    {
+      "text": "ask.",
+      "startSec": 25.692736,
+      "endSec": 26.110736000000003
+    },
+    {
+      "text": "There",
+      "startSec": 26.435736000000002,
+      "endSec": 26.644736
+    },
+    {
+      "text": "is",
+      "startSec": 26.667736,
+      "endSec": 26.737736
+    },
+    {
+      "text": "room",
+      "startSec": 26.795736,
+      "endSec": 26.969736
+    },
+    {
+      "text": "to",
+      "startSec": 27.016736,
+      "endSec": 27.062736
+    },
+    {
+      "text": "negotiate,",
+      "startSec": 27.132736,
+      "endSec": 27.782736
+    },
+    {
+      "text": "but",
+      "startSec": 27.898736,
+      "endSec": 28.153736000000002
+    },
+    {
+      "text": "not",
+      "startSec": 28.223736000000002,
+      "endSec": 28.397736000000002
+    },
+    {
+      "text": "much.",
+      "startSec": 28.455736,
+      "endSec": 28.815736
+    },
+    {
+      "text": "156",
+      "startSec": 28.865307,
+      "endSec": 29.968307000000003
+    },
+    {
+      "text": "homes",
+      "startSec": 30.026307000000003,
+      "endSec": 30.258307000000002
+    },
+    {
+      "text": "active.",
+      "startSec": 30.305307000000003,
+      "endSec": 30.781307
+    },
+    {
+      "text": "A",
+      "startSec": 31.024307,
+      "endSec": 31.094307
+    },
+    {
+      "text": "lot",
+      "startSec": 31.175307,
+      "endSec": 31.326307
+    },
+    {
+      "text": "of",
+      "startSec": 31.361307,
+      "endSec": 31.408307
+    },
+    {
+      "text": "supply,",
+      "startSec": 31.454307,
+      "endSec": 32.023307
+    },
+    {
+      "text": "not",
+      "startSec": 32.267307,
+      "endSec": 32.441307
+    },
+    {
+      "text": "enough",
+      "startSec": 32.487307,
+      "endSec": 32.696307000000004
+    },
+    {
+      "text": "buyers",
+      "startSec": 32.754307000000004,
+      "endSec": 33.137307
+    },
+    {
+      "text": "pulling",
+      "startSec": 33.196307000000004,
+      "endSec": 33.451307
+    },
+    {
+      "text": "the",
+      "startSec": 33.497307,
+      "endSec": 33.567307
+    },
+    {
+      "text": "trigger.",
+      "startSec": 33.602307,
+      "endSec": 34.298307
+    },
+    {
+      "text": "Full",
+      "startSec": 34.324899,
+      "endSec": 34.603899000000006
+    },
+    {
+      "text": "report",
+      "startSec": 34.661899000000005,
+      "endSec": 35.032899
+    },
+    {
+      "text": "at",
+      "startSec": 35.102899,
+      "endSec": 35.264899
+    },
+    {
+      "text": "ryan-realty.com.",
+      "startSec": 35.334899,
+      "endSec": 36.820899000000004
+    },
+    {
+      "text": "Subscribe",
+      "startSec": 37.935899,
+      "endSec": 38.422899
+    },
+    {
+      "text": "for",
+      "startSec": 38.457899000000005,
+      "endSec": 38.562899
+    },
+    {
+      "text": "monthly",
+      "startSec": 38.608899,
+      "endSec": 38.875899000000004
+    },
+    {
+      "text": "updates.",
+      "startSec": 38.933899000000004,
+      "endSec": 39.711899
+    }
+  ],
+  "beatDurations": [
+    6.564898,
+    3,
+    6.830857400000001,
+    3,
+    5.419020400000001,
+    3,
+    5.419020400000001,
+    3,
+    6.987591400000001,
+    5.859592,
+    6.919020400000001
+  ]
+}

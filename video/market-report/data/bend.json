@@ -1,0 +1,71 @@
+{
+  "city": "Bend",
+  "period": {
+    "ytd_start": "2026-01-01",
+    "ytd_end": "2026-04-27",
+    "prior_start": "2025-01-01",
+    "prior_end": "2025-04-27"
+  },
+  "verified_at": "2026-04-27T21:20:07.695Z",
+  "sources": {
+    "live": "Supabase market_pulse_live (geo_type=city, property_type=A, residential SFR aggregate)",
+    "ytd_closed": "Supabase listings (StandardStatus ilike %Closed%, CloseDate window, SFR filter applied client-side)"
+  },
+  "sfr_filter": "PropertyType IS NULL OR not matching /(condo|townhouse|manufactured|mobile|acreage|land|farm|ranch|commercial|multi-family|business|industrial)/i",
+  "pulse": {
+    "active_count": 1149,
+    "pending_count": 415,
+    "new_count_7d": 93,
+    "new_count_30d": 360,
+    "median_list_price": 719000,
+    "avg_list_price": 1038196.1958252427,
+    "months_of_supply": 5.8,
+    "absorption_rate_pct": 16.71,
+    "pending_to_active_ratio": 0.3612,
+    "median_sale_to_list": 0.9721,
+    "pct_sold_over_asking": 14.5,
+    "pct_sold_under_asking": 67.5,
+    "pct_sold_at_asking": 18,
+    "median_days_to_pending": 16,
+    "median_active_dom": 52,
+    "sold_count_30d": 192,
+    "sold_count_90d": 598,
+    "median_close_price_90d": 657997.5,
+    "price_reduction_share": 25.94,
+    "net_inventory_change_30d": 145,
+    "pulse_updated_at": "2026-04-25T16:28:16.16214+00:00"
+  },
+  "ytd_2026": {
+    "count": 647,
+    "medianSalePrice": 699000,
+    "avgSalePrice": 885839,
+    "medianOriginalListPrice": 732450,
+    "medianDOM": 56,
+    "medianPPSF": 387,
+    "medianSaleToOriginalListRatio": 0.9706439937955995,
+    "saleToListSampleSize": 646,
+    "totalVolume": 572251699,
+    "raw_count_pre_sfr": 734
+  },
+  "ytd_2025": {
+    "count": 669,
+    "medianSalePrice": 754375,
+    "avgSalePrice": 958276,
+    "medianOriginalListPrice": 789000,
+    "medianDOM": 69.5,
+    "medianPPSF": 400,
+    "medianSaleToOriginalListRatio": 0.973592958122166,
+    "saleToListSampleSize": 665,
+    "totalVolume": 640128474,
+    "raw_count_pre_sfr": 779
+  },
+  "derived": {
+    "yoy_median_sale_price": -0.07340513670256835,
+    "yoy_median_dom": -0.19424460431654678,
+    "yoy_median_ppsf": -0.0325,
+    "yoy_closed_count": -0.03288490284005979,
+    "yoy_sale_to_list": -0.003028949934328104,
+    "market_classification": "balanced",
+    "market_classification_basis": "months_of_supply (≤4 seller / 4-6 balanced / ≥6 buyer)"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "verified_at": "2026-04-27T21:20:07.695Z",
+  "today": "2026-04-27",
+  "cities": [
+    {
+      "city": "Bend",
+      "file": "bend.json"
+    },
+    {
+      "city": "Redmond",
+      "file": "redmond.json"
+    },
+    {
+      "city": "Sisters",
+      "file": "sisters.json"
+    },
+    {
+      "city": "La Pine",
+      "file": "la-pine.json"
+    },
+    {
+      "city": "Prineville",
+      "file": "prineville.json"
+    },
+    {
+      "city": "Sunriver",
+      "file": "sunriver.json"
+    }
+  ]
+}

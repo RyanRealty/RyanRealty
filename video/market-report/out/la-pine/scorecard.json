@@ -1,0 +1,70 @@
+{
+  "deliverable": "La Pine YTD 2026 Market Report",
+  "scored_at": "2026-04-27T22:08:08.448Z",
+  "scored_by": "automated",
+  "format": "market_report_video",
+  "minimum_required": 85,
+  "categories": {
+    "hook": {
+      "score": 9,
+      "max": 10,
+      "notes": "City name \"La Pine\" visible by 1.5s, lead stat (median sale + YoY) lands inside 4-6s window. Strong typographic hero (Amboqia 200-220px). No banned opening, no logo cold-open. Unsplash image backdrop adds visual depth."
+    },
+    "retention": {
+      "score": 9,
+      "max": 10,
+      "notes": "Variable beat durations from VO segment lengths (no drift). 12 sub-beats keep pace under 4s cap. Ken Burns image motion adds visual life between cuts. CTA reveal staged inside outro at ~2.7s in."
+    },
+    "text": {
+      "score": 9,
+      "max": 10,
+      "notes": "Safe zone 900x1400 centered. Headline 26px gold caps, value 200-220px Amboqia hero, context 32px AzoSans. Captions in dedicated y=1480-1720 band, never overlap stats. Navy scrim ensures readability over all images."
+    },
+    "audio": {
+      "score": 10,
+      "max": 10,
+      "notes": "ElevenLabs Victoria (voice ID qSeXEcewz7tA0Q0qk9fH, hardcoded), model eleven_turbo_v2_5. previous_text chained across 11 segments for prosody continuity. Stability 0.50, similarity 0.75, style 0.35, speaker_boost on. Music bed ducked to 0.18, swells to 0.30 in final 8.5s. Word alignment drives caption timing."
+    },
+    "format": {
+      "score": 10,
+      "max": 10,
+      "notes": "1080x1920 portrait, 30fps, H.264, AAC. Captions burned in. 56.04s duration (target 55-58s), 25.74MB."
+    },
+    "engagement": {
+      "score": 8,
+      "max": 10,
+      "notes": "Save trigger (data-rich: 5 stats + classification pill). Re-watch trigger (multiple stats reward second view). CTA at ryan-realty.com / subscribe. No engagement-bait language. Unsplash imagery + Ken Burns adds stop-scroll quality."
+    },
+    "cover": {
+      "score": 9,
+      "max": 10,
+      "notes": "Cold open: \"La Pine\" in Amboqia 168px white on full-bleed Unsplash image with navy scrim. High contrast, instantly scannable. Subhead \"YTD Market Report April 2026\" sets context."
+    },
+    "cta": {
+      "score": 9,
+      "max": 10,
+      "notes": "Soft CTA matches platform: 'Full report at ryan-realty.com'. Logo is end-card only, no in-flight branding distracting from the data."
+    },
+    "voice_brand": {
+      "score": 10,
+      "max": 10,
+      "notes": "Amboqia headlines + AzoSans body (brand fonts loaded). Navy #102742 / Gold #D4AF37 / Cream #F2EBDD palette. White stacked logo end card. Unsplash photo credit on outro."
+    },
+    "antislop": {
+      "score": 9,
+      "max": 10,
+      "notes": "citations.json ships next to render with every on-screen figure traced to Supabase market_pulse_live or listings table query. SFR filter PropertyType=A applied. No banned words. No engagement bait. Voice rules respected (no semicolons, no em-dashes, no AI filler). Pronunciation overrides applied."
+    }
+  },
+  "auto_zero_hits": [],
+  "total": 92,
+  "verdict": "ship",
+  "render": {
+    "duration_sec": 56.043,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "blackdetect_hits": 0,
+    "size_mb": 25.74
+  }
+}

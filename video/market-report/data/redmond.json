@@ -1,0 +1,71 @@
+{
+  "city": "Redmond",
+  "period": {
+    "ytd_start": "2026-01-01",
+    "ytd_end": "2026-04-27",
+    "prior_start": "2025-01-01",
+    "prior_end": "2025-04-27"
+  },
+  "verified_at": "2026-04-27T21:20:07.695Z",
+  "sources": {
+    "live": "Supabase market_pulse_live (geo_type=city, property_type=A, residential SFR aggregate)",
+    "ytd_closed": "Supabase listings (StandardStatus ilike %Closed%, CloseDate window, SFR filter applied client-side)"
+  },
+  "sfr_filter": "PropertyType IS NULL OR not matching /(condo|townhouse|manufactured|mobile|acreage|land|farm|ranch|commercial|multi-family|business|industrial)/i",
+  "pulse": {
+    "active_count": 440,
+    "pending_count": 148,
+    "new_count_7d": 46,
+    "new_count_30d": 156,
+    "median_list_price": 524000,
+    "avg_list_price": 606330.9022648083,
+    "months_of_supply": 6.39,
+    "absorption_rate_pct": 15.45,
+    "pending_to_active_ratio": 0.3364,
+    "median_sale_to_list": 0.9809,
+    "pct_sold_over_asking": 12.87,
+    "pct_sold_under_asking": 63.37,
+    "pct_sold_at_asking": 23.76,
+    "median_days_to_pending": 28,
+    "median_active_dom": 47,
+    "sold_count_30d": 68,
+    "sold_count_90d": 202,
+    "median_close_price_90d": 469950,
+    "price_reduction_share": 24.09,
+    "net_inventory_change_30d": 80,
+    "pulse_updated_at": "2026-04-25T16:28:16.16214+00:00"
+  },
+  "ytd_2026": {
+    "count": 210,
+    "medianSalePrice": 475000,
+    "avgSalePrice": 549976,
+    "medianOriginalListPrice": 499000,
+    "medianDOM": 61.5,
+    "medianPPSF": 324,
+    "medianSaleToOriginalListRatio": 0.981339928057554,
+    "saleToListSampleSize": 207,
+    "totalVolume": 113845131,
+    "raw_count_pre_sfr": 235
+  },
+  "ytd_2025": {
+    "count": 249,
+    "medianSalePrice": 520250,
+    "avgSalePrice": 574429,
+    "medianOriginalListPrice": 524900,
+    "medianDOM": 87.5,
+    "medianPPSF": 317,
+    "medianSaleToOriginalListRatio": 0.9891086908201823,
+    "saleToListSampleSize": 243,
+    "totalVolume": 140160779,
+    "raw_count_pre_sfr": 284
+  },
+  "derived": {
+    "yoy_median_sale_price": -0.086977414704469,
+    "yoy_median_dom": -0.29714285714285715,
+    "yoy_median_ppsf": 0.022082018927444796,
+    "yoy_closed_count": -0.1566265060240964,
+    "yoy_sale_to_list": -0.007854306442486433,
+    "market_classification": "buyer",
+    "market_classification_basis": "months_of_supply (≤4 seller / 4-6 balanced / ≥6 buyer)"
+  }
+}

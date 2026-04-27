@@ -1,0 +1,77 @@
+{
+  "deliverable": "La Pine Market Report YTD 2026",
+  "rendered_at": "2026-04-27T21:20:17.310Z",
+  "verified_at": "2026-04-27T21:20:07.695Z",
+  "source_primary": "Supabase market_pulse_live (geo_type=city, property_type=A, residential SFR aggregate)",
+  "source_secondary": "Supabase listings (StandardStatus ilike %Closed%, CloseDate window, SFR filter applied client-side)",
+  "sfr_filter": "PropertyType IS NULL OR not matching /(condo|townhouse|manufactured|mobile|acreage|land|farm|ranch|commercial|multi-family|business|industrial)/i",
+  "period": {
+    "ytd_start": "2026-01-01",
+    "ytd_end": "2026-04-27",
+    "prior_start": "2025-01-01",
+    "prior_end": "2025-04-27"
+  },
+  "figures": [
+    {
+      "stat": "Median Sale Price (YTD 2026)",
+      "on_screen": "$381K",
+      "exact": 381200,
+      "query": "listings WHERE City ilike 'La Pine' AND StandardStatus ilike '%Closed%' AND CloseDate IN [2026-01-01, 2026-04-27] AND PropertyType='A', median(ClosePrice). n=62 SFR."
+    },
+    {
+      "stat": "YoY Median Sale Price",
+      "on_screen": "-1.0% vs 2025",
+      "direction": "down",
+      "exact": -0.009741524873360177,
+      "query": "(medianSale2026=381200 - medianSale2025=384950) / medianSale2025. n2025=90"
+    },
+    {
+      "stat": "Active Listings",
+      "on_screen": "303",
+      "exact": 303,
+      "query": "market_pulse_live property_type='A' geo_slug='la pine', updated_at=2026-04-25T16:28:16.16214+00:00"
+    },
+    {
+      "stat": "Pending Listings",
+      "on_screen": "70",
+      "exact": 70,
+      "query": "market_pulse_live pending_count"
+    },
+    {
+      "stat": "New 30d",
+      "on_screen": "78",
+      "exact": 78,
+      "query": "market_pulse_live new_count_30d"
+    },
+    {
+      "stat": "Months of Supply",
+      "on_screen": "13.5",
+      "exact": 13.47,
+      "query": "market_pulse_live months_of_supply (active / 90d sold run-rate)"
+    },
+    {
+      "stat": "Market Classification",
+      "on_screen": "BUYER'S MARKET",
+      "exact": "buyer",
+      "query": "MoS 13.47 => seller (<4) | balanced (4-6) | buyer (>=6)"
+    },
+    {
+      "stat": "Median Days on Market",
+      "on_screen": "99 days",
+      "exact": 98.5,
+      "query": "listings YTD 2026 closed SFR, median(DaysOnMarket). n=62"
+    },
+    {
+      "stat": "Sale-to-List Ratio",
+      "on_screen": "95.5%",
+      "exact": 0.9546365914786967,
+      "query": "listings YTD 2026 closed SFR, median(ClosePrice/OriginalListPrice). n=62, clamped 0.5-1.5"
+    },
+    {
+      "stat": "Median $ / SqFt",
+      "on_screen": "$259",
+      "exact": 259,
+      "query": "listings YTD 2026 closed SFR, median(ClosePrice/TotalLivingAreaSqFt). n=62"
+    }
+  ]
+}

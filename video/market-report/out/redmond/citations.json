@@ -1,0 +1,77 @@
+{
+  "deliverable": "Redmond Market Report YTD 2026",
+  "rendered_at": "2026-04-27T21:20:17.309Z",
+  "verified_at": "2026-04-27T21:20:07.695Z",
+  "source_primary": "Supabase market_pulse_live (geo_type=city, property_type=A, residential SFR aggregate)",
+  "source_secondary": "Supabase listings (StandardStatus ilike %Closed%, CloseDate window, SFR filter applied client-side)",
+  "sfr_filter": "PropertyType IS NULL OR not matching /(condo|townhouse|manufactured|mobile|acreage|land|farm|ranch|commercial|multi-family|business|industrial)/i",
+  "period": {
+    "ytd_start": "2026-01-01",
+    "ytd_end": "2026-04-27",
+    "prior_start": "2025-01-01",
+    "prior_end": "2025-04-27"
+  },
+  "figures": [
+    {
+      "stat": "Median Sale Price (YTD 2026)",
+      "on_screen": "$475K",
+      "exact": 475000,
+      "query": "listings WHERE City ilike 'Redmond' AND StandardStatus ilike '%Closed%' AND CloseDate IN [2026-01-01, 2026-04-27] AND PropertyType='A', median(ClosePrice). n=210 SFR."
+    },
+    {
+      "stat": "YoY Median Sale Price",
+      "on_screen": "-8.7% vs 2025",
+      "direction": "down",
+      "exact": -0.086977414704469,
+      "query": "(medianSale2026=475000 - medianSale2025=520250) / medianSale2025. n2025=249"
+    },
+    {
+      "stat": "Active Listings",
+      "on_screen": "440",
+      "exact": 440,
+      "query": "market_pulse_live property_type='A' geo_slug='redmond', updated_at=2026-04-25T16:28:16.16214+00:00"
+    },
+    {
+      "stat": "Pending Listings",
+      "on_screen": "148",
+      "exact": 148,
+      "query": "market_pulse_live pending_count"
+    },
+    {
+      "stat": "New 30d",
+      "on_screen": "156",
+      "exact": 156,
+      "query": "market_pulse_live new_count_30d"
+    },
+    {
+      "stat": "Months of Supply",
+      "on_screen": "6.4",
+      "exact": 6.39,
+      "query": "market_pulse_live months_of_supply (active / 90d sold run-rate)"
+    },
+    {
+      "stat": "Market Classification",
+      "on_screen": "BUYER'S MARKET",
+      "exact": "buyer",
+      "query": "MoS 6.39 => seller (<4) | balanced (4-6) | buyer (>=6)"
+    },
+    {
+      "stat": "Median Days on Market",
+      "on_screen": "62 days",
+      "exact": 61.5,
+      "query": "listings YTD 2026 closed SFR, median(DaysOnMarket). n=210"
+    },
+    {
+      "stat": "Sale-to-List Ratio",
+      "on_screen": "98.1%",
+      "exact": 0.981339928057554,
+      "query": "listings YTD 2026 closed SFR, median(ClosePrice/OriginalListPrice). n=207, clamped 0.5-1.5"
+    },
+    {
+      "stat": "Median $ / SqFt",
+      "on_screen": "$324",
+      "exact": 324,
+      "query": "listings YTD 2026 closed SFR, median(ClosePrice/TotalLivingAreaSqFt). n=210"
+    }
+  ]
+}

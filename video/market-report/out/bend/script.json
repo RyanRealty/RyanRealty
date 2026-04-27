@@ -1,0 +1,49 @@
+{
+  "city": "Bend",
+  "segments": [
+    {
+      "id": "intro",
+      "text": "Bend homes, year-to-date 2026. At five point eight months of supply, this market is balanced."
+    },
+    {
+      "id": "price-lbl",
+      "text": "Median sale price."
+    },
+    {
+      "id": "price-val",
+      "text": "six ninety-nine thousand dollars this year, down 7 point 3 percent from last year."
+    },
+    {
+      "id": "supply-lbl",
+      "text": "Months of supply."
+    },
+    {
+      "id": "supply-val",
+      "text": "five point eight months. a balanced market."
+    },
+    {
+      "id": "dom-lbl",
+      "text": "Median days on market."
+    },
+    {
+      "id": "dom-val",
+      "text": "fifty-six days to contract. fourteen days faster than last year."
+    },
+    {
+      "id": "stl-lbl",
+      "text": "Sale to list ratio."
+    },
+    {
+      "id": "stl-val",
+      "text": "Sellers getting 97 point 1 percent of ask. Negotiation is limited. Pricing has been firm."
+    },
+    {
+      "id": "active",
+      "text": "1149 homes active. Pending volume is moderate against current inventory."
+    },
+    {
+      "id": "outro",
+      "text": "Full report at ryan-realty.com. Subscribe for monthly updates."
+    }
+  ]
+}

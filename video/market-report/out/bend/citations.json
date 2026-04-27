@@ -1,0 +1,77 @@
+{
+  "deliverable": "Bend Market Report YTD 2026",
+  "rendered_at": "2026-04-27T21:20:17.307Z",
+  "verified_at": "2026-04-27T21:20:07.695Z",
+  "source_primary": "Supabase market_pulse_live (geo_type=city, property_type=A, residential SFR aggregate)",
+  "source_secondary": "Supabase listings (StandardStatus ilike %Closed%, CloseDate window, SFR filter applied client-side)",
+  "sfr_filter": "PropertyType IS NULL OR not matching /(condo|townhouse|manufactured|mobile|acreage|land|farm|ranch|commercial|multi-family|business|industrial)/i",
+  "period": {
+    "ytd_start": "2026-01-01",
+    "ytd_end": "2026-04-27",
+    "prior_start": "2025-01-01",
+    "prior_end": "2025-04-27"
+  },
+  "figures": [
+    {
+      "stat": "Median Sale Price (YTD 2026)",
+      "on_screen": "$699K",
+      "exact": 699000,
+      "query": "listings WHERE City ilike 'Bend' AND StandardStatus ilike '%Closed%' AND CloseDate IN [2026-01-01, 2026-04-27] AND PropertyType='A', median(ClosePrice). n=647 SFR."
+    },
+    {
+      "stat": "YoY Median Sale Price",
+      "on_screen": "-7.3% vs 2025",
+      "direction": "down",
+      "exact": -0.07340513670256835,
+      "query": "(medianSale2026=699000 - medianSale2025=754375) / medianSale2025. n2025=669"
+    },
+    {
+      "stat": "Active Listings",
+      "on_screen": "1,149",
+      "exact": 1149,
+      "query": "market_pulse_live property_type='A' geo_slug='bend', updated_at=2026-04-25T16:28:16.16214+00:00"
+    },
+    {
+      "stat": "Pending Listings",
+      "on_screen": "415",
+      "exact": 415,
+      "query": "market_pulse_live pending_count"
+    },
+    {
+      "stat": "New 30d",
+      "on_screen": "360",
+      "exact": 360,
+      "query": "market_pulse_live new_count_30d"
+    },
+    {
+      "stat": "Months of Supply",
+      "on_screen": "5.8",
+      "exact": 5.8,
+      "query": "market_pulse_live months_of_supply (active / 90d sold run-rate)"
+    },
+    {
+      "stat": "Market Classification",
+      "on_screen": "BALANCED MARKET",
+      "exact": "balanced",
+      "query": "MoS 5.80 => seller (<4) | balanced (4-6) | buyer (>=6)"
+    },
+    {
+      "stat": "Median Days on Market",
+      "on_screen": "56 days",
+      "exact": 56,
+      "query": "listings YTD 2026 closed SFR, median(DaysOnMarket). n=647"
+    },
+    {
+      "stat": "Sale-to-List Ratio",
+      "on_screen": "97.1%",
+      "exact": 0.9706439937955995,
+      "query": "listings YTD 2026 closed SFR, median(ClosePrice/OriginalListPrice). n=646, clamped 0.5-1.5"
+    },
+    {
+      "stat": "Median $ / SqFt",
+      "on_screen": "$387",
+      "exact": 387,
+      "query": "listings YTD 2026 closed SFR, median(ClosePrice/TotalLivingAreaSqFt). n=647"
+    }
+  ]
+}
