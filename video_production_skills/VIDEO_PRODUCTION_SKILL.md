@@ -25,7 +25,7 @@ This file replaces ad-hoc decisions across the v5 series of Schoolhouse listing 
 - **Canonical model + settings**: `eleven_turbo_v2_5`, stability `0.50`, similarity_boost `0.75`, style `0.35`, `use_speaker_boost: true`. These match the market-report scorecards Matt approved. Different model or different settings = different-sounding voice = a rejected render.
 - Use `previous_text` chaining for prosody continuity across sentences within a clip.
 - Use IPA phoneme tags for tricky pronunciations (e.g., Deschutes → `<phoneme alphabet="ipa" ph="dəˈʃuːts">Deschutes</phoneme>`).
-- Matt approved this voice 2026-04-27 (replaces prior Ellen `BIvP0GN1cAtSRTxNHnWS`). It is locked in permanently.
+- Matt approved this voice 2026-04-27 — Victoria is the permanent voice. Do not switch without explicit Matt direction.
 
 ### Pacing Rule — First Scenes
 

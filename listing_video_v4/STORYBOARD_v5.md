@@ -140,7 +140,7 @@ Recommend: keep 27 photos, trim avg modern interior dwell to 3.7s. Total lands a
 
 1. **Cover frame text:** "A RYAN REALTY REPRESENTATION / VANDEVERT RANCH" or alternative? The v4b cover used "A Ryan Realty Representation / Vandevert Ranch / Founded 1892" — keep "Founded 1892" as a third line?
 
-2. **Voice:** Try Ellen `BIvP0GN1cAtSRTxNHnWS` (used in v3) at speed 0.88 with ffmpeg apad inter-sentence silence padding, OR retest c6SfcYrb2t09NHXiT80T (v4b voice that read robotic) with SSML breaks, OR try a fresh ElevenLabs voice from the VoiceLab? Matt's call.
+2. **Voice:** Victoria `qSeXEcewz7tA0Q0qk9fH` is the permanent voice (locked 2026-04-27). Use `eleven_turbo_v2_5`, stability 0.50, similarity_boost 0.75, style 0.35, speaker_boost on. `previous_text` chained across sentences for prosody continuity.
 
 3. **Music bed:** Use existing `public/audio/music_bed.mp3` (100s ElevenLabs cinematic, from v3/v4 builds) or generate a new bed sized to 138s?
 

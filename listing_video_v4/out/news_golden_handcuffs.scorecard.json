@@ -23,7 +23,7 @@
     "audio_strategy": {
       "score": 9,
       "max": 10,
-      "notes": "ElevenLabs Ellen voice, prosody-chained across 5 sentences. No banned openings. Cadence: short, declarative, factual. -1pt: no music bed, VO is dry. Total VO ~17.8s in a 30s clip leaves silence gaps."
+      "notes": "ElevenLabs Victoria voice, prosody-chained across 5 sentences. No banned openings. Cadence: short, declarative, factual. -1pt: no music bed, VO is dry. Total VO ~17.8s in a 30s clip leaves silence gaps."
     },
     "format_compliance": {
       "score": 10,

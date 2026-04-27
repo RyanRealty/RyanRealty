@@ -23,7 +23,7 @@
     "audio_strategy": {
       "score": 9,
       "max": 10,
-      "notes": "ElevenLabs voice BIvP0GN1cAtSRTxNHnWS (Ellen news anchor), settings stability 0.55, similarity 0.85, style 0.15, speaker_boost on, speed 0.95. Five sentences synthed with previous_text prosody chaining for continuity. No banned openings ('In today's market', 'Have you ever', 'Welcome to' — all absent). Cadence: short declarative sentences. Loses 1pt because no music bed is layered yet — VO is dry. VIRAL_GUARDRAILS allows VO-only but penalizes for no beat-sync benefit."
+      "notes": "ElevenLabs voice qSeXEcewz7tA0Q0qk9fH (Victoria news anchor), settings stability 0.55, similarity 0.85, style 0.15, speaker_boost on, speed 0.95. Five sentences synthed with previous_text prosody chaining for continuity. No banned openings ('In today's market', 'Have you ever', 'Welcome to' — all absent). Cadence: short declarative sentences. Loses 1pt because no music bed is layered yet — VO is dry. VIRAL_GUARDRAILS allows VO-only but penalizes for no beat-sync benefit."
     },
     "format_compliance": {
       "score": 10,

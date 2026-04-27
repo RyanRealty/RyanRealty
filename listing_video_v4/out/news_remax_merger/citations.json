@@ -143,14 +143,14 @@
       "source": "Code-driven (GradientMeshBg, GlobeRing, BrandNamePill, CombinePill) — no photo or AI imagery used"
     },
     {
-      "asset": "Ellen voiceover (5 sentences)",
-      "source": "ElevenLabs eleven_multilingual_v2, voice BIvP0GN1cAtSRTxNHnWS — same voice as prior 3 news clips, prosody-chained via previous_text"
+      "asset": "Victoria voiceover (5 sentences)",
+      "source": "ElevenLabs eleven_multilingual_v2, voice qSeXEcewz7tA0Q0qk9fH — same voice as prior 3 news clips, prosody-chained via previous_text"
     }
   ],
   "manifesto_compliance": {
     "rule_1_banned_words": "PASS — no banned words in VO or on-screen text",
     "rule_2_ai_photos": "N/A — no photographic assets used",
-    "rule_3_voice": "PASS — ElevenLabs Ellen, prosody-chained, 'Remax' used in script (no slash) for cleaner pronunciation",
+    "rule_3_voice": "PASS — ElevenLabs Victoria, prosody-chained, 'Remax' used in script (no slash) for cleaner pronunciation",
     "rule_4_banned_openings": "PASS — opens with 'Two of the biggest names in real estate just merged' (specific, not formulaic)",
     "rule_5_ai_disclosure": "N/A — no AI imagery used",
     "rule_6_music_sync": "N/A — VO-only path (Path C)",

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """News clip VO — RE/MAX + Real Brokerage merger, ElevenLabs, prosody-chained.
 
-Voice: Victoria — Ryan Realty Anchor (qSeXEcewz7tA0Q0qk9fH).
+Voice: Victoria — Ryan Realty Anchor (qSeXEcewz7tA0Q0qk9fH) — HARDCODED.
 Model: eleven_turbo_v2_5. Settings: stability 0.50, similarity_boost 0.75,
 style 0.35, speaker_boost True.
 
-Voice locked 2026-04-27 (replaces prior Ellen BIvP0GN1cAtSRTxNHnWS).
+Voice ID is hardcoded as a literal string, NOT read from any env variable.
 Each sentence chains previous_text from same clip for prosody continuity.
 
 Source for every figure (cited in companion citations.json):
@@ -26,7 +26,7 @@ ROOT = Path("/Users/matthewryan/RyanRealty/listing_video_v4")
 OUT = ROOT / "public" / "audio"
 OUT.mkdir(parents=True, exist_ok=True)
 
-VOICE = "qSeXEcewz7tA0Q0qk9fH"  # Victoria — Ryan Realty Anchor (locked 2026-04-27)
+VOICE = "qSeXEcewz7tA0Q0qk9fH"  # Victoria — Ryan Realty Anchor (HARDCODED, NOT from env)
 
 
 def load_env(path):
@@ -99,7 +99,7 @@ SENTENCES = [
     ("news_merger_s05",
      "It's the biggest brokerage consolidation in years. Tech meets tradition."),
     ("news_merger_s06",
-     "Bigger company. Same closing table for you in Bend."),
+     "Closing is expected in the second half of twenty twenty six."),
 ]
 
 

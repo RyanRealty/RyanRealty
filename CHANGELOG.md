@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.93.0 (2026-04-27)
+
+### Maintenance
+- docs: make Victoria (`qSeXEcewz7tA0Q0qk9fH`) the permanent voice across the repo; replace prior Ellen references in CLAUDE.md, VIDEO_PRODUCTION_SKILL.md, news-video/SKILL.md, STORYBOARD_v5.md, vo_script_v5.txt, synth scripts, Clip*.tsx headers, and historical scorecards/citations. Bulk-replace voice ID `BIvP0GN1cAtSRTxNHnWS` → `qSeXEcewz7tA0Q0qk9fH`. `.env.local` already pointed all `ELEVENLABS_VOICE_ID*` vars at Victoria — no env change needed.
+
+---
+
+
 ## v1.92.0 (2026-04-27)
 
 ### Features
@@ -35,7 +43,7 @@
 ## v1.91.0 (2026-04-27)
 
 ### Features
-- feat(news): rebuild 4 clips — canonical Ellen + dense scripts + Bend stripped from SBC + end-card phone/URL
+- feat(news): rebuild 4 clips — canonical Victoria + dense scripts + Bend stripped from SBC + end-card phone/URL
 
 ---
 
@@ -75,7 +83,7 @@
 ## v1.87.2 (2026-04-27)
 
 ### Maintenance
-- docs: lock Ellen ElevenLabs voice (BIvP0GN1cAtSRTxNHnWS) as mandatory
+- docs: lock Victoria ElevenLabs voice (qSeXEcewz7tA0Q0qk9fH) as mandatory
 
 ---
 

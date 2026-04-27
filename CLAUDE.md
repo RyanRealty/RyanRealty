@@ -113,8 +113,8 @@ If a deliverable could plausibly be the kind of thing Matt would want to review,
 - White text + shadow OR dark pill under text. Never white-on-white, never gold-on-gold.
 
 ## VO (ElevenLabs only)
-- **Voice: Ellen, ID `BIvP0GN1cAtSRTxNHnWS`** (locked per `docs: lock Ellen ElevenLabs voice` commit). No other voice.
-- Settings: stability 0.45–0.55, similarity 0.75–0.85, style 0.15–0.45, speaker_boost on, speed 0.95.
+- **Voice: Victoria, ID `qSeXEcewz7tA0Q0qk9fH`** (locked 2026-04-27 — permanent). No other voice.
+- Settings: stability `0.50`, similarity `0.75`, style `0.35`, `use_speaker_boost: true`. Model `eleven_turbo_v2_5`.
 - **`previous_text` chained** across all lines for prosody continuity.
 - Numbers spelled out for ingestion: "475,000" → "four hundred seventy five thousand."
 - IPA phoneme tag for tricky place names on `eleven_v3` model: Deschutes (`dəˈʃuːts` — "duh-shoots"), Tumalo (`TOO-muh-low`), Tetherow, Awbrey, Terrebonne.
@@ -303,7 +303,7 @@ Everything else (debugging, architecture, testing-strategy, documentation, incid
 - **Canonical model + settings**: `eleven_turbo_v2_5`, stability `0.50`, similarity_boost `0.75`, style `0.35`, `use_speaker_boost: true`. These match the market-report scorecards Matt approved. Different model or different settings = different-sounding voice = a rejected render.
 - Use `previous_text` chaining for prosody continuity across sentences within a clip.
 - Use IPA phoneme tags for tricky pronunciations (e.g., Deschutes → `<phoneme alphabet="ipa" ph="dəˈʃuːts">Deschutes</phoneme>`).
-- Matt approved this voice 2026-04-27 (replaces prior Ellen `BIvP0GN1cAtSRTxNHnWS`). It is locked in permanently.
+- Matt approved this voice 2026-04-27 — Victoria is the permanent voice. Do not switch without explicit Matt direction.
 
 ### Video Review Gate — MANDATORY
 

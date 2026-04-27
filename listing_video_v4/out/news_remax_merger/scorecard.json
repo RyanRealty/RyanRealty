@@ -20,7 +20,7 @@
     "audio": {
       "score": 9,
       "path": "C",
-      "notes": "VO-only path. ElevenLabs Ellen voice (BIvP0GN1cAtSRTxNHnWS) — same voice used across the prior 3 news clips. Stability 0.55, similarity 0.85, style 0.15, speed 0.95. previous_text chained across all 5 sentences for prosody continuity. Pronunciation override: 'Remax' (no slash) used in script for cleaner cadence. Sentence rhythm: short, declarative, no commas-where-Matt-wouldn't-pause. Lost 1 point: numbers were spelled out fully ('eight hundred eighty million dollar') which reads slightly awkwardly when chained — could be cleaner. No music, so no beat-sync needed (Path C)."
+      "notes": "VO-only path. ElevenLabs Victoria voice (qSeXEcewz7tA0Q0qk9fH) — same voice used across the prior 3 news clips. Stability 0.55, similarity 0.85, style 0.15, speed 0.95. previous_text chained across all 5 sentences for prosody continuity. Pronunciation override: 'Remax' (no slash) used in script for cleaner cadence. Sentence rhythm: short, declarative, no commas-where-Matt-wouldn't-pause. Lost 1 point: numbers were spelled out fully ('eight hundred eighty million dollar') which reads slightly awkwardly when chained — could be cleaner. No music, so no beat-sync needed (Path C)."
     },
     "format": {
       "score": 10,
@@ -45,7 +45,7 @@
     },
     "antislop": {
       "score": 10,
-      "notes": "citations.json present with every figure traced to primary-source URLs (Real Estate News, Pulse2, Inman, Housing Wire, Yahoo Finance, Seeking Alpha, TipRanks, The Real Deal — all 2026-04-27). All figures triangulated across 4+ sources. Asset sources: Ellen voice (ElevenLabs), code-driven backdrops (no photos, no AI imagery). AI disclosure: N/A — no AI imagery or AI avatar used. Fair-housing scan: clean (no demographic / steering language). Misrepresentation scan: clean (reporting external industry news, not posting RE/MAX or Real listings as Ryan Realty's). Forecasting: none — no 'this will mean' predictions, only factual reportage of an announced deal. Manifesto rules 1-13 all PASS or N/A as documented in citations.json."
+      "notes": "citations.json present with every figure traced to primary-source URLs (Real Estate News, Pulse2, Inman, Housing Wire, Yahoo Finance, Seeking Alpha, TipRanks, The Real Deal — all 2026-04-27). All figures triangulated across 4+ sources. Asset sources: Victoria voice (ElevenLabs), code-driven backdrops (no photos, no AI imagery). AI disclosure: N/A — no AI imagery or AI avatar used. Fair-housing scan: clean (no demographic / steering language). Misrepresentation scan: clean (reporting external industry news, not posting RE/MAX or Real listings as Ryan Realty's). Forecasting: none — no 'this will mean' predictions, only factual reportage of an announced deal. Manifesto rules 1-13 all PASS or N/A as documented in citations.json."
     }
   },
   "auto_zero_hits": [],

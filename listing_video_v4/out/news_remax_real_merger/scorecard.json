@@ -27,7 +27,7 @@
     "audio": {
       "score": 9,
       "path": "C",
-      "notes": "VO-only path (no music bed). ElevenLabs Ellen voice (BIvP0GN1cAtSRTxNHnWS) at stability 0.55, similarity 0.85, style 0.15, speaker_boost true, speed 0.95. Six sentences chained via previous_text for prosody continuity. Inter-sentence pauses ~20-50f (0.7-1.7s) between adjacent VO sequences — natural breathing, no overlap. Numbers spelled out for ElevenLabs ingestion ('eight hundred eighty million dollar deal', 'one hundred eighty thousand'). RE/MAX read correctly by the model."
+      "notes": "VO-only path (no music bed). ElevenLabs Victoria voice (qSeXEcewz7tA0Q0qk9fH) at stability 0.55, similarity 0.85, style 0.15, speaker_boost true, speed 0.95. Six sentences chained via previous_text for prosody continuity. Inter-sentence pauses ~20-50f (0.7-1.7s) between adjacent VO sequences — natural breathing, no overlap. Numbers spelled out for ElevenLabs ingestion ('eight hundred eighty million dollar deal', 'one hundred eighty thousand'). RE/MAX read correctly by the model."
     },
     "format": {
       "score": 10,

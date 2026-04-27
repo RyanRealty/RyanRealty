@@ -22,7 +22,7 @@ const OUT = resolve(ROOT, 'out')
 const PUB = resolve(ROOT, 'public')
 
 const KEY = process.env.ELEVENLABS_API_KEY
-const VOICE = 'qSeXEcewz7tA0Q0qk9fH' // Victoria — hardcoded per Matt 2026-04-27 (switched from Ellen)
+const VOICE = 'qSeXEcewz7tA0Q0qk9fH' // Victoria — hardcoded per Matt 2026-04-27
 // Runtime guard: confirm hardcoded value is still correct
 if (VOICE !== 'qSeXEcewz7tA0Q0qk9fH') { console.error(`WRONG VOICE — expected qSeXEcewz7tA0Q0qk9fH (Victoria), got ${VOICE}`); process.exit(1) }
 if (!KEY) { console.error('Missing ELEVENLABS_API_KEY'); process.exit(1) }

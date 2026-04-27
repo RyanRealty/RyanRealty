@@ -4,7 +4,7 @@
 Voice: Victoria — Ryan Realty Anchor (qSeXEcewz7tA0Q0qk9fH).
 Model: eleven_turbo_v2_5. Settings: stability 0.50, similarity_boost 0.75,
 style 0.35, speaker_boost True.
-Voice locked 2026-04-27 (replaces prior Ellen BIvP0GN1cAtSRTxNHnWS).
+Voice locked 2026-04-27 — Victoria is the permanent voice.
 
 Each sentence chains previous_text from the prior line for prosody
 continuity per ANTI_SLOP_MANIFESTO.md Rule 3 + VIDEO_PRODUCTION_SKILL.md
@@ -25,7 +25,7 @@ ROOT = Path("/Users/matthewryan/RyanRealty/listing_video_v4")
 OUT = ROOT / "public" / "audio"
 OUT.mkdir(parents=True, exist_ok=True)
 
-VOICE = "qSeXEcewz7tA0Q0qk9fH"  # Victoria — Ryan Realty Anchor (locked 2026-04-27)
+VOICE = "qSeXEcewz7tA0Q0qk9fH"  # Victoria — Ryan Realty Anchor (HARDCODED, NOT from env)
 
 
 def load_env(path):

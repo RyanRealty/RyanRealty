@@ -1,6 +1,6 @@
 SCHOOLHOUSE V5 VO SCRIPT
 Locked photo set: 27 picks (Matt approved 2026-04-25)
-Voice: TBD Gate 3 voice test — try Ellen BIvP0GN1cAtSRTxNHnWS at speed 0.88 with ffmpeg apad inter-sentence silence, OR retest c6SfcYrb2t09NHXiT80T with SSML breaks
+Voice: Victoria — Ryan Realty Anchor (qSeXEcewz7tA0Q0qk9fH), eleven_turbo_v2_5, stability 0.50, similarity_boost 0.75, style 0.35, speaker_boost on. previous_text chained across sentences.
 Total target: 110-130s.
 
 [OPEN — 6s — boundary draw beginning at 2.5s, no VO, music only]

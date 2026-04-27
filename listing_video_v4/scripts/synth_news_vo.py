@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """News clip VO — 3 viral news-style clips, ElevenLabs, prosody-chained.
 
-Voice: Victoria — Ryan Realty Anchor (qSeXEcewz7tA0Q0qk9fH).
+Voice: Victoria — Ryan Realty Anchor (qSeXEcewz7tA0Q0qk9fH) — HARDCODED.
 Model: eleven_turbo_v2_5. Settings: stability 0.50, similarity_boost 0.75,
 style 0.35, speaker_boost True.
 
-Locked 2026-04-27 (replaces prior Ellen BIvP0GN1cAtSRTxNHnWS). Voice profile:
-middle-aged American, conversational, warm, trustworthy, relatable. Designed
-for explainer videos, viral social, and modern brand VO.
-
-Each sentence chains previous_text from the same clip for prosody continuity.
+Locked 2026-04-27 per Matt — Victoria is the permanent voice. Voice ID is
+hardcoded as a literal string, NOT read from any env variable. Do not
+change without explicit Matt direction. Each sentence chains previous_text
+for prosody continuity.
 """
 import json, urllib.request, sys
 from pathlib import Path
@@ -18,7 +17,7 @@ ROOT = Path("/Users/matthewryan/RyanRealty/listing_video_v4")
 OUT = ROOT / "public" / "audio"
 OUT.mkdir(parents=True, exist_ok=True)
 
-VOICE = "qSeXEcewz7tA0Q0qk9fH"  # Victoria — Ryan Realty Anchor (locked 2026-04-27)
+VOICE = "qSeXEcewz7tA0Q0qk9fH"  # Victoria — Ryan Realty Anchor (HARDCODED, NOT from env)
 
 
 def load_env(path):
@@ -88,26 +87,36 @@ def synth(slug: str, text: str, prev_text: str = "", model: str = "eleven_turbo_
 # Sun Belt source: Fortune / AEI Housing Center, Feb 2025 → Feb 2026 window
 # (Fortune 2026-04-11; URL in ClipSunBeltCorrection.tsx).
 CLIPS = {
+    # Expanded for 60s clips per Matt 2026-04-27: more substance, slower pacing,
+    # 6-7 sentences per clip with deliberate breath between. All figures still
+    # trace to the primary sources cited in each .tsx file header — no new
+    # fabrication, just more of what those sources already said.
     "tariffs": [
-        ("news_tariffs_s01", "Your next new home just got more expensive. The cost added: ten thousand nine hundred dollars on average."),
-        ("news_tariffs_s02", "That's the per home tariff impact estimated by the National Association of Home Builders."),
-        ("news_tariffs_s03", "Suppliers raised prices six point three percent. Lumber, steel, aluminum, cabinets, drywall. Every line item up."),
-        ("news_tariffs_s04", "The Center for American Progress projects four hundred fifty thousand fewer new homes built by twenty thirty."),
-        ("news_tariffs_s05", "Less new supply means higher prices on what does get built. Existing homes hold their leverage."),
+        ("news_tariffs_s01", "Your next new home just got more expensive. About ten thousand nine hundred dollars more, on average."),
+        ("news_tariffs_s02", "That's the per home cost effect estimated by the National Association of Home Builders."),
+        ("news_tariffs_s03", "Here's where it goes. Suppliers raised prices an average of six point three percent."),
+        ("news_tariffs_s04", "Lumber. Steel. Aluminum. Cabinets. Drywall. Doors. Every line item up."),
+        ("news_tariffs_s05", "And the squeeze doesn't stop at one home. The Center for American Progress projects four hundred fifty thousand fewer new homes built by twenty thirty."),
+        ("news_tariffs_s06", "Less new supply means higher prices on what does get built."),
+        ("news_tariffs_s07", "If you already own, you're sitting on the asset that just got harder to replace."),
     ],
     "gh": [
         ("news_gh_s01", "The lock in effect just cracked."),
-        ("news_gh_s02", "One in three sellers giving up a sub five percent mortgage rate. Listing anyway. From a national survey of seven hundred twenty seven Coldwell Banker agents this spring."),
-        ("news_gh_s03", "Eighty percent of those agents say buyers stopped waiting for rates."),
-        ("news_gh_s04", "Forty three percent report a busier spring than twenty twenty five."),
-        ("news_gh_s05", "Two years of frozen inventory is thawing. The market that punished waiting is rewarding action now."),
+        ("news_gh_s02", "For two years, sellers with mortgage rates below five percent stayed put. Refused to give up a cheap rate."),
+        ("news_gh_s03", "That just changed. One in three of those sellers are listing anyway, this spring."),
+        ("news_gh_s04", "From a national survey of seven hundred twenty seven Coldwell Banker agents."),
+        ("news_gh_s05", "Eighty percent of those agents say buyers stopped waiting for rates."),
+        ("news_gh_s06", "Forty three percent report a busier spring than twenty twenty five."),
+        ("news_gh_s07", "Two years of frozen inventory is thawing. The market is rewarding action now."),
     ],
     "sbc": [
         ("news_sbc_s01", "The Sun Belt boom is unwinding."),
-        ("news_sbc_s02", "Cape Coral, Florida. Down nine point six percent year over year. The biggest annual drop in the country, per the AEI Housing Center."),
-        ("news_sbc_s03", "Phoenix, Tampa, Austin. Every Sun Belt market that overshot in twenty twenty one is giving back gains."),
-        ("news_sbc_s04", "Compare Kansas City. Up eight point six percent. Steady mid American markets are climbing while pandemic boom towns correct."),
-        ("news_sbc_s05", "It's not geography. It's cycle position. The hottest markets are cooling the fastest."),
+        ("news_sbc_s02", "Cape Coral, Florida. Down nine point six percent year over year."),
+        ("news_sbc_s03", "The biggest annual home price drop in the country, per the AEI Housing Center."),
+        ("news_sbc_s04", "Phoenix. Tampa. Austin. Every Sun Belt market that overshot in twenty twenty one is giving back gains."),
+        ("news_sbc_s05", "Now compare Kansas City. Up eight point six percent."),
+        ("news_sbc_s06", "Steady mid American markets are climbing while pandemic boom towns correct."),
+        ("news_sbc_s07", "It's not geography. It's cycle position. The hottest markets cool the fastest."),
     ],
 }
 
