@@ -9,6 +9,7 @@ import { BoundaryDrawTest } from './BoundaryDrawTest';
 import { ClipGoldenHandcuffs, CLIP_GH_TOTAL_SEC } from './news/ClipGoldenHandcuffs';
 import { ClipSunBeltCorrection, CLIP_SBC_TOTAL_SEC } from './news/ClipSunBeltCorrection';
 import { ClipTariffs, CLIP_TARIFFS_TOTAL_SEC } from './news/ClipTariffs';
+import { ClipRemaxRealMerger, CLIP_MERGER_TOTAL_SEC } from './news/ClipRemaxRealMerger';
 
 const FPS = 30;
 const W_PORT = 1080;
@@ -68,6 +69,14 @@ export const RemotionRoot: React.FC = () => (
       id="NewsTariffs"
       component={ClipTariffs as any}
       durationInFrames={Math.round(CLIP_TARIFFS_TOTAL_SEC * FPS)}
+      fps={FPS}
+      width={W_PORT}
+      height={H_PORT}
+    />
+    <Composition
+      id="NewsRemaxRealMerger"
+      component={ClipRemaxRealMerger as any}
+      durationInFrames={Math.round(CLIP_MERGER_TOTAL_SEC * FPS)}
       fps={FPS}
       width={W_PORT}
       height={H_PORT}

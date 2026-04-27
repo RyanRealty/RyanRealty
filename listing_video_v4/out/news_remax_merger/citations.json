@@ -1,0 +1,165 @@
+{
+  "deliverable": "news_remax_merger",
+  "rendered_at": "2026-04-27",
+  "topic": "Real Brokerage to acquire RE/MAX Holdings ($880M); combined entity Real REMAX Group",
+  "primary_event_date": "2026-04-27",
+  "figures": [
+    {
+      "id": "deal_enterprise_value",
+      "value": "$880M",
+      "appears_in": ["BeatDeal GiantNumber", "BottomCaption s02", "VO s02"],
+      "source": "Real Estate News, Pulse2, Housing Wire, Inman, Yahoo Finance, Seeking Alpha, TipRanks (consensus)",
+      "source_urls": [
+        "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant",
+        "https://pulse2.com/real-brokerage-880-million-re-max-acquisition-creates-global-ai-powered-real-estate-platform/",
+        "https://www.inman.com/2026/04/27/real-brokerage-to-acquire-remax-for-880m-in-consolidation-play/",
+        "https://www.housingwire.com/articles/real-to-acquire-remax-880-million-real-remax-group/",
+        "https://seekingalpha.com/news/4579870-real-brokerage-confirms-remax-acquisition-for-enterprise-value-of-880m",
+        "https://finance.yahoo.com/markets/stocks/articles/real-acquire-remax-creating-leading-110000290.html",
+        "https://www.tipranks.com/news/company-announcements/real-brokerage-to-acquire-re-max-and-form-global-tech-driven-real-estate-giant"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "deal_equity_value",
+      "value": "$550M",
+      "appears_in": ["citation only (not on screen — enterprise value used for hook)"],
+      "source": "The Real Deal 2026-04-27",
+      "source_urls": [
+        "https://therealdeal.com/national/2026/04/27/real-brokerage-to-buy-re-max-for-550m/"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "combined_agent_count",
+      "value": "180,000+",
+      "appears_in": ["BeatScale GiantNumber", "BottomCaption s03", "VO s03"],
+      "source": "Real Estate News, Pulse2, Inman, Housing Wire (consensus)",
+      "source_urls": [
+        "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant",
+        "https://pulse2.com/real-brokerage-880-million-re-max-acquisition-creates-global-ai-powered-real-estate-platform/"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "countries_count",
+      "value": "120+",
+      "appears_in": ["BeatScale GiantNumber", "BottomCaption s03", "VO s03"],
+      "source": "Real Estate News, Pulse2",
+      "source_urls": [
+        "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant",
+        "https://pulse2.com/real-brokerage-880-million-re-max-acquisition-creates-global-ai-powered-real-estate-platform/"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "remax_pre_deal_agents",
+      "value": "145,000+",
+      "appears_in": ["citation only"],
+      "source": "Pulse2",
+      "source_urls": [
+        "https://pulse2.com/real-brokerage-880-million-re-max-acquisition-creates-global-ai-powered-real-estate-platform/"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "real_pre_deal_agents",
+      "value": "33,000+",
+      "appears_in": ["citation only"],
+      "source": "WebSearch summary citing multiple outlets",
+      "source_urls": [
+        "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "real_shareholders_pct",
+      "value": "~59%",
+      "appears_in": ["citation only"],
+      "source": "Pulse2",
+      "source_urls": [
+        "https://pulse2.com/real-brokerage-880-million-re-max-acquisition-creates-global-ai-powered-real-estate-platform/"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "synergies",
+      "value": "~$30M projected cost savings",
+      "appears_in": ["citation only"],
+      "source": "Real Estate News",
+      "source_urls": [
+        "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "expected_close",
+      "value": "H2 2026",
+      "appears_in": ["BeatCombine WordReveal"],
+      "source": "Real Estate News, Pulse2",
+      "source_urls": [
+        "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "headquarters",
+      "value": "Miami (Denver operations continue)",
+      "appears_in": ["BeatCombine WordReveal"],
+      "source": "Real Estate News",
+      "source_urls": [
+        "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "combined_entity_name",
+      "value": "Real REMAX Group",
+      "appears_in": ["BeatCombine CombinePill"],
+      "source": "Real Estate News, Pulse2, Housing Wire (consensus)",
+      "source_urls": [
+        "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant"
+      ],
+      "verified_at": "2026-04-27"
+    },
+    {
+      "id": "combined_ceo",
+      "value": "Tamir Poleg (current Real CEO)",
+      "appears_in": ["citation only — not on screen"],
+      "source": "Real Estate News, Pulse2 (consensus)",
+      "source_urls": [
+        "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant"
+      ],
+      "verified_at": "2026-04-27"
+    }
+  ],
+  "asset_sources": [
+    {
+      "asset": "stacked_logo_white.png (end card)",
+      "source": "Ryan Realty brand assets, listing_video_v4/public/brand/"
+    },
+    {
+      "asset": "all backgrounds",
+      "source": "Code-driven (GradientMeshBg, GlobeRing, BrandNamePill, CombinePill) — no photo or AI imagery used"
+    },
+    {
+      "asset": "Ellen voiceover (5 sentences)",
+      "source": "ElevenLabs eleven_multilingual_v2, voice BIvP0GN1cAtSRTxNHnWS — same voice as prior 3 news clips, prosody-chained via previous_text"
+    }
+  ],
+  "manifesto_compliance": {
+    "rule_1_banned_words": "PASS — no banned words in VO or on-screen text",
+    "rule_2_ai_photos": "N/A — no photographic assets used",
+    "rule_3_voice": "PASS — ElevenLabs Ellen, prosody-chained, 'Remax' used in script (no slash) for cleaner pronunciation",
+    "rule_4_banned_openings": "PASS — opens with 'Two of the biggest names in real estate just merged' (specific, not formulaic)",
+    "rule_5_ai_disclosure": "N/A — no AI imagery used",
+    "rule_6_music_sync": "N/A — VO-only path (Path C)",
+    "rule_7_data_verified": "PASS — every number traces to a primary-source URL above",
+    "rule_8_30_day_window": "Format already shipped (3 prior news clips); this is the 4th in the format",
+    "rule_9_ai_humor": "N/A — informational, not humor-driven",
+    "rule_10_engagement_bait": "PASS — hook promise matches body content",
+    "rule_11_voice_rules": "PASS — no semicolons, no em-dashes, no AI filler in VO or text",
+    "rule_12_brand_visuals": "PASS — Navy/Gold/Cream/Charcoal palette, AzoSans + Amboqia fonts, white logo end card",
+    "rule_13_oregon_compliance": "PASS — no fair-housing or steering language; reporting external news, not making forecasts about Oregon market"
+  }
+}

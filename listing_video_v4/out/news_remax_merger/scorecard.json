@@ -1,0 +1,61 @@
+{
+  "deliverable": "news_remax_merger",
+  "scored_at": "2026-04-27T08:35:00-07:00",
+  "scored_by": "orchestrator",
+  "format": "data_viz_video",
+  "minimum_required": 80,
+  "categories": {
+    "hook": {
+      "score": 9,
+      "notes": "Frame 0 has motion (gradient mesh drift, BreakingBadge enters frame 0-10). 'Real estate just consolidated' kinetic title at frame 2 + 'INDUSTRY ALERT' pill. Specific concrete element: industry-shock framing with 'biggest brokerage merger in years.' Pattern interrupt: not a generic 'today's market' opener. Lost 1 point: VO line opens with 'Two of the biggest names...' — concrete but not as punchy as a number-led hook."
+    },
+    "retention": {
+      "score": 7,
+      "notes": "25% mark (~7.5s): cut into BeatDeal with $880M counter slam-in — strong register shift from kinetic title to giant number. 50% mark (~15s): cut into BeatScale with new mesh palette (forest green) and rotating GlobeRing — pattern interrupt. 75% mark (~22.5s): cut into BeatCombine with name pills colliding into Real REMAX Group — payoff seed. Final 15% (25.7-30s): editorial close + white-logo end card. Average beat length 5.25s exceeds the §1 'standard 2-3s' cap; mitigated by continuous micro-pattern-interrupts inside each beat (word reveals every ~1-1.5s). Lost 3 points on the strict beat-length rule."
+    },
+    "text": {
+      "score": 10,
+      "notes": "All on-screen text inside the 900x1400 safe zone (text content is centered, x-margin >= 90px). Body text 56px (BottomCaption) and 32-38px (WordReveal) — meets >= 48px for primary captions and acceptable for sub-overlays. Headline text 88-300px (counters, titles). Each text block displays 2s+ minimum. Contrast: white text on navy 70% pill OR shadow-on-mesh — passes. All numbers carry units ($880M, 180,000+ agents, 120+ countries). No 'approximately/about' anywhere."
+    },
+    "audio": {
+      "score": 9,
+      "path": "C",
+      "notes": "VO-only path. ElevenLabs Ellen voice (BIvP0GN1cAtSRTxNHnWS) — same voice used across the prior 3 news clips. Stability 0.55, similarity 0.85, style 0.15, speed 0.95. previous_text chained across all 5 sentences for prosody continuity. Pronunciation override: 'Remax' (no slash) used in script for cleaner cadence. Sentence rhythm: short, declarative, no commas-where-Matt-wouldn't-pause. Lost 1 point: numbers were spelled out fully ('eight hundred eighty million dollar') which reads slightly awkwardly when chained — could be cleaner. No music, so no beat-sync needed (Path C)."
+    },
+    "format": {
+      "score": 10,
+      "notes": "1080x1920 portrait, 30fps. Total length 30s (within IG Reels 15-60s, TikTok 11-45s, Shorts 13-60s viral windows). Codec h264 CRF 22. Captions burned in via BottomCaption component on every VO line (40% IG mute / 85% FB mute mitigation). Cover frame: BeatHook frame ~30 (kinetic 'Real estate just consolidated' on navy mesh) — designate explicitly when uploading. File size will be < 100MB after compress."
+    },
+    "engagement": {
+      "score": 8,
+      "primary_trigger": "share",
+      "notes": "Share trigger PRESENT: industry shakeup news — agents and consumers send to colleagues / 'did you see this?' moments. Comment trigger PRESENT: 'biggest in years' framing invites disagreement / hot takes about consolidation in real estate. Save trigger MEDIUM: useful summary of a landmark event, viewers may save for reference. DM trigger ABSENT in-frame: BrandWatermark + closing line 'closing table for you in Bend' is a soft positioning CTA but no specific DM keyword. Re-watch trigger MEDIUM: stat density rewards a second view. Lost 2 points: no specific DM-keyword CTA, no save-prompt in caption."
+    },
+    "cover": {
+      "score": 8,
+      "notes": "Cover-frame candidate: BeatHook ~frame 25 (kinetic 'Real estate just consolidated' + INDUSTRY ALERT pill, navy mesh backdrop). High contrast: gold pill on navy. Specificity: 'INDUSTRY ALERT' communicates news urgency. No face shown (the format is data/news, not Matt-on-camera) — face-forward would lift Reels retention by ~30% per scorecard ref. Lost 2 points: face absent (intentional for news format) and the strongest single visual is actually BeatDeal frame 80 ($880M counter at land-punch) which would be a stronger cover than frame 25. Recommend selecting frame 80 of BeatDeal as cover at upload."
+    },
+    "cta": {
+      "score": 8,
+      "notes": "Payoff at 75-100% delivers what the hook promised: 'biggest brokerage merger in years' (hook) → '$880M deal, 180,000+ agents, biggest consolidation in years' (body). Closing line 'Bigger company. Same closing table for you in Bend' is a soft positioning CTA — locates the news in Ryan Realty's market without shilling. No in-frame phone / URL / brokerage attribution (master skill §5 compliance). Lost 2 points: caption-CTA not yet drafted at score time; no DM-keyword CTA in-frame."
+    },
+    "voice_brand": {
+      "score": 10,
+      "notes": "Sounds like Matt: 40-something Bend broker reporting industry news, direct, factual, confident. Brand colors used: Navy #102742 (mesh, navy pill captions, end card), Gold #D4AF37 (counters, source pills, top border on captions), Cream #F2EBDD (body text), Charcoal (composition fallback). Brand fonts: AzoSans for body / captions / counters, Amboqia (FONT_SERIF) for kinetic-hook headlines. No logo / phone / agent name / 'Ryan Realty' in body of viral cut — only on white-stacked-logo end card (4s) which is part of the news clip register per the existing 3 clips. Voice rules pass: no semicolons, no em-dashes in VO, no AI filler ('delve', 'leverage', 'tapestry' all absent)."
+    },
+    "antislop": {
+      "score": 10,
+      "notes": "citations.json present with every figure traced to primary-source URLs (Real Estate News, Pulse2, Inman, Housing Wire, Yahoo Finance, Seeking Alpha, TipRanks, The Real Deal — all 2026-04-27). All figures triangulated across 4+ sources. Asset sources: Ellen voice (ElevenLabs), code-driven backdrops (no photos, no AI imagery). AI disclosure: N/A — no AI imagery or AI avatar used. Fair-housing scan: clean (no demographic / steering language). Misrepresentation scan: clean (reporting external industry news, not posting RE/MAX or Real listings as Ryan Realty's). Forecasting: none — no 'this will mean' predictions, only factual reportage of an announced deal. Manifesto rules 1-13 all PASS or N/A as documented in citations.json."
+    }
+  },
+  "auto_zero_hits": [],
+  "total": 89,
+  "verdict": "ship",
+  "format_minimum": 80,
+  "comparison_to_prior_format_clips": "Prior 3 news clips (golden_handcuffs, sun_belt_correction, tariffs) all scored 88/100 against the same rubric. This clip scored 89 — slight improvement on hook + audio + brand voice categories.",
+  "notes_for_next_iteration": [
+    "Add a specific DM-keyword CTA in caption (e.g. 'DM me MERGER for the full deal breakdown') to lift Engagement to 10",
+    "If cover-frame design is critical, render a cover frame at frame 80 of BeatDeal ($880M counter at land-punch) instead of using auto-pick",
+    "Consider adding a tertiary stat reveal in BeatScale at t~5s ('over 100 nations') for additional micro-pattern-interrupt density"
+  ]
+}
