@@ -24,11 +24,23 @@
 
 6. **For market reports: always `property_type='A'` (single-family residential), YTD windows, apples-to-apples periods.** A YoY claim compares the same date window across two years — not Q1 vs full-year, not closed vs active, not city vs region. Document the exact window in `citations.json`.
 
-7. **Spark API cross-check is mandatory when both Supabase and Spark cover the same field.** Discrepancies > 1% must be flagged and reconciled before render. Source-of-truth rule: live MLS via Spark is authoritative for active inventory and DOM; Supabase is authoritative for historical close data once reconciled. Document which side wins per figure in `citations.json`.
+7. **Spark API cross-check is a HARD PRE-RENDER GATE for every market report.** Before the render command runs, the agent MUST query Spark for every figure that also exists in Supabase (median close price, active inventory, DOM, sale-to-list, MoS inputs) and compare side-by-side. **Any `|delta| > 1%` blocks the render.** No render proceeds with an unresolved Spark-vs-Supabase delta. The agent surfaces the conflict to Matt with both numbers, both queries, and a suspected cause (date-window mismatch, property-type filter mismatch, status-filter mismatch, Supabase staleness past Spark cutover, etc.), and waits for resolution. Source-of-truth on reconciliation: live MLS via Spark wins for active inventory + DOM; Supabase wins for historical close data once Supabase has been refreshed past the Spark cutover date. Document the cross-check (Spark value, Supabase value, delta %, which side won, why) in `citations.json` per figure. Spark creds in `.env.local`: `SPARK_API_KEY` (verified present 2026-04-27, value redacted), `SPARK_API_BASE_URL=https://replication.sparkapi.com/v1`. No other Spark/Bridge/RESO keys are provisioned — surface a missing-cred error before scaffolding if a build needs OAuth-flow Spark, Bridge, or RESO Web API.
 
 8. **Months of supply** = `active_listings / (closed_last_6_months / 6)`. **Thresholds: ≤ 4 seller's market, 4–6 balanced, ≥ 6 buyer's market.** The verdict pill MUST match the months-of-supply number computed against these thresholds. A "seller's market" caption next to 4.3 months is a fail.
 
 9. **Never round in a way that changes the market narrative.** $474,500 may render as `$475K` (rounding within ±0.5%, no narrative shift). $474,500 may NOT render as `$500K` (changes the price-point story). Inventory at 12.3 active listings does NOT round to "low double-digits" if that obscures whether we're in 4-month or 6-month MoS territory. When in doubt, show the full number.
+
+### Pre-render gate: Spark × Supabase reconciliation (market reports — MANDATORY)
+
+For any market-report build, **before** `npx remotion render` runs:
+
+1. Query Supabase for every market figure the build will display.
+2. Query Spark API for the same figure (`SPARK_API_BASE_URL` + `SPARK_API_KEY`, endpoint `/v1`).
+3. Print both values side-by-side with the delta percent.
+4. If `abs(delta_pct) > 1%` for any figure → **STOP**. Do NOT render. Surface the conflict to Matt with: figure name, Supabase value + query, Spark value + query, delta, suspected cause. Wait for resolution. Re-render only after Matt confirms.
+5. If all deltas are ≤ 1% → proceed with the render and write the cross-check table into `citations.json`.
+
+This gate is a ship-blocker. It does not yield to scorecard pressure, deadline pressure, or "the brief said" pressure. A 5% miss on median price or a 0.8 → 4.3 jump in MoS changes the market narrative the video tells, and Ryan Realty's compliance posture requires the published number to match the live MLS.
 
 ### Verification trace (mandatory artifact)
 

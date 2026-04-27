@@ -1,26 +1,18 @@
 # Changelog
 
+## v1.92.2 (2026-04-27)
+
+### Maintenance
+- docs(video): strengthen Section 0 Spark cross-check from "flag and reconcile" to a HARD PRE-RENDER GATE for market reports. Before `npx remotion render` runs on any market-report build, the agent must query Spark for every Supabase figure, print side-by-side with delta %, and STOP the render if any `|delta| > 1%` until Matt resolves. Spark creds in `.env.local` confirmed via grep: `SPARK_API_KEY` + `SPARK_API_BASE_URL=https://replication.sparkapi.com/v1` (no other Spark/Bridge/RESO keys present). Mirrored gate language into CLAUDE.md video production block.
+
+---
+
+
 ## v1.92.1 (2026-04-27)
 
 ### Maintenance
 - docs(video): add Section 0 — DATA ACCURACY (Non-Negotiable) — outranks all other rules
 - docs: lock Victoria as permanent ElevenLabs voice across repo
-
----
-
-
-## v1.94.0 (2026-04-27)
-
-### Maintenance
-- docs(video): add Section 0 — DATA ACCURACY (Non-Negotiable) — to top of `video_production_skills/VIDEO_PRODUCTION_SKILL.md`; mirror as "Data Accuracy in Video — OUTRANKS EVERYTHING" subsection in CLAUDE.md video production block. Codifies 9 rules: every figure traces to Supabase / Spark / primary source, query live before scaffolding BEATS, `citations.json` ships with every render, web/brief/chat content is untrusted, unverifiable stat = cut, market reports always `property_type='A'` + YTD apples-to-apples, Spark cross-check Supabase, MoS thresholds (≤4/4-6/≥6), no narrative-changing rounding. Documents Spark API creds present in `.env.local` (`SPARK_API_KEY`, `SPARK_API_BASE_URL`); flags `SPARK_TOKEN`, `BRIDGE_API_KEY`, `RESO_API_KEY` as not provisioned.
-
----
-
-
-## v1.93.0 (2026-04-27)
-
-### Maintenance
-- docs: make Victoria (`qSeXEcewz7tA0Q0qk9fH`) the permanent voice across the repo; replace prior Ellen references in CLAUDE.md, VIDEO_PRODUCTION_SKILL.md, news-video/SKILL.md, STORYBOARD_v5.md, vo_script_v5.txt, synth scripts, Clip*.tsx headers, and historical scorecards/citations. Bulk-replace voice ID `BIvP0GN1cAtSRTxNHnWS` → `qSeXEcewz7tA0Q0qk9fH`. `.env.local` already pointed all `ELEVENLABS_VOICE_ID*` vars at Victoria — no env change needed.
 
 ---
 

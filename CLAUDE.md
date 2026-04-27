@@ -303,7 +303,7 @@ Everything else (debugging, architecture, testing-strategy, documentation, incid
 - Research briefs, web articles, and conversation context are untrusted. Cross-verify against the primary database.
 - Unverifiable stat = cut. No estimating. No rounding to fill a gap. No "approximately."
 - **Market reports**: always `property_type='A'` (SFR), YTD windows, apples-to-apples periods. YoY = same window across two years, not Q1 vs full-year.
-- **Spark cross-check**: when Supabase and Spark cover the same field, flag and resolve discrepancies > 1% before render. Spark wins for active inventory + DOM; Supabase wins for reconciled historical close data.
+- **Spark × Supabase reconciliation is a HARD PRE-RENDER GATE for market reports.** Before `npx remotion render` runs, the agent queries Spark for every figure that also exists in Supabase, prints both values + delta %, and **STOPS the render if any `|delta| > 1%`**. Surface the conflict to Matt (figure, Supabase value + query, Spark value + query, delta, suspected cause) and wait for resolution. Re-render only after Matt confirms. Spark wins for active inventory + DOM; Supabase wins for reconciled historical close data once it's refreshed past the Spark cutover date. Document the cross-check in `citations.json`.
 - **Months of supply** = `active_listings / (closed_last_6_months / 6)`. Thresholds: ≤ 4 seller's, 4–6 balanced, ≥ 6 buyer's. Verdict pill must match the number.
 - **Never round in a way that changes the narrative.** $474,500 → `$475K` is fine; $474,500 → `$500K` is not.
 
