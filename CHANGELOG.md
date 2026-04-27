@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.91.1 (2026-04-27)
+
+### Maintenance
+- docs: lock Victoria (qSeXEcewz7tA0Q0qk9fH) as the canonical news/VO voice
+
+---
+
+
 ## v1.91.0 (2026-04-27)
 
 ### Features
