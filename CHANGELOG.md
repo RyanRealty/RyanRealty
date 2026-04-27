@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.91.0 (2026-04-27)
+
+### Features
+- feat(news): rebuild 4 clips — canonical Ellen + dense scripts + Bend stripped from SBC + end-card phone/URL
+
+---
+
+
 ## v1.90.0 (2026-04-27)
 
 ### Features
