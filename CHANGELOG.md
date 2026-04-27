@@ -3,6 +3,14 @@
 ## v1.92.2 (2026-04-27)
 
 ### Maintenance
+- docs(video): strengthen Spark × Supabase to HARD PRE-RENDER GATE for market reports
+
+---
+
+
+## v1.92.2 (2026-04-27)
+
+### Maintenance
 - docs(video): strengthen Section 0 Spark cross-check from "flag and reconcile" to a HARD PRE-RENDER GATE for market reports. Before `npx remotion render` runs on any market-report build, the agent must query Spark for every Supabase figure, print side-by-side with delta %, and STOP the render if any `|delta| > 1%` until Matt resolves. Spark creds in `.env.local` confirmed via grep: `SPARK_API_KEY` + `SPARK_API_BASE_URL=https://replication.sparkapi.com/v1` (no other Spark/Bridge/RESO keys present). Mirrored gate language into CLAUDE.md video production block.
 
 ---
