@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.92.1 (2026-04-27)
+
+### Maintenance
+- docs(video): add Section 0 — DATA ACCURACY (Non-Negotiable) — outranks all other rules
+- docs: lock Victoria as permanent ElevenLabs voice across repo
+
+---
+
+
 ## v1.94.0 (2026-04-27)
 
 ### Maintenance
