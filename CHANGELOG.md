@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.86.0 (2026-04-27)
+
+### Features
+- feat: news clip VO+captions, buffer + depthflow skill scaffolds
+
+---
+
+
 ## v1.85.0 (2026-04-27)
 
 ### Features
