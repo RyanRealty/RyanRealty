@@ -1,0 +1,158 @@
+{
+  "deliverable": "news_remax_real_merger",
+  "scored_at": "2026-04-27",
+  "summary": "RE/MAX + Real Brokerage merger 30→45s news clip. Every figure traces to a primary source.",
+  "figures": [
+    {
+      "figure": "$880M",
+      "label": "Enterprise value of the deal",
+      "claim": "Real Brokerage to acquire RE/MAX in a deal valued at approximately $880M (enterprise value, including debt).",
+      "sources": [
+        {
+          "outlet": "Inman",
+          "url": "https://www.inman.com/2026/04/27/real-brokerage-to-acquire-remax-for-880m-in-consolidation-play/",
+          "date": "2026-04-27"
+        },
+        {
+          "outlet": "BusinessWire (press release)",
+          "url": "https://www.businesswire.com/news/home/20260426359658/en/Real-to-Acquire-REMAX-Creating-a-Leading-Technology-Enabled-Global-Real-Estate-Platform",
+          "date": "2026-04-26"
+        },
+        {
+          "outlet": "HousingWire",
+          "url": "https://www.housingwire.com/articles/real-to-acquire-remax-880-million-real-remax-group/",
+          "date": "2026-04-27"
+        },
+        {
+          "outlet": "Real Estate News",
+          "url": "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant",
+          "date": "2026-04-27"
+        }
+      ]
+    },
+    {
+      "figure": "$550M",
+      "label": "Equity value of the deal",
+      "claim": "Equity value of the transaction is $550M (deal totals $880M including debt).",
+      "sources": [
+        {
+          "outlet": "The Real Deal",
+          "url": "https://therealdeal.com/national/2026/04/27/real-brokerage-to-buy-re-max-for-550m/",
+          "date": "2026-04-27"
+        },
+        {
+          "outlet": "Bloomberg",
+          "url": "https://www.bloomberg.com/news/articles/2026-04-27/real-brokerage-to-buy-re-max-as-amid-real-estate-consolidation",
+          "date": "2026-04-27"
+        }
+      ]
+    },
+    {
+      "figure": "180,000+",
+      "label": "Combined agent count",
+      "claim": "Combined entity will support more than 180,000 agents — RE/MAX (~145,000) + Real (~33,000+).",
+      "sources": [
+        {
+          "outlet": "BusinessWire (press release)",
+          "url": "https://www.businesswire.com/news/home/20260426359658/en/Real-to-Acquire-REMAX-Creating-a-Leading-Technology-Enabled-Global-Real-Estate-Platform",
+          "date": "2026-04-26"
+        },
+        {
+          "outlet": "HousingWire",
+          "url": "https://www.housingwire.com/articles/real-to-acquire-remax-880-million-real-remax-group/",
+          "date": "2026-04-27"
+        }
+      ]
+    },
+    {
+      "figure": "120+",
+      "label": "Countries / territories",
+      "claim": "Combined company will operate in more than 120 countries and territories.",
+      "sources": [
+        {
+          "outlet": "BusinessWire",
+          "url": "https://www.businesswire.com/news/home/20260426359658/en/Real-to-Acquire-REMAX-Creating-a-Leading-Technology-Enabled-Global-Real-Estate-Platform",
+          "date": "2026-04-26"
+        },
+        {
+          "outlet": "Real Estate News",
+          "url": "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant",
+          "date": "2026-04-27"
+        }
+      ]
+    },
+    {
+      "figure": "Real REMAX Group",
+      "label": "New holding company",
+      "claim": "New parent entity is Real REMAX Group; HQ Miami; trades on Nasdaq under ticker REAX. Tamir Poleg becomes Chairman & CEO.",
+      "sources": [
+        {
+          "outlet": "BusinessWire",
+          "url": "https://www.businesswire.com/news/home/20260426359658/en/Real-to-Acquire-REMAX-Creating-a-Leading-Technology-Enabled-Global-Real-Estate-Platform",
+          "date": "2026-04-26"
+        },
+        {
+          "outlet": "Real Estate News",
+          "url": "https://www.realestatenews.com/2026/04/27/real-to-buy-remax-in-usd880m-deal-creating-global-brokerage-giant",
+          "date": "2026-04-27"
+        }
+      ]
+    },
+    {
+      "figure": "$30M",
+      "label": "Annual run-rate cost synergies",
+      "claim": "Companies project approximately $30M in annual run-rate cost synergies, mostly realized by 2027.",
+      "sources": [
+        {
+          "outlet": "BusinessWire",
+          "url": "https://www.businesswire.com/news/home/20260426359658/en/Real-to-Acquire-REMAX-Creating-a-Leading-Technology-Enabled-Global-Real-Estate-Platform",
+          "date": "2026-04-26"
+        },
+        {
+          "outlet": "National Mortgage Professional",
+          "url": "https://nationalmortgageprofessional.com/news/real-brokerage-acquire-remax-holdings-880m-deal",
+          "date": "2026-04-27"
+        }
+      ]
+    },
+    {
+      "figure": "H2 2026",
+      "label": "Expected closing window",
+      "claim": "Transaction is expected to close in the second half of 2026, pending regulatory and shareholder approvals.",
+      "sources": [
+        {
+          "outlet": "BusinessWire",
+          "url": "https://www.businesswire.com/news/home/20260426359658/en/Real-to-Acquire-REMAX-Creating-a-Leading-Technology-Enabled-Global-Real-Estate-Platform",
+          "date": "2026-04-26"
+        }
+      ]
+    },
+    {
+      "figure": "$13.80 / 5.152 shares",
+      "label": "Per-share consideration",
+      "claim": "RE/MAX shareholders may elect $13.80 cash per share OR 5.152 shares of the combined company per RMAX share, subject to proration; cash consideration capped between $60M and $80M.",
+      "sources": [
+        {
+          "outlet": "Inman",
+          "url": "https://www.inman.com/2026/04/27/real-brokerage-to-acquire-remax-for-880m-in-consolidation-play/",
+          "date": "2026-04-27"
+        },
+        {
+          "outlet": "BusinessWire",
+          "url": "https://www.businesswire.com/news/home/20260426359658/en/Real-to-Acquire-REMAX-Creating-a-Leading-Technology-Enabled-Global-Real-Estate-Platform",
+          "date": "2026-04-26"
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "photographic": [],
+    "ai_generated": [],
+    "code_only_backdrops": [
+      "GradientMeshBg (palette: navy / forest / ember)",
+      "BrandNamePill (text-only abstraction in each company's signature color — not logo art)",
+      "GlobeRing (SVG concentric rings)",
+      "CombinePill (gradient pill with gold border)"
+    ]
+  }
+}

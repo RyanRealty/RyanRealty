@@ -141,7 +141,7 @@ const MergerSourcePill: React.FC<{
       style={{
         position: 'absolute',
         left: '50%',
-        bottom: 480,
+        bottom: 510,
         transform: 'translate(-50%, 0)',
         opacity: alpha * 0.95,
         background: 'rgba(6,16,31,0.80)',
@@ -441,8 +441,9 @@ const BeatDeal: React.FC = () => {
         startFrame={Math.round(fps * 0.2)}
         fromSide="left"
         centerY="28%"
-        fontSize={88}
-        width={360}
+        centerX="30%"
+        fontSize={84}
+        width={340}
       />
       <BrandNamePill
         text="RE/MAX"
@@ -451,8 +452,9 @@ const BeatDeal: React.FC = () => {
         startFrame={Math.round(fps * 0.5)}
         fromSide="right"
         centerY="28%"
-        fontSize={88}
-        width={420}
+        centerX="70%"
+        fontSize={84}
+        width={380}
       />
       <CollideSpark startFrame={Math.round(fps * 0.95)} centerY="28%" />
       <GiantNumber
@@ -601,17 +603,17 @@ const BeatCombine: React.FC = () => {
         startFrame={Math.round(fps * 1.7)}
         perWordFrames={5}
         fontSize={36}
-        top="68%"
+        top="65%"
         color={CREAM}
         highlightColor={GOLD_BRAND}
         letterSpacing={3.2}
       />
       <WordReveal
         text="EXPECTED CLOSE: |H2 2026"
-        startFrame={Math.round(fps * 2.5)}
+        startFrame={Math.round(fps * 2.4)}
         perWordFrames={5}
         fontSize={32}
-        top="78%"
+        top="72%"
         color={CREAM}
         highlightColor={GOLD_BRAND}
         letterSpacing={3.2}

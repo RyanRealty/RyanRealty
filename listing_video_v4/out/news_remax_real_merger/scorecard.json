@@ -1,0 +1,63 @@
+{
+  "deliverable": "news_remax_real_merger",
+  "scored_at": "2026-04-27T08:48:00-07:00",
+  "scored_by": "orchestrator",
+  "format": "news_video",
+  "minimum_required": 80,
+  "render_path": "listing_video_v4/public/v5_library/news_remax_real_merger.mp4",
+  "render_size_bytes": 5834887,
+  "duration_sec": 45.0,
+  "fps": 30,
+  "resolution": "1080x1920",
+  "codec": "h264 + aac",
+  "blackdetect_strict": "0 sequences (pix_th=0.05)",
+  "categories": {
+    "hook": {
+      "score": 9,
+      "notes": "Frame 0-12 motion engaged via spring-in KineticHook + GradientMeshBg drift. 'INDUSTRY ALERT' badge + 'Real estate just consolidated.' headline visible by f30 (1s). First spoken word at f0 is 'Two' — content, not greeting. Hook contains specific elements: a brand name (RE/MAX) and a deal magnitude implied. Pattern interrupt: brokerage M&A is rare in feed."
+    },
+    "retention": {
+      "score": 9,
+      "notes": "25% mark (f337, mid-Scale beat) lands on register change from $880M deal counter to 180,000 agent count + GlobeRing. 50% mark (f675, Scale→Combine boundary) flips visual register from agent count to brand naming pills colliding into REAL REMAX GROUP. 75% mark (f1012, mid-Local beat) lands on the Bend pivot for re-engagement. Final 15% (f1147–1350) covers BeatLocal tail + white stacked logo end card. Beat lengths follow news-clip pacing — multiple internal animation moments inside each scene keep visual register changing every ~2-3s."
+    },
+    "text": {
+      "score": 9,
+      "notes": "All on-screen text within 900x1400 safe zone (60-90 px margins on every edge). Body text 36-56px, headlines 130-220px. Caption pill displays each line for 100-220 frames (3.3-7.3s) — well above 2s minimum and within 3 wpm reading speed. White text on 70%-opacity navy pill with gold top border = high contrast. All numbers carry units ($880M, 180,000+, 120+, 145,000, 33,000, $30M, H2 2026). No 'approximately/roughly/about' anywhere."
+    },
+    "audio": {
+      "score": 9,
+      "path": "C",
+      "notes": "VO-only path (no music bed). ElevenLabs Ellen voice (BIvP0GN1cAtSRTxNHnWS) at stability 0.55, similarity 0.85, style 0.15, speaker_boost true, speed 0.95. Six sentences chained via previous_text for prosody continuity. Inter-sentence pauses ~20-50f (0.7-1.7s) between adjacent VO sequences — natural breathing, no overlap. Numbers spelled out for ElevenLabs ingestion ('eight hundred eighty million dollar deal', 'one hundred eighty thousand'). RE/MAX read correctly by the model."
+    },
+    "format": {
+      "score": 10,
+      "notes": "9:16 portrait 1080x1920 at 30fps, h264 codec, CRF 22, captions burned in. Total length 45.0s — within 30-60s news-video viral sweet spot. Cover frame implicitly hero exterior (Hook beat at f0). File size will be compressed to <100MB at CRF 24 if needed."
+    },
+    "engagement": {
+      "score": 8,
+      "primary_trigger": "share+comment",
+      "notes": "Share trigger: industry-shaping M&A news that brokers, agents, and homebuyers all care about — 'send to your real estate friend' moment. Comment trigger: closing line 'Bigger company. Same closing table for you in Bend.' invites conversation about local-vs-corporate brokerage debate. Save trigger: deal-summary card useful as reference. No DM-CTA in frame (per master skill §5)."
+    },
+    "cover": {
+      "score": 8,
+      "notes": "First frame is the Hook beat — animated navy gradient mesh + 'INDUSTRY ALERT' gold pill + 'Real estate / just consolidated.' kinetic title. High contrast (cream + gold on navy). The label communicates the news angle in <6 words at grid-preview size. Specificity: contains the verb that defines the story ('consolidated'). No black, no logo dominant."
+    },
+    "cta": {
+      "score": 8,
+      "notes": "Soft CTA — payoff lands at f1147+ with 'Bigger company. Same closing table for you in Bend.' as the BigQuote close, then white-logo end card. CTA matches register: top-of-funnel news content with a localized closer that points back to the brand without an in-frame link / phone / DM ask. Caption-CTA in IG/TikTok caption (handled out-of-band) carries the explicit DM hook."
+    },
+    "voice_brand": {
+      "score": 9,
+      "notes": "Sounds like Matt: direct, factual, confident. No corporate jargon, no influencer-bro register. Brand colors: Navy #102742 (caption pill, end card, navy mesh palette), Gold #D4AF37 (GOLD_BRAND, accents, source pill borders), Cream #F2EBDD (body text). Brand fonts: Amboqia (headlines), AzoSans (body, captions). No banned words present in VO or on-screen text. No semicolons, no em-dashes, no 'I'm thrilled to'. End card uses stacked_logo_white.png per brief."
+    },
+    "antislop": {
+      "score": 10,
+      "notes": "citations.json present next to render with every figure traced to BusinessWire press release / Inman / HousingWire / Real Estate News / The Real Deal / Bloomberg (multiple primary sources per figure). No photographic assets used (code-only backdrops). No AI imagery — gradient mesh, SVG silhouette, brand-color text pills are deterministic CSS+SVG, not AI generation. AI disclosure not required (per Rule 5 — only required for AI imagery / avatars). Fair-housing scan clean (no demographic steering, no 'great for families'). No misrepresentation (RE/MAX and Real Brokerage names used factually with primary-source attribution; brand-styled pills are text-only and not logo art reproductions). VO Rule 11 voice rules pass (no semicolons, no em-dashes, no AI filler — verified)."
+    }
+  },
+  "auto_zero_hits": [],
+  "total": 89,
+  "verdict": "ship",
+  "verification_traces_summary": "All deal figures cross-check across BusinessWire (issuer release), Inman, HousingWire, Real Estate News, The Real Deal. The $880M enterprise + $550M equity split is consistent. The 180k+ agent / 120+ countries claim is from the issuer release. No figure on screen lacks a citation in citations.json.",
+  "notes": "Final 30-day-review-window check: news_video format graduated from review window after the 3 prior news clips (Tariffs, Golden Handcuffs, Sun Belt Correction) shipped at 88/100 each. This 4th clip uses identical primitives (BeatHook → kinetic stat beats → editorial close → NewsEndCard). Caption styling follows the spec from Matt's ship instructions: bottom zone y 1480-1720, AzoSans 56px, 70% navy pill, 24px corner radius, 2px gold top border."
+}
