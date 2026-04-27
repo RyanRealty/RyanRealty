@@ -159,6 +159,20 @@ Everything else (debugging, architecture, testing-strategy, documentation, incid
 - Use IPA phoneme tags for tricky pronunciations (e.g., Deschutes → `<phoneme alphabet="ipa" ph="dəˈʃuːts">Deschutes</phoneme>`).
 - Matt approved this voice 2026-04-27 (replaces prior Ellen `BIvP0GN1cAtSRTxNHnWS`). It is locked in permanently.
 
+### Video Review Gate — MANDATORY
+
+- **No rendered video MP4 gets committed or pushed without Matt's explicit approval.**
+- This applies to anything that lands in `listing_video_v4/public/v5_library/` or any other user-facing/public-facing path. Source code changes (`.tsx`, `.py`, skill docs, scorecards, citations.json) push as normal — those are infrastructure, not the deliverable.
+- Workflow:
+  1. Render to `listing_video_v4/out/<name>.mp4` (local, untracked).
+  2. Run the QA gate (blackdetect, audio non-silent check, duration/codec verify).
+  3. **Present the local file path to Matt** for review (`open /Users/matthewryan/RyanRealty/listing_video_v4/out/<name>.mp4`). If multiple clips, list each path.
+  4. Wait for explicit ship approval (e.g., "ship it", "approved", "push").
+  5. Only after approval: copy to `public/v5_library/`, `git add` the MP4, commit, push.
+- This rule overrides the default "always push immediately" rule from `feedback_always_push.md` for video deliverables. Code changes that describe the video still push immediately.
+- Reason: bad audio, wrong voice, wrong end card, wrong duration — all caught by Matt before the MP4 lands on `main` and gets distributed. Cheaper to fix in `out/` than to revert a public commit.
+- Locked 2026-04-27. Applies to every format: news clips, listing reels, market reports, neighborhood guides, memes with rendered video.
+
 ### Pacing Rule — First Scenes
 
 - The first scene / hook text MUST stay on screen long enough for the viewer to read it completely. **Minimum 3 seconds** for any text-heavy opening scene.
