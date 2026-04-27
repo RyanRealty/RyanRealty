@@ -1,0 +1,70 @@
+{
+  "asset": "news_golden_handcuffs.mp4",
+  "format": "news_data_video",
+  "minimum_required": 85,
+  "scored_at": "2026-04-26T20:35:00-07:00",
+  "scored_by": "claude-opus-4-7",
+  "categories": {
+    "hook_0_3s": {
+      "score": 9,
+      "max": 10,
+      "notes": "Frame 0: navy mesh + house-row silhouette + BREAKING badge. Frame 2: KineticHook 'Lock-in' at 180px. Frame 14 (0.45s): 'just broke' in gold serif at 150px. Frame 30 (1.0s): WordReveal '1 IN 3 SELLERS WALKED AWAY'. VO s01 'The lock-in effect just broke' covers 0–1.6s. Strong hook architecture per VIRAL_GUARDRAILS hook spec. -1pt: 1.6s VO is shorter than the 2.4s payoff frame, leaving 0.8s of silence before s02 starts at frame 70."
+    },
+    "retention_structure": {
+      "score": 9,
+      "max": 10,
+      "notes": "Pattern interrupts at 25% (frame 220, BeatBuyers ember palette + 80% GiantNumber), 50% (frame 400, BeatBusier sunset palette + 43% GiantNumber + house silhouette), 75% (frame 570, BeatClose dark navy + BigQuote). End card with white logo at 26–30s. Five distinct re-hooks. -1pt: BeatBusier (50–67%) and BeatBuyers (25–50%) use similar GiantNumber + WordReveal structure, less visual differentiation than ideal."
+    },
+    "text_execution": {
+      "score": 8,
+      "max": 10,
+      "notes": "Hero numbers at 380px (80%) and 360px (43%) and 300px (35%) — well above headline minimum. Body at 34–44px. Caption track 32–38px in white-on-dark pill, 105–150 frame display. Safe zone respected. -2pts: WordReveal lines at 34–36px on Beats 3 and 4 are below the 48px body floor."
+    },
+    "audio_strategy": {
+      "score": 9,
+      "max": 10,
+      "notes": "ElevenLabs Ellen voice, prosody-chained across 5 sentences. No banned openings. Cadence: short, declarative, factual. -1pt: no music bed, VO is dry. Total VO ~17.8s in a 30s clip leaves silence gaps."
+    },
+    "format_compliance": {
+      "score": 10,
+      "max": 10,
+      "notes": "30.0s, 1080×1920, 30fps. 5 visual beats + end card. Internal motion (KineticHook stagger, GiantNumber animation, PercentRing fill, WordReveal cascade) keeps perceived cuts at ~14. No shot >4s without internal motion change."
+    },
+    "engagement_triggers": {
+      "score": 7,
+      "max": 10,
+      "notes": "End card subscribe trigger via white logo. BigQuote close 'the market is no longer waiting on you' is a save-trigger insight. -3pts: no DM keyword, no specific comment prompt, no resource map."
+    },
+    "cover_first_frame": {
+      "score": 8,
+      "max": 10,
+      "notes": "Frame 0: navy backdrop + house silhouette + BREAKING badge. Hook text appears within 2 frames. -2pts: thumbnail not exported separately; first frame busy."
+    },
+    "cta_payoff": {
+      "score": 8,
+      "max": 10,
+      "notes": "Soft CTA via NewsEndCard at 26–30s. BigQuote at 75% mark is a payoff-reframe per spec. -2pts: no resource map, no DM keyword."
+    },
+    "voice_brand_consistency": {
+      "score": 10,
+      "max": 10,
+      "notes": "Zero semicolons, zero em-dashes in VO. No banned-language. No AI tells. NAVY/GOLD_BRAND/CREAM tokens used."
+    },
+    "anti_slop_data_trace": {
+      "score": 10,
+      "max": 10,
+      "notes": "Source documented in .tsx header: Coldwell Banker 2026 Home Shopping Season Report (PRNewswire 2026-04-23, n=727 agents). Three figures (35%, 80%, 43%) all trace to that single release. No AI photos. No AI disclosure needed."
+    }
+  },
+  "total": 88,
+  "minimum_required_met": true,
+  "auto_zero_hits": [],
+  "ship_decision": "SHIP",
+  "review_notes": [
+    "Same gaps as news_tariffs: add music bed (beat-synced), DM keyword in end card, dedicated thumbnail export.",
+    "BeatBuyers and BeatBusier visual differentiation could be improved with a third motion type (line-chart melt was in viral_primitives but not used here).",
+    "VO total 17.8s vs 30s clip — pad with breath beats or layer music to fill silence."
+  ],
+  "rendered_path": "listing_video_v4/out/news_golden_handcuffs.mp4",
+  "library_path": "listing_video_v4/public/v5_library/news_golden_handcuffs.mp4"
+}

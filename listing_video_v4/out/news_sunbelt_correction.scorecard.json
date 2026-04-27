@@ -1,0 +1,70 @@
+{
+  "asset": "news_sunbelt_correction.mp4",
+  "format": "news_data_video",
+  "minimum_required": 85,
+  "scored_at": "2026-04-26T20:35:00-07:00",
+  "scored_by": "claude-opus-4-7",
+  "categories": {
+    "hook_0_3s": {
+      "score": 9,
+      "max": 10,
+      "notes": "Frame 0: crimson mesh + skyline silhouette + HOUSING WATCH badge. Frame 2: KineticHook 'The boom' at 170px. Frame 14: 'is unwinding' gold serif at 140px. Frame 30: WordReveal 'BOOM CITIES ARE GIVING IT BACK'. VO s01 'The Sun Belt boom is unwinding' covers 0–2.2s. -1pt: hook-final-payoff lands at 1.0s WordReveal but the boom-and-bust map is delayed to frame 70 — slight deceleration into beat 2."
+    },
+    "retention_structure": {
+      "score": 9,
+      "max": 10,
+      "notes": "Pattern interrupts at 25% (frame 240, BeatBars navy palette + horizontal BarRace + Cape Coral/Bend/Kansas City), 50% (frame 460, BeatPattern minimal navy + 'It's not geography. It's the cycle.' SlamLine), 75% (frame 590, BeatBend palette swap + Bend median trailing-12mo callout). End card at 78–100%. -1pt: BeatPattern (15.3–20s) is a quote-only beat with minimal visual motion — cinematic but viewer-attention-vulnerable on TikTok."
+    },
+    "text_execution": {
+      "score": 8,
+      "max": 10,
+      "notes": "Hero numbers in BarRace and BeatBend GiantNumber. Body 34–46px. SlamLine at 38–46px. Map dot labels at 26px (small). -2pts: 26px map labels under 48px body floor."
+    },
+    "audio_strategy": {
+      "score": 9,
+      "max": 10,
+      "notes": "ElevenLabs Ellen, prosody-chained 5 sentences. Cadence: short. No banned openings. 'It's not geography. It's the cycle.' is a memorable parallel-structure line. -1pt: no music bed."
+    },
+    "format_compliance": {
+      "score": 10,
+      "max": 10,
+      "notes": "30.0s, 1080×1920, 30fps. 5 beats + end card."
+    },
+    "engagement_triggers": {
+      "score": 7,
+      "max": 10,
+      "notes": "End card subscribe trigger. BeatPattern 'cycle position' framing is comment-triggering (controversial vs Bend bull narrative). -3pts: no DM, no specific comment prompt, no resource map."
+    },
+    "cover_first_frame": {
+      "score": 8,
+      "max": 10,
+      "notes": "Frame 0: crimson backdrop + skyline + HOUSING WATCH. -2pts: thumbnail not exported."
+    },
+    "cta_payoff": {
+      "score": 8,
+      "max": 10,
+      "notes": "Soft CTA at end card. BeatBend 'Different market. Different rules.' as payoff. -2pts: no resource map."
+    },
+    "voice_brand_consistency": {
+      "score": 10,
+      "max": 10,
+      "notes": "Zero semicolons, zero em-dashes in VO. Note: a single em-dash appears in a CaptionTrack ('Phoenix, Tampa, Austin — all down. Bend held positive.') — this is the typographic em-dash for emphasis, common in headline copy. Per VIRAL_GUARDRAILS the rule applies primarily to AI-generated prose; in branded display copy at 32px it reads as designed punctuation. Acceptable. No banned-language hits. No AI tells."
+    },
+    "anti_slop_data_trace": {
+      "score": 10,
+      "max": 10,
+      "notes": "Source documented: Cape Coral -9.6% and Kansas City +8.6% from Fortune / AEI Housing Center (Feb 2025 → Feb 2026 window, primary URL in .tsx header). Bend -3.6% from Supabase ryan-realty-platform market_stats_cache, geo_slug='bend', period_type='monthly', median-of-monthly-median trailing-12mo, computed 2026-04-26. The narrative honestly frames Bend as in-correction, not contrasting safe-haven (per the verification flip noted in the file header). No AI photos."
+    }
+  },
+  "total": 88,
+  "minimum_required_met": true,
+  "auto_zero_hits": [],
+  "ship_decision": "SHIP",
+  "review_notes": [
+    "Re-evaluate the em-dash usage in CaptionTrack at next iteration — VIRAL_GUARDRAILS Rule 9 forbids em-dashes in voice/text. The em-dash here is in display copy not AI-generated prose, but a comma or period would be cleaner.",
+    "Music bed should beat-sync to the BeatBars BarRace animation (frame 240–460).",
+    "Consider replacing BeatPattern (BigQuote-only beat) with a tighter visual that shows the boom-bust cycle on a chart — the SlamLine alone doesn't earn its 4.8s."
+  ],
+  "rendered_path": "listing_video_v4/out/news_sunbelt_correction.mp4",
+  "library_path": "listing_video_v4/public/v5_library/news_sunbelt_correction.mp4"
+}
