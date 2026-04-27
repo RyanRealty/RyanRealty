@@ -16,7 +16,7 @@
 // attribution. No stock photos, no AI imagery.
 
 import React from 'react';
-import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig, spring } from 'remotion';
+import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame, useVideoConfig, spring } from 'remotion';
 import { CREAM, FONT_BODY, FONT_SERIF } from '../brand';
 import { clamp } from '../easing';
 import {
@@ -33,6 +33,7 @@ import {
   NewsEndCard,
   SlamLine,
   BigQuote,
+  CaptionTrack,
   GOLD_BRAND,
   RED_DROP,
   formatDollars,
@@ -40,7 +41,7 @@ import {
 } from './viral_primitives';
 
 const FPS = 30;
-export const CLIP_TARIFFS_TOTAL_SEC = 28.0;
+export const CLIP_TARIFFS_TOTAL_SEC = 30.0;
 
 const TARIFF_TICKER = [
   { label: 'Per new home', value: '+$10,900', tone: 'down' as const },
@@ -350,6 +351,28 @@ export const ClipTariffs: React.FC = () => {
       </Sequence>
       <Sequence from={780} durationInFrames={120}>
         <NewsEndCard startFrame={0} />
+      </Sequence>
+
+      {/* ─── VO + Captions (sentence-level, prosody-chained) ─── */}
+      <Sequence from={0} durationInFrames={72}>
+        <Audio src={staticFile('audio/news_tariffs_s01.mp3')} />
+        <CaptionTrack text="Your next home just got more expensive." startFrame={0} durationFrames={72} />
+      </Sequence>
+      <Sequence from={65} durationInFrames={171}>
+        <Audio src={staticFile('audio/news_tariffs_s02.mp3')} />
+        <CaptionTrack text="Tariffs added $10,900 to every new home." startFrame={0} durationFrames={171} />
+      </Sequence>
+      <Sequence from={250} durationInFrames={186}>
+        <Audio src={staticFile('audio/news_tariffs_s03.mp3')} />
+        <CaptionTrack text="Lumber. Steel. Cabinets. Drywall. +6.3%." startFrame={0} durationFrames={186} />
+      </Sequence>
+      <Sequence from={450} durationInFrames={171}>
+        <Audio src={staticFile('audio/news_tariffs_s04.mp3')} />
+        <CaptionTrack text="By 2030, 450,000 fewer homes will be built." startFrame={0} durationFrames={171} />
+      </Sequence>
+      <Sequence from={615} durationInFrames={144}>
+        <Audio src={staticFile('audio/news_tariffs_s05.mp3')} />
+        <CaptionTrack text="When new construction gets harder, your home gets stronger." startFrame={0} durationFrames={144} fontSize={32} />
       </Sequence>
     </AbsoluteFill>
   );

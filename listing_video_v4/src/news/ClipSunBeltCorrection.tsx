@@ -22,7 +22,7 @@
 // watermark. No stock photos, no AI imagery — pure code.
 
 import React from 'react';
-import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Audio, Sequence, staticFile, useVideoConfig } from 'remotion';
 import { CREAM, FONT_BODY, FONT_SERIF } from '../brand';
 import {
   GradientMeshBg,
@@ -32,6 +32,7 @@ import {
   GiantNumber,
   TickerTape,
   BarRace,
+  CaptionTrack,
   PulseDot,
   BreakingBadge,
   SourcePill,
@@ -45,7 +46,7 @@ import {
 } from './viral_primitives';
 
 const FPS = 30;
-export const CLIP_SBC_TOTAL_SEC = 28.0;
+export const CLIP_SBC_TOTAL_SEC = 30.0;
 
 // Ticker uses ONLY verified stats per CLAUDE.md data accuracy rule.
 // Cape Coral -9.6% and Kansas City +8.6% trace to Fortune / AEI Housing
@@ -340,6 +341,28 @@ export const ClipSunBeltCorrection: React.FC = () => {
       </Sequence>
       <Sequence from={780} durationInFrames={120}>
         <NewsEndCard startFrame={0} />
+      </Sequence>
+
+      {/* ─── VO + Captions ─── */}
+      <Sequence from={0} durationInFrames={66}>
+        <Audio src={staticFile('audio/news_sbc_s01.mp3')} />
+        <CaptionTrack text="The Sun Belt boom is unwinding." startFrame={0} durationFrames={66} />
+      </Sequence>
+      <Sequence from={75} durationInFrames={114}>
+        <Audio src={staticFile('audio/news_sbc_s02.mp3')} />
+        <CaptionTrack text="Cities that overshot in 2021 are giving it back." startFrame={0} durationFrames={114} fontSize={34} />
+      </Sequence>
+      <Sequence from={245} durationInFrames={144}>
+        <Audio src={staticFile('audio/news_sbc_s03.mp3')} />
+        <CaptionTrack text="Phoenix, Tampa, Austin — all down. Bend held positive." startFrame={0} durationFrames={144} fontSize={32} />
+      </Sequence>
+      <Sequence from={465} durationInFrames={75}>
+        <Audio src={staticFile('audio/news_sbc_s04.mp3')} />
+        <CaptionTrack text="It's not geography. It's the cycle." startFrame={0} durationFrames={75} />
+      </Sequence>
+      <Sequence from={595} durationInFrames={138}>
+        <Audio src={staticFile('audio/news_sbc_s05.mp3')} />
+        <CaptionTrack text="Different market. Different rules." startFrame={0} durationFrames={138} />
       </Sequence>
     </AbsoluteFill>
   );

@@ -18,7 +18,7 @@
 // disclosure required.
 
 import React from 'react';
-import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Audio, Sequence, staticFile, useVideoConfig } from 'remotion';
 import { CREAM, FONT_BODY, FONT_SERIF, TEXT_SHADOW } from '../brand';
 import {
   GradientMeshBg,
@@ -28,6 +28,7 @@ import {
   GiantNumber,
   PercentRing,
   TickerTape,
+  CaptionTrack,
   BreakingBadge,
   SourcePill,
   BrandWatermark,
@@ -39,7 +40,7 @@ import {
 } from './viral_primitives';
 
 const FPS = 30;
-export const CLIP_GH_TOTAL_SEC = 28.0;
+export const CLIP_GH_TOTAL_SEC = 30.0;
 
 // Persistent ticker — every value traces to the Coldwell Banker spring 2026
 // release cited in this file's header. "Lock-in effect: easing" is editorial
@@ -284,6 +285,28 @@ export const ClipGoldenHandcuffs: React.FC = () => {
       </Sequence>
       <Sequence from={780} durationInFrames={120}>
         <NewsEndCard startFrame={0} />
+      </Sequence>
+
+      {/* ─── VO + Captions ─── */}
+      <Sequence from={0} durationInFrames={48}>
+        <Audio src={staticFile('audio/news_gh_s01.mp3')} />
+        <CaptionTrack text="The lock-in effect just broke." startFrame={0} durationFrames={48} />
+      </Sequence>
+      <Sequence from={70} durationInFrames={150}>
+        <Audio src={staticFile('audio/news_gh_s02.mp3')} />
+        <CaptionTrack text="1 in 3 sellers with sub-5% rates are listing anyway." startFrame={0} durationFrames={150} fontSize={34} />
+      </Sequence>
+      <Sequence from={235} durationInFrames={105}>
+        <Audio src={staticFile('audio/news_gh_s03.mp3')} />
+        <CaptionTrack text="80% of agents say buyers aren't waiting on rates." startFrame={0} durationFrames={105} fontSize={34} />
+      </Sequence>
+      <Sequence from={415} durationInFrames={120}>
+        <Audio src={staticFile('audio/news_gh_s04.mp3')} />
+        <CaptionTrack text="43% report a busier spring than 2025." startFrame={0} durationFrames={120} />
+      </Sequence>
+      <Sequence from={585} durationInFrames={150}>
+        <Audio src={staticFile('audio/news_gh_s05.mp3')} />
+        <CaptionTrack text="The market isn't waiting on you anymore." startFrame={0} durationFrames={150} />
       </Sequence>
     </AbsoluteFill>
   );

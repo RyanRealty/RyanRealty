@@ -1293,5 +1293,64 @@ export const BigQuote: React.FC<BigQuoteProps> = ({
   );
 };
 
+// ─── CaptionTrack ─────────────────────────────────────────────────────────
+// Bottom safe-zone subtitle box. Fades in fast, holds, fades out. Designed
+// to sit just above the ticker on news clips. Use one CaptionTrack per VO
+// sentence, sequenced to match audio timing.
+type CaptionProps = {
+  text: string;
+  startFrame?: number;
+  durationFrames: number;
+  fontSize?: number;
+  bottom?: number;
+};
+
+export const CaptionTrack: React.FC<CaptionProps> = ({
+  text,
+  startFrame = 0,
+  durationFrames,
+  fontSize = 38,
+  bottom = 280,
+}) => {
+  const frame = useCurrentFrame();
+  const localF = frame - startFrame;
+  if (localF < 0 || localF > durationFrames) return null;
+
+  const fadeIn = clamp(localF / 4, 0, 1);
+  const fadeOut = clamp((durationFrames - localF) / 6, 0, 1);
+  const opacity = Math.min(fadeIn, fadeOut);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: '50%',
+        bottom,
+        transform: 'translateX(-50%)',
+        maxWidth: 940,
+        padding: '14px 28px',
+        background: 'rgba(0,0,0,0.82)',
+        borderRadius: 8,
+        opacity,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          fontFamily: FONT_BODY,
+          fontWeight: 700,
+          fontSize,
+          color: '#FFFFFF',
+          letterSpacing: 0.5,
+          lineHeight: 1.25,
+          textShadow: '0 2px 8px rgba(0,0,0,0.95)',
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+};
+
 // Re-export the spring/interpolate util so clip files have a single import.
 export { interpolate };
