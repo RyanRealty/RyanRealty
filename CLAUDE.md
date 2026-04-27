@@ -157,6 +157,13 @@ Everything else (debugging, architecture, testing-strategy, documentation, incid
 - Use IPA phoneme tags for tricky pronunciations (e.g., Deschutes → `<phoneme alphabet="ipa" ph="dəˈʃuːts">Deschutes</phoneme>`).
 - Matt approved this voice. It is locked in permanently.
 
+### Pacing Rule — First Scenes
+
+- The first scene / hook text MUST stay on screen long enough for the viewer to read it completely. **Minimum 3 seconds** for any text-heavy opening scene.
+- **No scene with readable text shorter than 2.5 seconds.**
+- The hook should grab attention but NOT flash by so fast nobody can read it.
+- This rule applies to every video format: news clips, listing reels, market reports, neighborhood guides, memes with text overlay.
+
 **Pair-required (load all three before any build):**
 
 1. **`video_production_skills/ANTI_SLOP_MANIFESTO.md`** — banned-content gate. Twelve rules, every one a ship-blocker. Banned generic real estate language, banned AI-passed-as-real photos, ElevenLabs-only VO with pronunciation overrides, banned openings, AI disclosure requirements, beat-synced music or none, source-verified data only, 30-day human review on every new format, no AI humor, no engagement bait, voice rules (no semicolons, no em-dashes, no AI filler), and brand visual standards. Every skill in `video_production_skills/`, `social_media_skills/`, and `automation_skills/` references it.

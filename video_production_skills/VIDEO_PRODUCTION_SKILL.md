@@ -25,6 +25,13 @@ This file replaces ad-hoc decisions across the v5 series of Schoolhouse listing 
 - Use IPA phoneme tags for tricky pronunciations (e.g., Deschutes → `<phoneme alphabet="ipa" ph="dəˈʃuːts">Deschutes</phoneme>`).
 - Matt approved this voice. It is locked in permanently.
 
+### Pacing Rule — First Scenes
+
+- The first scene / hook text MUST stay on screen long enough for the viewer to read it completely. **Minimum 3 seconds** for any text-heavy opening scene.
+- **No scene with readable text shorter than 2.5 seconds.**
+- The hook should grab attention but NOT flash by so fast nobody can read it.
+- This rule applies to every video format: news clips, listing reels, market reports, neighborhood guides, memes with text overlay.
+
 ### Length
 - **Target: 30-45 seconds.**
 - **Never exceed 60 seconds.** A 75s "cinematic" cut goes nowhere. Cap holds across all platforms.
