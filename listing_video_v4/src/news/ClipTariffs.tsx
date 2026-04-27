@@ -41,7 +41,7 @@ import {
 } from './viral_primitives';
 
 const FPS = 30;
-export const CLIP_TARIFFS_TOTAL_SEC = 30.0;
+export const CLIP_TARIFFS_TOTAL_SEC = 45.0;
 
 const TARIFF_TICKER = [
   { label: 'Per new home', value: '+$10,900', tone: 'down' as const },
@@ -332,47 +332,58 @@ export const ClipTariffs: React.FC = () => {
   //   450–620  (15–20.7s) 450,000 projection
   //   610–780  (20.3–26s) Editorial close
   //   780–900  (26–30s)   End card
+  // 45s timeline @ 30fps = 1350 frames. Per VIDEO_PRODUCTION_SKILL §1
+  // Pacing Rule: hook beat ≥3s, every readable-text beat ≥2.5s. Inter-VO
+  // gaps deliberate (~0.5–3s) so it sounds like a person, not a TTS rush.
+  //
+  // Beat layout (frames @ 30fps):
+  //   0–105     (0–3.5s)   Hook            VO s01 @ 9 (2.46s, ends 83)
+  //   90–315   (3.0–10.5s)  $10,900 hero    VO s02 @ 99 (5.85s, ends 274)
+  //   300–585  (10.0–19.5s) Materials       VO s03 @ 309 (6.35s, ends 500)
+  //   570–855  (19.0–28.5s) 450k projection VO s04 @ 579 (5.88s, ends 755)
+  //   840–1215 (28.0–40.5s) Close           VO s05 @ 849 (4.96s, ends 998)
+  //   1200–1350 (40.0–45.0s) End card with white stacked logo
   return (
     <AbsoluteFill style={{ background: '#0e0703' }}>
-      <Sequence from={0} durationInFrames={80}>
+      <Sequence from={0} durationInFrames={105}>
         <BeatHook />
       </Sequence>
-      <Sequence from={65} durationInFrames={170}>
+      <Sequence from={90} durationInFrames={225}>
         <BeatCost />
       </Sequence>
-      <Sequence from={220} durationInFrames={245}>
+      <Sequence from={300} durationInFrames={285}>
         <BeatMaterials />
       </Sequence>
-      <Sequence from={450} durationInFrames={175}>
+      <Sequence from={570} durationInFrames={285}>
         <BeatProjection />
       </Sequence>
-      <Sequence from={610} durationInFrames={175}>
+      <Sequence from={840} durationInFrames={375}>
         <BeatClose />
       </Sequence>
-      <Sequence from={780} durationInFrames={120}>
+      <Sequence from={1200} durationInFrames={150}>
         <NewsEndCard startFrame={0} />
       </Sequence>
 
-      {/* ─── VO + Captions (sentence-level, prosody-chained) ─── */}
-      <Sequence from={0} durationInFrames={72}>
+      {/* ─── VO + Captions (Ellen voice, prosody-chained, breath padding) ─── */}
+      <Sequence from={9} durationInFrames={75}>
         <Audio src={staticFile('audio/news_tariffs_s01.mp3')} />
-        <CaptionTrack text="Your next home just got more expensive." startFrame={0} durationFrames={72} />
+        <CaptionTrack text="Your next home just got more expensive." startFrame={0} durationFrames={75} />
       </Sequence>
-      <Sequence from={65} durationInFrames={171}>
+      <Sequence from={99} durationInFrames={180}>
         <Audio src={staticFile('audio/news_tariffs_s02.mp3')} />
-        <CaptionTrack text="Tariffs added $10,900 to every new home." startFrame={0} durationFrames={171} />
+        <CaptionTrack text="Tariffs added $10,900 to every new home." startFrame={0} durationFrames={180} />
       </Sequence>
-      <Sequence from={250} durationInFrames={186}>
+      <Sequence from={309} durationInFrames={195}>
         <Audio src={staticFile('audio/news_tariffs_s03.mp3')} />
-        <CaptionTrack text="Lumber. Steel. Cabinets. Drywall. +6.3%." startFrame={0} durationFrames={186} />
+        <CaptionTrack text="Lumber. Steel. Cabinets. Drywall. +6.3%." startFrame={0} durationFrames={195} />
       </Sequence>
-      <Sequence from={450} durationInFrames={171}>
+      <Sequence from={579} durationInFrames={180}>
         <Audio src={staticFile('audio/news_tariffs_s04.mp3')} />
-        <CaptionTrack text="By 2030, 450,000 fewer homes will be built." startFrame={0} durationFrames={171} />
+        <CaptionTrack text="By 2030, 450,000 fewer homes will be built." startFrame={0} durationFrames={180} />
       </Sequence>
-      <Sequence from={615} durationInFrames={144}>
+      <Sequence from={849} durationInFrames={155}>
         <Audio src={staticFile('audio/news_tariffs_s05.mp3')} />
-        <CaptionTrack text="When new construction gets harder, your home gets stronger." startFrame={0} durationFrames={144} fontSize={32} />
+        <CaptionTrack text="When new construction gets harder, your home gets stronger." startFrame={0} durationFrames={155} fontSize={32} />
       </Sequence>
     </AbsoluteFill>
   );

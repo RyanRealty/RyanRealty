@@ -46,7 +46,7 @@ import {
 } from './viral_primitives';
 
 const FPS = 30;
-export const CLIP_SBC_TOTAL_SEC = 30.0;
+export const CLIP_SBC_TOTAL_SEC = 45.0;
 
 // Ticker uses ONLY verified stats per CLAUDE.md data accuracy rule.
 // Cape Coral -9.6% and Kansas City +8.6% trace to Fortune / AEI Housing
@@ -315,54 +315,56 @@ const BeatBend: React.FC = () => {
 };
 
 export const ClipSunBeltCorrection: React.FC = () => {
-  // Beat layout:
-  //   0–80     (0–2.7s)   Hook
-  //   70–250   (2.3–8.3s) Map dots
-  //   240–470  (8–15.7s)  Bar race
-  //   460–600  (15.3–20s) Pattern editorial
-  //   590–780  (19.7–26s) Bend local
-  //   780–900  (26–30s)   End card
+  // 45s timeline @ 30fps = 1350 frames. Pacing Rule: hook beat ≥3s, every
+  // readable-text beat ≥2.5s. Breath padding between VO sentences.
+  //
+  //   0–105     (0–3.5s)    Hook            VO s01 @ 9 (2.22s, ends 75)
+  //   90–390    (3.0–13.0s) Map dots        VO s02 @ 99 (3.94s, ends 217)
+  //   375–705   (12.5–23.5s) Bar race       VO s03 @ 399 (4.91s, ends 546)
+  //   690–945   (23.0–31.5s) Pattern        VO s04 @ 714 (2.59s, ends 791)
+  //   930–1215  (31.0–40.5s) Bend local     VO s05 @ 954 (4.68s, ends 1094)
+  //   1200–1350 (40–45s)    End card with white stacked logo
   return (
     <AbsoluteFill style={{ background: '#06101F' }}>
-      <Sequence from={0} durationInFrames={85}>
+      <Sequence from={0} durationInFrames={105}>
         <BeatHook />
       </Sequence>
-      <Sequence from={70} durationInFrames={185}>
+      <Sequence from={90} durationInFrames={300}>
         <BeatMap />
       </Sequence>
-      <Sequence from={240} durationInFrames={235}>
+      <Sequence from={375} durationInFrames={330}>
         <BeatBars />
       </Sequence>
-      <Sequence from={460} durationInFrames={145}>
+      <Sequence from={690} durationInFrames={255}>
         <BeatPattern />
       </Sequence>
-      <Sequence from={590} durationInFrames={195}>
+      <Sequence from={930} durationInFrames={285}>
         <BeatBend />
       </Sequence>
-      <Sequence from={780} durationInFrames={120}>
+      <Sequence from={1200} durationInFrames={150}>
         <NewsEndCard startFrame={0} />
       </Sequence>
 
-      {/* ─── VO + Captions ─── */}
-      <Sequence from={0} durationInFrames={66}>
+      {/* ─── VO + Captions (Ellen voice, prosody-chained, breath padding) ─── */}
+      <Sequence from={9} durationInFrames={75}>
         <Audio src={staticFile('audio/news_sbc_s01.mp3')} />
-        <CaptionTrack text="The Sun Belt boom is unwinding." startFrame={0} durationFrames={66} />
+        <CaptionTrack text="The Sun Belt boom is unwinding." startFrame={0} durationFrames={75} />
       </Sequence>
-      <Sequence from={75} durationInFrames={114}>
+      <Sequence from={99} durationInFrames={130}>
         <Audio src={staticFile('audio/news_sbc_s02.mp3')} />
-        <CaptionTrack text="Cities that overshot in 2021 are giving it back." startFrame={0} durationFrames={114} fontSize={34} />
+        <CaptionTrack text="Cities that overshot in 2021 are giving it back." startFrame={0} durationFrames={130} fontSize={34} />
       </Sequence>
-      <Sequence from={245} durationInFrames={144}>
+      <Sequence from={399} durationInFrames={155}>
         <Audio src={staticFile('audio/news_sbc_s03.mp3')} />
-        <CaptionTrack text="Phoenix, Tampa, Austin — all down. Bend held positive." startFrame={0} durationFrames={144} fontSize={32} />
+        <CaptionTrack text="Phoenix, Tampa, Austin. All down. Bend held positive." startFrame={0} durationFrames={155} fontSize={32} />
       </Sequence>
-      <Sequence from={465} durationInFrames={75}>
+      <Sequence from={714} durationInFrames={85}>
         <Audio src={staticFile('audio/news_sbc_s04.mp3')} />
-        <CaptionTrack text="It's not geography. It's the cycle." startFrame={0} durationFrames={75} />
+        <CaptionTrack text="It's not geography. It's the cycle." startFrame={0} durationFrames={85} />
       </Sequence>
-      <Sequence from={595} durationInFrames={138}>
+      <Sequence from={954} durationInFrames={145}>
         <Audio src={staticFile('audio/news_sbc_s05.mp3')} />
-        <CaptionTrack text="Different market. Different rules." startFrame={0} durationFrames={138} />
+        <CaptionTrack text="Different market. Different rules." startFrame={0} durationFrames={145} />
       </Sequence>
     </AbsoluteFill>
   );
