@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.87.1 (2026-04-27)
+
+### Maintenance
+- chore: dedup schoolhouse MP4s, canonicalize to listing_video_v4/public/v5_library
+
+---
+
+
 ## v1.87.0 (2026-04-27)
 
 ### Features
