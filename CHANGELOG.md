@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.93.0 (2026-04-27)
+
+### Maintenance
+- docs(video): add Section 0.5 — CAPTIONS (Hard Rules — Ship Blockers) — to `video_production_skills/VIDEO_PRODUCTION_SKILL.md`; mirror as "Captions — HARD RULES (Ship Blockers)" subsection in CLAUDE.md video production block. Five hard rules: (1) captions never render over other visual components — stats, charts, logos, end card, animated overlays, photos with focal content; (2) captions occupy a dedicated reserved safe zone (portrait y 1480–1720, x 90–990) physically reserved at composition level via `<CaptionSafeZone>` wrapper, not just z-index; (3) caption transitions must be smooth (fade min 6f / 200ms or word-by-word kinetic with 1–3 word chunks + active-word color + scale 1.0→1.08 spring), never hard cuts between full-sentence blocks; (4) timing syncs to ElevenLabs `/v1/forced-alignment` word-level timestamps, never to clock-time slots or `<Sequence>` boundaries; (5) no choppy / jittery / 1-frame blips / mid-word fade-outs / font-size oscillation. Wrong number OR broken captions = no ship. Companion diagnostic: `video_production_skills/CAPTION_AUDIT.md` (uncommitted draft) catalogues 6 confirmed overlap violations across the news clips and market-report outros and recommends Option A (strict reserved-zone pattern) as the architectural fix.
+
+---
+
+
 ## v1.92.2 (2026-04-27)
 
 ### Maintenance

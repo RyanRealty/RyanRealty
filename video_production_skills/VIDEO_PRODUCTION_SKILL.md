@@ -64,6 +64,57 @@ This section supersedes hook rules, length rules, brand rules, voice rules, and 
 
 ---
 
+## 0.5. CAPTIONS (Hard Rules — Ship Blockers)
+
+**Captions are the single most-watched element on muted feeds (~80% of TikTok / Reels / Shorts viewers play with sound off). Choppy or overlapping captions kill retention before the hook lands. The rules below are HARD — a render that violates any of them does not ship, regardless of scorecard, regardless of voice quality, regardless of cinematics.** See `video_production_skills/CAPTION_AUDIT.md` for the diagnostic + violation log that produced these rules.
+
+### Hard rules
+
+1. **Captions NEVER render over other visual components.** No exceptions. Captions cannot overlap stats, numbers, charts, graphs, data visualizations, logos, end-card elements, animated text overlays (titles, headlines, price reveals, SlamLine, WordReveal, BreakingBadge, CountUp pills, ticker tape, source pills), photos with focal content in the caption zone, or any other rendered overlay. If a competing element needs the caption zone for a beat, the caption is suppressed for that beat — the caption never gets layered on top.
+
+2. **Captions occupy a dedicated, reserved safe zone that no other component can enter.** Portrait 1080×1920 spec: **`y = 1480–1720` (240 px tall band, 90 px from each side edge)**. Treat this zone as caption-only for the entire composition timeline. Every other component — beats, headlines, stats, end cards, watermarks — must position above (`bottom > 440`) or render at a non-caption-active frame. The reserved zone is enforced at the composition level (a `<CaptionSafeZone>` wrapper at fixed coords; no other absolute-positioned element renders into those pixels). Z-index alone is not enough — the zone is physically reserved.
+
+3. **Caption transitions must be smooth — fade or word-by-word — never hard cuts between lines.** No instant-swap line changes. Approved transition primitives:
+   - **Fade** between caption groups: minimum 6-frame (200 ms) opacity ramp on both outgoing and incoming text. No 1-frame swaps.
+   - **Word-by-word kinetic** (CapCut / Hormozi style): 1–3 word chunks revealed in sync with forced-alignment timestamps; active word highlighted via color change + scale 1.0→1.08 spring + drop shadow; previous chunk fades out as next chunk fades in over 4–8 frames.
+   - Either pattern is acceptable. Hard cuts between full sentences are NOT.
+
+4. **Caption timing syncs to natural speech cadence — never to clock-time slots or beat boundaries.** The source of truth is the ElevenLabs `/v1/forced-alignment` JSON for the VO clip (word-level `start` / `end` timestamps). Captions appear when the word is spoken and disappear when the speech-natural breath gap arrives — not when a Remotion `<Sequence>` happens to end. Sentence-level full-screen blocks are banned: a 9-second VO sentence does NOT show as a single 9-second static caption. Break it into spoken chunks. If forced-alignment data isn't available for a clip (e.g., older renders), generate it before rendering — it's the audio file path → POST `/v1/forced-alignment` → save JSON next to the MP3.
+
+5. **No choppy or jittery caption changes.** No flicker. No 1-frame visibility blips. No mid-word fade-out. No caption that appears, disappears, and reappears within the same sentence. No font-size oscillation between consecutive lines (either pick a fixed size or commit to a single per-clip scale curve). No re-layout jumps when a long word pushes the line to wrap — pre-measure and commit to the layout for the duration of the chunk.
+
+### Component contract
+
+The single canonical caption component (replacing the legacy `CaptionTrack` and `CaptionBand` patterns) takes:
+- `alignment` — the forced-alignment JSON (array of `{ word, start_s, end_s }`)
+- `chunkSize` — words per visible chunk (1–3, default 2)
+- `style` — `fade` | `kinetic`
+- `safeZone` — fixed { top, bottom, left, right } in px; defaults to portrait reserve y 1480–1720
+- `audioStartFrame` — when the parent `<Audio>` begins, so the component can map `start_s` / `end_s` to absolute composition frames
+
+Output: an `<AbsoluteFill>` constrained to `safeZone`, internally rendering the active chunk with the chosen transition style. The component MUST NOT render outside `safeZone`. Other components MUST NOT render inside `safeZone`. Both halves of that contract are enforced by the composition wrapper.
+
+### What violations look like (from the current codebase, see CAPTION_AUDIT.md)
+
+- A `CaptionTrack` holding a 7-word sentence on screen for 9 seconds with no internal animation = violates rule 3 (hard-cut transitions between sentences) + rule 4 (no word-level sync) + rule 5 (visually static = jittery feel when sentence finally swaps).
+- `CaptionBand` snapping a 7-word window on every word boundary instead of chunking 2–3 words = violates rule 3 (no smooth transition; the whole window swaps).
+- `PercentRing` bottom arc landing inside the caption pill area = violates rule 1 + rule 2.
+- Market-report OutroBeat CTA pill rendered at `bottom: 200` while `CaptionBand` occupies y 1480–1720 = violates rule 1 (CTA on top of caption layer).
+- Long sentence-level captions with no breath-gap segmentation = violates rule 4 (synced to Sequence boundary, not speech).
+
+### Enforcement
+
+Before any video deliverable renders or ships:
+- [ ] Caption component reads from a forced-alignment JSON (or generates one).
+- [ ] Caption renders as 1–3 word chunks with smooth (fade or kinetic) transitions, never as a full static sentence block.
+- [ ] No other overlay's bounding box intersects the caption safe zone (y 1480–1720, x 90–990) at any frame where the caption is active.
+- [ ] Manual frame scrub at 25%, 50%, 75%, 90% of the timeline confirms no overlap visually.
+- [ ] No 1-frame caption blips, no font-size jumps, no mid-word fade-outs visible.
+
+A render that fails any item is a non-ship until repaired. Section 0 (Data Accuracy) and Section 0.5 (Captions) together gate every render — wrong number OR broken captions = no ship.
+
+---
+
 **Pair-required reading (load all three before any build):**
 1. **[`ANTI_SLOP_MANIFESTO.md`](ANTI_SLOP_MANIFESTO.md)** — banned-content gate. Twelve hard rules. Voice rules, fair-housing, AI disclosure, brand visual standards.
 2. **[`VIRAL_GUARDRAILS.md`](VIRAL_GUARDRAILS.md)** — pre-publish virality gate. 100-point scorecard, format-specific minimum scores, frame-by-frame hook spec, platform-specific length / aspect / cadence specs. Every piece scores against this gate before it ships. Default ship floor: 80/100. Format minimums: listing video 85, market data 80, neighborhood 80, meme 75, earth zoom 85.

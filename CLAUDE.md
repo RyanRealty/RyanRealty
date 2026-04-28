@@ -309,6 +309,18 @@ Everything else (debugging, architecture, testing-strategy, documentation, incid
 
 `.env.local` cred status (verified 2026-04-27): `SPARK_API_KEY` ✅, `SPARK_API_BASE_URL` ✅ (`https://replication.sparkapi.com/v1`). `SPARK_TOKEN`, `BRIDGE_API_KEY`, `RESO_API_KEY` ❌ not provisioned — surface to Matt before any build that needs them.
 
+### Captions — HARD RULES (Ship Blockers)
+
+**Captions are the single most-watched element on muted feeds. Choppy or overlapping captions kill retention. These rules are hard — see `video_production_skills/VIDEO_PRODUCTION_SKILL.md` Section 0.5 for the full spec and `video_production_skills/CAPTION_AUDIT.md` for the violation log.**
+
+1. **Captions NEVER render over other visual components.** No overlap with stats, numbers, charts, logos, end-card elements, animated text overlays (titles, price reveals, SlamLine, WordReveal, BreakingBadge), photos with focal content, or any other rendered overlay. If a competing element needs the caption zone for a beat, the caption is suppressed for that beat.
+2. **Captions occupy a dedicated reserved safe zone that no other component can enter.** Portrait 1080×1920: y 1480–1720, x 90–990. Enforced at the composition level via a `<CaptionSafeZone>` wrapper — physical reservation, not just z-index.
+3. **Caption transitions must be smooth — fade or word-by-word kinetic — never hard cuts between full-sentence blocks.** Min 6-frame (200 ms) opacity ramp on fades. Word-by-word: 1–3 word chunks, active word color + scale 1.0→1.08 spring, synced to ElevenLabs forced-alignment timestamps.
+4. **Caption timing syncs to natural speech cadence via ElevenLabs `/v1/forced-alignment` word-level timestamps — never to clock-time slots or `<Sequence>` boundaries.** Generate the alignment JSON next to every VO MP3 before rendering; the caption component reads from it.
+5. **No choppy or jittery caption changes.** No flicker. No 1-frame blips. No mid-word fade-outs. No font-size oscillation. No re-layout jumps mid-chunk.
+
+A render that fails any of these is a non-ship until repaired. Captions + data accuracy together gate every render: wrong number OR broken captions = no ship.
+
 ### ElevenLabs Voice — MANDATORY
 
 - **Voice: Victoria — Voice ID: `qSeXEcewz7tA0Q0qk9fH`**
