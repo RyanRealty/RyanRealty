@@ -293,6 +293,18 @@ Everything else (debugging, architecture, testing-strategy, documentation, incid
 
 **Read `video_production_skills/VIDEO_PRODUCTION_SKILL.md` before writing any video code or Remotion composition. This is non-negotiable.**
 
+### The routine-build triplet — load these for any standard listing/market/news/evergreen/luxury build
+
+For routine production work, three short docs sit on top of the master skill and answer most questions without re-ingesting 2,000 lines:
+
+1. **`video_production_skills/API_INVENTORY.md`** — every API key Ryan Realty has access to, status (✅ / ⚠️ / ❌ as of 2026-04-27), what each does, current usage, untapped capability, cost per call. Verified live. Headline: **Replicate is the gateway to Kling v2.1 Master, Veo 3, Hailuo 02, Seedance 1 Pro, Wan 2.5 i2v, and Luma Ray 2** — the entire SOTA AI-video stack. fal.ai balance is dry; ElevenLabs has ~99k chars headroom this cycle; Meta Page Token is expired (publishing currently blocked); Resend `mail.ryan-realty.com` sender is unverified.
+
+2. **`video_production_skills/VISUAL_STRATEGY.md`** — opinionated creative brief per content type (listing / market report / news / evergreen / luxury). Primary visual source, motion vocabulary, transitions, color grading, typography, scroll-stopping vs forgettable principles.
+
+3. **`video_production_skills/WORKFLOWS.md`** — step-by-step build pipeline per content type. Numbered actionable steps. Includes the cross-cutting fallback table for when an API is down.
+
+These three layer with the master skill: `API_INVENTORY` answers *what tools are up*, `VISUAL_STRATEGY` answers *what the video should look like*, `WORKFLOWS` answers *what steps in what order*, and `VIDEO_PRODUCTION_SKILL.md` answers *what hard constraints every build must clear*. CLAUDE.md §0 (data accuracy) and §0.5 (captions) outrank everything in the triplet — the triplet is operational, not a rule weakener.
+
 ### Data Accuracy in Video — OUTRANKS EVERYTHING
 
 **Every number shown or spoken in a video MUST trace to a verified primary source. Read `video_production_skills/VIDEO_PRODUCTION_SKILL.md` Section 0 in full before writing any video code. A pretty render with a wrong number does not ship — even at 100/100 on the viral scorecard.**

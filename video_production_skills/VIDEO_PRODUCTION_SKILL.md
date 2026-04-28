@@ -126,6 +126,32 @@ This file replaces ad-hoc decisions across the v5 series of Schoolhouse listing 
 
 ---
 
+## 0.6. THE ROUTINE-BUILD TRIPLET — READ THESE BEFORE ANY VIDEO WORK
+
+For routine builds (listing, market report, news clip, evergreen, luxury), the three docs below are the operational layer above this master skill. Load them BEFORE scaffolding any BEATS array. They are concise on purpose — they exist so agents do not have to re-ingest 2,000 lines of master skills per build.
+
+1. **[`API_INVENTORY.md`](API_INVENTORY.md)** — Every API key Ryan Realty has access to. Status (`✅` / `⚠️` / `❌`), endpoint, capability, current usage, untapped capability, cost per call, when to use it, when not. Refreshed by every build that touches a service. **Read before assuming a tool is available.** As of 2026-04-27 the headline finding is that **Replicate (`REPLICATE_API_TOKEN`) is the gateway to Kling v2.1 Master, Veo 3 / Veo 3 Fast, Hailuo 02, Seedance 1 Pro, Wan 2.5 i2v, and Luma Ray 2 / Ray Flash 2** — the entire SOTA AI-video stack. fal.ai's balance is dry; do not rely on it. ElevenLabs has ~99k chars headroom this billing cycle. The Meta Page Access Token is currently expired (publishing blocked). The Resend `mail.ryan-realty.com` sender is not yet verified.
+
+2. **[`VISUAL_STRATEGY.md`](VISUAL_STRATEGY.md)** — The opinionated creative brief per content type (listing / market report / news / evergreen / luxury). Primary visual source, motion vocabulary, transition style, color grading approach, typography spec, and what makes each format scroll-stopping vs forgettable. Pair with this master skill for hook/length specs; this file gives the *creative direction*, the master skill gives the *technical floor*.
+
+3. **[`WORKFLOWS.md`](WORKFLOWS.md)** — Numbered, step-by-step build pipeline per content type. "When building a listing video, do steps 1-14 in this order using these tools." Includes the cross-cutting fallback table for when an API is down. Start here for any new build.
+
+The three documents layer cleanly:
+- `API_INVENTORY.md` answers *what tools are up right now*.
+- `VISUAL_STRATEGY.md` answers *what the video should look like*.
+- `WORKFLOWS.md` answers *what steps to do, in what order*.
+- This master skill answers *what hard constraints every build must clear*.
+
+If anything in the routine-triplet appears to contradict this master skill or `CLAUDE.md` §0 (data accuracy) or §0.5 (captions), the master skill and CLAUDE.md win. The triplet is the operational layer; it cannot weaken the ship-blocker rules.
+
+**When to read the long files anyway** (skip the triplet, go straight to the master skills):
+- First time doing a brand-new format (no prior render in `out/` or `public/v5_library/` matches).
+- An edge case isn't covered by the triplet.
+- Auditing or debugging a scoring decision.
+- Onboarding a new sub-skill (`depth_parallax/`, `gaussian_splat/`, `audio_sync/`, etc.).
+
+---
+
 ## 1. Hard constraints (ship blockers — not suggestions)
 
 ### ElevenLabs Voice — MANDATORY
