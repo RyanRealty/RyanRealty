@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.92.4 (2026-04-28)
+
+### Maintenance
+- docs(video): add API_INVENTORY, VISUAL_STRATEGY, WORKFLOWS skill triplet
+
+---
+
+
 ## v1.92.3 (2026-04-28)
 
 ### Maintenance
