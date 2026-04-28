@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.92.3 (2026-04-28)
+
+### Maintenance
+- docs(video): add Section 0.5 — CAPTIONS (Hard Rules — Ship Blockers)
+
+---
+
+
 ## v1.93.0 (2026-04-27)
 
 ### Maintenance
