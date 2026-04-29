@@ -292,11 +292,38 @@ Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Rules that dire
 
 - **Colors:** Navy `#102742` for all pill backgrounds, stat cards, CTA cards. Gold `#D4AF37` for price display, accent borders, and stat card separators.
 - **Fonts:** Amboqia for address headline, price, and Beat 16 CTA address. AzoSans Medium for beds/baths/sqft/lot supporting stats and VO captions.
-- **No logo in frame.** No brokerage name in frame. No phone number in frame. No agent name in frame.
+- **No brokerage name, no phone, no agent name in frame.** The gold logo in the footer bar (see overlay system below) is the only branded element allowed in-frame.
 - **Beat 16 CTA:** address + "Tour link in bio." — nothing more. White text, navy background, Amboqia, centered, 72px.
 - **Caption delivery:** all brokerage attribution, phone, and social handle live in the IG caption, not the video frame.
 - **Text safe zone:** 900×1400 px centered in 1080×1920.
 - **On-screen numbers carry units:** "$895,000" not "$895K". "3 bedrooms" not "3 bd". "2,100 sqft" not "2100".
+
+---
+
+## Overlay system — HARD RULE (approved 2026-04-28)
+
+**FINAL approved spec for every listing video. The old single-panel approach (one dark panel at bottom ~43% of frame, 0.25–0.30 opacity scrim, 456 px logo) is DEAD.** Every listing video uses a TWO-LAYER overlay; both layers MUST be present and byte-identical across every video in a batch (same opacity values, same heights, same logo size, same Y positions). Different listings, identical chrome.
+
+**Layer 1 — Text-zone scrim**
+- `rgba(0,0,0,0.40)` background — covers ONLY the text area (headline, address, price block).
+- Hard rectangle. **No feathering. No drop shadows. No `text-shadow` CSS. No `filter: drop-shadow(...)`.**
+- Photo behind shows through at 60%. The scrim is a contrast tool, not a blackout.
+- Sized to wrap the text content with tight padding; does NOT bleed into the logo footer bar.
+
+**Layer 2 — Logo footer bar**
+- `rgba(0,0,0,0.70)` background — **NOT solid black.** Faint photo texture must show through.
+- 200 px tall, flush to the very bottom of the frame: `y = 1720 → 1920`.
+- Gold (champagne) logo, **580 px wide**, vertically centered inside the bar.
+- Gold logo only — **no white logo, no navy logo.** No swap.
+- No drop shadow on the logo.
+
+**Critical absolutes**
+- **No drop shadows on text or logo, anywhere in the listing video.** Strip every `text-shadow` and `filter: drop-shadow(...)` from the listing video components.
+- **Both layers identical across every video in a set.** Same `rgba()` values. Same heights. Same logo width. Same Y positions.
+- **The strip between the bottom of Layer 1 and the top of Layer 2 (y=1720) shows clean unobstructed photo** — no scrim, no darkening, no gradient.
+- Approved by Matt 2026-04-28; do not revisit without his direction.
+
+See `video_production_skills/VIDEO_PRODUCTION_SKILL.md` §1 "Listing video overlay system" for the master spec.
 
 ---
 

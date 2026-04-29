@@ -120,12 +120,22 @@ If a deliverable could plausibly be the kind of thing Matt would want to review,
 - IPA phoneme tag for tricky place names on `eleven_v3` model: Deschutes (`dəˈʃuːts` — "duh-shoots"), Tumalo (`TOO-muh-low`), Tetherow, Awbrey, Terrebonne.
 - Sentences short. Two clauses max. No commas where Matt wouldn't pause.
 
-## Brand (zero in frame for viral cuts)
-- **No logo, no "Ryan Realty" text, no phone, no agent name, no URL anywhere in the video frame.**
+## Brand (zero in frame for viral cuts — EXCEPT listing videos, see overlay system below)
+- **News, market reports, area guides, memes, evergreen:** no logo, no "Ryan Realty" text, no phone, no agent name, no URL anywhere in the video frame.
+- **Listing videos:** gold logo IS in frame, in the 200 px footer bar only — see "Listing video overlay system" below. No phone, no agent name, no URL anywhere else in frame.
 - Brand colors: Navy `#102742`, Gold `#D4AF37` (news clips) / `#C8A864` (listing reels), Cream `#F2EBDD`, Charcoal `#1A1A1A`. No off-brand hex.
 - Fonts: Amboqia (headlines), AzoSans (body, captions). No Helvetica, no system fallback.
-- **End card uses `listing_video_v4/public/brand/stacked_logo_white.png`** — never text-only Ryan Realty.
+- **End card uses `listing_video_v4/public/brand/stacked_logo_white.png`** — never text-only Ryan Realty. (Listing videos use the gold/champagne logo variant in the footer bar, not the white stacked logo.)
 - News-clip caption pill spec: bottom zone y 1480–1720, AzoSans 56 px, 70% navy pill (`rgba(16,39,66,0.70)`), 24 px corner radius, 2 px gold top border. Must NOT overlay graphics.
+
+## Listing video overlay system — HARD RULE (approved 2026-04-28)
+**FINAL spec for every listing video. Old single-panel approach (one dark panel at bottom ~43% of frame, 0.25–0.30 opacity scrim, 456 px logo) is DEAD. TWO layers, both required, both byte-identical across every video in a batch.**
+
+- **Layer 1 — Text-zone scrim:** `rgba(0,0,0,0.40)` covering ONLY the headline/address/price block. Hard rectangle. **No feathering. No drop shadows. No `text-shadow`. No `filter: drop-shadow(...)`.** Photo shows through at 60%.
+- **Layer 2 — Logo footer bar:** `rgba(0,0,0,0.70)` (NOT solid black — faint photo texture shows through), 200 px tall, flush bottom (`y=1720→1920`). Gold/champagne logo, **580 px wide**, vertically centered. Gold only — no white, no navy. No drop shadow on the logo.
+- **Strip between the two layers shows clean unobstructed photo** — no scrim, no gradient.
+- **Identical across every video in a batch:** same opacity values, same heights, same logo size, same Y positions.
+- Master spec: `video_production_skills/VIDEO_PRODUCTION_SKILL.md` §1 "Listing video overlay system." Format-specific: `video_production_skills/listing_reveal/SKILL.md` "Overlay system."
 
 ## Banned words (any caption, VO, on-screen text, blog, email, listing copy)
 - stunning, nestled, boasts, charming, pristine, gorgeous, breathtaking, must-see, dream home

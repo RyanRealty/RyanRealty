@@ -199,9 +199,34 @@ If anything in the routine-triplet appears to contradict this master skill or `C
 - **Safe zone: 900×1400 px centered inside 1080×1920** (90 px margin every edge — accounts for IG/TikTok UI chrome).
 - **Display time: minimum 2 seconds per text block.**
 - **Font sizes: minimum 48 px body, headline 64-80 px.**
-- **Contrast: white text with shadow OR dark pill/scrim under the text.** Never white text on a white wall. Never gold text on a gold sky.
+- **Contrast: white text with shadow OR dark pill/scrim under the text.** Never white text on a white wall. Never gold text on a gold sky. (Listing videos override the "with shadow" allowance — see next subsection.)
 - **Word count: max 5-7 words per block.**
 - **Numbers carry units.** "$3,025,000" not "3,025,000". "4 bedrooms" not "4 BR".
+
+### Listing video overlay system — HARD RULE (approved 2026-04-28)
+
+**This is the FINAL approved overlay spec for listing videos. The old single-panel approach (one dark panel at bottom ~43% of frame, 0.25–0.30 opacity scrim, 456 px logo) is DEAD. It is replaced by a TWO-LAYER system. Both layers MUST be present on every listing-video beat that carries headline/address/price text, and BOTH layers MUST be byte-identical across every video in a batch (same opacity, same heights, same logo size, same Y positions). Any deviation = no ship.**
+
+**Layer 1 — Text-zone scrim**
+- Background: `rgba(0,0,0,0.40)` — covers ONLY the text area (headline, address, price block).
+- Hard rectangle. **No feathering. No gradient edges. No drop shadows. No `text-shadow` CSS. No `filter: drop-shadow(...)`.**
+- The photo behind the scrim is visible at 60% — the scrim is a contrast tool, not a blackout.
+- Sized to wrap the text content with a tight padding pad — does NOT extend to the full frame width unnecessarily, does NOT bleed into the logo footer bar.
+
+**Layer 2 — Logo footer bar**
+- Background: `rgba(0,0,0,0.70)` — **NOT solid black.** Faint photo texture must show through.
+- Height: **200 px**, flush to the very bottom of the frame: `y = 1720 → 1920` (portrait 1080×1920).
+- Logo: **gold (champagne) variant**, **580 px wide**, vertically centered inside the 200 px bar.
+- Logo color: gold/champagne ONLY. **No white logo. No navy logo.** No swap.
+- No drop shadow on the logo. No `filter: drop-shadow(...)` on the logo `<img>`.
+
+**Critical absolutes**
+- **No drop shadows on text or logo, anywhere.** Not on headlines, not on addresses, not on price reveals, not on the logo. Remove every `text-shadow` and `filter: drop-shadow(...)` from listing-video text components.
+- **Gold logo only** — `stacked_logo_white.png` is for non-listing formats (news, market reports, etc.); listing videos use the gold variant in the footer bar.
+- **The two layers must be IDENTICAL across every video in a set.** Same `rgba()` values. Same heights. Same logo width. Same Y positions. Different listings, identical chrome.
+- **Gap between layers shows clean photo.** The text-zone scrim ends above the 200 px footer bar. The strip between the bottom of the text scrim and the top of the logo bar shows the underlying photo with NO scrim, NO darkening, NO gradient — clean unobstructed image.
+
+**Why two layers, not one:** the old single panel forced a dark wash over ~43% of the frame to carry both the text AND the logo. That ate the photo's emotional pull and made every beat feel templated. The two-layer system carries the text via a tight scrim only where the text actually sits, then anchors the brand in a thin bottom bar — leaving the middle of the frame (the photo) unobstructed. Approved by Matt 2026-04-28; do not revisit without his direction.
 
 ### Retention
 - **70%+ retention through first 30 seconds is the target.** TikTok algorithmic floor; Instagram correlate.
