@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.93.0 (2026-04-29)
+
+### Features
+- feat(video): TilesStill composition for 3D Tiles coverage probes
+
+---
+
+
 ## v1.92.5 (2026-04-29)
 
 ### Maintenance
