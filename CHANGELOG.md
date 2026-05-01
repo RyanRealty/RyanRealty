@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.99.0 (2026-05-01)
+
+### Features
+- feat(youtube-market-report): VO script generator + anti-slop validator
+
+---
+
+
 ## v1.98.0 (2026-05-01)
 
 ### Features
