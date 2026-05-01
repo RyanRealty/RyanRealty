@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.97.0 (2026-05-01)
+
+### Features
+- feat(youtube-market-report): Supabase row fetchers with UF1/UF2/UF3 + tz handling
+
+---
+
+
 ## v1.96.0 (2026-05-01)
 
 ### Features
