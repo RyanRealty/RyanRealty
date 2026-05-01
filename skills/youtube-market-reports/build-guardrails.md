@@ -2,7 +2,7 @@
 
 ## 0. BEFORE ANY WORK
 
-- [ ] Read ALL 8 skill files in `skills/youtube-market-reports/` cover to cover. Not skimming — reading.
+- [ ] Read ALL 9 skill files in `skills/youtube-market-reports/` cover to cover. Not skimming — reading. The set is: `SKILL.md`, `brand-system.md`, `build-guardrails.md` (this file), `data-dictionary.md`, `data-stories.md`, `engagement-guardrails.md`, `pipeline.md`, `query-rules.md`, `storyboard-template.md`, `tool-inventory.md`.
 - [ ] Read `CLAUDE.md` at repo root for project-wide rules.
 - [ ] Read auto-memory files for market data rules, video production rules, and brand identity.
 - [ ] Confirm you understand the full pipeline: Data → Script → Voice → Alignment → Scenes → Render → Upload.
@@ -40,6 +40,28 @@ Each scene component listed in `storyboard-template.md` has a specific visual sp
 - Every component must accept a `data` prop typed to the `VideoProps` schema.
 - Every component must render correctly at 1920x1080 AND 1080x1920 (landscape + portrait).
 - Test each component by rendering a single frame with `npx remotion still` before moving on.
+
+## 3.5 ENGAGEMENT REQUIREMENTS — SHIP-BLOCKER
+
+**`engagement-guardrails.md` is the canonical source for visual engagement.** It encodes 12 research-validated techniques (8 revised + 4 new) sourced from YouTube Creator Academy, VidIQ, the leaked MrBeast production handbook, OpusClip, Retention Rabbit, Journal of Consumer Marketing, and others. Reading it before scaffolding ANY scene component is non-negotiable.
+
+Every scene component must be auditable against the techniques in that file. Specifically:
+
+- **Compound hook (T1).** Scene 0 (and the first 60 frames of any standalone Reel/Short) must layer a kinetic stat over branded background with VO landing on frame 1 — no logo intros, no "hey guys," no static brand cards before value.
+- **Animated data viz (T3).** Charts (line, bar, gauge) must reveal sequentially synced to VO — never display the complete chart on entry. Subtle SFX OK; emoji overlays / cartoon sounds / reaction GIFs forbidden on financial data.
+- **Pattern interrupt cadence (T4).** Long-form (≥3 min): major visual mode switch every 45–90s, never every 15s. Vertical Shorts/Reels: at least one new visual element every 3–4s.
+- **Presenter presence (T5).** Faceless Victoria-VO format is the default for market reports. PIP / talking-head moments are a deliberate strategic choice (opinion, CTA, transition), not a percentage to hit.
+- **Kinetic typography (T6).** Every kinetic text element gets a minimum 2s (60-frame) static display after the entrance animation completes. WCAG-AA 4.5:1 contrast ratio enforced.
+- **Cultural references (T7).** Verbal-first. Max 1 visual reference per video, 0 is fine. Never insert third-party clips.
+- **Layered composition (T8).** No frame may be a single flat element. Background + primary content + at least one persistent UI element. Solid white/black/single-color backgrounds are forbidden.
+- **Open loops (T9).** Every long-form video plants 2–3 open loops and resolves all of them. The hook contains the primary loop. Teasers without delivery are a hard ship-blocker.
+- **Audio architecture (T10).** Three-layer mix: VO at -6dB peak / -12dB avg, music bed at -24dB under VO and -14dB during transitions, sound design ≤1 SFX per 5s. No vine boom, no cartoon sounds, no airhorns.
+- **End screen / CTA (T11).** Last 20s of every YouTube long-form must be clean visual space for the YouTube end screen elements + a verbal CTA. No important data after T-20.
+- **Captions (T12).** Vertical content: styled captions REQUIRED (bold sans-serif 32–40px, semi-transparent pill, brand-accent word highlight). Landscape: optional but recommended.
+
+The "WHAT NOT TO DO" section of `engagement-guardrails.md` lists 10 anti-patterns (scream-face thumbnails, zoom-punch overuse, subscribe popups, fake engagement bait, etc.). Hitting any of them is a ship-blocker regardless of viral scorecard.
+
+**Verification gate:** before declaring a scene component done, walk it against the engagement-guardrails techniques relevant to that scene type. Note in the commit message which techniques the component implements.
 
 ## 4. VOICE & ALIGNMENT — PRECISION REQUIRED
 
