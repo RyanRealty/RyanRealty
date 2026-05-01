@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.101.0 (2026-05-01)
+
+### Features
+- feat(market-report): brand-token refactor + TitleCard + OutroCard scenes
+
+---
+
+
 ## v1.100.0 (2026-05-01)
 
 ### Features
