@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.94.0 (2026-05-01)
+
+### Features
+- feat(skills): add youtube-market-reports skill suite
+- feat(beaumont): move logo band to top of frame
+
+---
+
+
 ## v1.93.0 (2026-04-29)
 
 ### Features
