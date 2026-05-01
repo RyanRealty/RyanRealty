@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.102.0 (2026-05-01)
+
+### Features
+- feat(video): shared motion library with 20 reusable Remotion components
+
+---
+
+
 ## v1.101.1 (2026-05-01)
 
 ### Other
