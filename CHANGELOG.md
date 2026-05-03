@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.107.0 (2026-05-03)
+
+### Features
+- feat(video-evergreen): qc + send-delivery-email scripts + script polish
+
+---
+
+
 ## v1.106.0 (2026-05-03)
 
 ### Features
