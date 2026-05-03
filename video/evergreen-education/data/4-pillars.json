@@ -22,37 +22,51 @@
     "taxBracket": 0.24,
     "taxSavingsYearly": 3491
   },
-  "beatDurations": [4, 10, 11, 11, 13, 8, 3],
+  "beatDurations": [3, 9, 9, 10, 13, 11, 5],
+  "scriptNote": "Trimmed 2026-05-03 to fit Grok TTS pacing (~2.5 words/sec) inside the 60s evergreen-format cap. Original Verbose script (309 words, 125s at Grok pace) stored in scriptOriginal below for ElevenLabs re-renders where pacing is tighter (~2.7 words/sec compressed VO yields ~57s).",
   "script": {
     "segments": [
       {
         "id": "intro",
-        "text": "Real estate doesn't build wealth one way. It builds wealth four ways at once."
+        "text": "Real estate builds wealth four ways at once."
       },
       {
         "id": "cash-flow",
-        "text": "Pillar one. Cash flow. On a five hundred thousand dollar rental, with twenty-five percent down, the rent covers the mortgage, taxes, insurance, and reserves. What's left over is yours. Maybe two hundred dollars a month. Modest. But it's income you didn't trade your hours for."
+        "text": "Pillar one. Cash flow. On a five hundred thousand dollar rental at twenty-five percent down, you might net two hundred dollars a month. Modest. But it's income you didn't trade your hours for."
       },
       {
         "id": "appreciation",
-        "text": "Pillar two. Appreciation. At around three percent a year, the long-run national average, that same five hundred thousand dollar property gains fifteen thousand dollars in year one. The next year, the gain stacks on the new value, not the old one. That's compounding doing the work."
+        "text": "Pillar two. Appreciation. At three percent a year, that same property gains fifteen thousand in year one. Then it stacks on the new value. That's compounding doing the work."
       },
       {
         "id": "loan-paydown",
-        "text": "Pillar three. Loan paydown. Your tenant's rent pays down your mortgage every month. On a three hundred seventy-five thousand dollar loan at seven percent, about three thousand eight hundred dollars of principal disappears in year one. You didn't fund it. They did. After thirty years, the loan is gone. The property is yours, free and clear."
+        "text": "Pillar three. Loan paydown. Your tenant's rent kills the mortgage. Year one: three thousand eight hundred dollars in principal disappears. You didn't fund it. They did. After thirty years, the property is yours."
       },
       {
         "id": "tax-benefits",
-        "text": "Pillar four. Tax benefits. The I R S lets you depreciate the building's value over twenty-seven and a half years, even while the property gains market value. On a four hundred thousand dollar building basis, that's about fourteen thousand five hundred a year you write off. At a twenty-four percent tax bracket, that's about thirty-five hundred a year you keep instead of send to the I R S. Mortgage interest is deductible. And a ten thirty-one exchange defers capital gains."
+        "text": "Pillar four. Tax benefits. Depreciation lets you write off fourteen thousand five hundred dollars a year. At a twenty-four percent bracket, that's about thirty-five hundred dollars you keep, not send to the I R S. Plus mortgage interest. Plus a ten thirty-one exchange."
       },
       {
         "id": "stacked-summary",
-        "text": "Look at the four pillars together. At three years, around seventy-six thousand in equity. At five, one hundred thirty-one thousand. At ten, two hundred eighty-four thousand. At twenty, six hundred eighty-one thousand. That's not luck. That's four things compounding at the same time."
+        "text": "Together, at three years: seventy-six thousand. At five: one hundred thirty-one thousand. At ten: two hundred eighty-four thousand. At twenty: six hundred eighty-one thousand. Four things compounding at the same time."
       },
       {
         "id": "outro",
-        "text": "Each pillar alone is decent. Stacked together, they're the wealth most people can't see from the outside."
+        "text": "Stacked, that's the wealth most people miss."
       }
+    ]
+  },
+  "scriptOriginal": {
+    "preservedAt": "2026-05-03",
+    "reason": "Verbose draft used for first-pass design; restore for ElevenLabs re-renders where Victoria's tighter pacing fits the longer text in 60s.",
+    "segments": [
+      { "id": "intro", "text": "Real estate doesn't build wealth one way. It builds wealth four ways at once." },
+      { "id": "cash-flow", "text": "Pillar one. Cash flow. On a five hundred thousand dollar rental, with twenty-five percent down, the rent covers the mortgage, taxes, insurance, and reserves. What's left over is yours. Maybe two hundred dollars a month. Modest. But it's income you didn't trade your hours for." },
+      { "id": "appreciation", "text": "Pillar two. Appreciation. At around three percent a year, the long-run national average, that same five hundred thousand dollar property gains fifteen thousand dollars in year one. The next year, the gain stacks on the new value, not the old one. That's compounding doing the work." },
+      { "id": "loan-paydown", "text": "Pillar three. Loan paydown. Your tenant's rent pays down your mortgage every month. On a three hundred seventy-five thousand dollar loan at seven percent, about three thousand eight hundred dollars of principal disappears in year one. You didn't fund it. They did. After thirty years, the loan is gone. The property is yours, free and clear." },
+      { "id": "tax-benefits", "text": "Pillar four. Tax benefits. The I R S lets you depreciate the building's value over twenty-seven and a half years, even while the property gains market value. On a four hundred thousand dollar building basis, that's about fourteen thousand five hundred a year you write off. At a twenty-four percent tax bracket, that's about thirty-five hundred a year you keep instead of send to the I R S. Mortgage interest is deductible. And a ten thirty-one exchange defers capital gains." },
+      { "id": "stacked-summary", "text": "Look at the four pillars together. At three years, around seventy-six thousand in equity. At five, one hundred thirty-one thousand. At ten, two hundred eighty-four thousand. At twenty, six hundred eighty-one thousand. That's not luck. That's four things compounding at the same time." },
+      { "id": "outro", "text": "Each pillar alone is decent. Stacked together, they're the wealth most people can't see from the outside." }
     ]
   },
   "illustrationPrompts": {

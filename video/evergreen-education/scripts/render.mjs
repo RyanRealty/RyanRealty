@@ -40,6 +40,9 @@ async function main() {
   const captionWords = (await exists(resolve(OUT_DIR, 'captionWords.json')))
     ? JSON.parse(await readFile(resolve(OUT_DIR, 'captionWords.json'), 'utf8'))
     : []
+  const alignment = (await exists(resolve(OUT_DIR, 'alignment.json')))
+    ? JSON.parse(await readFile(resolve(OUT_DIR, 'alignment.json'), 'utf8'))
+    : null
 
   // Grok Video overlays — only present if scout passed AND Matt picked
   const cashFlowVideoPath = (await exists(resolve(PUB_DIR, 'beat-1-cash-flow.mp4')))
@@ -53,8 +56,31 @@ async function main() {
   const voPath = (await exists(resolve(PUB_DIR, 'voiceover.mp3'))) ? '4-pillars/voiceover.mp3' : ''
   const musicPath = (await exists(resolve(PUB_DIR, 'music.mp3'))) ? '4-pillars/music.mp3' : undefined
 
+  // Beat durations: prefer alignment-derived (each beat lasts as long as its VO
+  // segment + a small pad). Fall back to config.beatDurations if no alignment.
+  let beatDurations = config.beatDurations
+  if (alignment && alignment.segments && alignment.segments.length === 7) {
+    const PAD = 0.4
+    const TARGET_TOTAL_MIN = 55
+    const TARGET_TOTAL_MAX = 60.0
+    beatDurations = alignment.segments.map((s) => Math.max(2.0, s.duration + PAD))
+    let total = beatDurations.reduce((a, b) => a + b, 0)
+    if (total > TARGET_TOTAL_MAX) {
+      // shrink uniformly
+      const k = TARGET_TOTAL_MAX / total
+      beatDurations = beatDurations.map((d) => d * k)
+      total = beatDurations.reduce((a, b) => a + b, 0)
+    } else if (total < TARGET_TOTAL_MIN) {
+      // pad outro to reach min
+      beatDurations[beatDurations.length - 1] += TARGET_TOTAL_MIN - total
+      total = beatDurations.reduce((a, b) => a + b, 0)
+    }
+    console.log(`Auto-fit beatDurations to alignment: total ${total.toFixed(2)}s`)
+    console.log(`  ${beatDurations.map((d) => d.toFixed(2)).join(' / ')}`)
+  }
+
   const props = {
-    beatDurations: config.beatDurations,
+    beatDurations,
     voPath,
     musicPath,
     captionWords,

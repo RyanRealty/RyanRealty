@@ -3,31 +3,32 @@
   "format": "evergreen-explainer",
   "formatMinimumScore": 80,
   "scoredAt": "2026-05-03",
-  "scoredBy": "agent (cloud build, no Matt review yet)",
+  "scoredBy": "agent (cloud build with Grok TTS fallback)",
+  "voProvider": "grok-tts (eve voice) — fallback used because cloud agent has no ELEVENLABS_API_KEY; ElevenLabs Victoria preferred when key present",
   "categories": [
     {
       "name": "Hook strength",
       "weight": 15,
-      "score": 11,
-      "rationale": "Visual anchor (4 columns supporting house) + title card by frame 30 + first content word ('Real estate doesn't build wealth one way') by 0.5s. No greeting, no logo. Strong opener for an explainer. Loses 4 points: VO not present in this build (cloud agent has no ELEVENLABS_API_KEY), so the spoken hook is missing for the cloud render — Matt's local re-render will add it back."
+      "score": 13,
+      "rationale": "Visual anchor (4 columns supporting house) + title card by frame 30 + first spoken word ('Real') by 0.4s. Hook line 'Real estate builds wealth four ways at once' lands by 1.5s. No greeting, no logo. Loses 2 points: Grok 'eve' voice is competent but not tuned to Ryan Realty brand the way Victoria is — re-run synth-vo locally with ELEVENLABS_API_KEY for the +2."
     },
     {
       "name": "Retention curve / pacing",
       "weight": 12,
-      "score": 10,
-      "rationale": "60s with 7 distinct beats. Each pillar 10-13s — enough to absorb one number. 25% mark = mid Beat 1 cash flow data viz. 50% mark = transition into Beat 4 tax stack. Pattern interrupt at 49s (chart reveal). Reveal in final 15% (chart hold + tagline). No dead time."
+      "score": 11,
+      "rationale": "60s with 7 distinct beats, beat durations auto-fit to actual VO segment durations. 25% mark = mid Beat 2 appreciation. 50% mark = mid Beat 3 loan paydown. Pattern interrupt at ~38s (chart reveal). Reveal in final 15% (chart + tagline). No dead time."
     },
     {
       "name": "Caption / on-screen text",
       "weight": 10,
-      "score": 7,
-      "rationale": "Headlines + numeric pills + bar viz on every beat. Beat 5 chart labels visible. Loses 3 points: kinetic burned-in captions (CaptionBand) require ElevenLabs forced-alignment data — disabled in cloud build. Local re-render will add full word-by-word captions per CLAUDE.md §0.5."
+      "score": 9,
+      "rationale": "Word-by-word kinetic captions burned in: navy pill, gold border, active word color shifts navy → gold + smooth fade. Reserved safe zone (y 1480-1720) per CLAUDE.md §0.5. Headlines + numeric pills + bar viz on every beat. Verified at frame t=16.5s (active word THOUSAND highlighted)."
     },
     {
       "name": "Audio (VO + music + mix)",
       "weight": 10,
-      "score": 6,
-      "rationale": "Music bed (Long Stroll, CC-BY) sub-mixed at -16dB — confirmed playing. VO disabled this build (no ELEVENLABS_API_KEY in cloud agent env). Local re-render with synth-vo.mjs adds Victoria voice, locked settings, previous_text chained, and forced-alignment captionWords."
+      "score": 8,
+      "rationale": "VO present (Grok TTS 'eve', tempo-scaled 1.487x to fit 60s budget). Music bed (Long Stroll, CC-BY) sub-mixed at -16dB. Loses 2 points: Grok at 1.487x atempo is on the edge of natural; local Victoria re-render at 1.0x or 1.1x speed will sound noticeably better."
     },
     {
       "name": "Format compliance (length, aspect, codec)",
@@ -66,14 +67,13 @@
       "rationale": "Banned-words grep clean. No AI humor. No engagement bait. Numbers traceable (citations.json). Stylized vector illustrations clearly non-photoreal — viewer cannot mistake for real footage. Grok Video scout failed for both candidate beats; deterministic Remotion fallback used. Loses 1 point: AI-generated illustration disclosure not yet shown in caption (will add to post-scripts)."
     }
   ],
-  "totalRaw": 83,
-  "totalWeighted": 83,
+  "totalRaw": 89,
+  "totalWeighted": 89,
   "minimumForFormat": 80,
   "passes": true,
   "blockers": [],
   "openItems": [
-    "VO + captions to be added by local re-run with ELEVENLABS_API_KEY",
-    "Final score after VO re-render expected ~92 (gain 4 points caption + 3 points audio + 1 point hook = 91-92)",
+    "Local re-run with ELEVENLABS_API_KEY would swap Grok 'eve' for Victoria + drop the 1.487x atempo to ~1.0x. Expected gain: +4 points (hook +2, audio +2). Final ~93/100.",
     "Matt to review video before promotion to public/library/"
   ],
   "decisionsAtThisRender": {
@@ -82,6 +82,7 @@
       "beat6": "FAIL — failed manual visual scrub (background palette swapped); deterministic fallback used"
     },
     "music": "Long Stroll by Kevin MacLeod (Incompetech, CC-BY 4.0)",
-    "vo": "DISABLED — no key in cloud env; matt to local-run synth-vo.mjs"
+    "vo": "Grok TTS (eve voice) — ElevenLabs fallback chain in synth-vo.mjs picked Grok because no ELEVENLABS_API_KEY; tempo-scaled 1.487x to fit 60s budget; word timestamps via Grok STT pass on the rendered audio",
+    "scriptTrim": "Original verbose script (309 words / ~125s at Grok pace) preserved in data/4-pillars.json under scriptOriginal; trimmed to 192 words for the in-budget render"
   }
 }
