@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.108.0 (2026-05-03)
+
+### Features
+- feat(video-evergreen): commit text deliverables (citations, scorecard, post-scripts)
+
+---
+
+
 ## v1.107.2 (2026-05-03)
 
 ### Bug Fixes
