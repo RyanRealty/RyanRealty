@@ -10,42 +10,54 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Claude Code (this session)** — Schoolhouse v5 listing video build, Gate 1 complete, waiting on Matt's photo picks. |
-| **Stopped at (UTC)** | 2026-04-24 — Gate 1 photo audit + contact sheet shipped; Matt has the email and the Vercel URL on his phone for picking. |
-| **`main` @ commit** | `033c9e5` (verify with `git rev-parse --short HEAD`) |
-| **Task focus** | Schoolhouse v5 cinematic short film (NOT a listing tour). Brokerage-credibility piece for the off-market $3,025,000 Vandevert Ranch sale. Read `listing_video_v4/HANDOFF_TO_CLAUDE_CODE.md` Section 7 for the gate plan + `~/.auto-memory/memory_schoolhouse_v5_video_handoff.md` for the in-flight state. |
+| **Surface** | **Cursor Cloud Agent** — BL-015 search/city/community path performance branch. |
+| **Stopped at (UTC)** | 2026-05-03 — BL-015 implementation committed on `cursor/bl-015-search-performance-301f`; PR branch ready for review. |
+| **Branch @ commit** | `cursor/bl-015-search-performance-301f` @ `bd959b3` (handoff update follows this implementation commit). |
+| **Task focus** | BL-015 Phase 7 optimize search city and community paths. |
 
-### Done this session (Claude Code)
+### Done this session (Cursor Cloud)
 
-- Pulled full 89-photo Schoolhouse listing library from Drive `images-for-web-or-mls` via viewer@ service account + DWD impersonation of matt@ (the SA in `.env.local` is `ga4-data-api@` which is GA4-only; the proper viewer@ key lives at `~/.config/gcloud/legacy_credentials/viewer@ryanrealty.iam.gserviceaccount.com/adc.json`)
-- Pulled 2 Snowdrift Visuals area-guide stills + indexed 16 historic Vandevert/Locati portraits already on disk → 107 total photos
-- Generated 480px JPEG thumbnails for all 107 + emitted manifest at `listing_video_v4/public/v5_library/manifest.json`
-- Probed all 5 prior Schoolhouse MP4s (v1, v2, Pending Reel, VirtualTour Short/Full) — all 1080×1920
-- Built mobile-responsive HTML contact sheet with checkbox + copy-picks UI at `public/photo-review-v5.html` and `listing_video_v4/photo_contact_sheet_v5.html`
-- Pushed commit `033c9e5` to origin/main, Vercel auto-deploys to https://ryanrealty.vercel.app/photo-review-v5.html
-- Sent Resend email `b94cc0dd-a080-453c-9f90-cc77bda1d98e` to matt@ryan-realty.com with the link
+- Installed missing Cloud runtime pieces locally in the agent container: Node/npm via apt, upgraded Node to 20.20.2, ran root `npm ci`, and installed nested `video/market-report` dependencies so Vitest video scene tests can import Remotion.
+- Marked `BL-015` in progress, then complete via `npx tsx scripts/orchestrate.ts`.
+- Parallelized basic search listing rows + count in `getListingsWithAdvanced()`.
+- Bounded `getGeocodedListings()` to 10 external geocode attempts per call and 2 concurrent fetches.
+- Parallelized a city communities pending-count lookup with resort key lookup and kept tile/map projection constants off `details` JSONB.
+- Excluded standalone `listing_video_v4` from the root Next TypeScript project, matching the existing `video` workspace exclusion, so app builds do not typecheck independent Remotion sources.
+- Added `lib/actions-performance.test.ts` covering list/count parallel startup, geocode concurrency, geocode batch cap, and projection constants.
 
-### Next agent should (Claude Code or Cursor — picks up after Matt's photo selections)
+### Verification
 
-1. `git pull --rebase origin main` — confirm at or past `033c9e5`.
-2. Read `listing_video_v4/HANDOFF_TO_CLAUDE_CODE.md` Section 7 (the gate plan) and `~/.auto-memory/memory_schoolhouse_v5_video_handoff.md`.
-3. Wait for Matt's photo picks (he'll paste the "Copy picks" output from the contact sheet).
-4. **Gate 2:** Write `listing_video_v4/STORYBOARD_v5.md` — one row per VO sentence with photo file, aspect ratio, motion choice, justification. Email Matt for approval.
-5. **Gate 3:** Voice padding test (15s sample with real inter-sentence silence via ffmpeg `apad`/concat OR ElevenLabs SSML `<break>`) + boundary draw test (6s standalone clip of Vandevert Ranch parcel boundary draw over satellite tile, gold #C8A864 SVG dasharray stroke). Email both for approval.
-6. **Gate 4:** Full render with Remotion. NO AI photo-to-video (Round 4 ban). Use existing `cameraMoves.ts` push/pan primitives. Run `design:design-critique` subagent on rendered MP4 before email.
-7. **Gate 5:** Resend with thumbnail grid + change log. Pattern from `listing_video_v4/send_v3.py`.
+- `npx vitest run lib/actions-performance.test.ts` passed.
+- `npm run lint -- app/actions/listings.ts app/actions/cities.ts app/actions/communities.ts app/actions/geocode.ts lib/actions-performance.test.ts` passed with existing warnings only.
+- `npm run test` passed, 35 files and 405 tests.
+- `npm run build` passed.
+- `npx tsx scripts/orchestrate.ts validate BL-015` passed and `complete BL-015` marked the registry complete.
+
+### Next agent should
+
+1. Pull or check out `cursor/bl-015-search-performance-301f`.
+2. Review PR for BL-015, especially the root `tsconfig.json` exclusion of `listing_video_v4`.
+3. Continue with the next registry item after merge: `BL-018` Phase 12 and 13 cleanup and full verification.
 
 ### Blockers / env / secrets
 
-- `.env.local` has `GOOGLE_SERVICE_ACCOUNT_*` pointing at `ga4-data-api@ryanrealty.iam.gserviceaccount.com` (GA4-specific). For Drive access, use viewer@ from gcloud legacy_credentials instead. Cleanup task: rotate `.env.local` to use viewer@, OR add a separate `GOOGLE_DRIVE_SA_KEY_PATH` var pointing to the gcloud file.
-- Resend `From:` is currently `onboarding@resend.dev` (Resend's default test sender). Verifying `matt@ryan-realty.com` as a Resend sender domain would unblock proper From branding on future client-facing email.
-- $3,025,000 Schoolhouse price needs SkySlope/MLS verification before Gate 4 burns it into the closing reveal frame.
+- Cloud image initially had no Node/npm on PATH. This session installed Node 20.20.2 and dependencies manually; a future env setup should bake Node 20 plus root `npm ci` and nested `video/market-report npm ci` into startup if Cloud Agents start from the same image.
+- No schema changes were made.
 
 ### Skills actually read (paths)
 
-- `listing_video_v4/HANDOFF_TO_CLAUDE_CODE.md` (full v5 build state)
-- Cowork memory: `feedback_luxury_listing_v3_critique.md` (the bar — all 4 critique rounds), `feedback_photo_to_cinema_motion.md` (camera moves), `feedback_video_qa_gate.md` (mandatory pre-ship checklist), `MEMORY.md` (full Cowork index) — all at `/Users/matthewryan/Library/Application Support/Claude/local-agent-mode-sessions/.../memory/`
-- `~/.auto-memory/memory_schoolhouse_v5_video_handoff.md` (this session's in-flight state, written + linter-updated with Gate 1 status)
+- `docs/plans/GLOBAL_SKILLS_REGISTRY.md`
+- `using-superpowers/SKILL.md`
+- `supabase/SKILL.md`
+- `supabase-postgres-best-practices/SKILL.md`
+- `nextjs/SKILL.md`
+- `test-driven-development/SKILL.md`
+- `requesting-code-review/SKILL.md`
+- `verification-before-completion/SKILL.md`
+- `video_production_skills/VIDEO_PRODUCTION_SKILL.md`
+- `video_production_skills/VIRAL_VIDEO_CONSTRAINTS.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`
 
 ---
 
