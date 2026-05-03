@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.107.2 (2026-05-03)
+
+### Bug Fixes
+- fix(video-evergreen): banned-word cleanup in post-scripts + extend QC
+
+---
+
+
 ## v1.107.1 (2026-05-03)
 
 ### Maintenance
