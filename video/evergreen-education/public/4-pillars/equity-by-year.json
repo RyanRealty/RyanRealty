@@ -1,0 +1,36 @@
+{
+  "bars": [
+    {
+      "year": 3,
+      "cashFlow": 7200,
+      "appreciation": 46364,
+      "loanPaydown": 12274,
+      "taxSavings": 10472,
+      "total": 76310
+    },
+    {
+      "year": 5,
+      "cashFlow": 12000,
+      "appreciation": 79637,
+      "loanPaydown": 22007,
+      "taxSavings": 17454,
+      "total": 131098
+    },
+    {
+      "year": 10,
+      "cashFlow": 24000,
+      "appreciation": 171958,
+      "loanPaydown": 53204,
+      "taxSavings": 34908,
+      "total": 284070
+    },
+    {
+      "year": 20,
+      "cashFlow": 48000,
+      "appreciation": 403056,
+      "loanPaydown": 160125,
+      "taxSavings": 69816,
+      "total": 680997
+    }
+  ]
+}

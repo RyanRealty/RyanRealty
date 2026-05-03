@@ -24,9 +24,11 @@ export const loadFonts = (): Promise<void> => {
   if (loadingPromise) return loadingPromise
   const handle = delayRender('font-load')
   loadingPromise = (async () => {
+    // staticFile() expects paths relative to public/, no leading "public/" prefix.
+    // Mirror video/market-report — fonts live at public/ root, not in a subdirectory.
     await Promise.all([
-      tryLoad('Amboqia', 'fonts/Amboqia_Boriango.otf', 'opentype'),
-      tryLoad('AzoSans', 'fonts/AzoSans-Medium.ttf', 'truetype'),
+      tryLoad('Amboqia', 'Amboqia_Boriango.otf', 'opentype'),
+      tryLoad('AzoSans', 'AzoSans-Medium.ttf', 'truetype'),
     ])
     loaded = true
   })().finally(() => continueRender(handle))

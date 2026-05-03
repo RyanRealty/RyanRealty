@@ -4,13 +4,17 @@ import { CREAM, FONT_HEAD, GOLD, NAVY_DEEP } from '../brand'
 type Props = {
   illustrationPath: string
   videoOverlayPath?: string | null
-  /** italic tagline shown below illustration */
   tagline: string
   durationInFrames: number
 }
 
 /**
  * OutroBeat — closing tagline over hero bookend.
+ *
+ *   y  120 – 880   illustration
+ *   y  920 – 1240  tagline (italic Amboqia)
+ *   y 1320 – 1340  gold accent bar
+ *   y 1480 – 1720  caption safe zone (empty)
  */
 export const OutroBeat: React.FC<Props> = ({
   illustrationPath,
@@ -29,40 +33,59 @@ export const OutroBeat: React.FC<Props> = ({
 
   return (
     <AbsoluteFill style={{ backgroundColor: NAVY_DEEP }}>
-      <AbsoluteFill
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: 0.85,
-        }}
-      >
-        {videoOverlayPath ? (
-          <OffthreadVideo
-            src={staticFile(videoOverlayPath)}
-            style={{
-              width: 820,
-              height: 820,
-              objectFit: 'contain',
-            }}
-            muted
-          />
-        ) : (
-          <Img
-            src={staticFile(illustrationPath)}
-            style={{
-              width: 820,
-              height: 820,
-              objectFit: 'contain',
-            }}
-          />
-        )}
-      </AbsoluteFill>
-
+      {/* Hero illustration — cream backing panel for visual consistency */}
       <div
         style={{
           position: 'absolute',
-          bottom: 600,
+          top: 130,
+          left: 0,
+          right: 0,
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          style={{
+            width: 760,
+            height: 760,
+            background: CREAM,
+            borderRadius: 32,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 20px 80px rgba(0,0,0,0.5)',
+            border: `2px solid ${GOLD}`,
+            overflow: 'hidden',
+          }}
+        >
+          {videoOverlayPath ? (
+            <OffthreadVideo
+              src={staticFile(videoOverlayPath)}
+              style={{
+                width: 720,
+                height: 720,
+                objectFit: 'contain',
+              }}
+              muted
+            />
+          ) : (
+            <Img
+              src={staticFile(illustrationPath)}
+              style={{
+                width: 720,
+                height: 720,
+                objectFit: 'contain',
+              }}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Tagline */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 950,
           left: 80,
           right: 80,
           textAlign: 'center',
@@ -70,7 +93,7 @@ export const OutroBeat: React.FC<Props> = ({
           fontFamily: FONT_HEAD,
           fontStyle: 'italic',
           fontSize: 56,
-          lineHeight: 1.2,
+          lineHeight: 1.25,
           opacity: taglineOpacity,
           textShadow: '0 6px 20px rgba(0,0,0,0.6)',
         }}
@@ -78,14 +101,14 @@ export const OutroBeat: React.FC<Props> = ({
         {tagline}
       </div>
 
-      {/* Subtle gold accent bar at bottom for closure */}
+      {/* Gold accent bar */}
       <div
         style={{
           position: 'absolute',
-          bottom: 200,
+          top: 1310,
           left: '50%',
           transform: 'translateX(-50%)',
-          width: 120,
+          width: 160,
           height: 3,
           background: GOLD,
           opacity: 0.7,

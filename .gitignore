@@ -79,6 +79,10 @@ video/market-report/out/
 video/market-report/public/Amboqia_Boriango.otf
 video/market-report/public/AzoSans-Medium.ttf
 
+# Same — evergreen-education
+video/evergreen-education/public/Amboqia_Boriango.otf
+video/evergreen-education/public/AzoSans-Medium.ttf
+
 # Legacy style backup — old design system (hex, .btn-cta, .card-base); do not use or import
 _style_backup
 

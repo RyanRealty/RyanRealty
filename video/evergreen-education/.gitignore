@@ -1,8 +1,9 @@
 node_modules/
 out/
 public/4-pillars/voiceover.mp3
+public/4-pillars/voiceover.mp3.list
 public/4-pillars/music.mp3
 public/4-pillars/illustrations/
-public/4-pillars/equity-by-year.json
-public/library/
+public/4-pillars/beat-1-cash-flow.mp4
+public/4-pillars/beat-6-outro.mp4
 .DS_Store

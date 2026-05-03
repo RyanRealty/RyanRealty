@@ -9,17 +9,11 @@ export type PillarKind = 'cashFlow' | 'appreciation' | 'loanPaydown' | 'taxBenef
 
 type Props = {
   kind: PillarKind
-  /** "1" / "2" / "3" / "4" — pillar number */
   pillarNumber: 1 | 2 | 3 | 4
-  /** headline label, e.g. "CASH FLOW" */
   headline: string
-  /** illustration under public/ */
   illustrationPath: string
-  /** OPTIONAL Grok Video clip path under public/ — if present, overlays cinemagraph-style on top of the still */
   videoOverlayPath?: string | null
-  /** present in props for parity with other beats — not used directly inside this comp */
   durationInFrames?: number
-  /** kind-specific params */
   params: PillarParams
 }
 
@@ -35,11 +29,14 @@ export type PillarParams =
     }
 
 /**
- * PillarBeat — generic per-pillar layout: hero illustration top half, data viz bottom half,
- * headline ribbon in between. The data-viz component is selected by `kind`.
+ * PillarBeat — three vertically-stacked zones:
  *
- * If videoOverlayPath is provided (Grok Video opt-in scout for beats 1+6), it renders
- * via OffthreadVideo IN the same coordinates as the still — cinemagraph technique.
+ *   y    0 – 280   header band (PILLAR N + headline)
+ *   y  300 – 880   illustration zone (580px tall, square)
+ *   y  920 – 1380  data-viz zone (460px tall)
+ *   y 1480 – 1720  caption safe zone (CaptionBand renders here, never us)
+ *
+ * No nested AbsoluteFills. Explicit absolute positioning everywhere.
  */
 export const PillarBeat: React.FC<Props> = ({
   kind,
@@ -52,63 +49,23 @@ export const PillarBeat: React.FC<Props> = ({
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
 
-  // Headline ribbon springs in over 16 frames
-  const ribbonEnter = spring({
-    frame,
-    fps,
-    config: { damping: 14, stiffness: 110 },
-  })
-  const ribbonOpacity = interpolate(frame, [0, 12], [0, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  })
+  const headerEnter = spring({ frame, fps, config: { damping: 14, stiffness: 110 } })
+  const headerOpacity = interpolate(frame, [0, 12], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
 
-  // Data viz starts ~0.4s into the beat (12 frames)
   const VIZ_DELAY = 12
 
   return (
     <AbsoluteFill style={{ backgroundColor: NAVY_DEEP }}>
-      {/* Hero illustration — TOP zone (y 100..820) */}
-      <AbsoluteFill
+      {/* Header band — top zone */}
+      <div
         style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          paddingTop: 100,
-        }}
-      >
-        {videoOverlayPath ? (
-          <OffthreadVideo
-            src={staticFile(videoOverlayPath)}
-            style={{
-              width: 700,
-              height: 700,
-              objectFit: 'contain',
-            }}
-            muted
-          />
-        ) : (
-          <Img
-            src={staticFile(illustrationPath)}
-            style={{
-              width: 700,
-              height: 700,
-              objectFit: 'contain',
-            }}
-          />
-        )}
-      </AbsoluteFill>
-
-      {/* Headline ribbon (between illustration and data viz) */}
-      <AbsoluteFill
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          paddingTop: 850,
-          opacity: ribbonOpacity,
-          transform: `translateY(${(1 - ribbonEnter) * 20}px)`,
+          position: 'absolute',
+          top: 90,
+          left: 0,
+          right: 0,
+          textAlign: 'center',
+          opacity: headerOpacity,
+          transform: `translateY(${(1 - headerEnter) * 20}px)`,
         }}
       >
         <div
@@ -126,24 +83,75 @@ export const PillarBeat: React.FC<Props> = ({
           style={{
             color: GOLD,
             fontFamily: FONT_HEAD,
-            fontSize: 72,
+            fontSize: 80,
             letterSpacing: 4,
             textTransform: 'uppercase',
-            marginTop: 4,
+            marginTop: 8,
             textShadow: '0 6px 20px rgba(0,0,0,0.5)',
           }}
         >
           {headline}
         </div>
-      </AbsoluteFill>
+      </div>
 
-      {/* Data viz — BOTTOM zone (y 1060..1380) — well above caption safe zone (1480) */}
-      <AbsoluteFill
+      {/* Illustration zone — cream backing panel keeps the editorial vector vibe consistent */}
+      <div
         style={{
+          position: 'absolute',
+          top: 290,
+          left: 0,
+          right: 0,
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'center',
-          paddingTop: 1060,
+        }}
+      >
+        <div
+          style={{
+            width: 620,
+            height: 620,
+            background: '#faf8f4',
+            borderRadius: 28,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 16px 60px rgba(0,0,0,0.45)',
+            border: `2px solid ${GOLD}`,
+            overflow: 'hidden',
+          }}
+        >
+          {videoOverlayPath ? (
+            <OffthreadVideo
+              src={staticFile(videoOverlayPath)}
+              style={{
+                width: 580,
+                height: 580,
+                objectFit: 'contain',
+              }}
+              muted
+            />
+          ) : (
+            <Img
+              src={staticFile(illustrationPath)}
+              style={{
+                width: 580,
+                height: 580,
+                objectFit: 'contain',
+              }}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Data-viz zone */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 940,
+          left: 0,
+          right: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
         }}
       >
         {kind === 'cashFlow' && params.kind === 'cashFlow' ? (
@@ -152,14 +160,14 @@ export const PillarBeat: React.FC<Props> = ({
             prefix="+$"
             suffix="/mo"
             label="Net cash flow"
-            variant="medium"
+            variant="large"
             enterDelayFrames={VIZ_DELAY}
           />
         ) : null}
 
         {kind === 'appreciation' && params.kind === 'appreciation' ? (
           <BarFillViz
-            percent={Math.min(100, params.ratePercent * 20)} // 3% → 60% bar fill (visual scaling)
+            percent={Math.min(100, params.ratePercent * 20)}
             primaryLabel={`${params.ratePercent}% / yr`}
             subLabel={`first-year gain: $${params.firstYearGain.toLocaleString('en-US')}`}
             enterDelayFrames={VIZ_DELAY}
@@ -188,14 +196,13 @@ export const PillarBeat: React.FC<Props> = ({
               },
               {
                 headline: '1031 exchange',
-                sub: 'Defer capital gains by rolling into the next property',
+                sub: 'Defer capital gains by rolling into next property',
               },
             ]}
             enterDelayFrames={VIZ_DELAY}
           />
         ) : null}
-      </AbsoluteFill>
+      </div>
     </AbsoluteFill>
   )
 }
-
