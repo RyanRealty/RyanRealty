@@ -1,11 +1,11 @@
 {
-  "runAt": "2026-05-03T15:15:24.354Z",
+  "runAt": "2026-05-04T00:59:17.264Z",
   "file": "/workspace/video/evergreen-education/out/4-pillars/4-pillars.mp4",
   "pass": true,
   "failures": [],
   "warnings": [],
   "duration": 60.053333,
-  "sizeMb": "6.38",
+  "sizeMb": "5.76",
   "video": {
     "codec": "h264",
     "width": 1080,

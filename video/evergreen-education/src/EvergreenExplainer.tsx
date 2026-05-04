@@ -1,6 +1,6 @@
 import { AbsoluteFill, Audio, Sequence, interpolate, staticFile, useVideoConfig } from 'remotion'
 import { FPS, NAVY_DEEP } from './brand'
-import { CaptionBand, CaptionWord } from './components/CaptionBand'
+import { CaptionBand, CaptionSentence, CaptionWord } from './components/CaptionBand'
 import { EquityBar } from './components/StackedEquityChart'
 import { IntroBeat } from './beats/IntroBeat'
 import { OutroBeat } from './beats/OutroBeat'
@@ -17,6 +17,8 @@ export type EvergreenInput = {
   musicPath?: string
   /** Word-level caption timing across the full VO */
   captionWords: CaptionWord[]
+  /** Sentence groupings for full-sentence caption display (preferred over word-window) */
+  captionSentences?: CaptionSentence[]
   /** Illustrations per beat (slugs under public/4-pillars/illustrations/) */
   illustrations: {
     intro: string
@@ -156,8 +158,8 @@ export const EvergreenExplainer: React.FC<EvergreenInput> = (input) => {
         />
       </Sequence>
 
-      {/* Caption band on top — always */}
-      <CaptionBand words={input.captionWords} />
+      {/* Caption band on top — always. Prefers full-sentence display via captionSentences. */}
+      <CaptionBand words={input.captionWords} sentences={input.captionSentences} />
     </AbsoluteFill>
   )
 }

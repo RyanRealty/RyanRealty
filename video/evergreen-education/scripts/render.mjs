@@ -40,6 +40,9 @@ async function main() {
   const captionWords = (await exists(resolve(OUT_DIR, 'captionWords.json')))
     ? JSON.parse(await readFile(resolve(OUT_DIR, 'captionWords.json'), 'utf8'))
     : []
+  const captionSentences = (await exists(resolve(OUT_DIR, 'captionSentences.json')))
+    ? JSON.parse(await readFile(resolve(OUT_DIR, 'captionSentences.json'), 'utf8'))
+    : []
   const alignment = (await exists(resolve(OUT_DIR, 'alignment.json')))
     ? JSON.parse(await readFile(resolve(OUT_DIR, 'alignment.json'), 'utf8'))
     : null
@@ -84,6 +87,7 @@ async function main() {
     voPath,
     musicPath,
     captionWords,
+    captionSentences,
     illustrations: {
       intro: '4-pillars/illustrations/beat-0-hero.png',
       cashFlow: '4-pillars/illustrations/beat-1-cash-flow.png',

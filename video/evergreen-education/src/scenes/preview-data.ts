@@ -14,8 +14,9 @@ export const defaultPreviewProps: EvergreenInput = {
   musicPath: '4-pillars/music.mp3',
   captionWords: [
     // Empty by default — populated by synth-vo.mjs from forced alignment.
-    // CaptionBand renders nothing if list is empty; safe for Studio preview.
+    // CaptionBand renders nothing if both lists empty; safe for Studio preview.
   ],
+  captionSentences: [],
   illustrations: {
     intro: '4-pillars/illustrations/beat-0-hero.png',
     cashFlow: '4-pillars/illustrations/beat-1-cash-flow.png',

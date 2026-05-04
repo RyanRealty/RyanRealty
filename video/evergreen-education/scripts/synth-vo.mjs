@@ -197,6 +197,61 @@ async function openaiSynth(text /*, previousText (unsupported) */) {
   }
 }
 
+// ---------- caption sentence segmentation ----------
+/**
+ * Split the captionWords stream into "caption phrases" sized for the safe-zone pill.
+ *
+ * Rules:
+ *  - Hard break on . ! ?
+ *  - Soft break on , ; : when current chunk is already ≥ 8 words
+ *  - Hard cap: chunk never exceeds 14 words (split at the next allowed break)
+ *  - Each chunk's endSec extends to (next chunk's startSec - 0.05) so the band
+ *    stays up through breath gaps without flicker.
+ */
+export function buildCaptionSentences(allWords) {
+  const HARD_END = /[.!?]$/
+  const SOFT_END = /[,;:]$/
+  const SOFT_MIN_WORDS = 8
+  const MAX_WORDS = 14
+
+  const phrases = []
+  let cur = []
+  const flush = () => {
+    if (!cur.length) return
+    phrases.push({
+      text: cur.map((x) => x.text).join(' '),
+      startSec: cur[0].startSec,
+      endSec: cur[cur.length - 1].endSec,
+      words: cur,
+    })
+    cur = []
+  }
+
+  for (const w of allWords) {
+    cur.push(w)
+    const t = w.text.replace(/["()\[\]]/g, '').trim()
+    const endsHard = HARD_END.test(t) && !t.endsWith('...')
+    const endsSoft = SOFT_END.test(t)
+    if (endsHard) {
+      flush()
+    } else if (cur.length >= MAX_WORDS) {
+      flush()
+    } else if (endsSoft && cur.length >= SOFT_MIN_WORDS) {
+      flush()
+    }
+  }
+  if (cur.length) flush()
+
+  // Extend endSec through the breath gap to the next phrase
+  for (let i = 0; i < phrases.length - 1; i++) {
+    const gap = phrases[i + 1].startSec - phrases[i].endSec
+    if (gap > 0 && gap < 1.5) {
+      phrases[i].endSec = phrases[i + 1].startSec - 0.05
+    }
+  }
+  return phrases
+}
+
 // ---------- ffmpeg helpers ----------
 async function mp3Duration(path) {
   const { stdout } = await exec('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', path])
@@ -365,6 +420,9 @@ async function main() {
     words: allWords,
   }
   await writeFile(resolve(OUT_DIR, 'captionWords.json'), JSON.stringify(allWords, null, 2))
+
+  await writeFile(resolve(OUT_DIR, 'captionSentences.json'), JSON.stringify(buildCaptionSentences(allWords), null, 2))
+
   await writeFile(resolve(OUT_DIR, 'alignment.json'), JSON.stringify(meta, null, 2))
 
   console.log(`✓ wrote alignment.json + captionWords.json (${allWords.length} words, ${provider})`)
