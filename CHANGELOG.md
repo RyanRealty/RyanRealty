@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.111.0 (2026-05-04)
+
+### Features
+- feat(video-evergreen): real photos mixed with illustrations
+
+---
+
+
 ## v1.110.0 (2026-05-04)
 
 ### Features
