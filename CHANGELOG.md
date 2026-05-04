@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.110.0 (2026-05-04)
+
+### Features
+- feat(video-evergreen): full-sentence captions with active-word highlight
+
+---
+
+
 ## v1.109.0 (2026-05-03)
 
 ### Features
