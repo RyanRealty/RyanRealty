@@ -26,6 +26,17 @@ out/4-pillars/photos/candidates/
 out/4-pillars/alignment.json
 out/4-pillars/captionWords.json
 out/4-pillars/captionSentences.json
+# Same set for masterclass (v2)
+out/masterclass/masterclass.mp4
+out/masterclass/voiceover.mp3
+out/masterclass/voiceover.mp3.list
+out/masterclass/masterclass-render-props.json
+out/masterclass/segments/
+out/masterclass/frames/
+out/masterclass/alignment.json
+out/masterclass/captionWords.json
+out/masterclass/captionSentences.json
+public/masterclass/voiceover.mp3
 # Everything else under out/4-pillars/ (text deliverables) is COMMITTED so Matt has them on main:
 #   citations.json, scorecard.json, grok-video-decisions.md, qc-report.json,
 #   music-license.txt, pronunciation-notes.md, post-scripts/*.md
