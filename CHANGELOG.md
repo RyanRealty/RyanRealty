@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.112.0 (2026-05-04)
+
+### Features
+- feat(video-evergreen): v2 masterclass build — SFR rentals, 8 chapters, ~108s, 4 new charts
+
+---
+
+
 ## v1.111.0 (2026-05-04)
 
 ### Features
