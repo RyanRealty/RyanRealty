@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.112.1 (2026-05-04)
+
+### Maintenance
+- chore(video-evergreen): gitignore masterclass heavy artifacts
+
+---
+
+
 ## v1.112.0 (2026-05-04)
 
 ### Features
