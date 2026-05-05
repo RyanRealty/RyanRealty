@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.115.2 (2026-05-05)
+
+### Maintenance
+- chore: redeploy to pick up clean OAuth env vars (no trailing newlines)
+
+---
+
+
 ## v1.115.1 (2026-05-05)
 
 ### Bug Fixes
