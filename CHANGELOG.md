@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.115.0 (2026-05-05)
+
+### Features
+- feat(social): direct X/Pinterest/Threads OAuth + publisher — remove Buffer dependency
+
+---
+
+
 ## v1.114.0 (2026-05-05)
 
 ### Features
