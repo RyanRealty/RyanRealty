@@ -40,13 +40,15 @@ async function main() {
     ? JSON.parse(await readFile(resolve(OUT_DIR, 'alignment.json'), 'utf8'))
     : null
 
-  // Auto-fit chapter durations to actual VO segment durations (with min 5s, max 18s per chapter)
+  // Auto-fit chapter durations to actual VO segment durations (with min 5s, max 30s per chapter)
   let chapterDurations = config.chapterDurations
   if (alignment && alignment.segments && alignment.segments.length === 8) {
-    const PAD = 0.4
-    const MIN_TOTAL = 90
-    const MAX_TOTAL = 115
-    chapterDurations = alignment.segments.map((s) => Math.max(5, Math.min(18, s.duration + PAD)))
+    // v3 native-pace: VO can run up to ~3 minutes if Grok pacing demands it.
+    // Per Matt 2026-05-04: slow speech > tight budget.
+    const PAD = 0.5
+    const MIN_TOTAL = 110
+    const MAX_TOTAL = 180
+    chapterDurations = alignment.segments.map((s) => Math.max(5, Math.min(35, s.duration + PAD)))
     let total = chapterDurations.reduce((a, b) => a + b, 0)
     if (total > MAX_TOTAL) {
       const k = MAX_TOTAL / total
@@ -65,12 +67,15 @@ async function main() {
     const p = resolve(PUB_4P, 'photos', `${slug}.jpg`)
     return (await exists(p)) ? `4-pillars/photos/${slug}.jpg` : null
   }
+  // v3: Matt confirmed chapter 4 (appreciation) gets a photo backdrop too.
+  // Chapter 6 (tax) also benefits from concrete tax-form imagery.
+  // Only chapter 7 (stacked summary) stays pure-chart — that's THE visual.
   const photos = {
     intro: await photoIfExists('intro-hero'),
     cashFlow: await photoIfExists('cash-flow'),
-    appreciation: null, // pure data viz beat — photo would distract
+    appreciation: await photoIfExists('appreciation'),
     loanPaydown: await photoIfExists('loan-paydown'),
-    taxBenefits: null, // pure data viz beat
+    taxBenefits: await photoIfExists('tax-benefits'),
     outro: await photoIfExists('outro-hero'),
   }
 
@@ -90,6 +95,10 @@ async function main() {
       interestRate: config.inputs.interestRate,
       termYears: config.inputs.termYears,
       monthlyRent: config.inputs.monthlyRent,
+      monthlyPI: config.inputs.monthlyPI,
+      monthlyTaxes: config.inputs.monthlyTaxes,
+      monthlyInsurance: config.inputs.monthlyInsurance,
+      monthlyOpexReserves: config.inputs.monthlyOpexReserves,
       monthlyCashFlow: config.inputs.monthlyCashFlow,
       appreciationRate: config.inputs.appreciationRate,
       depreciationYearly: config.inputs.depreciationYearly,

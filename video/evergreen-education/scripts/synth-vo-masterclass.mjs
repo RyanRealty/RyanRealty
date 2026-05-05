@@ -74,12 +74,18 @@ async function grokTts(text) {
   return Buffer.from(await res.arrayBuffer())
 }
 
-async function grokStt(audioBuffer) {
+async function grokStt(audioBuffer, attempt = 1) {
   const fd = new FormData()
   fd.append('language', 'en')
   fd.append('file', new Blob([audioBuffer], { type: 'audio/mpeg' }), 'audio.mp3')
   const res = await fetch(`${GROK_HOST}/v1/stt`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.XAI_API_KEY}` }, body: fd })
-  if (!res.ok) throw new Error(`grok stt ${res.status}`)
+  if (!res.ok) {
+    if ((res.status === 500 || res.status === 502 || res.status === 503) && attempt < 4) {
+      await new Promise((r) => setTimeout(r, 1500 * attempt))
+      return grokStt(audioBuffer, attempt + 1)
+    }
+    throw new Error(`grok stt ${res.status}`)
+  }
   return await res.json()
 }
 
@@ -109,19 +115,32 @@ async function openaiSynth(text) {
   return { audioBuffer, nativeWords: true, words: (stt.words || []).map((x) => ({ text: x.word, startSec: x.start, endSec: x.end })) }
 }
 
+/**
+ * v3 segmentation per Matt 2026-05-04: WHOLE SENTENCES ONLY.
+ * No comma soft-breaks, no max-word cap. Long sentences wrap inside the pill
+ * (CaptionBand auto-fits font size). Sentence boundary = . ! ? only.
+ */
 function buildCaptionSentences(allWords) {
-  const HARD_END = /[.!?]$/, SOFT_END = /[,;:]$/, SOFT_MIN = 8, MAX = 14
+  const HARD_END = /[.!?]$/
   const phrases = []
   let cur = []
-  const flush = () => { if (!cur.length) return; phrases.push({ text: cur.map((x) => x.text).join(' '), startSec: cur[0].startSec, endSec: cur[cur.length - 1].endSec, words: cur }); cur = [] }
+  const flush = () => {
+    if (!cur.length) return
+    phrases.push({
+      text: cur.map((x) => x.text).join(' '),
+      startSec: cur[0].startSec,
+      endSec: cur[cur.length - 1].endSec,
+      words: cur,
+    })
+    cur = []
+  }
   for (const w of allWords) {
     cur.push(w)
     const t = w.text.replace(/["()\[\]]/g, '').trim()
     if (HARD_END.test(t) && !t.endsWith('...')) flush()
-    else if (cur.length >= MAX) flush()
-    else if (SOFT_END.test(t) && cur.length >= SOFT_MIN) flush()
   }
   if (cur.length) flush()
+  // Extend sentence end through breath gap to next sentence (no flicker)
   for (let i = 0; i < phrases.length - 1; i++) {
     const gap = phrases[i + 1].startSec - phrases[i].endSec
     if (gap > 0 && gap < 1.5) phrases[i].endSec = phrases[i + 1].startSec - 0.05
@@ -176,10 +195,10 @@ async function main() {
   const synth = provider === 'elevenlabs' ? elSynth : provider === 'grok' ? grokSynth : openaiSynth
   const config = JSON.parse(await readFile(DATA, 'utf8'))
   const segments = config.script.segments
-  const targetSec = config.lengthTarget?.targetSec ?? 105
-  const maxSec = config.lengthTarget?.maxSec ?? 115
+  const targetSec = config.lengthTarget?.targetSec ?? 135
+  const maxSec = config.lengthTarget?.maxSec ?? 150
 
-  console.log(`Synthesizing ${segments.length} chapters via ${provider} (target ${targetSec}s, max ${maxSec}s)...\n`)
+  console.log(`Synthesizing ${segments.length} chapters via ${provider} (target ${targetSec}s, max ${maxSec}s, NO speedup)...\n`)
 
   const segPaths = []
   const allWords = []
@@ -205,15 +224,13 @@ async function main() {
   }
 
   const rawTotal = segMeta.reduce((s, m) => s + m.duration, 0)
+  // Per Matt 2026-05-04: NO speedup for the masterclass. Pacing is the deliverable.
+  // If raw total exceeds maxSec, we warn but ship — no atempo compression.
   let tempoScale = 1.0
-  if (rawTotal > targetSec) {
-    tempoScale = rawTotal / targetSec
-    if (tempoScale > 1.5) {
-      console.warn(`\n⚠ raw VO ${rawTotal.toFixed(2)}s would need ${tempoScale.toFixed(2)}x speedup. Capping at 1.5x.`)
-      tempoScale = 1.5
-    } else {
-      console.log(`\nApplying atempo=${tempoScale.toFixed(3)} to compress ${rawTotal.toFixed(2)}s → ~${targetSec}s`)
-    }
+  if (rawTotal > maxSec) {
+    console.warn(`\n⚠ raw VO ${rawTotal.toFixed(2)}s exceeds max ${maxSec}s. Shipping at native pace anyway — trim script if you want it shorter.`)
+  } else {
+    console.log(`\nNative pace (no atempo): ${rawTotal.toFixed(2)}s — within [${0}, ${maxSec}]s budget.`)
   }
 
   const finalMp3Pub = resolve(PUB_DIR, 'voiceover.mp3')

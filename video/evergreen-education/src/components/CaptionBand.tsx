@@ -73,10 +73,6 @@ const SentenceBand: React.FC<{ sentences: CaptionSentence[]; t: number; fps: num
   if (sIdx === -1) return null
   const sentence = sentences[sIdx]
 
-  // Find active word within sentence:
-  //   1. word whose [startSec, endSec) contains t  →  active
-  //   2. else, last word whose startSec <= t       →  linger highlight
-  //   3. else (we're before the first word)         →  no word highlighted yet
   let activeWordIdx = -1
   for (let i = 0; i < sentence.words.length; i++) {
     const w = sentence.words[i]
@@ -87,17 +83,20 @@ const SentenceBand: React.FC<{ sentences: CaptionSentence[]; t: number; fps: num
     if (t >= w.startSec) activeWordIdx = i
   }
 
-  // Soft fade in (first 0.25s of sentence) + fade out (last 0.15s before next sentence)
   const fadeInEnd = Math.min(sentence.startSec + 0.25, sentence.endSec)
   const fadeOutStart = Math.max(sentence.endSec - 0.15, sentence.startSec)
   const fadeIn = interpolate(t, [sentence.startSec, fadeInEnd], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
   const fadeOut = interpolate(t, [fadeOutStart, sentence.endSec], [1, 0.92], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
   const opacity = Math.min(fadeIn, fadeOut)
 
+  // v3: auto-fit font size for long sentences (no mid-sentence break ever)
+  const wc = sentence.words.length
+  const fontSize = wc <= 14 ? 40 : wc <= 18 ? 36 : wc <= 24 ? 32 : 28
+
   return (
     <BandShell opacity={opacity}>
       {sentence.words.map((w, i) => (
-        <Word key={`${w.startSec}-${i}`} text={w.text} active={i === activeWordIdx} />
+        <Word key={`${w.startSec}-${i}`} text={w.text} active={i === activeWordIdx} fontSize={fontSize} />
       ))}
     </BandShell>
   )
@@ -136,16 +135,16 @@ const BandShell: React.FC<{ opacity: number; children: React.ReactNode }> = ({ o
   </div>
 )
 
-const Word: React.FC<{ text: string; active: boolean }> = ({ text, active }) => (
+const Word: React.FC<{ text: string; active: boolean; fontSize?: number }> = ({ text, active, fontSize = 40 }) => (
   <span
     style={{
       fontFamily: FONT_BODY,
       fontWeight: active ? 800 : 600,
-      fontSize: 40,
+      fontSize,
       color: active ? GOLD : 'rgba(255,255,255,0.92)',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
-      transition: 'color 80ms linear', // tiny smoothing on highlight transitions
+      transition: 'color 80ms linear',
     }}
   >
     {text}

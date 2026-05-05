@@ -8,13 +8,15 @@ import { CREAM, FONT_BODY, FONT_HEAD, GOLD, NAVY_RICH, WHITE } from '../brand'
 type Props = {
   yearlyAmount: number
   years: number
+  /** Optional tax bracket — if provided, shows annual tax savings callout */
+  taxBracket?: number
   enterDelaySec?: number
 }
 
 const W = 960
 const H = 600
 
-export const DepreciationSchedule: React.FC<Props> = ({ yearlyAmount, years, enterDelaySec = 0 }) => {
+export const DepreciationSchedule: React.FC<Props> = ({ yearlyAmount, years, taxBracket, enterDelaySec = 0 }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
   const f = Math.max(0, frame - Math.round(enterDelaySec * fps))
@@ -95,6 +97,38 @@ export const DepreciationSchedule: React.FC<Props> = ({ yearlyAmount, years, ent
           y{y}
         </text>
       ))}
+
+      {/* Tax savings callout at bottom — appears after staircase fully reveals */}
+      {taxBracket ? (() => {
+        const cF = f - Math.round(fps * 1.7)
+        const cOp = interpolate(cF, [0, 12], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+        const annualSavings = Math.round(yearlyAmount * taxBracket)
+        return (
+          <g opacity={cOp}>
+            <rect
+              x={W / 2 - 230}
+              y={BOTTOM + 64}
+              width={460}
+              height={70}
+              fill="rgba(212, 175, 55, 0.15)"
+              stroke={GOLD}
+              strokeWidth={2}
+              rx={14}
+            />
+            <text
+              x={W / 2}
+              y={BOTTOM + 110}
+              fill={GOLD}
+              fontFamily={FONT_HEAD}
+              fontSize={36}
+              textAnchor="middle"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              ≈ ${annualSavings.toLocaleString('en-US')}/yr you keep
+            </text>
+          </g>
+        )
+      })() : null}
     </svg>
   )
 }

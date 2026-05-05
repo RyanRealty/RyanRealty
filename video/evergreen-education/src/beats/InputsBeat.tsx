@@ -63,7 +63,7 @@ const Row: React.FC<{ label: string; value: string; delay: number }> = ({ label,
 
 export const InputsBeat: React.FC<Props> = ({ chapterNumber, durationInFrames, inputs }) => {
   return (
-    <ChapterBeat chapterNumber={chapterNumber} headline="The hypothetical" durationInFrames={durationInFrames}>
+    <ChapterBeat chapterNumber={chapterNumber} headline="Picture a rental property" durationInFrames={durationInFrames}>
       <div
         style={{
           width: 820,

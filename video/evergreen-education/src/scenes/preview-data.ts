@@ -64,9 +64,9 @@ export const defaultPreviewProps: EvergreenInput = {
  * Real props are written at render time by scripts/render-masterclass.mjs.
  */
 export const defaultMasterclassProps: MasterclassInput = {
-  chapterDurations: [12, 10, 14, 14, 13, 14, 14, 12], // sums to 103s
+  chapterDurations: [18, 14, 22, 18, 16, 18, 16, 13], // sums to 135s
   voPath: 'masterclass/voiceover.mp3',
-  musicPath: '4-pillars/music.mp3', // re-use long-stroll
+  musicPath: '4-pillars/music.mp3',
   captionWords: [],
   captionSentences: [],
   inputs: {
@@ -76,6 +76,10 @@ export const defaultMasterclassProps: MasterclassInput = {
     interestRate: 0.07,
     termYears: 30,
     monthlyRent: 3000,
+    monthlyPI: 2495,
+    monthlyTaxes: 625,
+    monthlyInsurance: 80,
+    monthlyOpexReserves: 200,
     monthlyCashFlow: 200,
     appreciationRate: 0.03,
     depreciationYearly: 14545,

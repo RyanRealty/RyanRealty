@@ -4,7 +4,7 @@ import { CaptionBand, CaptionSentence, CaptionWord } from './components/CaptionB
 import { ChapterBeat } from './beats/ChapterBeat'
 import { InputsBeat } from './beats/InputsBeat'
 import { OutroBeat } from './beats/OutroBeat'
-import { MonthlyCashFlowChart } from './charts/MonthlyCashFlowChart'
+import { CashFlowBreakdown } from './charts/CashFlowBreakdown'
 import { AppreciationCurve } from './charts/AppreciationCurve'
 import { AmortizationCurve } from './charts/AmortizationCurve'
 import { DepreciationSchedule } from './charts/DepreciationSchedule'
@@ -34,6 +34,10 @@ export type MasterclassInput = {
     interestRate: number
     termYears: number
     monthlyRent: number
+    monthlyPI: number
+    monthlyTaxes: number
+    monthlyInsurance: number
+    monthlyOpexReserves: number
     monthlyCashFlow: number
     appreciationRate: number
     depreciationYearly: number
@@ -91,30 +95,32 @@ export const EvergreenMasterclass: React.FC<MasterclassInput> = (input) => {
       {input.voPath ? <Audio src={staticFile(input.voPath)} /> : null}
       {input.musicPath ? <Audio src={staticFile(input.musicPath)} volume={musicVolume} loop /> : null}
 
-      {/* Chapter 1 — Why an SFR rental */}
+      {/* Chapter 1 — Why real estate? (sourced hook per CLAUDE.md §0) */}
       <Sequence from={cursor} durationInFrames={c1}>
         <ChapterBeat
           chapterNumber={1}
-          headline="Why an SFR rental"
+          headline="Why real estate?"
           photoPath={input.photos?.intro ?? null}
           durationInFrames={c1}
         >
           <div
             style={{
-              maxWidth: 800,
+              maxWidth: 880,
               padding: '0 60px',
               textAlign: 'center',
               color: '#faf8f4',
               fontFamily: "'Geist', 'Inter', system-ui, sans-serif",
-              fontSize: 38,
-              lineHeight: 1.35,
+              fontSize: 36,
+              lineHeight: 1.4,
             }}
           >
-            Stocks compound returns one way.
+            For the typical American household,
             <br />
-            <span style={{ color: '#D4AF37', fontWeight: 700 }}>
-              Rental property compounds wealth four ways at once.
+            <span style={{ color: '#D4AF37', fontWeight: 700, fontSize: 44 }}>
+              your home is the single biggest piece of your net worth.
             </span>
+            <br />
+            <span style={{ fontSize: 28, opacity: 0.8 }}>Source: Federal Reserve SCF</span>
           </div>
         </ChapterBeat>
       </Sequence>
@@ -126,7 +132,7 @@ export const EvergreenMasterclass: React.FC<MasterclassInput> = (input) => {
       </Sequence>
       {(cursor += c2, null)}
 
-      {/* Chapter 3 — Pillar 1: Cash flow */}
+      {/* Chapter 3 — Pillar 1: Cash flow (line-by-line breakdown for beginners) */}
       <Sequence from={cursor} durationInFrames={c3}>
         <ChapterBeat
           chapterNumber={3}
@@ -134,7 +140,15 @@ export const EvergreenMasterclass: React.FC<MasterclassInput> = (input) => {
           photoPath={input.photos?.cashFlow ?? null}
           durationInFrames={c3}
         >
-          <MonthlyCashFlowChart enterDelaySec={0.4} />
+          <CashFlowBreakdown
+            rent={input.inputs.monthlyRent}
+            mortgage={input.inputs.monthlyPI}
+            taxes={input.inputs.monthlyTaxes}
+            insurance={input.inputs.monthlyInsurance}
+            reserves={input.inputs.monthlyOpexReserves}
+            net={input.inputs.monthlyCashFlow}
+            enterDelaySec={1.0}
+          />
         </ChapterBeat>
       </Sequence>
       {(cursor += c3, null)}
@@ -181,15 +195,16 @@ export const EvergreenMasterclass: React.FC<MasterclassInput> = (input) => {
           <DepreciationSchedule
             yearlyAmount={input.inputs.depreciationYearly}
             years={input.inputs.depreciationYears}
+            taxBracket={input.inputs.taxBracket}
             enterDelaySec={0.3}
           />
         </ChapterBeat>
       </Sequence>
       {(cursor += c6, null)}
 
-      {/* Chapter 7 — Stacked over time (the headline chart) */}
+      {/* Chapter 7 — Stack all four together */}
       <Sequence from={cursor} durationInFrames={c7}>
-        <ChapterBeat chapterNumber={7} headline="Stacked over time" durationInFrames={c7}>
+        <ChapterBeat chapterNumber={7} headline="Stack all four together" durationInFrames={c7}>
           <StackedGrowthChart series={input.equitySeries} enterDelaySec={0.3} />
         </ChapterBeat>
       </Sequence>
@@ -200,7 +215,7 @@ export const EvergreenMasterclass: React.FC<MasterclassInput> = (input) => {
         <OutroBeat
           illustrationPath="4-pillars/illustrations/beat-6-outro.png"
           photoPath={input.photos?.outro ?? null}
-          tagline="Illustrative. Not a forecast. Your numbers will differ."
+          tagline="Illustrative. Your numbers will differ. The framework holds."
           durationInFrames={c8}
         />
       </Sequence>

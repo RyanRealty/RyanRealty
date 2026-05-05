@@ -1,11 +1,12 @@
 {
   "topic": "real-estate-investing-101-sfr",
-  "title": "Real Estate Investing 101 — SFR Rentals",
+  "title": "Real Estate Investing 101 — SFR Rentals (for Beginners)",
   "format": "evergreen-masterclass",
-  "audience": "investor-curious owner-occupants",
-  "scope": "single-family residential rentals only — no commercial / REIT / house-hacking detour",
+  "audience": "TRUE beginners — assume zero prior knowledge of real estate investing",
+  "scope": "single-family residential rentals only",
   "lockedAt": "2026-05-04",
-  "lengthTarget": { "minSec": 90, "maxSec": 115, "targetSec": 105 },
+  "lengthTarget": { "minSec": 110, "maxSec": 150, "targetSec": 135 },
+  "scriptNotes": "v3-final per Matt 2026-05-04: slower speech (no atempo speedup), longer intro for beginners, line-by-line cash flow breakdown, storytelling tone (2nd-person present-tense), no transactional brief language. Targets ~2.0 wps natural pace; ~270 words = ~135s.",
   "inputs": {
     "purchasePrice": 500000,
     "downPaymentPct": 0.25,
@@ -14,7 +15,9 @@
     "interestRate": 0.07,
     "termYears": 30,
     "monthlyRent": 3000,
-    "monthlyPiti": 2800,
+    "monthlyPI": 2495,
+    "monthlyTaxes": 625,
+    "monthlyInsurance": 80,
     "monthlyOpexReserves": 200,
     "monthlyCashFlow": 200,
     "appreciationRate": 0.03,
@@ -25,58 +28,64 @@
     "taxSavingsYearly": 3491,
     "year1LoanPaydown": 4091
   },
-  "chapterDurations": [12, 10, 14, 14, 13, 14, 14, 12],
+  "chapterDurations": [18, 14, 22, 18, 16, 18, 16, 13],
   "script": {
     "segments": [
       {
-        "id": "why-sfr",
+        "id": "intro-hook",
         "chapter": 1,
-        "headline": "Why an SFR rental",
-        "text": "Stocks compound returns one way. A rental property compounds wealth four ways at once. We're going to focus on single-family rentals because they're the most teachable starting point and the entry that makes sense for most beginners."
+        "headline": "Why real estate?",
+        "text": "Most people don't realize this. For the typical American household, your home is the single biggest piece of your net worth. Not stocks. Not retirement accounts. Real estate. So real estate isn't some advanced strategy. It's the foundation almost everyone is already standing on. Today let me show you how it actually builds wealth."
       },
       {
         "id": "the-hypothetical",
         "chapter": 2,
-        "headline": "The hypothetical",
-        "text": "Throughout this video: a five hundred thousand dollar single-family rental. Twenty-five percent down. Three hundred seventy-five thousand dollar mortgage at seven percent. Three thousand dollar monthly rent. Same numbers every example."
+        "headline": "Picture a rental property",
+        "text": "Picture a typical rental. A five hundred thousand dollar single-family home. You put twenty-five percent down. That's a hundred and twenty-five thousand. The bank lends you the rest. You rent it for three thousand a month. We're going to follow this property for the next twenty years."
       },
       {
-        "id": "cash-flow",
+        "id": "cash-flow-breakdown",
         "chapter": 3,
         "headline": "Pillar 1: Cash flow",
-        "text": "Rent comes in. Mortgage, taxes, insurance, and reserves go out. What's left is cash flow. On our example, about two hundred dollars a month after a vacancy. Modest. But income you didn't trade your hours for."
+        "text": "Each month, three thousand dollars in rent comes in. Out goes the mortgage payment, about twenty-five hundred. Property tax, six hundred and twenty-five. Insurance, eighty dollars. And reserves for repairs and vacancies, around two hundred. What's left? About two hundred dollars a month. Not life-changing. But it's income you didn't trade your hours for."
       },
       {
         "id": "appreciation",
         "chapter": 4,
         "headline": "Pillar 2: Appreciation",
-        "text": "U S single-family homes have appreciated around three percent a year long-term. On a five hundred thousand dollar property, that's fifteen thousand in year one. Year twenty: roughly four hundred thousand in gain. Compounding does the work."
+        "text": "While you're collecting that rent, the house itself is doing something else. It's quietly going up in value. Long-term, U.S. homes have appreciated about three percent a year. On a five hundred thousand dollar home, that's fifteen thousand in year one. By year twenty, you're sitting on roughly four hundred thousand dollars in pure appreciation."
       },
       {
         "id": "loan-paydown",
         "chapter": 5,
         "headline": "Pillar 3: Loan paydown",
-        "text": "Year one of a thirty-year mortgage is mostly interest. By year thirty, it's mostly principal. Either way, your tenant is the one writing the check. After thirty years, the loan is gone, the property is yours."
+        "text": "Here's the part most people miss. Every month, your tenant writes a check. That check pays down YOUR mortgage. Year one, almost four thousand dollars of YOUR loan disappears. Paid by someone else. After thirty years, the mortgage is gone. The property is yours, free and clear."
       },
       {
         "id": "tax-benefits",
         "chapter": 6,
         "headline": "Pillar 4: Tax benefits",
-        "text": "The I R S lets you depreciate the building over twenty-seven and a half years. On our example, that's about fourteen thousand five hundred a year you write off. At a twenty-four percent bracket, thirty-five hundred a year you keep. Plus mortgage interest. Plus a ten thirty-one exchange."
+        "text": "Now here's the part the IRS quietly hands you. You can depreciate the building over twenty-seven and a half years. On our example, that's about fourteen thousand five hundred a year you write off. At a typical tax bracket, that's roughly thirty-five hundred dollars a year you keep instead of sending to the government."
       },
       {
         "id": "stacked-summary",
         "chapter": 7,
-        "headline": "Stacked over time",
-        "text": "Add the four pillars together. Year three: seventy-six thousand. Year five: one hundred thirty-one thousand. Year ten: two hundred eighty-four thousand. Year twenty: six hundred eighty-one thousand. Four engines, one balance sheet."
+        "headline": "Stack all four together",
+        "text": "Now watch what happens when you stack all four pillars together. Year three, you've built about seventy-six thousand dollars in equity. Year five, one hundred thirty-one thousand. Year ten, two hundred eighty-four thousand. By year twenty, you're looking at six hundred eighty-one thousand dollars."
       },
       {
         "id": "caveats-outro",
         "chapter": 8,
         "headline": "The honest part",
-        "text": "These numbers are illustrative. Not a forecast. Your market and your tax bracket will give different results. Vacancies happen. Markets cycle. The framework is durable. The specific numbers vary. D M for the spreadsheet that runs your numbers."
+        "text": "Here's the honest part. These are illustrative numbers. Your market and your tax situation will give different results. Vacancies happen. Markets cycle. But the framework — four engines on one property, working at the same time — that's the part that holds. D M me for the spreadsheet that runs your numbers."
       }
     ]
   },
-  "scriptOriginalNotes": "v2 sharper script — chapter 2 (kinds of investing) collapsed into chapter 1; chapter 9 caveats merged into chapter 8 outro; total 188 words at ~2.0 wps = ~94s before atempo, fits 100-115s target after pad / atempo. v1 4-pillars 60s build preserved at data/4-pillars.json."
+  "citations": {
+    "intro-hook": {
+      "claim": "For the typical American household, your home is the single biggest piece of your net worth",
+      "source": "Federal Reserve Survey of Consumer Finances 2022 + Z.1 Financial Accounts of the United States. For households below the top 10% by net worth, primary-residence equity is the largest single component of household wealth. Source URLs: federalreserve.gov/publications/files/scf23.pdf + federalreserve.gov/releases/z1/",
+      "type": "verified primary source"
+    }
+  }
 }

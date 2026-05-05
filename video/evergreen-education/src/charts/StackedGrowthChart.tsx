@@ -40,18 +40,35 @@ export const StackedGrowthChart: React.FC<Props> = ({ series, enterDelaySec = 0 
   const xAt = (yr: number) => PAD_X + (yr / maxX) * (W - PAD_X * 2)
   const yAt = (v: number) => BOTTOM - (v / maxY) * HEIGHT
 
-  const visibleCount = Math.max(2, Math.round(series.length * reveal))
-  const vis = series.slice(0, visibleCount)
+  // Per-pillar staggered reveal — each curve appears 0.4s after the previous,
+  // so the viewer sees each pillar contribute one at a time.
+  const PILLAR_STAGGER = Math.round(fps * 0.4)
+  const apprStart = 0
+  const paydownStart = PILLAR_STAGGER
+  const taxStart = PILLAR_STAGGER * 2
+  const cfStart = PILLAR_STAGGER * 3
+  const totalStart = PILLAR_STAGGER * 4
 
-  const buildPath = (key: keyof Series) => {
-    if (!vis.length) return ''
-    return `M ${vis.map((s) => `${xAt(s.year).toFixed(1)},${yAt(s[key] as number).toFixed(1)}`).join(' L ')}`
+  const revealFor = (startFrame: number) => {
+    const localF = f - startFrame
+    return interpolate(localF, [0, fps * 1.2], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
   }
-  const totalPath = buildPath('total')
-  const apprPath = buildPath('appreciation')
-  const paydownPath = buildPath('loanPaydown')
-  const taxPath = buildPath('taxSavings')
-  const cfPath = buildPath('cashFlow')
+
+  const buildPath = (key: keyof Series, startFrame: number) => {
+    const r = revealFor(startFrame)
+    if (r <= 0) return ''
+    const visCount = Math.max(2, Math.round(series.length * r))
+    const v = series.slice(0, visCount)
+    return `M ${v.map((s) => `${xAt(s.year).toFixed(1)},${yAt(s[key] as number).toFixed(1)}`).join(' L ')}`
+  }
+  const apprPath = buildPath('appreciation', apprStart)
+  const paydownPath = buildPath('loanPaydown', paydownStart)
+  const taxPath = buildPath('taxSavings', taxStart)
+  const cfPath = buildPath('cashFlow', cfStart)
+  const totalPath = buildPath('total', totalStart)
+
+  const visibleCount = Math.max(2, Math.round(series.length * revealFor(totalStart)))
+  const vis = series.slice(0, visibleCount)
 
   // Total area under curve
   const totalArea =

@@ -44,34 +44,50 @@ const PUB_DIR = resolve(ROOT, 'public', '4-pillars', 'photos')
 // Multiple query candidates per slot — try each, keep all results, score visually.
 // The agent re-runs unsplashSearch per query and saves all hits; then the agent
 // (or Matt) picks the best from the candidate pool.
+// v3 photo spec — per Matt 2026-05-04: people doing the thing, not abstract objects.
+// Each chapter that gets a photo backdrop has its own slot.
 const SLOTS = [
   {
     slug: 'intro-hero',
     beat: 'intro',
-    queries: ['suburban home exterior daytime', 'single family home front yard', 'house for sale exterior'],
+    queries: ['couple outside home holding hands', 'family home front yard', 'homebuyers in front of house'],
     orientation: 'landscape',
-    notes: 'A real home — front-yard view, daytime, recognizable American SFR.',
+    notes: 'People in front of / interacting with a home. Aspirational.',
   },
   {
     slug: 'cash-flow',
     beat: 'cash-flow',
-    queries: ['cash money hundred dollar bills', 'rent check payment', 'wallet money stack'],
+    queries: ['landlord receiving rent payment', 'tenant paying rent envelope', 'real estate keys handover handshake'],
     orientation: 'squarish',
-    notes: 'Money imagery — hard to misread. Skip the "handover" framing entirely.',
+    notes: 'A transaction moment — keys + envelope or handshake. Hands, NOT staged faces.',
+  },
+  {
+    slug: 'appreciation',
+    beat: 'appreciation',
+    queries: ['hand on doorframe house keys', 'homeowner standing in driveway', 'family in backyard golden hour'],
+    orientation: 'landscape',
+    notes: 'Time-passing feel. Patient. A moment of ownership / connection to the home.',
   },
   {
     slug: 'loan-paydown',
     beat: 'loan-paydown',
-    queries: ['signing contract pen close up', 'mortgage document signature', 'loan paperwork desk'],
+    queries: ['signing contract pen close up', 'mortgage document signature hand', 'loan paperwork close-up'],
     orientation: 'squarish',
-    notes: 'Pen on document, contract close-up, NOT people-in-a-room shots.',
+    notes: 'Pen on document, hand visible. v2 photo (Ahmad Saidu) was good — re-pull only if forced.',
+  },
+  {
+    slug: 'tax-benefits',
+    beat: 'tax-benefits',
+    queries: ['1040 tax form calculator pen', 'schedule e tax form', 'tax preparation desk paperwork'],
+    orientation: 'squarish',
+    notes: 'Tax document close-up. Concrete, not abstract.',
   },
   {
     slug: 'outro-hero',
     beat: 'outro',
-    queries: ['neighborhood aerial homes', 'suburban street homes', 'house with yard sunset'],
+    queries: ['suburban neighborhood aerial trees', 'family home golden hour exterior', 'single family home dusk'],
     orientation: 'landscape',
-    notes: 'A neighborhood OR a single home at golden hour — the "look at what wealth looks like" feeling.',
+    notes: 'A neighborhood OR a single home at golden hour. v2 outro-hero (Zac Gudakov) worked — keep unless forced.',
   },
 ]
 

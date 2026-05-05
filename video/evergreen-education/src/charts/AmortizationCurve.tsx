@@ -74,7 +74,10 @@ export const AmortizationCurve: React.FC<Props> = ({ loan, rate, termYears, ente
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '100%', maxWidth: 960, maxHeight: 600 }}>
-      <text x={W / 2} y={50} fill={WHITE} fontFamily={FONT_HEAD} fontSize={42} textAnchor="middle">
+      {/* Background contrast band */}
+      <rect x={PAD_X - 20} y={TOP - 30} width={W - PAD_X * 2 + 40} height={HEIGHT + 60} fill="#0A1A2E" opacity={0.35} rx={16} />
+
+      <text x={W / 2} y={50} fill={WHITE} fontFamily={FONT_HEAD} fontSize={38} textAnchor="middle">
         Interest vs principal over 30 years
       </text>
 
@@ -100,6 +103,33 @@ export const AmortizationCurve: React.FC<Props> = ({ loan, rate, termYears, ente
           y{y}
         </text>
       ))}
+
+      {/* Annotation: year 1 = mostly interest */}
+      {(() => {
+        const aF = f - Math.round(fps * 1.2)
+        const aOp = interpolate(aF, [0, 12], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+        return (
+          <g opacity={aOp}>
+            <text x={xAt(12)} y={TOP + 80} fill={GOLD_SOFT} fontFamily={FONT_BODY} fontSize={22} textAnchor="start">
+              year 1: mostly interest
+            </text>
+            <line x1={xAt(12) - 4} y1={TOP + 90} x2={xAt(12) - 4} y2={TOP + HEIGHT * 0.45} stroke={GOLD_SOFT} strokeWidth={1} opacity={0.6} />
+          </g>
+        )
+      })()}
+
+      {/* Annotation: year 30 = tenant paid it off */}
+      {(() => {
+        const aF = f - Math.round(fps * 1.7)
+        const aOp = interpolate(aF, [0, 12], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+        return (
+          <g opacity={aOp}>
+            <text x={W - PAD_X - 12} y={TOP + 250} fill={GOLD} fontFamily={FONT_BODY} fontSize={22} textAnchor="end">
+              year 30: tenant paid it off
+            </text>
+          </g>
+        )
+      })()}
 
       {/* Legend */}
       <g transform={`translate(${PAD_X}, ${TOP - 12})`}>
