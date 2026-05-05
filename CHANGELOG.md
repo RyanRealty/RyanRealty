@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.115.3 (2026-05-05)
+
+### Bug Fixes
+- fix(linkedin): remove openid/profile/email scopes — app only has Share on LinkedIn product
+
+---
+
+
 ## v1.115.2 (2026-05-05)
 
 ### Maintenance
