@@ -7,7 +7,7 @@
 1. **Name the source.** Every stat must trace to one of: live Supabase (`ryan-realty-platform`, table + filter documented), MLS direct pull, official agency data (ORMLS, NAR, Case-Shiller, OHCS, Census, BLS, FRED), or a linked primary-source URL. "I remember" is not a source. LLM-recall numbers are not a source.
 2. **Pull the query fresh.** Re-run the SQL/API call in this session. Never reuse a hard-coded value from a prior script without re-confirming.
 3. **Print the raw result.** Show the row counts, the date window, the filter (`PropertyType='A'` for SFR, geography, status, close-date range). The number in the deliverable must equal the number in the printout.
-4. **Cross-check math.** Derived stats (months of supply, YoY %, absorption, median, price/sqft) get recomputed and the computation is shown. Market classification (seller/balanced/buyer) must match the actual months-of-supply number against the ≤4 / 4–6 / ≥6 thresholds.
+4. **Cross-check math.** Derived stats (months of supply, YoY %, absorption, median, price/sqft) get recomputed and the computation is shown. **Months of supply formula** = `active_listings / (closed_last_6_months / 6)`. **Thresholds: ≤ 4 seller's market, 4–6 balanced, ≥ 6 buyer's market.** Market classification (seller/balanced/buyer) verdict must match the actual MoS number against these thresholds.
 5. **Reconcile narrative to data.** Every sentence, subhead, verdict, and pill has to be consistent with the number it sits next to. A "seller's market" verdict next to 4.3 months of supply is a fail.
 6. **QA the rendered output.** For video or image deliverables, capture stills of every scene and visually confirm the displayed number matches the verified number. For text, grep the draft for every figure and map each to the source row.
 7. **If a stat can't be verified, it doesn't ship.** Cut it. Don't estimate. Don't round-fill. Don't "approximate." The deliverable goes out with fewer numbers rather than one wrong one.
@@ -274,6 +274,9 @@ Launch parallel subagents in a single message when work is independent. **Never 
 - **Never ask Matt to run anything manually.** You handle ALL git operations, ALL terminal commands, ALL deployments, everything. Matt never touches the terminal. If something needs to be done, you do it.
 - **Proactively clear git locks.** Before ANY git operation (commit, merge, rebase, pull, push), check for .git/index.lock and remove it if it's stale. Never let a lock file block progress. Never report a lock file to Matt as a blocker — just fix it.
 - **No blocked builds or commits.** Builds must never back up. Commits must never be blocked. If something is in the way, fix it yourself. Exhaust every option before reporting an issue.
+- **No half measures. Research how pros do it first, nail it the first time.** Before scaffolding anything non-trivial, look at how the best agents/teams in the field do it (the actual viral creator, the actual top-tier broker workflow, the actual reference implementation). Build to that standard from the start. Don't ship a minimum-viable thing and iterate ten times — that wastes Matt's review cycles and produces drift. Get it right.
+- **Vault is the sole source of truth for transaction coordination.** When auditing, reconciling, or reporting on transactions, query Vault. **Never reconcile transactions against SkySlope** — SkySlope is a workflow tool, not a system of record. Treating SkySlope as authoritative is a known failure mode that produces wrong audit numbers.
+- **Full company scope on all audits.** Every audit (transactions, mailboxes, broker activity, listing counts, anything) runs across **all brokers**, **all mailboxes**, and the **max available date range** by default. Never narrow to a single broker, single inbox, or last-30-days window unless Matt explicitly asks for that scope. Partial-scope audits miss outliers and produce false-clean reports.
 
 ---
 
@@ -282,6 +285,47 @@ Launch parallel subagents in a single message when work is independent. **Never 
 Durable cross-session notes live in **`.auto-memory/`** (same pattern as Cowork `feedback_*.md` references in video skills). **Cascade Peaks video (in flight):** append status to `.auto-memory/memory_cascade_peaks_video_handoff.md` — do not let handoff notes live only in chat. **Local Remotion env (Mac / Cursor, parity with Cowork `work/cascade_peaks`):** `npm run video:cascade-peaks:setup` then `video/cascade-peaks/README.md`.
 
 **Hand off to Cursor / the other Claude agent:** Before Matt switches tools, update **`docs/plans/CROSS_AGENT_HANDOFF.md`** (Current block: what shipped, what is next, commit SHA, skills you read). The other side pulls `main` and reads that file first. See **`AGENTS.md`** (*Cross-agent handoff* + *Skills*).
+
+---
+
+## Supabase `listings` Schema — MANDATORY READ before any SQL
+
+**Project ID:** `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform` — `dwvlophlbvvygjfxcrhm.supabase.co`).
+
+**Row count:** 589K+ rows in `listings` as of 2026-04-29. Always paginate or aggregate; never `SELECT *` without a tight filter.
+
+**Column-name quirk (RETS standard).** The `listings` table uses **mixed-case column names** that Postgres preserves only when quoted. **Every reference to a mixed-case column must be wrapped in double quotes** or the query returns "column does not exist." This is the #1 cause of failed listings queries.
+
+**Quoted column names (must use double quotes in SQL):**
+`"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, `"TotalLivingAreaSqFt"`, `"PhotoURL"`, `"SubdivisionName"`, `"ClosePrice"`, `"CloseDate"`, `"CumulativeDaysOnMarket"`, `"BedroomsTotal"`, `"BathroomsTotal"`.
+
+**Lower-case columns (no quoting required):**
+`year_built`, `pending_timestamp`, `price_per_sqft`.
+
+**Example — correct:**
+```sql
+SELECT "StreetNumber", "StreetName", "ListPrice", "StandardStatus", year_built
+FROM listings
+WHERE "StandardStatus" = 'Active'
+  AND "ListPrice" BETWEEN 500000 AND 1000000
+LIMIT 50;
+```
+
+**Example — silently wrong (returns "column does not exist"):**
+```sql
+SELECT StreetNumber, ListPrice FROM listings WHERE StandardStatus = 'Active';
+```
+
+**When in doubt, query `information_schema.columns` FIRST.** Do not guess column names. Do not infer from prior queries — schemas drift.
+
+```sql
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'listings'
+ORDER BY ordinal_position;
+```
+
+For market-data work, also see the master rule above (Data Accuracy §4): MoS formula, thresholds, and Spark × Supabase reconciliation gate. Per-table conventions like `PropertyType='A'` for SFR and YTD windows live in `video_production_skills/VIDEO_PRODUCTION_SKILL.md` §0.
 
 ---
 
@@ -302,6 +346,8 @@ Everything else (debugging, architecture, testing-strategy, documentation, incid
 ## Video Production — REQUIRED
 
 **Read `video_production_skills/VIDEO_PRODUCTION_SKILL.md` before writing any video code or Remotion composition. This is non-negotiable.**
+
+**For listing/pending/just-listed/coming-soon videos specifically: VIDEO_PRODUCTION_SKILL.md §11 ("Listing Video Production Rules") is the operative ruleset.** It covers the hard-won lessons from the School House Rd v6.x → v7.0 build — banned fonts (Great Vibes / Allura), single-overlay discipline, Ken Burns easing curves, social-media safe zones, contact-sheet format for photo selection, ambient music conventions, and the 5-point QA gate every render must clear before email. Also load `video_production_skills/photo-hero-drift/SKILL.md` for the five camera-move primitives — every beat must use a different one; never repeat the same zoom on consecutive photos.
 
 ### The routine-build triplet — load these for any standard listing/market/news/evergreen/luxury build
 
@@ -390,13 +436,13 @@ For quick reference during work, keep `video_production_skills/VIRAL_VIDEO_CONST
 
 Every video build opens all three master files before scaffolding the BEATS array, engineers the BEATS array against the VIRAL_GUARDRAILS scorecard from beat 0 (do not "score later"), runs the quality gate (ffmpeg blackdetect strict + frame extraction + visual scrub) before push, and writes a `scorecard.json` next to every render. Self-enforce — don't wait for Matt to find an obvious bug.
 
-The full master sub-skill index (depth_parallax, gaussian_splat, cinematic_transitions, audio_sync, social_calendar, market_report_video, news_video, google_maps_flyover, brand_assets, listing_launch, area_guides, ai_platforms, content_pipeline, quality_gate) is in §10 of the master skill. Operations manual is `video_production_skills/AGENT_HANDOFF.md`; rendered MP4 inventory is `video_production_skills/ASSET_LOCATIONS.md`.
+The full master sub-skill index now routes through canonical active skills such as `market-data-video`, `news-video`, `listing-tour-video`, `listing_reveal`, `neighborhood-overview`, `neighborhood_tour`, `weekend-events-video`, plus capability skills (`depth_parallax`, `gaussian_splat`, `cinematic_transitions`, `audio_sync`, `brand_assets`, `ai_platforms`, `content_pipeline`, `quality_gate`, `render_pipeline`, `captions`, `elevenlabs_voice`, `publisher`). Retired/reference names (`market_report_video`, `news_video`, `area_guides`, `google_maps_flyover`) are archive-only and not canonical routing targets. Operations manual is `video_production_skills/AGENT_HANDOFF.md`; rendered MP4 inventory is `video_production_skills/ASSET_LOCATIONS.md`.
 
 ### Sister skill libraries
 
 Three sibling directories at the repo root carry the autonomous viral content engine:
 
-- **`video_production_skills/`** — master skill, manifesto, plus the format and capability skills above PLUS six viral format skills added in §11: `earth_zoom`, `data_viz_video`, `listing_reveal`, `meme_content`, `avatar_market_update`, `neighborhood_tour`. Some of the §11 skills overlap conceptually with earlier ones (`earth_zoom` ↔ `google_maps_flyover`, `neighborhood_tour` ↔ `area_guides`, `listing_reveal` ↔ `listing_launch`, `data_viz_video` ↔ `market_report_video`) — both sets coexist while the team chooses which is canonical per format. Read the relevant SKILL.md before invoking.
+- **`video_production_skills/`** — master skill, manifesto, and canonical routing index for all active formats. Current canonical format skills include `listing-tour-video`, `listing_reveal`, `market-data-video`, `data_viz_video`, `news-video`, `neighborhood-overview`, `neighborhood_tour`, `lifestyle-community`, `development-showcase`, `weekend-events-video`, `meme_content`, and `avatar_market_update`. Capability and operations skills include `render_pipeline`, `captions`, `elevenlabs_voice`, `audio_sync`, `depth_parallax`, `gaussian_splat`, `publisher`, and others. Retired/reference paths remain for history only.
 - **`social_media_skills/`** — platforms (algorithm briefs, channel specs, viral hooks, trending audio, profile optimization, audits), content (calendar, creation, repurposing, animation rules, AI video, Synthesia, quality gate, Remotion), ops (analytics, API wrappers, community management, ads, lead nurture), intelligence (Paid Ads, Organic Growth, Marketing, Canva/CapCut). Index at `social_media_skills/README.md`.
 - **`automation_skills/`** — three triggers (`listing_trigger`, `market_trigger`, `trend_trigger`) + six pipelines (`post_scheduler`, `performance_loop`, `repurpose_engine`, `engagement_bot`, `thumbnail_generator`, `ab_testing`). Defines 19 database tables, the OAuth flow for Meta/TikTok/YouTube/LinkedIn, the post queue with first-30-days human review gate, format performance scoring, and FUB lead capture from inbound DMs/comments.
 

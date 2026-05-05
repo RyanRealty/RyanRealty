@@ -189,3 +189,4 @@ Then merge new paths into this file under the right heading.
 - `/Users/matthewryan/RyanRealty/video_production_skills/listing-tour-video/SKILL.md`
 - `/Users/matthewryan/RyanRealty/video_production_skills/market-data-video/SKILL.md`
 - `/Users/matthewryan/RyanRealty/video_production_skills/neighborhood-overview/SKILL.md`
+- `/Users/matthewryan/RyanRealty/video_production_skills/publisher/SKILL.md`

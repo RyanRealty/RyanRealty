@@ -52,6 +52,7 @@ If a workspace **skill** might apply—even slightly—**read its `SKILL.md` fir
 - **This repo:** `.cursor/skills/**/SKILL.md` (e.g. Oregon OREF, OREA PB, SkySlope, professional Word, etc.)
 - **Cursor-bundled / plugin skills:** paths under `~/.cursor/plugins/.../skills/**/SKILL.md` when the task matches their description (Next.js, Vercel, Supabase, TDD, debugging, etc.)
 - **Repo `video_production_skills/**/SKILL.md`** when the task is video production
+- **Publishing trigger:** if Matt says "go ahead and publish it" after approving content, load `video_production_skills/publisher/SKILL.md`
 - **Cowork-only skills** (e.g. mounted **docx** under `mnt/.claude/skills/`): see section **E** in the global registry; copy into `~/.claude/skills/` if you need the same skill in Claude Code CLI.
 
 **Heuristic:** Task mentions migrations → read Supabase skill; task mentions ship → read deploy / verification skills; task mentions rules → read `create-rule` skill before authoring rules. When unsure, grep `SKILL.md` titles or ask once; prefer loading an extra skill over skipping.

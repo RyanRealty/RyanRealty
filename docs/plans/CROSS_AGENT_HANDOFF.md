@@ -17,7 +17,7 @@
 
 ### Done this session (Claude Code)
 
-- Pulled full 89-photo Schoolhouse listing library from Drive `images-for-web-or-mls` via viewer@ service account + DWD impersonation of matt@ (the SA in `.env.local` is `ga4-data-api@` which is GA4-only; the proper viewer@ key lives at `~/.config/gcloud/legacy_credentials/viewer@ryanrealty.iam.gserviceaccount.com/adc.json`)
+- Pulled full 89-photo Schoolhouse listing library from Drive `images-for-web-or-mls` via viewer@ service account + DWD impersonation of matt@ (`.env.local` now has `viewer@ryanrealty.iam.gserviceaccount.com` as the consolidated SA — GA4, Drive, Search Console, Sheets all use this single SA)
 - Pulled 2 Snowdrift Visuals area-guide stills + indexed 16 historic Vandevert/Locati portraits already on disk → 107 total photos
 - Generated 480px JPEG thumbnails for all 107 + emitted manifest at `listing_video_v4/public/v5_library/manifest.json`
 - Probed all 5 prior Schoolhouse MP4s (v1, v2, Pending Reel, VirtualTour Short/Full) — all 1080×1920
@@ -37,7 +37,7 @@
 
 ### Blockers / env / secrets
 
-- `.env.local` has `GOOGLE_SERVICE_ACCOUNT_*` pointing at `ga4-data-api@ryanrealty.iam.gserviceaccount.com` (GA4-specific). For Drive access, use viewer@ from gcloud legacy_credentials instead. Cleanup task: rotate `.env.local` to use viewer@, OR add a separate `GOOGLE_DRIVE_SA_KEY_PATH` var pointing to the gcloud file.
+- `.env.local` has `GOOGLE_SERVICE_ACCOUNT_*` pointing at `viewer@ryanrealty.iam.gserviceaccount.com` (consolidated SA with DWD — covers GA4, Drive, Search Console, Sheets). The old `ga4-data-api@` SA is retired. `lib/ga4-data-api.ts` deleted (was a dead stub). `build_v5_library.py` now reads creds from env vars instead of a hardcoded gcloud file path.
 - Resend `From:` is currently `onboarding@resend.dev` (Resend's default test sender). Verifying `matt@ryan-realty.com` as a Resend sender domain would unblock proper From branding on future client-facing email.
 - $3,025,000 Schoolhouse price needs SkySlope/MLS verification before Gate 4 burns it into the closing reveal frame.
 

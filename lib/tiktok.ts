@@ -101,13 +101,14 @@ export async function getAuthorizationUrl(): Promise<{ url: string; state: strin
 }
 
 export async function exchangeCodeForToken(code: string, codeVerifier?: string): Promise<TokenResponse> {
-  const { clientKey, clientSecret } = getEnv()
+  const { clientKey, clientSecret, redirectUri } = getEnv()
 
   const body = new URLSearchParams({
     client_key: clientKey,
     client_secret: clientSecret,
     code,
     grant_type: 'authorization_code',
+    redirect_uri: redirectUri,
   })
 
   if (codeVerifier) {

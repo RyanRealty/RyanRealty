@@ -1,5 +1,7 @@
 const META_GRAPH_BASE = 'https://graph.facebook.com/v22.0'
-const META_IG_BASE = 'https://graph.instagram.com/v22.0'
+// Instagram Business publishing endpoints are under graph.facebook.com,
+// not graph.instagram.com (which is for Basic Display tokens).
+const META_IG_BASE = 'https://graph.facebook.com/v22.0'
 
 // ---------------------------------------------------------------------------
 // Error class

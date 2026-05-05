@@ -71,6 +71,10 @@ video/cascade-peaks/.brand-attachments/
 # Commercial brand fonts — keep local only (see video/cascade-peaks/README.md)
 video/cascade-peaks/public/Amboqia_Boriango.otf
 video/cascade-peaks/public/AzoSans-Medium.ttf
+video/listing-tour/node_modules/
+video/listing-tour/out/
+video/listing-tour/out/qc-frames/
+video/listing-tour/public/tour-cache/
 
 # Remotion market-report — deps + draft renders (keep source in git)
 video/market-report/node_modules/
@@ -95,3 +99,8 @@ docs/skyslope-forms-principal-brief.docx
 # Tesseract default English data downloaded to repo root during local OCR
 /eng.traineddata
 listing_video_v4/out/*.mp4
+
+# Service account key files — NEVER commit
+service_account_key.json
+**/adc.json
+viewer_sa_key.json
