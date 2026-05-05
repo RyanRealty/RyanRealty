@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.115.1 (2026-05-05)
+
+### Bug Fixes
+- fix(build): exclude listing_video_v4 from root tsconfig TypeScript check
+
+---
+
+
 ## v1.115.0 (2026-05-05)
 
 ### Features
