@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.114.0 (2026-05-05)
+
+### Features
+- feat(social): unified publisher + TikTok/YouTube/LinkedIn/GBP/Buffer OAuth wiring
+
+---
+
+
 ## v1.113.0 (2026-05-05)
 
 ### Features
