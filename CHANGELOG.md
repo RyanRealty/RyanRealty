@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.113.0 (2026-05-05)
+
+### Features
+- feat(video-evergreen): v3 masterclass — beginner-friendly, slower pace, sourced hook, line-by-line cash flow, photos on every chapter
+
+---
+
+
 ## v1.112.1 (2026-05-04)
 
 ### Maintenance
