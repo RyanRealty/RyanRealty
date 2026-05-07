@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server'
  * - X: continuous (refresh_token rotates each call)
  * - Threads: 60 days (long-lived token, refresh extends)
  * - Pinterest: 30-60 days depending on tier
+ * - Nextdoor: ~365 days (gated API, refresh_token rotates per OAuth 2.0 spec)
  *
  * Daily cadence is well under every window. Anything connected stays alive.
  *
@@ -173,6 +174,20 @@ async function pingPinterest(): Promise<PlatformResult> {
   }
 }
 
+async function pingNextdoor(): Promise<PlatformResult> {
+  try {
+    const { getNextdoorAccessToken } = await import('@/lib/nextdoor')
+    const token = await getNextdoorAccessToken()
+    return { platform: 'nextdoor', status: 'ok', message: `access_token len ${token.length}` }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'unknown'
+    if (msg.includes('not connected') || msg.includes('not configured') || msg.includes('apply for Nextdoor API access')) {
+      return { platform: 'nextdoor', status: 'skipped', message: msg }
+    }
+    return { platform: 'nextdoor', status: 'failed', message: msg }
+  }
+}
+
 export async function GET(request: NextRequest) {
   const apiKey = request.headers.get('x-cron-secret')
   if (!validateApiKey(apiKey)) {
@@ -190,6 +205,7 @@ export async function GET(request: NextRequest) {
     pingTikTok(),
     pingThreads(),
     pingPinterest(),
+    pingNextdoor(),
   ])
 
   const summary = {

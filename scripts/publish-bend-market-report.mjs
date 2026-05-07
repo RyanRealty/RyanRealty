@@ -95,11 +95,17 @@ const captionGBP =
   `(neither a clear seller's nor buyer's market). Active listings: 1,149. ` +
   `Median days on market: 56, which is 14 days faster than the same period last year.`
 
+// Nextdoor: neighborhood-focused, body 250-500 chars, no hashtags, lead with local hook
+const captionNextdoor =
+  `Quick April update for the Bend single-family market — your neighbors might find this useful.\n\n` +
+  `Median sale price is $699K (down 7.3% from 2025). Active listings: 1,149. Months of supply: 5.8 — that's a balanced market, not leaning seller or buyer. Typical home goes pending in 56 days, two weeks faster than a year ago.\n\n` +
+  `Full breakdown for Bend, Redmond, Sisters, Sunriver, La Pine, and Prineville on our site.`
+
 // ----- Build the publish payload -----
 const body = {
   approved: true,
   contentType: 'market_report_video',
-  platforms: ['instagram', 'facebook', 'youtube', 'linkedin', 'x', 'google_business_profile'],
+  platforms: ['instagram', 'facebook', 'youtube', 'linkedin', 'x', 'google_business_profile', 'nextdoor'],
   mediaType: 'reel',
   mediaUrl: MEDIA_URL,
   coverUrl: undefined, // we'll let IG pick a frame; YT thumbnail set separately
@@ -111,6 +117,7 @@ const body = {
     linkedin: captionLinkedIn,
     x: captionX,
     google_business_profile: captionGBP,
+    nextdoor: captionNextdoor,
   },
   hashtagsPerPlatform: {
     instagram: ['#BendOregon', '#CentralOregon', '#RealEstate', '#MarketReport', '#HousingMarket'],
@@ -126,6 +133,10 @@ const body = {
     google_business_profile: {
       summary: captionGBP,
       callToActionUrl: 'https://ryan-realty.com/reports',
+    },
+    nextdoor: {
+      ctaText: 'See full report',
+      ctaUrl: 'https://ryan-realty.com/reports',
     },
   },
   gate: {

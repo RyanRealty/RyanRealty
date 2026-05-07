@@ -26,6 +26,7 @@ import {
   createPinterestVideoPin,
 } from '@/lib/pinterest'
 import { getThreadsAccessToken, publishThreadsVideo } from '@/lib/threads'
+import { publishNextdoorPost } from '@/lib/nextdoor'
 
 type Platform =
   | 'instagram'
@@ -37,6 +38,7 @@ type Platform =
   | 'x'
   | 'pinterest'
   | 'threads'
+  | 'nextdoor'
 type MediaType = 'image' | 'video' | 'reel'
 
 /**
@@ -96,6 +98,10 @@ interface PublishRequest {
     pinterest?: {
       title?: string
       boardId?: string
+    }
+    nextdoor?: {
+      ctaText?: string
+      ctaUrl?: string
     }
   }
 }
@@ -491,6 +497,32 @@ async function publishToThreads(
   }
 }
 
+async function publishToNextdoor(
+  mediaType: MediaType,
+  mediaUrl: string,
+  caption: string,
+  ctaText?: string,
+  ctaUrl?: string
+): Promise<PlatformResult> {
+  try {
+    const postId = await publishNextdoorPost({
+      body: caption,
+      imageUrl: mediaType === 'image' ? mediaUrl : undefined,
+      videoUrl: mediaType !== 'image' ? mediaUrl : undefined,
+      ctaText,
+      ctaUrl,
+    })
+    return { success: true, status: 'published', externalPostId: postId, url: null }
+  } catch (error) {
+    console.error('Nextdoor publish error:', error)
+    return {
+      success: false,
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Nextdoor publish failed',
+    }
+  }
+}
+
 async function publishToGoogleBusinessProfile(
   caption: string,
   mediaUrl: string,
@@ -573,6 +605,7 @@ export async function POST(request: NextRequest) {
       'x',
       'pinterest',
       'threads',
+      'nextdoor',
     ]
     const invalidPlatforms = platforms.filter((p) => !validPlatforms.includes(p))
     if (invalidPlatforms.length > 0) {
@@ -642,6 +675,15 @@ export async function POST(request: NextRequest) {
             break
           case 'threads':
             result = await publishToThreads(mediaType, mediaUrl, caption)
+            break
+          case 'nextdoor':
+            result = await publishToNextdoor(
+              mediaType,
+              mediaUrl,
+              caption,
+              body.metadata?.nextdoor?.ctaText,
+              body.metadata?.nextdoor?.ctaUrl
+            )
             break
           default:
             result = {
