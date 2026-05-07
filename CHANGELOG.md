@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.118.0 (2026-05-07)
+
+### Features
+- feat(content-engine): Phase 1 — autonomous content engine foundation
+
+---
+
+
 ## v1.117.0 (2026-05-07)
 
 ### Features
