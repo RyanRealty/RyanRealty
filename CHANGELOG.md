@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.119.1 (2026-05-07)
+
+### Bug Fixes
+- fix(threads): use threads.com (not .net) for OAuth — .net redirect drops client_id
+
+---
+
+
 ## v1.119.0 (2026-05-07)
 
 ### Features
