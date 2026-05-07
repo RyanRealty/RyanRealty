@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.120.0 (2026-05-07)
+
+### Features
+- feat(demo): one-shot publish script for Bend market report — fans out to 5 platforms
+
+---
+
+
 ## v1.119.2 (2026-05-07)
 
 ### Maintenance
