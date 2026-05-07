@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.120.1 (2026-05-07)
+
+### Bug Fixes
+- fix(streaming): LinkedIn + YouTube video upload OOM on Vercel
+
+---
+
+
 ## v1.120.0 (2026-05-07)
 
 ### Features
