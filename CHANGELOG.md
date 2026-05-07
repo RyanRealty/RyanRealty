@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.119.2 (2026-05-07)
+
+### Maintenance
+- chore(tiktok): add domain verification file for ryanrealty.vercel.app
+
+---
+
+
 ## v1.119.1 (2026-05-07)
 
 ### Bug Fixes
