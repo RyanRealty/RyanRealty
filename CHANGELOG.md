@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.116.0 (2026-05-07)
+
+### Features
+- feat(legal): add Ryan Realty Social TikTok app disclosures to /terms and /privacy
+
+---
+
+
 ## v1.115.4 (2026-05-05)
 
 ### Maintenance
