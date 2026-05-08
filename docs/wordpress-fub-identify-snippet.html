@@ -46,6 +46,12 @@
     endpoint: 'https://ryanrealty.vercel.app/api/fub/identify',
     googleClientId: '725620954432-aq83t2skspo1qgk0jjhs608etgb2o9ar.apps.googleusercontent.com',
     facebookAppId: '901712509522992',
+    // Facebook Login for Business Configuration ID (not the App ID).
+    // Created 2026-05-08 via developers.facebook.com → Ryan Realty →
+    // Facebook Login for Business → Configurations. Scope/permissions
+    // (email, public_profile) live inside this config — the snippet passes
+    // config_id instead of scope= so FB looks up permissions from FBLB.
+    facebookConfigId: '1566038921545634',
     cookieName: 'rr_identified',
     cookieDays: 30,
     // Facebook app passed app review (Matt 2026-05-07). Both email and
@@ -440,12 +446,16 @@
       var redirectUri = window.location.origin + '/';
       var state = 'rr_fb_' + Math.random().toString(36).slice(2);
       try { sessionStorage.setItem('rr_fb_oauth_state', state); } catch (e) {}
+      // FBLB flow — pass config_id, NOT scope. Permissions are determined by
+      // the FBLB Configuration in the FB app dashboard.
       var oauthUrl =
         'https://www.facebook.com/v18.0/dialog/oauth' +
         '?client_id=' + encodeURIComponent(cfg.facebookAppId) +
         '&redirect_uri=' + encodeURIComponent(redirectUri) +
         '&response_type=token' +
-        '&scope=' + encodeURIComponent('email,public_profile') +
+        (cfg.facebookConfigId
+          ? '&config_id=' + encodeURIComponent(cfg.facebookConfigId)
+          : '&scope=' + encodeURIComponent('email,public_profile')) +
         '&display=popup' +
         '&state=' + encodeURIComponent(state);
       var popup = window.open(oauthUrl, 'rr_fb_oauth_popup', 'width=600,height=700,scrollbars=yes,resizable=yes');
@@ -786,7 +796,9 @@
       '?client_id=' + encodeURIComponent(cfg.facebookAppId) +
       '&redirect_uri=' + encodeURIComponent(redirectUri) +
       '&response_type=token' +
-      '&scope=' + encodeURIComponent('email,public_profile') +
+      (cfg.facebookConfigId
+        ? '&config_id=' + encodeURIComponent(cfg.facebookConfigId)
+        : '&scope=' + encodeURIComponent('email,public_profile')) +
       '&state=' + encodeURIComponent(state);
   };
 
