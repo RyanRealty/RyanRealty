@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.140.1 (2026-05-08)
+
+### Bug Fixes
+- fix(fub-snippet): use FBLB Configuration ID instead of scope= for FB OAuth
+
+---
+
+
 ## v1.140.0 (2026-05-08)
 
 ### Features
