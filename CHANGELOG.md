@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.4 (2026-05-10)
+
+### Bug Fixes
+- fix(marketing): align execution route Supabase typing
+
+---
+
+
 ## v1.142.3 (2026-05-10)
 
 ### Bug Fixes
