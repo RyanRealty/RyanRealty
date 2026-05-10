@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.140.5 (2026-05-10)
+
+### Bug Fixes
+- fix(linkedin): swap to /rest/posts + openid scopes for personal posts
+
+---
+
+
 ## v1.140.4 (2026-05-10)
 
 ### Bug Fixes
