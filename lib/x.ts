@@ -6,7 +6,10 @@ const X_OAUTH_AUTH_URL = 'https://twitter.com/i/oauth2/authorize'
 const X_OAUTH_TOKEN_URL = 'https://api.twitter.com/2/oauth2/token'
 const X_TWEETS_URL = 'https://api.twitter.com/2/tweets'
 const X_MEDIA_UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json'
-const X_OAUTH_SCOPES = 'tweet.write tweet.read users.read offline.access'
+// media.write added 2026-05-10 to enable native video/image upload via v2/media/upload.
+// Requires X dev app on Basic tier ($100/mo) or higher per X docs. If the OAuth grant
+// fails after this change, the app needs to be upgraded at developer.x.com.
+const X_OAUTH_SCOPES = 'tweet.write tweet.read users.read media.write offline.access'
 
 interface StoredXToken {
   access_token: string
