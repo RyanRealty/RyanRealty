@@ -16,6 +16,9 @@ export default async function DashboardGA4Panel() {
   const endDate = end.toISOString().slice(0, 10)
 
   const result = await getGA4Summary(startDate, endDate)
+  const ga4PropertyId = process.env.GOOGLE_GA4_PROPERTY_ID?.trim() || '(missing)'
+  const ga4ServiceAccountEmail =
+    process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL?.trim() || '(missing)'
 
   if (result.ok && (result.data.sessions > 0 || result.data.totalUsers > 0)) {
     const d = result.data
@@ -95,6 +98,10 @@ export default async function DashboardGA4Panel() {
   }
 
   const isNotConfigured = !result.ok && result.error === 'GA4_NOT_CONFIGURED'
+  const isPermissionDenied =
+    !result.ok &&
+    !isNotConfigured &&
+    /PERMISSION_DENIED|insufficient permissions/i.test(result.error)
   const apiError = !result.ok && !isNotConfigured ? result.error : null
   return (
     <div className="space-y-4">
@@ -105,6 +112,22 @@ export default async function DashboardGA4Panel() {
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
           <p className="font-medium text-destructive">API error</p>
           <p className="mt-1 text-sm text-destructive">{apiError}</p>
+        </div>
+      )}
+      {isPermissionDenied && (
+        <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
+          <p className="font-medium text-foreground">Google Analytics permission fix needed</p>
+          <p className="mt-1 text-sm text-warning">
+            Add this service account as a Viewer (or Analyst) on GA4 property{' '}
+            <code className="rounded bg-warning/15 px-1">{ga4PropertyId}</code>:
+          </p>
+          <p className="mt-2 text-sm text-warning">
+            <code className="rounded bg-warning/15 px-1">{ga4ServiceAccountEmail}</code>
+          </p>
+          <p className="mt-2 text-sm text-warning">
+            GA4 Admin → Property Access Management → Add users → paste service account email →
+            role Viewer or Analyst. This dashboard will populate once access is granted.
+          </p>
         </div>
       )}
       <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
