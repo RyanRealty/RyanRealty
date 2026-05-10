@@ -48,7 +48,38 @@ export default function GoogleAnalytics() {
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              ${hasGA4 ? `gtag('config', '${GA4_ID!.replace(/'/g, "\\'")}');` : ''}
+              (function() {
+                var params = new URLSearchParams(window.location.search || '');
+                var utmSource = params.get('utm_source');
+                var utmMedium = params.get('utm_medium');
+                var inferredSource = null;
+                var inferredMedium = null;
+
+                if (!utmSource) {
+                  if (params.get('fbclid')) {
+                    inferredSource = 'facebook';
+                    inferredMedium = 'paid_social';
+                  } else if (params.get('ttclid')) {
+                    inferredSource = 'tiktok';
+                    inferredMedium = 'paid_social';
+                  } else if (params.get('gclid')) {
+                    inferredSource = 'google';
+                    inferredMedium = 'cpc';
+                  } else if (params.get('msclkid')) {
+                    inferredSource = 'bing';
+                    inferredMedium = 'cpc';
+                  }
+                }
+
+                var gaConfig = {};
+                if (inferredSource && inferredMedium) {
+                  gaConfig.campaign_source = inferredSource;
+                  gaConfig.campaign_medium = inferredMedium;
+                  gaConfig.campaign_name = params.get('utm_campaign') || 'auto-click-id';
+                }
+
+                ${hasGA4 ? `gtag('config', '${GA4_ID!.replace(/'/g, "\\'")}', gaConfig);` : ''}
+              })();
               ${hasGoogleAds ? `gtag('config', '${GOOGLE_ADS_ID!.replace(/'/g, "\\'")}');` : ''}
             `}
           </Script>
