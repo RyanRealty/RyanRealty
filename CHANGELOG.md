@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.13 (2026-05-10)
+
+### Bug Fixes
+- fix(ga4-grant): drill into modal, dump candidate buttons, stop closing the dialog
+
+---
+
+
 ## v1.142.12 (2026-05-10)
 
 ### Maintenance
