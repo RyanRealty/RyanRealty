@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.14 (2026-05-10)
+
+### Maintenance
+- docs(marketing): add visual pipeline reference for the Facebook seller growth system
+
+---
+
+
 ## v1.142.13 (2026-05-10)
 
 ### Bug Fixes
