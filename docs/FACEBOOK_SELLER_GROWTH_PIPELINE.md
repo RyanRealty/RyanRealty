@@ -29,38 +29,38 @@ This is the canonical reference. If anything in `docs/`, `.claude/skills/`, or a
 
 ```mermaid
 flowchart LR
-    subgraph META[Meta - Facebook + Instagram]
-        FBAD[Lead Ad / Boosted Post]
-        FBLEAD[Lead Form]
-        FBLW[Lead Webhook]
+    subgraph META["Meta — Facebook and Instagram"]
+        FBAD["Lead Ad or Boosted Post"]
+        FBLEAD["Lead Form"]
+        FBLW["Lead Webhook"]
     end
 
-    subgraph SITE[ryan-realty.com + ryanrealty.vercel.app]
-        LP[Landing pages: /sell, /home-valuation, /sell/valuation]
-        PIXEL[Meta Pixel + GA4 + GTM]
-        CAPI[/api/meta-capi - server CAPI/]
-        IDBR[Identity bridges: FubIdentityBridge, AgentAttributionBridge]
-        FORMS[Server actions: contact, valuation, exit-intent, page CTA]
+    subgraph SITE["Website — ryan-realty.com and ryanrealty.vercel.app"]
+        LP["Landing pages — sell, home-valuation, valuation"]
+        PIXEL["Meta Pixel and GA4 and GTM"]
+        CAPI["api meta-capi — server CAPI"]
+        IDBR["Identity bridges"]
+        FORMS["Server actions — contact, valuation, exit, page CTA"]
     end
 
-    subgraph FUB[Follow Up Boss CRM]
-        FUBPP[People + Stages + Tags + Notes + Tasks]
+    subgraph FUB["Follow Up Boss CRM"]
+        FUBPP["People and Stages and Tags and Notes and Tasks"]
     end
 
-    subgraph SUPA[Supabase ryan-realty-platform]
+    subgraph SUPA["Supabase ryan-realty-platform"]
         VIS[(visits)]
         VAL[(valuation_requests)]
         AI[(agent_insights)]
         BRK[(brokers)]
     end
 
-    subgraph CRON[Vercel cron jobs]
-        MOR[/api/cron/marketing-optimization-report - Mon 6:30am/]
-        FOE[/api/cron/fub-outreach-execution - Mon 6:45am/]
+    subgraph CRON["Vercel cron jobs"]
+        MOR["marketing-optimization-report — Mon 06:30 UTC"]
+        FOE["fub-outreach-execution — Mon 06:45 UTC"]
     end
 
-    subgraph GA[Google Analytics 4]
-        GA4[GA4 property 527333348]
+    subgraph GA["Google Analytics 4"]
+        GA4["GA4 property 527333348"]
     end
 
     FBAD --> FBLEAD
@@ -71,7 +71,7 @@ flowchart LR
     LP --> IDBR
     LP --> FORMS
     PIXEL --> GA4
-    PIXEL -.fbp/fbc cookie.-> CAPI
+    PIXEL -. fbp and fbc cookie .-> CAPI
     FORMS --> FUBPP
     FORMS --> CAPI
     FORMS --> VIS
@@ -82,12 +82,12 @@ flowchart LR
     META -. ads insights .-> MOR
     FUBPP -. people API .-> MOR
     FUBPP -. people API .-> FOE
-    SUPA -. visits + brokers .-> MOR
+    SUPA -. visits and brokers .-> MOR
     SUPA -. brokers .-> FOE
     MOR --> AI
     FOE --> AI
-    FOE -. PUT person stage/tags .-> FUBPP
-    AI -. pickup_prompt .-> ADMIN[Admin dashboard - marketing command center]
+    FOE -. PUT person stage and tags .-> FUBPP
+    AI -. pickup prompt .-> ADMIN["Admin dashboard — marketing command center"]
 
     classDef meta fill:#1877F2,stroke:#0a4cb3,color:#fff
     classDef site fill:#102742,stroke:#0a1c30,color:#fff
@@ -96,12 +96,12 @@ flowchart LR
     classDef cron fill:#D4AF37,stroke:#9a7d27,color:#fff
     classDef ga fill:#F4B400,stroke:#b58300,color:#fff
 
-    class FBAD,FBLEAD,FBLW,META meta
-    class LP,PIXEL,CAPI,IDBR,FORMS,SITE site
-    class FUBPP,FUB fub
-    class VIS,VAL,AI,BRK,SUPA supa
-    class MOR,FOE,CRON cron
-    class GA4,GA ga
+    class FBAD,FBLEAD,FBLW meta
+    class LP,PIXEL,CAPI,IDBR,FORMS site
+    class FUBPP fub
+    class VIS,VAL,AI,BRK supa
+    class MOR,FOE cron
+    class GA4 ga
 ```
 
 The five layers, in order:
@@ -120,33 +120,33 @@ The five layers, in order:
 sequenceDiagram
     autonumber
     participant U as Visitor
-    participant M as Meta - FB / IG
-    participant W as Website (Next.js)
+    participant M as Meta FB and IG
+    participant W as Website Next.js
     participant FB as FUB Lead Webhook
     participant FUB as Follow Up Boss
 
     Note over M: Two acquisition paths in parallel
 
     rect rgb(232,243,253)
-        Note over U,M: Path A - Lead Ad on Facebook (in-feed)
+        Note over U,M: Path A — Lead Ad on Facebook in-feed
         U->>M: Click ad
         M->>U: Show in-feed lead form
-        U->>M: Submit form (name, email, phone, intent)
-        M->>FB: leadgen webhook (X-Hub-Signature-256)
+        U->>M: Submit form name email phone intent
+        M->>FB: leadgen webhook X-Hub-Signature-256
         FB->>FB: Verify HMAC against META_APP_SECRET
         FB->>M: Fetch lead detail via Graph API
-        FB->>FUB: POST /v1/people with source=Facebook Lead Ad - {campaign}, tags, stage=Lead
-        FB->>FUB: POST /v1/notes with campaign + ad set + intent
+        FB->>FUB: POST people source Facebook Lead Ad campaign tags stage Lead
+        FB->>FUB: POST notes campaign ad-set intent
     end
 
     rect rgb(220,242,228)
-        Note over U,W: Path B - Click-through to website
-        U->>M: Click ad with utm + fbclid
-        M->>W: Land on /sell, /home-valuation, etc
-        W->>W: GoogleAnalytics + MetaPixel scripts load (after consent)
-        W->>W: Auto-infer campaign_source=facebook from fbclid in GA config
-        W->>W: ExitIntentPopup, HomeValuationCta, etc capture lead
-        Note right of W: Continued in section 3 (identity)
+        Note over U,W: Path B — Click-through to website
+        U->>M: Click ad with utm and fbclid
+        M->>W: Land on sell or home-valuation
+        W->>W: GoogleAnalytics and MetaPixel scripts load after consent
+        W->>W: Auto-infer campaign_source facebook from fbclid in GA config
+        W->>W: ExitIntentPopup and HomeValuationCta capture lead
+        Note right of W: Continued in section 3 identity
     end
 ```
 
@@ -168,28 +168,28 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    A[Anonymous visitor lands] --> B{Identification trigger?}
+    A["Anonymous visitor lands"] --> B{"Identification trigger"}
 
-    B -->|Email click from FUB| C[FubIdentityBridge reads ?_fuid=ID]
-    C --> D[POST identifyFubFromEmailClick]
-    D --> E[Set httpOnly fub_cid cookie 90 days]
-    D --> F[Send FUB Visited Website event]
+    B -->|Email click from FUB| C["FubIdentityBridge reads fuid query param"]
+    C --> D["POST identifyFubFromEmailClick"]
+    D --> E["Set httpOnly fub_cid cookie for 90 days"]
+    D --> F["Send FUB Visited Website event"]
 
-    B -->|Google sign-in| G[OAuth callback]
-    G --> H[trackSignedInUser]
-    H --> I[FUB find or create person + Registration event]
+    B -->|Google sign-in| G["OAuth callback"]
+    G --> H["trackSignedInUser"]
+    H --> I["FUB find or create person plus Registration event"]
 
-    B -->|Facebook OAuth on WP| J[POST /api/fub/identify provider=facebook]
-    J --> K[verifyFacebookAccessToken]
+    B -->|Facebook OAuth on WP| J["POST api fub identify provider facebook"]
+    J --> K["verifyFacebookAccessToken"]
     K --> H
 
-    B -->|Form submit signed-out| L[Server action collects email]
+    B -->|Form submit signed-out| L["Server action collects email"]
     L --> H
 
-    E --> M[All future requests carry fub_cid]
+    E --> M["All future requests carry fub_cid"]
     I --> M
-    M --> N[Server actions read fub_cid via getFubPersonIdFromCookie]
-    N --> O[Subsequent FUB events attach to known person id]
+    M --> N["Server actions read fub_cid via getFubPersonIdFromCookie"]
+    N --> O["Subsequent FUB events attach to known person id"]
 
     classDef trigger fill:#fef3c7,stroke:#d97706
     classDef bridge fill:#dbeafe,stroke:#1e40af
@@ -230,25 +230,25 @@ sequenceDiagram
     participant GA as GA4
     participant DB as Supabase
 
-    U->>W: Submit valuation form on /sell/valuation
-    W->>SA: submitValuationRequest(formData)
+    U->>W: Submit valuation form on sell valuation
+    W->>SA: submitValuationRequest formData
     par
         SA->>DB: INSERT INTO valuation_requests
     and
-        SA->>FUB: POST /v1/events (Seller Inquiry + property)
+        SA->>FUB: POST events Seller Inquiry plus property
     and
-        SA->>MC: POST /api/meta-capi (eventName=Lead, hashed PII, fbp+fbc, eventId)
-        MC->>MC: Hash email + phone with SHA-256
-        MC->>MC: Read fbp + fbc cookies
-        MC->>MC: Capture client IP + user-agent
-        MC->>MC: POST graph.facebook.com/<pixel_id>/events
+        SA->>MC: POST api meta-capi eventName Lead hashed PII fbp fbc eventId
+        MC->>MC: Hash email and phone with SHA-256
+        MC->>MC: Read fbp and fbc cookies
+        MC->>MC: Capture client IP and user-agent
+        MC->>MC: POST graph.facebook.com pixel events
     and
-        W->>GA: gtag("event", "valuation_requested")
+        W->>GA: gtag event valuation_requested
     end
-    SA->>DB: (auto-CMA) INSERT visits row tagged seller intent
-    SA->>SA: Build CMA PDF, email to visitor and admin
+    SA->>DB: auto-CMA INSERT visits row tagged seller intent
+    SA->>SA: Build CMA PDF email to visitor and admin
 
-    Note over W,GA: Both pixel (browser) and CAPI (server) fire with the same eventId so Meta dedupes
+    Note over W,GA: Pixel browser and CAPI server fire with the same eventId so Meta dedupes
 ```
 
 **Event taxonomy on the wire**
@@ -274,36 +274,36 @@ Two Vercel crons run every Monday morning (Pacific time, since `vercel.json` sch
 
 ```mermaid
 flowchart TB
-    subgraph MOR[marketing-optimization-report cron - Mondays]
-        MOR1[Pull last-30d window]
-        MOR2[Parallel data fetch]
-        MOR2 --> MOR2a[GA4 sessions, lead events, source split]
-        MOR2 --> MOR2b[Meta Ads insights spend, CTR, CPL, frequency]
-        MOR2 --> MOR2c[Supabase visits + valuation_requests + FUB pipeline]
-        MOR3[Score 0-100 against thresholds]
-        MOR4[Build report card with scale/pause/test/fix items]
-        MOR5[Compose pickup_prompt for the next agent]
-        MOR6[INSERT agent_insights insight_type=marketing_optimization_weekly]
-        MOR7[Mark prior pending or in_progress packets implemented]
+    subgraph MOR["marketing-optimization-report cron — Mondays"]
+        MOR1["Pull last-30d window"]
+        MOR2["Parallel data fetch"]
+        MOR2 --> MOR2a["GA4 sessions, lead events, source split"]
+        MOR2 --> MOR2b["Meta Ads insights spend CTR CPL frequency"]
+        MOR2 --> MOR2c["Supabase visits, valuation_requests, FUB pipeline"]
+        MOR3["Score 0 to 100 against thresholds"]
+        MOR4["Build report card with scale, pause, test, fix items"]
+        MOR5["Compose pickup_prompt for the next agent"]
+        MOR6["INSERT agent_insights — marketing_optimization_weekly"]
+        MOR7["Mark prior pending or in-progress packets implemented"]
         MOR1 --> MOR2 --> MOR3 --> MOR4 --> MOR5 --> MOR6 --> MOR7
     end
 
-    subgraph FOE[fub-outreach-execution cron - Mondays 15min later]
-        FOE1[Find Matt broker uuid in brokers table]
-        FOE2[Load contact snapshot]
-        FOE2 --> FOE2a{fub_contacts_cache exists?}
-        FOE2a -->|yes| FOE2b[Use Supabase cache]
-        FOE2a -->|no| FOE2c{fub_contacts exists?}
-        FOE2c -->|yes| FOE2d[Use legacy table]
-        FOE2c -->|no| FOE2e[fetchMyLeadsFromFubLive - paginate /v1/people by assignedUserId]
-        FOE3[Filter to my-leads, exclude likely realtors]
-        FOE4[For each contact, choose outreach plan based on stage]
-        FOE5{FOLLOWUPBOSS_EXECUTION_ENABLED?}
-        FOE5 -->|true| FOE6a[PUT FUB person stage and tags]
-        FOE5 -->|true| FOE6b[POST FUB note with suggested SMS + email]
-        FOE5 -->|false| FOE6c[Dry-run, packet records intent only]
-        FOE7[INSERT agent_insights insight_type=fub_outreach_execution_weekly]
-        FOE8[Mark prior pending or in_progress execution packets implemented]
+    subgraph FOE["fub-outreach-execution cron — Mondays 15 min later"]
+        FOE1["Find Matt broker uuid in brokers table"]
+        FOE2["Load contact snapshot"]
+        FOE2 --> FOE2a{"fub_contacts_cache exists"}
+        FOE2a -->|yes| FOE2b["Use Supabase cache"]
+        FOE2a -->|no| FOE2c{"fub_contacts exists"}
+        FOE2c -->|yes| FOE2d["Use legacy table"]
+        FOE2c -->|no| FOE2e["fetchMyLeadsFromFubLive — paginate people by assignedUserId"]
+        FOE3["Filter to my-leads, exclude likely realtors"]
+        FOE4["For each contact choose outreach plan by stage"]
+        FOE5{"FOLLOWUPBOSS_EXECUTION_ENABLED"}
+        FOE5 -->|true| FOE6a["PUT FUB person stage and tags"]
+        FOE5 -->|true| FOE6b["POST FUB note with suggested SMS and email"]
+        FOE5 -->|false| FOE6c["Dry-run, packet records intent only"]
+        FOE7["INSERT agent_insights — fub_outreach_execution_weekly"]
+        FOE8["Mark prior pending or in-progress execution packets implemented"]
         FOE1 --> FOE2 --> FOE3 --> FOE4 --> FOE5
         FOE6a --> FOE7
         FOE6b --> FOE7
@@ -311,10 +311,10 @@ flowchart TB
         FOE7 --> FOE8
     end
 
-    MOR -.runs at 6:30am UTC Mon.-> FOE
-    MOR7 --> AGENT[Admin dashboard + agent pickup]
+    MOR -. runs at 06:30 UTC Mon .-> FOE
+    MOR7 --> AGENT["Admin dashboard and agent pickup"]
     FOE8 --> AGENT
-    AGENT --> ACTION[Matt or agent executes recommendations]
+    AGENT --> ACTION["Matt or agent executes recommendations"]
     ACTION -. next cycle .-> MOR
 
     classDef step fill:#fff7ed,stroke:#c2410c
@@ -347,28 +347,28 @@ Every weekly packet ships a 0–100 score, a verdict, and 0–N typed recommenda
 
 ```mermaid
 flowchart LR
-    PACKET[agent_insights packet] --> SCORE{score?}
-    SCORE -->|>= 75| STRONG[strong - scale]
-    SCORE -->|50-74| NEED[needs_attention - test + fix]
-    SCORE -->|< 50| RISK[at_risk - fix critical first]
+    PACKET["agent_insights packet"] --> SCORE{"score band"}
+    SCORE -->|"75 to 100"| STRONG["strong — scale"]
+    SCORE -->|"50 to 74"| NEED["needs_attention — test plus fix"]
+    SCORE -->|"0 to 49"| RISK["at_risk — fix critical first"]
 
-    STRONG --> ACT[Read recommendations]
+    STRONG --> ACT["Read recommendations"]
     NEED --> ACT
     RISK --> ACT
 
-    ACT --> FIX[fix - data plumbing missing]
-    ACT --> SCALE[scale - more budget on winner]
-    ACT --> PAUSE[pause - kill underperformer]
-    ACT --> TEST[test - one creative + one audience hypothesis]
-    ACT --> WATCH[watch - no action this cycle]
+    ACT --> FIX["fix — data plumbing missing"]
+    ACT --> SCALE["scale — more budget on winner"]
+    ACT --> PAUSE["pause — kill underperformer"]
+    ACT --> TEST["test — one creative plus one audience hypothesis"]
+    ACT --> WATCH["watch — no action this cycle"]
 
-    FIX --> CYCLE[Wait for next Monday cron + re-score]
+    FIX --> CYCLE["Wait for next Monday cron and re-score"]
     SCALE --> CYCLE
     PAUSE --> CYCLE
     TEST --> CYCLE
     WATCH --> CYCLE
 
-    CYCLE -. update LEARNINGS.md .-> SKILL[.claude/skills/facebook-seller-growth/LEARNINGS.md]
+    CYCLE -. "update learnings file" .-> SKILL["facebook-seller-growth LEARNINGS"]
 
     classDef strong fill:#bbf7d0,stroke:#15803d
     classDef warn fill:#fef08a,stroke:#a16207
@@ -404,41 +404,41 @@ Every recommendation carries an `action` (`scale / pause / test / fix / watch`) 
 
 ```mermaid
 erDiagram
-    AGENT_INSIGHTS ||--o{ MARKETING_PACKETS : has
-    AGENT_INSIGHTS ||--o{ EXECUTION_PACKETS : has
-    BROKERS ||--o{ FUB_CONTACTS_LIVE : owns
+    AGENT_INSIGHTS ||--o{ MARKETING_PACKETS : "writes"
+    AGENT_INSIGHTS ||--o{ EXECUTION_PACKETS : "writes"
+    BROKERS ||--o{ FUB_CONTACTS_LIVE : "owns"
     VALUATION_REQUESTS ||--o{ VISITS : "fired by"
 
     AGENT_INSIGHTS {
         uuid id PK
-        text insight_type "marketing_optimization_weekly | fub_outreach_execution_weekly"
+        text insight_type "weekly packet type"
         text title
         text description
-        text priority "low | medium | high"
-        text status "pending | in_progress | implemented | superseded"
-        jsonb data
+        text priority "low or medium or high"
+        text status "pending in_progress implemented superseded"
+        jsonb data "the packet body"
         timestamptz created_at
         timestamptz updated_at
     }
 
     MARKETING_PACKETS {
         text window_label "Last 30 days"
-        jsonb report_card "score, verdict, items[]"
-        jsonb metrics_snapshot "ga4, meta_ads, website, fub"
-        jsonb fub_pipeline "stageCounts, myLeadsTotal, etc"
-        text_array next_actions
-        text pickup_prompt
+        jsonb report_card "score verdict items"
+        jsonb metrics_snapshot "ga4 meta_ads website fub"
+        jsonb fub_pipeline "stageCounts myLeadsTotal"
+        text next_actions "array of suggested next actions"
+        text pickup_prompt "ready-made agent pickup prompt"
     }
 
     EXECUTION_PACKETS {
-        text execution_mode "apply | dry_run"
-        text source_table "fub_contacts_cache | fub_contacts | fub_api_live | none"
+        text execution_mode "apply or dry_run"
+        text source_table "fub_contacts_cache fub_contacts fub_api_live"
         text source_warning
         uuid matt_broker_id
         int my_leads_count
         int targetable_count
-        jsonb_array execution_items "fubId, stage, triggerTag, sms, applied"
-        text_array voice_rules
+        jsonb execution_items "array of fubId stage tag sms applied"
+        text voice_rules "array of brand voice constraints"
     }
 
     BROKERS {
@@ -470,7 +470,7 @@ erDiagram
     }
 
     FUB_CONTACTS_LIVE {
-        text fub_id "from /v1/people"
+        text fub_id "from FUB people endpoint"
         uuid broker_id
         text stage
         jsonb tags
@@ -490,26 +490,26 @@ All schedules are UTC (Vercel cron convention). Pacific time conversions are app
 
 ```mermaid
 gantt
-    title Weekly cron schedule (UTC)
+    title Weekly cron schedule UTC
     dateFormat HH:mm
     axisFormat %H:%M
 
-    section Sync + caches
-    sync-delta - every 10min : 00:00, 24h
-    sync-history-terminal - every 5min : 00:00, 24h
+    section Sync caches
+    sync-delta              :00:00, 5m
+    sync-history-terminal   :00:05, 5m
 
     section Reporting
-    refresh-market-stats - every 6h : 00:00, 24h
-    refresh-reporting-cache - daily 03:15 : 03:15, 1m
+    refresh-market-stats    :00:00, 5m
+    refresh-reporting-cache :03:15, 5m
 
-    section Marketing optimization Mon
-    optimization-loop - 06:00 Mon : 06:00, 1m
-    marketing-optimization-report - 06:30 Mon : 06:30, 1m
-    fub-outreach-execution - 06:45 Mon : 06:45, 1m
+    section Marketing Mon
+    optimization-loop                :06:00, 10m
+    marketing-optimization-report    :06:30, 10m
+    fub-outreach-execution           :06:45, 10m
 
     section Comms
-    saved-search-alerts - daily 14:00 : 14:00, 1m
-    market-report - Sat 14:00 : 14:00, 1m
+    saved-search-alerts     :14:00, 5m
+    market-report-Sat       :14:30, 5m
 ```
 
 **The Marketing Mon block is the seller growth loop.** It runs serially: optimization-loop first (broader system review), then marketing-optimization-report (writes the marketing packet), then fub-outreach-execution (writes the execution packet and applies to FUB).
@@ -599,47 +599,47 @@ node scripts/grant-ga4-viewer-access.mjs --service-account other@project.iam.gse
 
 ```mermaid
 flowchart LR
-    subgraph SHARED[Shared infra]
-        FUB_LIB[lib/followupboss.ts]
-        FUB_CLI[lib/fub-client.mjs]
-        MCAPI[lib/meta-capi.ts]
-        TRACK[lib/tracking.ts]
+    subgraph SHARED["Shared infra"]
+        FUB_LIB["lib/followupboss.ts"]
+        FUB_CLI["lib/fub-client.mjs"]
+        MCAPI["lib/meta-capi.ts"]
+        TRACK["lib/tracking.ts"]
     end
 
-    subgraph ACQ[Acquisition + identity]
-        IDR[app/api/fub/identify/route.ts]
-        TPR[app/api/fub/track-page/route.ts]
-        IDB[app/actions/fub-identity-bridge.ts]
-        FUBC[components/FubIdentityBridge.tsx]
-        ATTC[components/AgentAttributionBridge.tsx]
+    subgraph ACQ["Acquisition and identity"]
+        IDR["app api fub identify route.ts"]
+        TPR["app api fub track-page route.ts"]
+        IDB["app actions fub-identity-bridge.ts"]
+        FUBC["components FubIdentityBridge.tsx"]
+        ATTC["components AgentAttributionBridge.tsx"]
     end
 
-    subgraph FORMS[Conversion server actions]
-        CONT[app/contact/actions.ts]
-        VAL[app/home-valuation/actions.ts]
-        LEAD[app/actions/lead-capture.ts]
-        MCR[app/api/meta-capi/route.ts]
-        LWH[app/api/meta/lead-webhook/route.ts]
+    subgraph FORMS["Conversion server actions"]
+        CONT["app contact actions.ts"]
+        VAL["app home-valuation actions.ts"]
+        LEAD["app actions lead-capture.ts"]
+        MCR["app api meta-capi route.ts"]
+        LWH["app api meta lead-webhook route.ts"]
     end
 
-    subgraph CRON[Weekly automation]
-        MOR[app/api/cron/marketing-optimization-report/route.ts]
-        FOE[app/api/cron/fub-outreach-execution/route.ts]
-        DASH[app/actions/dashboard.ts]
-        GA[app/actions/ga4-report.ts]
+    subgraph CRON["Weekly automation"]
+        MOR["app api cron marketing-optimization-report route.ts"]
+        FOE["app api cron fub-outreach-execution route.ts"]
+        DASH["app actions dashboard.ts"]
+        GA["app actions ga4-report.ts"]
     end
 
-    subgraph UI[Admin command center]
-        ADM[app/admin/(protected)/page.tsx]
-        PNL[components/admin/DashboardMarketingCommandCenterPanel.tsx]
+    subgraph UI["Admin command center"]
+        ADM["app admin protected page.tsx"]
+        PNL["components admin DashboardMarketingCommandCenterPanel.tsx"]
     end
 
-    subgraph SKILLS[Skill + ops]
-        SK[.claude/skills/facebook-seller-growth/SKILL.md]
-        LRN[.claude/skills/facebook-seller-growth/LEARNINGS.md]
-        CLR[CLOUD_ROUTINE_PROMPT.md]
-        GRANT[scripts/grant-ga4-viewer-access.mjs]
-        DOC[docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md]
+    subgraph SKILLS["Skill and ops"]
+        SK[".claude skills facebook-seller-growth SKILL.md"]
+        LRN[".claude skills facebook-seller-growth LEARNINGS.md"]
+        CLR["CLOUD_ROUTINE_PROMPT.md"]
+        GRANT["scripts grant-ga4-viewer-access.mjs"]
+        DOC["docs FACEBOOK_SELLER_GROWTH_PIPELINE.md"]
     end
 
     ACQ --> SHARED
