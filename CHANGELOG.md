@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.140.3 (2026-05-10)
+
+### Bug Fixes
+- fix(deploy): allow deploy verification without explicit VERCEL_TOKEN
+
+---
+
+
 ## v1.140.2 (2026-05-10)
 
 ### Bug Fixes
