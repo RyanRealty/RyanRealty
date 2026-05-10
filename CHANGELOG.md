@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.15 (2026-05-10)
+
+### Maintenance
+- docs(marketing): build self-contained HTML render of the pipeline doc
+
+---
+
+
 ## v1.142.14 (2026-05-10)
 
 ### Maintenance
