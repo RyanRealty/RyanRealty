@@ -113,10 +113,14 @@ const recordStep = (step, result) => {
   const page = context.pages()[0] ?? (await context.newPage())
 
   try {
-    // 1. Property Access Management — direct deep link.
-    const propertyAccessUrl = `https://analytics.google.com/analytics/web/#/p${PROPERTY_ID}/admin/suiteuserpermissions/property`
-    log('Navigating to Property Access Management')
-    await page.goto(propertyAccessUrl, { waitUntil: 'domcontentloaded' })
+    // 1. Land on the GA4 Home page in the right account/property scope.
+    //    GA4 deep links to /admin/suiteuserpermissions/* are flaky in the
+    //    current UI — they often dump the user back at Home. Instead we land
+    //    on Home and click the "Property access management" tile that appears
+    //    in either Recently accessed or under the Admin (gear) menu.
+    const homeUrl = 'https://analytics.google.com/analytics/web/'
+    log('Navigating to GA4 Home')
+    await page.goto(homeUrl, { waitUntil: 'domcontentloaded' })
 
     // 2. Detect sign-in state. If the URL bounces to accounts.google.com,
     //    pause and let the human / agent complete Google sign-in.
@@ -128,17 +132,23 @@ const recordStep = (step, result) => {
     }
     recordStep('signin', { status: 'signed_in' })
 
-    // 3. Wait for the access table to settle.
-    await page.waitForTimeout(2500)
+    // 3. Navigate to Property Access Management via the in-app UI.
+    const propertyNavOk = await navigateToAccessManagement(page, 'property')
     await screenshot(page, '02_property_access_loaded.png')
+    if (!propertyNavOk) {
+      log('Could not reach Property Access Management UI')
+      recordStep('property_nav', { status: 'navigation_failed' })
+    }
 
     // 4. Try Property-level add first.
-    const propertyResult = await tryAddViewer({
-      page,
-      level: 'property',
-      label: 'property',
-      screenshotPrefix: '03_property',
-    })
+    const propertyResult = propertyNavOk
+      ? await tryAddViewer({
+          page,
+          level: 'property',
+          label: 'property',
+          screenshotPrefix: '03_property',
+        })
+      : { status: 'navigation_failed', level: 'property' }
     recordStep('property_attempt', propertyResult)
 
     if (propertyResult.status === 'added') {
@@ -148,18 +158,24 @@ const recordStep = (step, result) => {
     }
 
     // 5. Fall back to Account-level add.
-    log('Property-level add failed, trying account level')
-    const accountAccessUrl = `https://analytics.google.com/analytics/web/#/p${PROPERTY_ID}/admin/suiteuserpermissions/account`
-    await page.goto(accountAccessUrl, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(2500)
+    log('Property-level add did not succeed, trying account level')
+    await page.goto(homeUrl, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(2000)
+    const accountNavOk = await navigateToAccessManagement(page, 'account')
     await screenshot(page, '04_account_access_loaded.png')
+    if (!accountNavOk) {
+      log('Could not reach Account Access Management UI')
+      recordStep('account_nav', { status: 'navigation_failed' })
+    }
 
-    const accountResult = await tryAddViewer({
-      page,
-      level: 'account',
-      label: 'account',
-      screenshotPrefix: '05_account',
-    })
+    const accountResult = accountNavOk
+      ? await tryAddViewer({
+          page,
+          level: 'account',
+          label: 'account',
+          screenshotPrefix: '05_account',
+        })
+      : { status: 'navigation_failed', level: 'account' }
     recordStep('account_attempt', accountResult)
 
     if (accountResult.status === 'added') {
@@ -240,6 +256,14 @@ async function waitForSignInOrAccessUI(page, timeoutMs) {
 
 async function tryAddViewer({ page, level, label, screenshotPrefix }) {
   log(`Attempting add at ${label} level`)
+
+  // IMPORTANT: do NOT press Escape here. GA4 renders access management as a
+  // modal dialog overlay, not a separate page. Escape would close it.
+
+  // Debug dump: list every visible button on the right half of the screen
+  // with its aria-label and bounding box. Helps a future agent tighten the
+  // selector without re-running the whole flow.
+  await dumpRightSideButtons(page, screenshotPrefix)
 
   // Find an add affordance. GA4 uses a floating action button "Create" at the
   // top right of the access table. Try several common labels.
@@ -324,18 +348,201 @@ async function tryAddViewer({ page, level, label, screenshotPrefix }) {
   }
 }
 
+async function navigateToAccessManagement(page, scope /* 'property' | 'account' */) {
+  const tileName = scope === 'property' ? /^Property access management$/i : /^Account access management$/i
+
+  // Strategy 1: click the Recently accessed tile then, if we land on the
+  // Admin overview, click the actual subpage link to drill in.
+  const tile = page.getByRole('link', { name: tileName }).first()
+  if (await tile.count()) {
+    log(`  clicking "${scope === 'property' ? 'Property' : 'Account'} access management" tile`)
+    await tile.click().catch(() => {})
+    await page.waitForTimeout(3000)
+    if (await isOnAccessManagementPage(page, scope)) return true
+    // Drill in from Admin overview: click the link in the side nav or right
+    // panel that points specifically at access management for our scope.
+    if (await drillIntoAccessSubpage(page, scope)) {
+      await page.waitForTimeout(3000)
+      if (await isOnAccessManagementPage(page, scope)) return true
+    }
+  }
+
+  // Strategy 2: open Admin from the sidebar/gear and drill in.
+  const admin = page.getByRole('link', { name: /^Admin$/i }).first()
+  if (await admin.count()) {
+    log('  opening Admin via gear/sidebar')
+    await admin.click().catch(() => {})
+    await page.waitForTimeout(2500)
+    if (await drillIntoAccessSubpage(page, scope)) {
+      await page.waitForTimeout(3000)
+      if (await isOnAccessManagementPage(page, scope)) return true
+    }
+  }
+
+  return false
+}
+
+async function drillIntoAccessSubpage(page, scope) {
+  const phrase = scope === 'property' ? 'Property access management' : 'Account access management'
+
+  // Try the right-panel card icon link first (under "Property settings" or
+  // "Account settings"). This is the most reliable path when on the Admin
+  // overview. The card link sits inside a section that contains the literal
+  // text "Property settings" or "Account settings".
+  const sectionAnchor = scope === 'property' ? 'Property settings' : 'Account settings'
+  const cardLink = page
+    .locator(`section:has-text("${sectionAnchor}")`)
+    .locator(`a:has-text("${phrase}"), button:has-text("${phrase}")`)
+    .first()
+  if (await cardLink.count()) {
+    log(`  drilling via ${sectionAnchor} card link`)
+    await cardLink.scrollIntoViewIfNeeded().catch(() => {})
+    await cardLink.click({ force: true }).catch(() => {})
+    await page.waitForTimeout(2500)
+    if (await isOnAccessManagementPage(page, scope)) return true
+  }
+
+  // Try clicking the side nav entry. The side nav has truncated labels like
+  // "Property access managem..." so we use a starts-with text match.
+  const sideNav = page
+    .locator('nav, [role="navigation"]')
+    .locator(`a:has-text("${phrase.slice(0, 18)}"), button:has-text("${phrase.slice(0, 18)}")`)
+  const sideNavAll = await sideNav.all()
+  for (const handle of sideNavAll) {
+    if (!(await handle.isVisible().catch(() => false))) continue
+    log('  drilling via side nav entry')
+    await handle.click({ force: true }).catch(() => {})
+    await page.waitForTimeout(2500)
+    if (await isOnAccessManagementPage(page, scope)) return true
+  }
+
+  // Last resort: try every link/button matching the phrase, click each in
+  // turn, check after each click. Forces past any swallowed click handlers.
+  const broad = page.locator(
+    `a:has-text("${phrase}"), button:has-text("${phrase}"), [role="link"]:has-text("${phrase}"), [role="button"]:has-text("${phrase}")`
+  )
+  const broadAll = await broad.all()
+  for (const handle of broadAll) {
+    if (!(await handle.isVisible().catch(() => false))) continue
+    log('  drilling via broad text match')
+    await handle.click({ force: true }).catch(() => {})
+    await page.waitForTimeout(2500)
+    if (await isOnAccessManagementPage(page, scope)) return true
+  }
+
+  return false
+}
+
+async function isOnAccessManagementPage(page, scope) {
+  // IMPORTANT: do NOT press Escape here. GA4 renders the access management
+  // table as a modal dialog over the Admin page; Escape would close it.
+
+  // The Admin overview page also contains the literal text "Property access
+  // management" (as a link card), so loose text matching gives false
+  // positives. The reliable signals are:
+  //   1. The "Roles and data restrictions" column header — only renders on
+  //      the access management subpage.
+  //   2. The "<scope> access management <N> rows?" title format with a row
+  //      count suffix — only renders when the access table is loaded.
+  //   3. URL contains the suiteuserpermissions / accessmanagement segment.
+  // We reject if the visible page heading is exactly "Admin" (overview).
+
+  const adminHeadingVisible = await page
+    .locator('h1:has-text("Admin"), [role="heading"]:has-text("Admin")')
+    .first()
+    .isVisible({ timeout: 800 })
+    .catch(() => false)
+  if (adminHeadingVisible) return false
+
+  const colHeader = await page
+    .locator('text=/Roles and data restrictions/i')
+    .first()
+    .isVisible({ timeout: 1500 })
+    .catch(() => false)
+  if (colHeader) return true
+
+  const url = page.url()
+  if (/suiteuserpermissions|accessmanagement/i.test(url)) return true
+
+  // Title with row count — "Property access management 1 row" or "10 rows".
+  const titlePattern = scope === 'property'
+    ? /Property access management\s+\d+\s+rows?/i
+    : /Account access management\s+\d+\s+rows?/i
+  const rowsTitle = await page
+    .locator(`text=${titlePattern.toString().slice(1, -2)}`)
+    .first()
+    .isVisible({ timeout: 1000 })
+    .catch(() => false)
+  if (rowsTitle) return true
+
+  return false
+}
+
+async function dumpRightSideButtons(page, prefix) {
+  const viewport = page.viewportSize() ?? { width: 1024, height: 768 }
+  const rows = await page.evaluate((vw) => {
+    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'))
+    return buttons
+      .map((b) => {
+        const r = b.getBoundingClientRect()
+        return {
+          aria_label: b.getAttribute('aria-label') ?? '',
+          aria_haspopup: b.getAttribute('aria-haspopup') ?? '',
+          text: (b.textContent ?? '').trim().slice(0, 40),
+          class_name: b.className?.toString().slice(0, 80) ?? '',
+          x: Math.round(r.x),
+          y: Math.round(r.y),
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+          disabled: b.hasAttribute('disabled'),
+          visible: r.width > 0 && r.height > 0,
+        }
+      })
+      .filter((b) => b.visible && !b.disabled && b.x > vw * 0.45 && b.y < 120)
+  }, viewport.width)
+  const path = join(OUT_DIR, `${prefix}_z_button_dump.json`)
+  writeFileSync(path, JSON.stringify(rows, null, 2))
+  log(`  dumped ${rows.length} top-right candidate buttons → ${path}`)
+}
+
 async function findAddAffordance(page) {
+  // The actual add control is a blue circular FAB in the top-right of the
+  // access management table header. Filtering rules:
+  //   - Reject disabled / hidden buttons.
+  //   - Reject carousel scroll arrows (aria-label contains "scroll",
+  //     "backwards", etc.).
+  //   - Reject the TOP-LEFT "+ Create" entity creator (lives in the side
+  //     nav, x position is in the LEFT HALF of the viewport, opens an
+  //     Account / Property submenu).
+  //   - Accept the right-side FAB even if it has aria-haspopup, because
+  //     clicking the access-management add button opens an Add users /
+  //     Add user groups submenu before showing the email form.
+  const viewport = page.viewportSize() ?? { width: 1440, height: 900 }
   const candidates = [
     page.getByRole('button', { name: /^add users?$/i }),
+    page.getByRole('link', { name: /^add users?$/i }),
+    page.locator('button[aria-label="Add users"]'),
+    page.locator('button[aria-label="Add user"]'),
+    page.locator('button[aria-label="Add users to account"]'),
+    page.locator('button[aria-label="Add users to property"]'),
+    page.locator('button[mat-fab]:not([disabled])'),
+    page.locator('button.mdc-fab:not([disabled])'),
+    page.locator('button.mat-mdc-fab:not([disabled])'),
     page.getByRole('button', { name: /^create$/i }),
-    page.getByRole('button', { name: /^add$/i }),
-    page.locator('button[aria-label*="Add"]'),
-    page.locator('button[aria-label*="Create"]'),
-    page.locator('mat-fab, [class*="fab"]'),
   ]
   for (const candidate of candidates) {
-    const handle = candidate.first()
-    if ((await handle.count()) && (await handle.isVisible().catch(() => false))) {
+    const all = await candidate.all()
+    for (const handle of all) {
+      const enabled = await handle.isEnabled().catch(() => false)
+      const visible = await handle.isVisible().catch(() => false)
+      if (!enabled || !visible) continue
+      const aria = (await handle.getAttribute('aria-label').catch(() => '')) ?? ''
+      if (/scroll|backwards?|forwards?|previous|next|move/i.test(aria)) continue
+      // Require right-half placement: the access-management add button sits
+      // at the top-right of the table; the entity creator "+ Create" sits
+      // in the left side nav.
+      const box = await handle.boundingBox().catch(() => null)
+      if (box && box.x < viewport.width * 0.5) continue
       return handle
     }
   }
