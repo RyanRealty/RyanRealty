@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.0 (2026-05-10)
+
+### Features
+- feat(marketing): launch FUB outreach execution layer
+
+---
+
+
 ## v1.141.2 (2026-05-10)
 
 ### Bug Fixes
