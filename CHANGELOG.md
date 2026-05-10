@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.2 (2026-05-10)
+
+### Bug Fixes
+- fix(marketing): align dashboard Supabase client typing
+
+---
+
+
 ## v1.142.1 (2026-05-10)
 
 ### Bug Fixes
