@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.141.1 (2026-05-10)
+
+### Bug Fixes
+- fix(linkedin): use OpenID sub for author URN + active LinkedIn-Version
+
+---
+
+
 ## v1.141.0 (2026-05-10)
 
 ### Features
