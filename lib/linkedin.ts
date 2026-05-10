@@ -4,7 +4,13 @@ const LINKEDIN_OAUTH_AUTH_URL = 'https://www.linkedin.com/oauth/v2/authorization
 const LINKEDIN_OAUTH_TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken'
 const LINKEDIN_ASSET_REGISTER_URL = 'https://api.linkedin.com/v2/assets?action=registerUpload'
 const LINKEDIN_UGC_POSTS_URL = 'https://api.linkedin.com/v2/ugcPosts'
-const LINKEDIN_OAUTH_SCOPES = 'w_member_social'
+const LINKEDIN_USERINFO_URL = 'https://api.linkedin.com/v2/userinfo'
+const LINKEDIN_REST_POSTS_URL = 'https://api.linkedin.com/rest/posts'
+const LINKEDIN_REST_VERSION = '202404'
+// w_member_social = post on behalf of member; openid+profile+email = OpenID Connect
+// (provisioned 2026-05-09, required so /v2/userinfo returns the canonical person sub
+// and the modern /rest/posts API will accept urn:li:person:{sub} as author).
+const LINKEDIN_OAUTH_SCOPES = 'openid profile email w_member_social'
 
 interface RegisterUploadResponse {
   value?: {
@@ -197,6 +203,30 @@ export function getLinkedInPersonId(): string {
   return requireEnv('LINKEDIN_PERSON_ID')
 }
 
+/**
+ * Fetch the OpenID Connect userinfo for the current token. Returns the
+ * canonical 'sub' (LinkedIn person sub identifier) which is what the modern
+ * /rest/posts API expects for author=urn:li:person:{sub}. Requires the
+ * 'openid' scope on the token.
+ */
+export async function getLinkedInUserInfo(accessToken: string): Promise<{
+  sub: string
+  name?: string
+  given_name?: string
+  family_name?: string
+  email?: string
+}> {
+  const response = await fetch(LINKEDIN_USERINFO_URL, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) {
+    throw new Error(
+      `LinkedIn userinfo failed: ${response.status} ${response.statusText} (token may be missing the openid scope — re-OAuth via /api/linkedin/authorize)`
+    )
+  }
+  return response.json()
+}
+
 export async function publishLinkedInVideoFromUrl(
   options: LinkedInVideoPublishOptions
 ): Promise<string> {
@@ -263,39 +293,48 @@ export async function publishLinkedInVideoFromUrl(
     throw new Error(`LinkedIn media upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`)
   }
 
-  const postResponse = await fetch(LINKEDIN_UGC_POSTS_URL, {
+  // Modern /rest/posts API. The legacy /v2/ugcPosts now rejects
+  // urn:li:person: authors with 422 ("does not match urn:li:company|member"),
+  // so we swap to /rest/posts which accepts urn:li:person:{sub} for personal
+  // posts when the token carries the openid scope.
+  const postResponse = await fetch(LINKEDIN_REST_POSTS_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${options.accessToken}`,
       'Content-Type': 'application/json',
+      'LinkedIn-Version': LINKEDIN_REST_VERSION,
       'X-Restli-Protocol-Version': '2.0.0',
     },
     body: JSON.stringify({
       author: authorUrn,
+      commentary: options.caption,
+      visibility: options.visibility ?? 'PUBLIC',
+      distribution: {
+        feedDistribution: 'MAIN_FEED',
+        targetEntities: [],
+        thirdPartyDistributionChannels: [],
+      },
+      content: {
+        media: { id: assetUrn },
+      },
       lifecycleState: 'PUBLISHED',
-      specificContent: {
-        'com.linkedin.ugc.ShareContent': {
-          shareCommentary: { text: options.caption },
-          shareMediaCategory: 'VIDEO',
-          media: [{ status: 'READY', media: assetUrn }],
-        },
-      },
-      visibility: {
-        'com.linkedin.ugc.MemberNetworkVisibility': options.visibility ?? 'PUBLIC',
-      },
+      isReshareDisabledByAuthor: false,
     }),
   })
 
   if (!postResponse.ok) {
-    throw new Error(`LinkedIn post create failed: ${postResponse.status} ${postResponse.statusText}`)
+    const body = await postResponse.text()
+    throw new Error(
+      `LinkedIn post create failed: ${postResponse.status} ${postResponse.statusText} - ${body.slice(0, 300)}`
+    )
   }
 
-  const postJson = (await postResponse.json()) as LinkedInPostResponse
+  // Modern /rest/posts returns the URN in x-restli-id header
+  const postUrn = postResponse.headers.get('x-restli-id')
+  if (postUrn?.trim()) return postUrn
+
+  const postJson = (await postResponse.json().catch(() => ({}))) as LinkedInPostResponse
   if (!postJson.id) {
-    const locationHeader = postResponse.headers.get('x-restli-id')
-    if (locationHeader?.trim()) {
-      return locationHeader
-    }
     throw new Error(postJson.message || 'LinkedIn post created but id missing')
   }
 
