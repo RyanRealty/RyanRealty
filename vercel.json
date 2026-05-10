@@ -29,6 +29,14 @@
       "schedule": "0 6 * * 1"
     },
     {
+      "path": "/api/cron/marketing-optimization-report",
+      "schedule": "30 6 * * 1"
+    },
+    {
+      "path": "/api/cron/fub-outreach-execution",
+      "schedule": "45 6 * * 1"
+    },
+    {
       "path": "/api/cron/saved-search-alerts",
       "schedule": "0 14 * * *"
     },

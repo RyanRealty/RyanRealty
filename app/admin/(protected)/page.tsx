@@ -6,6 +6,7 @@ import {
   getDashboardLeadData,
   getDashboardDataQuality,
   getDashboardContentStatus,
+  getDashboardMarketingData,
 } from '@/app/actions/dashboard'
 import DashboardPanel from '@/components/admin/DashboardPanel'
 import DashboardSyncPanel from '@/components/admin/DashboardSyncPanel'
@@ -15,6 +16,7 @@ import DashboardNotificationsPanel from '@/components/admin/DashboardNotificatio
 import DashboardSitePerformancePanel from '@/components/admin/DashboardSitePerformancePanel'
 import DashboardRevenuePanel from '@/components/admin/DashboardRevenuePanel'
 import DashboardContentStatusPanel from '@/components/admin/DashboardContentStatusPanel'
+import DashboardMarketingCommandCenterPanel from '@/components/admin/DashboardMarketingCommandCenterPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,11 +24,12 @@ export default async function AdminDashboardPage() {
   const setupComplete = await getSetupComplete()
   if (!setupComplete) redirect('/admin/setup')
 
-  const [syncData, leadData, dataQuality, contentStatus] = await Promise.all([
+  const [syncData, leadData, dataQuality, contentStatus, marketingData] = await Promise.all([
     getDashboardSyncData(),
     getDashboardLeadData(),
     getDashboardDataQuality(),
     getDashboardContentStatus(),
+    getDashboardMarketingData(),
   ])
 
   return (
@@ -50,6 +53,10 @@ export default async function AdminDashboardPage() {
 
         <DashboardPanel id="ga4" title="Google Analytics (GA4) deep integration" defaultOpen={true}>
           <DashboardGA4Panel />
+        </DashboardPanel>
+
+        <DashboardPanel id="marketing" title="Marketing command center (Meta + GA4 + FUB)" defaultOpen={true}>
+          <DashboardMarketingCommandCenterPanel data={marketingData} />
         </DashboardPanel>
 
         <DashboardPanel id="lead" title="Lead and contact intelligence" defaultOpen={true}>

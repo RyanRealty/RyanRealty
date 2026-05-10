@@ -388,6 +388,46 @@ export async function addPersonNote(personId: number, body: string): Promise<boo
 }
 
 /**
+ * Update person stage and/or merge tags on an existing FUB person.
+ * This is used to trigger FUB automation workflows in a controlled way.
+ */
+export async function updatePersonAutomationState(params: {
+  personId: number
+  stage?: string
+  tags?: Array<string | undefined | null>
+}): Promise<boolean> {
+  const auth = getAuth()
+  if (!auth) return false
+  if (!Number.isFinite(params.personId) || params.personId <= 0) return false
+
+  const cleanedTags = Array.from(
+    new Set(
+      (params.tags ?? [])
+        .map((tag) => (typeof tag === 'string' ? tag.trim() : ''))
+        .filter((tag): tag is string => tag.length > 0 && tag.length <= 80),
+    ),
+  )
+
+  const body: Record<string, unknown> = {}
+  if (params.stage?.trim()) body.stage = params.stage.trim()
+  if (cleanedTags.length > 0) body.tags = cleanedTags
+  if (Object.keys(body).length === 0) return false
+
+  try {
+    const response = await fetch(`${FUB_BASE}/people/${params.personId}?mergeTags=true`, {
+      method: 'PUT',
+      headers: fubHeaders(auth),
+      body: JSON.stringify(body),
+      next: { revalidate: 0 },
+    })
+    return response.ok
+  } catch (error) {
+    console.error('[updatePersonAutomationState] Network error:', error)
+    return false
+  }
+}
+
+/**
  * Send an event to FollowUp Boss (creates or updates the person and triggers automations).
  * Use type "Registration" for sign-ups; FUB matches by email to avoid duplicates.
  */
