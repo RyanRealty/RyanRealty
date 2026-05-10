@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.6 (2026-05-10)
+
+### Bug Fixes
+- fix(marketing): restore build and harden FUB activity alerts
+
+---
+
+
 ## v1.142.5 (2026-05-10)
 
 ### Bug Fixes
