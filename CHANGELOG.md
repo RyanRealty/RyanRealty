@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.1 (2026-05-10)
+
+### Bug Fixes
+- fix(marketing): resolve broker id typing in production build
+
+---
+
+
 ## v1.142.0 (2026-05-10)
 
 ### Features
