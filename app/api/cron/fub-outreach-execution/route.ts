@@ -23,6 +23,12 @@ type OutreachPlan = {
   reason: string
 }
 
+type FubSourceQueryResult = {
+  rows: FubSnapshotRow[]
+  sourceTable: 'fub_contacts_cache' | 'fub_contacts' | 'none'
+  warning: string | null
+}
+
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim()
   if (!secret) return true
@@ -107,6 +113,44 @@ function renderTemplate(template: string, firstName: string): string {
   return template.replaceAll('{firstName}', safeFirstName)
 }
 
+async function loadFubSnapshotRows(
+  supabase: ReturnType<typeof createClient>,
+  weekAgoIso: string
+): Promise<FubSourceQueryResult> {
+  const cacheQuery = await supabase
+    .from('fub_contacts_cache')
+    .select('fub_id, broker_id, stage, tags, name, email, source, synced_at')
+    .gte('synced_at', weekAgoIso)
+    .limit(5000)
+
+  if (!cacheQuery.error) {
+    return {
+      rows: (cacheQuery.data ?? []) as FubSnapshotRow[],
+      sourceTable: 'fub_contacts_cache',
+      warning: null,
+    }
+  }
+
+  const fallbackQuery = await supabase
+    .from('fub_contacts')
+    .select('fub_id, broker_id, stage, tags, name, email, source')
+    .limit(5000)
+
+  if (!fallbackQuery.error) {
+    return {
+      rows: (fallbackQuery.data ?? []) as FubSnapshotRow[],
+      sourceTable: 'fub_contacts',
+      warning: `fub_contacts_cache unavailable: ${cacheQuery.error.message}`,
+    }
+  }
+
+  return {
+    rows: [],
+    sourceTable: 'none',
+    warning: `fub_contacts_cache unavailable: ${cacheQuery.error.message}. fub_contacts unavailable: ${fallbackQuery.error.message}`,
+  }
+}
+
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -131,17 +175,8 @@ export async function GET(request: Request) {
 
   const mattBroker = (mattBrokerRow ?? null) as { id: string } | null
   const mattBrokerId = mattBroker?.id ?? null
-  const { data: fubRows, error: fubRowsError } = await supabase
-    .from('fub_contacts_cache')
-    .select('fub_id, broker_id, stage, tags, name, email, source, synced_at')
-    .gte('synced_at', weekAgoIso)
-    .limit(5000)
-
-  if (fubRowsError) {
-    return NextResponse.json({ error: fubRowsError.message }, { status: 500 })
-  }
-
-  const rows = ((fubRows ?? []) as FubSnapshotRow[])
+  const fubSource = await loadFubSnapshotRows(supabase, weekAgoIso)
+  const rows = fubSource.rows
   const myLeads = mattBrokerId ? rows.filter((row) => row.broker_id === mattBrokerId) : rows
   const targetable = myLeads.filter((row) => !isLikelyRealtor(row))
 
@@ -221,6 +256,8 @@ export async function GET(request: Request) {
       status: 'pending',
       data: {
         execution_mode: applyExecution ? 'apply' : 'dry_run',
+        source_table: fubSource.sourceTable,
+        source_warning: fubSource.warning,
         matt_broker_id: mattBrokerId,
         my_leads_count: myLeads.length,
         targetable_count: targetable.length,
