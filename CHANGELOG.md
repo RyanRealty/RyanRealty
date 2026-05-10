@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.141.0 (2026-05-10)
+
+### Features
+- feat(analytics): add lead and social GA4 insights for conversion optimization
+
+---
+
+
 ## v1.140.5 (2026-05-10)
 
 ### Bug Fixes
