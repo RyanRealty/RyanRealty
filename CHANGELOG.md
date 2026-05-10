@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.12 (2026-05-10)
+
+### Maintenance
+- chore(ga4): add browser-agent script to grant viewer access on property 527333348
+
+---
+
+
 ## v1.142.11 (2026-05-10)
 
 ### Bug Fixes
