@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.5 (2026-05-10)
+
+### Bug Fixes
+- fix(x): add media.write scope for native video/image upload
+
+---
+
+
 ## v1.142.4 (2026-05-10)
 
 ### Bug Fixes
