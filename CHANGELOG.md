@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.17 (2026-05-10)
+
+### Maintenance
+- chore(env): bypass vercel CLI bug, expand GA4 SA vars to preview via REST API
+
+---
+
+
 ## v1.142.16 (2026-05-10)
 
 ### Bug Fixes
