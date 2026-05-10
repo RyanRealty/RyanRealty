@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.9 (2026-05-10)
+
+### Maintenance
+- chore(env): trigger redeploy to load GA4 service account creds
+
+---
+
+
 ## v1.142.8 (2026-05-10)
 
 ### Maintenance
