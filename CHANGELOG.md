@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.11 (2026-05-10)
+
+### Bug Fixes
+- fix(marketing): add immediate reminder window for realtime FUB tasks
+
+---
+
+
 ## v1.142.10 (2026-05-10)
 
 ### Maintenance
