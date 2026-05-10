@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { addPersonNote, updatePersonAutomationState } from '@/lib/followupboss'
 
 export const runtime = 'nodejs'
@@ -114,7 +114,7 @@ function renderTemplate(template: string, firstName: string): string {
 }
 
 async function loadFubSnapshotRows(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   weekAgoIso: string
 ): Promise<FubSourceQueryResult> {
   const cacheQuery = await supabase
