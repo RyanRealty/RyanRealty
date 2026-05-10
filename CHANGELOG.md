@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.16 (2026-05-10)
+
+### Bug Fixes
+- fix(docs): rewrite pipeline doc mermaid blocks for mermaid 11 strict parser
+
+---
+
+
 ## v1.142.15 (2026-05-10)
 
 ### Maintenance
