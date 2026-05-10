@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.3 (2026-05-10)
+
+### Bug Fixes
+- fix(marketing): fallback when FUB cache table is missing
+
+---
+
+
 ## v1.142.2 (2026-05-10)
 
 ### Bug Fixes
