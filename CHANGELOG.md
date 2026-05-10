@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.8 (2026-05-10)
+
+### Maintenance
+- docs(handoff): record FUB live API fallback ship and GA4 next steps
+
+---
+
+
 ## v1.142.7 (2026-05-10)
 
 ### Bug Fixes
