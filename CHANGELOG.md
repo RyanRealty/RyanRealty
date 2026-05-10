@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.140.2 (2026-05-10)
+
+### Bug Fixes
+- fix(analytics): restore GA4 route tracking and enrich admin traffic insights
+
+---
+
+
 ## v1.140.1 (2026-05-08)
 
 ### Bug Fixes
