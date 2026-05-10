@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.141.2 (2026-05-10)
+
+### Bug Fixes
+- fix(analytics): infer paid social source when UTMs are missing
+
+---
+
+
 ## v1.141.1 (2026-05-10)
 
 ### Bug Fixes
