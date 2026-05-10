@@ -27,6 +27,7 @@
 import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
 import { execSync } from 'child_process'
+import { homedir } from 'os'
 
 const TIMEOUT_MS = Number(process.env.DEPLOY_VERIFY_TIMEOUT_MS ?? 5 * 60 * 1000)
 const POLL_INTERVAL_MS = Number(process.env.DEPLOY_VERIFY_POLL_MS ?? 8000)
@@ -61,6 +62,50 @@ function loadEnvLocal() {
     return env
   } catch {
     return {}
+  }
+}
+
+function loadVercelCliToken() {
+  const explicitPath = process.env.VERCEL_AUTH_CONFIG?.trim()
+  const authPath = explicitPath || resolve(homedir(), '.vercel/auth.json')
+  if (!existsSync(authPath)) return ''
+  try {
+    const raw = JSON.parse(readFileSync(authPath, 'utf8'))
+    return String(raw?.token ?? '').trim()
+  } catch {
+    return ''
+  }
+}
+
+function parseJsonFromOutput(raw) {
+  const firstBrace = raw.indexOf('{')
+  if (firstBrace < 0) return null
+  try {
+    return JSON.parse(raw.slice(firstBrace))
+  } catch {
+    return null
+  }
+}
+
+function findDeploymentForShaViaCli(sha) {
+  try {
+    const output = execSync(
+      `npx vercel ls --environment production --meta githubCommitSha=${sha} --format json`,
+      { encoding: 'utf8' },
+    )
+    const parsed = parseJsonFromOutput(output)
+    const deployments = parsed?.deployments
+    if (!Array.isArray(deployments) || deployments.length === 0) return null
+    const hit = deployments[0]
+    return {
+      id: `cli-${sha.slice(0, 7)}`,
+      state: String(hit?.state ?? 'UNKNOWN').toUpperCase(),
+      url: hit?.url,
+      inspectorUrl: null,
+      meta: { githubCommitSha: hit?.meta?.githubCommitSha ?? sha },
+    }
+  } catch {
+    return null
   }
 }
 
@@ -135,15 +180,20 @@ function formatLogTail(events) {
 
 async function main() {
   const fileEnv = loadEnvLocal()
-  const token = (process.env.VERCEL_TOKEN || fileEnv.VERCEL_TOKEN || '').trim()
-  if (!token) {
-    err('VERCEL_TOKEN missing. Set it in .env.local or your shell env.')
-    err('Get a token at https://vercel.com/account/tokens.')
-    process.exit(2)
-  }
+  const apiToken = (
+    process.env.VERCEL_TOKEN ||
+    fileEnv.VERCEL_TOKEN ||
+    loadVercelCliToken() ||
+    ''
+  ).trim()
+  const usingCliFallback = !apiToken
 
   const { projectId, teamId } = loadProjectMeta()
   const sha = (targetSha || getHeadSha()).toLowerCase()
+
+  if (usingCliFallback) {
+    out('no API token found; using Vercel CLI auth fallback for deploy checks')
+  }
 
   out(`waiting for production deploy of ${sha.slice(0, 7)} (project ${projectId})`)
 
@@ -152,7 +202,9 @@ async function main() {
   let lastState = null
 
   while (Date.now() - startedAt < TIMEOUT_MS) {
-    deployment = await findDeploymentForSha(token, projectId, teamId, sha)
+    deployment = usingCliFallback
+      ? findDeploymentForShaViaCli(sha)
+      : await findDeploymentForSha(apiToken, projectId, teamId, sha)
     if (deployment) {
       const state = deployment.state ?? 'UNKNOWN'
       if (state !== lastState) {
@@ -168,14 +220,18 @@ async function main() {
       if (state === 'ERROR' || state === 'CANCELED') {
         err(`deployment ${state} for SHA ${sha.slice(0, 7)} (id ${deployment.id})`)
         err(`inspector: ${deployment.inspectorUrl ?? '(none)'}`)
-        try {
-          const events = await getBuildLogs(token, deployment.id, teamId, 80)
-          const tail = formatLogTail(events)
-          err('---- last build-log frames ----')
-          for (const line of tail) process.stderr.write(line.text + '\n')
-          err('-------------------------------')
-        } catch (e) {
-          err(`could not fetch build logs: ${e.message}`)
+        if (usingCliFallback) {
+          err('build-log tail unavailable in CLI fallback mode (set VERCEL_TOKEN to enable)')
+        } else {
+          try {
+            const events = await getBuildLogs(apiToken, deployment.id, teamId, 80)
+            const tail = formatLogTail(events)
+            err('---- last build-log frames ----')
+            for (const line of tail) process.stderr.write(line.text + '\n')
+            err('-------------------------------')
+          } catch (e) {
+            err(`could not fetch build logs: ${e.message}`)
+          }
         }
         process.exit(1)
       }
