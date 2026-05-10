@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getGA4Summary } from './ga4-report'
 import {
@@ -195,7 +195,7 @@ function isLikelyRealtorContact(row: FubContactSnapshot): boolean {
 }
 
 async function getFubPipelineSnapshot(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   startIso: string
 ): Promise<DashboardMarketingData['fubPipeline']> {
   const { data: mattBrokerRow } = await supabase
