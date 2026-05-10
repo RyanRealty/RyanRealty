@@ -1,18 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { addPersonNote, updatePersonAutomationState } from '@/lib/followupboss'
+import {
+  addPersonNote,
+  fetchMyLeadsFromFubLive,
+  updatePersonAutomationState,
+  type FubMyLeadSnapshotRow,
+} from '@/lib/followupboss'
 
 export const runtime = 'nodejs'
 
-type FubSnapshotRow = {
-  fub_id: string
-  broker_id: string | null
-  stage: string | null
-  tags: unknown
-  name: string | null
-  email: string | null
-  source: string | null
-}
+type FubSnapshotRow = FubMyLeadSnapshotRow
 
 type OutreachPlan = {
   triggerTag: string
@@ -25,7 +22,7 @@ type OutreachPlan = {
 
 type FubSourceQueryResult = {
   rows: FubSnapshotRow[]
-  sourceTable: 'fub_contacts_cache' | 'fub_contacts' | 'none'
+  sourceTable: 'fub_contacts_cache' | 'fub_contacts' | 'fub_api_live' | 'none'
   warning: string | null
 }
 
@@ -115,7 +112,8 @@ function renderTemplate(template: string, firstName: string): string {
 
 async function loadFubSnapshotRows(
   supabase: SupabaseClient,
-  weekAgoIso: string
+  weekAgoIso: string,
+  liveFallback: { brokerSlug: string | null; brokerEmail: string | null; brokerId: string | null }
 ): Promise<FubSourceQueryResult> {
   const cacheQuery = await supabase
     .from('fub_contacts_cache')
@@ -123,7 +121,7 @@ async function loadFubSnapshotRows(
     .gte('synced_at', weekAgoIso)
     .limit(5000)
 
-  if (!cacheQuery.error) {
+  if (!cacheQuery.error && (cacheQuery.data ?? []).length > 0) {
     return {
       rows: (cacheQuery.data ?? []) as FubSnapshotRow[],
       sourceTable: 'fub_contacts_cache',
@@ -131,23 +129,51 @@ async function loadFubSnapshotRows(
     }
   }
 
+  const cacheWarning = cacheQuery.error
+    ? `fub_contacts_cache unavailable: ${cacheQuery.error.message}`
+    : 'fub_contacts_cache empty for the requested window'
+
   const fallbackQuery = await supabase
     .from('fub_contacts')
     .select('fub_id, broker_id, stage, tags, name, email, source')
     .limit(5000)
 
-  if (!fallbackQuery.error) {
+  if (!fallbackQuery.error && (fallbackQuery.data ?? []).length > 0) {
     return {
       rows: (fallbackQuery.data ?? []) as FubSnapshotRow[],
       sourceTable: 'fub_contacts',
-      warning: `fub_contacts_cache unavailable: ${cacheQuery.error.message}`,
+      warning: cacheWarning,
+    }
+  }
+
+  const fallbackWarning = fallbackQuery.error
+    ? `fub_contacts unavailable: ${fallbackQuery.error.message}`
+    : 'fub_contacts empty'
+
+  const live = await fetchMyLeadsFromFubLive({
+    brokerSlug: liveFallback.brokerSlug,
+    brokerEmail: liveFallback.brokerEmail,
+    brokerId: liveFallback.brokerId,
+  })
+
+  if (live.rows.length > 0) {
+    return {
+      rows: live.rows,
+      sourceTable: 'fub_api_live',
+      warning: [cacheWarning, fallbackWarning, live.warning].filter(Boolean).join(' | '),
     }
   }
 
   return {
     rows: [],
     sourceTable: 'none',
-    warning: `fub_contacts_cache unavailable: ${cacheQuery.error.message}. fub_contacts unavailable: ${fallbackQuery.error.message}`,
+    warning: [
+      cacheWarning,
+      fallbackWarning,
+      live.warning ?? 'fub_api_live returned 0 rows',
+    ]
+      .filter(Boolean)
+      .join(' | '),
   }
 }
 
@@ -173,11 +199,23 @@ export async function GET(request: Request) {
     .limit(1)
     .maybeSingle()
 
-  const mattBroker = (mattBrokerRow ?? null) as { id: string } | null
+  const mattBroker = (mattBrokerRow ?? null) as
+    | { id: string; slug?: string | null; email?: string | null }
+    | null
   const mattBrokerId = mattBroker?.id ?? null
-  const fubSource = await loadFubSnapshotRows(supabase, weekAgoIso)
+  const fubSource = await loadFubSnapshotRows(supabase, weekAgoIso, {
+    brokerSlug: mattBroker?.slug ?? 'matt-ryan',
+    brokerEmail: mattBroker?.email ?? null,
+    brokerId: mattBrokerId,
+  })
   const rows = fubSource.rows
-  const myLeads = mattBrokerId ? rows.filter((row) => row.broker_id === mattBrokerId) : rows
+  // When rows came from the live FUB API we already filtered to assignedUserId,
+  // so the broker_id column is null by design. Skip the broker filter in that case.
+  const isLiveSource = fubSource.sourceTable === 'fub_api_live'
+  const myLeads =
+    isLiveSource || !mattBrokerId
+      ? rows
+      : rows.filter((row) => row.broker_id === mattBrokerId)
   const targetable = myLeads.filter((row) => !isLikelyRealtor(row))
 
   const executionItems: Array<{
@@ -288,10 +326,22 @@ export async function GET(request: Request) {
     )
   }
 
+  // Lifecycle hygiene: mark any prior pending/in_progress execution packets as
+  // implemented so the queue reflects reality. Best-effort; failure here does
+  // not block the response.
+  await supabase
+    .from('agent_insights')
+    .update({ status: 'implemented', updated_at: new Date().toISOString() })
+    .eq('insight_type', 'fub_outreach_execution_weekly')
+    .in('status', ['pending', 'in_progress'])
+    .neq('id', insertedInsight.id)
+
   return NextResponse.json({
     ok: true,
     insight_id: insertedInsight.id,
     execution_mode: applyExecution ? 'apply' : 'dry_run',
+    source_table: fubSource.sourceTable,
+    source_warning: fubSource.warning,
     my_leads_count: myLeads.length,
     targetable_count: targetable.length,
     generated_outreach: executionItems.length,

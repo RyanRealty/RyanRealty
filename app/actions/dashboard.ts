@@ -2,6 +2,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchMyLeadsFromFubLive } from '@/lib/followupboss'
 import { getGA4Summary } from './ga4-report'
 import {
   getAdminSyncCounts,
@@ -205,18 +206,40 @@ async function getFubPipelineSnapshot(
     .limit(1)
     .maybeSingle()
 
-  const mattBroker = (mattBrokerRow ?? null) as { id: string } | null
+  const mattBroker = (mattBrokerRow ?? null) as
+    | { id: string; slug?: string | null; email?: string | null }
+    | null
   const mattBrokerId = mattBroker?.id ?? null
-  const { data: contactRows } = await supabase
+  const cacheQuery = await supabase
     .from('fub_contacts_cache')
     .select('id, broker_id, stage, tags, email, name')
     .gte('synced_at', startIso)
     .limit(5000)
 
-  const contacts = ((contactRows ?? []) as FubContactSnapshot[])
-  const myLeads = mattBrokerId
-    ? contacts.filter((row) => row.broker_id === mattBrokerId)
-    : contacts
+  let contacts: FubContactSnapshot[] = (cacheQuery.data ?? []) as FubContactSnapshot[]
+  let usedLiveSource = false
+  if (cacheQuery.error || contacts.length === 0) {
+    const live = await fetchMyLeadsFromFubLive({
+      brokerSlug: mattBroker?.slug ?? 'matt-ryan',
+      brokerEmail: mattBroker?.email ?? null,
+      brokerId: mattBrokerId,
+    })
+    if (live.rows.length > 0) {
+      usedLiveSource = true
+      contacts = live.rows.map((row) => ({
+        id: row.fub_id,
+        broker_id: mattBrokerId,
+        stage: row.stage,
+        tags: row.tags,
+        email: row.email,
+        name: row.name,
+      }))
+    }
+  }
+  const myLeads =
+    usedLiveSource || !mattBrokerId
+      ? contacts
+      : contacts.filter((row) => row.broker_id === mattBrokerId)
 
   const targetable = myLeads.filter((row) => !isLikelyRealtorContact(row))
   const realtorExcludedCount = myLeads.length - targetable.length
@@ -375,12 +398,23 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
           .select('id', { count: 'exact', head: true })
           .gte('created_at', startIso)
           .or('path.ilike./sell%,path.ilike./home-valuation%'),
+        // Seller visits attributed to Facebook: utm_source=facebook in path,
+        // an fbclid present (paid clickthroughs auto-tagged by Facebook), or
+        // a referrer host in the Meta family (facebook / instagram / m.me).
         supabase
           .from('visits')
           .select('id', { count: 'exact', head: true })
           .gte('created_at', startIso)
           .or('path.ilike./sell%,path.ilike./home-valuation%')
-          .ilike('path', '%utm_source=facebook%'),
+          .or(
+            [
+              'path.ilike.%utm_source=facebook%',
+              'path.ilike.%fbclid=%',
+              'referrer.ilike.%facebook.%',
+              'referrer.ilike.%instagram.%',
+              'referrer.ilike.%m.me%',
+            ].join(',')
+          ),
         supabase
           .from('valuation_requests')
           .select('id', { count: 'exact', head: true })

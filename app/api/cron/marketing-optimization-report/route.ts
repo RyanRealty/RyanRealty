@@ -100,6 +100,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  // Lifecycle hygiene: mark any prior pending/in_progress marketing packets as
+  // implemented so the queue reflects reality. Best-effort.
+  await supabase
+    .from('agent_insights')
+    .update({ status: 'implemented', updated_at: new Date().toISOString() })
+    .eq('insight_type', 'marketing_optimization_weekly')
+    .in('status', ['pending', 'in_progress'])
+    .neq('id', inserted.id)
+
   return NextResponse.json({
     ok: true,
     insight_id: inserted.id,

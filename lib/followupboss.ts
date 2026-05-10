@@ -990,3 +990,137 @@ export async function trackReturnVisit(params: {
     taskName: 'Lead returned to website. Follow up now.',
   })
 }
+
+/**
+ * Snapshot row shape consumed by the marketing dashboard and the FUB outreach
+ * execution cron. Mirrors the legacy `fub_contacts_cache` row shape so callers
+ * can swap data sources (Supabase cache → live FUB API) without changes.
+ */
+export type FubMyLeadSnapshotRow = {
+  fub_id: string
+  broker_id: string | null
+  stage: string | null
+  tags: unknown
+  name: string | null
+  email: string | null
+  source: string | null
+}
+
+type FubLivePerson = {
+  id?: number
+  name?: string
+  firstName?: string
+  lastName?: string
+  emails?: Array<{ value?: string | null }>
+  stage?: string | null
+  tags?: string[] | null
+  source?: string | null
+  assignedUserId?: number | null
+}
+
+/**
+ * Pull "My Leads" for a broker directly from the live FUB People API. Used as
+ * the source of truth when the legacy Supabase contact cache table is absent.
+ *
+ * Resolution order for the FUB user id:
+ *   1. `FOLLOWUPBOSS_BROKER_USER_MAP` env (slug → userId pairs).
+ *   2. Lookup by broker email via `findUserByEmail`.
+ *
+ * Returns rows shaped like the old `fub_contacts_cache` snapshot so dashboards
+ * and outreach execution can consume them with no schema branching.
+ */
+export async function fetchMyLeadsFromFubLive(params: {
+  brokerSlug?: string | null
+  brokerEmail?: string | null
+  brokerId?: string | null
+  /** Hard cap on rows returned (defaults to 1500). FUB pages are 100/req. */
+  limit?: number
+}): Promise<{ rows: FubMyLeadSnapshotRow[]; assignedUserId: number | null; warning: string | null }> {
+  const auth = getAuth()
+  if (!auth) {
+    return { rows: [], assignedUserId: null, warning: 'FOLLOWUPBOSS_API_KEY not configured' }
+  }
+
+  const slug = params.brokerSlug?.trim().toLowerCase() || ''
+  const email = params.brokerEmail?.trim() || null
+
+  let assignedUserId: number | null = null
+  if (slug) {
+    const mapped = getMappedUserIdForSlug(slug)
+    if (mapped) assignedUserId = mapped
+  }
+  if (!assignedUserId && email) {
+    const user = await findUserByEmail(email)
+    if (user?.id) assignedUserId = user.id
+  }
+  if (!assignedUserId) {
+    return {
+      rows: [],
+      assignedUserId: null,
+      warning: 'Could not resolve FUB assigned user id (set FOLLOWUPBOSS_BROKER_USER_MAP or broker email).',
+    }
+  }
+
+  const cap = Math.max(1, Math.min(5000, params.limit ?? 1500))
+  const pageSize = 100
+  const rows: FubMyLeadSnapshotRow[] = []
+
+  for (let offset = 0; offset < cap; offset += pageSize) {
+    const remaining = cap - offset
+    const limit = Math.min(pageSize, remaining)
+    const query = new URLSearchParams({
+      assignedUserId: String(assignedUserId),
+      limit: String(limit),
+      offset: String(offset),
+      fields: 'id,name,firstName,lastName,emails,stage,tags,source,assignedUserId',
+    })
+    let res: Response
+    try {
+      res = await fetch(`${FUB_BASE}/people?${query.toString()}`, {
+        headers: fubHeaders(auth),
+        next: { revalidate: 0 },
+      })
+    } catch (err) {
+      return {
+        rows,
+        assignedUserId,
+        warning: `FUB people fetch network error at offset ${offset}: ${(err as Error).message}`,
+      }
+    }
+    if (!res.ok) {
+      return {
+        rows,
+        assignedUserId,
+        warning: `FUB people fetch HTTP ${res.status} at offset ${offset}`,
+      }
+    }
+    const payload = (await res.json().catch(() => null)) as { people?: FubLivePerson[] } | null
+    const people = Array.isArray(payload?.people) ? payload!.people : []
+    if (people.length === 0) break
+
+    for (const person of people) {
+      const fubId = Number(person.id)
+      if (!Number.isFinite(fubId) || fubId <= 0) continue
+      const fullName =
+        (person.name?.trim()) ||
+        [person.firstName?.trim(), person.lastName?.trim()].filter(Boolean).join(' ').trim() ||
+        null
+      const primaryEmail = Array.isArray(person.emails)
+        ? (person.emails.find((e) => typeof e?.value === 'string' && (e.value as string).trim().length > 0)?.value ?? null)
+        : null
+      rows.push({
+        fub_id: String(fubId),
+        broker_id: params.brokerId ?? null,
+        stage: typeof person.stage === 'string' ? person.stage : null,
+        tags: Array.isArray(person.tags) ? person.tags : [],
+        name: fullName,
+        email: primaryEmail ? String(primaryEmail).trim() : null,
+        source: typeof person.source === 'string' ? person.source : null,
+      })
+    }
+
+    if (people.length < limit) break
+  }
+
+  return { rows, assignedUserId, warning: null }
+}
