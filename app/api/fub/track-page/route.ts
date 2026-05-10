@@ -23,7 +23,7 @@
  */
 
 import { NextResponse } from 'next/server'
-import { trackPageView, trackListingView, addPersonTags, addPersonNote } from '@/lib/followupboss'
+import { trackPageView, trackListingView, addPersonTags, addPersonNote, createRealtimeTask } from '@/lib/followupboss'
 
 const ALLOWED_ORIGINS = new Set<string>([
   'https://ryan-realty.com',
@@ -169,6 +169,7 @@ export async function POST(request: Request) {
   // area guide views. Other categories (home / blog / about / search /
   // financial_tools / other) don't add notes — those would be too noisy.
   let noteAdded = false
+  let taskCreated = false
   const noteCategories = new Set(['listing_detail', 'seller_intent', 'buyer_intent', 'area_guide'])
   if (category && noteCategories.has(category)) {
     let noteBody = ''
@@ -190,10 +191,34 @@ export async function POST(request: Request) {
     if (noteBody) {
       try { noteAdded = await addPersonNote(fubPersonId, noteBody) } catch {}
     }
+
+    const taskCategories = new Set(['listing_detail', 'seller_intent', 'buyer_intent'])
+    if (taskCategories.has(category)) {
+      let taskName = 'Website activity alert. Follow up now.'
+      let dueInMinutes = 10
+      if (category === 'listing_detail' && listing) {
+        taskName = `Lead viewed listing now (${listing.mlsNumber ?? 'no MLS'})`
+        dueInMinutes = 5
+      } else if (category === 'seller_intent') {
+        taskName = 'Seller intent page activity. Call now.'
+        dueInMinutes = 5
+      } else if (category === 'buyer_intent') {
+        taskName = 'Buyer intent page activity. Follow up now.'
+        dueInMinutes = 10
+      }
+      try {
+        taskCreated = await createRealtimeTask({
+          personId: fubPersonId,
+          taskType: 'Call',
+          dueInMinutes,
+          taskName,
+        })
+      } catch {}
+    }
   }
 
   return NextResponse.json(
-    { ok: true, eventType, taggedCount: tagsToMerge.length, taggedSucceeded, noteAdded },
+    { ok: true, eventType, taggedCount: tagsToMerge.length, taggedSucceeded, noteAdded, taskCreated },
     { headers: corsHeaders(origin) },
   )
 }

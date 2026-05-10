@@ -32,6 +32,7 @@
     "db:add-team-image": "node scripts/add-team-image-column.mjs",
     "sync:full": "node scripts/run-full-sync.mjs",
     "sync:strict-last-ask": "node scripts/sync-strict-verify-last-ask.mjs",
+    "fub:enrich": "node scripts/fub-enrich-contacts.mjs",
     "test": "vitest run",
     "orchestrate": "npx tsx scripts/orchestrate.ts",
     "orchestrate:status": "npx tsx scripts/orchestrate.ts status",

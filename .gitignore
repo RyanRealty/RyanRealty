@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -89,6 +90,7 @@ video/evergreen-education/public/AzoSans-Medium.ttf
 
 # Legacy style backup — old design system (hex, .btn-cta, .card-base); do not use or import
 _style_backup
+_worktree_salvage/
 
 .vercel
 public/videos/hero-original.mp4

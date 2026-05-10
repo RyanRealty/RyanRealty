@@ -76,3 +76,74 @@ When a signed-in user returns after **24+ hours** (cookie-based), the site sends
 | Return (24h+)     | Visited Website    | `return` (message sent) |
 
 Configure tags and custom fields in FUB Admin; the app sends the event type and optional `message` only.
+
+## Real-time task alerts (Matt app notifications)
+
+To make website re-activation harder to miss in the FUB app, high-intent events now create near-term call tasks:
+
+- return visit (`Visited Website` with message `return`) → call task due in ~10 minutes
+- listing detail view via tracked page endpoint → call task due in ~5 minutes
+- seller intent page activity → call task due in ~5 minutes
+- buyer intent page activity → call task due in ~10 minutes
+
+Environment controls:
+
+```bash
+# default true; set to false to disable "Matt alert" notes
+FOLLOWUPBOSS_REALTIME_ACTIVITY_ALERTS=true
+
+# default true; set to false to disable auto-created follow-up tasks
+FOLLOWUPBOSS_REALTIME_ACTIVITY_TASKS=true
+
+# optional fallback assignee when contact has no assignedUserId in FUB
+FOLLOWUPBOSS_DEFAULT_ASSIGNED_USER_ID=1234
+```
+
+## Contact enrichment workflow (name cleanup + profile build)
+
+Use the enrichment runner to process FUB contacts, normalize name fields, and build ownership/profile context from Supabase listings.
+
+### Dry run (recommended first)
+
+```bash
+node --env-file=.env.local scripts/fub-enrich-contacts.mjs --limit 300
+```
+
+Or with npm script:
+
+```bash
+npm run fub:enrich -- --limit 300
+```
+
+This creates a JSON report under `out/fub-contact-enrichment/` with:
+
+- suggested first/last name fixes
+- owned-home and mailing-address extraction from FUB fields
+- Supabase ownership lookup (close date, close price, estimated years owned) when address match is found
+- public research links (Facebook search + public-records searches) for manual review
+
+### Apply safe updates to FUB
+
+```bash
+node --env-file=.env.local scripts/fub-enrich-contacts.mjs --limit 300 --apply
+```
+
+Safe updates currently include:
+
+- filling missing `firstName` / `lastName` when parseable from full name
+- skipping auto-name updates for likely entities (trusts, LLCs, estates, etc.)
+- deferring ambiguous or recently active contacts to manual review in report output
+- populating owned-home profile fields when available (`customOpenHouseAddress`, purchase fields, MLS when derivable)
+- merging home and mailing data into FUB `addresses` without overwriting richer existing address values
+
+To also attach a profile snapshot note to each contact:
+
+```bash
+node --env-file=.env.local scripts/fub-enrich-contacts.mjs --limit 300 --apply --write-notes
+```
+
+### Single-contact repair
+
+```bash
+node --env-file=.env.local scripts/fub-enrich-contacts.mjs --person-id 12345 --apply --write-notes
+```

@@ -137,6 +137,80 @@ function isBrokerAssignmentGuardrailEnabled(): boolean {
   return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on'
 }
 
+function isRealtimeActivityAlertsEnabled(): boolean {
+  const raw = process.env.FOLLOWUPBOSS_REALTIME_ACTIVITY_ALERTS?.trim().toLowerCase()
+  if (!raw) return true
+  return !(raw === '0' || raw === 'false' || raw === 'no' || raw === 'off')
+}
+
+function isRealtimeActivityTasksEnabled(): boolean {
+  const raw = process.env.FOLLOWUPBOSS_REALTIME_ACTIVITY_TASKS?.trim().toLowerCase()
+  if (!raw) return true
+  return !(raw === '0' || raw === 'false' || raw === 'no' || raw === 'off')
+}
+
+type RealtimeTaskContext = {
+  personId: number
+  taskName: string
+  taskType?: 'Follow Up' | 'Call' | 'Text' | 'Email'
+  dueInMinutes?: number
+}
+
+async function getPersonAssignedUserId(personId: number): Promise<number | null> {
+  const auth = getAuth()
+  if (!auth) return null
+  try {
+    const query = new URLSearchParams({ fields: 'assignedUserId' })
+    const res = await fetch(`${FUB_BASE}/people/${personId}?${query}`, {
+      headers: fubHeaders(auth),
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { assignedUserId?: number | null }
+    return data.assignedUserId && data.assignedUserId > 0 ? data.assignedUserId : null
+  } catch {
+    return null
+  }
+}
+
+export async function createRealtimeTask(params: RealtimeTaskContext): Promise<boolean> {
+  if (!isRealtimeActivityTasksEnabled()) return false
+  const auth = getAuth()
+  if (!auth) return false
+  if (!Number.isFinite(params.personId) || params.personId <= 0) return false
+
+  const dueInMinutes = Number.isFinite(params.dueInMinutes) ? Math.max(1, Number(params.dueInMinutes)) : 5
+  const dueDateTime = new Date(Date.now() + dueInMinutes * 60 * 1000).toISOString()
+  const assignedUserId =
+    (await getPersonAssignedUserId(params.personId)) ??
+    (() => {
+      const fallback = Number(process.env.FOLLOWUPBOSS_DEFAULT_ASSIGNED_USER_ID ?? '')
+      return Number.isFinite(fallback) && fallback > 0 ? fallback : null
+    })()
+
+  const body: Record<string, unknown> = {
+    personId: params.personId,
+    name: params.taskName.slice(0, 190),
+    type: params.taskType ?? 'Call',
+    dueDateTime,
+    remindSecondsBefore: 0,
+  }
+  if (assignedUserId) body.assignedUserId = assignedUserId
+
+  try {
+    const res = await fetch(`${FUB_BASE}/tasks`, {
+      method: 'POST',
+      headers: fubHeaders(auth),
+      body: JSON.stringify(body),
+      next: { revalidate: 0 },
+    })
+    return res.ok
+  } catch (error) {
+    console.error('[createRealtimeTask] Network error:', error)
+    return false
+  }
+}
+
 async function findUserByEmail(email: string): Promise<FubUser | null> {
   const auth = getAuth()
   if (!auth) return null
@@ -618,6 +692,20 @@ export async function trackListingView(params: {
     },
     campaign: params.campaign,
   })
+
+  // Optional real-time push signal: add a concise note so Matt gets an app
+  // notification when a known contact views a listing.
+  if (!isRealtimeActivityAlertsEnabled()) return
+  const personId = await resolvePersonId(person)
+  if (!personId) return
+  const addressLine = [params.property.street, params.property.city, params.property.state].filter(Boolean).join(', ')
+  const details: string[] = []
+  if (params.property.mlsNumber) details.push(`MLS ${params.property.mlsNumber}`)
+  if (params.property.price != null) details.push(`$${params.property.price.toLocaleString()}`)
+  const detailsLine = details.length > 0 ? ` (${details.join(' • ')})` : ''
+  const who = email ?? `FUB Contact ${personId}`
+  const note = `Matt alert: ${who} is viewing listing ${addressLine || params.listingUrl}${detailsLine}.`
+  await addPersonNote(personId, note)
 }
 
 /**
@@ -885,5 +973,20 @@ export async function trackReturnVisit(params: {
     pageUrl: params.pageUrl,
     pageTitle: params.pageTitle,
     message: 'return',
+  })
+
+  // Optional real-time push signal: add a note so Matt is notified in FUB app.
+  if (!isRealtimeActivityAlertsEnabled()) return
+  const personId = await resolvePersonId(person)
+  if (!personId) return
+  const who = email || `FUB Contact ${personId}`
+  const titlePart = params.pageTitle?.trim() ? ` (${params.pageTitle.trim()})` : ''
+  const note = `Matt alert: ${who} is back on the website and viewing ${params.pageUrl}${titlePart}.`
+  await addPersonNote(personId, note)
+  await createRealtimeTask({
+    personId,
+    taskType: 'Call',
+    dueInMinutes: 10,
+    taskName: 'Lead returned to website. Follow up now.',
   })
 }
