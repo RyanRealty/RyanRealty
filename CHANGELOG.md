@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.7 (2026-05-10)
+
+### Bug Fixes
+- fix(marketing): live FUB API fallback and packet lifecycle hygiene
+
+---
+
+
 ## v1.142.6 (2026-05-10)
 
 ### Bug Fixes
