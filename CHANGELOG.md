@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.142.10 (2026-05-10)
+
+### Maintenance
+- docs(handoff): GA4 service account creds in prod, awaiting property access grant
+
+---
+
+
 ## v1.142.9 (2026-05-10)
 
 ### Maintenance
