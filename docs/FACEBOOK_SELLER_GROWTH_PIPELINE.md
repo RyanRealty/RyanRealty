@@ -541,7 +541,7 @@ Verified in Vercel production on 2026-05-10.
 | `FOLLOWUPBOSS_BROKER_USER_MAP` | ⚠️ optional | Slug → FUB userId map for `fetchMyLeadsFromFubLive` |
 | `FOLLOWUPBOSS_REQUIRE_BROKER_ASSIGNMENT` | ⚠️ optional | Hard-fail events when broker assignment can't resolve |
 
-**Preview + development environments** are missing the GA4 service account vars (Vercel CLI bug demanding a git branch arg even with `--yes --value --force --sensitive`). Production is sufficient for the cron loop. Add via the Vercel dashboard env UI when preview parity is needed.
+**Preview** environment now mirrors production for the GA4 service account vars (added 2026-05-10 via `scripts/expand-vercel-env-targets.mjs` — bypasses the Vercel CLI bug that demanded a git branch arg even with `--yes --value --force --sensitive` by PATCHing the existing env-var records via the REST API). **Development** target was intentionally skipped: Vercel forbids sensitive env vars from targeting `development` (sensitive vars are server-only; `vercel dev` would need to read them locally). Local development reads from `.env.local`, which already has the values.
 
 ---
 
@@ -675,7 +675,7 @@ flowchart LR
 Sorted by ROI, highest-impact first.
 
 1. **Improve `applied_count` in FUB outreach (current: 55 of 150).** `updatePersonAutomationState` returns `false` when the contact already has the target stage and merged tags, so `applied = stateApplied || noteApplied` stays false on contacts that only need a note. Fix: always attempt `addPersonNote` so each generated outreach record has at least the note artifact in FUB. File: `app/api/cron/fub-outreach-execution/route.ts`.
-2. **Push GA4 service account creds to Vercel preview + development.** Production is wired but preview/dev still return `GA4_NOT_CONFIGURED`. Vercel CLI bug demands a git branch arg — easiest path is the Vercel dashboard env UI.
+2. ~~**Push GA4 service account creds to Vercel preview + development.**~~ Resolved 2026-05-10 for preview via `scripts/expand-vercel-env-targets.mjs`. Development is permanently skipped because sensitive env vars cannot target `development` per Vercel platform rules — local `vercel dev` reads from `.env.local` instead.
 3. **Restore `fub_contacts_cache` mirror table.** The dashboard pipeline snapshot pays a FUB API cost on every render right now; only the weekly cron should pay that. Spec a small sync (FUB people → Supabase) on a 30-min cron.
 4. **Lift Meta Ads CTR.** Latest packet recommends `[TEST][MEDIUM] Low click-through rate — CTR is 0.00%. Test stronger hooks, seller pain-point headlines, and first-frame visuals.` Action lives in Meta Ads Manager, not the codebase.
 5. **Resolve the Bend Policy Pulse 3-part series state mismatch.** Files `bend_policy_pulse_part{1,2,3}.mp4` are in `public/v5_library/` but the scorecard says they're drafts awaiting review. Either approve them and update the scorecard or pull the MP4s back out. Tracked separately from this pipeline but called out here for handoff completeness.
