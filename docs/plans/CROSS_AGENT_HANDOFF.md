@@ -11,8 +11,8 @@
 | Field | Value |
 |--------|--------|
 | **Surface** | **Cursor Agent (this session)** — Resumed locked Facebook Ad Campaign Optimization agent and unblocked the FUB execution pipeline. |
-| **Stopped at (UTC)** | 2026-05-10 05:12 — Live FUB API fallback shipped; production cron just generated 150 outreach packets and applied 55 to FUB. |
-| **`main` @ commit** | `2762ec96` (Vercel production READY). |
+| **Stopped at (UTC)** | 2026-05-10 05:35 — Live FUB API fallback shipped (150 outreach packets, 55 applied) and GA4 service account creds pushed to Vercel production; awaiting one-click GA4 property access grant. |
+| **`main` @ commit** | `009e3b40` (Vercel production READY). |
 | **Task focus** | Restore Facebook seller optimization data flow after the legacy `fub_contacts_cache` / `fub_contacts` tables were dropped, plus tighten packet lifecycle and Facebook attribution. |
 
 ### Done this session (Cursor Agent)
@@ -30,9 +30,9 @@
 
 ### Next agent should (Cursor or Claude Code)
 
-1. `git pull --rebase origin main` (latest commit `2762ec96`).
-2. **Wire GA4 service account creds in Vercel** — `GOOGLE_GA4_PROPERTY_ID` is set (`527333348`), but `GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL` and `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` are missing. Until those are added, optimization scoring stays in `at_risk` because GA4 attribution is unavailable. Steps: create/reuse a GCP service account, grant it Viewer on the GA4 property, generate a JSON key, store the email + private key (literal `\n` for newlines) as Vercel env vars in all three environments.
-3. After GA4 is wired, rerun `/api/cron/marketing-optimization-report` and confirm `score` rises and the report card no longer flags GA4 setup.
+1. `git pull --rebase origin main` (latest commit `009e3b40`).
+2. **Grant GA4 access to the service account** — Vercel production now has `GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL=viewer@ryanrealty.iam.gserviceaccount.com`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`, `GOOGLE_SERVICE_ACCOUNT_SUBJECT=matt@ryan-realty.com`, and `GOOGLE_GA4_PROPERTY_ID=527333348` (verified by hitting the cron — GA4 client now reaches the API). Current error from the live cron: `7 PERMISSION_DENIED: User does not have sufficient permissions for this property.` The service account is missing from the GA4 property's access list. **Fix:** open https://analytics.google.com → Admin → Property Access Management for property `527333348` → Add user → `viewer@ryanrealty.iam.gserviceaccount.com` with `Viewer` role → Save. After granting, rerun `/api/cron/marketing-optimization-report` (no redeploy needed) and confirm `ga4.ok=true` plus a higher `score`.
+3. **Push GA4 service account creds to Vercel preview + development** — `GOOGLE_SERVICE_ACCOUNT_*` are only in production right now. The Vercel CLI `env add` for preview demands a git branch arg even with `--yes --value --force --sensitive` (CLI 50.38.3 and 53.3.1 both hit the same prompt bug from a non-interactive shell). Add via the Vercel dashboard env UI (or by passing an explicit branch like `main`) when you need preview/dev to mirror production.
 4. Investigate why only 55 of 150 outreach attempts changed FUB state — likely some contacts already had the target stage and merged tags so `updatePersonAutomationState` returned `false` with no body to send. Consider relaxing that guard or always falling back to `addPersonNote` so `applied_count` matches `generated_outreach`.
 5. Optional: re-introduce a `fub_contacts_cache` mirror table so the dashboard does not pay the FUB API cost on every render (live pull is fine for the weekly cron, less ideal for the dashboard).
 
