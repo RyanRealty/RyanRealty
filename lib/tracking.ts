@@ -80,6 +80,11 @@ function pushDataLayer(obj: Record<string, unknown>) {
   window.dataLayer.push(obj)
 }
 
+function fireGaEvent(eventName: string, params: Record<string, unknown> = {}) {
+  if (typeof window === 'undefined' || !window.gtag) return
+  window.gtag('event', eventName, params)
+}
+
 /**
  * Fire a Google Ads conversion (when send_to env is set). Only call from client after consent.
  */
@@ -97,6 +102,8 @@ const GOOGLE_ADS_CONVERSION_SIGNUP = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSI
  */
 export function trackEvent(eventName: EventName, params: Record<string, unknown> = {}) {
   pushDataLayer({ event: eventName, ...params })
+  // Direct GA4 event dispatch keeps analytics working even without GTM tags.
+  fireGaEvent(eventName, params)
   if (eventName === 'generate_lead' && GOOGLE_ADS_CONVERSION_LEAD) {
     fireGoogleAdsConversion(GOOGLE_ADS_CONVERSION_LEAD)
   }
@@ -107,6 +114,7 @@ export function trackEvent(eventName: EventName, params: Record<string, unknown>
  */
 export function trackPageView(pageType: string, params: Record<string, unknown> = {}) {
   pushDataLayer({ event: 'page_view', page_type: pageType, ...params })
+  fireGaEvent('page_view', { page_type: pageType, ...params })
 }
 
 function trackFbq(event: string, params?: Record<string, unknown>) {

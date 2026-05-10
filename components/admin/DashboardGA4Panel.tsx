@@ -25,7 +25,7 @@ export default async function DashboardGA4Panel() {
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Last 30 days (GA4 Data API) with acquisition and top content so you can see where traffic comes from and what pages are performing.
+          Last 30 days with acquisition, social channel performance, and lead-event tracking so you can optimize for more seller leads.
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-lg bg-muted p-3">
@@ -51,6 +51,14 @@ export default async function DashboardGA4Panel() {
           <div className="rounded-lg bg-muted p-3">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Bounce rate</p>
             <p className="mt-1 text-xl font-semibold text-foreground">{(d.bounceRate * 100).toFixed(1)}%</p>
+          </div>
+          <div className="rounded-lg bg-muted p-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Lead events</p>
+            <p className="mt-1 text-xl font-semibold text-foreground">{d.totalLeadEvents.toLocaleString()}</p>
+          </div>
+          <div className="rounded-lg bg-muted p-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Lead event rate</p>
+            <p className="mt-1 text-xl font-semibold text-foreground">{(d.leadEventRate * 100).toFixed(2)}%</p>
           </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
@@ -87,6 +95,66 @@ export default async function DashboardGA4Panel() {
               ))}
             </div>
           </div>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Top lead actions</p>
+            <div className="mt-3 space-y-2">
+              {d.topLeadEvents.length === 0 && (
+                <p className="text-sm text-muted-foreground">No lead events in this date range yet.</p>
+              )}
+              {d.topLeadEvents.map((lead) => (
+                <div key={lead.eventName} className="rounded-md bg-muted p-3">
+                  <p className="text-sm font-medium text-foreground">{lead.eventName}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {lead.eventCount.toLocaleString()} events • {lead.users.toLocaleString()} users
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Lead sources</p>
+            <div className="mt-3 space-y-2">
+              {d.leadSources.length === 0 && (
+                <p className="text-sm text-muted-foreground">No attributed lead sources yet.</p>
+              )}
+              {d.leadSources.map((source) => (
+                <div key={source.sourceMedium} className="rounded-md bg-muted p-3">
+                  <p className="text-sm font-medium text-foreground">{source.sourceMedium}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {source.leadEvents.toLocaleString()} lead events • {source.users.toLocaleString()} users
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Social channel sessions</p>
+          <div className="mt-3 space-y-2">
+            {d.socialChannels.length === 0 && (
+              <p className="text-sm text-muted-foreground">No social channel sessions reported yet.</p>
+            )}
+            {d.socialChannels.map((channel) => (
+              <div key={channel.channel} className="rounded-md bg-muted p-3">
+                <p className="text-sm font-medium text-foreground">{channel.channel}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {channel.sessions.toLocaleString()} sessions • {channel.users.toLocaleString()} users • {(channel.engagementRate * 100).toFixed(1)}% engagement
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Facebook ads attribution checklist</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Keep UTM naming consistent in every ad URL so lead-source reporting is reliable:
+            <code className="ml-1 rounded bg-muted px-1">utm_source=facebook</code>,
+            <code className="ml-1 rounded bg-muted px-1">utm_medium=paid_social</code>,
+            <code className="ml-1 rounded bg-muted px-1">utm_campaign=&lt;campaign-name&gt;</code>,
+            <code className="ml-1 rounded bg-muted px-1">utm_content=&lt;ad-variant&gt;</code>.
+          </p>
         </div>
         <p>
           <Link href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-success hover:underline">

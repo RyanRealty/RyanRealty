@@ -2,6 +2,18 @@
 
 import { BetaAnalyticsDataClient } from '@google-analytics/data'
 
+const LEAD_EVENT_NAMES = [
+  'generate_lead',
+  'contact_agent',
+  'contact_agent_click',
+  'schedule_tour_click',
+  'tour_requested',
+  'valuation_requested',
+  'cma_downloaded',
+  'sign_up',
+  'newsletter_signup',
+] as const
+
 export type GA4Summary = {
   sessions: number
   totalUsers: number
@@ -22,6 +34,24 @@ export type GA4Summary = {
     views: number
     users: number
     avgEngagementTimeSeconds: number
+  }[]
+  totalLeadEvents: number
+  leadEventRate: number
+  topLeadEvents: {
+    eventName: string
+    eventCount: number
+    users: number
+  }[]
+  leadSources: {
+    sourceMedium: string
+    leadEvents: number
+    users: number
+  }[]
+  socialChannels: {
+    channel: string
+    sessions: number
+    users: number
+    engagementRate: number
   }[]
 }
 
@@ -55,7 +85,7 @@ export async function getGA4Summary(
       },
     })
 
-    const [summaryResponse, sourceResponse, pageResponse] = await Promise.all([
+    const [summaryResponse, sourceResponse, pageResponse, leadEventsResponse, leadSourcesResponse, socialChannelsResponse] = await Promise.all([
       client.runReport({
         property: `properties/${propertyId}`,
         dateRanges: [{ startDate, endDate }],
@@ -93,11 +123,66 @@ export async function getGA4Summary(
         orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
         limit: 10,
       }),
+      client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'eventName' }],
+        metrics: [
+          { name: 'eventCount' },
+          { name: 'totalUsers' },
+        ],
+        dimensionFilter: {
+          filter: {
+            fieldName: 'eventName',
+            inListFilter: {
+              values: [...LEAD_EVENT_NAMES],
+              caseSensitive: false,
+            },
+          },
+        },
+        orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+        limit: 10,
+      }),
+      client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'sessionSourceMedium' }],
+        metrics: [
+          { name: 'eventCount' },
+          { name: 'totalUsers' },
+        ],
+        dimensionFilter: {
+          filter: {
+            fieldName: 'eventName',
+            inListFilter: {
+              values: [...LEAD_EVENT_NAMES],
+              caseSensitive: false,
+            },
+          },
+        },
+        orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+        limit: 10,
+      }),
+      client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+        metrics: [
+          { name: 'sessions' },
+          { name: 'totalUsers' },
+          { name: 'engagementRate' },
+        ],
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+        limit: 20,
+      }),
     ])
 
     const summary = summaryResponse[0]
     const sourceBreakdown = sourceResponse[0]
     const pageBreakdown = pageResponse[0]
+    const leadEventsBreakdown = leadEventsResponse[0]
+    const leadSourcesBreakdown = leadSourcesResponse[0]
+    const socialChannelsBreakdown = socialChannelsResponse[0]
 
     const row = summary.rows?.[0]
     if (!row || !row.metricValues?.length) {
@@ -112,6 +197,11 @@ export async function getGA4Summary(
           bounceRate: 0,
           topSources: [],
           topPages: [],
+          totalLeadEvents: 0,
+          leadEventRate: 0,
+          topLeadEvents: [],
+          leadSources: [],
+          socialChannels: [],
         },
       }
     }
@@ -136,10 +226,38 @@ export async function getGA4Summary(
       return { pagePath, pageTitle, views, users, avgEngagementTimeSeconds }
     })
 
+    const topLeadEvents = (leadEventsBreakdown.rows ?? []).map((r) => {
+      const eventName = String(r.dimensionValues?.[0]?.value || '(unknown)')
+      const eventCount = parseInt(String(r.metricValues?.[0]?.value ?? 0), 10)
+      const users = parseInt(String(r.metricValues?.[1]?.value ?? 0), 10)
+      return { eventName, eventCount, users }
+    })
+
+    const leadSources = (leadSourcesBreakdown.rows ?? []).map((r) => {
+      const sourceMedium = String(r.dimensionValues?.[0]?.value || '(direct) / (none)')
+      const leadEvents = parseInt(String(r.metricValues?.[0]?.value ?? 0), 10)
+      const users = parseInt(String(r.metricValues?.[1]?.value ?? 0), 10)
+      return { sourceMedium, leadEvents, users }
+    })
+
+    const socialChannels = (socialChannelsBreakdown.rows ?? [])
+      .map((r) => {
+        const channel = String(r.dimensionValues?.[0]?.value || '(unknown)')
+        const sessions = parseInt(String(r.metricValues?.[0]?.value ?? 0), 10)
+        const users = parseInt(String(r.metricValues?.[1]?.value ?? 0), 10)
+        const engagementRate = parseFloat(String(r.metricValues?.[2]?.value ?? 0))
+        return { channel, sessions, users, engagementRate }
+      })
+      .filter((r) => /social/i.test(r.channel))
+
+    const totalLeadEvents = topLeadEvents.reduce((sum, row) => sum + row.eventCount, 0)
+    const sessions = parseInt(String(vals[0]?.value ?? 0), 10)
+    const leadEventRate = sessions > 0 ? totalLeadEvents / sessions : 0
+
     return {
       ok: true,
       data: {
-        sessions: parseInt(String(vals[0]?.value ?? 0), 10),
+        sessions,
         totalUsers: parseInt(String(vals[1]?.value ?? 0), 10),
         newUsers: parseInt(String(vals[2]?.value ?? 0), 10),
         averageSessionDurationSeconds: parseFloat(String(vals[3]?.value ?? 0)),
@@ -147,6 +265,11 @@ export async function getGA4Summary(
         bounceRate: parseFloat(String(vals[5]?.value ?? 0)),
         topSources,
         topPages,
+        totalLeadEvents,
+        leadEventRate,
+        topLeadEvents,
+        leadSources,
+        socialChannels,
       },
     }
   } catch (e) {
