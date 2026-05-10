@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { trackVisit } from '@/app/actions/track-visit'
 import { trackReturnVisitAction } from '@/app/actions/track-return-visit'
-import { hasTrackingConsent, getOrCreateVisitId } from './CookieConsentBanner'
+import { hasAnalyticsConsent, getOrCreateVisitId } from './CookieConsentBanner'
 
 const FUB_LAST_VISIT_KEY = 'fub_last_visit'
 const RETURN_VISIT_MS = 24 * 60 * 60 * 1000
@@ -32,7 +32,7 @@ export default function VisitTracker({ userId, userEmail }: Props) {
   const returnTracked = useRef(false)
 
   useEffect(() => {
-    if (!hasTrackingConsent()) return
+    if (!hasAnalyticsConsent()) return
     const visitId = getOrCreateVisitId()
     if (!visitId || !pathname) return
     const key = pathname + (userId ?? 'anon')
@@ -48,7 +48,7 @@ export default function VisitTracker({ userId, userEmail }: Props) {
   }, [pathname, userId])
 
   useEffect(() => {
-    if (!hasTrackingConsent() || !userEmail?.trim() || !pathname) return
+    if (!hasAnalyticsConsent() || !userEmail?.trim() || !pathname) return
     const now = Date.now()
     const last = getFubLastVisit()
     const isReturn = last == null || now - last >= RETURN_VISIT_MS
@@ -63,7 +63,7 @@ export default function VisitTracker({ userId, userEmail }: Props) {
 
   useEffect(() => {
     const onConsent = () => {
-      if (hasTrackingConsent() && pathname) {
+      if (hasAnalyticsConsent() && pathname) {
         const visitId = getOrCreateVisitId()
         if (visitId) {
           trackVisit({

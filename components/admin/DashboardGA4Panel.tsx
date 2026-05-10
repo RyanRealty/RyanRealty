@@ -22,7 +22,7 @@ export default async function DashboardGA4Panel() {
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Last 30 days (GA4 Data API). More metrics (acquisition, top content, real-time) can be added later.
+          Last 30 days (GA4 Data API) with acquisition and top content so you can see where traffic comes from and what pages are performing.
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-lg bg-muted p-3">
@@ -48,6 +48,41 @@ export default async function DashboardGA4Panel() {
           <div className="rounded-lg bg-muted p-3">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Bounce rate</p>
             <p className="mt-1 text-xl font-semibold text-foreground">{(d.bounceRate * 100).toFixed(1)}%</p>
+          </div>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Top traffic sources</p>
+            <div className="mt-3 space-y-2">
+              {d.topSources.length === 0 && (
+                <p className="text-sm text-muted-foreground">No source data for this date range yet.</p>
+              )}
+              {d.topSources.map((source) => (
+                <div key={source.sourceMedium} className="rounded-md bg-muted p-3">
+                  <p className="text-sm font-medium text-foreground">{source.sourceMedium}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {source.sessions.toLocaleString()} sessions • {source.users.toLocaleString()} users • {(source.engagementRate * 100).toFixed(1)}% engagement
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Top pages</p>
+            <div className="mt-3 space-y-2">
+              {d.topPages.length === 0 && (
+                <p className="text-sm text-muted-foreground">No page data for this date range yet.</p>
+              )}
+              {d.topPages.map((page) => (
+                <div key={`${page.pagePath}-${page.pageTitle}`} className="rounded-md bg-muted p-3">
+                  <p className="text-sm font-medium text-foreground">{page.pagePath}</p>
+                  <p className="text-xs text-muted-foreground">{page.pageTitle}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {page.views.toLocaleString()} views • {page.users.toLocaleString()} users • {formatDuration(page.avgEngagementTimeSeconds)} avg engagement
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         <p>

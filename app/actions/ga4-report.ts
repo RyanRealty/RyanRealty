@@ -9,6 +9,20 @@ export type GA4Summary = {
   averageSessionDurationSeconds: number
   engagementRate: number
   bounceRate: number
+  topSources: {
+    sourceMedium: string
+    sessions: number
+    users: number
+    engagedSessions: number
+    engagementRate: number
+  }[]
+  topPages: {
+    pagePath: string
+    pageTitle: string
+    views: number
+    users: number
+    avgEngagementTimeSeconds: number
+  }[]
 }
 
 export type GA4ReportResult = { ok: true; data: GA4Summary } | { ok: false; error: string }
@@ -41,20 +55,51 @@ export async function getGA4Summary(
       },
     })
 
-    const [response] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate }],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'totalUsers' },
-        { name: 'newUsers' },
-        { name: 'averageSessionDuration' },
-        { name: 'engagementRate' },
-        { name: 'bounceRate' },
-      ],
-    })
+    const [summaryResponse, sourceResponse, pageResponse] = await Promise.all([
+      client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate, endDate }],
+        metrics: [
+          { name: 'sessions' },
+          { name: 'totalUsers' },
+          { name: 'newUsers' },
+          { name: 'averageSessionDuration' },
+          { name: 'engagementRate' },
+          { name: 'bounceRate' },
+        ],
+      }),
+      client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'sessionSourceMedium' }],
+        metrics: [
+          { name: 'sessions' },
+          { name: 'totalUsers' },
+          { name: 'engagedSessions' },
+          { name: 'engagementRate' },
+        ],
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+        limit: 8,
+      }),
+      client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
+        metrics: [
+          { name: 'screenPageViews' },
+          { name: 'totalUsers' },
+          { name: 'userEngagementDuration' },
+        ],
+        orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+        limit: 10,
+      }),
+    ])
 
-    const row = response.rows?.[0]
+    const summary = summaryResponse[0]
+    const sourceBreakdown = sourceResponse[0]
+    const pageBreakdown = pageResponse[0]
+
+    const row = summary.rows?.[0]
     if (!row || !row.metricValues?.length) {
       return {
         ok: true,
@@ -65,11 +110,32 @@ export async function getGA4Summary(
           averageSessionDurationSeconds: 0,
           engagementRate: 0,
           bounceRate: 0,
+          topSources: [],
+          topPages: [],
         },
       }
     }
 
     const vals = row.metricValues
+    const topSources = (sourceBreakdown.rows ?? []).map((r) => {
+      const sourceMedium = String(r.dimensionValues?.[0]?.value || '(direct) / (none)')
+      const sessions = parseInt(String(r.metricValues?.[0]?.value ?? 0), 10)
+      const users = parseInt(String(r.metricValues?.[1]?.value ?? 0), 10)
+      const engagedSessions = parseInt(String(r.metricValues?.[2]?.value ?? 0), 10)
+      const engagementRate = parseFloat(String(r.metricValues?.[3]?.value ?? 0))
+      return { sourceMedium, sessions, users, engagedSessions, engagementRate }
+    })
+
+    const topPages = (pageBreakdown.rows ?? []).map((r) => {
+      const pagePath = String(r.dimensionValues?.[0]?.value || '/')
+      const pageTitle = String(r.dimensionValues?.[1]?.value || '(untitled)')
+      const views = parseInt(String(r.metricValues?.[0]?.value ?? 0), 10)
+      const users = parseInt(String(r.metricValues?.[1]?.value ?? 0), 10)
+      const totalEngagement = parseFloat(String(r.metricValues?.[2]?.value ?? 0))
+      const avgEngagementTimeSeconds = users > 0 ? totalEngagement / users : 0
+      return { pagePath, pageTitle, views, users, avgEngagementTimeSeconds }
+    })
+
     return {
       ok: true,
       data: {
@@ -79,6 +145,8 @@ export async function getGA4Summary(
         averageSessionDurationSeconds: parseFloat(String(vals[3]?.value ?? 0)),
         engagementRate: parseFloat(String(vals[4]?.value ?? 0)),
         bounceRate: parseFloat(String(vals[5]?.value ?? 0)),
+        topSources,
+        topPages,
       },
     }
   } catch (e) {
