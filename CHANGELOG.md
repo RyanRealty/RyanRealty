@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.140.4 (2026-05-10)
+
+### Bug Fixes
+- fix(analytics): surface actionable GA4 permission diagnostics in admin
+
+---
+
+
 ## v1.140.3 (2026-05-10)
 
 ### Bug Fixes
