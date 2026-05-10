@@ -180,6 +180,10 @@ export async function createRealtimeTask(params: RealtimeTaskContext): Promise<b
   if (!Number.isFinite(params.personId) || params.personId <= 0) return false
 
   const dueInMinutes = Number.isFinite(params.dueInMinutes) ? Math.max(1, Number(params.dueInMinutes)) : 5
+  const dueInSeconds = dueInMinutes * 60
+  // Many mobile setups do not push for self-created tasks. Force a near-immediate
+  // reminder so the assigned user still gets a phone alert shortly after creation.
+  const remindSecondsBefore = Math.max(30, dueInSeconds - 30)
   const dueDateTime = new Date(Date.now() + dueInMinutes * 60 * 1000).toISOString()
   const assignedUserId =
     (await getPersonAssignedUserId(params.personId)) ??
@@ -193,7 +197,7 @@ export async function createRealtimeTask(params: RealtimeTaskContext): Promise<b
     name: params.taskName.slice(0, 190),
     type: params.taskType ?? 'Call',
     dueDateTime,
-    remindSecondsBefore: 0,
+    remindSecondsBefore,
   }
   if (assignedUserId) body.assignedUserId = assignedUserId
 
