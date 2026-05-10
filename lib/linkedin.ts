@@ -6,7 +6,7 @@ const LINKEDIN_ASSET_REGISTER_URL = 'https://api.linkedin.com/v2/assets?action=r
 const LINKEDIN_UGC_POSTS_URL = 'https://api.linkedin.com/v2/ugcPosts'
 const LINKEDIN_USERINFO_URL = 'https://api.linkedin.com/v2/userinfo'
 const LINKEDIN_REST_POSTS_URL = 'https://api.linkedin.com/rest/posts'
-const LINKEDIN_REST_VERSION = '202404'
+const LINKEDIN_REST_VERSION = '202602'
 // w_member_social = post on behalf of member; openid+profile+email = OpenID Connect
 // (provisioned 2026-05-09, required so /v2/userinfo returns the canonical person sub
 // and the modern /rest/posts API will accept urn:li:person:{sub} as author).
@@ -230,7 +230,19 @@ export async function getLinkedInUserInfo(accessToken: string): Promise<{
 export async function publishLinkedInVideoFromUrl(
   options: LinkedInVideoPublishOptions
 ): Promise<string> {
-  const authorUrn = `urn:li:person:${options.personId}`
+  // Modern /rest/posts requires the OpenID `sub` (e.g. "G0tXRDZK2X") as the
+  // member identifier, not the legacy numeric personId from the env var.
+  // Fetch sub from /v2/userinfo and fall back to options.personId if it fails
+  // (so the call still works in test/dev contexts where the token might be
+  // a legacy w_member_social-only one).
+  let memberSub: string
+  try {
+    const info = await getLinkedInUserInfo(options.accessToken)
+    memberSub = info.sub
+  } catch {
+    memberSub = options.personId
+  }
+  const authorUrn = `urn:li:person:${memberSub}`
 
   const registerResponse = await fetch(LINKEDIN_ASSET_REGISTER_URL, {
     method: 'POST',
