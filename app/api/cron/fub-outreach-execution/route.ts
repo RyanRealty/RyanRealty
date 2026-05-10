@@ -122,13 +122,14 @@ export async function GET(request: Request) {
   )
 
   const weekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const { data: mattBroker } = await supabase
+  const { data: mattBrokerRow } = await supabase
     .from('brokers')
     .select('id, slug, display_name, email')
     .or('slug.eq.matt-ryan,display_name.ilike.%matt%ryan%,email.ilike.%matt%')
     .limit(1)
     .maybeSingle()
 
+  const mattBroker = (mattBrokerRow ?? null) as { id: string } | null
   const mattBrokerId = mattBroker?.id ?? null
   const { data: fubRows, error: fubRowsError } = await supabase
     .from('fub_contacts_cache')

@@ -198,13 +198,14 @@ async function getFubPipelineSnapshot(
   supabase: ReturnType<typeof createClient>,
   startIso: string
 ): Promise<DashboardMarketingData['fubPipeline']> {
-  const { data: mattBroker } = await supabase
+  const { data: mattBrokerRow } = await supabase
     .from('brokers')
     .select('id, slug, display_name, email')
     .or('slug.eq.matt-ryan,display_name.ilike.%matt%ryan%,email.ilike.%matt%')
     .limit(1)
     .maybeSingle()
 
+  const mattBroker = (mattBrokerRow ?? null) as { id: string } | null
   const mattBrokerId = mattBroker?.id ?? null
   const { data: contactRows } = await supabase
     .from('fub_contacts_cache')
