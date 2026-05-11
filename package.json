@@ -31,6 +31,7 @@
     "db:migration": "supabase migration new",
     "db:add-team-image": "node scripts/add-team-image-column.mjs",
     "sync:full": "node scripts/run-full-sync.mjs",
+    "flyer:fetch-photos": "node scripts/fetch-listing-photos-for-flyer.mjs",
     "flyer:just-listed": "node scripts/render-just-listed-flyer.mjs",
     "sync:strict-last-ask": "node scripts/sync-strict-verify-last-ask.mjs",
     "fub:enrich": "node scripts/fub-enrich-contacts.mjs",

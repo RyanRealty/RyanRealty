@@ -143,6 +143,14 @@ async function main() {
     }
   }
 
+  const uniquePaths = new Set(photos.map((p) => resolve(p)))
+  if (uniquePaths.size !== photos.length) {
+    console.error(
+      'Flyer config repeats the same image path. Each entry in config.photos must be a different file (distinct MLS photos). Run: node scripts/fetch-listing-photos-for-flyer.mjs --mls <number> --out-dir out/flyers/<mls>'
+    )
+    process.exit(1)
+  }
+
   const heroZoom = Number(cfg.heroZoom ?? 1.32)
   const thumbZoom = Number(cfg.thumbZoom ?? 1.12)
   const fontInfo = registerFlyerFonts()

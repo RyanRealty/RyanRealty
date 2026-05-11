@@ -78,8 +78,11 @@ If any item is `fail`, the package is **not** shown as client-ready.
 For repeatable **1080×1350** just-listed layouts (header, zoomed hero, optional **3-up filmstrip**, spec cards, footer):
 
 - Run: `npm run flyer:just-listed -- --config out/flyers/<slug>/config.json --out out/flyers/<slug>/render.png`
-- Source: `scripts/render-just-listed-flyer.mjs`
-- Config lists **paths to photos** (first = hero, next up to three = filmstrip). Tune `heroZoom` / `thumbZoom`.
+- **Photos:** `npm run flyer:fetch-photos -- --mls <ListNumber> --out-dir out/flyers/<slug>` pulls **deduped**
+  URLs from `listing_photos`, or from `details.Photos` + `PhotoURL` when the photos table is empty,
+  then rewrites `config.json` `photos` with local filenames. Never hand-duplicate the same path.
+- Source: `scripts/render-just-listed-flyer.mjs` (hard-fails if any `config.photos` path repeats)
+- Source: `scripts/fetch-listing-photos-for-flyer.mjs`
 - **Amboqia** must be on disk for display headlines (see script env `FLYER_FONT_AMBOQIA`) or the script notes noncompliance in `fonts_used.json`.
 
 ## Typography — NON-NEGOTIABLE (brand fonts only)
