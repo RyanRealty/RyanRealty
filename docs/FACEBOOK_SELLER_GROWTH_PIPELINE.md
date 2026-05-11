@@ -693,6 +693,8 @@ Sorted by ROI, highest-impact first. Items shipped in iteration 2 are crossed ou
 
 **Where to learn more:**
 
+- **Campaign launch playbook — `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** *(iter 3)*: locked 3-campaign architecture (Cold + LAL + Retargeting at $60/day), Higher Intent lead form spec with conditional logic, 3 creative variants for A/B test, Special Ad Category Housing rules, 5-minute response window, full launch checklist, and the optimization decision rules for week 2 onwards. Use this when actually launching the first paid Meta seller campaign.
+- **FUB Custom Audience export script** — `scripts/export-fub-custom-audience.mjs` ships hashed-PII CSVs for Meta upload. `--mode lookalike-seed` (4,964 rows from current FUB) seeds the LAL; `--mode suppression` (6,000 rows) becomes the Exclusion on every prospecting ad set.
 - Skill — `.claude/skills/facebook-seller-growth/SKILL.md` (canonical routine for cloud + local Claude runs)
 - Learnings — `.claude/skills/facebook-seller-growth/LEARNINGS.md` (one entry per cycle)
 - FUB integration — `docs/FOLLOWUPBOSS-SETUP.md`
