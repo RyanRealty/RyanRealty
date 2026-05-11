@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.146.2 (2026-05-11)
+
+### Bug Fixes
+- fix(meta-graph): type FB reel upload init with duplex for undici
+
+---
+
+
 ## v1.146.1 (2026-05-11)
 
 ### Bug Fixes
