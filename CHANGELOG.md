@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.146.4 (2026-05-11)
+
+### Bug Fixes
+- fix: repair FB ad spec builder against market_stats_cache schema
+
+---
+
+
 ## v1.146.3 (2026-05-11)
 
 ### Bug Fixes
