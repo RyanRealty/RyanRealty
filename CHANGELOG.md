@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.146.0 (2026-05-11)
+
+### Features
+- feat(flyers): multi-photo just-listed compositor and design review gate
+
+---
+
+
 ## v1.145.1 (2026-05-11)
 
 ### Maintenance
