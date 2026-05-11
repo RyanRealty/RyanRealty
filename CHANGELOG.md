@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.143.0 (2026-05-11)
+
+### Features
+- feat(marketing): iteration 2 — Bend context, CAPI value, granular FUB apply, weekly digest
+
+---
+
+
 ## v1.142.17 (2026-05-10)
 
 ### Maintenance
