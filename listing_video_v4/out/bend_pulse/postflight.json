@@ -1,0 +1,38 @@
+{
+  "asset": "bend_pulse_3part",
+  "generated_at_iso": "2026-05-10T18:50:00-07:00",
+  "ffprobe": {
+    "part1": {
+      "path": "listing_video_v4/out/bend_pulse/bend_pulse_part1.mp4",
+      "duration_sec": 87.594667,
+      "video": "1080x1920, 30fps, h264",
+      "audio": "aac 48000 Hz stereo"
+    },
+    "part2": {
+      "path": "listing_video_v4/out/bend_pulse/bend_pulse_part2.mp4",
+      "duration_sec": 90.346667,
+      "video": "1080x1920, 30fps, h264",
+      "audio": "aac 48000 Hz stereo"
+    },
+    "part3": {
+      "path": "listing_video_v4/out/bend_pulse/bend_pulse_part3.mp4",
+      "duration_sec": 70.058667,
+      "video": "1080x1920, 30fps, h264",
+      "audio": "aac 48000 Hz stereo"
+    }
+  },
+  "ffmpeg_blackdetect": {
+    "filter": "blackdetect=d=0.03:pix_th=0.05",
+    "part1": "no sequences",
+    "part2": "no sequences",
+    "part3": "one 0.033s spike at ~39.7s (reviewed, non fatal)"
+  },
+  "cover_stills": {
+    "note": "JPG at t=2.85s from each render, matches TitleCard legibility",
+    "public_urls": [
+      "/v5_library/bend_pulse/cover_part1.jpg",
+      "/v5_library/bend_pulse/cover_part2.jpg",
+      "/v5_library/bend_pulse/cover_part3.jpg"
+    ]
+  }
+}

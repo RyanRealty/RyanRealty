@@ -1,0 +1,96 @@
+{
+  "series_title": "Bend Policy Pulse — 3-part news series",
+  "format": "news-video (local government policy explainer)",
+  "format_minimum_score": 80,
+  "rendered_at_iso": "2026-05-10T05:30:00Z",
+  "voice": "Victoria — Ryan Realty Anchor (qSeXEcewz7tA0Q0qk9fH)",
+  "model": "eleven_turbo_v2_5",
+  "voice_settings": { "stability": 0.40, "similarity_boost": 0.80, "style": 0.50, "use_speaker_boost": true },
+  "videos": [
+    {
+      "id": "BendPulsePart1",
+      "file": "bend_pulse_part1.mp4",
+      "duration_sec": 40.02,
+      "size_kb": 6416,
+      "scores": {
+        "hook_first_2s": 9,
+        "retention_structure": 8,
+        "text_legibility": 9,
+        "audio_quality": 9,
+        "format_compliance": 10,
+        "engagement_trigger": 7,
+        "cover_thumbnail_potential": 8,
+        "cta_strength": 8,
+        "voice_brand_consistency": 9,
+        "antislop_compliance": 10
+      },
+      "total": 87,
+      "status": "ship-eligible (above 80 floor)"
+    },
+    {
+      "id": "BendPulsePart2",
+      "file": "bend_pulse_part2.mp4",
+      "duration_sec": 43.52,
+      "size_kb": 7007,
+      "scores": {
+        "hook_first_2s": 9,
+        "retention_structure": 9,
+        "text_legibility": 9,
+        "audio_quality": 9,
+        "format_compliance": 10,
+        "engagement_trigger": 8,
+        "cover_thumbnail_potential": 8,
+        "cta_strength": 8,
+        "voice_brand_consistency": 9,
+        "antislop_compliance": 10
+      },
+      "total": 89,
+      "status": "ship-eligible (above 80 floor)"
+    },
+    {
+      "id": "BendPulsePart3",
+      "file": "bend_pulse_part3.mp4",
+      "duration_sec": 33.02,
+      "size_kb": 5147,
+      "scores": {
+        "hook_first_2s": 9,
+        "retention_structure": 8,
+        "text_legibility": 9,
+        "audio_quality": 9,
+        "format_compliance": 10,
+        "engagement_trigger": 9,
+        "cover_thumbnail_potential": 7,
+        "cta_strength": 9,
+        "voice_brand_consistency": 9,
+        "antislop_compliance": 10
+      },
+      "total": 89,
+      "status": "ship-eligible (above 80 floor)"
+    }
+  ],
+  "auto_zero_checks": {
+    "banned_words_check": "PASS — no instances of stunning, nestled, boasts, must-see, dream home, gorgeous, charming, etc.",
+    "em_dash_or_semicolon_check": "PASS — none in VO scripts",
+    "unverified_number_check": "PASS — every figure traces to citations.json (caveat: June 3 / June 17 / April 1 2027 dates corroborated via web search; recommend re-verify against City Council agenda packet before public publish)",
+    "ai_disclosure_check": "N/A — no AI-generated photos or video clips used. Backgrounds are code-driven gradient mesh, primitives, and silhouettes.",
+    "fair_housing_check": "PASS — no protected-class language; topic is local policy, not housing marketing"
+  },
+  "quality_gate": {
+    "resolution": "1080×1920 (all 3) ✓",
+    "fps": "30 (all 3) ✓",
+    "codec": "h264 + aac ✓",
+    "duration_30_to_45s": "✓ (Part 1 40.02s, Part 2 43.52s, Part 3 33.02s — Part 3 below 35 but above 30s minimum)",
+    "blackdetect_strict": "0 sequences across all 3 ✓",
+    "audio_max_volume": "−4.4 / −3.9 / −4.3 dB (all healthy, non-silent) ✓",
+    "file_size_under_100mb": "✓ (largest 7 MB)",
+    "captions_burned_in": "✓ (CaptionTrack on every VO segment)",
+    "source_attribution_in_frame": "✓ (SourcePill on every data beat)"
+  },
+  "blocking_issues_to_resolve_before_publish": [
+    "Re-verify June 3 / June 17 / April 1 2027 dates against the actual Bend City Council agenda packet on bend.granicus.com (citations.json open_caveats #1)",
+    "Matt review pass — confirm Chair Gary North quote attribution is appropriate to use this prominently",
+    "Decide whether to publish all 3 simultaneously or stagger across 3 days for series binge potential"
+  ],
+  "where_drafts_live": "/Users/matthewryan/RyanRealty/listing_video_v4/out/bend_pulse/",
+  "ship_status": "DRAFT — awaiting Matt review per Draft-First commit-last rule. Not committed to git, not in public/v5_library/."
+}

@@ -1,0 +1,136 @@
+{
+  "series_title": "Bend Policy Pulse",
+  "version": "v2 — real Bend Council meeting footage (Granicus archive)",
+  "topic": "Bend climate pollution fee on natural gas in new residential construction",
+  "rendered_at_iso": "2026-05-10T06:15:00Z",
+  "verified_at_iso": "2026-05-09T23:00:00-07:00",
+  "primary_sources": [
+    {
+      "id": "feb11_council_worksession",
+      "type": "video_recording",
+      "url": "https://bend.granicus.com/MediaPlayer.php?view_id=9&clip_id=865",
+      "stream_url": "https://archive-stream.granicus.com/OnDemand/_definst_/mp4:archive/bend/bend_e811a84d-c658-45c4-b2f1-1ec8c22ab83c.mp4/playlist.m3u8",
+      "title": "Bend City Council Work Session — Feb 11 2026 — Electrification Policy Process Fee Options (75-min agenda item)",
+      "duration": "2h 03m",
+      "fetched_at_iso": "2026-05-09T22:53:00-07:00",
+      "license": "Public record (Oregon Public Records Law). Government meeting recording produced by City of Bend. Used for news commentary.",
+      "clips_used": [
+        {"slug": "feb11_fee_design", "ss_sec": 600, "duration_sec": 15, "content": "Cassie Lacy 'Proposed Fee Design' slide — SCC × Net Lifetime Carbon Produced × Tier Factor formula"},
+        {"slug": "feb11_fee_levels", "ss_sec": 4500, "duration_sec": 15, "content": "'Impacts of Fee Levels' slide — $1,954 / $4,885 / $9,771 max per home; 0.23% / 0.58% / 1.15% housing cost impact"},
+        {"slug": "feb11_grid_impact", "ss_sec": 2700, "duration_sec": 15, "content": "'Grid Impact Numbers' slide — 6.73 to 14.99 MW annual additional demand"},
+        {"slug": "feb11_tcep", "ss_sec": 3600, "duration_sec": 15, "content": "'Recommended Approach to Policy Development' slide — Temporary Committee on Electrification Policy (TCEP) structure"},
+        {"slug": "feb11_transmission", "ss_sec": 1500, "duration_sec": 12, "content": "Pacific Power 'Blueprint South 500 kV Transmission Project' slide"}
+      ]
+    },
+    {
+      "id": "jan7_council_business",
+      "type": "video_recording",
+      "url": "https://bend.granicus.com/MediaPlayer.php?view_id=9&clip_id=860",
+      "title": "Bend City Council Business Meeting — Jan 7 2026 (joint committee on electrification appointment discussion)",
+      "duration": "3h 14m",
+      "fetched_at_iso": "2026-05-09T22:53:00-07:00",
+      "license": "Public record. Used for establishing Council Chambers footage.",
+      "clips_used": [
+        {"slug": "jan7_chambers", "ss_sec": 600, "duration_sec": 15, "content": "Public comment table + Council Chamber wide shot"}
+      ]
+    },
+    {
+      "id": "feb4_council_business",
+      "type": "video_recording",
+      "url": "https://bend.granicus.com/MediaPlayer.php?view_id=9&clip_id=864",
+      "title": "Bend City Council Business Meeting — Feb 4 2026 (Economic Development Strategy adoption)",
+      "duration": "2h 30m",
+      "fetched_at_iso": "2026-05-09T22:53:00-07:00",
+      "license": "Public record. Used for Council member close-up.",
+      "clips_used": [
+        {"slug": "feb4_chambers", "ss_sec": 900, "duration_sec": 12, "content": "Councilor Franzosa close-up + Council Chamber inset"}
+      ]
+    },
+    {
+      "id": "city_of_bend_electrification_policy",
+      "type": "official_webpage",
+      "url": "https://bendoregon.gov/top-priorities/environment-and-climate/electrification-policy-options/",
+      "fetched_at_iso": "2026-05-09T22:23:00-07:00",
+      "applicable_facts": ["fee_applies_sfr_duplex_townhouse_adu", "fee_does_not_apply_to_existing_homes", "late_may_early_june_2026_public_hearing", "june_3_first_reading", "june_17_second_reading"]
+    },
+    {
+      "id": "bedab_jan_5_2026_minutes",
+      "type": "official_pdf",
+      "url": "https://bendoregon.gov/wp-content/uploads/2026/01/For-Approval-01.05.2026-BEDAB-Meeting-Minutes.pdf",
+      "fetched_at_iso": "2026-05-09T22:21:00-07:00",
+      "applicable_facts": ["coba_grid_capacity_concern", "ua_local_290_grid_capacity_concern", "bend_chamber_pilot_program_request", "chair_north_quote_social_cost_carbon", "vote_8_to_0_pilot_letter"]
+    }
+  ],
+  "verification_trace_per_figure": [
+    {
+      "video": "BendPulsePart1",
+      "claim": "Three fee levels: $1,954 / $4,885 / $9,771 max per home",
+      "source": "feb11_council_worksession",
+      "evidence": "feb11_fee_levels.mp4 visually shows the slide with these exact numbers in the 'Impacts of Fee Levels' table"
+    },
+    {
+      "video": "BendPulsePart1",
+      "claim": "Housing cost impact 0.23% / 0.58% / 1.15%",
+      "source": "feb11_council_worksession",
+      "evidence": "feb11_fee_levels.mp4 — same slide, 'Housing Cost Impact (%)' row"
+    },
+    {
+      "video": "BendPulsePart1",
+      "claim": "Fee applies only to new SFR / duplex / townhouse / ADU; existing homes off the table",
+      "source": "city_of_bend_electrification_policy",
+      "source_text": "This policy would not apply to existing homes or buildings. ... The climate pollution fee under consideration would apply only to new residential construction."
+    },
+    {
+      "video": "BendPulsePart2",
+      "claim": "Three industries showed up at BEDAB Jan 5 (COBA, Bend Chamber, UA Local 290)",
+      "source": "bedab_jan_5_2026_minutes",
+      "source_text": "Garrett Mosher, on behalf of the Central Oregon Builders Association ... Dave DeBerger, on behalf of UA local 290 Plumbers and Steamfitters ... Sara Odendahl, on behalf of the Bend Chamber of Commerce"
+    },
+    {
+      "video": "BendPulsePart2",
+      "claim": "BEDAB voted 8-0 asking Council for a pilot",
+      "source": "bedab_jan_5_2026_minutes",
+      "source_text": "Member Evons moved for BEDAB to draft a letter specifically focused on a pilot period with a data driven approach to validate a fee. Member Taylor seconded the motion. The voice vote passed 8-0. Member Kroncke did not vote."
+    },
+    {
+      "video": "BendPulsePart2",
+      "claim": "Chair Gary North quote: social cost of unaffordable housing > social cost of carbon",
+      "source": "bedab_jan_5_2026_minutes",
+      "source_text": "Chair North stated that the social cost of a lack of housing affordability is greater than the social cost of carbon"
+    },
+    {
+      "video": "BendPulsePart2",
+      "claim": "Council created a Temporary Committee on Electrification Policy (TCEP)",
+      "source": "feb11_council_worksession",
+      "evidence": "feb11_tcep.mp4 visually shows the slide 'Recommended Approach to Policy Development' with bullet 'Establishes Temporary Committee on Electrification Policy (TCEP)'"
+    },
+    {
+      "video": "BendPulsePart3",
+      "claim": "Late May / early June 2026 public hearing on fee adoption",
+      "source": "city_of_bend_electrification_policy",
+      "source_text": "Late May–Early June 2026: Public hearing on fee adoption and associated policies"
+    },
+    {
+      "video": "BendPulsePart3",
+      "claim": "June 3 first reading / June 17 second reading",
+      "source": "web_search_2026_05_09",
+      "source_text": "First reading of the ordinance was scheduled for June 3, 2026, with a second reading on June 17, 2026 (open caveat: re-verify against bend.granicus.com agenda packet before publish)"
+    },
+    {
+      "video": "BendPulsePart3",
+      "claim": "Earliest effective date April 1, 2027",
+      "source": "web_search_2026_05_09",
+      "source_text": "Proposed Effective Dates: April 1, 2027 / July 1, 2027 / January 1, 2028"
+    },
+    {
+      "video": "BendPulsePart3",
+      "claim": "Bend City Hall, 710 NW Wall Street",
+      "source": "bedab_jan_5_2026_minutes",
+      "source_text": "City Council Chambers, 710 NW Wall Street, and online"
+    }
+  ],
+  "open_caveats": [
+    "Re-verify the June 3 / June 17 / April 1 2027 dates against the actual Bend City Council agenda packet on bend.granicus.com before public publish.",
+    "All meeting clips are excerpted under fair-use commentary doctrine for local news. Each clip is short (≤ 15s), used to provide visual context for narration, and clearly attributed in the source pill. No license fee required for Oregon public records, but recommend an Oregon real-estate attorney review before commercial distribution."
+  ]
+}
