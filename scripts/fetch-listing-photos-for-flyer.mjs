@@ -58,7 +58,9 @@ async function main() {
 
   const { data: listing, error: le } = await sb
     .from('listings')
-    .select('ListingKey, ListNumber')
+    .select(
+      'ListingKey, ListNumber, StreetNumber, StreetName, City, State, PostalCode, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, lot_size_acres, public_remarks, StandardStatus'
+    )
     .eq('ListNumber', mls)
     .maybeSingle()
 
@@ -160,6 +162,24 @@ async function main() {
   }
 
   cfg.photos = localNames
+  const remarks = listing.public_remarks ? String(listing.public_remarks).trim() : ''
+  if (remarks) cfg.description = remarks
+  const acres = listing.lot_size_acres
+  if (acres != null && !Number.isNaN(Number(acres))) cfg.acres = Number(acres)
+  cfg.mls = mls
+  if (listing.StandardStatus) cfg.status = String(listing.StandardStatus)
+  if (listing.BedroomsTotal != null) cfg.beds = Number(listing.BedroomsTotal)
+  if (listing.BathroomsTotal != null) cfg.baths = Number(listing.BathroomsTotal)
+  if (listing.TotalLivingAreaSqFt != null) cfg.sqft = Number(listing.TotalLivingAreaSqFt)
+  const street = [listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ').trim()
+  if (street) cfg.address = street
+  const cityParts = [listing.City, listing.State, listing.PostalCode].filter(Boolean)
+  if (cityParts.length) cfg.cityLine = cityParts.join(', ')
+  if (listing.ListPrice != null) {
+    const p = Number(listing.ListPrice)
+    if (!Number.isNaN(p)) cfg.price = `$${p.toLocaleString('en-US')}`
+  }
+
   writeFileSync(cfgPath, `${JSON.stringify(cfg, null, 2)}\n`)
 
   if (localNames.length < 4) {
