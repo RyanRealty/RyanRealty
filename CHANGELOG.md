@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.145.1 (2026-05-11)
+
+### Maintenance
+- docs: route agents to tracked Facebook seller marketing workflow
+
+---
+
+
 ## v1.145.0 (2026-05-11)
 
 ### Features
