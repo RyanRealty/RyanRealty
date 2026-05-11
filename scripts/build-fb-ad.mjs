@@ -175,37 +175,65 @@ function getSupabase() {
   return { url: url.replace(/\/+$/, ''), key }
 }
 
-async function fetchMarketStats(city, period) {
+const CACHE_SELECT = [
+  'geo_type',
+  'geo_slug',
+  'geo_label',
+  'period_type',
+  'period_start',
+  'period_end',
+  'sold_count',
+  'median_sale_price',
+  'median_dom',
+  'avg_sale_to_list_ratio',
+  'market_health_label',
+  'yoy_median_price_delta_pct',
+].join(',')
+
+/** Map cache + pulse rows to fields expected by copy + verification_trace */
+function normalizeMarketStat(row, pulseRow) {
+  const activeListings = pulseRow?.active_count ?? null
+  return {
+    ...row,
+    median_sale_price_yoy_pct: row.yoy_median_price_delta_pct,
+    avg_days_on_market: row.median_dom,
+    closed_count: row.sold_count,
+    active_listings: activeListings,
+    months_of_supply: null,
+    market_condition: row.market_health_label,
+    period_label: row.period_start,
+    list_to_sale_ratio: row.avg_sale_to_list_ratio,
+  }
+}
+
+async function fetchPulseActive(url, key, citySlug) {
+  const qs = new URLSearchParams({
+    select: 'active_count',
+    geo_type: 'eq.city',
+    geo_slug: `eq.${citySlug}`,
+    property_type: 'eq.A',
+    limit: '1',
+  })
+  const res = await fetch(`${url}/rest/v1/market_pulse_live?${qs}`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' },
+  })
+  if (!res.ok) return null
+  const rows = await res.json().catch(() => [])
+  return rows[0] ?? null
+}
+
+async function fetchMarketStats(citySlug, period) {
   const { url, key } = getSupabase()
 
-  // Parse period to date window
   const [year, month] = period.split('-').map(Number)
   const periodStart = `${year}-${String(month).padStart(2, '0')}-01`
-  // Last day of the month
-  const periodEnd = new Date(year, month, 0) // day 0 of next month = last day of this month
-  const periodEndStr = `${year}-${String(month).padStart(2, '0')}-${String(periodEnd.getDate()).padStart(2, '0')}`
 
   const params = new URLSearchParams({
-    select: [
-      'period_label',
-      'period_start',
-      'period_end',
-      'geo_level',
-      'geo_name',
-      'median_sale_price',
-      'median_sale_price_yoy_pct',
-      'active_listings',
-      'months_of_supply',
-      'avg_days_on_market',
-      'closed_count',
-      'market_condition',
-      'list_to_sale_ratio',
-    ].join(','),
-    geo_level: 'eq.city',
-    geo_name: `ilike.${city}`,
-    period_start: `gte.${periodStart}`,
-    period_end: `lte.${periodEndStr}`,
-    order: 'period_end.desc',
+    select: CACHE_SELECT,
+    geo_type: 'eq.city',
+    geo_slug: `eq.${citySlug}`,
+    period_type: 'eq.monthly',
+    period_start: `eq.${periodStart}`,
     limit: '1',
   })
 
@@ -222,33 +250,39 @@ async function fetchMarketStats(city, period) {
     throw new Error(`market_stats_cache query failed (HTTP ${res.status}): ${body}`)
   }
 
-  const rows = await res.json()
+  let rows = await res.json()
+  let row = rows[0]
 
-  if (!rows.length) {
-    // Try a broader fallback: last available period for the city
-    console.warn(`[build-fb-ad] No data for ${city} in period ${period}. Trying latest available...`)
+  if (!row) {
+    console.warn(`[build-fb-ad] No monthly row for ${citySlug} at ${periodStart}. Trying latest monthly...`)
     const fallbackParams = new URLSearchParams({
-      select: params.get('select'),
-      geo_level: 'eq.city',
-      geo_name: `ilike.${city}`,
-      order: 'period_end.desc',
+      select: CACHE_SELECT,
+      geo_type: 'eq.city',
+      geo_slug: `eq.${citySlug}`,
+      period_type: 'eq.monthly',
+      order: 'period_start.desc',
       limit: '1',
     })
     const fallback = await fetch(`${url}/rest/v1/market_stats_cache?${fallbackParams}`, {
       headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' },
     })
-    const fallbackRows = await fallback.json().catch(() => [])
-    if (!fallbackRows.length) {
+    if (!fallback.ok) {
+      const body = await fallback.text().catch(() => '')
+      throw new Error(`market_stats_cache fallback failed (HTTP ${fallback.status}): ${body}`)
+    }
+    rows = await fallback.json()
+    row = rows[0]
+    if (!row) {
       throw new Error(
-        `No market_stats_cache data found for city="${city}". ` +
-        `Check that the market report has been generated for this city first.`
+        `No market_stats_cache monthly data for city slug="${citySlug}". ` +
+          `Refresh reporting cache first.`
       )
     }
-    console.warn(`[build-fb-ad] Using latest available period: ${fallbackRows[0].period_label}`)
-    return fallbackRows[0]
+    console.warn(`[build-fb-ad] Using latest cache row: period_start=${row.period_start}`)
   }
 
-  return rows[0]
+  const pulse = await fetchPulseActive(url, key, citySlug)
+  return normalizeMarketStat(row, pulse)
 }
 
 // ---------------------------------------------------------------------------
@@ -267,8 +301,6 @@ function generateAdCopy(stat, cityMeta, periodDisplay, headlinePeriod) {
   const city = cityMeta.displayName
   const price = stat.median_sale_price
   const yoy = stat.median_sale_price_yoy_pct
-  const dom = stat.avg_days_on_market
-  const supply = stat.months_of_supply
 
   if (!price) {
     throw new Error('Cannot generate ad copy: median_sale_price is null. Stat must be verified before ad build.')
@@ -288,9 +320,9 @@ function generateAdCopy(stat, cityMeta, periodDisplay, headlinePeriod) {
   // Example: "Bend's median home price hit $699K in April, down 13.4% from last year. Get the full breakdown — neighborhoods, days on market, and what it means for you."
   let primaryText
   if (yoyStr) {
-    primaryText = `${city}'s median home price hit ${priceFormatted} in ${periodDisplay.split(' ')[0]}, ${yoyStr}. Get the full market breakdown — days on market, inventory, and what it means for buyers and sellers.`
+    primaryText = `${city}'s median home price hit ${priceFormatted} in ${periodDisplay.split(' ')[0]}, ${yoyStr}. Get the full market breakdown: days on market, inventory, and what it means for buyers and sellers.`
   } else {
-    primaryText = `${city}'s median home price was ${priceFormatted} in ${periodDisplay.split(' ')[0]}. Get the full market breakdown — days on market, inventory, and what it means for buyers and sellers.`
+    primaryText = `${city}'s median home price was ${priceFormatted} in ${periodDisplay.split(' ')[0]}. Get the full market breakdown: days on market, inventory, and what it means for buyers and sellers.`
   }
 
   // Truncate if over 125 chars (soft boundary — Meta allows more but truncates display)
@@ -298,14 +330,12 @@ function generateAdCopy(stat, cityMeta, periodDisplay, headlinePeriod) {
     primaryText = `${city}'s median home price hit ${priceFormatted} in ${periodDisplay.split(' ')[0]}${yoyStr ? `, ${yoyStr}` : ''}. Free monthly market report inside.`
   }
 
-  // Headline: ≤27 chars — "{City} Market Report — {Mon YYYY}"
-  let headline = `${city} Market Report — ${headlinePeriod}`
+  // Headline: ≤27 chars
+  let headline = `${city} Market Report - ${headlinePeriod}`
   if (headline.length > 27) {
-    // Shorten: "{City} Market — {Mon YYYY}"
-    headline = `${city} Market — ${headlinePeriod}`
+    headline = `${city} Market - ${headlinePeriod}`
     if (headline.length > 27) {
-      // Further: "Bend — Apr 2026 Report"
-      headline = `${city} — ${headlinePeriod} Report`
+      headline = `${city} - ${headlinePeriod} Report`
       if (headline.length > 27) headline = headline.slice(0, 27)
     }
   }
@@ -384,7 +414,9 @@ async function main() {
   // 1. Pull market stats from Supabase
   console.log('[1/4] Fetching market stats from Supabase...')
   const stat = await fetchMarketStats(city, period)
-  console.log(`      Found: ${stat.period_label || period} — median=$${stat.median_sale_price?.toLocaleString() ?? 'n/a'} yoy=${stat.median_sale_price_yoy_pct ?? 'n/a'}% supply=${stat.months_of_supply ?? 'n/a'}mo dom=${stat.avg_days_on_market ?? 'n/a'}d`)
+  console.log(
+    `      Found: ${stat.period_label || period} | median=$${stat.median_sale_price?.toLocaleString() ?? 'n/a'} yoy=${stat.median_sale_price_yoy_pct ?? 'n/a'}% active=${stat.active_listings ?? 'n/a'} dom=${stat.avg_days_on_market ?? 'n/a'}d`
+  )
 
   const cityMeta = getCityMeta(city)
   const periodDisplay = formatPeriodDisplay(period)
@@ -420,7 +452,7 @@ async function main() {
 
   // 6. Assemble ad spec
   const slug = city.replace(/\s+/g, '-').toLowerCase()
-  const campaignName = `RR Market Report — ${cityMeta.displayName} ${periodDisplay} Lead Gen`
+  const campaignName = `RR Market Report - ${cityMeta.displayName} ${periodDisplay} Lead Gen`
 
   const adSpec = {
     version: 1,
@@ -438,7 +470,7 @@ async function main() {
       status: 'PAUSED',
     },
     ad_set: {
-      name: `${campaignName} — Ad Set`,
+      name: `${campaignName} - Ad Set`,
       optimization_goal: 'LEAD_GENERATION',
       billing_event: 'IMPRESSIONS',
       daily_budget_dollars: dailyBudgetDollars,
@@ -455,18 +487,23 @@ async function main() {
       call_to_action_type: 'SIGN_UP',
     },
     ad: {
-      name: `${campaignName} — Ad`,
+      name: `${campaignName} - Ad`,
       status: 'PAUSED',
     },
     // Data verification trace (per CLAUDE.md data accuracy rules)
     verification_trace: {
-      source: 'Supabase market_stats_cache',
-      table: 'market_stats_cache',
-      filters: { geo_level: 'city', geo_name: city, period },
+      source: 'Supabase market_stats_cache + market_pulse_live',
+      tables: ['market_stats_cache', 'market_pulse_live'],
+      filters: {
+        geo_type: 'city',
+        geo_slug: city,
+        period_type: 'monthly',
+        period_requested: period,
+        period_row: stat.period_start,
+      },
       values: {
         median_sale_price: stat.median_sale_price,
         median_sale_price_yoy_pct: stat.median_sale_price_yoy_pct,
-        months_of_supply: stat.months_of_supply,
         avg_days_on_market: stat.avg_days_on_market,
         active_listings: stat.active_listings,
         closed_count: stat.closed_count,

@@ -314,7 +314,7 @@ async function main() {
       type: spec.creative.call_to_action_type || 'SIGN_UP',
       value: { lead_gen_form_id: formId },
     },
-    name: `${spec.campaign.name} — Creative`,
+    name: `${spec.campaign.name} - Creative`,
   })
 
   // Create ad
