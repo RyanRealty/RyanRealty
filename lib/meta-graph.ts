@@ -563,6 +563,8 @@ export async function publishFacebookReel(
       offset: '0',
       file_size: videoResponse.headers.get('content-length') ?? '0',
     },
+    // Node undici requires duplex when piping a ReadableStream as the request body
+    duplex: 'half',
     body: videoResponse.body,
   })
 

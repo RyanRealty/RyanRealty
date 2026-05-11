@@ -28,6 +28,9 @@ import {
 import { getThreadsAccessToken, publishThreadsVideo } from '@/lib/threads'
 import { publishNextdoorPost } from '@/lib/nextdoor'
 
+/** Fan-out can exceed 60s when Meta poll finishes slowly or FB reel upload is large. */
+export const maxDuration = 300
+
 type Platform =
   | 'instagram'
   | 'facebook'
