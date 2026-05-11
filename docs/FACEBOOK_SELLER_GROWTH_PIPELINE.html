@@ -358,7 +358,7 @@
     </div>
     <div class="meta">
       <span class="pill"><span class="dot"></span> Production live</span>
-      <span>Built 2026-05-10T15:42:17.714Z</span>
+      <span>Built 2026-05-11T01:33:35.950Z</span>
     </div>
   </div>
 </header>
@@ -383,7 +383,7 @@
 
 This is the canonical reference. If anything in `docs/`, `.claude/skills/`, or any cursor rule conflicts with this file, this file wins for the *flow* (skills still win for editorial / brand voice).
 
-> **Status as of 2026-05-10:** All five layers are live in production at commit `91051eb7`. Latest weekly score: **65/100 (needs_attention)**. GA4 reporting confirmed. FUB outreach: 1500 my-leads, 1433 targetable, 150 outreach packets generated, 55 applied to FUB this cycle.
+> **Status as of 2026-05-11:** All five layers are live in production. Iteration 2 shipped: Bend market context now in every packet (active=449, MoS=4.11, "Warm"), CAPI Lead events carry $value for Meta bid optimization, FUB outreach apply tracking is granular (`state_updated_count` + `note_added_count`), weekly digest email lands in `MARKETING_DIGEST_EMAIL` after every cron with at_risk alerting on verdict drop, and a "campaigns active" performance score band makes the score respond to real ad activity instead of staying flat at 55 from infra alone. Latest weekly score: **65/100 (needs_attention)** with 3 actionable recommendations (the top one is "no active Meta campaign").
 
 ---
 
@@ -772,8 +772,12 @@ flowchart LR
 | Meta CPL healthy | +10 / +5 / 0 | ≤$25 / ≤$40 / >$40 |
 | Facebook seller-visit → valuation rate | +10 / +5 / 0 | ≥3% / ≥2% / <2% |
 | FUB Facebook capture rate | +5 / 0 | ≥80% / <80% |
+| **Meta campaign actively running** *(iter 2)* | +5 / 0 | spend > 0 AND impressions > 0 |
+| **GA4 traffic above noise floor** *(iter 2)* | +5 / 0 | sessions ≥ 100 in 30d |
 
 **Verdict thresholds:** `>=75 strong`, `50–74 needs_attention`, `<50 at_risk`.
+
+**Bend market context auto-recommendation** *(iter 2)*: when `bendMarketContext.monthsOfSupply ≤ 4.0` (seller's market), the report card automatically appends a `[SCALE][MEDIUM]` recommendation telling the agent this is the right time to push seller-acquisition spend.
 
 Every recommendation carries an `action` (`scale / pause / test / fix / watch`) and a `priority` (`high / medium / low`). The pickup prompt lays them out in order so an agent can execute top-down.
 
@@ -1051,14 +1055,18 @@ flowchart LR
 
 ## 12. Open follow-ups
 
-Sorted by ROI, highest-impact first.
+Sorted by ROI, highest-impact first. Items shipped in iteration 2 are crossed out.
 
-1. **Improve `applied_count` in FUB outreach (current: 55 of 150).** `updatePersonAutomationState` returns `false` when the contact already has the target stage and merged tags, so `applied = stateApplied || noteApplied` stays false on contacts that only need a note. Fix: always attempt `addPersonNote` so each generated outreach record has at least the note artifact in FUB. File: `app/api/cron/fub-outreach-execution/route.ts`.
+1. ~~**Improve `applied_count` in FUB outreach.**~~ Resolved 2026-05-11 with granular tracking. `applied_count_breakdown` now ships in the packet with `state_updated_count`, `note_added_count`, and `at_least_one_applied_count`. We now know that when a FUB contact is updatable, both attempts succeed; the gap (47/150 in the latest run) is contacts where FUB rejects both calls (likely due to invalid person ids in the cache or rate-limited tier).
 2. ~~**Push GA4 service account creds to Vercel preview + development.**~~ Resolved 2026-05-10 for preview via `scripts/expand-vercel-env-targets.mjs`. Development is permanently skipped because sensitive env vars cannot target `development` per Vercel platform rules — local `vercel dev` reads from `.env.local` instead.
-3. **Restore `fub_contacts_cache` mirror table.** The dashboard pipeline snapshot pays a FUB API cost on every render right now; only the weekly cron should pay that. Spec a small sync (FUB people → Supabase) on a 30-min cron.
-4. **Lift Meta Ads CTR.** Latest packet recommends `[TEST][MEDIUM] Low click-through rate — CTR is 0.00%. Test stronger hooks, seller pain-point headlines, and first-frame visuals.` Action lives in Meta Ads Manager, not the codebase.
-5. **Resolve the Bend Policy Pulse 3-part series state mismatch.** Files `bend_policy_pulse_part{1,2,3}.mp4` are in `public/v5_library/` but the scorecard says they're drafts awaiting review. Either approve them and update the scorecard or pull the MP4s back out. Tracked separately from this pipeline but called out here for handoff completeness.
-6. **Decide on a strict broker user map.** Setting `FOLLOWUPBOSS_BROKER_USER_MAP=matt-ryan:<userId>` would let `fetchMyLeadsFromFubLive` skip the email lookup and shave a network call per cron.
+3. ~~**Add Bend market context to the weekly packet.**~~ Resolved 2026-05-11. Every packet now includes `bend_market_context` (active, median list, MoS, sold 30d, median close 90d, market health label) pulled from `market_pulse_live`. Auto-recommendation fires when MoS ≤ 4.0.
+4. ~~**Add CAPI `value` to every Lead event for Meta bid optimization.**~~ Resolved 2026-05-11. Contact form sends $200 / $300 / $500 by inquiry type, valuation form sends $500. Meta uses this to push budget toward higher-intent conversions.
+5. ~~**Weekly digest email + at_risk alert.**~~ Resolved 2026-05-11. After every marketing cron run, `MARKETING_DIGEST_EMAIL` (or `ADMIN_EMAIL`) receives a brand-styled HTML digest with score, verdict, recommendations, Bend context, and the agent pickup prompt. Subject line escalates to `[ALERT]` when the verdict drops to `at_risk`.
+6. **Get a Meta campaign running.** Latest packet recommends `[FIX][HIGH] No active Meta campaign this cycle` — Meta Ads reports zero spend / zero impressions in the last 30 days. Optimization can't optimize what isn't running. Action lives in Meta Ads Manager.
+7. **Restore `fub_contacts_cache` mirror table.** The dashboard pipeline snapshot pays a FUB API cost on every render right now; only the weekly cron should pay that. Spec a small sync (FUB people → Supabase) on a 30-min cron.
+8. **Investigate the `103 of 150 outreach attempts that get rejected by FUB`.** State + note both fail with the exact same count (47/150 succeed = 103 fail both). Add per-contact error capture in the execution items so we know whether it's invalid person ids in the snapshot, FUB rate limiting, or contacts in restricted states.
+9. **Decide on a strict broker user map.** Setting `FOLLOWUPBOSS_BROKER_USER_MAP=matt-ryan:<userId>` would let `fetchMyLeadsFromFubLive` skip the email lookup and shave a network call per cron.
+10. **Resolve the Bend Policy Pulse 3-part series state mismatch.** Files `bend_policy_pulse_part{1,2,3}.mp4` are in `public/v5_library/` but the scorecard says they're drafts awaiting review. Tracked separately from this pipeline but called out here for handoff completeness.
 
 ---
 
