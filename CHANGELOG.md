@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.146.1 (2026-05-11)
+
+### Bug Fixes
+- fix: Meta FB reel upload duplex + longer social publish timeout
+
+---
+
+
 ## v1.146.0 (2026-05-11)
 
 ### Features
