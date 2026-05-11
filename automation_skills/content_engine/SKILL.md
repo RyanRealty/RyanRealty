@@ -7,7 +7,8 @@ description: >
   "produce a social post", "fire the content engine", "kick off content for", "do a [format]
   for [topic]", "make a [format] video", "create a reel for", "listing reveal", "earth zoom",
   "news clip", "avatar update", "weekend events", "listing launch", "area guide", "depth
-  parallax", or any request to produce a video, reel, image post, or social content.
+  parallax", "flyer", "just listed flyer", "open house flyer", "property one-sheet", or any
+  request to produce a video, reel, image post, flyer, or social content.
   No format skill may be invoked directly — ALL content production routes through here first.
   NOT for pure code/data/text tasks with no content deliverable.
 when_to_use: >
@@ -57,6 +58,7 @@ RESEARCH → STORYBOARD → BUILD → QA PASS → MATT REVIEW → PUBLISH → PO
 | depthflow / depthflow render | `depthflow_pipeline` | `video_production_skills/depthflow_pipeline/SKILL.md` |
 | google maps flyover / 3D aerial / cinematic aerial | `google_maps_flyover` | `video_production_skills/google_maps_flyover/SKILL.md` |
 | gaussian splat | `gaussian_splat` | `video_production_skills/gaussian_splat/SKILL.md` |
+| flyer / just-listed flyer / open house / print one-sheet | `flyer-design` | `social_media_skills/flyer-design/SKILL.md` |
 
 **Retired / archive only (do not route to):** `market_report_video` is canonical only when
 Matt explicitly requests the ffmpeg stat-card path. `news_video` (underscore) is the avatar
@@ -92,13 +94,23 @@ Invoke format skill. Render to `out/<format>/<slug>/` (gitignored — never to
 `public/v5_library/` directly). All stats must be verified before render starts.
 
 **Step 7 — QA pass**
-Auto-invoke `video_production_skills/quality_gate/SKILL.md` on every render. Run:
-- `ffprobe` duration check (30–60s)
-- `ffmpeg blackdetect` (zero sequences at pix_th=0.05)
-- Frame extracts at 0%, 25%, 50%, 85% — visual confirm motion, register shifts, kinetic reveal
-- Banned-word grep across VO script + captions
-- Verify every on-screen number appears in `citations.json`
-- Viral scorecard (VIRAL_GUARDRAILS.md §3) — format minimum must be met
+Branch on deliverable type:
+
+- **Video / motion:** Auto-invoke `video_production_skills/quality_gate/SKILL.md`. Run:
+  - `ffprobe` duration check (30–60s)
+  - `ffmpeg blackdetect` (zero sequences at pix_th=0.05)
+  - Frame extracts at 0%, 25%, 50%, 85% — visual confirm motion, register shifts, kinetic reveal
+  - Banned-word grep across VO script + captions
+  - Verify every on-screen number appears in `citations.json`
+  - Viral scorecard (VIRAL_GUARDRAILS.md §3) — format minimum must be met
+
+- **Static flyer / one-sheet:** Auto-invoke the gate in `social_media_skills/flyer-design/SKILL.md`.
+  - **Photography:** Multi-photo layout with **distinct** alternates (hero + filmstrip); intentional
+    hero crop / zoom (no distant “postage stamp”); never duplicate the same file three ways.
+  - **`design_review_checklist.json`:** every line item `pass` before the draft is described as
+    ready (trained-eye self-audit — “ready” still means **draft for Matt**, not distributed).
+  - Verify mobile readability, `citations.json`, `fonts_used.json`, `provenance.json`,
+    `design_scorecard.json`.
 
 If QA fails: fix and re-render (max 2 auto-iterations). After 2 failures: report to Matt
 with specific failure reason. Do NOT present a broken draft.
@@ -137,6 +149,8 @@ Feed signal back to format skill's reference files.
 5. Feedback loop runs on every rejection. No silent retries without capturing the reason.
 6. Every stat ships with a verification trace. No trace, no ship.
 7. Render target is always `out/` first. `public/v5_library/` only after Matt approval.
+8. Static flyers must pass `flyer-design` photography + typography + `design_review_checklist`
+   gates before Matt sees them. Never describe a flyer as “client-ready” or “for distribution.”
 
 ## Platform defaults (when Matt doesn't specify)
 
@@ -151,6 +165,7 @@ Feed signal back to format skill's reference files.
 | `avatar_market_update` | YT (long), LinkedIn, FB Feed |
 | `social_calendar` | IG Reels, FB Feed, GBP Event post |
 | `meme_lord` (image) | IG Feed, FB Feed, X, Threads |
+| `flyer-design` (static) | IG Feed, FB Feed, LinkedIn, email/PDF handout |
 
 Matt can override: "publish to ONLY {platform list}" or "build but don't publish."
 
@@ -161,4 +176,5 @@ Matt can override: "publish to ONLY {platform list}" or "build but don't publish
 - `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content rules
 - `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard + format minimums
 - `video_production_skills/VIDEO_PRODUCTION_SKILL.md` — master hard constraints
+- `social_media_skills/flyer-design/SKILL.md` — static flyers + design review gate
 - `automation_skills/triggers/listing_trigger/SKILL.md` — automated listing pipeline
