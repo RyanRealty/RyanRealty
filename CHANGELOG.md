@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.146.3 (2026-05-11)
+
+### Bug Fixes
+- fix(meta-graph): buffer FB reel upload bytes (reliable file_size, no duplex stream)
+
+---
+
+
 ## v1.146.2 (2026-05-11)
 
 ### Bug Fixes
