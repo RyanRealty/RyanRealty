@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.144.0 (2026-05-11)
+
+### Features
+- feat(marketing): iter 3 — locked Meta seller campaign launch playbook
+
+---
+
+
 ## v1.143.1 (2026-05-11)
 
 ### Maintenance
