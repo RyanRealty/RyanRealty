@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.145.0 (2026-05-11)
+
+### Features
+- feat: ship Bend Policy Pulse for social publish
+
+---
+
+
 ## v1.144.0 (2026-05-11)
 
 ### Features
