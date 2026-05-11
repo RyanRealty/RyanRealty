@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.147.1 (2026-05-11)
+
+### Maintenance
+- chore: add --parts filter to bend policy pulse publish script
+
+---
+
+
 ## v1.147.0 (2026-05-11)
 
 ### Features
