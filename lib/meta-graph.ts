@@ -550,26 +550,26 @@ export async function publishFacebookReel(
 
   const { video_id, upload_url } = startData
 
-  // Phase 2 — transfer: download the video and pipe it to the upload URL
+  // Phase 2 — transfer: pull full bytes then POST (buffered). Streaming the
+  // response body with duplex can fail tsc on RequestInit and has seen Graph
+  // "Bad Request" when Content-Length on the source URL is missing or stale.
   const videoResponse = await fetch(videoUrl)
   if (!videoResponse.ok) {
     throw new MetaGraphError(`Failed to fetch video from URL: ${videoResponse.statusText}`)
   }
 
-  const uploadResponse = await fetch(
-    upload_url,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `OAuth ${accessToken}`,
-        offset: '0',
-        file_size: videoResponse.headers.get('content-length') ?? '0',
-      },
-      // Node undici requires duplex when piping a ReadableStream as the request body
-      duplex: 'half',
-      body: videoResponse.body,
-    } as RequestInit & { duplex?: 'half' }
-  )
+  const videoBytes = await videoResponse.arrayBuffer()
+  const fileSize = String(videoBytes.byteLength)
+
+  const uploadResponse = await fetch(upload_url, {
+    method: 'POST',
+    headers: {
+      Authorization: `OAuth ${accessToken}`,
+      offset: '0',
+      file_size: fileSize,
+    },
+    body: videoBytes,
+  })
 
   if (!uploadResponse.ok) {
     throw new MetaGraphError(`Reel upload transfer failed: ${uploadResponse.statusText}`)
