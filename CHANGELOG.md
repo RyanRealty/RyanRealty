@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.143.1 (2026-05-11)
+
+### Maintenance
+- docs(marketing): record iteration 2 ship in pipeline doc
+
+---
+
+
 ## v1.143.0 (2026-05-11)
 
 ### Features
