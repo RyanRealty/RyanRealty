@@ -189,4 +189,6 @@ Then merge new paths into this file under the right heading.
 - `/Users/matthewryan/RyanRealty/video_production_skills/listing-tour-video/SKILL.md`
 - `/Users/matthewryan/RyanRealty/video_production_skills/market-data-video/SKILL.md`
 - `/Users/matthewryan/RyanRealty/video_production_skills/neighborhood-overview/SKILL.md`
-- `/Users/matthewryan/RyanRealty/video_production_skills/publisher/SKILL.md`
+- `/Users/matthewryan/RyanRealty/video_production_skills/publisher/SKILL.md` *(stub → canonical: `automation_skills/automation/publish/SKILL.md`)*
+- `/Users/matthewryan/RyanRealty/automation_skills/automation/publish/SKILL.md` *(canonical: `/api/social/publish`, gates, platform matrix)*
+- `/Users/matthewryan/RyanRealty/social_media_skills/blog-post/SKILL.md` *(AgentFire WordPress publish)*
