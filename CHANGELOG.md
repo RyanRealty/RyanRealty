@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.147.2 (2026-05-11)
+
+### Maintenance
+- docs: add publisher skill stub pointing to automation publish + registry entries
+
+---
+
+
 ## v1.147.1 (2026-05-11)
 
 ### Maintenance
