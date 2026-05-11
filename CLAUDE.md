@@ -358,7 +358,8 @@ Before touching any code that builds a market report, listing reel, news clip, n
 | Short-form market video at neighborhood/subdivision scope (called by orchestrator) | `video_production_skills/neighborhood-overview/SKILL.md` |
 | **YouTube long-form market video** (8–12 min, 1920×1080, deep arc) | `video_production_skills/youtube-long-form-market-report/SKILL.md` |
 | **SEO blog post** (AgentFire WordPress on ryan-realty.com) | `social_media_skills/blog-post/SKILL.md` |
-| **Facebook lead-gen ad** (FB lead form → FUB) | `social_media_skills/facebook-lead-gen-ad/SKILL.md` |
+| **Paid Meta pipeline, marketing automation, weekly optimization crons, seller funnel wiring** | **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** (read first) + **`.cursor/skills/facebook-seller-growth/SKILL.md`** + **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** when launching |
+| **Facebook lead-gen ad** (FB lead form → FUB, creative and form spec) | **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** for live wiring (CAPI, webhooks, dashboard), then `social_media_skills/facebook-lead-gen-ad/SKILL.md` |
 | "listing video", "just-listed", "coming-soon", "pending", any single-property reel | `video_production_skills/listing-tour-video/SKILL.md` + `listing_reveal/SKILL.md` |
 | "news clip", "real estate news", "market news" | `video_production_skills/news-video/SKILL.md` |
 | "neighborhood overview", "subdivision deep dive" | `video_production_skills/neighborhood-overview/SKILL.md` |

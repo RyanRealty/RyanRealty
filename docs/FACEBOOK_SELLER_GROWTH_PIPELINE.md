@@ -2,6 +2,8 @@
 
 **The end-to-end seller-lead system for Ryan Realty.** From a Facebook ad impression all the way to a stage-tagged contact in Follow Up Boss with a weekly optimization packet that any agent can pick up and execute.
 
+**For AI agents:** Treat this file as the **single front door** for marketing and advertising work in this repo. It is linked from **`AGENTS.md`**, **`CLAUDE.md`** (Skill Routing), **`.cursor/rules/marketing-advertising-workflow.mdc`**, and **`.cursor/skills/facebook-seller-growth/SKILL.md`**. Load it before editing cron routes, dashboard marketing actions, CAPI, or advising on Meta campaigns.
+
 This is the canonical reference. If anything in `docs/`, `.claude/skills/`, or any cursor rule conflicts with this file, this file wins for the *flow* (skills still win for editorial / brand voice).
 
 > **Status as of 2026-05-11:** All five layers are live in production. Iteration 2 shipped: Bend market context now in every packet (active=449, MoS=4.11, "Warm"), CAPI Lead events carry $value for Meta bid optimization, FUB outreach apply tracking is granular (`state_updated_count` + `note_added_count`), weekly digest email lands in `MARKETING_DIGEST_EMAIL` after every cron with at_risk alerting on verdict drop, and a "campaigns active" performance score band makes the score respond to real ad activity instead of staying flat at 55 from infra alone. Latest weekly score: **65/100 (needs_attention)** with 3 actionable recommendations (the top one is "no active Meta campaign").
@@ -600,6 +602,19 @@ node scripts/grant-ga4-viewer-access.mjs --service-account other@project.iam.gse
 ---
 
 ## 11. Files + ownership
+
+### Agent onboarding
+
+Cloud and IDE agents pick up marketing or advertising work through these **tracked** entry points (not the gitignored `~/.claude/skills/` copy):
+
+| Entry | Path |
+|-------|------|
+| Repo protocol | `AGENTS.md` → Skills list → marketing bullet |
+| Skill routing | `CLAUDE.md` → Format-specific skill load table |
+| Cursor rule | `.cursor/rules/marketing-advertising-workflow.mdc` |
+| Weekly routine skill | `.cursor/skills/facebook-seller-growth/SKILL.md` |
+| Learnings log | `docs/marketing/facebook-seller-growth-LEARNINGS.md` |
+| Claude cloud paste body | `docs/marketing/facebook-seller-growth-CLOUD_ROUTINE_PROMPT.md` |
 
 ```mermaid
 flowchart LR

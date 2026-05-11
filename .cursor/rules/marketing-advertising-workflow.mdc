@@ -1,0 +1,34 @@
+---
+description: Marketing, advertising, Meta or Facebook or Instagram paid ads, lead generation, seller acquisition, CAPI or pixel, weekly marketing optimization or FUB outreach crons — load canonical pipeline documentation first.
+alwaysApply: false
+---
+
+# Marketing and advertising workflow
+
+Use this rule whenever the user asks for **marketing**, **advertising**, **paid social**, **Meta / Facebook / Instagram ads**, **lead gen**, **seller acquisition**, **CPL**, **CAPI**, **marketing dashboard**, **weekly optimization packet**, **`agent_insights` marketing**, **GA4 for marketing**, or **Follow Up Boss outreach automation** tied to ads.
+
+## Mandatory reads (in order)
+
+1. **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** — System map, layers, crons, env vars, verification commands, open follow-ups. **Canonical for architecture and data flow.**
+2. **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** — Launch playbook when the task is “how do we run the seller campaign.”
+3. **`.cursor/skills/facebook-seller-growth/SKILL.md`** — Recurring optimization routine; append outcomes to **`docs/marketing/facebook-seller-growth-LEARNINGS.md`** after a cycle.
+4. **`social_media_skills/facebook-lead-gen-ad/SKILL.md`** — When building lead-gen **creative**, form fields, or Ads Manager steps for report-style lead magnets.
+
+## Browsable diagram export
+
+- **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.html`** — Self-contained HTML with Mermaid diagrams. Regenerate after markdown edits: `node scripts/build-pipeline-doc-html.mjs`. Validate diagrams: `node scripts/validate-pipeline-doc-mermaid.mjs`.
+
+## Related code (quick pointers)
+
+| Area | Typical paths |
+|------|----------------|
+| Weekly marketing packet cron | `app/api/cron/marketing-optimization-report/route.ts` |
+| FUB outreach cron | `app/api/cron/fub-outreach-execution/route.ts` |
+| Admin marketing dashboard data | `app/actions/dashboard.ts` |
+| FUB API helpers | `lib/followupboss.ts` (`fetchMyLeadsFromFubLive`, etc.) |
+| Meta CAPI from forms | `app/contact/actions.ts`, `app/home-valuation/actions.ts`, routes under `app/api/meta-capi/` |
+
+## Do not
+
+- Invent a parallel “marketing architecture” in chat without reading the pipeline doc first.
+- Ship deliverable copy or budget numbers that contradict **fair housing** and **special ad category** rules already noted in the playbook and pipeline doc.

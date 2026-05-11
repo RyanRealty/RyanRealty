@@ -9,6 +9,8 @@ description: Create and launch Facebook Lead Generation ads with native FB lead 
 
 **Status:** Locked 2026-05-07 per Matt directive — Lead Generation is the default ad type for monthly market reports.
 
+**Repo wiring:** Before proposing URLs, webhooks, UTMs, or server-side events, read **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** (live pipeline: pixel, CAPI, FUB, Supabase, weekly crons). For seller-acquisition launch specifics use **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`**.
+
 ---
 
 ## 1. When to use / when not to use
