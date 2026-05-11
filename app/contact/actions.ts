@@ -34,8 +34,17 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
 
   await sendContactNotification({ name, email, phone, inquiryType, message }).catch(() => {})
 
-  // Send to Meta CAPI for deduplication with browser pixel
+  // Send to Meta CAPI for deduplication with browser pixel.
+  // Every Lead carries an estimated value so Meta's bid algorithm can
+  // optimize for higher-value conversions. Property inquiries are higher
+  // intent than general inquiries; fold that into the value tier.
   const eventId = generateEventId()
+  const inquiryLower = inquiryType.toLowerCase()
+  const leadValue = inquiryLower.includes('property') || inquiryLower.includes('listing')
+    ? 300
+    : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
+      ? 500
+      : 200
   await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://localhost:3000'}/api/meta-capi`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -46,7 +55,11 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       firstName: name.split(/\s+/)[0] ?? undefined,
       lastName: name.split(/\s+/).slice(1).join(' ') || undefined,
       eventId,
-      customData: { inquiry_type: inquiryType },
+      customData: {
+        inquiry_type: inquiryType,
+        value: leadValue,
+        currency: 'USD',
+      },
       eventSourceUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://localhost:3000'}/contact`,
     }),
   }).catch((err) => {

@@ -190,7 +190,10 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
     console.warn('[valuation] Auto-CMA failed:', e)
   }
 
-  // Send to Meta CAPI for deduplication with browser pixel
+  // Send to Meta CAPI for deduplication with browser pixel.
+  // Seller leads (valuation requests) are the highest-intent funnel entry,
+  // so they carry the highest value per event. Meta's bid algorithm uses
+  // this to push budget toward seller-acquisition campaigns.
   const eventId = generateEventId()
   await fetch(`${siteUrl}/api/meta-capi`, {
     method: 'POST',
@@ -202,7 +205,12 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
       firstName: name.split(/\s+/)[0] ?? undefined,
       lastName: name.split(/\s+/).slice(1).join(' ') || undefined,
       eventId,
-      customData: { property_address: fullAddress },
+      customData: {
+        property_address: fullAddress,
+        lead_type: 'seller_valuation',
+        value: 500,
+        currency: 'USD',
+      },
       eventSourceUrl: `${siteUrl}/home-valuation`,
     }),
   }).catch((err) => {

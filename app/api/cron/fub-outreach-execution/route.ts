@@ -227,6 +227,8 @@ export async function GET(request: Request) {
     emailSubject: string
     emailBody: string
     applied: boolean
+    stateUpdated: boolean
+    noteAdded: boolean
   }> = []
 
   for (const row of targetable.slice(0, 150)) {
@@ -244,14 +246,15 @@ export async function GET(request: Request) {
     const emailSubject = renderTemplate(plan.emailSubject, firstName)
     const emailBody = renderTemplate(plan.emailBody, firstName)
 
-    let applied = false
+    let stateUpdated = false
+    let noteAdded = false
     if (applyExecution) {
-      const stateApplied = await updatePersonAutomationState({
+      stateUpdated = await updatePersonAutomationState({
         personId: fubId,
         stage: plan.targetStage,
         tags: [plan.triggerTag, 'auto:brand-voice:plain-honest', 'segment:my-leads'],
       })
-      const noteApplied = await addPersonNote(
+      noteAdded = await addPersonNote(
         fubId,
         [
           'Automated outreach packet generated.',
@@ -261,8 +264,8 @@ export async function GET(request: Request) {
           `Suggested Email Body: ${emailBody}`,
         ].join('\n')
       )
-      applied = stateApplied || noteApplied
     }
+    const applied = stateUpdated || noteAdded
 
     executionItems.push({
       fubId,
@@ -273,8 +276,14 @@ export async function GET(request: Request) {
       emailSubject,
       emailBody,
       applied,
+      stateUpdated,
+      noteAdded,
     })
   }
+
+  const stateUpdatedCount = executionItems.filter((i) => i.stateUpdated).length
+  const noteAddedCount = executionItems.filter((i) => i.noteAdded).length
+  const appliedCount = executionItems.filter((i) => i.applied).length
 
   const summary = [
     `FUB outreach execution run for Matt Ryan leads.`,
@@ -282,6 +291,8 @@ export async function GET(request: Request) {
     `Targetable after realtor exclusion: ${targetable.length}.`,
     `Execution mode: ${applyExecution ? 'APPLY' : 'DRY_RUN'}.`,
     `Outreach packets generated: ${executionItems.length}.`,
+    `State updates applied: ${stateUpdatedCount}.`,
+    `Notes added: ${noteAddedCount}.`,
   ].join(' ')
 
   const { data: insertedInsight, error: insightError } = await supabase
@@ -299,6 +310,12 @@ export async function GET(request: Request) {
         matt_broker_id: mattBrokerId,
         my_leads_count: myLeads.length,
         targetable_count: targetable.length,
+        applied_count_breakdown: {
+          state_updated: stateUpdatedCount,
+          note_added: noteAddedCount,
+          at_least_one_applied: appliedCount,
+          total_attempted: executionItems.length,
+        },
         execution_items: executionItems,
         voice_rules: [
           'honest',
@@ -345,7 +362,9 @@ export async function GET(request: Request) {
     my_leads_count: myLeads.length,
     targetable_count: targetable.length,
     generated_outreach: executionItems.length,
-    applied_count: executionItems.filter((item) => item.applied).length,
+    applied_count: appliedCount,
+    state_updated_count: stateUpdatedCount,
+    note_added_count: noteAddedCount,
   })
 }
 

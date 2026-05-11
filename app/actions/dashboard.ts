@@ -95,6 +95,16 @@ type DashboardMarketingMetaSummary = {
 
 export type DashboardMarketingData = {
   windowLabel: string
+  bendMarketContext: {
+    available: boolean
+    activeListings: number | null
+    medianListPrice: number | null
+    monthsOfSupply: number | null
+    soldCount30d: number | null
+    medianClosePrice90d: number | null
+    marketHealthLabel: string | null
+    error: string | null
+  }
   ga4: {
     ok: boolean
     sessions: number
@@ -355,6 +365,66 @@ async function getMetaAdsSummary30d(): Promise<{
   }
 }
 
+type BendMarketContext = DashboardMarketingData['bendMarketContext']
+
+async function getBendMarketContext(supabase: SupabaseClient): Promise<BendMarketContext> {
+  try {
+    const { data, error } = await supabase
+      .from('market_pulse_live')
+      .select(
+        'active_count, median_list_price, months_of_supply, sold_count_30d, median_close_price_90d, market_health_label'
+      )
+      .eq('geo_type', 'city')
+      .eq('geo_slug', 'bend')
+      .eq('property_type', 'A')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error || !data) {
+      return {
+        available: false,
+        activeListings: null,
+        medianListPrice: null,
+        monthsOfSupply: null,
+        soldCount30d: null,
+        medianClosePrice90d: null,
+        marketHealthLabel: null,
+        error: error?.message ?? 'No Bend pulse row',
+      }
+    }
+
+    const row = data as Record<string, unknown>
+    const numOrNull = (v: unknown): number | null => {
+      const n = Number(v)
+      return Number.isFinite(n) ? n : null
+    }
+
+    return {
+      available: true,
+      activeListings: numOrNull(row.active_count),
+      medianListPrice: numOrNull(row.median_list_price),
+      monthsOfSupply: numOrNull(row.months_of_supply),
+      soldCount30d: numOrNull(row.sold_count_30d),
+      medianClosePrice90d: numOrNull(row.median_close_price_90d),
+      marketHealthLabel:
+        typeof row.market_health_label === 'string' ? row.market_health_label : null,
+      error: null,
+    }
+  } catch (err) {
+    return {
+      available: false,
+      activeListings: null,
+      medianListPrice: null,
+      monthsOfSupply: null,
+      soldCount30d: null,
+      medianClosePrice90d: null,
+      marketHealthLabel: null,
+      error: err instanceof Error ? err.message : 'Bend pulse fetch failed',
+    }
+  }
+}
+
 export async function getDashboardMarketingData(): Promise<DashboardMarketingData> {
   const now = new Date()
   const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
@@ -373,6 +443,16 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
   let valuationRequests30d = 0
   let contactsSynced30d = 0
   let facebookContacts30d = 0
+  let bendMarketContext: BendMarketContext = {
+    available: false,
+    activeListings: null,
+    medianListPrice: null,
+    monthsOfSupply: null,
+    soldCount30d: null,
+    medianClosePrice90d: null,
+    marketHealthLabel: null,
+    error: 'Supabase not configured',
+  }
   let fubPipeline: DashboardMarketingData['fubPipeline'] = {
     mattBrokerId: null,
     myLeadsTotal: 0,
@@ -391,8 +471,15 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
 
   if (url?.trim() && serviceKey?.trim()) {
     const supabase = createClient(url, serviceKey)
-    const [sellerVisitsRes, sellerFacebookRes, valuationRes, contactsRes, facebookContactsRes, pipelineSnapshot] =
-      await Promise.all([
+    const [
+      sellerVisitsRes,
+      sellerFacebookRes,
+      valuationRes,
+      contactsRes,
+      facebookContactsRes,
+      pipelineSnapshot,
+      bendCtx,
+    ] = await Promise.all([
         supabase
           .from('visits')
           .select('id', { count: 'exact', head: true })
@@ -429,6 +516,7 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
           .gte('synced_at', startIso)
           .ilike('source', 'Facebook%'),
         getFubPipelineSnapshot(supabase, startIso),
+        getBendMarketContext(supabase),
       ])
 
     sellerVisits30d = sellerVisitsRes.count ?? 0
@@ -437,6 +525,7 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
     contactsSynced30d = contactsRes.count ?? 0
     facebookContacts30d = facebookContactsRes.count ?? 0
     fubPipeline = pipelineSnapshot
+    bendMarketContext = bendCtx
   }
 
   const [ga, meta] = await Promise.all([gaPromise, metaPromise])
@@ -560,6 +649,50 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
     }
   }
 
+  // Performance signal: did anything actually happen this cycle?
+  // Without this band, the score is dominated by the 55-point infra baseline
+  // and stays flat at 65 even when no campaigns run. This makes it move with
+  // real activity.
+  const hasMetaSpend = (meta.summary?.spend ?? 0) > 0
+  const hasMetaImpressions = (meta.summary?.impressions ?? 0) > 0
+  if (hasMetaSpend && hasMetaImpressions) {
+    score += 5
+  } else {
+    reportItems.push({
+      action: 'fix',
+      priority: 'high',
+      title: 'No active Meta campaign this cycle',
+      rationale: 'Meta Ads reports zero spend and zero impressions in the last 30 days. Optimization cannot improve a pipeline with no inputs. Launch or unpause a seller-targeted campaign before the next cycle.',
+    })
+  }
+  const ga4Sessions = ga.ok ? ga.data.sessions : 0
+  if (ga4Sessions >= 100) {
+    score += 5
+  } else if (ga4Sessions > 0) {
+    reportItems.push({
+      action: 'watch',
+      priority: 'low',
+      title: 'Site traffic below threshold',
+      rationale: `GA4 reports ${ga4Sessions} sessions in the last 30 days. Optimization signal is noisy below 100 sessions. Boost organic or paid traffic this week.`,
+    })
+  }
+
+  // Bend market context: surface a one-line nudge if the local market is in
+  // seller-favorable conditions so the agent reading the packet has a reason
+  // to launch or scale a campaign.
+  if (
+    bendMarketContext.available &&
+    bendMarketContext.monthsOfSupply !== null &&
+    bendMarketContext.monthsOfSupply <= 4
+  ) {
+    reportItems.push({
+      action: 'scale',
+      priority: 'medium',
+      title: 'Bend market favors sellers right now',
+      rationale: `Bend SFR months of supply is ${bendMarketContext.monthsOfSupply.toFixed(1)} (seller's market threshold is 4.0). This is the right time to push seller-acquisition spend.`,
+    })
+  }
+
   if (reportItems.length === 0) {
     reportItems.push({
       action: 'scale',
@@ -641,6 +774,7 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
 
   return {
     windowLabel: 'Last 30 days',
+    bendMarketContext,
     ga4: {
       ok: ga.ok,
       sessions: ga.ok ? ga.data.sessions : 0,
