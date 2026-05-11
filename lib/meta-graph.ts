@@ -556,17 +556,20 @@ export async function publishFacebookReel(
     throw new MetaGraphError(`Failed to fetch video from URL: ${videoResponse.statusText}`)
   }
 
-  const uploadResponse = await fetch(upload_url, {
-    method: 'POST',
-    headers: {
-      Authorization: `OAuth ${accessToken}`,
-      offset: '0',
-      file_size: videoResponse.headers.get('content-length') ?? '0',
-    },
-    // Node undici requires duplex when piping a ReadableStream as the request body
-    duplex: 'half',
-    body: videoResponse.body,
-  })
+  const uploadResponse = await fetch(
+    upload_url,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `OAuth ${accessToken}`,
+        offset: '0',
+        file_size: videoResponse.headers.get('content-length') ?? '0',
+      },
+      // Node undici requires duplex when piping a ReadableStream as the request body
+      duplex: 'half',
+      body: videoResponse.body,
+    } as RequestInit & { duplex?: 'half' }
+  )
 
   if (!uploadResponse.ok) {
     throw new MetaGraphError(`Reel upload transfer failed: ${uploadResponse.statusText}`)
