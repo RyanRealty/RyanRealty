@@ -10,9 +10,10 @@ Use this rule whenever the user asks for **marketing**, **advertising**, **paid 
 ## Mandatory reads (in order)
 
 1. **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** — System map, layers, crons, env vars, verification commands, open follow-ups. **Canonical for architecture and data flow.**
-2. **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** — Launch playbook when the task is “how do we run the seller campaign.”
-3. **`.cursor/skills/facebook-seller-growth/SKILL.md`** — Recurring optimization routine; append outcomes to **`docs/marketing/facebook-seller-growth-LEARNINGS.md`** after a cycle.
-4. **`social_media_skills/facebook-lead-gen-ad/SKILL.md`** — When building lead-gen **creative**, form fields, or Ads Manager steps for report-style lead magnets.
+2. **`docs/MARKETING_LEAD_FLOW.md`** — Lead flow only: Meta Lead Ads webhook, site forms, CAPI plus pixel dedup, FUB versus Supabase sinks, troubleshooting.
+3. **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** — Launch playbook when the task is “how do we run the seller campaign.”
+4. **`.cursor/skills/facebook-seller-growth/SKILL.md`** — Recurring optimization routine; append outcomes to **`docs/marketing/facebook-seller-growth-LEARNINGS.md`** after a cycle.
+5. **`social_media_skills/facebook-lead-gen-ad/SKILL.md`** — When building lead-gen **creative**, form fields, or Ads Manager steps for report-style lead magnets.
 
 ## Browsable diagram export
 
@@ -27,6 +28,7 @@ Use this rule whenever the user asks for **marketing**, **advertising**, **paid 
 | Admin marketing dashboard data | `app/actions/dashboard.ts` |
 | FUB API helpers | `lib/followupboss.ts` (`fetchMyLeadsFromFubLive`, etc.) |
 | Meta CAPI from forms | `app/contact/actions.ts`, `app/home-valuation/actions.ts`, routes under `app/api/meta-capi/` |
+| Meta Lead Ads webhook | `app/api/meta/lead-webhook/route.ts` |
 
 ## Do not
 

@@ -4,6 +4,8 @@
 
 **For AI agents:** Treat this file as the **single front door** for marketing and advertising work in this repo. It is linked from **`AGENTS.md`**, **`CLAUDE.md`** (Skill Routing), **`.cursor/rules/marketing-advertising-workflow.mdc`**, and **`.cursor/skills/facebook-seller-growth/SKILL.md`**. Load it before editing cron routes, dashboard marketing actions, CAPI, or advising on Meta campaigns.
 
+**Path-by-path lead creation** (webhooks, forms, pixel plus CAPI dedup, where rows land, troubleshooting): **`docs/MARKETING_LEAD_FLOW.md`**.
+
 This is the canonical reference. If anything in `docs/`, `.claude/skills/`, or any cursor rule conflicts with this file, this file wins for the *flow* (skills still win for editorial / brand voice).
 
 > **Status as of 2026-05-11:** All five layers are live in production. Iteration 2 shipped: Bend market context now in every packet (active=449, MoS=4.11, "Warm"), CAPI Lead events carry $value for Meta bid optimization, FUB outreach apply tracking is granular (`state_updated_count` + `note_added_count`), weekly digest email lands in `MARKETING_DIGEST_EMAIL` after every cron with at_risk alerting on verdict drop, and a "campaigns active" performance score band makes the score respond to real ad activity instead of staying flat at 55 from infra alone. Latest weekly score: **65/100 (needs_attention)** with 3 actionable recommendations (the top one is "no active Meta campaign").
