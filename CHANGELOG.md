@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.152.0 (2026-05-12)
+
+### Features
+- feat(flyers): editorial hero/footer polish; Azo Just Listed fallback; broker row layout
+
+---
+
+
 ## v1.151.0 (2026-05-12)
 
 ### Features
