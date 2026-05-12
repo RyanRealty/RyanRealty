@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.152.1 (2026-05-12)
+
+### Bug Fixes
+- fix(flyers): simplify layout — drop template chrome, calmer type
+
+---
+
+
 ## v1.152.0 (2026-05-12)
 
 ### Features
