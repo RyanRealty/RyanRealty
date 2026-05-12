@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.148.0 (2026-05-12)
+
+### Features
+- feat(flyers): hero top-right logo instead of navy header bar
+
+---
+
+
 ## v1.147.5 (2026-05-12)
 
 ### Bug Fixes
