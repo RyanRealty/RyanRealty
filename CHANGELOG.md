@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.158.0 (2026-05-12)
+
+### Features
+- feat(marketing-brain): snapshot-channels skill + GA4 ingestor
+
+---
+
+
 ## v1.157.0 (2026-05-12)
 
 ### Features
