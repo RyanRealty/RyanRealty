@@ -242,6 +242,123 @@ The `_style_backup/` directory was removed from the repo. Never recreate it. Use
 
 ---
 
+# Design System v2 — Heritage + Web Registers (locked 2026-05-12)
+
+**The canonical source for every brand-touching decision lives at [design_system/ryan-realty/](design_system/ryan-realty/).** Read order: `MANIFEST.md` → `SKILL.md` → `README.md` → `colors_and_type.css`. Never invent colors, fonts, or asset paths from memory — open the source.
+
+## Two registers — pick one per surface
+
+| Register | Use for | Color | Type |
+|---|---|---|---|
+| **Heritage** | Yard signs, postcards, door hangers, email banners, IG posts + carousels, print flyers, broker brag sheets, section heroes, listing-tour-video, news clips, all "stamped" moments | Navy `#102742` **monochrome** on cream `#faf8f4` (warm stone neutrals) | **Amboqia Boriango** display; the pre-rendered wordmark as image — never re-typeset |
+| **Web / product** | Homepage, search, market hub, dashboards, forms, every UI surface | Navy `#102742` primary on warm stone (shadcn/ui radix-nova) | **Geist** sans for UI/body/captions, **Amboqia Boriango** for display/hero H1s |
+
+Never mix the two on the same surface (except a single cross-register hero or footer block).
+
+## Brand colors — locked hex
+
+| Token | Hex | Use |
+|---|---|---|
+| `--rr-navy` | `#102742` | Primary navy. Logo, CTAs, headlines, focus intent. |
+| `--rr-navy-deep` | `#0a1a2e` | Hover / pressed navy. |
+| `--rr-cream` | `#faf8f4` | Heritage register background. (Replaces the old `#F2EBDD` cream.) |
+| `--rr-sand` | `#e8e2d4` | Stone neutral. |
+| `--rr-fir` | `#2e4a3a` | Forest accent (sparing). |
+| `--rr-sky` | `#8fb8d4` | Deschutes sky accent (sparing). |
+
+**Gold is OUT of the v2 system.** Both `#D4AF37` (news) and `#C8A864` (listing reels) are removed from the heritage register. Existing rendered videos in `public/v5_library/` stay as-is until re-rendered; new renders use navy-on-cream. See "Migration conflicts" below.
+
+## Type families — three, with a decision tree
+
+CSS vars are in `design_system/ryan-realty/colors_and_type.css`.
+
+1. Writing a **wordmark or section hero stamp** → use the pre-rendered image from `design_system/ryan-realty/assets/brand/` (e.g. `logo-blue.png`, `illustration-05.png`). Do **not** re-typeset.
+2. Writing a **display moment** (hero H1, pull quote, testimonial, yard-sign text, postcard headline, IG cover title, slide title) → **Amboqia Boriango**, navy on cream, tracking `-0.01em` (hero H1) to `0.08em` (all-caps signage).
+3. Writing an **arched ribbon sub-label** under a wordmark → **Azo Sans Medium**, UPPERCASE, tracked `0.12em`.
+4. Writing **body, UI, market data, forms, nav, video captions** → **Geist** (400/500/600/700). Geist Mono for code.
+
+Font files: `design_system/ryan-realty/fonts/Amboqia_Boriango.otf`, `AzoSans-Medium.ttf`. Geist loads via `next/font/geist` in production; via Google Fonts in design previews.
+
+## Radii — base 10px, ladder to 22px
+
+`sm 6` · `md 8` · `lg 10` (button/input) · `xl 14` (card) · `2xl 18` · `3xl 22`. Badge = pill.
+
+## Shadows — navy-tinted only
+
+All shadows use `rgb(16 39 66 / opacity)`. `--shadow-sm` on resting cards, `--shadow-md` on hover, `--shadow-lg` on hero search. Full ladder in `colors_and_type.css`.
+
+## Focus ring
+
+**3px warm stone.** Never navy. Visible always. 
+
+## Motion ladder
+
+200ms fades · 300ms entrances · 400ms fade-up · 2s loops · 20s Ken Burns. Ease-out entrances, ≤16px travel. Always respect `prefers-reduced-motion`.
+
+## Voice + content — binding everywhere (web, print, video VO, social, email)
+
+The full spec is in `design_system/ryan-realty/SKILL.md`. Highlights:
+
+- **Honest. Transparent. Trustworthy. Direct and kind.** Show, don't tell — let the fact do the work.
+- **Four rules:** Direct. Specific. Kind. Honest, even when inconvenient.
+- **Phone:** `541.213.6706` (dotted). **Web:** `ryan-realty.com` (hyphenated, lowercase). **Place separator:** middle dot · — `BEND · OREGON`.
+- **"You/your"** is the subject. **"We/our team"** for broker identity. **Never "I".**
+- **Sentence case** for web headings; Title Case only for the hero H1.
+- **Tabular numerals** (`font-variant-numeric: tabular-nums`) for every numeric surface.
+- **Currency rounded** to the nearest thousand: `$895,000` not `$894,750`.
+- **Days = integer + "days":** `38 days`.
+- **Unavailable** → em-dash `—` (em-dashes are banned as punctuation but allowed as a data placeholder).
+- **Percents:** one decimal, signed arrow: `↑ 2.1% YoY`.
+
+### Banned vocabulary (extends the video manifesto — applies to every surface)
+
+- Meta-tone: *passionate, dedicated, premier, luxury, boutique, concierge, white-glove*
+- Real-estate clichés: *dream home, nestled, breathtaking, turnkey, must-see, stunning, gorgeous, charming, pristine, meticulously maintained, entertainer's dream, tucked away, hidden gem*
+- Hedging: *may, could, potentially*
+- Marketing exhortations: *Don't miss out! Act now!*
+- **Exclamation marks** in body. **Emoji.** Anywhere. Ever. Pressure / scarcity framing.
+
+## Heritage asset cheat sheet
+
+Full inventory: `design_system/ryan-realty/MANIFEST.md`. Most-used:
+
+- **Heritage wordmark:** `design_system/ryan-realty/assets/brand/logo-blue.png` (navy on cream — print, signage, IG, flyers)
+- **Signature lockup:** `design_system/ryan-realty/assets/brand/illustration-05.png` (wordmark + beer-glass + dog + tagline ribbon)
+- **Mascot Jax:** `design_system/ryan-realty/assets/brand/blue-dog.png` · `white-dog.png` for dark backgrounds
+- **Scene illustrations:** `scene-tower.png` (Tower Theater), `scene-water-pageant.png` (historic downtown)
+- **Hero photography:** `design_system/ryan-realty/assets/hero-poster.webp` (Deschutes through downtown Bend)
+- **14 numbered heritage wordmark variations:** `illustration-01.png` through `illustration-14.png`
+- **Element cutouts** (for custom compositing): `design_system/ryan-realty/assets/brand/navy-cream/element-*.png`
+
+## Migration conflicts vs the prior locked spec (RESOLVED 2026-05-12)
+
+The v1 spec held in this file before today carried gold accents and AzoSans body. v2 supersedes:
+
+| Surface | v1 (pre-2026-05-12) | v2 (locked now) |
+|---|---|---|
+| Listing video footer logo bar | Gold `#C8A864` logo on `rgba(0,0,0,0.70)` bar | Navy `#102742` logo on cream-tinted bar; uses `logo-blue.png` |
+| News clip caption pill | 70% navy pill with 2px gold top border, AzoSans 56px | 70% navy pill with **warm stone** 2px top border, **Geist 500 56px** |
+| Body / UI / captions font | AzoSans | **Geist** |
+| Cream background | `#F2EBDD` | `#faf8f4` |
+| Brand color count | Navy, gold, cream, charcoal | Navy, navy-deep, cream, sand, fir (sparing), sky (sparing) |
+| Mascot | Not specified | **Jax** the blue lab — explicitly part of brand |
+
+**Already-rendered videos in `public/v5_library/` stay as-is** (no retroactive re-render). **New renders use v2.** When a video is re-rendered for any reason, it migrates to v2.
+
+## Web product specifics (extends "Design System Rules — MANDATORY" above)
+
+The shadcn/ui-only rule above still holds. v2 additions:
+
+- The `--font-sans` token in `app/globals.css` is `Geist` (already loaded via `next/font/geist` in `app/layout.tsx`). Do not swap to system fonts.
+- The radix-nova stone neutral base is correct. Do not migrate to slate or cool greys.
+- The `--primary` oklch in `app/globals.css` evaluates to `#102742`. Do not edit.
+
+## Skill self-binding (the rule that keeps this real)
+
+Every content skill (`video_production_skills/*`, `social_media_skills/*`, `automation_skills/*`) MUST reference `design_system/ryan-realty/SKILL.md` in its "Required references" section. A skill that produces content without loading the design system is non-compliant. Update the skill, not the workaround.
+
+---
+
 ## Opus Orchestrator Policy (MANDATORY)
 
 This agent runs on Opus. Opus is ~15× the per-token cost of Haiku. **Do not burn Opus context on mechanical/bulk work.** Delegate to subagents via the `Agent` tool (`model: "sonnet"` or `"haiku"`).

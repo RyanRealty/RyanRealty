@@ -1,0 +1,6 @@
+# Build artifacts and AI experiment dumps from the design system build process
+# — not part of the canonical brand kit, do not track.
+scraps/
+uploads/
+tmp-*.png
+README-print.html

@@ -1,0 +1,83 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Email signature</title><link rel="stylesheet" href="_card.css">
+<style>
+  .card-root { --sig-navy:#102742; --sig-cream:#faf8f4; --sig-edge:#ede6d4; --sig-muted:#46607c; }
+
+  .sig-eyebrow { font-family:var(--font-sans); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted-foreground); font-weight:500; margin-bottom:8px; }
+  .sig-section { margin-bottom:16px; }
+  .sig-section:last-child { margin-bottom:0; }
+
+  /* PRIMARY --------- */
+  .sig-primary {
+    background:var(--sig-cream); border:1px solid var(--sig-edge); border-radius:10px;
+    padding:22px 24px;
+    display:grid; grid-template-columns:150px 1px 1fr; gap:24px; align-items:center;
+    font-family:var(--font-sans); color:var(--sig-navy);
+  }
+  .sig-primary .mark { display:flex; align-items:center; justify-content:center; }
+  .sig-primary .mark img { max-width:150px; max-height:150px; width:auto; display:block; }
+  .sig-primary .rule { background:var(--sig-navy); opacity:0.16; width:1px; align-self:stretch; }
+  .sig-primary .body { display:flex; flex-direction:column; min-width:0; }
+  .sig-primary .name { font-size:17px; font-weight:700; letter-spacing:-0.01em; line-height:1.2; }
+  .sig-primary .title { font-size:10.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--sig-muted); margin-top:3px; }
+  .sig-primary .company { font-size:12px; font-weight:600; margin-top:8px; line-height:1.35; }
+  .sig-primary .addr { font-size:11.5px; color:var(--sig-muted); line-height:1.4; margin-top:1px; }
+  .sig-primary .contact { display:grid; grid-template-columns:auto 1fr; column-gap:8px; row-gap:2px; margin-top:8px; font-size:11.5px; line-height:1.5; }
+  .sig-primary .contact b { font-weight:600; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--sig-muted); align-self:center; }
+  .sig-primary .contact a { color:var(--sig-navy); text-decoration:none; border-bottom:1px dotted rgba(16,39,66,0.28); }
+  .sig-primary .tagline { margin-top:10px; font-size:10.5px; font-style:italic; color:var(--sig-muted); border-top:1px solid rgba(16,39,66,0.12); padding-top:7px; line-height:1.45; }
+
+  /* COMPACT --------- */
+  .sig-compact {
+    background:var(--sig-cream); border:1px solid var(--sig-edge); border-radius:10px;
+    padding:12px 18px;
+    display:grid; grid-template-columns:54px 1px 1fr; gap:16px; align-items:center;
+    font-family:var(--font-sans); color:var(--sig-navy);
+  }
+  .sig-compact .mark img { max-width:54px; max-height:54px; width:auto; display:block; }
+  .sig-compact .rule { background:var(--sig-navy); opacity:0.16; width:1px; align-self:stretch; }
+  .sig-compact .body { min-width:0; }
+  .sig-compact .name { font-size:13px; font-weight:700; line-height:1.25; }
+  .sig-compact .meta { font-size:10.5px; color:var(--sig-muted); margin-top:3px; line-height:1.5; }
+  .sig-compact .meta a { color:var(--sig-navy); text-decoration:none; border-bottom:1px dotted rgba(16,39,66,0.28); }
+  .sig-compact .meta .sep { opacity:0.5; margin:0 5px; }
+</style></head>
+<body><div class="card-root">
+
+  <div class="label-eyebrow" style="margin-bottom:12px">Email signature · Matthew Ryan · Ryan Realty</div>
+
+  <div class="sig-section">
+    <div class="sig-eyebrow">Primary · first-touch, outbound</div>
+    <div class="sig-primary">
+      <div class="mark"><img src="../assets/brand/ryan-realty-stacked-logo-blue.png" alt="Ryan Realty · Bend, Oregon"></div>
+      <div class="rule"></div>
+      <div class="body">
+        <div class="name">Matthew Ryan</div>
+        <div class="title">Principal Broker · Owner</div>
+        <div class="company">Ryan Realty</div>
+        <div class="addr">115 Northwest Oregon Avenue, #2<br>Bend, OR 97707</div>
+        <div class="contact">
+          <b>Tel</b><a href="tel:+15412136706">541.213.6706</a>
+          <b>Email</b><a href="mailto:matt@ryan-realty.com">matt@ryan-realty.com</a>
+          <b>Web</b><a href="https://ryan-realty.com">ryan-realty.com</a>
+        </div>
+        <div class="tagline">Building community through authentic relationships and exceptional customer service.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sig-section">
+    <div class="sig-eyebrow">Compact · reply-chain, ongoing threads</div>
+    <div class="sig-compact">
+      <div class="mark"><img src="../assets/brand/ryan-realty-stacked-logo-blue.png" alt="Ryan Realty"></div>
+      <div class="rule"></div>
+      <div class="body">
+        <div class="name">Matthew Ryan · Principal Broker, Ryan Realty</div>
+        <div class="meta">
+          <a href="tel:+15412136706">541.213.6706</a><span class="sep">·</span><a href="mailto:matt@ryan-realty.com">matt@ryan-realty.com</a><span class="sep">·</span><a href="https://ryan-realty.com">ryan-realty.com</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="label-mono" style="margin-top:6px">Stacked logo in both. Address allowed to break across two lines; contact labeled and aligned in a two-column grid so nothing overflows. Tagline sits full-width under a rule.</div>
+</div></body></html>
