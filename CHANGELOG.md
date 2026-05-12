@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.147.4 (2026-05-12)
+
+### Bug Fixes
+- fix(flyers): white footer bar, rectangular headshot, horizontal broker row
+
+---
+
+
 ## v1.147.3 (2026-05-12)
 
 ### Maintenance
