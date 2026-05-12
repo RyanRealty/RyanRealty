@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.165.0 (2026-05-12)
+
+### Features
+- feat(marketing-brain): weekly-cycle orchestrator
+
+---
+
+
 ## v1.164.0 (2026-05-12)
 
 ### Features
