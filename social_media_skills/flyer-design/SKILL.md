@@ -75,7 +75,7 @@ If any item is `fail`, the package is **not** shown as client-ready.
 
 ## Compositor (repo)
 
-For repeatable **1080×1350** just-listed layouts: **Amboqia** **Just Listed** (top-left, gold, when font on disk); stacked **white** mark **hero top-right**; **beds/baths/sqft/acres** on **lower-right hero** scrim; **left hero** **MLS · status**, plain **price**, **address**, **city** (display address = Amboqia when available); optional **3-up filmstrip**; **footer** **⅔** MLS description **| ⅓** broker (**headshot**, name, phone, email, **Ryan Realty** only — **no** listing URL, **no** long CTA line); **Geist** body, **Azo** optional ribbon per typography table.
+For repeatable **1080×1350** just-listed layouts (minimal chrome): **Amboqia** **Just Listed** when font on disk else **Geist SemiBold**; logo **hero top-right**; **specs** lower-right **soft navy** panel only (no label, no gold frame); **MLS**, **price**, **address**, **city** on gradient (**no** frosted card); optional **3-up filmstrip**; footer **⅔** plain MLS body copy **| ⅓** centered **headshot**, then name, phone, email, **Ryan Realty** (no URL/CTA).
 
 - Run: `npm run flyer:just-listed -- --config out/flyers/<slug>/config.json --out out/flyers/<slug>/render.png`
 - **Amboqia** paths: `FLYER_FONT_AMBOQIA`, `video/market-report/public/Amboqia.otf`, `listing_video_v4/public/fonts/Amboqia.otf`.
