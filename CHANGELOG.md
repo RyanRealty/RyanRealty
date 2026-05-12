@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.165.1 (2026-05-12)
+
+### Bug Fixes
+- fix(marketing-brain): remove status field from meta-ads insights entirely
+
+---
+
+
 ## v1.165.0 (2026-05-12)
 
 ### Features
