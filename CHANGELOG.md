@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.156.0 (2026-05-12)
+
+### Features
+- feat(marketing): CAPI v21 + paths D/E/F + lead-webhook hot/warm/nurture tagging
+
+---
+
+
 ## v1.155.1 (2026-05-12)
 
 ### Maintenance
