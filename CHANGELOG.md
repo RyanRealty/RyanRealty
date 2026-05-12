@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.147.5 (2026-05-12)
+
+### Bug Fixes
+- fix(brand): real PNG for stacked_logo_white (was WebP mislabeled .png)
+
+---
+
+
 ## v1.147.4 (2026-05-12)
 
 ### Bug Fixes
