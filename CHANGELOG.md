@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.150.0 (2026-05-12)
+
+### Features
+- feat(flyers): white footer ⅔ description+highlights, ⅓ broker
+
+---
+
+
 ## v1.149.0 (2026-05-12)
 
 ### Features
