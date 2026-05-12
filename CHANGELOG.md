@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.155.1 (2026-05-12)
+
+### Maintenance
+- chore(brand): retire gold across skill files per Design System v2
+
+---
+
+
 ## v1.155.0 (2026-05-12)
 
 ### Features
