@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.163.1 (2026-05-12)
+
+### Bug Fixes
+- fix(marketing-brain): meta-ads field, FUB window pattern, GSC site default
+
+---
+
+
 ## v1.163.0 (2026-05-12)
 
 ### Features
