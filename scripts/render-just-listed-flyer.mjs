@@ -222,7 +222,7 @@ async function main() {
   const descLineH = 21
   const maxDescLines = 7
 
-  /** Pre-measure bottom navy block (bullets + description + separator + agent) */
+  /** Pre-measure: navy content + gold rule + white agent bar */
   const canvas = createCanvas(W, H)
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('2d context missing')
@@ -242,13 +242,14 @@ async function main() {
   const descColH = descLines.length * descLineH
   const textBlockH = Math.max(bulletsH, descColH)
   const infoTopPad = 20
-  const sepH = 2
-  const agentBlockH = 132
   const infoBottomPad = 16
-  const BOTTOM_NAVY_H = infoTopPad + textBlockH + infoBottomPad + sepH + agentBlockH
+  const GOLD_RULE = 2
+  const WHITE_FOOTER_H = 144
+  const CONTENT_NAVY_H = infoTopPad + textBlockH + infoBottomPad
+  const BOTTOM_TOTAL = CONTENT_NAVY_H + GOLD_RULE + WHITE_FOOTER_H
 
   const filmGap = FILM_H ? GAP : 0
-  const HERO_H = H - HEADER_H - FILM_H - filmGap - BOTTOM_NAVY_H - GAP
+  const HERO_H = H - HEADER_H - FILM_H - filmGap - BOTTOM_TOTAL - GAP
 
   const heroImg = await loadImage(photos[0])
   const thumbImgs = photos.length > 1 ? await Promise.all(photos.slice(1, 4).map((p) => loadImage(p))) : []
@@ -337,9 +338,9 @@ async function main() {
 
   yAfterHero += GAP
 
-  // Single navy block: highlights + description + agent (no floating white cards)
+  // Navy: highlights + description only
   ctx.fillStyle = COLORS.navy
-  ctx.fillRect(0, yAfterHero, W, BOTTOM_NAVY_H)
+  ctx.fillRect(0, yAfterHero, W, CONTENT_NAVY_H)
 
   let cy = yAfterHero + infoTopPad
   const bulletTextX = infoPadX + 20
@@ -360,51 +361,83 @@ async function main() {
     dy += descLineH
   }
 
-  const sepY = yAfterHero + BOTTOM_NAVY_H - agentBlockH - sepH
-  ctx.fillStyle = 'rgba(200,168,100,0.45)'
-  ctx.fillRect(infoPadX, sepY, W - infoPadX * 2, sepH)
+  const footBandTop = yAfterHero + CONTENT_NAVY_H
+  ctx.fillStyle = COLORS.gold
+  ctx.fillRect(0, footBandTop, W, GOLD_RULE)
 
-  const footY = sepY + sepH
-  let tx = infoPadX
+  const whiteStart = footBandTop + GOLD_RULE
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, whiteStart, W, WHITE_FOOTER_H)
+
+  const brandReserve = 220
+  const imgW = 120
+  const imgH = 132
+  const ix = infoPadX
+  const iy = whiteStart + (WHITE_FOOTER_H - imgH) / 2
+  let photoAdvance = 0
+
   if (cfg.headshot) {
     const hp = resolve(baseDir, cfg.headshot)
     if (existsSync(hp)) {
       const face = await loadImage(hp)
-      const d = 88
-      const fy = footY + (agentBlockH - d) / 2
-      const fx = infoPadX
       ctx.save()
-      ctx.beginPath()
-      ctx.arc(fx + d / 2, fy + d / 2, d / 2, 0, Math.PI * 2)
+      roundRect(ctx, ix, iy, imgW, imgH, 2)
       ctx.clip()
-      ctx.drawImage(face, fx, fy, d, d)
+      drawCoverZoom(ctx, face, ix, iy, imgW, imgH, 1.08)
       ctx.restore()
-      ctx.strokeStyle = 'rgba(200,168,100,0.55)'
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.arc(fx + d / 2, fy + d / 2, d / 2, 0, Math.PI * 2)
-      ctx.stroke()
-      tx = fx + d + 18
+      photoAdvance = imgW + 22
     }
   }
 
-  ctx.fillStyle = COLORS.white
-  ctx.font = '600 19px Geist-Bold'
-  ctx.fillText(`${cfg.agent.name} | ${cfg.agent.title}`, tx, footY + 40)
-  ctx.font = '500 14px Geist'
-  ctx.fillText(cfg.agent.phone, tx, footY + 64)
-  ctx.fillText(cfg.agent.email, tx, footY + 84)
-  ctx.fillStyle = COLORS.gold
-  ctx.font = '600 13px Geist-SemiBold'
-  ctx.fillText(cfg.agent.cta, tx, footY + 106)
-  ctx.fillStyle = 'rgba(250,248,244,0.72)'
-  ctx.font = '400 11px Geist'
-  const url = cfg.agent.url
-  let shown = url
-  if (ctx.measureText(url).width > W - tx - infoPadX) {
-    shown = url.slice(0, 48) + '…'
+  let tx = infoPadX + photoAdvance
+  let ty = whiteStart + 40
+
+  const lineIntro = `${cfg.agent.name} | ${cfg.agent.title}`
+  const sepChunk = '     ·     '
+  const contactOneLine = `${lineIntro}${sepChunk}${cfg.agent.phone}${sepChunk}${cfg.agent.email}`
+
+  ctx.fillStyle = COLORS.navy
+  ctx.font = '500 15px Geist'
+  const midMaxW = W - tx - infoPadX - brandReserve
+  if (ctx.measureText(contactOneLine).width <= midMaxW) {
+    ctx.fillText(contactOneLine, tx, ty)
+    ty = whiteStart + 66
+  } else {
+    ctx.font = '600 15px Geist-SemiBold'
+    ctx.fillText(lineIntro, tx, ty)
+    ty += 22
+    ctx.font = '500 14px Geist'
+    ctx.fillStyle = 'rgba(26,26,26,0.85)'
+    ctx.fillText(`${cfg.agent.phone}  ·  ${cfg.agent.email}`, tx, ty)
+    ty = whiteStart + 72
   }
-  ctx.fillText(shown, tx, footY + 124)
+
+  ctx.fillStyle = COLORS.gold
+  ctx.font = '600 14px Geist-SemiBold'
+  ctx.fillText(cfg.agent.cta, tx, ty)
+  ty += 22
+
+  const url = cfg.agent.url
+  ctx.fillStyle = 'rgba(16,39,66,0.58)'
+  ctx.font = '400 12px Geist'
+  const urlMaxW = W - tx - infoPadX - brandReserve
+  let urlDraw = url
+  if (ctx.measureText(url).width > urlMaxW) {
+    let lo = url
+    while (lo.length > 12 && ctx.measureText(lo + '…').width > urlMaxW) lo = lo.slice(0, -1)
+    urlDraw = lo + '…'
+  }
+  ctx.fillText(urlDraw, tx, ty)
+
+  const rx = W - infoPadX
+  ctx.textAlign = 'right'
+  ctx.fillStyle = COLORS.navy
+  ctx.font = '600 20px Geist-Bold'
+  ctx.fillText('Ryan Realty', rx, whiteStart + 46)
+  ctx.font = '500 13px Geist'
+  ctx.fillStyle = 'rgba(26,26,26,0.55)'
+  ctx.fillText('Central Oregon', rx, whiteStart + 68)
+  ctx.textAlign = 'left'
 
   const outPath = values.out ? resolve(process.cwd(), values.out) : join(baseDir, 'just-listed-render.png')
   mkdirSync(dirname(outPath), { recursive: true })
@@ -418,7 +451,8 @@ async function main() {
     thumbZoom,
     photoCount: photos.length,
     displayFont: displayFamily,
-    bottomNavyH: BOTTOM_NAVY_H,
+    bottomContentNavyH: CONTENT_NAVY_H,
+    whiteFooterH: WHITE_FOOTER_H,
     fontNote:
       displayFamily === 'Amboqia'
         ? 'Amboqia registered for display headlines.'
