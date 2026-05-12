@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.157.0 (2026-05-12)
+
+### Features
+- feat(marketing-brain): 6 foundation tables for analytics + content pipeline
+
+### Bug Fixes
+- fix(tiktok): surface token exchange error body for diagnostics
+
+---
+
+
 ## v1.156.0 (2026-05-12)
 
 ### Features
