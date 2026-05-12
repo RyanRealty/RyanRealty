@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.161.0 (2026-05-12)
+
+### Features
+- feat(marketing-brain): phase 1 close — diagnose, competitor-recon, dashboard
+
+---
+
+
 ## v1.160.1 (2026-05-12)
 
 ### Bug Fixes
