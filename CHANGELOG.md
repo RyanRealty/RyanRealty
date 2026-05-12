@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.151.0 (2026-05-12)
+
+### Features
+- feat(flyers): Just Listed script, specs on hero, cleaner broker footer
+
+---
+
+
 ## v1.150.0 (2026-05-12)
 
 ### Features
