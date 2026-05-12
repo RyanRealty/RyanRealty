@@ -18,7 +18,7 @@
  *   "acres": 3.36,
  *   "description": "MLS public remarks — wrapped, truncated with ellipsis if long",
  *   "mls": "220221088", "status": "Active",
- *   "brokerHighlights": ["Optional", "bullet lines"], // if non-empty, replaces auto beds/baths/specs in footer highlights
+ *   "brokerHighlights": ["ignored — beds/baths/sqft/acres always from listing on hero"],
  *   "headshot": "agent.png",
  *   "agent": { ... }
  * }
@@ -128,6 +128,7 @@ function registerFlyerFonts() {
     process.env.FLYER_FONT_AMBOQIA,
     join(REPO_ROOT, 'video/market-report/public/Amboqia.otf'),
     join(REPO_ROOT, 'video/market-report/public/fonts/Amboqia.otf'),
+    join(REPO_ROOT, 'listing_video_v4/public/fonts/Amboqia.otf'),
   ].filter(Boolean)
   for (const p of amboqiaCandidates) {
     if (p && existsSync(p)) {
@@ -136,7 +137,8 @@ function registerFlyerFonts() {
       break
     }
   }
-  return { displayFamily }
+  const hasAmboqia = displayFamily === 'Amboqia'
+  return { displayFamily, hasAmboqia }
 }
 
 /** @param {number | undefined | null} n */
@@ -206,7 +208,7 @@ async function main() {
 
   const heroZoom = Number(cfg.heroZoom ?? 1.32)
   const thumbZoom = Number(cfg.thumbZoom ?? 1.12)
-  const { displayFamily } = registerFlyerFonts()
+  const { displayFamily, hasAmboqia } = registerFlyerFonts()
 
   const W = 1080
   const H = 1350
@@ -226,8 +228,6 @@ async function main() {
   const descLineH = 21
   const maxDescLines = 12
   const descW = FOOTER_LEFT_W - 2 * footerLeftPad
-  const highlightGapAfterDesc = 18
-  const footerBulletLineH = 24
   const infoTopPad = 20
   const infoBottomPad = 20
   const GOLD_RULE = 2
@@ -245,18 +245,13 @@ async function main() {
   ]
   if (acresLabel) bulletTexts.push(acresLabel)
 
-  const brokerLines =
-    Array.isArray(cfg.brokerHighlights) && cfg.brokerHighlights.length > 0
-      ? cfg.brokerHighlights.map((s) => String(s).trim()).filter(Boolean)
-      : []
-  /** Footer left column: home specs unless broker lines provided. */
-  const highlightLines = brokerLines.length > 0 ? brokerLines.slice(0, 8) : bulletTexts
+  /** Beds/baths/sqft/acres overlay on hero only (not in footer). */
+  const heroSpecLines = bulletTexts
 
   ctx.font = '15px Geist'
   const descLines = wrapText(ctx, cfg.description || '', descW, maxDescLines)
   const descColH = descLines.length * descLineH
-  const highlightsBlockH = highlightLines.length > 0 ? highlightGapAfterDesc + highlightLines.length * footerBulletLineH : 0
-  const leftFooterH = infoTopPad + descColH + highlightsBlockH + infoBottomPad
+  const leftFooterH = infoTopPad + descColH + infoBottomPad
 
   const hasHeadshot = Boolean(cfg.headshot && existsSync(resolve(baseDir, cfg.headshot)))
   const rightInner = FOOTER_RIGHT_W - 2 * footerRightPad
@@ -269,12 +264,7 @@ async function main() {
   ctx.font = '500 14px Geist'
   rightFooterH += 18
   const emailLines = wrapText(ctx, cfg.agent.email || '', rightInner, 2)
-  rightFooterH += emailLines.length * 17 + 6
-  ctx.font = '600 14px Geist-SemiBold'
-  rightFooterH += 20
-  ctx.font = '400 12px Geist'
-  const urlLinesPre = wrapText(ctx, cfg.agent.url || '', rightInner, 2)
-  rightFooterH += urlLinesPre.length * 15 + 14
+  rightFooterH += emailLines.length * 17 + 10
   rightFooterH += 56
   rightFooterH += footerRightPad
 
@@ -307,6 +297,51 @@ async function main() {
   ctx.fillStyle = grad
   ctx.fillRect(0, gy, W, heroY + HERO_H - gy)
 
+  // Script-style kicker — top-left (Amboqia when on disk; Geist fallback in meta.fontNote)
+  const jlFamily = hasAmboqia ? 'Amboqia' : displayFamily
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.42)'
+  ctx.shadowBlur = 14
+  ctx.shadowOffsetY = 2
+  ctx.fillStyle = COLORS.gold
+  ctx.font = `400 54px ${jlFamily}`
+  ctx.textAlign = 'left'
+  ctx.fillText('Just Listed', 24, heroY + 58)
+  ctx.restore()
+
+  // Spec line overlay — lower-right on photo (beds, baths, sqft, acres)
+  const specLineH = 26
+  const specPad = 14
+  const specFont = '600 16px Geist-SemiBold'
+  ctx.font = specFont
+  const bulletGap = 8
+  let maxSpecW = 0
+  for (const line of heroSpecLines) {
+    const tw = ctx.measureText(line).width
+    const bw = ctx.measureText('•').width
+    maxSpecW = Math.max(maxSpecW, tw + bulletGap + bw)
+  }
+  const scrSpecW = Math.min(W * 0.46, Math.max(220, maxSpecW + specPad * 2))
+  const scrSpecH = heroSpecLines.length * specLineH + specPad * 2
+  const scrSpecX = W - scrSpecW - 20
+  const scrSpecY = heroY + HERO_H - scrSpecH - 22
+  ctx.fillStyle = 'rgba(16,39,66,0.68)'
+  roundRect(ctx, scrSpecX, scrSpecY, scrSpecW, scrSpecH, 12)
+  ctx.fill()
+  let sy = scrSpecY + specPad + 16
+  const sxR = scrSpecX + scrSpecW - specPad
+  ctx.textAlign = 'right'
+  ctx.font = specFont
+  for (const line of heroSpecLines) {
+    const tw = ctx.measureText(line).width
+    ctx.fillStyle = COLORS.gold
+    ctx.fillText('•', sxR - tw - bulletGap, sy)
+    ctx.fillStyle = 'rgba(255,255,255,0.96)'
+    ctx.fillText(line, sxR, sy)
+    sy += specLineH
+  }
+  ctx.textAlign = 'left'
+
   // Stacked mark on hero photo, top-right (replaces former navy header bar)
   if (logoImg) {
     const lh = LOGO_OVERLAY_H
@@ -316,8 +351,8 @@ async function main() {
 
   const hx = 28
   let hy = heroY + HERO_H - 28
-  ctx.fillStyle = 'rgba(250,248,244,0.92)'
   ctx.font = '500 16px Geist'
+  ctx.fillStyle = 'rgba(250,248,244,0.92)'
   ctx.fillText(cfg.cityLine, hx, hy)
   hy -= 30
   ctx.font = `600 26px ${displayFamily}`
@@ -382,22 +417,11 @@ async function main() {
     ctx.fillText(ln, footerLeftPad, ly)
     ly += descLineH
   }
-  if (highlightLines.length > 0) {
-    ly += highlightGapAfterDesc
-    ctx.font = '600 15px Geist-SemiBold'
-    const bulletTextX = footerLeftPad + 16
-    for (const b of highlightLines) {
-      ctx.fillStyle = COLORS.gold
-      ctx.fillText('•', footerLeftPad, ly)
-      ctx.fillStyle = COLORS.navy
-      ctx.fillText(b, bulletTextX, ly)
-      ly += footerBulletLineH
-    }
-  }
 
   const rx0 = FOOTER_LEFT_W
   const rInnerX = rx0 + footerRightPad
-  let ry = footerY + footerRightPad
+  const footerRightYOff = Math.max(0, Math.floor((FOOTER_H - rightFooterH) / 2))
+  let ry = footerY + footerRightYOff + footerRightPad
   const imgW = 92
   const imgH = 100
 
@@ -429,18 +453,7 @@ async function main() {
     ctx.fillText(ln, rInnerX, ry)
     ry += 17
   }
-  ry += 4
-  ctx.font = '600 14px Geist-SemiBold'
-  ctx.fillStyle = COLORS.gold
-  ctx.fillText(cfg.agent.cta, rInnerX, ry)
-  ry += 20
-  ctx.font = '400 12px Geist'
-  ctx.fillStyle = 'rgba(16,39,66,0.58)'
-  for (const ln of urlLinesPre) {
-    ctx.fillText(ln, rInnerX, ry)
-    ry += 15
-  }
-  ry += 12
+  ry += 16
   ctx.textAlign = 'center'
   const cx = rx0 + FOOTER_RIGHT_W / 2
   ctx.font = '600 18px Geist-Bold'
@@ -466,10 +479,9 @@ async function main() {
     displayFont: displayFamily,
     footerH: FOOTER_H,
     footerSplit: { leftPx: FOOTER_LEFT_W, rightPx: FOOTER_RIGHT_W },
-    fontNote:
-      displayFamily === 'Amboqia'
-        ? 'Amboqia registered for display headlines.'
-        : 'Amboqia not found on disk; hero address used Geist. Set FLYER_FONT_AMBOQIA or add Amboqia.otf under video/market-report/public/ for brand display.',
+    fontNote: hasAmboqia
+      ? 'Amboqia on disk: script Just Listed + display address use heritage face.'
+      : 'Add Amboqia.otf (see FLYER_FONT_AMBOQIA or listing_video_v4/public/fonts/) so Just Listed reads in brand script; address falls back to Geist-Bold.',
   }
   writeFileSync(join(baseDir, 'fonts_used.json'), `${JSON.stringify(meta, null, 2)}\n`)
 

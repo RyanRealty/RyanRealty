@@ -75,10 +75,10 @@ If any item is `fail`, the package is **not** shown as client-ready.
 
 ## Compositor (repo)
 
-For repeatable **1080×1350** just-listed layouts (**no** top navy bar; stacked **white** mark on **hero top-right**; **left hero** stack **MLS · status**, **plain list price** (no pill), **address**, **city**; zoomed hero, optional **3-up filmstrip**; **footer** single **white** block split **⅔** (MLS description + **beds/baths/sqft/acres** or optional **`brokerHighlights[]`**) **| ⅓** broker headshot, contact, CTA, URL, **Ryan Realty**):
+For repeatable **1080×1350** just-listed layouts: **Amboqia** **Just Listed** (top-left, gold, when font on disk); stacked **white** mark **hero top-right**; **beds/baths/sqft/acres** on **lower-right hero** scrim; **left hero** **MLS · status**, plain **price**, **address**, **city** (display address = Amboqia when available); optional **3-up filmstrip**; **footer** **⅔** MLS description **| ⅓** broker (**headshot**, name, phone, email, **Ryan Realty** only — **no** listing URL, **no** long CTA line); **Geist** body, **Azo** optional ribbon per typography table.
 
 - Run: `npm run flyer:just-listed -- --config out/flyers/<slug>/config.json --out out/flyers/<slug>/render.png`
-- **brokerHighlights (optional):** string array in `config.json`. When non-empty, replaces auto home spec bullets in the **footer** left column.
+- **Amboqia** paths: `FLYER_FONT_AMBOQIA`, `video/market-report/public/Amboqia.otf`, `listing_video_v4/public/fonts/Amboqia.otf`.
 - **Photos:** `npm run flyer:fetch-photos -- --mls <ListNumber> --out-dir out/flyers/<slug>` pulls **deduped**
   URLs from `listing_photos`, or from `details.Photos` + `PhotoURL` when the photos table is empty,
   then rewrites `config.json` `photos` with local filenames. Never hand-duplicate the same path.
@@ -86,7 +86,6 @@ For repeatable **1080×1350** just-listed layouts (**no** top navy bar; stacked 
   **address/city**, and **status** from the same listing row when present.
 - Source: `scripts/render-just-listed-flyer.mjs` (hard-fails if any `config.photos` path repeats)
 - Source: `scripts/fetch-listing-photos-for-flyer.mjs`
-- **Amboqia** must be on disk for display headlines (see script env `FLYER_FONT_AMBOQIA`) or the script notes noncompliance in `fonts_used.json`.
 
 ## Typography — NON-NEGOTIABLE (brand fonts only)
 
