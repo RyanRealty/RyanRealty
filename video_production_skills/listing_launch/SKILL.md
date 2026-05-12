@@ -138,6 +138,20 @@ Subject: [Subject line]
 
 The Tumalo Reservoir Rd reel ($1,599,000, 3BR/2.5BA, 2.28 ac, MLS 220193552) is the canonical worked example. Per-photo asset IDs and per-shot Reel beat-by-beat are in [`../brand_assets/SKILL.md`](../brand_assets/SKILL.md) ("Tumalo Reservoir Rd Asset ID Reference"). Watch the rendered file before scaffolding a similar tier — `~/Documents/Claude/Projects/SOCIAL MEDIA MANAGER/56111_SchoolHouse_Pending_Reel.mp4` and the Tumalo Reels in the same folder (see [`../ASSET_LOCATIONS.md`](../ASSET_LOCATIONS.md)).
 
+## Broker headshots
+
+Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
+
+- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
+- `paul-stevenson.jpg` — Paul Stevenson
+- `rebecca-peterson.jpg` — Rebecca Peterson
+
+All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+
+**Listing-agent rule:** Include the LISTING AGENT'S headshot on every per-listing deliverable in this package that has a broker-contact slot (Reel end card, Story frame 7, sphere email signature). Resolve `ListAgentFullName` from the listing data pull to one of the three brokers above. For brand-led content that is part of this package but not tied to a specific agent (evergreen Reel scripts, generic open-house Story), omit the headshot and use the Jax mascot from `assets/brand/blue-dog.png` instead.
+
+---
+
 ## Quality gate
 
 Master skill §6 applies for video. For text:

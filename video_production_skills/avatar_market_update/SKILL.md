@@ -398,6 +398,10 @@ If Matt rejects the draft or suggests a change:
 
 `feedback_loop` extracts an actionable rule, appends it to this SKILL.md under a `## Lessons learned` section (creating it if absent), and writes a row to `rejection_log` Supabase table. Future invocations of this skill read those rules and adapt.
 
+## Broker headshots (avatar overlay use)
+
+Team headshots for broker-branded overlays: `design_system/ryan-realty/assets/team/matt-ryan.jpg`, `paul-stevenson.jpg`, `rebecca-peterson.jpg` (all 800×1200 px, white bg). Use these if a static broker photo is needed on any non-Synthesia frame (intro card, end card, picture-in-picture). Full specs: `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+
 ## Lessons learned
 [Auto-maintained by `feedback_loop` skill. Each rejection adds an entry below.]
 <!-- format: ### YYYY-MM-DD — <asset slug>: <one-line summary> -->

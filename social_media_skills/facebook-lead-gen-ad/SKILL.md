@@ -317,7 +317,21 @@ Surface in a one-line summary:
 
 ---
 
-## 10. See also
+## 10. Broker headshots in ad creative
+
+Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
+
+- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
+- `paul-stevenson.jpg` — Paul Stevenson
+- `rebecca-peterson.jpg` — Rebecca Peterson
+
+All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+
+**Agent-face creative guidance:** For listing-specific lead-gen ads, test an agent-face creative variant alongside the property-photo version. Agent-face ads (broker headshot + listing address as text overlay, no photo of the home) frequently outperform property-only creatives for lead capture because they signal a real person is on the other end. Resolve the listing agent from `ListAgentFullName` in the Supabase `listings` row and use that broker's headshot. For brand-led campaigns (monthly market report, buyer/seller guide), omit the individual headshot — use the Ryan Realty logo from `design_system/ryan-realty/assets/brand/logo-blue.png`.
+
+---
+
+## 11. See also
 
 - `video_production_skills/monthly-market-report-orchestrator/SKILL.md` — the orchestrator that calls this skill
 - `video_production_skills/market-data-video/SKILL.md` — the short-form video this ad uses + canonical data dictionary

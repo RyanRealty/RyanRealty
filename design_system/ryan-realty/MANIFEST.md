@@ -114,6 +114,26 @@ All shadows use `rgb(16 39 66 / opacity)` for the navy tint. From light to heavy
 | `postcard-magnet.png` | Postcard / magnet artwork |
 | `qr-code.png` | Brand QR code |
 
+### `assets/team/` — broker headshots (locked 2026-05-12)
+
+Three brokers, three byte-identical headshots — normalized to share head height, top whitespace, and horizontal centering. Use these on any broker-branded content (listing flyer / carousel / video, blog byline, ad creative, email signature). Source-of-truth location for the entire team.
+
+| File | Broker | Role |
+|---|---|---|
+| `matt-ryan.jpg` | Matt Ryan | Owner / principal broker |
+| `paul-stevenson.jpg` | Paul Stevenson | Broker |
+| `rebecca-peterson.jpg` | Rebecca Peterson | Broker |
+
+**Specs (every file):** 800×1200 px · pure white background · 20px whitespace above head · 552px head height (top-of-head to chin) · face horizontally centered · natural color (no filter).
+
+**Web mirror:** Identical files also live at `public/images/brokers/` under web-convention names (`peterson-rebecca.jpg`, `ryan-matt.jpg`, `stevenson-paul.jpg`). Both locations stay in sync.
+
+**Listing-agent rule:** On any per-listing deliverable, include the listing agent's headshot. The listing's broker is in the Supabase `listings` row (`ListAgentEmail` / `ListAgentFullName` — resolve to one of the three above). For brand-led content (market reports, news, memes), omit the headshot and use the Jax mascot from `assets/brand/blue-dog.png` instead.
+
+**Re-shoot note:** Rebecca's source is 414×600 (upscaled 2× for the canonical file). Fine for web/social/IG/email. For print larger than 4×6", a high-res re-shoot is needed.
+
+**Re-crop script:** `out/headshot-proofs/normalize_headshots.py` re-runs the alignment if a new headshot needs to join the set.
+
 ### `assets/brand/navy-cream/` — element-level cutouts (for compositing)
 
 `element-beer-stein.png`, `element-running-horse.png`, `element-seated-dog.png`, `element-swan-arch.png`, `element-swan.png`, `element-tagline-relationships.png`, `element-wheel-log-medallion.png` (each with `-trans.png` transparent variants where applicable).

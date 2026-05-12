@@ -286,7 +286,21 @@ If ANY fail, halt before publishing.
 
 ---
 
-## 8. See also
+## 8. Broker headshots (author bylines)
+
+Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
+
+- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
+- `paul-stevenson.jpg` — Paul Stevenson
+- `rebecca-peterson.jpg` — Rebecca Peterson
+
+All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+
+**Author byline rule:** Every blog post that features a specific agent (listing spotlight, agent commentary, market insight attributed to a broker) must include that broker's headshot in the author byline block. Upload the headshot to the WP Media Library if not already there, then reference the media ID in the `author_image` custom field or theme avatar override. For brokerage-brand posts (monthly market reports, neighborhood guides), no individual headshot is required — use the Ryan Realty logo from `design_system/ryan-realty/assets/brand/logo-blue.png`.
+
+---
+
+## 9. See also
 
 - `video_production_skills/monthly-market-report-orchestrator/SKILL.md` — the orchestrator that calls this skill
 - `video_production_skills/youtube-long-form-market-report/SKILL.md` — the long-form video this post embeds

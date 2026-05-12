@@ -70,7 +70,7 @@ Do NOT invoke for:
 | 13 | View or natural feature | slow_pan_lr | Mountain, river, canyon, forest — whatever the property has |
 | 14 | Closing aerial: drone pullback showing neighborhood context | push_counter slow | Different drone shot than Beat 9 |
 | 15 | Data beat: price, beds, baths, sqft, lot | kinetic_stat_reveal | Navy background, gold accent, Amboqia headline. All five numbers on screen together. |
-| 16 | CTA: address + "Tour link in bio" | static_hold or slow_push | Address centered, AzoSans, white on navy. No phone, no logo, no "REPRESENTED BY". |
+| 16 | CTA: address + listing agent headshot + "Tour link in bio" | static_hold or slow_push | Address centered, AzoSans, white on navy. Listing agent headshot from `design_system/ryan-realty/assets/team/` (resolved from `ListAgentFullName`), circular crop, `96 px` diameter, right of address block. No phone, no logo, no "REPRESENTED BY". |
 
 **Motion variety rule:** Across 16 beats you must use at least 4 different motion types. Review `VIDEO_PRODUCTION_SKILL.md` Section 1 motion requirement before finalizing the BEATS array.
 
@@ -428,6 +428,20 @@ See format-specific render instructions above (16-beat Remotion composition with
 ```
 cd listing_video_v4 && npx remotion render src/index.ts ListingReveal out/<slug>/listing_reveal.mp4 --codec h264 --concurrency 1 --crf 22 --image-format=jpeg --jpeg-quality=92
 ```
+
+## Broker headshots
+
+Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
+
+- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
+- `paul-stevenson.jpg` — Paul Stevenson
+- `rebecca-peterson.jpg` — Rebecca Peterson
+
+All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+
+**Listing-agent rule:** Include the LISTING AGENT'S headshot on Beat 16 (CTA beat). Resolve `ListAgentFullName` from the Supabase `listings` row to the correct broker headshot above. Render as a circular crop (`border-radius: 50%`, `96 px` diameter) positioned to the right of the address block on the navy CTA card. For brand-led content (market reports, news, neighborhood), omit the headshot and use the Jax mascot from `assets/brand/blue-dog.png` if a personality element is needed.
+
+---
 
 ## Post-Build QA Pass (mandatory)
 After render completes:

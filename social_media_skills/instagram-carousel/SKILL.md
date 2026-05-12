@@ -223,6 +223,14 @@ Always the last slide. No exceptions.
   `y = 200 px` from top of content area.
 - **Tagline** (Amboqia Boriango, `40–48 px`, `#faf8f4`, centered, `line-height: 1.1`):
   `It's About Relationships.` — verbatim, with apostrophe, with period.
+- **Broker headshot (listing carousels only):** For any carousel tied to a specific listing,
+  include the listing agent's headshot on the CTA slide. Headshots live at
+  `design_system/ryan-realty/assets/team/` — `matt-ryan.jpg`, `paul-stevenson.jpg`,
+  `rebecca-peterson.jpg` (all 800×1200 px, white bg). Resolve the correct broker from
+  `ListAgentFullName` in the Supabase `listings` row. Place the headshot centered between the
+  logo and the contact block, `160 px` wide, `border-radius: 50%` crop. For brand-led carousels
+  (market data, neighborhood, evergreen), omit the headshot and use the Jax mascot from
+  `assets/brand/blue-dog.png` instead.
 - **Contact block** (Geist 400, `22 px`, `#faf8f4`, centered, `line-height: 1.8`):
   Phone: `541.213.6706` · Web: `ryan-realty.com`
   Each on its own line. `font-variant-numeric: tabular-nums` for the phone.

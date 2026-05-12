@@ -27,6 +27,22 @@ Every deliverable in the kit traces to the same verified Supabase record. Copy, 
 
 ---
 
+## Broker headshots
+
+Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
+
+- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
+- `paul-stevenson.jpg` — Paul Stevenson
+- `rebecca-peterson.jpg` — Rebecca Peterson
+
+All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+
+**Listing-agent rule:** Include the LISTING AGENT'S headshot on per-listing content. Resolve from the Supabase `listings` row (`ListAgentEmail` / `ListAgentFullName`) to one of the three brokers above. For brand-led content (market data, news, memes, neighborhood guides), omit the headshot and use the Jax mascot from `assets/brand/blue-dog.png` instead.
+
+The list-kit data pull (§4) includes `"ListAgentFullName"` — use that field to resolve the correct headshot. Pass the resolved headshot path to each sub-skill that needs it (flyer-design, instagram-carousel).
+
+---
+
 ## 2. Required references — load before doing any work
 
 Read all of the following before scaffolding any deliverable. The data accuracy mandate and draft-first rule outrank every other instruction in every sub-skill.

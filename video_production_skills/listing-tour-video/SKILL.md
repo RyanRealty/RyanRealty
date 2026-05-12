@@ -1089,7 +1089,21 @@ On each run: INSERT ... ON CONFLICT DO UPDATE. Check `rendered_at` — if a rend
 
 ---
 
-## 12. See Also
+## 12. Broker headshots — closing card
+
+Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
+
+- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
+- `paul-stevenson.jpg` — Paul Stevenson
+- `rebecca-peterson.jpg` — Rebecca Peterson
+
+All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+
+**Closing card rule (branded cut only):** The branded video closing card must include the listing agent's headshot alongside the Ryan Realty logo and contact info. Resolve `ListAgentFullName` from the Supabase `listings` row to the correct headshot path. The headshot renders as a circular crop (`border-radius: 50%`, `120 px` diameter) beside the stacked white logo. Unbranded MLS cut: no headshot, no agent name — logo + MLS number only. For brand-led videos with no specific listing (market reports, neighborhood guides), omit the headshot; use Jax from `assets/brand/blue-dog.png` if a personality element is needed.
+
+---
+
+## 13. See Also
 
 - `development-showcase/SKILL.md` — new-construction development videos using 3D massing models when MLS listing photos are insufficient
 - `neighborhood-overview/SKILL.md` — Google 3D Tiles + Supabase neighborhood boundary flyovers with market stat overlays, no specific listing required

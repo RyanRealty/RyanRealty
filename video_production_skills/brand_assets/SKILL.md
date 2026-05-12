@@ -376,6 +376,12 @@ Most Ryan Realty content is data-driven without Matt on camera:
 
 ---
 
+## Team headshots
+
+Three normalized broker headshots are available for broker-branded content. Canonical path: `design_system/ryan-realty/assets/team/` (`matt-ryan.jpg`, `paul-stevenson.jpg`, `rebecca-peterson.jpg`). Specs and listing-agent resolution rule: `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+
+---
+
 ## QA checklist (run before every commit)
 
 1. **Color direction** — background mostly white (static) or mostly dark (video)? Off-direction → regenerate.

@@ -330,6 +330,18 @@ Full inventory: `design_system/ryan-realty/MANIFEST.md`. Most-used:
 - **14 numbered heritage wordmark variations:** `illustration-01.png` through `illustration-14.png`
 - **Element cutouts** (for custom compositing): `design_system/ryan-realty/assets/brand/navy-cream/element-*.png`
 
+## Broker headshots (locked 2026-05-12)
+
+The three Ryan Realty brokers each have a normalized 800×1200 headshot at `design_system/ryan-realty/assets/team/`:
+
+- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
+- `paul-stevenson.jpg` — Paul Stevenson
+- `rebecca-peterson.jpg` — Rebecca Peterson
+
+All three share identical head height (552px top-of-head to chin), top whitespace (20px), and horizontal centering. Natural color, white background, no filter. Byte-identical mirrors at `public/images/brokers/` under web-convention names. Full spec in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+
+**Listing-agent rule:** Every per-listing deliverable (flyer / IG carousel / listing-tour-video end card / blog byline / lead-gen ad / email) includes the **listing agent's headshot** — resolve from the Supabase `listings` row (`ListAgentEmail`, `ListAgentFullName`) to one of the three brokers above. For brand-led content (market reports, news clips, memes, neighborhood guides), the brokerage speaks — omit the headshot and use the Jax mascot instead.
+
 ## Migration conflicts vs the prior locked spec (RESOLVED 2026-05-12)
 
 The v1 spec held in this file before today carried gold accents and AzoSans body. v2 supersedes:

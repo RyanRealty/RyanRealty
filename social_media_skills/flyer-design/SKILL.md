@@ -28,6 +28,18 @@ mobile and print. This skill is the hard standard for flyer composition quality 
 4. `video_production_skills/ANTI_SLOP_MANIFESTO.md` (authenticity + no fake claims)
 5. `CLAUDE.md` §0 (data accuracy / verification trace)
 
+## Broker headshots
+
+Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
+
+- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
+- `paul-stevenson.jpg` — Paul Stevenson
+- `rebecca-peterson.jpg` — Rebecca Peterson
+
+All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+
+**Listing-agent rule:** Every listing flyer includes the LISTING AGENT'S headshot in the broker footer. Resolve `ListAgentEmail` / `ListAgentFullName` from the Supabase `listings` row to one of the three brokers above. For brand-led collateral with no specific listing agent (open-house generic, farming mail), omit the headshot and use the Jax mascot from `assets/brand/blue-dog.png` instead.
+
 ## Inputs (mandatory)
 
 - Verified listing payload from source of truth (MLS/Spark/Supabase): address, price, beds, baths,
@@ -35,6 +47,7 @@ mobile and print. This skill is the hard standard for flyer composition quality 
 - Approved photo set (source-traced, no watermark, no AI fake property visuals).
 - Deliverable intent: print (`8.5x11`, postcard, etc.), digital feed (`1080x1350` / `1080x1080`),
   or both.
+- **Listing agent headshot** — resolved from `ListAgentFullName` to one of the three broker headshots at `design_system/ryan-realty/assets/team/`. Required for any listing flyer. Missing headshot = stop and resolve before building.
 - CTA + compliance copy (phone, email, URL, legal footer if required).
 
 If any input is missing, stop and request it. Do not fabricate.
