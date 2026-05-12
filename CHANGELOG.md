@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.147.3 (2026-05-12)
+
+### Maintenance
+- docs: add MARKETING_LEAD_FLOW lead-path reference and cross-links
+
+---
+
+
 ## v1.147.2 (2026-05-11)
 
 ### Maintenance
