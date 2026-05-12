@@ -18,7 +18,7 @@
  *   "acres": 3.36,
  *   "description": "MLS public remarks — wrapped, truncated with ellipsis if long",
  *   "mls": "220221088", "status": "Active",
- *   "brokerHighlights": ["Optional", "bullet lines"], // if non-empty, used on hero instead of beds/baths/specs
+ *   "brokerHighlights": ["Optional", "bullet lines"], // if non-empty, replaces auto beds/baths/specs in footer highlights
  *   "headshot": "agent.png",
  *   "agent": { ... }
  * }
@@ -218,13 +218,20 @@ async function main() {
   const LOGO_PAD_TOP = 20
   const LOGO_PAD_RIGHT = 22
 
-  const infoPadX = 32
+  /** Footer: 2/3 MLS description + highlights | 1/3 broker (all white). */
+  const FOOTER_LEFT_W = Math.floor((W * 2) / 3)
+  const FOOTER_RIGHT_W = W - FOOTER_LEFT_W
+  const footerLeftPad = 28
+  const footerRightPad = 20
   const descLineH = 21
-  const maxDescLines = 9
-  /** Full-width MLS description in navy band (specs live on hero overlay). */
-  const descW = W - 2 * infoPadX
+  const maxDescLines = 12
+  const descW = FOOTER_LEFT_W - 2 * footerLeftPad
+  const highlightGapAfterDesc = 18
+  const footerBulletLineH = 24
+  const infoTopPad = 20
+  const infoBottomPad = 20
+  const GOLD_RULE = 2
 
-  /** Pre-measure: navy content + gold rule + white agent bar */
   const canvas = createCanvas(W, H)
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('2d context missing')
@@ -242,19 +249,37 @@ async function main() {
     Array.isArray(cfg.brokerHighlights) && cfg.brokerHighlights.length > 0
       ? cfg.brokerHighlights.map((s) => String(s).trim()).filter(Boolean)
       : []
-  /** Shown on hero lower-right (broker copy wins when provided). */
-  const heroOverlayLines = brokerLines.length > 0 ? brokerLines.slice(0, 6) : bulletTexts
+  /** Footer left column: home specs unless broker lines provided. */
+  const highlightLines = brokerLines.length > 0 ? brokerLines.slice(0, 8) : bulletTexts
 
   ctx.font = '15px Geist'
   const descLines = wrapText(ctx, cfg.description || '', descW, maxDescLines)
   const descColH = descLines.length * descLineH
-  const textBlockH = descColH
-  const infoTopPad = 20
-  const infoBottomPad = 16
-  const GOLD_RULE = 2
-  const WHITE_FOOTER_H = 144
-  const CONTENT_NAVY_H = infoTopPad + textBlockH + infoBottomPad
-  const BOTTOM_TOTAL = CONTENT_NAVY_H + GOLD_RULE + WHITE_FOOTER_H
+  const highlightsBlockH = highlightLines.length > 0 ? highlightGapAfterDesc + highlightLines.length * footerBulletLineH : 0
+  const leftFooterH = infoTopPad + descColH + highlightsBlockH + infoBottomPad
+
+  const hasHeadshot = Boolean(cfg.headshot && existsSync(resolve(baseDir, cfg.headshot)))
+  const rightInner = FOOTER_RIGHT_W - 2 * footerRightPad
+  let rightFooterH = footerRightPad
+  if (hasHeadshot) rightFooterH += 100 + 14
+  ctx.font = '600 15px Geist-SemiBold'
+  const lineIntro = `${cfg.agent.name} | ${cfg.agent.title}`
+  const introLines = wrapText(ctx, lineIntro, rightInner, 3)
+  rightFooterH += introLines.length * 20 + 6
+  ctx.font = '500 14px Geist'
+  rightFooterH += 18
+  const emailLines = wrapText(ctx, cfg.agent.email || '', rightInner, 2)
+  rightFooterH += emailLines.length * 17 + 6
+  ctx.font = '600 14px Geist-SemiBold'
+  rightFooterH += 20
+  ctx.font = '400 12px Geist'
+  const urlLinesPre = wrapText(ctx, cfg.agent.url || '', rightInner, 2)
+  rightFooterH += urlLinesPre.length * 15 + 14
+  rightFooterH += 56
+  rightFooterH += footerRightPad
+
+  const FOOTER_H = Math.max(leftFooterH, rightFooterH, 168)
+  const BOTTOM_TOTAL = GAP + GOLD_RULE + FOOTER_H
 
   const filmGap = FILM_H ? GAP : 0
   const HERO_H = H - HEADER_H - FILM_H - filmGap - BOTTOM_TOTAL - GAP
@@ -272,8 +297,8 @@ async function main() {
   const heroY = HEADER_H
   drawCoverZoom(ctx, heroImg, 0, heroY, W, HERO_H, heroZoom)
 
-  // Hero gradient — covers MLS, price, address, city (left) + lower-right scrim
-  const gradH = 200
+  // Hero gradient — MLS, price, address, city (left)
+  const gradH = 180
   const gy = heroY + HERO_H - gradH
   const grad = ctx.createLinearGradient(0, gy, 0, heroY + HERO_H)
   grad.addColorStop(0, 'rgba(16,39,66,0)')
@@ -288,39 +313,6 @@ async function main() {
     const lw = (logoImg.width / logoImg.height) * lh
     ctx.drawImage(logoImg, W - lw - LOGO_PAD_RIGHT, heroY + LOGO_PAD_TOP, lw, lh)
   }
-
-  // Home or broker highlights — lower-right on hero (scrim for contrast, not a gold price pill)
-  const highlightLineH = 26
-  const highlightPad = 14
-  const highlightFont = '600 16px Geist-SemiBold'
-  const bulletGap = 8
-  ctx.font = highlightFont
-  let maxHighlightW = 0
-  for (const line of heroOverlayLines) {
-    const tw = ctx.measureText(line).width
-    const bw = ctx.measureText('•').width
-    maxHighlightW = Math.max(maxHighlightW, tw + bulletGap + bw)
-  }
-  const scrimW = Math.min(W * 0.48, Math.max(200, maxHighlightW + highlightPad * 2))
-  const scrimH = heroOverlayLines.length * highlightLineH + highlightPad * 2
-  const scrimX = W - scrimW - 20
-  const scrimY = heroY + HERO_H - scrimH - 22
-  ctx.fillStyle = 'rgba(16,39,66,0.68)'
-  roundRect(ctx, scrimX, scrimY, scrimW, scrimH, 12)
-  ctx.fill()
-  let hyR = scrimY + highlightPad + 16
-  const hxR = scrimX + scrimW - highlightPad
-  ctx.textAlign = 'right'
-  ctx.font = highlightFont
-  for (const line of heroOverlayLines) {
-    const tw = ctx.measureText(line).width
-    ctx.fillStyle = COLORS.gold
-    ctx.fillText('•', hxR - tw - bulletGap, hyR)
-    ctx.fillStyle = 'rgba(255,255,255,0.96)'
-    ctx.fillText(line, hxR, hyR)
-    hyR += highlightLineH
-  }
-  ctx.textAlign = 'left'
 
   const hx = 28
   let hy = heroY + HERO_H - 28
@@ -368,94 +360,96 @@ async function main() {
 
   yAfterHero += GAP
 
-  // Navy: MLS description only (specs are on hero overlay)
-  ctx.fillStyle = COLORS.navy
-  ctx.fillRect(0, yAfterHero, W, CONTENT_NAVY_H)
-
-  let dy = yAfterHero + infoTopPad
-  ctx.font = '15px Geist'
-  ctx.fillStyle = 'rgba(250,248,244,0.9)'
-  for (const ln of descLines) {
-    ctx.fillText(ln, infoPadX, dy)
-    dy += descLineH
-  }
-
-  const footBandTop = yAfterHero + CONTENT_NAVY_H
   ctx.fillStyle = COLORS.gold
-  ctx.fillRect(0, footBandTop, W, GOLD_RULE)
+  ctx.fillRect(0, yAfterHero, W, GOLD_RULE)
+  const footerY = yAfterHero + GOLD_RULE
 
-  const whiteStart = footBandTop + GOLD_RULE
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, whiteStart, W, WHITE_FOOTER_H)
+  ctx.fillStyle = COLORS.white
+  ctx.fillRect(0, footerY, W, FOOTER_H)
 
-  const brandReserve = 220
-  const imgW = 120
-  const imgH = 132
-  const ix = infoPadX
-  const iy = whiteStart + (WHITE_FOOTER_H - imgH) / 2
-  let photoAdvance = 0
+  ctx.strokeStyle = 'rgba(16,39,66,0.14)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(FOOTER_LEFT_W, footerY + 10)
+  ctx.lineTo(FOOTER_LEFT_W, footerY + FOOTER_H - 10)
+  ctx.stroke()
 
-  if (cfg.headshot) {
-    const hp = resolve(baseDir, cfg.headshot)
-    if (existsSync(hp)) {
-      const face = await loadImage(hp)
-      ctx.save()
-      roundRect(ctx, ix, iy, imgW, imgH, 2)
-      ctx.clip()
-      drawCoverZoom(ctx, face, ix, iy, imgW, imgH, 1.08)
-      ctx.restore()
-      photoAdvance = imgW + 22
+  let ly = footerY + infoTopPad
+  ctx.textAlign = 'left'
+  ctx.fillStyle = 'rgba(26,26,26,0.88)'
+  ctx.font = '15px Geist'
+  for (const ln of descLines) {
+    ctx.fillText(ln, footerLeftPad, ly)
+    ly += descLineH
+  }
+  if (highlightLines.length > 0) {
+    ly += highlightGapAfterDesc
+    ctx.font = '600 15px Geist-SemiBold'
+    const bulletTextX = footerLeftPad + 16
+    for (const b of highlightLines) {
+      ctx.fillStyle = COLORS.gold
+      ctx.fillText('•', footerLeftPad, ly)
+      ctx.fillStyle = COLORS.navy
+      ctx.fillText(b, bulletTextX, ly)
+      ly += footerBulletLineH
     }
   }
 
-  let tx = infoPadX + photoAdvance
-  let ty = whiteStart + 40
+  const rx0 = FOOTER_LEFT_W
+  const rInnerX = rx0 + footerRightPad
+  let ry = footerY + footerRightPad
+  const imgW = 92
+  const imgH = 100
 
-  const lineIntro = `${cfg.agent.name} | ${cfg.agent.title}`
-  const sepChunk = '     ·     '
-  const contactOneLine = `${lineIntro}${sepChunk}${cfg.agent.phone}${sepChunk}${cfg.agent.email}`
-
-  ctx.fillStyle = COLORS.navy
-  ctx.font = '500 15px Geist'
-  const midMaxW = W - tx - infoPadX - brandReserve
-  if (ctx.measureText(contactOneLine).width <= midMaxW) {
-    ctx.fillText(contactOneLine, tx, ty)
-    ty = whiteStart + 66
-  } else {
-    ctx.font = '600 15px Geist-SemiBold'
-    ctx.fillText(lineIntro, tx, ty)
-    ty += 22
-    ctx.font = '500 14px Geist'
-    ctx.fillStyle = 'rgba(26,26,26,0.85)'
-    ctx.fillText(`${cfg.agent.phone}  ·  ${cfg.agent.email}`, tx, ty)
-    ty = whiteStart + 72
+  if (hasHeadshot && cfg.headshot) {
+    const hp = resolve(baseDir, cfg.headshot)
+    const face = await loadImage(hp)
+    const ix = rInnerX + (rightInner - imgW) / 2
+    ctx.save()
+    roundRect(ctx, ix, ry, imgW, imgH, 4)
+    ctx.clip()
+    drawCoverZoom(ctx, face, ix, ry, imgW, imgH, 1.08)
+    ctx.restore()
+    ry += imgH + 14
   }
 
-  ctx.fillStyle = COLORS.gold
+  ctx.textAlign = 'left'
+  ctx.font = '600 15px Geist-SemiBold'
+  ctx.fillStyle = COLORS.navy
+  for (const ln of introLines) {
+    ctx.fillText(ln, rInnerX, ry)
+    ry += 20
+  }
+  ry += 2
+  ctx.font = '500 14px Geist'
+  ctx.fillStyle = 'rgba(26,26,26,0.88)'
+  ctx.fillText(cfg.agent.phone, rInnerX, ry)
+  ry += 18
+  for (const ln of emailLines) {
+    ctx.fillText(ln, rInnerX, ry)
+    ry += 17
+  }
+  ry += 4
   ctx.font = '600 14px Geist-SemiBold'
-  ctx.fillText(cfg.agent.cta, tx, ty)
-  ty += 22
-
-  const url = cfg.agent.url
-  ctx.fillStyle = 'rgba(16,39,66,0.58)'
+  ctx.fillStyle = COLORS.gold
+  ctx.fillText(cfg.agent.cta, rInnerX, ry)
+  ry += 20
   ctx.font = '400 12px Geist'
-  const urlMaxW = W - tx - infoPadX - brandReserve
-  let urlDraw = url
-  if (ctx.measureText(url).width > urlMaxW) {
-    let lo = url
-    while (lo.length > 12 && ctx.measureText(lo + '…').width > urlMaxW) lo = lo.slice(0, -1)
-    urlDraw = lo + '…'
+  ctx.fillStyle = 'rgba(16,39,66,0.58)'
+  for (const ln of urlLinesPre) {
+    ctx.fillText(ln, rInnerX, ry)
+    ry += 15
   }
-  ctx.fillText(urlDraw, tx, ty)
-
-  const rx = W - infoPadX
-  ctx.textAlign = 'right'
+  ry += 12
+  ctx.textAlign = 'center'
+  const cx = rx0 + FOOTER_RIGHT_W / 2
+  ctx.font = '600 18px Geist-Bold'
   ctx.fillStyle = COLORS.navy
-  ctx.font = '600 20px Geist-Bold'
-  ctx.fillText('Ryan Realty', rx, whiteStart + 46)
-  ctx.font = '500 13px Geist'
+  ctx.fillText('Ryan Realty', cx, ry)
+  ry += 22
+  ctx.font = '500 12px Geist'
   ctx.fillStyle = 'rgba(26,26,26,0.55)'
-  ctx.fillText('Central Oregon', rx, whiteStart + 68)
+  ctx.fillText('Central Oregon', cx, ry)
   ctx.textAlign = 'left'
 
   const outPath = values.out ? resolve(process.cwd(), values.out) : join(baseDir, 'just-listed-render.png')
@@ -470,8 +464,8 @@ async function main() {
     thumbZoom,
     photoCount: photos.length,
     displayFont: displayFamily,
-    bottomContentNavyH: CONTENT_NAVY_H,
-    whiteFooterH: WHITE_FOOTER_H,
+    footerH: FOOTER_H,
+    footerSplit: { leftPx: FOOTER_LEFT_W, rightPx: FOOTER_RIGHT_W },
     fontNote:
       displayFamily === 'Amboqia'
         ? 'Amboqia registered for display headlines.'
