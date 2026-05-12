@@ -85,7 +85,7 @@ function campaignRowsForDay(date: string, row: MetaAdsInsightRow): MetricRow[] {
     scope_id: campaignId,
     metadata: {
       campaign_name: row.campaign_name ?? '',
-      campaign_status: row.campaign_status ?? '',
+      effective_status: row.effective_status ?? '',
       objective: row.objective ?? '',
     },
   }

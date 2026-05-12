@@ -41,9 +41,12 @@ function normalizeRows(rows: SearchConsoleRow[] | undefined) {
 export async function getSearchConsoleSummary(startDate: string, endDate: string): Promise<SearchConsoleReportResult> {
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL?.trim()
   const privateKeyRaw = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
-  const siteUrl = process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL?.trim()
+  // GSC site URL: prefer the env override, otherwise default to the
+  // canonical domain property for ryan-realty.com. The service account
+  // already has access to this property in GSC.
+  const siteUrl = process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL?.trim() || 'sc-domain:ryan-realty.com'
 
-  if (!clientEmail || !privateKeyRaw || !siteUrl) {
+  if (!clientEmail || !privateKeyRaw) {
     return { ok: false, error: 'SEARCH_CONSOLE_NOT_CONFIGURED' }
   }
 

@@ -92,6 +92,64 @@ async function fetchAllPages<T>(
   return all
 }
 
+/**
+ * Fetch items in a creation-date window using sort=-created and client-side
+ * filtering. FUB v1 /people does NOT accept createdAfter/createdBefore as
+ * query params (it returns 400). The documented filter pattern is to sort
+ * by -created and paginate until we hit dates before the window.
+ *
+ * Stops paginating as soon as the newest item on a page is older than
+ * startDateISO, so for typical 30-day windows this is far cheaper than
+ * scanning the whole DB.
+ */
+async function fetchInDateWindow<T extends { created?: string | null; createdAt?: string | null }>(
+  endpoint: string,
+  startDateISO: string,
+  endDateISO: string,
+  headers: HeadersInit,
+  pageSize = 100,
+  hardCapPages = 200,
+): Promise<T[]> {
+  const all: T[] = []
+  let offset = 0
+  let pages = 0
+  while (pages < hardCapPages) {
+    const q = new URLSearchParams({
+      sort: '-created',
+      limit: String(pageSize),
+      offset: String(offset),
+    })
+    const res = await fetch(`${FUB_BASE}/${endpoint}?${q}`, { headers })
+    if (!res.ok) {
+      throw new Error(`FUB /${endpoint} HTTP ${res.status}`)
+    }
+    const data = (await res.json()) as Record<string, unknown>
+    const key = Object.keys(data).find(
+      (k) => Array.isArray(data[k]) && k !== 'metadata',
+    )
+    const items: T[] = key ? (data[key] as T[]) : []
+    if (items.length === 0) break
+
+    for (const item of items) {
+      const created: string = item.created ?? item.createdAt ?? ''
+      if (!created) continue
+      if (created >= endDateISO) continue
+      if (created < startDateISO) continue
+      all.push(item)
+    }
+
+    // If the newest item on this page is older than our window start,
+    // every remaining page is also older — stop.
+    const newest: string = items[0]?.created ?? items[0]?.createdAt ?? ''
+    if (newest && newest < startDateISO) break
+
+    if (items.length < pageSize) break
+    offset += pageSize
+    pages += 1
+  }
+  return all
+}
+
 // ─── FUB type stubs (only the fields we consume) ────────────────────────────
 
 type FubPerson = {
@@ -353,46 +411,48 @@ export async function GET(request: NextRequest) {
   // snapshot regardless of which day we're writing metrics for.
   let allDeals: FubDeal[] = []
   try {
-    allDeals = await fetchAllPages<FubDeal>(
-      'deals',
-      { fields: 'id,price,status,stage,created,createdAt,updatedAt,stageUpdatedAt' },
-      headers,
-    )
+    allDeals = await fetchAllPages<FubDeal>('deals', {}, headers)
   } catch (e) {
     errors.push(`deals pipeline fetch: ${e instanceof Error ? e.message : String(e)}`)
   }
 
+  // Compute the full window once and fetch all people/events/deals created in
+  // the range in a single paginated stream per endpoint. Then we group by day
+  // in JavaScript. This avoids 90+ API calls per endpoint AND works around
+  // FUB /v1/people not supporting createdAfter/createdBefore query params.
+  const fullStartISO = `${startDate}T00:00:00Z`
+  const fullEndISO = dayWindow(endDate).before
+
+  let allPeople: FubPerson[] = []
+  let allEvents: FubEvent[] = []
+  let allDealsCreated: FubDeal[] = []
+
+  try {
+    allPeople = await fetchInDateWindow<FubPerson>('people', fullStartISO, fullEndISO, headers)
+  } catch (e) {
+    errors.push(`people window fetch: ${e instanceof Error ? e.message : String(e)}`)
+  }
+  try {
+    allEvents = await fetchInDateWindow<FubEvent>('events', fullStartISO, fullEndISO, headers)
+  } catch (e) {
+    errors.push(`events window fetch: ${e instanceof Error ? e.message : String(e)}`)
+  }
+  try {
+    allDealsCreated = await fetchInDateWindow<FubDeal>('deals', fullStartISO, fullEndISO, headers)
+  } catch (e) {
+    errors.push(`deals window fetch: ${e instanceof Error ? e.message : String(e)}`)
+  }
+
+  const inDay = (created: string | null | undefined, day: string): boolean => {
+    if (!created) return false
+    return created.slice(0, 10) === day
+  }
+
   for (const day of dateIter(startDate, endDate)) {
     try {
-      const { after, before } = dayWindow(day)
-      const windowParams = { createdAfter: after, createdBefore: before }
-
-      // people created that day
-      const people = await fetchAllPages<FubPerson>(
-        'people',
-        {
-          ...windowParams,
-          fields: 'id,created,createdAt,source,tags,firstAgentResponseTime,respondedAt',
-        },
-        headers,
-      )
-
-      // events created that day
-      const events = await fetchAllPages<FubEvent>(
-        'events',
-        { ...windowParams, fields: 'id,type,created,createdAt,personId' },
-        headers,
-      )
-
-      // deals created that day
-      const dealsCreated = await fetchAllPages<FubDeal>(
-        'deals',
-        {
-          ...windowParams,
-          fields: 'id,price,status,stage,created,createdAt,updatedAt,stageUpdatedAt',
-        },
-        headers,
-      )
+      const people = allPeople.filter((p) => inDay(p.created ?? p.createdAt, day))
+      const events = allEvents.filter((e) => inDay(e.created ?? e.createdAt, day))
+      const dealsCreated = allDealsCreated.filter((d) => inDay(d.created ?? d.createdAt, day))
 
       const rows = buildRows(day, people, events, dealsCreated, allDeals)
       const upserted = await upsertMetricRows(rows)
