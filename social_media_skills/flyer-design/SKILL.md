@@ -75,7 +75,7 @@ If any item is `fail`, the package is **not** shown as client-ready.
 
 ## Compositor (repo)
 
-For repeatable **1080×1350** just-listed layouts (header, zoomed hero, optional **3-up filmstrip**, spec cards, footer):
+For repeatable **1080×1350** just-listed layouts (**no** top navy bar; stacked **white** mark on **hero top-right**; zoomed hero, optional **3-up filmstrip**, spec cards, white footer):
 
 - Run: `npm run flyer:just-listed -- --config out/flyers/<slug>/config.json --out out/flyers/<slug>/render.png`
 - **Photos:** `npm run flyer:fetch-photos -- --mls <ListNumber> --out-dir out/flyers/<slug>` pulls **deduped**

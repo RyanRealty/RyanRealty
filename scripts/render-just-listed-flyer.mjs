@@ -135,7 +135,7 @@ function registerFlyerFonts() {
       break
     }
   }
-  return { displayFamily, hasAzo: existsSync(azo) }
+  return { displayFamily }
 }
 
 /** @param {number | undefined | null} n */
@@ -204,14 +204,17 @@ async function main() {
 
   const heroZoom = Number(cfg.heroZoom ?? 1.32)
   const thumbZoom = Number(cfg.thumbZoom ?? 1.12)
-  const fontInfo = registerFlyerFonts()
-  const displayFamily = fontInfo.displayFamily
+  const { displayFamily } = registerFlyerFonts()
 
   const W = 1080
   const H = 1350
-  const HEADER_H = 72
+  /** No top bar — stacked logo overlays hero top-right only */
+  const HEADER_H = 0
   const GAP = 6
   const FILM_H = photos.length > 1 ? 158 : 0
+  const LOGO_OVERLAY_H = 52
+  const LOGO_PAD_TOP = 20
+  const LOGO_PAD_RIGHT = 22
 
   const infoPadX = 32
   const bulletColW = 252
@@ -254,22 +257,11 @@ async function main() {
   const heroImg = await loadImage(photos[0])
   const thumbImgs = photos.length > 1 ? await Promise.all(photos.slice(1, 4).map((p) => loadImage(p))) : []
 
-  // --- Header ---
-  ctx.fillStyle = COLORS.navy
-  ctx.fillRect(0, 0, W, HEADER_H)
-  ctx.fillStyle = COLORS.gold
-  ctx.font = fontInfo.hasAzo ? '600 20px AzoSans' : '600 20px Geist-Bold'
-  ctx.fillText('JUST LISTED', 28, 34)
-  ctx.fillStyle = 'rgba(250,248,244,0.9)'
-  ctx.font = '500 14px Geist'
-  ctx.fillText('Ryan Realty | Central Oregon', 28, 56)
-
   const logoPath = join(REPO_ROOT, 'listing_video_v4/public/brand/stacked_logo_white.png')
+  /** @type {import('@napi-rs/canvas').Image | null} */
+  let logoImg = null
   if (existsSync(logoPath)) {
-    const logo = await loadImage(logoPath)
-    const lh = 48
-    const lw = (logo.width / logo.height) * lh
-    ctx.drawImage(logo, W - lw - 22, (HEADER_H - lh) / 2, lw, lh)
+    logoImg = await loadImage(logoPath)
   }
 
   const heroY = HEADER_H
@@ -284,6 +276,13 @@ async function main() {
   grad.addColorStop(1, 'rgba(16,39,66,0.72)')
   ctx.fillStyle = grad
   ctx.fillRect(0, gy, W, heroY + HERO_H - gy)
+
+  // Stacked mark on hero photo, top-right (replaces former navy header bar)
+  if (logoImg) {
+    const lh = LOGO_OVERLAY_H
+    const lw = (logoImg.width / logoImg.height) * lh
+    ctx.drawImage(logoImg, W - lw - LOGO_PAD_RIGHT, heroY + LOGO_PAD_TOP, lw, lh)
+  }
 
   const hx = 28
   let hy = heroY + HERO_H - 30
