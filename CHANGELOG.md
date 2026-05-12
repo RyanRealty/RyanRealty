@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.159.0 (2026-05-12)
+
+### Features
+- feat(meta-capi): CORS allowlist + fbp/fbc body fallback for ryan-realty.com mirror
+
+---
+
+
 ## v1.158.0 (2026-05-12)
 
 ### Features
