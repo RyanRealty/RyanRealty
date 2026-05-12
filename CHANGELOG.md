@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.164.0 (2026-05-12)
+
+### Features
+- feat(marketing-brain): generate-briefs synthesis skill (the brain's core)
+
+---
+
+
 ## v1.163.1 (2026-05-12)
 
 ### Bug Fixes
