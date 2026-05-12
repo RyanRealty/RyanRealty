@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.160.1 (2026-05-12)
+
+### Bug Fixes
+- fix(lead-webhook): prefer META_USER_ACCESS_TOKEN for fetchLeadDetails
+
+---
+
+
 ## v1.160.0 (2026-05-12)
 
 ### Features
