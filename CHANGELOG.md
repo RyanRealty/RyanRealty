@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.160.0 (2026-05-12)
+
+### Features
+- feat(marketing-brain): add 4 daily-metrics ingestors (meta_ads, meta_page+ig, fub, gsc)
+
+---
+
+
 ## v1.159.0 (2026-05-12)
 
 ### Features
