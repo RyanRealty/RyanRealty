@@ -69,6 +69,10 @@
       "schedule": "0 7 * * 1"
     },
     {
+      "path": "/api/cron/marketing-platform-trends",
+      "schedule": "0 8 * * 1"
+    },
+    {
       "path": "/api/cron/marketing-snapshot-gsc",
       "schedule": "30 6 * * *"
     },
