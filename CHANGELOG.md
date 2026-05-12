@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.162.1 (2026-05-12)
+
+### Bug Fixes
+- fix(marketing-brain): dedupe metric rows by PK before upsert
+
+---
+
+
 ## v1.162.0 (2026-05-12)
 
 ### Features
