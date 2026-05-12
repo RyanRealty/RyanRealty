@@ -72,8 +72,19 @@ function getSupabase(): SupabaseClient {
 export async function upsertMetricRows(rows: MetricRow[]): Promise<number> {
   if (rows.length === 0) return 0
 
+  // Dedupe by primary key — last write wins. Without this, Postgres
+  // rejects the batch with "ON CONFLICT DO UPDATE cannot affect row a
+  // second time" when the upstream API returns the same source_medium
+  // or pagePath twice within a single day's response.
+  const pkMap = new Map<string, MetricRow>()
+  for (const r of rows) {
+    const pk = `${r.date}|${r.channel}|${r.scope}|${r.scope_id}|${r.metric}`
+    pkMap.set(pk, r)
+  }
+  const deduped = Array.from(pkMap.values())
+
   const supabase = getSupabase()
-  const payload = rows.map((r) => ({
+  const payload = deduped.map((r) => ({
     date: r.date,
     channel: r.channel,
     scope: r.scope,
