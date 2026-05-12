@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.154.0 (2026-05-12)
+
+### Features
+- feat(tiktok): add tiktok_auth token storage migration
+
+---
+
+
 ## v1.153.0 (2026-05-12)
 
 ### Features
