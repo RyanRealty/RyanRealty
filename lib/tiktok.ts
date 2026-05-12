@@ -121,13 +121,19 @@ export async function exchangeCodeForToken(code: string, codeVerifier?: string):
     body: body.toString(),
   })
 
+  const raw = await response.text()
   if (!response.ok) {
-    throw new Error(`TikTok token exchange failed: ${response.statusText}`)
+    throw new Error(`TikTok token exchange failed: ${response.status} ${response.statusText} body=${raw.slice(0, 500)}`)
   }
 
-  const data = (await response.json()) as TokenResponse
+  let data: TokenResponse
+  try {
+    data = JSON.parse(raw) as TokenResponse
+  } catch {
+    throw new Error(`TikTok token exchange returned non-JSON: ${raw.slice(0, 500)}`)
+  }
   if (!data.access_token) {
-    throw new Error('No access token in response')
+    throw new Error(`No access token in response: ${raw.slice(0, 500)}`)
   }
 
   return data
