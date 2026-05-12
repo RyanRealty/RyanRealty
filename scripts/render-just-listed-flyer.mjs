@@ -138,7 +138,8 @@ function registerFlyerFonts() {
     }
   }
   const hasAmboqia = displayFamily === 'Amboqia'
-  return { displayFamily, hasAmboqia }
+  const hasAzo = existsSync(azo)
+  return { displayFamily, hasAmboqia, hasAzo }
 }
 
 /** @param {number | undefined | null} n */
@@ -147,6 +148,20 @@ function formatAcres(n) {
   const a = Number(n)
   const s = a === Math.floor(a) ? String(Math.floor(a)) : String(parseFloat(a.toFixed(2)))
   return `${s} acres`
+}
+
+/** Spaced caps line — editorial fallback when script display face is missing. */
+function drawTrackedLabel(ctx, text, x, y, letterPx, fontCss, fill) {
+  ctx.save()
+  ctx.font = fontCss
+  ctx.fillStyle = fill
+  let cx = x
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    ctx.fillText(ch, cx, y)
+    cx += ctx.measureText(ch).width + letterPx
+  }
+  ctx.restore()
 }
 
 async function main() {
@@ -208,7 +223,7 @@ async function main() {
 
   const heroZoom = Number(cfg.heroZoom ?? 1.32)
   const thumbZoom = Number(cfg.thumbZoom ?? 1.12)
-  const { displayFamily, hasAmboqia } = registerFlyerFonts()
+  const { displayFamily, hasAmboqia, hasAzo } = registerFlyerFonts()
 
   const W = 1080
   const H = 1350
@@ -225,10 +240,10 @@ async function main() {
   const FOOTER_RIGHT_W = W - FOOTER_LEFT_W
   const footerLeftPad = 28
   const footerRightPad = 20
-  const descLineH = 21
-  const maxDescLines = 12
+  const descLineH = 24
+  const maxDescLines = 11
   const descW = FOOTER_LEFT_W - 2 * footerLeftPad
-  const infoTopPad = 20
+  const infoTopPad = 24
   const infoBottomPad = 20
   const GOLD_RULE = 2
 
@@ -251,22 +266,25 @@ async function main() {
   ctx.font = '15px Geist'
   const descLines = wrapText(ctx, cfg.description || '', descW, maxDescLines)
   const descColH = descLines.length * descLineH
-  const leftFooterH = infoTopPad + descColH + infoBottomPad
+  const leftFooterH = infoTopPad + 22 + descColH + infoBottomPad
 
   const hasHeadshot = Boolean(cfg.headshot && existsSync(resolve(baseDir, cfg.headshot)))
   const rightInner = FOOTER_RIGHT_W - 2 * footerRightPad
+  const brokerTextW = hasHeadshot ? Math.max(120, rightInner - 100 - 14) : rightInner
+
   let rightFooterH = footerRightPad
-  if (hasHeadshot) rightFooterH += 100 + 14
-  ctx.font = '600 15px Geist-SemiBold'
-  const lineIntro = `${cfg.agent.name} | ${cfg.agent.title}`
-  const introLines = wrapText(ctx, lineIntro, rightInner, 3)
-  rightFooterH += introLines.length * 20 + 6
   ctx.font = '500 14px Geist'
-  rightFooterH += 18
-  const emailLines = wrapText(ctx, cfg.agent.email || '', rightInner, 2)
-  rightFooterH += emailLines.length * 17 + 10
-  rightFooterH += 56
-  rightFooterH += footerRightPad
+  const emailLines = wrapText(ctx, cfg.agent.email || '', brokerTextW, 3)
+  const nameOnly = cfg.agent.name || ''
+  const titleOnly = cfg.agent.title || ''
+  const headshotBlockH = 118
+  let nameColH = 22
+  if (titleOnly) nameColH += 20
+  nameColH += 20
+  nameColH += emailLines.length * 18
+  nameColH += 8
+  const brokerMainH = hasHeadshot ? Math.max(headshotBlockH, nameColH) : nameColH
+  rightFooterH += brokerMainH + 22 + 50 + footerRightPad
 
   const FOOTER_H = Math.max(leftFooterH, rightFooterH, 168)
   const BOTTOM_TOTAL = GAP + GOLD_RULE + FOOTER_H
@@ -297,73 +315,127 @@ async function main() {
   ctx.fillStyle = grad
   ctx.fillRect(0, gy, W, heroY + HERO_H - gy)
 
-  // Script-style kicker — top-left (Amboqia when on disk; Geist fallback in meta.fontNote)
-  const jlFamily = hasAmboqia ? 'Amboqia' : displayFamily
+  // Kicker — script when Amboqia is on disk; otherwise spaced Azo caps (or Geist).
   ctx.save()
-  ctx.shadowColor = 'rgba(0,0,0,0.42)'
-  ctx.shadowBlur = 14
+  ctx.shadowColor = 'rgba(0,0,0,0.38)'
+  ctx.shadowBlur = 12
   ctx.shadowOffsetY = 2
-  ctx.fillStyle = COLORS.gold
-  ctx.font = `400 54px ${jlFamily}`
-  ctx.textAlign = 'left'
-  ctx.fillText('Just Listed', 24, heroY + 58)
+  if (hasAmboqia) {
+    ctx.fillStyle = COLORS.gold
+    ctx.font = '400 54px Amboqia'
+    ctx.textAlign = 'left'
+    ctx.fillText('Just Listed', 26, heroY + 60)
+  } else if (hasAzo) {
+    ctx.shadowBlur = 10
+    drawTrackedLabel(ctx, 'JUST', 26, heroY + 46, 5, '600 11px AzoSans', COLORS.gold)
+    drawTrackedLabel(ctx, 'LISTED', 26, heroY + 64, 5, '600 11px AzoSans', COLORS.gold)
+    ctx.strokeStyle = COLORS.gold
+    ctx.globalAlpha = 0.85
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.moveTo(26, heroY + 76)
+    ctx.lineTo(168, heroY + 76)
+    ctx.stroke()
+    ctx.globalAlpha = 1
+  } else {
+    ctx.fillStyle = COLORS.gold
+    ctx.font = '600 32px Geist-Bold'
+    ctx.textAlign = 'left'
+    ctx.fillText('Just Listed', 26, heroY + 58)
+  }
   ctx.restore()
 
-  // Spec line overlay — lower-right on photo (beds, baths, sqft, acres)
-  const specLineH = 26
-  const specPad = 14
-  const specFont = '600 16px Geist-SemiBold'
+  // Spec card — left-aligned list, gold frame (beds/baths/sqft/acres)
+  const specLineH = 27
+  const specPad = 16
+  const specHeaderH = 30
+  const specFont = '600 15px Geist-SemiBold'
   ctx.font = specFont
-  const bulletGap = 8
   let maxSpecW = 0
   for (const line of heroSpecLines) {
     const tw = ctx.measureText(line).width
-    const bw = ctx.measureText('•').width
-    maxSpecW = Math.max(maxSpecW, tw + bulletGap + bw)
+    maxSpecW = Math.max(maxSpecW, tw + 28)
   }
-  const scrSpecW = Math.min(W * 0.46, Math.max(220, maxSpecW + specPad * 2))
-  const scrSpecH = heroSpecLines.length * specLineH + specPad * 2
-  const scrSpecX = W - scrSpecW - 20
-  const scrSpecY = heroY + HERO_H - scrSpecH - 22
-  ctx.fillStyle = 'rgba(16,39,66,0.68)'
-  roundRect(ctx, scrSpecX, scrSpecY, scrSpecW, scrSpecH, 12)
+  const azoHeader = hasAzo ? '600 11px AzoSans' : '600 11px Geist-SemiBold'
+  ctx.font = azoHeader
+  const headW = ctx.measureText('HIGHLIGHTS').width
+  maxSpecW = Math.max(maxSpecW, headW + 8)
+  const scrSpecW = Math.min(W * 0.48, Math.max(236, maxSpecW + specPad * 2 + 8))
+  const scrSpecH = specHeaderH + heroSpecLines.length * specLineH + specPad * 2 + 6
+  const scrSpecX = W - scrSpecW - 22
+  const scrSpecY = heroY + HERO_H - scrSpecH - 20
+  ctx.fillStyle = 'rgba(16,39,66,0.62)'
+  roundRect(ctx, scrSpecX, scrSpecY, scrSpecW, scrSpecH, 14)
   ctx.fill()
-  let sy = scrSpecY + specPad + 16
-  const sxR = scrSpecX + scrSpecW - specPad
-  ctx.textAlign = 'right'
+  ctx.strokeStyle = COLORS.gold
+  ctx.lineWidth = 2
+  roundRect(ctx, scrSpecX, scrSpecY, scrSpecW, scrSpecH, 14)
+  ctx.stroke()
+  ctx.textAlign = 'left'
+  ctx.font = azoHeader
+  ctx.fillStyle = COLORS.gold
+  ctx.fillText('HIGHLIGHTS', scrSpecX + specPad, scrSpecY + specPad + 12)
+  let sy = scrSpecY + specHeaderH + specPad
+  const bulletX = scrSpecX + specPad + 4
+  const textX = bulletX + 18
   ctx.font = specFont
   for (const line of heroSpecLines) {
-    const tw = ctx.measureText(line).width
     ctx.fillStyle = COLORS.gold
-    ctx.fillText('•', sxR - tw - bulletGap, sy)
-    ctx.fillStyle = 'rgba(255,255,255,0.96)'
-    ctx.fillText(line, sxR, sy)
+    ctx.fillText('·', bulletX, sy)
+    ctx.fillStyle = 'rgba(255,255,255,0.97)'
+    ctx.fillText(line, textX, sy)
     sy += specLineH
   }
-  ctx.textAlign = 'left'
 
-  // Stacked mark on hero photo, top-right (replaces former navy header bar)
+  // Stacked mark on hero photo, top-right
   if (logoImg) {
     const lh = LOGO_OVERLAY_H
     const lw = (logoImg.width / logoImg.height) * lh
     ctx.drawImage(logoImg, W - lw - LOGO_PAD_RIGHT, heroY + LOGO_PAD_TOP, lw, lh)
   }
 
-  const hx = 28
-  let hy = heroY + HERO_H - 28
-  ctx.font = '500 16px Geist'
-  ctx.fillStyle = 'rgba(250,248,244,0.92)'
+  /** Frosted block behind address stack for readable editorial layout */
+  const stackPadX = 22
+  const stackPadY = 18
+  let maxStackW = 300
+  for (const row of [
+    ['500 15px Geist', cfg.cityLine],
+    [`600 26px ${displayFamily}`, cfg.address],
+    ['700 21px Geist-Bold', String(cfg.price)],
+    ['600 14px Geist-SemiBold', `MLS ${cfg.mls} · ${cfg.status}`],
+  ]) {
+    ctx.font = /** @type {string} */ (row[0])
+    maxStackW = Math.max(maxStackW, ctx.measureText(/** @type {string} */ (row[1])).width)
+  }
+  const stackW = Math.min(545, maxStackW + stackPadX * 2 + 10)
+  const stackH = 118
+  const stackY = heroY + HERO_H - stackH - 16
+  ctx.fillStyle = 'rgba(16,39,66,0.5)'
+  roundRect(ctx, 14, stackY, stackW, stackH, 16)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(200,168,100,0.5)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(26, stackY + 10)
+  ctx.lineTo(stackW * 0.38, stackY + 10)
+  ctx.stroke()
+
+  const hx = 14 + stackPadX
+  let hy = stackY + stackH - stackPadY
+  ctx.textAlign = 'left'
+  ctx.font = '500 15px Geist'
+  ctx.fillStyle = 'rgba(250,248,244,0.94)'
   ctx.fillText(cfg.cityLine, hx, hy)
-  hy -= 30
+  hy -= 26
   ctx.font = `600 26px ${displayFamily}`
   ctx.fillStyle = COLORS.white
   ctx.fillText(cfg.address, hx, hy)
-  hy -= 32
-  ctx.font = '700 22px Geist-Bold'
+  hy -= 30
+  ctx.font = '700 21px Geist-Bold'
   ctx.fillStyle = COLORS.white
   ctx.fillText(String(cfg.price), hx, hy)
   hy -= 26
-  ctx.font = '600 15px Geist-SemiBold'
+  ctx.font = '600 14px Geist-SemiBold'
   ctx.fillStyle = 'rgba(255,255,255,0.98)'
   ctx.fillText(`MLS ${cfg.mls} · ${cfg.status}`, hx, hy)
 
@@ -372,7 +444,7 @@ async function main() {
   // Filmstrip — muted band, tighter
   if (FILM_H > 0 && thumbImgs.length > 0) {
     yAfterHero += filmGap
-    ctx.fillStyle = '#e5e2db'
+    ctx.fillStyle = '#ebe6dc'
     ctx.fillRect(0, yAfterHero, W, FILM_H)
     const pad = 14
     const n = thumbImgs.length
@@ -411,6 +483,10 @@ async function main() {
 
   let ly = footerY + infoTopPad
   ctx.textAlign = 'left'
+  ctx.font = hasAzo ? '600 11px AzoSans' : '600 11px Geist-SemiBold'
+  ctx.fillStyle = COLORS.gold
+  ctx.fillText('ABOUT THIS HOME', footerLeftPad, ly)
+  ly += 22
   ctx.fillStyle = 'rgba(26,26,26,0.88)'
   ctx.font = '15px Geist'
   for (const ln of descLines) {
@@ -422,44 +498,53 @@ async function main() {
   const rInnerX = rx0 + footerRightPad
   const footerRightYOff = Math.max(0, Math.floor((FOOTER_H - rightFooterH) / 2))
   let ry = footerY + footerRightYOff + footerRightPad
-  const imgW = 92
-  const imgH = 100
+  const hsW = 100
+  const hsH = 118
+  const hsGap = 14
+  const textColX = rInnerX + (hasHeadshot ? hsW + hsGap : 0)
 
   if (hasHeadshot && cfg.headshot) {
     const hp = resolve(baseDir, cfg.headshot)
     const face = await loadImage(hp)
-    const ix = rInnerX + (rightInner - imgW) / 2
     ctx.save()
-    roundRect(ctx, ix, ry, imgW, imgH, 4)
+    roundRect(ctx, rInnerX, ry, hsW, hsH, 6)
     ctx.clip()
-    drawCoverZoom(ctx, face, ix, ry, imgW, imgH, 1.08)
+    drawCoverZoom(ctx, face, rInnerX, ry, hsW, hsH, 1.06)
     ctx.restore()
-    ry += imgH + 14
+    ctx.strokeStyle = 'rgba(16,39,66,0.12)'
+    ctx.lineWidth = 1
+    roundRect(ctx, rInnerX, ry, hsW, hsH, 6)
+    ctx.stroke()
   }
 
+  let tyy = ry
   ctx.textAlign = 'left'
-  ctx.font = '600 15px Geist-SemiBold'
+  ctx.font = '600 17px Geist-SemiBold'
   ctx.fillStyle = COLORS.navy
-  for (const ln of introLines) {
-    ctx.fillText(ln, rInnerX, ry)
-    ry += 20
+  ctx.fillText(nameOnly, textColX, tyy)
+  tyy += 24
+  if (titleOnly) {
+    ctx.font = '500 13px Geist'
+    ctx.fillStyle = 'rgba(26,26,26,0.58)'
+    ctx.fillText(titleOnly, textColX, tyy)
+    tyy += 22
   }
-  ry += 2
   ctx.font = '500 14px Geist'
-  ctx.fillStyle = 'rgba(26,26,26,0.88)'
-  ctx.fillText(cfg.agent.phone, rInnerX, ry)
-  ry += 18
+  ctx.fillStyle = 'rgba(26,26,26,0.9)'
+  ctx.fillText(cfg.agent.phone, textColX, tyy)
+  tyy += 20
   for (const ln of emailLines) {
-    ctx.fillText(ln, rInnerX, ry)
-    ry += 17
+    ctx.fillText(ln, textColX, tyy)
+    tyy += 18
   }
-  ry += 16
+  const brokerBlockBottom = hasHeadshot ? Math.max(ry + hsH, tyy) : tyy
+  ry = brokerBlockBottom + 18
   ctx.textAlign = 'center'
   const cx = rx0 + FOOTER_RIGHT_W / 2
-  ctx.font = '600 18px Geist-Bold'
+  ctx.font = '600 17px Geist-Bold'
   ctx.fillStyle = COLORS.navy
   ctx.fillText('Ryan Realty', cx, ry)
-  ry += 22
+  ry += 20
   ctx.font = '500 12px Geist'
   ctx.fillStyle = 'rgba(26,26,26,0.55)'
   ctx.fillText('Central Oregon', cx, ry)
@@ -480,8 +565,10 @@ async function main() {
     footerH: FOOTER_H,
     footerSplit: { leftPx: FOOTER_LEFT_W, rightPx: FOOTER_RIGHT_W },
     fontNote: hasAmboqia
-      ? 'Amboqia on disk: script Just Listed + display address use heritage face.'
-      : 'Add Amboqia.otf (see FLYER_FONT_AMBOQIA or listing_video_v4/public/fonts/) so Just Listed reads in brand script; address falls back to Geist-Bold.',
+      ? 'Amboqia on disk: script Just Listed + heritage address.'
+      : hasAzo
+        ? 'Azo Sans: spaced caps Just Listed kicker (add Amboqia.otf for true script).'
+        : 'Add Amboqia.otf and/or Azo paths per repo flyer skill for full brand typography.',
   }
   writeFileSync(join(baseDir, 'fonts_used.json'), `${JSON.stringify(meta, null, 2)}\n`)
 
