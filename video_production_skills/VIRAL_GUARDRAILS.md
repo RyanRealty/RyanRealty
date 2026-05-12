@@ -145,7 +145,7 @@ Every video, every image-post, every carousel, every story sequence runs through
 | All on-screen text inside the 900x1400 safe zone (per master skill §1) | 2 |
 | Body text >= 48px, headlines 64-80px | 2 |
 | Each text block displays for at least 2 seconds and at a reading speed under ~3 words per second | 2 |
-| Contrast pass: white-on-shadow OR dark-pill-under-text. No white-on-white, no gold-on-gold | 2 |
+| Contrast pass: white-on-shadow OR dark-pill-under-text. No white-on-white, no navy-on-navy | 2 |
 | All numbers carry units ($, beds, sqft, %); no "approximately/roughly/about" | 2 |
 
 **Auto-zero:** any text overlaps platform UI chrome (bottom nav, top status, comment ribbon), any number on screen has no citation in `citations.json`, any text block flashes for under 1 second.
@@ -236,7 +236,7 @@ The piece must be engineered to earn at least one of: a share, a save, a comment
 | Sub-criterion | Points |
 |---------------|--------|
 | Sounds like Matt: 40-something Bend broker, direct, factual, confident. Not ChatGPT, not corporate, not influencer-bro | 2 |
-| Brand colors used (Navy #102742, Gold #C8A864 or #D4AF37, Cream #F2EBDD, Charcoal). No off-brand hex | 2 |
+| Brand colors used (Navy `#102742`, Navy-deep `#0a1a2e`, Cream `#faf8f4`, Sand `#e8e2d4`, Fir `#2e4a3a` (sparing), Sky `#8fb8d4` (sparing)). No off-brand hex | 2 |
 | Brand fonts used (Amboqia headline, AzoSans body). No Helvetica, no system fallback | 2 |
 | No logo, brokerage name, phone, or agent-name chyron inside viral video frames (per master skill §5) | 2 |
 | Voice rules pass (manifesto Rule 11): no semicolons, no em-dashes, no AI filler, no "I'm thrilled to..." | 2 |
@@ -491,7 +491,7 @@ Per §3 Category 7. The cover is the first conversion event — from grid view t
 - **Highest-contrast, most-intriguing frame from the entire piece.** If the cover is not the strongest frame, the piece is fighting itself.
 - **One element of specificity** — a recognizable place, a number, a face, an architectural detail. "Pretty exterior" is not specificity.
 - **Text overlay (if used) under 6 words.** Sized for grid-preview legibility (250x444 in IG grid). AzoSans Bold 64px minimum on a 1080x1920 source.
-- **Brand-color treatment if text-led.** Navy pill or cream pill, never gold-on-gold or white-on-bright-sky.
+- **Brand-color treatment if text-led.** Navy pill or cream pill, never navy-on-navy or white-on-bright-sky.
 
 ### Cover-frame data (April 2026)
 

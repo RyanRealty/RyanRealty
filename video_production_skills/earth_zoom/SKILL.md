@@ -222,7 +222,7 @@ The comp:
 1. Plays the Earth Studio video full-bleed (portrait: crop center 1080×1920 from 4K source; landscape: crop center 1920×1080)
 2. Fades in address overlay at frame 30 (0.5s) — white text, Amboqia, 72px, centered, navy pill background
 3. VO audio starts at frame 0
-4. At final 2 seconds (landing), fades in price + beds/baths/sqft stats pill (AzoSans Medium, 48px, navy background with gold border, 900px wide, centered)
+4. At final 2 seconds (landing), fades in price + beds/baths/sqft stats pill (AzoSans Medium, 48px, navy background with 1px warm stone border `oklch(0.923 0.003 48.717)`, 900px wide, centered)
 5. Transitions to Beat 1 of the main listing video via 0.5s cross-dissolve
 
 Render command:
@@ -298,11 +298,11 @@ Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Rules that appl
 
 ## Brand rules
 
-- **Colors:** Navy `#102742` for all pill backgrounds and text scrim overlays. Gold `#D4AF37` for price display borders and accent lines. No other colors.
+- **Colors:** Navy `#102742` for all pill backgrounds and text scrim overlays. Warm stone border (`oklch(0.923 0.003 48.717)`, 1px) on the price pill at arrival frame. No gold.
 - **Fonts:** Amboqia for address and price headline. AzoSans Medium for beds/baths/sqft supporting stats.
 - **No logo or brokerage name in the video frame.** Attribution lives in the IG caption and bio.
 - **No agent name, phone number, or "REPRESENTED BY" in any frame.**
-- **Gold border only on the price pill at arrival frame** — not during the descent sequence.
+- **Warm stone border only on the price pill at arrival frame** (`oklch(0.923 0.003 48.717)`, 1px) — not during the descent sequence.
 - **Text safe zone:** 900×1400 px centered inside 1080×1920 portrait.
 
 ---

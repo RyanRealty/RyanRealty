@@ -259,12 +259,14 @@ After 30 days of clean output, the format graduates to auto-publish status. Unti
 ## Rule 12 — Brand visual standards (non-negotiable)
 
 ### Colors
-- **Navy: #102742** — primary brand
-- **Gold: #D4AF37** — accent, never used for body text
-- **White: #FFFFFF** — light text on dark
-- **Charcoal: #1A1A1A** — dark text on light
+- **Navy: `#102742`** — primary brand
+- **Navy-deep: `#0a1a2e`** — deep accent, structural elements
+- **Cream: `#faf8f4`** — light background, light text on dark
+- **Sand: `#e8e2d4`** — warm tone, borders, subtle surfaces
+- **Fir: `#2e4a3a`** — sparing, natural accent
+- **Sky: `#8fb8d4`** — sparing, cool accent
 
-No other colors as primary brand elements. Photo content can be any color obviously. UI chrome, data viz pills, logo treatment, end cards — Navy + Gold + White + Charcoal only.
+No other colors as primary brand elements. Photo content can be any color obviously. UI chrome, data viz pills, logo treatment, end cards — Navy + Cream + Sand only. No gold.
 
 ### Typography
 - **Amboqia** — all headlines, all on-screen video text bigger than 32px, all logo lockups
@@ -276,12 +278,12 @@ No other colors as primary brand elements. Photo content can be any color obviou
 - Minimum size: 120px wide on a 1080px-wide canvas
 - Clear space: 0.5x logo height on every side
 - Never on a busy photo without a navy scrim
-- White-on-navy or navy-on-white only. Never gold-on-white (illegible).
+- White-on-navy or navy-on-white only. Never cream-on-cream or navy-on-navy (illegible).
 
 ### End cards
 - 5 seconds maximum
 - Logo + phone (541-XXX-XXXX) + URL (ryanrealty.com or current production domain) + tagline if used
-- Black background with subtle navy gradient or solid navy with gold accent line
+- Solid navy or navy with warm stone (1px sand border) accent. No gold accent line.
 - No animated logo unless using one of the existing `Logo_Animations/` presets
 
 **How to apply:** Every Remotion composition imports brand tokens from a shared `brand.ts` file (define if not present). Direct hex values fail the design lint. Any deliverable missing brand colors or using an off-brand color blocks at QA.

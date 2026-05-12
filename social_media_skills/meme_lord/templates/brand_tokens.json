@@ -1,11 +1,13 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "colors": {
     "navy": "#102742",
-    "gold": "#D4AF37",
+    "navy_deep": "#0a1a2e",
+    "cream": "#faf8f4",
+    "sand": "#e8e2d4",
+    "fir": "#2e4a3a",
+    "sky": "#8fb8d4",
     "white": "#FFFFFF",
-    "charcoal": "#1A1A1A",
-    "cream": "#F5EFE0",
     "imessage_blue": "#0B93F6",
     "imessage_gray": "#E5E5EA"
   },
@@ -43,8 +45,8 @@
   "logo": {
     "min_width_on_1080_canvas_px": 60,
     "clear_space_factor": 0.5,
-    "color_combos_allowed": ["white_on_navy", "navy_on_white"],
-    "color_combos_banned": ["gold_on_white", "gold_on_cream"]
+    "color_combos_allowed": ["white_on_navy", "navy_on_white", "navy_on_cream", "cream_on_navy"],
+    "color_combos_banned": ["navy_on_navy", "cream_on_cream", "white_on_white"]
   },
   "_notes": "Brand fonts must be installed locally. If Amboqia or AzoSans are missing, the renderer falls back to system fonts but logs a warning. The Anti-Slop Manifesto Rule 12 says renders should fail without brand fonts in production. For sample/dev renders, fallback is acceptable with a warning."
 }

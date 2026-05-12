@@ -199,7 +199,7 @@ If anything in the routine-triplet appears to contradict this master skill or `C
 - **Safe zone: 900×1400 px centered inside 1080×1920** (90 px margin every edge — accounts for IG/TikTok UI chrome).
 - **Display time: minimum 2 seconds per text block.**
 - **Font sizes: minimum 48 px body, headline 64-80 px.**
-- **Contrast: white text with shadow OR dark pill/scrim under the text.** Never white text on a white wall. Never gold text on a gold sky. (Listing videos override the "with shadow" allowance — see next subsection.)
+- **Contrast: white text with shadow OR dark pill/scrim under the text.** Never white text on a white wall. Never navy text on a navy background. (Listing videos override the "with shadow" allowance — see next subsection.)
 - **Word count: max 5-7 words per block.**
 - **Numbers carry units.** "$3,025,000" not "3,025,000". "4 bedrooms" not "4 BR".
 
@@ -216,13 +216,13 @@ If anything in the routine-triplet appears to contradict this master skill or `C
 **Layer 2 — Logo footer bar**
 - Background: `rgba(0,0,0,0.70)` — **NOT solid black.** Faint photo texture must show through.
 - Height: **200 px**, flush to the very bottom of the frame: `y = 1720 → 1920` (portrait 1080×1920).
-- Logo: **gold (champagne) variant**, **580 px wide**, vertically centered inside the 200 px bar.
-- Logo color: gold/champagne ONLY. **No white logo. No navy logo.** No swap.
+- Logo: **navy variant** (`design_system/ryan-realty/assets/brand/logo-blue.png`), **580 px wide**, vertically centered inside the 200 px bar.
+- Logo color: navy ONLY. **No white logo. No gold or champagne logo.** No swap.
 - No drop shadow on the logo. No `filter: drop-shadow(...)` on the logo `<img>`.
 
 **Critical absolutes**
 - **No drop shadows on text or logo, anywhere.** Not on headlines, not on addresses, not on price reveals, not on the logo. Remove every `text-shadow` and `filter: drop-shadow(...)` from listing-video text components.
-- **Gold logo only** — `stacked_logo_white.png` is for non-listing formats (news, market reports, etc.); listing videos use the gold variant in the footer bar.
+- **Navy logo only** (`logo-blue.png`) — `stacked_logo_white.png` is for non-listing formats (news, market reports, etc.); listing videos use the navy variant in the footer bar.
 - **The two layers must be IDENTICAL across every video in a set.** Same `rgba()` values. Same heights. Same logo width. Same Y positions. Different listings, identical chrome.
 - **Gap between layers shows clean photo.** The text-zone scrim ends above the 200 px footer bar. The strip between the bottom of the text scrim and the top of the logo bar shows the underlying photo with NO scrim, NO darkening, NO gradient — clean unobstructed image.
 
@@ -363,11 +363,15 @@ ffmpeg -i out/<name>.mp4 -c:v libx264 -crf 24 -preset medium -c:a copy \
 
 ## 5. Brand rules for video
 
-### Colors (from `brand.ts`)
-- **Navy:** `#102742` — closing reveal background ONLY. Never inside the body of a viral cut.
-- **Gold:** `#C8A864` (current) / `#D4AF37` (alternate) — kinetic title gold, boundary glow.
-- **Cream:** `#F2EBDD` — body text on dark backgrounds.
+### Colors (from `brand.ts`) — v2 palette (locked 2026-05-12)
+- **Navy:** `#102742` — closing reveal background, structural elements.
+- **Navy-deep:** `#0a1a2e` — kinetic title accent, boundary glow. Replaces gold.
+- **Cream:** `#faf8f4` — body text on dark backgrounds.
+- **Sand:** `#e8e2d4` — warm stone borders (1px), pill borders.
+- **Fir:** `#2e4a3a` — sparing natural accent.
+- **Sky:** `#8fb8d4` — sparing cool accent.
 - **Charcoal:** `#1a1714` — composition AbsoluteFill background (never visible if Sequence overlap is correct).
+- No gold (`#D4AF37` / `#C8A864`). Both are retired.
 
 ### Fonts
 - **Amboqia** — headlines (kinetic title, reveal price).

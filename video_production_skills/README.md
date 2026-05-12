@@ -110,7 +110,7 @@ These resolve the contradictions previously found across the constitution docs. 
 | Topic | Canonical answer |
 |---|---|
 | Listing video length | 30–45s social reels; 60s branded tours; 90–110s luxury |
-| Gold hex | `#D4AF37` for news clips, `#C8A864` for listing reels |
+| Brand palette | Navy `#102742`, Navy-deep `#0a1a2e`, Cream `#faf8f4`, Sand `#e8e2d4`, Fir `#2e4a3a` (sparing), Sky `#8fb8d4` (sparing) |
 | Charcoal hex | `#1A1A1A` |
 | ElevenLabs voice ID | `qSeXEcewz7tA0Q0qk9fH` (Victoria — locked permanent 2026-04-27) |
 | ElevenLabs settings | stability 0.40, similarity_boost 0.80, style 0.50, speaker_boost true — Updated 2026-05-07 per Matt directive; canonical source: video_production_skills/elevenlabs_voice/SKILL.md |

@@ -310,7 +310,7 @@ Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Critical rules:
 
 ## Brand rules
 
-- **Colors:** Navy `#102742` background on all stat cards and chart containers. Gold `#D4AF37` for positive deltas, trend lines, and highlight bars. White text for all metric values.
+- **Colors:** Navy `#102742` background on all stat cards and chart containers. Navy-deep `#0a1a2e` for trend lines and highlight bars. White or cream text for all metric values. Use ↑/↓ direction arrows for positive/negative signal — not color alone.
 - **Fonts:** Amboqia for city name headline and section titles. AzoSans Medium for all metric values, labels, and citation pills.
 - **No logo in frame.** No brokerage name in frame. No phone number in frame.
 - **Text safe zone:** 900×1400 px centered in 1080×1920.

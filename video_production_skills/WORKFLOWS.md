@@ -72,10 +72,10 @@ Pair this with:
 - Total: 12-13 beats, ~45-48s. Trim if over 50s.
 
 ### Step 7: Layer overlays
-- Address ribbon: bottom zone `<CaptionSafeZone>`, AzoSans 56px, navy 70% pill, gold 2px top border, fades in over 12 frames at beat 1.
-- Price reveal at the 50% mark: Amboqia 96-144px, gold, springs in over 18 frames.
+- Address ribbon: bottom zone `<CaptionSafeZone>`, Geist 500 56px, navy 70% pill, warm stone 2px top border (`oklch(0.923 0.003 48.717)`), fades in over 12 frames at beat 1.
+- Price reveal at the 50% mark: Amboqia 96-144px, navy `#102742`, springs in over 18 frames.
 - Stat strip at 75%: AzoSans 56px, four pills (beds / baths / sqft / lot).
-- Caption (VO): kinetic word-by-word via `<KineticCaptions>` component reading from `<mls>.alignment.json`. Active word color shift navy → gold + scale 1.0 → 1.08 spring.
+- Caption (VO): kinetic word-by-word via `<KineticCaptions>` component reading from `<mls>.alignment.json`. Active word scale 1.0 → 1.08 spring (no color shift; bold weight on active word).
 
 ### Step 8: Render to scratch
 ```
@@ -139,7 +139,7 @@ npx remotion render src/index.ts ListingTour out/<mls>.mp4 \
 
 ### Step 3: Verdict classification
 - Months of supply ≤ 4 → **Seller's Market** (red-orange `#D62828` pill).
-- 4 < MoS < 6 → **Balanced Market** (gold `#D4AF37` pill).
+- 4 < MoS < 6 → **Balanced Market** (navy `#102742` pill with 1px warm stone border `oklch(0.923 0.003 48.717)`).
 - MoS ≥ 6 → **Buyer's Market** (green `#2E7D32` pill).
 - The verdict pill that ends the video MUST match the months-of-supply number on screen. Re-check at quality gate.
 
@@ -237,7 +237,7 @@ npx remotion render src/index.ts ListingTour out/<mls>.mp4 \
 
 ### Step 2: Hero illustration
 - Generate 3 candidate stylized illustrations with **xAI Grok Imagine** (`grok-imagine-image-pro`) OR Replicate Stable Diffusion XL (`stability-ai/sdxl`):
-  - Prompt format: `"stylized vector illustration, real estate <topic>, brand colors navy gold cream, minimalist, no text, friendly approachable feel"`
+  - Prompt format: `"stylized vector illustration, real estate <topic>, brand colors navy cream, minimalist, no text, friendly approachable feel"`
 - Save candidates to `video/evergreen-education/illustrations/<slug>/`. Pick 1-2 for the build.
 
 ### Step 3: Optional AI cinematic — only if a beat needs it

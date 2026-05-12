@@ -51,8 +51,8 @@ Camera vocabulary, in order of preference:
 LUT/grade implementation: pass clips through a Remotion `<ColorMatrix>` or a `colorGrading` filter prop in the Sequence. Document in the citations.json.
 
 ### Typography
-- Address ribbon: AzoSans 56px, bottom-zone (y 1480-1720), 70% navy pill `rgba(16,39,66,0.70)`, 24px corner radius, 2px gold top border. Same spec as news-clip caption pill (CLAUDE.md). Address spelled out: "61271 Kwinnum Dr, Bend OR 97702" — no abbreviations.
-- Price reveal at the 50% mark: Amboqia 96px, gold `#C8A864`, drop-shadow `rgba(0,0,0,0.40)`, springs in over 12 frames. **Always carries units:** "$3,025,000" not "3,025,000."
+- Address ribbon: Geist 500 56px, bottom-zone (y 1480-1720), 70% navy pill `rgba(16,39,66,0.70)`, 24px corner radius, 2px warm stone top border (`oklch(0.923 0.003 48.717)`). Address spelled out: "61271 Kwinnum Dr, Bend OR 97702" — no abbreviations.
+- Price reveal at the 50% mark: Amboqia 96px, navy `#102742`, no drop-shadow, springs in over 12 frames. **Always carries units:** "$3,025,000" not "3,025,000."
 - Stat strip (beds/baths/sqft/acres) at 75% mark: AzoSans 56px, single line, four pills.
 - **No agent name, no phone, no URL, no Ryan Realty logo in the frame.** End card uses `listing_video_v4/public/brand/stacked_logo_white.png` only.
 
@@ -76,7 +76,7 @@ For Bend market report specifically:
 - For neighborhoods that don't have AI-recognizable landmarks (Tumalo, Tetherow, La Pine), use Veo 3 because its native ambient audio (creek, wind, birds) gives the place a sonic identity.
 
 **Data visualization:** Remotion-rendered, never AI-generated. Charts, countup numbers, kinetic stat reveals, market-condition pills. Spec:
-- Active listings count: kinetic countup, AzoSans 96px, gold accent on the comma.
+- Active listings count: kinetic countup, AzoSans 96px, navy-deep accent on the comma.
 - Median price: spring in from 0, hold 2.5s minimum so the viewer can read it.
 - Months of supply: animated bar that fills against the threshold zones (≤4 = seller's, 4-6 = balanced, ≥6 = buyer's). Color-coded.
 - YoY change: arrow that draws on, percentage springs in. Red for down, green for up — never the inverse.
@@ -95,12 +95,12 @@ The viewer should feel like they're watching a Bloomberg-meets-MKBHD market anal
 
 ### Color grading
 - B-roll: city-specific. Bend = warm golden tones (real Bend light is golden 8 months of the year — don't fight it). Redmond = neutral, slightly cooler (high desert light is harder, more direct). Sisters = warm but desaturated greens. La Pine / Sunriver = green forward, deep blue sky.
-- Data viz: brand palette only. Navy `#102742`, gold `#D4AF37` (news/market accent), cream `#F2EBDD`, charcoal `#1A1A1A`.
+- Data viz: brand palette only. Navy `#102742`, navy-deep `#0a1a2e`, cream `#faf8f4`, sand `#e8e2d4`. No gold.
 
 ### Typography
 - City name in cold open: Amboqia 96px, springs in, 3s minimum hold (CLAUDE.md pacing rule applies hard here — "Bend Market Report" must be readable).
 - Stat headlines: AzoSans 64px, white, drop-shadow.
-- Stat numbers (the big one in each beat): Amboqia 120px, gold or white.
+- Stat numbers (the big one in each beat): Amboqia 120px, cream or white.
 - Verdict pill (final beat): "Seller's Market" / "Balanced Market" / "Buyer's Market" — AzoSans 56px in a 70% pill, 28px corner radius, color-coded to the verdict. **Must match the months-of-supply number on screen.** This is the #1 narrative-vs-data inconsistency we've shipped historically (CLAUDE.md §0). Re-check every render.
 
 ### What makes this scroll-stopping vs forgettable
@@ -135,13 +135,13 @@ Camera moves on real footage: minimal — let the footage speak. Camera moves on
 
 ### Color grading
 - Real footage: don't grade. Leave it as shot. News footage that's been color-graded reads as ad — the lack of grading IS the credibility signal.
-- Graphics: brand palette. Navy + gold + cream. The breaking-news red `#D62828` is allowed only on a true breaking-news pill.
+- Graphics: brand palette. Navy + cream + sand. The breaking-news red `#D62828` is allowed only on a true breaking-news pill.
 
 ### Typography
 - BREAKING badge (when warranted): Amboqia 48px, white on red `#D62828` pill, top-left corner, 2s pulse.
 - Headline: AzoSans Bold 64-80px, white, drop-shadow, max 8 words. ("MEDIAN HOMES PRICE FALLS $32K IN ORANGE COUNTY" not "Median home prices have fallen by $32,000 in Orange County this past quarter.")
 - Source attribution: AzoSans 32px, bottom-left or bottom-right. Always present. Always linkable in the description.
-- Number callouts: Amboqia 96-120px, gold or red depending on direction.
+- Number callouts: Amboqia 96-120px, navy or red depending on direction (↑/↓ arrows for sign; color alone does not encode direction).
 
 ### What makes this scroll-stopping vs forgettable
 **Scroll-stopping:** real footage of Jay Powell at a Fed press conference + a kinetic stat showing the rate decision + a 4-word implication ("Mortgages just got cheaper").
@@ -203,13 +203,13 @@ Animation vocabulary:
 - Cross-dissolve transitions, not match cuts (this is teaching, not action).
 
 ### Color grading
-- Brand palette only. Navy + gold + cream + charcoal. No off-brand hex.
-- One accent color per topic, drawn from the gold/red/green spectrum based on whether the topic is neutral / risk / benefit. (Risk topics like ARM, HELOC, foreclosure get the red accent; benefit topics like 1031, capital gains exclusion get the gold.)
+- Brand palette only. Navy + cream + sand + navy-deep. No off-brand hex. No gold.
+- One accent color per topic drawn from the navy-deep/red/fir spectrum based on whether the topic is neutral / risk / benefit. (Risk topics like ARM, HELOC, foreclosure get the red accent; benefit topics like 1031, capital gains exclusion get navy-deep with ↑ arrow direction indicator.)
 
 ### Typography
-- Topic title: Amboqia 96px, gold, intro hold 3s minimum.
+- Topic title: Amboqia 96px, cream on navy, intro hold 3s minimum.
 - Definition cards: AzoSans 56px, white text on navy pill.
-- Numbers/formulas: Amboqia 96px, gold.
+- Numbers/formulas: Amboqia 96px, navy-deep or cream (on dark backgrounds).
 - Source citation (when stating a stat or rule): AzoSans 28px, bottom-left, always linkable.
 
 ### What makes this scroll-stopping vs forgettable
@@ -258,9 +258,9 @@ LUT: build a `tetherow.lut.cube` and apply consistently across every Tetherow vi
 ### Typography
 - **Less is more.** One overlay per beat, max.
 - Address: AzoSans Light 48px, lower-third, no pill — just white text with a subtle shadow.
-- Price reveal: Amboqia 144px, slow spring (24 frames), gold `#C8A864` (the muted luxury gold, not the brighter `#D4AF37` we use on news). 4s hold.
+- Price reveal: Amboqia 144px, slow spring (24 frames), navy `#102742` text on a centered cream `#faf8f4` pill (auto-width + 32px horizontal padding + 16px vertical, `border-radius: 18px` (`--radius-2xl`), `--shadow-md` for legibility against the dark drone footage). 4s hold. The cream pill is non-negotiable for luxury — never float navy text directly on a dark video frame; it disappears.
 - Stat strip: AzoSans 48px, single line, lots of letter-spacing (luxury negative space).
-- Tagline (final frame): Amboqia Italic 56px, cream `#F2EBDD`, centered.
+- Tagline (final frame): Amboqia Italic 56px, cream `#faf8f4`, centered.
 
 ### What makes this scroll-stopping vs forgettable
 **Scroll-stopping:** the camera doesn't move for the first 2 seconds — just holds on a wide of the home with smoke from the chimney drifting up — and then a single line of type appears: "On the 14th green at Tetherow." The pacing IS the brand.

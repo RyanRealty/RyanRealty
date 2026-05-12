@@ -22,7 +22,7 @@ mobile and print. This skill is the hard standard for flyer composition quality 
 
 ## Required references (load before design)
 
-1. `skills/youtube-market-reports/brand-system.md` §2–§3 — **authoritative** colors + typography (flyers count as print/postcard-class collateral)
+1. `design_system/ryan-realty/SKILL.md` — **authoritative** colors + typography (flyers count as print/postcard-class collateral; v2 palette: navy `#102742`, cream `#faf8f4`, sand `#e8e2d4` — no gold)
 2. `video_production_skills/brand_assets/SKILL.md` — light editorial register, hierarchy, negative space
 3. `video_production_skills/VIDEO_PRODUCTION_SKILL.md` §5 — brand colors, banned words (video forbids Butcher; flyers follow static rules below)
 4. `video_production_skills/ANTI_SLOP_MANIFESTO.md` (authenticity + no fake claims)
@@ -69,15 +69,15 @@ Score each item `pass` / `fail` with one sentence of evidence:
 | 3 | Cropping feels **intentional** (no accidental “too far away”). |
 | 4 | Typography matches § Typography (Amboqia display / Geist body / Azo ribbon — no silent fallback). |
 | 5 | Readable on **phone width** (critical text, price pill, MLS). |
-| 6 | Contrast / overlays follow brand (no white-on-gold, no busy text on busy focal point). |
+| 6 | Contrast / overlays follow brand (no navy-on-navy, no busy text on busy focal point). |
 
 If any item is `fail`, the package is **not** shown as client-ready.
 
 ## Compositor (repo)
 
-For repeatable **1080×1350** just-listed layouts (minimal chrome): **Amboqia** **Just Listed** when font on disk else **Geist SemiBold**; logo **hero top-right**; **specs** lower-right **soft navy** panel only (no label, no gold frame); **MLS**, **price**, **address**, **city** on gradient (**no** frosted card); optional **3-up filmstrip**; footer **⅔** plain MLS body copy **| ⅓** centered **headshot**, then name, phone, email, **Ryan Realty** (no URL/CTA).
+For repeatable **1080×1350** just-listed layouts (minimal chrome): **Amboqia** **Just Listed** when font on disk else **Geist SemiBold**; logo **hero top-right**; **specs** lower-right **soft navy** panel only (no label, no decorative frame — warm stone border 1px if border needed); **MLS**, **price**, **address**, **city** on gradient (**no** frosted card); optional **3-up filmstrip**; footer **⅔** plain MLS body copy **| ⅓** centered **headshot**, then name, phone, email, **Ryan Realty** (no URL/CTA).
 
-- Run: `npm run flyer:just-listed -- --config out/flyers/<slug>/config.json --out out/flyers/<slug>/render.png`
+- Run: `npm run flyer:just-listed -- --config out/flyers/<slug>/config.json --out out/flyers/<slug>/render.png` (compositor uses v2 palette: navy/cream/sand — no gold frame)
 - **Amboqia** paths: `FLYER_FONT_AMBOQIA`, `video/market-report/public/Amboqia.otf`, `listing_video_v4/public/fonts/Amboqia.otf`.
 - **Photos:** `npm run flyer:fetch-photos -- --mls <ListNumber> --out-dir out/flyers/<slug>` pulls **deduped**
   URLs from `listing_photos`, or from `details.Photos` + `PhotoURL` when the photos table is empty,
@@ -92,7 +92,7 @@ For repeatable **1080×1350** just-listed layouts (minimal chrome): **Amboqia** 
 Flyers are **static collateral**. They must use the licensed brand faces from the authoritative
 design system, not system or generic web fallbacks.
 
-**Canonical pairing (per `skills/youtube-market-reports/brand-system.md` §3):**
+**Canonical pairing (per `design_system/ryan-realty/SKILL.md`):**
 
 | Role | Font | Use on flyer |
 |------|------|----------------|
@@ -138,7 +138,7 @@ If any family resolved to a fallback at render time, the flyer **fails** the qua
    - Max 3 visual tiers per panel. If more, simplify.
 
 3. **Composition + typography**
-   - Use brand-safe palette and high contrast (light editorial register: white/off-white ground, navy `#102742` type, gold accent sparingly — see `brand_assets` static register).
+   - Use brand-safe palette and high contrast (light editorial register: cream `#faf8f4` or white ground, navy `#102742` type, sand `#e8e2d4` accent — see `design_system/ryan-realty/SKILL.md`). No gold.
    - Enforce **exactly** the trio in the typography table above: one display face (Amboqia), one body face (Geist), optional ribbon (Azo). No extra display fonts.
    - Keep mobile readability: no critical text below practical feed readability.
 
