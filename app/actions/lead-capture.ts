@@ -4,6 +4,46 @@ import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { findPersonByEmail, sendEvent, type FubEventPerson } from '@/lib/followupboss'
 import { recordPartnerReferral } from '@/app/actions/partnership-revenue'
+import { generateEventId } from '@/lib/meta-pixel-helpers'
+
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+
+async function fireCapiLead(args: {
+  eventName: 'Lead' | 'ViewContent'
+  email?: string | null
+  phone?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  eventSourceUrl: string
+  contentName: string
+  value: number
+}): Promise<string | null> {
+  const eventId = generateEventId()
+  try {
+    await fetch(`${SITE_URL}/api/meta-capi`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventName: args.eventName,
+        email: args.email ?? undefined,
+        phone: args.phone ?? undefined,
+        firstName: args.firstName ?? undefined,
+        lastName: args.lastName ?? undefined,
+        eventId,
+        eventSourceUrl: args.eventSourceUrl,
+        customData: {
+          content_name: args.contentName,
+          value: args.value,
+          currency: 'USD',
+        },
+      }),
+    })
+    return eventId
+  } catch (err) {
+    console.warn(`[lead-capture CAPI ${args.eventName}]`, err)
+    return null
+  }
+}
 
 type CampaignInput = {
   source?: string
@@ -44,10 +84,18 @@ export async function trackHomeValuationCta(campaign?: CampaignInput): Promise<v
     type: 'Seller Inquiry',
     person,
     source: websiteSource(),
-    sourceUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/sell/valuation`,
+    sourceUrl: `${SITE_URL}/sell/valuation`,
     pageTitle: 'Home Valuation CTA',
     message: 'home-valuation-cta',
     campaign,
+  })
+
+  await fireCapiLead({
+    eventName: 'ViewContent',
+    email,
+    eventSourceUrl: `${SITE_URL}/sell/valuation`,
+    contentName: 'home_valuation_cta_click',
+    value: 0,
   })
 
   const partnerSlug = partnerSlugFromCampaign(campaign?.source)
@@ -82,11 +130,19 @@ export async function submitExitIntentLead(input: {
     type: 'Registration',
     person,
     source: websiteSource(),
-    sourceUrl: input.pageUrl?.trim() || `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/`,
+    sourceUrl: input.pageUrl?.trim() || `${SITE_URL}/`,
     pageUrl: input.pageUrl?.trim(),
     pageTitle: 'Exit Intent Lead',
     message: input.context?.trim() || 'exit-intent-popup',
     campaign: input.campaign,
+  })
+
+  await fireCapiLead({
+    eventName: 'Lead',
+    email,
+    eventSourceUrl: input.pageUrl?.trim() || `${SITE_URL}/`,
+    contentName: 'exit_intent_popup',
+    value: 100,
   })
 
   const partnerSlug = partnerSlugFromCampaign(input.campaign?.source)
@@ -146,9 +202,23 @@ export async function submitPageCTA(input: {
       type: eventType,
       person,
       source: websiteSource(),
-      sourceUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/`,
+      sourceUrl: `${SITE_URL}/`,
       pageTitle: `Page CTA${input.area ? ` — ${input.area}` : ''}`,
       message: input.context ?? 'page-cta',
+    })
+
+    const value =
+      input.leadType === 'seller' ? 500 :
+      input.leadType === 'buyer' ? 300 :
+      input.leadType === 'newsletter' ? 50 :
+      150
+    await fireCapiLead({
+      eventName: 'Lead',
+      email,
+      phone,
+      eventSourceUrl: `${SITE_URL}/`,
+      contentName: `page_cta_${input.leadType ?? 'general'}${input.area ? `_${input.area}` : ''}`,
+      value,
     })
 
     return { error: null }

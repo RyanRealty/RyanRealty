@@ -26,12 +26,13 @@ export async function sendServerEvent(
   eventName: string,
   userData: MetaCapiUserData,
   customData?: MetaCapiCustomData,
-  eventId?: string
+  eventId?: string,
+  eventSourceUrl?: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!PIXEL_ID || !ACCESS_TOKEN) {
     return { ok: false, error: 'META_CAPI_ACCESS_TOKEN or NEXT_PUBLIC_META_PIXEL_ID not set' }
   }
-  const url = `https://graph.facebook.com/v18.0/${PIXEL_ID}/events`
+  const url = `https://graph.facebook.com/v21.0/${PIXEL_ID}/events`
   const body = {
     data: [
       {
@@ -40,6 +41,7 @@ export async function sendServerEvent(
         event_id: eventId ?? `capi_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         user_data: userData,
         ...(customData && Object.keys(customData).length > 0 ? { custom_data: customData } : {}),
+        ...(eventSourceUrl ? { event_source_url: eventSourceUrl } : {}),
         action_source: 'website',
       },
     ],

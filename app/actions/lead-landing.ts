@@ -3,6 +3,9 @@
 import { sendEvent, type FubEventPerson } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
 import type { LeadLandingAudience } from '@/lib/lead-landing-content'
+import { generateEventId } from '@/lib/meta-pixel-helpers'
+
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 function websiteSource(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? '')
@@ -69,6 +72,31 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       },
     })
     if (!result.ok) return { error: result.error ?? 'Could not submit request right now' }
+
+    const eventId = generateEventId()
+    const leadValue = input.audience === 'seller' ? 500 : 300
+    fetch(`${SITE_URL}/api/meta-capi`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventName: 'Lead',
+        email,
+        phone: phone || undefined,
+        firstName: nameParts[0] ?? undefined,
+        lastName: nameParts.slice(1).join(' ') || undefined,
+        eventId,
+        eventSourceUrl: sourceUrl,
+        customData: {
+          content_name: `lead_landing_${input.audience}`,
+          lead_type: input.audience === 'seller' ? 'seller_inquiry' : 'buyer_inquiry',
+          intent: input.leadIntent,
+          value: leadValue,
+          currency: 'USD',
+        },
+      }),
+    }).catch((err) => {
+      console.warn('[Lead Landing CAPI]', err)
+    })
 
     await sendContactNotification({
       name,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createRealtimeTask } from '@/lib/followupboss'
 
 export const runtime = 'nodejs'
 
@@ -42,7 +43,7 @@ export const runtime = 'nodejs'
 // Config
 // ---------------------------------------------------------------------------
 
-const META_GRAPH_BASE = 'https://graph.facebook.com/v18.0'
+const META_GRAPH_BASE = 'https://graph.facebook.com/v21.0'
 const FUB_BASE = 'https://api.followupboss.com/v1'
 
 function getMetaToken(): string {
@@ -178,16 +179,113 @@ async function fetchLeadDetails(leadId: string): Promise<MetaLeadDetail | null> 
 // Parse field_data into a contact record
 // ---------------------------------------------------------------------------
 
+type LeadAudience = 'buyer' | 'seller' | 'unknown'
+type LeadIntent = 'hot' | 'warm' | 'nurture' | null
+
 interface ParsedLead {
   firstName: string | null
   lastName: string | null
   email: string | null
   phone: string | null
   buySellIntent: string | null
+  timelineAnswer: string | null
+  audience: LeadAudience
+  intent: LeadIntent
+  possibleRealtor: boolean
   campaignName: string | null
   adSetName: string | null
   leadId: string
   createdTime: string
+}
+
+const TIMELINE_FIELD_HINTS = [
+  'timeline',
+  'when',
+  'how_soon',
+  'time_frame',
+  'timeframe',
+  'thinking',
+  'looking_to_buy',
+  'looking_to_sell',
+  'planning_to_sell',
+  'planning_to_buy',
+  'ready_to_sell',
+  'ready_to_buy',
+]
+
+function getTimelineAnswer(fields: LeadFieldData[]): string | null {
+  for (const f of fields) {
+    const key = f.name.toLowerCase()
+    if (TIMELINE_FIELD_HINTS.some(h => key.includes(h))) {
+      const v = f.values?.[0]?.trim()
+      if (v) return v
+    }
+  }
+  return null
+}
+
+function classifyIntent(answer: string | null): LeadIntent {
+  if (!answer) return null
+  const a = answer.toLowerCase()
+  if (
+    a.includes('asap') ||
+    a.includes('immediately') ||
+    a.includes('right now') ||
+    /\bnow\b/.test(a) ||
+    a.includes('this month') ||
+    a.includes('0-3') ||
+    a.includes('0 to 3') ||
+    a.includes('within 3')
+  ) return 'hot'
+  if (
+    a.includes('this year') ||
+    a.includes('next 3') ||
+    a.includes('next 6') ||
+    a.includes('3-12') ||
+    a.includes('3 to 12') ||
+    a.includes('within 12') ||
+    a.includes('soon') ||
+    a.includes('few months')
+  ) return 'warm'
+  if (
+    a.includes('explor') ||
+    a.includes('research') ||
+    a.includes('just') ||
+    a.includes('curious') ||
+    a.includes('12+') ||
+    a.includes('more than 12') ||
+    a.includes('next year') ||
+    a.includes('not sure') ||
+    a.includes('eventually')
+  ) return 'nurture'
+  return null
+}
+
+function detectAudience(lead: MetaLeadDetail, intentField: string | null): LeadAudience {
+  const campaign = (lead.campaign_name || '').toLowerCase()
+  if (campaign.includes('buyer') || campaign.includes('listing alert')) return 'buyer'
+  if (campaign.includes('seller') || campaign.includes('home value')) return 'seller'
+  const form = (lead.form_id || '').toLowerCase()
+  if (form && intentField) {
+    const i = intentField.toLowerCase()
+    if (i.includes('buy')) return 'buyer'
+    if (i.includes('sell')) return 'seller'
+  }
+  return 'unknown'
+}
+
+const REALTOR_KEYWORDS = [
+  'realtor', 'real estate', 'realty', 'agent', 'broker',
+  'kw.com', 'kellerwilliams', 'remax', 're/max', 'century21',
+  'sothebys', 'sotheby', 'compass.com', 'coldwell', 'cbre',
+  'berkshirehathaway', 'exp realty', 'expworld', 'windermere',
+  'johnlscott', 'redfin.com',
+]
+
+function detectPossibleRealtor(firstName: string | null, lastName: string | null, email: string | null): boolean {
+  const blob = [firstName, lastName, email].filter(Boolean).join(' ').toLowerCase()
+  if (!blob) return false
+  return REALTOR_KEYWORDS.some(kw => blob.includes(kw))
 }
 
 function parseLeadFields(lead: MetaLeadDetail): ParsedLead {
@@ -198,12 +296,22 @@ function parseLeadFields(lead: MetaLeadDetail): ParsedLead {
     return f?.values?.[0]?.trim() || null
   }
 
+  const firstName = get('first_name')
+  const lastName = get('last_name')
+  const email = get('email')
+  const buySellIntent = get('buy_sell_intent')
+  const timelineAnswer = getTimelineAnswer(fields)
+
   return {
-    firstName: get('first_name'),
-    lastName: get('last_name'),
-    email: get('email'),
+    firstName,
+    lastName,
+    email,
     phone: get('phone_number') || get('phone'),
-    buySellIntent: get('buy_sell_intent'),
+    buySellIntent,
+    timelineAnswer,
+    audience: detectAudience(lead, buySellIntent),
+    intent: classifyIntent(timelineAnswer),
+    possibleRealtor: detectPossibleRealtor(firstName, lastName, email),
     campaignName: lead.campaign_name || null,
     adSetName: lead.adset_name || null,
     leadId: lead.id,
@@ -234,11 +342,25 @@ async function createFubContact(lead: ParsedLead): Promise<number | null> {
     ? `Facebook Lead Ad — ${lead.campaignName}`
     : 'Facebook Lead Ad — Market Report'
 
-  const tags = ['FB Lead Ad', 'Market Report']
+  const tags = ['FB Lead Ad']
+  if (lead.audience === 'buyer') tags.push('audience:buyer')
+  else if (lead.audience === 'seller') tags.push('audience:seller')
+
   if (lead.buySellIntent === 'buying') tags.push('Intent: Buying')
   else if (lead.buySellIntent === 'selling') tags.push('Intent: Selling')
   else if (lead.buySellIntent === 'both') tags.push('Intent: Buying + Selling')
   else if (lead.buySellIntent === 'exploring') tags.push('Intent: Exploring')
+
+  if (lead.possibleRealtor) {
+    tags.push('possible-realtor')
+  } else if (lead.intent === 'hot') {
+    tags.push(lead.audience === 'buyer' ? 'hot-buyer' : 'hot-seller')
+    if (lead.audience !== 'buyer') tags.push('auto:seller-seq:new')
+  } else if (lead.intent === 'warm') {
+    tags.push(lead.audience === 'buyer' ? 'warm-buyer' : 'warm-seller')
+  } else if (lead.intent === 'nurture') {
+    tags.push('nurture-only')
+  }
 
   const body: Record<string, unknown> = {
     source,
@@ -293,13 +415,16 @@ async function addFubNote(personId: number, lead: ParsedLead): Promise<void> {
   const lines = [
     `Facebook Lead Ad capture`,
     `Lead ID: ${lead.leadId}`,
-    `Captured: ${new Date(lead.createdTime).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })} PST`,
+    `Captured: ${new Date(lead.createdTime).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })} PT`,
     lead.campaignName ? `Campaign: ${lead.campaignName}` : null,
     lead.adSetName ? `Ad Set: ${lead.adSetName}` : null,
-    lead.buySellIntent ? `Intent: ${lead.buySellIntent}` : null,
+    lead.audience !== 'unknown' ? `Audience: ${lead.audience}` : null,
+    lead.timelineAnswer ? `Timeline answer: ${lead.timelineAnswer}` : null,
+    lead.intent ? `Classified intent: ${lead.intent}` : null,
+    lead.possibleRealtor ? `⚠ Possible realtor — auto-tagged for review` : null,
+    lead.buySellIntent ? `Buy/sell field: ${lead.buySellIntent}` : null,
     `---`,
     `Source: Facebook Lead Generation Ad`,
-    `Lead magnet: Monthly Market Report`,
   ].filter(Boolean).join('\n')
 
   try {
@@ -344,7 +469,20 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   // Add context note
   await addFubNote(personId, parsed)
 
-  console.log(`[lead-webhook] Lead ${leadId} → FUB person ${personId} (${parsed.email || 'no email'})`)
+  // Fire 5-min realtime task for hot leads (skip realtors)
+  if (parsed.intent === 'hot' && !parsed.possibleRealtor) {
+    const who = [parsed.firstName, parsed.lastName].filter(Boolean).join(' ') || parsed.email || 'unknown'
+    const label = parsed.audience === 'buyer' ? 'Hot buyer' : 'Hot seller'
+    const taskOk = await createRealtimeTask({
+      personId,
+      taskName: `${label} lead — call within 5 min: ${who}`,
+      taskType: 'Call',
+      dueInMinutes: 5,
+    })
+    console.log(`[lead-webhook] Hot-lead 5-min task ${taskOk ? 'created' : 'NOT created'} for person ${personId}`)
+  }
+
+  console.log(`[lead-webhook] Lead ${leadId} → FUB person ${personId} (${parsed.email || 'no email'}) intent=${parsed.intent ?? 'n/a'} audience=${parsed.audience} realtor=${parsed.possibleRealtor}`)
 }
 
 // ---------------------------------------------------------------------------

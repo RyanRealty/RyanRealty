@@ -77,7 +77,8 @@ export async function POST(req: NextRequest) {
       eventName,
       userData,
       customData,
-      eventId
+      eventId,
+      eventSourceUrl
     )
 
     if (!res.ok) {
