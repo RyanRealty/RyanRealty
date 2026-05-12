@@ -18,6 +18,7 @@
  *   "acres": 3.36,
  *   "description": "MLS public remarks — wrapped, truncated with ellipsis if long",
  *   "mls": "220221088", "status": "Active",
+ *   "brokerHighlights": ["Optional", "bullet lines"], // if non-empty, used on hero instead of beds/baths/specs
  *   "headshot": "agent.png",
  *   "agent": { ... }
  * }
@@ -181,6 +182,7 @@ async function main() {
    *   description?: string
    *   mls: string
    *   status: string
+   *   brokerHighlights?: string[]
    *   headshot?: string
    *   agent: { name: string, title: string, phone: string, email: string, cta: string, url: string }
    * }} */
@@ -217,13 +219,10 @@ async function main() {
   const LOGO_PAD_RIGHT = 22
 
   const infoPadX = 32
-  const bulletColW = 252
-  const colGap = 28
-  const descX = infoPadX + bulletColW + colGap
-  const descW = W - descX - infoPadX
-  const bulletLineH = 28
   const descLineH = 21
-  const maxDescLines = 7
+  const maxDescLines = 9
+  /** Full-width MLS description in navy band (specs live on hero overlay). */
+  const descW = W - 2 * infoPadX
 
   /** Pre-measure: navy content + gold rule + white agent bar */
   const canvas = createCanvas(W, H)
@@ -239,11 +238,17 @@ async function main() {
   ]
   if (acresLabel) bulletTexts.push(acresLabel)
 
+  const brokerLines =
+    Array.isArray(cfg.brokerHighlights) && cfg.brokerHighlights.length > 0
+      ? cfg.brokerHighlights.map((s) => String(s).trim()).filter(Boolean)
+      : []
+  /** Shown on hero lower-right (broker copy wins when provided). */
+  const heroOverlayLines = brokerLines.length > 0 ? brokerLines.slice(0, 6) : bulletTexts
+
   ctx.font = '15px Geist'
   const descLines = wrapText(ctx, cfg.description || '', descW, maxDescLines)
-  const bulletsH = bulletTexts.length * bulletLineH
   const descColH = descLines.length * descLineH
-  const textBlockH = Math.max(bulletsH, descColH)
+  const textBlockH = descColH
   const infoTopPad = 20
   const infoBottomPad = 16
   const GOLD_RULE = 2
@@ -267,8 +272,8 @@ async function main() {
   const heroY = HEADER_H
   drawCoverZoom(ctx, heroImg, 0, heroY, W, HERO_H, heroZoom)
 
-  // Hero gradient — tall enough for MLS + address stack + city
-  const gradH = 168
+  // Hero gradient — covers MLS, price, address, city (left) + lower-right scrim
+  const gradH = 200
   const gy = heroY + HERO_H - gradH
   const grad = ctx.createLinearGradient(0, gy, 0, heroY + HERO_H)
   grad.addColorStop(0, 'rgba(16,39,66,0)')
@@ -284,30 +289,56 @@ async function main() {
     ctx.drawImage(logoImg, W - lw - LOGO_PAD_RIGHT, heroY + LOGO_PAD_TOP, lw, lh)
   }
 
+  // Home or broker highlights — lower-right on hero (scrim for contrast, not a gold price pill)
+  const highlightLineH = 26
+  const highlightPad = 14
+  const highlightFont = '600 16px Geist-SemiBold'
+  const bulletGap = 8
+  ctx.font = highlightFont
+  let maxHighlightW = 0
+  for (const line of heroOverlayLines) {
+    const tw = ctx.measureText(line).width
+    const bw = ctx.measureText('•').width
+    maxHighlightW = Math.max(maxHighlightW, tw + bulletGap + bw)
+  }
+  const scrimW = Math.min(W * 0.48, Math.max(200, maxHighlightW + highlightPad * 2))
+  const scrimH = heroOverlayLines.length * highlightLineH + highlightPad * 2
+  const scrimX = W - scrimW - 20
+  const scrimY = heroY + HERO_H - scrimH - 22
+  ctx.fillStyle = 'rgba(16,39,66,0.68)'
+  roundRect(ctx, scrimX, scrimY, scrimW, scrimH, 12)
+  ctx.fill()
+  let hyR = scrimY + highlightPad + 16
+  const hxR = scrimX + scrimW - highlightPad
+  ctx.textAlign = 'right'
+  ctx.font = highlightFont
+  for (const line of heroOverlayLines) {
+    const tw = ctx.measureText(line).width
+    ctx.fillStyle = COLORS.gold
+    ctx.fillText('•', hxR - tw - bulletGap, hyR)
+    ctx.fillStyle = 'rgba(255,255,255,0.96)'
+    ctx.fillText(line, hxR, hyR)
+    hyR += highlightLineH
+  }
+  ctx.textAlign = 'left'
+
   const hx = 28
-  let hy = heroY + HERO_H - 30
+  let hy = heroY + HERO_H - 28
   ctx.fillStyle = 'rgba(250,248,244,0.92)'
   ctx.font = '500 16px Geist'
   ctx.fillText(cfg.cityLine, hx, hy)
-  hy -= 28
+  hy -= 30
   ctx.font = `600 26px ${displayFamily}`
   ctx.fillStyle = COLORS.white
   ctx.fillText(cfg.address, hx, hy)
-  hy -= 28
+  hy -= 32
+  ctx.font = '700 22px Geist-Bold'
+  ctx.fillStyle = COLORS.white
+  ctx.fillText(String(cfg.price), hx, hy)
+  hy -= 26
   ctx.font = '600 15px Geist-SemiBold'
   ctx.fillStyle = 'rgba(255,255,255,0.98)'
   ctx.fillText(`MLS ${cfg.mls} · ${cfg.status}`, hx, hy)
-
-  const priceText = cfg.price
-  ctx.font = '700 24px Geist-Bold'
-  const pw = ctx.measureText(priceText).width + 40
-  const px = W - pw - 22
-  const py = heroY + HERO_H - 62
-  ctx.fillStyle = COLORS.gold
-  roundRect(ctx, px, py, pw, 42, 9)
-  ctx.fill()
-  ctx.fillStyle = COLORS.navy
-  ctx.fillText(priceText, px + 20, py + 28)
 
   let yAfterHero = heroY + HERO_H
 
@@ -337,26 +368,15 @@ async function main() {
 
   yAfterHero += GAP
 
-  // Navy: highlights + description only
+  // Navy: MLS description only (specs are on hero overlay)
   ctx.fillStyle = COLORS.navy
   ctx.fillRect(0, yAfterHero, W, CONTENT_NAVY_H)
-
-  let cy = yAfterHero + infoTopPad
-  const bulletTextX = infoPadX + 20
-  ctx.font = '17px Geist-SemiBold'
-  for (const b of bulletTexts) {
-    ctx.fillStyle = COLORS.gold
-    ctx.fillText('•', infoPadX, cy)
-    ctx.fillStyle = COLORS.cream
-    ctx.fillText(b, bulletTextX, cy)
-    cy += bulletLineH
-  }
 
   let dy = yAfterHero + infoTopPad
   ctx.font = '15px Geist'
   ctx.fillStyle = 'rgba(250,248,244,0.9)'
   for (const ln of descLines) {
-    ctx.fillText(ln, descX, dy)
+    ctx.fillText(ln, infoPadX, dy)
     dy += descLineH
   }
 

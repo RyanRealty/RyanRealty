@@ -75,9 +75,10 @@ If any item is `fail`, the package is **not** shown as client-ready.
 
 ## Compositor (repo)
 
-For repeatable **1080×1350** just-listed layouts (**no** top navy bar; stacked **white** mark on **hero top-right**; zoomed hero, optional **3-up filmstrip**, spec cards, white footer):
+For repeatable **1080×1350** just-listed layouts (**no** top navy bar; stacked **white** mark on **hero top-right**; **beds/baths/sqft/acres** or optional **`brokerHighlights[]`** on a **lower-right hero** panel with navy scrim; **left hero stack** top-to-bottom **MLS · status**, **plain white list price** (no gold pill), **address**, **city**; zoomed hero, optional **3-up filmstrip**; **navy band** is **MLS description only**; white footer):
 
 - Run: `npm run flyer:just-listed -- --config out/flyers/<slug>/config.json --out out/flyers/<slug>/render.png`
+- **brokerHighlights (optional):** string array in `config.json`. When non-empty, replaces auto home specs on the hero panel.
 - **Photos:** `npm run flyer:fetch-photos -- --mls <ListNumber> --out-dir out/flyers/<slug>` pulls **deduped**
   URLs from `listing_photos`, or from `details.Photos` + `PhotoURL` when the photos table is empty,
   then rewrites `config.json` `photos` with local filenames. Never hand-duplicate the same path.
