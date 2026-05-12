@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.162.0 (2026-05-12)
+
+### Features
+- feat(brand): land normalized broker headshots + wire into 10 skills
+
+---
+
+
 ## v1.161.0 (2026-05-12)
 
 ### Features
