@@ -989,7 +989,6 @@ export interface MetaAdsInsightRow {
   actions?: MetaActionEntry[]
   campaign_id?: string
   campaign_name?: string
-  effective_status?: string
   objective?: string
 }
 
@@ -1015,7 +1014,6 @@ const INSIGHTS_FIELDS = [
 const CAMPAIGN_INSIGHTS_FIELDS = [
   'campaign_id',
   'campaign_name',
-  'effective_status',
   'objective',
   ...INSIGHTS_FIELDS.split(','),
 ].join(',')
