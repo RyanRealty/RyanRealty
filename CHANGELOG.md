@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.163.0 (2026-05-12)
+
+### Features
+- feat(marketing-brain): phase 2 — audit-website + audit-ads + audit-crm + platform-trends
+
+---
+
+
 ## v1.162.1 (2026-05-12)
 
 ### Bug Fixes
