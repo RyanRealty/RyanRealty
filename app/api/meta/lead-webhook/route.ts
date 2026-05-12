@@ -47,12 +47,17 @@ const META_GRAPH_BASE = 'https://graph.facebook.com/v21.0'
 const FUB_BASE = 'https://api.followupboss.com/v1'
 
 function getMetaToken(): string {
+  // Prefer the System User token (has `leads_retrieval` scope so we can
+  // fetch field_data for each inbound Lead Ad). Fall back to the Page token
+  // — which can receive webhooks but CANNOT read individual lead payloads,
+  // so falling back means downstream FUB persons get no email/phone/timeline.
   const token = (
+    process.env.META_USER_ACCESS_TOKEN ||
     process.env.META_PAGE_ACCESS_TOKEN ||
     process.env.META_PAGE_TOKEN ||
     ''
   ).trim()
-  if (!token) throw new Error('META_PAGE_ACCESS_TOKEN not configured')
+  if (!token) throw new Error('META_USER_ACCESS_TOKEN or META_PAGE_ACCESS_TOKEN not configured')
   return token
 }
 
