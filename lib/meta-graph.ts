@@ -1,4 +1,7 @@
 const META_GRAPH_BASE = 'https://graph.facebook.com/v25.0'
+// Marketing API version pinned separately (v18.0 in the .mjs ad-creation client;
+// insights endpoint is stable on v25.0 which we use here).
+const META_ADS_GRAPH_BASE = 'https://graph.facebook.com/v25.0'
 // Instagram Business publishing endpoints are under graph.facebook.com,
 // not graph.instagram.com (which is for Basic Display tokens).
 const META_IG_BASE = 'https://graph.facebook.com/v25.0'
@@ -588,4 +591,488 @@ export async function publishFacebookReel(
   )
 
   return finishData.video_id ?? finishData.id ?? video_id
+}
+
+// ---------------------------------------------------------------------------
+// Page / IG organic insights — shared internal types
+// ---------------------------------------------------------------------------
+
+interface InsightsResponse extends MetaErrorBody {
+  data?: Array<{
+    name: string
+    period: string
+    values: Array<{ value: number | Record<string, number>; end_time: string }>
+    id: string
+  }>
+}
+
+interface PagePostsResponse extends MetaErrorBody {
+  data?: Array<{
+    id: string
+    created_time: string
+    permalink_url: string
+    message?: string
+  }>
+}
+
+interface PostInsightsResponse extends MetaErrorBody {
+  data?: Array<{
+    name: string
+    values: Array<{ value: number | Record<string, number> }>
+    id: string
+  }>
+}
+
+interface IGMediaListResponse extends MetaErrorBody {
+  data?: Array<{
+    id: string
+    timestamp: string
+    media_type: string
+    media_url?: string
+    permalink: string
+    caption?: string
+  }>
+}
+
+interface IGMediaInsightsResponse extends MetaErrorBody {
+  data?: Array<{
+    name: string
+    values: Array<{ value: number }>
+    id: string
+  }>
+}
+
+// ---------------------------------------------------------------------------
+// Facebook Page insights — account-level
+// ---------------------------------------------------------------------------
+
+export interface PageInsightsDay {
+  date: string
+  page_impressions: number
+  page_impressions_unique: number
+  page_engaged_users: number
+  page_post_engagements: number
+  /** Snapshot: fan count as of end of the day window */
+  page_fans: number
+  page_fan_adds: number
+  page_video_views: number
+}
+
+/**
+ * Fetch Facebook Page account-level insights for a single calendar day.
+ * `page_fans` is a "snapshot" / lifetime metric — value is the current fan
+ * count at the end of the day, not a delta.
+ */
+export async function getPageInsights(
+  accessToken: string,
+  pageId: string,
+  date: string
+): Promise<PageInsightsDay> {
+  const dayMetrics = [
+    'page_impressions',
+    'page_impressions_unique',
+    'page_engaged_users',
+    'page_post_engagements',
+    'page_fan_adds',
+    'page_video_views',
+  ]
+  const snapshotMetrics = ['page_fans']
+
+  const sinceDate = new Date(`${date}T00:00:00Z`)
+  const untilDate = new Date(sinceDate)
+  untilDate.setUTCDate(untilDate.getUTCDate() + 1)
+  const since = Math.floor(sinceDate.getTime() / 1000)
+  const until = Math.floor(untilDate.getTime() / 1000)
+
+  const [dayData, snapshotData] = await Promise.all([
+    getJson<InsightsResponse>(
+      `${META_GRAPH_BASE}/${pageId}/insights` +
+        `?metric=${dayMetrics.join(',')}` +
+        `&period=day&since=${since}&until=${until}` +
+        `&access_token=${encodeURIComponent(accessToken)}`
+    ),
+    getJson<InsightsResponse>(
+      `${META_GRAPH_BASE}/${pageId}/insights` +
+        `?metric=${snapshotMetrics.join(',')}` +
+        `&period=day&since=${since}&until=${until}` +
+        `&access_token=${encodeURIComponent(accessToken)}`
+    ),
+  ])
+
+  const values: Record<string, number> = {}
+  for (const item of [...(dayData.data ?? []), ...(snapshotData.data ?? [])]) {
+    const v = item.values?.[0]
+    if (v !== undefined && typeof v.value === 'number') {
+      values[item.name] = v.value
+    }
+  }
+
+  return {
+    date,
+    page_impressions: values['page_impressions'] ?? 0,
+    page_impressions_unique: values['page_impressions_unique'] ?? 0,
+    page_engaged_users: values['page_engaged_users'] ?? 0,
+    page_post_engagements: values['page_post_engagements'] ?? 0,
+    page_fans: values['page_fans'] ?? 0,
+    page_fan_adds: values['page_fan_adds'] ?? 0,
+    page_video_views: values['page_video_views'] ?? 0,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Facebook Page posts — with per-post insights
+// ---------------------------------------------------------------------------
+
+export interface PagePost {
+  id: string
+  created_time: string
+  permalink_url: string
+  message: string
+  post_impressions: number
+  post_engaged_users: number
+  post_reactions_by_type_total: number
+  post_clicks: number
+}
+
+/**
+ * Fetch top N Facebook Page posts published in the last `lookbackDays` days
+ * along with per-post insight metrics.
+ */
+export async function getPagePostsWithInsights(
+  accessToken: string,
+  pageId: string,
+  lookbackDays = 30,
+  topN = 10
+): Promise<PagePost[]> {
+  const since = Math.floor((Date.now() - lookbackDays * 86400 * 1000) / 1000)
+
+  const postsData = await getJson<PagePostsResponse>(
+    `${META_GRAPH_BASE}/${pageId}/posts` +
+      `?fields=id,created_time,permalink_url,message` +
+      `&since=${since}&limit=50` +
+      `&access_token=${encodeURIComponent(accessToken)}`
+  )
+
+  const posts = (postsData.data ?? []).slice(0, topN)
+  if (posts.length === 0) return []
+
+  const postMetrics = [
+    'post_impressions',
+    'post_engaged_users',
+    'post_reactions_by_type_total',
+    'post_clicks',
+  ]
+
+  return Promise.all(
+    posts.map(async (post): Promise<PagePost> => {
+      try {
+        const insightsData = await getJson<PostInsightsResponse>(
+          `${META_GRAPH_BASE}/${post.id}/insights` +
+            `?metric=${postMetrics.join(',')}&period=lifetime` +
+            `&access_token=${encodeURIComponent(accessToken)}`
+        )
+        const insightMap: Record<string, number> = {}
+        for (const item of insightsData.data ?? []) {
+          const raw = item.values?.[0]?.value
+          if (typeof raw === 'number') {
+            insightMap[item.name] = raw
+          } else if (typeof raw === 'object' && raw !== null) {
+            insightMap[item.name] = Object.values(raw as Record<string, number>).reduce(
+              (a, b) => a + b,
+              0
+            )
+          }
+        }
+        return {
+          id: post.id,
+          created_time: post.created_time,
+          permalink_url: post.permalink_url,
+          message: (post.message ?? '').slice(0, 200),
+          post_impressions: insightMap['post_impressions'] ?? 0,
+          post_engaged_users: insightMap['post_engaged_users'] ?? 0,
+          post_reactions_by_type_total: insightMap['post_reactions_by_type_total'] ?? 0,
+          post_clicks: insightMap['post_clicks'] ?? 0,
+        }
+      } catch {
+        return {
+          id: post.id,
+          created_time: post.created_time,
+          permalink_url: post.permalink_url,
+          message: (post.message ?? '').slice(0, 200),
+          post_impressions: 0,
+          post_engaged_users: 0,
+          post_reactions_by_type_total: 0,
+          post_clicks: 0,
+        }
+      }
+    })
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Instagram account-level insights
+// ---------------------------------------------------------------------------
+
+export interface IGAccountInsightsDay {
+  date: string
+  impressions: number
+  reach: number
+  profile_views: number
+  /** Snapshot: follower count as of end of day */
+  follower_count: number
+  website_clicks: number
+}
+
+/**
+ * Fetch Instagram Business account-level insights for a single calendar day.
+ * `follower_count` is a snapshot metric queried at period=lifetime.
+ */
+export async function getIGAccountInsights(
+  accessToken: string,
+  igUserId: string,
+  date: string
+): Promise<IGAccountInsightsDay> {
+  const sinceDate = new Date(`${date}T00:00:00Z`)
+  const untilDate = new Date(sinceDate)
+  untilDate.setUTCDate(untilDate.getUTCDate() + 1)
+  const since = Math.floor(sinceDate.getTime() / 1000)
+  const until = Math.floor(untilDate.getTime() / 1000)
+
+  const dayMetrics = ['impressions', 'reach', 'profile_views', 'website_clicks']
+  const snapshotMetrics = ['follower_count']
+
+  const [dayData, snapshotData] = await Promise.all([
+    getJson<InsightsResponse>(
+      `${META_GRAPH_BASE}/${igUserId}/insights` +
+        `?metric=${dayMetrics.join(',')}&period=day` +
+        `&since=${since}&until=${until}` +
+        `&access_token=${encodeURIComponent(accessToken)}`
+    ),
+    getJson<InsightsResponse>(
+      `${META_GRAPH_BASE}/${igUserId}/insights` +
+        `?metric=${snapshotMetrics.join(',')}&period=lifetime` +
+        `&access_token=${encodeURIComponent(accessToken)}`
+    ),
+  ])
+
+  const values: Record<string, number> = {}
+  for (const item of [...(dayData.data ?? []), ...(snapshotData.data ?? [])]) {
+    const v = item.values?.[0]
+    if (v !== undefined && typeof v.value === 'number') {
+      values[item.name] = v.value
+    }
+  }
+
+  return {
+    date,
+    impressions: values['impressions'] ?? 0,
+    reach: values['reach'] ?? 0,
+    profile_views: values['profile_views'] ?? 0,
+    follower_count: values['follower_count'] ?? 0,
+    website_clicks: values['website_clicks'] ?? 0,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Instagram media — top posts with per-media insights
+// ---------------------------------------------------------------------------
+
+export interface IGMedia {
+  id: string
+  timestamp: string
+  media_type: string
+  media_url: string
+  permalink: string
+  caption: string
+  impressions: number
+  reach: number
+  engagement: number
+  saved: number
+}
+
+/**
+ * Fetch top N Instagram media items published in the last `lookbackDays` days
+ * along with per-media insight metrics.
+ */
+export async function getIGMediaWithInsights(
+  accessToken: string,
+  igUserId: string,
+  lookbackDays = 30,
+  topN = 10
+): Promise<IGMedia[]> {
+  const mediaData = await getJson<IGMediaListResponse>(
+    `${META_GRAPH_BASE}/${igUserId}/media` +
+      `?fields=id,timestamp,media_type,media_url,permalink,caption` +
+      `&limit=50&access_token=${encodeURIComponent(accessToken)}`
+  )
+
+  const cutoff = Date.now() - lookbackDays * 86400 * 1000
+  const recentMedia = (mediaData.data ?? [])
+    .filter((m) => new Date(m.timestamp).getTime() >= cutoff)
+    .slice(0, topN)
+
+  if (recentMedia.length === 0) return []
+
+  const insightMetrics = ['impressions', 'reach', 'engagement', 'saved']
+
+  return Promise.all(
+    recentMedia.map(async (media): Promise<IGMedia> => {
+      try {
+        const insightsData = await getJson<IGMediaInsightsResponse>(
+          `${META_GRAPH_BASE}/${media.id}/insights` +
+            `?metric=${insightMetrics.join(',')}&period=lifetime` +
+            `&access_token=${encodeURIComponent(accessToken)}`
+        )
+        const insightMap: Record<string, number> = {}
+        for (const item of insightsData.data ?? []) {
+          const raw = item.values?.[0]?.value
+          if (typeof raw === 'number') insightMap[item.name] = raw
+        }
+        return {
+          id: media.id,
+          timestamp: media.timestamp,
+          media_type: media.media_type,
+          media_url: media.media_url ?? '',
+          permalink: media.permalink,
+          caption: (media.caption ?? '').slice(0, 200),
+          impressions: insightMap['impressions'] ?? 0,
+          reach: insightMap['reach'] ?? 0,
+          engagement: insightMap['engagement'] ?? 0,
+          saved: insightMap['saved'] ?? 0,
+        }
+      } catch {
+        return {
+          id: media.id,
+          timestamp: media.timestamp,
+          media_type: media.media_type,
+          media_url: media.media_url ?? '',
+          permalink: media.permalink,
+          caption: (media.caption ?? '').slice(0, 200),
+          impressions: 0,
+          reach: 0,
+          engagement: 0,
+          saved: 0,
+        }
+      }
+    })
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Meta Ads Insights — daily metrics ingestor
+// ---------------------------------------------------------------------------
+
+/**
+ * A single action entry returned by the Insights API's `actions` array.
+ * Each entry has a type (e.g. "lead", "offsite_conversion.fb_pixel_purchase")
+ * and a string value that represents the count.
+ */
+interface MetaActionEntry {
+  action_type: string
+  value: string
+}
+
+/**
+ * One row from the Ads Insights API: could be at account level (no campaign_*
+ * fields) or campaign level (campaign_id, campaign_name, etc. populated).
+ */
+export interface MetaAdsInsightRow {
+  date_start: string
+  date_stop: string
+  impressions: string
+  reach: string
+  spend: string
+  clicks: string
+  cpm: string
+  cpc: string
+  ctr: string
+  actions?: MetaActionEntry[]
+  campaign_id?: string
+  campaign_name?: string
+  campaign_status?: string
+  objective?: string
+}
+
+interface MetaInsightsApiResponse extends MetaErrorBody {
+  data?: MetaAdsInsightRow[]
+  paging?: {
+    cursors?: { before?: string; after?: string }
+    next?: string
+  }
+}
+
+const INSIGHTS_FIELDS = [
+  'impressions',
+  'reach',
+  'spend',
+  'clicks',
+  'cpm',
+  'cpc',
+  'ctr',
+  'actions',
+].join(',')
+
+const CAMPAIGN_INSIGHTS_FIELDS = [
+  'campaign_id',
+  'campaign_name',
+  'campaign_status',
+  'objective',
+  ...INSIGHTS_FIELDS.split(','),
+].join(',')
+
+/**
+ * Fetch Meta Ads Insights for a single day at both account and campaign scope.
+ *
+ * Uses `META_PAGE_ACCESS_TOKEN` (fallback: `META_PAGE_TOKEN`) and
+ * `META_AD_ACCOUNT_ID` from the environment — consistent with the existing
+ * lib/meta-marketing-api.mjs conventions.
+ *
+ * @param date - ISO date string `YYYY-MM-DD` for the day to pull.
+ * @returns Object with `accountRow` (account-level totals) and `campaignRows`
+ *          (one row per campaign). Both arrays may be empty if the API returns
+ *          no data for that day.
+ */
+export async function getMetaAdsInsights(date: string): Promise<{
+  accountRow: MetaAdsInsightRow | null
+  campaignRows: MetaAdsInsightRow[]
+}> {
+  const token =
+    process.env.META_PAGE_ACCESS_TOKEN?.trim() ||
+    process.env.META_PAGE_TOKEN?.trim()
+  if (!token) {
+    throw new MetaGraphError(
+      'META_PAGE_ACCESS_TOKEN (or META_PAGE_TOKEN) is not set in the environment'
+    )
+  }
+
+  const rawAccountId = process.env.META_AD_ACCOUNT_ID?.trim()
+  if (!rawAccountId) {
+    throw new MetaGraphError('META_AD_ACCOUNT_ID is not set in the environment')
+  }
+  // Normalise: accept "act_123" or bare "123"
+  const adAccountId = /^\d+$/.test(rawAccountId) ? `act_${rawAccountId}` : rawAccountId
+
+  const buildUrl = (level: 'account' | 'campaign', fields: string): string => {
+    const params = new URLSearchParams({
+      access_token: token,
+      level,
+      fields,
+      time_range: JSON.stringify({ since: date, until: date }),
+      time_increment: '1',
+      limit: '500',
+    })
+    return `${META_ADS_GRAPH_BASE}/${adAccountId}/insights?${params.toString()}`
+  }
+
+  // Account-level totals
+  const accountUrl = buildUrl('account', INSIGHTS_FIELDS)
+  const accountResp = await getJson<MetaInsightsApiResponse>(accountUrl)
+  const accountRow = accountResp.data?.[0] ?? null
+
+  // Campaign-level breakdown
+  const campaignUrl = buildUrl('campaign', CAMPAIGN_INSIGHTS_FIELDS)
+  const campaignResp = await getJson<MetaInsightsApiResponse>(campaignUrl)
+  const campaignRows = campaignResp.data ?? []
+
+  return { accountRow, campaignRows }
 }

@@ -63,6 +63,22 @@
     {
       "path": "/api/cron/marketing-snapshot-ga4",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/marketing-snapshot-gsc",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/marketing-snapshot-meta-ads",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/marketing-snapshot-fub",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/marketing-snapshot-meta-page",
+      "schedule": "30 6 * * *"
     }
   ]
 }
