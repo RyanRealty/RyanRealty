@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.153.0 (2026-05-12)
+
+### Features
+- feat(brand-voice): canonical voice guidelines and GBP corpus
+
+---
+
+
 ## v1.152.1 (2026-05-12)
 
 ### Bug Fixes
