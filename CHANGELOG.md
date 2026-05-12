@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.149.0 (2026-05-12)
+
+### Features
+- feat(flyers): hero highlight panel, MLS then plain price, full-width description
+
+---
+
+
 ## v1.148.0 (2026-05-12)
 
 ### Features
