@@ -65,6 +65,10 @@
       "schedule": "30 6 * * *"
     },
     {
+      "path": "/api/cron/marketing-competitor-recon",
+      "schedule": "0 7 * * 1"
+    },
+    {
       "path": "/api/cron/marketing-snapshot-gsc",
       "schedule": "30 6 * * *"
     },
