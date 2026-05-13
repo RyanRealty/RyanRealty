@@ -889,10 +889,43 @@ export async function persistBriefs(
       finalReason += ` | VOICE_FAIL: ${brief.voice_validation.violations.join('; ')}`
     }
 
-    // INSERT content_briefs row
+    // Map format → action_type + assigned_producer. Source of truth is
+    // marketing_brain_skills/producers/REGISTRY.md. Falls back to
+    // content_engine for unknown formats so the brain doesn't drop work.
+    const formatRoute: Record<string, { action_type: string; producer: string }> = {
+      fb_ad_creative: { action_type: 'content:fb_lead_gen_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
+      ig_reel: { action_type: 'content:listing_reel', producer: 'video_production_skills/listing_reveal' },
+      ig_carousel: { action_type: 'content:ig_carousel', producer: 'social_media_skills/instagram-carousel' },
+      tiktok_reel: { action_type: 'content:tiktok_reel', producer: 'video_production_skills/listing_reveal' },
+      blog_post: { action_type: 'content:blog_post', producer: 'social_media_skills/blog-post' },
+      listing_video: { action_type: 'content:listing_video', producer: 'video_production_skills/listing-tour-video' },
+      market_data_video: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+      market_data_short: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+      news_clip: { action_type: 'content:news_clip', producer: 'video_production_skills/news-video' },
+      flyer: { action_type: 'content:flyer', producer: 'social_media_skills/flyer-design' },
+      list_kit: { action_type: 'content:list_kit', producer: 'social_media_skills/list-kit' },
+      gbp_post: { action_type: 'ops:gbp_post', producer: 'marketing_brain_skills/producers/ops-reputation' },
+    }
+    const route = formatRoute[brief.format] ?? {
+      action_type: `content:${brief.format}`,
+      producer: 'automation_skills/content_engine',
+    }
+
+    // INSERT marketing_brain_actions row. The content_briefs view is read-
+    // only post-migration; INSERTs must go to the underlying table.
     const { data: briefRow, error: briefErr } = await supabase
-      .from('content_briefs')
+      .from('marketing_brain_actions')
       .insert({
+        action_type: route.action_type,
+        target: 'brand',
+        assigned_producer: route.producer,
+        payload: {
+          hook: brief.hook,
+          body: brief.body ?? null,
+          cta: brief.cta ?? null,
+          target_audience: brief.target_audience,
+        },
+        data_evidence: { sources: brief.data_sources },
         topic: brief.topic,
         format: brief.format,
         platforms: brief.platforms,
@@ -910,7 +943,7 @@ export async function persistBriefs(
       .single()
 
     if (briefErr || !briefRow) {
-      console.error('persistBriefs INSERT content_briefs:', briefErr?.message ?? 'no row returned')
+      console.error('persistBriefs INSERT marketing_brain_actions:', briefErr?.message ?? 'no row returned')
       continue
     }
 
