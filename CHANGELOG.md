@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.173.0 (2026-05-13)
+
+### Features
+- feat(marketing-brain): 10 new producers (site + ops + comms + analyze)
+
+---
+
+
 ## v1.172.1 (2026-05-13)
 
 ### Other
