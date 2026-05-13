@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.182.7 (2026-05-13)
+
+### Maintenance
+- docs(agent-prompts): SEO execution agent prompt — for parallel session
+
+### Other
+- revert: remove SEO execution agent prompt file
+
+---
+
+
 ## v1.182.6 (2026-05-13)
 
 ### Maintenance
