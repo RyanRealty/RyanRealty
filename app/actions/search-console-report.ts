@@ -42,9 +42,11 @@ export async function getSearchConsoleSummary(startDate: string, endDate: string
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL?.trim()
   const privateKeyRaw = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
   // GSC site URL: prefer the env override, otherwise default to the
-  // canonical domain property for ryan-realty.com. The service account
-  // already has access to this property in GSC.
-  const siteUrl = process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL?.trim() || 'sc-domain:ryan-realty.com'
+  // URL-prefix property for ryan-realty.com. Verified via the GSC
+  // sites.list diagnostic on 2026-05-13 that the service account has
+  // siteFullUser on https://ryan-realty.com/ specifically (not the
+  // sc-domain: variant).
+  const siteUrl = process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL?.trim() || 'https://ryan-realty.com/'
 
   if (!clientEmail || !privateKeyRaw) {
     return { ok: false, error: 'SEARCH_CONSOLE_NOT_CONFIGURED' }
