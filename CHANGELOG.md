@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.183.0 (2026-05-13)
+
+### Features
+- feat(seller-lp): "our listings" inventory grid + seller-resonant testimonials
+
+---
+
+
 ## v1.182.9 (2026-05-13)
 
 ### Maintenance
