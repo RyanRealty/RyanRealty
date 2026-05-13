@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.165.5 (2026-05-13)
+
+### Bug Fixes
+- fix(marketing-brain): GSC ingestor accepts ?site= override
+
+---
+
+
 ## v1.165.4 (2026-05-13)
 
 ### Bug Fixes
