@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.169.7 (2026-05-13)
+
+### Bug Fixes
+- fix(marketing-brain): youtube video query without channel-only metrics
+
+---
+
+
 ## v1.169.6 (2026-05-13)
 
 ### Maintenance
