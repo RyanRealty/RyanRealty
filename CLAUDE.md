@@ -400,6 +400,148 @@ Research sources at `docs/research/best-practices-*.md` (Instagram, TikTok, YouT
 
 ---
 
+## Marketing Brain Architecture (MANDATORY READ for any agent producing marketing artifacts)
+
+Any agent producing content, writing site copy, mutating ad campaigns, or sending communications on behalf of Ryan Realty reads this section first. The architecture governs how every marketing action is generated, dispatched, executed, and approved.
+
+### Three invocation modes
+
+| Mode | When Matt says | Skill | What happens |
+|---|---|---|---|
+| **Run brain** | "run the brain", "weekly brain", "what should we make" | `marketing_brain_skills/run/SKILL.md` | Full cycle: audits → generate action rows → dispatch all to producers in parallel → surface all drafts |
+| **Direct produce** | "make a listing video for...", "create a flyer for...", "draft a GBP post" | `marketing_brain_skills/produce/SKILL.md` | Bypasses cycle: parses request → writes one action row → dispatches matching producer → surfaces draft |
+| **Read plan** | "show me the brain report", "what's pending" | Read-only query against `marketing_brain_actions` | No dispatch; surface pending rows and their statuses |
+
+**Rule:** Never invoke a producer directly without going through one of these two entry-point skills. The entry-point skills enforce the approval gate and the action-row audit trail.
+
+### The protocol: `marketing_brain_actions` table
+
+Every marketing action — brain-generated or manually triggered — gets one row in `public.marketing_brain_actions` (Supabase project `dwvlophlbvvygjfxcrhm`).
+
+**Key columns:**
+
+| Column | Purpose |
+|---|---|
+| `action_type` | `content:listing_reel`, `site:copy_update`, `ops:meta_ads_pause`, etc. |
+| `target` | Subject: `mls:220189422`, `/listings`, `city:Bend`, `topic:wildfire-risk` |
+| `assigned_producer` | Path to the producer's SKILL.md (e.g. `video_production_skills/listing_reveal`) |
+| `payload` | Action-type-specific data the producer needs (jsonb) |
+| `data_evidence` | Raw signal evidence from audits that triggered this action (jsonb) |
+| `generation_reason` | Human-readable explanation of why this action was created |
+| `executor_response` | What the producer returned after execution (nullable jsonb) |
+| `executed_at` | When the producer transitioned to `in_production` |
+
+**Status flow:**
+
+```
+pending → in_production → ready → [Matt approves] → approved → executed → measured
+                                                                 │
+                                          killed ◄───────────────┘ (Matt cancels or QA fails)
+```
+
+**Backward-compat view:** `public.content_briefs` is a view over `marketing_brain_actions`. Existing code using `.from('content_briefs')` keeps working.
+
+**Four action-type categories:**
+
+| prefix | examples | approval |
+|---|---|---|
+| `content:` | `content:listing_reel`, `content:blog_post`, `content:fb_ad` | matt-review-draft |
+| `site:` | `site:copy_update`, `site:page_create`, `site:perf_fix` | matt-review-PR |
+| `ops:` | `ops:meta_ads_pause`, `ops:fub_tag`, `ops:email_blast` | matt-explicit |
+| `comms:` / `analyze:` | `comms:alert`, `analyze:anomaly` | none (internal) |
+
+### Producer registry
+
+**Path:** `marketing_brain_skills/producers/REGISTRY.md`
+
+The brain reads this file at decision-time. Sections A–F are brain-callable producers. Sections G–I are capabilities and infrastructure (not action-type targets).
+
+To look up a producer for a given `action_type`: find the row in Sections A–F where `action_types` contains that string. The `path` column is `assigned_producer`.
+
+**Never hard-code a producer path.** Always resolve through the registry.
+
+### Content actions route through `automation_skills/content_engine/`
+
+Every `content:*` action — regardless of source (brain cycle or direct produce) — dispatches through `automation_skills/content_engine/SKILL.md`. No content producer is invoked directly. The content engine owns: storyboard pass → build → QA pass → Matt review → publish → post-mortem. Skipping it means skipping the QA gate and viral scorecard. That is not allowed.
+
+**Non-content actions** (`site:*`, `ops:*`, `comms:*`, `analyze:*`) dispatch directly to the producer at `assigned_producer/SKILL.md`.
+
+### Producer SKILL.md template
+
+**Path:** `marketing_brain_skills/producers/TEMPLATE.md`
+
+Every producer skill has 10 required sections:
+
+1. Scope (what it does + what it does not)
+2. Action types handled (list + payload schemas)
+3. Brief payload schema (TypeScript interface)
+4. The recipe (step-by-step expertise)
+5. Tools used (APIs, MCPs, env vars)
+6. Output format (where draft lands, how to surface it)
+7. Approval gate (what kind of human approval)
+8. Status flow (how producer transitions the action row)
+9. Failure modes (common errors + recovery)
+10. Related skills + playbooks + references
+
+The frontmatter must include `action_types: [...]` listing every action_type string the producer handles.
+
+### Approval gates by action_type category
+
+| action_type prefix | approval type | what counts as approval |
+|---|---|---|
+| `content:*` | matt-review-draft | Matt says "ship it" / "approved" / "go" after seeing the draft |
+| `site:*` | matt-review-PR | Matt merges the GitHub PR |
+| `ops:*` | matt-explicit | Matt explicitly names the action in the conversation (not inferred) |
+| `comms:alert` | none | Brain sends directly; Matt sees it in iMessage/Slack |
+| `analyze:*` | none | Findings written to marketing_decisions; surfaced in next digest |
+
+**Silence is never approval.** A passing QA gate is never approval. A successful build is never approval.
+
+### Status flow (ASCII)
+
+```
+     pending
+        │ producer picks up row
+        ▼
+  in_production   ← executed_at = now()
+        │ draft complete, QA passed
+        ▼
+      ready        ← executor_response populated with draft_path + scorecard
+        │ Matt says "ship it"
+        ▼
+    approved       ← approved_by='matt', approved_at=now()
+        │ publish step completes
+        ▼
+    executed       ← git commit+push OR API call OR PR merge done
+        │ 48h post-publish
+        ▼
+    measured       ← performance_loop writes metrics to content_performance
+
+    killed         ← terminal; Matt cancels OR QA fails after 2 auto-iterations
+```
+
+### Producer expertise model
+
+Every producer reads its own references before executing. Mandatory for every producer:
+1. `CLAUDE.md` §0 — Data Accuracy mandate (non-negotiable; outranks all other instructions)
+2. `CLAUDE.md` §0.5 — Draft-First, Commit-Last (non-negotiable)
+3. `design_system/ryan-realty/SKILL.md` — brand visual system
+4. `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice enforcement
+
+Content producers additionally load:
+5. `automation_skills/content_engine/SKILL.md` — the routing bus they are called from
+6. `social_media_skills/platform-best-practices/SKILL.md` — 2026 platform rule layer
+7. `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
+8. `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard + format minimums
+
+A producer that executes without loading its mandatory references is non-compliant. Fix the producer, not the content.
+
+### Existing exemplar: list-kit
+
+`social_media_skills/list-kit/SKILL.md` is the canonical compound-producer pattern. It demonstrates: single data pull fans out to 5 parallel deliverables, verification trace per figure, draft surface format, kit-manifest.json, approval gate, publish step, asset library registration. Read it before building any new orchestrator-class producer.
+
+---
+
 ## Opus Orchestrator Policy (MANDATORY)
 
 This agent runs on Opus. Opus is ~15× the per-token cost of Haiku. **Do not burn Opus context on mechanical/bulk work.** Delegate to subagents via the `Agent` tool (`model: "sonnet"` or `"haiku"`).
