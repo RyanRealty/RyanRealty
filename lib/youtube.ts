@@ -139,14 +139,17 @@ export async function getYouTubeTopVideoMetrics(
   startDate.setUTCDate(startDate.getUTCDate() - 29)
   const startDateStr = startDate.toISOString().slice(0, 10)
 
+  // impressions + impressionsClickThroughRate are only available at the
+  // channel level in YouTube Analytics, not at the video dimension.
+  // They live in the account-scope ingestor output. Including them here
+  // returns 400 "Unknown identifier (impressions) given in field
+  // parameters.metrics". Verified live 2026-05-13.
   const videoMetrics = [
     'views',
     'estimatedMinutesWatched',
     'averageViewDuration',
     'averageViewPercentage',
     'subscribersGained',
-    'impressions',
-    'impressionsClickThroughRate',
   ].join(',')
 
   const params = new URLSearchParams({
@@ -186,6 +189,8 @@ export async function getYouTubeTopVideoMetrics(
   const idxAvgDur = col('averageViewDuration')
   const idxAvgPct = col('averageViewPercentage')
   const idxSubGained = col('subscribersGained')
+  // Video dimension does not return impressions / CTR — they're omitted
+  // from videoMetrics above. Indices return -1 and the consumer reads 0.
   const idxImpressions = col('impressions')
   const idxCTR = col('impressionsClickThroughRate')
 
