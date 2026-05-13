@@ -5,6 +5,18 @@ description: Generate and publish SEO-optimized long-form blog posts on Ryan Rea
 
 # Blog Post Skill — Ryan Realty (AgentFire WordPress)
 
+## Required references — load these BEFORE producing any content
+
+Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
+
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+
+A piece of content that ships without consulting BOTH of these is non-compliant.
+
+---
+
 **Scope:** Generate SEO-optimized long-form blog posts and publish them to Ryan Realty's WordPress site at `ryan-realty.com` (AgentFire-hosted). The skill covers: research → outline → draft → SEO optimization → schema markup → image alt text → WordPress REST API publish.
 
 **Status:** Locked 2026-05-07. AgentFire WordPress is the production blog destination per Matt directive — see `video_production_skills/AGENT_HANDOFF.md`.

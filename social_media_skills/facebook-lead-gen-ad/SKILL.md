@@ -5,6 +5,18 @@ description: Create and launch Facebook Lead Generation ads with native FB lead 
 
 # Facebook Lead-Gen Ad Skill — Ryan Realty
 
+## Required references — load these BEFORE producing any content
+
+Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
+
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+
+A piece of content that ships without consulting BOTH of these is non-compliant.
+
+---
+
 **Scope:** Generate Meta (Facebook + Instagram) Lead Generation ad campaigns where the market report content acts as the lead magnet. Captures leads via FB native lead form → routes to Follow-Up Boss (FUB) for nurture. Locked default for the `monthly-market-report-orchestrator` deliverable #4.
 
 **Status:** Locked 2026-05-07 per Matt directive — Lead Generation is the default ad type for monthly market reports.

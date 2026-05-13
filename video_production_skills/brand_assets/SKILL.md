@@ -11,6 +11,12 @@ description: >
 
 # Brand Assets — Visual System, Photo Selection, Creative Intelligence
 
+## Canonical references
+
+This is a capability skill. The two top-tier rule layers — [`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md) (brand) and [`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md) (platform rules) — apply to all output. Per CLAUDE.md "Skill self-binding", every Ryan Realty content piece loads both before producing.
+
+---
+
 **When to use.** Any time you're picking a photo, choosing a color, picking a font, designing a stat card, scaffolding a thumbnail, or making a creative decision for any deliverable that ships to the public. This skill is the agent's creative brain — consult it before choosing a visual treatment, text layout, color scheme, motion style, format, or thumbnail.
 
 **Read first:** [VIDEO_PRODUCTION_SKILL.md](../VIDEO_PRODUCTION_SKILL.md) §5 (brand colors, fonts, banned words) — the master skill is the source of truth for video brand rules. This file extends those rules into static design and explains the *why*.

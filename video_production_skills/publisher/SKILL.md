@@ -8,6 +8,12 @@ description: >
 
 # Publisher — multi-platform video delivery
 
+## Canonical references
+
+This is a capability skill. The two top-tier rule layers — [`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md) (brand) and [`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md) (platform rules) — apply to all output. Per CLAUDE.md "Skill self-binding", every Ryan Realty content piece loads both before producing.
+
+---
+
 **Canonical skill (read this in full):** [`automation_skills/automation/publish/SKILL.md`](../../automation_skills/automation/publish/SKILL.md)
 
 That file defines:

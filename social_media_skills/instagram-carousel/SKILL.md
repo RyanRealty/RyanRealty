@@ -42,6 +42,7 @@ they must look like they came from a design studio, not a template app.
    imagery registers, iconography, layout rhythm.
 7. **`/design_system/ryan-realty/colors_and_type.css`** — authoritative CSS vars for every color
    token, font family, radius, shadow, and spacing value. Quote directly; do not invent values.
+8. **[`social_media_skills/platform-best-practices/SKILL.md`](../platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators. Per CLAUDE.md "Skill self-binding (2026-05-13)", this is mandatory for every Ryan Realty content piece.
 
 ---
 

@@ -5,6 +5,18 @@ description: Generate a monthly city-level SFR market report video (1080x1920, 6
 
 # Market Data Video Skill — Ryan Realty
 
+## Required references — load these BEFORE producing any content
+
+Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
+
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+
+A piece of content that ships without consulting BOTH of these is non-compliant.
+
+---
+
 **Scope:** Generate a monthly, city-level SFR market report video for Central Oregon cities (Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, Tumalo, Powell Butte). Portrait 1080x1920 @ 30fps, 60-90 seconds, Remotion 4.0.290. One video per city per month. Fully automated — no manual tools.
 
 **Status:** Verified against Redmond April 2026 (v7, shipped) and Sisters April 2026 (v3, shipped). Data accuracy mandate, closing card lock, and 12-scene architecture confirmed working.

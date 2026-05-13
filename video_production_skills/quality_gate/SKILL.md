@@ -11,6 +11,12 @@ description: >
 
 # Viral Video Quality Gate — 6-Phase Hard Gate (MANDATORY)
 
+## Canonical references
+
+This is a capability skill. The two top-tier rule layers — [`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md) (brand) and [`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md) (platform rules) — apply to all output. Per CLAUDE.md "Skill self-binding", every Ryan Realty content piece loads both before producing.
+
+---
+
 ## Enforcement: ABSOLUTE
 
 This is a hard gate. **No AI-generated video content leaves this system without passing every check below.** No exceptions. No "we'll fix it in post." No "good enough for a draft." If a check fails, the content does not ship.

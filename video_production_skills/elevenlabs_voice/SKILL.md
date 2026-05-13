@@ -5,6 +5,12 @@ description: Use this skill whenever the user says "generate VO", "synth the voi
 
 # ElevenLabs Voice Skill
 
+## Canonical references
+
+This is a capability skill. The two top-tier rule layers — [`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md) (brand) and [`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md) (platform rules) — apply to all output. Per CLAUDE.md "Skill self-binding", every Ryan Realty content piece loads both before producing.
+
+---
+
 ## Voice (LOCKED — permanent as of 2026-04-27)
 
 | Field | Value |

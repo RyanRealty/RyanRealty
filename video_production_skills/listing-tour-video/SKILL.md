@@ -5,6 +5,18 @@ description: Use this skill whenever the user says "create a listing video for t
 
 # Listing Tour Video Skill — Ryan Realty
 
+## Required references — load these BEFORE producing any content
+
+Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
+
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+
+A piece of content that ships without consulting BOTH of these is non-compliant.
+
+---
+
 **QC / anti-slideshow (mandatory in Cursor):** Use the project skill **`listing-tour-reel-qc`** (`.cursor/skills/listing-tour-reel-qc/SKILL.md`) after every render: run `node scripts/listing-tour-qc-render.mjs <mp4>` and **Read** the extracted PNGs. Do not sign off on “motion” without that pass.
 
 **Scope:** Produce a fully automated 60–90s listing tour video from a single MLS `ListingKey`. Pulls listing data and photos from Supabase `ryan-realty-platform`, generates narration via ElevenLabs (Matt's voice clone), optionally opens with a Google Photorealistic 3D Tiles aerial establishing shot, animates hero photos via Replicate Wan 2.7 i2v, and renders + compresses in Remotion. Outputs two MP4s from one composition flag: branded (Ryan Realty logo, Matt's name, phone) and MLS-compliant unbranded (MLS number, "Contact your agent" card only).

@@ -27,6 +27,7 @@ mobile and print. This skill is the hard standard for flyer composition quality 
 3. `video_production_skills/VIDEO_PRODUCTION_SKILL.md` §5 — brand colors, banned words (video forbids Butcher; flyers follow static rules below)
 4. `video_production_skills/ANTI_SLOP_MANIFESTO.md` (authenticity + no fake claims)
 5. `CLAUDE.md` §0 (data accuracy / verification trace)
+6. **[`social_media_skills/platform-best-practices/SKILL.md`](../platform-best-practices/SKILL.md)** — 2026 platform rule layer. Cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + Ryan Realty application matrix. Per CLAUDE.md "Skill self-binding (2026-05-13)", mandatory for every Ryan Realty content piece.
 
 ## Broker headshots
 

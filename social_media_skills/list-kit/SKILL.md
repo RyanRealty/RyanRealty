@@ -60,6 +60,7 @@ Read all of the following before scaffolding any deliverable. The data accuracy 
 | `social_media_skills/instagram-carousel/SKILL.md` | Carousel sub-skill — 8-slide spec, persistent footer, slide numerals, visual continuity. |
 | `video_production_skills/asset-library/SKILL.md` | Asset registration at kit close — manifest at `data/asset-library/manifest.json`. |
 | `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned-content gate. Twelve rules, all ship-blockers. |
+| `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer — cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, cadence) + Ryan Realty application matrix. Per CLAUDE.md "Skill self-binding (2026-05-13)", mandatory for every Ryan Realty content piece. |
 
 ---
 

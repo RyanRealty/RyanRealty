@@ -6,6 +6,18 @@ description: "Use this skill whenever the user says 'make a meme video', 'trend-
 
 # Meme Content — Trend-Jacking with Vlipsy Clips
 
+## Required references — load these BEFORE producing any content
+
+Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
+
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+
+A piece of content that ships without consulting BOTH of these is non-compliant.
+
+---
+
 **Read `video_production_skills/VIDEO_PRODUCTION_SKILL.md` before writing any composition code. All hard constraints (hook, length, branding) apply. Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` — the text grader pass in this skill is the most important quality gate.**
 
 ---
