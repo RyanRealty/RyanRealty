@@ -90,6 +90,7 @@ export interface GenerateOptions {
 export interface PersistResult {
   inserted: number
   ids: string[]
+  errors: string[]
 }
 
 // ---------------------------------------------------------------------------
@@ -876,11 +877,12 @@ export async function persistBriefs(
   opts: GenerateOptions = {}
 ): Promise<PersistResult> {
   if (opts.dryRun || briefs.length === 0) {
-    return { inserted: 0, ids: [] }
+    return { inserted: 0, ids: [], errors: [] }
   }
 
   const supabase = getSupabase()
   const ids: string[] = []
+  const persistErrors: string[] = []
 
   for (const brief of briefs) {
     // Determine generation_reason — append VOICE_FAIL if validation failed
@@ -943,7 +945,11 @@ export async function persistBriefs(
       .single()
 
     if (briefErr || !briefRow) {
-      console.error('persistBriefs INSERT marketing_brain_actions:', briefErr?.message ?? 'no row returned')
+      const msg = briefErr?.message ?? briefErr?.code ?? 'no row returned'
+      const details = briefErr?.details ?? briefErr?.hint ?? ''
+      const fullMsg = `INSERT marketing_brain_actions failed: ${msg}${details ? ' :: ' + details : ''}`
+      console.error('persistBriefs:', fullMsg, JSON.stringify(briefErr ?? {}, null, 2))
+      persistErrors.push(fullMsg)
       continue
     }
 
@@ -994,7 +1000,7 @@ export async function persistBriefs(
     })
   }
 
-  return { inserted: ids.length, ids }
+  return { inserted: ids.length, ids, errors: persistErrors }
 }
 
 // ---------------------------------------------------------------------------
@@ -1042,8 +1048,18 @@ export async function generateWeeklyBriefs(
     }
   }
 
-  // Step 5: persist
-  await persistBriefs(allBriefs, usedOpportunities, opts)
+  // Step 5: persist. If any insert errors, stamp them onto the briefs'
+  // generation_reason so the caller (weekly-cycle) can surface them in
+  // the report's errors array without changing the return type.
+  const persist = await persistBriefs(allBriefs, usedOpportunities, opts)
+  if (persist.errors.length > 0) {
+    const errorBlob = persist.errors.join(' || ')
+    for (const b of allBriefs) {
+      if (!b.generation_reason.includes('PERSIST_ERR')) {
+        b.generation_reason = `${b.generation_reason} | PERSIST_ERR: ${errorBlob.slice(0, 300)}`
+      }
+    }
+  }
 
   return allBriefs
 }
