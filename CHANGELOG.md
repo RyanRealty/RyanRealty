@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.166.0 (2026-05-13)
+
+### Features
+- feat(marketing-brain): inverse-metric direction + persistent decisions log
+
+---
+
+
 ## v1.165.5 (2026-05-13)
 
 ### Bug Fixes
