@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.180.1 (2026-05-13)
+
+### Other
+- GBP description + phone now live; LinkedIn/YouTube need re-auth
+
+---
+
+
 ## v1.180.0 (2026-05-13)
 
 ### Features
