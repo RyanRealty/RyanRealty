@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.176.0 (2026-05-13)
+
+### Features
+- feat(lp): Phase 2 — strip global chrome on /lp/* + host rewrite for seller subdomain
+
+---
+
+
 ## v1.175.0 (2026-05-13)
 
 ### Features
