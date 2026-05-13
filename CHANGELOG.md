@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.182.5 (2026-05-13)
+
+### Other
+- Register F1 as canonical Ryan Realty brand hero
+
+---
+
+
 ## v1.182.4 (2026-05-13)
 
 ### Bug Fixes
