@@ -17,6 +17,64 @@ A piece of content that ships without consulting BOTH of these is non-compliant.
 
 ---
 
+## HARD RULES (locked 2026-05-13 after the Tumalo render failure)
+
+These are non-negotiable. A listing video that violates any of these does not ship.
+
+1. **No black text cards interrupting photo flow.** Photos run continuously — captions overlay the photo, they do not replace it. The video must NEVER show a frame that is text-on-black-or-navy except the final 2-3s end card. If you're rendering a beat where the VO says "Three bedrooms" — show the bedroom photo with "Three bedrooms" overlay. Don't cut to a black card.
+
+2. **No dollar amounts spoken in VO.** Price is visual data only — show it on screen, never say it. ("Listed at one million two hundred twenty-five thousand" is banned in voiceover. The number can appear in an on-screen pill / end-card stat strip.)
+
+3. **`eleven_turbo_v2_5` model — never `eleven_v3` for listing videos.** IPA phoneme tags are silently SKIPPED on v3. Tumalo must pronounce as TUM-uh-low (`ˈtʌm.ə.loʊ`), Deschutes as duh-shoots (`dəˈʃuːts`) — only turbo_v2_5 honors the phoneme tags.
+
+4. **Opening hook frame (frames 0-30 = first 1s):** First frame is a photo (NOT logo, NOT text-only card) — already in motion at frame 0 (slow push-in / pan engaged). On-screen text overlay appears by frame 12-18 (0.4-0.6s) with the *hook* — neighborhood + key differentiator. For Tumalo example: "Tumalo, OR · Cascade views · 2.28 acres" Geist 500 cream pill bottom-third, NOT just the address. The opening tile is the social-feed thumbnail — it must read at 90×160 thumbnail size and make people stop scrolling.
+
+5. **Motion variety — at least 4 different motion types per 30s video.** Acceptable primitives:
+   - Slow push-in (Ken Burns subset, OK in moderation)
+   - Slow pull-out
+   - Slow pan (horizontal or vertical)
+   - Multi-point pan
+   - Parallax (foreground + background separation)
+   - Hard cut on the beat
+   - Cross-dissolve transition (200-400ms)
+   - Whip pan transition
+   - Cinemagraph (subtle motion on still: smoke, water, leaves)
+   
+   **Never repeat the same primitive on two consecutive beats.** A video that's all Ken Burns is rejected.
+
+6. **Photo variety across beats — never two consecutive same-register beats.** Mix: aerial → interior → grounds → aerial → exterior → detail → aerial. Visual register changes every beat. No 3 aerial-dusks in a row.
+
+7. **Captions: smooth, not choppy.**
+   - Full sentence visible at all times (NEVER word-by-word fade-in)
+   - Active-word highlight via weight transition only (500 → 700), NO scale spring (the 1.0→1.08 spring is what made the Tumalo video chop)
+   - 300ms crossfade between sentences (NOT hard cut, NOT swap-on-frame)
+   - White Geist 500 with subtle `text-shadow: 0 2px 4px rgba(0,0,0,0.6)` — never on a navy/colored pill, never with a colored background
+   - Forced-alignment from ElevenLabs `/v1/forced-alignment` JSON — synced to actual spoken word timestamps, never to a generic clock
+
+8. **Music — every video gets a UNIQUE track. Never reuse a clip across videos.** Maintain a per-render music manifest at `out/list-kits/<slug>/music-manifest.json` recording the source + clip ID used. If a track has been used in a prior render in the same season, source a different one. Acceptable sources in priority order:
+   1. ElevenLabs Music API (`/v1/music/compose`) — generate unique track per video, parameterize by mood + tempo + duration
+   2. Mixkit royalty-free library (https://mixkit.co/free-stock-music/) — curated, varied, downloadable, license-free
+   3. Pixabay Music (https://pixabay.com/music/) — same, broader catalog
+   
+   **Banned (over-reused):** `audio/music_bed_v5.mp3` and any other track ending in `_v[1-9].mp3` that's been used >1 time. Check the music manifest before picking a track.
+
+9. **End card has design treatment — not plain navy + logo.** Acceptable end-card patterns:
+   - Property photo + dark scrim + stacked navy logo + address callout
+   - Cascade silhouette / heritage illustration backdrop + stacked navy logo + address
+   - Three-Sisters dusk aerial under-exposed + cream logo overlay + address
+   
+   **Banned:** solid navy bg + stacked logo + address line. That's the default and reads as boilerplate.
+
+10. **Self-QA gate (mandatory).** After rendering, the producer (you, the agent) extracts 8-12 keyframes via `ffmpeg -vf 'select=...,scale=405:720'` and reviews them. If ANY of the following are visible, the video does not ship:
+    - Black frame with text only (rule #1)
+    - Same photo or visual register in 3 consecutive frames (rule #6)
+    - No on-screen text in the first 30 frames (rule #4)
+    - Plain end card (rule #9)
+    
+    Document the QA pass in the scorecard.json `qc_keyframes_reviewed: [paths]`.
+
+---
+
 **QC / anti-slideshow (mandatory in Cursor):** Use the project skill **`listing-tour-reel-qc`** (`.cursor/skills/listing-tour-reel-qc/SKILL.md`) after every render: run `node scripts/listing-tour-qc-render.mjs <mp4>` and **Read** the extracted PNGs. Do not sign off on “motion” without that pass.
 
 **Scope:** Produce a fully automated 60–90s listing tour video from a single MLS `ListingKey`. Pulls listing data and photos from Supabase `ryan-realty-platform`, generates narration via ElevenLabs (Matt's voice clone), optionally opens with a Google Photorealistic 3D Tiles aerial establishing shot, animates hero photos via Replicate Wan 2.7 i2v, and renders + compresses in Remotion. Outputs two MP4s from one composition flag: branded (Ryan Realty logo, Matt's name, phone) and MLS-compliant unbranded (MLS number, "Contact your agent" card only).

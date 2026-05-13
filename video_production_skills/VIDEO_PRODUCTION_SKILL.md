@@ -152,6 +152,118 @@ If anything in the routine-triplet appears to contradict this master skill or `C
 
 ---
 
+## 0.7. UNIVERSAL VIDEO HARD RULES (locked 2026-05-13, extended 2026-05-13 PM)
+
+These apply to **every** video this repo produces — listing tour, listing reveal, listing launch, market data, news clip, neighborhood overview, weekend events, data viz, market report long-form, meme, avatar update, evergreen. Not a single video ships that violates any of these.
+
+### Brand placement rules (PRIMARY LOCKED 2026-05-13 by Matt's pick)
+
+- **Primary logo on cream / light surfaces:** `assets/brand/logo-blue.png` (referred to as **LOGO_A** in design pickers). Heritage navy wordmark. Use this on the end card when the backdrop is cream, light photo, or pale gradient.
+- **Primary logo on dark / navy surfaces:** `assets/brand/logo-white.png` — the **white reversed horizontal wordmark** (referred to as **LOGO_C** in design pickers). Use this on the end card when the backdrop is a dark photo, navy, or dark scrim.
+- **End card size:** logo occupies 30-45% of frame width centered (at 1080×1920, that's 320-485px wide). Not the tiny 150px treatment that failed Matt's review.
+- **No other logo variant in the video frame.** Specifically: do not use `logo-stacked-white.png`, `ryan-realty-stacked-logo-*`, `illustration-01.png` through `illustration-14.png`, or `blue-dog.png` (Jax) AS THE VIDEO LOGO. Those are for OTHER content surfaces (heritage signature lockup, postcards, IG carousels, yard signs).
+
+### Caption font (LOCKED 2026-05-13)
+
+**Captions use Amboqia Boriango** — not Geist. Matt's directive: "for the captions, we can use that Amboqia Boriango."
+
+- **Caption typeface:** Amboqia Boriango, white, with subtle `text-shadow: 0 3px 6px rgba(0,0,0,0.7)`.
+- **Caption size:** 72-96px on 1080-wide frames (LARGE — top-creator TikTok / Reels style). NOT 56px.
+- **Active-word highlight:** weight transition only (the regular face is 400, active word transitions to a heavier face if Amboqia has one; if not, use scale 1.0→1.05 spring 200ms — gentle, NOT the choppy 1.0→1.08 spring that failed). Color stays white throughout.
+- **Sync to spoken word.** Word-level forced alignment required (Whisper local install if ElevenLabs forced-alignment endpoint is unavailable on plan). Sentence-granularity timing is rejected — every word must illuminate when spoken.
+- **One word at a time visible, OR full sentence with active word highlight** — both are valid TikTok / Reels conventions; pick per format. Sentence-with-highlight is safer because it gives the reader context. Word-at-a-time is more attention-grabbing but harder to read on the second pass.
+
+### VO scripting rule (LOCKED 2026-05-13)
+
+**Every listing VO script is sourced from the listing's `public_remarks` field in Supabase, NOT hand-written.**
+
+- Pull `public_remarks` from the `listings` table for the `ListingKey` being produced.
+- Strip banned words (`stunning, nestled, breathtaking, must-see, dream home, charming, pristine, soak it all in, turnkey`) and replace with direct alternatives.
+- Strip dollar amounts (per CLAUDE.md / listing-tour-video rule — price is visual data only).
+- Break the cleaned remarks into 6-9 narrative sentences, each tied to a SPECIFIC visual beat.
+- Apply IPA phoneme tags to place names (Tumalo, Deschutes, Awbrey, Terrebonne, Paulina, Madras, Tetherow).
+- Hand-written canned scripts are banned for per-listing videos. They produce generic output that doesn't reflect the actual home.
+
+### Semantic photo-to-VO sync (LOCKED 2026-05-13)
+
+**Each beat's photo must match what the VO is saying.**
+
+- VO line about CASCADE VIEWS → show the deck/window/aerial photo where the Cascades are visible
+- VO line about THE CREEK → show the creek / water feature photo
+- VO line about THE KITCHEN → show the kitchen photo
+- VO line about OUTDOOR SPACE → show the patio / deck / yard photo
+- VO line about THE GARAGE → show the garage photo
+- VO line about NEIGHBORHOOD / LOCATION → show aerial showing location context
+
+To enforce this: each listing's photos must be classified before beat assembly. Use the `listing_photos.classification` Supabase column when populated, OR run a vision model (Claude vision, GPT-4o vision, BLIP, etc.) on each photo to tag it semantically (`exterior`, `aerial`, `living`, `kitchen`, `primary_bedroom`, `primary_bath`, `view`, `grounds`, `garage`, `outdoor_living`, `creek`, `detail`).
+
+Matt's rule: "if we're talking about the views, the views are up. If we're talking about other features, we're trying to show those features when possible."
+
+### Headless video for listing content (LOCKED 2026-05-13)
+
+**Listing videos are always headless** — Matt's face does not appear on camera in any per-listing video (V2 Cascade & Creek, V8 Tumalo Life, listing-tour-video, listing-reveal, listing-launch). The listing-agent identity comes through on the end card (logo + address + stats), NOT through agent-face footage. This matches what top real estate creators on TikTok / IG Reels do for property-tour content (Daniel Heider, Madison Sutton — research confirmed in `docs/research/best-practices-instagram.md`).
+
+Agent face is permitted on:
+- YouTube long-form market reports (Matt as anchor — face builds trust over time)
+- Day-in-the-life / behind-the-scenes broker content
+- Story content where Matt is talking directly to camera
+
+But never on per-listing videos.
+
+---
+
+These apply to **every** video this repo produces. Not a single video ships that violates any of these. The rules were locked after a listing-video render failure exposed the gaps (text-on-black cards filling half the runtime, reused music, model mismatch silently skipping IPA phonemes, choppy active-word captions, generic end card, no self-QA, tiny logo, hand-written VO not sourced from listing remarks). The same failure modes apply across format — so the rules apply across format.
+
+1. **No text-only frames mid-video.** Photos / footage run continuously. Captions overlay the photo, they do not replace it. The video must NEVER show a frame that is text-on-black or text-on-navy except a final 2-3s end card. Captions are absolute-positioned over the photo, never a separate "card" beat. Half the runtime cannot be text-on-black — that's a slideshow, not a video.
+
+2. **`eleven_turbo_v2_5` for any VO line needing IPA phoneme tags. NEVER `eleven_v3` for those lines.** Per CLAUDE.md "ElevenLabs Voice — MANDATORY", `eleven_v3` silently SKIPS phoneme tags. Tumalo (`ˈtʌm.ə.loʊ`), Deschutes (`dəˈʃuːts`), Awbrey, Terrebonne, Paulina, Madras, Tetherow — all need turbo_v2_5 to pronounce correctly. Run a one-line test before committing to the full VO synth.
+
+3. **Motion variety — at least 4 different motion primitives per 30-45s video, never two consecutive same.** Acceptable primitives: slow push-in, slow pull-out, slow pan (horizontal or vertical), multi-point pan, parallax (foreground + background separation), hard cut on the beat, cross-dissolve transition (200-400ms), whip pan transition, cinemagraph (subtle motion on still). A video that's all Ken Burns is rejected. A video where every beat is a "slow push-in" is rejected. Mix the primitives.
+
+4. **Photo / footage variety — never 3 consecutive same-register beats.** Mix the visual registers: aerial → interior → grounds → aerial → exterior → detail → aerial. Visual register changes every beat. No three consecutive aerials. No three consecutive close-ups. No three consecutive interiors.
+
+5. **Captions: smooth, not choppy.**
+   - Full sentence visible at all times during the sentence's duration. NEVER word-by-word fade-in.
+   - Active-word highlight via weight transition only (500 → 700). NO scale spring. (The 1.0→1.08 scale spring is what made the prior Tumalo render chop — banned.)
+   - 300ms crossfade between sentences. NOT hard cut. NOT swap-on-frame.
+   - White Geist 500 with subtle `text-shadow: 0 2px 4px rgba(0,0,0,0.6)`. Never on a navy/colored pill. Never with a colored background.
+   - Timing from ElevenLabs `/v1/forced-alignment` JSON — synced to actual spoken-word timestamps, never to a generic clock or `<Sequence>` boundary.
+
+6. **Music: every video gets a UNIQUE track. Never reuse a clip across videos in the same season.** Maintain a per-render music manifest at `out/<format>/<slug>/music-manifest.json` recording source + track ID + license + first-used date. Before picking a track, search the manifests to make sure it hasn't been used. Acceptable sources, priority order:
+   1. **ElevenLabs Music API** (`/v1/music/compose`) — generate unique track per video, parameterize by mood + tempo + duration. Best path for uniqueness.
+   2. **Mixkit royalty-free** (https://mixkit.co/free-stock-music/) — curated, varied, downloadable.
+   3. **Pixabay Music** (https://pixabay.com/music/) — broader catalog, same license model.
+   
+   **Banned (over-reused):** `audio/music_bed_v5.mp3` is banned forever — Matt directive 2026-05-13. Any other `audio/*_v[1-9].mp3` that has been used >1 time per the music manifest is auto-banned until a new variant is sourced.
+
+7. **End card has design treatment — not plain solid-color + logo.** Acceptable patterns:
+   - Property/scene photo under-exposed + dark scrim + cream stacked logo pill + address callout
+   - Heritage illustration backdrop (e.g., scene-water-pageant.png) + cream logo overlay + address
+   - Cascade silhouette / Bend landscape silhouette + cream logo + address
+   - Dusk aerial + dark scrim + cream logo pill
+   
+   **Banned:** solid navy bg + stacked logo + address line. That's the default and reads as boilerplate. The end card is where the logo earns its appearance (per platform-best-practices "the logo is a closer, not an opener") — give it weight, not blandness.
+
+8. **Self-QA via keyframe extraction is MANDATORY before any video ships.** After rendering, the producer (you, the agent) MUST extract 8-12 keyframes and review them. Run:
+   ```bash
+   ffmpeg -y -i <output>.mp4 -vf "fps=1/3,scale=405:720" <output_dir>/qc-keyframes/<name>-frame-%02d.jpg
+   ```
+   That extracts a frame every 3 seconds. Review each:
+   - Frame 1 (opener): photo with text overlay (hook line) by ~0.4s. NOT logo-only, NOT text-only.
+   - Frames 2-N (body): each shows a photo with caption overlaid. NEVER text-on-black-or-navy.
+   - Final frame: end card has photo/illustration backdrop. NEVER plain navy + logo.
+   - No two consecutive frames have the same photo or visual register.
+   
+   **If ANY keyframe fails, re-render. Do not surface the video to Matt until every keyframe passes.** Document the review in `scorecard.json` with the keyframe paths under `qc_keyframes_reviewed: [paths]`. The orchestrator cannot ship a video without that field populated.
+
+9. **Banned vocabulary, expanded.** In addition to the standard banned-words list (`stunning, nestled, breathtaking, must-see, dream home, charming, pristine, soak it all in, turnkey`), no dollar amount is **spoken in VO on a per-listing video** (price is visual data only on screen). For market reports and news clips this rule is inverted — the number IS the story, so it's spoken. The dollar-amount-in-VO rule lives in the per-format skill, not this universal layer.
+
+10. **The opening frame is the social-feed tile.** Whatever shows at frame 0-30 (~1 second) is what scrolls past someone in a feed. It MUST: (a) be a photo in motion at frame 0 — never a static start; (b) have a text overlay by frame 12-18 (0.4-0.6s) with a hook (place name, key differentiator, identifier); (c) read at 90×160 thumbnail size — if you can't make sense of it at thumbnail scale, the social-feed swipe rate destroys reach.
+
+These rules are universal across video formats and inherit into every format-specific skill that loads this master. Per-format skills can add MORE rules (e.g., listing-tour-video specifies "no dollar amounts spoken"), but they cannot weaken these. CLAUDE.md "Skill self-binding" enforces this.
+
+---
+
 ## 1. Hard constraints (ship blockers — not suggestions)
 
 ### ElevenLabs Voice — MANDATORY
