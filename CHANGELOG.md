@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.169.5 (2026-05-13)
+
+### Bug Fixes
+- fix(marketing-brain): tiktok /v2/video/list expects fields as query param
+
+---
+
+
 ## v1.169.4 (2026-05-13)
 
 ### Bug Fixes
