@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.178.0 (2026-05-13)
+
+### Features
+- feat(lp): hero photo background + locked design-system widths/colors
+
+---
+
+
 ## v1.177.0 (2026-05-13)
 
 ### Features
