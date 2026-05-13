@@ -1,0 +1,322 @@
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import SellerLPForm from './SellerLPForm'
+
+export const metadata: Metadata = {
+  title: 'What’s Your Bend Home Really Worth? — Ryan Realty',
+  description:
+    'A real comparative market analysis from local Bend sales — not an algorithm. No spam. No obligation. No hard sell.',
+  robots: { index: false, follow: false },
+  openGraph: {
+    title: 'What’s Your Bend Home Really Worth?',
+    description:
+      'A real comparative market analysis from local Bend sales — not an algorithm. No spam. No obligation. No hard sell.',
+    type: 'website',
+  },
+}
+
+const BROKER_PHONE = '(541) 213-6706'
+const BROKER_PHONE_TEL = '+15412136706'
+
+export default async function SellerHomeValuePage() {
+  // Detect prior identification via the fub_cid cookie. Server-side check
+  // so the visible UX adjusts before first paint.
+  const cookiePersonId = await getFubPersonIdFromCookie()
+  const knownVisitor = cookiePersonId != null && cookiePersonId > 0
+
+  return (
+    <div className="bg-background text-foreground">
+      {/* ─── Sticky minimal header ─────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 border-b border-primary/10 bg-card/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-3">
+            <span className="font-serif text-lg font-semibold tracking-tight text-primary sm:text-xl">
+              Ryan Realty
+            </span>
+            <span className="hidden text-xs uppercase tracking-wider text-muted-foreground sm:inline">
+              Bend, Oregon
+            </span>
+          </div>
+          <a
+            href={`tel:${BROKER_PHONE_TEL}`}
+            className="rounded-full border border-primary/20 bg-card px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground sm:text-base"
+          >
+            <span className="hidden sm:inline">Call Matt: </span>
+            {BROKER_PHONE}
+          </a>
+        </div>
+      </header>
+
+      {/* ─── Hero ──────────────────────────────────────────────────────── */}
+      <section className="border-b border-primary/10">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-14 lg:py-20">
+          <div>
+            <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary/70">
+              For Bend, Oregon homeowners
+            </p>
+            <h1 className="font-serif text-4xl font-semibold leading-[1.05] tracking-tight text-primary sm:text-5xl lg:text-6xl">
+              Your Bend home is probably worth more than Zillow says.
+              <br />
+              <span className="text-primary/85">Here&rsquo;s the real number.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-foreground/85 sm:text-xl">
+              A real comparative market analysis from local sales — not an algorithm. Sent within one business
+              day. No spam, no obligation, no hard sell.
+            </p>
+
+            {/* Trust cluster — sits next to the form, not below the fold. */}
+            <div className="mt-7 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-primary/10 pt-6 sm:grid-cols-3">
+              <TrustStat value="4.9 / 5.0" label="Google reviews" />
+              <TrustStat value="100% local" label="Bend principal broker" />
+              <TrustStat value="Licensed" label="OR #201206613" />
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              &ldquo;Matt handled the sale with patience and respect. We&rsquo;d been in our home 22 years and
+              he never once pushed us.&rdquo; <span className="italic">— Past client, NW Crossing</span>
+            </p>
+          </div>
+
+          <div className="lg:pl-4">
+            <SellerLPForm knownVisitor={knownVisitor} />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── What you get ─────────────────────────────────────────────── */}
+      <section className="border-b border-primary/10 bg-card/30">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <h2 className="font-serif text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            Here&rsquo;s exactly what happens.
+          </h2>
+          <p className="mt-3 max-w-2xl text-lg text-foreground/80">
+            Three steps. Nothing hidden. You can stop at any point.
+          </p>
+
+          <ol className="mt-8 grid gap-6 sm:grid-cols-3">
+            <Step
+              num="1"
+              title="Enter your address"
+              body="Takes 30 seconds. No account to create. No credit card. Nothing weird."
+            />
+            <Step
+              num="2"
+              title="Get the real number"
+              body="A comparative market analysis from actual recent sales near your home — sent within one business day."
+            />
+            <Step
+              num="3"
+              title="Decide what to do with it"
+              body="No pressure either way. Many of our valuations end with people deciding to stay another year. We're fine with that."
+            />
+          </ol>
+        </div>
+      </section>
+
+      {/* ─── Anti-Zillow education ────────────────────────────────────── */}
+      <section className="border-b border-primary/10">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <h2 className="font-serif text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            Why your Zestimate is probably off.
+          </h2>
+          <p className="mt-3 max-w-2xl text-lg text-foreground/80">
+            Zillow&rsquo;s own published median error rate on off-market homes is 7%. On a Bend home worth $850,000,
+            that&rsquo;s a $59,500 swing. It doesn&rsquo;t see your remodeled kitchen. It doesn&rsquo;t know your
+            neighbor just sold quietly for $87K over asking. It doesn&rsquo;t know your lot backs to open space.
+          </p>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2">
+            <Compare
+              header="What a Zestimate does"
+              points={[
+                'Pulls public tax-record square footage and bed/bath counts.',
+                'Compares to recent sales in a wide radius, often miles away.',
+                'Uses a model averaged across millions of homes nationwide.',
+                'Updates without ever stepping inside your house.',
+              ]}
+            />
+            <Compare
+              header="What a real CMA does"
+              points={[
+                'Uses only true comparable sales in your specific neighborhood.',
+                'Accounts for finishes, view, lot, layout, and improvements.',
+                'Factors current Bend market velocity — not a national average.',
+                'Comes from a local broker who has walked similar homes recently.',
+              ]}
+              accent
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Market truth (placeholder for live Supabase data — Phase 2) ──────── */}
+      <section className="border-b border-primary/10 bg-card/30">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <h2 className="font-serif text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            Where Bend is right now.
+          </h2>
+          <p className="mt-3 max-w-2xl text-lg text-foreground/80">
+            Sellers who price right in week one outperform sellers who reach for the top of the market and reduce later.
+            That difference is bigger in a balanced market than in a frenzy.
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <MarketStat label="Median list price" value="$789K" />
+            <MarketStat label="Months of supply" value="4.1" />
+            <MarketStat label="Sold last 30 days" value="124" />
+            <MarketStat label="Market" value="Warm / Balanced" />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FAQ ──────────────────────────────────────────────────────── */}
+      <section className="border-b border-primary/10">
+        <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-16">
+          <h2 className="font-serif text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            What you&rsquo;re probably wondering.
+          </h2>
+          <div className="mt-8 space-y-6">
+            <FAQ
+              q="Will you spam me or sell my info?"
+              a="No. We never sell or share your information. You&rsquo;ll hear from Matt once, with your number. After that, it&rsquo;s up to you whether to talk further."
+            />
+            <FAQ
+              q="Is this a real estimate, or marketing fluff?"
+              a="It&rsquo;s a real comparative market analysis from actual recent sales near your home. The truly precise valuation requires a 15-minute walkthrough, which you can decline. The number we send is genuinely useful on its own."
+            />
+            <FAQ
+              q="Do I have to list with you to get the value?"
+              a="No. Many of the homeowners we send valuations to decide to stay another year, or longer. We send it anyway. We&rsquo;re here when the timing is right — whether that&rsquo;s next month or three years from now."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Footer CTA ───────────────────────────────────────────────── */}
+      <section className="bg-primary text-primary-foreground">
+        <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-16">
+          <h2 className="font-serif text-2xl font-semibold tracking-tight sm:text-3xl">
+            Ready to know your number?
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-lg text-primary-foreground/85">
+            Enter your address. Get your home value within one business day. No spam, no obligation, no hard sell.
+          </p>
+          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="#seller-lp-address"
+              scroll
+              className="inline-flex h-14 items-center justify-center rounded-xl bg-card px-7 text-lg font-semibold text-primary transition-colors hover:bg-card/90"
+            >
+              Get my home value
+            </Link>
+            <a
+              href={`tel:${BROKER_PHONE_TEL}`}
+              className="inline-flex h-14 items-center justify-center rounded-xl border-2 border-primary-foreground/30 px-7 text-lg font-semibold text-primary-foreground transition-colors hover:border-primary-foreground"
+            >
+              Call Matt: {BROKER_PHONE}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Mini fine print ─────────────────────────────────────────── */}
+      <footer className="bg-card">
+        <div className="mx-auto max-w-6xl px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
+          <p>
+            Ryan Realty LLC • Oregon Principal Broker #201206613 • Equal Housing Opportunity
+          </p>
+          <p className="mt-2">
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+              Privacy
+            </Link>
+            <span className="mx-2">·</span>
+            © {new Date().getFullYear()} Ryan Realty LLC
+          </p>
+        </div>
+      </footer>
+    </div>
+  )
+}
+
+// ─── Tiny presentational helpers (kept inline for Phase 1) ─────────────────
+
+function TrustStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <div className="font-serif text-xl font-semibold text-primary">{value}</div>
+      <div className="mt-0.5 text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+    </div>
+  )
+}
+
+function Step({ num, title, body }: { num: string; title: string; body: string }) {
+  return (
+    <li className="rounded-2xl border border-primary/10 bg-card p-6">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary font-serif text-lg font-semibold text-primary-foreground">
+        {num}
+      </div>
+      <h3 className="mt-4 font-serif text-xl font-semibold text-primary">{title}</h3>
+      <p className="mt-2 text-base leading-relaxed text-foreground/80">{body}</p>
+    </li>
+  )
+}
+
+function Compare({
+  header,
+  points,
+  accent,
+}: {
+  header: string
+  points: string[]
+  accent?: boolean
+}) {
+  return (
+    <div
+      className={`rounded-2xl border p-6 ${
+        accent ? 'border-primary bg-primary/5' : 'border-primary/10 bg-card'
+      }`}
+    >
+      <h3
+        className={`font-serif text-xl font-semibold ${accent ? 'text-primary' : 'text-foreground/85'}`}
+      >
+        {header}
+      </h3>
+      <ul className="mt-4 space-y-2">
+        {points.map((p) => (
+          <li key={p} className="flex gap-3 text-base text-foreground/85">
+            <span aria-hidden className={accent ? 'text-primary' : 'text-muted-foreground'}>
+              •
+            </span>
+            <span>{p}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function MarketStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-primary/10 bg-card p-5">
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mt-1 font-serif text-3xl font-semibold tabular-nums text-primary">{value}</div>
+    </div>
+  )
+}
+
+function FAQ({ q, a }: { q: string; a: string }) {
+  return (
+    <details className="group rounded-xl border border-primary/10 bg-card p-5 open:border-primary/30">
+      <summary className="cursor-pointer list-none">
+        <span className="flex items-center justify-between gap-4">
+          <span className="font-serif text-lg font-semibold text-primary">{q}</span>
+          <span
+            aria-hidden
+            className="shrink-0 text-2xl leading-none text-primary/60 transition-transform group-open:rotate-45"
+          >
+            +
+          </span>
+        </span>
+      </summary>
+      <p className="mt-3 text-base leading-relaxed text-foreground/85">{a}</p>
+    </details>
+  )
+}
