@@ -61,18 +61,18 @@ export default async function SellerHomeValuePage() {
       {/* ─── Hero ──────────────────────────────────────────────────────────
           Documentary Central Oregon photography behind a navy protection
           overlay — per the design system: "No decorative gradients. Only
-          the navy protection overlay on the hero image." Image is one of
-          Matt's approved hero options (hero-deschutes-clean.jpg — clean
-          Deschutes River shot from the design-system asset library). */}
+          the navy protection overlay on the hero image." Image is Matt's
+          approved 2048×1152 banner photo from
+          design_system/ryan-realty/assets/social/banner-photo/. */}
       <section className="relative isolate border-b border-primary/10">
         {/* Background photo */}
         <Image
-          src="/images/lp/hero-deschutes-clean.jpg"
+          src="/images/lp/hero-banner.jpg"
           alt=""
           fill
           priority
           sizes="100vw"
-          className="absolute inset-0 -z-20 object-cover"
+          className="absolute inset-0 -z-20 object-cover object-center"
         />
         {/* Navy protection overlay — solid, not a gradient, per design system */}
         <div className="absolute inset-0 -z-10 bg-primary/70" aria-hidden="true" />
