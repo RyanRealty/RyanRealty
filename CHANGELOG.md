@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.175.0 (2026-05-13)
+
+### Features
+- feat(lp): seller home value landing page on Next.js (Phase 1)
+
+---
+
+
 ## v1.174.0 (2026-05-13)
 
 ### Features
