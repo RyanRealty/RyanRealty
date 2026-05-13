@@ -3,7 +3,14 @@ import { createClient } from '@supabase/supabase-js'
 const YOUTUBE_UPLOAD_BASE = 'https://www.googleapis.com/upload/youtube/v3/videos'
 const GOOGLE_OAUTH_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
-const YOUTUBE_OAUTH_SCOPES = 'https://www.googleapis.com/auth/youtube.upload'
+// youtube.upload: publish videos. youtube.readonly: read channel metadata
+// (subscribers, video list). yt-analytics.readonly: pull the YouTube
+// Analytics API v2 (views, retention, CTR, etc) for the marketing brain.
+const YOUTUBE_OAUTH_SCOPES = [
+  'https://www.googleapis.com/auth/youtube.upload',
+  'https://www.googleapis.com/auth/youtube.readonly',
+  'https://www.googleapis.com/auth/yt-analytics.readonly',
+].join(' ')
 
 // ---------------------------------------------------------------------------
 // YouTube Analytics API v2

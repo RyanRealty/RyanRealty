@@ -10,7 +10,14 @@ const LINKEDIN_REST_VERSION = '202602'
 // w_member_social = post on behalf of member; openid+profile+email = OpenID Connect
 // (provisioned 2026-05-09, required so /v2/userinfo returns the canonical person sub
 // and the modern /rest/posts API will accept urn:li:person:{sub} as author).
-const LINKEDIN_OAUTH_SCOPES = 'openid profile email w_member_social'
+// openid+profile+email: get user identity for the OAuth flow.
+// w_member_social: publish posts as the authenticated person.
+// rw_organization_admin: read + manage Company Page admin (Ryan Realty LLC).
+// r_organization_social: read posts on the Company Page (analytics).
+// Note: rw_organization_admin and r_organization_social require the
+// "Community Management API" product to be enabled on the LinkedIn
+// Developer App at developer.linkedin.com → app → Products.
+const LINKEDIN_OAUTH_SCOPES = 'openid profile email w_member_social rw_organization_admin r_organization_social'
 
 interface RegisterUploadResponse {
   value?: {
