@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.167.0 (2026-05-13)
+
+### Features
+- feat(brand): transparent-bg broker portraits + composite-rule docs
+
+---
+
+
 ## v1.166.0 (2026-05-13)
 
 ### Features
