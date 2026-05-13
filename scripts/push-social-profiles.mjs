@@ -79,6 +79,36 @@ const record = (platform, action, ok, detail) => {
   console.log(`${icon} ${platform}: ${action} — ${detail}`);
 };
 
+// Auto-refresh Google OAuth2 token if expired (used by GBP + YouTube)
+async function refreshGoogleToken(refreshToken, clientId, clientSecret) {
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }),
+  });
+  const j = await r.json();
+  if (!r.ok || !j.access_token) throw new Error(`Token refresh failed: ${JSON.stringify(j).slice(0, 200)}`);
+  return j;
+}
+
+async function getValidGoogleToken(tableName, clientId, clientSecret) {
+  const { data: row, error } = await supabase.from(tableName).select('access_token, refresh_token, expires_at').eq('id', 'default').single();
+  if (error || !row?.access_token) throw new Error(`${tableName} row not found`);
+  const expiresAtMs = new Date(row.expires_at).getTime();
+  if (Date.now() < expiresAtMs - 60000) return row.access_token;
+  // Refresh
+  if (!row.refresh_token) throw new Error(`${tableName}: token expired and no refresh_token`);
+  const refreshed = await refreshGoogleToken(row.refresh_token, clientId, clientSecret);
+  const newExpiresAt = new Date(Date.now() + (refreshed.expires_in - 60) * 1000).toISOString();
+  await supabase.from(tableName).update({ access_token: refreshed.access_token, expires_at: newExpiresAt, updated_at: new Date().toISOString() }).eq('id', 'default');
+  return refreshed.access_token;
+}
+
 // ============ 1. FACEBOOK PAGE ============
 async function pushFacebookPage() {
   const token = env.META_PAGE_ACCESS_TOKEN;
@@ -179,15 +209,15 @@ async function pushGoogleBusinessProfile() {
   const locationId = env.GOOGLE_BUSINESS_PROFILE_LOCATION_ID;
   if (!accountId || !locationId) { record('GBP', 'config-check', false, 'missing GBP_ACCOUNT_ID or LOCATION_ID'); return; }
 
-  // Fetch token from DB
-  const { data: row, error: tokenErr } = await supabase
-    .from('google_business_profile_auth').select('access_token, refresh_token, expires_at').eq('id', 'default').single();
-  if (tokenErr || !row?.access_token) {
-    record('GBP', 'fetch token', false, tokenErr?.message || 'no token row');
+  // Fetch + auto-refresh token
+  let token;
+  try {
+    token = await getValidGoogleToken('google_business_profile_auth', env.GOOGLE_OAUTH_CLIENT_ID, env.GOOGLE_OAUTH_CLIENT_SECRET);
+    record('GBP', 'fetch+refresh token', true, 'token ready');
+  } catch (e) {
+    record('GBP', 'fetch+refresh token', false, e.message);
     return;
   }
-  // (Token refresh logic would go here — assume valid for now)
-  const token = row.access_token;
 
   // Update business description via Business Information API
   try {
@@ -215,30 +245,33 @@ async function pushLinkedInCompanyPage() {
   }
   const token = row.access_token;
 
-  // First find the organization (company page) — use organizationAcls?q=roleAssignee
+  // First find the organization — use organizationAcls without projection (simpler call)
+  let orgId, orgUrn;
   try {
-    const r = await fetch('https://api.linkedin.com/rest/organizationAcls?q=roleAssignee&role=ADMINISTRATOR&projection=(elements*(organization~(id,vanityName,localizedName)))', {
-      headers: { Authorization: `Bearer ${token}`, 'LinkedIn-Version': '202401', 'X-Restli-Protocol-Version': '2.0.0' },
+    const r = await fetch('https://api.linkedin.com/rest/organizationAcls?q=roleAssignee&role=ADMINISTRATOR&state=APPROVED', {
+      headers: { Authorization: `Bearer ${token}`, 'LinkedIn-Version': '202602', 'X-Restli-Protocol-Version': '2.0.0' },
     });
     const j = await r.json();
     if (!r.ok) { record('LinkedIn', 'find org', false, `HTTP ${r.status}: ${JSON.stringify(j).slice(0,200)}`); return; }
     const orgs = j.elements || [];
     if (!orgs.length) { record('LinkedIn', 'find org', false, 'no admin organizations'); return; }
-    const org = orgs[0]['organization~'] || orgs[0];
-    const orgUrn = `urn:li:organization:${org.id}`;
-    record('LinkedIn', 'find org', true, `org=${org.id} (${org.localizedName})`);
+    orgUrn = orgs[0].organization || orgs[0].organizationalTarget;
+    orgId = orgUrn?.split(':').pop();
+    record('LinkedIn', 'find org', true, `urn=${orgUrn}`);
+  } catch (e) { record('LinkedIn', 'find org', false, e.message); return; }
 
-    // Update Company description
+  // Update Company description via PATCH
+  try {
     const updateBody = {
       patch: {
         '$set': { description: { localized: { 'en_US': BIO_MEDIUM } } },
       },
     };
-    const r2 = await fetch(`https://api.linkedin.com/rest/organizations/${org.id}`, {
+    const r2 = await fetch(`https://api.linkedin.com/rest/organizations/${orgId}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
-        'LinkedIn-Version': '202401',
+        'LinkedIn-Version': '202602',
         'X-Restli-Protocol-Version': '2.0.0',
         'Content-Type': 'application/json',
         'X-HTTP-Method-Override': 'PATCH',
@@ -247,21 +280,19 @@ async function pushLinkedInCompanyPage() {
     });
     if (r2.ok) record('LinkedIn', 'update description', true, 'success');
     else record('LinkedIn', 'update description', false, `HTTP ${r2.status}: ${(await r2.text()).slice(0,200)}`);
+  } catch (e) { record('LinkedIn', 'update description', false, e.message); }
 
-    record('LinkedIn', 'note', true, 'logo + cover upload requires /assets initializeUpload + multipart PUT — manual upload may be faster');
-  } catch (e) { record('LinkedIn', 'org update', false, e.message); }
+  record('LinkedIn', 'note', true, 'logo + cover upload requires /assets initializeUpload + multipart PUT — manual upload may be faster');
 }
 
 // ============ 5. YOUTUBE CHANNEL ============
 async function pushYouTube() {
   console.log('\n=== YouTube channel ===');
-  const { data: row, error: tokenErr } = await supabase
-    .from('youtube_auth').select('access_token, refresh_token').eq('id', 'default').single();
-  if (tokenErr || !row?.access_token) {
-    record('YouTube', 'fetch token', false, tokenErr?.message || 'no token row');
-    return;
-  }
-  const token = row.access_token;
+  let token;
+  try {
+    token = await getValidGoogleToken('youtube_auth', env.YOUTUBE_CLIENT_ID || env.GOOGLE_OAUTH_CLIENT_ID, env.YOUTUBE_CLIENT_SECRET || env.GOOGLE_OAUTH_CLIENT_SECRET);
+    record('YouTube', 'fetch+refresh token', true, 'token ready');
+  } catch (e) { record('YouTube', 'fetch+refresh token', false, e.message); return; }
 
   // First find the channel id
   try {
