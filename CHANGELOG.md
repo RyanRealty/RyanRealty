@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.169.1 (2026-05-13)
+
+### Maintenance
+- chore(marketing-brain): add linkedin-orgs diagnostic route
+
+---
+
+
 ## v1.169.0 (2026-05-13)
 
 ### Features
