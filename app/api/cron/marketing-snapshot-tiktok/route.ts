@@ -87,9 +87,23 @@ const TIKTOK_API_BASE = 'https://open.tiktokapis.com/v2'
 
 interface TikTokAuthRow {
   access_token: string
-  refresh_token: string
+  refresh_token: string | null
   expires_at: string | null
-  open_id: string
+  open_id: string | null
+}
+
+async function fetchOpenIdFromTikTok(accessToken: string): Promise<string> {
+  const res = await fetch(
+    'https://open.tiktokapis.com/v2/user/info/?fields=open_id',
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  )
+  if (!res.ok) {
+    throw new Error(`TikTok /user/info failed: ${res.status} ${res.statusText}`)
+  }
+  const json = (await res.json()) as { data?: { user?: { open_id?: string } } }
+  const openId = json.data?.user?.open_id
+  if (!openId) throw new Error('TikTok /user/info returned no open_id')
+  return openId
 }
 
 async function getValidToken(): Promise<{ accessToken: string; openId: string }> {
@@ -101,8 +115,7 @@ async function getValidToken(): Promise<{ accessToken: string; openId: string }>
   const { data, error } = await supabase
     .from('tiktok_auth')
     .select('access_token, refresh_token, expires_at, open_id')
-    .order('created_at', { ascending: false })
-    .limit(1)
+    .eq('id', 'default')
     .single<TikTokAuthRow>()
 
   if (error || !data) {
@@ -113,6 +126,7 @@ async function getValidToken(): Promise<{ accessToken: string; openId: string }>
   const expiresAt = data.expires_at ? new Date(data.expires_at) : null
   const needsRefresh = !expiresAt || expiresAt.getTime() - Date.now() < 5 * 60 * 1000
 
+  let accessToken = data.access_token
   if (needsRefresh && data.refresh_token) {
     const refreshed = await refreshAccessToken(data.refresh_token)
     const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
@@ -125,12 +139,23 @@ async function getValidToken(): Promise<{ accessToken: string; openId: string }>
         expires_at: newExpiresAt,
         updated_at: new Date().toISOString(),
       })
-      .eq('open_id', data.open_id)
+      .eq('id', 'default')
 
-    return { accessToken: refreshed.access_token, openId: data.open_id }
+    accessToken = refreshed.access_token
   }
 
-  return { accessToken: data.access_token, openId: data.open_id }
+  // open_id may be missing on rows created before the column was added.
+  // Fetch it from TikTok and persist it back so next call is cheaper.
+  let openId = data.open_id
+  if (!openId) {
+    openId = await fetchOpenIdFromTikTok(accessToken)
+    await supabase
+      .from('tiktok_auth')
+      .update({ open_id: openId, updated_at: new Date().toISOString() })
+      .eq('id', 'default')
+  }
+
+  return { accessToken, openId }
 }
 
 // ---------------------------------------------------------------------------
