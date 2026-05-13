@@ -5,9 +5,11 @@ import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import SellerLPForm from './SellerLPForm'
 import {
   getBendMarketSnapshot,
-  getRecentBendSoldListings,
+  getOurListings,
+  getSellerTestimonials,
   formatPriceCompact,
-  type RecentSoldListing,
+  type OurListing,
+  type SellerTestimonial,
 } from './data'
 
 export const metadata: Metadata = {
@@ -35,13 +37,15 @@ export default async function SellerHomeValuePage() {
   const cookiePersonId = await getFubPersonIdFromCookie()
   const knownVisitor = cookiePersonId != null && cookiePersonId > 0
 
-  // Live local data — Bend market snapshot + recent closings. Pulled at request
-  // time (the LP route is rendered on-demand). Both fall back gracefully if
-  // Supabase is briefly unreachable — the section just hides itself.
-  const [marketSnapshot, recentSold] = await Promise.all([
+  // Live local data — Bend market snapshot + Ryan Realty's own recent listings.
+  // Pulled at request time (the LP route is rendered on-demand). Each falls
+  // back gracefully if Supabase is briefly unreachable — the section either
+  // hides itself or shows the hard-coded marquee entry alone.
+  const [marketSnapshot, ourListings] = await Promise.all([
     getBendMarketSnapshot(),
-    getRecentBendSoldListings(),
+    getOurListings(),
   ])
+  const sellerTestimonials = getSellerTestimonials()
 
   return (
     <div className="bg-background text-foreground">
@@ -143,10 +147,6 @@ export default async function SellerHomeValuePage() {
               <TrustStat value="100% local" label="Bend principal broker" tone="on-photo" />
               <TrustStat value="Licensed" label="OR #201206613" tone="on-photo" />
             </div>
-            <p className="mt-4 text-sm italic text-card/80">
-              &ldquo;Matt handled the sale with patience and respect. We&rsquo;d been in our home 22 years and
-              he never once pushed us.&rdquo; <span className="not-italic">— Past client, NW Crossing</span>
-            </p>
           </div>
 
           <div className="lg:pl-4">
@@ -220,24 +220,63 @@ export default async function SellerHomeValuePage() {
         </div>
       </section>
 
-      {/* ─── Recent Bend closings — real social proof ──────────────────────
-          Pulled live from the listings table at request time. Up to 6 most
-          recent SFR closings in Bend with a photo. If the data fetch fails or
-          returns zero rows, the section hides itself — never shows skeletons
-          or fake placeholders. */}
-      {recentSold.length > 0 && (
+      {/* ─── Our listings — Ryan Realty inventory showcase ─────────────────
+          Hand-curated set of Ryan Realty's own listings (Schoolhouse Rd $3M
+          marquee + four MLS-tracked properties). Prices intentionally hidden
+          per Matt's directive — we don't say what they sold for, we just
+          show the inventory we represent. Each card pulls its photo from
+          either Spark MLS (CDN) or the listing_video_v4 archive on disk. */}
+      {ourListings.length > 0 && (
         <section className="border-b border-primary/10 bg-card/30">
           <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
             <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-              Recent sales right here in Bend.
+              The homes we represent.
             </h2>
             <p className="mt-3 max-w-2xl text-lg text-foreground/80">
-              What homes like yours are actually closing for — pulled from local MLS data, refreshed daily.
-              No filters. No cherry-picking.
+              A glimpse at recent Ryan Realty listings — from $1M acreage and downtown condos to
+              architectural estates on Bend&rsquo;s westside. Yours could be the next one we market.
             </p>
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {recentSold.map((listing, i) => (
-                <SoldCard key={`${listing.closedAt}-${i}`} listing={listing} />
+              {ourListings.map((listing) => (
+                <ListingCard key={listing.key} listing={listing} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ─── Social proof — seller-resonant Google reviews ──────────────────
+          Hand-picked pull-quotes from past clients who specifically had a
+          selling experience with Matt. Six cards, mobile 1-up, sm 2-up,
+          lg 3-up. Source: lib/testimonials.ts (real verified Google reviews,
+          curated to seller-relevant quotes only). */}
+      {sellerTestimonials.length > 0 && (
+        <section className="border-b border-primary/10">
+          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-primary/70">
+                  Past Bend sellers
+                </p>
+                <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+                  What sellers actually say after we&rsquo;ve closed.
+                </h2>
+              </div>
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=Ryan+Realty+Bend+OR"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
+              >
+                Read all reviews on Google →
+              </a>
+            </div>
+            <p className="mt-3 max-w-2xl text-lg text-foreground/80">
+              Verified Google reviews. Real names, real homes. Not a marketing testimonial wall.
+            </p>
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {sellerTestimonials.map((t) => (
+                <TestimonialCard key={t.author} t={t} />
               ))}
             </div>
           </div>
@@ -439,48 +478,76 @@ function MarketStat({ label, value }: { label: string; value: string }) {
   )
 }
 
-function SoldCard({ listing }: { listing: RecentSoldListing }) {
-  const sold = formatPriceCompact(listing.closePrice)
-  const list = formatPriceCompact(listing.listPrice)
-  const overAsk =
-    listing.closePrice && listing.listPrice && listing.closePrice > listing.listPrice
-      ? Math.round(((listing.closePrice - listing.listPrice) / listing.listPrice) * 1000) / 10
-      : null
-  const place = listing.neighborhood?.trim() || listing.city?.trim() || 'Bend'
+function ListingCard({ listing }: { listing: OurListing }) {
+  const place = listing.neighborhood?.trim() || 'Bend, Oregon'
+  const specBits: string[] = []
+  if (typeof listing.beds === 'number') specBits.push(`${listing.beds} bd`)
+  if (typeof listing.baths === 'number') specBits.push(`${listing.baths} ba`)
+  if (typeof listing.sqft === 'number' && listing.sqft > 0) {
+    specBits.push(`${listing.sqft.toLocaleString()} sqft`)
+  }
+  const badgeIsActive = listing.badge === 'Currently Listed'
+  const badgeIsFeatured = listing.badge === 'Featured'
   return (
-    <div className="group overflow-hidden rounded-2xl border border-primary/10 bg-card shadow-sm transition-shadow hover:shadow-md">
+    <div
+      className={`group overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md ${
+        listing.emphasis ? 'border-primary/30 ring-1 ring-primary/15' : 'border-primary/10'
+      }`}
+    >
       <div className="relative aspect-[4/3] w-full bg-primary/5">
         <Image
           src={listing.photoUrl}
-          alt={`Recently sold home in ${place}`}
+          alt={`Ryan Realty listing — ${listing.addressLine}`}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <div className="absolute bottom-3 left-3 rounded-full bg-card/95 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary shadow-sm">
-          Sold {sold}
+        <div
+          className={`absolute bottom-3 left-3 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider shadow-sm ${
+            badgeIsFeatured
+              ? 'bg-primary text-primary-foreground'
+              : badgeIsActive
+                ? 'bg-card/95 text-primary'
+                : 'bg-card/95 text-foreground/80'
+          }`}
+        >
+          {listing.badge}
         </div>
       </div>
       <div className="p-5">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">{place}</p>
-        <div className="mt-2 flex items-baseline justify-between gap-3">
-          <p className="font-display text-2xl font-semibold tabular-nums text-primary">{sold}</p>
-          {overAsk != null && overAsk > 0 && (
-            <p className="text-sm font-semibold text-foreground/85">+{overAsk}% over ask</p>
-          )}
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground tabular-nums">
-          Listed {list}
-          {listing.beds || listing.baths ? (
-            <>
-              {' · '}
-              {listing.beds ?? '—'} bd · {listing.baths ?? '—'} ba
-            </>
-          ) : null}
-          {typeof listing.domDays === 'number' ? <> · {listing.domDays} days</> : null}
+        <p className="mt-2 font-display text-xl font-semibold leading-snug text-primary">
+          {listing.addressLine}
         </p>
+        {specBits.length > 0 && (
+          <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+            {specBits.join(' · ')}
+          </p>
+        )}
       </div>
     </div>
+  )
+}
+
+function TestimonialCard({ t }: { t: SellerTestimonial }) {
+  return (
+    <figure className="flex h-full flex-col rounded-2xl border border-primary/10 bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
+      <div
+        aria-label="Five star Google review"
+        className="flex items-center gap-0.5 text-base leading-none text-primary"
+      >
+        {'★★★★★'}
+      </div>
+      <blockquote className="mt-3 grow font-display text-lg leading-snug text-foreground/90">
+        &ldquo;{t.pull}&rdquo;
+      </blockquote>
+      <figcaption className="mt-5 flex items-center justify-between border-t border-primary/10 pt-4">
+        <span className="font-semibold text-foreground">{t.author}</span>
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Google · Verified
+        </span>
+      </figcaption>
+    </figure>
   )
 }
 
