@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.182.6 (2026-05-13)
+
+### Maintenance
+- docs(seo): one-off audit of ryan-realty.com — paste-ready for AgentFire
+
+---
+
+
 ## v1.182.5 (2026-05-13)
 
 ### Other
