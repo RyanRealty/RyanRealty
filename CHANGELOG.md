@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.176.1 (2026-05-13)
+
+### Other
+- Social profile push: Facebook Page LIVE, IG/X manual, others queued
+
+---
+
+
 ## v1.176.0 (2026-05-13)
 
 ### Features
