@@ -330,17 +330,21 @@ Full inventory: `design_system/ryan-realty/MANIFEST.md`. Most-used:
 - **14 numbered heritage wordmark variations:** `illustration-01.png` through `illustration-14.png`
 - **Element cutouts** (for custom compositing): `design_system/ryan-realty/assets/brand/navy-cream/element-*.png`
 
-## Broker headshots (locked 2026-05-12)
+## Broker headshots (locked 2026-05-12, transparent PNGs added 2026-05-13)
 
-The three Ryan Realty brokers each have a normalized 800×1200 headshot at `design_system/ryan-realty/assets/team/`:
+The three Ryan Realty brokers each have a normalized 800×1200 headshot at `design_system/ryan-realty/assets/team/`. **Both `.jpg` (white bg, kept for legacy) and `.png` (transparent bg, canonical going forward) versions exist:**
 
-- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
-- `paul-stevenson.jpg` — Paul Stevenson
-- `rebecca-peterson.jpg` — Rebecca Peterson
+- `matt-ryan.png` (transparent) / `.jpg` — Matt Ryan (owner / principal broker)
+- `paul-stevenson.png` / `.jpg` — Paul Stevenson
+- `rebecca-peterson.png` / `.jpg` — Rebecca Peterson
 
-All three share identical head height (552px top-of-head to chin), top whitespace (20px), and horizontal centering. Natural color, white background, no filter. Byte-identical mirrors at `public/images/brokers/` under web-convention names. Full spec in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+**Use the `.png` (transparent) version by default.** The subject is cut out cleanly (alpha-matted via rembg u2net_human_seg), so the portrait drops onto any background — cream, navy, a photo, a banner, a gradient — without showing a rectangular white box. Only fall back to `.jpg` if a transparent-aware renderer isn't available.
+
+All three share identical head height (552px top-of-head to chin), top whitespace (20px in the JPG version; the PNG retains the same anchoring), and horizontal centering. Natural color, no filter. Byte-identical mirrors at `public/images/brokers/` under web-convention names (`ryan-matt.png`, `stevenson-paul.png`, `peterson-rebecca.png`). Full spec in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
 
 **Listing-agent rule:** Every per-listing deliverable (flyer / IG carousel / listing-tour-video end card / blog byline / lead-gen ad / email) includes the **listing agent's headshot** — resolve from the Supabase `listings` row (`ListAgentEmail`, `ListAgentFullName`) to one of the three brokers above. For brand-led content (market reports, news clips, memes, neighborhood guides), the brokerage speaks — omit the headshot and use the Jax mascot instead.
+
+**Composite rule:** Never re-create a rectangular box behind the broker portrait by adding background fills, drop-shadows that fake a frame, or borders. The transparent edge IS the composition — let the portrait float over the underlying surface.
 
 ## Migration conflicts vs the prior locked spec (RESOLVED 2026-05-12)
 

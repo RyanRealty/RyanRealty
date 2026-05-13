@@ -114,17 +114,23 @@ All shadows use `rgb(16 39 66 / opacity)` for the navy tint. From light to heavy
 | `postcard-magnet.png` | Postcard / magnet artwork |
 | `qr-code.png` | Brand QR code |
 
-### `assets/team/` — broker headshots (locked 2026-05-12)
+### `assets/team/` — broker headshots (locked 2026-05-12, transparent PNGs added 2026-05-13)
 
 Three brokers, three byte-identical headshots — normalized to share head height, top whitespace, and horizontal centering. Use these on any broker-branded content (listing flyer / carousel / video, blog byline, ad creative, email signature). Source-of-truth location for the entire team.
 
-| File | Broker | Role |
-|---|---|---|
-| `matt-ryan.jpg` | Matt Ryan | Owner / principal broker |
-| `paul-stevenson.jpg` | Paul Stevenson | Broker |
-| `rebecca-peterson.jpg` | Rebecca Peterson | Broker |
+Each broker has **two file variants** — use the `.png` by default:
 
-**Specs (every file):** 800×1200 px · pure white background · 20px whitespace above head · 552px head height (top-of-head to chin) · face horizontally centered · natural color (no filter).
+| Broker | Transparent PNG (default) | White-bg JPG (legacy) |
+|---|---|---|
+| Matt Ryan | `matt-ryan.png` | `matt-ryan.jpg` |
+| Paul Stevenson | `paul-stevenson.png` | `paul-stevenson.jpg` |
+| Rebecca Peterson | `rebecca-peterson.png` | `rebecca-peterson.jpg` |
+
+**Specs (every file):** 800×1200 px · 20px whitespace above head · 552px head height (top-of-head to chin) · face horizontally centered · natural color (no filter). `.jpg` has a pure white background; `.png` has transparent background (alpha-matted via rembg `u2net_human_seg` with `alpha_matting=True`).
+
+**Use the `.png` by default.** The transparent version composites cleanly over cream, navy, photos, banners, gradients — anywhere — without a rectangular white box around the subject. Only fall back to `.jpg` if the renderer can't handle alpha.
+
+**Never fake a frame.** Don't add a rectangular fill, drop-shadow box, or border behind the transparent portrait. The transparent edge IS the composition.
 
 **Web mirror:** Identical files also live at `public/images/brokers/` under web-convention names (`peterson-rebecca.jpg`, `ryan-matt.jpg`, `stevenson-paul.jpg`). Both locations stay in sync.
 
