@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.168.0 (2026-05-13)
+
+### Features
+- feat(marketing-brain): 5 platform ingestors + deep-research playbooks
+
+---
+
+
 ## v1.167.0 (2026-05-13)
 
 ### Features
