@@ -5,7 +5,208 @@ const GOOGLE_OAUTH_BASE = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GOOGLE_GBP_ACCOUNTS_URL = 'https://mybusinessaccountmanagement.googleapis.com/v1/accounts'
 const GOOGLE_GBP_LOCAL_POSTS_BASE = 'https://mybusiness.googleapis.com/v4'
+const GOOGLE_GBP_PERFORMANCE_BASE =
+  'https://businessprofileperformance.googleapis.com/v1'
 const STATE_TTL_SECONDS = 600
+
+// ---------------------------------------------------------------------------
+// GBP Performance API types
+// ---------------------------------------------------------------------------
+
+/**
+ * Metric IDs supported by the Business Profile Performance API
+ * (businessprofileperformance.locations.getDailyMetricsTimeSeries).
+ *
+ * Reference:
+ *   https://developers.google.com/my-business/reference/businessprofileperformance/rest/v1/DailyMetric
+ *
+ * Skipped metrics (not applicable for a real-estate brokerage):
+ *   BUSINESS_FOOD_ORDERS, BUSINESS_FOOD_MENU_CLICKS
+ */
+export type GBPDailyMetric =
+  | 'BUSINESS_IMPRESSIONS_DESKTOP_MAPS'
+  | 'BUSINESS_IMPRESSIONS_DESKTOP_SEARCH'
+  | 'BUSINESS_IMPRESSIONS_MOBILE_MAPS'
+  | 'BUSINESS_IMPRESSIONS_MOBILE_SEARCH'
+  | 'CALL_CLICKS'
+  | 'WEBSITE_CLICKS'
+  | 'BUSINESS_DIRECTION_REQUESTS'
+  | 'BUSINESS_CONVERSATIONS'
+  | 'BUSINESS_BOOKINGS'
+
+export interface GBPDailyMetricPoint {
+  date: string // YYYY-MM-DD
+  metric: GBPDailyMetric
+  value: number
+}
+
+export interface GBPDailyMetricsResult {
+  ok: true
+  points: GBPDailyMetricPoint[]
+  locationName: string
+}
+
+export interface GBPDailyMetricsError {
+  ok: false
+  error: string
+  status?: number
+}
+
+interface GBPTimeSeries {
+  datedValues?: Array<{
+    date?: { year?: number; month?: number; day?: number }
+    value?: string
+  }>
+}
+
+interface GBPPerformanceApiResponse {
+  timeSeries?: GBPTimeSeries
+  error?: { message?: string; code?: number }
+}
+
+// ---------------------------------------------------------------------------
+// GBP Performance API fetcher
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch daily metric time-series for a single metric from the GBP Performance
+ * API. The Insights API was deprecated in 2024; this uses the replacement:
+ *   businessprofileperformance.googleapis.com/v1/locations/{name}:getDailyMetricsTimeSeries
+ *
+ * API Tier note: The Performance API is part of the Business Profile APIs
+ * (previously My Business API). It requires the `business.manage` OAuth scope.
+ * The API does NOT require enabling a separate API key — it uses OAuth 2.0
+ * bearer tokens. Free tier; no per-call cost. Daily quota is 5,000 requests
+ * per project per day (GCP API Console → Business Profile Performance API).
+ *
+ * Fetches one metric per call because the API endpoint is metric-scoped.
+ */
+async function fetchGBPMetricTimeSeries(
+  accessToken: string,
+  locationName: string,
+  metric: GBPDailyMetric,
+  startDate: string,
+  endDate: string
+): Promise<GBPDailyMetricPoint[]> {
+  const [startYear, startMonth, startDay] = startDate.split('-').map(Number)
+  const [endYear, endMonth, endDay] = endDate.split('-').map(Number)
+
+  const params = new URLSearchParams({
+    dailyMetric: metric,
+    'dailyRange.start_date.year': String(startYear),
+    'dailyRange.start_date.month': String(startMonth),
+    'dailyRange.start_date.day': String(startDay),
+    'dailyRange.end_date.year': String(endYear),
+    'dailyRange.end_date.month': String(endMonth),
+    'dailyRange.end_date.day': String(endDay),
+  })
+
+  const url = `${GOOGLE_GBP_PERFORMANCE_BASE}/${locationName}:getDailyMetricsTimeSeries?${params}`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  const json = (await response.json()) as GBPPerformanceApiResponse
+
+  if (!response.ok) {
+    throw new Error(
+      `GBP Performance API error for ${metric}: ${json.error?.message ?? response.statusText} (${response.status})`
+    )
+  }
+
+  const datedValues = json.timeSeries?.datedValues ?? []
+  return datedValues
+    .filter((dv) => dv.date?.year && dv.date?.month && dv.date?.day)
+    .map((dv) => {
+      const y = dv.date!.year!
+      const m = String(dv.date!.month!).padStart(2, '0')
+      const d = String(dv.date!.day!).padStart(2, '0')
+      return {
+        date: `${y}-${m}-${d}`,
+        metric,
+        value: parseInt(dv.value ?? '0', 10) || 0,
+      }
+    })
+}
+
+/**
+ * Fetch all applicable GBP daily metrics for a date range. Calls the
+ * Performance API once per metric (9 metrics × 1 call each per day range).
+ *
+ * Location name format: `locations/{locationId}` — built from the env var
+ * GOOGLE_BUSINESS_PROFILE_LOCATION_ID.
+ *
+ * Returns a flat array of (date, metric, value) points so the caller can
+ * easily decompose into marketing_channel_daily rows.
+ */
+export async function getGBPDailyMetrics(
+  startDate: string,
+  endDate: string
+): Promise<GBPDailyMetricsResult | GBPDailyMetricsError> {
+  const locationId = process.env.GOOGLE_BUSINESS_PROFILE_LOCATION_ID
+  if (!locationId?.trim()) {
+    return { ok: false, error: 'GOOGLE_BUSINESS_PROFILE_LOCATION_ID not configured' }
+  }
+
+  const locationName = locationId.startsWith('locations/')
+    ? locationId
+    : `locations/${locationId}`
+
+  let accessToken: string
+  try {
+    accessToken = await getOrRefreshGoogleBusinessProfileAccessToken()
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Token error: ${e instanceof Error ? e.message : String(e)}`,
+    }
+  }
+
+  const metrics: GBPDailyMetric[] = [
+    'BUSINESS_IMPRESSIONS_DESKTOP_MAPS',
+    'BUSINESS_IMPRESSIONS_DESKTOP_SEARCH',
+    'BUSINESS_IMPRESSIONS_MOBILE_MAPS',
+    'BUSINESS_IMPRESSIONS_MOBILE_SEARCH',
+    'CALL_CLICKS',
+    'WEBSITE_CLICKS',
+    'BUSINESS_DIRECTION_REQUESTS',
+    'BUSINESS_CONVERSATIONS',
+    'BUSINESS_BOOKINGS',
+  ]
+
+  const allPoints: GBPDailyMetricPoint[] = []
+  const errors: string[] = []
+
+  // Sequential calls to stay within rate limits — 9 metrics is trivially fast.
+  for (const metric of metrics) {
+    try {
+      const points = await fetchGBPMetricTimeSeries(
+        accessToken,
+        locationName,
+        metric,
+        startDate,
+        endDate
+      )
+      allPoints.push(...points)
+    } catch (e) {
+      // Collect per-metric errors; don't abort the entire batch.
+      errors.push(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  if (errors.length > 0 && allPoints.length === 0) {
+    return { ok: false, error: errors.join('; ') }
+  }
+
+  // Partial success (some metrics failed) is still ok — caller sees all points
+  // that did come back. Errors are surfaced in the ingestor result.
+  return { ok: true, points: allPoints, locationName }
+}
 
 interface GoogleTokenResponse {
   access_token: string

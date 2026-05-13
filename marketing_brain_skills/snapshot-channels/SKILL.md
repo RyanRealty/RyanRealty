@@ -47,7 +47,7 @@ app/api/cron/marketing-snapshot-<channel>/route.ts
 | GSC (search console) | `/api/cron/marketing-snapshot-gsc` | `app/actions/search-console-report.ts` | Pending |
 | YouTube | `/api/cron/marketing-snapshot-youtube` | `lib/youtube.ts` | Pending |
 | LinkedIn | `/api/cron/marketing-snapshot-linkedin` | `lib/linkedin.ts` | Pending |
-| X | `/api/cron/marketing-snapshot-x` | `lib/x.ts` | Pending |
+| X | `/api/cron/marketing-snapshot-x` | `lib/x.ts` → `getXAnalytics`, `getXUserId` | **Live** |
 | TikTok | `/api/cron/marketing-snapshot-tiktok` | `lib/tiktok.ts` | Pending |
 | GBP | `/api/cron/marketing-snapshot-gbp` | `lib/google-business-profile.ts` | Pending |
 | Threads | `/api/cron/marketing-snapshot-threads` | `lib/threads.ts` | Skipped (no token yet) |

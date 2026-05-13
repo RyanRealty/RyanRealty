@@ -5,6 +5,246 @@ const GOOGLE_OAUTH_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const YOUTUBE_OAUTH_SCOPES = 'https://www.googleapis.com/auth/youtube.upload'
 
+// ---------------------------------------------------------------------------
+// YouTube Analytics API v2
+// ---------------------------------------------------------------------------
+
+const YOUTUBE_ANALYTICS_BASE = 'https://youtubeanalytics.googleapis.com/v2'
+const YOUTUBE_DATA_BASE = 'https://www.googleapis.com/youtube/v3'
+
+export interface YouTubeAnalyticsDayRow {
+  date: string // YYYY-MM-DD
+  // Account-level metrics (channel==MINE)
+  views: number
+  watchTimeMinutes: number
+  subscribersGained: number
+  subscribersLost: number
+  averageViewDurationSeconds: number
+  averageViewPercentage: number
+  cardClickRate: number
+  cardImpressions: number
+  annotationClickThroughRate: number
+  likes: number
+  comments: number
+  shares: number
+}
+
+export interface YouTubeVideoMetrics {
+  videoId: string
+  views: number
+  watchTimeMinutes: number
+  averageViewDurationSeconds: number
+  averageViewPercentage: number
+  subscribersGained: number
+  impressions: number
+  impressionsClickThroughRate: number
+  metadata: {
+    title: string
+    publishedAt: string
+    durationSeconds: number
+  }
+}
+
+/**
+ * Fetch account-level YouTube Analytics metrics for a single day.
+ * Uses the YouTube Analytics API v2 (youtubeAnalytics.reports.query).
+ * Requires a valid access token with the youtube.readonly scope.
+ */
+export async function getYouTubeAnalyticsDay(
+  date: string,
+  accessToken: string
+): Promise<YouTubeAnalyticsDayRow> {
+  const metrics = [
+    'views',
+    'estimatedMinutesWatched',
+    'subscribersGained',
+    'subscribersLost',
+    'averageViewDuration',
+    'averageViewPercentage',
+    'cardClickRate',
+    'cardImpressions',
+    'annotationClickThroughRate',
+    'likes',
+    'comments',
+    'shares',
+  ].join(',')
+
+  const params = new URLSearchParams({
+    ids: 'channel==MINE',
+    startDate: date,
+    endDate: date,
+    metrics,
+  })
+
+  const res = await fetch(`${YOUTUBE_ANALYTICS_BASE}/reports?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`YouTube Analytics account query failed ${res.status}: ${body}`)
+  }
+
+  const json = (await res.json()) as {
+    columnHeaders?: { name: string }[]
+    rows?: (number | string)[][]
+  }
+
+  // API returns rows only when there is data. A channel with zero activity
+  // returns an empty rows array — treat as all-zeros rather than an error.
+  const row = json.rows?.[0] ?? []
+
+  const get = (name: string): number => {
+    const idx = json.columnHeaders?.findIndex((h) => h.name === name) ?? -1
+    if (idx === -1) return 0
+    return Number(row[idx] ?? 0)
+  }
+
+  return {
+    date,
+    views: get('views'),
+    watchTimeMinutes: get('estimatedMinutesWatched'),
+    subscribersGained: get('subscribersGained'),
+    subscribersLost: get('subscribersLost'),
+    averageViewDurationSeconds: get('averageViewDuration'),
+    averageViewPercentage: get('averageViewPercentage'),
+    cardClickRate: get('cardClickRate'),
+    cardImpressions: get('cardImpressions'),
+    annotationClickThroughRate: get('annotationClickThroughRate'),
+    likes: get('likes'),
+    comments: get('comments'),
+    shares: get('shares'),
+  }
+}
+
+/**
+ * Fetch per-video YouTube Analytics metrics for the top-N videos by views
+ * in the 30-day window ending on `endDate`. Returns up to `limit` videos
+ * (default 15) with analytics + Data API metadata (title, publishedAt, duration).
+ */
+export async function getYouTubeTopVideoMetrics(
+  endDate: string,
+  accessToken: string,
+  limit = 15
+): Promise<YouTubeVideoMetrics[]> {
+  // Step 1: Fetch top videos by views in the last 30 days.
+  const startDate = new Date(`${endDate}T00:00:00Z`)
+  startDate.setUTCDate(startDate.getUTCDate() - 29)
+  const startDateStr = startDate.toISOString().slice(0, 10)
+
+  const videoMetrics = [
+    'views',
+    'estimatedMinutesWatched',
+    'averageViewDuration',
+    'averageViewPercentage',
+    'subscribersGained',
+    'impressions',
+    'impressionsClickThroughRate',
+  ].join(',')
+
+  const params = new URLSearchParams({
+    ids: 'channel==MINE',
+    startDate: startDateStr,
+    endDate,
+    metrics: videoMetrics,
+    dimensions: 'video',
+    sort: '-views',
+    maxResults: String(limit),
+  })
+
+  const res = await fetch(`${YOUTUBE_ANALYTICS_BASE}/reports?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`YouTube Analytics video query failed ${res.status}: ${body}`)
+  }
+
+  const json = (await res.json()) as {
+    columnHeaders?: { name: string }[]
+    rows?: (number | string)[][]
+  }
+
+  const rows = json.rows ?? []
+  if (rows.length === 0) return []
+
+  const headers = json.columnHeaders ?? []
+  const col = (name: string) => headers.findIndex((h) => h.name === name)
+
+  // Column indices
+  const idxVideo = col('video')
+  const idxViews = col('views')
+  const idxMinutes = col('estimatedMinutesWatched')
+  const idxAvgDur = col('averageViewDuration')
+  const idxAvgPct = col('averageViewPercentage')
+  const idxSubGained = col('subscribersGained')
+  const idxImpressions = col('impressions')
+  const idxCTR = col('impressionsClickThroughRate')
+
+  // Step 2: Fetch Data API metadata for all video IDs in one call.
+  const videoIds = rows.map((r) => String(r[idxVideo])).filter(Boolean)
+
+  const dataParams = new URLSearchParams({
+    part: 'snippet,contentDetails',
+    id: videoIds.join(','),
+    fields: 'items(id,snippet(title,publishedAt),contentDetails(duration))',
+  })
+
+  const dataRes = await fetch(`${YOUTUBE_DATA_BASE}/videos?${dataParams.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!dataRes.ok) {
+    const body = await dataRes.text()
+    throw new Error(`YouTube Data API video metadata failed ${dataRes.status}: ${body}`)
+  }
+
+  const dataJson = (await dataRes.json()) as {
+    items?: {
+      id: string
+      snippet?: { title?: string; publishedAt?: string }
+      contentDetails?: { duration?: string }
+    }[]
+  }
+
+  // Build metadata map by video ID.
+  const metaMap = new Map<string, { title: string; publishedAt: string; durationSeconds: number }>()
+  for (const item of dataJson.items ?? []) {
+    metaMap.set(item.id, {
+      title: item.snippet?.title ?? '',
+      publishedAt: item.snippet?.publishedAt ?? '',
+      durationSeconds: parseIsoDuration(item.contentDetails?.duration ?? 'PT0S'),
+    })
+  }
+
+  return rows.map((r): YouTubeVideoMetrics => {
+    const videoId = String(r[idxVideo])
+    const meta = metaMap.get(videoId) ?? { title: '', publishedAt: '', durationSeconds: 0 }
+    return {
+      videoId,
+      views: Number(r[idxViews] ?? 0),
+      watchTimeMinutes: Number(r[idxMinutes] ?? 0),
+      averageViewDurationSeconds: Number(r[idxAvgDur] ?? 0),
+      averageViewPercentage: Number(r[idxAvgPct] ?? 0),
+      subscribersGained: Number(r[idxSubGained] ?? 0),
+      impressions: Number(r[idxImpressions] ?? 0),
+      impressionsClickThroughRate: Number(r[idxCTR] ?? 0),
+      metadata: meta,
+    }
+  })
+}
+
+/**
+ * Parse an ISO 8601 duration string (e.g. "PT4M13S") into total seconds.
+ * Handles hours, minutes, and seconds. Returns 0 for invalid input.
+ */
+function parseIsoDuration(iso: string): number {
+  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+  if (!match) return 0
+  return (Number(match[1] ?? 0) * 3600) + (Number(match[2] ?? 0) * 60) + Number(match[3] ?? 0)
+}
+
 interface YouTubeSnippet {
   title: string
   description: string

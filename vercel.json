@@ -89,8 +89,28 @@
       "schedule": "30 6 * * *"
     },
     {
+      "path": "/api/cron/marketing-snapshot-x",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/marketing-snapshot-linkedin",
+      "schedule": "30 6 * * *"
+    },
+    {
       "path": "/api/cron/marketing-weekly-cycle",
       "schedule": "0 2 * * 1"
+    },
+    {
+      "path": "/api/cron/marketing-snapshot-tiktok",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/marketing-snapshot-gbp",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/marketing-snapshot-youtube",
+      "schedule": "30 6 * * *"
     }
   ]
 }
