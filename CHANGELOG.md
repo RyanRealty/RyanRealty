@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.172.0 (2026-05-13)
+
+### Features
+- feat(marketing-brain): brain→producers architecture foundation
+
+---
+
+
 ## v1.171.0 (2026-05-13)
 
 ### Features
