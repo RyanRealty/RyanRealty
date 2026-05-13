@@ -52,47 +52,45 @@ Single-deliverable specialists. Each handles one or more `content:*` action_type
 
 ## Section C — Site Producers
 
-**Status: pending build** (next wave). These producers make changes to ryan-realty.com.
+These producers make changes to ryan-realty.com. All site changes land in a git branch and open a GitHub PR — never directly on `main`.
 
 | producer_name | path | action_types | approval | notes |
 |---|---|---|---|---|
-| site-edit | `marketing_brain_skills/producers/site-edit/` | `site:copy_update`, `site:hero_update` | matt-review-PR | Edits existing page copy or hero content; opens a PR for Matt to merge |
-| site-page-create | `marketing_brain_skills/producers/site-page-create/` | `site:page_create`, `site:landing_page` | matt-review-PR | Scaffolds a new Next.js page; opens a PR |
-| site-performance | `marketing_brain_skills/producers/site-performance/` | `site:perf_fix`, `site:seo_fix` | matt-review-PR | Fixes Core Web Vitals or SEO issues surfaced by audit-website |
+| site-edit | `marketing_brain_skills/producers/site-edit/` | `site:copy_update`, `site:meta_update`, `site:cta_update` | matt-review-PR | Edits existing page copy, metadata, or CTAs; brand-voice-validates all after_text before editing; opens a PR for Matt to merge |
+| site-page-create | `marketing_brain_skills/producers/site-page-create/` | `site:page_create`, `site:landing_page_create` | matt-review-PR | Scaffolds a new Next.js page with shadcn/ui, wires lead form for landing pages, updates sitemap; opens a PR |
+| site-performance | `marketing_brain_skills/producers/site-performance/` | `site:perf_fix`, `site:redirect_add`, `site:schema_add` | matt-review-PR | Applies lazy-load attributes, PNG→WebP conversion, 301 redirects in next.config.ts, or JSON-LD structured data; opens a PR |
 
 ---
 
 ## Section D — Operational Producers
 
-**Status: pending build.** These producers make changes to ad accounts, CRM, and email platform.
+These producers make changes to ad accounts, CRM, and email platform.
 
 | producer_name | path | action_types | approval | notes |
 |---|---|---|---|---|
-| ops-meta-ads | `marketing_brain_skills/producers/ops-meta-ads/` | `ops:meta_ads_pause`, `ops:meta_ads_budget`, `ops:meta_ads_new_campaign` | matt-explicit | Any Meta Ads account change requires explicit Matt approval before execution |
-| ops-fub-crm | `marketing_brain_skills/producers/ops-fub-crm/` | `ops:fub_tag`, `ops:fub_stage`, `ops:fub_assign` | matt-explicit | CRM mutations; explicit approval required |
-| ops-email-send | `marketing_brain_skills/producers/ops-email-send/` | `ops:email_blast`, `ops:email_drip_add` | matt-review-draft | Drafts email for Matt's review before Resend send |
-| ops-reputation | `marketing_brain_skills/producers/ops-reputation/` | `ops:gbp_review_response`, `ops:review_flag` | matt-review-draft | Drafts GBP review responses in Matt's voice; Matt approves before post |
+| ops-meta-ads | `marketing_brain_skills/producers/ops-meta-ads/` | `ops:meta_budget`, `ops:meta_pause`, `ops:meta_resume`, `ops:meta_audience`, `ops:meta_creative_swap` | matt-explicit | Any Meta Ads account change requires explicit Matt approval before execution; ±25% daily budget band enforced per FB_SELLER_CAMPAIGN_PLAYBOOK.md |
+| ops-fub-crm | `marketing_brain_skills/producers/ops-fub-crm/` | `ops:fub_tag_fix`, `ops:fub_sequence_change`, `ops:fub_task_create`, `ops:fub_routing` | matt-explicit (>5 leads) / matt-review-draft (≤5 leads) | CRM mutations; filter count verified before bulk ops; task creation requires explicit lead_ids |
+| ops-email-send | `marketing_brain_skills/producers/ops-email-send/` | `ops:email_newsletter`, `ops:email_blast`, `ops:email_template_update` | matt-explicit | Verifies mail.ryan-realty.com Resend domain before draft; voice validated before surface; every send requires explicit approval |
+| ops-reputation | `marketing_brain_skills/producers/ops-reputation/` | `ops:review_response`, `ops:review_request`, `ops:gbp_post`, `ops:gbp_qna` | matt-review-draft | Drafts in Matt's voice using 22-response GBP corpus; negative reviews flagged separately; Matt approves before any public post |
 
 ---
 
 ## Section E — Communications Producers
 
-**Status: pending build.** Internal alerts to Matt.
-
 | producer_name | path | action_types | approval | notes |
 |---|---|---|---|---|
-| comms-matt-alert | `marketing_brain_skills/producers/comms-matt-alert/` | `comms:alert`, `comms:digest` | none | Sends iMessage or Slack notification to Matt; no content approval gate — these are brain status reports, not published content |
+| comms-matt-alert | `marketing_brain_skills/producers/comms-matt-alert/` | `comms:matt_alert`, `comms:matt_summary`, `comms:team_update`, `comms:stakeholder_summary` | none (critical/high send immediately; medium/low/summary land in dashboard) | Routes alerts to iMessage (critical/high) or email + dashboard card (medium/low/summary). Voice-validates every message before send. |
 
 ---
 
 ## Section F — Analysis Producers
 
-**Status: pending build.** These producers run analysis and surface findings; they do not publish.
+These producers run analysis and surface findings; they do not publish.
 
 | producer_name | path | action_types | approval | notes |
 |---|---|---|---|---|
-| analyze-anomaly | `marketing_brain_skills/producers/analyze-anomaly/` | `analyze:anomaly`, `analyze:spike` | none (findings surfaced in digest) | Deep-dives into a flagged channel anomaly; writes finding to marketing_decisions |
-| analyze-experiment | `marketing_brain_skills/producers/analyze-experiment/` | `analyze:experiment_result` | none | Concludes a running A/B test; writes winner + rationale to marketing_decisions |
+| analyze-anomaly | `marketing_brain_skills/analyze-anomaly/` | `analyze:drop_investigation`, `analyze:spike_investigation`, `analyze:metric_decomposition` | none (findings written to marketing_decisions; generate-briefs reads them) | Drills into flagged channel anomaly: inflection date, dimension decomposition, correlated events, hypothesis, recommended actions. |
+| analyze-experiment | `marketing_brain_skills/analyze-experiment/` | `analyze:ab_test_design`, `analyze:ab_test_readout` | none (rollout actions it enqueues go to site-edit which has matt-review-PR) | Designs A/B tests with power calculation; reads out completed tests with chi-square / t-test significance; declares winner or extends. |
 
 ---
 
