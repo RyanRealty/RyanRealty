@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.174.0 (2026-05-13)
+
+### Features
+- feat(list-kit): full Tumalo list set + Rebecca hair cleanup + state page
+
+---
+
+
 ## v1.173.0 (2026-05-13)
 
 ### Features
