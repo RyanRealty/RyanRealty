@@ -40,20 +40,22 @@ for (const spec of BANNER_SPECS) {
   const targetAspect = spec.w / spec.h;
 
   // Crop math
+  // Matt's directive 2026-05-13: anchor crop so the American flag sits at ~5% from the top
+  // of the rendered banner — flag visually hugs the upper edge. In source, flag flies above
+  // middle smokestack at ~y=80px (out of 720). Target flag position = cropHeight * 0.05.
+  // cropTop = flagY_source - cropHeight * 0.05
+  const FLAG_Y_IN_SOURCE = 80;   // approximate y-pixel of the flag in the 720p source
+  const FLAG_TARGET_FRAC = 0.05; // flag should land at 5% from top of crop
   let cropBox;
   if (Math.abs(targetAspect - heroAspect) < 0.05) {
-    // Same aspect — no crop needed
+    // Same aspect — no crop needed, flag at ~11% from top (8/720). Already near top.
     cropBox = { left: 0, top: 0, width: heroMeta.width, height: heroMeta.height };
   } else if (targetAspect > heroAspect) {
-    // Banner wider than source — full width, partial height. Anchor vertically to keep
-    // smokestacks + flag in frame (they span the upper-mid portion).
     const cropHeight = Math.round(heroMeta.width / targetAspect);
-    // Smokestacks centered around y ~50%; anchor crop so that point lands at crop center.
-    let cropTop = Math.round(heroMeta.height * 0.50 - cropHeight * 0.50);
+    let cropTop = Math.round(FLAG_Y_IN_SOURCE - cropHeight * FLAG_TARGET_FRAC);
     cropTop = Math.max(0, Math.min(heroMeta.height - cropHeight, cropTop));
     cropBox = { left: 0, top: cropTop, width: heroMeta.width, height: cropHeight };
   } else {
-    // Banner narrower than source — full height, partial width. Anchor to smokestacks at x~55%.
     const cropWidth = Math.round(heroMeta.height * targetAspect);
     let cropLeft = Math.round(heroMeta.width * 0.55 - cropWidth * 0.50);
     cropLeft = Math.max(0, Math.min(heroMeta.width - cropWidth, cropLeft));
