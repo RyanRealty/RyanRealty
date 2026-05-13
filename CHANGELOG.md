@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.169.3 (2026-05-13)
+
+### Bug Fixes
+- fix(marketing-brain): expand LinkedIn + YouTube OAuth scopes for analytics
+
+---
+
+
 ## v1.169.2 (2026-05-13)
 
 ### Maintenance
