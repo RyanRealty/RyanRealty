@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.176.2 (2026-05-13)
+
+### Bug Fixes
+- fix(build): force-dynamic on 5 slow pages so Vercel deploy doesn't time out
+
+---
+
+
 ## v1.176.1 (2026-05-13)
 
 ### Other
