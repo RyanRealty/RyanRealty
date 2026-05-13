@@ -30,14 +30,16 @@
 }
 
 :root {
-  /* ───── Brand core ───── */
-  --rr-navy:          #102742;   /* Ryan Realty navy — primary */
-  --rr-navy-deep:     #0a1a2e;   /* Hover/pressed navy */
-  --rr-navy-50:       oklch(0.95 0.015 253.9);
-  --rr-cream:         #faf8f4;   /* Warm off-white sometimes used */
-  --rr-sand:          #e8e2d4;   /* Stone neutral */
-  --rr-fir:           #2e4a3a;   /* Central Oregon forest accent */
-  --rr-sky:           #8fb8d4;   /* Deschutes sky accent */
+  /* ───── Brand core (locked 2026-05-13 — Matt's directive: navy + cream only) ───── */
+  --rr-navy:          #102742;   /* Ryan Realty navy — primary brand color */
+  --rr-cream:         #faf8f4;   /* Warm off-white — primary background */
+
+  /* RETIRED 2026-05-13 by Matt's directive. Do not reintroduce.
+     --rr-navy-deep   was #0a1a2e (hover/pressed navy) — replaced with rgba(navy, 0.85)
+     --rr-sand        was #e8e2d4 (stone neutral)      — replaced with rgba(navy, 0.08) for borders
+     --rr-fir         was #2e4a3a (forest accent)      — gone, no replacement
+     --rr-sky         was #8fb8d4 (Deschutes accent)   — gone, no replacement
+  */
 
   /* ───── Semantic tokens (from app/globals.css) ───── */
   --background:         oklch(1 0 0);

@@ -18,16 +18,21 @@ Claude Design project `b87a4e11-1017-4fb5-bc82-ed8fec1ec568`.
 
 Never mix the two on the same surface (except a single cross-register hero or footer block).
 
-## Brand colors (hex)
+## Brand colors (hex) — LOCKED 2026-05-13: navy + cream only
 
 | Token | Hex | Use |
 |---|---|---|
-| `--rr-navy` | `#102742` | Primary brand navy. Logo, CTAs, headlines, focus intent. |
-| `--rr-navy-deep` | `#0a1a2e` | Hover / pressed navy. |
-| `--rr-cream` | `#faf8f4` | Warm off-white background for heritage register. |
-| `--rr-sand` | `#e8e2d4` | Stone neutral. |
-| `--rr-fir` | `#2e4a3a` | Central Oregon forest accent (sparing). |
-| `--rr-sky` | `#8fb8d4` | Deschutes sky accent (sparing). |
+| `--rr-navy` | `#102742` | Primary brand navy. Logo, CTAs, headlines, focus intent, end-card backgrounds. |
+| `--rr-cream` | `#faf8f4` | Warm off-white — primary background for cream surfaces (flyers, IG carousels, heritage moments). |
+
+**Retired 2026-05-13 by Matt's directive — never reintroduce:**
+
+- `--rr-navy-deep` (was `#0a1a2e` for hover/pressed) → use `rgba(16,39,66,0.85)` for hover/pressed states
+- `--rr-sand` (was `#e8e2d4` stone neutral) → use `rgba(16,39,66,0.08)` for borders/dividers
+- `--rr-fir` (was `#2e4a3a` forest accent)
+- `--rr-sky` (was `#8fb8d4` Deschutes accent)
+
+Utility: white `#FFFFFF` and pure black `#000000` are allowed for text-on-photo legibility and scrim layers. Off-brand hex codes still banned.
 
 Semantic web tokens (cards, popovers, muted, foreground, etc.) live in `colors_and_type.css` as `oklch()` values that mirror the existing `app/globals.css` radix-nova base. The chart ramp is monochromatic blue.
 

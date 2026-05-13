@@ -255,18 +255,25 @@ The `_style_backup/` directory was removed from the repo. Never recreate it. Use
 
 Never mix the two on the same surface (except a single cross-register hero or footer block).
 
-## Brand colors — locked hex
+## Brand colors — locked hex (palette simplified 2026-05-13)
 
 | Token | Hex | Use |
 |---|---|---|
-| `--rr-navy` | `#102742` | Primary navy. Logo, CTAs, headlines, focus intent. |
-| `--rr-navy-deep` | `#0a1a2e` | Hover / pressed navy. |
-| `--rr-cream` | `#faf8f4` | Heritage register background. (Replaces the old `#F2EBDD` cream.) |
-| `--rr-sand` | `#e8e2d4` | Stone neutral. |
-| `--rr-fir` | `#2e4a3a` | Forest accent (sparing). |
-| `--rr-sky` | `#8fb8d4` | Deschutes sky accent (sparing). |
+| `--rr-navy` | `#102742` | Primary navy. Logo, CTAs, headlines, focus intent, end-card backgrounds. |
+| `--rr-cream` | `#faf8f4` | Warm off-white — primary background. |
 
-**Gold is OUT of the v2 system.** Both `#D4AF37` (news) and `#C8A864` (listing reels) are removed from the heritage register. Existing rendered videos in `public/v5_library/` stay as-is until re-rendered; new renders use navy-on-cream. See "Migration conflicts" below.
+**Two-color palette only.** Matt's directive 2026-05-13: "I want to get rid of navy-deep, sand, fir, sky — we won't be using that in anything else, so remove those entirely."
+
+Retired tokens (do not reintroduce):
+
+- `--rr-navy-deep` `#0a1a2e` → use `rgba(16,39,66,0.85)` for hover/pressed states
+- `--rr-sand` `#e8e2d4` → use `rgba(16,39,66,0.08)` for borders/dividers
+- `--rr-fir` `#2e4a3a` (was forest accent — gone)
+- `--rr-sky` `#8fb8d4` (was Deschutes accent — gone)
+
+Utility: white `#FFFFFF` and pure black `#000000` allowed for text-on-photo legibility and scrim layers only. Off-brand hex codes still banned.
+
+**Gold is also OUT of the v2 system.** Both `#D4AF37` (news) and `#C8A864` (listing reels) remain retired. Existing rendered videos in `public/v5_library/` stay as-is until re-rendered; new renders use navy-on-cream. See "Migration conflicts" below.
 
 ## Type families — three, with a decision tree
 

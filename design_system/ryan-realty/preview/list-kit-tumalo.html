@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ryan Realty · List Kit State — 19496 Tumalo Reservoir</title>
+<style>
+/* ── FONTS ── */
+@font-face { font-family:'Amboqia Boriango'; src:url('../fonts/Amboqia_Boriango.otf') format('opentype'); }
+@font-face { font-family:'Azo Sans'; src:url('../fonts/AzoSans-Medium.ttf') format('truetype'); }
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+
+/* ── TOKENS ── */
+:root {
+  --rr-navy:      #102742;
+  --rr-navy-deep: #0a1a2e;
+  --rr-cream:     #faf8f4;
+  --rr-sand:      #e8e2d4;
+  --rr-sand-edge: #ede6d4;
+  --rr-fir:       #2e4a3a;
+  --rr-sky:       #8fb8d4;
+  --rr-muted:     #46607c;
+}
+
+/* ── RESET / BASE ── */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--rr-cream);
+  font-family: 'Geist', system-ui, sans-serif;
+  color: var(--rr-navy);
+}
+
+/* ── STICKY NAV ── */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(250,248,244,0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--rr-sand);
+  padding: 0 32px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  justify-content: center;
+}
+.top-nav a {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--rr-navy);
+  text-decoration: none;
+  opacity: 0.65;
+  padding: 0 18px;
+  transition: opacity 150ms;
+  white-space: nowrap;
+}
+.top-nav a:hover { opacity: 1; }
+.top-nav .nav-sep { color: var(--rr-sand-edge); font-size: 16px; }
+
+/* ── SCROLL ANCHOR OFFSET ── */
+.anchor { display: block; height: 0; scroll-margin-top: 68px; }
+
+/* ── PAGE SHELL ── */
+.page-wrap {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 56px 32px 120px;
+}
+
+/* ── SECTION CARD ── */
+.section-card {
+  background: #fff;
+  border: 1px solid var(--rr-sand);
+  border-radius: 14px;
+  box-shadow:
+    0 4px 6px -1px rgb(16 39 66 / .08),
+    0 2px 4px -2px rgb(16 39 66 / .06);
+  padding: 40px 44px;
+  margin-bottom: 72px;
+}
+
+/* ── SECTION HEADER ROW ── */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.section-id {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--rr-navy);
+  opacity: 0.45;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.section-title {
+  font-family: 'Amboqia Boriango', Georgia, serif;
+  font-size: 32px;
+  color: var(--rr-navy);
+  line-height: 1;
+  margin: 0;
+}
+.section-sep { flex: 1; }
+
+/* ── STATUS PILLS ── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Geist', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.pill-approved { background: #dcfce7; color: #15803d; }
+.pill-review   { background: #fef9c3; color: #92400e; }
+.pill-rejected { background: #fee2e2; color: #b91c1c; }
+.pill-info     { background: #e0f2fe; color: #0369a1; }
+.pill-locked   { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+.pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pill-approved .pill-dot { background: #15803d; }
+.pill-review   .pill-dot { background: #d97706; }
+.pill-rejected .pill-dot { background: #b91c1c; }
+.pill-info     .pill-dot { background: #0369a1; }
+.pill-locked   .pill-dot { background: #166534; }
+
+/* ── §0 PAGE HEADER ── */
+.page-eyebrow {
+  font-family: 'Azo Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--rr-navy);
+  opacity: 0.6;
+  margin: 0 0 18px;
+}
+.page-h1 {
+  font-family: 'Amboqia Boriango', Georgia, serif;
+  font-size: 72px;
+  color: var(--rr-navy);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  margin: 0 0 20px;
+}
+.page-sub {
+  font-family: 'Geist', sans-serif;
+  font-size: 18px;
+  color: var(--rr-navy);
+  opacity: 0.75;
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+.page-meta {
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px;
+  color: var(--rr-muted);
+  margin: 0 0 16px;
+}
+.page-note {
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  color: var(--rr-muted);
+  font-style: italic;
+  margin: 0;
+  padding: 14px 18px;
+  background: rgb(16 39 66 / .04);
+  border-left: 3px solid var(--rr-sand-edge);
+  border-radius: 0 8px 8px 0;
+}
+
+/* ── §0.5 LOCKED DECISIONS ── */
+.locked-panel {
+  background: var(--rr-navy);
+  border-radius: 14px;
+  padding: 36px 44px;
+  margin-bottom: 72px;
+}
+.locked-panel-eyebrow {
+  font-family: 'Azo Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(250,248,244,0.5);
+  margin: 0 0 10px;
+}
+.locked-panel-title {
+  font-family: 'Amboqia Boriango', Georgia, serif;
+  font-size: 36px;
+  color: var(--rr-cream);
+  line-height: 1;
+  margin: 0 0 28px;
+}
+.locked-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.locked-table tr {
+  border-bottom: 1px solid rgba(250,248,244,0.08);
+}
+.locked-table tr:last-child {
+  border-bottom: none;
+}
+.locked-table td {
+  padding: 14px 0;
+  vertical-align: top;
+}
+.locked-table td:first-child {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(250,248,244,0.55);
+  width: 220px;
+  padding-right: 24px;
+  line-height: 1.5;
+}
+.locked-table td:nth-child(2) {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  color: var(--rr-cream);
+  line-height: 1.5;
+}
+.locked-table td:last-child {
+  width: 32px;
+  text-align: right;
+  vertical-align: middle;
+}
+.locked-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #22c55e;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.locked-check svg {
+  width: 11px;
+  height: 11px;
+}
+.locked-val-mono {
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px;
+  color: rgba(250,248,244,0.75);
+  background: rgba(250,248,244,0.08);
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
+/* ── §1 LOGO PICKER ── */
+.logo-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.logo-item {}
+.logo-item-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.logo-item-id {
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rr-navy);
+  background: rgb(16 39 66 / .07);
+  padding: 2px 10px;
+  border-radius: 5px;
+}
+.logo-item-id-locked {
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #166534;
+  background: #dcfce7;
+  padding: 2px 10px;
+  border-radius: 5px;
+}
+.logo-item-filename {
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px;
+  color: var(--rr-muted);
+}
+.logo-item-label {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  color: var(--rr-muted);
+  font-style: italic;
+}
+.logo-use-case {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  color: #166534;
+  font-weight: 600;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 8px 14px;
+  margin-bottom: 14px;
+  display: inline-block;
+}
+.logo-swatches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.logo-swatch {
+  border-radius: 10px;
+  padding: 32px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  border: 1px solid transparent;
+}
+.logo-swatch.on-cream {
+  background: var(--rr-cream);
+  border-color: var(--rr-sand);
+}
+.logo-swatch.on-navy {
+  background: var(--rr-navy);
+}
+.logo-swatch img {
+  width: 300px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+.swatch-label {
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  color: var(--rr-muted);
+  text-align: center;
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+}
+.swatch-label-navy {
+  color: rgba(250,248,244,0.5);
+}
+.logo-swatch-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-divider {
+  border: none;
+  border-top: 1px solid var(--rr-sand);
+  margin: 0;
+}
+
+/* Collapsed other variants */
+.other-variants-toggle {
+  margin-top: 36px;
+}
+details.other-variants > summary {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  color: var(--rr-muted);
+  cursor: pointer;
+  padding: 12px 16px;
+  background: rgb(16 39 66 / .03);
+  border: 1px solid var(--rr-sand);
+  border-radius: 8px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+details.other-variants > summary::-webkit-details-marker { display: none; }
+details.other-variants > summary::before {
+  content: '▶';
+  font-size: 10px;
+  opacity: 0.5;
+  transition: transform 150ms;
+}
+details.other-variants[open] > summary::before {
+  transform: rotate(90deg);
+}
+.other-variants-inner {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+.other-variant-rejected {
+  opacity: 0.55;
+}
+
+/* ── §2 BRAND REFERENCE ── */
+.brand-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+}
+.brand-block h3 {
+  font-family: 'Azo Sans', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--rr-muted);
+  margin: 0 0 14px;
+}
+.color-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.color-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.color-chip-swatch {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.color-chip-hex {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--rr-muted);
+}
+.color-chip-name {
+  font-family: 'Geist', sans-serif;
+  font-size: 10px;
+  color: var(--rr-muted);
+  opacity: 0.8;
+}
+.type-samples {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.type-sample-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+.type-sample-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--rr-muted);
+  width: 80px;
+  flex-shrink: 0;
+}
+.type-amboqia {
+  font-family: 'Amboqia Boriango', Georgia, serif;
+  font-size: 48px;
+  color: var(--rr-navy);
+  line-height: 1;
+}
+.type-amboqia-caption {
+  font-family: 'Amboqia Boriango', Georgia, serif;
+  font-size: 28px;
+  color: var(--rr-navy);
+  line-height: 1.2;
+}
+.type-geist {
+  font-family: 'Geist', sans-serif;
+  font-size: 24px;
+  color: var(--rr-navy);
+}
+.type-azo {
+  font-family: 'Azo Sans', sans-serif;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--rr-navy);
+}
+.voice-rules {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.voice-rules li {
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  color: var(--rr-navy);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.voice-rules li::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--rr-navy);
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+/* Caption preview swatch */
+.caption-preview {
+  background: #000;
+  border-radius: 12px;
+  padding: 32px 24px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.caption-demo {
+  font-family: 'Amboqia Boriango', Georgia, serif;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 1px 2px rgba(0,0,0,0.9);
+  line-height: 1.2;
+}
+.caption-demo-lg { font-size: 96px; }
+.caption-demo-md { font-size: 72px; }
+.caption-demo-note {
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.05em;
+}
+
+/* ── §3 HEADSHOTS ── */
+.headshot-surfaces {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.headshot-surface-label {
+  font-family: 'Azo Sans', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--rr-muted);
+  margin: 0 0 14px;
+}
+.headshot-row {
+  display: flex;
+  gap: 32px;
+  padding: 32px;
+  border-radius: 12px;
+  border: 1px solid var(--rr-sand);
+  flex-wrap: wrap;
+}
+.headshot-row.on-cream { background: var(--rr-cream); }
+.headshot-row.on-navy  { background: var(--rr-navy); border-color: transparent; }
+
+/* Each broker: PNG (transparent) + JPG (white bg) side by side */
+.headshot-broker-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.headshot-broker-variants {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+.headshot-variant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.headshot-variant img {
+  width: 160px;
+  height: 224px;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  border-radius: 4px;
+}
+.headshot-variant img.headshot-png,
+.headshot-variant img.headshot-jpg {
+  /* Larger size + high-quality resampling to fix pixelation */
+  width: 320px !important;
+  height: 448px !important;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+}
+.headshot-variant img.headshot-png {
+  background: transparent;
+}
+.headshot-variant img.headshot-jpg {
+  background: #fff;
+}
+.headshot-variant-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--rr-muted);
+  letter-spacing: 0.04em;
+}
+.headshot-variant-label-light {
+  color: rgba(250,248,244,0.4);
+}
+.headshot-name {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rr-navy);
+}
+.headshot-name-light { color: rgba(250,248,244,0.85); }
+.headshot-role {
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  color: var(--rr-muted);
+}
+.headshot-role-light { color: rgba(250,248,244,0.5); }
+
+/* ── §4 CAROUSELS ── */
+.carousel-block {
+  margin-bottom: 44px;
+}
+.carousel-block:last-child { margin-bottom: 0; }
+.carousel-block-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.carousel-block-id {
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--rr-navy);
+  background: rgb(16 39 66 / .07);
+  padding: 2px 10px;
+  border-radius: 5px;
+}
+.carousel-block-name {
+  font-family: 'Geist', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--rr-navy);
+}
+.carousel-slides {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rr-sand) transparent;
+}
+.slide-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+/* Full-bleed: no border-radius, no border, no padding */
+.slide-item img {
+  width: 195px;
+  height: 244px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 0;
+  border: none;
+  display: block;
+}
+.slide-id {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--rr-muted);
+}
+.carousel-prompt {
+  margin-top: 14px;
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  color: var(--rr-muted);
+  font-style: italic;
+  padding: 10px 14px;
+  background: rgb(16 39 66 / .03);
+  border-radius: 7px;
+  border: 1px solid var(--rr-sand);
+}
+.carousel-divider {
+  border: none;
+  border-top: 1px solid var(--rr-sand);
+  margin: 36px 0;
+}
+.known-issue-panel {
+  margin-top: 14px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.known-issue-panel p {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  color: #78350f;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── §5 VIDEOS ── */
+.video-block {
+  margin-bottom: 52px;
+}
+.video-block:last-child { margin-bottom: 0; }
+.video-block-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.video-block-id {
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rr-navy);
+  background: rgb(16 39 66 / .07);
+  padding: 3px 12px;
+  border-radius: 5px;
+}
+.video-block-name {
+  font-family: 'Geist', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--rr-navy);
+}
+.video-player-wrap {
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 360px;
+  margin-bottom: 16px;
+}
+.video-player-wrap video {
+  width: 100%;
+  display: block;
+}
+.keyframe-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.keyframe-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.keyframe-item img {
+  width: 140px;
+  height: 249px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--rr-sand);
+  display: block;
+}
+.keyframe-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--rr-muted);
+}
+.issues-panel {
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 18px 22px;
+}
+.issues-panel-title {
+  font-family: 'Azo Sans', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #b91c1c;
+  margin: 0 0 12px;
+}
+.issues-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.issues-list li {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  color: #7f1d1d;
+  display: flex;
+  gap: 8px;
+  line-height: 1.5;
+}
+.issues-list li::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #b91c1c;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+.video-divider {
+  border: none;
+  border-top: 1px solid var(--rr-sand);
+  margin: 40px 0;
+}
+
+/* ── §6 ROADMAP ── */
+.roadmap-panel {
+  background: rgb(16 39 66 / .04);
+  border: 1px solid var(--rr-sand-edge);
+  border-radius: 10px;
+  padding: 28px 32px;
+}
+.roadmap-panel p {
+  font-family: 'Geist', sans-serif;
+  font-size: 15px;
+  color: var(--rr-navy);
+  margin: 0;
+  line-height: 1.7;
+}
+.roadmap-panel code {
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px;
+  background: rgb(16 39 66 / .07);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+</style>
+</head>
+<body>
+
+<!-- STICKY NAV -->
+<nav class="top-nav">
+  <a href="#locked">Locked</a>
+  <span class="nav-sep">·</span>
+  <a href="#logos">Logos</a>
+  <span class="nav-sep">·</span>
+  <a href="#brand">Brand</a>
+  <span class="nav-sep">·</span>
+  <a href="#headshots">Headshots</a>
+  <span class="nav-sep">·</span>
+  <a href="#carousels">Carousels</a>
+  <span class="nav-sep">·</span>
+  <a href="#videos">Videos</a>
+  <span class="nav-sep">·</span>
+  <a href="#roadmap">Roadmap</a>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- §0 PAGE HEADER -->
+  <div style="max-width:960px; margin:0 auto 64px;">
+    <p class="page-eyebrow">Ryan Realty &middot; List Kit State</p>
+    <h1 class="page-h1">19496 Tumalo Reservoir</h1>
+    <p class="page-sub">3 BD &middot; 3 BA &middot; 2,325 sqft &middot; 2.28 acres &middot; Tumalo, Oregon &middot; $1,225,000</p>
+    <p class="page-meta">Listing agent: Matt Ryan &nbsp;&nbsp;·&nbsp;&nbsp; Key: 20260225192329433521000000 &nbsp;&nbsp;·&nbsp;&nbsp; Status: Active</p>
+    <p class="page-note">Locked decisions are now pinned at the top. Remaining open items are flagged. Reply with any overrides.</p>
+  </div>
+
+
+  <!-- §0.5 LOCKED DECISIONS -->
+  <div class="anchor" id="locked"></div>
+  <div class="locked-panel">
+    <p class="locked-panel-eyebrow">§0.5</p>
+    <h2 class="locked-panel-title">Locked Decisions</h2>
+    <table class="locked-table">
+      <tr>
+        <td>Primary logo (cream / light surfaces)</td>
+        <td>
+          LOGO_A &mdash; <span class="locked-val-mono">assets/brand/logo-blue.png</span><br>
+          Heritage navy horizontal wordmark
+        </td>
+        <td>
+          <span class="locked-check">
+            <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td>Primary logo (dark / navy surfaces)</td>
+        <td>
+          LOGO_C &mdash; <span class="locked-val-mono">assets/brand/logo-white.png</span><br>
+          White reversed horizontal wordmark
+        </td>
+        <td>
+          <span class="locked-check">
+            <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td>Caption typeface</td>
+        <td>
+          Amboqia Boriango, white, 72&ndash;96 px, with text-shadow<br>
+          <span style="font-family:'Geist Mono',monospace;font-size:11px;color:rgba(250,248,244,0.4);">Synced to spoken word via ElevenLabs forced-alignment</span>
+        </td>
+        <td>
+          <span class="locked-check">
+            <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td>VO source</td>
+        <td>
+          Driven by <span class="locked-val-mono">listing.public_remarks</span> from Supabase<br>
+          <span style="font-family:'Geist Mono',monospace;font-size:11px;color:rgba(250,248,244,0.4);">Not hand-written scripts</span>
+        </td>
+        <td>
+          <span class="locked-check">
+            <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td>Listing video on-camera</td>
+        <td>
+          Headless &mdash; broker face never appears in per-listing video frames
+        </td>
+        <td>
+          <span class="locked-check">
+            <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td>Photo-to-VO sync</td>
+        <td>
+          Semantic &mdash; VO line about creek shows creek photo, view line shows view photo, etc.
+        </td>
+        <td>
+          <span class="locked-check">
+            <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </td>
+      </tr>
+    </table>
+  </div><!-- /§0.5 -->
+
+
+  <!-- §1 LOGOS — LOCKED -->
+  <div class="anchor" id="logos"></div>
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-id">§1</span>
+      <h2 class="section-title">Logos — Locked</h2>
+      <span class="section-sep"></span>
+      <span class="pill pill-locked"><span class="pill-dot"></span>Primary decisions locked</span>
+    </div>
+    <p style="font-family:'Geist',sans-serif;font-size:14px;color:var(--rr-muted);margin:0 0 32px;line-height:1.6;">
+      Two primary logos are locked for all list kit deliverables. LOGO_A on light/cream surfaces; LOGO_C on dark/navy surfaces.
+    </p>
+
+    <div class="logo-grid">
+
+      <!-- LOGO_A — LOCKED PRIMARY -->
+      <div class="logo-item">
+        <div class="logo-item-header">
+          <span class="logo-item-id-locked">LOGO_A — PRIMARY</span>
+          <span class="logo-item-filename">logo-blue.png</span>
+          <span class="logo-item-label">Heritage navy horizontal wordmark</span>
+        </div>
+        <p class="logo-use-case">Use on: cream backgrounds, light surfaces, print, email headers, IG carousels, flyers, listing tour end card (cream bg variant)</p>
+        <div class="logo-swatches">
+          <div class="logo-swatch-wrap">
+            <div class="logo-swatch on-cream">
+              <img src="../assets/brand/logo-blue.png" alt="logo-blue on cream">
+            </div>
+            <p class="swatch-label">On cream — primary use</p>
+          </div>
+          <div class="logo-swatch-wrap">
+            <div class="logo-swatch on-navy">
+              <img src="../assets/brand/logo-blue.png" alt="logo-blue on navy" style="opacity:0.18;">
+            </div>
+            <p class="swatch-label" style="color:var(--rr-muted);">On navy (disappears — use LOGO_C instead)</p>
+          </div>
+        </div>
+      </div>
+
+      <hr class="logo-divider">
+
+      <!-- LOGO_C — LOCKED PRIMARY DARK -->
+      <div class="logo-item">
+        <div class="logo-item-header">
+          <span class="logo-item-id-locked">LOGO_C — PRIMARY DARK</span>
+          <span class="logo-item-filename">logo-white.png</span>
+          <span class="logo-item-label">White reversed horizontal wordmark</span>
+        </div>
+        <p class="logo-use-case">Use on: navy backgrounds, dark overlays, video end card footer bar, dark hero sections</p>
+        <div class="logo-swatches">
+          <div class="logo-swatch-wrap">
+            <div class="logo-swatch on-cream">
+              <img src="../assets/brand/logo-white.png" alt="logo-white on cream" style="opacity:0.14;">
+            </div>
+            <p class="swatch-label">On cream (disappears — use LOGO_A instead)</p>
+          </div>
+          <div class="logo-swatch-wrap">
+            <div class="logo-swatch on-navy">
+              <img src="../assets/brand/logo-white.png" alt="logo-white on navy">
+            </div>
+            <p class="swatch-label" style="color:rgba(250,248,244,0.5);">On navy — primary use</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /logo-grid primary -->
+
+    <!-- Collapsed: other variants -->
+    <div class="other-variants-toggle">
+      <details class="other-variants">
+        <summary>Other variants (not selected &mdash; 9 options reviewed, not used)</summary>
+        <div class="other-variants-inner">
+
+          <div class="logo-item other-variant-rejected">
+            <div class="logo-item-header">
+              <span class="logo-item-id">LOGO_B</span>
+              <span class="logo-item-filename">logo-black.png</span>
+              <span class="logo-item-label">Black 1-color print</span>
+            </div>
+            <div class="logo-swatches">
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-cream"><img src="../assets/brand/logo-black.png" alt="logo-black on cream"></div>
+                <p class="swatch-label">On cream</p>
+              </div>
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-navy"><img src="../assets/brand/logo-black.png" alt="logo-black on navy" style="opacity:0.25;"></div>
+                <p class="swatch-label" style="color:var(--rr-muted);">On navy (disappears)</p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="logo-divider">
+
+          <div class="logo-item other-variant-rejected">
+            <div class="logo-item-header">
+              <span class="logo-item-id">LOGO_D</span>
+              <span class="logo-item-filename">logo-stacked-white.png</span>
+              <span class="logo-item-label">White stacked</span>
+            </div>
+            <div class="logo-swatches">
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-cream"><img src="../assets/brand/logo-stacked-white.png" alt="stacked-white on cream" style="width:220px;opacity:0.12;"></div>
+                <p class="swatch-label">On cream (disappears)</p>
+              </div>
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-navy"><img src="../assets/brand/logo-stacked-white.png" alt="stacked-white on navy" style="width:220px;"></div>
+                <p class="swatch-label" style="color:rgba(250,248,244,0.5);">On navy</p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="logo-divider">
+
+          <div class="logo-item other-variant-rejected">
+            <div class="logo-item-header">
+              <span class="logo-item-id">LOGO_E</span>
+              <span class="logo-item-filename">ryan-realty-stacked-logo-blue.png</span>
+              <span class="logo-item-label">Navy stacked</span>
+            </div>
+            <div class="logo-swatches">
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-cream"><img src="../assets/brand/ryan-realty-stacked-logo-blue.png" alt="stacked-blue on cream" style="width:220px;"></div>
+                <p class="swatch-label">On cream</p>
+              </div>
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-navy"><img src="../assets/brand/ryan-realty-stacked-logo-blue.png" alt="stacked-blue on navy" style="width:220px;opacity:0.18;"></div>
+                <p class="swatch-label" style="color:var(--rr-muted);">On navy (low contrast)</p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="logo-divider">
+
+          <div class="logo-item other-variant-rejected">
+            <div class="logo-item-header">
+              <span class="logo-item-id">LOGO_F</span>
+              <span class="logo-item-filename">ryan-realty-stacked-logo-white.png</span>
+              <span class="logo-item-label">White stacked alternate</span>
+            </div>
+            <div class="logo-swatches">
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-cream"><img src="../assets/brand/ryan-realty-stacked-logo-white.png" alt="stacked-white-alt on cream" style="width:220px;opacity:0.12;"></div>
+                <p class="swatch-label">On cream (disappears)</p>
+              </div>
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-navy"><img src="../assets/brand/ryan-realty-stacked-logo-white.png" alt="stacked-white-alt on navy" style="width:220px;"></div>
+                <p class="swatch-label" style="color:rgba(250,248,244,0.5);">On navy</p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="logo-divider">
+
+          <div class="logo-item other-variant-rejected">
+            <div class="logo-item-header">
+              <span class="logo-item-id">LOGO_G</span>
+              <span class="logo-item-filename">illustration-01.png</span>
+              <span class="logo-item-label">Primary stacked Butcher wordmark</span>
+            </div>
+            <div class="logo-swatches">
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-cream"><img src="../assets/brand/illustration-01.png" alt="illustration-01 on cream" style="width:260px;"></div>
+                <p class="swatch-label">On cream</p>
+              </div>
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-navy"><img src="../assets/brand/illustration-01.png" alt="illustration-01 on navy" style="width:260px;"></div>
+                <p class="swatch-label" style="color:rgba(250,248,244,0.5);">On navy</p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="logo-divider">
+
+          <div class="logo-item other-variant-rejected">
+            <div class="logo-item-header">
+              <span class="logo-item-id">LOGO_H</span>
+              <span class="logo-item-filename">illustration-05.png</span>
+              <span class="logo-item-label">Signature lockup — wordmark + beer-glass + Jax + tagline ribbon</span>
+            </div>
+            <div class="logo-swatches">
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-cream"><img src="../assets/brand/illustration-05.png" alt="illustration-05 on cream" style="width:280px;"></div>
+                <p class="swatch-label">On cream</p>
+              </div>
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-navy"><img src="../assets/brand/illustration-05.png" alt="illustration-05 on navy" style="width:280px;"></div>
+                <p class="swatch-label" style="color:rgba(250,248,244,0.5);">On navy</p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="logo-divider">
+
+          <div class="logo-item other-variant-rejected">
+            <div class="logo-item-header">
+              <span class="logo-item-id">LOGO_I</span>
+              <span class="logo-item-filename">illustration-09.png</span>
+              <span class="logo-item-label">Heritage illustration variant 09</span>
+            </div>
+            <div class="logo-swatches">
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-cream"><img src="../assets/brand/illustration-09.png" alt="illustration-09 on cream" style="width:260px;"></div>
+                <p class="swatch-label">On cream</p>
+              </div>
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-navy"><img src="../assets/brand/illustration-09.png" alt="illustration-09 on navy" style="width:260px;"></div>
+                <p class="swatch-label" style="color:rgba(250,248,244,0.5);">On navy</p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="logo-divider">
+
+          <div class="logo-item other-variant-rejected">
+            <div class="logo-item-header">
+              <span class="logo-item-id">LOGO_J</span>
+              <span class="logo-item-filename">illustration-10.png</span>
+              <span class="logo-item-label">Horizontal script wordmark variant</span>
+            </div>
+            <div class="logo-swatches">
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-cream"><img src="../assets/brand/illustration-10.png" alt="illustration-10 on cream" style="width:280px;"></div>
+                <p class="swatch-label">On cream</p>
+              </div>
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-navy"><img src="../assets/brand/illustration-10.png" alt="illustration-10 on navy" style="width:280px;"></div>
+                <p class="swatch-label" style="color:rgba(250,248,244,0.5);">On navy</p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="logo-divider">
+
+          <div class="logo-item other-variant-rejected">
+            <div class="logo-item-header">
+              <span class="logo-item-id">LOGO_K</span>
+              <span class="logo-item-filename">blue-dog.png</span>
+              <span class="logo-item-label">Jax mascot only — standalone dog, no wordmark</span>
+            </div>
+            <div class="logo-swatches">
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-cream"><img src="../assets/brand/blue-dog.png" alt="blue-dog on cream" style="width:180px;"></div>
+                <p class="swatch-label">On cream</p>
+              </div>
+              <div class="logo-swatch-wrap">
+                <div class="logo-swatch on-navy"><img src="../assets/brand/blue-dog.png" alt="blue-dog on navy" style="width:180px;"></div>
+                <p class="swatch-label" style="color:rgba(250,248,244,0.5);">On navy</p>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /other-variants-inner -->
+      </details>
+    </div><!-- /other-variants-toggle -->
+
+  </div><!-- /§1 -->
+
+
+  <!-- §2 BRAND REFERENCE -->
+  <div class="anchor" id="brand"></div>
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-id">§2</span>
+      <h2 class="section-title">Brand Reference</h2>
+      <span class="section-sep"></span>
+      <span class="pill pill-approved"><span class="pill-dot"></span>Locked</span>
+    </div>
+
+    <div class="brand-grid">
+
+      <!-- Colors: locked 2026-05-13 to navy + cream only -->
+      <div class="brand-block" style="grid-column:1/-1;">
+        <h3>Color Swatches — locked 2026-05-13: navy + cream only</h3>
+        <div class="color-chips">
+          <div class="color-chip">
+            <div class="color-chip-swatch" style="background:#102742;width:140px;height:140px;"></div>
+            <span class="color-chip-hex">#102742</span>
+            <span class="color-chip-name">navy</span>
+          </div>
+          <div class="color-chip">
+            <div class="color-chip-swatch" style="background:#faf8f4;border:1px solid rgba(16,39,66,0.08);width:140px;height:140px;"></div>
+            <span class="color-chip-hex">#faf8f4</span>
+            <span class="color-chip-name">cream</span>
+          </div>
+        </div>
+        <p style="font-family:'Geist',sans-serif;font-size:13px;color:#102742;opacity:0.7;margin-top:16px;line-height:1.5;">
+          <strong>Retired 2026-05-13</strong> (do not reintroduce): navy-deep <code>#0a1a2e</code>, sand <code>#e8e2d4</code>, fir <code>#2e4a3a</code>, sky <code>#8fb8d4</code>. Use <code>rgba(16,39,66,0.85)</code> for hover/pressed states and <code>rgba(16,39,66,0.08)</code> for borders/dividers. White and black allowed for text-on-photo legibility only.
+        </p>
+      </div>
+
+      <!-- Type -->
+      <div class="brand-block" style="grid-column:1/-1;">
+        <h3>Type Families</h3>
+        <div class="type-samples">
+          <div class="type-sample-row">
+            <span class="type-sample-label">Amboqia<br>Boriango<br><em style="font-style:normal;color:#15803d;font-size:9px;font-family:'Geist',sans-serif;">captions</em></span>
+            <span class="type-amboqia">Display headline</span>
+          </div>
+          <div class="type-sample-row">
+            <span class="type-sample-label">Geist</span>
+            <span class="type-geist">Body, UI, market data, forms</span>
+          </div>
+          <div class="type-sample-row">
+            <span class="type-sample-label">Azo Sans<br>Medium</span>
+            <span class="type-azo">Sub-labels &amp; eyebrows</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Caption preview -->
+      <div class="brand-block" style="grid-column:1/-1;">
+        <h3>Caption Typeface Preview — Amboqia Boriango on dark frame</h3>
+        <div class="caption-preview">
+          <div class="caption-demo caption-demo-lg">2.28 acres</div>
+          <div class="caption-demo caption-demo-md">Tumalo Creek frontage</div>
+          <span class="caption-demo-note">72&ndash;96 px &nbsp;&middot;&nbsp; white &nbsp;&middot;&nbsp; text-shadow: 0 2px 8px rgba(0,0,0,0.7) &nbsp;&middot;&nbsp; Locked 2026-05-13</span>
+        </div>
+      </div>
+
+      <!-- Voice -->
+      <div class="brand-block">
+        <h3>Voice Rules</h3>
+        <ul class="voice-rules">
+          <li>Direct</li>
+          <li>Specific</li>
+          <li>Kind</li>
+          <li>Honest, even when inconvenient</li>
+        </ul>
+      </div>
+
+    </div><!-- /brand-grid -->
+  </div><!-- /§2 -->
+
+
+  <!-- §3 HEADSHOTS -->
+  <div class="anchor" id="headshots"></div>
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-id">§3</span>
+      <h2 class="section-title">Broker Headshots</h2>
+      <span class="section-sep"></span>
+      <span class="pill pill-approved"><span class="pill-dot"></span>Locked 2026-05-13</span>
+    </div>
+    <p style="font-family:'Geist',sans-serif;font-size:14px;color:var(--rr-muted);margin:0 0 24px;line-height:1.6;">
+      Each broker shown at 160&times;224 px. Both .png (transparent, canonical) and .jpg (white bg, fallback) displayed per broker on cream and navy surfaces. The transparent PNG should float cleanly with no rectangular box.
+    </p>
+
+    <div class="headshot-surfaces">
+
+      <!-- ON CREAM -->
+      <div>
+        <p class="headshot-surface-label">On cream background</p>
+        <div class="headshot-row on-cream">
+
+          <!-- Matt Ryan -->
+          <div class="headshot-broker-block">
+            <div class="headshot-broker-variants">
+              <div class="headshot-variant">
+                <img class="headshot-png" src="../assets/team/matt-ryan.png" alt="Matt Ryan transparent PNG" width="160" height="224">
+                <span class="headshot-variant-label">.png (transparent)</span>
+              </div>
+              <div class="headshot-variant">
+                <img class="headshot-jpg" src="../assets/team/matt-ryan.jpg" alt="Matt Ryan JPG" width="160" height="224">
+                <span class="headshot-variant-label">.jpg (fallback)</span>
+              </div>
+            </div>
+            <span class="headshot-name">Matt Ryan</span>
+            <span class="headshot-role">Owner / Principal Broker</span>
+          </div>
+
+          <!-- Paul Stevenson -->
+          <div class="headshot-broker-block">
+            <div class="headshot-broker-variants">
+              <div class="headshot-variant">
+                <img class="headshot-png" src="../assets/team/paul-stevenson.png" alt="Paul Stevenson transparent PNG" width="160" height="224">
+                <span class="headshot-variant-label">.png (transparent)</span>
+              </div>
+              <div class="headshot-variant">
+                <img class="headshot-jpg" src="../assets/team/paul-stevenson.jpg" alt="Paul Stevenson JPG" width="160" height="224">
+                <span class="headshot-variant-label">.jpg (fallback)</span>
+              </div>
+            </div>
+            <span class="headshot-name">Paul Stevenson</span>
+            <span class="headshot-role">Broker</span>
+          </div>
+
+          <!-- Rebecca Peterson -->
+          <div class="headshot-broker-block">
+            <div class="headshot-broker-variants">
+              <div class="headshot-variant">
+                <img class="headshot-png" src="../assets/team/rebecca-peterson.png" alt="Rebecca Peterson transparent PNG" width="160" height="224">
+                <span class="headshot-variant-label">.png (transparent)</span>
+              </div>
+              <div class="headshot-variant">
+                <img class="headshot-jpg" src="../assets/team/rebecca-peterson.jpg" alt="Rebecca Peterson JPG" width="160" height="224">
+                <span class="headshot-variant-label">.jpg (fallback)</span>
+              </div>
+            </div>
+            <span class="headshot-name">Rebecca Peterson</span>
+            <span class="headshot-role">Broker</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ON NAVY -->
+      <div>
+        <p class="headshot-surface-label">On navy background</p>
+        <div class="headshot-row on-navy">
+
+          <!-- Matt Ryan -->
+          <div class="headshot-broker-block">
+            <div class="headshot-broker-variants">
+              <div class="headshot-variant">
+                <img class="headshot-png" src="../assets/team/matt-ryan.png" alt="Matt Ryan transparent PNG" width="160" height="224">
+                <span class="headshot-variant-label headshot-variant-label-light">.png (transparent)</span>
+              </div>
+              <div class="headshot-variant">
+                <img class="headshot-jpg" src="../assets/team/matt-ryan.jpg" alt="Matt Ryan JPG" width="160" height="224">
+                <span class="headshot-variant-label headshot-variant-label-light">.jpg (fallback)</span>
+              </div>
+            </div>
+            <span class="headshot-name headshot-name-light">Matt Ryan</span>
+            <span class="headshot-role headshot-role-light">Owner / Principal Broker</span>
+          </div>
+
+          <!-- Paul Stevenson -->
+          <div class="headshot-broker-block">
+            <div class="headshot-broker-variants">
+              <div class="headshot-variant">
+                <img class="headshot-png" src="../assets/team/paul-stevenson.png" alt="Paul Stevenson transparent PNG" width="160" height="224">
+                <span class="headshot-variant-label headshot-variant-label-light">.png (transparent)</span>
+              </div>
+              <div class="headshot-variant">
+                <img class="headshot-jpg" src="../assets/team/paul-stevenson.jpg" alt="Paul Stevenson JPG" width="160" height="224">
+                <span class="headshot-variant-label headshot-variant-label-light">.jpg (fallback)</span>
+              </div>
+            </div>
+            <span class="headshot-name headshot-name-light">Paul Stevenson</span>
+            <span class="headshot-role headshot-role-light">Broker</span>
+          </div>
+
+          <!-- Rebecca Peterson -->
+          <div class="headshot-broker-block">
+            <div class="headshot-broker-variants">
+              <div class="headshot-variant">
+                <img class="headshot-png" src="../assets/team/rebecca-peterson.png" alt="Rebecca Peterson transparent PNG" width="160" height="224">
+                <span class="headshot-variant-label headshot-variant-label-light">.png (transparent)</span>
+              </div>
+              <div class="headshot-variant">
+                <img class="headshot-jpg" src="../assets/team/rebecca-peterson.jpg" alt="Rebecca Peterson JPG" width="160" height="224">
+                <span class="headshot-variant-label headshot-variant-label-light">.jpg (fallback)</span>
+              </div>
+            </div>
+            <span class="headshot-name headshot-name-light">Rebecca Peterson</span>
+            <span class="headshot-role headshot-role-light">Broker</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /headshot-surfaces -->
+
+    <p style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--rr-muted);margin:16px 0 0;">
+      Source: <code style="font-size:11px;background:rgb(16 39 66/.06);padding:1px 5px;border-radius:3px;">design_system/ryan-realty/assets/team/*.png</code> (transparent, canonical) &nbsp;&middot;&nbsp; <code style="font-size:11px;background:rgb(16 39 66/.06);padding:1px 5px;border-radius:3px;">*.jpg</code> (white bg, fallback)
+    </p>
+  </div><!-- /§3 -->
+
+
+  <!-- §4 CAROUSELS -->
+  <div class="anchor" id="carousels"></div>
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-id">§4</span>
+      <h2 class="section-title">Carousels</h2>
+      <span class="section-sep"></span>
+      <span class="pill pill-review"><span class="pill-dot"></span>3 rendered — review required</span>
+    </div>
+
+    <!-- C1 Property Dossier -->
+    <div class="carousel-block">
+      <div class="carousel-block-header">
+        <span class="carousel-block-id">C1</span>
+        <span class="carousel-block-name">Property Dossier</span>
+        <span style="font-family:'Geist',sans-serif;font-size:13px;color:var(--rr-muted);">7 slides</span>
+        <span class="pill pill-review"><span class="pill-dot"></span>In Review</span>
+      </div>
+      <div class="carousel-slides">
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/property-dossier/1.png" alt="C1 slide 1">
+          <span class="slide-id">C1.S1</span>
+        </div>
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/property-dossier/2.png" alt="C1 slide 2">
+          <span class="slide-id">C1.S2</span>
+        </div>
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/property-dossier/3.png" alt="C1 slide 3">
+          <span class="slide-id">C1.S3</span>
+        </div>
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/property-dossier/4.png" alt="C1 slide 4">
+          <span class="slide-id">C1.S4</span>
+        </div>
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/property-dossier/5.png" alt="C1 slide 5">
+          <span class="slide-id">C1.S5</span>
+        </div>
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/property-dossier/6.png" alt="C1 slide 6">
+          <span class="slide-id">C1.S6</span>
+        </div>
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/property-dossier/7.png" alt="C1 slide 7">
+          <span class="slide-id">C1.S7</span>
+        </div>
+      </div>
+      <div class="known-issue-panel">
+        <p><strong>Known issue — C1 rebuild required:</strong> C1 slide photos must be full-bleed to their slide frame. No padding, no border-radius, no constraining box around the photo. The photo IS the slide. This page has been updated to preview slides full-bleed; the C1 Remotion component needs the same fix before next render.</p>
+      </div>
+    </div>
+
+    <hr class="carousel-divider">
+
+    <!-- C6 Wide Shot -->
+    <div class="carousel-block">
+      <div class="carousel-block-header">
+        <span class="carousel-block-id">C6</span>
+        <span class="carousel-block-name">Wide Shot</span>
+        <span style="font-family:'Geist',sans-serif;font-size:13px;color:var(--rr-muted);">3 slides (panoramic)</span>
+        <span class="pill pill-review"><span class="pill-dot"></span>In Review</span>
+      </div>
+      <div class="carousel-slides">
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/wide-shot/1.png" alt="C6 slide 1">
+          <span class="slide-id">C6.S1</span>
+        </div>
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/wide-shot/2.png" alt="C6 slide 2">
+          <span class="slide-id">C6.S2</span>
+        </div>
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/wide-shot/3.png" alt="C6 slide 3">
+          <span class="slide-id">C6.S3</span>
+        </div>
+      </div>
+      <p class="carousel-prompt">Reply with slide IDs that need changes (e.g. "C6.S2 needs different photo" / "C6.S1 is fine").</p>
+    </div>
+
+    <hr class="carousel-divider">
+
+    <!-- C10 The Zoom -->
+    <div class="carousel-block">
+      <div class="carousel-block-header">
+        <span class="carousel-block-id">C10</span>
+        <span class="carousel-block-name">The Zoom</span>
+        <span style="font-family:'Geist',sans-serif;font-size:13px;color:var(--rr-muted);">3 slides (map zoom)</span>
+        <span class="pill pill-review"><span class="pill-dot"></span>In Review</span>
+      </div>
+      <div class="carousel-slides">
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/the-zoom/1.png" alt="C10 slide 1">
+          <span class="slide-id">C10.S1</span>
+        </div>
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/the-zoom/2.png" alt="C10 slide 2">
+          <span class="slide-id">C10.S2</span>
+        </div>
+        <div class="slide-item">
+          <img src="/template-picker/list-kits/19496-tumalo-reservoir/carousels/the-zoom/3.png" alt="C10 slide 3">
+          <span class="slide-id">C10.S3</span>
+        </div>
+      </div>
+      <p class="carousel-prompt">Reply with slide IDs that need changes (e.g. "C10.S2 needs different photo" / "C10.S3 is fine").</p>
+    </div>
+
+  </div><!-- /§4 -->
+
+
+  <!-- §5 VIDEOS -->
+  <div class="anchor" id="videos"></div>
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-id">§5</span>
+      <h2 class="section-title">Videos</h2>
+      <span class="section-sep"></span>
+      <span class="pill pill-rejected"><span class="pill-dot"></span>2 rendered — both need rebuild</span>
+    </div>
+
+    <!-- Global known issues from locked decisions -->
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 22px;margin-bottom:32px;">
+      <p style="font-family:'Azo Sans',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:#166534;margin:0 0 10px;">Rebuild Requirements from Locked Decisions</p>
+      <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px;">
+        <li style="font-family:'Geist',sans-serif;font-size:13px;color:#14532d;display:flex;gap:8px;line-height:1.5;"><span style="color:#22c55e;font-weight:700;">&#x2713;</span> Caption typeface: change to Amboqia Boriango 72&ndash;96 px, white, with text-shadow</li>
+        <li style="font-family:'Geist',sans-serif;font-size:13px;color:#14532d;display:flex;gap:8px;line-height:1.5;"><span style="color:#22c55e;font-weight:700;">&#x2713;</span> VO script: rewrite driven by listing public_remarks from Supabase, not hand-written</li>
+        <li style="font-family:'Geist',sans-serif;font-size:13px;color:#14532d;display:flex;gap:8px;line-height:1.5;"><span style="color:#22c55e;font-weight:700;">&#x2713;</span> End card logo: LOGO_C (logo-white.png) on navy, sized 30&ndash;45% of 1080 px width (324&ndash;486 px)</li>
+        <li style="font-family:'Geist',sans-serif;font-size:13px;color:#14532d;display:flex;gap:8px;line-height:1.5;"><span style="color:#22c55e;font-weight:700;">&#x2713;</span> Word-level caption sync: ElevenLabs forced-alignment (pending Whisper local install as fallback)</li>
+        <li style="font-family:'Geist',sans-serif;font-size:13px;color:#14532d;display:flex;gap:8px;line-height:1.5;"><span style="color:#22c55e;font-weight:700;">&#x2713;</span> Semantic photo-to-VO: creek VO line = creek photo, view line = view photo</li>
+      </ul>
+    </div>
+
+    <!-- V2 Cascade & Creek -->
+    <div class="video-block">
+      <div class="video-block-header">
+        <span class="video-block-id">V2</span>
+        <span class="video-block-name">Cascade &amp; Creek</span>
+        <span class="pill pill-rejected"><span class="pill-dot"></span>Rejected — rebuild required</span>
+      </div>
+
+      <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;">
+        <div class="video-player-wrap">
+          <video controls preload="metadata" poster="/template-picker/list-kits/19496-tumalo-reservoir/videos/qc-keyframes/cascade-and-creek-frame-01.jpg">
+            <source src="/template-picker/list-kits/19496-tumalo-reservoir/videos/cascade-and-creek.mp4" type="video/mp4">
+          </video>
+        </div>
+
+        <div style="flex:1;min-width:300px;">
+          <p style="font-family:'Azo Sans',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--rr-muted);margin:0 0 10px;">Keyframes (opener / 1/3 / 2/3 / end)</p>
+          <div class="keyframe-row">
+            <div class="keyframe-item">
+              <img src="/template-picker/list-kits/19496-tumalo-reservoir/videos/qc-keyframes/cascade-and-creek-frame-01.jpg" alt="frame 01">
+              <span class="keyframe-label">opener</span>
+            </div>
+            <div class="keyframe-item">
+              <img src="/template-picker/list-kits/19496-tumalo-reservoir/videos/qc-keyframes/cascade-and-creek-frame-04.jpg" alt="frame 04">
+              <span class="keyframe-label">1/3</span>
+            </div>
+            <div class="keyframe-item">
+              <img src="/template-picker/list-kits/19496-tumalo-reservoir/videos/qc-keyframes/cascade-and-creek-frame-08.jpg" alt="frame 08">
+              <span class="keyframe-label">2/3</span>
+            </div>
+            <div class="keyframe-item">
+              <img src="/template-picker/list-kits/19496-tumalo-reservoir/videos/qc-keyframes/cascade-and-creek-frame-11.jpg" alt="frame 11">
+              <span class="keyframe-label">end card</span>
+            </div>
+          </div>
+
+          <div class="issues-panel">
+            <p class="issues-panel-title">Known Issues</p>
+            <ul class="issues-list">
+              <li>VO has 4 audible silence gaps (8.6s, 11.6s, 13.6s, 20.0s) from concatenated 7-segment TTS — needs single-call synthesis</li>
+              <li>Captions at sentence granularity only — word-level sync requires ElevenLabs forced-alignment or Whisper local install</li>
+              <li>Caption typeface: not yet Amboqia Boriango — needs rebuild per locked decision</li>
+              <li>VO script not yet driven by public_remarks — needs Supabase pull per locked decision</li>
+              <li>End card logo too small (~150 px) — needs 324&ndash;486 px per locked decision; must use LOGO_C (logo-white.png)</li>
+              <li>Title card: per Matt — "does not look good" — needs redesign</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="video-divider">
+
+    <!-- V8 Tumalo Life -->
+    <div class="video-block">
+      <div class="video-block-header">
+        <span class="video-block-id">V8</span>
+        <span class="video-block-name">Tumalo Life</span>
+        <span class="pill pill-rejected"><span class="pill-dot"></span>Rejected — same issues</span>
+      </div>
+
+      <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;">
+        <div class="video-player-wrap">
+          <video controls preload="metadata" poster="/template-picker/list-kits/19496-tumalo-reservoir/videos/qc-keyframes/tumalo-life-frame-01.jpg">
+            <source src="/template-picker/list-kits/19496-tumalo-reservoir/videos/tumalo-life.mp4" type="video/mp4">
+          </video>
+        </div>
+
+        <div style="flex:1;min-width:300px;">
+          <p style="font-family:'Azo Sans',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--rr-muted);margin:0 0 10px;">Keyframes (opener / 1/3 / 2/3 / end)</p>
+          <div class="keyframe-row">
+            <div class="keyframe-item">
+              <img src="/template-picker/list-kits/19496-tumalo-reservoir/videos/qc-keyframes/tumalo-life-frame-01.jpg" alt="frame 01">
+              <span class="keyframe-label">opener</span>
+            </div>
+            <div class="keyframe-item">
+              <img src="/template-picker/list-kits/19496-tumalo-reservoir/videos/qc-keyframes/tumalo-life-frame-04.jpg" alt="frame 04">
+              <span class="keyframe-label">1/3</span>
+            </div>
+            <div class="keyframe-item">
+              <img src="/template-picker/list-kits/19496-tumalo-reservoir/videos/qc-keyframes/tumalo-life-frame-08.jpg" alt="frame 08">
+              <span class="keyframe-label">2/3</span>
+            </div>
+            <div class="keyframe-item">
+              <img src="/template-picker/list-kits/19496-tumalo-reservoir/videos/qc-keyframes/tumalo-life-frame-11.jpg" alt="frame 11">
+              <span class="keyframe-label">end card</span>
+            </div>
+          </div>
+
+          <div class="issues-panel">
+            <p class="issues-panel-title">Known Issues</p>
+            <ul class="issues-list">
+              <li>Same VO silence gaps from segment concatenation — needs single-call synthesis</li>
+              <li>Captions at sentence granularity only — same word-level sync fix required</li>
+              <li>Caption typeface: not yet Amboqia Boriango — needs rebuild per locked decision</li>
+              <li>VO script not yet driven by public_remarks — needs Supabase pull per locked decision</li>
+              <li>End card logo too small — same 324&ndash;486 px fix; must use LOGO_C (logo-white.png)</li>
+              <li>Title card: same redesign needed per Matt's direction</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /§5 -->
+
+
+  <!-- §6 LIST KIT CONTENT ROADMAP -->
+  <div class="anchor" id="roadmap"></div>
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-id">§6</span>
+      <h2 class="section-title">List Kit Content Roadmap</h2>
+      <span class="section-sep"></span>
+      <span class="pill pill-info"><span class="pill-dot"></span>In flight</span>
+    </div>
+
+    <div class="roadmap-panel">
+      <p>The complete list kit content matrix is being researched by a parallel agent. It will define every content piece — Reels, TikToks, YouTube Shorts, IG carousels, LinkedIn document carousels, Story content, email blast, and print — that ships per listing. Output will land at <code>docs/research/best-practices-list-kit-content-matrix.md</code> and a new section will be added here once research completes.</p>
+    </div>
+
+  </div><!-- /§6 -->
+
+</div><!-- /page-wrap -->
+
+</body>
+</html>
