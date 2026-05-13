@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.169.8 (2026-05-13)
+
+### Maintenance
+- docs(marketing-brain): log LinkedIn app architecture blocker + YouTube live
+
+---
+
+
 ## v1.169.7 (2026-05-13)
 
 ### Bug Fixes
