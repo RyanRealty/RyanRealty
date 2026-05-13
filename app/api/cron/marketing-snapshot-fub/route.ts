@@ -35,9 +35,38 @@ export const maxDuration = 300
 const SOURCE = 'fub_api_v1'
 const FUB_BASE = 'https://api.followupboss.com/v1'
 
-// Canonical seller-lead tags (docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md §2 conditional logic).
+// Canonical seller-lead tags. Match against the actual tag values observed in
+// FUB, normalised to lowercase. Source:
+//   - docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md §2 (kebab-case playbook tags)
+//   - direct FUB inspection 2026-05-12 (Title Case tags applied by webhook +
+//     landing-page form submissions + the auto:seller-seq:new automation)
+// Comparison is case-insensitive (see isSellerLead helper).
 // nurture-only is explicitly excluded — those are not yet qualified.
-const SELLER_LEAD_TAGS = new Set(['hot-seller', 'warm-seller', 'seller', 'seller-lead'])
+const SELLER_LEAD_TAGS = new Set<string>([
+  // Playbook kebab-case (canonical doc)
+  'hot-seller',
+  'warm-seller',
+  'seller',
+  'seller-lead',
+  // Webhook Title Case (actual production tags)
+  'seller lead',
+  'seller intent',
+  'hot seller',
+  'warm seller',
+  // Landing-page seller-intent tags
+  'lp-home-value',
+  // Automation tag (fires when website lead is classified seller-intent)
+  'auto:seller-seq:new',
+])
+
+function isSellerLead(tags: string[] | null | undefined): boolean {
+  if (!Array.isArray(tags)) return false
+  for (const raw of tags) {
+    if (typeof raw !== 'string') continue
+    if (SELLER_LEAD_TAGS.has(raw.toLowerCase().trim())) return true
+  }
+  return false
+}
 
 // ─── date helpers ───────────────────────────────────────────────────────────
 
@@ -306,10 +335,7 @@ function buildRows(
   }
 
   // qualified_seller_leads (north-star): new leads with any canonical seller tag
-  const qualifiedSellers = people.filter((p) => {
-    const tags = Array.isArray(p.tags) ? p.tags : []
-    return tags.some((t) => typeof t === 'string' && SELLER_LEAD_TAGS.has(t.toLowerCase()))
-  })
+  const qualifiedSellers = people.filter((p) => isSellerLead(p.tags))
   if (qualifiedSellers.length > 0) {
     rows.push({
       ...base,
