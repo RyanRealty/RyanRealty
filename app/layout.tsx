@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { validateEnv, logOptionalEnv } from "@/lib/env";
 import { Suspense } from "react";
 import "./globals.css";
@@ -127,7 +128,7 @@ async function VisitTrackerAsync({
   return <VisitTracker userId={session?.user?.id ?? null} userEmail={session?.user?.email ?? null} />
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -136,59 +137,87 @@ export default function RootLayout({
   if (!envCheck.ok) {
     console.error('[env] Missing required build vars:', envCheck.missing.join(', '));
   }
-  const sessionPromise = withTimeout(getSession(), null, 700)
-  const brokeragePromise = withTimeout(getBrokerageSettings(), null, 1200)
+
+  // Middleware forwards the request path as `x-pathname` so we can branch on
+  // it from server components. /lp/* routes are dedicated landing pages —
+  // they render without site nav/footer/chat/exit-intent/etc. so the only
+  // visitor action is "convert or bounce."
+  const headersList = await headers()
+  const pathname = headersList.get('x-pathname') ?? ''
+  const isLP = pathname.startsWith('/lp/')
+
+  // Skip the session + brokerage data fetches on LPs — nothing in the
+  // dedicated layout consumes them, and saving the roundtrip shaves time
+  // off TTFB on paid-traffic pages where speed matters most.
+  const sessionPromise = isLP ? Promise.resolve(null) : withTimeout(getSession(), null, 700)
+  const brokeragePromise = isLP ? Promise.resolve(null) : withTimeout(getBrokerageSettings(), null, 1200)
 
   return (
     <html lang="en" className={cn("font-sans", GeistSans.variable, GeistMono.variable)}>
       <head>
         <GTMHead />
         <link rel="manifest" href="/manifest.json" />
-        {/* Preload hero poster for instant LCP — browser starts fetching before HTML stream delivers the <img> */}
-        <link rel="preload" as="image" href="/images/hero-poster.webp" fetchPriority="high" />
+        {/* Preload hero poster for instant LCP — browser starts fetching before HTML stream delivers the <img>.
+            Skip on LPs: they don't use the global hero. */}
+        {!isLP && (
+          <link rel="preload" as="image" href="/images/hero-poster.webp" fetchPriority="high" />
+        )}
       </head>
       <body className="min-h-screen overflow-x-hidden antialiased">
         <ComparisonProvider>
         <GTMBody />
-          <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[100] focus:p-4 focus:bg-card focus:text-primary">
-            Skip to main content
-          </a>
+          {!isLP && (
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[100] focus:p-4 focus:bg-card focus:text-primary">
+              Skip to main content
+            </a>
+          )}
           <GoogleAnalytics />
           <MetaPixel />
           {/* PageViewTracker uses useSearchParams — must be in a Suspense boundary so static generation doesn't bail. */}
           <Suspense fallback={null}>
             <PageViewTracker />
           </Suspense>
-          <JsonLd />
+          {!isLP && <JsonLd />}
           {/* Header streams in independently — doesn't block page content */}
-          <Suspense fallback={<div className="h-16 bg-primary" />}>
-            <HeaderAsync sessionPromise={sessionPromise} brokeragePromise={brokeragePromise} />
-          </Suspense>
+          {!isLP && (
+            <Suspense fallback={<div className="h-16 bg-primary" />}>
+              <HeaderAsync sessionPromise={sessionPromise} brokeragePromise={brokeragePromise} />
+            </Suspense>
+          )}
           <Suspense fallback={<div className="min-h-[calc(100vh-64px)]" aria-hidden />}>
             <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
           </Suspense>
-          <Suspense fallback={<div className="min-h-[200px] bg-primary" />}>
-            <FooterAsync brokeragePromise={brokeragePromise} />
+          {!isLP && (
+            <Suspense fallback={<div className="min-h-[200px] bg-primary" />}>
+              <FooterAsync brokeragePromise={brokeragePromise} />
+            </Suspense>
+          )}
+          {!isLP && <CookieConsentBanner />}
+          {!isLP && (
+            <Suspense fallback={null}>
+              <SignInPromptAsync sessionPromise={sessionPromise} />
+            </Suspense>
+          )}
+          {!isLP && <InstallPrompt />}
+          {!isLP && (
+            <Suspense fallback={null}>
+              <VisitTrackerAsync sessionPromise={sessionPromise} />
+            </Suspense>
+          )}
+          <Suspense fallback={null}>
+            {/* Identity + attribution bridges DO run on LPs — visitors arriving
+                from FUB email clicks (?_fuid=) or ad attribution links need them.
+                Auth/sign-up redirects do NOT — LP visitors aren't authenticating. */}
+            <FubIdentityBridge />
+            <AgentAttributionBridge />
+            {!isLP && <AuthCodeRedirect />}
+            {!isLP && <AuthErrorRedirect />}
+            {!isLP && <SignUpTracker />}
+            {!isLP && <AdminHashRedirect />}
           </Suspense>
-          <CookieConsentBanner />
-        <Suspense fallback={null}>
-          <SignInPromptAsync sessionPromise={sessionPromise} />
-        </Suspense>
-        <InstallPrompt />
-        <Suspense fallback={null}>
-          <VisitTrackerAsync sessionPromise={sessionPromise} />
-        </Suspense>
-        <Suspense fallback={null}>
-          <FubIdentityBridge />
-          <AgentAttributionBridge />
-          <AuthCodeRedirect />
-          <AuthErrorRedirect />
-          <SignUpTracker />
-          <AdminHashRedirect />
-        </Suspense>
-        <ComparisonTray />
-        <LazyChatWidget />
-        <ExitIntentPopup />
+          {!isLP && <ComparisonTray />}
+          {!isLP && <LazyChatWidget />}
+          {!isLP && <ExitIntentPopup />}
         </ComparisonProvider>
         </body>
     </html>
