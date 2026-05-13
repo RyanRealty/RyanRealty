@@ -6,6 +6,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Ryan Realty heritage display face. Loaded via next/font/local in
+   app/layout.tsx as the --font-amboqia variable. Use the .font-display
+   utility for hero H1s, section headings, pull quotes, and any other
+   "stamped" display moment per the locked design system. */
+.font-display {
+  font-family: var(--font-amboqia), ui-serif, Georgia, "Times New Roman", serif;
+  font-feature-settings: "liga", "kern";
+}
+
 /* ═══════════════════════════════════════════════════════════════
    shadcn/ui radix-nova theme — stone base color
    Only override: --primary is Ryan Realty brand navy (#102742)

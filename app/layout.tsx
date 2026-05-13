@@ -30,7 +30,17 @@ import ExitIntentPopup from "@/components/ExitIntentPopup";
 import { getCanonicalSiteUrl } from "@/lib/share-metadata";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import localFont from "next/font/local";
 import { cn } from "@/lib/utils";
+
+// Amboqia Boriango — Ryan Realty's locked display face. Used for hero H1s,
+// pull quotes, yard-sign text, IG cover titles. Body copy stays Geist.
+const amboqia = localFont({
+  src: '../public/fonts/Amboqia_Boriango.otf',
+  variable: '--font-amboqia',
+  display: 'swap',
+  weight: '400',
+})
 
 /** Revalidate every 60s so pages load instantly from cache but data stays fresh. */
 export const revalidate = 60
@@ -153,7 +163,7 @@ export default async function RootLayout({
   const brokeragePromise = isLP ? Promise.resolve(null) : withTimeout(getBrokerageSettings(), null, 1200)
 
   return (
-    <html lang="en" className={cn("font-sans", GeistSans.variable, GeistMono.variable)}>
+    <html lang="en" className={cn("font-sans", GeistSans.variable, GeistMono.variable, amboqia.variable)}>
       <head>
         <GTMHead />
         <link rel="manifest" href="/manifest.json" />

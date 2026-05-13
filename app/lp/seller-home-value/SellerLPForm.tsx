@@ -122,7 +122,7 @@ export default function SellerLPForm({
     const isHot = resultClassification === 'hot'
     return (
       <div className="rounded-2xl border border-primary/15 bg-card p-8 shadow-sm">
-        <h2 className="font-serif text-2xl font-semibold text-primary">
+        <h2 className="font-display text-2xl font-semibold text-primary">
           Got it. Your home value is on its way.
         </h2>
         <p className="mt-3 text-lg text-foreground/85">
@@ -148,7 +148,7 @@ export default function SellerLPForm({
         aria-labelledby="seller-lp-form-heading"
         noValidate
       >
-        <h2 id="seller-lp-form-heading" className="font-serif text-xl font-semibold text-primary">
+        <h2 id="seller-lp-form-heading" className="font-display text-xl font-semibold text-primary">
           {knownVisitor ? 'Welcome back. What address would you like valued?' : 'Get your real home value'}
         </h2>
         {knownVisitor && (prefillEmail || prefillName) && (
@@ -223,7 +223,7 @@ export default function SellerLPForm({
         ← Edit address
       </button>
 
-      <h2 id="seller-lp-form-heading-2" className="font-serif text-xl font-semibold text-primary">
+      <h2 id="seller-lp-form-heading-2" className="font-display text-xl font-semibold text-primary">
         Where should we send your home value?
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">

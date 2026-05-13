@@ -28,15 +28,24 @@ export default async function SellerHomeValuePage() {
 
   return (
     <div className="bg-background text-foreground">
-      {/* ─── Sticky minimal header ─────────────────────────────────────── */}
+      {/* ─── Sticky minimal header ───────────────────────────────────────
+          Heritage wordmark (logo-blue.png) — the pre-rendered mark from the
+          brand kit, NOT re-typeset. Per the design system: "Drop in the
+          pre-rendered wordmark from assets/brand/. Do not re-typeset the
+          wordmark." */}
       <header className="sticky top-0 z-40 border-b border-primary/10 bg-card/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <span className="font-serif text-lg font-semibold tracking-tight text-primary sm:text-xl">
-              Ryan Realty
-            </span>
-            <span className="hidden text-xs uppercase tracking-wider text-muted-foreground sm:inline">
-              Bend, Oregon
+            <Image
+              src="/images/brand/logo-blue.png"
+              alt="Ryan Realty"
+              width={160}
+              height={40}
+              priority
+              className="h-9 w-auto sm:h-10"
+            />
+            <span className="hidden text-xs uppercase tracking-[0.12em] text-muted-foreground sm:inline">
+              Bend · Oregon
             </span>
           </div>
           <a
@@ -49,17 +58,33 @@ export default async function SellerHomeValuePage() {
         </div>
       </header>
 
-      {/* ─── Hero ──────────────────────────────────────────────────────── */}
-      <section className="border-b border-primary/10">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-14 lg:py-20">
+      {/* ─── Hero ──────────────────────────────────────────────────────────
+          Documentary Central Oregon photography behind a navy protection
+          overlay — per the design system: "No decorative gradients. Only
+          the navy protection overlay on the hero image." Image is one of
+          Matt's approved hero options (hero-deschutes-clean.jpg — clean
+          Deschutes River shot from the design-system asset library). */}
+      <section className="relative isolate border-b border-primary/10">
+        {/* Background photo */}
+        <Image
+          src="/images/lp/hero-deschutes-clean.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="absolute inset-0 -z-20 object-cover"
+        />
+        {/* Navy protection overlay — solid, not a gradient, per design system */}
+        <div className="absolute inset-0 -z-10 bg-primary/70" aria-hidden="true" />
+
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-14 lg:py-20">
           <div>
             {/* Broker identity strip — verified human face above the fold is the
                 #3 ranked trust signal for boomer-seller LPs per the deep research
                 (NNG + AnytimeEstimate 2025: 2× CVR with a real broker headshot
-                visible). Real photo, not stock — boomers detect inauthentic imagery
-                even when they can't name why it feels off. */}
+                visible). Real photo, not stock. */}
             <div className="mb-5 flex items-center gap-4">
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full bg-card ring-2 ring-primary/15 sm:h-24 sm:w-24">
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full bg-card ring-2 ring-card/80 sm:h-24 sm:w-24">
                 <Image
                   src="/images/brokers/ryan-matt.png"
                   alt="Matt Ryan, Principal Broker at Ryan Realty"
@@ -70,40 +95,40 @@ export default async function SellerHomeValuePage() {
                 />
               </div>
               <div>
-                <p className="font-serif text-lg font-semibold text-primary leading-tight">
+                <p className="font-display text-lg font-semibold leading-tight text-card">
                   Matt Ryan
                 </p>
-                <p className="text-sm leading-tight text-muted-foreground">
+                <p className="text-sm leading-tight text-card/85">
                   Principal Broker · Bend, Oregon
                 </p>
-                <p className="mt-0.5 text-xs uppercase tracking-wider text-primary/60">
+                <p className="mt-0.5 text-xs uppercase tracking-wider text-card/70">
                   Oregon License #201206613
                 </p>
               </div>
             </div>
 
-            <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary/70">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-card/75">
               For Bend, Oregon homeowners
             </p>
-            <h1 className="font-serif text-4xl font-semibold leading-[1.05] tracking-tight text-primary sm:text-5xl lg:text-6xl">
+            <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tight text-card drop-shadow-sm sm:text-5xl lg:text-6xl">
               Your Bend home is probably worth more than Zillow says.
               <br />
-              <span className="text-primary/85">Here&rsquo;s the real number.</span>
+              <span className="text-card/90">Here&rsquo;s the real number.</span>
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-foreground/85 sm:text-xl">
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-card/90 sm:text-xl">
               A real comparative market analysis from local sales — not an algorithm. Sent within one business
               day. No spam, no obligation, no hard sell.
             </p>
 
             {/* Trust cluster — sits next to the form, not below the fold. */}
-            <div className="mt-7 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-primary/10 pt-6 sm:grid-cols-3">
-              <TrustStat value="4.9 / 5.0" label="Google reviews" />
-              <TrustStat value="100% local" label="Bend principal broker" />
-              <TrustStat value="Licensed" label="OR #201206613" />
+            <div className="mt-7 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-card/20 pt-6 sm:grid-cols-3">
+              <TrustStat value="4.9 / 5.0" label="Google reviews" tone="on-photo" />
+              <TrustStat value="100% local" label="Bend principal broker" tone="on-photo" />
+              <TrustStat value="Licensed" label="OR #201206613" tone="on-photo" />
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm italic text-card/80">
               &ldquo;Matt handled the sale with patience and respect. We&rsquo;d been in our home 22 years and
-              he never once pushed us.&rdquo; <span className="italic">— Past client, NW Crossing</span>
+              he never once pushed us.&rdquo; <span className="not-italic">— Past client, NW Crossing</span>
             </p>
           </div>
 
@@ -115,8 +140,8 @@ export default async function SellerHomeValuePage() {
 
       {/* ─── What you get ─────────────────────────────────────────────── */}
       <section className="border-b border-primary/10 bg-card/30">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <h2 className="font-serif text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
             Here&rsquo;s exactly what happens.
           </h2>
           <p className="mt-3 max-w-2xl text-lg text-foreground/80">
@@ -145,8 +170,8 @@ export default async function SellerHomeValuePage() {
 
       {/* ─── Anti-Zillow education ────────────────────────────────────── */}
       <section className="border-b border-primary/10">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <h2 className="font-serif text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
             Why your Zestimate is probably off.
           </h2>
           <p className="mt-3 max-w-2xl text-lg text-foreground/80">
@@ -180,8 +205,8 @@ export default async function SellerHomeValuePage() {
 
       {/* ─── Market truth (placeholder for live Supabase data — Phase 2) ──────── */}
       <section className="border-b border-primary/10 bg-card/30">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <h2 className="font-serif text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
             Where Bend is right now.
           </h2>
           <p className="mt-3 max-w-2xl text-lg text-foreground/80">
@@ -200,7 +225,7 @@ export default async function SellerHomeValuePage() {
       {/* ─── FAQ ──────────────────────────────────────────────────────── */}
       <section className="border-b border-primary/10">
         <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-16">
-          <h2 className="font-serif text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
             What you&rsquo;re probably wondering.
           </h2>
           <div className="mt-8 space-y-6">
@@ -220,10 +245,35 @@ export default async function SellerHomeValuePage() {
         </div>
       </section>
 
+      {/* ─── Heritage block — cross-register stamp before the footer CTA ──
+          The signature lockup (illustration-05) is the wordmark + Jax + the
+          "It's About Relationships." tagline ribbon as a single hand-drawn
+          mark. Used here as the one allowed cross-register moment per the
+          design system: a heritage block at the end of a web-register page. */}
+      <section className="bg-[#faf8f4] border-b border-primary/10">
+        <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-16">
+          <div className="relative mx-auto aspect-[4/3] w-full max-w-md">
+            <Image
+              src="/images/brand/signature-lockup.png"
+              alt="Ryan Realty — It's About Relationships. With Jax the blue lab."
+              fill
+              sizes="(max-width: 640px) 90vw, 480px"
+              className="object-contain"
+            />
+          </div>
+          <p className="mt-2 font-display text-xl text-primary sm:text-2xl">
+            Building community through authentic relationships.
+          </p>
+          <p className="mt-3 text-sm uppercase tracking-[0.12em] text-muted-foreground">
+            Local · Bend · Oregon · Since 2023
+          </p>
+        </div>
+      </section>
+
       {/* ─── Footer CTA ───────────────────────────────────────────────── */}
       <section className="bg-primary text-primary-foreground">
         <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-16">
-          <h2 className="font-serif text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to know your number?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-lg text-primary-foreground/85">
@@ -249,7 +299,7 @@ export default async function SellerHomeValuePage() {
 
       {/* ─── Mini fine print ─────────────────────────────────────────── */}
       <footer className="bg-card">
-        <div className="mx-auto max-w-6xl px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
+        <div className="mx-auto max-w-7xl px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
           <p>
             Ryan Realty LLC • Oregon Principal Broker #201206613 • Equal Housing Opportunity
           </p>
@@ -268,11 +318,12 @@ export default async function SellerHomeValuePage() {
 
 // ─── Tiny presentational helpers (kept inline for Phase 1) ─────────────────
 
-function TrustStat({ value, label }: { value: string; label: string }) {
+function TrustStat({ value, label, tone }: { value: string; label: string; tone?: 'on-photo' | 'on-surface' }) {
+  const onPhoto = tone === 'on-photo'
   return (
     <div>
-      <div className="font-serif text-xl font-semibold text-primary">{value}</div>
-      <div className="mt-0.5 text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`font-display text-xl font-semibold ${onPhoto ? 'text-card' : 'text-primary'}`}>{value}</div>
+      <div className={`mt-0.5 text-xs uppercase tracking-wider ${onPhoto ? 'text-card/70' : 'text-muted-foreground'}`}>{label}</div>
     </div>
   )
 }
@@ -280,10 +331,10 @@ function TrustStat({ value, label }: { value: string; label: string }) {
 function Step({ num, title, body }: { num: string; title: string; body: string }) {
   return (
     <li className="rounded-2xl border border-primary/10 bg-card p-6">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary font-serif text-lg font-semibold text-primary-foreground">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary font-display text-lg font-semibold text-primary-foreground">
         {num}
       </div>
-      <h3 className="mt-4 font-serif text-xl font-semibold text-primary">{title}</h3>
+      <h3 className="mt-4 font-display text-xl font-semibold text-primary">{title}</h3>
       <p className="mt-2 text-base leading-relaxed text-foreground/80">{body}</p>
     </li>
   )
@@ -305,7 +356,7 @@ function Compare({
       }`}
     >
       <h3
-        className={`font-serif text-xl font-semibold ${accent ? 'text-primary' : 'text-foreground/85'}`}
+        className={`font-display text-xl font-semibold ${accent ? 'text-primary' : 'text-foreground/85'}`}
       >
         {header}
       </h3>
@@ -327,7 +378,7 @@ function MarketStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-primary/10 bg-card p-5">
       <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="mt-1 font-serif text-3xl font-semibold tabular-nums text-primary">{value}</div>
+      <div className="mt-1 font-display text-3xl font-semibold tabular-nums text-primary">{value}</div>
     </div>
   )
 }
@@ -337,7 +388,7 @@ function FAQ({ q, a }: { q: string; a: string }) {
     <details className="group rounded-xl border border-primary/10 bg-card p-5 open:border-primary/30">
       <summary className="cursor-pointer list-none">
         <span className="flex items-center justify-between gap-4">
-          <span className="font-serif text-lg font-semibold text-primary">{q}</span>
+          <span className="font-display text-lg font-semibold text-primary">{q}</span>
           <span
             aria-hidden
             className="shrink-0 text-2xl leading-none text-primary/60 transition-transform group-open:rotate-45"
