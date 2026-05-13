@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.169.2 (2026-05-13)
+
+### Maintenance
+- chore(skills): backfill canonical references into 22 content skills
+
+---
+
+
 ## v1.169.1 (2026-05-13)
 
 ### Maintenance
