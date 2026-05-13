@@ -193,18 +193,49 @@ function offsetDate(isoDate: string, days: number): string {
 }
 
 /**
+ * Metrics where a lower value is BETTER. The classifier flips spike/crash and
+ * rising/falling for these so the brain reports "spike" only when the number
+ * moved in the favorable direction.
+ *
+ * Examples:
+ *   - avg_position / position (GSC search rank, 1 = top)
+ *   - bounce_rate (lower = stickier)
+ *   - cpm / cpc / cpa (lower = more efficient spend)
+ *   - avg_response_time_minutes (faster response is better)
+ *   - days_on_market
+ */
+const INVERSE_METRICS = new Set<string>([
+  'position',
+  'avg_position',
+  'bounce_rate',
+  'cpm',
+  'cpc',
+  'cpa',
+  'cost_per_lead',
+  'avg_response_time_minutes',
+  'days_on_market',
+  'unsubscribe_rate',
+])
+
+/**
  * Classify percent change relative to the 2-sigma band of the trailing 30-day
- * distribution. Uses the trailingStd computed outside.
+ * distribution. Uses the trailingStd computed outside. Inverse metrics
+ * (where lower is better) have spike/crash and rising/falling flipped.
  */
 function classifySignificance(
   pctChange: number | null,
   absoluteChange: number,
   trailingMean: number,
-  trailingStd: number
+  trailingStd: number,
+  metric: string
 ): Significance {
+  const inverse = INVERSE_METRICS.has(metric)
+
   if (pctChange === null) {
-    // Prior is zero: treat non-zero current as a spike/crash based on direction.
-    return absoluteChange > 0 ? 'spike' : 'stable'
+    // Prior is zero: a non-zero current value moves the metric.
+    // For inverse metrics, an increase from zero is a "crash" (worse).
+    const direction = absoluteChange > 0 ? (inverse ? 'crash' : 'spike') : 'stable'
+    return direction
   }
   const absPct = Math.abs(pctChange)
   if (absPct < SIGNIFICANCE_STABLE_PCT) return 'stable'
@@ -212,21 +243,28 @@ function classifySignificance(
   const twoSigma = 2 * trailingStd
   const outsideBand = Math.abs(absoluteChange) > twoSigma || trailingMean === 0
 
+  // pctChange > 0 means the raw value WENT UP.
+  // For normal metrics, up = good (spike/rising).
+  // For inverse metrics, up = bad (crash/falling).
+  const wentUp = pctChange > 0
+  const favorable = inverse ? !wentUp : wentUp
+
   if (absPct > SIGNIFICANCE_EXTREME_PCT && outsideBand) {
-    return pctChange > 0 ? 'spike' : 'crash'
+    return favorable ? 'spike' : 'crash'
   }
-  return pctChange > 0 ? 'rising' : 'falling'
+  return favorable ? 'rising' : 'falling'
 }
 
 function buildDelta(
   current: number,
   prior: number,
   trailingMean: number,
-  trailingStd: number
+  trailingStd: number,
+  metric: string
 ): PeriodDelta {
   const absoluteChange = current - prior
   const pctChange = prior !== 0 ? ((current - prior) / prior) * 100 : null
-  const significance = classifySignificance(pctChange, absoluteChange, trailingMean, trailingStd)
+  const significance = classifySignificance(pctChange, absoluteChange, trailingMean, trailingStd, metric)
   return { current, prior, absolute_change: absoluteChange, percent_change: pctChange, significance }
 }
 
@@ -288,9 +326,9 @@ export async function computeDelta(
     scope,
     scope_id: scopeId,
     as_of_date: asOfDate,
-    wow: buildDelta(wowCurrent, wowPrior, trailingMean, trailingStd),
-    mom: buildDelta(momCurrent, momPrior, trailingMean, trailingStd),
-    trend_vs_baseline: buildDelta(trendCurrent, baselineWeekEstimate, trailingMean, trailingStd),
+    wow: buildDelta(wowCurrent, wowPrior, trailingMean, trailingStd, metric),
+    mom: buildDelta(momCurrent, momPrior, trailingMean, trailingStd, metric),
+    trend_vs_baseline: buildDelta(trendCurrent, baselineWeekEstimate, trailingMean, trailingStd, metric),
     trailing_30_mean: trailingMean,
     trailing_30_std: trailingStd,
   }
