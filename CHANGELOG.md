@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.182.3 (2026-05-13)
+
+### Bug Fixes
+- fix(lp): LP phone is (541) 213-6706 — Matt's direct line
+
+---
+
+
 ## v1.182.2 (2026-05-13)
 
 ### Bug Fixes
