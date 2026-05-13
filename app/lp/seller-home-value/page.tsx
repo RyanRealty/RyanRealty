@@ -3,6 +3,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import SellerLPForm from './SellerLPForm'
+import {
+  getBendMarketSnapshot,
+  getRecentBendSoldListings,
+  formatPriceCompact,
+  type RecentSoldListing,
+} from './data'
 
 export const metadata: Metadata = {
   title: 'What’s Your Bend Home Really Worth? — Ryan Realty',
@@ -25,6 +31,14 @@ export default async function SellerHomeValuePage() {
   // so the visible UX adjusts before first paint.
   const cookiePersonId = await getFubPersonIdFromCookie()
   const knownVisitor = cookiePersonId != null && cookiePersonId > 0
+
+  // Live local data — Bend market snapshot + recent closings. Pulled at request
+  // time (the LP route is rendered on-demand). Both fall back gracefully if
+  // Supabase is briefly unreachable — the section just hides itself.
+  const [marketSnapshot, recentSold] = await Promise.all([
+    getBendMarketSnapshot(),
+    getRecentBendSoldListings(),
+  ])
 
   return (
     <div className="bg-background text-foreground">
@@ -72,7 +86,7 @@ export default async function SellerHomeValuePage() {
           fill
           priority
           sizes="100vw"
-          className="absolute inset-0 -z-20 object-cover object-center"
+          className="lp-kenburns absolute inset-0 -z-20 object-cover object-center"
         />
         {/* Navy protection overlay — solid, not a gradient, per design system */}
         <div className="absolute inset-0 -z-10 bg-primary/70" aria-hidden="true" />
@@ -203,8 +217,35 @@ export default async function SellerHomeValuePage() {
         </div>
       </section>
 
-      {/* ─── Market truth (placeholder for live Supabase data — Phase 2) ──────── */}
-      <section className="border-b border-primary/10 bg-card/30">
+      {/* ─── Recent Bend closings — real social proof ──────────────────────
+          Pulled live from the listings table at request time. Up to 6 most
+          recent SFR closings in Bend with a photo. If the data fetch fails or
+          returns zero rows, the section hides itself — never shows skeletons
+          or fake placeholders. */}
+      {recentSold.length > 0 && (
+        <section className="border-b border-primary/10 bg-card/30">
+          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+              Recent sales right here in Bend.
+            </h2>
+            <p className="mt-3 max-w-2xl text-lg text-foreground/80">
+              What homes like yours are actually closing for — pulled from local MLS data, refreshed daily.
+              No filters. No cherry-picking.
+            </p>
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {recentSold.map((listing, i) => (
+                <SoldCard key={`${listing.closedAt}-${i}`} listing={listing} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ─── Market truth — live Bend snapshot ─────────────────────────────
+          Pulled from market_pulse_live (the same source the weekly market
+          packet uses). Falls back to the placeholder figures only when the
+          live row is missing — never invents data. */}
+      <section className="border-b border-primary/10">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
           <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
             Where Bend is right now.
@@ -214,10 +255,22 @@ export default async function SellerHomeValuePage() {
             That difference is bigger in a balanced market than in a frenzy.
           </p>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <MarketStat label="Median list price" value="$789K" />
-            <MarketStat label="Months of supply" value="4.1" />
-            <MarketStat label="Sold last 30 days" value="124" />
-            <MarketStat label="Market" value="Warm / Balanced" />
+            <MarketStat
+              label="Median list price"
+              value={formatPriceCompact(marketSnapshot?.medianListPrice ?? null)}
+            />
+            <MarketStat
+              label="Active listings"
+              value={marketSnapshot?.activeCount ? marketSnapshot.activeCount.toLocaleString() : '—'}
+            />
+            <MarketStat
+              label="New last 30 days"
+              value={marketSnapshot?.newCount30d ? marketSnapshot.newCount30d.toLocaleString() : '—'}
+            />
+            <MarketStat
+              label="Market"
+              value={marketSnapshot?.marketHealthLabel ?? '—'}
+            />
           </div>
         </div>
       </section>
@@ -379,6 +432,51 @@ function MarketStat({ label, value }: { label: string; value: string }) {
     <div className="rounded-2xl border border-primary/10 bg-card p-5">
       <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-1 font-display text-3xl font-semibold tabular-nums text-primary">{value}</div>
+    </div>
+  )
+}
+
+function SoldCard({ listing }: { listing: RecentSoldListing }) {
+  const sold = formatPriceCompact(listing.closePrice)
+  const list = formatPriceCompact(listing.listPrice)
+  const overAsk =
+    listing.closePrice && listing.listPrice && listing.closePrice > listing.listPrice
+      ? Math.round(((listing.closePrice - listing.listPrice) / listing.listPrice) * 1000) / 10
+      : null
+  const place = listing.neighborhood?.trim() || listing.city?.trim() || 'Bend'
+  return (
+    <div className="group overflow-hidden rounded-2xl border border-primary/10 bg-card shadow-sm transition-shadow hover:shadow-md">
+      <div className="relative aspect-[4/3] w-full bg-primary/5">
+        <Image
+          src={listing.photoUrl}
+          alt={`Recently sold home in ${place}`}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        <div className="absolute bottom-3 left-3 rounded-full bg-card/95 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary shadow-sm">
+          Sold {sold}
+        </div>
+      </div>
+      <div className="p-5">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{place}</p>
+        <div className="mt-2 flex items-baseline justify-between gap-3">
+          <p className="font-display text-2xl font-semibold tabular-nums text-primary">{sold}</p>
+          {overAsk != null && overAsk > 0 && (
+            <p className="text-sm font-semibold text-foreground/85">+{overAsk}% over ask</p>
+          )}
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+          Listed {list}
+          {listing.beds || listing.baths ? (
+            <>
+              {' · '}
+              {listing.beds ?? '—'} bd · {listing.baths ?? '—'} ba
+            </>
+          ) : null}
+          {typeof listing.domDays === 'number' ? <> · {listing.domDays} days</> : null}
+        </p>
+      </div>
     </div>
   )
 }
