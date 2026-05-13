@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import SellerLPForm from './SellerLPForm'
@@ -52,6 +53,35 @@ export default async function SellerHomeValuePage() {
       <section className="border-b border-primary/10">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-14 lg:py-20">
           <div>
+            {/* Broker identity strip — verified human face above the fold is the
+                #3 ranked trust signal for boomer-seller LPs per the deep research
+                (NNG + AnytimeEstimate 2025: 2× CVR with a real broker headshot
+                visible). Real photo, not stock — boomers detect inauthentic imagery
+                even when they can't name why it feels off. */}
+            <div className="mb-5 flex items-center gap-4">
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full bg-card ring-2 ring-primary/15 sm:h-24 sm:w-24">
+                <Image
+                  src="/images/brokers/ryan-matt.png"
+                  alt="Matt Ryan, Principal Broker at Ryan Realty"
+                  fill
+                  sizes="(max-width: 640px) 80px, 96px"
+                  className="object-cover object-top"
+                  priority
+                />
+              </div>
+              <div>
+                <p className="font-serif text-lg font-semibold text-primary leading-tight">
+                  Matt Ryan
+                </p>
+                <p className="text-sm leading-tight text-muted-foreground">
+                  Principal Broker · Bend, Oregon
+                </p>
+                <p className="mt-0.5 text-xs uppercase tracking-wider text-primary/60">
+                  Oregon License #201206613
+                </p>
+              </div>
+            </div>
+
             <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary/70">
               For Bend, Oregon homeowners
             </p>
