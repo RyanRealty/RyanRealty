@@ -250,15 +250,17 @@ async function fetchRecentVideos(accessToken: string): Promise<TikTokVideo[]> {
   let hasMore = true
 
   while (hasMore) {
+    // TikTok v2/video/list: `fields` is a QUERY param. `max_count` and
+    // `cursor` go in the JSON body. Putting fields in the body returns
+    // 400 Bad Request (verified 2026-05-13).
     const body: Record<string, unknown> = {
       max_count: 20,
-      fields,
     }
     if (cursor !== undefined) {
       body.cursor = cursor
     }
 
-    const resp = await fetch(`${TIKTOK_API_BASE}/video/list/`, {
+    const resp = await fetch(`${TIKTOK_API_BASE}/video/list/?fields=${encodeURIComponent(fields)}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -268,7 +270,8 @@ async function fetchRecentVideos(accessToken: string): Promise<TikTokVideo[]> {
     })
 
     if (!resp.ok) {
-      throw new Error(`TikTok video.list failed: ${resp.status} ${resp.statusText}`)
+      const errBody = await resp.text().catch(() => '')
+      throw new Error(`TikTok video.list failed: ${resp.status} ${resp.statusText} body=${errBody.slice(0, 300)}`)
     }
 
     const data = (await resp.json()) as TikTokVideoListResponse
