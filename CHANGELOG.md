@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.182.0 (2026-05-13)
+
+### Features
+- feat(lp): real recent-sold grid + live Bend market data + Ken Burns hero
+
+---
+
+
 ## v1.181.0 (2026-05-13)
 
 ### Features
