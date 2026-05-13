@@ -6,10 +6,13 @@ const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 // youtube.upload: publish videos. youtube.readonly: read channel metadata
 // (subscribers, video list). yt-analytics.readonly: pull the YouTube
 // Analytics API v2 (views, retention, CTR, etc) for the marketing brain.
+// youtube.force-ssl: write access for channels.update brandingSettings
+// (channel description, title) — needed for social brand sync 2026-05-13.
 const YOUTUBE_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/youtube.upload',
   'https://www.googleapis.com/auth/youtube.readonly',
   'https://www.googleapis.com/auth/yt-analytics.readonly',
+  'https://www.googleapis.com/auth/youtube.force-ssl',
 ].join(' ')
 
 // ---------------------------------------------------------------------------
