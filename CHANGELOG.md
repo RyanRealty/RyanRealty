@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.165.4 (2026-05-13)
+
+### Bug Fixes
+- fix(marketing-brain): GSC default site is URL-prefix not domain
+
+---
+
+
 ## v1.165.3 (2026-05-13)
 
 ### Maintenance
