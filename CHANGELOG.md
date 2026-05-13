@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.170.0 (2026-05-13)
+
+### Features
+- feat(video-skills): lock 5 decisions from Matt review 2026-05-13
+
+---
+
+
 ## v1.169.8 (2026-05-13)
 
 ### Maintenance
