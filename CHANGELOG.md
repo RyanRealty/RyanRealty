@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.172.1 (2026-05-13)
+
+### Other
+- Social brand kit: avatar, banners, bios, asset library
+
+---
+
+
 ## v1.172.0 (2026-05-13)
 
 ### Features
