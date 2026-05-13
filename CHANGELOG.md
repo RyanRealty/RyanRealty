@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.177.0 (2026-05-13)
+
+### Features
+- feat(lp): add Matt Ryan broker headshot above the H1 in seller LP hero
+
+---
+
+
 ## v1.176.3 (2026-05-13)
 
 ### Bug Fixes
