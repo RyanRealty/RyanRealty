@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.181.0 (2026-05-13)
+
+### Features
+- feat(lp): swap hero photo to approved banner-2048x1152-youtube.jpg
+
+---
+
+
 ## v1.180.1 (2026-05-13)
 
 ### Other
