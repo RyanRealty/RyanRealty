@@ -371,7 +371,25 @@ The shadcn/ui-only rule above still holds. v2 additions:
 
 ## Skill self-binding (the rule that keeps this real)
 
-Every content skill (`video_production_skills/*`, `social_media_skills/*`, `automation_skills/*`) MUST reference `design_system/ryan-realty/SKILL.md` in its "Required references" section. A skill that produces content without loading the design system is non-compliant. Update the skill, not the workaround.
+Every content skill (`video_production_skills/*`, `social_media_skills/*`, `automation_skills/*`) MUST reference BOTH of these in its "Required references" section:
+
+1. `design_system/ryan-realty/SKILL.md` — the visual brand spec
+2. `social_media_skills/platform-best-practices/SKILL.md` — the platform rule layer (2026 best practices for IG, TikTok, YouTube, FB, LinkedIn)
+
+A skill that produces content without loading both is non-compliant. Update the skill, not the workaround.
+
+## Platform best practices (locked 2026-05-13)
+
+Canonical platform rule layer lives at [`social_media_skills/platform-best-practices/SKILL.md`](social_media_skills/platform-best-practices/SKILL.md). Synthesized from research on 30+ top real estate creators across IG, TikTok, YouTube, Facebook, LinkedIn. The skill resolves these recurring questions:
+
+- **Logo in frame?** Almost always no on short-form (TikTok, IG Reels, YouTube Shorts, FB Reels). Allowed on long-form YouTube after 0:30, FB Reels (tolerated), end cards, thumbnails, print. **"The logo is a closer, not an opener."**
+- **Matt's face on camera?** Use the per-surface matrix in the skill (broker brag yes, listing tour optional, neighborhood guide YT long-form yes).
+- **Captions?** Geist 500 white with subtle drop-shadow per CLAUDE.md §0.5. Never on navy/colored pills.
+- **Length / aspect / hook timing / posting cadence / SEO?** All answered by the cross-platform decision matrix.
+
+**Default to the matrix.** When asking the user a content question, frame it as: "Best practice says X (per platform-best-practices.md). Want to follow it, or override?"
+
+Research sources at `docs/research/best-practices-*.md` (Instagram, TikTok, YouTube, Facebook+LinkedIn, cross-platform branding).
 
 ---
 

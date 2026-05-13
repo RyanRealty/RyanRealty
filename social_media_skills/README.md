@@ -5,6 +5,9 @@ It pairs with `video_production_skills/` to cover the full content pipeline from
 raw footage and market data to published posts, paid campaigns, and growth ops.
 Load the relevant skill file before executing any social, brand, or content task.
 
+**Default rule layer (load FIRST — before any content skill):**
+- [`platform-best-practices/SKILL.md`](platform-best-practices/SKILL.md) — canonical 2026 platform rules for IG, TikTok, YouTube, Facebook, and LinkedIn. Answers: logo in frame? Agent face? Hook timing? Caption style? Length? Posting cadence? SEO angle? Every content skill loads this first. Contains the cross-platform decision matrix and the Ryan Realty application matrix.
+
 **Pre-publish gates (mandatory on every piece, regardless of which skill produced it):**
 - [`../video_production_skills/ANTI_SLOP_MANIFESTO.md`](../video_production_skills/ANTI_SLOP_MANIFESTO.md) — banned-content gate.
 - [`../video_production_skills/VIRAL_GUARDRAILS.md`](../video_production_skills/VIRAL_GUARDRAILS.md) — pre-publish virality scorecard. Default ship floor: 80/100, format-specific minimums per §10. Every published piece (Reel, TikTok, Short, FB Reel, X video, LinkedIn video, IG carousel, Story sequence) ships with a `scorecard.json` proving the score.
