@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.182.8 (2026-05-13)
+
+### Other
+- Add youtube.force-ssl scope so we can push channel branding via API
+
+---
+
+
 ## v1.182.7 (2026-05-13)
 
 ### Maintenance
