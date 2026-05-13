@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.182.1 (2026-05-13)
+
+### Bug Fixes
+- fix(lp): correct LP phone to 541-703-3095 (was the OREA brokerage line)
+
+---
+
+
 ## v1.182.0 (2026-05-13)
 
 ### Features
