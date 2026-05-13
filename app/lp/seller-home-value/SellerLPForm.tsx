@@ -131,8 +131,8 @@ export default function SellerLPForm({
         </p>
         <p className="mt-3 text-base text-muted-foreground">
           Prefer to talk right now? Call Matt directly at{' '}
-          <a href="tel:+15417033095" className="font-semibold text-primary underline underline-offset-2">
-            (541) 703-3095
+          <a href="tel:+15412136706" className="font-semibold text-primary underline underline-offset-2">
+            (541) 213-6706
           </a>.
         </p>
       </div>
@@ -196,8 +196,8 @@ export default function SellerLPForm({
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
           No spam. No obligation. No hard sell. Or call Matt at{' '}
-          <a href="tel:+15417033095" className="font-semibold text-foreground underline underline-offset-2">
-            (541) 703-3095
+          <a href="tel:+15412136706" className="font-semibold text-foreground underline underline-offset-2">
+            (541) 213-6706
           </a>.
         </p>
       </form>

@@ -23,8 +23,11 @@ export const metadata: Metadata = {
   },
 }
 
-const BROKER_PHONE = '(541) 703-3095'
-const BROKER_PHONE_TEL = '+15417033095'
+// Matt's direct line — seller LP visitors are calling because they want
+// to reach Matt personally, not the brokerage main line. The brand/brokerage
+// general number (541) 703-3095 lives elsewhere on the site.
+const BROKER_PHONE = '(541) 213-6706'
+const BROKER_PHONE_TEL = '+15412136706'
 
 export default async function SellerHomeValuePage() {
   // Detect prior identification via the fub_cid cookie. Server-side check
