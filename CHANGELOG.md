@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.178.1 (2026-05-13)
+
+### Bug Fixes
+- fix(marketing-brain): surface persistBriefs errors in cycle output
+
+---
+
+
 ## v1.178.0 (2026-05-13)
 
 ### Features
