@@ -106,3 +106,18 @@ listing_video_v4/out/*.mp4
 service_account_key.json
 **/adc.json
 viewer_sa_key.json
+
+# Social brand intermediate workspace — exploration thumbnails + downloaded source media.
+# Final deliverables (avatar/, banner-photo/, banner-illustration/, upload-checklist.html,
+# brand-preview.html, bio-drafts.md) ARE tracked. The folders below are not.
+design_system/ryan-realty/assets/social/approved/
+design_system/ryan-realty/assets/social/from-drive/
+design_system/ryan-realty/assets/social/oldmill-candidates/
+design_system/ryan-realty/assets/social/unsplash-candidates/
+design_system/ryan-realty/assets/social/okane-candidates/
+design_system/ryan-realty/assets/social/istock-frames/
+design_system/ryan-realty/assets/social/popular-candidates/
+design_system/ryan-realty/assets/social/bend-contact-sheet.html
+design_system/ryan-realty/assets/social/downtown-deep-dive.html
+design_system/ryan-realty/assets/social/oldmill-contact-sheet.html
+design_system/ryan-realty/assets/social/popular-bend-contact-sheet.html
