@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.176.3 (2026-05-13)
+
+### Bug Fixes
+- fix(marketing-brain): generate-briefs writes to marketing_brain_actions
+
+---
+
+
 ## v1.176.2 (2026-05-13)
 
 ### Bug Fixes
