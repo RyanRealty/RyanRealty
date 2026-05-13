@@ -24,8 +24,8 @@ export const metadata: Metadata = {
 }
 
 // Matt's direct line — seller LP visitors are calling because they want
-// to reach Matt personally, not the brokerage main line. The brand/brokerage
-// general number (541) 703-3095 lives elsewhere on the site.
+// to reach Matt personally. The Ryan Realty brand / brokerage general line
+// (541) 703-3095 lives on other site surfaces.
 const BROKER_PHONE = '(541) 213-6706'
 const BROKER_PHONE_TEL = '+15412136706'
 
