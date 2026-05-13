@@ -23,8 +23,8 @@ export const metadata: Metadata = {
   },
 }
 
-const BROKER_PHONE = '(541) 213-6706'
-const BROKER_PHONE_TEL = '+15412136706'
+const BROKER_PHONE = '(541) 703-3095'
+const BROKER_PHONE_TEL = '+15417033095'
 
 export default async function SellerHomeValuePage() {
   // Detect prior identification via the fub_cid cookie. Server-side check
