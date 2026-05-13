@@ -13,7 +13,11 @@ import sharp from 'sharp';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const HERO = 'design_system/ryan-realty/assets/social/istock-frames/frame-01-t3.61s.jpg';
+// Upgraded source: 1920×1080 extracted from the 233 MB MOV master (was previously 1280×720
+// from the 21 MB web copy). Better for YouTube 2048×1152 banner — only 1.07× upscale.
+const HERO = fs.existsSync('design_system/ryan-realty/assets/hero/hero-old-mill-master-4k.jpg')
+  ? 'design_system/ryan-realty/assets/hero/hero-old-mill-master-4k.jpg'
+  : 'design_system/ryan-realty/assets/social/istock-frames/frame-01-t3.61s.jpg';
 const OUT_DIR = 'design_system/ryan-realty/assets/social/banner-photo';
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -41,10 +45,9 @@ for (const spec of BANNER_SPECS) {
 
   // Crop math
   // Matt's directive 2026-05-13: anchor crop so the American flag sits at ~5% from the top
-  // of the rendered banner — flag visually hugs the upper edge. In source, flag flies above
-  // middle smokestack at ~y=80px (out of 720). Target flag position = cropHeight * 0.05.
-  // cropTop = flagY_source - cropHeight * 0.05
-  const FLAG_Y_IN_SOURCE = 80;   // approximate y-pixel of the flag in the 720p source
+  // of the rendered banner — flag visually hugs the upper edge.
+  // Flag y-pixel scales with source height (was ~80 at 720p → ~120 at 1080p).
+  const FLAG_Y_IN_SOURCE = Math.round(heroMeta.height * 0.11);   // ~11% from top
   const FLAG_TARGET_FRAC = 0.05; // flag should land at 5% from top of crop
   let cropBox;
   if (Math.abs(targetAspect - heroAspect) < 0.05) {

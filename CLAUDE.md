@@ -333,7 +333,8 @@ Full inventory: `design_system/ryan-realty/MANIFEST.md`. Most-used:
 - **Signature lockup:** `design_system/ryan-realty/assets/brand/illustration-05.png` (wordmark + beer-glass + dog + tagline ribbon)
 - **Mascot Jax:** `design_system/ryan-realty/assets/brand/blue-dog.png` · `white-dog.png` for dark backgrounds
 - **Scene illustrations:** `scene-tower.png` (Tower Theater), `scene-water-pageant.png` (historic downtown)
-- **Hero photography:** `design_system/ryan-realty/assets/hero-poster.webp` (Deschutes through downtown Bend)
+- **CANONICAL BRAND HERO PHOTO (LOCKED 2026-05-13):** `design_system/ryan-realty/assets/hero/hero-old-mill-master-4k.jpg` (1920×1080 F1 frame of `iStock-1330945786` — Old Mill District drone: three smokestacks, American flag at top, Deschutes River with floaters + kayakers, Cascade mountain horizon). **Use this for ANY design surface that needs a banner / cover photo / header / hero / cinematic anchor (social profile banners, email headers, website hero, listing-video intros, flyer + carousel hero slots, marketing collateral, etc.).** Pre-cropped at every social-platform aspect lives in the same `hero/` folder (`banner-2048x1152-youtube.jpg`, `banner-1500x500-x.jpg`, `banner-820x312-facebook.jpg`, `banner-1024x576-gbp.jpg`, `banner-800x450-pinterest.jpg`, `banner-1128x191-linkedin.jpg`). Top-anchored crops so the American flag stays visible at every aspect. **Crop discipline mandatory** — see `design_system/ryan-realty/assets/hero/README.md` for full rules. Stock subscription license (iStock) — active sub required at publish time.
+- **Legacy site hero:** `design_system/ryan-realty/assets/hero-poster.webp` (Deschutes aerial) — being phased out in favor of the canonical hero above.
 - **14 numbered heritage wordmark variations:** `illustration-01.png` through `illustration-14.png`
 - **Element cutouts** (for custom compositing): `design_system/ryan-realty/assets/brand/navy-cream/element-*.png`
 

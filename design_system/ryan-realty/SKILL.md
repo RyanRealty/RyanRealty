@@ -81,7 +81,8 @@ Let what we say create the tone. **Never describe the tone overtly.** Warmth, tr
 - **Mascot alone:** `assets/brand/blue-dog.png` · `white-dog.png`.
 - **Scene illustrations:** `assets/brand/scene-tower.png` (Tower Theater marquee) · `scene-water-pageant.png` (historic downtown).
 - **Web wordmark:** `assets/logo.png` (navy on cream) · `logo-header-white.png` (reversed on navy).
-- **Hero photography:** `assets/hero-poster.webp` (Deschutes aerial).
+- **CANONICAL BRAND HERO (LOCKED 2026-05-13):** `assets/hero/hero-old-mill-master-4k.jpg` (1920×1080 F1 frame of iStock Old Mill drone — three smokestacks, American flag, Deschutes River with floaters, Cascade mountains). **Use for any design surface needing a banner / cover / header / hero photo.** Pre-cropped at every social-platform aspect lives in the same folder. See `assets/hero/README.md` for usage rules + regeneration commands.
+- **Legacy site hero:** `assets/hero-poster.webp` (Deschutes aerial) — being phased out in favor of the F1 master above.
 
 ## What not to do
 

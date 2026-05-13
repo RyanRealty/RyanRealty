@@ -83,6 +83,23 @@ All shadows use `rgb(16 39 66 / opacity)` for the navy tint. From light to heavy
 
 ## Asset directory
 
+### `assets/hero/` — canonical brand hero (LOCKED 2026-05-13)
+
+**Every design surface that needs a Ryan Realty banner / cover photo / header image / cinematic anchor uses F1 from this folder by default.** See `assets/hero/README.md` for usage rules.
+
+| File | Resolution | Aspect | Use |
+|---|---|---|---|
+| `hero-old-mill-master-4k.jpg` | 1920×1080 | 16:9 | **Source of truth** — F1 frame, regenerate crops from this |
+| `hero-old-mill-banner-2048x1152.jpg` | 2048×1152 | 16:9 | Generic 16:9 hero |
+| `banner-2048x1152-youtube.jpg` | 2048×1152 | 16:9 | YouTube channel art |
+| `banner-1500x500-x.jpg` | 1500×500 | 3:1 | X / Twitter header |
+| `banner-820x312-facebook.jpg` | 820×312 | 2.63:1 | Facebook Page cover |
+| `banner-1024x576-gbp.jpg` | 1024×576 | 16:9 | Google Business Profile cover |
+| `banner-800x450-pinterest.jpg` | 800×450 | 16:9 | Pinterest cover |
+| `banner-1128x191-linkedin.jpg` | 1128×191 | 5.9:1 | LinkedIn Company cover |
+
+F1 = Old Mill District drone shot at 3.61s of `iStock-1330945786`. Three smokestacks, American flag at top, Deschutes River with floaters + kayakers, theater stage, Cascade mountain horizon. Stock subscription license — active sub required for use. Registered in `data/asset-library/manifest.json` (photo id `113232e1-1bd0-499e-8247-4c85c2386878`, video uuid in stock/ folder).
+
 ### `assets/` — web platform essentials
 
 | File | Use |
@@ -90,7 +107,7 @@ All shadows use `rgb(16 39 66 / opacity)` for the navy tint. From light to heavy
 | `favicon.ico`, `apple-touch-icon.png`, `icon-512.png` | Browser/PWA icons |
 | `logo.png` | Web wordmark (navy on cream) |
 | `logo-header-white.png` | Reversed wordmark (white on dark) |
-| `hero-poster.webp` | Deschutes River through downtown Bend — primary site hero |
+| `hero-poster.webp` | Deschutes River through downtown Bend — legacy site hero (consider replacing with `hero/hero-old-mill-master-4k.jpg` on next refresh) |
 | `hero-alpine-clean.jpg`, `hero-applegate-clean.jpg`, `hero-awbrey-clean.jpg`, `hero-bend-alpine.png`, `hero-bend-desktop.png`, `hero-bend-downtown.png`, `hero-deschutes-clean.jpg` | Alternate documentary hero options |
 | `team.webp` | Team photo |
 | `morgan-data-shuttle-logo.svg`, `oregon-data-share-logo.svg` | Partner marks |
