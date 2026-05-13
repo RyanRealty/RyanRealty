@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.171.0 (2026-05-13)
+
+### Features
+- feat(brand): simplify palette to navy + cream only (Matt directive 2026-05-13)
+
+---
+
+
 ## v1.170.0 (2026-05-13)
 
 ### Features
