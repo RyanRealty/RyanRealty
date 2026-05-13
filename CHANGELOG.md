@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.165.2 (2026-05-13)
+
+### Bug Fixes
+- fix(marketing-brain): match real FUB seller-lead tag values
+
+---
+
+
 ## v1.165.1 (2026-05-12)
 
 ### Bug Fixes
