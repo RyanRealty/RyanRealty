@@ -1,6 +1,10 @@
 import { getLastOptimizationRun } from '@/app/actions/optimization-runs'
 import Link from 'next/link'
 
+// Admin route — always render at request time. Static generation of this page
+// timed out the build (>180s) because the optimization-runs query is slow.
+export const dynamic = 'force-dynamic'
+
 export default async function AdminOptimizationPage() {
   const last = await getLastOptimizationRun()
 

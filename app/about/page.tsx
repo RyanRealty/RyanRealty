@@ -14,7 +14,10 @@ import { listingsBrowsePath } from '@/lib/slug'
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const aboutOgImage = `${siteUrl}/api/og?type=default`
 
-export const revalidate = 60
+// Render on demand. This page uses cookies() (via getSession + getFubPersonIdFromCookie),
+// which is incompatible with static pre-rendering — Next.js throws DYNAMIC_SERVER_USAGE
+// during the build's static-generation pass. Force-dynamic moves the render to request time.
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'About Us',

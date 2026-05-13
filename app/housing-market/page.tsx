@@ -6,6 +6,10 @@ import { Separator } from '@/components/ui/separator'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 
+// Render on demand to avoid the 180s static-generation timeout. getBrowseCities
+// is slow enough at build time that the static export windows out.
+export const dynamic = 'force-dynamic'
+
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = {

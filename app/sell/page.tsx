@@ -14,6 +14,11 @@ import BrokerSocialProofCta from '@/components/broker/BrokerSocialProofCta'
 import { valuationPath } from '@/lib/slug'
 import ShareButton from '@/components/ShareButton'
 
+// Render on demand to avoid the 180s static-generation timeout. This page
+// performs heavy market-data fetches at build time (Supabase + market-condition
+// classification) and consistently busts the static export window.
+export const dynamic = 'force-dynamic'
+
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
 

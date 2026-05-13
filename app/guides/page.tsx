@@ -5,6 +5,10 @@ import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import ContentPageHero from '@/components/layout/ContentPageHero'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 
+// Render on demand to avoid the 180s static-generation timeout. The published
+// guides query is slow enough at build time that the static export windows out.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Real Estate Guides',
   description: 'Local buying and selling guides for Bend and Central Oregon.',
