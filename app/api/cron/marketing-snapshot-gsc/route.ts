@@ -150,13 +150,17 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // ?site= overrides both env and the lib default. Use this to point at
+  // a specific GSC property when multiple are accessible.
+  const siteOverride = new URL(request.url).searchParams.get('site')?.trim() || undefined
+
   const errors: string[] = []
   const metricsCovered = new Set<string>()
   let totalRows = 0
 
   for (const day of dateIter(startDate, endDate)) {
     try {
-      const summary = await getSearchConsoleSummary(day, day)
+      const summary = await getSearchConsoleSummary(day, day, siteOverride)
       if (!summary.ok) {
         errors.push(`${day}: ${summary.error}`)
         continue

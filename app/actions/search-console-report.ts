@@ -38,15 +38,17 @@ function normalizeRows(rows: SearchConsoleRow[] | undefined) {
   }))
 }
 
-export async function getSearchConsoleSummary(startDate: string, endDate: string): Promise<SearchConsoleReportResult> {
+export async function getSearchConsoleSummary(startDate: string, endDate: string, siteOverride?: string): Promise<SearchConsoleReportResult> {
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL?.trim()
   const privateKeyRaw = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
-  // GSC site URL: prefer the env override, otherwise default to the
-  // URL-prefix property for ryan-realty.com. Verified via the GSC
-  // sites.list diagnostic on 2026-05-13 that the service account has
-  // siteFullUser on https://ryan-realty.com/ specifically (not the
-  // sc-domain: variant).
-  const siteUrl = process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL?.trim() || 'https://ryan-realty.com/'
+  // GSC site URL priority (highest to lowest):
+  //   1. siteOverride argument (passed by the ingestor's ?site= query param)
+  //   2. GOOGLE_SEARCH_CONSOLE_SITE_URL env var
+  //   3. https://ryan-realty.com/ default (the URL-prefix property the
+  //      service account actually has access to per the 2026-05-13
+  //      sites.list diagnostic). The sc-domain: variant is NOT
+  //      accessible to viewer@ryanrealty.iam.gserviceaccount.com.
+  const siteUrl = siteOverride?.trim() || process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL?.trim() || 'https://ryan-realty.com/'
 
   if (!clientEmail || !privateKeyRaw) {
     return { ok: false, error: 'SEARCH_CONSOLE_NOT_CONFIGURED' }
