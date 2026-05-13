@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.182.9 (2026-05-13)
+
+### Maintenance
+- docs(competitive): Bend RE competitor intelligence deep-dive
+
+---
+
+
 ## v1.182.8 (2026-05-13)
 
 ### Other
