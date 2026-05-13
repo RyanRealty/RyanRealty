@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.180.0 (2026-05-13)
+
+### Features
+- feat(lp): apply Amboqia display font + heritage wordmark + signature lockup
+
+---
+
+
 ## v1.179.0 (2026-05-13)
 
 ### Features
