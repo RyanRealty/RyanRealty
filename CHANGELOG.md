@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.169.4 (2026-05-13)
+
+### Bug Fixes
+- fix(marketing-brain): tiktok ingestor robust to missing open_id
+
+---
+
+
 ## v1.169.3 (2026-05-13)
 
 ### Bug Fixes
