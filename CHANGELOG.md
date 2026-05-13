@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.169.0 (2026-05-13)
+
+### Features
+- feat(brand): land 2026 platform-best-practices skill + research
+
+---
+
+
 ## v1.168.0 (2026-05-13)
 
 ### Features
