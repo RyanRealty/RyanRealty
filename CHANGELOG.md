@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.169.6 (2026-05-13)
+
+### Maintenance
+- docs(marketing-brain): refresh memory log with 7-channel live state + 5 platform locks
+
+---
+
+
 ## v1.169.5 (2026-05-13)
 
 ### Bug Fixes
