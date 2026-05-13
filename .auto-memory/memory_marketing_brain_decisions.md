@@ -37,15 +37,15 @@ cascade_hasson_sothebys, compass_bend, windermere_central_oregon, cascade_sotheb
 
 | Platform | Status | Notes |
 |---|---|---|
-| Meta (FB + IG) | Live | Long-lived page token, all publishing scopes |
-| GA4 | Live | Service account `viewer@ryanrealty.iam.gserviceaccount.com` |
-| GSC | Live | Same service account, property `https://ryan-realty.com/` (URL-prefix, NOT `sc-domain:`) |
-| FUB | Live | API key in env |
-| LinkedIn | Token present | Ingestor not yet built |
-| YouTube | Token present | Ingestor not yet built |
-| X | Token present | Ingestor not yet built |
-| TikTok | Token present (2026-05-12) | Ingestor not yet built |
-| GBP | Token present | Ingestor not yet built |
+| Meta (FB + IG) | **Live** | Long-lived page token, all publishing scopes. Ingestors flowing: ~3,600 rows each over 90d. |
+| GA4 | **Live** | Service account `viewer@ryanrealty.iam.gserviceaccount.com`. ~1,304 rows over 90d. |
+| GSC | **Live** | Same service account, property `https://ryan-realty.com/` (URL-prefix, NOT `sc-domain:`). 17,932 rows over 90d. |
+| FUB | **Live** | API key in env. 665 rows over 90d. Window-based fetcher (NOT createdAfter/createdBefore — see gotchas). |
+| GBP | **Live** | Performance API (NOT deprecated Insights API). 801 rows over 90d. |
+| X | **Live** | 3,825 rows over 75d. /2/users/me hits 429 rate limit aggressively — cache user_id locally to avoid. |
+| TikTok | **Token live, ingestor debugging** | open_id column added 2026-05-13. /v2/video/list `fields` param goes in QUERY string, not body. |
+| YouTube | **Re-auth needed 2026-05-13** | Old scope was upload-only. Added youtube.readonly + yt-analytics.readonly. Matt to click /api/youtube/authorize. |
+| LinkedIn | **Re-auth needed 2026-05-13** | Old scopes were openid+profile+email+w_member_social. Added rw_organization_admin + r_organization_social. Requires Community Management API product on the LinkedIn Developer App. |
 | Threads | No token | Skipped per Matt 2026-05-12 |
 | Nextdoor | No token | Pending |
 | Pinterest | No dev app | Pending |
@@ -142,6 +142,80 @@ Session duration improving. Users staying longer. Likely tied to recent site cha
 
 ---
 
+## Per-platform locked "most important metric"
+
+For every platform, the deep-research playbook at
+`marketing_brain_skills/platforms/<name>/SKILL.md` locked the single
+metric the algorithm cares about most. The brain weights signals on
+this metric above others for that channel.
+
+| Platform | Most important metric | Why |
+|---|---|---|
+| YouTube | `average_view_percentage` (retention) | Determines whether the algorithm expands Suggested + Browse distribution after the initial test window. |
+| LinkedIn | Dwell time (proxied via `engagement_rate`) | LinkedIn's 2025 360Brew foundation model shifted dominant signal from Social Graph to Interest Graph; dwell is its measurement. |
+| X | `replies` | 13.5× the baseline engagement weight in the OSS algorithm — by far the highest signal. |
+| TikTok | `completion_rate` | Practical proxy for the algorithm's top two signals (watch time + view-through). Currently tier-gated behind Research API. |
+| GBP | `call_clicks` | Cleanest bottom-of-funnel signal; isolates Map Pack ranking issues from profile-trust issues. |
+
+---
+
+## More gotchas (added 2026-05-13 from the platform-ingestor build)
+
+### LinkedIn OAuth needs Community Management API product
+Adding `rw_organization_admin` / `r_organization_social` to the scope
+list is necessary but not sufficient. The LinkedIn Developer App must
+have the **Community Management API** product enabled at
+developer.linkedin.com → app → Products. Without it, the OAuth flow
+rejects the scope with `unauthorized_scope`. Approval is typically
+instant for verified pages.
+
+### YouTube Analytics requires its own scope
+`youtube.upload` alone does not grant access to the Analytics API. Must
+include `yt-analytics.readonly` (Analytics) and `youtube.readonly`
+(channel + video metadata). Otherwise every call returns
+`ACCESS_TOKEN_SCOPE_INSUFFICIENT`.
+
+### TikTok /v2/video/list field placement
+`fields` is a QUERY STRING parameter, NOT a body parameter on TikTok
+v2 endpoints. Putting it in the JSON body returns 400 Bad Request with
+no detailed error. Verified live 2026-05-13. `max_count` and `cursor`
+DO go in the body.
+
+### TikTok open_id is required for many endpoints
+`tiktok_auth.open_id` column added 2026-05-13. Older rows from before
+the column existed have NULL; ingestor fetches from /v2/user/info and
+persists back at runtime if missing.
+
+### X /2/users/me rate-limit
+The Free / Basic tier rate-limits /2/users/me aggressively. Backfills
+that call it once per day hit 429s after the first ~14 days. Mitigation:
+cache the X user_id locally (env var or Supabase) so the ingestor only
+calls /2/users/me once per ingestor run, not once per day in the loop.
+
+### GBP env vars must be in Vercel
+`GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID` and `GOOGLE_BUSINESS_PROFILE_LOCATION_ID`
+existed in `.env.local` but not on Vercel. Added to Production +
+Development envs via `vercel env add` 2026-05-13. Preview not yet
+populated.
+
+---
+
+## Platform-specific decisions awaiting Matt
+
+1. **TikTok Research API ($$$)** — would unlock completion_rate (the
+   locked most-important metric per the playbook). Currently we can
+   only see views/likes/comments/shares. Decision pending budget.
+
+2. **LinkedIn Community Management API product** — must be requested
+   at developer.linkedin.com before the new scopes work. Quick form +
+   usually instant approval.
+
+3. **X tier upgrade** — Basic tier limits both rate and metrics. Likely
+   not worth upgrading until X consistently drives qualified leads.
+
+---
+
 ## Changelog
 
-- **2026-05-13** — Initial decisions log created. Added GSC URL-prefix gotcha, FUB tag-form gotcha, Meta Ads `effective_status` gotcha, inverse-metrics fix, 2 approved briefs, SERP findings.
+- **2026-05-13 morning** — Initial decisions log. GSC URL-prefix gotcha, FUB tag forms, Meta Ads `effective_status` gotcha, inverse-metrics fix, 2 approved briefs, SERP findings.
+- **2026-05-13 afternoon** — 5 platform ingestors + playbooks shipped. Added locked-metric table per platform. Documented GBP env wiring, LinkedIn/YouTube re-auth requirements, TikTok video.list query-param fix, TikTok open_id column, X 429 rate limit pattern.
