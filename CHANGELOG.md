@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.165.3 (2026-05-13)
+
+### Maintenance
+- chore(marketing-brain): add gsc-properties diagnostic route
+
+---
+
+
 ## v1.165.2 (2026-05-13)
 
 ### Bug Fixes
