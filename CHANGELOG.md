@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.182.2 (2026-05-13)
+
+### Bug Fixes
+- fix(lp): revert LP phone to Matt's direct line — 541-213-6706
+
+---
+
+
 ## v1.182.1 (2026-05-13)
 
 ### Bug Fixes
