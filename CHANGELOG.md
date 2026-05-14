@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.184.4 (2026-05-14)
+
+### Maintenance
+- docs(seo): week 4 body-fix drafts — 6 banned-word replacements pending Matt approval
+
+---
+
+
 ## v1.184.3 (2026-05-14)
 
 ### Maintenance
