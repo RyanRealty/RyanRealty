@@ -25,13 +25,60 @@ action_types:
 
 # Broker Contact Card · Buyer-Side Last Tile
 
-## CRITICAL — Canonical generator + rule
+## CRITICAL — Layout is DERIVED FROM S7-Agent-Intro. Do not shuffle.
 
-**Generator:** `scripts/build_broker_contact_card.py` (single source of truth — adapt the
-broker registry inside the script when contact info changes; never re-implement layout).
+**The card layout is not invented here.** It is the approved **S7 Agent Intro** layout
+from `scripts/build_single_image_posts.py` (function `s7_agent_intro()`), extended by
+a compact contact block in the bottom 200 px. Matt approved S7 on 2026-05-12 — the
+rendered reference lives at
+`public/template-picker/list-kits/19496-tumalo-reservoir/v3/single-image/S7-agent-intro.jpg`.
+
+If S7 changes (portrait height, name size, divider position, eyebrow style), update
+**both** `s7_agent_intro()` AND `build_broker_contact_card.py::build_card()` together so
+they stay in sync. A drift between them is a bug.
+
+### Locked layout — DO NOT reshuffle without explicit Matt approval
+
+```
+1080 × 1350 cream background
+
+y=60   ─ Eyebrow top-left, Azo Sans 22 tracked 0.20em (S7 spec).
+         Varies by moment: buyer → "YOUR BUYER'S AGENT"
+                           seller → "YOUR LISTING AGENT"
+                           generic → "MEET YOUR BROKER"
+y=100  ─ Hairline under eyebrow (1px navy)
+
+y=60–880  ─ Transparent broker portrait, 820 px tall, centered horizontally
+            (IDENTICAL to S7 spec)
+
+y=920  ─ Hairline divider centered (180 px from each edge)
+
+y=970  ─ Name centered, Amboqia 86px, navy
+
+y=1080 ─ Role centered, Azo Sans 26: "Broker · Ryan Realty" / "Principal Broker · Ryan Realty"
+
+y=1122 ─ Sub-line centered, Azo Sans 22, slate (80,90,110):
+         "Bend · Tumalo · Central Oregon"
+
+──── Contact block (added vs S7; do not move) ────
+
+y=1182 ─ License # centered, tracked uppercase Azo Sans 14, slate
+         e.g. "OR LIC. #201254727"
+y=1218 ─ Phone centered, Azo Sans 26, navy
+         e.g. "415.308.9087"
+y=1260 ─ Email centered, Azo Sans 17, slate
+         e.g. "rebeccapeterson@ryan-realty.com"
+```
+
+**No logo.** S7 doesn't have one. The wordmark is already implied by the "Ryan Realty"
+text in the role line. A second wordmark would compete with the name.
+
+**No "side-by-side" two-column contact, no decorative rules below the portrait, no
+website URL bottom-right.** Those were inventions from earlier iterations and got
+rejected. Stay locked to S7 + the contact block above.
 
 **Approved-state reference:** `out/proof/2026-05-14/rendered/broker-cards/rebecca-buyer.jpg`
-— the first locked render Matt approved 2026-05-14.
+locked 2026-05-14 — must match the S7-derived layout above.
 
 **The rule that creates this skill (locked 2026-05-14):**
 
