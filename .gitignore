@@ -107,6 +107,12 @@ service_account_key.json
 **/adc.json
 viewer_sa_key.json
 
+# Draft deliverables — per CLAUDE.md "Draft-First, Commit-Last".
+# Renders, copy, CMAs, scratch outputs land here until Matt reviews + approves.
+# Promote to tracked locations only after explicit sign-off.
+drafts/
+out/
+
 # Social brand intermediate workspace — exploration thumbnails + downloaded source media.
 # Final deliverables (avatar/, banner-photo/, banner-illustration/, upload-checklist.html,
 # brand-preview.html, bio-drafts.md) ARE tracked. The folders below are not.
