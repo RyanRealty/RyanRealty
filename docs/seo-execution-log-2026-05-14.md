@@ -745,6 +745,53 @@ Until then, all Resend-based email sending will fail. Gmail-via-service-account 
 
 ---
 
+## Post-bio: smart-mapping attempt + Resend DNS investigation
+
+### Smart neighborhood-mapping attempt (per Matt's "be smart, find the cache key")
+
+Pulled the entire `market_stats_cache` inventory:
+- 194 distinct cities cached
+- Only 4 distinct neighborhoods/subdivisions cached: Awbrey Butte, Larkspur, Tetherow, North Bend
+- 2 regions (Central Oregon variants)
+
+For the 3 missing AgentFire pages (Valhalla Heights, Tree Farm, Tumalo), the cache has NO matching geo entries. So Matt's "rename to match the cache" path doesn't work — the cache doesn't have them.
+
+**Smart fallback via raw `listings`:**
+- **Tumalo** — postal code 97703 + 97701 area has Bend-classified listings. Street "Tumalo Reservoir" has 2 actives. No clean MLS-level Tumalo classification.
+- **Valhalla Heights** — searched for street names from the audit (Polarstar, Torsway). Found 10 active SFR + 14 sold last 12 months at $1.59M median. **BUT** this median is way out of line with the audit's description of a 1970s 11,000-sqft-lot working-class neighborhood. Almost certainly Polarstar/Torsway streets exist in a DIFFERENT (high-end) NW Bend area, not the original Valhalla Heights. **Data ambiguity → not publishing** per CLAUDE.md §0.
+- **Tree Farm** — no `tree farm` matches in SubdivisionName. "The Tree Farm" is a real master-planned community on Bend's west side, but it's not classified that way in this MLS feed. Likely needs polygon-boundary lookup (lat/lon) which isn't easily scriptable here.
+
+**Conclusion:** the 3 neighborhoods need either:
+1. A polygon-boundary aggregation layer in the cache pipeline (separate engineering project), OR
+2. AgentFire to expose its own IDX boundary definitions (separate request)
+
+Until then, those 3 pages stay without market snapshots. Documented as a pipeline gap, not a quick fix.
+
+### Resend domain verification — investigated, documented for Matt
+
+- DNS for ryan-realty.com is on **Cloudflare** (NS: jeff.ns.cloudflare.com + eva.ns.cloudflare.com)
+- No Cloudflare API token in env vars (`CLOUDFLARE_*` / `CF_*` all empty)
+- Therefore cannot programmatically add Resend's DNS records
+- **Wrote `docs/resend-dns-verification-steps-2026-05-14.md`** with the exact records Matt needs to add via Cloudflare's dashboard, plus the future-automated Cloudflare API path if Matt wants to script it next time
+
+Quick step: Matt opens Cloudflare → DNS → adds the 4 records Resend shows (MX, SPF TXT, DKIM TXT, optional DMARC TXT) with proxying OFF. ~5 min total. After verification, `noreply@mail.ryan-realty.com` will send successfully and `lib/resend.ts`-based scripts unblock.
+
+### Updated session totals after this round
+
+- **GSC indexing API enabled** (Matt did) — script error now shifted from "API disabled" to "permission denied / Failed to verify URL ownership." Service account needs to be added as Verified Owner in GSC → Settings → Users and permissions. **30-second add.**
+- **Smart neighborhood mapping investigated** — cache doesn't have the data; raw-listings fallback produces ambiguous results for Valhalla and no results for Tree Farm. Honest call: not publishing fabricated figures.
+- **Resend DNS path documented** in `docs/resend-dns-verification-steps-2026-05-14.md`
+
+### Two remaining Matt actions (both very small)
+
+1. **GSC**: add `viewer@ryanrealty.iam.gserviceaccount.com` as Owner in Search Console (Settings → Users and permissions → Add user). 30 seconds. Then re-run `node --env-file=.env.local scripts/seo-gsc-indexing-submit.mjs` for instant 19-URL re-indexing.
+
+2. **Resend DNS**: follow `docs/resend-dns-verification-steps-2026-05-14.md` (4 Cloudflare DNS records). 5 minutes. Then production email sends work.
+
+Everything else autonomous-doable has been done.
+
+---
+
 ## Skipped + reason
 
 *(none yet)*
