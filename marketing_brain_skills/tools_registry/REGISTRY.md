@@ -4,7 +4,7 @@ The brain and its producers read this file at decision-time to know which extern
 
 A producer that needs to scrape an Instagram profile looks here for the canonical Apify actor. A capability skill that needs to TTS a script looks here for the canonical voice. A site producer that needs to push a blog post looks here for the AgentFire pattern. **Editing a tool's auth/cost/usage inline inside a producer is non-compliant — update this registry instead.**
 
-**Last audited:** 2026-05-14. (apify, anthropic-classifier, supabase, replicate, spark_mls, meta_graph, resend — 7 of 33 authored.)
+**Last audited:** 2026-05-14. (apify, anthropic-classifier, supabase, replicate, spark_mls, meta_graph, resend, ga4, gsc, youtube_data, google_business_profile, follow_up_boss — 12 of 33 authored.)
 **Canonical source for each tool:** the `SKILL.md` at the listed path.
 **Template for new tool skills:** use [`video_production_skills/elevenlabs_voice/SKILL.md`](../../video_production_skills/elevenlabs_voice/SKILL.md) as the structural reference.
 
@@ -41,12 +41,12 @@ First-party APIs Ryan Realty owns or pays for. These are NOT scraping targets �
 |---|---|---|---|---|
 | supabase | [`marketing_brain_skills/tools_registry/supabase/`](supabase/SKILL.md) | ✅ | Postgres + RLS + Edge Functions; ryan-realty-platform project `dwvlophlbvvygjfxcrhm`; listings ~140 cols (mixed-case quirk documented), marketing_channel_daily, marketing_brain_actions, competitor_intel, content_classification, audit_runs | every brain skill + every producer |
 | spark_mls | [`marketing_brain_skills/tools_registry/spark-mls/`](spark-mls/SKILL.md) | ✅ | Live MLS data via SparkAPI (replication endpoint); RETS OData filter syntax; Spark x Supabase reconciliation gate; MoS formula locked | market-data-video, monthly-market-report, listing-tour-video, generate-briefs |
-| ga4 | `marketing_brain_skills/tools_registry/ga4/` | 📝 | Google Analytics 4 via Data API + service account `viewer@ryanrealty.iam.gserviceaccount.com` | snapshot-channels, audit-website, diagnose-performance |
-| gsc | `marketing_brain_skills/tools_registry/gsc/` | 📝 | Google Search Console — URL-prefix property `https://ryan-realty.com/` (NOT sc-domain) | snapshot-channels, audit-website, generate-briefs |
-| follow_up_boss | `marketing_brain_skills/tools_registry/follow-up-boss/` | 📝 | FUB CRM via v1 API; tag matching is case-insensitive AND includes multiple forms | snapshot-channels-fub, audit-crm, generate-briefs |
+| ga4 | [`marketing_brain_skills/tools_registry/ga4/`](ga4/SKILL.md) | ✅ | Google Analytics 4 via Data API + service account `viewer@ryanrealty.iam.gserviceaccount.com`; sessions, traffic sources, top pages, conversion events, funnel analysis | snapshot-channels-ga4, audit-website, diagnose-performance |
+| gsc | [`marketing_brain_skills/tools_registry/gsc/`](gsc/SKILL.md) | ✅ | Google Search Console — URL-prefix property `https://ryan-realty.com/` (NOT sc-domain); inverse-metric gotcha for position; Search Analytics API query patterns; 10 locked tracked queries | snapshot-channels-gsc, audit-website (seo layer), generate-briefs |
+| follow_up_boss | [`marketing_brain_skills/tools_registry/follow-up-boss/`](follow-up-boss/SKILL.md) | ✅ | FUB CRM via v1 API; Basic auth (not Bearer); tag matching is case-insensitive multi-form (Title Case + kebab + automation tags); /v1/people has no date-filter params — use fetchInDateWindow; north-star metric (qualified_seller_leads); SLA thresholds (hot 5m, warm 30m) | snapshot-channels-fub, audit-crm, generate-briefs, ops-fub-crm |
 | meta_graph | [`marketing_brain_skills/tools_registry/meta-graph/`](meta-graph/SKILL.md) | ✅ | Meta Graph API — long-lived page token with full publishing scopes; ads + page + IG insights; v25.0 pinned; campaign-status-on-insights gotcha documented | snapshot-channels-meta, audit-ads, every publisher target Meta |
-| google_business_profile | `marketing_brain_skills/tools_registry/gbp/` | 📝 | GBP Performance API (NOT deprecated Insights API) | snapshot-channels-gbp, ops-reputation |
-| youtube_data | `marketing_brain_skills/tools_registry/youtube-data/` | 📝 | YouTube Data API + Analytics API; needs `youtube.readonly` + `yt-analytics.readonly` | snapshot-channels-youtube, future publisher |
+| google_business_profile | [`marketing_brain_skills/tools_registry/gbp/`](gbp/SKILL.md) | ✅ | GBP Performance API (NOT deprecated Insights API); locked metric `call_clicks`; user OAuth token (not service-account); date-integer gotcha; post + photo publisher via v4 My Business API | snapshot-channels-gbp, ops-reputation |
+| youtube_data | [`marketing_brain_skills/tools_registry/youtube-data/`](youtube-data/SKILL.md) | ✅ | YouTube Data API v3 (channel metadata, video list, upload) + Analytics API v2 (views, watch time, average_view_percentage, CTR); two-API architecture; scope + impressions-at-video-dimension gotchas documented | snapshot-channels-youtube, diagnose-performance, generate-briefs, future publisher |
 | tiktok_api | `marketing_brain_skills/tools_registry/tiktok-api/` | 📝 | TikTok v2 API; fields param goes in QUERY string not body; open_id required | snapshot-channels-tiktok, future publisher |
 | x_api | `marketing_brain_skills/tools_registry/x-api/` | 📝 | X / Twitter v2 API; aggressive rate limits on free/basic tier — cache user_id | snapshot-channels-x, future publisher |
 | linkedin_api | `marketing_brain_skills/tools_registry/linkedin-api/` | 📝 | LinkedIn API; Community Management API is mutually exclusive with Share-on-LinkedIn on same app — pending dev-app decision | snapshot-channels-linkedin (blocked), future publisher |
@@ -138,17 +138,11 @@ Tools producers do not call directly but depend on for operation.
 
 ## Status snapshot — 2026-05-14 (end of session)
 
-- **Authored:** 7 (apify, anthropic-classifier, supabase, replicate, spark_mls, meta_graph, resend)
+- **Authored:** 12 (apify, anthropic-classifier, supabase, replicate, spark_mls, meta_graph, resend, ga4, gsc, youtube_data, google_business_profile, follow_up_boss)
 - **Referenced (existing skills):** 3 (elevenlabs_voice, asset-library, media-sourcing)
-- **Stub:** 23 — the next session that touches a stub tool should author its SKILL.md before producers start depending on it inline.
+- **Stub:** 18 — the next session that touches a stub tool should author its SKILL.md before producers start depending on it inline.
 - **Authoring priority for next pass** (order by dependency depth):
-  1. ga4 — every snapshot ingestor uses it; service-account auth pattern needs documenting
-  2. gsc — URL-prefix-vs-sc-domain gotcha + audit-website dependence
-  3. follow_up_boss — case-insensitive tag matching gotcha; v1 /people window pattern
-  4. google_business_profile — Performance API (not Insights) + env-var-on-Vercel gotcha
-  5. youtube_data — Analytics scope + per-video impressions gotcha
-  6. resend dependencies: the comms-matt-alert producer + ops-email-send already point at the new resend SKILL.md
-  7. agentfire_wordpress — blog publishing layer; needs WordPress REST API documentation
-  8. linkedin_api — pending dev-app architecture decision (Community Management vs Share)
-  9. tiktok_api — v2 query-param vs body gotcha; open_id requirement
-  10. x_api — Free/Basic tier rate-limit pattern; cache user_id
+  1. agentfire_wordpress — blog publishing layer; needs WordPress REST API documentation
+  2. linkedin_api — pending dev-app architecture decision (Community Management vs Share)
+  3. tiktok_api — v2 query-param vs body gotcha; open_id requirement
+  4. x_api — Free/Basic tier rate-limit pattern; cache user_id
