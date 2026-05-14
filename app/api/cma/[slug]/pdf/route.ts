@@ -3,6 +3,7 @@ import puppeteer, { type Browser } from 'puppeteer-core'
 import chromium from '@sparticuz/chromium-min'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
+import { fetchCmaMapPngBuffer } from '@/lib/cma-map'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -83,8 +84,6 @@ const ASSET_MIME: Record<string, string> = {
 }
 
 async function inlineLocalAssets(html: string, cmaDir: string): Promise<string> {
-  // Match any src="./assets/X" or url('./assets/X') reference and replace
-  // with a data: URI. Spark CDN photos use absolute URLs and are skipped.
   const pattern = /\.\/assets\/([A-Za-z0-9_./-]+)/g
   const cache = new Map<string, string>()
   const replacements: Array<{ match: string; dataUri: string }> = []
@@ -108,12 +107,38 @@ async function inlineLocalAssets(html: string, cmaDir: string): Promise<string> 
   }
 
   let out = html
-  // Apply replacements once each (dedupe by match)
   const seen = new Set<string>()
   for (const { match, dataUri } of replacements) {
     if (seen.has(match)) continue
     seen.add(match)
     out = out.split(match).join(dataUri)
+  }
+  return out
+}
+
+/**
+ * Inline /api/maps/<slug> references as data URIs. The browser inside
+ * puppeteer can't fetch /api/maps/* via a relative URL (setContent has
+ * no host), and even if it could, the Vercel SSO wall on preview
+ * deployments would block it. Pre-fetching the map server-side and
+ * inlining as a data URI sidesteps both.
+ */
+async function inlineMapReferences(html: string): Promise<string> {
+  const pattern = /\/api\/maps\/([a-z0-9-]+)/g
+  const cache = new Map<string, string>()
+  const matches = Array.from(new Set(Array.from(html.matchAll(pattern), (m) => m[1])))
+
+  for (const mapSlug of matches) {
+    if (cache.has(mapSlug)) continue
+    const buf = await fetchCmaMapPngBuffer(mapSlug)
+    if (buf) {
+      cache.set(mapSlug, `data:image/png;base64,${buf.toString('base64')}`)
+    }
+  }
+
+  let out = html
+  for (const [mapSlug, dataUri] of cache.entries()) {
+    out = out.split(`/api/maps/${mapSlug}`).join(dataUri)
   }
   return out
 }
@@ -142,7 +167,8 @@ export async function GET(
   const { searchParams } = new URL(request.url)
   const download = searchParams.get('download') === '1'
 
-  const html = await inlineLocalAssets(resolved.html, resolved.dir)
+  let html = await inlineLocalAssets(resolved.html, resolved.dir)
+  html = await inlineMapReferences(html)
 
   let browser: Browser | null = null
   try {
