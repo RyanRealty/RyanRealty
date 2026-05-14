@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.184.3 (2026-05-14)
+
+### Maintenance
+- docs(seo): week 3 new-page drafts — 3 pages ready for Matt review
+
+---
+
+
 ## v1.184.2 (2026-05-14)
 
 ### Maintenance
