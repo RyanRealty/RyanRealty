@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.189.0 (2026-05-14)
+
+### Features
+- feat(seller-lp): unified Sold Stories matrix + MLS video tours + horizontal wordmark + Sunstone-as-Represented
+
+### Maintenance
+- docs(seo): paul + rebecca extended bios + agentfire support ticket sent
+
+---
+
+
 ## v1.188.0 (2026-05-14)
 
 ### Features
