@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.191.0 (2026-05-14)
+
+### Features
+- feat(marketing-brain): wire audit-website signals to site:* actions (Item 1)
+
+---
+
+
 ## v1.190.3 (2026-05-14)
 
 ### Maintenance
