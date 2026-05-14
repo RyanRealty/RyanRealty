@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.199.2 (2026-05-14)
+
+### Maintenance
+- docs(handoffs): lock marketing inbox address to marketing@ryan-realty.com
+
+---
+
+
 ## v1.199.1 (2026-05-14)
 
 ### Maintenance
