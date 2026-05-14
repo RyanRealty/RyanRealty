@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.184.5 (2026-05-14)
+
+### Maintenance
+- docs(seo): final session log — 31 changes live, week 4 ACF limit hit
+
+---
+
+
 ## v1.184.4 (2026-05-14)
 
 ### Maintenance
