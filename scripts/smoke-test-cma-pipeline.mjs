@@ -84,21 +84,33 @@ function parseAddress(raw) {
 }
 
 async function sb(path, init = {}) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-      ...(init.headers ?? {}),
-    },
-  })
-  const text = await r.text()
-  if (!r.ok) {
-    throw new Error(`Supabase ${path} ${r.status}: ${text.slice(0, 200)}`)
+  // Retry transient PostgREST 503 / 504 / 502 errors with backoff. The
+  // schema cache occasionally takes a few seconds to reload on Supabase's
+  // side, and we'd rather block here than blow up the smoke test.
+  let lastErr = null
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...init,
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+        ...(init.headers ?? {}),
+      },
+    })
+    const text = await r.text()
+    if (r.ok) return text ? JSON.parse(text) : null
+    const transient = r.status === 502 || r.status === 503 || r.status === 504
+    if (!transient) {
+      throw new Error(`Supabase ${path} ${r.status}: ${text.slice(0, 200)}`)
+    }
+    lastErr = `${r.status}: ${text.slice(0, 200)}`
+    const backoff = 1500 * Math.pow(1.5, attempt)
+    console.error(`      ⏳ Supabase ${path} ${r.status} — retry ${attempt + 1}/6 in ${Math.round(backoff)}ms`)
+    await new Promise((res) => setTimeout(res, backoff))
   }
-  return text ? JSON.parse(text) : null
+  throw new Error(`Supabase ${path} gave up after 6 retries — last: ${lastErr}`)
 }
 
 function base64Url(buf) {
