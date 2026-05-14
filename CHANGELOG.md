@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.184.1 (2026-05-14)
+
+### Maintenance
+- docs(seo): week 1 sweep — 15 changes shipped, paste-ready spec + execution log
+
+---
+
+
 ## v1.184.0 (2026-05-14)
 
 ### Features
