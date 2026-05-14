@@ -27,29 +27,46 @@ async function handleEmail(
     return NextResponse.json({ error: 'Invalid slug' }, { status: 400 })
   }
 
-  const supabase = createServiceClient()
-  const { data: cma } = await supabase
-    .from('cmas')
-    .select('subject_address, client_name, client_email, broker_slug, recommended_list, value_low, value_high')
-    .eq('slug', safeSlug)
-    .maybeSingle()
-  if (!cma) {
-    return NextResponse.json({ error: 'CMA not found in repository' }, { status: 404 })
+  // Look up the CMA metadata from public.cmas. If the row isn't there yet
+  // (skill hasn't run finalize, or env is misconfigured), we still want to
+  // render the email — fall back to slug-derived defaults instead of 404.
+  interface CmaRow {
+    subject_address: string
+    client_name: string | null
+    client_email: string | null
+    broker_slug: string | null
+    recommended_list: number | null
+    value_low: number | null
+    value_high: number | null
   }
-
-  // Resolve broker email from public.brokers via broker_slug for the default
-  // sender + default recipient (if `to` not provided).
+  let cma: CmaRow | null = null
   let brokerEmail: string | null = null
   let brokerName: string | null = null
-  if (cma.broker_slug) {
-    const { data: broker } = await supabase
-      .from('brokers')
-      .select('email, display_name')
-      .eq('slug', cma.broker_slug)
+  try {
+    const supabase = createServiceClient()
+    const { data } = await supabase
+      .from('cmas')
+      .select('subject_address, client_name, client_email, broker_slug, recommended_list, value_low, value_high')
+      .eq('slug', safeSlug)
       .maybeSingle()
-    brokerEmail = broker?.email ?? null
-    brokerName = broker?.display_name ?? null
+    cma = (data as CmaRow | null) ?? null
+    if (cma?.broker_slug) {
+      const { data: broker } = await supabase
+        .from('brokers')
+        .select('email, display_name')
+        .eq('slug', cma.broker_slug)
+        .maybeSingle()
+      brokerEmail = (broker as { email?: string | null })?.email ?? null
+      brokerName = (broker as { display_name?: string | null })?.display_name ?? null
+    }
+  } catch (e) {
+    // Supabase env not set — proceed with defaults.
+    console.warn('[cma-email] Supabase lookup failed', e instanceof Error ? e.message : e)
   }
+
+  const subjectAddressFallback = safeSlug.replace(/^cma-/, '').replace(/-/g, ' ')
+  const subjectAddress = cma?.subject_address ?? subjectAddressFallback
+  const clientName = cma?.client_name ?? null
 
   const to = body.to ?? brokerEmail
   if (!to) {
@@ -58,7 +75,7 @@ async function handleEmail(
 
   const subject =
     body.subject ??
-    `Comparative Market Analysis · ${cma.subject_address}`
+    `Comparative Market Analysis · ${subjectAddress}`
 
   const formatPrice = (n: number | null | undefined): string =>
     n == null
@@ -69,9 +86,9 @@ async function handleEmail(
   const htmlBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #102742; max-width: 600px; line-height: 1.55;">
       ${intro ? `<p style="margin: 0 0 16px 0;">${intro}</p>` : ''}
-      <p style="margin: 0 0 12px 0;">Attached is the Comparative Market Analysis for <strong>${cma.subject_address}</strong>${cma.client_name ? ` (prepared for ${cma.client_name})` : ''}.</p>
-      <p style="margin: 0 0 12px 0;"><strong>Recommended list:</strong> ${formatPrice(cma.recommended_list)}<br/>
-      <strong>Value range:</strong> ${formatPrice(cma.value_low)} – ${formatPrice(cma.value_high)}</p>
+      <p style="margin: 0 0 12px 0;">Attached is the Comparative Market Analysis for <strong>${subjectAddress}</strong>${clientName ? ` (prepared for ${clientName})` : ''}.</p>
+      ${cma?.recommended_list ? `<p style="margin: 0 0 12px 0;"><strong>Recommended list:</strong> ${formatPrice(cma.recommended_list)}<br/>
+      <strong>Value range:</strong> ${formatPrice(cma.value_low)} – ${formatPrice(cma.value_high)}</p>` : ''}
       <p style="margin: 0 0 12px 0; font-size: 13px; color: #5f6c7c;">PDF generated ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })} from the Ryan Realty CMA producer.</p>
       ${brokerName ? `<p style="margin: 20px 0 0 0; font-size: 13px; color: #5f6c7c;">— ${brokerName}<br/>Ryan Realty</p>` : ''}
     </div>
@@ -88,6 +105,20 @@ async function handleEmail(
     }
 
     const { buffer } = await renderCmaPdfBuffer(safeSlug)
+
+    // Hard cap: 25 MB so the PDF works as a Gmail attachment.
+    const MAX_PDF_BYTES = 25 * 1024 * 1024
+    if (buffer.byteLength > MAX_PDF_BYTES) {
+      return NextResponse.json(
+        {
+          error: 'PDF exceeds 25 MB email-attachment cap',
+          bytes: buffer.byteLength,
+          megabytes: +(buffer.byteLength / 1024 / 1024).toFixed(2),
+          max_bytes: MAX_PDF_BYTES,
+        },
+        { status: 413 }
+      )
+    }
 
     // Resend's React/HTML payload doesn't include cc in our lib's typed wrapper.
     // Append cc addresses to `to` instead for now — same delivery, slightly
