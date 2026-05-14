@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server'
-import { fetchSingleListing } from '@/lib/spark-odata'
+import { fetchSparkListingByKey, type SparkPhoto } from '@/lib/spark'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/listings/[listingKey]/photos
  *
- * Fetches photo URLs for a single listing directly from the Spark OData feed
- * via $expand=Media. Used when `listings.PhotoURL` is null and
- * `listing_photos` has no rows for the key (sparse-sync edge case).
+ * Fetches photo URLs for a single listing directly from Spark via the legacy
+ * `/v1/listings/{key}?_expand=Photos` endpoint. Used when `listings.PhotoURL`
+ * is null and `listing_photos` has no rows (sparse-sync edge case).
  *
- * Returns: { listingKey, photosCount, photos: [{ order, url, category? }] }
+ * Returns: { listingKey, photosCount, photos: [{ id?, primary?, url, urlLarge? }] }
  */
 export async function GET(
   _request: Request,
@@ -22,24 +22,42 @@ export async function GET(
     return NextResponse.json({ error: 'Missing listingKey' }, { status: 400 })
   }
 
-  const listing = await fetchSingleListing(key)
-  if (!listing) {
-    return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+  const accessToken = process.env.SPARK_API_KEY?.trim()
+  if (!accessToken) {
+    return NextResponse.json({ error: 'SPARK_API_KEY is not set' }, { status: 500 })
   }
 
-  const media = Array.isArray(listing.Media) ? listing.Media : []
-  const photos = media
-    .filter((m) => typeof m.MediaURL === 'string' && m.MediaURL.length > 0)
-    .map((m) => ({
-      order: typeof m.Order === 'number' ? m.Order : null,
-      url: m.MediaURL as string,
-      category: typeof m.MediaCategory === 'string' ? m.MediaCategory : null,
+  try {
+    const response = await fetchSparkListingByKey(accessToken, key, 'Photos')
+    const result = response?.D?.Results?.[0]
+    if (!result) {
+      return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+    }
+    const fields = (result.StandardFields ?? {}) as Record<string, unknown>
+    const photosRaw = Array.isArray(fields.Photos) ? (fields.Photos as SparkPhoto[]) : []
+    const photos = photosRaw.map((p, i) => ({
+      id: typeof p.Id === 'string' ? p.Id : null,
+      order: i,
+      primary: Boolean(p.Primary),
+      url:
+        p.Uri1600 ??
+        p.Uri1280 ??
+        p.Uri1024 ??
+        p.Uri800 ??
+        p.Uri640 ??
+        p.Uri300 ??
+        p.UriThumb ??
+        null,
+      urlLarge: p.Uri2048 ?? p.UriLarge ?? p.Uri1600 ?? null,
+      caption: typeof p.Caption === 'string' ? p.Caption : null,
     }))
-    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
-
-  return NextResponse.json({
-    listingKey: key,
-    photosCount: typeof listing.PhotosCount === 'number' ? listing.PhotosCount : photos.length,
-    photos,
-  })
+    return NextResponse.json({
+      listingKey: key,
+      photosCount: photos.length,
+      photos,
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 }
