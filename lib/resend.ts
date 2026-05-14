@@ -1,7 +1,12 @@
 import type { ReactElement } from 'react'
 import { Resend } from 'resend'
 
-const DEFAULT_FROM = 'Ryan Realty <noreply@mail.ryan-realty.com>'
+// FROM address. Override via RESEND_FROM env var once a custom domain
+// (e.g. mail.ryan-realty.com) is verified at https://resend.com/domains.
+// Until then we use Resend's always-verified sandbox so emails actually
+// deliver; callers should set `replyTo` to the broker/admin address.
+const DEFAULT_FROM =
+  process.env.RESEND_FROM?.trim() || 'Ryan Realty <onboarding@resend.dev>'
 
 function getClient(): Resend | null {
   const key = process.env.RESEND_API_KEY

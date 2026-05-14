@@ -532,7 +532,7 @@ async function resolveAssignedBroker(params: {
   }
 
   // 2. Env default
-  const defaultSlug = (process.env.CMA_DEFAULT_BROKER_SLUG ?? 'ryan-matt')
+  const defaultSlug = (process.env.CMA_DEFAULT_BROKER_SLUG ?? 'matthew-ryan')
     .trim()
     .toLowerCase()
   const { data: defaultRow } = await sb
