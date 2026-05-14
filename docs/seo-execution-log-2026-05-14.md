@@ -444,6 +444,60 @@ Closes the competitor-intel-gap #8: "Individual broker profile pages indexed sep
 
 ---
 
+## Spark Editor breakthrough (after Matt clarified: wp-admin IS the AgentFire dashboard)
+
+**The unlock:** AgentFire's CBL (Content Block Layout) editor is accessible at `/wp-admin/admin.php?page=agentfire-editor&post_id=<id>`. It loads the page in an iframe (the preview) with the parent frame exposing:
+
+- `window.afe_values` — the page's CBL data including `items` (array of section/block/row/column/widget items, each with a `values` object)
+- `window.SparkEditor.savePage()` — the save method (async, takes no args, persists to backend)
+- `window.afe_wp_nonce` — WP nonce for save requests
+- `window.afe_post_id`, `window.afe_post_status`
+
+**Pattern:** for each banned-word widget:
+1. Navigate to `?page=agentfire-editor&post_id={id}`
+2. Find item in `afe_values.items` where `values.text` contains banned phrase
+3. Replace `values.text` with voice-compliant copy
+4. Call `await SparkEditor.savePage()`
+5. Verify live with cache-busted fetch
+
+**Applied across (all live verified):**
+
+| Page | Item | Fix |
+|---|---|---|
+| Contact (1927) | widget_ljv0lkt6qa8 (Text) | Replaced "Whether you're buying...dedicated team...real estate journey smooth and successful" with voice-compliant 541.213.6706 + CMA + MLS alerts copy |
+| About Us (1910) | widget_hjuvsacqlmc (Heading Text) | H1 "Experienced Professionals You Can Trust" → "Bend's Principal-Broker-Owned Real Estate Brokerage" |
+| About Us (1910) | widget_tk01fp3631g (Text) | Replaced "The Ryan Realty team is a group of skilled professionals dedicated to...meet expectations—it's to exceed them..." with Matt's voice — principal broker, fiduciary, your interests over the deal |
+| Tanager (2296) | widget_mo8xx2oagu4 (Text) | Replaced "exclusive gated community...rare blend of privacy, luxury...discerning buyers seeking a peaceful, high-end retreat" with ponderosa pine + Reed Market Rd copy |
+| Valhalla (3181) | widget_mo8xx2oagu4 (Text) | Replaced ~4,800-char block (nestled, storybook charm, authentic Bend magic, cozy mid-century ranches, perfect blend) with 5-sentence factual neighborhood description |
+| Rim (3158) | widget_mo8xx2oagu4 (Text) | Replaced multi-paragraph block with "pinnacle of serene living, breathtaking views, nothing short of spectacular, unparalleled beauty and tranquility" with Cascade foothills + 27-hole course + actual Supabase data |
+| Explore Bend hub (2170) | widget_dk1if470j0k (About) | Replaced "stunning natural beauty...vibrant community" with 21-neighborhoods lead + factual Cascade Mountains + population |
+| Explore Bend hub (2170) | widget_acraohllssg (Signup) | Replaced "navigate Oregon's real estate scene" with "market updates from a working Bend broker" |
+| Join Us (1923) | widget_ljv0jkl6vp0 (Text) | "Grow your career with a passionate Bend team dedicated to premium real estate" → "Join the Ryan Realty team. We are a small Bend brokerage focused on real estate and community in Central Oregon." |
+| Join Us (1923) | widget_7w2icavui45 (Text) | Founder-story paragraph rewritten — removed "my vision/my team/I" first-person, em dash, "dream homes/top value" |
+| Home (285) | widget_7w2g3biptjr (Text) | "we are passionate about helping you call it home...team of dedicated brokers provide personalized, transparent support" → broker bio with 541.213.6706 + CMA + MLS alerts |
+| Home (285) | widget_u29x8kno8zh (Text) | "Grow your career with a passionate Bend brokerage" → cleaner career callout |
+| Relocation (1904) | widget_94evcbjuixb (Text) | "dedicated team offers personalized assistance...seamless transition. Trust us to handle every detail" → logistics-heavy + same-day reply + video walkthroughs |
+| Giving Back (1942) | 4 widgets (8, 23, 33, 48) | Inline banned-word swaps: `vibrant`/`dedicated team`/`passionate about`/`navigate`/`personalized`/`world-class`/`unique`/em dashes all replaced or removed |
+
+### Updated session totals
+
+**Total live SEO changes shipped this session: ~52** (was 38 + 14 Spark Editor body fixes).
+
+Closes 5 of 6 audit-specified Week 4 body fixes (Contact, About Us H1+intro, Tanager, Valhalla, Rim, Explore Bend hub) — actually ALL 6 — plus 8 additional sitewide cleanups (Join Us, Home, Relocation, Giving Back).
+
+### Residual banned-word hits (flagged for follow-up)
+
+Final live sweep (2026-05-14):
+
+- **Sitewide `exclusive` x1** on every page checked (home, contact, about-us, giving-back, join-us, relocation, explore/bend, all neighborhoods). Almost certainly a shared **footer/sidebar widget** that I haven't located. AgentFire likely has a "Exclusive listings" or "Exclusive content" widget mounted globally.
+- **Home (page 285)**: `dedicated` x2, `vibrant` x2 in deeper widgets not in my scan (banned-word filter is widget-by-widget; widgets I touched are clean but additional widgets remain).
+- **Relocation (page 1904)**: `vibrant` x2, `stunning` x2 in different widgets not yet swept.
+- **Giving Back (page 1942)**: 1 residual `passionate` from inline-substitution that didn't match the exact phrase pattern.
+
+These are mop-up — not catastrophic — and can be addressed in a follow-up session by repeating the Spark Editor pattern: navigate to each edit screen, scan items for banned words, swap inline, save.
+
+---
+
 ## Skipped + reason
 
 *(none yet)*
