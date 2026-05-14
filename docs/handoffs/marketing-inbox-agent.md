@@ -1,6 +1,6 @@
 # Handoff — Marketing Inbox Agent
 
-**Mission:** Stand up an always-on email intake pipeline for the dedicated agent-facing inbox `marketing@ryan-crealty.com`. Every inbound email becomes a tracked action in the marketing brain queue, gets parsed for intent, dispatched to the matching producer (or routed for triage if intent is unclear), and the sender gets a confirmation reply within the same minute.
+**Mission:** Stand up an always-on email intake pipeline for the dedicated agent-facing inbox **`marketing@ryan-realty.com`**. Every inbound email becomes a tracked action in the marketing brain queue, gets parsed for intent, dispatched to the matching producer (or routed for triage if intent is unclear), and the sender gets a confirmation reply within the same minute.
 
 The user (Matt) wants this to "just work" — he sends an email from anywhere, and the brain picks it up and acts on it. He should not have to log into a dashboard or poll for status.
 
@@ -8,23 +8,17 @@ The user (Matt) wants this to "just work" — he sends an email from anywhere, a
 
 ---
 
-## 0. Domain verification (do this first)
+## 0. Inbox address (locked)
 
-Matt wrote the email address as `marketing@ryan-crealty.com`. Every other Ryan Realty domain reference in the codebase uses `ryan-realty.com` (no `c`) — see CLAUDE.md "production domain" memory, the Resend SKILL.md (`mail.ryan-realty.com`), the website canonical, every email signature kit.
+`marketing@ryan-realty.com` — confirmed by Matt 2026-05-14. This is a new dedicated Gmail-style inbox for agent-driven requests, separate from Matt's personal `matt@ryan-realty.com` and from the marketing-send sender `noreply@mail.ryan-realty.com` used by the Resend transactional layer.
 
-Three possibilities:
-1. Typo — Matt meant `marketing@ryan-realty.com`. Most likely. Verify via DNS lookup or by asking Matt.
-2. New separate domain — Matt registered `ryan-crealty.com` deliberately for agent-only inbound. Then DNS + MX records would be live. Check.
-3. Subdomain — `marketing.ryan-realty.com` or similar. Ask Matt.
-
-**Confirm before building anything.** Wrong domain = receiver builds the wrong webhook. Quick MX record check:
+Quick pre-flight before wiring auth:
 
 ```sh
-dig MX ryan-crealty.com +short
 dig MX ryan-realty.com +short
 ```
 
-Whichever resolves to a real mail provider (Google, Microsoft 365, Resend inbound, etc.) is the live domain. If both resolve, Matt has two domains and you ask him which one this inbox lives on.
+Confirm the MX records point at Google Workspace (`aspmx.l.google.com.` family). If yes, this is a Google Workspace mailbox and you'll use Gmail API + OAuth (or a service account with domain-wide delegation) — NOT IMAP. If MX points somewhere else, ask Matt before continuing.
 
 ---
 
@@ -191,7 +185,7 @@ Voice rules apply: no em dashes, no banned phrases, no fake urgency, "you/your" 
 
 ## 5. Work items (priority order)
 
-1. **Verify the domain** (§0 above). Don't build anything until you know which domain is real.
+1. **Verify the mailbox is reachable.** `marketing@ryan-realty.com` is locked (§0). Run the MX check, then either (a) use existing Gmail OAuth tokens if any already cover this inbox, or (b) run a one-time OAuth flow to authorize the marketing brain's Google client for this mailbox specifically. Document whichever path you take in the memory log.
 2. **Pick the trigger path** (§3 — Path A vs Path B). Recommend Path B (cron poll) for MVP.
 3. **Author the migration** for `marketing_inbox_events` and apply via Supabase MCP. Same commit as the code that uses it.
 4. **Build the receiver** — cron route at `/api/cron/marketing-inbox-poll/route.ts` OR webhook at `/api/inbound/marketing-email/route.ts`. Fetches new messages, writes to `marketing_inbox_events`, marks as read in Gmail.
