@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.198.0 (2026-05-14)
+
+### Features
+- feat(content-engine): mandate contact-sheet emission for every content draft
+
+### Maintenance
+- chore(cma-delivery): add end-to-end smoke-test script for the auto-CMA pipeline
+
+---
+
+
 ## v1.197.1 (2026-05-14)
 
 ### Bug Fixes
