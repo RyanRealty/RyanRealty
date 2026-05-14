@@ -598,6 +598,50 @@ Result: the 3 new pages (sell-your-bend-oregon-home, bend-oregon-realtor, reloca
 
 ---
 
+## Final autonomous pass (Matt: "you have full control, grind on this")
+
+### AgentFire support ticket drafted
+- `docs/agentfire-support-ticket-draft-2026-05-14.md` — full email body ready to send for footer Twig `exclusive` + parse-error JSON-LD bug. Matt to forward via AgentFire chat or `support@agentfire.com`.
+
+### GSC URL submission script written + tested
+- `scripts/seo-gsc-indexing-submit.mjs` — submits 19 updated/new URLs to Google's Indexing API (URL_UPDATED notifications).
+- **Tested execution: blocked.** The Indexing API isn't enabled in the GCP project (725620954432). To unblock:
+  1. Visit `https://console.developers.google.com/apis/api/indexing.googleapis.com/overview?project=725620954432` and click Enable.
+  2. Add the service account `viewer@ryanrealty.iam.gserviceaccount.com` as a verified owner in GSC → Settings → Users and permissions.
+  3. Re-run: `node --env-file=.env.local scripts/seo-gsc-indexing-submit.mjs`
+- **Fallback:** the Yoast sitemap at `https://ryan-realty.com/sitemap_index.xml` was auto-rebuilt at 2026-05-14T14:09 (verified). Google will discover the changes on natural recrawl within 1-7 days for an active site.
+
+### Newsletter form audit (partial)
+- All 4 audited pages (home, contact, sellers, buyers) have a form with `action="#"` — meaning client-side JS handles submission, not a standard POST.
+- AgentFire's lead-capture probably routes to its own backend then to whatever CRM is connected ("Connect a CRM" link in admin nav). Matt confirmed FUB is the target.
+- Full audit needs wp-admin access to inspect "Connect a CRM" config + the existing form widgets in Spark Editor. **WP admin session expired during this work session.** Re-login needed.
+
+### Other items deferred (wp-admin access required)
+- AgentFire dynamic widget static backfill on 7 neighborhood pages (Spark Editor)
+- Sellers (1885), Buyers (1879), Home (285), Relocation (1904) residual banned-word widgets that need a 2nd pass
+- Configuring "Connect a CRM" for FUB if not already wired
+
+---
+
+## Total session totals (final, this is the end of the autonomous run)
+
+- **~70+ live SEO changes shipped + verified, zero rollbacks**
+- **11 git commits pushed to main** (`41800f85` → `dd0006c6`)
+- **6 working documents** created/updated in `docs/`
+- **1 utility script** added (`scripts/seo-gsc-indexing-submit.mjs`)
+- **1 support ticket draft** ready for forwarding
+- **3 broker bios** SEO-reworked, Person schemas live
+- **Spark Editor methodology** documented and proven across 14+ widgets and 7+ pages
+
+### Items needing Matt before further autonomous work
+
+1. **Re-login to wp-admin** (session expired) — unlocks Spark Editor for remaining body fixes + widget backfill + form audit
+2. **Enable GCP Indexing API + add service account to GSC verified owners** — unlocks programmatic URL re-indexing
+3. **Send the AgentFire support ticket** (or have me send it via Resend once we confirm `mail.ryan-realty.com` is verified)
+4. **Provide Paul + Rebecca bio expansion** if you want to flesh out their broker pages beyond skeleton
+
+---
+
 ## Skipped + reason
 
 *(none yet)*
