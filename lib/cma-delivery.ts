@@ -427,17 +427,11 @@ async function findPropertyByAddress(params: {
   const city = params.city?.trim()
   if (!city) return null
 
-  let q = sb
-    .from('properties')
-    .select('id, unparsed_address')
-    .ilike('city', city)
-  if (params.state?.trim()) q = q.ilike('state', params.state.trim())
-  if (params.postalCode?.trim()) {
-    q = q.eq('postal_code', params.postalCode.trim().slice(0, 20))
-  }
-  const { data } = await q.limit(20)
-  if (!data?.length) return null
-
+  // Pull street number + street-name tokens out of the visitor-typed string.
+  // Filtering on `street_number` is highly selective (one row per city for
+  // most addresses) — much better than fetching 20 arbitrary city rows and
+  // doing post-hoc substring matching, which was missing target rows when
+  // they fell outside the first 20.
   const rawParts = (params.street ?? '')
     .trim()
     .toLowerCase()
@@ -446,13 +440,43 @@ async function findPropertyByAddress(params: {
     .filter(Boolean)
   // Drop the suffix token so "Rd" doesn't fail-to-substring-match "Road".
   const streetParts = dropStreetSuffix(rawParts)
+  const streetNumber = streetParts[0]
+  const nameParts = streetParts.slice(1)
 
-  if (streetParts.length === 0) {
+  let q = sb
+    .from('properties')
+    .select('id, unparsed_address, street_number, street_name')
+    .ilike('city', city)
+  if (params.state?.trim()) q = q.ilike('state', params.state.trim())
+  if (params.postalCode?.trim()) {
+    q = q.eq('postal_code', params.postalCode.trim().slice(0, 20))
+  }
+  if (streetNumber && /^\d+/.test(streetNumber)) {
+    q = q.eq('street_number', streetNumber)
+  }
+  const { data } = await q.limit(50)
+  if (!data?.length) return null
+
+  // If we filtered on street_number, that's usually unique enough; return
+  // the first hit.
+  if (streetNumber && data.length === 1) {
+    return (data[0] as { id: string }).id
+  }
+
+  // Otherwise (or for multiple hits on the same street_number, e.g. unit
+  // suffixes), validate by checking each row's full address against the
+  // remaining name tokens.
+  if (nameParts.length === 0) {
     return data.length === 1 ? (data[0] as { id: string }).id : null
   }
-  for (const row of data as Array<{ id: string; unparsed_address?: string }>) {
-    const addr = (row.unparsed_address ?? '').toLowerCase()
-    if (streetParts.every((p) => addr.includes(p))) return row.id
+  for (const row of data as Array<{
+    id: string
+    unparsed_address?: string
+    street_name?: string
+  }>) {
+    const addr = ((row.unparsed_address ?? '') + ' ' + (row.street_name ?? ''))
+      .toLowerCase()
+    if (nameParts.every((p) => addr.includes(p))) return row.id
   }
   return data.length === 1 ? (data[0] as { id: string }).id : null
 }
