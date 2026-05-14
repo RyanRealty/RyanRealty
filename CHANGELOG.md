@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.186.2 (2026-05-14)
+
+### Bug Fixes
+- fix(brand): wrap headshot in signature anchor to ryan-realty.com
+
+---
+
+
 ## v1.186.1 (2026-05-14)
 
 ### Maintenance
