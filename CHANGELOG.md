@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.201.0 (2026-05-14)
+
+### Features
+- feat(dashboard): surface brain state — action queue, audit runs, voice failures, blockers
+
+---
+
+
 ## v1.200.0 (2026-05-14)
 
 ### Features
