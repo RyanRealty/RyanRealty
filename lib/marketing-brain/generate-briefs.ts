@@ -17,6 +17,10 @@
  *   audit-crm north_star drop/spike       → fb_lead_gen_ad + market_data_short
  *   audit-ads creative test_new_creative   → fb_lead_gen_ad ×3 (data/question/contrarian)
  *   audit-ads * capitalize_on_spike       → market_data_short
+ *   audit-ads budget reduce/increase       → ops:meta_budget (matt-explicit, ±25% band)
+ *   audit-ads targeting review_targeting    → ops:meta_audience (matt-explicit)
+ *   audit-ads campaign_structure pause     → ops:meta_pause (matt-explicit)
+ *   audit-ads tracking check_tracking      → analyze:metric_decomposition
  *   audit-website seo investigate_drop     → blog_post (refresh losing query)
  *   audit-website seo capitalize_on_spike  → blog_post + ig_carousel (recycle winning content)
  *   audit-website seo test_new_creative    → site:meta_update (Item 1 wiring)
@@ -963,6 +967,198 @@ export function mapOpportunityToBriefs(
     }))
   }
 
+  // ── audit-ads budget (drift) → ops:meta_budget ───────────────────────────
+  // Spend below playbook → increase_budget. Spend above playbook → reduce_budget.
+  // Both cap proposed delta at ±25% per FB_SELLER_CAMPAIGN_PLAYBOOK.md.
+  // ops-meta-ads producer is matt-explicit: action stays pending until Matt confirms.
+  if (
+    opportunity.source === 'audit-ads' &&
+    opportunity.area === 'budget' &&
+    (opportunity.recommended_action === 'reduce_budget' || opportunity.recommended_action === 'increase_budget')
+  ) {
+    const budget = signals.adsAudit.budget
+    const direction = opportunity.recommended_action === 'increase_budget' ? 'increase' : 'reduce'
+    // Prefer the flagged role; otherwise account-level totals
+    const flaggedRole = (budget.by_role as unknown as Array<Record<string, unknown>>).find((r) => r.drift_flagged === true)
+    const role = flaggedRole?.role ? String(flaggedRole.role) : 'account'
+    const currentSpend = (flaggedRole?.actual_spend as number) ?? budget.actual_spend
+    const targetSpend = (flaggedRole?.expected_spend as number) ?? budget.expected_spend
+    const rawDelta = currentSpend > 0 ? (targetSpend - currentSpend) / currentSpend : 0
+    const proposedDelta = Math.max(-0.25, Math.min(0.25, rawDelta))
+
+    briefs.push(buildBrief({
+      topic: `Meta Ads budget ${direction} on ${role} role`,
+      format: 'ops_meta_budget',
+      platforms: ['meta'],
+      hook: `Budget drift on the ${role} role: spending $${currentSpend.toLocaleString()} vs playbook target $${targetSpend.toLocaleString()}.`,
+      body: `Propose a ${direction} of ${Math.abs(proposedDelta * 100).toFixed(0)}% on the ${role} daily budget. Bounded by the ±25% daily band locked in FB_SELLER_CAMPAIGN_PLAYBOOK.md.`,
+      cta: undefined,
+      target_audience: 'brand_default',
+      target: `campaign_role:${role}`,
+      payload_override: {
+        campaign_role: role,
+        current_daily_spend: currentSpend,
+        target_daily_spend: targetSpend,
+        proposed_delta_pct: proposedDelta,
+        direction,
+        playbook_band_pct: 0.25,
+        action_hint: `Surface as matt-explicit. On approval, call Meta Ads API to ${direction} the ${role} role's daily budget by ${Math.abs(proposedDelta * 100).toFixed(0)}%. Verify post-change spend tracking for the next 48h.`,
+        source_audit: 'audit-ads.budget.drift',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-ads', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: direction === 'increase'
+          ? `+10-25% reach on the ${role} role within 7 days`
+          : `Recover ${Math.abs(proposedDelta * 100).toFixed(0)}% of daily spend; reallocate to lower-CPL slot`,
+        rationale: `Budget drift means the campaign mix is off-playbook. ${direction === 'increase' ? 'Increasing' : 'Reducing'} brings spend back in band, restoring the role mix the playbook is built around.`,
+      },
+      generation_reason: `audit-ads budget ${opportunity.recommended_action}: ${opportunity.headline}. ${role} role spend $${currentSpend.toLocaleString()} vs target $${targetSpend.toLocaleString()}.`,
+    }))
+  }
+
+  // ── audit-ads targeting + review_targeting → ops:meta_audience ───────────
+  if (
+    opportunity.source === 'audit-ads' &&
+    opportunity.area === 'targeting' &&
+    opportunity.recommended_action === 'review_targeting'
+  ) {
+    const campaigns = signals.adsAudit.campaigns as unknown as Array<Record<string, unknown>>
+    const flaggedCampaign = campaigns.find((c) => {
+      const flags = c.flags as Array<{ type?: string }> | undefined
+      return flags?.some((f) => f.type === 'underperforming_cpl')
+    })
+    const campaign = flaggedCampaign ?? campaigns[0]
+    const validCpls = campaigns.map((c) => c.cpl).filter((v): v is number => typeof v === 'number' && v > 0)
+    const accountAvgCpl = validCpls.length > 0
+      ? validCpls.reduce((s, v) => s + v, 0) / validCpls.length
+      : 0
+    const campaignCpl = (campaign?.cpl as number | undefined) ?? 0
+    const cplMultiple = accountAvgCpl > 0 ? campaignCpl / accountAvgCpl : null
+
+    briefs.push(buildBrief({
+      topic: `Meta Ads audience review on ${String(campaign?.campaign_name ?? 'underperforming campaign')}`,
+      format: 'ops_meta_audience',
+      platforms: ['meta'],
+      hook: `CPL on ${String(campaign?.campaign_name ?? 'a campaign')} is ${cplMultiple ? `${cplMultiple.toFixed(1)}×` : 'well above'} the account average. Audience needs review.`,
+      body: `Most common cause when one campaign's CPL diverges from the rest: audience is too broad, too narrow, or stale. Audit the interest layer, lookalike percentage, and geo constraints. Propose a tightened audience and surface for matt-explicit approval before applying.`,
+      cta: undefined,
+      target_audience: 'brand_default',
+      target: `campaign_id:${String(campaign?.campaign_id ?? 'unknown')}`,
+      payload_override: {
+        campaign_id: campaign?.campaign_id,
+        campaign_name: campaign?.campaign_name,
+        campaign_role: campaign?.role,
+        current_cpl: campaignCpl,
+        account_avg_cpl: accountAvgCpl,
+        cpl_multiple: cplMultiple,
+        action_hint: 'Read the affected campaign\'s audience definition via Meta Ads API. Compare to top-performing campaign in the same role. Propose a tightened audience (smaller LAL pct, tighter geo, fewer interests) and surface as matt-explicit.',
+        source_audit: 'audit-ads.targeting.cpl_multiple',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-ads', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: 'CPL recovery toward account average within 14 days',
+        rationale: `Audience drift is the most common cause of CPL >2× the account average on a single campaign. Tightening the audience and re-testing typically restores CPL within two weeks.`,
+      },
+      generation_reason: `audit-ads targeting review_targeting: ${opportunity.headline}. ${String(campaign?.campaign_name ?? 'campaign')} CPL ${campaignCpl.toFixed(2)} vs account avg ${accountAvgCpl.toFixed(2)}.`,
+    }))
+  }
+
+  // ── audit-ads campaign_structure + pause_underperformer → ops:meta_pause ─
+  if (
+    opportunity.source === 'audit-ads' &&
+    opportunity.area === 'campaign_structure' &&
+    opportunity.recommended_action === 'pause_underperformer'
+  ) {
+    const campaigns = signals.adsAudit.campaigns as unknown as Array<Record<string, unknown>>
+    const zeroConvCampaign = campaigns.find((c) => {
+      const flags = c.flags as Array<{ type?: string }> | undefined
+      return flags?.some((f) => f.type === 'no_conversions')
+    })
+    const campaign = zeroConvCampaign ?? campaigns[0]
+    const spend = (campaign?.spend as number | undefined) ?? 0
+
+    briefs.push(buildBrief({
+      topic: `Pause Meta Ads campaign with zero conversions: ${String(campaign?.campaign_name ?? 'campaign')}`,
+      format: 'ops_meta_pause',
+      platforms: ['meta'],
+      hook: `${String(campaign?.campaign_name ?? 'A campaign')} burned $${spend.toLocaleString()} this window with zero conversions. Pause and rebuild.`,
+      body: `Zero-conversion spend is wasted budget. Pause now, audit the audience and creative, and only relaunch when at least one has changed. matt-explicit approval required before executing the pause API call.`,
+      cta: undefined,
+      target_audience: 'brand_default',
+      target: `campaign_id:${String(campaign?.campaign_id ?? 'unknown')}`,
+      payload_override: {
+        campaign_id: campaign?.campaign_id,
+        campaign_name: campaign?.campaign_name,
+        campaign_role: campaign?.role,
+        spend_with_no_conversions: spend,
+        action_hint: 'Surface as matt-explicit. On approval, call Meta Ads API to set this campaign to PAUSED. Log the pre-pause state for the relaunch audit.',
+        source_audit: 'audit-ads.campaign_structure.no_conversions',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-ads', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: `Free $${spend.toLocaleString()} of daily budget for higher-converting slots`,
+        rationale: `Zero-conversion campaigns drag the account average CPL up while contributing nothing. Pausing and reallocating is a pure win on attributable lead spend.`,
+      },
+      generation_reason: `audit-ads campaign_structure pause_underperformer: ${opportunity.headline}. ${String(campaign?.campaign_name ?? 'campaign')} burned $${spend.toLocaleString()} with zero conversions.`,
+    }))
+  }
+
+  // ── audit-ads tracking + check_tracking → analyze:metric_decomposition ───
+  if (
+    opportunity.source === 'audit-ads' &&
+    opportunity.area === 'tracking' &&
+    opportunity.recommended_action === 'check_tracking'
+  ) {
+    const conv = signals.adsAudit.conversion_path
+    const deltaPctStr = conv.delta_pct !== null ? `${conv.delta_pct.toFixed(1)}%` : 'unknown'
+
+    briefs.push(buildBrief({
+      topic: `Meta vs FUB conversion gap: investigate tracking`,
+      format: 'analyze_metric_decomposition',
+      platforms: ['internal'],
+      hook: `Meta reports ${conv.meta_conversions} conversions in the last ${conv.window_days} days; FUB has ${conv.fub_qualified_leads} qualified seller leads. Delta ${deltaPctStr}.`,
+      body: `Two source-of-truth systems disagree on the same conversion count. Decompose: pixel firing on the wrong event, CAPI deduplication failing, FUB lead-stage filter excluding rows, or a real funnel leak between Meta-attributed sessions and FUB lead creation.`,
+      cta: undefined,
+      target_audience: 'internal',
+      target: `audit:tracking_gap:${new Date(signals.asOfDate).toISOString().slice(0, 10)}`,
+      payload_override: {
+        meta_conversions: conv.meta_conversions,
+        fub_qualified_leads: conv.fub_qualified_leads,
+        delta: conv.delta,
+        delta_pct: conv.delta_pct,
+        window_days: conv.window_days,
+        action_hint: 'Run analyze-anomaly on the conversion path. Decompose by source/medium, by FUB lead-stage filter, by Meta event mapping (Lead vs CompleteRegistration vs Contact). Output findings to marketing_decisions for Matt review.',
+        source_audit: 'audit-ads.tracking.meta_vs_fub_delta',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-ads', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: 'Identify root cause; restore reporting accuracy for budget decisions',
+        rationale: `Tracking gaps between Meta and FUB usually trace to pixel-mapping or lead-stage filter, not a real conversion loss. Resolving the diagnostic prevents budget moves based on phantom numbers.`,
+      },
+      generation_reason: `audit-ads tracking check_tracking: ${opportunity.headline}. Meta=${conv.meta_conversions}, FUB=${conv.fub_qualified_leads}, delta=${deltaPctStr}.`,
+    }))
+  }
+
   // ── audit-website seo — branch by recommended_action ─────────────────────
   // investigate_drop    → blog_post (page refresh on losing query)
   // capitalize_on_spike → blog_post + ig_carousel (recycle winning content)
@@ -1519,6 +1715,34 @@ export async function persistBriefs(
       site_perf_fix: { action_type: 'site:perf_fix', producer: 'marketing_brain_skills/producers/site-performance' },
       site_redirect_add: { action_type: 'site:redirect_add', producer: 'marketing_brain_skills/producers/site-performance' },
       site_schema_add: { action_type: 'site:schema_add', producer: 'marketing_brain_skills/producers/site-performance' },
+
+      // Ops — Meta Ads. All ops:meta_* are matt-explicit per CLAUDE.md
+      // Marketing Brain Architecture and producers/REGISTRY.md Section D.
+      ops_meta_budget: { action_type: 'ops:meta_budget', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
+      ops_meta_pause: { action_type: 'ops:meta_pause', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
+      ops_meta_resume: { action_type: 'ops:meta_resume', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
+      ops_meta_audience: { action_type: 'ops:meta_audience', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
+      ops_meta_creative_swap: { action_type: 'ops:meta_creative_swap', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
+
+      // Ops — FUB CRM. Tier-based approval (>5 leads = matt-explicit;
+      // <=5 = matt-review-draft) per producers/REGISTRY.md Section D.
+      ops_fub_tag_fix: { action_type: 'ops:fub_tag_fix', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
+      ops_fub_sequence_change: { action_type: 'ops:fub_sequence_change', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
+      ops_fub_task_create: { action_type: 'ops:fub_task_create', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
+      ops_fub_routing: { action_type: 'ops:fub_routing', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
+
+      // Analyze — drill into anomalies; findings land in marketing_decisions
+      // and generate-briefs reads them on the next cycle.
+      analyze_metric_decomposition: { action_type: 'analyze:metric_decomposition', producer: 'marketing_brain_skills/analyze-anomaly' },
+      analyze_drop_investigation: { action_type: 'analyze:drop_investigation', producer: 'marketing_brain_skills/analyze-anomaly' },
+      analyze_spike_investigation: { action_type: 'analyze:spike_investigation', producer: 'marketing_brain_skills/analyze-anomaly' },
+
+      // Comms — matt-alert; tier-based delivery (critical/high = iMessage,
+      // medium/low = email + dashboard card) handled by the producer.
+      comms_matt_alert: { action_type: 'comms:matt_alert', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+      comms_matt_summary: { action_type: 'comms:matt_summary', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+      comms_team_update: { action_type: 'comms:team_update', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+      comms_stakeholder_summary: { action_type: 'comms:stakeholder_summary', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
 
       // Legacy aliases — pre-Item-3 these routed to listing_reveal which
       // fails when target='brand' because listing_reveal requires an MLS#.
