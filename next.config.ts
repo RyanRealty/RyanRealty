@@ -119,6 +119,19 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '4mb',
     },
   },
+  // Include CMA drafts + finalized assets so /api/cma/[slug]/pdf can read
+  // them from disk inside the serverless function (avoids the SSO wall on
+  // preview deployments).
+  outputFileTracingIncludes: {
+    'app/api/cma/[slug]/pdf/route': [
+      './public/drafts/cma-*/cma.html',
+      './public/drafts/cma-*/assets/*.png',
+      './public/drafts/cma-*/assets/*.jpg',
+      './public/cmas/cma-*/cma.html',
+      './public/cmas/cma-*/assets/*.png',
+      './public/cmas/cma-*/assets/*.jpg',
+    ],
+  },
 }
 
 export default nextConfig
