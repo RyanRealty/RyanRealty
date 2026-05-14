@@ -279,6 +279,27 @@ Always the last slide. No exceptions.
 | **C** | 1 slide | Single hero with Azo Sans Medium tracked eyebrow (top-left) + magazine-style caption (bottom-left) + small Ryan Realty wordmark (top-right corner). Coldwell Banker Global Luxury register. |
 | **D** | 3 slides | Panorama — one wide aerial cropped to 2.4:1 then sliced into 3 portrait tiles (1080×1350 each) that flow seamlessly when swiped. **ZERO overlay on tiles.** Approved source: a wide drone aerial ≥ 3240px wide ideal; ≥ 1367px workable with 2.4x upscale. |
 
+### Buyer-side variant — Pattern A is BANNED, use broker-card sequence instead
+
+**Locked 2026-05-14.** When the deal is BUYER-SIDE (Ryan Realty represented the buyers,
+not the listing), Pattern A is **not used at all** — no multi-photo carousel. The listing
+isn't ours to sell; our service is. So the IG sequence becomes a series of single branded
+tiles where the final tile is ALWAYS a broker contact card:
+
+```
+Slide 1: S2-style hero  (Just Sold / Under Contract overlay on the listing's hero photo)
+Slide 2 (optional): Pattern B editorial variant
+Final slide: Broker contact card (cream background, wordmark, transparent broker portrait,
+             name + role + phone + email — see social_media_skills/broker-contact-card/SKILL.md)
+```
+
+The broker contact card is produced by `scripts/build_broker_contact_card.py`. See
+`social_media_skills/broker-contact-card/SKILL.md` for the full spec. Never produce a
+buyer-side IG sequence without the broker card as the final tile.
+
+This rule applies for any of the three brokers (matt-ryan, paul-stevenson, rebecca-peterson)
+on any buyer-side close or under-contract post.
+
 **Earlier versions of this section** said Pattern A had a persistent navy footer with logo + slide numeral baked into every slide. **That was wrong** — the approved spec at `public/template-picker/list-kits/19496-tumalo-reservoir/v3/pattern-a/` is bare photos. Reference: the "verdict" in `public/template-picker/preview/ig-actual-posts.html` — top brokerages don't put logos or numerals on listing slides.
 
 ### Pattern C font discipline
