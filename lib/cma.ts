@@ -116,8 +116,21 @@ function buildCMAResult(
     totalWeight > 0
       ? compResults.reduce((sum, c, i) => sum + c.adjustedPrice * (weights[i]! / totalWeight), 0)
       : adjustedPrices[0] ?? 0
-  const confidence: 'high' | 'medium' | 'low' =
-    compResults.length >= 5 ? 'high' : compResults.length >= 3 ? 'medium' : 'low'
+  // Confidence is the JOINT product of comp count, range width, and whether
+  // we actually have subject data to filter on. A 10-comp pool that spans
+  // $80k–$1.2M is NOT high confidence — old logic produced exactly that.
+  const rangeWidth = estimatedValue > 0 ? (valueHigh - valueLow) / estimatedValue : 1
+  const subjectBlind = subject.beds == null && subject.sqft == null && subject.yearBuilt == null
+  let confidence: 'high' | 'medium' | 'low'
+  if (subjectBlind) {
+    confidence = 'low'
+  } else if (compResults.length >= 5 && rangeWidth <= 0.3) {
+    confidence = 'high'
+  } else if (compResults.length >= 3 && rangeWidth <= 0.5) {
+    confidence = 'medium'
+  } else {
+    confidence = 'low'
+  }
 
   const methodology =
     'Weighted average of adjusted comparable sales. Adjustments: sqft (price/sqft), beds ($15k), baths ($10k), age ($2k/yr), lot ($5k/0.25ac), garage ($15k), pool ($20k).'
@@ -158,7 +171,11 @@ function parseCompRow(r: Record<string, unknown>): CMACompRow {
   }
 }
 
-/** Fetch subject property and its active listing using actual RESO column names. */
+/** Fetch subject property and its most-recent matching listing.
+ * Looks across ALL statuses (Active, Pending, Closed) — many properties
+ * only have a historical Closed listing, and refusing to pull from it
+ * leaves the CMA blind to beds/baths/sqft and lets garbage comps through.
+ */
 async function getSubject(
   supabase: SupabaseClient,
   propertyId: string
@@ -172,20 +189,27 @@ async function getSubject(
 
   const p = prop as { id: string; unparsed_address: string; community_id?: string; street_number?: string; city?: string; postal_code?: string }
 
-  // Find the matching listing by address (no property_id FK in listings table)
+  // Find the matching listing by address. Take the most recently modified
+  // record across ALL statuses — Active first if one exists, otherwise the
+  // last Closed (which carries the historic beds/baths/sqft).
   let listing: Record<string, unknown> | null = null
   if (p.city) {
     let query = supabase
       .from('listings')
-      .select('ListingKey, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, StandardStatus')
+      .select('ListingKey, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, StandardStatus, lot_size_acres, year_built')
       .ilike('City', p.city)
     if (p.street_number) query = query.eq('StreetNumber', p.street_number)
     if (p.postal_code) query = query.eq('PostalCode', p.postal_code)
     const { data: matches } = await query
-      .or('StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%For Sale%')
       .order('ModificationTimestamp', { ascending: false })
-      .limit(1)
-    listing = (matches as Record<string, unknown>[] | null)?.[0] ?? null
+      .limit(5)
+    // Prefer an Active/Pending row; fall back to most-recent (typically Closed).
+    const rows = (matches as Record<string, unknown>[] | null) ?? []
+    const active = rows.find((r) => {
+      const s = String(r.StandardStatus ?? '').toLowerCase()
+      return s.includes('active') || s.includes('pending') || s.includes('for sale')
+    })
+    listing = active ?? rows[0] ?? null
   }
 
   return {
@@ -194,8 +218,8 @@ async function getSubject(
     beds: num(listing?.BedroomsTotal) ?? null,
     baths: num(listing?.BathroomsTotal) ?? null,
     sqft: num(listing?.TotalLivingAreaSqFt) ?? null,
-    lotAcres: null,
-    yearBuilt: null,
+    lotAcres: num(listing?.lot_size_acres) ?? null,
+    yearBuilt: num(listing?.year_built) != null ? Math.round(Number(listing?.year_built)) : null,
     garageSpaces: null,
     poolYn: false,
     propertyType: listing?.PropertyType != null ? String(listing.PropertyType) : null,
@@ -245,14 +269,20 @@ async function getCompsDirectQuery(
   cutoff.setMonth(cutoff.getMonth() - monthsBack)
   const cutoffStr = cutoff.toISOString().slice(0, 10)
 
-  // Query closed listings — include details for ClosePrice fallback, and ListPrice as last resort
+  // Query closed listings — pull lot/year/property-type so filterComps
+  // can actually reject vacant land and grossly mismatched lot sizes.
+  // PropertyType='A' is the RESO code for residential single-family.
   let query = supabase
     .from('listings')
-    .select('ListingKey, ListNumber, StreetNumber, StreetName, City, ClosePrice, CloseDate, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, SubdivisionName, ListPrice, details')
+    .select('ListingKey, ListNumber, StreetNumber, StreetName, City, ClosePrice, CloseDate, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, property_sub_type, SubdivisionName, ListPrice, details, lot_size_acres, year_built')
     .ilike('StandardStatus', '%Closed%')
     .not('CloseDate', 'is', null)
     .gte('CloseDate', cutoffStr)
     .ilike('City', city)
+    // Residential only — exclude Land, Lots, Commercial, etc.
+    // PropertyType='A' is the RESO single-family-residential code in this
+    // MLS; 'Residential' is the descriptive form. Accept either.
+    .or('PropertyType.eq.A,PropertyType.ilike.%Residential%')
 
   if (subdivision) {
     query = query.ilike('SubdivisionName', subdivision)
@@ -260,7 +290,7 @@ async function getCompsDirectQuery(
 
   const { data } = await query
     .order('CloseDate', { ascending: false })
-    .limit(maxCount * 2) // Fetch extra to account for rows where fallback still yields null
+    .limit(maxCount * 4) // Fetch extra; the filter below trims many.
 
   if (!data?.length) return []
 
@@ -268,6 +298,13 @@ async function getCompsDirectQuery(
   for (const r of data as Record<string, unknown>[]) {
     const closePrice = resolveClosePrice(r)
     if (closePrice == null || closePrice <= 0) continue
+    // Bend SFR floor: anything sub-$200K in 2025+ is land, distressed,
+    // or a partial-interest sale. Not a useful comp for a livable home.
+    if (closePrice < 200_000) continue
+    // Need living area to make a price/sqft adjustment; rows with no
+    // sqft are usually land or condo sub-units we don't want in the pool.
+    const sqft = num(r.TotalLivingAreaSqFt)
+    if (sqft == null || sqft < 500) continue
 
     results.push({
       listing_key: String(r.ListingKey ?? ''),
@@ -277,9 +314,9 @@ async function getCompsDirectQuery(
       close_date: r.CloseDate != null ? String(r.CloseDate).slice(0, 10) : null,
       beds_total: num(r.BedroomsTotal) != null ? Math.round(Number(r.BedroomsTotal)) : null,
       baths_full: num(r.BathroomsTotal),
-      living_area: num(r.TotalLivingAreaSqFt),
-      lot_size_acres: null,
-      year_built: null,
+      living_area: sqft,
+      lot_size_acres: num(r.lot_size_acres),
+      year_built: num(r.year_built) != null ? Math.round(Number(r.year_built)) : null,
       garage_spaces: null,
       pool_yn: false,
       property_type: r.PropertyType != null ? String(r.PropertyType) : null,
@@ -355,8 +392,23 @@ function filterComps(subject: CMASubject, rows: CMACompRow[]): CMACompRow[] {
   const subBeds = subject.beds
   const subSqft = subject.sqft
   const subYear = subject.yearBuilt
+  const subLot = subject.lotAcres
   return rows.filter((r) => {
     if (r.close_price == null || r.close_price <= 0) return false
+    // Re-enforce Bend SFR floor at the filter layer (defense in depth).
+    if (r.close_price < 200_000) return false
+    // Drop anything not flagged residential.
+    if (r.property_type) {
+      const pt = r.property_type.toLowerCase()
+      if (
+        pt.includes('land') ||
+        pt.includes('lot') ||
+        pt.includes('commercial') ||
+        pt.includes('farm')
+      ) {
+        return false
+      }
+    }
     // Only filter by beds if we know the subject's bed count
     if (subBeds != null && subBeds > 0) {
       const beds = r.beds_total ?? 0
@@ -369,6 +421,13 @@ function filterComps(subject: CMASubject, rows: CMACompRow[]): CMACompRow[] {
         const pct = Math.abs(sqft - subSqft) / subSqft
         if (pct > 0.25) return false
       }
+    }
+    // Lot size: a 2.28-acre Tumalo property does not comp against a 0.1-acre
+    // in-town starter, period. When we know both, require the lot to be
+    // within ~3x (so a 2-acre subject takes 0.66-6 acre comps).
+    if (subLot != null && subLot > 0 && r.lot_size_acres != null && r.lot_size_acres > 0) {
+      const ratio = r.lot_size_acres / subLot
+      if (ratio > 3 || ratio < 1 / 3) return false
     }
     // Only filter by year if we know both
     if (subYear != null && subYear > 0) {
