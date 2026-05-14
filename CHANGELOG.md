@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.186.4 (2026-05-14)
+
+### Bug Fixes
+- fix(brand): regenerate Matt's profile photo with top-anchored crop
+
+---
+
+
 ## v1.186.3 (2026-05-14)
 
 ### Maintenance
