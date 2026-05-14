@@ -2,15 +2,13 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { SoldStoryCard } from '@/components/seller-lp/SoldStoryCard'
 import SellerLPForm from './SellerLPForm'
 import {
   getBendMarketSnapshot,
-  getOurListings,
-  getSellerTestimonials,
+  getSoldStories,
   getTestimonialAggregate,
   formatPriceCompact,
-  type OurListing,
-  type SellerTestimonial,
 } from './data'
 
 export const metadata: Metadata = {
@@ -36,16 +34,24 @@ export default async function SellerHomeValuePage() {
   const cookiePersonId = await getFubPersonIdFromCookie()
   const knownVisitor = cookiePersonId != null && cookiePersonId > 0
 
-  // Live local data — Bend market snapshot + Ryan Realty's own recent listings.
-  // Each falls back gracefully if Supabase is briefly unreachable.
-  const [marketSnapshot, ourListings] = await Promise.all([
+  // Live local data — Bend market snapshot + the unified "homes we represent"
+  // matrix (active listings + closed sales × optional Google reviews × broker
+  // headshots). Each falls back gracefully if Supabase is briefly unreachable.
+  const [marketSnapshot, soldStories, aggregate] = await Promise.all([
     getBendMarketSnapshot(),
-    getOurListings(),
+    getSoldStories(),
+    getTestimonialAggregate(),
   ])
-  const sellerTestimonials = getSellerTestimonials()
-  const aggregate = getTestimonialAggregate()
 
-  // JSON-LD review schema for SEO rich results. Pulled from the same testimonials.
+  // Visible cards: featured (top 2-up) + compact (next 3-up). schemaOnly
+  // stories stay in the JSON-LD review payload for SEO but aren't rendered.
+  const featuredStories = soldStories.filter((s) => s.featured)
+  const compactStories = soldStories.filter((s) => !s.featured)
+  const hasSoldStories = featuredStories.length > 0 || compactStories.length > 0
+
+  // JSON-LD review schema for SEO rich results. Each review is attached to
+  // the property it reviewed via itemReviewed → real-estate-agent's named
+  // RealEstateListing. Mirrors the pattern HomeLight uses.
   const reviewSchema = {
     '@context': 'https://schema.org',
     '@type': 'RealEstateAgent',
@@ -64,12 +70,26 @@ export default async function SellerHomeValuePage() {
       reviewCount: aggregate.count,
       bestRating: '5',
     },
-    review: sellerTestimonials.map((t) => ({
-      '@type': 'Review',
-      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
-      author: { '@type': 'Person', name: t.author },
-      reviewBody: t.quote,
-    })),
+    review: soldStories
+      .filter((s): s is typeof s & { testimonial: NonNullable<typeof s.testimonial> } =>
+        s.testimonial !== null
+      )
+      .map((s) => ({
+        '@type': 'Review',
+        reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
+        author: { '@type': 'Person', name: s.testimonial.author },
+        reviewBody: s.testimonial.quote,
+        itemReviewed: {
+          '@type': 'RealEstateListing',
+          name: s.listing.addressLine,
+          address: {
+            '@type': 'PostalAddress',
+            addressLocality: 'Bend',
+            addressRegion: 'OR',
+            addressCountry: 'US',
+          },
+        },
+      })),
   }
 
   return (
@@ -81,20 +101,26 @@ export default async function SellerHomeValuePage() {
       />
 
       {/* ─── Sticky minimal header ───────────────────────────────────────
-          Rendered as live text using Amboqia Boriango (the brand's display
-          font) instead of the stacked PNG wordmark. The PNG was reading as
-          a heavy dark block at header size — text scales cleanly and is
-          still 100% on-brand because Amboqia is the official wordmark
-          typeface. */}
+          Horizontal wordmark (logo-horizontal-blue.png — the 5:1 banner-
+          format Ryan Realty wordmark in navy on cream). Canonical pre-
+          rendered PNG; never re-typeset. Includes "BEND · OREGON" in the
+          art itself so no separate subtitle is needed. */}
       <header className="sticky top-0 z-40 border-b border-primary/10 bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link href="/" className="flex items-baseline gap-3" aria-label="Ryan Realty — Bend, Oregon">
-            <span className="font-display text-2xl font-semibold leading-none text-primary sm:text-3xl">
-              Ryan Realty
-            </span>
-            <span className="hidden h-4 w-px bg-primary/25 sm:block" aria-hidden />
-            <span className="hidden text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground sm:inline">
-              Bend · Oregon
+          <Link
+            href="/"
+            className="flex items-center"
+            aria-label="Ryan Realty — Bend, Oregon"
+          >
+            <span className="relative block h-7 w-[140px] shrink-0 sm:h-9 sm:w-[180px]">
+              <Image
+                src="/images/brand/logo-horizontal-blue.png"
+                alt="Ryan Realty — Bend, Oregon"
+                fill
+                sizes="(max-width: 640px) 140px, 180px"
+                className="object-contain object-left"
+                priority
+              />
             </span>
           </Link>
           <a
@@ -250,46 +276,32 @@ export default async function SellerHomeValuePage() {
         </div>
       </section>
 
-      {/* ─── Our listings — Ryan Realty inventory showcase ─────────────────
-          Schoolhouse Rd $3M marquee + five MLS listings, prices shown,
-          listing agent attributed. Drouillard photo pulled live from Spark
-          since the Supabase cache PhotoURL is null. */}
-      {ourListings.length > 0 && (
-        <section className="border-b border-primary/10 bg-card/30">
-          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
-            <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-              The homes we represent.
-            </h2>
-            <p className="mt-3 max-w-2xl text-lg text-foreground/80">
-              From $1M acreage and downtown condos to architectural estates on Bend&rsquo;s westside.
-              Yours could be the next one we market.
-            </p>
-            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {ourListings.map((listing) => (
-                <ListingCard key={listing.key} listing={listing} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ─── Social proof — featured quote + 5 supporting cards ──────────
-          Pattern modeled on Stripe / Linear / top broker LPs. Lead with the
-          most-credible quote (Helen Luna Fess — Realtor of 23 years), then
-          a tighter 5-card grid with colored-initials avatars + Google G mark
-          for verified attribution. Aggregate rating badge anchors the
-          section above the cards. */}
-      {sellerTestimonials.length > 0 && (
+      {/* ─── Homes we've represented — unified matrix ────────────────────
+          One section, nine cards. Top row (3-up on lg) features the highest-
+          value properties; bottom rows (3-up) carry the rest. Each card pairs
+          a real Ryan Realty transaction (active listing or closed sale, list
+          side or buyer side) with the matching broker headshot — and when we
+          have a Google review from that seller, the review is attached
+          directly under the property. No stock imagery. Pattern modeled on
+          Compass spotlights + HomeLight customer cards + the SaaS spotlight
+          format used by Vercel and Linear. Pairings verified by Matt
+          2026-05-14; see scratch/social-proof-research.md for the brief. */}
+      {hasSoldStories && (
         <section className="border-b border-primary/10 bg-[#faf8f4]">
           <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-primary/70">
-                  Past Bend sellers
+                  Recent Ryan Realty work
                 </p>
                 <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-                  What sellers actually say after we&rsquo;ve closed.
+                  Homes we&rsquo;ve represented. And what the sellers said next.
                 </h2>
+                <p className="mt-3 max-w-2xl text-lg text-foreground/80">
+                  From $755K river-acreage to architectural estates on Bend&rsquo;s westside. Each
+                  home pairs to the broker who worked the deal — and where a seller left a
+                  Google review, you&rsquo;ll see it under the property.
+                </p>
               </div>
               <a
                 href="https://www.google.com/maps/search/?api=1&query=Ryan+Realty+Bend+OR"
@@ -301,7 +313,7 @@ export default async function SellerHomeValuePage() {
               </a>
             </div>
 
-            {/* Aggregate trust badge */}
+            {/* Aggregate trust badge — anchors the section above the cards. */}
             <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-primary/15 bg-card px-4 py-2 shadow-sm">
               <GoogleMark className="h-5 w-5" />
               <span className="text-sm font-semibold text-foreground">
@@ -309,20 +321,27 @@ export default async function SellerHomeValuePage() {
               </span>
               <StarRow className="text-primary" />
               <span className="text-sm text-muted-foreground">
-                · {aggregate.count} verified seller reviews
+                · {aggregate.count} verified seller reviews on Google
               </span>
             </div>
 
-            {/* Featured quote + supporting grid */}
-            <div className="mt-8 grid gap-5 lg:grid-cols-3">
-              {sellerTestimonials.map((t) =>
-                t.featured ? (
-                  <FeaturedTestimonial key={t.author} t={t} />
-                ) : (
-                  <TestimonialCard key={t.author} t={t} />
-                )
-              )}
-            </div>
+            {/* Featured row — top 2-up. The two highest-value transactions. */}
+            {featuredStories.length > 0 && (
+              <div className="mt-8 grid gap-5 lg:grid-cols-2">
+                {featuredStories.map((story) => (
+                  <SoldStoryCard key={story.key} story={story} />
+                ))}
+              </div>
+            )}
+
+            {/* Compact rows — 3-up on lg. The remaining six properties. */}
+            {compactStories.length > 0 && (
+              <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {compactStories.map((story) => (
+                  <SoldStoryCard key={story.key} story={story} />
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -546,138 +565,7 @@ function MarketStat({ label, value }: { label: string; value: string }) {
   )
 }
 
-function ListingCard({ listing }: { listing: OurListing }) {
-  const place = listing.neighborhood?.trim() || 'Bend, Oregon'
-  const specBits: string[] = []
-  if (typeof listing.beds === 'number') specBits.push(`${listing.beds} bd`)
-  if (typeof listing.baths === 'number') specBits.push(`${listing.baths} ba`)
-  if (typeof listing.sqft === 'number' && listing.sqft > 0) {
-    specBits.push(`${listing.sqft.toLocaleString()} sqft`)
-  }
-  const badgeIsActive = listing.badge === 'Currently Listed'
-  const badgeIsFeatured = listing.badge === 'Featured'
-  const badgeIsSold = listing.badge === 'Sold'
-
-  return (
-    <div
-      className={`group overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md ${
-        listing.emphasis ? 'border-primary/30 ring-1 ring-primary/15' : 'border-primary/10'
-      }`}
-    >
-      <div className="relative aspect-[4/3] w-full bg-primary/5">
-        <Image
-          src={listing.photoUrl}
-          alt={`Ryan Realty listing — ${listing.addressLine}`}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-        />
-        <div
-          className={`absolute bottom-3 left-3 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider shadow-sm ${
-            badgeIsFeatured
-              ? 'bg-primary text-primary-foreground'
-              : badgeIsSold
-                ? 'bg-card text-primary'
-                : badgeIsActive
-                  ? 'bg-card/95 text-primary'
-                  : 'bg-card/95 text-foreground/80'
-          }`}
-        >
-          {listing.badge}
-        </div>
-      </div>
-      <div className="p-5">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{place}</p>
-        <p className="mt-2 font-display text-xl font-semibold leading-snug text-primary">
-          {listing.addressLine}
-        </p>
-        <p className="mt-2 text-base font-semibold tabular-nums text-foreground">
-          {listing.displayPrice}
-        </p>
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
-          {specBits.length > 0 && (
-            <p className="text-sm text-muted-foreground tabular-nums">{specBits.join(' · ')}</p>
-          )}
-          {listing.agentFirstName && (
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Marketed by {listing.agentFirstName}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Testimonial section helpers ──────────────────────────────────────────
-
-function FeaturedTestimonial({ t }: { t: SellerTestimonial }) {
-  return (
-    <figure className="relative flex h-full flex-col rounded-2xl border border-primary/20 bg-primary p-7 text-primary-foreground shadow-md lg:col-span-1 lg:row-span-2 lg:p-9">
-      <QuoteGlyph className="absolute right-6 top-6 h-10 w-10 text-primary-foreground/15" />
-      <StarRow className="text-card" />
-      <blockquote className="mt-5 grow font-display text-2xl leading-snug text-primary-foreground sm:text-[28px]">
-        &ldquo;{t.pull}&rdquo;
-      </blockquote>
-      <figcaption className="mt-6 flex items-center gap-4 border-t border-primary-foreground/20 pt-5">
-        <Avatar initials={t.initials} tint="card" />
-        <div>
-          <p className="font-semibold text-primary-foreground">{t.author}</p>
-          <p className="text-xs uppercase tracking-wider text-primary-foreground/70">
-            Past Bend seller · Google verified
-          </p>
-        </div>
-        <GoogleMark className="ml-auto h-5 w-5 opacity-80" />
-      </figcaption>
-    </figure>
-  )
-}
-
-function TestimonialCard({ t }: { t: SellerTestimonial }) {
-  return (
-    <figure className="flex h-full flex-col rounded-2xl border border-primary/10 bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex items-center justify-between">
-        <StarRow className="text-primary" />
-        <GoogleMark className="h-4 w-4 opacity-70" />
-      </div>
-      <blockquote className="mt-4 grow text-base leading-relaxed text-foreground/85">
-        &ldquo;{t.pull}&rdquo;
-      </blockquote>
-      <figcaption className="mt-5 flex items-center gap-3 border-t border-primary/10 pt-4">
-        <Avatar initials={t.initials} tint={t.avatarTint} />
-        <div>
-          <p className="text-sm font-semibold text-foreground">{t.author}</p>
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            Bend seller · Verified review
-          </p>
-        </div>
-      </figcaption>
-    </figure>
-  )
-}
-
-function Avatar({
-  initials,
-  tint,
-}: {
-  initials: string
-  tint: SellerTestimonial['avatarTint'] | 'card'
-}) {
-  const palette: Record<typeof tint, string> = {
-    navy: 'bg-primary text-primary-foreground',
-    'navy-deep': 'bg-[#0a1a2e] text-primary-foreground',
-    gold: 'bg-[#C8A864] text-primary',
-    card: 'bg-card text-primary',
-  } as const
-  return (
-    <span
-      aria-hidden
-      className={`flex h-10 w-10 items-center justify-center rounded-full font-display text-sm font-semibold tracking-tight ${palette[tint]}`}
-    >
-      {initials}
-    </span>
-  )
-}
+// ─── Trust-strip helpers ──────────────────────────────────────────────────
 
 function StarRow({ className }: { className?: string }) {
   return (
@@ -714,20 +602,6 @@ function GoogleMark({ className }: { className?: string }) {
         fill="#EA4335"
         d="M12 5.38c1.62 0 3.07.56 4.21 1.64l3.16-3.16C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
       />
-    </svg>
-  )
-}
-
-function QuoteGlyph({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 32 32"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-      fill="currentColor"
-    >
-      <path d="M9 8c-3.31 0-6 2.69-6 6v10h10V14H7c0-1.1.9-2 2-2V8zm14 0c-3.31 0-6 2.69-6 6v10h10V14h-6c0-1.1.9-2 2-2V8z" />
     </svg>
   )
 }
