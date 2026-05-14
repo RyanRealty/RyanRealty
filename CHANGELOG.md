@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.199.4 (2026-05-14)
+
+### Maintenance
+- docs(seo): database pipeline fix — 4 polygons + 633 listings tagged + 2 AF pages updated
+
+---
+
+
 ## v1.199.3 (2026-05-14)
 
 ### Bug Fixes
