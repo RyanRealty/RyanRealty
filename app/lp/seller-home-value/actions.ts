@@ -240,7 +240,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         const cronSecretHeader = process.env.CRON_SECRET?.trim()
           ? { 'x-cron-secret': process.env.CRON_SECRET.trim() }
           : undefined
-        void fetch(`${siteUrl}/api/cron/cma-delivery`, {
+        void fetch(`${siteUrl}/api/cma-delivery`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

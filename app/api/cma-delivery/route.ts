@@ -1,7 +1,7 @@
 /**
  * CMA delivery worker.
  *
- * POST /api/cron/cma-delivery
+ * POST /api/cma-delivery
  *   body: { delivery_id: string }
  *
  * Fired fire-and-forget from `submitSellerLPForm` after the FUB event lands.
@@ -11,9 +11,10 @@
  *
  * Idempotent: rows already in 'sent' or 'no_match' return early.
  *
- * Secured by a shared CRON_SECRET header (`x-cron-secret`) so the route
- * isn't a public DOS surface. In dev (`NODE_ENV !== 'production'`) the
- * secret check is bypassed.
+ * Lives outside `/api/cron/*` so Vercel's automatic Cron-route bearer-token
+ * protection doesn't gate it (we use our own optional `x-cron-secret` header
+ * check below). In dev (`NODE_ENV !== 'production'`) the secret check is
+ * bypassed.
  */
 
 import { NextResponse } from 'next/server'
