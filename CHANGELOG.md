@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.192.0 (2026-05-14)
+
+### Features
+- feat(marketing-brain): cadence + active-listing awareness (Item 2)
+- feat(seller-lp): auto-CMA delivery loop — form submit → CMA → draft email → broker review → send
+
+---
+
+
 ## v1.191.0 (2026-05-14)
 
 ### Features
