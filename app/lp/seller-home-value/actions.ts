@@ -10,6 +10,7 @@ import {
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { createCmaDelivery } from '@/lib/cma-delivery'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -212,6 +213,46 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         taskType: 'Call',
         dueInMinutes: 5,
       }).catch((e) => console.warn('[seller-lp] realtime task error:', e))
+    }
+
+    // ─── Auto-CMA delivery — fire-and-forget ──────────────────────────────
+    // Insert a `cma_deliveries` row synchronously (fast — one DB write), then
+    // ping the worker at /api/cron/cma-delivery so the heavy CMA compute +
+    // PDF render + Storage upload + broker review email happens off the
+    // form-submit path. The visitor sees a fast "we got it" response; the
+    // broker gets their review email within ~10s.
+    if (email) {
+      const created = await createCmaDelivery({
+        rawAddress: parsed.full,
+        parsedStreet: parsed.street,
+        parsedCity: parsed.city,
+        parsedState: parsed.state,
+        parsedPostalCode: parsed.postalCode,
+        leadEmail: email,
+        leadName: name || null,
+        leadPhone: phone || null,
+        leadTimeline: timeline ?? null,
+        leadClassification: classification,
+        fubPersonId,
+      })
+      if ('id' in created) {
+        const deliveryId = created.id
+        const cronSecretHeader = process.env.CRON_SECRET?.trim()
+          ? { 'x-cron-secret': process.env.CRON_SECRET.trim() }
+          : undefined
+        void fetch(`${siteUrl}/api/cron/cma-delivery`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(cronSecretHeader ?? {}),
+          },
+          body: JSON.stringify({ delivery_id: deliveryId }),
+        }).catch((e) => {
+          console.warn('[seller-lp] CMA worker ping failed:', e)
+        })
+      } else {
+        console.warn('[seller-lp] createCmaDelivery failed:', created.error)
+      }
     }
 
     // ─── Meta CAPI Lead $500 with dedup event_id ──────────────────────────
