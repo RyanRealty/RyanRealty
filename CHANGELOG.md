@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.196.0 (2026-05-14)
+
+### Features
+- feat(brand): wider-aspect Google Workspace logo (400x80, 5:1)
+
+---
+
+
 ## v1.195.0 (2026-05-14)
 
 ### Features
