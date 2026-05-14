@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.199.0 (2026-05-14)
+
+### Features
+- feat(brand): marketing account profile photo (Ryan Realty crest)
+
+### Maintenance
+- docs(marketing-brain): end-of-session memory log update
+
+---
+
+
 ## v1.198.1 (2026-05-14)
 
 ### Bug Fixes
