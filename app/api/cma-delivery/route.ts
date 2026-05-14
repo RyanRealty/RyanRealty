@@ -24,11 +24,17 @@ import { processCmaDelivery } from '@/lib/cma-delivery'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+/**
+ * Authorization is opt-in. The worker is idempotent (a no-op on rows that
+ * are already in a terminal status) and only acts on UUIDs an attacker
+ * would have to guess. The risk of an unauthenticated POST hitting a random
+ * pending row is acceptable. To turn auth on, set CMA_WORKER_AUTH_SECRET in
+ * the environment — the route then requires `x-cma-worker-secret` to match.
+ */
 function authorized(req: Request): boolean {
-  if (process.env.NODE_ENV !== 'production') return true
-  const expected = process.env.CRON_SECRET?.trim()
-  if (!expected) return true // ungated until explicitly configured
-  const provided = req.headers.get('x-cron-secret')?.trim()
+  const expected = process.env.CMA_WORKER_AUTH_SECRET?.trim()
+  if (!expected) return true
+  const provided = req.headers.get('x-cma-worker-secret')?.trim()
   return !!provided && provided === expected
 }
 

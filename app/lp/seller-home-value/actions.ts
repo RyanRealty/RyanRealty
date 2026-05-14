@@ -237,14 +237,14 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       })
       if ('id' in created) {
         const deliveryId = created.id
-        const cronSecretHeader = process.env.CRON_SECRET?.trim()
-          ? { 'x-cron-secret': process.env.CRON_SECRET.trim() }
+        const workerAuthHeader = process.env.CMA_WORKER_AUTH_SECRET?.trim()
+          ? { 'x-cma-worker-secret': process.env.CMA_WORKER_AUTH_SECRET.trim() }
           : undefined
         void fetch(`${siteUrl}/api/cma-delivery`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(cronSecretHeader ?? {}),
+            ...(workerAuthHeader ?? {}),
           },
           body: JSON.stringify({ delivery_id: deliveryId }),
         }).catch((e) => {
