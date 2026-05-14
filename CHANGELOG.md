@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.185.0 (2026-05-14)
+
+### Features
+- feat(marketing-brain): author 15 producer skills + v3 list-kit + Pattern A/B/C/D carousel
+
+### Maintenance
+- docs(seo): Spark Editor breakthrough — 14 CBL body fixes shipped
+
+---
+
+
 ## v1.184.7 (2026-05-14)
 
 ### Maintenance
