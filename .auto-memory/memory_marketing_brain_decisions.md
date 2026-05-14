@@ -251,6 +251,54 @@ populated.
 1. ~~**Item 1 — site:\* signal wiring**~~: **SHIPPED** in commit `4fc9e7a3` (2026-05-14). audit-website seo+test_new_creative emits `site:meta_update`; audit-website page+audit_landing_page emits `site:cta_update`; audit-website funnel+audit_landing_page emits `site:cta_update` on the upstream page. GeneratedBrief gained optional `target` + `payload_override` fields. formatRoute now includes 8 site:\* entries. Brain producer coverage 9/21 → 11/21. audit-ads budget/tracking/targeting and audit-website traffic are still dropped (next session).
 2. ~~**Item 2 — cadence + active-listing awareness**~~: **SHIPPED** in commit `6dae73df` (2026-05-14). gatherCadenceGaps() reads marketing_channel_daily for last-7d posts per channel, compares against locked CADENCE_TARGETS (IG/TT 5/wk, Meta Page 4/wk, YouTube 2/wk, LinkedIn 3/wk, X 5/wk, GBP 2/wk), emits cadence opportunities with severity scaling by staleness. gatherActiveListingNeeds() queries top-20 active listings by ListPrice, filters those covered in last 14 days, emits the top-3 uncovered. Handlers route cadence → channel-matched default format (market_data_short on social, ig_carousel on LinkedIn, gbp_post on GBP) and listing_coverage → content:list_kit orchestrator. Brain producer coverage 11/21 → 12/21 (adds list-kit). ops:fub_\* wiring from audit-crm was NOT done — moved to next item.
 
+## End-of-session-2 summary — 2026-05-14 evening (after handoff prompt + post-launch fixes)
+
+Shipped on top of the earlier in-day commits:
+
+| Commit | What |
+|---|---|
+| `48dc1d1a` (rebased to `2689c9b0`) | competitor-recon cron split into per-day rotation (Mon-Fri); maxDuration 300→800; SKILL.md updated |
+| `94d9ef6` → `9ef3d83a` | dashboard surface 4 new sections + perf fix bounding the slow queries |
+| `d5084e43` | 5 more tool SKILL.md (ga4 / gsc / follow_up_boss / gbp / youtube_data) — registry 7→12 of 33 |
+| `72379481` | content_performance feedback loop scaffolding — lib/marketing-brain/measurement-loop.ts + cron route + SKILL.md + vercel.json entry |
+
+Plus a Supabase-MCP cleanup that killed 5 noise action rows (4 duplicates + 1 debug test). Canonical pair `876ecf7c` + `d89079ac` still pending Matt review.
+
+### Critical findings
+
+- **`APIFY_API_TOKEN` is NOT in Vercel env.** Every weekly competitor-recon cron has been silently failing — every scraper call errors at `runApifyActor()`'s "APIFY_API_TOKEN is not set" check. The 1 row currently in `competitor_intel` is a manual debug insert with LLM-summarized SERP findings, not cron output.
+- **`ANTHROPIC_API_KEY` is NOT in Vercel env.** Confirmed by exhaustive search across .env files, source code, shell rc, Vercel production / preview / development, Cursor settings, workspace files. Audit classifier + inbox parser both blocked.
+- **Both blockers are 2-min Vercel-env-add tasks** on Matt's end. Code is ready.
+
+### Recon cron architecture change
+
+Pre-2026-05-14: weekly Monday 07:00 UTC, attempts 10 competitors × 5 sources = 50 scraper calls in one invocation, times out at 300s. Post-2026-05-14: daily Mon-Fri 07:00 UTC, rotates source by day-of-week (Mon=gmb_reviews, Tue=serp, Wed=instagram, Thu=tiktok, Fri=fb_ad_library). Each weekday handles 10 competitors × 1 source ≈ 5-15 min under maxDuration=800. Same weekly coverage, 5× faster reliability.
+
+### Feedback loop scaffolding
+
+`measurement-loop` cron runs daily 15:00 UTC, scans executed action rows from last 90 days, fetches per-post metrics at 24h / 7d / 30d windows, writes `content_performance` rows. Meta Graph (IG + FB) is live; TikTok / YouTube / LinkedIn / X / GBP / blog are stub returning-null TODOs.
+
+The producer contract is documented at `marketing_brain_skills/measurement-loop/SKILL.md`: every producer transitioning a row to status='executed' MUST write `executor_response.published_posts` with per-platform `{ platform, platform_post_id, url?, published_at }` entries. Producer Authoring session is on the hook for updating producer SKILL.mds to enforce.
+
+Until producers ship the contract, the loop scans, finds 0 candidates, exits clean. Expected during rollout. Once the first content:* action row is executed and publishes correctly, the loop starts working with no further code change.
+
+### Brain producer coverage end-of-day
+
+- Brain mapper: **14/21 producers** reachable from real signals (unchanged from earlier in the day)
+- Producer SKILL.md files: site-edit, site-page-create, site-performance, ops-meta-ads, ops-fub-crm, ops-email-send, ops-reputation — all authored by Producer Authoring (verified, 414-521 lines each)
+- Tools registry: **12/33 authored** (apify, anthropic-classifier, supabase, replicate, spark_mls, meta_graph, resend, ga4, gsc, youtube_data, google_business_profile, follow_up_boss)
+- Inbox pipeline: shipped by other agent — 7 lib files + cron, marketing_inbox_events has 5 rows (1 real test from Matt — parsed_intent='unknown' due to missing Anthropic key, replied successfully via fallback; 4 Google security/welcome emails correctly killed by allowlist)
+
+### Next-session queue (revised post evening grind)
+
+1. **Matt action** — set `APIFY_API_TOKEN` + `ANTHROPIC_API_KEY` in Vercel env. Everything else is ready to fire.
+2. **Producer Authoring** — update each producer's SKILL.md to enforce the `executor_response.published_posts` contract on every status='executed' transition.
+3. Wire YouTube + LinkedIn Apify scrapers in audit-run.ts scrapeTarget() (replace TODO stubs)
+4. Wire TikTok / YouTube / LinkedIn / blog measurement in measurement-loop.measurePlatformPost() (replace TODO stubs)
+5. Author the next-pass tool SKILL.md: tiktok_api, x_api, linkedin_api, agentfire_wordpress
+
+---
+
 ## End-of-session summary — 2026-05-14 (full grind)
 
 **Shipped today on origin/main, in commit order:**
