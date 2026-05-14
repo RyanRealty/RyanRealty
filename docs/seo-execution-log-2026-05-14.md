@@ -498,6 +498,86 @@ These are mop-up — not catastrophic — and can be addressed in a follow-up se
 
 ---
 
+## Broker bio reworks (after Matt directive: SEO-rework existing bios + Person schema for Matt)
+
+**Matt Ryan (page 1911)** — bio rework via Spark Editor:
+- Item 10 (intro): replaced generic "committed to highest standards / white-glove service / unparalleled / seamless" AI-marketing copy with SEO-focused intro: principal broker, 12 years, neighborhoods specialty (Bend, Tumalo, Tetherow, Awbrey Butte, NW Crossing), specialties (out-of-state sellers, relocation buyers, investment property), direct phone.
+- Item 29 (personal story): surgical cleanup. Preserved family-member-realtor and fire-service biographical content. Removed em dashes, swapped `navigate` → `understand`, removed `dynamic, sought-after` filler.
+- Item 37 (Red Erickson mentor story): surgical cleanup. Preserved the Hjalmar "Red" Erickson / Erickson Realty mentor narrative. Removed em dashes, `truly`, `authentic`, `fostering`, `elevated`.
+- Yoast title + meta: light cleanup.
+- **Person schema added** to body via #content textarea — Matt Ryan with worksFor RealEstateAgent + description with specialties.
+
+**Paul Stevenson (page 2167)** — bio rework via Spark Editor:
+- Item 36 (generic marketing): replaced "From first-time buyers... Central Oregon dreams into reality... exceptional real estate experiences" with SEO-focused: 19 years La Pine Fire service, Redmond resident, specialty in rural properties + acreage + family homes + south Deschutes County.
+- Item 13 (personal bio): preserved 19-year-fire-service / 27-years-married / 4-H-pigs / Redmond resident biographical content. Removed em dashes (`—it's a personal journey—and` → `. It is a personal decision.`), swapped `proud to call home` → `glad to call home`, `unique perspective` → `direct experience`, `incredible children` → `kids`.
+- Yoast + Person schema already in place from earlier pass.
+
+**Rebecca Ryser Peterson (page 1919)** — bio rework via Spark Editor:
+- Item 10 (bio): rewrote with SEO-focused content preserving real biographical facts: longtime Central Oregon resident, private money lending background → analytical/financial skills, represents Bend/Redmond/Tumalo area, specialties in first-time buyers + financial-driven negotiations + out-of-state moves.
+- Item 36 (generic marketing): cleaned the same "dreams into reality / exceptional / proud to be" widget that appeared on each broker page (different uniqid per page, so per-page edit needed).
+- Yoast + Person schema already in place from earlier pass.
+
+---
+
+## Final autonomous-mode work shipped
+
+**Additional Spark Editor body fixes:**
+- Home (page 285): 3 deeper widgets cleaned (`dreams into reality`, `navigate`, `seamless`)
+- Relocation (page 1904): 3 more widgets cleaned (same patterns)
+
+**Internal linking pass (audit Section 5.3):**
+- May 2026 market report (3484): added "Neighborhood-level detail" section with 7 internal links to NW Crossing, River's Edge Village, Valhalla Heights, Tumalo, Tanager, Tree Farm, Explore Bend hub
+- Building permit timeline (3334): added "Related Bend resources" with 4 internal links (cost of living, market report, relocating, neighborhoods)
+- Cost of living (3504): added "Related resources" with 5 internal links (market report, relocating, sell-bend, neighborhoods, permits)
+- Verified live: all 3 posts now have hasNeighborhoodLinks: true + hasRelatedSection: true
+
+**Sitewide footer `exclusive` source identified:**
+Located in an AgentFire Twig signup template (the "Create Your Account / Gain immediate access to exclusive features such as notifications for newly listed homes, customized searches" modal). Renders across every page. Theme-level edit needed; my edit access doesn't reach Twig templates. Flagged for AgentFire support.
+
+---
+
+## Updated session totals
+
+**Total live SEO changes shipped today: ~67+** including:
+- 15 Yoast title + meta + 1 redirect (Week 1)
+- 12 schema injections (Week 2)
+- 5 page creations / upgrades (Week 3 + brokers)
+- 14 CBL body fixes (Week 4 via Spark Editor)
+- 8 sitewide CBL cleanups (Join Us, Home, Relocation, Giving Back × 4 widgets, etc.)
+- 3 broker bio reworks (Matt, Paul, Rebecca, multiple widgets each)
+- 6 additional CBL banned-word swaps (Home + Relocation deeper widgets)
+- 3 blog posts with internal linking sections added
+- Person schemas live for Matt, Paul, Rebecca
+- LocalBusiness, RealEstateAgent, BreadcrumbList, FAQPage, Article, Service schemas live across the site
+
+**Zero rollbacks. Zero unverified figures shipped.** Every change verified live via cache-busted fetch.
+
+---
+
+## Remaining items (deferred to follow-up)
+
+1. **Sitewide footer `exclusive` Twig template** — needs AgentFire support to edit at theme level. Not reachable via Spark Editor.
+
+2. **Parse-error JSON-LD block on every page** — broken theme template stub. Same AgentFire-support fix.
+
+3. **Cross-link new pages from Buyers (1879), Sellers (1885), About-Us (1910)** — would point inbound link equity to /bend-oregon-realtor/, /relocating-to-bend-oregon/, /sell-your-bend-oregon-home/. Needs Spark Editor inline-edit on each service page. Not done this session (time budget).
+
+4. **AgentFire dynamic widget static backfill** (audit Section 5.5) — neighborhood pages show "$0" in the Area Highlights widget because Googlebot can't read JS-loaded content. Audit recommends static HTML market data above each widget. Same Spark Editor pattern but ~5-7 pages.
+
+5. **Follow Up Boss newsletter integration** — Matt's directive: no Mailchimp. Tie market-report signup to FUB directly. Needs:
+   - AgentFire's native form builder OR a custom form widget
+   - FUB lead-create webhook with appropriate tag (e.g., `source=newsletter-signup`)
+   - Configuration in AgentFire's admin
+   This is a multi-step integration; needs Matt input on lead routing rules + signup wording.
+
+6. **GSC URL Inspection + click-lift tracking** — needs GSC service account scope.
+
+7. **Google Rich Results Test validation** — wait 24-48h for Google to crawl the new schema, then run each URL.
+
+8. **Mop-up: residual `passionate` on Giving Back** — 1 hit didn't match my inline regex; needs manual scan.
+
+---
+
 ## Skipped + reason
 
 *(none yet)*
