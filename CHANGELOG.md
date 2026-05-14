@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.188.0 (2026-05-14)
+
+### Features
+- feat(brand): Paul Stevenson email signature install kit (v6 layout)
+
+---
+
+
 ## v1.187.0 (2026-05-14)
 
 ### Features
