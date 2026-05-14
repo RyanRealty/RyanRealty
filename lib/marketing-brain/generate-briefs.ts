@@ -22,6 +22,8 @@
  *   audit-website seo test_new_creative    → site:meta_update (Item 1 wiring)
  *   audit-website page audit_landing_page  → site:cta_update (Item 1 wiring)
  *   audit-website funnel audit_landing_page → site:cta_update (Item 1 wiring)
+ *   cadence (any channel below target)    → channel-matched default format (Item 2 wiring)
+ *   listing_coverage uncovered_active     → content:list_kit (Item 2 wiring)
  *   competitor serp_gap                   → blog_post + ig_carousel
  *   competitor format_gap (video)         → market_data_short
  *   platform-trends format                → market_data_short OR meme_video by label cue
@@ -126,7 +128,7 @@ export interface PersistResult {
 /** An opportunity from any audit source, normalized for ranking. */
 interface RankedOpportunity {
   /** Source system that surfaced this opportunity. */
-  source: 'audit-crm' | 'audit-ads' | 'audit-website' | 'competitor' | 'platform-trend' | 'diagnose'
+  source: 'audit-crm' | 'audit-ads' | 'audit-website' | 'competitor' | 'platform-trend' | 'diagnose' | 'cadence' | 'listing_coverage'
   /** The area/category within that source. */
   area: string
   severity: 'high' | 'medium' | 'low'
@@ -150,6 +152,27 @@ export interface SignalBundle {
   channelInsights: InsightSummary[]
   platformTrends: PlatformTrendsReport | null
   competitorRows: CompetitorIntelRow[]
+  cadenceGaps: CadenceGap[]
+  activeListingNeeds: ActiveListingNeed[]
+}
+
+/** A single channel below its target posting cadence. Item 2 — gatherCadenceGaps. */
+export interface CadenceGap {
+  channel: Channel
+  target_per_week: number
+  actual_last_7d: number
+  gap: number
+  days_since_last_post: number | null
+}
+
+/** An active listing with no recent content brief covering it. Item 2 — gatherActiveListingNeeds. */
+export interface ActiveListingNeed {
+  listing_key: string
+  address: string
+  city: string
+  list_price: number
+  photo_url: string | null
+  days_since_last_coverage: number | null
 }
 
 /** Competitor intel row shape (subset needed by brief generation). */
@@ -168,6 +191,27 @@ interface CompetitorIntelRow {
 
 const DEFAULT_MAX_BRIEFS = 10
 const WINDOW_DAYS = 7
+
+/**
+ * Target posting cadence per channel (posts per 7-day window).
+ * Sourced from social_media_skills/platform-best-practices/SKILL.md.
+ * Item 2 — gatherCadenceGaps surfaces channels that fell below target.
+ */
+const CADENCE_TARGETS: Partial<Record<Channel, number>> = {
+  instagram: 5,
+  tiktok: 5,
+  meta_page: 4,
+  youtube: 2,
+  linkedin: 3,
+  x: 5,
+  gbp: 2,
+}
+
+/** Days of staleness before an active listing becomes a coverage opportunity. */
+const LISTING_COVERAGE_THRESHOLD_DAYS = 14
+
+/** Top N active listings the brain considers each cycle (sorted by ListPrice desc). */
+const LISTING_COVERAGE_TOP_N = 3
 
 /** Channels we try to get InsightSummary for. */
 const INSIGHT_CHANNELS: Channel[] = [
@@ -260,6 +304,147 @@ const BANNED_TROPE_PATTERNS: Array<{ pattern: RegExp; rule: string }> = [
 ]
 
 // ---------------------------------------------------------------------------
+// Item 2 — cadence gap detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Detect channels that fell below their target posting cadence in the last
+ * 7 days. Reads marketing_channel_daily for scope='post' rows and counts
+ * distinct scope_id per channel.
+ *
+ * Returns one entry per under-cadence channel. Channels at or above target
+ * are omitted. Soft-fail: returns [] on any Supabase error.
+ */
+export async function gatherCadenceGaps(asOfDate: string): Promise<CadenceGap[]> {
+  const supabase = getSupabase()
+  const sevenDaysAgo = offsetDate(asOfDate, -7)
+
+  const { data, error } = await supabase
+    .from('marketing_channel_daily')
+    .select('channel, date, scope_id')
+    .eq('scope', 'post')
+    .gte('date', sevenDaysAgo)
+    .lte('date', asOfDate)
+
+  if (error) {
+    console.error('gatherCadenceGaps:', error.message)
+    return []
+  }
+
+  const postsByChannel = new Map<Channel, Set<string>>()
+  const latestPostByChannel = new Map<Channel, string>()
+
+  for (const row of (data ?? []) as Array<{ channel: string; date: string; scope_id: string }>) {
+    const channel = row.channel as Channel
+    if (!postsByChannel.has(channel)) postsByChannel.set(channel, new Set())
+    postsByChannel.get(channel)!.add(row.scope_id)
+
+    const prev = latestPostByChannel.get(channel)
+    if (!prev || row.date > prev) {
+      latestPostByChannel.set(channel, row.date)
+    }
+  }
+
+  const gaps: CadenceGap[] = []
+  for (const [channelStr, target] of Object.entries(CADENCE_TARGETS)) {
+    const channel = channelStr as Channel
+    const actual = postsByChannel.get(channel)?.size ?? 0
+    if (actual >= (target as number)) continue
+
+    const latestPost = latestPostByChannel.get(channel)
+    const daysSince = latestPost
+      ? Math.floor((Date.parse(asOfDate) - Date.parse(latestPost)) / 86400000)
+      : null
+
+    gaps.push({
+      channel,
+      target_per_week: target as number,
+      actual_last_7d: actual,
+      gap: (target as number) - actual,
+      days_since_last_post: daysSince,
+    })
+  }
+
+  return gaps
+}
+
+// ---------------------------------------------------------------------------
+// Item 2 — active-listing coverage detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Find active listings the brain has not generated a content brief for in
+ * the last LISTING_COVERAGE_THRESHOLD_DAYS. Returns the top-N by ListPrice.
+ *
+ * "Covered" means a marketing_brain_actions row exists with
+ * target='mls:<ListingKey>' and created_at within the threshold window.
+ *
+ * Soft-fail: returns [] on Supabase error. The Spark MLS listings table
+ * uses mixed-case column names (per CLAUDE.md schema notes) — Supabase
+ * JS client accepts them in .select() and .eq() without explicit quoting.
+ */
+export async function gatherActiveListingNeeds(asOfDate: string): Promise<ActiveListingNeed[]> {
+  const supabase = getSupabase()
+  const thresholdDate = offsetDate(asOfDate, -LISTING_COVERAGE_THRESHOLD_DAYS)
+
+  // Step 1: collect ListingKeys that already have a brief in the window
+  const coveredRes = await supabase
+    .from('marketing_brain_actions')
+    .select('target, created_at')
+    .like('target', 'mls:%')
+    .gte('created_at', `${thresholdDate}T00:00:00Z`)
+
+  if (coveredRes.error) {
+    console.error('gatherActiveListingNeeds (covered query):', coveredRes.error.message)
+    return []
+  }
+
+  const coveredKeys = new Set<string>()
+  for (const row of (coveredRes.data ?? []) as Array<{ target: string }>) {
+    coveredKeys.add(row.target.replace('mls:', ''))
+  }
+
+  // Step 2: pull top 20 active listings by ListPrice
+  const listingsRes = await supabase
+    .from('listings')
+    .select('ListingKey, StreetNumber, StreetName, City, ListPrice, PhotoURL')
+    .eq('StandardStatus', 'Active')
+    .order('ListPrice', { ascending: false })
+    .limit(20)
+
+  if (listingsRes.error) {
+    console.error('gatherActiveListingNeeds (listings query):', listingsRes.error.message)
+    return []
+  }
+
+  // Step 3: filter out covered + map
+  const needs: ActiveListingNeed[] = []
+  for (const l of (listingsRes.data ?? []) as Array<Record<string, unknown>>) {
+    const key = String(l.ListingKey ?? '')
+    if (!key || coveredKeys.has(key)) continue
+
+    const streetNum = l.StreetNumber ? String(l.StreetNumber) : ''
+    const streetName = l.StreetName ? String(l.StreetName) : ''
+    const city = l.City ? String(l.City) : ''
+    const price = typeof l.ListPrice === 'number' ? l.ListPrice : Number(l.ListPrice ?? 0)
+    const photo = l.PhotoURL ? String(l.PhotoURL) : null
+
+    needs.push({
+      listing_key: key,
+      address: `${streetNum} ${streetName}`.trim(),
+      city,
+      list_price: price,
+      photo_url: photo,
+      days_since_last_coverage: null,
+    })
+
+    if (needs.length >= LISTING_COVERAGE_TOP_N) break
+  }
+
+  return needs
+}
+
+// ---------------------------------------------------------------------------
 // Step 1: gatherSignals
 // ---------------------------------------------------------------------------
 
@@ -302,7 +487,17 @@ export async function gatherSignals(asOfDate: string, windowDays: number = WINDO
     return null
   })
 
-  const [websiteAudit, adsAudit, crmAudit, insightResults, platformTrends, competitorRows] =
+  // Item 2 — cadence + active-listing gatherers run alongside the audits
+  const cadencePromise = gatherCadenceGaps(asOfDate).catch((e) => {
+    console.error('gatherSignals cadenceGaps:', e instanceof Error ? e.message : String(e))
+    return [] as CadenceGap[]
+  })
+  const listingNeedsPromise = gatherActiveListingNeeds(asOfDate).catch((e) => {
+    console.error('gatherSignals activeListingNeeds:', e instanceof Error ? e.message : String(e))
+    return [] as ActiveListingNeed[]
+  })
+
+  const [websiteAudit, adsAudit, crmAudit, insightResults, platformTrends, competitorRows, cadenceGaps, activeListingNeeds] =
     await Promise.all([
       auditWebsite(asOfDate, windowDays).catch((e) => {
         console.error('gatherSignals auditWebsite:', e instanceof Error ? e.message : String(e))
@@ -330,11 +525,13 @@ export async function gatherSignals(asOfDate: string, windowDays: number = WINDO
       Promise.all(insightPromises),
       trendsPromise,
       competitorPromise,
+      cadencePromise,
+      listingNeedsPromise,
     ])
 
   const channelInsights = insightResults.filter((i): i is InsightSummary => i !== null)
 
-  return { asOfDate, websiteAudit, adsAudit, crmAudit, channelInsights, platformTrends, competitorRows }
+  return { asOfDate, websiteAudit, adsAudit, crmAudit, channelInsights, platformTrends, competitorRows, cadenceGaps, activeListingNeeds }
 }
 
 // ---------------------------------------------------------------------------
@@ -491,9 +688,47 @@ export function synthesizeOpportunities(signals: SignalBundle): RankedOpportunit
     })
   }
 
+  // --- Cadence gaps (Item 2) ---
+  for (const gap of signals.cadenceGaps) {
+    // Severity scales with staleness. Never-posted is medium (some channels
+    // are intentionally inactive); >7d stale is high; <=7d stale is low.
+    const sev: 'high' | 'medium' | 'low' =
+      gap.days_since_last_post === null ? 'medium' :
+      gap.days_since_last_post > 7 ? 'high' :
+      'low'
+
+    opps.push({
+      source: 'cadence',
+      area: gap.channel,
+      severity: sev,
+      headline: `${gap.channel} cadence gap: ${gap.actual_last_7d}/${gap.target_per_week} posts in last 7 days`,
+      evidence: `Target ${gap.target_per_week}/wk, actual ${gap.actual_last_7d}. ${gap.days_since_last_post === null ? 'No post detected in window.' : `Last post ${gap.days_since_last_post}d ago.`}`,
+      recommended_action: 'test_new_creative',
+      north_star_weight: 1,
+      rank_score: rankScore(sev, 'cadence'),
+      meta: { gap },
+    })
+  }
+
+  // --- Active-listing coverage gaps (Item 2) ---
+  for (const need of signals.activeListingNeeds) {
+    opps.push({
+      source: 'listing_coverage',
+      area: 'uncovered_active',
+      severity: 'medium',
+      headline: `Active listing without recent coverage: ${need.address}, ${need.city}`,
+      evidence: `$${need.list_price.toLocaleString()} active listing. No content brief in last ${LISTING_COVERAGE_THRESHOLD_DAYS} days.`,
+      recommended_action: 'test_new_creative',
+      north_star_weight: 1,
+      rank_score: rankScore('medium', 'listing_coverage'),
+      meta: { listing: need },
+    })
+  }
+
   // Rank descending by rank_score, then severity, then source priority
   const sourcePriority: Record<RankedOpportunity['source'], number> = {
-    'audit-crm': 0, 'audit-ads': 1, 'audit-website': 2, 'competitor': 3, 'platform-trend': 4, 'diagnose': 5,
+    'audit-crm': 0, 'audit-ads': 1, 'audit-website': 2, 'competitor': 3,
+    'platform-trend': 4, 'diagnose': 5, 'cadence': 6, 'listing_coverage': 7,
   }
 
   opps.sort((a, b) => {
@@ -1099,6 +1334,86 @@ export function mapOpportunityToBriefs(
         rationale: `Engagement spike of ${pctStr} on ${channel} indicates algorithm is distributing this format broadly. Repeating the format while the signal is warm captures the distribution window before it normalizes.`,
       },
       generation_reason: `diagnose capitalize_on_spike: ${channel} ${topDelta?.metric ?? 'engagement'} ${pctStr} WoW.`,
+    }))
+  }
+
+  // ── cadence gap → channel-matched default content (Item 2) ───────────────
+  // Brain's strongest format on each platform; producer chooses fresh angle.
+  if (opportunity.source === 'cadence') {
+    const gap = opportunity.meta.gap as CadenceGap
+    const channel = gap.channel
+
+    let format: string
+    let platforms: string[]
+    if (channel === 'instagram') { format = 'market_data_short'; platforms = ['instagram'] }
+    else if (channel === 'tiktok') { format = 'market_data_short'; platforms = ['tiktok'] }
+    else if (channel === 'meta_page') { format = 'market_data_short'; platforms = ['facebook'] }
+    else if (channel === 'youtube') { format = 'market_data_short'; platforms = ['youtube'] }
+    else if (channel === 'linkedin') { format = 'ig_carousel'; platforms = ['linkedin'] }
+    else if (channel === 'x') { format = 'market_data_short'; platforms = ['x'] }
+    else if (channel === 'gbp') { format = 'gbp_post'; platforms = ['gbp'] }
+    else {
+      return [] // unknown channel — drop silently
+    }
+
+    const staleness = gap.days_since_last_post === null
+      ? 'no recent post detected'
+      : `${gap.days_since_last_post} days since last post`
+
+    briefs.push(buildBrief({
+      topic: `Fill ${channel} cadence gap (${gap.actual_last_7d}/${gap.target_per_week} posts in last 7d)`,
+      format,
+      platforms,
+      hook: `Bend market data. Three numbers worth knowing this week.`,
+      body: `Default content for an under-cadence slot. Producer picks a fresh angle: months of supply, median price shift, or active inventory movement.`,
+      cta: `Address in bio for a real number on your Bend home.`,
+      target_audience: 'brand_default',
+      data_sources: [
+        { type: 'cadence', evidence: `${channel}: ${gap.actual_last_7d} posts vs target ${gap.target_per_week}/wk. ${staleness}.` },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: 'Maintain platform reach baseline; prevent algorithmic decay',
+        rationale: `Cadence gaps cost algorithmic trust. Filling the gap with brand-default content prevents reach decay on a platform we have already invested in.`,
+      },
+      generation_reason: `cadence ${channel}: ${gap.actual_last_7d}/${gap.target_per_week} posts in last 7d. ${staleness}.`,
+    }))
+  }
+
+  // ── listing_coverage uncovered_active → content:list_kit (Item 2) ────────
+  // List-kit is an orchestrator producer; one row fans out to flyer + IG
+  // carousel + listing reel + blog post + GBP post.
+  if (opportunity.source === 'listing_coverage') {
+    const listing = opportunity.meta.listing as ActiveListingNeed
+    const priceStr = `$${listing.list_price.toLocaleString()}`
+
+    briefs.push(buildBrief({
+      topic: `List kit for ${listing.address}, ${listing.city}`,
+      format: 'list_kit',
+      platforms: ['instagram', 'facebook', 'blog', 'gbp'],
+      hook: `${listing.address}, ${listing.city}. ${priceStr} active and waiting for a marketing kit.`,
+      body: `Run the list-kit orchestrator on this MLS id. Produces flyer, IG carousel, listing reel, blog post, and GBP post in one pass.`,
+      cta: undefined,
+      target_audience: 'brand_default',
+      target: `mls:${listing.listing_key}`,
+      payload_override: {
+        listing_key: listing.listing_key,
+        address: listing.address,
+        city: listing.city,
+        list_price: listing.list_price,
+        photo_url: listing.photo_url,
+        coverage_state: 'never_covered_in_window',
+        threshold_days: LISTING_COVERAGE_THRESHOLD_DAYS,
+      },
+      data_sources: [
+        { type: 'listing_coverage', evidence: `Active listing ${priceStr} in ${listing.city} has no content brief in the last ${LISTING_COVERAGE_THRESHOLD_DAYS} days.` },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: '+1 to +3 buyer-side inquiries per kit; cross-platform impression lift',
+        rationale: `Active listings without recent coverage are the cheapest content slot — data and photos already exist; the listing agent expects marketing support. List-kit produces 5 deliverables from one MLS input.`,
+      },
+      generation_reason: `listing_coverage uncovered_active: ${listing.listing_key} (${priceStr}, ${listing.city}). No brief in last ${LISTING_COVERAGE_THRESHOLD_DAYS} days.`,
     }))
   }
 
