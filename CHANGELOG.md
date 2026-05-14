@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.203.6 (2026-05-14)
+
+### Maintenance
+- chore(cma): bump methodology to 2.1 to invalidate pre-fail-closed cache
+
+---
+
+
 ## v1.203.5 (2026-05-14)
 
 ### Bug Fixes
