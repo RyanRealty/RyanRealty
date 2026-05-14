@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.202.2 (2026-05-14)
+
+### Bug Fixes
+- fix(marketing-brain): competitor-recon cron split into per-day rotation
+
+---
+
+
 ## v1.202.1 (2026-05-14)
 
 ### Maintenance
