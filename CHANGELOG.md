@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.194.0 (2026-05-14)
+
+### Features
+- feat(marketing-brain): wire audit-crm signals to ops:fub_* + ops:meta + site actions
+
+---
+
+
 ## v1.193.0 (2026-05-14)
 
 ### Features
