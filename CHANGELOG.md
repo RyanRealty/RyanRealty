@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.192.1 (2026-05-14)
+
+### Maintenance
+- docs(marketing-brain): record Item 2 shipping in decisions log
+
+---
+
+
 ## v1.192.0 (2026-05-14)
 
 ### Features
