@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.184.0 (2026-05-14)
+
+### Features
+- feat(seller-lp): prices + Drouillard + reimagined social proof + trust strap + sticky mobile CTA
+
+---
+
+
 ## v1.183.1 (2026-05-14)
 
 ### Maintenance
