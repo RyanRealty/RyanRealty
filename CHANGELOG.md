@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.198.1 (2026-05-14)
+
+### Bug Fixes
+- fix(cma-delivery): drop street-suffix abbreviations when matching properties
+
+### Maintenance
+- docs(tools_registry): author 5 high-priority tool SKILL.md files
+
+---
+
+
 ## v1.198.0 (2026-05-14)
 
 ### Features
