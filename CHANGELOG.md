@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.184.2 (2026-05-14)
+
+### Maintenance
+- docs(seo): week 2 schema rollout — 12 injections live + verified
+
+---
+
+
 ## v1.184.1 (2026-05-14)
 
 ### Maintenance
