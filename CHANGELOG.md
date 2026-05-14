@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.186.5 (2026-05-14)
+
+### Maintenance
+- docs(seo): widget backfill on 4 neighborhoods + FUB already-connected audit
+
+---
+
+
 ## v1.186.4 (2026-05-14)
 
 ### Bug Fixes
