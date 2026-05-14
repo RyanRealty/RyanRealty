@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.190.1 (2026-05-14)
+
+### Bug Fixes
+- fix(seller-lp): commit data.ts + page.tsx + signature-lockup.png that were unstaged in prior commit
+
+---
+
+
 ## v1.190.0 (2026-05-14)
 
 ### Features
