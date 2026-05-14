@@ -606,10 +606,10 @@ export async function computeCMA(propertyId: string): Promise<CMAResult | null> 
       value_high: interim.valueHigh,
       confidence: interim.confidence,
       comp_count: interim.comps.length,
-      // Bumped 2026-05-14: residential-only filter, $200K floor, lot-size
-      // sanity guard, range-aware confidence. Older 1.x rows are ignored by
-      // getCachedCMA so this rolls out cleanly without a manual purge.
-      methodology_version: '2.0',
+      // 2.1 (2026-05-14): fail-closed on unknown comp lot for rural subjects
+      // 2.0 (2026-05-14): residential-only filter, $200K floor, lot guard, range confidence
+      // 1.x: original (deprecated — buggy)
+      methodology_version: '2.1',
     })
     .select('id')
     .single()
@@ -694,7 +694,7 @@ export async function getCachedCMA(propertyId: string): Promise<CMAResult | null
     .from('valuations')
     .select('id, estimated_value, value_low, value_high, confidence, comp_count, methodology_version')
     .eq('property_id', propertyId)
-    .gte('methodology_version', '2.0')
+    .gte('methodology_version', '2.1')
     .order('computed_at', { ascending: false })
     .limit(1)
     .maybeSingle()
