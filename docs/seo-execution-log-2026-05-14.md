@@ -792,6 +792,58 @@ Everything else autonomous-doable has been done.
 
 ---
 
+## Final-final: sitemap submission worked, indexing API needs delegation
+
+**After Matt's GSC user-add (service account at Full permission):**
+
+### Indexing API still blocked
+Same "Permission denied / Failed to verify URL ownership" error. The Indexing API requires **Verified Owner** status, not just "Full" permission. To grant the service account Verified Owner status, one of these methods is needed:
+- HTML file upload (`google[hash].html` at site root)
+- HTML meta tag (`<meta name="google-site-verification">` in `<head>`)
+- DNS TXT record (`google-site-verification=...`)
+- Google Tag Manager
+- Google Analytics
+
+These methods require the service account to first get its own verification token from GSC, which requires the service account to call the Site Verification API or for an existing Owner (Matt) to go through the delegation flow in GSC. **Worth a separate session.**
+
+### Sitemap submission worked (better-than-nothing path)
+
+Wrote `scripts/seo-gsc-sitemap-submit.mjs` using the `webmasters` scope (works with "Full" permission). Result:
+
+```
+✓ submitted: https://ryan-realty.com/sitemap_index.xml
+✓ submitted: https://ryan-realty.com/page-sitemap.xml
+✓ submitted: https://ryan-realty.com/post-sitemap.xml
+
+Current sitemap registry in GSC:
+- post-sitemap.xml — lastSubmitted: 2026-05-14T20:33Z, lastDownloaded: 2026-05-14T08:42Z, 0 warnings, 0 errors
+- page-sitemap.xml — lastSubmitted: 2026-05-14T20:33Z, lastDownloaded: 2026-05-14T11:44Z, 0 warnings, 0 errors
+- sitemap_index.xml — lastSubmitted: 2026-05-14T20:33Z, lastDownloaded: 2026-05-13T23:50Z, 0 warnings, 0 errors
+- sitemap.xml (legacy) — lastSubmitted: 2024-04-30, 3 warnings (stale, can be removed)
+```
+
+**This is the practical re-indexing signal for an active site.** Google sees the lastmod timestamps on the updated URLs, recrawls them based on its priority queue. The Indexing API's one-URL-at-a-time PUSH model is faster for individual urgent updates but sitemap submission accomplishes the same broad re-indexing for sites with active sitemaps and current lastmod values (which we have — Yoast rebuilt the sitemap at 14:09 today).
+
+### Truly final autonomous tally
+
+- ~80 live SEO changes shipped
+- 17 commits pushed to main
+- AgentFire support ticket delivered
+- GSC sitemap submitted (3 sitemaps, fresh timestamps)
+- FUB integration confirmed already-wired
+- Brokers all have extended bios + Person schemas
+- Reusable scripts: `scripts/seo-gsc-indexing-submit.mjs`, `scripts/seo-gsc-sitemap-submit.mjs`, `scripts/seo-send-agentfire-support-ticket-gmail.mjs`, `scripts/seo-send-agentfire-support-ticket.mjs` (Resend path, blocked on domain verification)
+- Reusable docs: `docs/resend-dns-verification-steps-2026-05-14.md`, `docs/agentfire-support-ticket-draft-2026-05-14.md`
+
+### Two open-loops still requiring Matt UI action
+
+1. **Resend DNS** — 4 Cloudflare records, 5 min
+2. **GSC service account verified owner** — DNS TXT record verification, ~10 min including propagation
+
+Both unblock specific scripts; neither is blocking the SEO work that shipped today.
+
+---
+
 ## Skipped + reason
 
 *(none yet)*
