@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.202.4 (2026-05-14)
+
+### Maintenance
+- docs(tools_registry): author 5 more tool SKILL.md (ga4, gsc, follow_up_boss, gbp, youtube_data)
+
+---
+
+
 ## v1.202.3 (2026-05-14)
 
 ### Other
