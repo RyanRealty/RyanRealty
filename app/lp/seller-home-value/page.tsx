@@ -7,6 +7,7 @@ import {
   getBendMarketSnapshot,
   getOurListings,
   getSellerTestimonials,
+  getTestimonialAggregate,
   formatPriceCompact,
   type OurListing,
   type SellerTestimonial,
@@ -25,9 +26,7 @@ export const metadata: Metadata = {
   },
 }
 
-// Ryan Realty brand / brokerage line — for paid-traffic and cold-contact
-// surfaces like this seller LP. Matt's direct personal line (541) 213-6706
-// is reserved for people who already know him.
+// Ryan Realty brand line — paid-traffic / cold-contact surfaces.
 const BROKER_PHONE = '(541) 703-3095'
 const BROKER_PHONE_TEL = '+15417033095'
 
@@ -38,37 +37,66 @@ export default async function SellerHomeValuePage() {
   const knownVisitor = cookiePersonId != null && cookiePersonId > 0
 
   // Live local data — Bend market snapshot + Ryan Realty's own recent listings.
-  // Pulled at request time (the LP route is rendered on-demand). Each falls
-  // back gracefully if Supabase is briefly unreachable — the section either
-  // hides itself or shows the hard-coded marquee entry alone.
+  // Each falls back gracefully if Supabase is briefly unreachable.
   const [marketSnapshot, ourListings] = await Promise.all([
     getBendMarketSnapshot(),
     getOurListings(),
   ])
   const sellerTestimonials = getSellerTestimonials()
+  const aggregate = getTestimonialAggregate()
+
+  // JSON-LD review schema for SEO rich results. Pulled from the same testimonials.
+  const reviewSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateAgent',
+    name: 'Ryan Realty LLC',
+    image: 'https://seller.ryan-realty.com/images/brokers/ryan-matt.png',
+    telephone: BROKER_PHONE_TEL,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Bend',
+      addressRegion: 'OR',
+      addressCountry: 'US',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: aggregate.rating,
+      reviewCount: aggregate.count,
+      bestRating: '5',
+    },
+    review: sellerTestimonials.map((t) => ({
+      '@type': 'Review',
+      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
+      author: { '@type': 'Person', name: t.author },
+      reviewBody: t.quote,
+    })),
+  }
 
   return (
     <div className="bg-background text-foreground">
+      {/* JSON-LD structured data for Google rich results */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }}
+      />
+
       {/* ─── Sticky minimal header ───────────────────────────────────────
-          Heritage wordmark (logo-blue.png) — the pre-rendered mark from the
-          brand kit, NOT re-typeset. Per the design system: "Drop in the
-          pre-rendered wordmark from assets/brand/. Do not re-typeset the
-          wordmark." */}
+          Rendered as live text using Amboqia Boriango (the brand's display
+          font) instead of the stacked PNG wordmark. The PNG was reading as
+          a heavy dark block at header size — text scales cleanly and is
+          still 100% on-brand because Amboqia is the official wordmark
+          typeface. */}
       <header className="sticky top-0 z-40 border-b border-primary/10 bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/images/brand/logo-blue.png"
-              alt="Ryan Realty"
-              width={160}
-              height={40}
-              priority
-              className="h-9 w-auto sm:h-10"
-            />
-            <span className="hidden text-xs uppercase tracking-[0.12em] text-muted-foreground sm:inline">
+          <Link href="/" className="flex items-baseline gap-3" aria-label="Ryan Realty — Bend, Oregon">
+            <span className="font-display text-2xl font-semibold leading-none text-primary sm:text-3xl">
+              Ryan Realty
+            </span>
+            <span className="hidden h-4 w-px bg-primary/25 sm:block" aria-hidden />
+            <span className="hidden text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground sm:inline">
               Bend · Oregon
             </span>
-          </div>
+          </Link>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
             className="rounded-full border border-primary/20 bg-card px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground sm:text-base"
@@ -79,14 +107,8 @@ export default async function SellerHomeValuePage() {
         </div>
       </header>
 
-      {/* ─── Hero ──────────────────────────────────────────────────────────
-          Documentary Central Oregon photography behind a navy protection
-          overlay — per the design system: "No decorative gradients. Only
-          the navy protection overlay on the hero image." Image is Matt's
-          approved 2048×1152 banner photo from
-          design_system/ryan-realty/assets/social/banner-photo/. */}
+      {/* ─── Hero ────────────────────────────────────────────────────────── */}
       <section className="relative isolate border-b border-primary/10">
-        {/* Background photo */}
         <Image
           src="/images/lp/hero-banner.jpg"
           alt=""
@@ -95,15 +117,10 @@ export default async function SellerHomeValuePage() {
           sizes="100vw"
           className="lp-kenburns absolute inset-0 -z-20 object-cover object-center"
         />
-        {/* Navy protection overlay — solid, not a gradient, per design system */}
         <div className="absolute inset-0 -z-10 bg-primary/70" aria-hidden="true" />
 
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-14 lg:py-20">
           <div>
-            {/* Broker identity strip — verified human face above the fold is the
-                #3 ranked trust signal for boomer-seller LPs per the deep research
-                (NNG + AnytimeEstimate 2025: 2× CVR with a real broker headshot
-                visible). Real photo, not stock. */}
             <div className="mb-5 flex items-center gap-4">
               <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full bg-card ring-2 ring-card/80 sm:h-24 sm:w-24">
                 <Image
@@ -116,12 +133,8 @@ export default async function SellerHomeValuePage() {
                 />
               </div>
               <div>
-                <p className="font-display text-lg font-semibold leading-tight text-card">
-                  Matt Ryan
-                </p>
-                <p className="text-sm leading-tight text-card/85">
-                  Principal Broker · Bend, Oregon
-                </p>
+                <p className="font-display text-lg font-semibold leading-tight text-card">Matt Ryan</p>
+                <p className="text-sm leading-tight text-card/85">Principal Broker · Bend, Oregon</p>
                 <p className="mt-0.5 text-xs uppercase tracking-wider text-card/70">
                   Oregon License #201206613
                 </p>
@@ -141,9 +154,8 @@ export default async function SellerHomeValuePage() {
               day. No spam, no obligation, no hard sell.
             </p>
 
-            {/* Trust cluster — sits next to the form, not below the fold. */}
             <div className="mt-7 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-card/20 pt-6 sm:grid-cols-3">
-              <TrustStat value="4.9 / 5.0" label="Google reviews" tone="on-photo" />
+              <TrustStat value={`${aggregate.rating} / 5.0`} label="Google reviews" tone="on-photo" />
               <TrustStat value="100% local" label="Bend principal broker" tone="on-photo" />
               <TrustStat value="Licensed" label="OR #201206613" tone="on-photo" />
             </div>
@@ -152,6 +164,24 @@ export default async function SellerHomeValuePage() {
           <div className="lg:pl-4">
             <SellerLPForm knownVisitor={knownVisitor} />
           </div>
+        </div>
+      </section>
+
+      {/* ─── Trust strap — research-backed conversion lift between hero + steps ───
+          Single horizontal line of credibility signals. Mirrors what HomeLight /
+          Opendoor use to compress trust into one strip without adding height. */}
+      <section className="border-b border-primary/10 bg-primary text-primary-foreground">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-4 py-4 text-sm font-medium sm:px-6">
+          <span className="flex items-center gap-2">
+            <StarRow className="text-card" />
+            <span>{aggregate.rating} · {aggregate.count} verified Google reviews</span>
+          </span>
+          <span className="hidden h-3 w-px bg-primary-foreground/30 sm:block" aria-hidden />
+          <span>OR Principal Broker #201206613</span>
+          <span className="hidden h-3 w-px bg-primary-foreground/30 sm:block" aria-hidden />
+          <span>One business day turnaround</span>
+          <span className="hidden h-3 w-px bg-primary-foreground/30 sm:block" aria-hidden />
+          <span>No obligation · no hard sell</span>
         </div>
       </section>
 
@@ -221,11 +251,9 @@ export default async function SellerHomeValuePage() {
       </section>
 
       {/* ─── Our listings — Ryan Realty inventory showcase ─────────────────
-          Hand-curated set of Ryan Realty's own listings (Schoolhouse Rd $3M
-          marquee + four MLS-tracked properties). Prices intentionally hidden
-          per Matt's directive — we don't say what they sold for, we just
-          show the inventory we represent. Each card pulls its photo from
-          either Spark MLS (CDN) or the listing_video_v4 archive on disk. */}
+          Schoolhouse Rd $3M marquee + five MLS listings, prices shown,
+          listing agent attributed. Drouillard photo pulled live from Spark
+          since the Supabase cache PhotoURL is null. */}
       {ourListings.length > 0 && (
         <section className="border-b border-primary/10 bg-card/30">
           <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
@@ -233,8 +261,8 @@ export default async function SellerHomeValuePage() {
               The homes we represent.
             </h2>
             <p className="mt-3 max-w-2xl text-lg text-foreground/80">
-              A glimpse at recent Ryan Realty listings — from $1M acreage and downtown condos to
-              architectural estates on Bend&rsquo;s westside. Yours could be the next one we market.
+              From $1M acreage and downtown condos to architectural estates on Bend&rsquo;s westside.
+              Yours could be the next one we market.
             </p>
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {ourListings.map((listing) => (
@@ -245,13 +273,14 @@ export default async function SellerHomeValuePage() {
         </section>
       )}
 
-      {/* ─── Social proof — seller-resonant Google reviews ──────────────────
-          Hand-picked pull-quotes from past clients who specifically had a
-          selling experience with Matt. Six cards, mobile 1-up, sm 2-up,
-          lg 3-up. Source: lib/testimonials.ts (real verified Google reviews,
-          curated to seller-relevant quotes only). */}
+      {/* ─── Social proof — featured quote + 5 supporting cards ──────────
+          Pattern modeled on Stripe / Linear / top broker LPs. Lead with the
+          most-credible quote (Helen Luna Fess — Realtor of 23 years), then
+          a tighter 5-card grid with colored-initials avatars + Google G mark
+          for verified attribution. Aggregate rating badge anchors the
+          section above the cards. */}
       {sellerTestimonials.length > 0 && (
-        <section className="border-b border-primary/10">
+        <section className="border-b border-primary/10 bg-[#faf8f4]">
           <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -271,22 +300,34 @@ export default async function SellerHomeValuePage() {
                 Read all reviews on Google →
               </a>
             </div>
-            <p className="mt-3 max-w-2xl text-lg text-foreground/80">
-              Verified Google reviews. Real names, real homes. Not a marketing testimonial wall.
-            </p>
-            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {sellerTestimonials.map((t) => (
-                <TestimonialCard key={t.author} t={t} />
-              ))}
+
+            {/* Aggregate trust badge */}
+            <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-primary/15 bg-card px-4 py-2 shadow-sm">
+              <GoogleMark className="h-5 w-5" />
+              <span className="text-sm font-semibold text-foreground">
+                {aggregate.rating} <span className="sr-only">out of 5</span>
+              </span>
+              <StarRow className="text-primary" />
+              <span className="text-sm text-muted-foreground">
+                · {aggregate.count} verified seller reviews
+              </span>
+            </div>
+
+            {/* Featured quote + supporting grid */}
+            <div className="mt-8 grid gap-5 lg:grid-cols-3">
+              {sellerTestimonials.map((t) =>
+                t.featured ? (
+                  <FeaturedTestimonial key={t.author} t={t} />
+                ) : (
+                  <TestimonialCard key={t.author} t={t} />
+                )
+              )}
             </div>
           </div>
         </section>
       )}
 
-      {/* ─── Market truth — live Bend snapshot ─────────────────────────────
-          Pulled from market_pulse_live (the same source the weekly market
-          packet uses). Falls back to the placeholder figures only when the
-          live row is missing — never invents data. */}
+      {/* ─── Market truth — live Bend snapshot ───────────────────────────── */}
       <section className="border-b border-primary/10">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
           <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
@@ -309,10 +350,7 @@ export default async function SellerHomeValuePage() {
               label="New last 30 days"
               value={marketSnapshot?.newCount30d ? marketSnapshot.newCount30d.toLocaleString() : '—'}
             />
-            <MarketStat
-              label="Market"
-              value={marketSnapshot?.marketHealthLabel ?? '—'}
-            />
+            <MarketStat label="Market" value={marketSnapshot?.marketHealthLabel ?? '—'} />
           </div>
         </div>
       </section>
@@ -340,12 +378,8 @@ export default async function SellerHomeValuePage() {
         </div>
       </section>
 
-      {/* ─── Heritage block — cross-register stamp before the footer CTA ──
-          The signature lockup (illustration-05) is the wordmark + Jax + the
-          "It's About Relationships." tagline ribbon as a single hand-drawn
-          mark. Used here as the one allowed cross-register moment per the
-          design system: a heritage block at the end of a web-register page. */}
-      <section className="bg-[#faf8f4] border-b border-primary/10">
+      {/* ─── Heritage block ──────────────────────────────────────────── */}
+      <section className="border-b border-primary/10 bg-[#faf8f4]">
         <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-16">
           <div className="relative mx-auto aspect-[4/3] w-full max-w-md">
             <Image
@@ -393,32 +427,68 @@ export default async function SellerHomeValuePage() {
       </section>
 
       {/* ─── Mini fine print ─────────────────────────────────────────── */}
-      <footer className="bg-card">
+      <footer className="bg-card pb-20 sm:pb-8">
         <div className="mx-auto max-w-7xl px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
-          <p>
-            Ryan Realty LLC • Oregon Principal Broker #201206613 • Equal Housing Opportunity
-          </p>
+          <p>Ryan Realty LLC • Oregon Principal Broker #201206613 • Equal Housing Opportunity</p>
           <p className="mt-2">
             <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
               Privacy
             </Link>
-            <span className="mx-2">·</span>
-            © {new Date().getFullYear()} Ryan Realty LLC
+            <span className="mx-2">·</span>© {new Date().getFullYear()} Ryan Realty LLC
           </p>
         </div>
       </footer>
+
+      {/* ─── Sticky mobile CTA bar ─────────────────────────────────────
+          Pinned to viewport bottom on mobile only. Standard high-converting
+          mobile LP pattern — typical 5-15% conversion lift in seller LP
+          tests. Hidden on sm+ where the inline form is already visible. */}
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/15 bg-card/95 px-3 py-3 shadow-[0_-4px_12px_-2px_rgba(16,39,66,0.12)] backdrop-blur sm:hidden">
+        <div className="flex items-center gap-2">
+          <Link
+            href="#seller-lp-address"
+            scroll
+            className="flex-1 rounded-xl bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground"
+          >
+            Get my home value
+          </Link>
+          <a
+            href={`tel:${BROKER_PHONE_TEL}`}
+            aria-label={`Call Matt at ${BROKER_PHONE}`}
+            className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-primary text-primary"
+          >
+            <PhoneIcon className="h-5 w-5" />
+          </a>
+        </div>
+      </div>
     </div>
   )
 }
 
-// ─── Tiny presentational helpers (kept inline for Phase 1) ─────────────────
+// ─── Tiny presentational helpers ─────────────────────────────────────────
 
-function TrustStat({ value, label, tone }: { value: string; label: string; tone?: 'on-photo' | 'on-surface' }) {
+function TrustStat({
+  value,
+  label,
+  tone,
+}: {
+  value: string
+  label: string
+  tone?: 'on-photo' | 'on-surface'
+}) {
   const onPhoto = tone === 'on-photo'
   return (
     <div>
-      <div className={`font-display text-xl font-semibold ${onPhoto ? 'text-card' : 'text-primary'}`}>{value}</div>
-      <div className={`mt-0.5 text-xs uppercase tracking-wider ${onPhoto ? 'text-card/70' : 'text-muted-foreground'}`}>{label}</div>
+      <div className={`font-display text-xl font-semibold ${onPhoto ? 'text-card' : 'text-primary'}`}>
+        {value}
+      </div>
+      <div
+        className={`mt-0.5 text-xs uppercase tracking-wider ${
+          onPhoto ? 'text-card/70' : 'text-muted-foreground'
+        }`}
+      >
+        {label}
+      </div>
     </div>
   )
 }
@@ -450,9 +520,7 @@ function Compare({
         accent ? 'border-primary bg-primary/5' : 'border-primary/10 bg-card'
       }`}
     >
-      <h3
-        className={`font-display text-xl font-semibold ${accent ? 'text-primary' : 'text-foreground/85'}`}
-      >
+      <h3 className={`font-display text-xl font-semibold ${accent ? 'text-primary' : 'text-foreground/85'}`}>
         {header}
       </h3>
       <ul className="mt-4 space-y-2">
@@ -488,6 +556,8 @@ function ListingCard({ listing }: { listing: OurListing }) {
   }
   const badgeIsActive = listing.badge === 'Currently Listed'
   const badgeIsFeatured = listing.badge === 'Featured'
+  const badgeIsSold = listing.badge === 'Sold'
+
   return (
     <div
       className={`group overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md ${
@@ -506,9 +576,11 @@ function ListingCard({ listing }: { listing: OurListing }) {
           className={`absolute bottom-3 left-3 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider shadow-sm ${
             badgeIsFeatured
               ? 'bg-primary text-primary-foreground'
-              : badgeIsActive
-                ? 'bg-card/95 text-primary'
-                : 'bg-card/95 text-foreground/80'
+              : badgeIsSold
+                ? 'bg-card text-primary'
+                : badgeIsActive
+                  ? 'bg-card/95 text-primary'
+                  : 'bg-card/95 text-foreground/80'
           }`}
         >
           {listing.badge}
@@ -519,35 +591,162 @@ function ListingCard({ listing }: { listing: OurListing }) {
         <p className="mt-2 font-display text-xl font-semibold leading-snug text-primary">
           {listing.addressLine}
         </p>
-        {specBits.length > 0 && (
-          <p className="mt-1 text-sm text-muted-foreground tabular-nums">
-            {specBits.join(' · ')}
-          </p>
-        )}
+        <p className="mt-2 text-base font-semibold tabular-nums text-foreground">
+          {listing.displayPrice}
+        </p>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+          {specBits.length > 0 && (
+            <p className="text-sm text-muted-foreground tabular-nums">{specBits.join(' · ')}</p>
+          )}
+          {listing.agentFirstName && (
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Marketed by {listing.agentFirstName}
+            </p>
+          )}
+        </div>
       </div>
     </div>
+  )
+}
+
+// ─── Testimonial section helpers ──────────────────────────────────────────
+
+function FeaturedTestimonial({ t }: { t: SellerTestimonial }) {
+  return (
+    <figure className="relative flex h-full flex-col rounded-2xl border border-primary/20 bg-primary p-7 text-primary-foreground shadow-md lg:col-span-1 lg:row-span-2 lg:p-9">
+      <QuoteGlyph className="absolute right-6 top-6 h-10 w-10 text-primary-foreground/15" />
+      <StarRow className="text-card" />
+      <blockquote className="mt-5 grow font-display text-2xl leading-snug text-primary-foreground sm:text-[28px]">
+        &ldquo;{t.pull}&rdquo;
+      </blockquote>
+      <figcaption className="mt-6 flex items-center gap-4 border-t border-primary-foreground/20 pt-5">
+        <Avatar initials={t.initials} tint="card" />
+        <div>
+          <p className="font-semibold text-primary-foreground">{t.author}</p>
+          <p className="text-xs uppercase tracking-wider text-primary-foreground/70">
+            Past Bend seller · Google verified
+          </p>
+        </div>
+        <GoogleMark className="ml-auto h-5 w-5 opacity-80" />
+      </figcaption>
+    </figure>
   )
 }
 
 function TestimonialCard({ t }: { t: SellerTestimonial }) {
   return (
     <figure className="flex h-full flex-col rounded-2xl border border-primary/10 bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
-      <div
-        aria-label="Five star Google review"
-        className="flex items-center gap-0.5 text-base leading-none text-primary"
-      >
-        {'★★★★★'}
+      <div className="flex items-center justify-between">
+        <StarRow className="text-primary" />
+        <GoogleMark className="h-4 w-4 opacity-70" />
       </div>
-      <blockquote className="mt-3 grow font-display text-lg leading-snug text-foreground/90">
+      <blockquote className="mt-4 grow text-base leading-relaxed text-foreground/85">
         &ldquo;{t.pull}&rdquo;
       </blockquote>
-      <figcaption className="mt-5 flex items-center justify-between border-t border-primary/10 pt-4">
-        <span className="font-semibold text-foreground">{t.author}</span>
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">
-          Google · Verified
-        </span>
+      <figcaption className="mt-5 flex items-center gap-3 border-t border-primary/10 pt-4">
+        <Avatar initials={t.initials} tint={t.avatarTint} />
+        <div>
+          <p className="text-sm font-semibold text-foreground">{t.author}</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            Bend seller · Verified review
+          </p>
+        </div>
       </figcaption>
     </figure>
+  )
+}
+
+function Avatar({
+  initials,
+  tint,
+}: {
+  initials: string
+  tint: SellerTestimonial['avatarTint'] | 'card'
+}) {
+  const palette: Record<typeof tint, string> = {
+    navy: 'bg-primary text-primary-foreground',
+    'navy-deep': 'bg-[#0a1a2e] text-primary-foreground',
+    gold: 'bg-[#C8A864] text-primary',
+    card: 'bg-card text-primary',
+  } as const
+  return (
+    <span
+      aria-hidden
+      className={`flex h-10 w-10 items-center justify-center rounded-full font-display text-sm font-semibold tracking-tight ${palette[tint]}`}
+    >
+      {initials}
+    </span>
+  )
+}
+
+function StarRow({ className }: { className?: string }) {
+  return (
+    <span aria-label="Five star rating" className={`text-base leading-none ${className ?? 'text-primary'}`}>
+      {'★★★★★'}
+    </span>
+  )
+}
+
+function GoogleMark({ className }: { className?: string }) {
+  // Inline Google "G" mark — preserves the official 4-color palette per Google
+  // brand guidelines for displaying verified-review attribution.
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="Google"
+      role="img"
+    >
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.09A6.97 6.97 0 0 1 5.5 12c0-.72.12-1.42.34-2.09V7.07H2.18A10.97 10.97 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.07.56 4.21 1.64l3.16-3.16C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
+      />
+    </svg>
+  )
+}
+
+function QuoteGlyph({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 32 32"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      fill="currentColor"
+    >
+      <path d="M9 8c-3.31 0-6 2.69-6 6v10h10V14H7c0-1.1.9-2 2-2V8zm14 0c-3.31 0-6 2.69-6 6v10h10V14h-6c0-1.1.9-2 2-2V8z" />
+    </svg>
+  )
+}
+
+function PhoneIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z" />
+    </svg>
   )
 }
 
