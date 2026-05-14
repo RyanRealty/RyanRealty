@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.202.3 (2026-05-14)
+
+### Other
+- ship(beaumont): publish v3 under-contract package to public/list-kits/beaumont/
+
+---
+
+
 ## v1.202.2 (2026-05-14)
 
 ### Bug Fixes
