@@ -17,7 +17,6 @@
   :root {
     --navy: #102742;
     --cream: #faf8f4;
-    --navy-soft: rgba(16, 39, 66, 0.85);
     --navy-line: rgba(16, 39, 66, 0.18);
     --navy-fill: rgba(16, 39, 66, 0.06);
     --muted: rgba(16, 39, 66, 0.62);
@@ -40,25 +39,24 @@
     min-height: 11in;
     margin: 0.4in auto;
     background: var(--cream);
-    padding: 0.6in 0.7in;
+    padding: 0.55in 0.65in 0.85in 0.65in;
     box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
     position: relative;
     page-break-after: always;
   }
   .page:last-child { page-break-after: auto; }
 
-  /* ── Page header (every page) ───────────────────────────── */
   .pg-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid var(--navy-line);
-    padding-bottom: 14px;
-    margin-bottom: 28px;
+    padding-bottom: 12px;
+    margin-bottom: 22px;
   }
-  .pg-header img.logo { height: 38px; }
+  .pg-header img.logo { height: 34px; }
   .pg-header .pg-meta {
-    font-size: 10.5px;
+    font-size: 10px;
     color: var(--muted);
     text-align: right;
     letter-spacing: 0.06em;
@@ -67,27 +65,18 @@
 
   .pg-footer {
     position: absolute;
-    bottom: 0.45in;
-    left: 0.7in;
-    right: 0.7in;
+    bottom: 0.35in;
+    left: 0.65in;
+    right: 0.65in;
     border-top: 1px solid var(--navy-line);
-    padding-top: 10px;
+    padding-top: 9px;
     display: flex;
     justify-content: space-between;
-    font-size: 9.5px;
+    font-size: 9px;
     color: var(--muted);
     letter-spacing: 0.04em;
   }
 
-  /* ── Type ───────────────────────────────────────────────── */
-  h1.display {
-    font-family: 'Amboqia Boriango', 'Playfair Display', Georgia, serif;
-    font-weight: 400;
-    color: var(--navy);
-    letter-spacing: -0.01em;
-    line-height: 1.05;
-    margin: 0;
-  }
   h2.section {
     font-family: 'Geist', sans-serif;
     font-weight: 600;
@@ -96,167 +85,162 @@
     letter-spacing: 0.16em;
     color: var(--navy);
     margin: 0 0 14px 0;
-    padding-bottom: 8px;
+    padding-bottom: 7px;
     border-bottom: 2px solid var(--navy);
     display: inline-block;
   }
   h3.subhead {
     font-family: 'Geist', sans-serif;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--navy);
-    margin: 22px 0 8px 0;
+    margin: 18px 0 7px 0;
   }
-  p { font-size: 12px; line-height: 1.6; margin: 0 0 10px 0; }
-  .small { font-size: 10.5px; color: var(--muted); }
+  p { font-size: 11.5px; line-height: 1.55; margin: 0 0 9px 0; }
+  .small { font-size: 10px; color: var(--muted); line-height: 1.5; }
 
-  /* ── Cover ──────────────────────────────────────────────── */
   .cover-label {
-    font-size: 10.5px;
+    font-size: 10px;
     letter-spacing: 0.20em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 18px;
+    margin-bottom: 12px;
   }
   .cover-title {
     font-family: 'Amboqia Boriango', serif;
-    font-size: 72px;
+    font-size: 60px;
     line-height: 0.95;
     color: var(--navy);
-    margin: 0 0 8px 0;
+    margin: 0 0 6px 0;
   }
   .cover-sub {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--navy);
     font-weight: 400;
-    margin-bottom: 36px;
+    margin-bottom: 18px;
   }
-  .cover-prepared {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    margin-top: 50px;
-    padding-top: 24px;
-    border-top: 1px solid var(--navy-line);
-  }
-  .cover-prepared img {
-    width: 110px;
-    height: 110px;
-    object-fit: cover;
-    object-position: center 20%;
-    border-radius: 50%;
-    background: var(--navy-fill);
-  }
-  .cover-prepared .who-label {
-    font-size: 10.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
-    color: var(--muted);
-  }
-  .cover-prepared .who-name {
-    font-family: 'Amboqia Boriango', serif;
-    font-size: 28px;
-    line-height: 1;
-    margin: 4px 0 6px 0;
-  }
-  .cover-prepared .who-detail {
-    font-size: 11px;
-    color: var(--navy);
-    line-height: 1.5;
-  }
-  .cover-prepared .who-detail strong { font-weight: 500; }
 
-  /* ── Headline value block (page 1) ──────────────────────── */
+  .hero-photo {
+    width: 100%;
+    height: 280px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px;
+    background: var(--navy-fill);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .hero-caption {
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 16px;
+  }
+
   .value-block {
     background: var(--navy);
     color: var(--cream);
-    padding: 32px 36px;
-    margin: 28px 0 0 0;
+    padding: 24px 28px;
+    margin: 0 0 18px 0;
     border-radius: 10px;
   }
   .value-block .vb-label {
-    font-size: 10.5px;
+    font-size: 10px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: rgba(250, 248, 244, 0.72);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .value-block .vb-range {
     font-family: 'Amboqia Boriango', serif;
-    font-size: 52px;
+    font-size: 44px;
     line-height: 1;
     color: var(--cream);
     margin: 0;
   }
   .value-block .vb-detail {
     font-size: 11px;
-    color: rgba(250, 248, 244, 0.78);
-    margin-top: 12px;
+    color: rgba(250, 248, 244, 0.80);
+    margin-top: 10px;
+    line-height: 1.55;
   }
   .value-block .vb-most-likely {
-    margin-top: 18px;
-    padding-top: 16px;
+    margin-top: 14px;
+    padding-top: 12px;
     border-top: 1px solid rgba(250, 248, 244, 0.20);
     font-size: 12px;
+    line-height: 1.55;
   }
   .value-block .vb-most-likely strong { color: var(--cream); font-weight: 600; }
 
-  /* ── Stat strip ────────────────────────────────────────── */
   .stat-strip {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 0;
-    margin: 22px 0;
+    margin: 14px 0 18px 0;
     border-top: 1px solid var(--navy-line);
     border-bottom: 1px solid var(--navy-line);
   }
   .stat-strip .stat {
-    padding: 14px 12px;
+    padding: 12px 8px;
     text-align: center;
     border-right: 1px solid var(--navy-line);
   }
   .stat-strip .stat:last-child { border-right: 0; }
   .stat-strip .stat .lbl {
-    font-size: 9.5px;
+    font-size: 9px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
   .stat-strip .stat .val {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 500;
     color: var(--navy);
   }
 
-  /* ── Two-col ───────────────────────────────────────────── */
+  .presented-by {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--navy-line);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+  .presented-by strong {
+    color: var(--navy);
+    font-weight: 500;
+  }
+
   .two-col {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 28px;
+    gap: 24px;
   }
 
-  /* ── Tables ────────────────────────────────────────────── */
   table.comps {
     width: 100%;
     border-collapse: collapse;
-    font-size: 10.5px;
+    font-size: 9.5px;
     margin-top: 6px;
   }
   table.comps thead th {
     text-align: left;
     font-weight: 600;
-    font-size: 9.5px;
-    letter-spacing: 0.10em;
+    font-size: 8.5px;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--navy);
-    padding: 8px 6px;
+    padding: 7px 5px;
     border-bottom: 2px solid var(--navy);
   }
   table.comps tbody td {
-    padding: 9px 6px;
+    padding: 7px 5px;
     border-bottom: 1px solid var(--navy-line);
-    vertical-align: top;
+    vertical-align: middle;
   }
   table.comps tbody tr.subject td {
     background: var(--navy);
@@ -269,45 +253,107 @@
     font-weight: 500;
   }
 
-  /* ── Improvements ──────────────────────────────────────── */
   table.imps {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11px;
+    font-size: 10.5px;
   }
   table.imps thead th {
     text-align: left;
-    font-size: 9.5px;
+    font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.10em;
     color: var(--navy);
-    padding: 8px 6px;
+    padding: 7px 5px;
     border-bottom: 2px solid var(--navy);
   }
   table.imps tbody td {
-    padding: 10px 6px;
+    padding: 8px 5px;
     border-bottom: 1px solid var(--navy-line);
     vertical-align: top;
   }
   table.imps .num { text-align: right; font-variant-numeric: tabular-nums; }
   table.imps tfoot td {
-    padding: 10px 6px;
+    padding: 9px 5px;
     font-weight: 600;
     color: var(--navy);
     border-top: 2px solid var(--navy);
   }
 
-  /* ── Pricing tiers ─────────────────────────────────────── */
+  .comp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 8px 0 18px 0;
+  }
+  .comp-card {
+    border: 1px solid var(--navy-line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+  }
+  .comp-card .ph {
+    width: 100%;
+    height: 95px;
+    object-fit: cover;
+    display: block;
+    background: var(--navy-fill);
+  }
+  .comp-card .ph-missing {
+    width: 100%;
+    height: 95px;
+    background: var(--navy-fill);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 10px;
+  }
+  .comp-card .body {
+    padding: 8px 10px 10px;
+  }
+  .comp-card .addr {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--navy);
+    line-height: 1.25;
+    margin-bottom: 3px;
+  }
+  .comp-card .stats {
+    font-size: 9px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .comp-card .price {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .comp-card .price .when {
+    font-size: 8.5px;
+    font-weight: 400;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-left: 4px;
+  }
+
   .tier-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 16px;
+    gap: 10px;
+    margin-top: 14px;
   }
   .tier {
     border: 1px solid var(--navy-line);
     border-radius: 10px;
-    padding: 18px 16px;
+    padding: 16px 14px;
     background: white;
   }
   .tier.featured {
@@ -316,100 +362,110 @@
     border-color: var(--navy);
   }
   .tier .t-lbl {
-    font-size: 9.5px;
+    font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     color: var(--muted);
-    margin-bottom: 6px;
+    margin-bottom: 5px;
   }
   .tier.featured .t-lbl { color: rgba(250, 248, 244, 0.72); }
   .tier .t-val {
     font-family: 'Amboqia Boriango', serif;
-    font-size: 26px;
+    font-size: 24px;
     line-height: 1;
     color: var(--navy);
-    margin: 0 0 8px 0;
+    margin: 0 0 7px 0;
   }
   .tier.featured .t-val { color: var(--cream); }
-  .tier .t-note { font-size: 10.5px; color: var(--muted); line-height: 1.45; }
-  .tier.featured .t-note { color: rgba(250, 248, 244, 0.78); }
+  .tier .t-note { font-size: 10px; color: var(--muted); line-height: 1.4; }
+  .tier.featured .t-note { color: rgba(250, 248, 244, 0.80); }
 
-  /* ── Signature block ──────────────────────────────────── */
-  .sig-block {
-    margin-top: 38px;
-    padding-top: 26px;
-    border-top: 1px solid var(--navy-line);
+  /* Signature page — transparent portrait, no constraints (CLAUDE.md). */
+  .signature-page {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 220px 1fr;
     gap: 36px;
     align-items: end;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--navy-line);
   }
-  .sig-line .sig-name {
+  .signature-page .portrait {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .signature-page .sig-content { padding-bottom: 6px; }
+  .signature-page .sig-name {
     font-family: 'Caveat', cursive;
-    font-size: 42px;
+    font-size: 48px;
     color: var(--navy);
     line-height: 1;
     border-bottom: 1px solid var(--navy);
     padding-bottom: 4px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    width: 260px;
   }
-  .sig-line .sig-meta {
-    font-size: 10.5px;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+  .signature-page .sig-printed {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 4px 0;
   }
-  .sig-contact {
+  .signature-page .sig-title {
     font-size: 11px;
-    line-height: 1.6;
+    color: var(--navy);
+    margin-bottom: 14px;
+    line-height: 1.45;
+  }
+  .signature-page .sig-contact {
+    font-size: 11px;
+    line-height: 1.7;
     color: var(--navy);
   }
-  .sig-contact strong { font-weight: 500; }
+  .signature-page .sig-contact strong { font-weight: 500; }
+  .signature-page .sig-license {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--navy-line);
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
 
-  /* ── Source trace ─────────────────────────────────────── */
   .trace {
     background: var(--navy-fill);
     border-left: 3px solid var(--navy);
-    padding: 14px 16px;
-    margin-top: 18px;
-    font-size: 10px;
+    padding: 12px 14px;
+    margin-top: 14px;
+    font-size: 9.5px;
     line-height: 1.55;
     color: var(--navy);
   }
   .trace .t-hd {
-    font-size: 9.5px;
+    font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   .trace code {
     font-family: 'Geist Mono', monospace;
-    font-size: 9.5px;
+    font-size: 9px;
     background: rgba(16,39,66,0.10);
     padding: 1px 4px;
     border-radius: 3px;
   }
 
-  /* ── Misc ─────────────────────────────────────────────── */
-  .pill {
-    display: inline-block;
-    background: var(--navy);
-    color: var(--cream);
-    font-size: 9.5px;
-    letter-spacing: 0.10em;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 999px;
-  }
   .note-list {
-    margin: 8px 0 14px 16px;
+    margin: 6px 0 12px 16px;
     padding: 0;
   }
   .note-list li {
-    font-size: 11.5px;
-    line-height: 1.55;
-    margin-bottom: 6px;
+    font-size: 11px;
+    line-height: 1.5;
+    margin-bottom: 5px;
   }
 
   @media print {
@@ -420,9 +476,7 @@
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- PAGE 1 — COVER + HEADLINE VALUE                              -->
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE 1 — COVER -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -430,45 +484,38 @@
   </header>
 
   <div class="cover-label">Prepared for Kelly Hansen</div>
-  <h1 class="cover-title">21042 Robin<br/>Avenue</h1>
+  <h1 class="cover-title">21042 Robin Avenue</h1>
   <div class="cover-sub">Bend, Oregon 97703 · Whispering Pines · Tumalo</div>
 
-  <div class="value-block">
-    <div class="vb-label">Estimated Market Value Range</div>
-    <p class="vb-range">$1.095M — $1.195M</p>
-    <div class="vb-detail">Based on closed sales within Whispering Pines over the last 24 months, weighted by recency and improvement-adjusted condition. See page 4 for source trace.</div>
-    <div class="vb-most-likely"><strong>Most likely list price · $1,125,000 — $1,150,000.</strong> Upside to $1,175,000 if the deck is replaced before going live.</div>
-  </div>
+  <img class="hero-photo" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20220426183726585131000000-o.jpg" alt="21042 Robin Avenue" />
+  <div class="hero-caption">Most recent MLS listing photo (June 2022) · pre-renovation — updated photos pending</div>
 
   <div class="stat-strip">
     <div class="stat"><div class="lbl">Beds</div><div class="val">3</div></div>
-    <div class="stat"><div class="lbl">Baths</div><div class="val">3.5</div></div>
+    <div class="stat"><div class="lbl">Baths</div><div class="val">4</div></div>
     <div class="stat"><div class="lbl">Living Sqft</div><div class="val">2,592</div></div>
     <div class="stat"><div class="lbl">Lot</div><div class="val">2.87 ac</div></div>
     <div class="stat"><div class="lbl">Year Built</div><div class="val">2000</div></div>
   </div>
 
-  <div class="cover-prepared">
-    <img src="./assets/matt-ryan.png" alt="Matt Ryan" />
-    <div>
-      <div class="who-label">Prepared by</div>
-      <div class="who-name">Matt Ryan</div>
-      <div class="who-detail">
-        Owner &amp; Principal Broker · Ryan Realty<br/>
-        <strong>541.213.6706</strong> · matt@ryan-realty.com · ryan-realty.com
-      </div>
-    </div>
+  <div class="value-block">
+    <div class="vb-label">Estimated Market Value Range</div>
+    <p class="vb-range">$1.095M — $1.195M</p>
+    <div class="vb-detail">Based on closed sales within Whispering Pines over the last 24 months, weighted by recency and improvement-adjusted condition.</div>
+    <div class="vb-most-likely"><strong>Most likely list price · $1,125,000 — $1,150,000.</strong> Upside to $1,175,000 if the deck is replaced before going live.</div>
+  </div>
+
+  <div class="presented-by">
+    Presented by <strong>Matt Ryan</strong> · Owner &amp; Principal Broker · Ryan Realty · 541.213.6706
   </div>
 
   <footer class="pg-footer">
     <span>Ryan Realty · Bend · Oregon</span>
-    <span>Page 1 of 4</span>
+    <span>Page 1 of 5</span>
   </footer>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- PAGE 2 — SUBJECT + IMPROVEMENTS                              -->
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE 2 — SUBJECT + IMPROVEMENTS -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -480,38 +527,38 @@
   <div class="two-col">
     <div>
       <h3 class="subhead">At a glance</h3>
-      <p>Custom 2000-built home perched on 2.87 acres in the Whispering Pines subdivision, Tumalo. Cascade Mountain views, established landscaping, fenced yard, RV hookups, attached storage, detached garage/shop. Last on market in 2022 at $1,195,000 (expired). Since then the home has been substantially upgraded — see improvements below.</p>
+      <p>Custom 2000-built home on 2.87 acres in the Whispering Pines subdivision, Tumalo. Cascade Mountain views, established landscaping, fenced yard, RV hookups, attached storage, detached garage/shop. Last on market in 2022 at $1,195,000 (expired). Since then the home has been substantially upgraded — see improvements below. <strong>Bath count is now 4</strong> (3 full + 2 half) after the half-bath addition in the 2023–2024 remodel.</p>
 
       <h3 class="subhead">Site &amp; structure</h3>
       <ul class="note-list">
-        <li>3 bedrooms · 3.5 bathrooms · 2,592 sqft (per MLS 220144075)</li>
-        <li>2.87-acre parcel · fenced · RV hookups · detached shop</li>
+        <li>3 bedrooms · 4 bathrooms · 2,592 sqft (MLS 220144075)</li>
+        <li>2.87-acre parcel · fenced · RV hookups · 2-car garage + detached shop</li>
         <li>Primary on main; bonus room + 2 ensuites + loft above</li>
-        <li>Cascade Mountain views; quiet Tumalo position minutes to Bend, Redmond, the airport</li>
+        <li>Cascade Mountain views; quiet Tumalo position minutes to Bend, Redmond, and the airport</li>
       </ul>
     </div>
     <div>
       <h3 class="subhead">Why this matters</h3>
       <p>Buyers in the $1M–$1.2M Tumalo tier are paying a clear premium for renovated, move-in-ready homes on 2–3 acres with views. The improvements completed since 2022 pull this house out of the "2000-build, dated finishes" comp bucket and into the renovated turnkey tier — which is exactly where the most recent subdivision comps cleared north of $440/sqft.</p>
-      <p>The narrative for pricing isn't <em>2,592 sqft × subdivision average</em>. It's <em>2,592 sqft × renovated-condition multiplier</em>, anchored on the two 2026 sales at 65258 Old Bend Redmond ($1.20M) and 65299 85th ($1.135M, new build).</p>
+      <p>The narrative for pricing is not <em>2,592 sqft × subdivision average</em>. It is <em>2,592 sqft × renovated-condition multiplier</em>, anchored on the two 2026 sales at 65258 Old Bend Redmond ($1.20M) and 65299 85th ($1.135M, new build).</p>
     </div>
   </div>
 
-  <h2 class="section" style="margin-top:30px;">Improvements Since 2022</h2>
+  <h2 class="section" style="margin-top:24px;">Improvements Since 2022</h2>
 
   <table class="imps">
     <thead>
       <tr>
-        <th style="width:36%;">Improvement</th>
-        <th style="width:18%;">Year</th>
-        <th class="num" style="width:14%;">Owner Cost</th>
-        <th class="num" style="width:14%;">Recovery</th>
-        <th class="num" style="width:18%;">Value-Add</th>
+        <th style="width:38%;">Improvement</th>
+        <th style="width:16%;">Year</th>
+        <th class="num" style="width:13%;">Owner Cost</th>
+        <th class="num" style="width:13%;">Recovery</th>
+        <th class="num" style="width:20%;">Value-Add</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td>Kitchen / living / dining full remodel — walls removed, electrical upgraded, new windows, new lights, ceiling fans, new flooring, half-bath addition</td>
+        <td>Kitchen / living / dining full remodel — walls removed, electrical upgraded, new windows, lights, ceiling fans, flooring, half-bath addition</td>
         <td>2023–2024</td>
         <td class="num">$200,000</td>
         <td class="num">65–75%</td>
@@ -570,20 +617,18 @@
     </tfoot>
   </table>
 
-  <p class="small" style="margin-top:14px;">Recovery percentages reflect 2024–2025 Cost-vs-Value benchmarks (Remodeling Magazine, Pacific region) and the specific buyer profile for this tier in Tumalo, where renovated kitchens, new roofs, and mini-splits read as "no-deferred-maintenance" signals worth real money. The full owner-investment figure is what was spent; the value-add column is what the next buyer is reasonably expected to pay <em>on top of</em> an un-renovated 2000-build baseline.</p>
+  <p class="small" style="margin-top:12px;">Recovery percentages reflect 2024–2025 Cost-vs-Value benchmarks (Remodeling Magazine, Pacific region) and the specific buyer profile for this tier in Tumalo. The owner-investment figure is what was spent; the value-add column is what the next buyer is reasonably expected to pay <em>on top of</em> an un-renovated 2000-build baseline.</p>
 
-  <h3 class="subhead" style="margin-top:18px;">One unresolved item — the deck</h3>
-  <p>The deck has been sanded and stained twice and took some damage from the roofers. A full TREX replacement is estimated at ~$40,000. Recovery on a TREX deck in this tier is typically 50–60%, so the math is a ~$20–24K value-add for $40K out of pocket — but the more important effect is on photos and showings. A clean deck at this price point materially affects how the home reads in the first 90 seconds online. <strong>Recommendation: replace before listing</strong> if cash flow allows; if not, price into the lower half of the range and disclose.</p>
+  <h3 class="subhead" style="margin-top:14px;">One unresolved item — the deck</h3>
+  <p>The deck has been sanded and stained twice and took some damage from the roofers. A full TREX replacement is estimated at ~$40,000. Recovery on a TREX deck in this tier is typically 50–60%, so the math is a ~$20–24K value-add for $40K out of pocket — but the more important effect is on photos and showings. A clean deck at this price point materially affects how the home reads in the first 90 seconds online. <strong>Recommendation: replace before listing</strong> if cash flow allows; if not, price in the lower half of the range and disclose.</p>
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 2 of 4</span>
+    <span>Page 2 of 5</span>
   </footer>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- PAGE 3 — COMPARABLE SALES                                    -->
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE 3 — COMP THUMBNAILS + TABLE -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -591,13 +636,79 @@
   </header>
 
   <h2 class="section">Subdivision Comparable Sales — Whispering Pines</h2>
+  <p>Every closed single-family sale in the Whispering Pines subdivision over the last 24 months filtered to 2,000–3,200 sqft on 1.5–4.0 acres. Ordered most recent first.</p>
 
-  <p>The pool: every closed single-family sale in the Whispering Pines subdivision over the last 24 months filtered to 2,000–3,200 sqft on 1.5–4.0 acres. Ordered most recent first. Rows shaded navy-light are the strongest anchors for the subject. The subject row at the top is shown for reference.</p>
+  <div class="comp-grid">
+    <div class="comp-card">
+      <div class="ph-missing">No MLS photo on file</div>
+      <div class="body">
+        <div class="addr">65258 Old Bend Redmond Hwy</div>
+        <div class="stats">5 bd · 4 ba · 2,599 sf · 2.50 ac · 2004</div>
+        <div class="price">$1,200,000 <span class="when">Feb 2026 · 44 DOM</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250826033946247237000000-o.jpg" alt="65299 85th St" />
+      <div class="body">
+        <div class="addr">65299 85th St (new build)</div>
+        <div class="stats">3 bd · 3 ba · 2,573 sf · 2.41 ac · 2025</div>
+        <div class="price">$1,135,000 <span class="when">Feb 2026 · 176 DOM</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <div class="ph-missing">No MLS photo on file</div>
+      <div class="body">
+        <div class="addr">65195 85th St</div>
+        <div class="stats">3 bd · 3 ba · 3,020 sf · 2.79 ac · 2000</div>
+        <div class="price">$940,000 <span class="when">Feb 2025 · 37 DOM</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20241017174131313396000000-o.jpg" alt="21305 Gift Rd" />
+      <div class="body">
+        <div class="addr">21305 Gift Rd</div>
+        <div class="stats">4 bd · 4 ba · 2,382 sf · 2.31 ac · 2013</div>
+        <div class="price">$947,000 <span class="when">Nov 2024 · 39 DOM</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230901181559364745000000-o.jpg" alt="65318 85th St" />
+      <div class="body">
+        <div class="addr">65318 85th St</div>
+        <div class="stats">3 bd · 3 ba · 2,372 sf · 2.43 ac · 1997</div>
+        <div class="price">$975,000 <span class="when">Feb 2024 · 174 DOM</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231109162342401583000000-o.jpg" alt="21037 Gift Rd" />
+      <div class="body">
+        <div class="addr">21037 Gift Rd</div>
+        <div class="stats">3 bd · 4 ba · 2,796 sf · 2.46 ac · 1998</div>
+        <div class="price">$795,000 <span class="when">Feb 2024 · 90 DOM</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230607004445034825000000-o.jpg" alt="65030 78th St" />
+      <div class="body">
+        <div class="addr">65030 78th St</div>
+        <div class="stats">4 bd · 4 ba · 2,962 sf · 2.44 ac · 2002</div>
+        <div class="price">$860,000 <span class="when">Jan 2024 · 135 DOM</span></div>
+      </div>
+    </div>
+    <div class="comp-card">
+      <img class="ph" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231127201704864830000000-o.jpg" alt="65025 92nd St" />
+      <div class="body">
+        <div class="addr">65025 92nd St</div>
+        <div class="stats">4 bd · 3 ba · 2,583 sf · 1.01 ac · 2005</div>
+        <div class="price">$880,000 <span class="when">Jan 2024 · 58 DOM</span></div>
+      </div>
+    </div>
+  </div>
 
   <table class="comps">
     <thead>
       <tr>
-        <th style="width:24%;">Address</th>
+        <th style="width:23%;">Address</th>
         <th>Bd/Ba</th>
         <th class="num">Sqft</th>
         <th class="num">Lot</th>
@@ -612,7 +723,7 @@
     <tbody>
       <tr class="subject">
         <td>21042 Robin Ave <span style="opacity:0.7;">(subject)</span></td>
-        <td>3 / 3.5</td>
+        <td>3 / 4</td>
         <td class="num">2,592</td>
         <td class="num">2.87</td>
         <td class="num">2000</td>
@@ -635,7 +746,7 @@
         <td class="num">44</td>
       </tr>
       <tr>
-        <td>65299 85th St <span class="small">(new build)</span></td>
+        <td>65299 85th St (new build)</td>
         <td>3 / 3</td>
         <td class="num">2,573</td>
         <td class="num">2.41</td>
@@ -723,20 +834,14 @@
 
   <h3 class="subhead">What the comps actually say</h3>
   <ul class="note-list">
-    <li><strong>Two pricing tiers are visible inside Whispering Pines.</strong> Updated/turnkey homes are clearing $411–$462/sqft. Lightly-updated or dated homes are clearing $284–$340/sqft. The spread is real — the subdivision rewards renovation.</li>
-    <li><strong>65258 Old Bend Redmond is the cleanest anchor.</strong> 2,599 sqft (within 0.3% of subject), 2.50 acres, 2004 build, closed Feb 2026 at full list of $1.2M in 44 days. This is the single best read on what a renovated, well-positioned home on this stretch is worth in today's market.</li>
-    <li><strong>65195 85th sets the un-renovated floor.</strong> 3,020 sqft, 2.79 acres, same 2000 build year as the subject, sold Feb 2025 at $940K / $311/sqft — almost certainly with original or lightly-updated finishes given the price per foot.</li>
-    <li><strong>The new-build at 65299 85th sets a soft ceiling.</strong> Brand-new 2025 construction at $441/sqft tells us a renovated 2000-build will sit just below that — not above it.</li>
-    <li><strong>Days on market vary widely.</strong> The two recent &lt; 50 DOM sales (65258 OBR, 65195 85th) both went at or near list with clean photos and no significant condition issues. Long-DOM sales in the data set were priced above market entry and adjusted late.</li>
+    <li><strong>Two tiers visible inside Whispering Pines.</strong> Renovated/turnkey homes clear $411–$462/sqft; lightly-updated or dated homes clear $284–$340/sqft. The subdivision rewards renovation — that's the most important number on this page.</li>
+    <li><strong>65258 Old Bend Redmond is the cleanest anchor</strong> — 2,599 sqft (within 0.3% of subject), 2.50 ac, 2004 build, closed Feb 2026 at full list of $1.2M in 44 days.</li>
+    <li><strong>65195 85th sets the un-renovated floor.</strong> 3,020 sqft, 2.79 ac, same 2000 build year as the subject, sold Feb 2025 at $940K / $311/sqft — almost certainly original or lightly-updated finishes given the price per foot.</li>
+    <li><strong>The new-build at 65299 85th sets a soft ceiling.</strong> Brand-new 2025 construction at $441/sqft tells us a renovated 2000-build will sit just below that, not above.</li>
   </ul>
 
   <h3 class="subhead">Active competition — what a buyer will see this week</h3>
-  <ul class="note-list">
-    <li><strong>65140 78th St</strong> — 3/3, 1,740 sqft, 2.57 ac, 1995 build · Active at $965,000 · 204 DOM (overpriced, stale)</li>
-    <li><strong>20985 Limestone Ln</strong> — 3/2, 1,753 sqft, 3.60 ac, 1999 build · Just listed at $750,000 · 1 DOM (smaller home, larger lot)</li>
-    <li><strong>21130 Arid Ave</strong> — Active at $789,000 · 21 DOM (incomplete MLS data; likely smaller/dated)</li>
-  </ul>
-  <p>None of the current active listings in the subdivision are direct comp matches at the subject's size + renovation level. That's a positive — the subject would not be entering a crowded shelf.</p>
+  <p style="font-size:11px;">65140 78th St — 3/3, 1,740 sqft, 2.57 ac, 1995 · Active at $965,000 · 204 DOM (overpriced, stale). 20985 Limestone Ln — 3/2, 1,753 sqft, 3.60 ac, 1999 · Just listed at $750,000 (smaller home, bigger lot). 21130 Arid Ave — Active at $789,000 · 21 DOM. None directly match the subject's size + renovation level — the subject would not be entering a crowded shelf.</p>
 
   <footer class="pg-footer">
     <span>Source · Oregon Data Share MLS via Ryan Realty platform</span>
@@ -744,9 +849,7 @@
   </footer>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- PAGE 4 — PRICING STRATEGY + SOURCE TRACE + SIGNATURE         -->
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE 4 — PRICING STRATEGY -->
 <section class="page">
   <header class="pg-header">
     <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
@@ -755,10 +858,10 @@
 
   <h2 class="section">Pricing Strategy</h2>
 
-  <p>Two methods, one answer. Both bracket the subject at roughly the same place — which gives us a defensible range.</p>
+  <p>Two methods, one answer. Both bracket the subject at roughly the same place — that's the math check.</p>
 
   <h3 class="subhead">Method 1 — Tiered price-per-sqft (renovated bracket)</h3>
-  <p>Apply the renovated/turnkey $/sqft range observed in the subdivision ($410–$460/sqft) to the subject's 2,592 sqft. The post-improvement profile of the subject puts it squarely in this tier, not the un-renovated $284–$340 tier.</p>
+  <p>Apply the renovated/turnkey $/sqft range observed in the subdivision ($410–$460/sqft) to the subject's 2,592 sqft. The post-improvement profile puts the subject squarely in this tier, not the un-renovated $284–$340 tier.</p>
   <p class="small"><code style="font-family:'Geist Mono',monospace; background: var(--navy-fill); padding:2px 6px; border-radius:3px;">$410 × 2,592 = $1,062,720 &nbsp;&nbsp;|&nbsp;&nbsp; $460 × 2,592 = $1,192,320</code></p>
 
   <h3 class="subhead">Method 2 — Un-renovated baseline + improvement value-add</h3>
@@ -770,50 +873,73 @@
     <div class="tier">
       <div class="t-lbl">Conservative</div>
       <div class="t-val">$1,095,000</div>
-      <div class="t-note">Quick-sale entry. Likely closes within 30–45 days if photos and showings are clean. Use this if a 2026 close is the priority.</div>
+      <div class="t-note">Quick-sale entry. 30–45 day close if photos and showings are clean. Use if a 2026 close is the priority.</div>
     </div>
     <div class="tier featured">
       <div class="t-lbl">Recommended</div>
       <div class="t-val">$1,150,000</div>
-      <div class="t-note">Aligned with the strongest comp (65258 Old Bend Redmond, Feb 2026, $1.2M). Reasonable for renovated condition with the existing deck. Expected DOM 30–60.</div>
+      <div class="t-note">Aligned with the strongest comp (65258 Old Bend Redmond, Feb 2026, $1.2M). Renovated condition w/ existing deck. Expected DOM 30–60.</div>
     </div>
     <div class="tier">
       <div class="t-lbl">Stretch</div>
       <div class="t-val">$1,195,000</div>
-      <div class="t-note">Achievable <em>only</em> if the deck is replaced (TREX or equivalent) before going live. Otherwise risks the same fate as the 2022 listing.</div>
+      <div class="t-note">Achievable <em>only</em> if the deck is replaced before going live. Otherwise risks the same fate as the 2022 listing.</div>
     </div>
   </div>
 
   <h3 class="subhead">Where the 2022 listing went wrong</h3>
-  <p>The 2022 list at $1,195,000 expired. Two reasons. First, in mid-2022 the broader Bend market was already cooling from its 2021 peak and high-end Tumalo inventory was building. Second, the home at that time did not have the renovation that justifies a $400+/sqft price tag — and the photos still online from that period reflect the pre-renovation finishes. <strong>Today the price is supportable; in 2022 it was not.</strong> The fix is two-fold: re-shoot the photos to reflect the current condition (the existing online imagery is the single biggest risk to getting a buyer through the door), and price at the recommended tier rather than the stretch tier unless the deck issue is resolved first.</p>
+  <p>The 2022 list at $1,195,000 expired. Two reasons. First, by mid-2022 the broader Bend market was already cooling from its 2021 peak and high-end Tumalo inventory was building. Second, the home at that time did not have the renovation that justifies a $400+/sqft price tag, and the photos still online from that period reflect the pre-renovation finishes. <strong>Today the price is supportable; in 2022 it was not.</strong> The fix is two-fold: re-shoot the photos to reflect the current condition (the existing online imagery is the single biggest risk to getting a buyer through the door), and price at the recommended tier rather than the stretch tier unless the deck is resolved first.</p>
 
-  <h2 class="section" style="margin-top:24px;">Verification trace</h2>
+  <h2 class="section" style="margin-top:18px;">Verification trace</h2>
   <div class="trace">
     <div class="t-hd">Data sources (audit trail)</div>
-    Every figure on this report traces to the Oregon Data Share MLS via the Ryan Realty Supabase platform, pulled 2026-05-14. <br/>
+    Every figure on this report traces to the Oregon Data Share MLS via the Ryan Realty Supabase platform, pulled 2026-05-14.<br/>
     Subject: <code>listings</code> table, <code>ListingKey = 20220425183424852391000000</code> (ListNumber 220144075).<br/>
-    Comp set: <code>SubdivisionName = 'Whispering Pines' AND PropertyType = 'A' AND StandardStatus = 'Closed' AND CloseDate &gt;= 2024-01-01 AND TotalLivingAreaSqFt BETWEEN 2000 AND 3200 AND lot_size_acres BETWEEN 1.5 AND 4.0</code>. Result: 8 qualifying closed sales (shown). One outlier excluded (65470 78th, $580K Apr 2024 — pricing inconsistent with size/lot, likely off-market or distressed).<br/>
-    Active competition: <code>StandardStatus IN ('Active', 'Pending') AND SubdivisionName = 'Whispering Pines'</code> as of 2026-05-14.<br/>
-    Improvement recovery rates: Remodeling Magazine 2024 Cost vs Value Report — Pacific region — adapted to Bend / Tumalo market norms by Ryan Realty.
+    Comp set: <code>SubdivisionName = 'Whispering Pines' AND PropertyType = 'A' AND StandardStatus = 'Closed' AND CloseDate &gt;= 2024-01-01 AND TotalLivingAreaSqFt BETWEEN 2000 AND 3200 AND lot_size_acres BETWEEN 1.5 AND 4.0</code>. Result: 8 qualifying closed sales (all shown). One outlier excluded (65470 78th, $580K Apr 2024 — pricing inconsistent with size/lot).<br/>
+    Improvement recovery rates: Remodeling Magazine 2024 Cost-vs-Value Report, Pacific region, adapted to Bend / Tumalo norms.
   </div>
 
-  <p class="small" style="margin-top:18px;">This Comparative Market Analysis is an estimate of market value based on closed comparable sales, current active competition, and a professional adjustment for the documented improvements. It is not a formal appraisal and is not binding on any party. Market conditions change — figures are accurate as of the pull date above. Equal Housing Opportunity.</p>
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 4 of 5</span>
+  </footer>
+</section>
 
-  <div class="sig-block">
-    <div class="sig-line">
+<!-- PAGE 5 — DISCLAIMER + SIGNATURE -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">21042 Robin Ave · Presented by Matt Ryan</div>
+  </header>
+
+  <h2 class="section">Disclosure</h2>
+
+  <p>This Comparative Market Analysis is an estimate of market value based on closed comparable sales, current active competition, and a professional adjustment for the documented improvements made to the subject property since the 2022 listing. It is not a formal appraisal and is not binding on any party. Market conditions change continuously; figures are accurate as of the pull date noted in the verification trace on page 4. Equal Housing Opportunity.</p>
+
+  <p>The pricing range presented assumes the subject is brought to market with current, professionally produced photos and the documented improvements completed. The 2022 MLS imagery referenced on the cover page is provided for record and should not be used in any new marketing without replacement. The deck-replacement decision affects the upper end of the recommended range but does not change the floor.</p>
+
+  <p>Recovery percentages applied to the documented improvements are sourced from the 2024 Remodeling Magazine Cost-vs-Value Report (Pacific region) and adjusted for the specific buyer profile in Tumalo. These figures represent the value a buyer is reasonably expected to pay above an un-renovated 2000-build baseline, not a guarantee of return.</p>
+
+  <p>Comparable sales were drawn from the Oregon Data Share MLS via the Ryan Realty platform on 2026-05-14. The full comp pool was eight closed single-family sales within the Whispering Pines subdivision over the prior 24 months, filtered to 2,000–3,200 sqft and 1.5–4.0-acre lots. All eight are shown on page 3. One additional sale (65470 78th, $580K April 2024) was excluded as a likely non-arm's-length transaction.</p>
+
+  <div class="signature-page">
+    <img class="portrait" src="./assets/matt-ryan.png" alt="Matt Ryan" />
+    <div class="sig-content">
       <div class="sig-name">Matt Ryan</div>
-      <div class="sig-meta">Matt Ryan · Owner &amp; Principal Broker · Oregon Real Estate License # 201206613</div>
-    </div>
-    <div class="sig-contact">
-      <strong>Ryan Realty</strong><br/>
-      541.213.6706 · matt@ryan-realty.com<br/>
-      ryan-realty.com · Bend · Oregon
+      <div class="sig-printed">Matt Ryan</div>
+      <div class="sig-title">Owner &amp; Principal Broker · Ryan Realty</div>
+      <div class="sig-contact">
+        <strong>541.213.6706</strong><br/>
+        matt@ryan-realty.com<br/>
+        ryan-realty.com · Bend · Oregon
+      </div>
+      <div class="sig-license">Oregon Real Estate License # 201206613</div>
     </div>
   </div>
 
   <footer class="pg-footer">
     <span>Ryan Realty · Honest. Transparent. Trustworthy.</span>
-    <span>Page 4 of 4</span>
+    <span>Page 5 of 5</span>
   </footer>
 </section>
 
