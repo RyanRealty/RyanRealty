@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.201.2 (2026-05-14)
+
+### Bug Fixes
+- fix(cma-delivery): retry findPropertyByAddress on transient Supabase errors
+- fix(dashboard): bound slow queries so /dashboard/marketing actually loads
+
+---
+
+
 ## v1.201.1 (2026-05-14)
 
 ### Bug Fixes
