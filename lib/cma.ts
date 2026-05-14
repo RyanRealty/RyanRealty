@@ -543,13 +543,30 @@ function percentile(sorted: number[], p: number): number {
 export async function computeCMA(propertyId: string): Promise<CMAResult | null> {
   const supabase = getServiceSupabase()
   const subject = await getSubject(supabase, propertyId)
-  if (!subject) return null
+  if (!subject) {
+    console.warn(`[cma] computeCMA: getSubject returned null for property ${propertyId}`)
+    return null
+  }
 
   const candidates = await getCompCandidates(supabase, propertyId, subject.communityId, subject)
+  console.warn(
+    `[cma] computeCMA propertyId=${propertyId} subject: beds=${subject.beds} baths=${subject.baths} sqft=${subject.sqft} lot=${subject.lotAcres} year=${subject.yearBuilt} candidates=${candidates.length}`
+  )
   const compsFiltered = filterComps(subject, candidates)
-  if (compsFiltered.length === 0) return null
+  console.warn(
+    `[cma] computeCMA propertyId=${propertyId} filtered=${compsFiltered.length}/${candidates.length} after residential+price+lot+sqft+bed+year guards`
+  )
+  if (compsFiltered.length === 0) {
+    console.warn(
+      `[cma] computeCMA: zero comps survived filter for property ${propertyId} (subject beds=${subject.beds} sqft=${subject.sqft} lot=${subject.lotAcres})`
+    )
+    return null
+  }
   const interim = buildCMAResult(subject, compsFiltered, 'pending')
-  if (!interim) return null
+  if (!interim) {
+    console.warn(`[cma] computeCMA: buildCMAResult returned null for property ${propertyId}`)
+    return null
+  }
 
   const { data: valuation, error: valErr } = await supabase
     .from('valuations')
