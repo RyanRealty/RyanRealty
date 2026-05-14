@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.203.2 (2026-05-14)
+
+### Bug Fixes
+- fix(cma): bump methodology to 2.0 + cache-filter so old garbage doesn't replay
+
+### Maintenance
+- docs(marketing-brain): inbox went LIVE — full E2E happy path proven
+
+---
+
+
 ## v1.203.1 (2026-05-14)
 
 ### Bug Fixes
