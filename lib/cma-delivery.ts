@@ -443,19 +443,43 @@ async function findPropertyByAddress(params: {
   const streetNumber = streetParts[0]
   const nameParts = streetParts.slice(1)
 
-  let q = sb
-    .from('properties')
-    .select('id, unparsed_address, street_number, street_name')
-    .ilike('city', city)
-  if (params.state?.trim()) q = q.ilike('state', params.state.trim())
-  if (params.postalCode?.trim()) {
-    q = q.eq('postal_code', params.postalCode.trim().slice(0, 20))
+  // Build the query once and retry the .limit() call so transient PostgREST
+  // 503s (e.g. schema-cache reload mid-call) don't get swallowed as "no
+  // match." A genuine 0-row result is fast; only retry when the SDK reports
+  // an error.
+  function buildQuery() {
+    let q = sb
+      .from('properties')
+      .select('id, unparsed_address, street_number, street_name')
+      .ilike('city', city)
+    if (params.state?.trim()) q = q.ilike('state', params.state.trim())
+    if (params.postalCode?.trim()) {
+      q = q.eq('postal_code', params.postalCode.trim().slice(0, 20))
+    }
+    if (streetNumber && /^\d+/.test(streetNumber)) {
+      q = q.eq('street_number', streetNumber)
+    }
+    return q.limit(50)
   }
-  if (streetNumber && /^\d+/.test(streetNumber)) {
-    q = q.eq('street_number', streetNumber)
+
+  let data: Array<{ id: string; unparsed_address?: string; street_name?: string }> | null = null
+  let lastError: { message?: string; code?: string } | null = null
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data: rows, error } = await buildQuery()
+    if (!error) {
+      data = (rows as Array<{ id: string; unparsed_address?: string; street_name?: string }> | null) ?? []
+      break
+    }
+    lastError = error
+    console.warn(`[cma-delivery] findPropertyByAddress attempt ${attempt + 1}/3 error:`, error.message, error.code)
+    // 500ms, 1500ms backoff for transient PostgREST/network issues.
+    await new Promise((r) => setTimeout(r, attempt === 0 ? 500 : 1500))
   }
-  const { data } = await q.limit(50)
-  if (!data?.length) return null
+  if (data === null) {
+    console.error('[cma-delivery] findPropertyByAddress giving up after 3 attempts:', lastError)
+    return null
+  }
+  if (!data.length) return null
 
   // If we filtered on street_number, that's usually unique enough; return
   // the first hit.
