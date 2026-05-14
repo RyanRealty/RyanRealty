@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.201.1 (2026-05-14)
+
+### Bug Fixes
+- fix(cma-delivery): broker default slug + Resend default from-address
+
+---
+
+
 ## v1.201.0 (2026-05-14)
 
 ### Features
