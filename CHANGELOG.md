@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.196.1 (2026-05-14)
+
+### Bug Fixes
+- fix(cma-delivery): move worker route off /api/cron/* to avoid Vercel's auto-bearer-auth
+
+---
+
+
 ## v1.196.0 (2026-05-14)
 
 ### Features
