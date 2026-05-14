@@ -149,6 +149,33 @@ interface CompetitorSummary {
   sources: string[]
 }
 
+interface ActionCategoryRow {
+  category: string                 // 'content' | 'site' | 'ops' | 'analyze' | 'comms'
+  pending: number
+  ready: number
+  approved: number
+  executed: number
+  killed: number
+}
+
+interface AuditRunSummary {
+  audit_id: string
+  status: string
+  started_at: string
+  completed_at: string | null
+  competitors_with_data: number
+  posts_classified: number
+  apify_cost_usd: number
+  classifier_cost_usd: number
+  findings_action_id: string | null
+}
+
+interface BlockerRow {
+  label: string
+  severity: 'high' | 'medium' | 'low'
+  detail: string
+}
+
 async function fetchDashboardData() {
   const db = getServiceSupabase()
   const today = new Date().toISOString().slice(0, 10)
@@ -273,7 +300,7 @@ async function fetchDashboardData() {
     statusCounts.set(r.status, (statusCounts.get(r.status) ?? 0) + 1)
   }
   const briefStatuses: BriefStatusCount[] = [
-    'pending', 'in_production', 'ready', 'published', 'measured', 'killed',
+    'pending', 'in_production', 'ready', 'approved', 'executed', 'measured', 'killed',
   ].map((s) => ({ status: s, count: statusCounts.get(s) ?? 0 }))
 
   // 7. Next 5 calendar entries
@@ -314,6 +341,79 @@ async function fetchDashboardData() {
     sources: [...data.sources],
   })).sort((a, b) => b.rowCount - a.rowCount)
 
+  // 9. Action queue by category (pending/ready/approved/executed/killed by action_type prefix)
+  const { data: actionRows } = await db
+    .from('marketing_brain_actions')
+    .select('action_type, status')
+
+  const categoryMap: Map<string, ActionCategoryRow> = new Map()
+  for (const r of actionRows ?? []) {
+    const prefix = (r.action_type as string | null)?.split(':')[0] || 'legacy'
+    const row = categoryMap.get(prefix) ?? {
+      category: prefix, pending: 0, ready: 0, approved: 0, executed: 0, killed: 0,
+    }
+    const status = r.status as string
+    if (status === 'pending') row.pending += 1
+    else if (status === 'in_production' || status === 'ready') row.ready += 1
+    else if (status === 'approved') row.approved += 1
+    else if (status === 'executed' || status === 'measured') row.executed += 1
+    else if (status === 'killed') row.killed += 1
+    categoryMap.set(prefix, row)
+  }
+  const ORDER = ['content', 'site', 'ops', 'analyze', 'comms', 'legacy']
+  const actionCategories: ActionCategoryRow[] = ORDER
+    .map((c) => categoryMap.get(c))
+    .filter((r): r is ActionCategoryRow => r !== undefined)
+
+  // 10. Most recent audit run
+  const { data: auditRunRow } = await db
+    .from('audit_runs')
+    .select('audit_id, status, started_at, completed_at, competitors_with_data, posts_classified, apify_cost_usd, classifier_cost_usd, findings_action_id')
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const latestAuditRun: AuditRunSummary | null = auditRunRow
+    ? {
+        audit_id: auditRunRow.audit_id as string,
+        status: auditRunRow.status as string,
+        started_at: auditRunRow.started_at as string,
+        completed_at: (auditRunRow.completed_at as string) ?? null,
+        competitors_with_data: Number(auditRunRow.competitors_with_data ?? 0),
+        posts_classified: Number(auditRunRow.posts_classified ?? 0),
+        apify_cost_usd: Number(auditRunRow.apify_cost_usd ?? 0),
+        classifier_cost_usd: Number(auditRunRow.classifier_cost_usd ?? 0),
+        findings_action_id: (auditRunRow.findings_action_id as string) ?? null,
+      }
+    : null
+
+  // 11. Voice failures in last 7d
+  const { count: voiceFailures7d } = await db
+    .from('marketing_decisions')
+    .select('id', { count: 'exact', head: true })
+    .eq('decision_type', 'voice_violation')
+    .gte('created_at', new Date(Date.now() - 7 * 86_400_000).toISOString())
+
+  // 12. Operational blockers — derived, not stored
+  const blockers: BlockerRow[] = []
+  if (!process.env.ANTHROPIC_API_KEY) {
+    blockers.push({
+      label: 'ANTHROPIC_API_KEY missing',
+      severity: 'high',
+      detail: 'Audit classifier returns missing-key error on every call. Add to Vercel env to unblock audit-run.',
+    })
+  }
+  // mail.ryan-realty.com unverified — read from Resend if possible; for now, surface as a known blocker
+  blockers.push({
+    label: 'Resend domain unverified',
+    severity: 'medium',
+    detail: 'mail.ryan-realty.com pending DNS verification. ops-email-send producer + email tier of daily digest blocked. See marketing_brain_skills/tools_registry/resend/SKILL.md.',
+  })
+  blockers.push({
+    label: 'LinkedIn dev-app architecture pending',
+    severity: 'medium',
+    detail: 'Community Management API conflicts with Share-on-LinkedIn on the same app. LinkedIn analytics stays at 0 until Matt picks a path.',
+  })
+
   return {
     freshestAt,
     leads7d,
@@ -324,6 +424,10 @@ async function fetchDashboardData() {
     briefStatuses,
     calendarEntries,
     competitors,
+    actionCategories,
+    latestAuditRun,
+    voiceFailures7d: voiceFailures7d ?? 0,
+    blockers,
   }
 }
 
@@ -376,6 +480,10 @@ export default async function MarketingBrainPage() {
     briefStatuses,
     calendarEntries,
     competitors,
+    actionCategories,
+    latestAuditRun,
+    voiceFailures7d,
+    blockers,
   } = await fetchDashboardData()
 
   const today = new Date().toLocaleDateString('en-US', {
@@ -472,6 +580,173 @@ export default async function MarketingBrainPage() {
             })}
           </div>
         )}
+      </div>
+
+      <Separator />
+
+      {/* ── Operational blockers ─────────────────────────────── */}
+      {blockers.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-sm font-semibold text-foreground uppercase tracking-wide">
+            Operational blockers
+          </h2>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {blockers.map((b) => (
+              <Card key={b.label} className={cn(
+                'p-3',
+                b.severity === 'high' && 'border-destructive',
+              )}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">{b.label}</p>
+                  <Badge variant={b.severity === 'high' ? 'destructive' : b.severity === 'medium' ? 'soft-price-drop' : 'outline'}>
+                    {b.severity}
+                  </Badge>
+                </div>
+                <p className="mt-1.5 text-xs text-muted-foreground">{b.detail}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <Separator />
+
+      {/* ── Action queue by category ─────────────────────────── */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-foreground uppercase tracking-wide">
+          Action queue by category
+        </h2>
+        {actionCategories.length === 0 ? (
+          <EmptyState
+            title="Empty queue"
+            message="No action rows yet. Run the weekly cycle to generate the first set of briefs."
+            command={DECISIONS_CMD}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Pending</TableHead>
+                <TableHead className="text-right">Ready</TableHead>
+                <TableHead className="text-right">Approved</TableHead>
+                <TableHead className="text-right">Executed</TableHead>
+                <TableHead className="text-right">Killed</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {actionCategories.map((c) => (
+                <TableRow key={c.category}>
+                  <TableCell className="font-mono text-sm">{c.category}:*</TableCell>
+                  <TableCell className="text-right">
+                    {c.pending > 0 ? <Badge variant="soft-hot">{c.pending}</Badge> : <span className="text-muted-foreground">0</span>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {c.ready > 0 ? <Badge variant="soft-trending">{c.ready}</Badge> : <span className="text-muted-foreground">0</span>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {c.approved > 0 ? <Badge variant="soft-price-drop">{c.approved}</Badge> : <span className="text-muted-foreground">0</span>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {c.executed > 0 ? <Badge variant="soft-popular">{c.executed}</Badge> : <span className="text-muted-foreground">0</span>}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">{c.killed > 0 ? c.killed : '0'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+        <p className="mt-2 text-xs text-muted-foreground">
+          Categories: content (renders + posts), site (page edits via site-edit producer), ops (Meta Ads + FUB CRM mutations), analyze (anomaly drilldowns), comms (matt alerts + summaries). Legacy = pre-Item-3 rows.
+        </p>
+      </div>
+
+      <Separator />
+
+      {/* ── Audit run + voice failures ───────────────────────── */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Audit run */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium text-muted-foreground">
+              Most recent audit run
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!latestAuditRun ? (
+              <div className="space-y-2">
+                <p className="text-2xl font-semibold text-muted-foreground">No audit run yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Trigger the first audit (cost-bearing). Set <code className="font-mono">ANTHROPIC_API_KEY</code> in Vercel env first.
+                </p>
+                <p className="font-mono text-[10px] text-muted-foreground break-all">
+                  curl -H &quot;Authorization: Bearer $CRON_SECRET&quot; &quot;https://ryanrealty.vercel.app/api/cron/marketing-audit-run?dryRun=true&quot;
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <p className="font-mono text-lg font-semibold text-foreground">{latestAuditRun.audit_id}</p>
+                  <Badge variant={
+                    latestAuditRun.status === 'published' ? 'soft-popular' :
+                    latestAuditRun.status === 'killed' ? 'destructive' :
+                    'soft-trending'
+                  }>
+                    {latestAuditRun.status}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Posts classified</p>
+                    <p className="font-semibold">{fmt(latestAuditRun.posts_classified)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Competitors w/ data</p>
+                    <p className="font-semibold">{latestAuditRun.competitors_with_data}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Apify cost</p>
+                    <p className="font-semibold">${latestAuditRun.apify_cost_usd.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Classifier cost</p>
+                    <p className="font-semibold">${latestAuditRun.classifier_cost_usd.toFixed(2)}</p>
+                  </div>
+                </div>
+                {latestAuditRun.findings_action_id && (
+                  <p className="text-xs text-muted-foreground">
+                    Findings action row: <span className="font-mono">{latestAuditRun.findings_action_id.slice(0, 8)}</span>
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Voice failures */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium text-muted-foreground">
+              Voice failures (last 7 days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <p className="text-4xl font-bold text-foreground">{voiceFailures7d}</p>
+              <div className="mb-1 space-y-0.5">
+                <Badge variant={voiceFailures7d > 0 ? 'soft-price-drop' : 'soft-popular'}>
+                  {voiceFailures7d === 0 ? 'clean' : 'review'}
+                </Badge>
+                <p className="text-xs text-muted-foreground">
+                  Briefs blocked by voice_guidelines.md §6
+                </p>
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Voice failures persist as marketing_decisions rows with decision_type=&apos;voice_violation&apos;. Review and rewrite or kill.
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <Separator />
