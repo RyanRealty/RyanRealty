@@ -10,7 +10,10 @@ when_to_use: >
   Triggered by phrases: "make a carousel", "IG slides", "swipe post for this listing", "market
   snapshot carousel", "build slides for this neighborhood", "Instagram carousel content".
   Works for any content type — listings, market summaries, neighborhood guides, evergreen tips,
-  event recaps. If the deliverable is a single static image, use flyer-design instead.
+  event recaps. If the deliverable is a single static image, use flyer-design or ig-single-post
+  instead.
+action_types:
+  - content:ig_carousel
 ---
 
 # Instagram Carousel
@@ -240,6 +243,130 @@ Always the last slide. No exceptions.
   `YOUR LOCAL TEAM IS READY.` No exclamation marks. No hype.
 - Slide numeral in footer still appears (e.g. `8 / 8`).
 - **No photo on the CTA slide.** Navy-only.
+
+---
+
+## Listing carousel patterns (A / B / C / D) — locked 2026-05-14
+
+When `content_type == 'listing'`, the carousel switches into one of four pattern modes via the
+`pattern` payload field. **Pick one; never mix.** The default is Pattern A unless the caller
+specifies otherwise. Each pattern overrides the generic slide-type catalog above with a fixed
+slide composition.
+
+| Pattern | Slide count | What it is |
+|---|---|---|
+| **A** | 10 slides | Carousel of unaltered, color-corrected listing photos. Zero on-slide overlay (the persistent navy/cream footer with logo + numeral is the only chrome). Photo carries the post. Use as default for most listings. |
+| **B** | 1 slide | Single hero (1080×1350) with Amboqia Boriango editorial headline + conversational price line. Top-scrim only (`rgba(16,39,66,0.40)` covering the top 220 px text band, hard rectangle, no feathering). "The Agency" register. |
+| **C** | 1 slide | Single hero with Geist 500 magazine caption + Azo Sans Medium tracked eyebrow (UPPERCASE, 0.18em letter-spacing) + small Ryan Realty white wordmark in top-right corner (`logo-white.png`, 180 px wide). Bottom-scrim only (`rgba(16,39,66,0.50)` covering the bottom 320 px text band). Coldwell Banker Global Luxury register. |
+| **D** | 3 slides | Panorama — one wide aerial sliced into three portrait tiles (1080×1350 each) that flow seamlessly when swiped. Requires a source aerial ≥ 4500 px wide. No overlay on tiles; persistent footer only on the third tile to avoid cross-tile chrome breaks. |
+
+### Pattern C font discipline
+
+**Pattern C body caption is Geist 500**, per Design System v2 (`design_system/ryan-realty/SKILL.md`).
+v2 reserves Azo Sans Medium for UPPERCASE arched-ribbon sub-labels only. The 2026-05-14 visual
+reference rendered Pattern C with Azo Sans Medium body — that predates this lock. If Matt wants
+Azo Sans Medium back as a magazine-caption typeface, the path is to amend Design System v2, not
+to except Pattern C.
+
+### Pattern selection inputs (payload from list-kit or direct)
+
+```typescript
+interface ListingCarouselPayload {
+  content_type: 'listing'
+  mls_id: string
+  pattern: 'A' | 'B' | 'C' | 'D'
+  photos: string[]            // local file paths (Pattern A needs ≥ 10 distinct; Pattern D needs the aerial)
+  address: string             // for footer strip / caption
+  price: number               // for caption + Pattern B headline tail
+  beds: number | null
+  baths: number | null
+  sqft: number | null
+  acres: number | null
+  list_agent_full_name: string
+  list_agent_headshot_path: string
+  hero_aerial_path?: string   // Pattern D only
+}
+```
+
+If `photos.length < 10` and `pattern === 'A'`: surface to caller (default to caller's
+recommendation — typically downgrade to a collapsed Pattern A with fewer slides, or switch to B).
+
+If `pattern === 'D'` and `hero_aerial_path` is missing or < 4500 px wide: surface to caller.
+
+### Pattern A — full spec
+
+- 10 slides, all 1080×1350.
+- Photos are **unaltered** (color-corrected only at the source, no filters, no overlays, no text).
+  Run them through a single neutral color-grade pass (mild lift in midtones, no saturation push)
+  before render.
+- Photo order: slide 1 = best hero exterior (twilight if available). Slides 2–10 = a curated walk
+  through the property — exterior context, kitchen, living, primary suite, secondary spaces,
+  outdoor / lot, parting wide.
+- Persistent footer band on every slide (per "Persistent layers" above, navy 0.94 opacity, logo +
+  slide numeral). **No address strip on Pattern A** — the photo carries it.
+- Captions emitted by the caller in H&H tag-block format (see `list-kit/SKILL.md` §12). The
+  carousel renderer is not responsible for caption text.
+
+### Pattern B — full spec
+
+- 1 slide, 1080×1350.
+- Single hero photo, full-bleed (`object-fit: cover` with 1.05–1.15 zoom). Pick the most editorial
+  shot — twilight exterior, signature room, or hero feature.
+- **Top scrim**: `rgba(16,39,66,0.40)` covering `y = 0 → y = 220`. Hard rectangle. No gradient.
+- **Headline** (Amboqia Boriango, 64–80 px, `#faf8f4`, line-height 1.05): the editorial copy.
+  3–6 words. E.g. "A barn on twelve acres." or "First time on market in twenty years."
+- **Price line** (Geist 400, 22 px, `#faf8f4`, just under the headline at 14 px gap): the
+  conversational price phrase. E.g. "Listed at $895,000." or "Asking $1.2M." Not "$895,000" alone.
+- Persistent footer band — same as everywhere.
+
+### Pattern C — full spec
+
+- 1 slide, 1080×1350.
+- Single hero photo, full-bleed.
+- **Top-right Ryan Realty wordmark**: `design_system/ryan-realty/assets/brand/logo-white.png`,
+  180 px wide, placed `top: 32 px, right: 32 px`. No background plate. Logo is the only chrome up there.
+- **Bottom scrim**: `rgba(16,39,66,0.50)` covering `y = 1030 → y = 1350`. Hard rectangle.
+- **Tracked eyebrow** (Azo Sans Medium, 16 px, `rgba(250,248,244,0.85)`, UPPERCASE,
+  letter-spacing 0.18em, top of the scrim zone at `y = 1070`): neighborhood + city, e.g.
+  `NORTHWEST CROSSING · BEND, OREGON`.
+- **Magazine caption** (Geist 500, 22 px, `#faf8f4`, line-height 1.55, two lines max, below the
+  eyebrow at 16 px gap): a magazine-style sentence about the property. E.g. "Three bedrooms on
+  the southern slope of the butte, walking distance to the trail."
+- **Address + price line** (Geist 400, 16 px, `rgba(250,248,244,0.80)`, tabular-nums, bottom of
+  scrim at `y = 1300`): `<Address> · <Price>`.
+- Persistent footer band — same as everywhere.
+
+### Pattern D — full spec
+
+- 3 slides, each 1080×1350.
+- Source: one wide aerial photo ≥ 4500 px wide at ~16:9 ratio (Pattern D fails fast if not
+  available).
+- Slice the aerial into three portrait tiles. Each tile gets the center vertical band of the
+  source crop assigned to it. **Tile widths overlap by 0 px** — they must butt edge-to-edge to
+  preserve panorama continuity on swipe.
+- **No on-slide chrome on tiles 1 and 2.** Persistent footer band appears on tile 3 only — placing
+  it on tile 1 or 2 breaks the cross-slide continuity.
+- Each tile gets a small slide-numeral indicator at top-right (Geist 500, 14 px,
+  `rgba(250,248,244,0.65)`, format `N / 3`).
+- Captions emitted by the caller in H&H **panorama variant** format (opening line `SWIPE → |
+  <hook>` — see `list-kit/SKILL.md` §12).
+
+### Caption emission
+
+The carousel renderer **does not** generate caption copy. The caller (list-kit, or a direct
+trigger via the brain) emits the caption per the H&H format in `list-kit/SKILL.md` §12. The
+renderer writes the caption it received into `out/carousel/<slug>/caption.md` as the canonical
+record of what shipped with the slides.
+
+The renderer **validates** the caption it receives against:
+
+1. `#RyanRealtyBend` is the first hashtag in the trailing block (HARD RULE per CLAUDE.md "Voice
+   + content," locked 2026-05-14).
+2. No banned vocab (`marketing_brain_skills/brand-voice/voice_guidelines.md` §6).
+3. No em-dashes, no semicolons in body.
+4. Pattern D captions open with `SWIPE → |`.
+
+If validation fails: surface to caller. Do not render the slides until the caption is fixed.
 
 ---
 

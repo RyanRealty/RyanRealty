@@ -2,7 +2,7 @@
 
 The brain reads this file at decision-time to know which producer handles which `action_type`. New producer? Add a row here and the brain immediately knows.
 
-**Last audited:** 2026-05-13.
+**Last audited:** 2026-05-14.
 **Canonical source for each producer:** the `SKILL.md` at the listed path.
 **Template for new producers:** `marketing_brain_skills/producers/TEMPLATE.md`.
 
@@ -12,9 +12,9 @@ The brain reads this file at decision-time to know which producer handles which 
 
 Compound producers that delegate to multiple sub-producers in parallel. The brain emits one action row; the orchestrator fans it out.
 
-| producer_name | path | action_types | approval | est. run_time |
-|---|---|---|---|---|
-| list-kit | `social_media_skills/list-kit/` | `content:list_kit` | matt-review-draft | 15–30 min |
+| producer_name | path | action_types | approval | est. run_time | notes |
+|---|---|---|---|---|---|
+| list-kit | `social_media_skills/list-kit/` | `content:list_kit` | matt-review-draft | 15–30 min | v3 — at-Active orchestrator. Delegates to listing-tour-video, flyer-design, instagram-carousel (Pattern A/B/C/D), ig-single-post. Locked 2026-05-14. |
 | monthly-market-report-orchestrator | `video_production_skills/monthly-market-report-orchestrator/` | `content:monthly_market_report` | matt-review-draft | 20–45 min |
 | listing_launch | `video_production_skills/listing_launch/` | `content:listing_launch` | matt-review-draft | 15–30 min |
 | content_engine | `automation_skills/content_engine/` | internal router — all `content:*` actions execute through here; not emitted as an action_type itself | matt-review-draft | varies |
@@ -25,9 +25,9 @@ Compound producers that delegate to multiple sub-producers in parallel. The brai
 
 Single-deliverable specialists. Each handles one or more `content:*` action_types.
 
-| producer_name | path | action_types | approval | est. run_time |
-|---|---|---|---|---|
-| listing-tour-video | `video_production_skills/listing-tour-video/` | `content:listing_video` | matt-review-draft | 10–20 min |
+| producer_name | path | action_types | approval | est. run_time | notes |
+|---|---|---|---|---|---|
+| listing-tour-video | `video_production_skills/listing-tour-video/` | `content:listing_video` | matt-review-draft | 10–20 min | |
 | listing_reveal | `video_production_skills/listing_reveal/` | `content:listing_reel` | matt-review-draft | 8–15 min |
 | market-data-video | `video_production_skills/market-data-video/` | `content:market_data_short`, `content:market_video` | matt-review-draft | 10–20 min |
 | youtube-long-form-market-report | `video_production_skills/youtube-long-form-market-report/` | `content:market_youtube_longform` | matt-review-draft | 20–40 min |
@@ -47,6 +47,18 @@ Single-deliverable specialists. Each handles one or more `content:*` action_type
 | market_report_video (ffmpeg) | `video_production_skills/market_report_video/` | `content:market_stat_card_video` | matt-review-draft | 3–8 min |
 | news_video (avatar) | `video_production_skills/news_video/` | `content:avatar_video` | matt-review-draft | 10–20 min |
 | social_calendar | `video_production_skills/social_calendar/` | `content:social_calendar` | matt-review-draft | 3–5 min |
+| ig-single-post | `social_media_skills/ig-single-post/` | `content:ig_single_post` | matt-review-draft | 3–8 min | S1–S10 templates: Just Listed, Just Sold, Open House, Coming Soon, Price Improvement, Featured Listing, Agent Intro, Brag Stat, Press Feature, Market Data Card |
+| coming-soon-teaser | `social_media_skills/coming-soon-teaser/` | `content:coming_soon_teaser` | matt-review-draft | 8–15 min | Pre-Active Reel + IG/FB Stories. Exterior-only, 10–15s |
+| tiktok-listing-tour | `video_production_skills/tiktok-listing-tour/` | `content:tiktok_listing_tour` | matt-review-draft | 10–20 min | TikTok-optimized with SEO-baked VO embedding long-tail geo query |
+| youtube-long-form-walkthrough | `video_production_skills/youtube-long-form-walkthrough/` | `content:yt_longform_walkthrough` | matt-review-draft | 20–40 min | 4–12 min, 1920×1080, $750K+ floor. Faceless, drone hook + price reveal first 10s |
+| open-house-stories | `social_media_skills/open-house-stories/` | `content:open_house_stories` | matt-review-draft | 5–10 min | 5–7 frame Stories sequence with ManyChat keyword CTA |
+| under-contract-announcement | `social_media_skills/under-contract-announcement/` | `content:under_contract_announcement` | matt-review-draft | 3–8 min | 4:5 static, data-only caption, NO celebration language |
+| sold-deal-summary | `social_media_skills/sold-deal-summary/` | `content:sold_deal_summary` | matt-review-draft | 5–10 min | Dual deliverable: IG/FB static + LinkedIn native text (market-insight framing) |
+| linkedin-document-carousel | `social_media_skills/linkedin-document-carousel/` | `content:linkedin_doc_carousel` | matt-review-draft | 15–30 min | 8–12 slide PDF, market-insight framing — NOT a listing brochure. 24% engagement vs 6% static |
+| agent-coop-eflyer | `social_media_skills/agent-coop-eflyer/` | `content:agent_coop_eflyer` | matt-review-draft | 5–10 min | Agent-to-agent email blast. Subject is the hook. Distribution: ZipYourFlyer or Resend |
+| postcard-farm-mailer | `social_media_skills/postcard-farm-mailer/` | `content:postcard_mailer` | matt-review-draft | 8–15 min | USPS direct mail to 0.5-mile farm radius. at_list / at_sold variants |
+| yard-sign-rider | `social_media_skills/yard-sign-rider/` | `content:yard_sign` | matt-review-draft | 5–10 min | 18×24 main sign + rider variants (just_listed / open_house / under_contract / sold) |
+| neighbor-outreach-note | `social_media_skills/neighbor-outreach-note/` | `content:neighbor_note` | matt-review-draft | 5–10 min | Handwritten-style card text + flyer enclosure + Avery label sheet for 20-40 nearest neighbors |
 
 ---
 
@@ -59,6 +71,8 @@ These producers make changes to ryan-realty.com. All site changes land in a git 
 | site-edit | `marketing_brain_skills/producers/site-edit/` | `site:copy_update`, `site:meta_update`, `site:cta_update` | matt-review-PR | Edits existing page copy, metadata, or CTAs; brand-voice-validates all after_text before editing; opens a PR for Matt to merge |
 | site-page-create | `marketing_brain_skills/producers/site-page-create/` | `site:page_create`, `site:landing_page_create` | matt-review-PR | Scaffolds a new Next.js page with shadcn/ui, wires lead form for landing pages, updates sitemap; opens a PR |
 | site-performance | `marketing_brain_skills/producers/site-performance/` | `site:perf_fix`, `site:redirect_add`, `site:schema_add` | matt-review-PR | Applies lazy-load attributes, PNG→WebP conversion, 301 redirects in next.config.ts, or JSON-LD structured data; opens a PR |
+| site-property-landing | `marketing_brain_skills/producers/site-property-landing/` | `site:property_landing_create`, `site:property_landing_update` | matt-review-PR | Scaffolds a per-listing landing page at `/listings/<slug>`: gallery, video embed, 3D tour, floor plan, FUB showing form, ManyChat widget, RealEstateListing JSON-LD. shadcn/ui only |
+| site-matterport-embed | `marketing_brain_skills/producers/site-matterport-embed/` | `site:matterport_embed` | matt-review-PR | Embeds an existing Matterport 3D tour iframe on the property landing page. HEAD-validates the URL before commit. Mandatory at $750K+ per the matrix |
 
 ---
 
@@ -72,6 +86,8 @@ These producers make changes to ad accounts, CRM, and email platform.
 | ops-fub-crm | `marketing_brain_skills/producers/ops-fub-crm/` | `ops:fub_tag_fix`, `ops:fub_sequence_change`, `ops:fub_task_create`, `ops:fub_routing` | matt-explicit (>5 leads) / matt-review-draft (≤5 leads) | CRM mutations; filter count verified before bulk ops; task creation requires explicit lead_ids |
 | ops-email-send | `marketing_brain_skills/producers/ops-email-send/` | `ops:email_newsletter`, `ops:email_blast`, `ops:email_template_update` | matt-explicit | Verifies mail.ryan-realty.com Resend domain before draft; voice validated before surface; every send requires explicit approval |
 | ops-reputation | `marketing_brain_skills/producers/ops-reputation/` | `ops:review_response`, `ops:review_request`, `ops:gbp_post`, `ops:gbp_qna` | matt-review-draft | Drafts in Matt's voice using 22-response GBP corpus; negative reviews flagged separately; Matt approves before any public post |
+| ops-fb-marketplace | `marketing_brain_skills/producers/ops-fb-marketplace/` | `ops:fb_marketplace_create`, `ops:fb_marketplace_update` | matt-explicit | Stages FB Marketplace listing bundles (title + description + photos + payload + instructions). FB Marketplace API does not permit programmatic real-estate listing creation, so producer NEVER auto-publishes — Matt loads manually in the FB app. 30–40% of business documented through Marketplace per Getty Group |
+| ops-manychat | `marketing_brain_skills/producers/ops-manychat/` | `ops:manychat_setup`, `ops:manychat_pause`, `ops:manychat_update` | matt-explicit | Configures ManyChat IG keyword automation per listing (SHOWING / OPENHOUSE / DETAILS / `<street>`). Captures lead via FUB webhook. Documented: 5 showings/mo → 23 showings/mo after setup |
 
 ---
 

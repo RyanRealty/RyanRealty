@@ -59,6 +59,20 @@ RESEARCH → STORYBOARD → BUILD → QA PASS → MATT REVIEW → PUBLISH → PO
 | google maps flyover / 3D aerial / cinematic aerial | `google_maps_flyover` | `video_production_skills/google_maps_flyover/SKILL.md` |
 | gaussian splat | `gaussian_splat` | `video_production_skills/gaussian_splat/SKILL.md` |
 | flyer / just-listed flyer / open house / print one-sheet | `flyer-design` | `social_media_skills/flyer-design/SKILL.md` |
+| list kit / at-active kit / full marketing package / all the listing assets | `list-kit` | `social_media_skills/list-kit/SKILL.md` |
+| IG single post / just-listed post / just-sold post / coming-soon post / price-improvement post / featured listing / agent intro post / brag stat post / press feature post / market data card / S1–S10 by number | `ig-single-post` | `social_media_skills/ig-single-post/SKILL.md` |
+| IG carousel / swipe post / listing carousel / Pattern A / Pattern B / Pattern C / Pattern D | `instagram-carousel` | `social_media_skills/instagram-carousel/SKILL.md` |
+| coming-soon teaser / pre-active reel / coming-soon reel | `coming-soon-teaser` | `social_media_skills/coming-soon-teaser/SKILL.md` |
+| TikTok listing tour / TikTok tour for <address> / TikTok-optimized listing | `tiktok-listing-tour` | `video_production_skills/tiktok-listing-tour/SKILL.md` |
+| YouTube long-form / YT walkthrough / YouTube walkthrough / yt longform listing | `youtube-long-form-walkthrough` | `video_production_skills/youtube-long-form-walkthrough/SKILL.md` |
+| open-house stories / open-house frames / IG stories for the open house | `open-house-stories` | `social_media_skills/open-house-stories/SKILL.md` |
+| under-contract post / pending post / pending announcement | `under-contract-announcement` | `social_media_skills/under-contract-announcement/SKILL.md` |
+| sold post / sold deal / closing post / LinkedIn sold / sold summary | `sold-deal-summary` | `social_media_skills/sold-deal-summary/SKILL.md` |
+| LinkedIn document carousel / LinkedIn PDF / LinkedIn doc carousel / linkedin carousel | `linkedin-document-carousel` | `social_media_skills/linkedin-document-carousel/SKILL.md` |
+| agent coop / agent-to-agent email / coop eflyer / agent eflyer | `agent-coop-eflyer` | `social_media_skills/agent-coop-eflyer/SKILL.md` |
+| postcard / farm mailer / direct mail postcard / neighbor postcard | `postcard-farm-mailer` | `social_media_skills/postcard-farm-mailer/SKILL.md` |
+| yard sign / sign rider / yard sign rider | `yard-sign-rider` | `social_media_skills/yard-sign-rider/SKILL.md` |
+| neighbor note / neighbor outreach / handwritten neighbor card | `neighbor-outreach-note` | `social_media_skills/neighbor-outreach-note/SKILL.md` |
 
 **Retired / archive only (do not route to):** `market_report_video` is canonical only when
 Matt explicitly requests the ffmpeg stat-card path. `news_video` (underscore) is the avatar

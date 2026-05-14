@@ -1,77 +1,121 @@
 ---
 name: list-kit
-description: Orchestrator for the full Ryan Realty single-listing marketing package. Given an address or MLS#, fans out in parallel to produce a listing video, three flyers (Just Listed, Property Feature Sheet, Open House), and an Instagram carousel. All outputs follow the Ryan Realty design system (navy #102742 primary, cream #faf8f4 background, Amboqia Boriango display, Geist body). Surfaces every deliverable for Matt's review before any commit or publish. Sub-skills own the production; this skill owns the routing and the review gate.
+description: >
+  Orchestrator for the full Ryan Realty at-Active marketing kit per listing. Given an address or
+  MLS#, pulls the verified listing record once and fans out to six parallel deliverables: listing
+  video, three flyers (Just Listed, Feature Sheet, Open House), an IG carousel (one of Patterns
+  A / B / C / D), and an IG single-image post (one of S1–S10 templates — defaults to S1 Just
+  Listed at-Active). Every deliverable reads from the same Supabase pull; copy and pricing
+  match across the kit. Surfaces every deliverable for Matt's review before any commit or
+  publish. Sub-skills own production; this skill owns routing, data accuracy, caption emission,
+  the review gate, and asset library registration. Use this whenever Matt says "build a list
+  kit", "list kit for <address>", "create a list kit for <MLS#>", "full marketing package",
+  "all the listing assets", or any phrasing that asks for a complete listing launch package.
 when_to_use: |
   Trigger when Matt says any of:
   - "build a list kit"
-  - "create a list kit for <address>"
   - "list kit for <address or MLS#>"
+  - "create a list kit for <address or MLS#>"
   - "/build-list-kit <address or MLS#>"
   - "full marketing package for <address>"
   - "all the listing assets for <address>"
+  - "the at-active kit for <address>"
+  - "kick off the listing for <address>"
+action_types:
+  - content:list_kit
 ---
 
-# List Kit — Ryan Realty Listing Marketing Orchestrator
+# List Kit — Ryan Realty At-Active Listing Marketing Orchestrator
 
-**Scope:** Single entry point that builds every marketing deliverable for one listing. One trigger from Matt produces 5 output files (1 video, 3 flyers, 1 carousel), surfaces them for review, and publishes on explicit approval.
+**Scope.** Single entry point that builds every at-Active marketing deliverable for one listing.
+One trigger from Matt produces six output deliverables (1 video, 3 flyers, 1 carousel, 1 single
+post), surfaces them as a unit for review, and publishes on explicit approval. Pre-Active and
+post-Active moments (coming-soon, open-house Stories, under-contract, sold) are handled by their
+own producers — this orchestrator focuses on the at-Active moment only.
 
-**Status:** Canonical. Locked 2026-05-12. Sub-skills own production; this skill owns routing, data accuracy, the review gate, and asset library registration.
+**Status.** Canonical (v3). Locked 2026-05-14. Sub-skills own production; this skill owns routing,
+data accuracy, caption emission, the review gate, and asset library registration.
+
+**Producer category.** Section A — Content Orchestrator (per `marketing_brain_skills/producers/REGISTRY.md`).
 
 ---
 
 ## 1. Purpose
 
-A List Kit eliminates the coordination tax of building listing marketing piece-by-piece. The agent pulls the live listing record once, verifies the data once, and fans out to every deliverable in parallel. Matt reviews the full package as a unit and ships it as a unit.
+A list kit eliminates the coordination tax of building listing marketing piece-by-piece. The
+producer pulls the live listing record once, verifies the data once, and fans out to every
+deliverable in parallel. Matt reviews the full package as a unit and ships it as a unit.
 
-Every deliverable in the kit traces to the same verified Supabase record. Copy, specs, and pricing are consistent across the video, flyers, and carousel — because they all read from a single source pull, not from memory, a brief, or prior chat turns.
-
----
-
-## Broker headshots
-
-Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
-
-- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
-- `paul-stevenson.jpg` — Paul Stevenson
-- `rebecca-peterson.jpg` — Rebecca Peterson
-
-All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
-
-**Listing-agent rule:** Include the LISTING AGENT'S headshot on per-listing content. Resolve from the Supabase `listings` row (`ListAgentEmail` / `ListAgentFullName`) to one of the three brokers above. For brand-led content (market data, news, memes, neighborhood guides), omit the headshot and use the Jax mascot from `assets/brand/blue-dog.png` instead.
-
-The list-kit data pull (§4) includes `"ListAgentFullName"` — use that field to resolve the correct headshot. Pass the resolved headshot path to each sub-skill that needs it (flyer-design, instagram-carousel).
+Every deliverable in the kit traces to the same verified Supabase record. Copy, specs, and
+pricing are consistent across the video, flyers, carousel, and single post — because they all
+read from a single source pull, not from memory, a brief, or prior chat turns.
 
 ---
 
 ## 2. Required references — load before doing any work
 
-Read all of the following before scaffolding any deliverable. The data accuracy mandate and draft-first rule outrank every other instruction in every sub-skill.
-
 | Reference | Why |
 |---|---|
-| `CLAUDE.md` §0 — Data Accuracy mandate | Every number must trace to a verified primary source. No fabricating, no rounding to fill, no "approximately." |
-| `CLAUDE.md` §0.5 — Draft-First, Commit-Last | Nothing ships until Matt explicitly approves. Successful builds are not approval. |
-| `CLAUDE.md` §3 — Video Build Hard Rules | Listing video format, hook, beats, VO, and brand constraints. |
-| `design_system/ryan-realty/SKILL.md` | Canonical brand: navy `#102742`, cream `#faf8f4`, Amboqia Boriango display, Geist body, Heritage vs Web register split. |
-| `design_system/ryan-realty/README.md` | Full color, type, imagery, voice, and layout spec. Definitive source for the monochrome navy system. |
-| `video_production_skills/listing-tour-video/SKILL.md` | Listing video sub-skill — locked architecture, beat spec, Ken Burns curves, ambient audio. |
-| `video_production_skills/listing_reveal/SKILL.md` | Overlay system — two-layer spec (text scrim + logo footer bar). |
-| `social_media_skills/flyer-design/SKILL.md` | Flyer sub-skill — layout, type, margins, photo hero, broker footer. |
-| `social_media_skills/instagram-carousel/SKILL.md` | Carousel sub-skill — 8-slide spec, persistent footer, slide numerals, visual continuity. |
-| `video_production_skills/asset-library/SKILL.md` | Asset registration at kit close — manifest at `data/asset-library/manifest.json`. |
-| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned-content gate. Twelve rules, all ship-blockers. |
-| `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer — cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, cadence) + Ryan Realty application matrix. Per CLAUDE.md "Skill self-binding (2026-05-13)", mandatory for every Ryan Realty content piece. |
+| `CLAUDE.md` §0 — Data Accuracy mandate | Every number traces to a verified primary source. No fabricating, no rounding to fill, no "approximately." Outranks every other rule. |
+| `CLAUDE.md` §0.5 — Draft-First, Commit-Last | Nothing ships until Matt explicitly approves. Successful builds are not approval. Outranks every other rule. |
+| `CLAUDE.md` §3 — Video Build Hard Rules | Listing video format, hook, beats, VO, brand constraints. |
+| `CLAUDE.md` "Voice + content" — #RyanRealtyBend HARD RULE | Every caption on every hashtag-supporting platform leads its hashtag block with `#RyanRealtyBend`. Locked 2026-05-14. |
+| `design_system/ryan-realty/SKILL.md` | Brand registers (heritage vs web), color/type decision tree, asset cheat sheet. |
+| `design_system/ryan-realty/colors_and_type.css` | CSS variables (color tokens, type families, spacing, radii, shadows). |
+| `marketing_brain_skills/brand-voice/voice_guidelines.md` | Voice attributes, banned vocab/phrases/tropes, do/don't pairs per channel. |
+| `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's actual writing — voice fingerprint reference. |
+| `automation_skills/content_engine/SKILL.md` | All content actions route through here. Never bypass. |
+| `video_production_skills/listing-tour-video/SKILL.md` | Listing video sub-skill — locked architecture, beats, Ken Burns curves. |
+| `video_production_skills/listing_reveal/SKILL.md` | Two-layer overlay system (text scrim + navy footer bar). |
+| `social_media_skills/flyer-design/SKILL.md` | Flyer sub-skill — Just Listed / Feature Sheet / Open House. |
+| `social_media_skills/instagram-carousel/SKILL.md` | Carousel sub-skill — Patterns A/B/C/D. |
+| `social_media_skills/ig-single-post/SKILL.md` | Single-image post sub-skill — S1–S10 templates. |
+| `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer. Mandatory per CLAUDE.md "Skill self-binding." |
+| `video_production_skills/asset-library/SKILL.md` | Asset registration at kit close. |
+| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned-content gate. |
 
 ---
 
-## 3. Inputs (mandatory)
+## 3. Broker headshots
 
-Matt must provide one of:
+Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
 
-- **Address** — street number + street name (e.g. "1234 NW Riverview Dr, Bend"). City optional but helpful for disambiguation.
+- `matt-ryan.png` (transparent, default) / `.jpg` — Matt Ryan
+- `paul-stevenson.png` / `.jpg` — Paul Stevenson
+- `rebecca-peterson.png` / `.jpg` — Rebecca Peterson
+
+Use the `.png` (transparent) by default — drops cleanly onto any background. Fall back to `.jpg`
+only if a transparent-aware renderer isn't available.
+
+**Listing-agent rule.** Every per-listing deliverable in the kit (flyers, single post, carousel
+CTA slide, video end card) includes the listing agent's headshot. Resolve from the Supabase row
+(`ListAgentEmail`, `ListAgentFullName`) to one of the three brokers. For brand-led content
+elsewhere (market reports, news clips, neighborhood guides) the brokerage speaks — use the Jax
+mascot from `assets/brand/blue-dog.png` instead. This rule does not change in the kit because
+the kit is always per-listing.
+
+---
+
+## 4. Inputs (mandatory)
+
+Matt provides one of:
+
+- **Address** — street number + street name (e.g. "1234 NW Riverview Dr, Bend"). City optional.
 - **MLS#** — the `"MlsId"` value from the `listings` table (e.g. "220189422").
 
-**If address provided:** fuzzy-match against `CONCAT("StreetNumber", ' ', "StreetName")` + `"City"` in the `listings` table. Use `ILIKE` or `similarity()` for partial matches. Per CLAUDE.md schema rules, every mixed-case column name must be double-quoted in SQL.
+Optional payload fields (defaults apply if omitted):
+
+| Field | Default | Notes |
+|---|---|---|
+| `carousel_pattern` | `A` | One of `A` / `B` / `C` / `D`. See §10. |
+| `single_post_template` | `S1` (Just Listed) | One of `S1`–`S10`. See §11. |
+| `open_house_date` | none | If provided, Open House flyer renders with date+time. If omitted, that flyer is skipped. |
+| `voice_pattern` | `default` | Caption tone variant. Default = H&H tag-block. See §12. |
+
+If address is provided, fuzzy-match against `CONCAT("StreetNumber", ' ', "StreetName")` +
+`"City"` using `ILIKE`. If multiple matches, present candidate rows and ask Matt to disambiguate
+before pulling the full record. If no matches, report back with the exact input and confirm the
+`StandardStatus` filter is not over-narrowing.
 
 ```sql
 SELECT "MlsId", "StreetNumber", "StreetName", "City", "PostalCode",
@@ -82,32 +126,25 @@ WHERE CONCAT("StreetNumber", ' ', "StreetName") ILIKE '%riverview%'
 LIMIT 10;
 ```
 
-**If multiple matches:** present the candidate rows to Matt and ask him to disambiguate before pulling the full record. Never guess which listing is intended.
-
-**If no matches:** report back with the exact input, confirm the `StandardStatus` filter is not over-narrowing, and ask Matt to verify the address or provide the MLS#.
-
 ---
 
-## 4. Data pull from Supabase
+## 5. Data pull from Supabase
 
-Once the correct listing is identified, pull these columns in a single query. Every mixed-case column name is double-quoted per CLAUDE.md.
+Once the listing is identified, pull these columns in a single query. Every mixed-case column is
+double-quoted per CLAUDE.md schema rules.
 
 ```sql
 SELECT
   "MlsId",
-  "StreetNumber",
-  "StreetName",
-  "City",
-  "PostalCode",
+  "StreetNumber", "StreetName", "City", "PostalCode",
   "ListPrice",
-  "BedroomsTotal",
-  "BathroomsTotal",
-  "TotalLivingAreaSqFt",
+  "BedroomsTotal", "BathroomsTotal", "TotalLivingAreaSqFt",
+  "Latitude", "Longitude",
   year_built,
   "PhotoURL",
   "StandardStatus",
   "PublicRemarks",
-  "ListAgentFullName",
+  "ListAgentFullName", "ListAgentEmail",
   "ListOfficeName",
   "SubdivisionName",
   "CumulativeDaysOnMarket",
@@ -117,192 +154,77 @@ WHERE "MlsId" = '<mls-id>'
 LIMIT 1;
 ```
 
-**Before any render, produce a verification trace per CLAUDE.md §0:**
+**Verification trace.** Before any render, produce one line per figure shown in any deliverable:
 
-> `"$849,000 list price — Supabase listings, MlsId='220189422', ListPrice = 849000, fetched 2026-05-12T14:32Z, 1 row"`
+> `"$849,000 list price — Supabase listings, MlsId='220189422', ListPrice = 849000, fetched 2026-05-14T14:32Z, 1 row"`
 
-Every figure shown in any deliverable (price, beds, baths, sqft, year built) must have a trace line in `kit-manifest.json`. No trace, no ship.
+Every figure that appears anywhere in the kit (price, beds, baths, sqft, year built, DOM,
+price/sqft) must have a trace line in `kit-manifest.json`. No trace, no ship.
 
-**Never inherit numbers from a prior chat turn, a brief, web articles, or another agent session.** Pull fresh in this session.
+**Never inherit numbers from a prior chat turn, brief, web article, or another agent session.**
+Pull fresh in this session.
 
-**Photo pull:** `"PhotoURL"` may be a single URL or a JSON array. Parse accordingly. Pull all available photos and pass the full set to each sub-skill. Sub-skills select photos per their own spec; the kit passes the raw array, never pre-curates.
-
----
-
-## 5. Build flow
-
-```
-TRIGGER ──────► PARSE INPUT (address or MLS#)
-                    │
-                    ▼
-              FUZZY-MATCH in Supabase
-                    │
-            ┌── multiple matches? ──► ASK MATT TO DISAMBIGUATE
-            │
-            ▼ (single match confirmed)
-        FULL DATA PULL (14+ columns per §4)
-                    │
-                    ▼
-        VERIFICATION TRACE (one line per figure)
-                    │
-           ┌────────┴────────────────────────────────────┐
-           │    Fan out — 4 parallel build streams       │
-           │  5.1 Listing video (listing-tour-video)     │
-           │  5.2 Flyer 1: Just Listed (flyer-design)    │
-           │  5.3 Flyer 2: Property Feature Sheet        │
-           │  5.4 Flyer 3: Open House (flyer-design)     │
-           │  5.5 Instagram Carousel (instagram-carousel) │
-           └────────┬────────────────────────────────────┘
-                    │  (all 5 complete or fail visibly)
-                    ▼
-            QA GATE (per-deliverable + kit-level, §9)
-                    │
-                    ▼
-            DRAFT SURFACE TO MATT (§10 format)
-                    │
-           ◄──── WAIT FOR EXPLICIT APPROVAL ────►
-                    │  ("ship it" / "go" / "approved")
-                    ▼
-            PUBLISH STEP (§11)
-                    │
-                    ▼
-            ASSET LIBRARY REGISTRATION (§8)
-                    │
-                    ▼
-            git commit + push to main
-```
-
-**Failure of one stream does not block the others.** Surface each failure in the review package with a one-line diagnosis and an offer to retry.
+**Photo set.** `"PhotoURL"` is a JSON array. Parse and pass the full set to each renderer.
+Renderers select photos per their own spec; the orchestrator does not pre-curate.
 
 ---
 
-## 6. Slugging convention
+## 6. Build flow
 
-Every output path uses a consistent slug derived from the listing address:
+```
+TRIGGER ──► PARSE INPUT ──► FUZZY MATCH ──► DISAMBIGUATE if needed
+                                │
+                                ▼
+                        FULL DATA PULL (§5)
+                                │
+                                ▼
+                        VERIFICATION TRACE
+                                │
+   ┌────────────────────────────┴─────────────────────────────┐
+   │  Fan out — six parallel build streams                    │
+   │  6.1  Listing video         → listing-tour-video         │
+   │  6.2  Just Listed flyer     → flyer-design               │
+   │  6.3  Feature Sheet flyer   → flyer-design               │
+   │  6.4  Open House flyer*     → flyer-design (if date)     │
+   │  6.5  IG Carousel           → instagram-carousel         │
+   │       (pattern A / B / C / D)                            │
+   │  6.6  IG Single Post        → ig-single-post             │
+   │       (template S1 / ... / S10)                          │
+   │  6.7  Captions for IG       → §12 H&H tag-block format   │
+   └────────────────────────────┬─────────────────────────────┘
+                                │
+                                ▼
+                        QA GATE (§13)
+                                │
+                                ▼
+                        DRAFT SURFACE TO MATT (§14)
+                                │
+              ◄─── WAIT FOR EXPLICIT APPROVAL ───►
+                                │
+                                ▼
+                        PUBLISH STEP (§15)
+                                │
+                                ▼
+                        ASSET LIBRARY REGISTRATION (§9)
+                                │
+                                ▼
+                        git commit + push to main
+```
+
+Failure of one stream does not block others. Surface each failure in the review package with a
+one-line diagnosis and an offer to retry.
+
+---
+
+## 7. Slugging
 
 ```
 <city-lowercase>-<street-number>-<street-name-kebab>
 # Example: bend-1234-nw-riverview-dr
 ```
 
-All deliverables for a kit live under `out/list-kits/<slug>/`. The same slug is used for asset library `used_in` tags and the publish destination `public/list-kits/<slug>/`.
-
----
-
-## 7. Deliverable specs
-
-### 7.1 Listing video
-
-**Delegates to:** `video_production_skills/listing-tour-video/SKILL.md` + `video_production_skills/listing_reveal/SKILL.md`
-
-**Format:** 1080×1920 portrait, 30–45s, h264 + aac, faststart, < 100 MB.
-
-**Hook rule:** motion by frame 12 (0.4s), on-screen text by frame 30 (1.0s). First word is content — address, price, or a specific fact about the listing. No logo, no brokerage name, no "REPRESENTED BY" in frame 0.
-
-**Design system — overlay spec (updated from old gold spec):**
-
-Per `design_system/ryan-realty/SKILL.md`: the List Kit follows the new monochrome navy system. **No gold.** The footer bar uses navy `#102742` at 0.70 opacity with the heritage wordmark from `design_system/ryan-realty/assets/brand/logo-blue.png` (580px wide, vertically centered). Heritage register applies to all listing marketing — Amboqia Boriango for any new display text in overlay, navy monochrome on cream or dark backgrounds.
-
-Two-layer overlay (per `listing_reveal/SKILL.md`):
-- **Layer 1 — text-zone scrim:** `rgba(0,0,0,0.40)` covering only the address/price block. No feathering. No drop shadows.
-- **Layer 2 — logo footer bar:** `rgba(16,39,66,0.70)` (navy at 70% opacity), 200px tall, flush bottom (y=1720→1920). Heritage wordmark `logo-blue.png`, 580px wide, vertically centered. No drop shadow on logo.
-- Clean unobstructed photo strip between layers.
-
-**VO:** Victoria, voice ID `qSeXEcewz7tA0Q0qk9fH`, `eleven_turbo_v2_5`, stability 0.40, similarity_boost 0.80, style 0.50, use_speaker_boost true. Sentences short. Numbers spelled out for ingestion ("eight hundred forty nine thousand dollars"). IPA phoneme tags for Deschutes (`dəˈʃuːts`), Tumalo (`TUM-uh-low`), and other tricky Central Oregon names.
-
-**Captions:** full-sentence with active-word highlight. No word-by-word reveal. Synced to ElevenLabs forced-alignment timestamps. Safe zone y 1480–1720, x 90–990. Never overlay the logo footer bar.
-
-**Banned words in VO and captions:** stunning, nestled, boasts, charming, pristine, gorgeous, breathtaking, must-see, dream home, meticulously maintained, entertainer's dream, tucked away, hidden gem, truly, spacious, cozy, luxurious, updated throughout.
-
-**Output:** `out/list-kits/<slug>/video/<slug>.mp4`
-
-### 7.2 Flyer 1 — Just Listed (digital social)
-
-**Delegates to:** `social_media_skills/flyer-design/SKILL.md`
-
-**Format:** 1080×1350 px (4:5 portrait, Instagram feed + Facebook native)
-
-**Design register:** Heritage — Amboqia Boriango display headline, Geist body/data, navy `#102742` monochrome on cream `#faf8f4` background. Heritage wordmark from `design_system/ryan-realty/assets/brand/logo-blue.png` in broker footer. No gold. Warm stone neutrals for secondary elements.
-
-**Required content blocks:**
-- "JUST LISTED" stamp or eyebrow (Amboqia, UPPERCASE, navy, tracked 0.08em)
-- Property address (Amboqia display, navy)
-- Price in `$XXX,000` format — tabular numerals
-- Bed · Bath · Sqft data row (Geist 500, middle-dot separators)
-- Hero photo (top or full-bleed, navy scrim for text legibility)
-- Ryan Realty broker footer: heritage wordmark + `541.213.6706` + `ryan-realty.com`
-
-**Voice:** direct, specific — "3 bd · 2 ba · 1,820 sqft. Delivered turn-key, 2024 roof." Not "stunning home!" Not "tucked away in a lovely neighborhood!"
-
-**Output:** `out/list-kits/<slug>/flyers/just-listed.png` (or PDF)
-
-### 7.3 Flyer 2 — Property Feature Sheet (print + digital)
-
-**Delegates to:** `social_media_skills/flyer-design/SKILL.md`
-
-**Format:** 8.5×11 in at 300 dpi (print-ready PDF) + 2550×3300 px PNG for digital distribution
-
-**Design register:** Heritage — same navy/cream system as the Just Listed flyer. Print output must use `assets/brand/logo-blue.png` (the heritage wordmark for print per `design_system/ryan-realty/SKILL.md` asset cheat sheet — "heritage wordmark (print): logo-blue.png (navy)"). Amboqia Boriango for headline and section labels. Geist for all data.
-
-**Required content blocks:**
-- Full address header (Amboqia, large, navy)
-- List price in headline position
-- Specs grid: beds, baths, sqft, year built, lot size if available, HOA if available (em-dash `—` for unavailable values per CLAUDE.md)
-- Hero photo (top third of page)
-- Secondary photos grid (2–4 photos, if available in `"PhotoURL"` set)
-- Property description block — drawn from `"PublicRemarks"`, edited to remove banned words before render. If `"PublicRemarks"` is empty or contains only banned language, leave the block blank rather than fabricating copy
-- Broker footer: heritage wordmark, agent name from `"ListAgentFullName"`, `"ListOfficeName"`, phone `541.213.6706`, `ryan-realty.com`, MLS# disclosure line
-
-**Output:** `out/list-kits/<slug>/flyers/feature-sheet.pdf` + `feature-sheet.png`
-
-### 7.4 Flyer 3 — Open House (digital + print)
-
-**Delegates to:** `social_media_skills/flyer-design/SKILL.md`
-
-**Format:** 1080×1350 px digital (same as Just Listed) + 8.5×11 print PDF
-
-**Required input from Matt:** open house date, time, and whether the event has been scheduled. If no open house is scheduled, surface this to Matt and ask whether to (a) skip the flyer, (b) leave date as "[DATE · TIME — TBD]" placeholder, or (c) create a generic showing-request flyer instead. Never invent a date.
-
-**Design register:** Heritage. Same navy/cream system. Amboqia display for "OPEN HOUSE" header. Geist for date, time, and address data. Heritage wordmark in footer.
-
-**Required content blocks:**
-- "OPEN HOUSE" header (Amboqia, UPPERCASE, navy, large — this is a display moment)
-- Date and time (Geist 600, tabular numerals)
-- Address (Amboqia or Geist depending on hierarchy — match the sub-skill's template)
-- Price + key specs (Geist, middle-dot separators)
-- Hero photo
-- Broker footer
-
-**Output:** `out/list-kits/<slug>/flyers/open-house.png` + `open-house.pdf`
-
-### 7.5 Instagram Carousel
-
-**Delegates to:** `social_media_skills/instagram-carousel/SKILL.md`
-
-**Format:** 8 slides, 1080×1350 px each, visual continuity maintained across all slides via persistent footer logo bar and slide numerals.
-
-**Design register:** Heritage for cover slide (Amboqia display, navy/cream). Web register allowed for interior data slides (Geist, warm stone card backgrounds, tabular stats) — but both registers must share the same color system (navy `#102742`, cream `#faf8f4`, warm stone).
-
-**Slide structure (default):**
-
-| Slide | Content |
-|---|---|
-| 1 — Cover | Hero photo full-bleed, address in Amboqia, price in headline, "JUST LISTED" eyebrow |
-| 2 — Key specs | Beds, baths, sqft, year built — data card on cream background |
-| 3 — Photo | Full-bleed interior or feature photo — no text overlay except the persistent footer |
-| 4 — Feature highlight | One specific standout detail drawn from `"PublicRemarks"` (e.g. "Open-concept great room. Vaulted ceilings, 20-ft span." — Geist, direct, no clichés) |
-| 5 — Photo | Full-bleed exterior or lot photo |
-| 6 — Location context | Neighborhood name + 2–3 specific proximity facts (e.g. "0.3 mi to the Deschutes River Trail.") — sourced from verified geography, never invented |
-| 7 — Market context | 1–2 verified market stats for the city/neighborhood (median price, DOM, MoS) — pulled from Supabase `market_pulse_live` or `market_stats_cache`, traced per CLAUDE.md §0 |
-| 8 — CTA | "Your local team. 541.213.6706. ryan-realty.com." Heritage wordmark centered. "It's About Relationships." tagline. |
-
-**Persistent elements across all 8 slides:**
-- Footer bar: navy `rgba(16,39,66,0.70)`, 80–100px tall, flush bottom. Heritage wordmark (small) left-aligned. Slide numeral right-aligned (e.g. "3 / 8"), Geist 400.
-- Consistent safe-zone margin (90px all edges).
-
-**Slide 7 — market context data gate:** if the market stat cannot be verified (no Supabase row, Spark reconciliation failure, < 30 SFR closed sales in the period), cut the market context slide and shift slide 8 (CTA) to position 7. Deliver a 7-slide carousel rather than one wrong number.
-
-**Output:** `out/list-kits/<slug>/carousel/slide-01.png` … `slide-08.png` (or slide-07.png if market context cut)
+Same slug used for `out/list-kits/<slug>/`, asset-library `used_in` tags, and
+`public/list-kits/<slug>/` publish destination.
 
 ---
 
@@ -310,45 +232,47 @@ Two-layer overlay (per `listing_reveal/SKILL.md`):
 
 ```
 out/list-kits/<slug>/
-├── kit-manifest.json          # See §8.1 below
+├── kit-manifest.json          ← see §8.1
+├── captions/
+│   ├── carousel-caption.md    ← IG carousel caption (H&H format)
+│   ├── single-post-caption.md ← IG single-post caption (H&H format)
+│   └── caption-validation.json
 ├── video/
 │   └── <slug>.mp4
 ├── flyers/
 │   ├── just-listed.png
 │   ├── feature-sheet.pdf
 │   ├── feature-sheet.png
-│   ├── open-house.png
-│   └── open-house.pdf
-└── carousel/
-    ├── slide-01.png
-    ├── slide-02.png
-    ├── slide-03.png
-    ├── slide-04.png
-    ├── slide-05.png
-    ├── slide-06.png
-    ├── slide-07.png
-    └── slide-08.png           # may be absent if market context cut
+│   ├── open-house.png         ← optional
+│   └── open-house.pdf         ← optional
+├── carousel/
+│   ├── pattern.json           ← which pattern (A/B/C/D) was rendered
+│   └── slide-01.png … slide-NN.png
+└── single-post/
+    ├── template.json          ← which S-template (S1..S10) was rendered
+    └── post.png
 ```
 
 ### 8.1 kit-manifest.json
-
-Write this file alongside the deliverables before presenting to Matt. Every figure in every deliverable must appear in `verification_traces`.
 
 ```json
 {
   "kit_id": "list-kit-<slug>",
   "mls_id": "<MlsId>",
   "address": "<StreetNumber> <StreetName>, <City>, OR <PostalCode>",
-  "list_price": 000000,
-  "fetched_at_iso": "2026-05-12T14:32:00Z",
+  "list_price": 0,
+  "carousel_pattern": "A",
+  "single_post_template": "S1",
+  "fetched_at_iso": "2026-05-14T14:32:00Z",
   "deliverables": {
     "video": "out/list-kits/<slug>/video/<slug>.mp4",
     "flyer_just_listed": "out/list-kits/<slug>/flyers/just-listed.png",
-    "flyer_feature_sheet_pdf": "out/list-kits/<slug>/flyers/feature-sheet.pdf",
-    "flyer_feature_sheet_png": "out/list-kits/<slug>/flyers/feature-sheet.png",
-    "flyer_open_house_png": "out/list-kits/<slug>/flyers/open-house.png",
-    "flyer_open_house_pdf": "out/list-kits/<slug>/flyers/open-house.pdf",
-    "carousel_slides": ["slide-01.png", "..."]
+    "flyer_feature_sheet": "out/list-kits/<slug>/flyers/feature-sheet.pdf",
+    "flyer_open_house": "out/list-kits/<slug>/flyers/open-house.png",
+    "carousel_slides": ["slide-01.png", "..."],
+    "single_post": "out/list-kits/<slug>/single-post/post.png",
+    "carousel_caption": "out/list-kits/<slug>/captions/carousel-caption.md",
+    "single_post_caption": "out/list-kits/<slug>/captions/single-post-caption.md"
   },
   "verification_traces": [
     {
@@ -357,7 +281,7 @@ Write this file alongside the deliverables before presenting to Matt. Every figu
       "filter": "MlsId='220189422'",
       "column": "ListPrice",
       "value": 849000,
-      "fetched_at": "2026-05-12T14:32:00Z"
+      "fetched_at": "2026-05-14T14:32:00Z"
     }
   ],
   "design_system_version": "ryan-realty/SKILL.md 2026-05-12",
@@ -369,75 +293,185 @@ Write this file alongside the deliverables before presenting to Matt. Every figu
 
 ## 9. Asset library registration
 
-After Matt approves and deliverables are moved to `public/list-kits/<slug>/`, register every output in the asset library per `video_production_skills/asset-library/SKILL.md`.
+After Matt approves and deliverables are moved to `public/list-kits/<slug>/`, register every
+output in the asset library per `video_production_skills/asset-library/SKILL.md`. Tag pattern:
 
-Each asset gets:
-
-```json
-{
-  "asset_id": "list-kit-<slug>-video",
-  "file_path": "public/list-kits/<slug>/video/<slug>.mp4",
-  "asset_type": "video",
-  "used_in": ["list-kit-<slug>"],
-  "subject_tags": ["list-kit", "<city-lowercase>", "<slug>"],
-  "mls_id": "<MlsId>",
-  "registered_at": "<iso-timestamp>"
-}
-```
-
-Tag pattern for every file in the kit:
 - `used_in`: `["list-kit-<slug>"]`
 - `subject_tags`: `["list-kit", "<city-lowercase>", "<address-slug>", "<mls-id>"]`
 
-Register all 8–10 files in a single batch write to the manifest.
+Register all 8–12 files in a single batch write to the manifest.
 
 ---
 
-## 10. QA gate
+## 10. Carousel — Pattern decision
+
+Default pattern is **A** unless Matt's payload says otherwise. The four patterns are
+alternative visual approaches; **pick one per listing**, do not mix.
+
+| Pattern | What it is | When to default to it |
+|---|---|---|
+| **A** | 10-slide carousel of unaltered, color-corrected listing photos at 1080×1350. Zero overlay. Persistent navy/cream footer with logo + slide numeral. Photo carries the post. | Most listings. Photo-forward. Lowest production cost. Highest dwell. |
+| **B** | Single hero (1080×1350) with Amboqia Boriango editorial headline + conversational price line. Top-scrim only. "The Agency" register. | When the headline does the work — premium architecture, signature property, story-led. |
+| **C** | Single hero with Geist 500 magazine caption + Azo Sans Medium tracked eyebrow + small Ryan Realty white wordmark in top-right. Bottom-scrim. Coldwell Banker Global Luxury register. | When data-forward + restrained editorial caption beats a headline. |
+| **D** | Panorama across three slides — one wide aerial sliced into three portrait tiles (1080×1350 each) flowing seamlessly when swiped. | When the listing's lot, acreage, or location IS the story. Aerial photo required. |
+
+**Pattern C font note.** v3 spec is **Geist 500** for the magazine caption body, per
+Design System v2. The 2026-05-14 visual reference rendered Pattern C with Azo Sans Medium — that
+predates this lock. If Matt wants Azo Sans Medium back, the path is to amend Design System v2 (it
+reserves Azo Sans Medium for arched ribbon sub-labels), not to except Pattern C.
+
+**Pattern D requires** a wide aerial photo with sufficient horizontal resolution (≥ 4500 px wide
+at a 16:9-ish ratio) and `Latitude`/`Longitude` for verification. If the aerial isn't available,
+surface to Matt and ask whether to (a) source a drone shot, (b) downgrade to Pattern A.
+
+The orchestrator passes `pattern: 'A' | 'B' | 'C' | 'D'` to `instagram-carousel` in the action
+payload. The renderer owns the visual realization.
+
+---
+
+## 11. Single post — S-template decision
+
+Default at-Active template is **S1 (Just Listed)**. The full S-template catalog:
+
+| Template | Use | Default trigger |
+|---|---|---|
+| **S1** | Just Listed | At-Active (this kit's default) |
+| **S2** | Just Sold | At-Sold (separate producer: `sold-deal-summary`) |
+| **S3** | Open House | When an open house is scheduled — can run in this kit if `open_house_date` provided |
+| **S4** | Coming Soon | Pre-Active (separate producer: `coming-soon-teaser`) |
+| **S5** | Price Improvement | Status change to Price Reduced (separate trigger) |
+| **S6** | Featured Listing of the Week | Editorial / curated brand-led pick (separate trigger) |
+| **S7** | Agent Intro | Broker / team intro (separate trigger) |
+| **S8** | Brag Stat | A specific stat about the brokerage (separate trigger) |
+| **S9** | Press Feature | When Ryan Realty earns a press mention (separate trigger) |
+| **S10** | Market Data Card | Per-city / per-neighborhood market stat (separate producer) |
+
+All 1080×1350. Brand fonts only (Amboqia display, Geist body, Azo Sans Medium accent —
+arched-ribbon use only). Navy `#102742` on cream `#faf8f4`. No gold.
+
+The orchestrator passes `template: 'S1'` (or whichever Matt names) to `ig-single-post` in the
+action payload. The renderer owns the visual realization.
+
+---
+
+## 12. Captions — H&H tag-block format
+
+Every IG post (carousel and single-post) ships with a caption. Two formats:
+
+### Default (Patterns A / B / C and S-templates)
+
+```
+[Location-anchored opening — neighborhood or street name, one specific anchor]
+
+[Materials / architecture / construction-detail middle — 1–3 specific facts pulled from PublicRemarks]
+
+[Lifestyle close — one specific local detail: trail, brewery, school, view, drive time]
+
+》 [Address]  ·  [Price]  ·  [BR/BA]  ·  [acres or sqft]
+
+#RyanRealtyBend
+#BendOregon
+#BendRealEstate
+#[Neighborhood]Bend
+#CentralOregonRealEstate
+```
+
+### Panorama variant (Pattern D only)
+
+Identical structure, but the opening reads:
+
+```
+SWIPE → | [hook]
+```
+
+…to invite the swipe.
+
+### Caption hard rules
+
+1. **`#RyanRealtyBend` MUST be the first hashtag in the trailing block.** This is the locked rule
+   from CLAUDE.md "Voice + content" (2026-05-14). Captions missing it are non-compliant.
+2. **No banned vocab.** Run captions through the brand-voice validator against the full union
+   from `marketing_brain_skills/brand-voice/voice_guidelines.md` §6.
+3. **No exclamation marks** in body prose. (One per caption max if absolutely needed at the close
+   — but the brand voice rules say "rare." Default is zero.)
+4. **No em-dashes, no semicolons** in caption body. The 》separator IS allowed (it's a glyph,
+   not punctuation).
+5. **Price rounded** to the nearest thousand: `$895,000`, never `$894,750`.
+6. **Acres or sqft** — pick the more relevant. Lot-dominant listings use acres; structure-dominant
+   listings use sqft.
+7. **Neighborhood name in hashtags** must match `SubdivisionName` from the Supabase row when
+   present; falls back to city name when not.
+
+### Captions for non-hashtag-supporting platforms
+
+Per CLAUDE.md "Voice + content," **don't inject hashtags** into surfaces that don't honor them.
+The kit's captions are for IG / FB / TikTok / Threads / X / Pinterest / YouTube descriptions.
+For blog body, email body, broker email signatures, FUB lead-nurture emails — caption emission
+is OUT OF SCOPE for this orchestrator (those are handled by their own producers).
+
+---
+
+## 13. QA gate
 
 ### Per-deliverable gates (delegate to each sub-skill)
 
-**Video:**
+**Video** (full spec in `listing-tour-video/SKILL.md`):
 - `ffprobe` duration in [30s, 45s]
 - `ffmpeg blackdetect` (pix_th=0.05) returns zero sequences
 - Frame at 0s has motion + content
 - No frozen frames at beat boundaries
-- No logo / "Ryan Realty" / phone / agent name in any frame except footer bar (which is the approved exception)
+- No logo / "Ryan Realty" / phone / agent name in any frame except footer bar
 - File < 100 MB
-- Banned-words grep clean across VO script and captions
-- All on-screen numbers trace to `kit-manifest.json` verification_traces
-- No gold in frame (new spec — monochrome navy only)
+- Banned-words grep clean
+- All on-screen numbers trace to `kit-manifest.json`
+- Navy footer bar (not gold) — v2 brand
 
-**Flyers (all three):**
-- All figures (price, beds, baths, sqft, year built) trace to the same Supabase pull
+**Flyers** (full spec in `flyer-design/SKILL.md`):
+- All figures trace to the same Supabase pull
 - No banned words in any copy block
-- Broker footer present and accurate (`ListAgentFullName`, `541.213.6706`, `ryan-realty.com`, MLS# disclosure)
-- `PublicRemarks` content has been screened and sanitized (banned words removed or block left blank)
-- No AI-generated property photos used
-- Heritage wordmark used as the pre-rendered image from `design_system/ryan-realty/assets/brand/logo-blue.png`, not re-typeset
+- Broker footer present and accurate
+- `PublicRemarks` sanitized (banned words removed or block left blank)
+- No AI-generated property photos
+- Heritage wordmark as pre-rendered image, never re-typeset
+- `design_review_checklist.json` all `pass`
 
-**Carousel:**
-- 7 or 8 slides present (8 if market context verified, 7 if not)
-- Persistent footer bar on every slide
-- Slide numeral correct and sequential
-- Market context slide (7) figures trace to Supabase with row count and filter documented
-- No banned words in any slide copy
+**Carousel** (full spec in `instagram-carousel/SKILL.md`):
+- Pattern A: 10 slides, every photo unique, persistent footer
+- Pattern B: 1 slide, top-scrim only, Amboqia headline
+- Pattern C: 1 slide, bottom-scrim, Geist 500 caption, Azo Sans Medium eyebrow
+- Pattern D: 3 slides, panorama continuity verified at swipe boundaries
+- All on-screen numbers trace
+- No banned words
 
-### Kit-level gate (run after all per-deliverable gates pass)
+**Single post** (full spec in `ig-single-post/SKILL.md`):
+- Template-specific layout passes
+- All on-screen numbers trace
+- No banned words
 
-- All 5 deliverable groups present or accounted for (failure noted in manifest with reason)
-- `kit-manifest.json` exists and contains a verification trace for every numeric figure across all deliverables
-- All figures are consistent across deliverables (same price, same specs — no drift from one flyer to another)
-- No deliverable references a figure not in the Supabase pull (no invented data)
-- `kit_status` in manifest = "draft" (never auto-set to "approved")
+**Captions** (this skill enforces):
+- `#RyanRealtyBend` first in trailing hashtag block
+- No banned vocab (validator)
+- No em-dashes, no semicolons in body
+- 》separator on the tag line
+- Pattern D caption opens with `SWIPE → |`
 
-If the kit-level gate fails on any item: halt, surface to Matt with the specific failure, offer to fix before presenting for review.
+### Kit-level gate (after all per-deliverable gates pass)
+
+- All 6 deliverable groups present or accounted for (failure noted with reason)
+- `kit-manifest.json` exists and contains a verification trace for every numeric figure
+- All figures consistent across deliverables (same price, same specs — no drift)
+- No deliverable references a figure not in the Supabase pull
+- `kit_status` in manifest = `"draft"` (never auto-set to `"approved"`)
+
+Failure on any item: halt, surface to Matt with the specific failure, offer to fix before
+presenting.
 
 ---
 
-## 11. Draft surface format
+## 14. Draft surface format
 
-When all deliverables are ready (or visibly failed with a diagnosis), present to Matt in one message:
+When all deliverables are ready (or visibly failed with diagnosis), present to Matt in one
+message:
 
 ```
 List Kit ready for review — <StreetNumber> <StreetName>, <City>
@@ -454,8 +488,19 @@ List Kit ready for review — <StreetNumber> <StreetName>, <City>
                       [or: SKIPPED — no open house date provided]
 
   CAROUSEL
-    Slides: out/list-kits/<slug>/carousel/ (slide-01 … slide-0N.png)
-    Slide count: N (N=8 with market context, N=7 if market context cut)
+    Pattern: <A | B | C | D>
+    Slides: out/list-kits/<slug>/carousel/slide-01.png … slide-NN.png
+    Slide count: N
+
+  SINGLE POST
+    Template: <S1 | ... | S10>
+    Path: out/list-kits/<slug>/single-post/post.png
+
+  CAPTIONS
+    Carousel caption:  out/list-kits/<slug>/captions/carousel-caption.md
+    Single post:       out/list-kits/<slug>/captions/single-post-caption.md
+    #RyanRealtyBend: present in both ✓
+    Voice validation:  out/list-kits/<slug>/captions/caption-validation.json
 
   VERIFICATION TRACE
     <N> figures verified — kit-manifest.json:
@@ -463,7 +508,7 @@ List Kit ready for review — <StreetNumber> <StreetName>, <City>
     - <N> bd — Supabase listings, MlsId='<id>', BedroomsTotal = <N>
     - <N> ba — Supabase listings, MlsId='<id>', BathroomsTotal = <N>
     - <N> sqft — Supabase listings, MlsId='<id>', TotalLivingAreaSqFt = <N>
-    [... one line per figure, all deliverables]
+    [... one line per figure]
 
   KIT MANIFEST
     out/list-kits/<slug>/kit-manifest.json
@@ -475,74 +520,147 @@ Then stop. Do not commit. Do not push. Do not move any file. Wait for Matt's exp
 
 ---
 
-## 12. Publish step (post-approval)
+## 15. Publish step (post-approval)
 
 When Matt says "ship it" / "go" / "approved" / "publish":
 
 1. **Copy deliverables to public:**
    ```
    public/list-kits/<slug>/video/<slug>.mp4
-   public/list-kits/<slug>/flyers/just-listed.png
-   public/list-kits/<slug>/flyers/feature-sheet.pdf
-   public/list-kits/<slug>/flyers/feature-sheet.png
-   public/list-kits/<slug>/flyers/open-house.png
-   public/list-kits/<slug>/flyers/open-house.pdf
-   public/list-kits/<slug>/carousel/slide-01.png … slide-0N.png
+   public/list-kits/<slug>/flyers/*
+   public/list-kits/<slug>/carousel/slide-*.png
+   public/list-kits/<slug>/single-post/post.png
+   public/list-kits/<slug>/captions/*.md
    public/list-kits/<slug>/kit-manifest.json (update kit_status: "approved")
    ```
 
 2. **Register in asset library** (§9).
 
-3. **git add** the specific files above (not `git add -A` — the out/ directory is gitignored and must not be staged).
+3. **Update the `marketing_brain_actions` row:**
+   ```sql
+   UPDATE marketing_brain_actions
+   SET status='executed',
+       executor_response='{"draft_path":"public/list-kits/<slug>/","kit_status":"approved","deliverable_count":<N>}'::jsonb
+   WHERE id='<action_id>';
+   ```
 
-4. **Commit** with message referencing the MLS# and deliverable count.
+4. **git add** specific files only (not `git add -A` — `out/` is gitignored).
 
-5. **Push to origin/main immediately** — no "saved locally" commits.
+5. **Commit** with message referencing MLS# and deliverable count.
 
-6. **Optional — queue to post_scheduler:** only if Matt explicitly says "and publish to social" or "schedule it." The default is commit+push only. If post_scheduler is triggered, route:
-   - Just Listed flyer → IG feed, FB page, LinkedIn
-   - Carousel → IG carousel post
-   - Video → IG Reels, FB Reels
-   - Each post gets a platform-specific caption per `social_media_skills/platforms/` specs. No posting without a reviewed caption — surface captions for Matt's review separately.
+6. **Push to origin/main immediately** — no "saved locally" commits.
 
----
-
-## 13. What not to do
-
-1. **Never fabricate property facts.** If `"BedroomsTotal"` is null, show `—` on the flyer. Do not guess, do not infer from square footage, do not write "3 bedrooms" because the photos look like a 3-bedroom house.
-
-2. **Never use AI-generated property photos.** Every photo in every deliverable must come from `"PhotoURL"` (the actual MLS listing photos). Per `ANTI_SLOP_MANIFESTO.md`: AI-passed-as-real property photos is a hard ship-blocker. There is no exception.
-
-3. **Never deliver a partial kit.** All 5 deliverable groups ship together. If one fails, fix it or surface it to Matt — do not ship 4 of 5 and call it done. The review package must account for every deliverable.
-
-4. **Never push without Matt's approval.** A successful render, a passing QA gate, a complete kit-manifest.json — none of these are approval. Only Matt's explicit "ship it" / "go" / "approved" grants push permission per CLAUDE.md Draft-First, Commit-Last.
-
-5. **Never inherit numbers from chat context, prior sessions, a brief, or a web article.** Even if Matt quoted the price in his message, pull it fresh from Supabase and verify it matches. The Supabase record is the source of truth, not the conversation.
-
-6. **Never use gold.** The List Kit follows the new Ryan Realty design system: monochrome navy `#102742` only. No `#D4AF37`, no `#C8A864`, no gold hex of any variant. The old locked spec in CLAUDE.md (gold logo in the listing video footer) is superseded by the new design system for all List Kit deliverables.
-
-7. **Never re-typeset the wordmark.** Per `design_system/ryan-realty/SKILL.md`: "Don't invent a wordmark — the pre-rendered mark in `assets/brand/logo-blue.png` and the 14 numbered variations are the brand. Use them as images; don't re-typeset." This applies to flyers, carousel footer, and the video footer bar.
-
-8. **Never use banned words.** Any caption, VO, flyer copy, or carousel text containing "stunning," "nestled," "boasts," "charming," "pristine," "gorgeous," "breathtaking," "must-see," "dream home," "meticulously maintained," "entertainer's dream," "tucked away," "hidden gem," "truly," "spacious," "cozy," "luxurious," or "updated throughout" is a non-ship. Screen `"PublicRemarks"` before pulling it into flyer or carousel copy and sanitize.
-
-9. **Never skip the carousel market context verification gate.** If the market stat on slide 7 cannot be traced to a live Supabase query with row count and filter documented, cut the slide. A 7-slide carousel is better than a carousel with an unverified stat.
-
-10. **Never publish to social without separate caption review.** The commit+push step is the default. Social distribution is opt-in, requires Matt's explicit instruction, and requires a caption review pass before any post goes live.
+7. **Optional: queue to publisher** — only if Matt explicitly says "and publish to social" or
+   "schedule it." Routes through `automation_skills/automation/publish/`. Each platform post gets
+   a platform-specific caption derived from §12 + the platform best-practices skill.
 
 ---
 
-## 14. See also
+## 16. Action row contract
 
-- `video_production_skills/listing-tour-video/SKILL.md` — video sub-skill (locked architecture, photo-to-beat mapping, Ken Burns curves, ambient audio spec, QA gate)
-- `video_production_skills/listing_reveal/SKILL.md` — two-layer overlay system (text scrim + navy footer bar + logo)
-- `social_media_skills/flyer-design/SKILL.md` — flyer sub-skill (editorial layout, photo hero, broker footer, print vs digital spec)
-- `social_media_skills/instagram-carousel/SKILL.md` — carousel sub-skill (8-slide spec, persistent footer, slide continuity)
-- `video_production_skills/asset-library/SKILL.md` — asset manifest at `data/asset-library/manifest.json`, CLI at `lib/asset-library.mjs`
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — twelve banned-content rules, all ship-blockers
-- `video_production_skills/elevenlabs_voice/SKILL.md` — canonical Victoria voice settings (single source of truth: stability 0.40, similarity 0.80, style 0.50, model eleven_turbo_v2_5)
-- `design_system/ryan-realty/SKILL.md` — portable brand manifest
-- `design_system/ryan-realty/README.md` — full design system spec
-- `design_system/ryan-realty/colors_and_type.css` — all CSS variables (color tokens, type families, spacing, radii, shadows)
-- `CLAUDE.md` §0 — data accuracy mandate (non-negotiable)
-- `CLAUDE.md` §0.5 — draft-first, commit-last (non-negotiable)
-- `CLAUDE.md` §3 — video build hard rules (format, hook, beats, VO, brand)
+The producer reads from `marketing_brain_actions`:
+
+```typescript
+interface ListKitAction {
+  id: string                  // uuid
+  action_type: 'content:list_kit'
+  target: string              // 'mls:<MlsId>' or 'address:<slug>'
+  assigned_producer: 'social_media_skills/list-kit'
+  payload: {
+    mls_id?: string
+    address?: string
+    city?: string
+    carousel_pattern?: 'A' | 'B' | 'C' | 'D'   // default A
+    single_post_template?: 'S1' | 'S2' | 'S3' | 'S4' | 'S5' | 'S6' | 'S7' | 'S8' | 'S9' | 'S10'   // default S1
+    open_house_date?: string  // ISO datetime
+    voice_pattern?: 'default' | 'panorama'  // panorama auto-set when carousel_pattern='D'
+  }
+  data_evidence?: jsonb
+  status: 'pending'
+}
+```
+
+Status flow per `TEMPLATE.md` §8:
+
+```
+pending → in_production → ready → approved → executed → measured
+```
+
+---
+
+## 17. What not to do
+
+1. **Never fabricate property facts.** If `BedroomsTotal` is null, show `—` on the deliverable.
+   Do not guess from photos or square footage.
+2. **Never use AI-generated property photos.** Every photo comes from `"PhotoURL"`. Per
+   `ANTI_SLOP_MANIFESTO.md`: ship-blocker.
+3. **Never deliver a partial kit silently.** All 6 deliverable groups ship together. If one
+   fails, fix it or surface it — do not ship 5 of 6 and call it done.
+4. **Never push without Matt's approval.** A successful render, a passing QA gate, a complete
+   `kit-manifest.json` — none of these are approval.
+5. **Never inherit numbers from chat context, prior sessions, briefs, or web articles.** Pull
+   fresh from Supabase, verify match, every time.
+6. **Never use gold** in any kit deliverable. Monochrome navy `#102742` on cream `#faf8f4` is
+   the v2 brand. `#D4AF37` / `#C8A864` are retired tokens.
+7. **Never re-typeset the wordmark.** Use pre-rendered images from `assets/brand/` only.
+8. **Never use banned vocab.** Run every caption / VO / flyer copy / carousel text through the
+   voice_guidelines.md banned list before render.
+9. **Never skip the carousel pattern decision.** Default A is fine, but the decision is recorded
+   in `pattern.json` and `kit-manifest.json` — never silent.
+10. **Never publish to social without separate caption review.** Commit + push is the default.
+    Social distribution is opt-in, requires explicit instruction, and requires the caption to
+    have passed §12's hard rules.
+11. **Never mix patterns in the same listing.** Pick A, B, C, or D — never two.
+12. **Never ship a caption missing `#RyanRealtyBend`** on any IG / FB / TikTok / Threads / X /
+    Pinterest / YouTube surface. CLAUDE.md "Voice + content" — locked 2026-05-14.
+
+---
+
+## 18. Failure modes
+
+| failure | symptoms | recovery |
+|---|---|---|
+| Listing not found | `WHERE "MlsId"=...` returns 0 rows | Report exact input, ask Matt to verify or supply MLS# |
+| Multiple address matches | Fuzzy match returns >1 row | Present candidates, ask Matt to disambiguate |
+| Photo set < 4 distinct | Pattern A needs ≥10, flyer needs ≥4 | Surface to Matt. Offer: backfill from Spark, downgrade Pattern A to A-collapsed (fewer slides), or skip carousel |
+| Pattern D requested without aerial | No wide drone shot in PhotoURL | Surface to Matt. Offer: source drone, downgrade to A |
+| `PublicRemarks` contains banned vocab | Banned-word grep hits in remarks | Strip the offending sentences. If remarks become empty, leave the property description block blank — do not paraphrase/rewrite |
+| Voice validation fails | Caption voice fingerprint score < threshold | Re-write the caption. Max 2 auto-iterations. Then surface to Matt with the specific rule citation |
+| Render timeout | Remotion / compositor process hangs > 10 min | Kill the process, report last successful frame + error log |
+| Carousel pattern asset miss | logo-blue.png, fonts not on disk | Stop. Report missing assets. Do not fall back to system fonts |
+| Missing env var | Supabase / API key not set | Report which var, which tool. Do not guess or hard-code |
+
+---
+
+## 19. See also
+
+- `social_media_skills/instagram-carousel/SKILL.md` — Patterns A/B/C/D renderer
+- `social_media_skills/ig-single-post/SKILL.md` — S1–S10 single-image renderer
+- `social_media_skills/flyer-design/SKILL.md` — flyers
+- `video_production_skills/listing-tour-video/SKILL.md` — listing video
+- `video_production_skills/listing_reveal/SKILL.md` — overlay system
+- `video_production_skills/asset-library/SKILL.md` — manifest registration
+- `marketing_brain_skills/producers/TEMPLATE.md` — producer skeleton
+- `marketing_brain_skills/producers/REGISTRY.md` — Section A row
+- `automation_skills/content_engine/SKILL.md` — content routing bus
+- `social_media_skills/platform-best-practices/SKILL.md` — 2026 platform rules
+- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice + banned vocab
+- `design_system/ryan-realty/SKILL.md` — brand system
+
+**Related listing-moment producers** (separate triggers, not in this kit):
+
+- `social_media_skills/coming-soon-teaser/` — pre-Active Reel
+- `social_media_skills/neighbor-outreach-note/` — pre-Active handwritten note + flyer
+- `social_media_skills/open-house-stories/` — IG/FB Stories sequence
+- `social_media_skills/under-contract-announcement/` — under-contract static
+- `social_media_skills/sold-deal-summary/` — sold post (IG + LinkedIn)
+- `social_media_skills/postcard-farm-mailer/` — USPS at-list + at-sold
+- `social_media_skills/yard-sign-rider/` — physical signage
+- `social_media_skills/linkedin-document-carousel/` — LinkedIn PDF
+- `social_media_skills/agent-coop-eflyer/` — agent-to-agent email
+- `video_production_skills/tiktok-listing-tour/` — TikTok-optimized video
+- `video_production_skills/youtube-long-form-walkthrough/` — $750K+ YT
+- `marketing_brain_skills/producers/site-property-landing/` — property page
+- `marketing_brain_skills/producers/ops-fb-marketplace/` — FB Marketplace
+- `marketing_brain_skills/producers/ops-matterport-embed/` — Matterport embed
+- `marketing_brain_skills/producers/ops-manychat/` — ManyChat automation
