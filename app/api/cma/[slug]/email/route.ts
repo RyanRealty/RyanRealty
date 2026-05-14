@@ -7,42 +7,23 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-/**
- * POST /api/cma/[slug]/email
- *
- * Renders the CMA to PDF and emails it.
- *
- * Body: {
- *   to?: string | string[]      // recipient(s); defaults to broker email from public.cmas
- *   cc?: string | string[]
- *   subject?: string            // defaults to "Comparative Market Analysis · <address>"
- *   message?: string            // optional intro paragraph above the auto-generated body
- *   from?: string               // optional sender override; defaults to brand DEFAULT_FROM
- * }
- *
- * Auth: requires an authenticated session. Restricted to admin / broker accounts.
- */
-export async function POST(
+interface EmailPayload {
+  to?: string | string[]
+  cc?: string | string[]
+  subject?: string
+  message?: string
+  from?: string
+}
+
+async function handleEmail(
   request: Request,
-  context: { params: Promise<{ slug: string }> }
+  context: { params: Promise<{ slug: string }> },
+  body: EmailPayload
 ) {
   const { slug } = await context.params
   const safeSlug = String(slug ?? '').trim().toLowerCase()
   if (!/^[a-z0-9-]+$/.test(safeSlug)) {
     return NextResponse.json({ error: 'Invalid slug' }, { status: 400 })
-  }
-
-  let body: {
-    to?: string | string[]
-    cc?: string | string[]
-    subject?: string
-    message?: string
-    from?: string
-  } = {}
-  try {
-    body = await request.json()
-  } catch {
-    // empty body is ok — we'll fall back to defaults from public.cmas
   }
 
   const supabase = createServiceClient()
@@ -139,4 +120,49 @@ export async function POST(
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: 'CMA email failed', detail: msg.slice(0, 500) }, { status: 500 })
   }
+}
+
+/**
+ * POST /api/cma/[slug]/email
+ *
+ * Renders the CMA to PDF and emails it.
+ *
+ * Body: { to, cc, subject, message, from }
+ *
+ * Auth: requires an authenticated session. Restricted to admin / broker accounts.
+ */
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ slug: string }> }
+) {
+  let body: EmailPayload = {}
+  try {
+    body = await request.json()
+  } catch {
+    // empty body is OK — we'll fall back to defaults from public.cmas
+  }
+  return handleEmail(request, context, body)
+}
+
+/**
+ * GET /api/cma/[slug]/email?to=...&cc=...&subject=...&message=...&from=...
+ *
+ * Same behavior as POST, but accepts the payload via query string so the
+ * endpoint can be triggered from a browser link or an MCP tool that only
+ * supports GET. URL-encode the message body.
+ */
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ slug: string }> }
+) {
+  const url = new URL(request.url)
+  const sp = url.searchParams
+  const body: EmailPayload = {
+    to: sp.get('to') ?? undefined,
+    cc: sp.get('cc') ?? undefined,
+    subject: sp.get('subject') ?? undefined,
+    message: sp.get('message') ?? undefined,
+    from: sp.get('from') ?? undefined,
+  }
+  return handleEmail(request, context, body)
 }
