@@ -40,7 +40,7 @@
     min-height: 11in;
     margin: 0.4in auto;
     background: var(--cream);
-    padding: 0.45in 0.6in 0.7in 0.6in;
+    padding: 0.4in 0.6in 0.85in 0.6in;
     box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
     position: relative;
     page-break-after: always;
@@ -67,7 +67,7 @@
 
   .pg-footer {
     position: absolute;
-    bottom: 0.28in;
+    bottom: 0.32in;
     left: 0.6in;
     right: 0.6in;
     border-top: 1px solid var(--navy-line);
@@ -77,6 +77,7 @@
     font-size: 9px;
     color: var(--muted);
     letter-spacing: 0.04em;
+    background: var(--cream);
   }
 
   h2.section {
@@ -86,20 +87,20 @@
     text-transform: uppercase;
     letter-spacing: 0.16em;
     color: var(--navy);
-    margin: 0 0 14px 0;
-    padding-bottom: 7px;
+    margin: 0 0 10px 0;
+    padding-bottom: 6px;
     border-bottom: 2px solid var(--navy);
     display: inline-block;
   }
   h3.subhead {
     font-family: 'Geist', sans-serif;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--navy);
-    margin: 18px 0 7px 0;
+    margin: 12px 0 5px 0;
   }
-  p { font-size: 11.5px; line-height: 1.55; margin: 0 0 9px 0; }
-  .small { font-size: 10px; color: var(--muted); line-height: 1.5; }
+  p { font-size: 11px; line-height: 1.45; margin: 0 0 6px 0; }
+  .small { font-size: 10px; color: var(--muted); line-height: 1.45; }
 
   .cover-label {
     font-size: 10px;
@@ -220,7 +221,7 @@
   .two-col {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    gap: 20px;
   }
 
   table.comps {
@@ -236,11 +237,11 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--navy);
-    padding: 7px 5px;
+    padding: 5px 5px;
     border-bottom: 2px solid var(--navy);
   }
   table.comps tbody td {
-    padding: 7px 5px;
+    padding: 4px 5px;
     border-bottom: 1px solid var(--navy-line);
     vertical-align: middle;
   }
@@ -258,25 +259,26 @@
   table.imps {
     width: 100%;
     border-collapse: collapse;
-    font-size: 10.5px;
+    font-size: 10px;
   }
   table.imps thead th {
     text-align: left;
-    font-size: 9px;
+    font-size: 8.5px;
     text-transform: uppercase;
     letter-spacing: 0.10em;
     color: var(--navy);
-    padding: 7px 5px;
+    padding: 5px 5px;
     border-bottom: 2px solid var(--navy);
   }
   table.imps tbody td {
-    padding: 8px 5px;
+    padding: 5px 5px;
     border-bottom: 1px solid var(--navy-line);
     vertical-align: top;
+    line-height: 1.35;
   }
   table.imps .num { text-align: right; font-variant-numeric: tabular-nums; }
   table.imps tfoot td {
-    padding: 9px 5px;
+    padding: 6px 5px;
     font-weight: 600;
     color: var(--navy);
     border-top: 2px solid var(--navy);
@@ -461,13 +463,13 @@
   }
 
   .note-list {
-    margin: 6px 0 12px 16px;
+    margin: 5px 0 8px 16px;
     padding: 0;
   }
   .note-list li {
-    font-size: 11px;
-    line-height: 1.5;
-    margin-bottom: 5px;
+    font-size: 10.5px;
+    line-height: 1.4;
+    margin-bottom: 3px;
   }
 
   /* ── Comp flyer pages (one per comp) ─────────────────── */
