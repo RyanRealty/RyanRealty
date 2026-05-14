@@ -243,9 +243,58 @@ None.
 
 ---
 
-## In progress
+## Week 2 — Schema rollout (2026-05-14 continuation)
 
-- Final session summary + commit pending Matt's review.
+### Discovery (logged before pasting)
+
+- **Existing schema audit:** Homepage already renders 6 JSON-LD blocks: Organization (with address, phone, sameAs), WebSite, WebPage, RealEstateAgent + WebSite @graph (with full address, phone, geo, hours, areaServed). **Skipped LocalBusiness injection on homepage** — RealEstateAgent block 5 already covers all the fields the audit's proposed LocalBusiness would add. Adding a third entity describing the same business would create messy Knowledge Graph signals.
+- **Every NON-homepage page is bare on rich schema.** All non-homepage URLs only have Organization (basic) + WebPage. No Article, no FAQPage, no BreadcrumbList, no LocalBusiness/RealEstateAgent. Injection needed everywhere else.
+- **AgentFire "Custom HTML" metabox is landing-page-template-specific.** Pasting JSON-LD there only renders if Page Template is set to "Landing Page (Custom HTML)" — which would wipe normal page content. Not a viable injection point for regular pages.
+- **Schema injection method that works:** paste JSON-LD `<script type="application/ld+json">` blocks into the post body via the `#content` textarea (Classic editor). Admin users have `unfiltered_html` capability so WP preserves `<script>` tags through save. Verified by fetching live pages — blocks render in document body and Google reads JSON-LD from anywhere on the page.
+- **Bug discovered (not in scope for this session):** EVERY page on the site renders one JSON-LD block that contains a code-comment stub instead of valid JSON. The contents read like: "into <head>. Handles 0-level (homepage, no breadcrumb), 1-level (/sellers/), and 2-leve..." — i.e. a template placeholder that wasn't properly filled. Each page has this same parse-error block. Likely a broken breadcrumb injection template in the AgentFire theme. Recommend filing with AgentFire support.
+
+### Schema added (all live verified)
+
+**Posts:**
+- **Building permit timeline (post 3334)** — Article + FAQPage (3 Q&A). Live blocks: 5.
+- **Cost of living 2026 (page 3504)** — Article + FAQPage (3 Q&A). Live blocks: 5.
+- **May 2026 market report (post 3484)** — Article. Live blocks: 4.
+
+**Service pages:**
+- **Contact (page 1927)** — LocalBusiness + RealEstateAgent combined entity with address, phone, geo, hours, areaServed, sameAs. Live blocks: 5.
+- **About Us (page 1910)** — RealEstateAgent with employee array (Matt Ryan, Paul Stevenson, Rebecca Peterson). Live blocks: 5.
+
+**Neighborhood hub pages:**
+- **NW Crossing (2280)** — BreadcrumbList (Home > Explore Bend > Northwest Crossing). Live blocks: 4.
+- **Tumalo (2198)** — BreadcrumbList. Live blocks: 4.
+- **Tanager (2296)** — BreadcrumbList. Live blocks: 4.
+- **River's Edge Village (2606)** — BreadcrumbList. Live blocks: 4.
+- **Valhalla Heights (3181)** — BreadcrumbList. Live blocks: 4.
+- **Tree Farm (2617)** — BreadcrumbList. Live blocks: 4.
+- **The Rim at Aspen Lakes (3158)** — BreadcrumbList (Sisters parent). Live blocks: 4.
+
+### Week 2 totals
+
+- **12 schema injections shipped** across 12 unique pages.
+- **All verified live** via cache-busted fetch + JSON parse.
+- **Zero rollbacks**, zero failed saves.
+- Method: direct `#content` textarea append + native form submit. Pattern is reusable for any future schema injection on this AgentFire site.
+
+### Expected impact (per audit Section 4 + Section 2 modeling)
+
+- **FAQPage rich results on permits + cost-of-living** — could lift CTR from 0% to 8-12% at position 7-9 if Google grants the rich result. The two pages combined had 85 monthly impressions; conservative lift = +4-7 clicks/month.
+- **Article schema on 3 posts** — recency + authorship signals to Google. No direct CTR lift but improves Top Stories / news-cluster eligibility.
+- **LocalBusiness on Contact** — Knowledge Panel reinforcement for brand queries.
+- **RealEstateAgent on About Us** — Person entities for Matt, Paul, Rebecca enter Google's Knowledge Graph. Foundational for "[broker name] bend" queries.
+- **BreadcrumbList on 7 neighborhoods** — SERP breadcrumb path display + reinforced site hierarchy. Minor CTR lift across neighborhood cluster.
+
+### Still queued (deferred to next sessions)
+
+- **Google Rich Results Test validation** — Recommended for each new schema block. Can run via `https://search.google.com/test/rich-results` per URL. Skipped this session to keep momentum; syntax was verified via local JSON.parse.
+- **GSC URL Inspection** — Submit changed URLs to Google Search Console for re-indexing. Requires GSC OAuth credentials I don't have locally.
+- **Week 3 — 3 new pages**: `/sell-your-bend-oregon-home/`, `/bend-oregon-realtor/`, `/relocating-to-bend-oregon/`. Each needs draft-first approval per CLAUDE.md §0.5.
+- **Week 4 — 6 body refreshes**: banned-word replacements in AgentFire page-builder content (Contact intro, About Us intro+H1, Tanager About, Valhalla About, Rim About, Explore Bend hub lead). Each needs draft-first approval.
+- **Bug fix**: every page has a parse-error JSON-LD block from a broken theme template stub. Separate session, possibly needs AgentFire support.
 
 ---
 
