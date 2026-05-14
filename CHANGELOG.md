@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.190.0 (2026-05-14)
+
+### Features
+- feat(brand): host rendered Matt + Paul email signatures at public URLs
+
+---
+
+
 ## v1.189.0 (2026-05-14)
 
 ### Features
