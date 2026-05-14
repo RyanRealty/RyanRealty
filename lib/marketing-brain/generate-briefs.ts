@@ -19,8 +19,9 @@
  *   audit-ads * capitalize_on_spike       → market_data_short
  *   audit-website seo investigate_drop     → blog_post (refresh losing query)
  *   audit-website seo capitalize_on_spike  → blog_post + ig_carousel (recycle winning content)
- *   audit-website seo test_new_creative    → blog_post (TODO: site:meta_update in Item 1)
- *   audit-website page leak               → NO brief (CRO task, log as marketing_decision)
+ *   audit-website seo test_new_creative    → site:meta_update (Item 1 wiring)
+ *   audit-website page audit_landing_page  → site:cta_update (Item 1 wiring)
+ *   audit-website funnel audit_landing_page → site:cta_update (Item 1 wiring)
  *   competitor serp_gap                   → blog_post + ig_carousel
  *   competitor format_gap (video)         → market_data_short
  *   platform-trends format                → market_data_short OR meme_video by label cue
@@ -30,8 +31,8 @@
  *   diagnose capitalize_on_spike          → channel-matched format, correct producer routing
  *
  * Silently dropped today — still in scope for later items:
- *   audit-ads budget/tracking/targeting/campaign_structure → Item 1 (ops:meta_* actions)
- *   audit-website funnel/page/traffic                     → Item 1 (site:* actions)
+ *   audit-ads budget/tracking/targeting/campaign_structure → ops:meta_* actions (next)
+ *   audit-website traffic investigate_drop                 → analyze:drop_investigation (future)
  *   audit-crm response_time/source_quality/tagging_drift/pipeline_health → Item 2 (ops:fub_* + comms:*)
  *   platform-trends algorithm                             → Item 5 (comms:matt_alert)
  */
@@ -91,6 +92,20 @@ export interface GeneratedBrief {
   predicted_outcome: PredictedOutcome
   generation_reason: string
   voice_validation: VoiceValidation
+  /**
+   * Optional override for the `target` column on marketing_brain_actions.
+   * Defaults to 'brand' for content briefs. Site/ops briefs override with
+   * page paths ('/listings'), MLS ids ('mls:220189422'), campaign ids
+   * ('campaign_id:abc'), etc.
+   */
+  target?: string
+  /**
+   * Optional override for the `payload` jsonb on marketing_brain_actions.
+   * When present, replaces the default content payload (hook/body/cta/
+   * target_audience) entirely. Used by site:* and ops:* briefs where the
+   * producer needs structured edit data rather than hook+body+cta.
+   */
+  payload_override?: Record<string, unknown>
 }
 
 export interface GenerateOptions {
@@ -714,9 +729,11 @@ export function mapOpportunityToBriefs(
   }
 
   // ── audit-website seo — branch by recommended_action ─────────────────────
-  // investigate_drop  → blog_post (refresh)
+  // investigate_drop    → blog_post (page refresh on losing query)
   // capitalize_on_spike → blog_post + ig_carousel (recycle winning content)
-  // test_new_creative (low CTR) → blog_post (TODO Item 1: site:meta_update)
+  // test_new_creative   → site:meta_update (page ranks but CTR is low —
+  //                        the fix is title + meta description, not new
+  //                        content; routes to site-edit producer)
   if (
     opportunity.source === 'audit-website' &&
     opportunity.area === 'seo'
@@ -726,7 +743,43 @@ export function mapOpportunityToBriefs(
     const gainingQuery = seo?.top_queries.find((q) => q.position_delta !== null && q.position_delta < -1)
     const lowCtrQuery = seo?.top_queries.find((q) => q.low_ctr_flag)
 
-    // Pick the query that matches the action context
+    // Low CTR → site:meta_update (page exists, ranks, but few clicks).
+    // The fix is the SERP snippet, not new content. Short-circuit the
+    // blog_post emission path that follows.
+    if (opportunity.recommended_action === 'test_new_creative' && lowCtrQuery) {
+      const queryStr = lowCtrQuery.query
+      const impressionsStr = lowCtrQuery.impressions.toLocaleString()
+      briefs.push(buildBrief({
+        topic: `Site meta update: improve CTR on "${queryStr}"`,
+        format: 'site_meta_update',
+        platforms: ['site'],
+        hook: `"${queryStr}" gets ${impressionsStr} impressions but a low click-through rate. Page ranks; SERP snippet does not convert.`,
+        body: `Update the page's title tag and meta description to match the query intent. Use the exact query phrase if it reads naturally. Lift CTR by tightening the promise the snippet makes.`,
+        cta: undefined,
+        target_audience: 'search_intent_match',
+        target: `query:${queryStr}`,
+        payload_override: {
+          query: queryStr,
+          impressions: lowCtrQuery.impressions,
+          edit_targets: ['title', 'meta_description'],
+          problem_type: 'low_ctr',
+          action_hint: 'Resolve the ranking page via GSC, then rewrite the title + meta description to align with searcher intent. Site-edit producer opens a PR with both changes.',
+          source_audit: 'audit-website.seo.low_ctr_flag',
+        },
+        data_sources: [
+          { type: 'audit-website', evidence: `Query "${queryStr}" — ${impressionsStr} impressions, CTR in bottom quartile of top queries.` },
+        ],
+        predicted_outcome: {
+          primary_metric: 'qualified_seller_leads',
+          expected_value: '+30% to +50% CTR on the affected page within 30 days',
+          rationale: `A page that ranks but has low CTR has a title/meta mismatch, not a content gap. Rewriting the SERP snippet typically lifts CTR 30-50% on similar pages.`,
+        },
+        generation_reason: `audit-website seo test_new_creative (low CTR): ${opportunity.headline}. Query "${queryStr}" — ${impressionsStr} impressions.`,
+      }))
+      return briefs.map((brief): GeneratedBrief => ({ ...brief, voice_validation: applyBrandVoice(brief) }))
+    }
+
+    // Other seo branches use a query + blog_post emission
     let targetQuery: string
     let impressions: number
     let queryEvidence: string
@@ -739,13 +792,6 @@ export function mapOpportunityToBriefs(
       targetQuery = losingQuery.query
       impressions = losingQuery.impressions
       queryEvidence = `Position drifted +${losingQuery.position_delta?.toFixed(1)} places WoW. ${impressions.toLocaleString()} impressions.`
-    } else if (opportunity.recommended_action === 'test_new_creative' && lowCtrQuery) {
-      // TODO Item 1: the proper fix here is site:meta_update on the existing
-      // ranking page (title + meta description). For now we emit a blog_post
-      // refresh as the closest in-scope action.
-      targetQuery = lowCtrQuery.query
-      impressions = lowCtrQuery.impressions
-      queryEvidence = `CTR in bottom quartile of top queries. ${impressions.toLocaleString()} impressions.`
     } else {
       const q = losingQuery ?? lowCtrQuery ?? gainingQuery ?? seo?.top_queries[0]
       if (!q) return []
@@ -797,18 +843,85 @@ export function mapOpportunityToBriefs(
     }
   }
 
-  // ── audit-website page leak → NO brief (CRO task) ────────────────────────
-  // Handled in generateWeeklyBriefs as a marketing_decision only.
+  // ── audit-website page leak → site:cta_update ────────────────────────────
+  // Top-30% sessions, bottom-30% conversion: the page draws traffic but
+  // does not convert. Default fix is CTA placement + copy clarity. Routes
+  // to site-edit producer; the persistBriefs page-leak marketing_decision
+  // log still fires as supplementary audit trail.
   if (
     opportunity.source === 'audit-website' &&
     opportunity.area === 'page' &&
     opportunity.recommended_action === 'audit_landing_page'
   ) {
-    return [] // Explicitly no brief — caller logs marketing_decision instead
+    briefs.push(buildBrief({
+      topic: `Site CTA update: high-traffic page is not converting`,
+      format: 'site_cta_update',
+      platforms: ['site'],
+      hook: `One page draws top-quartile traffic but bottom-quartile leads. Read the CTA, the placement, and the friction below it.`,
+      body: `Audit the affected page for CTA visibility above the fold, form length, and copy that promises the reader something they can verify in 5 seconds. Default change: pull the lead form higher, restate the value above it, trim any field that is not required.`,
+      cta: undefined,
+      target_audience: 'site_visitor_seller',
+      target: `audit:page_leak:${new Date(signals.asOfDate).toISOString().slice(0, 10)}`,
+      payload_override: {
+        edit_targets: ['cta_placement', 'form_length', 'above_fold_value_prop'],
+        problem_type: 'page_leak',
+        action_hint: 'Resolve the leaky page via GA4 (top-30% sessions, bottom-30% conversion), inspect current CTA + form, then open a PR adjusting placement + copy. If the page is a landing page tied to an active campaign, prefer A/B testing the change.',
+        source_audit: 'audit-website.page.is_leak',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-website', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: '+1 to +3 qualified_seller_leads/week if the page is a seller-intent landing page; +0.3/week otherwise',
+        rationale: `High-traffic + low-conversion pages have either a CTA visibility problem, a friction problem at the form, or a trust problem above the fold. The fix is usually one of those three; CTA placement is the highest-leverage starting point.`,
+      },
+      generation_reason: `audit-website page audit_landing_page: ${opportunity.headline}. Evidence: ${opportunity.evidence}`,
+    }))
   }
 
-  // audit-website funnel / traffic → silently dropped today
-  // (Item 1 will wire these to site:* producers.)
+  // ── audit-website funnel drop-off → site:cta_update ──────────────────────
+  // A funnel step has >=50% drop-off. The previous step's page needs the
+  // fix. Same producer as page-leak; different framing in the payload.
+  if (
+    opportunity.source === 'audit-website' &&
+    opportunity.area === 'funnel' &&
+    opportunity.recommended_action === 'audit_landing_page'
+  ) {
+    briefs.push(buildBrief({
+      topic: `Site CTA update: funnel drop-off above 50%`,
+      format: 'site_cta_update',
+      platforms: ['site'],
+      hook: `A funnel step is losing more than half its traffic. The fix is on the page before the drop, not after.`,
+      body: `The drop-off step indicates the prior page is not selling the next action. Audit the upstream page for a clear next-step CTA, a verifiable promise, and friction-free entry to the next step. Default change: rewrite the CTA copy + make it the single dominant call to action on the page.`,
+      cta: undefined,
+      target_audience: 'site_visitor_seller',
+      target: `audit:funnel_drop:${new Date(signals.asOfDate).toISOString().slice(0, 10)}`,
+      payload_override: {
+        edit_targets: ['cta_copy', 'cta_placement', 'next_step_clarity'],
+        problem_type: 'funnel_drop_off',
+        action_hint: 'Resolve the upstream page via GA4 funnel report, audit current CTA copy, then open a PR with rewritten CTA + clearer next-step preview.',
+        source_audit: 'audit-website.funnel.dropoff_50pct',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-website', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: '+10% to +30% step-conversion on the affected funnel step within 30 days',
+        rationale: `Funnel drop-offs above 50% almost always trace to a CTA that does not preview the next step clearly. Tightening the copy lifts step-conversion in line with industry benchmarks.`,
+      },
+      generation_reason: `audit-website funnel audit_landing_page: ${opportunity.headline}. Evidence: ${opportunity.evidence}`,
+    }))
+  }
+
+  // audit-website traffic → silently dropped today (declining-source
+  // analysis is more like an investigation than a site edit; will route
+  // to analyze:drop_investigation in a future item).
 
   // ── competitor SERP gap → blog_post + ig_carousel ────────────────────────
   if (opportunity.source === 'competitor' && opportunity.area === 'serp_gap') {
@@ -1079,6 +1192,19 @@ export async function persistBriefs(
       // GBP (ops:* — but emitted as a content-flow format; route still resolves)
       gbp_post: { action_type: 'ops:gbp_post', producer: 'marketing_brain_skills/producers/ops-reputation' },
 
+      // Site edits — emitted by audit-website handlers in Item 1.
+      // Route to site-edit / site-page-create / site-performance producers
+      // per producers/REGISTRY.md Section C. Briefs use payload_override
+      // to carry structured edit data; target is a page path or audit-id.
+      site_meta_update: { action_type: 'site:meta_update', producer: 'marketing_brain_skills/producers/site-edit' },
+      site_copy_update: { action_type: 'site:copy_update', producer: 'marketing_brain_skills/producers/site-edit' },
+      site_cta_update: { action_type: 'site:cta_update', producer: 'marketing_brain_skills/producers/site-edit' },
+      site_page_create: { action_type: 'site:page_create', producer: 'marketing_brain_skills/producers/site-page-create' },
+      site_landing_page_create: { action_type: 'site:landing_page_create', producer: 'marketing_brain_skills/producers/site-page-create' },
+      site_perf_fix: { action_type: 'site:perf_fix', producer: 'marketing_brain_skills/producers/site-performance' },
+      site_redirect_add: { action_type: 'site:redirect_add', producer: 'marketing_brain_skills/producers/site-performance' },
+      site_schema_add: { action_type: 'site:schema_add', producer: 'marketing_brain_skills/producers/site-performance' },
+
       // Legacy aliases — pre-Item-3 these routed to listing_reveal which
       // fails when target='brand' because listing_reveal requires an MLS#.
       // Re-routed to market-data-video which accepts brand-level targets.
@@ -1092,18 +1218,23 @@ export async function persistBriefs(
 
     // INSERT marketing_brain_actions row. The content_briefs view is read-
     // only post-migration; INSERTs must go to the underlying table.
+    // Site/ops briefs may override target + payload (page paths, structured
+    // edit data); content briefs use the default 'brand' target + content
+    // payload built from hook/body/cta.
+    const resolvedTarget = brief.target ?? 'brand'
+    const resolvedPayload = brief.payload_override ?? {
+      hook: brief.hook,
+      body: brief.body ?? null,
+      cta: brief.cta ?? null,
+      target_audience: brief.target_audience,
+    }
     const { data: briefRow, error: briefErr } = await supabase
       .from('marketing_brain_actions')
       .insert({
         action_type: route.action_type,
-        target: 'brand',
+        target: resolvedTarget,
         assigned_producer: route.producer,
-        payload: {
-          hook: brief.hook,
-          body: brief.body ?? null,
-          cta: brief.cta ?? null,
-          target_audience: brief.target_audience,
-        },
+        payload: resolvedPayload,
         data_evidence: { sources: brief.data_sources },
         topic: brief.topic,
         format: brief.format,
@@ -1160,22 +1291,9 @@ export async function persistBriefs(
     })
   }
 
-  // Log page-leak CRO findings as marketing_decisions with no brief
-  const pageLeakOpps = opportunities.filter(
-    (o) => o.source === 'audit-website' && o.area === 'page' && o.recommended_action === 'audit_landing_page'
-  )
-  for (const opp of pageLeakOpps) {
-    await supabase.from('marketing_decisions').insert({
-      decision_type: 'audit_finding',
-      decision_summary: `CRO task (no brief generated): ${opp.headline}`,
-      data_observed: { evidence: opp.evidence, area: opp.area, source: opp.source },
-      rules_cited: ['generate-briefs mapping: page leak → CRO task, not content brief'],
-      predicted_outcome: {},
-      actual_outcome: {},
-      reviewer: 'marketing_brain:generate-briefs',
-      final_decision: 'awaiting_review',
-    })
-  }
+  // (Item 1: the legacy page-leak marketing_decisions log was removed —
+  // page-leak opportunities now generate a site:cta_update brief, which
+  // creates its own per-brief marketing_decisions row above.)
 
   return { inserted: ids.length, ids, errors: persistErrors }
 }
@@ -1262,6 +1380,8 @@ function buildBrief(params: Omit<GeneratedBrief, 'voice_validation'>): Omit<Gene
     cta: params.cta,
     target_audience: params.target_audience,
     data_sources: params.data_sources,
+    target: params.target,
+    payload_override: params.payload_override,
     predicted_outcome: {
       primary_metric: params.predicted_outcome.primary_metric || 'qualified_seller_leads',
       expected_value: params.predicted_outcome.expected_value,
