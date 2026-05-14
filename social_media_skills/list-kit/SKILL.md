@@ -27,6 +27,31 @@ action_types:
 
 # List Kit — Ryan Realty At-Active Listing Marketing Orchestrator
 
+## CRITICAL — Canonical generators + approved-state reference
+
+Before dispatching to any sub-skill, read:
+
+1. **Approved-state reference (must read every time):** `public/template-picker/preview/list-kit-tumalo-v3.html` — the canonical Tumalo Reservoir v3 kit Matt approved. Every new listing renders against it.
+2. **Canonical generators (the layout is in the code, not the prose):**
+   - `scripts/build_tumalo_v3_kit.py` — Pattern A bare-photo carousel + Pattern B editorial hero + Pattern C magazine hero.
+   - `scripts/build_single_image_posts.py` — S1–S10 single-image post templates.
+   - `scripts/build_pattern_d_panorama.py` — Pattern D panorama-across-slides (parameterized).
+3. **Working listing-specific adapters** (use as templates for new listings):
+   - `scripts/build_schoolhouse_sold_posts.py`
+   - `scripts/build_beaumont_pending_posts.py`
+
+**Adapt by changing SRC paths + listing data + text content only. Never re-implement layout, fonts, scrim values, or text positions.** If the canonical script positions the "Sold" word at `y = H - 360` with `amboqia(180)`, every new listing's S2 uses the same. The Python generator code is the source of truth — the SKILL.md prose can drift; the code cannot.
+
+Banned in any list-kit render:
+
+- Logo, broker headshot, phone, URL, or spec-line block burned into a Pattern A carousel slide.
+- "JUST LISTED" / "JUST SOLD" / "UNDER CONTRACT" sticker badges on top of photos. The text moments are tracked typography per the approved S-template layouts.
+- Writing a new HTML+Playwright compositor when the Python generator already produces the approved render.
+
+Locked 2026-05-14 per `~/.claude/.../memory/feedback_use_approved_generators.md`.
+
+---
+
 **Scope.** Single entry point that builds every at-Active marketing deliverable for one listing.
 One trigger from Matt produces six output deliverables (1 video, 3 flyers, 1 carousel, 1 single
 post), surfaces them as a unit for review, and publishes on explicit approval. Pre-Active and

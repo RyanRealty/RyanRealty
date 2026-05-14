@@ -18,6 +18,28 @@ action_types:
 
 # Instagram Carousel
 
+## CRITICAL — Canonical generators (read BEFORE rendering)
+
+**This skill does not describe carousel layouts in prose. The layouts live in code.** Before rendering for any new listing:
+
+1. **READ the approved-state reference:** `public/template-picker/preview/list-kit-tumalo-v3.html` — the canonical Tumalo Reservoir v3 listing kit. This is the design Matt approved. Every new listing renders against it.
+2. **READ the canonical generator:** `scripts/build_tumalo_v3_kit.py` — produces Pattern A (10 bare photos), Pattern B (Amboqia editorial hero), Pattern C (Azo Sans magazine hero).
+3. **For Pattern D panorama:** use `scripts/build_pattern_d_panorama.py <source-aerial.jpg> <output-dir>` — parameterized adapter of `scripts/build_tumalo_panorama_post.py`.
+4. **Adapt by writing a listing-specific adapter** at `scripts/build_<slug>_<moment>_posts.py`. Copy the helpers (smart_crop_to_portrait, gentle_polish, top_scrim, bottom_scrim, tracked_text). Change SRC paths + listing data only. **Never re-implement layout, fonts, scrim values, or positions.**
+
+**Banned:**
+
+- Baking a navy footer, brokerage logo, slide numeral, or any other overlay onto a Pattern A slide. **Pattern A is the bare photo. Zero on-slide chrome.** The viewer's mind reads it as a real listing photograph, not a marketing flyer.
+- Writing a new HTML+Playwright compositor when the Python generator already produces the approved render.
+- Adding scrim chunks, broker headshots, phone numbers, URLs, or "JUST LISTED" badges to listing photos. The CAPTION carries all of that.
+- Skipping the read of the approved-state reference before rendering. The SKILL.md prose drifts; the generator code is the truth.
+
+If the generator needs to produce a moment that doesn't exist in the canonical scripts (e.g. a new S-template variant), surface to Matt first. Don't ship a one-off.
+
+Locked 2026-05-14 per `~/.claude/.../memory/feedback_use_approved_generators.md`.
+
+---
+
 ## Purpose
 
 Produce multi-slide Instagram carousels (1–10 slides) that read as a single cohesive piece —
@@ -246,19 +268,18 @@ Always the last slide. No exceptions.
 
 ---
 
-## Listing carousel patterns (A / B / C / D) — locked 2026-05-14
+## Listing carousel patterns (A / B / C / D) — locked 2026-05-14 · CORRECTED 2026-05-14
 
-When `content_type == 'listing'`, the carousel switches into one of four pattern modes via the
-`pattern` payload field. **Pick one; never mix.** The default is Pattern A unless the caller
-specifies otherwise. Each pattern overrides the generic slide-type catalog above with a fixed
-slide composition.
+**The patterns are produced by `scripts/build_tumalo_v3_kit.py` (Pattern A/B/C) and `scripts/build_pattern_d_panorama.py` (Pattern D). Read those before rendering.** This table is descriptive only — the code is the source of truth.
 
 | Pattern | Slide count | What it is |
 |---|---|---|
-| **A** | 10 slides | Carousel of unaltered, color-corrected listing photos. Zero on-slide overlay (the persistent navy/cream footer with logo + numeral is the only chrome). Photo carries the post. Use as default for most listings. |
-| **B** | 1 slide | Single hero (1080×1350) with Amboqia Boriango editorial headline + conversational price line. Top-scrim only (`rgba(16,39,66,0.40)` covering the top 220 px text band, hard rectangle, no feathering). "The Agency" register. |
-| **C** | 1 slide | Single hero with Geist 500 magazine caption + Azo Sans Medium tracked eyebrow (UPPERCASE, 0.18em letter-spacing) + small Ryan Realty white wordmark in top-right corner (`logo-white.png`, 180 px wide). Bottom-scrim only (`rgba(16,39,66,0.50)` covering the bottom 320 px text band). Coldwell Banker Global Luxury register. |
-| **D** | 3 slides | Panorama — one wide aerial sliced into three portrait tiles (1080×1350 each) that flow seamlessly when swiped. Requires a source aerial ≥ 4500 px wide. No overlay on tiles; persistent footer only on the third tile to avoid cross-tile chrome breaks. |
+| **A** | 10 slides | Carousel of unaltered, color-corrected listing photos. **ZERO on-slide overlay — NO logo, NO slide numeral, NO footer band, NO spec line, NO "JUST LISTED" badge.** The photo IS the post. Caption underneath carries everything else. |
+| **B** | 1 slide | Single hero with Amboqia Boriango editorial headline (top-left) + conversational price line. Top-scrim only on the headline band. "The Agency" register. |
+| **C** | 1 slide | Single hero with Azo Sans Medium tracked eyebrow (top-left) + magazine-style caption (bottom-left) + small Ryan Realty wordmark (top-right corner). Coldwell Banker Global Luxury register. |
+| **D** | 3 slides | Panorama — one wide aerial cropped to 2.4:1 then sliced into 3 portrait tiles (1080×1350 each) that flow seamlessly when swiped. **ZERO overlay on tiles.** Approved source: a wide drone aerial ≥ 3240px wide ideal; ≥ 1367px workable with 2.4x upscale. |
+
+**Earlier versions of this section** said Pattern A had a persistent navy footer with logo + slide numeral baked into every slide. **That was wrong** — the approved spec at `public/template-picker/list-kits/19496-tumalo-reservoir/v3/pattern-a/` is bare photos. Reference: the "verdict" in `public/template-picker/preview/ig-actual-posts.html` — top brokerages don't put logos or numerals on listing slides.
 
 ### Pattern C font discipline
 

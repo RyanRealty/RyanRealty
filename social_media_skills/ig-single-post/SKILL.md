@@ -29,6 +29,37 @@ action_types:
 
 # Instagram Single Post — S1–S10 Template Renderer
 
+## CRITICAL — Canonical generator (read BEFORE rendering)
+
+**This skill does not describe S-template layouts in prose. The layouts live in code.** Before rendering for any new listing:
+
+1. **READ the approved-state reference:** `public/template-picker/preview/list-kit-tumalo-v3.html` — the canonical Tumalo Reservoir v3 state page Matt approved. Every new listing renders against it.
+2. **VIEW the 10 approved S-template renders:** `public/template-picker/list-kits/19496-tumalo-reservoir/v3/single-image/S1-just-listed.jpg ... S10-market-data.jpg`. These ARE the spec.
+3. **READ the canonical generator:** `scripts/build_single_image_posts.py` — produces all 10 templates. The function `s1_just_listed()`, `s2_just_sold()`, etc. each define the exact layout (font sizes, scrim values, text positions, source photo).
+4. **Adapt by writing a listing-specific adapter** at `scripts/build_<slug>_<moment>_posts.py` (see `scripts/build_schoolhouse_sold_posts.py` + `scripts/build_beaumont_pending_posts.py` for working examples). Copy the helpers + S-function from `build_single_image_posts.py`. Change SRC paths + listing data + text content only. **Never re-implement layout, fonts, scrim values, or text positions.**
+
+**The approved S2 (Just Sold) layout (for example):**
+
+- Top-left tracked eyebrow: `RYAN REALTY · REPRESENTED THE [BUYER|SELLER|BOTH SIDES]` (Azo Sans 20px, tracking 0.18em, shadow).
+- Big Amboqia "Sold" 180px, bottom-anchored at `y = H - 360`, left at `x = 60`.
+- Sub-narrative line at `sy + 200`: detail + price (e.g. "Off-market · $3,025,000").
+- Tracked uppercase address line at `sy + 240`: `<ADDRESS> · <SUBDIVISION> · <CITY, OREGON>`.
+- Bottom scrim at 50% height, max alpha 160.
+- Top scrim at 18% height, max alpha 100.
+- **NO logo, NO broker headshot, NO phone number, NO URL, NO spec-line block.** The "RYAN REALTY" eyebrow is the only brand mention on the photo.
+
+**Banned:**
+
+- Burning a brokerage logo onto the photo. The eyebrow text IS the brand mention.
+- Adding a broker headshot to a listing post (S1, S2, S3, S4, S5). Listing posts are listing posts, not agent posts. S7 is the only template with a portrait.
+- Burning phone numbers, URLs, or addresses-as-stat-block onto the photo. Caption carries it.
+- Writing a new HTML+Playwright compositor when the Python generator already produces the approved render.
+- Skipping the read of the approved S-template renders before producing a new one.
+
+Locked 2026-05-14 per `~/.claude/.../memory/feedback_use_approved_generators.md`.
+
+---
+
 **Scope.** Render one 1080×1350 single-image Instagram feed post per call, selecting from
 ten locked templates via the `template` payload field. Companion to `instagram-carousel`
 (multi-slide) and `flyer-design` (print/digital flyers). Owns the visual realization of every
