@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.203.7 (2026-05-14)
+
+### Bug Fixes
+- fix(cma): bypass PostGIS RPC for rural subjects + bump version to 2.2
+
+---
+
+
 ## v1.203.6 (2026-05-14)
 
 ### Maintenance
