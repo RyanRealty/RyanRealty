@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.203.0 (2026-05-14)
+
+### Features
+- feat(marketing-brain): content_performance feedback loop scaffolding
+
+### Maintenance
+- docs(marketing-brain): end-of-session-2 memory log update
+- chore(marketing-brain): add inbox e2e + send-test-email helper scripts
+
+---
+
+
 ## v1.202.4 (2026-05-14)
 
 ### Maintenance
