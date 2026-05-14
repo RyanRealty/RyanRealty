@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.185.1 (2026-05-14)
+
+### Maintenance
+- docs(seo): broker bio reworks + internal linking + Home/Relocation mop-up
+
+---
+
+
 ## v1.185.0 (2026-05-14)
 
 ### Features
