@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.199.3 (2026-05-14)
+
+### Bug Fixes
+- fix(cma-delivery): filter properties by street_number (was missing 80% of rows)
+
+---
+
+
 ## v1.199.2 (2026-05-14)
 
 ### Maintenance
