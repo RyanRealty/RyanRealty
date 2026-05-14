@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.202.1 (2026-05-14)
+
+### Maintenance
+- chore(smoke-test): retry transient PostgREST 5xx with exponential backoff
+
+---
+
+
 ## v1.202.0 (2026-05-14)
 
 ### Features
