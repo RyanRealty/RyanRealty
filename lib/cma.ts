@@ -350,20 +350,27 @@ async function getCompCandidates(
   communityId: string | null,
   subject: CMASubject
 ): Promise<CMACompRow[]> {
-  // Try the PostGIS RPC first (may fail if RPC has schema mismatch)
+  // RURAL SUBJECTS bypass the RPC entirely. The get_cma_comps PostGIS
+  // function doesn't surface lot_size_acres, so its 2-mile-radius pick
+  // pulls in-town starters for any Tumalo/Sisters/Powell Butte address —
+  // which the fail-closed lot guard then strips to zero. Going direct
+  // ensures the SQL lot-range filter is what shapes the candidate pool.
+  const isRural = subject.lotAcres != null && subject.lotAcres >= 1
   let rows: CMACompRow[] = []
-  try {
-    const rpcResult = await supabase.rpc('get_cma_comps', {
-      p_subject_property_id: propertyId,
-      p_radius_miles: 2,
-      p_months_back: 12,
-      p_max_count: 10,
-    })
-    if (!rpcResult.error && rpcResult.data?.length) {
-      rows = (rpcResult.data as Record<string, unknown>[]).map(parseCompRow)
+  if (!isRural) {
+    try {
+      const rpcResult = await supabase.rpc('get_cma_comps', {
+        p_subject_property_id: propertyId,
+        p_radius_miles: 2,
+        p_months_back: 12,
+        p_max_count: 10,
+      })
+      if (!rpcResult.error && rpcResult.data?.length) {
+        rows = (rpcResult.data as Record<string, unknown>[]).map(parseCompRow)
+      }
+    } catch {
+      // RPC unavailable — fall through to direct query
     }
-  } catch {
-    // RPC unavailable — fall through to direct query
   }
 
   // Compute a lot-size window for rural subjects so the SQL pulls a
@@ -606,10 +613,11 @@ export async function computeCMA(propertyId: string): Promise<CMAResult | null> 
       value_high: interim.valueHigh,
       confidence: interim.confidence,
       comp_count: interim.comps.length,
+      // 2.2 (2026-05-14): bypass PostGIS RPC for rural (≥1 ac) subjects
       // 2.1 (2026-05-14): fail-closed on unknown comp lot for rural subjects
       // 2.0 (2026-05-14): residential-only filter, $200K floor, lot guard, range confidence
       // 1.x: original (deprecated — buggy)
-      methodology_version: '2.1',
+      methodology_version: '2.2',
     })
     .select('id')
     .single()
@@ -694,7 +702,7 @@ export async function getCachedCMA(propertyId: string): Promise<CMAResult | null
     .from('valuations')
     .select('id, estimated_value, value_low, value_high, confidence, comp_count, methodology_version')
     .eq('property_id', propertyId)
-    .gte('methodology_version', '2.1')
+    .gte('methodology_version', '2.2')
     .order('computed_at', { ascending: false })
     .limit(1)
     .maybeSingle()
