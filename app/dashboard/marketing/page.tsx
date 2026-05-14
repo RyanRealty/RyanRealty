@@ -182,11 +182,17 @@ async function fetchDashboardData() {
   const d7 = daysAgo(7)
   const d14 = daysAgo(14)
 
-  // 1. Channel freshness: latest date per channel
+  // 1. Channel freshness: latest date per channel.
+  // Bounded to the last 30 days — channels that have not posted in 30 days
+  // surface as "No data" in the grid, which is the right behavior. Avoids
+  // scanning the full 33k+ row marketing_channel_daily table on every page
+  // render.
   const { data: freshnessRows } = await db
     .from('marketing_channel_daily')
     .select('channel, date')
+    .gte('date', daysAgo(30))
     .order('date', { ascending: false })
+    .limit(5000)
 
   const channelLastDate: Map<string, string> = new Map()
   if (freshnessRows) {
@@ -237,13 +243,15 @@ async function fetchDashboardData() {
 
   const freshestAt: string | null = freshestRow?.fetched_at ?? null
 
-  // 4. Top metrics by absolute delta (15 rows)
+  // 4. Top metrics by absolute delta (15 rows). Scope='account' + date
+  // window keeps this fast; explicit limit as a safety net.
   const { data: metrics7 } = await db
     .from('marketing_channel_daily')
     .select('metric, channel, value')
     .eq('scope', 'account')
     .gte('date', d7)
     .lte('date', today)
+    .limit(2000)
 
   const { data: metricsPrior } = await db
     .from('marketing_channel_daily')
@@ -251,6 +259,7 @@ async function fetchDashboardData() {
     .eq('scope', 'account')
     .gte('date', d14)
     .lt('date', d7)
+    .limit(2000)
 
   // Aggregate by (channel, metric)
   const agg7: Map<string, number> = new Map()
@@ -290,10 +299,13 @@ async function fetchDashboardData() {
     final_decision: r.final_decision,
   }))
 
-  // 6. Content pipeline: brief counts by status
+  // 6. Content pipeline: brief counts by status. Bounded to the last 90
+   // days — older rows are not actionable from this view.
   const { data: briefRows } = await db
     .from('content_briefs')
     .select('status')
+    .gte('created_at', new Date(Date.now() - 90 * 86_400_000).toISOString())
+    .limit(2000)
 
   const statusCounts: Map<string, number> = new Map()
   for (const r of briefRows ?? []) {
@@ -342,9 +354,14 @@ async function fetchDashboardData() {
   })).sort((a, b) => b.rowCount - a.rowCount)
 
   // 9. Action queue by category (pending/ready/approved/executed/killed by action_type prefix)
+  // Bounded to the last 60 days — the brain rarely cares about queue state
+  // older than two cycles. Limit applied as a safety net in case row count
+  // grows large.
   const { data: actionRows } = await db
     .from('marketing_brain_actions')
     .select('action_type, status')
+    .gte('created_at', new Date(Date.now() - 60 * 86_400_000).toISOString())
+    .limit(2000)
 
   const categoryMap: Map<string, ActionCategoryRow> = new Map()
   for (const r of actionRows ?? []) {
@@ -386,10 +403,12 @@ async function fetchDashboardData() {
       }
     : null
 
-  // 11. Voice failures in last 7d
+  // 11. Voice failures in last 7d — use 'planned' (estimate) instead of
+  // 'exact' to avoid a full table scan; estimate is accurate enough for a
+  // dashboard count.
   const { count: voiceFailures7d } = await db
     .from('marketing_decisions')
-    .select('id', { count: 'exact', head: true })
+    .select('id', { count: 'planned', head: true })
     .eq('decision_type', 'voice_violation')
     .gte('created_at', new Date(Date.now() - 7 * 86_400_000).toISOString())
 
