@@ -18,7 +18,8 @@ interface EmailPayload {
 async function handleEmail(
   request: Request,
   context: { params: Promise<{ slug: string }> },
-  body: EmailPayload
+  body: EmailPayload,
+  options: { preview?: boolean } = {}
 ) {
   const { slug } = await context.params
   const safeSlug = String(slug ?? '').trim().toLowerCase()
@@ -77,6 +78,15 @@ async function handleEmail(
   `.trim()
 
   try {
+    if (options.preview) {
+      // Return the HTML body in a wrapped page so Matt can preview before send.
+      const wrapped = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Email preview · ${safeSlug}</title><style>body{margin:0;padding:32px;background:#f5f3ed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}.envelope{max-width:680px;margin:0 auto;background:white;border-radius:10px;box-shadow:0 6px 24px rgba(16,39,66,0.10);overflow:hidden;}.hdr{background:#102742;color:#faf8f4;padding:18px 24px;font-size:13px;line-height:1.6;}.hdr strong{color:#faf8f4;}.body{padding:28px 24px;}.attach{margin:0 24px 24px;padding:12px 16px;background:#faf8f4;border:1px solid rgba(16,39,66,0.18);border-radius:6px;font-size:13px;color:#102742;display:flex;justify-content:space-between;align-items:center;}.attach a{color:#102742;text-decoration:underline;font-weight:500;}</style></head><body><div class="envelope"><div class="hdr"><strong>To:</strong> ${to}<br/><strong>Subject:</strong> ${subject}<br/><strong>From:</strong> ${body.from ?? 'Ryan Realty &lt;noreply@mail.ryan-realty.com&gt;'}</div><div class="body">${htmlBody}</div><div class="attach"><span>📎 ${safeSlug}.pdf · ~5–8 MB · 15 pages</span><a href="/api/cma/${safeSlug}/pdf" target="_blank">View PDF →</a></div></div></body></html>`
+      return new NextResponse(wrapped, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+      })
+    }
+
     const { buffer } = await renderCmaPdfBuffer(safeSlug)
 
     // Resend's React/HTML payload doesn't include cc in our lib's typed wrapper.
@@ -157,6 +167,7 @@ export async function GET(
 ) {
   const url = new URL(request.url)
   const sp = url.searchParams
+  const preview = sp.get('preview') === '1'
   const body: EmailPayload = {
     to: sp.get('to') ?? undefined,
     cc: sp.get('cc') ?? undefined,
@@ -164,5 +175,5 @@ export async function GET(
     message: sp.get('message') ?? undefined,
     from: sp.get('from') ?? undefined,
   }
-  return handleEmail(request, context, body)
+  return handleEmail(request, context, body, { preview })
 }
