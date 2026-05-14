@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.190.2 (2026-05-14)
+
+### Maintenance
+- docs(marketing-brain): record brain architecture v2 in decisions log
+
+---
+
+
 ## v1.190.1 (2026-05-14)
 
 ### Bug Fixes
