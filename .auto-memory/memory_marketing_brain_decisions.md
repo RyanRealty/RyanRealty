@@ -251,6 +251,55 @@ populated.
 1. ~~**Item 1 — site:\* signal wiring**~~: **SHIPPED** in commit `4fc9e7a3` (2026-05-14). audit-website seo+test_new_creative emits `site:meta_update`; audit-website page+audit_landing_page emits `site:cta_update`; audit-website funnel+audit_landing_page emits `site:cta_update` on the upstream page. GeneratedBrief gained optional `target` + `payload_override` fields. formatRoute now includes 8 site:\* entries. Brain producer coverage 9/21 → 11/21. audit-ads budget/tracking/targeting and audit-website traffic are still dropped (next session).
 2. ~~**Item 2 — cadence + active-listing awareness**~~: **SHIPPED** in commit `6dae73df` (2026-05-14). gatherCadenceGaps() reads marketing_channel_daily for last-7d posts per channel, compares against locked CADENCE_TARGETS (IG/TT 5/wk, Meta Page 4/wk, YouTube 2/wk, LinkedIn 3/wk, X 5/wk, GBP 2/wk), emits cadence opportunities with severity scaling by staleness. gatherActiveListingNeeds() queries top-20 active listings by ListPrice, filters those covered in last 14 days, emits the top-3 uncovered. Handlers route cadence → channel-matched default format (market_data_short on social, ig_carousel on LinkedIn, gbp_post on GBP) and listing_coverage → content:list_kit orchestrator. Brain producer coverage 11/21 → 12/21 (adds list-kit). ops:fub_\* wiring from audit-crm was NOT done — moved to next item.
 
+## End-of-session summary — 2026-05-14 (full grind)
+
+**Shipped today on origin/main, in commit order:**
+
+| Commit | Item | Coverage / Effect |
+|---|---|---|
+| `80dbc1f9` | Brain Architecture v2 (Item 3 + groundwork) | 4/21 → 9/21 producers; tools_registry; topic taxonomy; competitors config; audit-findings PROTOCOL |
+| `d98ffa35` | Memory log v1 + cross-session collision note | Documented git-add-A gotcha |
+| `4fc9e7a3` | Item 1 — audit-website → site:* | 9/21 → 11/21 (adds site-edit) |
+| `6dae73df` | Item 2 — cadence + active-listing | 11/21 → 12/21 (adds list-kit) |
+| `49256cb9` | Memory log v2 (Items 1+2) | — |
+| `d600acea` | audit-ads → ops:meta_* + analyze | 12/21 → 13/21 (adds ops-meta-ads) |
+| `d24aaeeb` | audit-crm → ops:fub_* + ops:meta + site | 13/21 → 14/21 (adds ops-fub-crm) |
+| `29148165` | Daily digest mechanism (Item 5) | Activates comms-matt-alert at cron cadence |
+| `e1e76cb8` | Audit-run infrastructure (Item 4) | content_classification + audit_runs tables migrated; audit-findings-builder + audit-classifier + audit-run orchestrator + cron route |
+| `0c0f2874` | 5 stub tool SKILL.md files | tools_registry/ authored count 2 → 7 |
+
+**Brain producer coverage: 4/21 → 14/21 (3.5× lift this session).**
+
+**Audit infrastructure: READY to run.** First-run trigger:
+```
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://ryanrealty.vercel.app/api/cron/marketing-audit-run?dryRun=true"
+```
+Cost: ~$30-80 Apify + ~$18 Anthropic for full corpus run. Set `ANTHROPIC_API_KEY` in Vercel env first.
+
+**Daily digest: SCHEDULED.** Cron entry added to vercel.json (`0 14 * * *` = 7am PT). First fire on next 14:00 UTC; deliverable lands in `marketing_brain_actions` as a `comms:matt_summary` row, then the comms-matt-alert producer routes per its tier rules (default = email + dashboard_card; override `?forceImessage=true` for phone delivery).
+
+**Audit-website + audit-ads + audit-crm signals now route to 4 producer categories:**
+- content:* (existing + new orchestrator coverage)
+- site:* (Item 1 wiring)
+- ops:meta_*, ops:fub_* (audit-ads + audit-crm wiring this session)
+- analyze:metric_decomposition (audit-ads tracking gap routing)
+
+**Out of scope going forward:**
+- audit-website traffic → analyze:drop_investigation (future)
+- platform-trends algorithm → comms:matt_alert (future)
+- Anthropic Batches API integration for the classifier (after corpus >1k posts)
+- YouTube + LinkedIn Apify scrapers in audit-run.ts (placeholder TODOs in code)
+
+**Tools authored this session (7 of 33 in REGISTRY now ✅):**
+apify · anthropic-classifier · supabase · replicate · spark_mls · meta_graph · resend.
+
+**Next-pass tool priority:** ga4 → gsc → follow_up_boss → google_business_profile → youtube_data.
+
+**Cross-session note:** the `feat(brand): host rendered Matt + Paul email signatures` commit (`80dbc1f9`) carries the Brain Architecture v2 content under a misleading message due to another session's `git add -A` collision. All subsequent commits this session were properly scoped via specific-path `git add`. See "Cross-session git collision" section above for the defense pattern.
+
+---
+
 ## Next-session queue (revised after Items 1+2 — 2026-05-14)
 3. **ops:meta_\* wiring** — audit-ads budget/tracking/targeting/campaign_structure → ops:meta_budget / ops:meta_pause / ops:meta_audience / ops:meta_creative_swap. The ops-meta-ads producer exists per `producers/REGISTRY.md` Section D. ~30 min. Pushes brain coverage 12/21 → 13/21.
 4. **ops:fub_\* wiring** — audit-crm response_time/source_quality/tagging_drift/pipeline_health → ops:fub_tag_fix / ops:fub_sequence_change / ops:fub_task_create / ops:fub_routing. The ops-fub-crm producer exists per REGISTRY Section D. ~30 min. Pushes brain coverage 13/21 → 14/21.
