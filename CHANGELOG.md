@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.184.6 (2026-05-14)
+
+### Maintenance
+- docs(seo): autonomous mode addendum — 33 total changes, broker pages shipped
+
+---
+
+
 ## v1.184.5 (2026-05-14)
 
 ### Maintenance
