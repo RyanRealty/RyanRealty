@@ -79,7 +79,123 @@ If a deliverable could plausibly be the kind of thing Matt would want to review,
 
 ---
 
-# Video Build Hard Rules (READ THIRD — for any video task)
+# Brand Voice — ABSOLUTE, applies to EVERY piece of text (READ THIRD)
+
+**Every piece of text generated for Ryan Realty — whether it ships to a channel, lands in a file, or is pasted into chat for Matt to copy into his own email client — must comply with the brand voice rules below.** No exceptions. This rule outranks convenience, speed, and any prior chat context. Matt should never have to remind the agent to strip em-dashes or banned words from a draft.
+
+**Canonical source:** `marketing_brain_skills/brand-voice/SKILL.md` and `marketing_brain_skills/brand-voice/voice_guidelines.md`. Load the full guidelines doc when generating long-form (blog, listing description, video VO script, multi-paragraph email, ad copy). For short chat-drafted snippets (one-paragraph email, social caption, headline), the inline rules below are the floor.
+
+## What triggers this rule
+
+ANY text the agent produces on behalf of Ryan Realty, in any of these forms:
+- An email body drafted in chat for Matt to copy-paste
+- A social post caption (IG, FB, TikTok, YouTube, LinkedIn, X)
+- A blog post, listing description, or website copy
+- A video VO script or on-screen text
+- An ad headline or primary text
+- A flyer, signage, or printed deliverable
+- A market report narrative
+- A client-facing email auto-sent from an API endpoint
+- A CMA cover letter, signature line, or any prose inside a CMA HTML
+- A GBP review response, an MLS public remarks block, an open-house sign
+
+Internal-only text (agent commentary in chat, git commit messages, code comments, debugging logs, technical docs) is NOT governed by this rule. Anything a client or member of the public could read IS.
+
+## Self-check (run before showing ANY draft to Matt)
+
+Before pasting drafted prose into chat or writing it to a file, the agent grep-scans the draft for hard fails. A failing draft does not get shown. Fix it, then surface it.
+
+### Banned punctuation (hard fail)
+
+- **Em dashes** (`—` U+2014 and `–` U+2013 en-dash). Replace with a period or comma. Exception: as a literal data placeholder for "unavailable" in a stats table, the em-dash is allowed.
+- **Semicolons** (`;`). Replace with a period.
+- **Dramatic colons** — a colon used to introduce a punchline or expansion in body prose. Colons in headers, list intros, and tables are fine.
+- **Exclamation marks in body copy.** One exclamation per piece maximum, and none in market-data content.
+
+Compound hyphens are allowed where standard English requires them (single-family, out-of-state, 30-year fixed, first-time buyer, well-maintained). Hyphens in `ryan-realty.com` are required.
+
+### Banned words (hard fail — full list in `voice_guidelines.md` §6.2)
+
+**Real-estate clichés:** stunning, breathtaking, gorgeous, charming, pristine, nestled, boasts, must-see, dream home, meticulously maintained, entertainer's dream, tucked away, hidden gem, truly, spacious, cozy, luxurious, updated throughout, turnkey, immaculate, captivating, exquisite
+
+**AI filler:** delve, leverage, tapestry, navigate, robust, seamless, comprehensive, elevate, unlock, holistic, dynamic, vibrant, bustling, eclectic, curated, bespoke, foster
+
+**Vague qualifiers (use the real number instead):** approximately, roughly, about, around, fairly, somewhat
+
+**Marketing slop:** top producing, top 1 percent, white glove, luxury concierge, premier brokerage, exclusive (as a brokerage descriptor), boutique brokerage, your real estate journey, we are passionate about, we pride ourselves on
+
+**Fake urgency:** act fast, don't miss out, won't last long, won't last
+
+**Hype openings:** "get ready to fall in love," "you won't believe," "introducing," "stunning new listing"
+
+**Pandering / talking down:** "what a beautiful home," "you have great taste," "don't worry, we will handle everything," "let me explain in simple terms," "I know this seems complicated"
+
+### Banned tropes
+
+- Dramatic before-and-after ("most agents do X, we do Y")
+- Fake humility brag ("we are just so honored to be voted...")
+- Market-doom or market-hype ("the market is crashing" / "on fire")
+- Agent-as-hero arc (broker is the protagonist instead of the client)
+
+### Voice + formatting rules
+
+- **Sentence case** for body headlines. Title Case only for top-of-page hero H1.
+- **"You/your"** is the subject (the reader). **"We/our team"** for brokerage identity. **"I"** only when the content is genuinely first-person from Matt (a video VO, a personal letter, a review response).
+- **Phone:** `541.213.6706` (dotted). **Web:** `ryan-realty.com` (hyphenated, lowercase).
+- **Place separator:** middle dot `·` — e.g. `BEND · OREGON`.
+- **Currency rounded** to the nearest thousand: `$895,000` not `$894,750`.
+- **Days = integer + "days":** `38 days`.
+- **Percents** carry one decimal and a signed arrow when YoY: `↑ 2.1% YoY`.
+- **Tabular numerals** on every numeric surface in the UI.
+- **No emoji** in blog posts, email body, ad headlines, or video on-screen text. One emoji max in a social caption.
+
+### Canonical phrases (use these as templates — drawn from Matt's actual writing)
+
+- "Thank you so much for taking the time to..."
+- "It was genuinely a pleasure working with you."
+- "That kind of trust makes all the difference."
+- "A small business like ours."
+- "Honored to..." / "Privilege to..."
+- "I'm always here if you need anything down the road."
+- "Wishing you all the best in your new chapter."
+
+Words to favor in Matt's voice: genuinely, honored, privilege, small business like ours, trust, chapter, the finish line, the unpredictable market, without the high pressure.
+
+## Self-check workflow (mandatory before every draft surfaces)
+
+1. **Generate** the draft in working memory or a scratch buffer.
+2. **Scan** for hard fails: grep for em-dash, en-dash, semicolon, every banned word, every banned phrase opener.
+3. **Rewrite** every hit. Period or comma replaces em-dash. Period replaces semicolon. The real number replaces "approximately."
+4. **Read aloud** in Matt's voice. If a sentence sounds like marketing copy (passionate, dedicated, premier, journey, dream), kill it.
+5. **Then** show the draft to Matt.
+
+If Matt has to ask "did you check the brand voice?" — the self-check failed. The cost of one extra scan is far cheaper than Matt's review cycles.
+
+## When to load the full skill
+
+Load `marketing_brain_skills/brand-voice/voice_guidelines.md` fully when:
+- Writing long-form (blog post, listing description over 100 words, multi-paragraph email, video VO script over 30 seconds)
+- Auditing existing content for voice drift
+- Updating the rules based on Matt's feedback
+- A producer skill runs — every producer's mandatory references already include `voice_guidelines.md`
+
+For short chat-drafted snippets, the inline rules above are the floor. Either way, the hard-fail regex check runs every time.
+
+## Inheritance and cross-references
+
+- `marketing_brain_skills/producers/TEMPLATE.md` already requires every producer to load `voice_guidelines.md`. That covers producer-dispatched content.
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md` carries the video-specific version of these rules. The two documents are aligned — fixes to one propagate to the other.
+- `social_media_skills/platform-best-practices/SKILL.md` carries the platform-specific calibration. Same voice, different format conventions per channel.
+
+## Maintenance
+
+When Matt issues a new voice directive in chat, the agent's job is twofold:
+1. Apply it to the immediate draft.
+2. Update `voice_guidelines.md` (the source of truth) AND this section of CLAUDE.md if the rule is universal. A rule that lives only in chat history will be forgotten next session.
+
+---
+
+# Video Build Hard Rules (READ FOURTH — for any video task)
 
 **These are the ship-blocker rules every video build must follow.** Inlining them here so agents do NOT have to re-read 2,000+ lines of `video_production_skills/*.md` for routine builds. Read those skill files only when doing something novel (new format, new sub-skill, edge case).
 
