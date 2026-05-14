@@ -560,7 +560,10 @@ export async function computeCMA(propertyId: string): Promise<CMAResult | null> 
       value_high: interim.valueHigh,
       confidence: interim.confidence,
       comp_count: interim.comps.length,
-      methodology_version: '1.0',
+      // Bumped 2026-05-14: residential-only filter, $200K floor, lot-size
+      // sanity guard, range-aware confidence. Older 1.x rows are ignored by
+      // getCachedCMA so this rolls out cleanly without a manual purge.
+      methodology_version: '2.0',
     })
     .select('id')
     .single()
@@ -637,10 +640,15 @@ export async function computeCMAByListingKey(listingKeyOrMls: string): Promise<C
 /** Get cached CMA for a property (by property_id). Returns null if none or expired. */
 export async function getCachedCMA(propertyId: string): Promise<CMAResult | null> {
   const supabase = getServiceSupabase()
+  // Only serve valuations from the current methodology version. 1.x rows
+  // were missing the residential-only filter and the lot-size guard, so
+  // they're effectively garbage even if recent. Returning null here forces
+  // a fresh computeCMA on the next worker run.
   const { data: val } = await supabase
     .from('valuations')
     .select('id, estimated_value, value_low, value_high, confidence, comp_count, methodology_version')
     .eq('property_id', propertyId)
+    .gte('methodology_version', '2.0')
     .order('computed_at', { ascending: false })
     .limit(1)
     .maybeSingle()
