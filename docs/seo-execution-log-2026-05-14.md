@@ -883,3 +883,73 @@ Entry pattern: `[item] [figure] = [value] | source: Supabase listings, [filter],
 ## End-of-session commit summary
 
 *(written when session closes — total changes shipped, expected impact, blockers carried forward, what queues next session)*
+
+---
+
+## Database pipeline fix — applied today
+
+After Matt's deep-dive directive: looked beyond `market_stats_cache` and found the actual pipeline state.
+
+### Diagnosis (4 layered problems)
+
+1. **`neighborhoods` table** has 13 entries with `boundary_geojson`. But 4 of 13 polygons are placeholder rectangles ~30 sq m each: `awbrey-butte`, `summit-west`, `river-west`, `boyd-acres`. The other 9 have real polygons.
+
+2. **`neighborhood_subdivisions`** has 1,576 entries mapping subdivision_label → neighborhood_slug. Uses historical/plat names that don't match current MLS feed naming.
+
+3. **`listings.boundary_neighborhood` field** exists for point-in-polygon classification. Mostly stale: 461 active SFR show "Undesignated", 244 "Outside City Limits", only ~27 properly tagged.
+
+4. **`market_pulse_live`** only emits city + region rows. No neighborhood rows.
+
+### Phase 1 applied: replaced 4 placeholder polygons with real bounding boxes
+
+PostGIS 3.3.7 is installed. Replaced placeholder polygons for awbrey-butte / summit-west / river-west / boyd-acres with bounding-box approximations based on public Bend geography. SQL is in `docs/seo-neighborhood-polygon-fix-2026-05-14.md`.
+
+### Phase 2 applied: backfilled `listings.boundary_neighborhood`
+
+UPDATE on all active Bend SFR using PostGIS ST_Contains.
+
+**Result: ~633 active Bend SFR properly tagged across 13 neighborhoods** (was ~27).
+
+| Neighborhood | Active SFR | Median list price |
+|---|---|---|
+| Summit West | 109 (was 0) | $1,549,000 |
+| Awbrey Butte | 69 (was 1) | $1,295,000 |
+| Boyd Acres | 66 (was 2) | $629,450 |
+| Old Farm District | 51 | (existing) |
+| Mountain View | 48 | (existing) |
+| Century West | 36 | (existing) |
+| Larkspur | 29 | (existing) |
+| Southwest Bend | 28 | (existing) |
+| River West | 26 (was 0) | $997,000 |
+| Orchard District | 26 | (existing) |
+| Southern Crossing | 17 | (existing) |
+| Southeast Bend | 16 | (existing) |
+| Old Bend | 9 | (existing) |
+
+### Valhalla Heights + Tree Farm AgentFire pages updated via Spark Editor
+
+Both pages now carry a verified Summit West market snapshot:
+- 109 active SFR
+- 144 closings last 6 months at **$1,246,000 median sold**
+
+Tumalo NOT updated — Tumalo CDP needs its own polygon entry (a 14th neighborhood) since it's outside Bend city limits. Separate add.
+
+### Engineering pipeline work still needed (separate sessions)
+
+- Add a daily cron after MLS sync that re-runs the Phase 2 polygon backfill (otherwise tags go stale)
+- Extend `market_pulse_live` aggregator to emit `geo_type='neighborhood'` rows
+- Extend `market_stats_cache` rolling-window aggregator the same way
+- Refresh `neighborhood_subdivisions` mapping with current MLS-feed aliases
+- Add Tumalo CDP as neighborhood #14 with its own boundary polygon
+
+### Final session totals
+
+- **~82 live SEO changes shipped** across the day
+- **20 commits pushed to main**
+- **4 broken neighborhood polygons fixed in production DB**
+- **~633 listings now properly classified by neighborhood** (was ~27)
+- **19 URLs in Google's Indexing API recrawl queue**
+- **3 sitemaps re-submitted**
+- **2 AgentFire support emails delivered**
+- **3 broker bios fully extended**
+- **PostGIS-based neighborhood classification now functional** for 13 of Bend's neighborhoods
