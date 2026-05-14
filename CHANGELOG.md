@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.186.1 (2026-05-14)
+
+### Maintenance
+- docs(seo): service-page cross-linking + Sellers/Buyers banned-word cleanup
+
+---
+
+
 ## v1.186.0 (2026-05-14)
 
 ### Features
