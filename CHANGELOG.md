@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.199.5 (2026-05-14)
+
+### Bug Fixes
+- fix(producer-skills): bind to canonical generators — Pattern A is BARE photo, no logo/numeral baked in
+
+---
+
+
 ## v1.199.4 (2026-05-14)
 
 ### Maintenance
