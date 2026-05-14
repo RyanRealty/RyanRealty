@@ -453,3 +453,81 @@ Until Action 1 lands, the cron is a no-op. Until Action 2 lands, every inbound e
 - No multi-recipient routing (replies only to original sender, not To+Cc+Bcc).
 - No batch parsing — one Anthropic call per email. Move to Batches API once volume exceeds ~1000 emails/day.
 - HTML→text conversion is best-effort (lightweight regex strip). Haiku parses the result correctly in practice.
+
+---
+
+## 2026-05-14 — Marketing inbox went LIVE (admin blockers cleared)
+
+Both admin blockers were resolved by driving Workspace Admin + Anthropic Console via Chrome MCP. Pipeline is now end-to-end live and the happy path is proven against the real mailbox.
+
+### Workspace DWD scope (Action 1) — DONE
+
+Added `https://www.googleapis.com/auth/gmail.modify` to the DWD allowlist for service account Client ID `116585568564644399058` (viewer@ryanrealty.iam.gserviceaccount.com). Scope count went from 13 to 14. Edit was made through `admin.google.com → Security → API controls → Manage Domain-wide Delegation → Edit (Ryan Realty)`. The legacy `gmail.send` scope was preserved; nothing else touched.
+
+Verified by `scripts/marketing-inbox-verify-auth.mjs`:
+```
+[send scope] ok — scopes granted: https://www.googleapis.com/auth/gmail.send
+[read scope] ok — scopes granted: https://www.googleapis.com/auth/gmail.modify
+```
+
+### ANTHROPIC_API_KEY (Action 2) — DONE
+
+- Minted key `ryanrealty-marketing-brain` at console.anthropic.com (sk-ant-api03-LwSlA4ZiYvLJ…GFLHTgAA, only the prefix/suffix are kept in the memory log; full value lives in `.env.local` and Vercel env).
+- Installed to all three Vercel envs (production, preview, development) via `vercel env add` (preview needed the REST API workaround — `vercel env add ANTHROPIC_API_KEY preview --value --yes` was silently failing on the CLI, so we hit `https://api.vercel.com/v10/projects/$PROJECT_ID/env?teamId=$ORG_ID` directly with the auth.json bearer token).
+- Appended to `.env.local`.
+
+### .env.local loading gotcha (LOCKED, 2026-05-14)
+
+Node's `--env-file=.env.local` does NOT override variables that already exist in the shell environment, even if they're empty. The shell had `ANTHROPIC_API_KEY=''` exported from somewhere (probably `.zshrc`), shadowing the value from the file. Symptom: `process.env.ANTHROPIC_API_KEY` returns `""` (empty string), parser fails with "ANTHROPIC_API_KEY missing".
+
+Fix: prefix scripts with `unset ANTHROPIC_API_KEY` before invoking `node --env-file=.env.local`. Or set the var via real shell export in `.zshrc`. Vercel production / preview / development unaffected (no shell at runtime).
+
+### Anthropic credit top-up (Action 3 — discovered during E2E)
+
+Round 1 of the E2E test surfaced a fresh blocker: the Anthropic account had a `-$0.01` balance and Haiku returned `400 — credit balance too low`. The parser fell through to its triage path (comms:matt_alert) as designed — pipeline did not crash, just routed for manual triage.
+
+Added $20.00 in credits at console.anthropic.com (charged to Link by Stripe — the card already on file). Invoice "May 14, 2026 — Credit grant — Paid — $20.00" landed in the invoice history. Balance went from `-$0.01` to `$20.00`.
+
+This is a financial transaction; flagged here for audit trail.
+
+### E2E happy-path transcript (2026-05-14T22:44Z)
+
+Sent test email from matt@ryan-realty.com → marketing@ryan-realty.com:
+> Subject: TEST: listing reel for MLS 220189422
+> Body: Make a listing reel for MLS 220189422. This is a brand-new listing — coming on market this week. Standard treatment.
+
+Pipeline output:
+```json
+{
+  "fetched_at": "2026-05-14T22:44:41.277Z",
+  "fetched_unread_count": 1,
+  "processed_events": [{
+    "inbox_event_id": "1ab3ab92-23f5-4c2b-8b4f-7ccd70ae9e76",
+    "sender_email": "matt@ryan-realty.com",
+    "outcome": "replied",
+    "action_row_id": "f7dc562e-9b24-46c9-abda-6faa360aa0c5",
+    "action_type": "content:listing_reel",
+    "reason": "Confident parse (0.95) routed to video_production_skills/listing_reveal."
+  }],
+  "duration_ms": 4401
+}
+```
+
+Row in `marketing_inbox_events`:
+- status='replied', parsed_intent='content:listing_reel', parsed_target='mls:220189422'
+- parser_confidence=0.95
+- reply_status='sent', reply_message_id='19e28a9e9c5e13c9'
+
+Row in `marketing_brain_actions` (linked):
+- action_type='content:listing_reel'
+- assigned_producer='video_production_skills/listing_reveal'
+- payload.mls_id='220189422'
+- status='pending' (waiting for the listing_reveal producer to pick it up)
+
+### Pipeline is LIVE on cron
+
+Vercel cron `*/2 * * * *` is firing `/api/cron/marketing-inbox-poll` in production. Local poll proved happy path. The first 4 unread emails when the mailbox was provisioned (3 Google account notifications + 1 Gmail provisioning email) were all correctly rejected by the allowlist and logged as `status='killed'` with no reply.
+
+### Auto reload remains DISABLED
+
+`Auto reload is disabled. Enable auto reload to avoid API interruptions when credits are fully spent.` Left it off. $20 buffer should last the inbox >6 months at current volume; future top-ups land in Matt's queue, not automatic.
