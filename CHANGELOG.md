@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.193.0 (2026-05-14)
+
+### Features
+- feat(marketing-brain): wire audit-ads signals to ops:meta_* + analyze actions
+
+---
+
+
 ## v1.192.1 (2026-05-14)
 
 ### Maintenance
