@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.186.3 (2026-05-14)
+
+### Maintenance
+- docs(seo): agentfire support ticket draft + GSC indexing script + final log
+
+---
+
+
 ## v1.186.2 (2026-05-14)
 
 ### Bug Fixes
