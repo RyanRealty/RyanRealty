@@ -91,13 +91,31 @@ Every row written to `competitor_intel` follows:
 
 ## Cron schedule
 
-Weekly — Mondays 07:00 UTC. Defined in `vercel.json`:
+**Daily 07:00 UTC, Mon-Fri** — one source per weekday. Defined in `vercel.json`:
 
 ```json
-{ "path": "/api/cron/marketing-competitor-recon", "schedule": "0 7 * * 1" }
+{ "path": "/api/cron/marketing-competitor-recon", "schedule": "0 7 * * 1-5" }
 ```
 
-The route serializes all scraper calls to avoid Apify rate limits. A full 10-competitor × 5-source pass runs for ~30–60 minutes; Vercel Pro cron timeout accommodates this. For single-competitor test runs, keep well within the 300s `maxDuration`.
+The route detects Vercel cron requests (via the `x-vercel-cron: 1` header) and rotates source selection by day-of-week:
+
+| Day (UTC) | Source |
+|---|---|
+| Monday | `google_maps_reviews` |
+| Tuesday | `google_serp` |
+| Wednesday | `instagram_profile` |
+| Thursday | `tiktok_profile` |
+| Friday | `fb_ad_library` |
+| Sat/Sun | no-op (returns `skipped: true`) |
+
+Each weekday run handles ~10 competitors × 1 source × 30-90s/scraper = 5-15 min, comfortably under the 800s `maxDuration` cap on Vercel Pro. The pre-2026-05-14 single-Monday schedule (`0 7 * * 1`) repeatedly timed out because the full 50-call pass exceeded the previous 300s `maxDuration`.
+
+For manual full passes (all sources × all competitors in one call), invoke without filters — but note this can exceed `maxDuration` if Apify is slow that day. Prefer per-source manual runs:
+
+```sh
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://ryanrealty.vercel.app/api/cron/marketing-competitor-recon?source=instagram_profile"
+```
 
 ---
 
@@ -110,7 +128,15 @@ GET /api/cron/marketing-competitor-recon?source=google_maps_reviews&competitor=c
 Authorization: Bearer $CRON_SECRET
 ```
 
-Omit either param to expand to all competitors or all sources for that dimension.
+Omit either param to expand to all competitors or all sources for that dimension. Filter modes:
+
+| Query | Behavior |
+|---|---|
+| (none) + Vercel cron header | Rotate by day-of-week (single source) — the production cron path |
+| (none) + manual curl | Run ALL sources × ALL competitors — may exceed maxDuration; avoid |
+| `?source=X` | One source × all competitors |
+| `?competitor=Y` | All sources × one competitor — may exceed maxDuration |
+| `?source=X&competitor=Y` | Single combo (fastest; ideal for actor input debugging) |
 
 ---
 

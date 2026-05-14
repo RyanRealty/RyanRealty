@@ -66,7 +66,7 @@
     },
     {
       "path": "/api/cron/marketing-competitor-recon",
-      "schedule": "0 7 * * 1"
+      "schedule": "0 7 * * 1-5"
     },
     {
       "path": "/api/cron/marketing-platform-trends",

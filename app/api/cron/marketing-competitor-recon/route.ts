@@ -1,9 +1,24 @@
 /**
  * Competitor recon cron route.
  *
- * Runs weekly (Mondays 07:00 UTC) via Vercel cron. Scrapes all configured
- * sources × all competitor targets and writes observations to
- * public.competitor_intel.
+ * Schedule (post-2026-05-14):
+ *   Daily 07:00 UTC, Mon-Fri. Each day scrapes ONE source across all
+ *   competitor targets. Splitting the 5-source × 10-competitor full pass
+ *   into per-day slices keeps each invocation under the Vercel maxDuration
+ *   (800s on Pro) — a full single-source pass is ~5-10 min vs ~30-60 min
+ *   for all five sources together. Source picked by day-of-week:
+ *     Mon → google_maps_reviews
+ *     Tue → google_serp
+ *     Wed → instagram_profile
+ *     Thu → tiktok_profile
+ *     Fri → fb_ad_library
+ *   Sat/Sun → no-op (cron unscheduled).
+ *
+ * Vercel cron requests carry an `x-vercel-cron: 1` header and no query
+ * params; the route detects that and triggers day-rotation. Manual
+ * invocations (without that header) honor whatever filters are passed
+ * and otherwise run the full pass (which may time out on Pro plans —
+ * recommended to pass `?source=` for manual full-target runs).
  *
  * Scope filters (for targeted testing):
  *   ?source=google_maps_reviews  — run one source across all competitors
@@ -26,7 +41,7 @@ import {
   scrapeTikTokProfile,
 } from '@/lib/marketing-brain/competitor-recon'
 
-export const maxDuration = 300
+export const maxDuration = 800
 
 type SourceKey = CompetitorSource
 
@@ -59,6 +74,22 @@ const ALL_SOURCES: SourceKey[] = [
   'fb_ad_library',
 ]
 
+/**
+ * Day-of-week → source. Vercel cron requests rotate through one source
+ * per weekday so each invocation completes well under maxDuration.
+ * Saturday/Sunday return null (cron not scheduled; manual runs allowed).
+ */
+function sourceForDayOfWeek(dayOfWeekUTC: number): SourceKey | null {
+  switch (dayOfWeekUTC) {
+    case 1: return 'google_maps_reviews' // Monday
+    case 2: return 'google_serp'          // Tuesday
+    case 3: return 'instagram_profile'    // Wednesday
+    case 4: return 'tiktok_profile'       // Thursday
+    case 5: return 'fb_ad_library'        // Friday
+    default: return null                  // Sat/Sun — no auto-run
+  }
+}
+
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -67,6 +98,7 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const sourceFilter = url.searchParams.get('source') as SourceKey | null
   const competitorFilter = url.searchParams.get('competitor') as CompetitorSlug | null
+  const isVercelCron = request.headers.get('x-vercel-cron') === '1'
 
   // Validate filters if provided
   if (sourceFilter && !ALL_SOURCES.includes(sourceFilter)) {
@@ -90,7 +122,28 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const sources = sourceFilter ? [sourceFilter] : ALL_SOURCES
+  // Source selection — three modes:
+  //   1. explicit ?source=X — use that single source
+  //   2. no filter, Vercel cron — rotate by day-of-week (single source per run)
+  //   3. no filter, manual call — run all sources (may exceed maxDuration)
+  let sources: SourceKey[]
+  if (sourceFilter) {
+    sources = [sourceFilter]
+  } else if (isVercelCron) {
+    const dayUTC = new Date().getUTCDay()
+    const rotatedSource = sourceForDayOfWeek(dayUTC)
+    if (!rotatedSource) {
+      return NextResponse.json({
+        observationDate,
+        skipped: true,
+        reason: `Vercel cron fired on day-of-week ${dayUTC} (Sat/Sun); recon rotation runs Mon-Fri only.`,
+        fetchedAt: new Date().toISOString(),
+      })
+    }
+    sources = [rotatedSource]
+  } else {
+    sources = ALL_SOURCES
+  }
   const results: SourceResult[] = []
 
   // Run serially to avoid hammering Apify and Supabase concurrently.
