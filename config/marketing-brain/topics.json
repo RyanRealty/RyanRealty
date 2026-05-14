@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "last_updated": "2026-05-14",
+  "description": "Canonical topic taxonomy for the Ryan Realty marketing brain. Used by competitor-recon classifier, generate-briefs producer-mix mapper, and content_performance aggregation. Read by lib/marketing-brain/topic-taxonomy.ts at runtime. Editing this file changes the classifier output domain — re-run any in-flight classification after edits.",
+  "topics": [
+    {
+      "id": "listing",
+      "display_name": "Listing",
+      "description": "Per-listing marketing: just-listed, just-sold, coming-soon, open house, under contract, price improvement, featured listing. The single property is the subject.",
+      "examples": [
+        "Just listed on Awbrey Butte — 4-bed, 3-bath, 3,200 sqft",
+        "Open house Saturday 1-3pm — 567 SW Canyon Blvd",
+        "Sold over asking: a quiet downtown stunner that found its people"
+      ],
+      "data_sources": ["listings table (MLS)", "listing photos", "listing_history"]
+    },
+    {
+      "id": "market_data",
+      "display_name": "Market Data",
+      "description": "Bend / Deschutes / Central Oregon market stats, trends, snapshots, monthly reports. Includes explainer treatments of market data. Distinguished from national_housing_news by geographic scope (local) and from national_economy by content type (real estate stats specifically).",
+      "examples": [
+        "Bend April 2026 market update: median price up 3.2%, MoS holding at 4.1",
+        "Why Bend's months of supply matters more than the headline price number",
+        "Three numbers that tell you what kind of market Bend is in this week"
+      ],
+      "data_sources": ["market_stats_cache", "market_pulse_live", "Spark MLS", "listings aggregated"]
+    },
+    {
+      "id": "national_housing_news",
+      "display_name": "National Housing News",
+      "description": "Fed moves, NAR reports, Case-Shiller, mortgage rate changes, migration data, national housing-policy news with a Bend interpretation layer. The story is national; the angle is what it means locally.",
+      "examples": [
+        "Fed cut rates 25bp — here is what changes for Bend buyers in the next 30 days",
+        "NAR's new commission rule lands today. The plain-English version for Bend",
+        "Case-Shiller print: Bend is decoupled from the national index. Why"
+      ],
+      "data_sources": ["WebSearch", "Fed press releases", "NAR reports", "Case-Shiller", "Bankrate / Mortgage News Daily"]
+    },
+    {
+      "id": "national_economy",
+      "display_name": "National Economy (housing lens)",
+      "description": "CPI, jobs report, GDP, Fed dot plot, regional economic indicators interpreted for housing-buyer decision-making. Distinguished from national_housing_news by primary subject (the economy, not housing) and from market_data by scope (national, not local).",
+      "examples": [
+        "CPI dropped again. What it tells you about mortgage rates heading into summer",
+        "Oregon jobs report: Deschutes County added 1,200 jobs. The housing-demand signal",
+        "When the dollar strengthens, this is what happens to West Coast home prices"
+      ],
+      "data_sources": ["BLS", "BEA", "FRED", "WebSearch", "regional Fed branches"]
+    },
+    {
+      "id": "local_community",
+      "display_name": "Local Community Info",
+      "description": "Bend / Redmond / Sisters / Sunriver community happenings: events, restaurant openings, school district news, business spotlights, civic decisions affecting residents. NOT lifestyle (which is brand-of-place) and NOT listings.",
+      "examples": [
+        "Mt. Bachelor opens uphill access this weekend. Here is the schedule",
+        "New restaurant on Galveston: Hop Pad opens June 1",
+        "Bend-La Pine school district passes the bond. What it funds and when"
+      ],
+      "data_sources": ["Source Weekly", "Cascade Business News", "Visit Bend", "KTVZ", "Bulletin", "city council agendas"]
+    },
+    {
+      "id": "lifestyle_bend",
+      "display_name": "Lifestyle (Bend signature)",
+      "description": "Brand-of-place content. Outdoor recreation, dining, breweries, scenery, seasonal moments — the why-people-move-here story. Distinguished from local_community (which is news/info) by emotional register: lifestyle is aspirational + sensory + atmospheric.",
+      "examples": [
+        "First snow on Bachelor. The morning the season turns",
+        "Tin Pig is the Bend lunch spot worth the wait — here is why",
+        "Smith Rock at golden hour. A reason to live in Central Oregon"
+      ],
+      "data_sources": ["original photography", "drone footage", "place_attractions table", "curated photo library", "Unsplash/Shutterstock"]
+    },
+    {
+      "id": "buyer_education",
+      "display_name": "Buyer Education",
+      "description": "First-time buyer 101, financing, inspection process, appraisal, closing, what-to-look-for-in-a-home, contingencies. The reader is a prospective buyer learning the process.",
+      "examples": [
+        "First-time buyer in Bend: the actual seven-step process, no jargon",
+        "What an inspection report looks like — and the four items that should give you pause",
+        "How appraisal gaps work and what to do when one happens to your offer"
+      ],
+      "data_sources": ["broker expertise", "Oregon real estate forms", "OREF contracts", "OREA materials"]
+    },
+    {
+      "id": "seller_education",
+      "display_name": "Seller Education",
+      "description": "Pricing strategy, listing prep, offers + negotiations, sellers-disclosure obligations, closing process from the seller side. The reader is a homeowner considering or executing a sale.",
+      "examples": [
+        "Pricing strategy in a 4-MoS market: three pricing models and when each works",
+        "What buyers actually notice on the first walkthrough — and the four cheap fixes that matter",
+        "Multiple offers on your Bend home: how to read them past the headline price"
+      ],
+      "data_sources": ["broker expertise", "OREF seller-disclosure form", "Bend-comparable sales data"]
+    },
+    {
+      "id": "behind_scenes",
+      "display_name": "Behind the Scenes",
+      "description": "Broker day-in-the-life, team intro, deal stories (without specifics that would breach confidentiality), brokerage culture, how-the-business-actually-works. The brokerage is the subject.",
+      "examples": [
+        "A Tuesday at Ryan Realty: four showings, one offer, one impossible kitchen",
+        "How we screen Bend listings before we put them in front of a buyer",
+        "The hardest deal we closed this year. What it took"
+      ],
+      "data_sources": ["broker journals", "team activity", "FUB pipeline (anonymized)", "calendar"]
+    },
+    {
+      "id": "recap_highlight",
+      "display_name": "Recap / Highlight",
+      "description": "Week-in-review, month-in-review, year-in-review, milestone announcements, deal-of-the-quarter. Looks backward over a window to surface what mattered.",
+      "examples": [
+        "Bend market — May 2026 in five numbers",
+        "Year-in-review: the four trends that defined Central Oregon real estate this year",
+        "Top three Bend listings we toured this month and why each is worth a look"
+      ],
+      "data_sources": ["market_stats_cache aggregations", "listings", "team activity logs"]
+    },
+    {
+      "id": "agent_brand",
+      "display_name": "Agent / Brokerage Brand",
+      "description": "Press features, awards, milestones, brag stats, brokerage-level brand moments. The brand itself is the subject.",
+      "examples": [
+        "Featured this week in Cascade Business News — the long view on Bend brokerages",
+        "Sold a record 47 homes in Q1. Here is what made the difference",
+        "Why Matt founded Ryan Realty — and what that means for how we work"
+      ],
+      "data_sources": ["press mentions", "internal team data", "founder story"]
+    },
+    {
+      "id": "other",
+      "display_name": "Other / Unclassified",
+      "description": "Catch-all for content that does not cleanly fit a bucket. Classifier MUST flag with topic_confidence below 0.6 and route to Sonnet review if confidence is low. Posts that consistently land here signal a missing taxonomy bucket — review monthly.",
+      "examples": [],
+      "data_sources": []
+    }
+  ],
+  "format_enum": [
+    "reel",
+    "carousel",
+    "single_image",
+    "long_video",
+    "live",
+    "story",
+    "text_post",
+    "blog",
+    "podcast_clip",
+    "other"
+  ],
+  "headless_or_face_enum": [
+    "headless",
+    "face",
+    "mixed",
+    "unknown"
+  ],
+  "hook_style_enum": [
+    "data",
+    "question",
+    "contrarian",
+    "narrative",
+    "list",
+    "before_after",
+    "tutorial",
+    "react",
+    "lifestyle",
+    "stat",
+    "pov",
+    "other"
+  ],
+  "audio_used_enum": [
+    "trending",
+    "original_vo",
+    "music_bed",
+    "ambient",
+    "none",
+    "unknown"
+  ],
+  "cta_pattern_enum": [
+    "link_in_bio",
+    "dm_me",
+    "comment",
+    "save",
+    "share",
+    "phone_call",
+    "form",
+    "address_capture",
+    "none",
+    "other"
+  ]
+}

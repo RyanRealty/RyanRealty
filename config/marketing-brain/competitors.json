@@ -1,0 +1,466 @@
+{
+  "schema_version": 1,
+  "last_updated": "2026-05-14",
+  "description": "Canonical brokerage + creator scrape set for the marketing brain's competitive-intelligence layer. Read by lib/marketing-brain/competitor-recon.ts at runtime. Add a competitor here, not by editing TS unions. Every platform handle starts verified: false — the audit run skips any entry where the relevant platform handle is unverified; verify by hand against the live profile and flip to true before relying on results. Handles can change; re-verify quarterly.",
+  "weight_categories": {
+    "bend_local": {
+      "weight": 2.0,
+      "description": "Direct geographic competitors in Bend / Redmond / Sisters / Sunriver. Highest priority in the audit because their content choices directly affect the same seller-lead pool we compete in."
+    },
+    "national_disruptor": {
+      "weight": 1.5,
+      "description": "iBuyer and national-platform threats to our seller-lead funnel. Their ad creative + landing pages set the bar Ryan Realty must beat for out-of-state-seller intent."
+    },
+    "national_content_winner": {
+      "weight": 1.5,
+      "description": "Top brand-led content brokerages and individual agents whose formats consistently outperform. We are not competing geographically; we are learning format and treatment."
+    },
+    "pnw_peer": {
+      "weight": 1.0,
+      "description": "Pacific Northwest brokerages in adjacent metros for benchmarking. Their market is different enough that direct copy will fail, but the platform mechanics translate."
+    },
+    "local_media": {
+      "weight": 0.5,
+      "description": "Bend lifestyle + news outlets. Not competitors for listings; included for topic-mining (lifestyle_bend + local_community topics) and to identify what local audiences engage with."
+    },
+    "adjacent_creator": {
+      "weight": 0.5,
+      "description": "Mortgage brokers, relocation specialists, regional economists, and lifestyle creators whose content shapes the same seller decision-window we participate in."
+    }
+  },
+  "platforms_tracked": [
+    "instagram",
+    "tiktok",
+    "youtube",
+    "facebook",
+    "linkedin"
+  ],
+  "audit_defaults": {
+    "window_days": 180,
+    "max_posts_per_platform": 200,
+    "engagement_window_days_for_rate_calc": 30,
+    "min_post_count_for_inclusion": 5
+  },
+  "competitors": [
+    {
+      "id": "cascade_hasson_sothebys",
+      "display_name": "Cascade Hasson Sotheby's International Realty",
+      "category": "bend_local",
+      "geo": "Bend, OR",
+      "rationale": "Largest local SIR-affiliate office; primary luxury-segment competitor",
+      "platforms": {
+        "instagram": { "handle": "@cascadehassonsir", "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": "CascadeHassonSIR", "verified": false },
+        "linkedin": { "vanity": "cascade-hasson-sothebys-international-realty", "verified": false }
+      },
+      "notes": "Slug locked in lib/marketing-brain/competitor-recon.ts CompetitorSlug union — do not change."
+    },
+    {
+      "id": "compass_bend",
+      "display_name": "Compass Bend",
+      "category": "bend_local",
+      "geo": "Bend, OR",
+      "rationale": "National franchise with local Bend office; agents post under both corporate and local handles",
+      "platforms": {
+        "instagram": { "handle": null, "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": "Compass local-office handles are not standardized; scrape via individual top-agent handles instead."
+    },
+    {
+      "id": "windermere_central_oregon",
+      "display_name": "Windermere Central Oregon",
+      "category": "bend_local",
+      "geo": "Bend, OR",
+      "rationale": "Regional franchise; historically high local market share",
+      "platforms": {
+        "instagram": { "handle": "@windermerecentraloregon", "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": "WindermereCentralOregon", "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "cascade_sothebys",
+      "display_name": "Cascade Sotheby's International Realty",
+      "category": "bend_local",
+      "geo": "Bend, OR",
+      "rationale": "Secondary SIR brand presence in Bend",
+      "platforms": {
+        "instagram": { "handle": "@cascadesothebysrealty", "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": "CascadeSothebysRealty", "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "coldwell_banker_bain_bend",
+      "display_name": "Coldwell Banker Bain Bend",
+      "category": "bend_local",
+      "geo": "Bend, OR",
+      "rationale": "National franchise; competes on volume + buyer education",
+      "platforms": {
+        "instagram": { "handle": "@coldwellbankerbain", "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": "CBBain", "verified": false },
+        "linkedin": { "vanity": "coldwell-banker-bain", "verified": false }
+      },
+      "notes": "Corporate IG covers all CBB offices; local Bend handle may not exist separately."
+    },
+    {
+      "id": "berkshire_hathaway_nw_bend",
+      "display_name": "Berkshire Hathaway HomeServices NW Real Estate (Bend)",
+      "category": "bend_local",
+      "geo": "Bend, OR",
+      "rationale": "National brand recognition advantage; strong out-of-state-seller appeal",
+      "platforms": {
+        "instagram": { "handle": null, "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "john_l_scott_bend",
+      "display_name": "John L. Scott Bend",
+      "category": "bend_local",
+      "geo": "Bend, OR",
+      "rationale": "Pacific NW regional franchise; strong PNW relocation pipeline",
+      "platforms": {
+        "instagram": { "handle": "@johnlscott", "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": "JohnLScott", "verified": false },
+        "linkedin": { "vanity": "john-l-scott-real-estate", "verified": false }
+      },
+      "notes": "Corporate handle covers all offices."
+    },
+    {
+      "id": "remax_key_properties_bend",
+      "display_name": "RE/MAX Key Properties Bend",
+      "category": "bend_local",
+      "geo": "Bend, OR",
+      "rationale": "Established local franchise; agent-led content presence",
+      "platforms": {
+        "instagram": { "handle": "@remaxkeyproperties", "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": "RemaxKeyProperties", "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "opendoor",
+      "display_name": "Opendoor",
+      "category": "national_disruptor",
+      "geo": "national",
+      "rationale": "Largest iBuyer; directly threatens out-of-state-seller funnel with instant-offer pitch",
+      "platforms": {
+        "instagram": { "handle": "@opendoor", "verified": true },
+        "tiktok": { "handle": "@opendoor", "verified": true },
+        "youtube": { "handle": "@Opendoor", "verified": true },
+        "facebook": { "page": "Opendoor", "verified": true },
+        "linkedin": { "vanity": "opendoor", "verified": true }
+      },
+      "notes": "Public-company brand; handles stable."
+    },
+    {
+      "id": "offerpad",
+      "display_name": "Offerpad",
+      "category": "national_disruptor",
+      "geo": "national",
+      "rationale": "Second-largest iBuyer; same seller-lead threat as Opendoor",
+      "platforms": {
+        "instagram": { "handle": "@offerpad", "verified": true },
+        "tiktok": { "handle": "@offerpad", "verified": false },
+        "youtube": { "handle": "@offerpad", "verified": false },
+        "facebook": { "page": "Offerpad", "verified": true },
+        "linkedin": { "vanity": "offerpad", "verified": true }
+      },
+      "notes": "Public-company brand; handles stable."
+    },
+    {
+      "id": "heider_real_estate",
+      "display_name": "Heider Real Estate (Loida Velasquez / Heider Team)",
+      "category": "national_content_winner",
+      "geo": "Las Vegas, NV",
+      "rationale": "Top US real estate content creator; format library is the closest analog to what Ryan Realty is building",
+      "platforms": {
+        "instagram": { "handle": null, "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": "Verify handle set — multiple creators use 'Heider' branding; pick the highest-engagement one for the audit."
+    },
+    {
+      "id": "ryan_serhant",
+      "display_name": "Ryan Serhant / SERHANT Studios",
+      "category": "national_content_winner",
+      "geo": "New York, NY",
+      "rationale": "Brand-led content brokerage at scale; the model for content-as-distribution",
+      "platforms": {
+        "instagram": { "handle": "@ryanserhant", "verified": false },
+        "tiktok": { "handle": "@ryanserhant", "verified": false },
+        "youtube": { "handle": "@SERHANT", "verified": false },
+        "facebook": { "page": "RyanSerhant", "verified": false },
+        "linkedin": { "vanity": "ryanserhant", "verified": false }
+      },
+      "notes": "Personal handle + SERHANT brand handle both worth scraping."
+    },
+    {
+      "id": "glennda_baker",
+      "display_name": "Glennda Baker",
+      "category": "national_content_winner",
+      "geo": "Atlanta, GA",
+      "rationale": "Original voice + camera-on personality model; high engagement-rate-per-post benchmark",
+      "platforms": {
+        "instagram": { "handle": "@glenndabaker", "verified": false },
+        "tiktok": { "handle": "@glenndabaker", "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "madison_sutton",
+      "display_name": "Madison Sutton",
+      "category": "national_content_winner",
+      "geo": "New York, NY",
+      "rationale": "Top short-form lifestyle-meets-listing creator; relevant for our lifestyle_bend bucket",
+      "platforms": {
+        "instagram": { "handle": "@themadisonsutton", "verified": false },
+        "tiktok": { "handle": "@themadisonsutton", "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "chad_carroll",
+      "display_name": "Chad Carroll",
+      "category": "national_content_winner",
+      "geo": "Miami, FL",
+      "rationale": "Luxury-segment content benchmark; format choices for $1M+ Bend listings",
+      "platforms": {
+        "instagram": { "handle": "@chadcarroll", "verified": false },
+        "tiktok": { "handle": "@thecarrollgroup", "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "compass_corp",
+      "display_name": "Compass (corporate)",
+      "category": "national_content_winner",
+      "geo": "national",
+      "rationale": "Compass's corporate content arm signals what national brokerages are testing at scale",
+      "platforms": {
+        "instagram": { "handle": "@compass", "verified": false },
+        "tiktok": { "handle": "@compass", "verified": false },
+        "youtube": { "handle": "@Compass", "verified": false },
+        "facebook": { "page": "compass", "verified": false },
+        "linkedin": { "vanity": "compass", "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "sothebys_corp",
+      "display_name": "Sotheby's International Realty (corporate)",
+      "category": "national_content_winner",
+      "geo": "national",
+      "rationale": "Luxury-segment corporate content; format reference for our high-end listings",
+      "platforms": {
+        "instagram": { "handle": "@sothebysrealty", "verified": false },
+        "tiktok": { "handle": "@sothebysrealty", "verified": false },
+        "youtube": { "handle": "@SothebysRealty", "verified": false },
+        "facebook": { "page": "SothebysInternationalRealty", "verified": false },
+        "linkedin": { "vanity": "sothebys-international-realty", "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "tom_ferry",
+      "display_name": "Tom Ferry",
+      "category": "national_content_winner",
+      "geo": "national",
+      "rationale": "Real estate coaching content; format reference for agent-education and behind_scenes content",
+      "platforms": {
+        "instagram": { "handle": "@tomferry", "verified": false },
+        "tiktok": { "handle": "@tomferry", "verified": false },
+        "youtube": { "handle": "@TomFerry", "verified": false },
+        "facebook": { "page": "CoachTomFerry", "verified": false },
+        "linkedin": { "vanity": "coachtomferry", "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "portland_peer_placeholder",
+      "display_name": "PNW Peer 1 — Portland brokerage (to assign)",
+      "category": "pnw_peer",
+      "geo": "Portland, OR",
+      "rationale": "Placeholder; pick a high-engagement Portland brokerage before first audit run",
+      "platforms": {
+        "instagram": { "handle": null, "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": "Suggestions: The Eckert Group (Living Room Realty), Windermere Portland, Where Inc."
+    },
+    {
+      "id": "seattle_peer_placeholder",
+      "display_name": "PNW Peer 2 — Seattle brokerage (to assign)",
+      "category": "pnw_peer",
+      "geo": "Seattle, WA",
+      "rationale": "Placeholder; pick a high-engagement Seattle brokerage before first audit run",
+      "platforms": {
+        "instagram": { "handle": null, "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": "Suggestions: Realogics Sotheby's, Windermere Seattle, COMPASS Seattle agent."
+    },
+    {
+      "id": "boise_peer_placeholder",
+      "display_name": "PNW Peer 3 — Boise brokerage (to assign)",
+      "category": "pnw_peer",
+      "geo": "Boise, ID",
+      "rationale": "Placeholder; pick a high-engagement Boise brokerage before first audit run",
+      "platforms": {
+        "instagram": { "handle": null, "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": "Boise is the closest comparable to Bend in growth/relocation pattern."
+    },
+    {
+      "id": "visit_bend",
+      "display_name": "Visit Bend",
+      "category": "local_media",
+      "geo": "Bend, OR",
+      "rationale": "Official tourism board; sets the lifestyle_bend conversation locally",
+      "platforms": {
+        "instagram": { "handle": "@visitbend", "verified": false },
+        "tiktok": { "handle": "@visitbend", "verified": false },
+        "youtube": { "handle": "@VisitBend", "verified": false },
+        "facebook": { "page": "VisitBend", "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": "Not a competitor; topic-mining source for lifestyle_bend bucket."
+    },
+    {
+      "id": "source_weekly",
+      "display_name": "The Source Weekly",
+      "category": "local_media",
+      "geo": "Bend, OR",
+      "rationale": "Bend's primary alt-weekly; local_community topics + audience-overlap with our seller base",
+      "platforms": {
+        "instagram": { "handle": "@sourceweekly", "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": "SourceWeekly", "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "cascade_business_news",
+      "display_name": "Cascade Business News",
+      "category": "local_media",
+      "geo": "Bend, OR",
+      "rationale": "Local business journal; relevant for agent_brand press features + Central Oregon economic indicators",
+      "platforms": {
+        "instagram": { "handle": "@cascadebusinessnews", "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": "CascadeBusinessNews", "verified": false },
+        "linkedin": { "vanity": "cascade-business-news", "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "ktvz",
+      "display_name": "KTVZ NewsChannel 21",
+      "category": "local_media",
+      "geo": "Bend, OR",
+      "rationale": "Local broadcast news; national_housing_news + local_community signal source",
+      "platforms": {
+        "instagram": { "handle": "@ktvz", "verified": false },
+        "tiktok": { "handle": "@ktvz", "verified": false },
+        "youtube": { "handle": "@KTVZ", "verified": false },
+        "facebook": { "page": "KTVZ", "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": ""
+    },
+    {
+      "id": "bend_mortgage_broker_placeholder_1",
+      "display_name": "Adjacent — Bend mortgage broker 1 (to assign)",
+      "category": "adjacent_creator",
+      "geo": "Bend, OR",
+      "rationale": "Mortgage brokers shape the buyer/seller decision-window; placeholder until Matt confirms which broker(s) to track",
+      "platforms": {
+        "instagram": { "handle": null, "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": "Suggestions: top Movement Mortgage Bend LO, Cross Country Mortgage Bend, local credit-union mortgage teams."
+    },
+    {
+      "id": "bend_mortgage_broker_placeholder_2",
+      "display_name": "Adjacent — Bend mortgage broker 2 (to assign)",
+      "category": "adjacent_creator",
+      "geo": "Bend, OR",
+      "rationale": "Second mortgage-broker slot",
+      "platforms": {
+        "instagram": { "handle": null, "verified": false },
+        "tiktok": { "handle": null, "verified": false },
+        "youtube": { "handle": null, "verified": false },
+        "facebook": { "page": null, "verified": false },
+        "linkedin": { "vanity": null, "verified": false }
+      },
+      "notes": ""
+    }
+  ],
+  "expansion_pool": {
+    "description": "Candidates to add when expanding from current ~27 entries toward the 30-50 audit target. Listed here so the brain knows what's been considered. Move into the competitors[] array before first audit run.",
+    "candidates": [
+      "kvale_team_bend (local team-led brand)",
+      "duke_warner_realty (regional Central Oregon)",
+      "rockwood_homes_bend (developer + listing presence)",
+      "yilmazer_team (national content winner — verify handle)",
+      "michael_lapaglia (luxury content)",
+      "anthony_lee_real_estate (PNW content creator)",
+      "redfin_corporate (national disruptor adjacent)",
+      "zillow_corporate (national platform)",
+      "the_agency_corporate (luxury brand-led)",
+      "fathom_realty (asset-light national)"
+    ]
+  }
+}

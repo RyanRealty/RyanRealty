@@ -14,15 +14,26 @@
  *   - §11 (per-channel calibration)
  *
  * Opportunity → brief mapping table (see mapOpportunityToBriefs):
- *   audit-crm north_star drop          → fb_ad_creative + ig_reel
- *   audit-ads test_new_creative         → fb_ad_creative ×3 (data/question/contrarian)
- *   audit-ads capitalize_on_spike       → ig_reel + tiktok_reel
- *   audit-website SEO gap (query)       → blog_post
- *   audit-website page leak             → NO brief (CRO task, log as marketing_decision)
- *   competitor SERP gap                 → blog_post targeting that query
- *   competitor running unreplicated fmt → tiktok_reel or ig_reel
- *   platform-trends act_on              → matching format brief
- *   diagnose capitalize_on_spike        → repeat-the-format brief
+ *   audit-crm north_star drop/spike       → fb_lead_gen_ad + market_data_short
+ *   audit-ads creative test_new_creative   → fb_lead_gen_ad ×3 (data/question/contrarian)
+ *   audit-ads * capitalize_on_spike       → market_data_short
+ *   audit-website seo investigate_drop     → blog_post (refresh losing query)
+ *   audit-website seo capitalize_on_spike  → blog_post + ig_carousel (recycle winning content)
+ *   audit-website seo test_new_creative    → blog_post (TODO: site:meta_update in Item 1)
+ *   audit-website page leak               → NO brief (CRO task, log as marketing_decision)
+ *   competitor serp_gap                   → blog_post + ig_carousel
+ *   competitor format_gap (video)         → market_data_short
+ *   platform-trends format                → market_data_short OR meme_video by label cue
+ *   platform-trends audio                 → meme_video
+ *   platform-trends hashtag               → ig_carousel
+ *   platform-trends algorithm             → SKIP (Item 5: comms:matt_alert)
+ *   diagnose capitalize_on_spike          → channel-matched format, correct producer routing
+ *
+ * Silently dropped today — still in scope for later items:
+ *   audit-ads budget/tracking/targeting/campaign_structure → Item 1 (ops:meta_* actions)
+ *   audit-website funnel/page/traffic                     → Item 1 (site:* actions)
+ *   audit-crm response_time/source_quality/tagging_drift/pipeline_health → Item 2 (ops:fub_* + comms:*)
+ *   platform-trends algorithm                             → Item 5 (comms:matt_alert)
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
@@ -556,7 +567,7 @@ export function mapOpportunityToBriefs(
 ): GeneratedBrief[] {
   const briefs: Omit<GeneratedBrief, 'voice_validation'>[] = []
 
-  // ── audit-crm north_star drop ─────────────────────────────────────────────
+  // ── audit-crm north_star drop/spike → fb_lead_gen_ad + market_data_short ─
   if (
     opportunity.source === 'audit-crm' &&
     opportunity.area === 'north_star' &&
@@ -568,14 +579,14 @@ export function mapOpportunityToBriefs(
     const wowPctStr = ns.wow_pct !== null ? `${ns.wow_pct.toFixed(1)}%` : 'unknown'
     const isDrop = (ns.wow_pct ?? 0) < 0
 
-    // fb_ad_creative
+    // Paid: FB lead-gen ad creative
     briefs.push(buildBrief({
       topic: `Recover qualified seller leads — WoW ${isDrop ? 'drop' : 'shift'} ${wowPctStr}`,
-      format: 'fb_ad_creative',
+      format: 'fb_lead_gen_ad',
       platforms: ['facebook', 'instagram'],
       hook: isDrop
         ? `Selling in Bend this year? Here is what changed in the market last week.`
-        : `Bend sellers: the window that opened this week will not stay open long.`,
+        : `Bend sellers: the data moved this week. Here's the read.`,
       body: `Honest breakdown of what the data says for Bend homeowners considering a sale right now. No pressure, just numbers.`,
       cta: `Tell us your address. We send back a real number based on Bend MLS sales in the last 90 days.`,
       target_audience: 'out_of_state_seller',
@@ -590,11 +601,13 @@ export function mapOpportunityToBriefs(
       generation_reason: `audit-crm north_star: qualified_seller_leads ${wowPctStr} WoW. Severity: ${opportunity.severity}.`,
     }))
 
-    // ig_reel (companion social proof creative)
+    // Organic: data-driven 30-45s vertical short
+    // (Previously emitted as `ig_reel` which routed wrongly to listing_reveal;
+    // now correctly routes to market-data-video which accepts brand-level targets.)
     briefs.push(buildBrief({
-      topic: `Bend market snapshot reel — seller positioning`,
-      format: 'ig_reel',
-      platforms: ['instagram'],
+      topic: `Bend market data short — seller positioning`,
+      format: 'market_data_short',
+      platforms: ['instagram', 'tiktok'],
       hook: `Bend, ${new Date(signals.asOfDate).toLocaleString('default', { month: 'long', year: 'numeric' })}. If you own a home here, read this.`,
       body: `Months of supply, median price, days on market. Three numbers. What they mean for you.`,
       cta: `Link in bio: get your home's current value, no call required.`,
@@ -604,14 +617,17 @@ export function mapOpportunityToBriefs(
       ],
       predicted_outcome: {
         primary_metric: 'qualified_seller_leads',
-        expected_value: '+0.5 to +1 qualified_seller_lead/week from IG-attributed leads',
-        rationale: `Supporting the FB ad with an IG reel improves cross-platform reach and retargeting pool size. Based on the last 4 weeks of IG-to-lead attribution in FUB.`,
+        expected_value: '+0.5 to +1 qualified_seller_lead/week from organic-attributed leads',
+        rationale: `Data-driven short backs up the FB ad with social proof. Cross-platform IG + TikTok distribution improves retargeting pool size. Based on the last 4 weeks of IG-to-lead attribution in FUB.`,
       },
-      generation_reason: `audit-crm north_star companion reel: WoW change ${wowPctStr}.`,
+      generation_reason: `audit-crm north_star companion short: WoW change ${wowPctStr}.`,
     }))
   }
 
-  // ── audit-ads test_new_creative ───────────────────────────────────────────
+  // ── audit-ads test_new_creative (fatigue) — fb_lead_gen_ad ×3 variants ───
+  // Three variants is the intentional exception to the 1-2-briefs-per-opportunity
+  // rule: creative-fatigue requires a deliberate A/B/C test, not a single
+  // replacement creative.
   if (
     opportunity.source === 'audit-ads' &&
     opportunity.recommended_action === 'test_new_creative'
@@ -644,7 +660,7 @@ export function mapOpportunityToBriefs(
     for (const variant of variants) {
       briefs.push(buildBrief({
         topic: `Ad creative variant (${variant.label}) — ${campaignName}`,
-        format: 'fb_ad_creative',
+        format: 'fb_lead_gen_ad',
         platforms: ['facebook'],
         hook: variant.hook,
         body: variant.body,
@@ -664,7 +680,8 @@ export function mapOpportunityToBriefs(
     }
   }
 
-  // ── audit-ads capitalize_on_spike ─────────────────────────────────────────
+  // ── audit-ads capitalize_on_spike → market_data_short ────────────────────
+  // (Previously ig_reel routed wrongly to listing_reveal; now market-data-video.)
   if (
     opportunity.source === 'audit-ads' &&
     opportunity.recommended_action === 'capitalize_on_spike'
@@ -677,12 +694,12 @@ export function mapOpportunityToBriefs(
     const evidence = opportunity.evidence
 
     briefs.push(buildBrief({
-      topic: `Capitalize on ads engagement spike — IG + TikTok reel`,
-      format: 'ig_reel',
+      topic: `Capitalize on ads engagement spike — market data short`,
+      format: 'market_data_short',
       platforms: ['instagram', 'tiktok'],
-      hook: `Bend market. This week only.`,
-      body: `When the data moves this fast, it pays to know what your home is worth before your neighbor lists theirs.`,
-      cta: `Address in bio form. Real number back in 24 hours.`,
+      hook: `Bend market data shifted in the last seven days. Here's what changed.`,
+      body: `Active inventory, median price, days on market. Three numbers. What the shift means for sellers thinking about pricing.`,
+      cta: `Get a real number for your Bend home in 24 hours.`,
       target_audience: audience,
       data_sources: [
         { type: 'audit-ads', evidence },
@@ -690,25 +707,56 @@ export function mapOpportunityToBriefs(
       predicted_outcome: {
         primary_metric: 'qualified_seller_leads',
         expected_value: '+1 qualified_seller_lead per 1,000 additional reach',
-        rationale: `Engagement spike on paid channel signals warm audience receptivity. Matching organic reel content to the moment amplifies the reach pool for retargeting.`,
+        rationale: `Engagement spike on paid channel signals warm audience receptivity. Matching organic data-driven short to the moment amplifies the reach pool for retargeting.`,
       },
       generation_reason: `audit-ads capitalize_on_spike: ${evidence}`,
     }))
   }
 
-  // ── audit-website SEO gap ─────────────────────────────────────────────────
+  // ── audit-website seo — branch by recommended_action ─────────────────────
+  // investigate_drop  → blog_post (refresh)
+  // capitalize_on_spike → blog_post + ig_carousel (recycle winning content)
+  // test_new_creative (low CTR) → blog_post (TODO Item 1: site:meta_update)
   if (
     opportunity.source === 'audit-website' &&
     opportunity.area === 'seo'
   ) {
     const seo = signals.websiteAudit.seo
     const losingQuery = seo?.top_queries.find((q) => q.position_delta !== null && q.position_delta > 1)
+    const gainingQuery = seo?.top_queries.find((q) => q.position_delta !== null && q.position_delta < -1)
     const lowCtrQuery = seo?.top_queries.find((q) => q.low_ctr_flag)
-    const targetQuery = losingQuery?.query ?? lowCtrQuery?.query ?? 'Bend real estate'
-    const impressions = losingQuery?.impressions ?? lowCtrQuery?.impressions ?? 0
 
+    // Pick the query that matches the action context
+    let targetQuery: string
+    let impressions: number
+    let queryEvidence: string
+
+    if (opportunity.recommended_action === 'capitalize_on_spike' && gainingQuery) {
+      targetQuery = gainingQuery.query
+      impressions = gainingQuery.impressions
+      queryEvidence = `Position improved ${Math.abs(gainingQuery.position_delta ?? 0).toFixed(1)} places WoW. ${impressions.toLocaleString()} impressions.`
+    } else if (opportunity.recommended_action === 'investigate_drop' && losingQuery) {
+      targetQuery = losingQuery.query
+      impressions = losingQuery.impressions
+      queryEvidence = `Position drifted +${losingQuery.position_delta?.toFixed(1)} places WoW. ${impressions.toLocaleString()} impressions.`
+    } else if (opportunity.recommended_action === 'test_new_creative' && lowCtrQuery) {
+      // TODO Item 1: the proper fix here is site:meta_update on the existing
+      // ranking page (title + meta description). For now we emit a blog_post
+      // refresh as the closest in-scope action.
+      targetQuery = lowCtrQuery.query
+      impressions = lowCtrQuery.impressions
+      queryEvidence = `CTR in bottom quartile of top queries. ${impressions.toLocaleString()} impressions.`
+    } else {
+      const q = losingQuery ?? lowCtrQuery ?? gainingQuery ?? seo?.top_queries[0]
+      if (!q) return []
+      targetQuery = q.query
+      impressions = q.impressions
+      queryEvidence = `${impressions.toLocaleString()} impressions. ${opportunity.evidence}`
+    }
+
+    // Primary: blog post
     briefs.push(buildBrief({
-      topic: `Blog post targeting SEO gap: "${targetQuery}"`,
+      topic: `Blog post targeting SEO query: "${targetQuery}"`,
       format: 'blog_post',
       platforms: ['blog'],
       hook: `${targetQuery.charAt(0).toUpperCase() + targetQuery.slice(1)}: what the data says for Bend in ${new Date(signals.asOfDate).getFullYear()}.`,
@@ -716,15 +764,37 @@ export function mapOpportunityToBriefs(
       cta: `If you have questions about how this affects your property, use the form above.`,
       target_audience: 'search_intent_match',
       data_sources: [
-        { type: 'audit-website', evidence: `Query "${targetQuery}" has ${impressions.toLocaleString()} impressions. ${losingQuery ? `Position drifted +${losingQuery.position_delta?.toFixed(1)} places WoW.` : `CTR in bottom quartile of top queries.`}` },
+        { type: 'audit-website', evidence: `Query "${targetQuery}" — ${queryEvidence}` },
       ],
       predicted_outcome: {
         primary_metric: 'qualified_seller_leads',
         expected_value: '+50 to +200 organic sessions/month within 60 days of publish',
-        rationale: `Target query has ${impressions.toLocaleString()} impressions with declining or low-CTR position. A well-structured 1,500-word post with the exact query as the H1 and sourced data typically recovers position within 4-8 weeks per GSC history.`,
+        rationale: `Target query has ${impressions.toLocaleString()} impressions. A well-structured 1,500-word post with the exact query as the H1 and sourced data typically recovers position within 4-8 weeks per GSC history.`,
       },
-      generation_reason: `audit-website seo: ${opportunity.headline}. Evidence: ${opportunity.evidence}`,
+      generation_reason: `audit-website seo ${opportunity.recommended_action}: ${opportunity.headline}. Evidence: ${opportunity.evidence}`,
     }))
+
+    // Companion: IG carousel recap if we are capitalizing on a winning query
+    if (opportunity.recommended_action === 'capitalize_on_spike') {
+      briefs.push(buildBrief({
+        topic: `IG carousel recap — "${targetQuery}" data`,
+        format: 'ig_carousel',
+        platforms: ['instagram'],
+        hook: `${targetQuery.charAt(0).toUpperCase() + targetQuery.slice(1)}: what the data says.`,
+        body: `Five to seven slide carousel summarizing the blog post for IG audience. Same data, same sources, condensed for scroll consumption.`,
+        cta: `Full breakdown on the blog. Link in bio.`,
+        target_audience: 'search_intent_match',
+        data_sources: [
+          { type: 'audit-website', evidence: `Recycle winning SEO content into IG carousel. Query "${targetQuery}" — ${queryEvidence}` },
+        ],
+        predicted_outcome: {
+          primary_metric: 'qualified_seller_leads',
+          expected_value: '+200 to +800 organic IG impressions; +0.2 to +0.5 qualified_seller_leads/week',
+          rationale: `Recycling winning SEO content as a carousel extends reach beyond search to social. IG carousels have higher dwell time than reels for data-heavy content.`,
+        },
+        generation_reason: `audit-website seo capitalize_on_spike companion carousel: amplify winning query "${targetQuery}".`,
+      }))
+    }
   }
 
   // ── audit-website page leak → NO brief (CRO task) ────────────────────────
@@ -737,7 +807,10 @@ export function mapOpportunityToBriefs(
     return [] // Explicitly no brief — caller logs marketing_decision instead
   }
 
-  // ── competitor SERP gap ───────────────────────────────────────────────────
+  // audit-website funnel / traffic → silently dropped today
+  // (Item 1 will wire these to site:* producers.)
+
+  // ── competitor SERP gap → blog_post + ig_carousel ────────────────────────
   if (opportunity.source === 'competitor' && opportunity.area === 'serp_gap') {
     const query = (opportunity.meta.query as string) ?? 'Bend real estate'
     const competitor = (opportunity.meta.competitor as string) ?? 'a competitor'
@@ -760,19 +833,36 @@ export function mapOpportunityToBriefs(
       },
       generation_reason: `competitor serp_gap: "${query}" — ${competitor} ranking, Ryan Realty absent.`,
     }))
+
+    // Companion: IG carousel recycling the blog data
+    briefs.push(buildBrief({
+      topic: `IG carousel: "${query}" data recap`,
+      format: 'ig_carousel',
+      platforms: ['instagram'],
+      hook: `${query.charAt(0).toUpperCase() + query.slice(1)}: five slides on the Bend data.`,
+      body: `Same data as the blog post, recut for IG scroll. Five to seven slides. Plain English, sourced numbers.`,
+      cta: `Full post on the blog. Link in bio.`,
+      target_audience: 'search_intent_match',
+      data_sources: [
+        { type: 'competitor', evidence: `Recycle SERP-gap blog content into IG carousel. Competitor ${competitor} ranks for "${query}".` },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: '+150 to +600 IG impressions; cross-platform discovery boost',
+        rationale: `IG carousel companion to blog post extends reach. Recycling winning content patterns reduces marginal content cost.`,
+      },
+      generation_reason: `competitor serp_gap companion carousel: extend "${query}" content reach to IG.`,
+    }))
   }
 
-  // ── competitor running video format we don't ─────────────────────────────
+  // ── competitor format_gap (video) → market_data_short ────────────────────
   if (opportunity.source === 'competitor' && opportunity.area === 'format_gap') {
     const competitor = (opportunity.meta.competitor as string) ?? 'a competitor'
-    const samplePost = (opportunity.meta.sample_post as Record<string, unknown>) ?? {}
-    const platform = (samplePost.platform as string) ?? 'tiktok'
-    const isTikTok = platform === 'tiktok'
 
     briefs.push(buildBrief({
-      topic: `Replicate competitor video format — adapted to our voice`,
-      format: isTikTok ? 'tiktok_reel' : 'ig_reel',
-      platforms: isTikTok ? ['tiktok'] : ['instagram'],
+      topic: `Replicate competitor video format — market data angle`,
+      format: 'market_data_short',
+      platforms: ['instagram', 'tiktok'],
       hook: `Bend market, ${new Date(signals.asOfDate).toLocaleString('default', { month: 'long' })}. Three numbers you need to know.`,
       body: `Fast-format market data breakdown in the style that performed for a Bend competitor. Adapted to our voice: no hype, sourced numbers, client-first angle.`,
       target_audience: 'brand_default',
@@ -782,30 +872,54 @@ export function mapOpportunityToBriefs(
       predicted_outcome: {
         primary_metric: 'qualified_seller_leads',
         expected_value: '+500 to +2,000 organic reach; +0.3 qualified_seller_leads/week',
-        rationale: `Competitor format signals audience receptivity on this platform in this category. Replicating the format in our voice captures the same audience intent without matching their voice or breaking brand rules.`,
+        rationale: `Competitor format signals audience receptivity on this platform in this category. Replicating the format with our data-driven voice captures the same audience intent without matching their voice or breaking brand rules.`,
       },
       generation_reason: `competitor format_gap: ${competitor} running video format we have not replicated. ${opportunity.evidence}`,
     }))
   }
 
-  // ── platform-trends act_on ────────────────────────────────────────────────
+  // ── platform-trends act_on — route by trend_type ─────────────────────────
+  // format → market_data_short (default) OR meme_video (label cue)
+  // audio  → meme_video
+  // hashtag → ig_carousel
+  // algorithm → SKIP (Item 5 will route to comms:matt_alert)
   if (opportunity.source === 'platform-trend') {
     const trendItem = opportunity.meta.trend_item as {
-      trend_type: string
+      trend_type: 'algorithm' | 'format' | 'audio' | 'hashtag'
       label: string
       platforms: string[]
       reason: string
     }
-    const platform = trendItem.platforms[0] ?? 'instagram'
-    const isTikTok = platform === 'tiktok'
-    const format = trendItem.trend_type === 'format'
-      ? (isTikTok ? 'tiktok_reel' : 'ig_reel')
-      : (isTikTok ? 'tiktok_reel' : 'ig_reel')
+
+    if (trendItem.trend_type === 'algorithm') {
+      // Algorithm shifts are operational comms, not content. Drop silently.
+      return []
+    }
+
+    const labelLower = trendItem.label.toLowerCase()
+    const humorCue = /\b(meme|reaction|pov|relatable|when you|how it feels)\b/i.test(labelLower)
+    let format: string
+    let platforms: string[]
+    if (trendItem.trend_type === 'audio') {
+      format = 'meme_video'
+      platforms = trendItem.platforms.length ? trendItem.platforms : ['tiktok', 'instagram']
+    } else if (trendItem.trend_type === 'hashtag') {
+      format = 'ig_carousel'
+      platforms = ['instagram']
+    } else if (trendItem.trend_type === 'format' && humorCue) {
+      format = 'meme_video'
+      platforms = trendItem.platforms.length ? trendItem.platforms : ['tiktok', 'instagram']
+    } else {
+      // Default: data-driven short (per Item 3 decision — market_data_short
+      // is the brand's strongest format when the trend_type is ambiguous)
+      format = 'market_data_short'
+      platforms = trendItem.platforms.length ? trendItem.platforms : ['instagram', 'tiktok']
+    }
 
     briefs.push(buildBrief({
       topic: `Act on platform trend: ${trendItem.label}`,
       format,
-      platforms: trendItem.platforms,
+      platforms,
       hook: `Bend market. This format is working right now.`,
       body: `Adapt the trending format (${trendItem.label}) to Bend real estate market data. Voice stays the same: honest, specific, no hype. Format adapts to the platform moment.`,
       target_audience: 'brand_default',
@@ -815,13 +929,13 @@ export function mapOpportunityToBriefs(
       predicted_outcome: {
         primary_metric: 'qualified_seller_leads',
         expected_value: '+1,000 to +5,000 organic reach from format-algorithm match',
-        rationale: `Platform trends data shows this format outperforming on ${platform} right now. Early adoption before saturation captures algorithmic advantage. No voice violations detected.`,
+        rationale: `Platform trends data shows this format outperforming on ${platforms.join(', ')} right now. Early adoption before saturation captures algorithmic advantage. No voice violations detected.`,
       },
-      generation_reason: `platform-trend act_on: "${trendItem.label}" on ${trendItem.platforms.join(', ')}. ${trendItem.reason}`,
+      generation_reason: `platform-trend ${trendItem.trend_type} act_on: "${trendItem.label}" on ${trendItem.platforms.join(', ')}. ${trendItem.reason}`,
     }))
   }
 
-  // ── diagnose capitalize_on_spike ─────────────────────────────────────────
+  // ── diagnose capitalize_on_spike → channel-matched, correct producer ─────
   if (
     opportunity.source === 'diagnose' &&
     opportunity.recommended_action === 'capitalize_on_spike'
@@ -833,10 +947,33 @@ export function mapOpportunityToBriefs(
       ? `+${Math.round(topDelta.wow.percent_change ?? 0)}%`
       : 'significantly'
 
+    // Channel → format mapping. Default is market_data_short (the brand's
+    // strongest format per Item 3 decision). YouTube high-severity spikes
+    // earn a long-form lift; non-social channels (ga4/gsc/fub/meta_ads)
+    // are dropped here because they belong to site:* and ops:* producers
+    // in Items 1 and 2.
+    let format: string
+    let platforms: string[]
+    if (channel === 'youtube') {
+      if (opportunity.severity === 'high') {
+        format = 'market_youtube_longform'
+        platforms = ['youtube']
+      } else {
+        format = 'market_data_short'
+        platforms = ['youtube', 'instagram', 'tiktok']
+      }
+    } else if (channel === 'tiktok' || channel === 'instagram' || channel === 'meta_page') {
+      format = 'market_data_short'
+      platforms = [channel]
+    } else {
+      // ga4 / gsc / fub / meta_ads → not a content channel. Silently drop.
+      return []
+    }
+
     briefs.push(buildBrief({
       topic: `Repeat-the-format brief — ${channel} engagement spike`,
-      format: channel === 'tiktok' ? 'tiktok_reel' : channel === 'instagram' ? 'ig_reel' : 'ig_reel',
-      platforms: [channel],
+      format,
+      platforms,
       hook: `This type of content worked ${pctStr} better than usual last week. Here is the next one.`,
       body: `Post in the same format as the piece that spiked. Same structure, fresh data, new angle. The algorithm is already pushing this format to our audience.`,
       target_audience: 'brand_default',
@@ -895,18 +1032,58 @@ export async function persistBriefs(
     // marketing_brain_skills/producers/REGISTRY.md. Falls back to
     // content_engine for unknown formats so the brain doesn't drop work.
     const formatRoute: Record<string, { action_type: string; producer: string }> = {
+      // Paid social — FB lead-gen ad creative
+      fb_lead_gen_ad: { action_type: 'content:fb_lead_gen_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
+      fb_ad: { action_type: 'content:fb_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
+      // Legacy alias — kept for manual produces / pre-Item-3 backfilled rows
       fb_ad_creative: { action_type: 'content:fb_lead_gen_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
-      ig_reel: { action_type: 'content:listing_reel', producer: 'video_production_skills/listing_reveal' },
-      ig_carousel: { action_type: 'content:ig_carousel', producer: 'social_media_skills/instagram-carousel' },
-      tiktok_reel: { action_type: 'content:tiktok_reel', producer: 'video_production_skills/listing_reveal' },
-      blog_post: { action_type: 'content:blog_post', producer: 'social_media_skills/blog-post' },
-      listing_video: { action_type: 'content:listing_video', producer: 'video_production_skills/listing-tour-video' },
-      market_data_video: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+
+      // Organic short-form video (30-45s vertical) — routed by content angle
       market_data_short: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+      market_data_video: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+      market_video: { action_type: 'content:market_video', producer: 'video_production_skills/market-data-video' },
+      market_data_viz: { action_type: 'content:market_data_viz', producer: 'video_production_skills/data_viz_video' },
+      stats_clip: { action_type: 'content:stats_clip', producer: 'video_production_skills/data_viz_video' },
+      meme_video: { action_type: 'content:meme_video', producer: 'video_production_skills/meme_content' },
+      neighborhood_reel: { action_type: 'content:neighborhood_reel', producer: 'video_production_skills/area_guides' },
+      area_guide_short: { action_type: 'content:area_guide_short', producer: 'video_production_skills/area_guides' },
       news_clip: { action_type: 'content:news_clip', producer: 'video_production_skills/news-video' },
+      news_video: { action_type: 'content:news_video', producer: 'video_production_skills/news-video' },
+      avatar_market_update: { action_type: 'content:avatar_market_update', producer: 'video_production_skills/avatar_market_update' },
+
+      // Listing-specific (valid only when target is a specific MLS#)
+      listing_reel: { action_type: 'content:listing_reel', producer: 'video_production_skills/listing_reveal' },
+      listing_video: { action_type: 'content:listing_video', producer: 'video_production_skills/listing-tour-video' },
+
+      // Long-form video
+      market_youtube_longform: { action_type: 'content:market_youtube_longform', producer: 'video_production_skills/youtube-long-form-market-report' },
+      neighborhood_tour: { action_type: 'content:neighborhood_tour', producer: 'video_production_skills/neighborhood_tour' },
+      area_guide_long: { action_type: 'content:area_guide_long', producer: 'video_production_skills/neighborhood_tour' },
+
+      // Static + carousels
+      ig_carousel: { action_type: 'content:ig_carousel', producer: 'social_media_skills/instagram-carousel' },
+      blog_post: { action_type: 'content:blog_post', producer: 'social_media_skills/blog-post' },
+      seo_blog: { action_type: 'content:seo_blog', producer: 'social_media_skills/blog-post' },
+
+      // Flyers
       flyer: { action_type: 'content:flyer', producer: 'social_media_skills/flyer-design' },
+      just_listed_flyer: { action_type: 'content:just_listed_flyer', producer: 'social_media_skills/flyer-design' },
+      open_house_flyer: { action_type: 'content:open_house_flyer', producer: 'social_media_skills/flyer-design' },
+      feature_sheet: { action_type: 'content:feature_sheet', producer: 'social_media_skills/flyer-design' },
+
+      // Orchestrators (compound producers that fan out to multiple deliverables)
       list_kit: { action_type: 'content:list_kit', producer: 'social_media_skills/list-kit' },
+      monthly_market_report: { action_type: 'content:monthly_market_report', producer: 'video_production_skills/monthly-market-report-orchestrator' },
+      listing_launch: { action_type: 'content:listing_launch', producer: 'video_production_skills/listing_launch' },
+
+      // GBP (ops:* — but emitted as a content-flow format; route still resolves)
       gbp_post: { action_type: 'ops:gbp_post', producer: 'marketing_brain_skills/producers/ops-reputation' },
+
+      // Legacy aliases — pre-Item-3 these routed to listing_reveal which
+      // fails when target='brand' because listing_reveal requires an MLS#.
+      // Re-routed to market-data-video which accepts brand-level targets.
+      ig_reel: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+      tiktok_reel: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
     }
     const route = formatRoute[brief.format] ?? {
       action_type: `content:${brief.format}`,
