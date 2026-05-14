@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.203.1 (2026-05-14)
+
+### Bug Fixes
+- fix(cma): tighten comp selection — exclude land/lots, $200K floor, lot-size sanity, range-aware confidence
+
+---
+
+
 ## v1.203.0 (2026-05-14)
 
 ### Features
