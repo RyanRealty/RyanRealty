@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.187.0 (2026-05-14)
+
+### Features
+- feat(brand): Paul profile photo + Google Workspace logo at correct aspect
+
+---
+
+
 ## v1.186.5 (2026-05-14)
 
 ### Maintenance
