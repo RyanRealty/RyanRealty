@@ -15,6 +15,12 @@
  *
  * Opportunity → brief mapping table (see mapOpportunityToBriefs):
  *   audit-crm north_star drop/spike       → fb_lead_gen_ad + market_data_short
+ *   audit-crm response_time investigate_drop → ops:fub_task_create
+ *   audit-crm response_time review_targeting → ops:fub_sequence_change
+ *   audit-crm tagging_drift investigate_drop → ops:fub_tag_fix
+ *   audit-crm pipeline_health pause_underperformer → ops:fub_routing
+ *   audit-crm pipeline_health audit_landing_page → site:cta_update
+ *   audit-crm source_quality expand_to_similar_audience → ops:meta_audience
  *   audit-ads creative test_new_creative   → fb_lead_gen_ad ×3 (data/question/contrarian)
  *   audit-ads * capitalize_on_spike       → market_data_short
  *   audit-ads budget reduce/increase       → ops:meta_budget (matt-explicit, ±25% band)
@@ -875,6 +881,230 @@ export function mapOpportunityToBriefs(
         rationale: `Data-driven short backs up the FB ad with social proof. Cross-platform IG + TikTok distribution improves retargeting pool size. Based on the last 4 weeks of IG-to-lead attribution in FUB.`,
       },
       generation_reason: `audit-crm north_star companion short: WoW change ${wowPctStr}.`,
+    }))
+  }
+
+  // ── audit-crm response_time + investigate_drop → ops:fub_task_create ─────
+  // Compliance below 50% — SLA breaches need immediate task follow-up.
+  if (
+    opportunity.source === 'audit-crm' &&
+    opportunity.area === 'response_time' &&
+    opportunity.recommended_action === 'investigate_drop'
+  ) {
+    const rt = signals.crmAudit.response_time
+    briefs.push(buildBrief({
+      topic: `FUB SLA breach task: response-time compliance below 50%`,
+      format: 'ops_fub_task_create',
+      platforms: ['fub'],
+      hook: `Response-time SLA compliance is ${rt.compliance_pct?.toFixed(0) ?? 'unknown'}% over the last ${rt.data_days} days. Below the 50% floor.`,
+      body: `Create a FUB task on the broker responsible for the affected lead stage. Surface the count of breaches, the median response time, and the hot vs warm SLA thresholds. matt-explicit approval required before any bulk task creation.`,
+      cta: undefined,
+      target_audience: 'internal',
+      target: `audit:fub_sla_breach:${new Date(signals.asOfDate).toISOString().slice(0, 10)}`,
+      payload_override: {
+        compliance_pct: rt.compliance_pct,
+        avg_response_time_minutes: rt.avg_response_time_minutes,
+        sla_hot_minutes: rt.sla_hot_minutes,
+        sla_warm_minutes: rt.sla_warm_minutes,
+        compliant_days: rt.compliant_days,
+        noncompliant_days: rt.noncompliant_days,
+        action_hint: 'Create a FUB task on Matt (or the broker on rotation) for "Review SLA breaches from the last N days." matt-explicit before bulk task creation.',
+        source_audit: 'audit-crm.response_time.investigate_drop',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-crm', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: 'Recover SLA compliance to >80% within 14 days; +5-15% qualified-lead conversion',
+        rationale: `SLA breaches under 50% compliance correlate directly with lost qualified leads. Tasked follow-up restores compliance, which restores the lead conversion baseline.`,
+      },
+      generation_reason: `audit-crm response_time investigate_drop: ${opportunity.headline}. Compliance ${rt.compliance_pct?.toFixed(0) ?? '?'}%, ${rt.noncompliant_days}/${rt.data_days} non-compliant days.`,
+    }))
+  }
+
+  // ── audit-crm response_time + review_targeting → ops:fub_sequence_change ─
+  // 50-80% compliance — sequence change (route slower leads to auto-followup
+  // faster) is the right fix vs creating individual tasks.
+  if (
+    opportunity.source === 'audit-crm' &&
+    opportunity.area === 'response_time' &&
+    opportunity.recommended_action === 'review_targeting'
+  ) {
+    const rt = signals.crmAudit.response_time
+    briefs.push(buildBrief({
+      topic: `FUB sequence change: tighten auto-followup for slow leads`,
+      format: 'ops_fub_sequence_change',
+      platforms: ['fub'],
+      hook: `Response-time SLA compliance is ${rt.compliance_pct?.toFixed(0) ?? 'unknown'}% — within band but not where we want it.`,
+      body: `Adjust the auto-followup sequence so leads that miss the hot-stage SLA route into a tighter touch cadence. Reduces dependency on manual broker followup during high-volume windows.`,
+      cta: undefined,
+      target_audience: 'internal',
+      target: `audit:fub_sla_sequence:${new Date(signals.asOfDate).toISOString().slice(0, 10)}`,
+      payload_override: {
+        compliance_pct: rt.compliance_pct,
+        sla_hot_minutes: rt.sla_hot_minutes,
+        sla_warm_minutes: rt.sla_warm_minutes,
+        action_hint: 'Propose a FUB sequence update: hot-stage leads with no broker reply in N minutes auto-trigger a templated email + SMS. matt-explicit before changing the active sequence.',
+        source_audit: 'audit-crm.response_time.review_targeting',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-crm', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: 'Compliance lift toward 90%+ within 21 days',
+        rationale: `Auto-followup catches the gap that manual response misses during high-volume windows. Lifts compliance without adding broker workload.`,
+      },
+      generation_reason: `audit-crm response_time review_targeting: ${opportunity.headline}. Compliance ${rt.compliance_pct?.toFixed(0) ?? '?'}%.`,
+    }))
+  }
+
+  // ── audit-crm tagging_drift + investigate_drop → ops:fub_tag_fix ─────────
+  // Untagged percentage above 10% — broker-side tagging discipline issue.
+  if (
+    opportunity.source === 'audit-crm' &&
+    opportunity.area === 'tagging_drift' &&
+    opportunity.recommended_action === 'investigate_drop'
+  ) {
+    briefs.push(buildBrief({
+      topic: `FUB tagging cleanup: untagged seller leads above threshold`,
+      format: 'ops_fub_tag_fix',
+      platforms: ['fub'],
+      hook: `New leads landing in FUB without a seller-stage tag above the 10% drift threshold. Without tagging, attribution breaks.`,
+      body: `Identify the untagged leads in the last window, propose tag assignments based on lead source + form-fill signals, and queue a bulk apply. matt-explicit on any bulk apply touching >5 leads.`,
+      cta: undefined,
+      target_audience: 'internal',
+      target: `audit:fub_tagging_drift:${new Date(signals.asOfDate).toISOString().slice(0, 10)}`,
+      payload_override: {
+        action_hint: 'Query FUB for new leads in the window with no seller-stage tag. Inspect source + form payload, propose tag, surface for matt-explicit. If <=5 leads, matt-review-draft is sufficient.',
+        source_audit: 'audit-crm.tagging_drift.investigate_drop',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-crm', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: 'Restore tagging coverage to 95%+; restore attribution accuracy',
+        rationale: `Untagged leads break the brain's source-quality audit and the FB-attribution loop. Tagging cleanup restores both, which restores budget-decision accuracy downstream.`,
+      },
+      generation_reason: `audit-crm tagging_drift investigate_drop: ${opportunity.headline}.`,
+    }))
+  }
+
+  // ── audit-crm pipeline_health + pause_underperformer → ops:fub_routing ───
+  // Stalled stages — re-route leads stuck in one stage too long.
+  if (
+    opportunity.source === 'audit-crm' &&
+    opportunity.area === 'pipeline_health' &&
+    opportunity.recommended_action === 'pause_underperformer'
+  ) {
+    const pipe = signals.crmAudit.pipeline_health
+    const stalledStage = (pipe.stages as unknown as Array<Record<string, unknown>>).find((s) => s.is_stalled === true)
+    briefs.push(buildBrief({
+      topic: `FUB routing change: stalled stage needs re-routing`,
+      format: 'ops_fub_routing',
+      platforms: ['fub'],
+      hook: `Leads are accumulating in a stage without progression. Pipeline value $${pipe.total_pipeline_value.toLocaleString()} across ${pipe.total_pipeline_count} leads.`,
+      body: `Identify the stalled stage and re-route the leads either to a different broker, into an auto-followup sequence, or to a "stale" stage with explicit cleanup. matt-explicit on any routing change touching >5 leads.`,
+      cta: undefined,
+      target_audience: 'internal',
+      target: `audit:fub_pipeline_stall:${new Date(signals.asOfDate).toISOString().slice(0, 10)}`,
+      payload_override: {
+        total_pipeline_count: pipe.total_pipeline_count,
+        total_pipeline_value: pipe.total_pipeline_value,
+        stalled_stage: stalledStage?.stage ?? null,
+        action_hint: 'Inspect the stalled stage in FUB. Propose either re-routing to a different broker, dropping into the warm-followup sequence, or moving to a "stale" stage with a 30d cleanup task. matt-explicit on bulk routing.',
+        source_audit: 'audit-crm.pipeline_health.pause_underperformer',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-crm', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: 'Recover 5-15% of stalled pipeline value within 30 days',
+        rationale: `Stalled stages compound: leads that sit untouched for too long become unrecoverable. Re-routing or sequencing them captures the recoverable portion before it converts to a closed-lost.`,
+      },
+      generation_reason: `audit-crm pipeline_health pause_underperformer: ${opportunity.headline}. ${pipe.total_pipeline_count} leads / $${pipe.total_pipeline_value.toLocaleString()} in pipeline.`,
+    }))
+  }
+
+  // ── audit-crm pipeline_health + audit_landing_page → site:cta_update ─────
+  // Low new-to-hot conversion — the lead-gen landing page is bringing in
+  // low-quality leads. Site-edit producer handles the fix.
+  if (
+    opportunity.source === 'audit-crm' &&
+    opportunity.area === 'pipeline_health' &&
+    opportunity.recommended_action === 'audit_landing_page'
+  ) {
+    briefs.push(buildBrief({
+      topic: `Site CTA review: low new-to-hot conversion in pipeline`,
+      format: 'site_cta_update',
+      platforms: ['site'],
+      hook: `Leads enter the pipeline but few make it to "hot". The lead-gen landing pages are over-promising or under-qualifying.`,
+      body: `Audit the seller-intent landing pages for CTA copy that filters intent (e.g. "Get a real number based on Bend MLS data — takes 24 hours" beats "Get your free instant home value"). Tighter promises filter low-intent traffic at the form, raising new-to-hot conversion.`,
+      cta: undefined,
+      target_audience: 'site_visitor_seller',
+      target: `audit:funnel_quality:${new Date(signals.asOfDate).toISOString().slice(0, 10)}`,
+      payload_override: {
+        edit_targets: ['cta_copy', 'form_qualification_fields', 'above_fold_promise'],
+        problem_type: 'low_new_to_hot_conversion',
+        action_hint: 'Audit /lp/seller-home-value and /lp/seller-cma CTA copy. Propose changes that filter intent at the form. Open a PR for matt-review-PR.',
+        source_audit: 'audit-crm.pipeline_health.audit_landing_page',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-crm', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: '+10-25% new-to-hot conversion within 30 days',
+        rationale: `Pipeline quality is shaped at the form. CTA copy that promises a more specific outcome filters out drive-by submissions, raising downstream conversion without hurting raw lead count meaningfully.`,
+      },
+      generation_reason: `audit-crm pipeline_health audit_landing_page: ${opportunity.headline}.`,
+    }))
+  }
+
+  // ── audit-crm source_quality + expand_to_similar_audience → ops:meta_audience ─
+  // High-quality source has volume cap; expand via paid lookalike.
+  if (
+    opportunity.source === 'audit-crm' &&
+    opportunity.area === 'source_quality' &&
+    opportunity.recommended_action === 'expand_to_similar_audience'
+  ) {
+    briefs.push(buildBrief({
+      topic: `Meta Ads audience expansion: scale winning lead source`,
+      format: 'ops_meta_audience',
+      platforms: ['meta'],
+      hook: `A high-quality lead source is hitting volume ceiling. The lookalike opportunity is to scale what's working.`,
+      body: `Build a lookalike audience seeded from the winning source's converted leads, layer it onto the lookalike role, and ramp spend within the playbook band. matt-explicit before applying.`,
+      cta: undefined,
+      target_audience: 'past_seller_lookalike',
+      target: `audit:source_expansion:${new Date(signals.asOfDate).toISOString().slice(0, 10)}`,
+      payload_override: {
+        action_hint: 'Identify the winning source from audit-crm.source_quality, pull its converted leads from FUB, build a Meta lookalike from that seed (1% LAL to start), apply to the lookalike-role campaign. matt-explicit.',
+        source_audit: 'audit-crm.source_quality.expand_to_similar_audience',
+        headline: opportunity.headline,
+        evidence: opportunity.evidence,
+      },
+      data_sources: [
+        { type: 'audit-crm', evidence: opportunity.evidence },
+      ],
+      predicted_outcome: {
+        primary_metric: 'qualified_seller_leads',
+        expected_value: '+3-8 qualified_seller_leads/week if the lookalike maps the seed well',
+        rationale: `When a single source is producing quality leads but capped on volume, lookalike modeling is the lowest-CAC way to scale. Same audience signal, larger reach pool.`,
+      },
+      generation_reason: `audit-crm source_quality expand_to_similar_audience: ${opportunity.headline}.`,
     }))
   }
 
