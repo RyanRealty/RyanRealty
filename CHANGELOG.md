@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.203.3 (2026-05-14)
+
+### Other
+- obs(cma): log subject + candidate + filtered counts so silent nulls are visible
+
+---
+
+
 ## v1.203.2 (2026-05-14)
 
 ### Bug Fixes
