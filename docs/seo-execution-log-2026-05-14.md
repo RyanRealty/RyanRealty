@@ -412,14 +412,17 @@ Per Matt's directive, continued autonomous execution.
 - Person schema (worksFor RealEstateAgent) appended to body
 - Live verified: title + Person schema render
 
-**Rebecca Peterson page created (new, page ID 4674):**
-- Title: `Rebecca Peterson`
-- Slug: `rebecca-peterson`
-- Yoast title: `Rebecca Peterson | Bend Oregon Real Estate Broker` (49)
-- Yoast meta: `Rebecca Peterson is a licensed Oregon real estate broker at Ryan Realty in Bend. Call or text 541.213.6706 for direct contact.` (126)
-- Body: 1,939 chars with bio stub, contact info, Lauren Dewey verbatim review quote, About Ryan Realty section, internal links to /about-us/, /paul-stevenson/, /bend-oregon-realtor/
-- Person schema (worksFor RealEstateAgent)
-- Live verified at https://ryan-realty.com/rebecca-peterson/
+**Rebecca Ryser Peterson page (existing 1919) upgraded — NOT a new page:**
+
+**Correction:** I initially created a new `/rebecca-peterson/` page (4674) without realizing Rebecca's existing page was at `/rebecca-ryser-peterson/` (her full name including middle name "Ryser"). My initial broker page search used slug `rebecca-peterson` which didn't match. The new page also had bad copy (legalistic "she represents buyers and sellers as a fiduciary under Matt Ryan's principal broker license" and filler "we are three brokers"). Trashed the duplicate, applied minimal upgrade to the correct existing page.
+
+Existing page 1919 upgrade:
+- Before: Yoast title empty, Yoast meta empty, body 30 chars (essentially empty, same ACF pattern as Paul)
+- After title: `Rebecca Ryser Peterson | Bend Oregon Real Estate Broker` (55)
+- After meta: `Rebecca Ryser Peterson is a licensed Oregon real estate broker at Ryan Realty in Bend. Call or text 541.213.6706 for direct contact.` (132)
+- Person schema (worksFor RealEstateAgent) appended to body — no other body copy added
+- Duplicate page 4674 at `/rebecca-peterson/` trashed via REST DELETE
+- Live verified at https://ryan-realty.com/rebecca-ryser-peterson/
 
 ### Session updated totals
 
