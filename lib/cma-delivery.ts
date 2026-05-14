@@ -290,16 +290,30 @@ export async function processCmaDelivery(deliveryId: string): Promise<{
     return { ok: false, status: 'failed', reason: 'PDF render failed' }
   }
 
-  // ── Step 5: upload PDF to Supabase Storage
+  // ── Step 5: upload PDF to Supabase Storage (retry on transient errors)
+  // Storage uploads through the connection pool occasionally fail with
+  // "connection to the database timed out" — pure infra blips. Retry 3x
+  // before giving up; pdfBuffer is held in memory so no re-render is needed.
   const storagePath = `${deliveryId}/cma.pdf`
-  const { error: uploadError } = await sb.storage
-    .from(STORAGE_BUCKET)
-    .upload(storagePath, pdfBuffer, {
-      contentType: 'application/pdf',
-      upsert: true,
-    })
-  if (uploadError) {
-    errors.push({ step: 'storage.upload', message: uploadError.message })
+  let uploadOk = false
+  let lastUploadErr: string | null = null
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { error: uploadError } = await sb.storage
+      .from(STORAGE_BUCKET)
+      .upload(storagePath, pdfBuffer, {
+        contentType: 'application/pdf',
+        upsert: true,
+      })
+    if (!uploadError) {
+      uploadOk = true
+      break
+    }
+    lastUploadErr = uploadError.message
+    console.warn(`[cma-delivery] storage upload attempt ${attempt + 1}/3 error:`, uploadError.message)
+    await new Promise((r) => setTimeout(r, attempt === 0 ? 800 : 2000))
+  }
+  if (!uploadOk) {
+    errors.push({ step: 'storage.upload', message: lastUploadErr ?? 'unknown upload error' })
   }
 
   // ── Step 6: resolve the assigned broker (FUB-side routing is the source of truth)
@@ -329,7 +343,7 @@ export async function processCmaDelivery(deliveryId: string): Promise<{
       cma_value_low: cma.valueLow ?? null,
       cma_value_high: cma.valueHigh ?? null,
       cma_confidence: cma.confidence ?? null,
-      pdf_storage_path: storagePath,
+      pdf_storage_path: uploadOk ? storagePath : null,
       assigned_broker_slug: assignedBroker?.slug ?? null,
       assigned_broker_email: assignedBroker?.email ?? null,
       assigned_broker_name: assignedBroker?.displayName ?? null,
