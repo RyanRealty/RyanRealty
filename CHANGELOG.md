@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.203.4 (2026-05-14)
+
+### Bug Fixes
+- fix(cma): SQL-layer lot-acres filter for rural subjects
+
+---
+
+
 ## v1.203.3 (2026-05-14)
 
 ### Other
