@@ -154,19 +154,48 @@ See §6 for the required surface format.
 
 ## 6. Output format
 
-**Draft lands at:** `out/<format-slug>/<target-slug>/`  
+**Draft lands at:** `out/<format-slug>/<target-slug>/`
 **Files produced:**
 ```
 out/<format-slug>/<target-slug>/
 ├── <main-deliverable>.<ext>
 ├── citations.json
-└── [scorecard.json if video]
+├── [scorecard.json if video]
+└── contact-sheet.html    ← MANDATORY per "Contact sheet required" rule (2026-05-14)
+```
+
+**Contact sheet (mandatory).** Every producer that outputs a visual or video deliverable must
+emit an HTML contact sheet that lets Matt review the draft in a browser. The contact sheet:
+
+- Embeds images inline (`<img>` at native or scaled-to-viewport).
+- Plays videos with HTML5 `<video controls>`.
+- Shows carousels as a slide grid with slide numerals.
+- Renders captions in a readable `<pre>` block.
+- Lists the verification trace (one row per figure: source · filter · value · fetched_at).
+- Shows file paths alongside each deliverable.
+- Carries a status pill per deliverable (DRAFT / APPROVED / REVISIONS NEEDED / BLOCKED).
+- Includes an approval prompt at the bottom listing the structured chat replies Matt should send.
+
+Brand: v2 (navy `#102742` on cream `#faf8f4`, Geist body, Amboqia headlines). Mirror the
+[2026-05-14 reference contact sheet](../../out/proof/2026-05-14/contact-sheet.html) for layout
+and styling.
+
+**Localhost serving.** Symlink `public/proof` → `../out/proof` so the local static server serves
+the sheet at `http://localhost:<port>/proof/<YYYY-MM-DD>/<batch>/contact-sheet.html`. `public/proof/`
+is gitignored. If the local server isn't running on port `<port>`, spin up a one-liner:
+
+```bash
+nohup python3 -m http.server <port> --directory public >/tmp/proof-server.log 2>&1 &
 ```
 
 **Surface format (present to Matt exactly like this):**
 
 ```
 Draft ready: <producer-name> — <target>
+
+Contact sheet:
+  → http://localhost:<port>/proof/<YYYY-MM-DD>/<batch>/contact-sheet.html
+  → file:///Users/matthewryan/RyanRealty/out/<format-slug>/<target-slug>/contact-sheet.html
 
   DELIVERABLE
     Path: out/<format-slug>/<target-slug>/<file>
@@ -178,7 +207,11 @@ Draft ready: <producer-name> — <target>
 
   citations.json: out/<format-slug>/<target-slug>/citations.json
 
-Reply "ship it" / "approved" / "go" to commit + push.
+Reply with one of:
+  • approve <slug>          — commits + pushes that deliverable to public/
+  • approve all             — commits + pushes everything in the batch
+  • revise <slug>: <note>   — feedback I'll act on
+  • kill <slug>             — drop that deliverable from the batch
 ```
 
 Then stop. Do not commit. Do not push. Wait for Matt's explicit approval.

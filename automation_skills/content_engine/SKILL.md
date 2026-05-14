@@ -129,15 +129,42 @@ Branch on deliverable type:
 If QA fails: fix and re-render (max 2 auto-iterations). After 2 failures: report to Matt
 with specific failure reason. Do NOT present a broken draft.
 
-**Step 8 — Present to Matt**
+**Step 8 — Present to Matt (mandatory contact sheet)**
+
+Generate an HTML contact sheet at `out/proof/<YYYY-MM-DD>/<batch-slug>/contact-sheet.html` (or
+`out/proof/<YYYY-MM-DD>/contact-sheet.html` if it's the day's only batch). The contact sheet must
+include, per deliverable in the batch:
+
+- The rendered image embedded inline (`<img>` at native or scaled-to-viewport).
+- Videos embedded with HTML5 `<video controls>` so Matt can play them in-browser.
+- Carousels shown as a slide grid with slide numerals.
+- Captions in a readable `<pre>` block (monospace, copyable).
+- A verification trace block (one row per figure: source · filter · value · fetched_at).
+- File paths shown alongside each deliverable.
+- A status pill per deliverable (DRAFT / APPROVED / REVISIONS NEEDED / BLOCKED).
+- An approval prompt at the bottom listing the structured chat replies Matt should send
+  (`approve <slug>`, `revise <slug>: <feedback>`, `ship all`, `kill <slug>`).
+
+Surface BOTH links to Matt — file:// for guaranteed access, and localhost for one-click open:
+
 ```
-Draft ready: out/<format>/<slug>/<name>.mp4
-Scorecard: <X>/100 (format minimum: <Y>)
-Verification trace: <one-line per stat>
-Cost actual: $<N>
-Ready to commit + push to main on your sign-off.
+Draft ready — contact sheet:
+  → http://localhost:<port>/proof/<YYYY-MM-DD>/<batch>/contact-sheet.html
+  → file:///Users/matthewryan/RyanRealty/out/proof/<YYYY-MM-DD>/<batch>/contact-sheet.html
+
+Open the link, review each card, then reply with one of:
+  • approve <slug>          — commits + pushes that deliverable to public/
+  • approve all             — commits + pushes everything in the batch
+  • revise <slug>: <note>   — feedback I'll act on
+  • kill <slug>             — drop that deliverable from the batch
 ```
+
 Then stop. Do not commit. Do not push. Wait.
+
+**Per "Contact sheet required" (locked 2026-05-14):** never describe a draft via file paths
+alone. Matt approves from the visual review. Every content draft surface must include the HTML
+contact sheet AND a clickable link. Brand the contact sheet to v2 (navy `#102742` on cream
+`#faf8f4`, Geist body, Amboqia headlines).
 
 **Step 9 — On approval: publish**
 Invoke `video_production_skills/content_pipeline/SKILL.md` with platform defaults (see

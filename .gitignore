@@ -121,3 +121,6 @@ design_system/ryan-realty/assets/social/bend-contact-sheet.html
 design_system/ryan-realty/assets/social/downtown-deep-dive.html
 design_system/ryan-realty/assets/social/oldmill-contact-sheet.html
 design_system/ryan-realty/assets/social/popular-bend-contact-sheet.html
+
+# Local content-draft contact sheets — local-review only, never committed
+public/proof/
