@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.203.5 (2026-05-14)
+
+### Bug Fixes
+- fix(cma): fail-closed on unknown comp lot for rural subjects
+
+---
+
+
 ## v1.203.4 (2026-05-14)
 
 ### Bug Fixes
