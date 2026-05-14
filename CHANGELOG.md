@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.197.1 (2026-05-14)
+
+### Bug Fixes
+- fix(cma-delivery): opt-in auth via CMA_WORKER_AUTH_SECRET (not CRON_SECRET)
+
+---
+
+
 ## v1.197.0 (2026-05-14)
 
 ### Features
