@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.194.1 (2026-05-14)
+
+### Maintenance
+- docs(seo): GSC sitemap submission DONE + indexing API still needs verified owner
+
+---
+
+
 ## v1.194.0 (2026-05-14)
 
 ### Features
