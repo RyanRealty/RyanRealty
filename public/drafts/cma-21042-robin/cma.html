@@ -468,6 +468,114 @@
     margin-bottom: 5px;
   }
 
+  /* ── Comp flyer pages (one per comp) ─────────────────── */
+  .flyer-badge {
+    display: inline-block;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+  .flyer-title {
+    font-family: 'Amboqia Boriango', serif;
+    font-size: 38px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 4px 0;
+  }
+  .flyer-sub {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+  }
+  .flyer-hero {
+    width: 100%;
+    height: 3.1in;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px;
+    background: var(--navy-fill);
+    display: block;
+    margin-bottom: 14px;
+  }
+  .flyer-stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    border-top: 1px solid var(--navy-line);
+    border-bottom: 1px solid var(--navy-line);
+    margin-bottom: 14px;
+  }
+  .flyer-stats .s {
+    padding: 10px 6px;
+    text-align: center;
+    border-right: 1px solid var(--navy-line);
+  }
+  .flyer-stats .s:last-child { border-right: 0; }
+  .flyer-stats .s .l {
+    font-size: 8.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .flyer-stats .s .v {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+  .flyer-stats .s.featured .v {
+    color: var(--navy);
+    font-weight: 600;
+  }
+  .flyer-desc {
+    font-size: 10.5px;
+    line-height: 1.55;
+    color: var(--navy);
+    margin: 0 0 14px 0;
+  }
+  .flyer-features {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 9.5px;
+  }
+  .flyer-features .f {
+    background: var(--navy-fill);
+    padding: 6px 9px;
+    border-radius: 6px;
+    color: var(--navy);
+  }
+  .flyer-features .f .fl {
+    font-size: 8.5px;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1px;
+  }
+  .flyer-features .f .fv {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+  .flyer-photos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .flyer-photos img {
+    width: 100%;
+    height: 1.4in;
+    object-fit: cover;
+    border-radius: 6px;
+    display: block;
+    background: var(--navy-fill);
+  }
+
   @media print {
     body { background: white; }
     .page { box-shadow: none; margin: 0; }
@@ -511,7 +619,7 @@
 
   <footer class="pg-footer">
     <span>Ryan Realty · Bend · Oregon</span>
-    <span>Page 1 of 5</span>
+    <span>Page 1 of 13</span>
   </footer>
 </section>
 
@@ -624,7 +732,7 @@
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 2 of 5</span>
+    <span>Page 2 of 13</span>
   </footer>
 </section>
 
@@ -845,7 +953,399 @@
 
   <footer class="pg-footer">
     <span>Source · Oregon Data Share MLS via Ryan Realty platform</span>
-    <span>Page 3 of 5</span>
+    <span>Page 3 of 13</span>
+  </footer>
+</section>
+
+<!-- PAGE 4 — COMP FLYER 1 of 8 : 65258 Old Bend Redmond Hwy -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 1 of 8 · Whispering Pines</div>
+  </header>
+  <div class="flyer-badge">Strongest Anchor · Feb 2026 · 44 DOM</div>
+  <h1 class="flyer-title">65258 Old Bend Redmond Hwy</h1>
+  <div class="flyer-sub">Bend, Oregon 97703 · Whispering Pines · Tumalo · MLS 220213432</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260110195137130526000000-o.jpg" alt="65258 Old Bend Redmond Hwy" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">5</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">4</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,599</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">2.50 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2004</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$461.72</div></div>
+  </div>
+
+  <p class="flyer-desc">Cascade Mountain Range views, privacy, and unmatched versatility on 2.5 fully fenced acres in the "Golden Triangle" of Bend/Tumalo. Custom 2,599 sqft home with 3BD/2.5BTH, vaulted ceilings, bonus loft, wood-burning stone fireplace, gas fireplace, upper deck with hot tub. Primary suite has spa-like bath with heated travertine floors, jetted tub, walk-in tile shower. Fully permitted 2BD guest house with full kitchen, laundry, deck and garage. 30'x40' shop with 200-amp service, 220V hookup, and bathroom. Greenhouse, irrigated garden with deer fencing, chicken coop, wood storage, wired for backup generator. All buildings painted in 2024.</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">List Price</div><div class="fv">$1,200,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$1,200,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Feb 23, 2026</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Cascade · Panoramic · Pond</div></div>
+    <div class="f"><div class="fl">Heat / Cool</div><div class="fv">Heat Pump · Forced Air · Central A/C</div></div>
+    <div class="f"><div class="fl">Garage</div><div class="fv">5-car + 30'×40' shop</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$6,187</div></div>
+    <div class="f"><div class="fl">Photos on File</div><div class="fv">70</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260107232723340809000000-o.jpg" alt="Front wrap-around porch" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260107232729541778000000-o.jpg" alt="Dining room w/ wood stove" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260107232731755233000000-o.jpg" alt="Kitchen" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260107232715958300000000-o.jpg" alt="Primary suite" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260110195153357593000000-o.jpg" alt="View from bonus room" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260110195146019194000000-o.jpg" alt="ADU (guest house)" />
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 4 of 13</span>
+  </footer>
+</section>
+
+<!-- PAGE 5 — COMP FLYER 2 of 8 : 65299 85th St (new build) -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 2 of 8 · Whispering Pines</div>
+  </header>
+  <div class="flyer-badge">New Build · Feb 2026 · 176 DOM</div>
+  <h1 class="flyer-title">65299 85th Street</h1>
+  <div class="flyer-sub">Bend, Oregon 97703 · Whispering Pines · Tumalo · MLS 220208275</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250826033946247237000000-o.jpg" alt="65299 85th St" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,573</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">2.41 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2025</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$441.12</div></div>
+  </div>
+
+  <p class="flyer-desc">Brand-new construction on 2.4 acres in the highly desirable Tumalo area, minutes from The Bite, Target and Costco. Southerly views of Bend and the Paulinas, mountain views from the flex room. Single-level floor plan with 3 bed / 2.5 baths, an office, laundry room, and a versatile flex space. Hardwood floors, quartz counters, chef-inspired kitchen flowing into the open living area. Primary suite is a true retreat with walk-in closet, dual quartz vanities, spa-worthy shower with full tile surround, fixed showerhead, handheld spray, and overhead rain feature. Quick highway access while maintaining privacy and room to expand with a shop or RV parking.</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">List Price</div><div class="fv">$1,150,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$1,135,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Feb 19, 2026</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Panoramic · Southerly · Mtn from flex</div></div>
+    <div class="f"><div class="fl">Heat / Cool</div><div class="fv">Propane · Heat Pump · Central A/C</div></div>
+    <div class="f"><div class="fl">Garage</div><div class="fv">2-car oversized</div></div>
+    <div class="f"><div class="fl">Tax (partial)</div><div class="fv">$514</div></div>
+    <div class="f"><div class="fl">Photos on File</div><div class="fv">46</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250826034112966955000000-o.jpg" alt="Huge covered rear patio" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250826034004526450000000-o.jpg" alt="Living with gas fireplace" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250826034010612095000000-o.jpg" alt="Kitchen breakfast bar" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250826034030966293000000-o.jpg" alt="Master with sliding door" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250826034034678024000000-o.jpg" alt="Master shower" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250826034041402156000000-o.jpg" alt="Bonus / flex room" />
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 5 of 13</span>
+  </footer>
+</section>
+
+<!-- PAGE 6 — COMP FLYER 3 of 8 : 65195 85th St -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 3 of 8 · Whispering Pines</div>
+  </header>
+  <div class="flyer-badge">Un-Renovated Floor · Feb 2025 · 37 DOM</div>
+  <h1 class="flyer-title">65195 85th Street</h1>
+  <div class="flyer-sub">Bend, Oregon 97703 · Whispering Pines · Tumalo · MLS 220194720</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250120204801957040000000-o.jpg" alt="65195 85th St" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">3,020</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">2.79 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2000</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$311.26</div></div>
+  </div>
+
+  <p class="flyer-desc">Magnificent Mountain Views in Tumalo. Situated on nearly 3 acres, the property offers privacy and space to enjoy the surrounding beauty and abundant wildlife. Conveniently close to the new Costco, Trader Joes, shopping, and dining, with easy access to Hwy 97. Within the highly desired Tumalo community elementary school district. Easy maintenance small fenced yard with underground sprinklers, water feature and patio with hot tub. Extra spacious living room upstairs with balcony for sunset watching. Plenty of room for entertaining downstairs in the bonus space with wet bar. Views from nearly every room. Detached 2-car garage and covered RV storage.</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">List Price</div><div class="fv">$949,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$940,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Feb 27, 2025</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Panoramic Cascade</div></div>
+    <div class="f"><div class="fl">Heat / Cool</div><div class="fv">Heat Pump · Pellet · Central A/C</div></div>
+    <div class="f"><div class="fl">Garage</div><div class="fv">2-car detached + RV cover</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$4,526</div></div>
+    <div class="f"><div class="fl">Photos on File</div><div class="fv">36</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250120205751310256000000-o.jpg" alt="Panoramic Cascade Mountain Views" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250120205128800450000000-o.jpg" alt="Living area" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250120205734371374000000-o.jpg" alt="Kitchen" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250120205759436458000000-o.jpg" alt="Private Balcony" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250120205826727377000000-o.jpg" alt="Bedroom" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250120205915248262000000-o.jpg" alt="Outdoor" />
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 6 of 13</span>
+  </footer>
+</section>
+
+<!-- PAGE 7 — COMP FLYER 4 of 8 : 21305 Gift Rd -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 4 of 8 · Whispering Pines</div>
+  </header>
+  <div class="flyer-badge">Newer Build · Nov 2024 · 39 DOM</div>
+  <h1 class="flyer-title">21305 Gift Road</h1>
+  <div class="flyer-sub">Bend, Oregon 97703 · Whispering Pines · Tumalo · MLS 220191613</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20241017174131313396000000-o.jpg" alt="21305 Gift Rd" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">4</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">4</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,382</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">2.31 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2013</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$397.57</div></div>
+  </div>
+
+  <p class="flyer-desc">Ranch-style home with heated 3-car garage and attached ADU, blending comfort, functionality, and scenic beauty on 2.31 acres between Bend and Redmond. Light-filled open floorplan with vaulted ceilings and cozy wood-burning stove. Kitchen features white cabinetry, stainless appliances, and breakfast bar for casual dining. Spacious primary suite offers walk-in closet and is thoughtfully set apart from the other bedrooms. Great views of Smith Rock and Grey Butte from the nook/formal dining area. The attached 512 sqft ADU provides flexibility for guests or multi-generational living with separate entrance, wood-burning stove, and laundry. 2,000 sqft insulated shop with 3 oversized doors, 220 electrical, indoor RV or boat parking.</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">List Price</div><div class="fv">$949,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$947,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Nov 27, 2024</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Mountain · Smith Rock · Grey Butte</div></div>
+    <div class="f"><div class="fl">Heat / Cool</div><div class="fv">Wood + Electric · Ductless</div></div>
+    <div class="f"><div class="fl">Garage</div><div class="fv">3-car heated + 2,000 sqft shop</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$4,602</div></div>
+    <div class="f"><div class="fl">Photos on File</div><div class="fv">46</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20241017174636241209000000-o.jpg" alt="Living room with wood stove" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20241017174629091319000000-o.jpg" alt="Kitchen" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20241017174622988238000000-o.jpg" alt="Primary suite" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20241017174614001447000000-o.jpg" alt="Bedroom" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20241017174535025958000000-o.jpg" alt="Shop with oversized doors" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20241019191628292235000000-o.jpg" alt="Exterior" />
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 7 of 13</span>
+  </footer>
+</section>
+
+<!-- PAGE 8 — COMP FLYER 5 of 8 : 65318 85th St -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 5 of 8 · Whispering Pines</div>
+  </header>
+  <div class="flyer-badge">Farmhouse Style · Feb 2024 · 174 DOM</div>
+  <h1 class="flyer-title">65318 85th Street</h1>
+  <div class="flyer-sub">Bend, Oregon 97703 · Whispering Pines · Tumalo · MLS 220170625</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230901181559364745000000-o.jpg" alt="65318 85th St" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,372</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">2.43 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">1997</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$411.05</div></div>
+  </div>
+
+  <p class="flyer-desc">NW farmhouse-style custom home on 2.43 fully fenced acres with wonderful curb appeal and distant mountain views. Tranquil high desert setting with multiple outdoor spaces for gatherings and entertaining. Large family room with wet bar anchored by an impressive stacked stone wood-burning fireplace, opens to a spacious covered deck. Eat-in kitchen with large windows and breakfast nook. Two additional office/flex rooms provide privacy options. Upstairs primary suite with walk-in closet and luxury bath with mountain views. Two guest rooms share an alcove and a bath. 24×30 insulated shop with 10' door, 2 attached carports, and RV hookups. Fenced garden area with raised beds and greenhouse. New fencing, new roof, and new solar panels.</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">List Price</div><div class="fv">$995,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$975,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Feb 23, 2024</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Mountain · Cascade · Territorial</div></div>
+    <div class="f"><div class="fl">Heat / Cool</div><div class="fv">Heat Pump · Wood · Central A/C</div></div>
+    <div class="f"><div class="fl">Shop</div><div class="fv">24×30 insulated + 2 carports</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$3,977</div></div>
+    <div class="f"><div class="fl">Photos on File</div><div class="fv">47</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230901181655133521000000-o.jpg" alt="Front exterior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230901181613587971000000-o.jpg" alt="Family room w/ stone fireplace" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230901181623080434000000-o.jpg" alt="Kitchen" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230901181704766954000000-o.jpg" alt="Primary suite" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230901181640041509000000-o.jpg" alt="Deck and outdoor space" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230901181647812528000000-o.jpg" alt="Shop / outbuilding" />
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 8 of 13</span>
+  </footer>
+</section>
+
+<!-- PAGE 9 — COMP FLYER 6 of 8 : 21037 Gift Rd -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 6 of 8 · Whispering Pines</div>
+  </header>
+  <div class="flyer-badge">Split-Level · Feb 2024 · 90 DOM</div>
+  <h1 class="flyer-title">21037 Gift Road</h1>
+  <div class="flyer-sub">Bend, Oregon 97703 · Whispering Pines · Tumalo · MLS 220173754</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231109162342401583000000-o.jpg" alt="21037 Gift Rd" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">4</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,796</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">2.46 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">1998</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$284.33</div></div>
+  </div>
+
+  <p class="flyer-desc">Tucked away on almost 2.5 acres, this split-level home offers a peaceful retreat from the outside world. Upstairs has open floor plan with comfortable living area, well-appointed kitchen, enclosed porch, and primary bedroom. The great room provides views all the way to Smith Rock. From the kitchen, access to the large deck and stairs leading to the expansive yard. Downstairs are 2 additional bedrooms, full bath, laundry, and bonus room with attached half bath. Outside is a fenced area for animals, space for a shop, RV parking. Endless possibilities for outdoor activities plus access to public land.</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">List Price</div><div class="fv">$825,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$795,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Feb 8, 2024</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Mountain · Territorial · Smith Rock</div></div>
+    <div class="f"><div class="fl">Heat / Cool</div><div class="fv">Electric · Forced Air · Central A/C</div></div>
+    <div class="f"><div class="fl">Garage</div><div class="fv">2-car</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$5,293</div></div>
+    <div class="f"><div class="fl">Photos on File</div><div class="fv">39</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231109162435595152000000-o.jpg" alt="Kitchen with large island" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231109162502227452000000-o.jpg" alt="Great room" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231109162448619885000000-o.jpg" alt="Great room with views" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231109162423061457000000-o.jpg" alt="Primary on upper floor" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231109162431166489000000-o.jpg" alt="Primary bath with jetted tub" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231109162345351625000000-o.jpg" alt="Fenced front area" />
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 9 of 13</span>
+  </footer>
+</section>
+
+<!-- PAGE 10 — COMP FLYER 7 of 8 : 65030 78th St -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 7 of 8 · Whispering Pines</div>
+  </header>
+  <div class="flyer-badge">Ranch + Shop · Jan 2024 · 135 DOM</div>
+  <h1 class="flyer-title">65030 78th Street</h1>
+  <div class="flyer-sub">Bend, Oregon 97703 · Whispering Pines · Tumalo · MLS 220165510</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230607004445034825000000-o.jpg" alt="65030 78th St" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">4</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">4</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,962</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">2.44 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2002</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$290.35</div></div>
+  </div>
+
+  <p class="flyer-desc">Custom updated home on 2.4 acres in the highly desired area of Tumalo. Ranch-style home with an incredible shop that would suit any home business. Beautiful high-end kitchen with custom cabinets and newer tile flooring flowing with radiant heat throughout. Open floor plan hosts one of two primary suites on the main level, as well as three sliders inviting you out to the sweeping mountain views on the deck. Separate dining area for hosting plus an office right off the front entrance. Upstairs offers a loft space that creates separation between two large bedrooms and the second primary suite. Includes walk-in closet, jetted tub, and a private balcony with panoramic mountain views. Full RV hookup alongside the home. Oversized two-story shop with 3 bay doors. Chicken coop, fire pit, circular driveway behind the shop.</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">List Price</div><div class="fv">$929,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$860,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Jan 19, 2024</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Cascade · Panoramic · Mountain</div></div>
+    <div class="f"><div class="fl">Heat / Cool</div><div class="fv">Solar · Radiant · Natural Gas · Central A/C</div></div>
+    <div class="f"><div class="fl">Shop</div><div class="fv">2-story · 3 bay doors</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$4,973</div></div>
+    <div class="f"><div class="fl">Photos on File</div><div class="fv">71</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230607004402451077000000-o.jpg" alt="Front exterior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230607004412777906000000-o.jpg" alt="Kitchen" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230607004245410577000000-o.jpg" alt="Living area" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230607004217667850000000-o.jpg" alt="Primary suite" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230607004234618440000000-o.jpg" alt="Loft / bonus" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230607004353797030000000-o.jpg" alt="Shop and grounds" />
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 10 of 13</span>
+  </footer>
+</section>
+
+<!-- PAGE 11 — COMP FLYER 8 of 8 : 65025 92nd St -->
+<section class="page">
+  <header class="pg-header">
+    <img src="./assets/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">Comparable Sale 8 of 8 · Whispering Pines</div>
+  </header>
+  <div class="flyer-badge">Log Home · Jan 2024 · 58 DOM</div>
+  <h1 class="flyer-title">65025 92nd Street</h1>
+  <div class="flyer-sub">Bend, Oregon 97703 · Whispering Pines · Tumalo · MLS 220174108</div>
+
+  <img class="flyer-hero" src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231127201704864830000000-o.jpg" alt="65025 92nd St" />
+
+  <div class="flyer-stats">
+    <div class="s"><div class="l">Beds</div><div class="v">4</div></div>
+    <div class="s"><div class="l">Baths</div><div class="v">3</div></div>
+    <div class="s"><div class="l">Sqft</div><div class="v">2,583</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">1.01 ac</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">2005</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">$340.69</div></div>
+  </div>
+
+  <p class="flyer-desc">Gorgeous mountain views from almost every room. Set on 1 acre, 10 minutes north of Bend, this log home features 4 BD, 3 BA, and 2,583 sqft. Giant windows frame the Cascade Mountains as you enter the home. Recent updates include new kitchen countertop, appliances, and refinished hardwood floors. The primary suite and one other bedroom are on the first floor; 2 more bedrooms, a built-in bar, and pellet fireplace are highlights of the downstairs living area. Large, fenced, and landscaped backyard with separate 2-car garage. The lot offers plenty of room to park extra vehicles or build corrals for livestock. Short-term rental potential (buyer to verify).</p>
+
+  <div class="flyer-features">
+    <div class="f"><div class="fl">List Price</div><div class="fv">$895,000</div></div>
+    <div class="f"><div class="fl">Sold Price</div><div class="fv">$880,000</div></div>
+    <div class="f"><div class="fl">Close Date</div><div class="fv">Jan 16, 2024</div></div>
+    <div class="f"><div class="fl">View</div><div class="fv">Cascade Mountains</div></div>
+    <div class="f"><div class="fl">Heat / Cool</div><div class="fv">Pellet · Baseboard · Ductless</div></div>
+    <div class="f"><div class="fl">Garage</div><div class="fv">2-car detached</div></div>
+    <div class="f"><div class="fl">Tax (annual)</div><div class="fv">$3,257</div></div>
+    <div class="f"><div class="fl">Photos on File</div><div class="fv">64</div></div>
+  </div>
+
+  <div class="flyer-photos">
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231127201658592865000000-o.jpg" alt="Front exterior" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231118172118282355000000-o.jpg" alt="Kitchen" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231127201735002118000000-o.jpg" alt="Living area" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231127201724305867000000-o.jpg" alt="Primary suite" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231118174055254649000000-o.jpg" alt="Downstairs bedroom" />
+    <img src="https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20231118173855546953000000-o.jpg" alt="Outdoor" />
+  </div>
+
+  <footer class="pg-footer">
+    <span>Ryan Realty · 541.213.6706</span>
+    <span>Page 11 of 13</span>
   </footer>
 </section>
 
@@ -901,7 +1401,7 @@
 
   <footer class="pg-footer">
     <span>Ryan Realty · 541.213.6706</span>
-    <span>Page 4 of 5</span>
+    <span>Page 12 of 13</span>
   </footer>
 </section>
 
@@ -939,7 +1439,7 @@
 
   <footer class="pg-footer">
     <span>Ryan Realty · Honest. Transparent. Trustworthy.</span>
-    <span>Page 5 of 5</span>
+    <span>Page 13 of 13</span>
   </footer>
 </section>
 
