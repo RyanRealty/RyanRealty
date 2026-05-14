@@ -444,9 +444,17 @@ function filterComps(subject: CMASubject, rows: CMACompRow[]): CMACompRow[] {
       }
     }
     // Lot size: a 2.28-acre Tumalo property does not comp against a 0.1-acre
-    // in-town starter, period. When we know both, require the lot to be
-    // within ~3x (so a 2-acre subject takes 0.66-6 acre comps).
-    if (subLot != null && subLot > 0 && r.lot_size_acres != null && r.lot_size_acres > 0) {
+    // in-town starter, period. When subject lot is known, require comp lot
+    // to be known AND within ~3x. Fail-closed: a comp with unknown lot
+    // gets rejected for any rural (≥1 ac) subject — the PostGIS RPC
+    // returns comps without lot data, and treating "unknown" as "pass"
+    // pollutes rural valuations with in-town starters.
+    if (subLot != null && subLot >= 1) {
+      if (r.lot_size_acres == null || r.lot_size_acres <= 0) return false
+      const ratio = r.lot_size_acres / subLot
+      if (ratio > 3 || ratio < 1 / 3) return false
+    } else if (subLot != null && subLot > 0 && r.lot_size_acres != null && r.lot_size_acres > 0) {
+      // Urban subject (<1 ac): apply ratio bound only when both are known.
       const ratio = r.lot_size_acres / subLot
       if (ratio > 3 || ratio < 1 / 3) return false
     }
