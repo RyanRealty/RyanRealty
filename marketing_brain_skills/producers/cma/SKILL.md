@@ -17,7 +17,11 @@ action_types:
 
 **Status:** Canonical
 **Locked:** 2026-05-14
-**Exemplar output:** `public/cmas/cma-21042-robin/cma.html` (when finalized) — draft at `public/drafts/cma-<slug>/cma.html` during creation. The 21042 Robin Ave CMA is the canonical exemplar; clone its structure for new CMAs.
+**Exemplar output:** `public/cmas/cma-21042-robin/cma.html` (the source HTML, when finalized) + `/api/cma/cma-21042-robin/pdf` (the primary deliverable: a server-rendered PDF). Draft lives at `public/drafts/cma-<slug>/cma.html` during creation. The 21042 Robin Ave CMA is the canonical exemplar; clone its structure for new CMAs.
+
+**Primary deliverable format:** PDF, generated server-side at `/api/cma/[slug]/pdf` via puppeteer-core + @sparticuz/chromium-min. The PDF uses the same Chrome engine that displays the HTML preview, so formatting is identical — no print-CSS surprises. The HTML is the source-of-truth, but anything that goes to a client (or to a broker who's signing it) is delivered as PDF. Append `?download=1` to force a download instead of inline preview.
+
+**Repository lookup:** Every finalized CMA appears at `/admin/cmas` — the canonical place to find old CMAs, filter by broker or client, and re-open the PDF or HTML for any row.
 
 ---
 
@@ -328,8 +332,9 @@ VALUES ...
 
 ## 6. Output format
 
-**Draft lands at:** `public/drafts/cma-<slug>/cma.html` (+ assets in `assets/`).
-**On finalization moves to:** `public/cmas/<slug>/cma.html`.
+**Draft HTML lands at:** `public/drafts/cma-<slug>/cma.html` (+ assets in `assets/`).
+**On finalization HTML moves to:** `public/cmas/<slug>/cma.html`.
+**PDF endpoint (primary deliverable):** `/api/cma/<slug>/pdf` — automatically resolves the HTML at either path and renders to PDF via headless Chrome. Append `?download=1` for force-download.
 
 **Surface format (present to Matt exactly like this):**
 
@@ -337,8 +342,10 @@ VALUES ...
 Draft ready: CMA — <subject address> for <client name>
 
   DELIVERABLE
-    Preview: <vercel preview url with _vercel_share token>
+    PDF (primary): <host>/api/cma/<slug>/pdf
+    HTML preview: <vercel preview url with _vercel_share token>
     Draft path: public/drafts/cma-<slug>/cma.html
+    Repository:  /admin/cmas (row visible to anyone with admin access)
 
   VALUATION
     Range: $X.XXM — $X.XXM
@@ -407,6 +414,8 @@ The `measured` step for a CMA is light — 90 days after delivery, the `performa
 **Capabilities used:**
 - `app/api/listings/[listingKey]/photos/route.ts` — Spark photo fetcher (added 2026-05-14)
 - `app/api/maps/cma-<slug>/route.ts` — Google Maps Static proxy (replicate per CMA until generalized)
+- `app/api/cma/[slug]/pdf/route.ts` — server-side PDF renderer (puppeteer-core + @sparticuz/chromium-min). Same Chrome engine as the HTML preview, so formatting is identical.
+- `app/admin/(protected)/cmas/page.tsx` — repository lookup UI; lists every row in `public.cmas` with broker / client / status / pricing range and links to both PDF and HTML.
 
 **Tables touched:**
 - READ: `listings`, `brokers`, `listing_history`, `status_history`, `price_history`
