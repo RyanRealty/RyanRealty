@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.190.3 (2026-05-14)
+
+### Maintenance
+- docs(seo): smart-mapping attempt + Resend DNS verification guide
+
+---
+
+
 ## v1.190.2 (2026-05-14)
 
 ### Maintenance
