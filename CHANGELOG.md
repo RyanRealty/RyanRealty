@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.200.0 (2026-05-14)
+
+### Features
+- feat(marketing-brain): inbox pipeline — email→action→producer→reply in ≤2 min
+
+---
+
+
 ## v1.199.5 (2026-05-14)
 
 ### Bug Fixes
