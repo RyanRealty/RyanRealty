@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.183.1 (2026-05-14)
+
+### Maintenance
+- docs(claude): lock @ryanrealtybend as canonical handle across every platform
+
+---
+
+
 ## v1.183.0 (2026-05-13)
 
 ### Features
