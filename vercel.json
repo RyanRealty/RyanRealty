@@ -105,6 +105,10 @@
       "schedule": "0 14 * * *"
     },
     {
+      "path": "/api/cron/marketing-inbox-poll",
+      "schedule": "*/2 * * * *"
+    },
+    {
       "path": "/api/cron/marketing-snapshot-tiktok",
       "schedule": "30 6 * * *"
     },

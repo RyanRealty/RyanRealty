@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "last_updated": "2026-05-14",
+  "description": "Allowlist of senders authorized to drive the marketing brain via emails to marketing@ryan-realty.com. Read by lib/marketing-brain/inbox-allowlist.ts at runtime. Anyone with the inbox address can email it; only senders matching one of allowlisted_emails or allowlisted_domains get parsed and dispatched. Everyone else is logged with status='killed' and (per default_action_on_unknown_sender) optionally gets a polite bounce.",
+  "allowlisted_emails": [
+    "matt@ryan-realty.com",
+    "matthew@ryan-realty.com",
+    "mattmryan2@gmail.com",
+    "mryan@ryan-realty.com"
+  ],
+  "allowlisted_domains": [
+    "ryan-realty.com"
+  ],
+  "default_action_on_unknown_sender": "reject_silent",
+  "default_action_options": {
+    "reject_silent": "Drop the email, log with status='killed'. No reply.",
+    "reject_and_alert": "Drop the email, log with status='killed', send a polite bounce reply to the sender."
+  },
+  "notes": [
+    "matt@ryan-realty.com is the primary trigger address.",
+    "mattmryan2@gmail.com is Matt's personal Gmail — used as a from-anywhere trigger when his work mailbox isn't loaded.",
+    "ryan-realty.com domain wildcard covers all current and future broker mailboxes (matt@, paul@, rebecca@, etc.).",
+    "Updates to this file land in the same commit as code that uses them. The producer-registry pattern."
+  ]
+}

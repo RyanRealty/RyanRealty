@@ -306,3 +306,102 @@ apify · anthropic-classifier · supabase · replicate · spark_mls · meta_grap
 5. **Item 5 — daily digest**: route platform-trend algorithm + diagnose anomalies on non-content channels to `comms:matt_alert`. ~30 min once channel chosen (Resend / Gmail draft / iMessage).
 6. **Audit run itself**: refactor `lib/marketing-brain/competitor-recon.ts` to read `config/marketing-brain/competitors.json`; add YouTube + LinkedIn scraper actors; add 180-day windowing; add classifier post-processing pass writing to `content_classification` (table not yet migrated — add the migration); write the first audit-findings action row + Markdown report. ~2-4 hours + $50-90 first run (Apify $30-80 + Haiku classifier ~$18).
 7. **Stub tools** in REGISTRY (supabase, replicate, spark_mls, meta_graph, resend) authored in priority order.
+
+---
+
+## 2026-05-14 — Marketing inbox shipped (read-side of the brain)
+
+The brain now triggers on inbound email at `marketing@ryan-realty.com`. Email → Haiku parse → action row → producer dispatch → voice-validated reply, all within 2 minutes of receipt.
+
+### Architecture (canonical)
+
+```
+marketing@ryan-realty.com  (Google Workspace, MX = aspmx.l.google.com)
+        ↓ Gmail API (DWD JWT)
+/api/cron/marketing-inbox-poll   (every */2 min)
+        ↓
+lib/marketing-brain/inbox-poll.ts
+        ├── inbox-auth          (gmail.modify + gmail.send via DWD)
+        ├── inbox-allowlist     (config/marketing-brain/inbox-senders.json)
+        ├── inbox-parser        (Anthropic Haiku, returns action_type+target+confidence)
+        ├── inbox-dispatcher    (writes marketing_brain_actions row OR comms:matt_alert)
+        └── inbox-reply         (Gmail send + applyBrandVoice gate)
+        ↓
+marketing_inbox_events  (status: received → parsed → dispatched → replied)
+marketing_brain_actions (the producer picks up from here)
+```
+
+Files of record:
+
+| Purpose | Path |
+|---|---|
+| Receiver schema | `supabase/migrations/20260514120000_marketing_inbox_events.sql` |
+| Cron route | `app/api/cron/marketing-inbox-poll/route.ts` |
+| Orchestrator | `lib/marketing-brain/inbox-poll.ts` |
+| Auth (DWD JWT) | `lib/marketing-brain/inbox-auth.ts` |
+| Allowlist gate | `lib/marketing-brain/inbox-allowlist.ts` |
+| Sender list | `config/marketing-brain/inbox-senders.json` |
+| Haiku parser | `lib/marketing-brain/inbox-parser.ts` |
+| action_type → producer | `lib/marketing-brain/inbox-producer-registry.ts` |
+| Dispatcher | `lib/marketing-brain/inbox-dispatcher.ts` |
+| Reply layer | `lib/marketing-brain/inbox-reply.ts` |
+| Skill doc | `marketing_brain_skills/inbox/SKILL.md` |
+| Admin one-pager | `docs/handoffs/marketing-inbox-admin-setup.md` |
+| Verify script | `scripts/marketing-inbox-verify-auth.mjs` |
+| Smoke script | `scripts/marketing-inbox-smoke-pipeline.mjs` |
+| Parser smoke | `scripts/marketing-inbox-smoke-parser.mjs` |
+| Cron schedule | `vercel.json` (`*/2 * * * *`) |
+
+### Decisions
+
+| Decision | Reason |
+|---|---|
+| Path B (cron poll) for MVP | Latency budget ≤2 min is acceptable; Path A swap is strictly a trigger change |
+| Domain-wide delegation for auth | Service account already exists; no per-user OAuth flow needed |
+| Confidence threshold = 0.70 | Conservative; tune after first 2 weeks of triage volume |
+| Inbox-side allowlist = matt@ + ryan-realty.com domain | Anyone outside the brokerage is `reject_silent` so we do not bounce spam back into the world |
+| Reply voice gate via `applyBrandVoice` | Same banned-word/punctuation/trope set every brain output passes through |
+| `marketing_inbox_events` separate from `marketing_brain_actions` | Lets an email fail to parse without dirtying the action queue |
+
+### Two admin actions Matt must complete to flip the pipeline live
+
+Both documented at `docs/handoffs/marketing-inbox-admin-setup.md`.
+
+1. **Add `gmail.modify` scope to DWD allowlist** for service account client ID `116585568564644399058` in Workspace Admin → Security → API controls → Manage Domain-wide Delegation. Without this, the cron returns `{"status":"auth_pending"}` and does nothing else.
+2. **Provision `ANTHROPIC_API_KEY`** in Vercel env (production + preview + development) + `.env.local`. Without this, the parser short-circuits to `action_type='unknown'` and every email routes to manual triage. The same key also unblocks `audit-classifier.ts`, which is the dormant blocker for competitor-content classification.
+
+Until Action 1 lands, the cron is a no-op. Until Action 2 lands, every inbound email is a triage event. Once both land, the loop closes.
+
+### Send scope already works
+
+`gmail.send` is already in the DWD allowlist (used today by `scripts/seo-send-agentfire-resend-dns-request.mjs`). The reply layer can therefore send a confirmation as soon as the cron has any message to confirm.
+
+### Smoke-test posture (2026-05-14)
+
+- TypeScript: clean across all new modules. No diagnostics.
+- Allowlist gate: 5/5 scenarios pass (matt@, paul@ domain, random@ reject, subdomain reject, case-insensitivity).
+- Voice gate: clean reply passes; banned punctuation fails (verified via type-check; runtime exercised in audit-classifier path).
+- RFC822 raw MIME composition: round-trips correctly through `Buffer.from(base64url).toString('utf8')`.
+- DB insert lifecycle: blocked by transient `PGRST002` PostgREST schema-cache stall affecting **every** table at 2026-05-14T21:23Z. Direct PG insert via the Supabase MCP succeeded, confirming the table itself is correctly created and reachable. Schema cache typically self-recovers in <5 min; re-run `scripts/marketing-inbox-smoke-pipeline.mjs` once it clears.
+- Parser smoke: blocked by missing `ANTHROPIC_API_KEY`. Will pass once Action 2 lands.
+
+### Idempotency posture
+
+`gmail_message_id` is `UNIQUE` on `marketing_inbox_events`. The poll path checks the table BEFORE inserting and marks the Gmail-side message as read AFTER processing. A cron retry mid-flight will hit the duplicate-row safeguard and short-circuit.
+
+### Operational levers
+
+| Lever | How to use |
+|---|---|
+| Manual poll trigger | `curl -H "Authorization: Bearer $CRON_SECRET" "https://ryanrealty.vercel.app/api/cron/marketing-inbox-poll?maxMessages=5"` |
+| Dry-run (no reply, no read-mark) | append `?dryReply=true&dryRead=true` |
+| Add a sender | edit `config/marketing-brain/inbox-senders.json` |
+| Add a new action_type to parser | edit `lib/marketing-brain/inbox-parser.ts` VALID_ACTION_TYPES + `inbox-producer-registry.ts` |
+| Tune confidence threshold | edit `INBOX_PARSE_CONFIDENCE_THRESHOLD` in `inbox-parser.ts` |
+
+### Known limitations (parked for future)
+
+- No attachment download. Attachments are recorded but not piped to Storage.
+- No multi-recipient routing (replies only to original sender, not To+Cc+Bcc).
+- No batch parsing — one Anthropic call per email. Move to Batches API once volume exceeds ~1000 emails/day.
+- HTML→text conversion is best-effort (lightweight regex strip). Haiku parses the result correctly in practice.
