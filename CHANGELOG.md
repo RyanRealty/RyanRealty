@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.195.0 (2026-05-14)
+
+### Features
+- feat(marketing-brain): daily digest mechanism (Item 5)
+
+### Maintenance
+- docs(seo): indexing API 19/19 + cache audit + Resend DNS forwarded to AgentFire
+
+---
+
+
 ## v1.194.1 (2026-05-14)
 
 ### Maintenance
