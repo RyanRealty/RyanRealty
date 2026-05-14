@@ -308,7 +308,8 @@ The full spec is in `design_system/ryan-realty/SKILL.md`. Highlights:
 
 - **Honest. Transparent. Trustworthy. Direct and kind.** Show, don't tell — let the fact do the work.
 - **Four rules:** Direct. Specific. Kind. Honest, even when inconvenient.
-- **Phone:** `541.213.6706` (dotted). **Web:** `ryan-realty.com` (hyphenated, lowercase). **Place separator:** middle dot · — `BEND · OREGON`.
+- **Phone:** `541.213.6706` (dotted, brand voice — Matt's direct). **Bio phone (FUB-tracked):** `541.703.3095` — use this on social profiles, ads, and any inbound lead-capture surface so calls route through Follow Up Boss for attribution. **Web:** `ryan-realty.com` (hyphenated, lowercase). **Place separator:** middle dot · — `BEND · OREGON`.
+- **Social handles (LOCKED 2026-05-13) — `@ryanrealtybend` on every platform** (IG, TikTok, Threads, YouTube, X, Pinterest), `/ryanrealtybend` on Facebook + LinkedIn vanity. The older `@ryanrealtybend1` TikTok account was an accidental sandbox-FB-OAuth byproduct — Matt has deleted it. Any new tooling, OAuth flow, publisher integration, or docs that reference a TikTok account use `@ryanrealtybend` only. Cross-platform consistency lets a viewer who sees `@ryanrealtybend` on one feed find Ryan Realty instantly on every other.
 - **"You/your"** is the subject. **"We/our team"** for broker identity. **Never "I".**
 - **Sentence case** for web headings; Title Case only for the hero H1.
 - **Tabular numerals** (`font-variant-numeric: tabular-nums`) for every numeric surface.
