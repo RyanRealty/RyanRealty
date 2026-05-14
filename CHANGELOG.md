@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.197.0 (2026-05-14)
+
+### Features
+- feat(marketing-brain): audit-run infrastructure (Item 4)
+
+---
+
+
 ## v1.196.1 (2026-05-14)
 
 ### Bug Fixes
