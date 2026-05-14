@@ -257,13 +257,19 @@ function resolveClosePrice(row: Record<string, unknown>): number | null {
  * Direct query fallback for finding comps — queries listings table
  * directly using RESO column names when the PostGIS RPC is unavailable.
  * Uses the canonical ClosePrice fallback chain.
+ *
+ * `lotAcresRange` lets the caller restrict candidates to a specific lot
+ * window at the SQL layer. Critical for rural acreage subjects: pulling
+ * 50 in-town starter homes only to reject all of them later wastes the
+ * candidate budget and leaves the post-filter set empty.
  */
 async function getCompsDirectQuery(
   supabase: SupabaseClient,
   city: string,
   subdivision: string | null,
   monthsBack: number,
-  maxCount: number
+  maxCount: number,
+  lotAcresRange?: { min: number; max: number } | null
 ): Promise<CMACompRow[]> {
   const cutoff = new Date()
   cutoff.setMonth(cutoff.getMonth() - monthsBack)
@@ -286,6 +292,14 @@ async function getCompsDirectQuery(
 
   if (subdivision) {
     query = query.ilike('SubdivisionName', subdivision)
+  }
+
+  // SQL-layer lot range filter for rural subjects — saves the candidate
+  // budget so we don't return 50 in-town SFRs only to reject them all.
+  if (lotAcresRange) {
+    query = query
+      .gte('lot_size_acres', lotAcresRange.min)
+      .lte('lot_size_acres', lotAcresRange.max)
   }
 
   const { data } = await query
@@ -352,12 +366,19 @@ async function getCompCandidates(
     // RPC unavailable — fall through to direct query
   }
 
+  // Compute a lot-size window for rural subjects so the SQL pulls a
+  // candidate set we can actually use. We mirror the post-hoc filterComps
+  // window (1/3..3x) but center it on the subject lot.
+  const lotRange = subject.lotAcres != null && subject.lotAcres > 0
+    ? { min: subject.lotAcres / 3, max: subject.lotAcres * 3 }
+    : null
+
   // If RPC returned no results, use direct query fallback
   if (rows.length < 3 && subject.address) {
     const addressParts = subject.address.split(',').map((s) => s.trim())
     const city = addressParts[1] || addressParts[0] || ''
     if (city) {
-      const directComps = await getCompsDirectQuery(supabase, city, null, 12, 15)
+      const directComps = await getCompsDirectQuery(supabase, city, null, 12, 15, lotRange)
       const seen = new Set(rows.map((c) => c.listing_key))
       for (const comp of directComps) {
         if (!seen.has(comp.listing_key)) {
@@ -373,7 +394,7 @@ async function getCompCandidates(
     const addressParts = subject.address.split(',').map((s) => s.trim())
     const city = addressParts[1] || ''
     if (city) {
-      const broader = await getCompsDirectQuery(supabase, city, null, 24, 20)
+      const broader = await getCompsDirectQuery(supabase, city, null, 24, 20, lotRange)
       const seen = new Set(rows.map((c) => c.listing_key))
       for (const comp of broader) {
         if (!seen.has(comp.listing_key)) {
