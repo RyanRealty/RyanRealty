@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.184.7 (2026-05-14)
+
+### Maintenance
+- docs(seo): correct Rebecca broker page entry — existing 1919 not new 4674
+
+---
+
+
 ## v1.184.6 (2026-05-14)
 
 ### Maintenance
