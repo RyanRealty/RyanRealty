@@ -386,6 +386,37 @@ export async function processCmaDelivery(deliveryId: string): Promise<{
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
+// Strip common street-suffix abbreviations from the matchable parts so
+// "19496 Tumalo Reservoir Rd" matches a properties row stored as
+// "19496 Tumalo Reservoir Road" (and vice versa). USPS recognizes both
+// long and short forms — MLS data is inconsistent across both. Just drop
+// the suffix from the matching key.
+const STREET_SUFFIXES = new Set([
+  'rd', 'road',
+  'st', 'street',
+  'ave', 'avenue',
+  'dr', 'drive',
+  'ln', 'lane',
+  'ct', 'court',
+  'pl', 'place',
+  'blvd', 'boulevard',
+  'hwy', 'highway',
+  'pkwy', 'parkway',
+  'cir', 'circle',
+  'way', 'trail', 'trl',
+  'ter', 'terrace',
+  'loop',
+])
+
+function dropStreetSuffix(parts: string[]): string[] {
+  if (parts.length < 2) return parts
+  const last = parts[parts.length - 1]?.toLowerCase()
+  if (last && STREET_SUFFIXES.has(last)) {
+    return parts.slice(0, -1)
+  }
+  return parts
+}
+
 async function findPropertyByAddress(params: {
   street: string | null
   city: string
@@ -407,12 +438,15 @@ async function findPropertyByAddress(params: {
   const { data } = await q.limit(20)
   if (!data?.length) return null
 
-  const streetParts = (params.street ?? '')
+  const rawParts = (params.street ?? '')
     .trim()
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .split(' ')
     .filter(Boolean)
+  // Drop the suffix token so "Rd" doesn't fail-to-substring-match "Road".
+  const streetParts = dropStreetSuffix(rawParts)
+
   if (streetParts.length === 0) {
     return data.length === 1 ? (data[0] as { id: string }).id : null
   }
