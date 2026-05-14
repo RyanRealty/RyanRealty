@@ -19,7 +19,9 @@ action_types:
 **Locked:** 2026-05-14
 **Exemplar output:** `public/cmas/cma-21042-robin/cma.html` (the source HTML, when finalized) + `/api/cma/cma-21042-robin/pdf` (the primary deliverable: a server-rendered PDF). Draft lives at `public/drafts/cma-<slug>/cma.html` during creation. The 21042 Robin Ave CMA is the canonical exemplar; clone its structure for new CMAs.
 
-**Primary deliverable format:** PDF, generated server-side at `/api/cma/[slug]/pdf` via puppeteer-core + @sparticuz/chromium-min. The PDF uses the same Chrome engine that displays the HTML preview, so formatting is identical — no print-CSS surprises. The HTML is the source-of-truth, but anything that goes to a client (or to a broker who's signing it) is delivered as PDF. Append `?download=1` to force a download instead of inline preview.
+**Primary deliverable format:** PDF, generated server-side at `/api/cma/[slug]/pdf` via puppeteer-core + @sparticuz/chromium-min. The PDF uses the same Chrome engine that displays the HTML preview, so formatting is identical — no print-CSS surprises. The HTML is the source-of-truth, but anything that goes to a client (or to a broker who's signing it) is delivered as PDF. Append `?download=1` to force a download. Append `?info=1` to get a JSON metadata response (size in bytes, finalized-flag) without the binary body.
+
+**HARD CAP — 25 MB attachment limit (non-negotiable):** Every CMA PDF must come in under **25 MB** so it can be attached to a Gmail/Outlook email without compression or external links. Both `/api/cma/[slug]/pdf` and `/api/cma/[slug]/email` enforce this and reject with HTTP 413 if the render exceeds the cap. The cap is set by `MAX_PDF_BYTES = 25 * 1024 * 1024` in `app/api/cma/[slug]/pdf/route.ts`. To stay under: cover/flyer hero photos at **1280×960** Spark CDN variant, comp grid + flyer-thumbnail photos at **800×600**, comp-summary card photos at **640×480** or smaller. Spark CDN supports `320×240`, `640×480`, `800×600`, `1024×768`, `1280×960`, `1600×1200` — drop one tier if a build comes back over 25 MB. Target landing: 5–10 MB.
 
 **Repository lookup:** Every finalized CMA appears at `/admin/cmas` — the canonical place to find old CMAs, filter by broker or client, and re-open the PDF or HTML for any row.
 
@@ -233,6 +235,7 @@ The subject row at the top of the comp summary table should populate List with t
 - Map renders successfully (hit `/api/maps/cma-<slug>` and confirm 200)
 - All flyer hero photos load (HEAD-check each Spark CDN URL)
 - Page numbers in footers correct (no `X of Y` mismatches)
+- **PDF under 25 MB** — hit `/api/cma/<slug>/pdf?info=1` and confirm `under_attachment_cap: true`. If over, drop the next image tier (1280→1024 heroes, or 800→640 thumbs) and re-render.
 
 **Step 12 — Write citations.json**
 
