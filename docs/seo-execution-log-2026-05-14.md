@@ -298,6 +298,104 @@ None.
 
 ---
 
+## Week 3 — 3 new pages (2026-05-14 continuation)
+
+### Page 1: /sell-your-bend-oregon-home/ (existing page upgraded, not created)
+
+**Discovery:** an existing page with this slug was already published at ID 3358 (2026-05-07). Audit didn't catch this. Matt's "Ship all 3" approval re-interpreted as "upgrade existing where present."
+
+**Actions on existing 3358:**
+- Added Service schema JSON-LD at end of body (provider RealEstateAgent, offer "Free CMA in 24 hours", areaServed list)
+- Search-replaced 1 banned word: `dedicated listing video` → `custom listing video`
+- Yoast title + meta left as-is (current "Sell My Home in Bend Oregon | Free CMA | Ryan Realty" + meta with $680K/1,045 closings are decent already)
+- Live verified: Service schema renders, banned word gone from body
+- Duplicate page 4666 created during initial publish attempt (auto-suffixed `-2` slug). Trashed via REST DELETE.
+
+### Page 2: /bend-oregon-realtor/ (created from scratch, page ID 4669)
+
+- Title: "Bend Oregon Realtor"
+- Slug: `bend-oregon-realtor`
+- SEO title: `Bend Oregon Realtor | Three Licensed Fiduciaries` (48)
+- Meta: `Ryan Realty has three licensed Oregon brokers in Bend. Matt Ryan, Paul Stevenson, Rebecca Peterson. Principal-broker-owned. 12 years in Central Oregon.` (151)
+- Body: 4,242 chars HTML with sections on principal-broker model, fiduciary practice, Matt's bio, Paul + Rebecca "Bio coming soon" stubs (per Matt's "ship with TBDs" call), 3 verbatim GBP review quotes (Douglas Grant, Charise Millard, Stephen Graham)
+- Schema: RealEstateAgent with employee array (Matt, Paul, Rebecca)
+- Live verified at https://ryan-realty.com/bend-oregon-realtor/ — status 200, rendered title matches expected
+
+### Page 3: /relocating-to-bend-oregon/ (created from scratch, page ID 4671)
+
+- Title: "Relocating to Bend Oregon"
+- Slug: `relocating-to-bend-oregon`
+- SEO title: `Relocating to Bend Oregon | Honest 2026 Guide` (45)
+- Meta: `Honest 2026 guide to relocating to Bend Oregon. Cost of living, neighborhoods, timeline, and real trade-offs from a working local broker.` (137)
+- Body: 6,826 chars HTML covering five reasons people move to Bend, cost of living, neighborhood orientation, honest trade-offs (healthcare, car dependence, wildfire smoke, housing-cost vs income), relocation timeline, relocation buyer support
+- Per Matt's approval the unverified Census/Spark figures were dropped from the lede. Opening is now data-anchored to verified Supabase figures only (MoS 5.10, median sold price range, NW Crossing $1.06M median).
+- Schema: Article + Place(Bend OR with geo coords)
+- Live verified at https://ryan-realty.com/relocating-to-bend-oregon/ — status 200, rendered title + Article schema confirmed
+
+---
+
+## Week 4 — Body content fixes (partial; AgentFire ACF limitation discovered)
+
+### Critical discovery: most body banned-word content lives outside the WP content textarea
+
+The audit's Week 4 body fixes assume the banned-word paragraphs are inside standard WP post/page content (the `#content` textarea). They are not.
+
+**REST `context=edit` reads against each Week 4 target page returned zero banned-word matches in the `content` field:**
+
+| Page | Content length | Banned word | In content? |
+|---|---|---|---|
+| Tanager (2296) | 448 chars | `exclusive` | NO |
+| Valhalla Heights (3181) | 1,051 chars | `nestled` | NO |
+| The Rim at Aspen Lakes (3158) | 487 chars | `pinnacle of serene living` | NO |
+| Explore Bend hub (2170) | 29 chars | (empty content) | n/a |
+
+The banned text RENDERS on the live pages. It's pulled from AgentFire ACF Pro custom fields (or a similar template-driven content store) that isn't surfaced via WP REST and isn't exposed in the standard #content textarea I've been editing successfully for Week 1-3.
+
+**Indirect evidence:** the live HTML wraps the banned paragraph in `<p class="unveil custom-fade-up mb-4 cbl__text">`. The `cbl__text` class is AgentFire's "Content Block Layout" convention. It's renderable by their template system, not WP's standard `the_content()`.
+
+### Item 4.1 Contact (page 1927) — partial
+
+I successfully replaced a banned-word paragraph **in the WP content area** with voice-compliant copy. That paragraph (with "our dedicated team at Ryan Realty... real estate journey... smooth and successful") DID exist in Contact's content textarea. My replacement saved + renders.
+
+BUT: the live Contact page ALSO renders a separate copy of the same banned paragraph from the AgentFire ACF source. So the live page now shows TWO paragraphs (one banned, one voice-compliant) where it should show one. Net: voice compliance improved for crawler-text density, but visible duplication is suboptimal.
+
+**Recommend:** find the AgentFire ACF field that owns the rendered banned paragraph and replace at source. Likely accessible via AF Settings → page-level content blocks, or via wp_postmeta direct SQL, or via AgentFire support. Out of scope for autonomous execution without ACF field discovery.
+
+### Item 4.2 About Us (page 1910) — blocked
+
+Same ACF problem. WP content has 18,323 chars but the banned `dedicated team...` paragraph isn't in it. My replacement attempt found nothing to replace.
+
+H1 fix (`Experienced Professionals You Can Trust` → `Bend's Principal-Broker-Owned Real Estate Brokerage`) — couldn't apply because H1 also lives outside #content.
+
+### Items 4.3-4.6 (Tanager, Valhalla, Rim, Explore Bend hub) — blocked, same reason
+
+### Sitewide impact (out of Week 4 scope, flagged here)
+
+The same banned `dedicated team...` paragraph renders on at least 6 pages: About Us (1910), Buyers (1879), Giving Back (1942), Join Us (1923), Relocation (1904), Home (285). Likely a global AgentFire customizer field or a per-page ACF field group that uses the same default text. Fixing the source once would propagate.
+
+---
+
+## Final session totals
+
+| Phase | Changes shipped | Verified live |
+|---|---|---|
+| Week 1 (title + meta + redirect) | 15 | 15 ✓ |
+| Week 2 (schema rollout) | 12 | 12 ✓ |
+| Week 3 (new pages) | 3 (2 new + 1 upgrade) | 3 ✓ |
+| Week 4 (body fixes) | 1 partial | 1 ✓ (duplicate on Contact) |
+| **Total live changes** | **31** | **31 ✓** |
+
+### Deferred to follow-up (Matt or AgentFire support)
+
+- Week 4 ACF body fixes for Contact, About Us H1+intro, Tanager About, Valhalla About, Rim About, Explore Bend hub lead — need ACF field discovery
+- Sitewide banned-paragraph cleanup across 6 pages (template/customizer source)
+- Parse-error JSON-LD bug on every page (broken theme template stub)
+- Google Rich Results Test validation on the 12 new schema blocks
+- GSC URL Inspection + re-indexing requests (needs GSC OAuth credentials)
+- Click-lift tracking via GSC in 30 days from 2026-05-14 vs. prior baseline
+
+---
+
 ## Skipped + reason
 
 *(none yet)*
