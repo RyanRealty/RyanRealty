@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.186.0 (2026-05-14)
+
+### Features
+- feat(brand): Matt Ryan email signature install kit (v6 locked)
+
+---
+
+
 ## v1.185.1 (2026-05-14)
 
 ### Maintenance
