@@ -578,6 +578,26 @@ Located in an AgentFire Twig signup template (the "Create Your Account / Gain im
 
 ---
 
+## Service-page cross-linking (added after broker-bio session)
+
+**Sellers (page 1885) via Spark Editor:**
+- Cleaned 5 widgets (items 16, 25, 42, 62, 83) — banned words `seamless`, `personalized`, `dreams into reality`, `navigate` swapped.
+- Appended "Related" link block to item 25 (longest text widget, 905 chars): links to /sell-your-bend-oregon-home/, /bend-oregon-market-report-may-2026/, /bend-oregon-realtor/.
+- Verified live — new links present, ~3 of 4 banned words gone (`journey` and `navigate` still in footer/sidebar widgets).
+
+**Buyers (page 1879) via Spark Editor:**
+- Cleaned 4 widgets (items 15, 35, 45, 66) — banned words `journey`, `dreams into reality`, `dedicated`, `personalized`, `navigate`, `seamless` all swapped.
+- Appended "Related" link block to item 15 (longest text widget, 517 chars): links to /relocating-to-bend-oregon/, /bend-oregon-cost-of-living-2026/, /bend-oregon-realtor/, /explore/bend/.
+- Verified live — new links present.
+
+**About Us (page 1910) via Spark Editor:**
+- Appended "Related" link block to item 38 (the intro I rewrote earlier): links to Matt, Paul, Rebecca individual broker pages + /bend-oregon-realtor/, /sell-your-bend-oregon-home/, /relocating-to-bend-oregon/.
+- Verified live.
+
+Result: the 3 new pages (sell-your-bend-oregon-home, bend-oregon-realtor, relocating-to-bend-oregon) AND the 3 broker pages (matt-ryan, paul-stevenson, rebecca-ryser-peterson) all now have inbound editorial links from the high-authority service pages.
+
+---
+
 ## Skipped + reason
 
 *(none yet)*
