@@ -60,40 +60,44 @@ export interface ReplyOutcome {
 const PRODUCTION_DASHBOARD_BASE_URL =
   process.env.MARKETING_DASHBOARD_BASE_URL?.replace(/\/$/, '') || 'https://ryanrealty.vercel.app'
 
+const REQUEST_PAGE_URL = `${PRODUCTION_DASHBOARD_BASE_URL}/marketing/request`
+
+// Signature appended to every broker-facing reply. Keeps the
+// "what can I ask for" surface one click away. Uses the RFC-822
+// "-- " signature delimiter (dash-dash-space) so mail clients fold it.
+const REPLY_SIGNATURE = [
+  '',
+  '-- ',
+  'Ryan Realty marketing',
+  `Here's what we can build for you: ${REQUEST_PAGE_URL}`,
+].join('\n')
+
 // ---------------------------------------------------------------------------
-// Body composition — kept short, voice-compliant, and skimmable.
+// Body composition — kept short, voice-compliant, broker-friendly.
+// No internal jargon (no "brain queue", "action row", "producer", "routing").
 // ---------------------------------------------------------------------------
 
 function composeBody(ctx: ReplyContext): { subject: string; body: string } {
   const subject = ctx.original_subject
     ? `Re: ${ctx.original_subject}`
-    : 'Re: your message to the marketing brain'
+    : 'Re: your message to marketing'
 
   if (ctx.kind.kind === 'parsed_intent') {
-    const link = `${PRODUCTION_DASHBOARD_BASE_URL}/marketing/actions/${ctx.kind.action_row_id}`
     const body = [
-      'Got it. Adding this to the brain queue now.',
+      'Got it. Working on this now.',
       '',
-      `Action type:    ${ctx.kind.action_type}`,
-      `Routed to:      ${ctx.kind.assigned_producer}`,
-      `Action row id:  ${ctx.kind.action_row_id}`,
-      `Track it here:  ${link}`,
-      '',
-      'Next step: the producer will assemble a draft and surface it for review. You will get a follow-up when it is ready.',
+      "We'll send an update on this thread as soon as we have a draft for you.",
+      REPLY_SIGNATURE,
     ].join('\n')
     return { subject, body }
   }
 
   if (ctx.kind.kind === 'unknown_triage') {
-    const link = `${PRODUCTION_DASHBOARD_BASE_URL}/marketing/actions/${ctx.kind.action_row_id}`
     const body = [
-      'Got it. The brain logged your message and flagged it for human triage.',
+      'Got it. We received your message and a team member will pick this up directly.',
       '',
-      `Reason:         ${ctx.kind.triage_reason}`,
-      `Action row id:  ${ctx.kind.action_row_id}`,
-      `Track it here:  ${link}`,
-      '',
-      'Matt will review and either dispatch the right producer or reply with a clarifying question.',
+      "We'll reply on this thread once we have a draft, or follow up with a clarifying question.",
+      REPLY_SIGNATURE,
     ].join('\n')
     return { subject, body }
   }
@@ -102,7 +106,7 @@ function composeBody(ctx: ReplyContext): { subject: string; body: string } {
   const body = [
     'Thanks for the message.',
     '',
-    'This inbox is reserved for the Ryan Realty brokerage team. Your sender address is not currently on the allowlist, so the request was not routed.',
+    'This inbox is reserved for the Ryan Realty brokerage team. Your sender address is not currently on the allowlist, so the request was not picked up.',
     '',
     'If you need to reach Ryan Realty, please use matt@ryan-realty.com or call 541.213.6706.',
   ].join('\n')
