@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.211.2 (2026-05-15)
+
+### Bug Fixes
+- fix(cma): add missing lat/lng fields to CMASubject in computeCMAByListingKey
+
+---
+
+
 ## v1.211.1 (2026-05-15)
 
 ### Maintenance
