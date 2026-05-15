@@ -176,6 +176,14 @@ export async function dispatchParsedEmail(
     body_short: `Inbox triage needed from ${event.sender_email}: ${(event.subject ?? '').slice(0, 100)}`,
     action_required: 'Open the marketing dashboard, find the inbox event, decide which producer should run, and re-dispatch.',
     related_inbox_event_id: event.id,
+    // Mirror the parsed_intent payload shape so daily-digest, dashboards,
+    // and any future reader can read sender info from a single place.
+    sender_email: event.sender_email,
+    sender_name: event.sender_name,
+    raw_subject: event.subject,
+    inbox_event_id: event.id,
+    inbox_thread_id: event.gmail_thread_id,
+    inbox_message_id: event.gmail_message_id,
   }
 
   const insert = await supabase
