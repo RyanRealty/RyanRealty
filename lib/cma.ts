@@ -741,13 +741,14 @@ export async function computeCMA(propertyId: string): Promise<CMAResult | null> 
       value_high: interim.valueHigh,
       confidence: interim.confidence,
       comp_count: interim.comps.length,
+      // 3.1 (2026-05-15): distance RPC re-keyed to use idx_listings_bend_point_gist
       // 3.0 (2026-05-15): PostGIS distance-based comp search with tiered
       //                   ring expansion (2/4/7mi), closed-first then active fallback
       // 2.2 (2026-05-14): bypass PostGIS RPC for rural (≥1 ac) subjects
       // 2.1 (2026-05-14): fail-closed on unknown comp lot for rural subjects
       // 2.0 (2026-05-14): residential-only filter, $200K floor, lot guard, range confidence
       // 1.x: original (deprecated — buggy)
-      methodology_version: '3.0',
+      methodology_version: '3.1',
     })
     .select('id')
     .single()
@@ -834,7 +835,7 @@ export async function getCachedCMA(propertyId: string): Promise<CMAResult | null
     .from('valuations')
     .select('id, estimated_value, value_low, value_high, confidence, comp_count, methodology_version')
     .eq('property_id', propertyId)
-    .gte('methodology_version', '3.0')
+    .gte('methodology_version', '3.1')
     .order('computed_at', { ascending: false })
     .limit(1)
     .maybeSingle()
