@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.214.2 (2026-05-15)
+
+### Bug Fixes
+- fix(cma-request): satisfy legacy content_briefs NOT NULL columns on action insert
+
+---
+
+
 ## v1.214.1 (2026-05-15)
 
 ### Bug Fixes
