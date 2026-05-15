@@ -8,14 +8,15 @@ when_to_use: Also fires on "push this live", "schedule this post", "cross-post t
 
 Executes the final delivery of Matt-approved content to one or more social platforms via `/api/social/publish`. Enforces the gate.json precondition and the per-platform best-practice matrix before any API call is made.
 
-## Hard preconditions — ALL four must pass before calling /api/social/publish
+## Hard preconditions — ALL five must pass before calling /api/social/publish
 
 **If any precondition fails: STOP. Report which gate is missing. Do not call the API.**
 
 1. **gate.json exists** at the asset's directory containing all of: `manifestoPath`, `citationsPath`, `scorecardPath`, `qaReportPath`, `postflightPath`, `humanApprovedAt` (ISO timestamp).
 2. **`humanApprovedAt` is within 7 days** of the current timestamp. Stale approvals do not carry forward.
-3. **Matt has explicitly approved THIS specific asset in THIS session** — a prior session approval or a passing scorecard is not sufficient.
-4. **`/api/social/publish` route validates `approved: true` AND `gate.scorecardPath`** — the route itself enforces this; the skill must also pre-validate before calling.
+3. **Matt has explicitly approved THIS specific asset in THIS session.** A prior session approval or a passing scorecard is not sufficient.
+4. **`/api/social/publish` route validates `approved: true` AND `gate.scorecardPath`.** The route itself enforces this; the skill must also pre-validate before calling.
+5. **Em-dash / en-dash guard.** Call `assertNoDashes()` from `lib/punctuation-guard.ts` on every caption variant before send, for every platform. A `DashViolationError` blocks the publish. Locked 2026-05-15 per Matt's directive. The publish API route also enforces this server-side; the skill enforces it client-side to fail fast. No exceptions. Do not auto-strip in production. Fix the source caption and re-run.
 
 ## Per-platform best-practice matrix
 

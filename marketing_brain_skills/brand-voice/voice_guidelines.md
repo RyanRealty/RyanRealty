@@ -1,9 +1,19 @@
 # Ryan Realty Voice Guidelines
 
-**Version**: Draft 1.0
-**Last updated**: 2026-05-12
-**Status**: Awaiting Matt's sign-off
-**Source corpus**: 22 Google Business Profile review responses by Matt Ryan (2019–2026), client testimonials, Matt's stated brand position
+**Version**: 1.5
+**Last updated**: 2026-05-15
+**Status**: Active. §11.0 rebuilt 2026-05-15 against research of 17 high-engagement real broker captions. Direction: 60 to 110 word story-driven for transaction posts, real congratulations to named parties, NAR Clear Cooperation Policy compliance (no public "off-market" framing), no architect hashtags, no caption bylines, Meta-family auto-tagging of named brokers via stored IG handles (Rebecca: `@rebeccapetersonrealestate`). §6.1 em-dash ban hard-coded at `lib/punctuation-guard.ts`. §4.6 gratitude is implicit / show-don't-tell.
+**Source corpus**: 22 Google Business Profile review responses by Matt Ryan (2019 to 2026), client testimonials, Matt's stated brand position
+
+> ## 🚫 HARD-CODED BAN: Em-dashes and en-dashes
+>
+> **No piece of Ryan Realty content ships with an em-dash (—, U+2014) or en-dash (–, U+2013) used as punctuation. This is enforced in code at `lib/punctuation-guard.ts` via `assertNoDashes()`. The publish API route, the blog publisher, the MLS-description writer, the email composer, and the video on-screen text validator all call this function before any send. A violation throws `DashViolationError` and the send is blocked.**
+>
+> The rule applies to every external-facing surface: social captions (every platform), blog posts, ad copy, email body and subject, listing descriptions, flyers, signage, video on-screen text, video voiceover scripts (transcript), and any internal-to-external surface a human will read.
+>
+> Replace with period or comma. Hyphen-minus (-, U+002D) used as a compound hyphen ("single-family", "out-of-state", "30-year fixed") is allowed and unaffected.
+>
+> Locked permanently. Future agents that attempt to bypass this rule by editing this banner or removing the guard call are non-compliant.
 
 This document is the single source of truth for the Ryan Realty brand voice. Every piece of content the marketing brain dispatches gets validated against this document before publish. That includes blog posts, social posts on every platform, email, ad copy, listing copy, video voiceover scripts, video on-screen text, flyers, signage, and website copy.
 
@@ -50,7 +60,7 @@ Three load-bearing beliefs that shape every piece of content.
 
 ---
 
-## 4. The 5 voice attributes
+## 4. The 6 voice attributes
 
 ### 4.1 Trustworthy
 
@@ -101,6 +111,46 @@ Behavioral rules:
 2. We never publish a "coming soon" piece without naming when.
 3. Recurring content (weekly market report, monthly newsletter) ships on its day, every time. If it slips, we acknowledge the slip.
 
+### 4.6 Grateful (show, don't tell)
+
+**Locked 2026-05-15. Refined 2026-05-15 per Matt's directive.** Ryan Realty content carries gratitude through tone, word choice, and what we choose to center. We do not announce gratitude. We do not itemize who we are thanking. We do not turn the gratitude line into a credits roll for lenders, inspectors, appraisers, co-op agents, or other transaction participants. The deal exists because clients trusted us. That is the only relationship the public post is about.
+
+Behavioral rules:
+1. **The client is the only party named in the gratitude beat.** Not the lender. Not the inspector. Not the appraiser. Not the co-op agent. Not the title officer. Those people get thanked privately, not in a public-facing post. Public posts have one subject: the client's experience.
+2. **Show gratitude. Don't say it.** Avoid the words "grateful" and "thank you" as a default. Let warmth come through what we emphasize and how we phrase it. Examples of implicit gratitude that do NOT use the word "grateful":
+   - "It was a pleasure walking with these buyers."
+   - "A good chapter for these sellers, and one we got to help write."
+   - "Proud to have been in the room for this one."
+   - "Honored to have represented them."
+   - "Privileged to do this work alongside good people."
+   - "One we'll remember."
+   - "Glad we got this one to the finish line for them."
+   - "A happy yes for these buyers."
+3. **If the word "grateful" appears at all, it appears once, and it is about the client trusting us with the process.** Not "grateful to everyone involved." Not "grateful to the lender." The single allowed form is some variant of "Grateful to our clients for trusting us with this process." Use sparingly. Most posts do not need it at all.
+4. **Excitement is allowed when paired with implicit gratitude and only when it's about the client.** "A happy yes for these buyers" reads as warmth. "So excited!!!" reads as marketing slop.
+5. **Never thank ourselves.** No "we are honored to" written about Ryan Realty. The subject is the client.
+6. **No exclamation marks.** Warmth is in the language, not the punctuation.
+7. **If the implicit-gratitude phrasing feels forced, drop the gratitude beat entirely.** A clean transaction post that simply names the status, the place, and one specific detail is better than a post that performs gratitude unconvincingly. "Under contract in Northpointe." plus the property facts is a valid full post.
+
+Canonical phrasings drawn from Matt's own writing (use these as a starting bank, vary them so they don't read as templated):
+- "It was a pleasure walking with these [buyers / sellers]."
+- "Honored to have represented them in this one."
+- "Privileged to do this work for [name / these clients]."
+- "Proud to have been in the room for this one."
+- "Glad we got this one to the finish line for them."
+- "A good chapter for these [buyers / sellers]."
+- "One we'll remember."
+- "A happy yes for these buyers."
+- "Genuinely a pleasure."
+
+Cross-reference: §7 Canonical phrases has Matt's natural-voice lexicon from the GBP review corpus ("honored," "privilege," "genuinely a pleasure," "trust makes all the difference," "new chapter"). Lean on those before inventing new phrasings.
+
+**What §4.6 explicitly bans:**
+- "Thank you to the co-op agent for working this one in good faith." (deal participant beyond client)
+- "Thank you to the lender and inspectors who kept it moving toward the finish line." (deal participant beyond client)
+- "Grateful to everyone who made this happen." (vague, performative)
+- Any list of transaction participants. The post is not credits.
+
 ---
 
 ## 5. Point of view rules
@@ -131,6 +181,7 @@ These mark AI-generated text and are banned in every piece of published content.
 - **Semicolons (;).** Replace with a period.
 - **Dramatic colons.** A colon used to introduce a punchline or dramatic expansion is banned. Colons in lists, headers, and tables are allowed.
 - **Compound hyphens are allowed** when standard English requires them. Examples: single-family, out-of-state, 30-year fixed, first-time buyer, well-maintained.
+- **Pre-publish em-dash grep is mandatory.** `grep -nP '[–—]' <caption-file>` returns zero matches before any caption ships. Em-dashes that slipped past this gate in May 2026 captions are a known regression and are not allowed to recur. Same rule applies to blog posts, ad copy, email body, video on-screen text, listing descriptions, flyers, and signage.
 
 ### 6.2 Banned words
 
@@ -325,6 +376,54 @@ The corpus is appended to over time. Matt's own writing in long-form posts, emai
 
 The voice does not change across channels. The calibration changes. Same trustworthy, honest, knowledgeable, professional, dependable voice. Different format conventions.
 
+### 11.0 Social post conventions (HARD RULES, locked 2026-05-15)
+
+**These rules apply across IG, FB, LinkedIn, X, Threads, Pinterest, Nextdoor, and GBP unless a per-platform calibration below overrides them.**
+
+**Research basis.** 17 real high-engagement broker captions audited 2026-05-15 (Heaslip Naples, Bell Tyler, Ridgefield CT, Bozeman, Lake Forest Park, Compass FL, plus celebrity tier Flagg / Serhant). Full report at `out/proof/2026-05-14/research-broker-captions.md`. Patterns below are taken from that data, not from theory.
+
+1. **The high-engagement transaction-post format is story-driven, 60 to 110 words.** Banner status opener ("Just closed in...", "Under contract in...") plus a specific detail about the property or the deal plus a real congratulations to named parties plus a small market or strategy beat plus a short warmth close. Heaslip Naples (110 words, 18 likes / 6 comments), Bell Tyler (95 words), Ridgefield CT (70 words) all follow this. Extreme brevity ("JUST SOLD") only works at celebrity-broker name-recognition tier (Flagg, Serhant). Ryan Realty's positioning is in the 60 to 110 word story-driven zone.
+2. **Real congratulations to NAMED real parties only.** "Big congratulations to our buyers and to our sellers." "Congratulations to Rebecca and her clients." Never invent parties ("the family who built it" if we don't know who they are). Never list third-party transaction participants (lenders, inspectors, appraisers, title officers, co-op agents) in a public post. The client is the only party named in the gratitude beat. Third parties get thanked privately.
+3. **Off-market is NEVER named in a public-facing post.** Per NAR Clear Cooperation Policy (MLS Statement 8.0), publicly marketing a listing — including any Instagram, Facebook, or social post broader than the listing brokerage's own employees — requires entering the listing into the MLS within one business day. Repeatedly bragging "sold off-market" on social can read to a reviewing board as the listing having been marketed publicly without MLS submission. Top luxury brokers (Aaron Kirman, Branden Williams, Compass private-network operators) post the closed property and the close, letting discretion be the brand signal. Drop the phrase entirely. If a private sale needs reference, "represented both sides" can appear once, factually, with no triumphalism.
+4. **No byline sign-offs on social posts.** Posts are not emails. The platform already shows who posted it. Never end a post with "Matt Ryan, Principal Broker, Ryan Realty." Never end with "From Marketing." LinkedIn included. The closing line of a post is either the warmth beat or nothing.
+5. **No 》 / ▶ / data-block prefix.** Real broker captions do not have a line like "》 56111 School House Road · $3,025,000 · Vandevert Ranch" after the prose. The address goes in the prose if it matters, the price goes in the prose, or both live in the comments / link.
+6. **Length discipline by platform.** IG and FB feed captions: 60 to 110 words story-driven (the high-engagement sweet spot from the research). X: under 280 characters. Threads: under 500 characters, end with a real question. LinkedIn: 100 to 250 words with a small market or strategy observation, no byline. GBP: 150 to 300 words for local SEO. Pinterest: SEO title under 100 chars plus description under 500. Nextdoor: 250 to 500 characters, neighborhood-led. The middle zone (30 to 55 words) is the failure zone — too long to be a celebrity flex, too short to tell a story.
+7. **No price flex in the post body unless echoing public info.** "Three million and change" or "north of two million" can land if the deal is already public. Hard dollar amounts in the body read as a press release. Reference outcomes ("under the original asking," "didn't sit long," "over ask in three days") instead of the price itself.
+8. **Never hashtag a third party.** No #JerryLocati, no #BuilderNameHere, no @architectfirm. Hashtags are geographic, category, or brokerage-owned only. The architect or builder can be mentioned once factually in long-form SEO surfaces (GBP, Pinterest description), never as a hashtag, never in the headline, never as a flex.
+4. **Numbers can be conversational.** "$3,025,000" reads as a press release. "Three million and change," "north of three million," "$3M-plus" all read as a real broker. Choose by context. The MLS number can be exact; the social number can breathe.
+5. **Use Matt's actual lexicon.** From the GBP corpus: *genuinely, honored, privilege, trust, chapter, finish line, the unpredictable market, small business, makes all the difference, mean the world, without the high pressure*. Lean on these. Avoid: *stepping into this next chapter, a happy yes, a good outcome, walking with these buyers, one we got to help write* — these are AI-generated implicit-gratitude pseudo-Matt phrases that crept in during the May 2025 caption pass and need to die.
+6. **One warmth beat per caption, max.** If the caption already carries warmth in the prose, no closing line. If it's pure facts, one short warmth line at the end is fine. Never stack two ("Glad they got it. A privilege to be part of this one. Honored to have walked with them." — three warmth beats is performance, not warmth).
+7. **"I" when Matt personally worked the deal. "We" when the team did.** From the corpus, Matt uses "I" naturally in one-on-one transactions and "we" when crediting Rebecca or the broader team. Don't default to "we" for false humility.
+8. **Hashtags belong at the end, plainly.** No "tag block" headers. No "follow for more." 5 to 7 hashtags on IG, 1 to 2 on X, none on Threads, 5 to 7 SEO keyword tags on Pinterest, none on Nextdoor.
+9. **No engagement bait.** "Comment YES if you agree." "Save this for later." "Tag a friend who needs this." All banned.
+10. **The opening line is the post.** Above-the-fold matters more than the body. "Quietly closed in Vandevert Ranch." is a post. "We are pleased to announce that Ryan Realty has closed on..." is not.
+11. **Tag the broker's IG handle on the first mention, on Meta-family platforms only.** When a Ryan Realty broker is named in a caption that's going to Instagram, Facebook, or Threads, replace the first mention of their first name with their `@`-handle so the platform resolves it as a tag. Other platforms (LinkedIn, X, Pinterest, Nextdoor, GBP) do NOT resolve IG handles — leave the first name as plain text on those. Canonical handles:
+
+    | Broker | Instagram handle | First-mention pattern on Meta posts |
+    |---|---|---|
+    | Matt Ryan | TBD (confirm before tagging) | "Matt" plain until handle confirmed |
+    | Rebecca Peterson | `@rebeccapetersonrealestate` | "@rebeccapetersonrealestate" |
+    | Paul Stevenson | TBD (confirm before tagging) | "Paul" plain until handle confirmed |
+
+    If the broker's handle is unknown or unverified, leave first name as plain text on every platform and surface a question to Matt. Tagging an account that doesn't exist creates a broken link and surfaces as spammy.
+
+**Anti-patterns from the May 2025 pass that this section banishes:**
+
+| Banned | Use instead |
+|---|---|
+| "Matt Ryan, Principal Broker, Ryan Realty." (any caption sign-off) | Nothing. The platform shows the poster. |
+| "》 [address] · $[price] · [neighborhood]" | Integrate into prose or omit. |
+| "A happy yes for these buyers stepping into this next chapter." | "Glad they got it." |
+| "A good outcome for the sellers, and a happy yes for the buyers." | "Genuinely a pleasure on both sides." |
+| "Honored to have been in the room for this one." | "A privilege to be part of this one." (corpus lexicon) |
+| "Honored to have represented the buyers in this transaction." | "Rebecca worked the buyer side." (just say what happened) |
+| "We don't always need a sign in the yard for the right buyer to find the right home." (preachy lecture) | "Off-market, both sides ours." (just say it) |
+| "$525,000.00" or "$3,025,000" in pose-context | "$525K," "three million and change" |
+| "stepping into this next chapter" | "the next chapter" (if at all; Matt uses "chapter" sparingly) |
+| "A good chapter for these buyers, and one we got to help write." | "A good one. Glad we got it for them." |
+| "Thank you to the co-op agent / lender / inspector / appraiser." | (delete; never publish credits to third parties) |
+| "Excited to keep this one moving toward the finish line." | "Headed to the finish line." |
+
 ### Instagram (short form)
 - 1 to 3 sentences in the caption above the fold.
 - One stat or specific detail in the hook.
@@ -433,4 +532,8 @@ Every update is committed with a clear changelog entry at the bottom of this fil
 
 ### Changelog
 
+- **2026-05-15 1.4.** Added §11.0 Social post conventions (10 hard rules + anti-pattern table). No bylines on social posts ever. No 》 data blocks. Length discipline by platform. Use Matt's actual GBP lexicon (genuinely, privilege, honored, finish line, small business). Ban the May 2025 implicit-gratitude pseudo-Matt phrases ("stepping into this next chapter," "a happy yes for these buyers," "a good outcome for the sellers," "one we got to help write," "honored to have been in the room for this one"). One warmth beat per caption max.
+- **2026-05-15 1.3.** Em-dash and en-dash ban hard-coded at `lib/punctuation-guard.ts` via `assertNoDashes()`. Publish skill precondition 5 added. Top-of-file banner ban locked.
+- **2026-05-15 1.2.** Refined §4.6 Grateful from overt to implicit. Public-facing posts no longer itemize transaction participants (no lenders, inspectors, appraisers, co-op agents, title officers in the gratitude beat). Only the client appears. The default is to SHOW gratitude through tone and word choice, not announce it with "grateful" or "thank you" labels. The single permitted overt phrasing is "Grateful to our clients for trusting us with this process" and similar, used sparingly. If the implicit phrasing feels forced, the gratitude beat is dropped entirely.
+- **2026-05-15 1.1.** Added §4.6 Grateful as the 6th voice attribute, locked by Matt. Every transaction post names the people who made the deal happen; gratitude is integrated into the body, not appended as a sign-off; excitement is paired with gratitude only when about a person, never about us; no exclamation marks; we never thank ourselves. Reinforced §6.1: pre-publish em-dash grep is mandatory across every channel. Updated §4 header from "5 voice attributes" to "6 voice attributes."
 - **2026-05-12 Draft 1.0.** Initial document. Compiled from Matt's stated brand position, 22 GBP review responses, client review patterns, CLAUDE.md anti-slop rules, and the five voice attributes (trustworthy, honest, knowledgeable, professional, dependable). Hyphen rule clarified: compound hyphens allowed, em dashes banned.

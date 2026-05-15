@@ -5,12 +5,18 @@ const azo = staticFile('fonts/AzoSans-Medium.ttf');
 const amboqia = staticFile('fonts/Amboqia_Boriango.otf');
 const mBold = staticFile('fonts/Montserrat-Bold.ttf');
 const mBlack = staticFile('fonts/Montserrat-Black.ttf');
+const geistReg = staticFile('fonts/Geist-Regular.ttf');
+const geistBold = staticFile('fonts/Geist-Bold.ttf');
+const geistBlack = staticFile('fonts/Geist-Black.ttf');
 
 const CSS = `
 @font-face { font-family: 'Amboqia'; src: url(${amboqia}) format('opentype'); font-weight: 400 900; font-display: block; }
 @font-face { font-family: 'AzoSans'; src: url(${azo}) format('truetype'); font-weight: 400 900; font-display: block; }
 @font-face { font-family: 'Montserrat'; src: url(${mBold}) format('truetype'); font-weight: 700; font-display: block; }
 @font-face { font-family: 'Montserrat'; src: url(${mBlack}) format('truetype'); font-weight: 900; font-display: block; }
+@font-face { font-family: 'Geist'; src: url(${geistReg}) format('truetype'); font-weight: 400 500; font-display: block; }
+@font-face { font-family: 'Geist'; src: url(${geistBold}) format('truetype'); font-weight: 600 700; font-display: block; }
+@font-face { font-family: 'Geist'; src: url(${geistBlack}) format('truetype'); font-weight: 800 900; font-display: block; }
 `;
 
 if (typeof document !== 'undefined') {
