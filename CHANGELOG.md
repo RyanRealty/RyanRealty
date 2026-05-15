@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.211.3 (2026-05-15)
+
+### Other
+- obs(cma): include lat/lng in computeCMA subject log to debug distance path
+
+---
+
+
 ## v1.211.2 (2026-05-15)
 
 ### Bug Fixes
