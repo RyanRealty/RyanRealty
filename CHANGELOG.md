@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.208.1 (2026-05-15)
+
+### Maintenance
+- docs(marketing-brain): record first audit run + closed feedback loop
+
+---
+
+
 ## v1.208.0 (2026-05-15)
 
 ### Features
