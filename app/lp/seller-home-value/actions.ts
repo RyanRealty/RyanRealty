@@ -10,7 +10,7 @@ import {
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
-import { createCmaDelivery } from '@/lib/cma-delivery'
+import { createCmaRequest } from '@/lib/cma-request'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -215,14 +215,17 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       }).catch((e) => console.warn('[seller-lp] realtime task error:', e))
     }
 
-    // ─── Auto-CMA delivery — fire-and-forget ──────────────────────────────
-    // Insert a `cma_deliveries` row synchronously (fast — one DB write), then
-    // ping the worker at /api/cron/cma-delivery so the heavy CMA compute +
-    // PDF render + Storage upload + broker review email happens off the
-    // form-submit path. The visitor sees a fast "we got it" response; the
-    // broker gets their review email within ~10s.
+    // ─── Canonical CMA request — queue the brain action ───────────────────
+    // The LP form submission creates two rows:
+    //   - public.cmas (status='draft') — the broker sees it in /admin/cmas
+    //   - public.marketing_brain_actions (action_type='content:cma') — the
+    //     brain dispatcher picks it up and runs the canonical CMA producer
+    //     (marketing_brain_skills/producers/cma/SKILL.md), which builds the
+    //     15-page HTML, renders the PDF, and ships it via /api/cma/[slug]/email.
+    // Broker gets a notification email immediately; lead gets a confirmation
+    // so they know we received their request and the CMA is in flight.
     if (email) {
-      const created = await createCmaDelivery({
+      const created = await createCmaRequest({
         rawAddress: parsed.full,
         parsedStreet: parsed.street,
         parsedCity: parsed.city,
@@ -235,23 +238,8 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         leadClassification: classification,
         fubPersonId,
       })
-      if ('id' in created) {
-        const deliveryId = created.id
-        const workerAuthHeader = process.env.CMA_WORKER_AUTH_SECRET?.trim()
-          ? { 'x-cma-worker-secret': process.env.CMA_WORKER_AUTH_SECRET.trim() }
-          : undefined
-        void fetch(`${siteUrl}/api/cma-delivery`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(workerAuthHeader ?? {}),
-          },
-          body: JSON.stringify({ delivery_id: deliveryId }),
-        }).catch((e) => {
-          console.warn('[seller-lp] CMA worker ping failed:', e)
-        })
-      } else {
-        console.warn('[seller-lp] createCmaDelivery failed:', created.error)
+      if (!created.ok) {
+        console.warn('[seller-lp] createCmaRequest failed:', created.error)
       }
     }
 
