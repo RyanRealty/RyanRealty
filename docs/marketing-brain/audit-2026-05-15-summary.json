@@ -1,0 +1,338 @@
+{
+  "audit_id": "2026-05-15-v2",
+  "duration_ms": 979484,
+  "competitors_attempted": 19,
+  "competitors_with_data": 19,
+  "posts_scraped": 442,
+  "posts_classified": 270,
+  "apify_cost_usd": 0.05,
+  "top_5_missing_producers": [
+    {
+      "proposed_skill_name": "other-reel",
+      "proposed_path": "video_production_skills/other-reel/",
+      "proposed_action_type": "content:other_reel",
+      "topic": "other",
+      "format": "reel",
+      "evidence": {
+        "median_engagement_rate_top_quartile": 0.00555461538461538,
+        "sample_post_urls": [
+          "https://www.tiktok.com/@sothebysrealty/video/7239454407287524654",
+          "https://www.tiktok.com/@ryanserhant/video/7506951442171694378",
+          "https://www.tiktok.com/@glenndabaker/video/6962094027445619973",
+          "https://www.tiktok.com/@glenndabaker/video/7087238812644035883",
+          "https://www.tiktok.com/@ryanserhant/video/7412296295760612651"
+        ],
+        "competitors_running_this": [
+          "chad_carroll",
+          "compass_corp",
+          "glennda_baker",
+          "ktvz",
+          "madison_sutton",
+          "offerpad",
+          "opendoor",
+          "ryan_serhant",
+          "sothebys_corp",
+          "tom_ferry",
+          "visit_bend"
+        ],
+        "post_count_in_corpus": 81
+      },
+      "priority": "high",
+      "rationale": "81 winning posts at p75 ER 0.006 from 11 competitors. No producer covers other/reel in REGISTRY.md.",
+      "data_sources_needed": [],
+      "similar_existing_producer": null
+    },
+    {
+      "proposed_skill_name": "other-single_image",
+      "proposed_path": "social_media_skills/other-single_image/",
+      "proposed_action_type": "content:other_single_image",
+      "topic": "other",
+      "format": "single_image",
+      "evidence": {
+        "median_engagement_rate_top_quartile": 0.00267320115838717,
+        "sample_post_urls": [
+          "https://www.instagram.com/p/DKCfYT9OhQ0/",
+          "https://www.instagram.com/p/DQ4OczJEbKH/",
+          "https://www.instagram.com/p/DYDONuGGeGk/",
+          "https://www.instagram.com/p/DYIR9_iEZYa/",
+          "https://www.instagram.com/p/DYUfAystGY1/"
+        ],
+        "competitors_running_this": [
+          "chad_carroll",
+          "compass_corp",
+          "glennda_baker",
+          "offerpad",
+          "opendoor",
+          "ryan_serhant",
+          "sothebys_corp",
+          "visit_bend"
+        ],
+        "post_count_in_corpus": 56
+      },
+      "priority": "high",
+      "rationale": "56 winning posts at p75 ER 0.003 from 8 competitors. No producer covers other/single_image in REGISTRY.md.",
+      "data_sources_needed": [],
+      "similar_existing_producer": null
+    },
+    {
+      "proposed_skill_name": "agent-brand-reel",
+      "proposed_path": "video_production_skills/agent-brand-reel/",
+      "proposed_action_type": "content:agent_brand_reel",
+      "topic": "agent_brand",
+      "format": "reel",
+      "evidence": {
+        "median_engagement_rate_top_quartile": 0.0982330637007078,
+        "sample_post_urls": [
+          "https://www.tiktok.com/@offerpad/video/7355527044639231274",
+          "https://www.tiktok.com/@offerpad/video/7361048842399124779",
+          "https://www.tiktok.com/@tomferry/video/7603400331514350862",
+          "https://www.tiktok.com/@glenndabaker/video/7610488662203157791",
+          "https://www.tiktok.com/@sothebysrealty/video/7629089667748531469"
+        ],
+        "competitors_running_this": [
+          "glennda_baker",
+          "offerpad",
+          "ryan_serhant",
+          "sothebys_corp",
+          "tom_ferry"
+        ],
+        "post_count_in_corpus": 6
+      },
+      "priority": "low",
+      "rationale": "6 winning posts at p75 ER 0.098 from 5 competitors. No producer covers agent_brand/reel in REGISTRY.md.",
+      "data_sources_needed": [
+        "press mentions",
+        "internal team data"
+      ],
+      "similar_existing_producer": "social_media_skills/instagram-carousel"
+    },
+    {
+      "proposed_skill_name": "behind-scenes-single_image",
+      "proposed_path": "social_media_skills/behind-scenes-single_image/",
+      "proposed_action_type": "content:behind_scenes_single_image",
+      "topic": "behind_scenes",
+      "format": "single_image",
+      "evidence": {
+        "median_engagement_rate_top_quartile": 0.00311873468478503,
+        "sample_post_urls": [
+          "https://www.instagram.com/p/DTtSIfUjrG5/",
+          "https://www.instagram.com/p/DIPDreqqP5o/",
+          "https://www.instagram.com/p/DH9SlNxRwrZ/",
+          "https://www.instagram.com/p/DHrGtDuKsoM/",
+          "https://www.instagram.com/p/DYFn6ePEfCW/"
+        ],
+        "competitors_running_this": [
+          "compass_corp",
+          "offerpad",
+          "ryan_serhant"
+        ],
+        "post_count_in_corpus": 5
+      },
+      "priority": "low",
+      "rationale": "5 winning posts at p75 ER 0.003 from 3 competitors. No producer covers behind_scenes/single_image in REGISTRY.md.",
+      "data_sources_needed": [
+        "broker journals",
+        "FUB pipeline (anonymized)"
+      ],
+      "similar_existing_producer": "video_production_skills/listing_reveal"
+    }
+  ],
+  "top_5_winners": [
+    {
+      "topic": "agent_brand",
+      "format": "reel",
+      "median_engagement_rate": 0.00104018224353975,
+      "p75_engagement_rate": 0.0982330637007078,
+      "post_count": 6,
+      "top_creators": [
+        {
+          "competitor_id": "glennda_baker",
+          "post_url": "https://www.tiktok.com/@offerpad/video/7355527044639231274",
+          "engagement_rate": 0.0982330637007078
+        },
+        {
+          "competitor_id": "offerpad",
+          "post_url": "https://www.tiktok.com/@offerpad/video/7361048842399124779",
+          "engagement_rate": 0.0982330637007078
+        },
+        {
+          "competitor_id": "ryan_serhant",
+          "post_url": "https://www.tiktok.com/@tomferry/video/7603400331514350862",
+          "engagement_rate": 0.0982330637007078
+        },
+        {
+          "competitor_id": "sothebys_corp",
+          "post_url": "https://www.tiktok.com/@glenndabaker/video/7610488662203157791",
+          "engagement_rate": 0.0982330637007078
+        },
+        {
+          "competitor_id": "tom_ferry",
+          "post_url": "https://www.tiktok.com/@sothebysrealty/video/7629089667748531469",
+          "engagement_rate": 0.0982330637007078
+        }
+      ],
+      "exemplar_caption": "https://www.tiktok.com/@offerpad/video/7355527044639231274"
+    },
+    {
+      "topic": "other",
+      "format": "reel",
+      "median_engagement_rate": 0.000861276986678916,
+      "p75_engagement_rate": 0.00555461538461538,
+      "post_count": 81,
+      "top_creators": [
+        {
+          "competitor_id": "chad_carroll",
+          "post_url": "https://www.tiktok.com/@sothebysrealty/video/7239454407287524654",
+          "engagement_rate": 0.00555461538461538
+        },
+        {
+          "competitor_id": "compass_corp",
+          "post_url": "https://www.tiktok.com/@ryanserhant/video/7506951442171694378",
+          "engagement_rate": 0.00555461538461538
+        },
+        {
+          "competitor_id": "glennda_baker",
+          "post_url": "https://www.tiktok.com/@glenndabaker/video/6962094027445619973",
+          "engagement_rate": 0.00555461538461538
+        },
+        {
+          "competitor_id": "ktvz",
+          "post_url": "https://www.tiktok.com/@glenndabaker/video/7087238812644035883",
+          "engagement_rate": 0.00555461538461538
+        },
+        {
+          "competitor_id": "madison_sutton",
+          "post_url": "https://www.tiktok.com/@ryanserhant/video/7412296295760612651",
+          "engagement_rate": 0.00555461538461538
+        }
+      ],
+      "exemplar_caption": "https://www.tiktok.com/@sothebysrealty/video/7239454407287524654"
+    },
+    {
+      "topic": "behind_scenes",
+      "format": "single_image",
+      "median_engagement_rate": 0.00222766763198931,
+      "p75_engagement_rate": 0.00311873468478503,
+      "post_count": 5,
+      "top_creators": [
+        {
+          "competitor_id": "compass_corp",
+          "post_url": "https://www.instagram.com/p/DTtSIfUjrG5/",
+          "engagement_rate": 0.00311873468478503
+        },
+        {
+          "competitor_id": "offerpad",
+          "post_url": "https://www.instagram.com/p/DIPDreqqP5o/",
+          "engagement_rate": 0.00311873468478503
+        },
+        {
+          "competitor_id": "ryan_serhant",
+          "post_url": "https://www.instagram.com/p/DH9SlNxRwrZ/",
+          "engagement_rate": 0.00311873468478503
+        },
+        {
+          "competitor_id": "unknown",
+          "post_url": "https://www.instagram.com/p/DHrGtDuKsoM/",
+          "engagement_rate": 0.00311873468478503
+        },
+        {
+          "competitor_id": "unknown",
+          "post_url": "https://www.instagram.com/p/DYFn6ePEfCW/",
+          "engagement_rate": 0.00311873468478503
+        }
+      ],
+      "exemplar_caption": "https://www.instagram.com/p/DTtSIfUjrG5/"
+    },
+    {
+      "topic": "other",
+      "format": "single_image",
+      "median_engagement_rate": 0.00126779304208367,
+      "p75_engagement_rate": 0.00267320115838717,
+      "post_count": 56,
+      "top_creators": [
+        {
+          "competitor_id": "chad_carroll",
+          "post_url": "https://www.instagram.com/p/DKCfYT9OhQ0/",
+          "engagement_rate": 0.00267320115838717
+        },
+        {
+          "competitor_id": "compass_corp",
+          "post_url": "https://www.instagram.com/p/DQ4OczJEbKH/",
+          "engagement_rate": 0.00267320115838717
+        },
+        {
+          "competitor_id": "glennda_baker",
+          "post_url": "https://www.instagram.com/p/DYDONuGGeGk/",
+          "engagement_rate": 0.00267320115838717
+        },
+        {
+          "competitor_id": "offerpad",
+          "post_url": "https://www.instagram.com/p/DYIR9_iEZYa/",
+          "engagement_rate": 0.00267320115838717
+        },
+        {
+          "competitor_id": "opendoor",
+          "post_url": "https://www.instagram.com/p/DYUfAystGY1/",
+          "engagement_rate": 0.00267320115838717
+        }
+      ],
+      "exemplar_caption": "https://www.instagram.com/p/DKCfYT9OhQ0/"
+    },
+    {
+      "topic": "agent_brand",
+      "format": "single_image",
+      "median_engagement_rate": 0.00120762888315149,
+      "p75_engagement_rate": 0.00217178644276111,
+      "post_count": 7,
+      "top_creators": [
+        {
+          "competitor_id": "chad_carroll",
+          "post_url": "https://www.instagram.com/p/DW80s_-EmEn/",
+          "engagement_rate": 0.00217178644276111
+        },
+        {
+          "competitor_id": "compass_corp",
+          "post_url": "https://www.instagram.com/p/DYR7krAEt1v/",
+          "engagement_rate": 0.00217178644276111
+        },
+        {
+          "competitor_id": "offerpad",
+          "post_url": "https://www.instagram.com/p/DHtMl1KM1hs/",
+          "engagement_rate": 0.00217178644276111
+        },
+        {
+          "competitor_id": "opendoor",
+          "post_url": "https://www.instagram.com/p/DQsMl9bjvNo/",
+          "engagement_rate": 0.00217178644276111
+        },
+        {
+          "competitor_id": "unknown",
+          "post_url": "https://www.instagram.com/p/DYXDc2_p83B/",
+          "engagement_rate": 0.00217178644276111
+        }
+      ],
+      "exemplar_caption": "https://www.instagram.com/p/DW80s_-EmEn/"
+    }
+  ],
+  "findings_action_id": "9062ab1c-9c7d-4053-86ad-a0bb33efd6c5",
+  "report_path": "docs/marketing-brain/audit-2026-05-15.md",
+  "errors": [
+    "cascade_hasson_sothebys/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "windermere_central_oregon/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "cascade_sothebys/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "coldwell_banker_bain_bend/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "john_l_scott_bend/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "remax_key_properties_bend/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "opendoor/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "offerpad/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "ryan_serhant/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "compass_corp/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "sothebys_corp/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "tom_ferry/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "visit_bend/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "source_weekly/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "cascade_business_news/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "ktvz/fb_ad_library: Apify start apify/facebook-ads-scraper failed (400): {\n  \"error\": {\n    \"type\": \"invalid-input\",\n    \"message\": \"Input is not valid: Field input.startUrls is required\"\n  }\n}",
+    "Classification batch 200: canceling statement due to statement timeout"
+  ]
+}

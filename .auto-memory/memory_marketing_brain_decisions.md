@@ -565,3 +565,69 @@ Vercel cron `*/2 * * * *` is firing `/api/cron/marketing-inbox-poll` in producti
 ### Auto reload remains DISABLED
 
 `Auto reload is disabled. Enable auto reload to avoid API interruptions when credits are fully spent.` Left it off. $20 buffer should last the inbox >6 months at current volume; future top-ups land in Matt's queue, not automatic.
+
+---
+
+## 2026-05-15 — First full competitor audit run complete
+
+### Audit ID: `2026-05-15-v2`
+
+Full audit ran from Claude Code audit-agent session. Scripted via `scripts/run-audit-2026-05-15.mjs`.
+
+**Scope:**
+- 19 viable competitors (filtered from 27 — excluded 8 all-null-handle placeholders)
+- 5 platforms attempted: instagram, tiktok, google_serp, google_maps_reviews, fb_ad_library
+- 180-day window
+- Apify cost: **$0.05** (well under $40 ceiling — actors are very cheap at this scale)
+- Duration: ~16 minutes
+
+**Results:**
+- 442 rows inserted into `competitor_intel`
+- 220 posts classified into `content_classification` (50 failed on Supabase statement timeout in batch 200-250; re-run will fill gaps next quarter)
+- 7 topic×format combos qualified for `audit_winners` view (>=5 posts)
+- `analyze:audit_findings` action row: `9062ab1c-9c7d-4053-86ad-a0bb33efd6c5` (status=pending, awaiting Matt review)
+- Markdown reports: `docs/marketing-brain/audit-2026-05-15.md` + `docs/marketing-brain/audit-LATEST.md`
+
+**Key findings (top winners by p75 engagement rate):**
+
+| Topic | Format | Posts | p75 ER | Notable competitors |
+|---|---|---|---|---|
+| agent_brand | reel | 6 | 9.8% | glennda_baker, offerpad, ryan_serhant, sothebys_corp, tom_ferry |
+| other (unclassified) | reel | 81 | 0.56% | 11 competitors |
+| behind_scenes | single_image | 5 | 0.31% | compass_corp, offerpad, ryan_serhant |
+| other (unclassified) | single_image | 56 | 0.27% | 8 competitors |
+| agent_brand | single_image | 7 | 0.22% | chad_carroll, compass_corp, offerpad, opendoor |
+| listing | single_image | 16 | 0.18% | chad_carroll, compass_corp, offerpad, opendoor, sothebys_corp |
+| listing | reel | 31 | 0.03% | chad_carroll, glennda_baker, ryan_serhant, sothebys_corp |
+
+**Missing producers identified (4 combos not covered by existing REGISTRY.md):**
+1. `agent-brand-reel` — LOW priority (only 6 posts, but p75 ER 9.8% is highest in corpus)
+2. `behind-scenes-single_image` — LOW priority (5 posts)
+3. `other-reel` — HIGH priority (81 posts, 11 competitors)
+4. `other-single_image` — HIGH priority (56 posts, 8 competitors)
+
+Note: `other/reel` and `other/single_image` are "other" because the classifier couldn't assign a topic with confidence ≥0.6 — these posts likely lack strong keyword signals. Deeper inspection of the sample URLs will reveal actual topics for next quarter's taxonomy refinement.
+
+**Existing producers validated:**
+- `video_production_skills/listing_reveal` — confirmed by listing/reel: 31 posts across 4 competitors
+- `social_media_skills/flyer-design` and `social_media_skills/instagram-carousel` — confirmed by listing/single_image and agent_brand/single_image
+
+**Known issues / gotchas from this run:**
+
+1. **FB Ads actor broken** (`apify/facebook-ads-scraper`): Actor now requires `startUrls` field — different from `adLibraryUrls` used in `competitor-recon.ts`. All 19 FB scrape attempts failed with 400. Zero FB Ad Library data in corpus. Fix before next run: verify actor input schema at apify.com before re-wiring. Updated `marketing_brain_skills/tools_registry/apify/SKILL.md` with this finding.
+
+2. **Classification batch timeout**: Supabase statement timeout killed the batch at rows 200-250. 220 of 270 post rows got classified; 50 skipped. Not critical — the 220 classified rows produced 7 qualifying winners. Fix for next run: reduce upsert batch size from 50 to 25, or add explicit statement timeout override in the client.
+
+3. **Instagram profile scraper returns limited posts**: Many scrapers returned only 1 row (the profile_metric row, no posts). This happens when the actor can't access the profile's posts due to anti-scraping or the account has very few recent posts. Accounts like `@windermerecentraloregon`, `@sourceweekly`, `@cascadebusinessnews`, `@ktvz` each returned only the profile-level row. The corpus is dominated by the national content winners (ryan_serhant, glennda_baker, opendoor, etc.) who have active IG + TikTok.
+
+4. **Local competitors (Bend brokerages) have almost no social content**: The 8 local Bend competitors collectively contributed very few post-type rows. Their IG profiles either have no recent posts or Apify couldn't access them. This is itself a finding: local competition on social is low. The national content winners are setting the format benchmark.
+
+5. **`audit_id` uniqueness constraint**: The stale `2026-05-15` run (from a prior agent session) had to be killed before this run could insert with a new `audit_id`. Used `2026-05-15-v2` as the ID. Future runs should check for existing running/killed runs before inserting.
+
+### Next-session queue after audit
+
+1. **Matt review** — producer authoring session queries `marketing_brain_actions WHERE action_type='analyze:audit_findings' AND status='approved'`. Matt needs to set the row to `approved` first via: `UPDATE marketing_brain_actions SET status='approved' WHERE id='9062ab1c-9c7d-4053-86ad-a0bb33efd6c5'`
+2. **FB Ads actor fix** — re-verify `apify/facebook-ads-scraper` input schema at apify.com; update `competitor-recon.ts` `scrapeFacebookAdLibrary()` before next quarterly run
+3. **Taxonomy refinement** — `other/reel` (81 posts) and `other/single_image` (56 posts) are the largest buckets. Inspect sample URLs and add keyword patterns to the classifier for the topics that dominate these (likely lifestyle/brand/testimonial content)
+4. **Classification timeout fix** — reduce upsert batch to 25 rows; add try/catch per row as fallback
+5. **Local competitor handle verification** — most Bend brokerages returned 0-1 posts. Verify their IG handles manually; many may have changed or the `@` prefix stripping in the script is doubling (handle already had `@`, script strips it, but the actor still returned empty)
