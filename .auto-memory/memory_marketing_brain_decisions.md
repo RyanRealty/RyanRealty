@@ -251,6 +251,51 @@ populated.
 1. ~~**Item 1 — site:\* signal wiring**~~: **SHIPPED** in commit `4fc9e7a3` (2026-05-14). audit-website seo+test_new_creative emits `site:meta_update`; audit-website page+audit_landing_page emits `site:cta_update`; audit-website funnel+audit_landing_page emits `site:cta_update` on the upstream page. GeneratedBrief gained optional `target` + `payload_override` fields. formatRoute now includes 8 site:\* entries. Brain producer coverage 9/21 → 11/21. audit-ads budget/tracking/targeting and audit-website traffic are still dropped (next session).
 2. ~~**Item 2 — cadence + active-listing awareness**~~: **SHIPPED** in commit `6dae73df` (2026-05-14). gatherCadenceGaps() reads marketing_channel_daily for last-7d posts per channel, compares against locked CADENCE_TARGETS (IG/TT 5/wk, Meta Page 4/wk, YouTube 2/wk, LinkedIn 3/wk, X 5/wk, GBP 2/wk), emits cadence opportunities with severity scaling by staleness. gatherActiveListingNeeds() queries top-20 active listings by ListPrice, filters those covered in last 14 days, emits the top-3 uncovered. Handlers route cadence → channel-matched default format (market_data_short on social, ig_carousel on LinkedIn, gbp_post on GBP) and listing_coverage → content:list_kit orchestrator. Brain producer coverage 11/21 → 12/21 (adds list-kit). ops:fub_\* wiring from audit-crm was NOT done — moved to next item.
 
+## 2026-05-15 evening — first competitive audit ran + feedback loop closed
+
+**Audit `2026-05-15-v2` complete** (commit `190f68e7` by background sub-agent):
+- 19 viable competitors scraped across IG, TikTok, GMB reviews, Google SERP (FB Ads actor schema-broken; see below)
+- 442 rows in `competitor_intel`, 220 classified via keyword-heuristic reasoning
+- 7 topic × format winners (`audit_winners` view; threshold = post_count ≥ 5)
+- Action row `9062ab1c-9c7d-4053-86ad-a0bb33efd6c5` written to `marketing_brain_actions` with `action_type='analyze:audit_findings'`, status='pending'
+- Markdown report at `docs/marketing-brain/audit-2026-05-15.md` + `audit-LATEST.md`
+- **Apify cost: $0.05** (800× under the $40 budget cap because the corpus was thin)
+- Classifier cost: $0 (used Claude Code subscription via Sonnet sub-agent reasoning instead of Anthropic API)
+
+**Top winner: `agent_brand/reel` at 9.8% p75 ER** — face-on-camera reels from Glennda Baker, Serhant, Tom Ferry, Sotheby's, Offerpad. This is the standout combo in the corpus.
+
+**Counter-data:** `listing/reel` (existing `listing_reveal` producer) hit only **0.03% p75 ER** — confirms headless listing reels underperform vs agent-voice content. The brand-first directive in CLAUDE.md memory is validated.
+
+**Strategic finding:** Local Bend competitors (cascade_hasson, compass_bend, windermere_central_oregon, etc.) have nearly zero IG/TikTok content. The competitive set on social is entirely national creators. **This is an opportunity, not a threat** — Ryan Realty can own social locally without competing against well-resourced local incumbents.
+
+**Top 5 missing producers surfaced (Producer Authoring queue):**
+
+| Priority | Proposed skill | Topic × Format | Evidence |
+|---|---|---|---|
+| HIGH | `other-reel` | other × reel | 81 posts, 11 competitors, p75 ER 0.56% |
+| HIGH | `other-single_image` | other × single_image | 56 posts, 8 competitors, p75 ER 0.27% |
+| LOW | `agent-brand-reel` | agent_brand × reel | 6 posts, 5 competitors, **p75 ER 9.8%** (highest in corpus) |
+| LOW | `behind-scenes-single_image` | behind_scenes × single_image | 5 posts, 3 competitors |
+
+Note: the "other" bucket is high volume because the keyword-heuristic classifier defaulted unmatched posts there. A real LLM classifier pass (with `ANTHROPIC_API_KEY` wired) will reduce "other" and increase precision in the next audit run. The agent_brand_reel signal is strong despite tiny sample (6 posts) — worth prioritizing as a producer to author NOW.
+
+**Feedback loop closed** (commit `b3ab2570` from this session):
+- `generate-briefs.ts gatherSignals()` now reads the latest analyze:audit_findings row
+- New `pickAuditWinningFormat()` helper translates audit's (topic, Format) → brain format string when sample_size ≥ 5
+- 5 mapOpportunityToBriefs handlers updated to consult the winners map: audit-crm north_star, audit-ads capitalize_on_spike, competitor format_gap, diagnose capitalize_on_spike, cadence
+- `daily-digest.ts` surfaces missing producers in markdown + short form
+- Dashboard adds "Latest audit findings" section with two cards (top 5 gaps, top 5 winners)
+- All read-only against marketing_brain_actions; no collision with the audit agent's write
+
+**Audit-agent issues to fix before the 6-month re-run:**
+1. `apify/facebook-ads-scraper` actor changed input schema — needs `startUrls` field now. All 19 FB runs returned 400. Documented in `tools_registry/apify/SKILL.md`.
+2. 50 classification rows skipped due to Supabase statement timeout on batch 200-250. Fix: reduce upsert batch from 50 to 25.
+3. `audit_id` uniqueness conflict on retry — the agent used `2026-05-15-v2` suffix as workaround. Future runs should check before inserting OR use timestamp-suffixed audit_ids.
+
+**Matt's action:** `UPDATE marketing_brain_actions SET status='approved' WHERE id='9062ab1c-9c7d-4053-86ad-a0bb33efd6c5'` once he's reviewed the markdown report. That transition hands off to Producer Authoring per `marketing_brain_skills/audit-findings/PROTOCOL.md`.
+
+---
+
 ## 2026-05-15 — Both API blockers unblocked end-to-end
 
 Per Matt's full-permission directive, drove his Mac Chrome via the Claude_in_Chrome MCP to acquire and install both missing API keys without his manual involvement.
