@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.214.0 (2026-05-15)
+
+### Features
+- feat(seller-lp): route to canonical CMA producer instead of inline auto-CMA
+
+---
+
+
 ## v1.213.0 (2026-05-15)
 
 ### Features
