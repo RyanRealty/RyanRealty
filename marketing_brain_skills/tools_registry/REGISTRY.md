@@ -4,7 +4,7 @@ The brain and its producers read this file at decision-time to know which extern
 
 A producer that needs to scrape an Instagram profile looks here for the canonical Apify actor. A capability skill that needs to TTS a script looks here for the canonical voice. A site producer that needs to push a blog post looks here for the AgentFire pattern. **Editing a tool's auth/cost/usage inline inside a producer is non-compliant — update this registry instead.**
 
-**Last audited:** 2026-05-14. (apify, anthropic-classifier, supabase, replicate, spark_mls, meta_graph, resend, ga4, gsc, youtube_data, google_business_profile, follow_up_boss — 12 of 33 authored.)
+**Last audited:** 2026-05-15. (apify, anthropic-classifier, supabase, replicate, spark_mls, meta_graph, resend, ga4, gsc, youtube_data, google_business_profile, follow_up_boss, tiktok_api, x_api, agentfire_wordpress, linkedin_api — 16 of 33 authored.)
 **Canonical source for each tool:** the `SKILL.md` at the listed path.
 **Template for new tool skills:** use [`video_production_skills/elevenlabs_voice/SKILL.md`](../../video_production_skills/elevenlabs_voice/SKILL.md) as the structural reference.
 
@@ -47,9 +47,9 @@ First-party APIs Ryan Realty owns or pays for. These are NOT scraping targets �
 | meta_graph | [`marketing_brain_skills/tools_registry/meta-graph/`](meta-graph/SKILL.md) | ✅ | Meta Graph API — long-lived page token with full publishing scopes; ads + page + IG insights; v25.0 pinned; campaign-status-on-insights gotcha documented | snapshot-channels-meta, audit-ads, every publisher target Meta |
 | google_business_profile | [`marketing_brain_skills/tools_registry/gbp/`](gbp/SKILL.md) | ✅ | GBP Performance API (NOT deprecated Insights API); locked metric `call_clicks`; user OAuth token (not service-account); date-integer gotcha; post + photo publisher via v4 My Business API | snapshot-channels-gbp, ops-reputation |
 | youtube_data | [`marketing_brain_skills/tools_registry/youtube-data/`](youtube-data/SKILL.md) | ✅ | YouTube Data API v3 (channel metadata, video list, upload) + Analytics API v2 (views, watch time, average_view_percentage, CTR); two-API architecture; scope + impressions-at-video-dimension gotchas documented | snapshot-channels-youtube, diagnose-performance, generate-briefs, future publisher |
-| tiktok_api | `marketing_brain_skills/tools_registry/tiktok-api/` | 📝 | TikTok v2 API; fields param goes in QUERY string not body; open_id required | snapshot-channels-tiktok, future publisher |
-| x_api | `marketing_brain_skills/tools_registry/x-api/` | 📝 | X / Twitter v2 API; aggressive rate limits on free/basic tier — cache user_id | snapshot-channels-x, future publisher |
-| linkedin_api | `marketing_brain_skills/tools_registry/linkedin-api/` | 📝 | LinkedIn API; Community Management API is mutually exclusive with Share-on-LinkedIn on same app — pending dev-app decision | snapshot-channels-linkedin (blocked), future publisher |
+| tiktok_api | [`marketing_brain_skills/tools_registry/tiktok-api/`](tiktok-api/SKILL.md) | ✅ | TikTok Open Platform v2; own-account video list + profile metrics; fields-in-query-string gotcha; open_id backfill logic; tier-gated completion_rate; Content Posting API scaffolded (not live) | snapshot-channels-tiktok, future publisher |
+| x_api | [`marketing_brain_skills/tools_registry/x-api/`](x-api/SKILL.md) | ✅ | X / Twitter v2 API; OAuth 2.0 PKCE; replies is north-star metric (13.5× weight); /2/users/me aggressively rate-limited on Free/Basic — call once per run, not per day | snapshot-channels-x, future publisher |
+| linkedin_api | [`marketing_brain_skills/tools_registry/linkedin-api/`](linkedin-api/SKILL.md) | ✅ | LinkedIn Marketing API; Community Management API mutually exclusive with Share-on-LinkedIn on current dev app — dev-app architecture decision pending Matt before org analytics unblock; publishing via `/rest/posts` works today | snapshot-channels-linkedin (analytics blocked; followers_count live), `/api/social/publish` (publishing live) |
 
 ---
 
@@ -76,7 +76,7 @@ Tools that push approved content to its destination platform.
 | tiktok_publisher | `marketing_brain_skills/tools_registry/tiktok-publisher/` | 📝 | TikTok Content Posting API; sandbox + production flow differ | post_scheduler |
 | x_publisher | `marketing_brain_skills/tools_registry/x-publisher/` | 📝 | X v2 API tweet creation; free/basic tier limits apply | post_scheduler |
 | gbp_publisher | `marketing_brain_skills/tools_registry/gbp-publisher/` | 📝 | GBP Posts API for "What's New" + listings updates | ops-reputation |
-| agentfire_wordpress | `marketing_brain_skills/tools_registry/agentfire-wordpress/` | 📝 | WordPress REST API on ryan-realty.com (AgentFire-hosted); blog post publishing | blog-post, site-edit (limited) |
+| agentfire_wordpress | [`marketing_brain_skills/tools_registry/agentfire-wordpress/`](agentfire-wordpress/SKILL.md) | ✅ | WordPress REST API on ryan-realty.com (AgentFire-hosted); Basic auth via Application Password (not login password); draft + publish lifecycle; markdown-to-HTML required; never touch AgentFire IDX custom post types | blog-post, site-edit (limited) |
 | resend | [`marketing_brain_skills/tools_registry/resend/`](resend/SKILL.md) | ✅ | Transactional + marketing email; mail.ryan-realty.com **pending DNS verification** (full SPF/DKIM/DMARC checklist in SKILL.md) | ops-email-send (BLOCKED until DNS verified), comms-matt-alert (email tier), cma-delivery |
 | gmail | `marketing_brain_skills/tools_registry/gmail/` | 📝 | Gmail API draft creation (Matt's account) for personalized outbound | comms-matt-alert (medium/low tier), ops-email-send fallback |
 | imessage | `marketing_brain_skills/tools_registry/imessage/` | 📝 | iMessage MCP server; for critical/high alerts to Matt directly | comms-matt-alert (critical/high tier) |
@@ -136,13 +136,11 @@ Tools producers do not call directly but depend on for operation.
 
 ---
 
-## Status snapshot — 2026-05-14 (end of session)
+## Status snapshot — 2026-05-15 (end of session)
 
-- **Authored:** 12 (apify, anthropic-classifier, supabase, replicate, spark_mls, meta_graph, resend, ga4, gsc, youtube_data, google_business_profile, follow_up_boss)
+- **Authored:** 16 (apify, anthropic-classifier, supabase, replicate, spark_mls, meta_graph, resend, ga4, gsc, youtube_data, google_business_profile, follow_up_boss, tiktok_api, x_api, agentfire_wordpress, linkedin_api)
 - **Referenced (existing skills):** 3 (elevenlabs_voice, asset-library, media-sourcing)
-- **Stub:** 18 — the next session that touches a stub tool should author its SKILL.md before producers start depending on it inline.
+- **Stub:** 14 — the next session that touches a stub tool should author its SKILL.md before producers start depending on it inline.
 - **Authoring priority for next pass** (order by dependency depth):
-  1. agentfire_wordpress — blog publishing layer; needs WordPress REST API documentation
-  2. linkedin_api — pending dev-app architecture decision (Community Management vs Share)
-  3. tiktok_api — v2 query-param vs body gotcha; open_id requirement
-  4. x_api — Free/Basic tier rate-limit pattern; cache user_id
+  1. websearch — blog-post and news-video producers depend on it for topic sourcing
+  2. remotion — every video producer depends on the canonical render command
