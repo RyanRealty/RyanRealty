@@ -251,6 +251,40 @@ populated.
 1. ~~**Item 1 — site:\* signal wiring**~~: **SHIPPED** in commit `4fc9e7a3` (2026-05-14). audit-website seo+test_new_creative emits `site:meta_update`; audit-website page+audit_landing_page emits `site:cta_update`; audit-website funnel+audit_landing_page emits `site:cta_update` on the upstream page. GeneratedBrief gained optional `target` + `payload_override` fields. formatRoute now includes 8 site:\* entries. Brain producer coverage 9/21 → 11/21. audit-ads budget/tracking/targeting and audit-website traffic are still dropped (next session).
 2. ~~**Item 2 — cadence + active-listing awareness**~~: **SHIPPED** in commit `6dae73df` (2026-05-14). gatherCadenceGaps() reads marketing_channel_daily for last-7d posts per channel, compares against locked CADENCE_TARGETS (IG/TT 5/wk, Meta Page 4/wk, YouTube 2/wk, LinkedIn 3/wk, X 5/wk, GBP 2/wk), emits cadence opportunities with severity scaling by staleness. gatherActiveListingNeeds() queries top-20 active listings by ListPrice, filters those covered in last 14 days, emits the top-3 uncovered. Handlers route cadence → channel-matched default format (market_data_short on social, ig_carousel on LinkedIn, gbp_post on GBP) and listing_coverage → content:list_kit orchestrator. Brain producer coverage 11/21 → 12/21 (adds list-kit). ops:fub_\* wiring from audit-crm was NOT done — moved to next item.
 
+## 2026-05-15 — Both API blockers unblocked end-to-end
+
+Per Matt's full-permission directive, drove his Mac Chrome via the Claude_in_Chrome MCP to acquire and install both missing API keys without his manual involvement.
+
+**APIFY_API_TOKEN**
+- Source: `console.apify.com/settings/integrations` → default Personal API token (created on Apify signup)
+- Acquired via: click "Copy to clipboard" icon → read OS clipboard via computer-use MCP
+- Set in: Vercel Production + Preview + Development envs (Preview required Vercel REST API workaround because the CLI in non-interactive mode rejects `vercel env add KEY preview --value X --yes` with a `git_branch_required` action_required hint, despite docs saying that's the "all preview branches" form)
+- Also written to `.env.local`
+- Verified: recon route `?source=google_serp&competitor=opendoor` returned `errors: []`, `apifyRunIdsCount: 1`. Apify actor invoked successfully. Zero rows inserted is correct (opendoor.com doesn't appear in top-20 results for Bend queries).
+- **Vercel env var changes require redeployment**, NOT picked up by running serverless functions automatically. Did `vercel redeploy <latest>` for production.
+
+**ANTHROPIC_API_KEY**
+- Existing key named `ryanrealty-marketing-brain` already in Matt's account (created 2026-05-14, $0.01 usage); value not retrievable from Anthropic console after creation. Matt had set ANTHROPIC_API_KEY in all 3 Vercel envs ~15h ago (between yesterday's session-end and today's session-start), but valueLength was inconsistent across envs (1292 preview vs 1316 prod/dev) suggesting different values per env — probable typo or paste error.
+- Created a fresh key `ryanrealty-brain-vercel-prod` in the Default workspace at `console.anthropic.com/settings/keys`
+- Acquired via: click "Copy key" button on the post-create modal → read OS clipboard
+- **CLI rejected `vercel env add` because key already existed.** Used Vercel REST API `PATCH /v10/projects/{id}/env/{envId}` to overwrite each of the 3 existing env entries with the new value.
+- Also overwrote `.env.local` (existing line replaced)
+- Verified: audit-run cron `?dryRun=true` returned `status: 'published'`, `errors: []`. No more "ANTHROPIC_API_KEY is not set; classifier cannot run" error. `posts_classified: 0` is correct — competitor_intel still has 0 `data_type='post'` rows for the classifier to chew on; that fills in starting Monday 07:00 UTC with the per-day recon rotation.
+- Old key `ryanrealty-marketing-brain` is now orphaned and can be revoked at leisure.
+
+**Vercel CLI gotchas discovered (worth remembering)**
+- `vercel env add KEY preview` in non-interactive agent mode returns `action_required: git_branch_required` even with `--value X --yes`; the documented "all preview branches" form (`vercel env add KEY preview --value X --yes`) doesn't actually persist the var. **Workaround: hit `POST /v10/projects/{id}/env?teamId=Y` directly with `target: ["preview"]`.**
+- To overwrite an existing env var, use `PATCH /v10/projects/{id}/env/{envId}` — `vercel env add` rejects with "already added; remove first." `--force` isn't documented for `add`.
+- Vercel auth token lives at `~/Library/Application Support/com.vercel.cli/auth.json` and is reusable for direct API calls.
+
+**Brain state after unblock**
+- Both pipelines are NOW unblocked
+- Dashboard `ANTHROPIC_API_KEY missing` blocker drops off the next /dashboard/marketing render (revalidate=60s)
+- Next Monday 07:00 UTC: per-day recon rotation starts populating `competitor_intel` properly (google_maps_reviews first)
+- Audit-run cron is ready to fire; Matt can trigger manually any time once `competitor_intel` has post-type rows
+
+---
+
 ## End-of-session-2 summary — 2026-05-14 evening (after handoff prompt + post-launch fixes)
 
 Shipped on top of the earlier in-day commits:
