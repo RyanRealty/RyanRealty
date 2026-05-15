@@ -73,10 +73,18 @@ RESEARCH → STORYBOARD → BUILD → QA PASS → MATT REVIEW → PUBLISH → PO
 | postcard / farm mailer / direct mail postcard / neighbor postcard | `postcard-farm-mailer` | `social_media_skills/postcard-farm-mailer/SKILL.md` |
 | yard sign / sign rider / yard sign rider | `yard-sign-rider` | `social_media_skills/yard-sign-rider/SKILL.md` |
 | neighbor note / neighbor outreach / handwritten neighbor card | `neighbor-outreach-note` | `social_media_skills/neighbor-outreach-note/SKILL.md` |
+| CMA / comparative market analysis / "what's this property worth" / "pricing opinion on" | `cma` | `marketing_brain_skills/producers/cma/SKILL.md` |
 
 **Retired / archive only (do not route to):** `market_report_video` is canonical only when
 Matt explicitly requests the ffmpeg stat-card path. `news_video` (underscore) is the avatar
 path — use `news-video` (hyphen) for standard news clips.
+
+**Document deliverables (CMA):** The content engine routes a CMA to the
+`cma` producer, but a CMA does not run the video/social storyboard or
+QA branches. The CMA producer owns its own pipeline (HTML build → PDF
+render → 25 MB size check → Matt review → finalize + repository write).
+The content engine's role is route-and-respect, not orchestrate. See
+`marketing_brain_skills/producers/cma/SKILL.md` for the full recipe.
 
 ## Procedure
 
