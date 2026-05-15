@@ -461,12 +461,17 @@ async function findPropertyByAddress(params: {
   // 503s (e.g. schema-cache reload mid-call) don't get swallowed as "no
   // match." A genuine 0-row result is fast; only retry when the SDK reports
   // an error.
+  //
+  // CRITICAL: do NOT include `city ILIKE 'Bend'` in the server-side filter.
+  // properties has no functional index on city LIKE patterns, so combining
+  // it with eq(postal_code) + eq(street_number) confuses the planner into
+  // a seq scan over ~8k rows that hits statement_timeout under load. The
+  // (postal_code, street_number) pair is already unique enough; we re-check
+  // city/state in JS below.
   function buildQuery() {
     let q = sb
       .from('properties')
-      .select('id, unparsed_address, street_number, street_name')
-      .ilike('city', city)
-    if (params.state?.trim()) q = q.ilike('state', params.state.trim())
+      .select('id, unparsed_address, street_number, street_name, city, state, postal_code')
     if (params.postalCode?.trim()) {
       q = q.eq('postal_code', params.postalCode.trim().slice(0, 20))
     }
@@ -495,28 +500,44 @@ async function findPropertyByAddress(params: {
   }
   if (!data.length) return null
 
+  // JS-side post-filter for city/state (we couldn't push these to the server
+  // without confusing the planner — see buildQuery comment above). Cheap on
+  // 1-50 rows.
+  const wantState = params.state?.trim().toLowerCase() ?? null
+  const wantCity = city.toLowerCase()
+  const cityFiltered = (data as Array<{
+    id: string
+    unparsed_address?: string
+    street_name?: string
+    city?: string | null
+    state?: string | null
+  }>).filter((row) => {
+    const rowCity = (row.city ?? '').toLowerCase()
+    const rowState = (row.state ?? '').toLowerCase()
+    if (rowCity && rowCity !== wantCity) return false
+    if (wantState && rowState && rowState !== wantState) return false
+    return true
+  })
+  if (cityFiltered.length === 0) return null
+
   // If we filtered on street_number, that's usually unique enough; return
   // the first hit.
-  if (streetNumber && data.length === 1) {
-    return (data[0] as { id: string }).id
+  if (streetNumber && cityFiltered.length === 1) {
+    return cityFiltered[0]!.id
   }
 
   // Otherwise (or for multiple hits on the same street_number, e.g. unit
   // suffixes), validate by checking each row's full address against the
   // remaining name tokens.
   if (nameParts.length === 0) {
-    return data.length === 1 ? (data[0] as { id: string }).id : null
+    return cityFiltered.length === 1 ? cityFiltered[0]!.id : null
   }
-  for (const row of data as Array<{
-    id: string
-    unparsed_address?: string
-    street_name?: string
-  }>) {
+  for (const row of cityFiltered) {
     const addr = ((row.unparsed_address ?? '') + ' ' + (row.street_name ?? ''))
       .toLowerCase()
     if (nameParts.every((p) => addr.includes(p))) return row.id
   }
-  return data.length === 1 ? (data[0] as { id: string }).id : null
+  return cityFiltered.length === 1 ? cityFiltered[0]!.id : null
 }
 
 type AssignedBroker = {
