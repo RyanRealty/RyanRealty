@@ -33,6 +33,8 @@ export type CMASubject = {
   communityId: string | null
   listingKey: string | null
   vowAvmDisplayYn: boolean
+  latitude: number | null
+  longitude: number | null
 }
 
 export type CMACompRow = {
@@ -182,12 +184,12 @@ async function getSubject(
 ): Promise<CMASubject | null> {
   const { data: prop, error: propErr } = await supabase
     .from('properties')
-    .select('id, unparsed_address, community_id, street_number, street_name, city, postal_code')
+    .select('id, unparsed_address, community_id, street_number, street_name, city, postal_code, latitude, longitude')
     .eq('id', propertyId)
     .single()
   if (propErr || !prop) return null
 
-  const p = prop as { id: string; unparsed_address: string; community_id?: string; street_number?: string; city?: string; postal_code?: string }
+  const p = prop as { id: string; unparsed_address: string; community_id?: string; street_number?: string; city?: string; postal_code?: string; latitude?: string | number | null; longitude?: string | number | null }
 
   // Find the matching listing by address. Take the most recently modified
   // record across ALL statuses — Active first if one exists, otherwise the
@@ -248,6 +250,8 @@ async function getSubject(
     communityId: p.community_id ?? null,
     listingKey: listing?.ListingKey != null ? String(listing.ListingKey) : null,
     vowAvmDisplayYn: true, // Always show CMA when available
+    latitude: num(p.latitude),
+    longitude: num(p.longitude),
   }
 }
 
@@ -365,18 +369,123 @@ async function getCompsDirectQuery(
   return results
 }
 
-/** Fetch comp candidates: try RPC first, fall back to direct query. */
+/**
+ * Pull comps via PostGIS distance from subject lat/lng using the
+ * get_cma_comps_by_distance RPC. Each tier widens the search a bit and
+ * optionally falls back to active listings; we stop the moment we have
+ * enough comps (≥ 5).
+ */
+async function getCompsByDistance(
+  supabase: SupabaseClient,
+  subject: CMASubject
+): Promise<CMACompRow[]> {
+  if (subject.latitude == null || subject.longitude == null) return []
+
+  const lotRange = subject.lotAcres != null && subject.lotAcres > 0
+    ? { min: subject.lotAcres / 3, max: subject.lotAcres * 3 }
+    : null
+  const sqftRange = subject.sqft != null && subject.sqft > 0
+    ? { min: subject.sqft * 0.75, max: subject.sqft * 1.25 }
+    : null
+  const yearRange = subject.yearBuilt != null && subject.yearBuilt > 0
+    ? { min: subject.yearBuilt - 15, max: subject.yearBuilt + 15 }
+    : null
+
+  // Tiered concentric search. Keep it sparing — closer comps always win.
+  // Closed-only first (true sold-price signal); only fall back to active
+  // listings if the closed pool is too thin at the widest radius.
+  const tiers: Array<{ miles: number; includeActive: boolean; monthsBack: number }> = [
+    { miles: 2, includeActive: false, monthsBack: 12 },
+    { miles: 4, includeActive: false, monthsBack: 12 },
+    { miles: 7, includeActive: false, monthsBack: 12 },
+    { miles: 4, includeActive: true,  monthsBack: 12 },
+    { miles: 7, includeActive: true,  monthsBack: 18 },
+  ]
+
+  let best: CMACompRow[] = []
+  for (const tier of tiers) {
+    const { data, error } = await supabase.rpc('get_cma_comps_by_distance', {
+      p_lat: subject.latitude,
+      p_lng: subject.longitude,
+      p_radius_meters: tier.miles * 1609.344,
+      p_months_back: tier.monthsBack,
+      p_max_count: 15,
+      p_lot_min: lotRange?.min ?? null,
+      p_lot_max: lotRange?.max ?? null,
+      p_sqft_min: sqftRange?.min ?? null,
+      p_sqft_max: sqftRange?.max ?? null,
+      p_year_min: yearRange?.min ?? null,
+      p_year_max: yearRange?.max ?? null,
+      p_include_active: tier.includeActive,
+    })
+    if (error) {
+      console.warn(`[cma] getCompsByDistance tier ${tier.miles}mi error:`, error.message)
+      continue
+    }
+    const rows = (data as Record<string, unknown>[] | null) ?? []
+    console.warn(
+      `[cma] getCompsByDistance tier ${tier.miles}mi ` +
+        `(closed${tier.includeActive ? '+active' : ''}, ${tier.monthsBack}mo): ${rows.length} hits`
+    )
+    if (rows.length > best.length) {
+      best = rows.map((r) => ({
+        listing_key: String(r.listing_key ?? ''),
+        listing_id: r.listing_id != null ? String(r.listing_id) : null,
+        address: r.address != null ? String(r.address) : null,
+        close_price: num(r.close_price),
+        close_date: r.close_date != null ? String(r.close_date).slice(0, 10) : null,
+        beds_total: num(r.beds_total) != null ? Math.round(Number(r.beds_total)) : null,
+        baths_full: num(r.baths_full),
+        living_area: num(r.living_area),
+        lot_size_acres: num(r.lot_size_acres),
+        year_built: num(r.year_built) != null ? Math.round(Number(r.year_built)) : null,
+        garage_spaces: null,
+        pool_yn: false,
+        property_type: r.property_type != null ? String(r.property_type) : null,
+        distance_miles: num(r.distance_miles) ?? null,
+      }))
+    }
+    if (best.length >= 5) break // good enough — stop expanding
+  }
+  return best
+}
+
+/** Fetch comp candidates: distance-based PostGIS RPC first, fall back to legacy paths. */
 async function getCompCandidates(
   supabase: SupabaseClient,
   propertyId: string,
   communityId: string | null,
   subject: CMASubject
 ): Promise<CMACompRow[]> {
-  // RURAL SUBJECTS bypass the RPC entirely. The get_cma_comps PostGIS
-  // function doesn't surface lot_size_acres, so its 2-mile-radius pick
-  // pulls in-town starters for any Tumalo/Sisters/Powell Butte address —
-  // which the fail-closed lot guard then strips to zero. Going direct
-  // ensures the SQL lot-range filter is what shapes the candidate pool.
+  // Primary path: PostGIS distance from subject lat/lng with concentric
+  // ring expansion. This is the right shape for rural acreage subjects
+  // where "City = 'Bend'" alone leaves Tumalo/Sisters/Redmond comps out.
+  if (subject.latitude != null && subject.longitude != null) {
+    const distanceComps = await getCompsByDistance(supabase, subject)
+    if (distanceComps.length >= 3) return distanceComps.slice(0, 10)
+    // If we got a thin pool, keep it and try to top up via legacy path below
+    if (distanceComps.length > 0) {
+      const seen = new Set(distanceComps.map((c) => c.listing_key))
+      const lotRange = subject.lotAcres != null && subject.lotAcres > 0
+        ? { min: subject.lotAcres / 3, max: subject.lotAcres * 3 }
+        : null
+      const addressParts = subject.address.split(',').map((s) => s.trim())
+      const city = addressParts[1] || addressParts[0] || ''
+      if (city) {
+        const directComps = await getCompsDirectQuery(supabase, city, null, 12, 15, lotRange)
+        for (const c of directComps) {
+          if (!seen.has(c.listing_key)) {
+            seen.add(c.listing_key)
+            distanceComps.push(c)
+          }
+        }
+      }
+      return distanceComps.slice(0, 10)
+    }
+  }
+
+  // Fallback (no subject lat/lng): legacy RPC + city-scoped direct query.
+  // RURAL SUBJECTS bypass the legacy RPC — see prior history.
   const isRural = subject.lotAcres != null && subject.lotAcres >= 1
   let rows: CMACompRow[] = []
   if (!isRural) {
@@ -396,13 +505,11 @@ async function getCompCandidates(
   }
 
   // Compute a lot-size window for rural subjects so the SQL pulls a
-  // candidate set we can actually use. We mirror the post-hoc filterComps
-  // window (1/3..3x) but center it on the subject lot.
+  // candidate set we can actually use.
   const lotRange = subject.lotAcres != null && subject.lotAcres > 0
     ? { min: subject.lotAcres / 3, max: subject.lotAcres * 3 }
     : null
 
-  // If RPC returned no results, use direct query fallback
   if (rows.length < 3 && subject.address) {
     const addressParts = subject.address.split(',').map((s) => s.trim())
     const city = addressParts[1] || addressParts[0] || ''
@@ -418,7 +525,6 @@ async function getCompCandidates(
     }
   }
 
-  // Broader search if still not enough
   if (rows.length < 3 && subject.address) {
     const addressParts = subject.address.split(',').map((s) => s.trim())
     const city = addressParts[1] || ''
@@ -635,11 +741,13 @@ export async function computeCMA(propertyId: string): Promise<CMAResult | null> 
       value_high: interim.valueHigh,
       confidence: interim.confidence,
       comp_count: interim.comps.length,
+      // 3.0 (2026-05-15): PostGIS distance-based comp search with tiered
+      //                   ring expansion (2/4/7mi), closed-first then active fallback
       // 2.2 (2026-05-14): bypass PostGIS RPC for rural (≥1 ac) subjects
       // 2.1 (2026-05-14): fail-closed on unknown comp lot for rural subjects
       // 2.0 (2026-05-14): residential-only filter, $200K floor, lot guard, range confidence
       // 1.x: original (deprecated — buggy)
-      methodology_version: '2.2',
+      methodology_version: '3.0',
     })
     .select('id')
     .single()
@@ -724,7 +832,7 @@ export async function getCachedCMA(propertyId: string): Promise<CMAResult | null
     .from('valuations')
     .select('id, estimated_value, value_low, value_high, confidence, comp_count, methodology_version')
     .eq('property_id', propertyId)
-    .gte('methodology_version', '2.2')
+    .gte('methodology_version', '3.0')
     .order('computed_at', { ascending: false })
     .limit(1)
     .maybeSingle()
