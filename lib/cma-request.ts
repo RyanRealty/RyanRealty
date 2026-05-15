@@ -168,6 +168,20 @@ export async function createCmaRequest(
         },
         generation_reason: `Seller LP submission — ${leadName ?? leadEmail} requested a CMA for ${rawAddress}`,
         status: 'pending',
+        // Legacy NOT-NULL fields inherited from the content_briefs view shape.
+        // For CMA action rows these are best-effort descriptive labels — the
+        // producer reads `payload` for its real inputs.
+        topic: `cma: ${rawAddress}`,
+        format: 'cma',
+        platforms: ['email'],
+        hook: `Personalized CMA for ${leadName ?? leadEmail} at ${rawAddress}`,
+        target_audience: 'seller-lead',
+        data_sources: { lp_form: 'seller-home-value', subject_address: rawAddress },
+        predicted_outcome: {
+          deliverable: '15-page CMA PDF via /api/cma/<slug>/email',
+          sla: '1 business day',
+        },
+        generated_by: 'seller-lp-form',
       })
       .select('id')
       .single()
