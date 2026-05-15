@@ -59,10 +59,18 @@ RESEARCH → STORYBOARD → BUILD → QA PASS → MATT REVIEW → PUBLISH → PO
 | google maps flyover / 3D aerial / cinematic aerial | `google_maps_flyover` | `video_production_skills/google_maps_flyover/SKILL.md` |
 | gaussian splat | `gaussian_splat` | `video_production_skills/gaussian_splat/SKILL.md` |
 | flyer / just-listed flyer / open house / print one-sheet | `flyer-design` | `social_media_skills/flyer-design/SKILL.md` |
+| CMA / comparative market analysis / "what's this property worth" / "pricing opinion on" | `cma` | `marketing_brain_skills/producers/cma/SKILL.md` |
 
 **Retired / archive only (do not route to):** `market_report_video` is canonical only when
 Matt explicitly requests the ffmpeg stat-card path. `news_video` (underscore) is the avatar
 path — use `news-video` (hyphen) for standard news clips.
+
+**Document deliverables (CMA):** The content engine routes a CMA to the
+`cma` producer, but a CMA does not run the video/social storyboard or
+QA branches. The CMA producer owns its own pipeline (HTML build → PDF
+render → 25 MB size check → Matt review → finalize + repository write).
+The content engine's role is route-and-respect, not orchestrate. See
+`marketing_brain_skills/producers/cma/SKILL.md` for the full recipe.
 
 ## Procedure
 

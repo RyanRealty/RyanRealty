@@ -81,6 +81,7 @@ Common mappings:
 | "open house flyer" | `content:open_house_flyer` |
 | "feature sheet", "property sheet" | `content:feature_sheet` |
 | "Instagram carousel", "carousel" | `content:ig_carousel` |
+| "CMA", "comparative market analysis", "create a CMA for", "what's this property worth", "pricing opinion on" | `content:cma` |
 | "GBP post", "Google Business post" | `ops:gbp_review_response` |
 | "update home page", "edit site copy" | `site:copy_update` |
 
