@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.205.0 (2026-05-15)
+
+### Features
+- feat(marketing-inbox): broker-facing reply + /marketing/request menu
+
+---
+
+
 ## v1.204.1 (2026-05-15)
 
 ### Bug Fixes
