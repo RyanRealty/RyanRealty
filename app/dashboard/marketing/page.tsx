@@ -158,6 +158,13 @@ interface ActionCategoryRow {
   killed: number
 }
 
+interface AuditFindingsCard {
+  audit_id: string
+  age_days: number
+  missing_producers_top: Array<{ name: string; priority: string; topic: string; format: string }>
+  top_winners: Array<{ topic: string; format: string; p75: number; post_count: number }>
+}
+
 interface AuditRunSummary {
   audit_id: string
   status: string
@@ -412,6 +419,51 @@ async function fetchDashboardData() {
     .eq('decision_type', 'voice_violation')
     .gte('created_at', new Date(Date.now() - 7 * 86_400_000).toISOString())
 
+  // 11.5 — latest analyze:audit_findings row (the brain's competitive intel)
+  const { data: auditFindingsRow } = await db
+    .from('marketing_brain_actions')
+    .select('payload, created_at')
+    .eq('action_type', 'analyze:audit_findings')
+    .in('status', ['pending', 'approved'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  let latestAuditFindings: AuditFindingsCard | null = null
+  if (auditFindingsRow?.payload) {
+    const payload = auditFindingsRow.payload as Record<string, unknown>
+    const missing = (payload.missing_producers as Array<Record<string, unknown>> | undefined) ?? []
+    const winners = (payload.top_winners_by_topic_format as Array<Record<string, unknown>> | undefined) ?? []
+    const ageMs = Date.now() - Date.parse(String(auditFindingsRow.created_at ?? ''))
+    latestAuditFindings = {
+      audit_id: String(payload.audit_id ?? ''),
+      age_days: Math.floor(ageMs / 86_400_000),
+      missing_producers_top: missing
+        .slice()
+        .sort((a, b) => {
+          const order: Record<string, number> = { high: 0, medium: 1, low: 2 }
+          return (order[String(a.priority ?? 'low')] ?? 3) - (order[String(b.priority ?? 'low')] ?? 3)
+        })
+        .slice(0, 5)
+        .map((m) => ({
+          name: String(m.proposed_skill_name ?? '(unnamed)'),
+          priority: String(m.priority ?? 'low'),
+          topic: String(m.topic ?? ''),
+          format: String(m.format ?? ''),
+        })),
+      top_winners: winners
+        .slice()
+        .sort((a, b) => Number(b.p75_engagement_rate ?? 0) - Number(a.p75_engagement_rate ?? 0))
+        .slice(0, 5)
+        .map((w) => ({
+          topic: String(w.topic ?? ''),
+          format: String(w.format ?? ''),
+          p75: Number(w.p75_engagement_rate ?? 0),
+          post_count: Number(w.post_count ?? 0),
+        })),
+    }
+  }
+
   // 12. Operational blockers — derived, not stored
   const blockers: BlockerRow[] = []
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -445,6 +497,7 @@ async function fetchDashboardData() {
     competitors,
     actionCategories,
     latestAuditRun,
+    latestAuditFindings,
     voiceFailures7d: voiceFailures7d ?? 0,
     blockers,
   }
@@ -501,6 +554,7 @@ export default async function MarketingBrainPage() {
     competitors,
     actionCategories,
     latestAuditRun,
+    latestAuditFindings,
     voiceFailures7d,
     blockers,
   } = await fetchDashboardData()
@@ -769,6 +823,98 @@ export default async function MarketingBrainPage() {
       </div>
 
       <Separator />
+
+      {/* ── Latest audit findings ────────────────────────────── */}
+      {latestAuditFindings && (
+        <div>
+          <h2 className="mb-3 text-sm font-semibold text-foreground uppercase tracking-wide">
+            Latest audit findings ({latestAuditFindings.audit_id} · {latestAuditFindings.age_days}d ago)
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Missing producers */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium text-muted-foreground">
+                  Top producer gaps ({latestAuditFindings.missing_producers_top.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {latestAuditFindings.missing_producers_top.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No producer gaps surfaced.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Skill name</TableHead>
+                        <TableHead>Topic / format</TableHead>
+                        <TableHead>Priority</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {latestAuditFindings.missing_producers_top.map((m) => (
+                        <TableRow key={m.name}>
+                          <TableCell className="font-mono text-xs">{m.name}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{m.topic} / {m.format}</TableCell>
+                          <TableCell>
+                            <Badge variant={m.priority === 'high' ? 'destructive' : m.priority === 'medium' ? 'soft-price-drop' : 'outline'}>
+                              {m.priority}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Producer Authoring session queries marketing_brain_actions for action_type=&apos;analyze:audit_findings&apos; to pick up the full list.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Top winners */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium text-muted-foreground">
+                  Top winning topic × format combos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {latestAuditFindings.top_winners.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No winners surfaced (audit may be partial).</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Topic</TableHead>
+                        <TableHead>Format</TableHead>
+                        <TableHead className="text-right">p75 ER</TableHead>
+                        <TableHead className="text-right">Posts</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {latestAuditFindings.top_winners.map((w, idx) => (
+                        <TableRow key={`${w.topic}-${w.format}-${idx}`}>
+                          <TableCell className="text-xs font-mono">{w.topic}</TableCell>
+                          <TableCell className="text-xs font-mono">{w.format}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant="soft-popular">{w.p75.toFixed(3)}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">{w.post_count}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  generate-briefs.ts now prefers these formats over hardcoded defaults when an opportunity matches the topic (sample size ≥ 5).
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {latestAuditFindings && <Separator />}
 
       {/* ── Top metrics table ────────────────────────────────── */}
       <div>

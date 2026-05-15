@@ -164,6 +164,25 @@ export interface SignalBundle {
   competitorRows: CompetitorIntelRow[]
   cadenceGaps: CadenceGap[]
   activeListingNeeds: ActiveListingNeed[]
+  auditFindings: AuditFindingsSnapshot | null
+}
+
+/**
+ * Subset of the analyze:audit_findings payload that generate-briefs needs
+ * to make audit-aware format choices. Full shape lives in
+ * `marketing_brain_skills/audit-findings/PROTOCOL.md`.
+ */
+export interface AuditFindingsSnapshot {
+  audit_id: string
+  audit_completed_at: string
+  top_winners_by_topic_format: Array<{
+    topic: string
+    format: string
+    median_engagement_rate: number
+    p75_engagement_rate: number
+    post_count: number
+  }>
+  missing_producers_count: number
 }
 
 /** A single channel below its target posting cadence. Item 2 — gatherCadenceGaps. */
@@ -455,6 +474,139 @@ export async function gatherActiveListingNeeds(asOfDate: string): Promise<Active
 }
 
 // ---------------------------------------------------------------------------
+// Audit-findings reader — closes the brain's feedback loop on competitive intel
+// ---------------------------------------------------------------------------
+
+/**
+ * Read the most recent analyze:audit_findings action row (pending OR approved)
+ * and extract the subset generate-briefs needs for audit-aware format choices.
+ * Returns null when no audit has ever run.
+ *
+ * Bounded query — single row lookup, fast.
+ */
+export async function fetchLatestAuditFindings(): Promise<AuditFindingsSnapshot | null> {
+  const supabase = getSupabase()
+  const res = await supabase
+    .from('marketing_brain_actions')
+    .select('payload, status, created_at')
+    .eq('action_type', 'analyze:audit_findings')
+    .in('status', ['pending', 'approved'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (res.error || !res.data) return null
+
+  const payload = res.data.payload as Record<string, unknown> | null
+  if (!payload) return null
+
+  const winners = (payload.top_winners_by_topic_format as Array<Record<string, unknown>> | undefined) ?? []
+  const missing = (payload.missing_producers as Array<unknown> | undefined) ?? []
+
+  return {
+    audit_id: String(payload.audit_id ?? ''),
+    audit_completed_at: String(payload.audit_completed_at ?? res.data.created_at ?? ''),
+    top_winners_by_topic_format: winners.map((w) => ({
+      topic: String(w.topic ?? ''),
+      format: String(w.format ?? ''),
+      median_engagement_rate: Number(w.median_engagement_rate ?? 0),
+      p75_engagement_rate: Number(w.p75_engagement_rate ?? 0),
+      post_count: Number(w.post_count ?? 0),
+    })),
+    missing_producers_count: missing.length,
+  }
+}
+
+/**
+ * Map a taxonomy (topic, audit Format) tuple to the brain's emitted format
+ * string. The audit reports winners using the topic-taxonomy.ts Format enum;
+ * the brain emits format strings the formatRoute table understands.
+ *
+ * Extend this map as new topic/format combos become winning patterns.
+ */
+const AUDIT_FORMAT_TO_BRAIN_FORMAT: Record<string, Record<string, string>> = {
+  listing: {
+    reel: 'listing_reel',
+    long_video: 'listing_video',
+    carousel: 'ig_carousel',
+    single_image: 'just_listed_flyer',
+    blog: 'blog_post',
+  },
+  market_data: {
+    reel: 'market_data_short',
+    long_video: 'market_youtube_longform',
+    carousel: 'ig_carousel',
+    blog: 'blog_post',
+  },
+  national_housing_news: {
+    reel: 'news_clip',
+    long_video: 'news_video',
+    blog: 'blog_post',
+    carousel: 'ig_carousel',
+  },
+  national_economy: {
+    blog: 'blog_post',
+    reel: 'news_clip',
+    carousel: 'ig_carousel',
+  },
+  local_community: {
+    reel: 'area_guide_short',
+    blog: 'blog_post',
+  },
+  lifestyle_bend: {
+    reel: 'neighborhood_reel',
+    long_video: 'neighborhood_tour',
+  },
+  buyer_education: {
+    blog: 'blog_post',
+    carousel: 'ig_carousel',
+  },
+  seller_education: {
+    blog: 'blog_post',
+    carousel: 'ig_carousel',
+  },
+  recap_highlight: {
+    carousel: 'ig_carousel',
+    blog: 'blog_post',
+  },
+  agent_brand: {
+    carousel: 'ig_carousel',
+    single_image: 'feature_sheet',
+  },
+}
+
+/**
+ * Consult the latest audit findings for a winning format for the given topic.
+ * Returns null when no audit data exists, when the topic has no winners with
+ * sufficient sample (post_count >= 5), or when the winning format doesn't map
+ * to a brain format string.
+ *
+ * Caller falls back to its hardcoded default when this returns null.
+ */
+export function pickAuditWinningFormat(
+  topic: string,
+  auditFindings: AuditFindingsSnapshot | null,
+): { format: string; rationale: string } | null {
+  if (!auditFindings) return null
+
+  // Filter audit winners to this topic, sample size >= 5, sort by p75 desc
+  const candidates = auditFindings.top_winners_by_topic_format
+    .filter((w) => w.topic === topic && w.post_count >= 5)
+    .sort((a, b) => b.p75_engagement_rate - a.p75_engagement_rate)
+
+  if (candidates.length === 0) return null
+
+  const winner = candidates[0]
+  const brainFormat = AUDIT_FORMAT_TO_BRAIN_FORMAT[topic]?.[winner.format]
+  if (!brainFormat) return null
+
+  return {
+    format: brainFormat,
+    rationale: `Audit ${auditFindings.audit_id} shows ${topic}/${winner.format} winning with p75 ER ${winner.p75_engagement_rate.toFixed(3)} across ${winner.post_count} competitor posts.`,
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Step 1: gatherSignals
 // ---------------------------------------------------------------------------
 
@@ -507,7 +659,15 @@ export async function gatherSignals(asOfDate: string, windowDays: number = WINDO
     return [] as ActiveListingNeed[]
   })
 
-  const [websiteAudit, adsAudit, crmAudit, insightResults, platformTrends, competitorRows, cadenceGaps, activeListingNeeds] =
+  // Audit-findings reader — pulls the latest pending/approved analyze:audit_findings
+  // action row + extracts the subset generate-briefs needs to make audit-aware
+  // format choices. Soft-fail on missing/empty.
+  const auditFindingsPromise = fetchLatestAuditFindings().catch((e) => {
+    console.error('gatherSignals auditFindings:', e instanceof Error ? e.message : String(e))
+    return null
+  })
+
+  const [websiteAudit, adsAudit, crmAudit, insightResults, platformTrends, competitorRows, cadenceGaps, activeListingNeeds, auditFindings] =
     await Promise.all([
       auditWebsite(asOfDate, windowDays).catch((e) => {
         console.error('gatherSignals auditWebsite:', e instanceof Error ? e.message : String(e))
@@ -537,11 +697,12 @@ export async function gatherSignals(asOfDate: string, windowDays: number = WINDO
       competitorPromise,
       cadencePromise,
       listingNeedsPromise,
+      auditFindingsPromise,
     ])
 
   const channelInsights = insightResults.filter((i): i is InsightSummary => i !== null)
 
-  return { asOfDate, websiteAudit, adsAudit, crmAudit, channelInsights, platformTrends, competitorRows, cadenceGaps, activeListingNeeds }
+  return { asOfDate, websiteAudit, adsAudit, crmAudit, channelInsights, platformTrends, competitorRows, cadenceGaps, activeListingNeeds, auditFindings }
 }
 
 // ---------------------------------------------------------------------------
@@ -861,13 +1022,17 @@ export function mapOpportunityToBriefs(
       generation_reason: `audit-crm north_star: qualified_seller_leads ${wowPctStr} WoW. Severity: ${opportunity.severity}.`,
     }))
 
-    // Organic: data-driven 30-45s vertical short
-    // (Previously emitted as `ig_reel` which routed wrongly to listing_reveal;
-    // now correctly routes to market-data-video which accepts brand-level targets.)
+    // Organic: data-driven 30-45s vertical short by default; audit can
+    // override with a higher-ER format for the market_data topic.
+    const ns_auditPick = pickAuditWinningFormat('market_data', signals.auditFindings)
+    const ns_organicFormat = ns_auditPick?.format ?? 'market_data_short'
+    const ns_organicPlatforms = ns_organicFormat === 'ig_carousel' ? ['instagram'] :
+                                 ns_organicFormat === 'market_youtube_longform' ? ['youtube'] :
+                                 ['instagram', 'tiktok']
     briefs.push(buildBrief({
-      topic: `Bend market data short — seller positioning`,
-      format: 'market_data_short',
-      platforms: ['instagram', 'tiktok'],
+      topic: `Bend market data ${ns_organicFormat === 'ig_carousel' ? 'carousel' : 'short'} — seller positioning`,
+      format: ns_organicFormat,
+      platforms: ns_organicPlatforms,
       hook: `Bend, ${new Date(signals.asOfDate).toLocaleString('default', { month: 'long', year: 'numeric' })}. If you own a home here, read this.`,
       body: `Months of supply, median price, days on market. Three numbers. What they mean for you.`,
       cta: `Link in bio: get your home's current value, no call required.`,
@@ -880,7 +1045,7 @@ export function mapOpportunityToBriefs(
         expected_value: '+0.5 to +1 qualified_seller_lead/week from organic-attributed leads',
         rationale: `Data-driven short backs up the FB ad with social proof. Cross-platform IG + TikTok distribution improves retargeting pool size. Based on the last 4 weeks of IG-to-lead attribution in FUB.`,
       },
-      generation_reason: `audit-crm north_star companion short: WoW change ${wowPctStr}.`,
+      generation_reason: `audit-crm north_star companion ${ns_organicFormat}: WoW change ${wowPctStr}.${ns_auditPick ? ' ' + ns_auditPick.rationale : ''}`,
     }))
   }
 
@@ -1177,10 +1342,16 @@ export function mapOpportunityToBriefs(
                      winningCampaign?.role === 'retargeting' ? 'site_visitor_seller' : 'brand_default'
     const evidence = opportunity.evidence
 
+    // Audit-aware format pick: default short; audit may bump to carousel or longform.
+    const ads_auditPick = pickAuditWinningFormat('market_data', signals.auditFindings)
+    const ads_format = ads_auditPick?.format ?? 'market_data_short'
+    const ads_platforms = ads_format === 'ig_carousel' ? ['instagram'] :
+                          ads_format === 'market_youtube_longform' ? ['youtube'] :
+                          ['instagram', 'tiktok']
     briefs.push(buildBrief({
-      topic: `Capitalize on ads engagement spike — market data short`,
-      format: 'market_data_short',
-      platforms: ['instagram', 'tiktok'],
+      topic: `Capitalize on ads engagement spike — ${ads_format === 'ig_carousel' ? 'market data carousel' : 'market data short'}`,
+      format: ads_format,
+      platforms: ads_platforms,
       hook: `Bend market data shifted in the last seven days. Here's what changed.`,
       body: `Active inventory, median price, days on market. Three numbers. What the shift means for sellers thinking about pricing.`,
       cta: `Get a real number for your Bend home in 24 hours.`,
@@ -1191,9 +1362,9 @@ export function mapOpportunityToBriefs(
       predicted_outcome: {
         primary_metric: 'qualified_seller_leads',
         expected_value: '+1 qualified_seller_lead per 1,000 additional reach',
-        rationale: `Engagement spike on paid channel signals warm audience receptivity. Matching organic data-driven short to the moment amplifies the reach pool for retargeting.`,
+        rationale: `Engagement spike on paid channel signals warm audience receptivity. Matching organic data-driven format to the moment amplifies the reach pool for retargeting.`,
       },
-      generation_reason: `audit-ads capitalize_on_spike: ${evidence}`,
+      generation_reason: `audit-ads capitalize_on_spike: ${evidence}.${ads_auditPick ? ' ' + ads_auditPick.rationale : ''}`,
     }))
   }
 
@@ -1629,14 +1800,21 @@ export function mapOpportunityToBriefs(
     }))
   }
 
-  // ── competitor format_gap (video) → market_data_short ────────────────────
+  // ── competitor format_gap (video) → market_data_short (audit may upgrade) ──
   if (opportunity.source === 'competitor' && opportunity.area === 'format_gap') {
     const competitor = (opportunity.meta.competitor as string) ?? 'a competitor'
 
+    // If the audit identified a winning market_data format with strong sample,
+    // prefer that over the hardcoded short.
+    const fg_auditPick = pickAuditWinningFormat('market_data', signals.auditFindings)
+    const fg_format = fg_auditPick?.format ?? 'market_data_short'
+    const fg_platforms = fg_format === 'ig_carousel' ? ['instagram'] :
+                         fg_format === 'market_youtube_longform' ? ['youtube'] :
+                         ['instagram', 'tiktok']
     briefs.push(buildBrief({
-      topic: `Replicate competitor video format — market data angle`,
-      format: 'market_data_short',
-      platforms: ['instagram', 'tiktok'],
+      topic: `Replicate competitor video format — ${fg_format === 'ig_carousel' ? 'market data carousel' : 'market data short'}`,
+      format: fg_format,
+      platforms: fg_platforms,
       hook: `Bend market, ${new Date(signals.asOfDate).toLocaleString('default', { month: 'long' })}. Three numbers you need to know.`,
       body: `Fast-format market data breakdown in the style that performed for a Bend competitor. Adapted to our voice: no hype, sourced numbers, client-first angle.`,
       target_audience: 'brand_default',
@@ -1648,7 +1826,7 @@ export function mapOpportunityToBriefs(
         expected_value: '+500 to +2,000 organic reach; +0.3 qualified_seller_leads/week',
         rationale: `Competitor format signals audience receptivity on this platform in this category. Replicating the format with our data-driven voice captures the same audience intent without matching their voice or breaking brand rules.`,
       },
-      generation_reason: `competitor format_gap: ${competitor} running video format we have not replicated. ${opportunity.evidence}`,
+      generation_reason: `competitor format_gap: ${competitor} running video format we have not replicated. ${opportunity.evidence}${fg_auditPick ? ' ' + fg_auditPick.rationale : ''}`,
     }))
   }
 
@@ -1726,18 +1904,30 @@ export function mapOpportunityToBriefs(
     // earn a long-form lift; non-social channels (ga4/gsc/fub/meta_ads)
     // are dropped here because they belong to site:* and ops:* producers
     // in Items 1 and 2.
+    // Audit-aware format pick — when audit data exists, prefer the winning
+    // market_data format for the channel-matched slot.
+    const diag_auditPick = pickAuditWinningFormat('market_data', signals.auditFindings)
     let format: string
     let platforms: string[]
     if (channel === 'youtube') {
       if (opportunity.severity === 'high') {
-        format = 'market_youtube_longform'
-        platforms = ['youtube']
+        format = diag_auditPick?.format === 'market_youtube_longform'
+          ? 'market_youtube_longform'
+          : (diag_auditPick?.format ?? 'market_youtube_longform')
+        platforms = format === 'market_youtube_longform' ? ['youtube'] : ['youtube', 'instagram', 'tiktok']
       } else {
-        format = 'market_data_short'
+        format = diag_auditPick?.format ?? 'market_data_short'
         platforms = ['youtube', 'instagram', 'tiktok']
       }
     } else if (channel === 'tiktok' || channel === 'instagram' || channel === 'meta_page') {
-      format = 'market_data_short'
+      // Channel-matched single platform; audit may upgrade to ig_carousel
+      // when the channel is IG, otherwise fall back to short.
+      const auditFormat = diag_auditPick?.format
+      if (auditFormat === 'ig_carousel' && channel === 'instagram') {
+        format = 'ig_carousel'
+      } else {
+        format = 'market_data_short'
+      }
       platforms = [channel]
     } else {
       // ga4 / gsc / fub / meta_ads → not a content channel. Silently drop.
@@ -1769,12 +1959,23 @@ export function mapOpportunityToBriefs(
     const gap = opportunity.meta.gap as CadenceGap
     const channel = gap.channel
 
+    // Audit-aware default: if audit data exists and identifies a winning
+    // market_data format, use it on IG (where ig_carousel is feasible) or
+    // YouTube (where market_youtube_longform is feasible). Other channels
+    // stay on market_data_short / gbp_post since they have no carousel-
+    // equivalent in the current formatRoute.
+    const cad_auditPick = pickAuditWinningFormat('market_data', signals.auditFindings)
     let format: string
     let platforms: string[]
-    if (channel === 'instagram') { format = 'market_data_short'; platforms = ['instagram'] }
-    else if (channel === 'tiktok') { format = 'market_data_short'; platforms = ['tiktok'] }
+    if (channel === 'instagram') {
+      format = cad_auditPick?.format === 'ig_carousel' ? 'ig_carousel' : 'market_data_short'
+      platforms = ['instagram']
+    } else if (channel === 'tiktok') { format = 'market_data_short'; platforms = ['tiktok'] }
     else if (channel === 'meta_page') { format = 'market_data_short'; platforms = ['facebook'] }
-    else if (channel === 'youtube') { format = 'market_data_short'; platforms = ['youtube'] }
+    else if (channel === 'youtube') {
+      format = cad_auditPick?.format === 'market_youtube_longform' ? 'market_youtube_longform' : 'market_data_short'
+      platforms = ['youtube']
+    }
     else if (channel === 'linkedin') { format = 'ig_carousel'; platforms = ['linkedin'] }
     else if (channel === 'x') { format = 'market_data_short'; platforms = ['x'] }
     else if (channel === 'gbp') { format = 'gbp_post'; platforms = ['gbp'] }
@@ -1802,7 +2003,7 @@ export function mapOpportunityToBriefs(
         expected_value: 'Maintain platform reach baseline; prevent algorithmic decay',
         rationale: `Cadence gaps cost algorithmic trust. Filling the gap with brand-default content prevents reach decay on a platform we have already invested in.`,
       },
-      generation_reason: `cadence ${channel}: ${gap.actual_last_7d}/${gap.target_per_week} posts in last 7d. ${staleness}.`,
+      generation_reason: `cadence ${channel}: ${gap.actual_last_7d}/${gap.target_per_week} posts in last 7d. ${staleness}.${cad_auditPick && (channel === 'instagram' || channel === 'youtube') ? ' ' + cad_auditPick.rationale : ''}`,
     }))
   }
 
