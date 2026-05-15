@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.206.0 (2026-05-15)
+
+### Features
+- feat(marketing-inbox): admin audit dashboard + broker domain wildcard verified
+
+---
+
+
 ## v1.205.1 (2026-05-15)
 
 ### Maintenance
