@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.204.0 (2026-05-15)
+
+### Features
+- feat(gis): authoritative City of Bend neighborhood polygons + spatial backfill
+
+---
+
+
 ## v1.203.8 (2026-05-15)
 
 ### Bug Fixes
