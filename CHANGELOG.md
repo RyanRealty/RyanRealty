@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.212.0 (2026-05-15)
+
+### Features
+- feat(geo): resort communities as neighborhood-type aliases — 14 parents, 100 child SubdivisionNames
+
+---
+
+
 ## v1.211.3 (2026-05-15)
 
 ### Other
