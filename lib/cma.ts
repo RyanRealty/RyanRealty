@@ -714,7 +714,7 @@ export async function computeCMA(propertyId: string): Promise<CMAResult | null> 
 
   const candidates = await getCompCandidates(supabase, propertyId, subject.communityId, subject)
   console.warn(
-    `[cma] computeCMA propertyId=${propertyId} subject: beds=${subject.beds} baths=${subject.baths} sqft=${subject.sqft} lot=${subject.lotAcres} year=${subject.yearBuilt} candidates=${candidates.length}`
+    `[cma] computeCMA propertyId=${propertyId} subject: beds=${subject.beds} baths=${subject.baths} sqft=${subject.sqft} lot=${subject.lotAcres} year=${subject.yearBuilt} latitude=${subject.latitude} longitude=${subject.longitude} candidates=${candidates.length}`
   )
   const compsFiltered = filterComps(subject, candidates)
   console.warn(
