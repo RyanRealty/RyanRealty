@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.208.0 (2026-05-15)
+
+### Features
+- feat(marketing-brain): first full competitor audit run 2026-05-15
+
+---
+
+
 ## v1.207.0 (2026-05-15)
 
 ### Features
