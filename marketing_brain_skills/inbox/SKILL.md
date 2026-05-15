@@ -104,6 +104,9 @@ Files of record:
 | Top-level orchestrator | `lib/marketing-brain/inbox-poll.ts` |
 | Cron route | `app/api/cron/marketing-inbox-poll/route.ts` |
 | Cron schedule | `vercel.json` (entry: `*/2 * * * *`) |
+| Broker request page | `app/marketing/request/page.tsx` |
+| Request page interactive | `app/marketing/request/RequestBuilder.tsx` |
+| Broker catalog (single source of truth) | `app/marketing/request/deliverables.ts` |
 
 ---
 
@@ -184,14 +187,68 @@ When a new producer is added to `marketing_brain_skills/producers/REGISTRY.md`:
 2. Add an entry to `PRODUCER_REGISTRY` in
    `lib/marketing-brain/inbox-producer-registry.ts` mapping the action_type
    to the producer path.
-3. (Optional) Add an example phrasing to the parser system prompt if the
+3. **Add a row to `app/marketing/request/deliverables.ts`** under the right
+   group (For a listing / Market reports / Neighborhoods / News, evergreen,
+   and social / Email, ads, and reviews / Website). Use broker-friendly
+   wording — `label` and `description` are what the broker sees, `prompt`
+   is the verb-led sentence the email body will contain.
+4. (Optional) Add an example phrasing to the parser system prompt if the
    action_type is ambiguous with a sibling type.
 
 If a parser response references an action_type that is missing from
 `VALID_ACTION_TYPES`, the parser downgrades it to `'unknown'`. If it is
 missing from the producer registry only, the dispatcher routes it to
-`comms:matt_alert` with a `no producer registered` reason. Both paths are
-safe — drift is caught, not silently broken.
+`comms:matt_alert` with a `no producer registered` reason. If it is
+missing from the broker request page only, brokers can still ask for it
+in free-text via the "Anything else" textarea or by emailing directly —
+the page menu is not the security boundary. All three paths are safe.
+
+---
+
+## 7.5 Broker request page (`/marketing/request`)
+
+Every reply from marketing@ ends with a signature line linking here:
+
+```
+Ryan Realty marketing
+Here's what we can build for you: https://ryanrealty.vercel.app/marketing/request
+```
+
+The page is a checkbox-driven email builder. Brokers pick from the
+catalog, the page reveals only the context fields the team needs
+(property address / city / topic / free-text details), and the
+"Build my email" button generates a `mailto:` link that opens their
+email client with the request pre-written and addressed to
+`marketing@ryan-realty.com`.
+
+**No backend writes from the page.** No auth gate. The marketing inbox
+itself enforces the allowlist; this page is purely a mailto: builder
+so brokers don't have to remember what they can ask for.
+
+**Canonical source for the menu:** `app/marketing/request/deliverables.ts`.
+
+To add a new deliverable to the menu:
+
+1. Open `app/marketing/request/deliverables.ts`.
+2. Find the matching group (`DELIVERABLE_GROUPS` array).
+3. Append a new entry:
+   ```typescript
+   {
+     id: 'unique_slug',
+     label: 'What brokers will read',
+     description: 'One-line plain-English explanation. No jargon.',
+     prompt: 'Make a <thing>.',  // verb-led; goes into the email body
+     needsProperty: true,         // reveals property/MLS# field
+     needsMarket: true,           // reveals city/neighborhood field
+     needsTopic: true,            // reveals topic field
+   }
+   ```
+4. Commit + push. The page rebuilds on deploy; no other changes needed.
+
+Voice rules apply to `label`, `description`, and `prompt` — no em-dashes,
+no banned tropes, sentence case. The reply layer's voice gate doesn't
+validate these strings at runtime (they're static), so they're inspected
+at review time.
 
 ---
 
@@ -297,3 +354,6 @@ needs to change.
 | 2026-05-14 | Confidence threshold = 0.70 | Conservative; tune after first 2 weeks of triage volume |
 | 2026-05-14 | Default action on unknown sender = `reject_silent` | Avoid bouncing spam back into the world |
 | 2026-05-14 | Receiver, parser, dispatcher, reply layer separated into 5 modules | Lets the Path A swap reuse parser + dispatcher + reply 1:1 |
+| 2026-05-15 | Broker-friendly reply language (no jargon) | The inbox is for brokers, not internal. No "brain queue", "action row", "producer", or "routing" in any broker-facing surface |
+| 2026-05-15 | Broker request page at `/marketing/request` | Linked in every reply signature. Single source of truth for what brokers can ask for. Checkbox-driven mailto: builder |
+| 2026-05-15 | RFC-822 `-- ` signature delimiter (not em-dash) | Voice gate bans em-dashes; the RFC sig delimiter is also what every mail client folds into a signature block |
