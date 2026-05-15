@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.207.0 (2026-05-15)
+
+### Features
+- feat(marketing-brain): close the audit-findings feedback loop
+
+---
+
+
 ## v1.206.1 (2026-05-15)
 
 ### Maintenance
