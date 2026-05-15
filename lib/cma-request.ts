@@ -123,6 +123,9 @@ export async function createCmaRequest(
           broker_id: brokerId,
           broker_slug: broker.slug,
           status: 'draft',
+          // html_path is required by the schema. The producer fills the real
+          // file when it builds; this is the path the file WILL live at.
+          html_path: `public/drafts/${slug}/cma.html`,
           generation_reason: `Seller LP submission from ${leadEmail}${
             input.leadTimeline ? ` (${input.leadTimeline})` : ''
           }`,
