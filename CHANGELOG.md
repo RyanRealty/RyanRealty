@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.210.0 (2026-05-15)
+
+### Features
+- feat(daily-digest): surface broker-waiting requests separately
+
+---
+
+
 ## v1.209.1 (2026-05-15)
 
 ### Bug Fixes
