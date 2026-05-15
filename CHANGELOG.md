@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.206.1 (2026-05-15)
+
+### Maintenance
+- docs: area-guide template handoff + AgentFire menu audit
+
+---
+
+
 ## v1.206.0 (2026-05-15)
 
 ### Features
