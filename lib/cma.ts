@@ -806,6 +806,8 @@ export async function computeCMAByListingKey(listingKeyOrMls: string): Promise<C
     communityId: null,
     listingKey: row.ListingKey != null ? String(row.ListingKey) : null,
     vowAvmDisplayYn: true,
+    latitude: null,
+    longitude: null,
   }
 
   const { data: rpcRows, error: rpcError } = await supabase.rpc('get_cma_comps_by_listing_key', {
