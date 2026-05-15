@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.209.1 (2026-05-15)
+
+### Bug Fixes
+- fix(marketing-brain): 3 audit-agent follow-ups from 2026-05-15 run
+
+---
+
+
 ## v1.209.0 (2026-05-15)
 
 ### Features
