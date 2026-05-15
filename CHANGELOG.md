@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.213.0 (2026-05-15)
+
+### Features
+- feat(cma): hard 25 MB attachment cap + graceful Supabase fallback
+- feat(cma-email): add ?preview=1 mode to render the email body in browser
+- feat(cma-email): add GET trigger alongside POST
+- feat(cma): /api/cma/[slug]/email + tighten page 5 (comp summary)
+- feat(cma): server-side PDF route + repository lookup UI + skill update
+- feat(cma-skill): codify CMA as a brain-callable producer + repository
+- feat(cma): branded comp location map page (Mapbox Static)
+- feat(api): /api/listings/[key]/photos — fetch Spark Media for one listing
+
+### Bug Fixes
+- fix(cma): drop image tiers to fit under 25 MB cap
+- fix(cma): keep content out of the footer zone on every page
+- fix(cma-pdf): inline map + tighten layout so every page fits one PDF page
+- fix(cma-pdf): read HTML from disk + inline local assets (avoid SSO wall)
+- fix(api): photos route uses legacy Spark client (`_expand=Photos`)
+
+### Maintenance
+- docs(cma-skill): close the routing gaps so any producer dispatcher finds the CMA skill
+- docs(claude-md): lock brand-voice rules as an absolute top-level requirement
+- chore: ignore drafts/ and out/ for draft-first workflow
+
+### Other
+- draft(cma): final pricing update + map fix + subject row populated
+- draft(cma): bump high end to \$1.225M, list at \$1,195,000, rewrite 2022 narrative
+- draft(cma): add subject flyer + Days to Offer everywhere
+- draft(cma): add 8 one-page comp flyers between summary and pricing
+- draft(cma): fill in the 2 missing comp thumbnails via Spark Media
+- draft(cma): fix page 3 footer + tighten comp-grid card density
+- draft(cma): v2 — subject hero photo, comp thumbnails, transparent headshot on final page
+- draft(cma): wire 21042 Robin CMA to canonical broker record
+- draft(cma): 21042 Robin Ave preview for Kelly Hansen
+
+---
+
+
 ## v1.212.1 (2026-05-15)
 
 ### Bug Fixes
