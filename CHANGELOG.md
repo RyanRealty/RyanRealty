@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.212.1 (2026-05-15)
+
+### Bug Fixes
+- fix(cma): bump methodology to 3.1 to invalidate v3.0 cached rows
+
+---
+
+
 ## v1.212.0 (2026-05-15)
 
 ### Features
