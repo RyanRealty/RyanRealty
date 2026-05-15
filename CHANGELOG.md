@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.204.1 (2026-05-15)
+
+### Bug Fixes
+- fix(cma-delivery): drop city ILIKE from properties query to avoid seq scan
+
+---
+
+
 ## v1.204.0 (2026-05-15)
 
 ### Features
