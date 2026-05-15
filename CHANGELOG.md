@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.211.1 (2026-05-15)
+
+### Maintenance
+- docs(tools_registry): author 4 more tool SKILL.md (tiktok_api, x_api, linkedin_api, agentfire_wordpress)
+
+---
+
+
 ## v1.211.0 (2026-05-15)
 
 ### Features
