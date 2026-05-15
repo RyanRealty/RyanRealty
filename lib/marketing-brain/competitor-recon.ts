@@ -547,10 +547,15 @@ export async function scrapeTikTokProfile(
  * Actor: apify/facebook-ads-scraper
  * https://apify.com/apify/facebook-ads-scraper
  *
- * TODO: refine input shape after first live run — confirm `adLibraryUrls` vs
- * `searchTerms` + `countryCode` approach against the actor's live schema.
- * The Ad Library API requires a country + search term or page ID; we start
- * with search term and refine once we have page IDs per competitor.
+ * Input shape (verified 2026-05-15 after the audit-agent run flagged
+ * the old `adLibraryUrls` field as schema-broken — actor now expects
+ * `startUrls`):
+ *   - startUrls: Array<{ url: string, method?: 'GET' }>
+ *   - maxResults (optional; default unlimited)
+ *
+ * Build the Ad Library search URL per competitor — country + keyword
+ * search yields all active ads matching the name. For page-id lookups,
+ * use https://www.facebook.com/ads/library/?id={page_id} instead.
  */
 export async function scrapeFacebookAdLibrary(
   target: CompetitorTarget,
@@ -565,8 +570,8 @@ export async function scrapeFacebookAdLibrary(
       `&ad_type=all&country=US&q=${encodeURIComponent(target.name)}&search_type=keyword_unordered`
 
     const result = await runApifyActor('apify/facebook-ads-scraper', {
-      adLibraryUrls: [{ url: adLibraryUrl }],
-      maxAds: 25,
+      startUrls: [{ url: adLibraryUrl }],
+      maxResults: 25,
     })
 
     const rows: CompetitorIntelRow[] = (result.items as Record<string, unknown>[]).map((item) => ({

@@ -283,6 +283,7 @@ Migration file location (when built): `supabase/migrations/<timestamp>_content_c
 | Taxonomy drift (topic-taxonomy.ts changes) | New topics added or slugs renamed | All existing classifications with the old slug are stale; re-run batch across the full `competitor_intel` table for the affected date window |
 | Batch stuck > 2 hours | Anthropic infrastructure delay | Check batch status at console.anthropic.com; if `processing_status` is still `in_progress` after 2h, contact Anthropic support; do not re-submit (creates duplicate rows) |
 | RPM limit on per-call mode | Burst traffic on non-batch path | Switch to Batches API; Anthropic org-level RPM limits do not apply to batch submissions |
+| Supabase statement timeout on large upsert batches | `INSERT INTO content_classification VALUES (...) returning ...` for batches ≥ 100 rows can exceed Supabase's default statement_timeout (8s) when the table is hot. The 2026-05-15 audit-agent run lost 50 rows at batch position 200-250 to this. | Cap upsert batches at **25 rows** in any agent-driven inline classification path. For high-volume Batches API runs, the result-collection step naturally chunks per batch (~10k limit) which keeps individual inserts small. Sub-agent prompts that classify in-context should explicitly batch by 25. |
 
 ---
 

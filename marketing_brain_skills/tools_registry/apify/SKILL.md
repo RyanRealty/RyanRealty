@@ -100,7 +100,7 @@ These actors are validated for Ryan Realty use. IDs are the Apify Store slugs us
 
 | Actor ID | What it captures | Cost estimate | Input gotchas |
 |---|---|---|---|
-| `apify/facebook-ads-scraper` | Active ads from Ad Library: copy, CTA, media type, impressions range, start date | ~$0.10–0.30 per page | **VERIFIED BROKEN 2026-05-15:** Actor now requires `startUrls` (not `adLibraryUrls`) as a top-level input field — passes `400 "Field input.startUrls is required"` regardless of the input shape. Actor schema appears to have changed. Before next run, open `apify.com/apify/facebook-ads-scraper` Input tab and re-verify the correct field name. Alternative: use `apify/facebook-pages-scraper` for organic page posts instead of Ad Library ads. |
+| `apify/facebook-ads-scraper` | Active ads from Ad Library: copy, CTA, media type, impressions range, start date | ~$0.10–0.30 per page | **FIXED 2026-05-15:** Actor schema changed — now requires `startUrls: [{ url }]` and `maxResults` (not the old `adLibraryUrls` + `maxAds`). `lib/marketing-brain/competitor-recon.ts:scrapeFacebookAdLibrary()` updated to the new shape. Before each quarterly audit, verify by opening `apify.com/apify/facebook-ads-scraper` Input tab — actor publishers sometimes change schemas unannounced. |
 | `apify/facebook-pages-scraper` | Page follower count, about section, recent posts | ~$0.05–0.15 per page | Use `startUrls: [{ url: "<facebook_page_url>" }]`. Not currently wired into competitor-recon — add when page-level follower tracking is needed. |
 
 ### Google

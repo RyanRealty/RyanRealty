@@ -213,6 +213,25 @@ Producer Authoring should not author against an audit older than 90 days without
 
 ---
 
+## Idempotency + retry pattern (added 2026-05-15 after first run)
+
+The `audit_runs.audit_id` column has a `UNIQUE` constraint per the `20260514180000_content_classification.sql` migration. If an agent re-runs an audit on the same UTC date, the second `INSERT` fails with `duplicate key value violates unique constraint`. The first audit run (2026-05-15) hit this when a prior partial-run row was left over; the agent worked around by using a `-v2` suffix.
+
+**Canonical retry pattern for audit agents:**
+
+1. **Default audit_id is the UTC date** (`YYYY-MM-DD`). Use this for the first attempt of the day.
+2. **On collision, append a version suffix** (`YYYY-MM-DD-v2`, `-v3`, etc.). Before INSERTING, check:
+   ```sql
+   SELECT audit_id FROM public.audit_runs WHERE audit_id LIKE '2026-05-15%' ORDER BY audit_id DESC LIMIT 1;
+   ```
+   If a row exists, pick the next version number.
+3. **Alternatively, use `INSERT ... ON CONFLICT (audit_id) DO UPDATE SET status='running', started_at=now()`** to gracefully resume the existing row. Use this only if you're certain you want to *replace* the prior partial run.
+4. **Downstream code is audit_id-agnostic** — `audit_winners` view groups by audit_id, `content_classification.audit_id` is just a string FK semantically, the markdown report path includes the full audit_id, and the analyze:audit_findings row's target is `audit:<audit_id>`. Any unique string works.
+
+The `lib/marketing-brain/audit-run.ts` orchestrator (the API-key-based path) already uses `upsert({ onConflict: 'audit_id' })` for the audit_runs row — that path is graceful by default. Inline-classification sub-agent prompts (the path used in 2026-05-15) must implement the retry pattern explicitly.
+
+---
+
 ## What's NOT in this protocol
 
 - The audit code itself (lives in `lib/marketing-brain/competitor-recon.ts` after expansion + a new `lib/marketing-brain/audit-run.ts` orchestrator — planned, not built)
