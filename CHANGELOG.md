@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.211.0 (2026-05-15)
+
+### Features
+- feat(cma): PostGIS distance-based comp search with tiered ring expansion (v3.0)
+
+---
+
+
 ## v1.210.0 (2026-05-15)
 
 ### Features
