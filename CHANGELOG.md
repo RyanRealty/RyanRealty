@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.203.8 (2026-05-15)
+
+### Bug Fixes
+- fix(cma): remove server-side ORDER BY in getSubject to dodge statement_timeout
+
+---
+
+
 ## v1.203.7 (2026-05-14)
 
 ### Bug Fixes
