@@ -192,19 +192,41 @@ async function getSubject(
   // Find the matching listing by address. Take the most recently modified
   // record across ALL statuses — Active first if one exists, otherwise the
   // last Closed (which carries the historic beds/baths/sqft).
+  //
+  // CRITICAL: NO server-side ORDER BY here. listings is 589K+ rows; the
+  // postal_code index alone returns ~500-2000 rows per zip, and the
+  // ModificationTimestamp DESC sort over that set triggers a Sort node
+  // that takes >60s and hits statement_timeout. We pull up to 20 rows
+  // by the indexed equality on PostalCode + StreetNumber and do the
+  // status/recency selection in JS. Retry transient errors so PostgREST
+  // flaps don't leave the subject blind.
   let listing: Record<string, unknown> | null = null
   if (p.city) {
-    let query = supabase
-      .from('listings')
-      .select('ListingKey, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, StandardStatus, lot_size_acres, year_built')
-      .ilike('City', p.city)
-    if (p.street_number) query = query.eq('StreetNumber', p.street_number)
-    if (p.postal_code) query = query.eq('PostalCode', p.postal_code)
-    const { data: matches } = await query
-      .order('ModificationTimestamp', { ascending: false })
-      .limit(5)
-    // Prefer an Active/Pending row; fall back to most-recent (typically Closed).
-    const rows = (matches as Record<string, unknown>[] | null) ?? []
+    let matches: Record<string, unknown>[] | null = null
+    for (let attempt = 0; attempt < 3; attempt++) {
+      let query = supabase
+        .from('listings')
+        .select('ListingKey, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, StandardStatus, lot_size_acres, year_built, ModificationTimestamp')
+      if (p.postal_code) query = query.eq('PostalCode', p.postal_code)
+      if (p.street_number) query = query.eq('StreetNumber', p.street_number)
+      query = query.ilike('City', p.city)
+      const { data, error } = await query.limit(20)
+      if (!error) {
+        matches = (data as Record<string, unknown>[] | null) ?? []
+        break
+      }
+      console.warn(`[cma] getSubject listings lookup attempt ${attempt + 1}/3 error:`, error.message)
+      await new Promise((r) => setTimeout(r, attempt === 0 ? 500 : 1500))
+    }
+    if (matches == null) {
+      console.warn(`[cma] getSubject: listings lookup gave up for ${p.unparsed_address}`)
+    }
+    // Sort in JS: most-recently-modified first.
+    const rows = (matches ?? []).slice().sort((a, b) => {
+      const at = String(a.ModificationTimestamp ?? '')
+      const bt = String(b.ModificationTimestamp ?? '')
+      return bt.localeCompare(at)
+    })
     const active = rows.find((r) => {
       const s = String(r.StandardStatus ?? '').toLowerCase()
       return s.includes('active') || s.includes('pending') || s.includes('for sale')
