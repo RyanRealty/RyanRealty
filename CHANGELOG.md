@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.205.1 (2026-05-15)
+
+### Maintenance
+- docs(marketing-brain): document the 2026-05-15 API-key unblock + Vercel CLI gotchas
+
+---
+
+
 ## v1.205.0 (2026-05-15)
 
 ### Features
