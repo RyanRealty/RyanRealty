@@ -51,10 +51,28 @@ export async function GET(request: Request) {
 
   const citySlugs = MARKET_REPORT_DEFAULT_CITIES.map((name) => slugify(name))
 
-  // All geos: cities + region
+  // Pull every geo_type='neighborhood' slug from public.boundaries so resort
+  // communities (Tetherow, Sunriver, Eagle Crest, Three Rivers, etc.) and Bend
+  // neighborhood districts (Awbrey Butte, Larkspur, etc.) get refreshed each cycle.
+  // Source: data/resort-communities.json + Bend neighborhood districts in boundaries.
+  const { data: neighborhoodRows, error: nbhdErr } = await supabase
+    .from('boundaries')
+    .select('geo_slug')
+    .eq('geo_type', 'neighborhood')
+  if (nbhdErr) {
+    console.error('[refresh-market-stats] failed to load neighborhood slugs:', nbhdErr.message)
+    return NextResponse.json(
+      { ok: false, error: `load neighborhoods: ${nbhdErr.message}` },
+      { status: 500 }
+    )
+  }
+  const neighborhoodSlugs: string[] = (neighborhoodRows ?? []).map((r) => r.geo_slug)
+
+  // All geos: cities + region + neighborhoods (resort communities + Bend districts)
   const geoEntries: Array<{ geo_type: string; geo_slug: string }> = [
     ...citySlugs.map((slug) => ({ geo_type: 'city', geo_slug: slug })),
     { geo_type: 'region', geo_slug: 'central-oregon' },
+    ...neighborhoodSlugs.map((slug) => ({ geo_type: 'neighborhood', geo_slug: slug })),
   ]
 
   let rollingCount = 0
@@ -90,6 +108,26 @@ export async function GET(request: Request) {
       )
     }
     rollingCount += typeof data === 'number' ? data : 1
+
+    // backfill_rolling only handles city + region (it GROUPs BY listings.City).
+    // For neighborhoods (resort communities + Bend districts), call the per-geo RPC.
+    for (const slug of neighborhoodSlugs) {
+      const { error: nErr } = await supabase.rpc('compute_and_cache_period_stats', {
+        p_geo_type: 'neighborhood',
+        p_geo_slug: slug,
+        p_period_type: period_type,
+        p_period_start: period_start,
+      })
+      if (nErr) {
+        console.error(
+          `[refresh-market-stats] compute_and_cache_period_stats ${period_type} neighborhood/${slug} error:`,
+          nErr.message
+        )
+        // Non-fatal: log and continue so one bad neighborhood doesn't break the whole cron
+      } else {
+        rollingCount++
+      }
+    }
   }
 
   // ── Step 2: Current month ────────────────────────────────────────────────
