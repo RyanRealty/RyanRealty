@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.214.7 (2026-05-16)
+
+### Bug Fixes
+- fix(cma): drop puppeteer DPR to 1× and self-calibrate bleed-check
+
+---
+
+
 ## v1.214.6 (2026-05-16)
 
 ### Bug Fixes
