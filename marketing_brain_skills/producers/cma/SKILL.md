@@ -186,20 +186,65 @@ Copy assets to `public/drafts/cma-<slug>/assets/`:
 - `Amboqia_Boriango.otf` (display font)
 - `<broker_slug>.png` (transparent headshot from `design_system/ryan-realty/assets/team/`)
 
-The 15-page layout (clone from the 21042 Robin exemplar at `public/drafts/cma-21042-robin/cma.html`):
+The canonical layout (clone from the 21042 Robin exemplar at `public/drafts/cma-21042-robin/cma.html`):
 
-| Page | Content |
+| Page | Content (one purpose per page) |
 |------|---------|
-| 1 | Cover · subject hero photo · value range · key stats · "Presented by" line |
-| 2 | Subject property details + improvements ledger (if seller invested capital) |
-| 3 | Subject flyer (one-page format matching comp flyers; off-market badge) |
-| 4 | Comp location map (Google Maps Static via `/api/maps/cma-<slug>`) + legend |
-| 5 | Comp summary — 4×2 thumbnail grid + full data table |
-| 6–13 | One-page flyer per comp (hero + 6-photo grid + public_remarks + features) |
-| 14 | Pricing strategy — two methods, converged range with three tiers |
-| 15 | Disclosure + broker signature block (transparent headshot, full contact, license #) |
+| 1 | **Cover** — subject hero photo · value range · key stats · "Presented by" line |
+| 2 | **Subject narrative** — at-a-glance · site & structure · why this matters · listing history |
+| 3 | **Subject flyer** — hero + 6-photo grid + current/historical MLS remarks + features (off-market badge if not currently Active) |
+| 4 | **Comp location map** — Google Maps Static via `/api/maps/cma-<slug>` · numbered legend · pin order matches comp flyer order |
+| 5 | **Comp summary** — subject row at top + 4×2 thumbnail grid + full data table |
+| 6 → N | **Comp flyers** — one full page per comp (hero + 6-photo grid + public_remarks + features). N scales with comp count (6 comps → flyers 6–11; 8 comps → flyers 6–13). |
+| N+1 | **Pricing strategy** — Method 1 ($/sqft tier) + Method 2 (un-renovated baseline + value-add) + Converged range (3 tiers: Conservative / Recommended / High End) |
+| N+2 | **Why this list price** — outlier explanations (if any high or low comps need context) + listing-history rationale + verification trace (data sources) |
+| Final | **Disclosure + broker signature** — disclosure paragraphs + Amboqia-script broker signature + transparent headshot + license # |
 
-Page numbers in the comp flyer area scale with the number of comps. If there are 6 comps instead of 8, the CMA is 13 pages instead of 15; renumber footers accordingly.
+Page numbers in the comp flyer area scale with the number of comps. 6 comps → 13 pages, 8 comps → 15 pages, etc. Always renumber footers. NEVER hardcode a `Page X of 15` — count actual pages.
+
+**Step 7a — Layout discipline (HARD RULES — non-negotiable)**
+
+Every page is purposeful and self-contained. Never split a single conceptual section across page breaks. Never let content bleed into another page's header or footer band. These rules outrank "include more detail" — if a section is too long, split or trim, never spill.
+
+1. **One section per page.** A page = one purpose with a single H2 / SUBJECT PROPERTY / WHERE THE COMPS SIT subhead. If the section's narrative + tables + visuals can't fit one page, split it into two purposeful pages with distinct subheads (e.g., "Pricing strategy" → page A with the methods + range; page B with outlier explanation + verification trace). Never overflow.
+
+2. **Footer + header are sacrosanct.** Body content lives in the inner box only. For 8.5×11" letter at 96 DPI = 1056 px tall × 816 px wide with 81.6 px padding top/bottom, the usable inner region is approximately **y = 60–976 px** (top = below the logo + breadcrumb line; bottom = above the page-N-of-N + brokerage name footer line). No element's bounding-box bottom may exceed y = 976 relative to its containing `.page`.
+
+3. **Width tolerance: zero.** Body content stays within the page padding box. Horizontal overflow gets cropped by `overflow: hidden` on the page container, which silently truncates and looks broken in PDF. Keep all column widths summed under the inner-box width (816 − 64 padding = ~752 px usable).
+
+4. **What gets trimmed first if a section is too long:** narrative adjectives and editorial prose. The DATA must stay (numbers, dates, addresses, $/sqft, lot sizes, listing-history rows, citations). Cut "stunning view" → "view"; cut "well-executed renovation" → "renovated"; never cut a comp's close price or date.
+
+5. **Never use orphan / widow content.** A heading at the bottom of a page with no body under it = the page break is wrong. Move the heading to the next page OR pull the first paragraph up onto the current page. Same for a single-line caption stranded on a fresh page — pull the visual up with it.
+
+6. **The verification trace lives on the "Why this list price" page**, not stapled to the bottom of the pricing-strategy page. If both narrative + trace won't fit one page, that's exactly when to use the N+2 split.
+
+**Mandatory QA: page-fit check (must pass before declaring draft ready)**
+
+After build, run this in a headless browser load of the HTML:
+
+```javascript
+const pages = document.querySelectorAll('.page')
+const bleed = []
+pages.forEach((p, i) => {
+  const top = p.getBoundingClientRect().top
+  p.querySelectorAll('*').forEach((el) => {
+    const r = el.getBoundingClientRect()
+    if (r.bottom - top > 976) {
+      bleed.push({
+        page: i + 1,
+        tag: el.tagName,
+        text: el.textContent.trim().slice(0, 60),
+        overshoot: Math.round(r.bottom - top - 976),
+      })
+    }
+  })
+})
+if (bleed.length > 0) throw new Error(`Page-fit bleed: ${JSON.stringify(bleed)}`)
+```
+
+If `bleed.length > 0`, the CMA is NOT ready. Either split the offending section across N+2 (per the layout table) or trim the narrative. Re-run until zero bleed. Only then surface to Matt.
+
+Note: the inner box ranges slightly between the exemplar's `1056` letter portrait and `1100` legal-style stretches. The `976` ceiling is calibrated for 8.5×11" portrait. If a per-CMA stylesheet uses different page dimensions, recompute the ceiling: `pageHeightPx - 80` (footer band).
 
 **Step 8 — Build the comp location map endpoint**
 
