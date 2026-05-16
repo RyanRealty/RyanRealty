@@ -231,7 +231,6 @@ const bleed = []
 pages.forEach((p, i) => {
   const pageTop = p.getBoundingClientRect().top
   const footer = p.querySelector('.pg-footer, footer')
-  const header = p.querySelector('.pg-header, header')
   // Fall back to 1056 - 31 (typical footer band height) if the page somehow has no footer.
   const footerTop = footer ? footer.getBoundingClientRect().top - pageTop : 1025
   p.querySelectorAll('*').forEach((el) => {
