@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.214.9 (2026-05-16)
+
+### Maintenance
+- docs(cma-skill): codify the actual puppeteer-PDF image budget
+
+---
+
+
 ## v1.214.8 (2026-05-16)
 
 ### Bug Fixes
