@@ -1,0 +1,84 @@
+{
+  "words": [
+    {
+      "text": "Specifically",
+      "startSec": 0.079,
+      "endSec": 0.819
+    },
+    {
+      "text": "",
+      "startSec": 0.819,
+      "endSec": 0.839
+    },
+    {
+      "text": "through",
+      "startSec": 0.839,
+      "endSec": 0.999
+    },
+    {
+      "text": "",
+      "startSec": 0.999,
+      "endSec": 1.019
+    },
+    {
+      "text": "the",
+      "startSec": 1.019,
+      "endSec": 1.059
+    },
+    {
+      "text": "",
+      "startSec": 1.059,
+      "endSec": 1.239
+    },
+    {
+      "text": "new",
+      "startSec": 1.24,
+      "endSec": 1.419
+    },
+    {
+      "text": "",
+      "startSec": 1.419,
+      "endSec": 1.439
+    },
+    {
+      "text": "committee",
+      "startSec": 1.439,
+      "endSec": 1.86
+    },
+    {
+      "text": "",
+      "startSec": 1.86,
+      "endSec": 1.899
+    },
+    {
+      "text": "they",
+      "startSec": 1.899,
+      "endSec": 2.079
+    },
+    {
+      "text": "",
+      "startSec": 2.079,
+      "endSec": 2.179
+    },
+    {
+      "text": "just",
+      "startSec": 2.18,
+      "endSec": 2.379
+    },
+    {
+      "text": "",
+      "startSec": 2.379,
+      "endSec": 2.419
+    },
+    {
+      "text": "created.",
+      "startSec": 2.419,
+      "endSec": 2.879
+    }
+  ],
+  "raw_keys": [
+    "characters",
+    "words",
+    "loss"
+  ]
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Area Guide Template Previews — v1</title>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #faf8f4; color: #102742; padding: 48px 24px; max-width: 800px; margin: 0 auto; }
+    h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 48px; margin-bottom: 8px; }
+    p.lede { font-size: 18px; color: rgba(16,39,66,0.62); margin-bottom: 32px; }
+    .preview { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 12px; padding: 24px; margin-bottom: 16px; transition: transform 0.2s, box-shadow 0.2s; display: block; text-decoration: none; color: inherit; }
+    .preview:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(16,39,66,0.08); }
+    .preview h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; margin-bottom: 4px; }
+    .preview .meta { font-size: 13px; color: rgba(16,39,66,0.62); margin-bottom: 8px; font-weight: 500; }
+    .preview .desc { font-size: 14px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; vertical-align: middle; }
+    .badge.ready { background: #2d7a2d; color: white; }
+    .badge.todo { background: rgba(16,39,66,0.12); color: rgba(16,39,66,0.62); }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <h1>Area Guide Templates · v1</h1>
+  <p class="lede">First-draft mocks. Real Bend data wired in. Open each to evaluate the direction before we commit to building the production Next.js routes.</p>
+
+  <a class="preview" href="./city-bend-v2.html">
+    <div class="meta">Template 1 · v2 · <span class="badge ready">Ready</span></div>
+    <h3>City template — Bend, Oregon (v2)</h3>
+    <div class="desc">v1 + hero market-report video embed, video-play overlays on listings with virtual tours, photo cards for the 13 neighborhoods.</div>
+  </a>
+
+  <a class="preview" href="./city-bend.html" style="opacity: 0.65;">
+    <div class="meta">Template 1 · v1 · earlier draft</div>
+    <h3>City template — Bend, Oregon (v1)</h3>
+    <div class="desc">Original draft. No video, flat neighborhood cards. Kept for comparison.</div>
+  </a>
+
+  <a class="preview" href="#" style="opacity: 0.55; pointer-events: none;">
+    <div class="meta">Template 2 of 4 · <span class="badge todo">To draft</span></div>
+    <h3>Neighborhood template — Awbrey Butte / Summit West / etc.</h3>
+    <div class="desc">Scoped variant of the city template. Parent city link, sub-subdivisions list, more local schools.</div>
+  </a>
+
+  <a class="preview" href="#" style="opacity: 0.55; pointer-events: none;">
+    <div class="meta">Template 3 of 4 · <span class="badge todo">To draft</span></div>
+    <h3>Subdivision template — Tree Farm / Valhalla Heights / etc.</h3>
+    <div class="desc">Designed for the 3,213 recorded plats. Graceful empty-inventory state for low-volume luxury enclaves like Tree Farm.</div>
+  </a>
+
+  <a class="preview" href="#" style="opacity: 0.55; pointer-events: none;">
+    <div class="meta">Template 4 of 4 · <span class="badge todo">To draft</span></div>
+    <h3>Listing detail template</h3>
+    <div class="desc">Single-property page with gallery, full facts, price+listing history, schools, CMA-lite comp set, neighborhood context.</div>
+  </a>
+</body>
+</html>

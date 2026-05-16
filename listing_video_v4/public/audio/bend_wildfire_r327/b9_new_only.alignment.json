@@ -1,0 +1,39 @@
+{
+  "words": [
+    {
+      "text": "But",
+      "startSec": 0.079,
+      "endSec": 0.179
+    },
+    {
+      "text": "",
+      "startSec": 0.179,
+      "endSec": 0.259
+    },
+    {
+      "text": "only",
+      "startSec": 0.259,
+      "endSec": 0.479
+    },
+    {
+      "text": "",
+      "startSec": 0.479,
+      "endSec": 0.56
+    },
+    {
+      "text": "new",
+      "startSec": 0.56,
+      "endSec": 0.659
+    },
+    {
+      "text": "",
+      "startSec": 0.659,
+      "endSec": 0.759
+    },
+    {
+      "text": "permits.",
+      "startSec": 0.759,
+      "endSec": 1.179
+    }
+  ]
+}

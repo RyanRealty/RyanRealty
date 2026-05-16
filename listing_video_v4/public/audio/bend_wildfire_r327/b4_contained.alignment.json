@@ -1,0 +1,49 @@
+{
+  "words": [
+    {
+      "text": "Seventy",
+      "startSec": 0.14,
+      "endSec": 0.479
+    },
+    {
+      "text": "",
+      "startSec": 0.479,
+      "endSec": 0.599
+    },
+    {
+      "text": "percent",
+      "startSec": 0.599,
+      "endSec": 0.979
+    },
+    {
+      "text": "",
+      "startSec": 0.979,
+      "endSec": 1.019
+    },
+    {
+      "text": "contained",
+      "startSec": 1.019,
+      "endSec": 1.559
+    },
+    {
+      "text": "",
+      "startSec": 1.559,
+      "endSec": 1.579
+    },
+    {
+      "text": "this",
+      "startSec": 1.579,
+      "endSec": 1.719
+    },
+    {
+      "text": "",
+      "startSec": 1.719,
+      "endSec": 1.799
+    },
+    {
+      "text": "morning.",
+      "startSec": 1.799,
+      "endSec": 2.119
+    }
+  ]
+}

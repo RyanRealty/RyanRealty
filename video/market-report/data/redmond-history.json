@@ -1,0 +1,98 @@
+{
+  "city": "Redmond",
+  "city_slug": "redmond",
+  "report_month": "2026-04",
+  "pulled_at": "2026-05-11T01:31:52.342Z",
+  "source": "listings table direct query (PropertyType=A AND StandardStatus ilike \"%Closed%\")",
+  "note": "market_stats_cache.compute_and_cache_period_stats RPC has a verified bug that produces incorrect counts/prices/DOM (off by 10-15% on count, 3-7% on price, DOM wildly wrong). This script bypasses the cache and queries listings directly. Verified 2026-05-07.",
+  "windows": [
+    {
+      "period_label": "April 2026",
+      "period_start": "2026-04-01",
+      "period_end": "2026-05-01",
+      "closed_count": 64,
+      "median_sale_price": 473500,
+      "avg_sale_price": 553232.28125,
+      "median_dom": 51.5,
+      "median_sale_to_list_ratio": 0.9814668394901707,
+      "median_ppsf": 331.78127020038784,
+      "sample_sizes": {
+        "prices": 64,
+        "dom": 64,
+        "ratios": 64,
+        "ppsf": 48
+      }
+    },
+    {
+      "period_label": "April 2025",
+      "period_start": "2025-04-01",
+      "period_end": "2025-05-01",
+      "closed_count": 80,
+      "median_sale_price": 548395,
+      "avg_sale_price": 597213.4,
+      "median_dom": 58.5,
+      "median_sale_to_list_ratio": 0.991139339763193,
+      "median_ppsf": 322.1534949069196,
+      "sample_sizes": {
+        "prices": 80,
+        "dom": 80,
+        "ratios": 80,
+        "ppsf": 80
+      }
+    },
+    {
+      "period_label": "April 2024",
+      "period_start": "2024-04-01",
+      "period_end": "2024-05-01",
+      "closed_count": 92,
+      "median_sale_price": 526250,
+      "avg_sale_price": 569804.4111956522,
+      "median_dom": 59,
+      "median_sale_to_list_ratio": 0.9866834184869615,
+      "median_ppsf": 307.5121678874624,
+      "sample_sizes": {
+        "prices": 92,
+        "dom": 92,
+        "ratios": 92,
+        "ppsf": 92
+      }
+    },
+    {
+      "period_label": "April 2019",
+      "period_start": "2019-04-01",
+      "period_end": "2019-05-01",
+      "closed_count": 105,
+      "median_sale_price": 319000,
+      "avg_sale_price": 354258.89523809525,
+      "median_dom": 84,
+      "median_sale_to_list_ratio": 0.9846827133479212,
+      "median_ppsf": 199.89047097480832,
+      "sample_sizes": {
+        "prices": 105,
+        "dom": 105,
+        "ratios": 105,
+        "ppsf": 105
+      }
+    }
+  ],
+  "deltas_vs_current": {
+    "vs_2025": {
+      "label": "April 2026 vs April 2025",
+      "sold_pct": -20,
+      "median_price_pct": -13.657126706115116,
+      "dom_change_days": -7
+    },
+    "vs_2024": {
+      "label": "April 2026 vs April 2024",
+      "sold_pct": -30.434782608695656,
+      "median_price_pct": -10.02375296912114,
+      "dom_change_days": -7.5
+    },
+    "vs_2019": {
+      "label": "April 2026 vs April 2019",
+      "sold_pct": -39.04761904761905,
+      "median_price_pct": 48.43260188087774,
+      "dom_change_days": -32.5
+    }
+  }
+}

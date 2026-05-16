@@ -37,6 +37,14 @@ const CMA_MAPS: Record<string, CmaMapPoint[]> = {
     { label: '7', color: COMP_COLOR, lat: 44.16127, lng: -121.264747 }, // 65030 78th
     { label: '8', color: COMP_COLOR, lat: 44.160531, lng: -121.281245 }, // 65025 92nd
   ],
+  'cma-19496-tumalo-reservoir': [
+    { label: 'S', color: SUBJECT_COLOR, lat: 44.138729, lng: -121.349064 }, // 19496 Tumalo Reservoir
+    { label: '1', color: COMP_COLOR, lat: 44.129022, lng: -121.341007 }, // 64141 Tumalo Rim
+    { label: '2', color: COMP_COLOR, lat: 44.160855, lng: -121.339668 }, // 65010 Gerking Market
+    { label: '3', color: COMP_COLOR, lat: 44.133412, lng: -121.315301 }, // 64265 Old Bend Redmond
+    { label: '4', color: COMP_COLOR, lat: 44.105719, lng: -121.370582 }, // 63510 Gold Spur
+    { label: '5', color: COMP_COLOR, lat: 44.097956, lng: -121.369776 }, // 19083 Saddleback
+  ],
 }
 
 export function getCmaMapPoints(slug: string): CmaMapPoint[] | null {

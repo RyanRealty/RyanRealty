@@ -1,0 +1,102 @@
+[
+  {
+    "label": "p1_cassie_calc",
+    "source_file": "feb11_intro_to_fee",
+    "raw_start_sec": 33,
+    "raw_end_sec": 36.08,
+    "expanded_start_sec": 31.48,
+    "expanded_end_sec": 36.08,
+    "duration_sec": 4.6,
+    "matched_text": "So the fee is calculated on a per appliance basis."
+  },
+  {
+    "label": "p1_cassie_scc",
+    "source_file": "feb11_intro_to_fee",
+    "raw_start_sec": 47.66,
+    "raw_end_sec": 50.88,
+    "expanded_start_sec": 47.02,
+    "expanded_end_sec": 54.82,
+    "duration_sec": 7.8,
+    "matched_text": "The social cost of carbon is the monetary value of climate change damages that occur from each metric ton of carbon dioxide that is emitted."
+  },
+  {
+    "label": "p1_cassie_ashland",
+    "source_file": "feb11_intro_to_fee",
+    "raw_start_sec": 122.52,
+    "raw_end_sec": 126.32,
+    "expanded_start_sec": 95.7,
+    "expanded_end_sec": 124.88,
+    "duration_sec": 29.18,
+    "matched_text": "And then the last part of the calculation is to multiply, USED BY THE CITY OF ASHLAND, BUT THE TWO KEY DIFFERENCES ARE THE INCLUSION OF THE TIER SCALING FACTOR AND NOW THE PART WHERE WE USE THE NET CARBON PRODUCTION similar to the one used by the City of Ashland but the two key differences are the inclusion of"
+  },
+  {
+    "label": "p2_council_false_binary",
+    "source_file": "feb11_fee_levels_discuss",
+    "raw_start_sec": 35.52,
+    "raw_end_sec": 38.4,
+    "expanded_start_sec": 30.44,
+    "expanded_end_sec": 39.7,
+    "duration_sec": 9.26,
+    "matched_text": "I think the other big thing I would say about affordability is that I honestly think that this is being framed as a false binary choice between an either or."
+  },
+  {
+    "label": "p2_council_walk_chew",
+    "source_file": "feb11_fee_levels_discuss",
+    "raw_start_sec": 81.76,
+    "raw_end_sec": 84.28,
+    "expanded_start_sec": 77.48,
+    "expanded_end_sec": 85.24,
+    "duration_sec": 7.76,
+    "matched_text": "I think that we can, I think as one commenter said in an email to us, we can walk and chew gum. We can protect affordability in our community."
+  },
+  {
+    "label": "p2_council_nudge",
+    "source_file": "feb11_council_qna",
+    "raw_start_sec": 48.08,
+    "raw_end_sec": 50.38,
+    "expanded_start_sec": 48.08,
+    "expanded_end_sec": 57.56,
+    "duration_sec": 9.48,
+    "matched_text": "We are nudging. We are sending a signal, which is sort of where we have landed as a council and why we're here with a fee, is trying to send a signal to start this transition, because it"
+  },
+  {
+    "label": "p3_cassie_questions",
+    "source_file": "feb11_tcep_discuss",
+    "raw_start_sec": 105.26,
+    "raw_end_sec": 106.78,
+    "expanded_start_sec": 102.68,
+    "expanded_end_sec": 106.78,
+    "duration_sec": 4.1,
+    "matched_text": "The questions that need to be answered about the fee design is what should the fee level be set at?"
+  },
+  {
+    "label": "p3_cassie_three_questions",
+    "source_file": "feb11_tcep_discuss",
+    "raw_start_sec": 108.88,
+    "raw_end_sec": 112.08,
+    "expanded_start_sec": 108.88,
+    "expanded_end_sec": 112.08,
+    "duration_sec": 3.2,
+    "matched_text": "What exemptions should there be and what should the effective date be?"
+  },
+  {
+    "label": "p3_cassie_stakeholder",
+    "source_file": "feb11_tcep_discuss",
+    "raw_start_sec": 144.66,
+    "raw_end_sec": 148.22,
+    "expanded_start_sec": 142.6,
+    "expanded_end_sec": 148.22,
+    "duration_sec": 5.62,
+    "matched_text": "SO WE NEED TO DO STAKEHOLDER ENGAGEMENT TO INFORM ALL OF THESE POLICY DECISIONS."
+  },
+  {
+    "label": "p3_cassie_tcep",
+    "source_file": "feb11_tcep_discuss",
+    "raw_start_sec": 156.82,
+    "raw_end_sec": 159.1,
+    "expanded_start_sec": 154.28,
+    "expanded_end_sec": 159.1,
+    "duration_sec": 4.82,
+    "matched_text": "This is a model we've been talking about a lot already with the temporary committee on electrification policy."
+  }
+]

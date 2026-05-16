@@ -1,0 +1,194 @@
+{
+  "words": [
+    {
+      "text": "Before",
+      "startSec": 0.079,
+      "endSec": 0.399
+    },
+    {
+      "text": "",
+      "startSec": 0.399,
+      "endSec": 0.419
+    },
+    {
+      "text": "the",
+      "startSec": 0.419,
+      "endSec": 0.459
+    },
+    {
+      "text": "",
+      "startSec": 0.459,
+      "endSec": 0.62
+    },
+    {
+      "text": "fee",
+      "startSec": 0.62,
+      "endSec": 0.759
+    },
+    {
+      "text": "",
+      "startSec": 0.759,
+      "endSec": 0.799
+    },
+    {
+      "text": "goes",
+      "startSec": 0.799,
+      "endSec": 1.019
+    },
+    {
+      "text": "",
+      "startSec": 1.019,
+      "endSec": 1.02
+    },
+    {
+      "text": "to",
+      "startSec": 1.02,
+      "endSec": 1.1
+    },
+    {
+      "text": "",
+      "startSec": 1.1,
+      "endSec": 1.139
+    },
+    {
+      "text": "ordinance,",
+      "startSec": 1.139,
+      "endSec": 1.619
+    },
+    {
+      "text": "",
+      "startSec": 1.619,
+      "endSec": 2.019
+    },
+    {
+      "text": "three",
+      "startSec": 2.019,
+      "endSec": 2.24
+    },
+    {
+      "text": "",
+      "startSec": 2.24,
+      "endSec": 2.299
+    },
+    {
+      "text": "questions",
+      "startSec": 2.299,
+      "endSec": 2.819
+    },
+    {
+      "text": "",
+      "startSec": 2.819,
+      "endSec": 2.899
+    },
+    {
+      "text": "still",
+      "startSec": 2.899,
+      "endSec": 3.099
+    },
+    {
+      "text": "",
+      "startSec": 3.099,
+      "endSec": 3.139
+    },
+    {
+      "text": "need",
+      "startSec": 3.139,
+      "endSec": 3.24
+    },
+    {
+      "text": "",
+      "startSec": 3.24,
+      "endSec": 3.259
+    },
+    {
+      "text": "answers.",
+      "startSec": 3.259,
+      "endSec": 3.72
+    },
+    {
+      "text": "",
+      "startSec": 3.72,
+      "endSec": 4.159
+    },
+    {
+      "text": "From",
+      "startSec": 4.159,
+      "endSec": 4.339
+    },
+    {
+      "text": "",
+      "startSec": 4.339,
+      "endSec": 4.359
+    },
+    {
+      "text": "Cassie",
+      "startSec": 4.36,
+      "endSec": 4.739
+    },
+    {
+      "text": "",
+      "startSec": 4.739,
+      "endSec": 4.779
+    },
+    {
+      "text": "Lacy",
+      "startSec": 4.779,
+      "endSec": 5.259
+    },
+    {
+      "text": "",
+      "startSec": 5.259,
+      "endSec": 5.319
+    },
+    {
+      "text": "at",
+      "startSec": 5.319,
+      "endSec": 5.44
+    },
+    {
+      "text": "",
+      "startSec": 5.44,
+      "endSec": 5.48
+    },
+    {
+      "text": "that",
+      "startSec": 5.48,
+      "endSec": 5.719
+    },
+    {
+      "text": "",
+      "startSec": 5.719,
+      "endSec": 5.739
+    },
+    {
+      "text": "February",
+      "startSec": 5.739,
+      "endSec": 6.219
+    },
+    {
+      "text": "",
+      "startSec": 6.219,
+      "endSec": 6.299
+    },
+    {
+      "text": "eleventh",
+      "startSec": 6.299,
+      "endSec": 6.639
+    },
+    {
+      "text": "",
+      "startSec": 6.639,
+      "endSec": 6.659
+    },
+    {
+      "text": "meeting.",
+      "startSec": 6.659,
+      "endSec": 6.98
+    }
+  ],
+  "raw_keys": [
+    "characters",
+    "words",
+    "loss"
+  ]
+}

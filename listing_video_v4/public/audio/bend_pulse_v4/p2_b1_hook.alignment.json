@@ -1,0 +1,234 @@
+{
+  "words": [
+    {
+      "text": "When",
+      "startSec": 0.079,
+      "endSec": 0.219
+    },
+    {
+      "text": "",
+      "startSec": 0.219,
+      "endSec": 0.279
+    },
+    {
+      "text": "Bend",
+      "startSec": 0.28,
+      "endSec": 0.459
+    },
+    {
+      "text": "",
+      "startSec": 0.459,
+      "endSec": 0.559
+    },
+    {
+      "text": "put",
+      "startSec": 0.56,
+      "endSec": 0.68
+    },
+    {
+      "text": "",
+      "startSec": 0.68,
+      "endSec": 0.699
+    },
+    {
+      "text": "this",
+      "startSec": 0.699,
+      "endSec": 0.839
+    },
+    {
+      "text": "",
+      "startSec": 0.839,
+      "endSec": 0.899
+    },
+    {
+      "text": "fee",
+      "startSec": 0.899,
+      "endSec": 1.019
+    },
+    {
+      "text": "",
+      "startSec": 1.019,
+      "endSec": 1.059
+    },
+    {
+      "text": "on",
+      "startSec": 1.059,
+      "endSec": 1.12
+    },
+    {
+      "text": "",
+      "startSec": 1.12,
+      "endSec": 1.159
+    },
+    {
+      "text": "the",
+      "startSec": 1.159,
+      "endSec": 1.24
+    },
+    {
+      "text": "",
+      "startSec": 1.24,
+      "endSec": 1.279
+    },
+    {
+      "text": "table,",
+      "startSec": 1.279,
+      "endSec": 1.579
+    },
+    {
+      "text": "",
+      "startSec": 1.579,
+      "endSec": 2.139
+    },
+    {
+      "text": "three",
+      "startSec": 2.139,
+      "endSec": 2.339
+    },
+    {
+      "text": "",
+      "startSec": 2.339,
+      "endSec": 2.379
+    },
+    {
+      "text": "industries",
+      "startSec": 2.379,
+      "endSec": 2.859
+    },
+    {
+      "text": "",
+      "startSec": 2.859,
+      "endSec": 2.899
+    },
+    {
+      "text": "showed",
+      "startSec": 2.899,
+      "endSec": 3.119
+    },
+    {
+      "text": "",
+      "startSec": 3.119,
+      "endSec": 3.179
+    },
+    {
+      "text": "up",
+      "startSec": 3.179,
+      "endSec": 3.399
+    },
+    {
+      "text": "",
+      "startSec": 3.399,
+      "endSec": 3.439
+    },
+    {
+      "text": "at",
+      "startSec": 3.439,
+      "endSec": 3.519
+    },
+    {
+      "text": "",
+      "startSec": 3.519,
+      "endSec": 3.579
+    },
+    {
+      "text": "the",
+      "startSec": 3.579,
+      "endSec": 3.619
+    },
+    {
+      "text": "",
+      "startSec": 3.619,
+      "endSec": 3.74
+    },
+    {
+      "text": "Bend",
+      "startSec": 3.74,
+      "endSec": 4.0
+    },
+    {
+      "text": "",
+      "startSec": 4.0,
+      "endSec": 4.159
+    },
+    {
+      "text": "Economic",
+      "startSec": 4.159,
+      "endSec": 4.639
+    },
+    {
+      "text": "",
+      "startSec": 4.639,
+      "endSec": 4.699
+    },
+    {
+      "text": "Development",
+      "startSec": 4.699,
+      "endSec": 5.079
+    },
+    {
+      "text": "",
+      "startSec": 5.079,
+      "endSec": 5.199
+    },
+    {
+      "text": "Board",
+      "startSec": 5.199,
+      "endSec": 5.659
+    },
+    {
+      "text": "",
+      "startSec": 5.659,
+      "endSec": 5.739
+    },
+    {
+      "text": "in",
+      "startSec": 5.739,
+      "endSec": 5.879
+    },
+    {
+      "text": "",
+      "startSec": 5.879,
+      "endSec": 5.919
+    },
+    {
+      "text": "January",
+      "startSec": 5.92,
+      "endSec": 6.46
+    },
+    {
+      "text": "",
+      "startSec": 6.46,
+      "endSec": 6.48
+    },
+    {
+      "text": "to",
+      "startSec": 6.48,
+      "endSec": 6.579
+    },
+    {
+      "text": "",
+      "startSec": 6.579,
+      "endSec": 6.619
+    },
+    {
+      "text": "push",
+      "startSec": 6.619,
+      "endSec": 6.839
+    },
+    {
+      "text": "",
+      "startSec": 6.839,
+      "endSec": 6.879
+    },
+    {
+      "text": "back.",
+      "startSec": 6.879,
+      "endSec": 7.139
+    }
+  ],
+  "raw_keys": [
+    "characters",
+    "words",
+    "loss"
+  ]
+}

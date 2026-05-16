@@ -1,0 +1,104 @@
+{
+  "words": [
+    {
+      "text": "And",
+      "startSec": 0.119,
+      "endSec": 0.259
+    },
+    {
+      "text": "",
+      "startSec": 0.259,
+      "endSec": 0.28
+    },
+    {
+      "text": "the",
+      "startSec": 0.28,
+      "endSec": 0.379
+    },
+    {
+      "text": "",
+      "startSec": 0.379,
+      "endSec": 0.439
+    },
+    {
+      "text": "other",
+      "startSec": 0.439,
+      "endSec": 0.699
+    },
+    {
+      "text": "",
+      "startSec": 0.699,
+      "endSec": 0.719
+    },
+    {
+      "text": "two",
+      "startSec": 0.719,
+      "endSec": 0.839
+    },
+    {
+      "text": "",
+      "startSec": 0.839,
+      "endSec": 0.939
+    },
+    {
+      "text": "questions",
+      "startSec": 0.939,
+      "endSec": 1.419
+    },
+    {
+      "text": "",
+      "startSec": 1.419,
+      "endSec": 1.5
+    },
+    {
+      "text": "Council",
+      "startSec": 1.5,
+      "endSec": 1.939
+    },
+    {
+      "text": "",
+      "startSec": 1.939,
+      "endSec": 1.959
+    },
+    {
+      "text": "still",
+      "startSec": 1.959,
+      "endSec": 2.18
+    },
+    {
+      "text": "",
+      "startSec": 2.18,
+      "endSec": 2.299
+    },
+    {
+      "text": "has",
+      "startSec": 2.299,
+      "endSec": 2.46
+    },
+    {
+      "text": "",
+      "startSec": 2.46,
+      "endSec": 2.5
+    },
+    {
+      "text": "to",
+      "startSec": 2.5,
+      "endSec": 2.539
+    },
+    {
+      "text": "",
+      "startSec": 2.539,
+      "endSec": 2.599
+    },
+    {
+      "text": "decide.",
+      "startSec": 2.599,
+      "endSec": 3.0
+    }
+  ],
+  "raw_keys": [
+    "characters",
+    "words",
+    "loss"
+  ]
+}

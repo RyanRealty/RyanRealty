@@ -1,0 +1,83 @@
+{
+  "city": "Redmond",
+  "city_slug": "redmond",
+  "report_month": "2026-04",
+  "pulled_at": "2026-05-11T01:31:56.126Z",
+  "source": "listings table direct query (PropertyType=A AND StandardStatus ilike \"%Closed%\"). Cache audit 2026-05-07: cache is accurate. Apparent discrepancies are property-type blending — cache headline sold_count includes all PropertyTypes; for SFR-only counts read property_type_breakdown.A. See video_production_skills/market-data-video/SKILL.md §22.",
+  "period": {
+    "start": "2026-04-01",
+    "end": "2026-05-01",
+    "label": "April 2026"
+  },
+  "closed_count": 64,
+  "price_segments": {
+    "total": 64,
+    "bins": [
+      {
+        "label": "Under $400K",
+        "lower": 300000,
+        "upper": 400000,
+        "count": 12,
+        "pct": 19
+      },
+      {
+        "label": "$400K–$500K",
+        "lower": 400000,
+        "upper": 500000,
+        "count": 22,
+        "pct": 34
+      },
+      {
+        "label": "$500K–$600K",
+        "lower": 500000,
+        "upper": 600000,
+        "count": 12,
+        "pct": 19
+      },
+      {
+        "label": "$600K–$700K",
+        "lower": 600000,
+        "upper": 700000,
+        "count": 7,
+        "pct": 11
+      },
+      {
+        "label": "$700K+",
+        "lower": 700000,
+        "upper": null,
+        "count": 11,
+        "pct": 17
+      }
+    ],
+    "annotations": [
+      "34% of closes",
+      "landed in $400k–$500k"
+    ]
+  },
+  "top_neighborhoods": {
+    "rows": [
+      {
+        "name": "Eagle Crest",
+        "median": "$839K",
+        "yoy": "7 sold",
+        "median_dom": 58,
+        "highlight": true
+      },
+      {
+        "name": "Prairie Crossing",
+        "median": "$546K",
+        "yoy": "4 sold",
+        "median_dom": 47,
+        "highlight": false
+      },
+      {
+        "name": "Dry Canyon",
+        "median": "$532K",
+        "yoy": "3 sold",
+        "median_dom": 58,
+        "highlight": false
+      }
+    ],
+    "total": 14
+  }
+}

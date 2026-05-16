@@ -1,0 +1,3848 @@
+{
+  "chunks": [
+    {
+      "text": " I'm",
+      "timestamp": [
+        0,
+        0.18
+      ]
+    },
+    {
+      "text": " interested",
+      "timestamp": [
+        0.18,
+        0.18
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        0.18,
+        0.36
+      ]
+    },
+    {
+      "text": " something",
+      "timestamp": [
+        0.36,
+        0.48
+      ]
+    },
+    {
+      "text": " more",
+      "timestamp": [
+        0.48,
+        0.82
+      ]
+    },
+    {
+      "text": " than",
+      "timestamp": [
+        0.82,
+        1.02
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        1.02,
+        1.14
+      ]
+    },
+    {
+      "text": " nudge,",
+      "timestamp": [
+        1.14,
+        1.56
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        1.56,
+        2
+      ]
+    },
+    {
+      "text": " very",
+      "timestamp": [
+        2,
+        2.24
+      ]
+    },
+    {
+      "text": " simple,",
+      "timestamp": [
+        2.24,
+        2.72
+      ]
+    },
+    {
+      "text": " low,",
+      "timestamp": [
+        2.72,
+        2.94
+      ]
+    },
+    {
+      "text": " gentle",
+      "timestamp": [
+        2.94,
+        3.22
+      ]
+    },
+    {
+      "text": " nudge,",
+      "timestamp": [
+        3.22,
+        3.72
+      ]
+    },
+    {
+      "text": " because",
+      "timestamp": [
+        3.72,
+        3.86
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        3.86,
+        3.98
+      ]
+    },
+    {
+      "text": " don't",
+      "timestamp": [
+        3.98,
+        4.14
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        4.14,
+        4.28
+      ]
+    },
+    {
+      "text": " it's",
+      "timestamp": [
+        4.28,
+        4.48
+      ]
+    },
+    {
+      "text": " going",
+      "timestamp": [
+        4.48,
+        4.6
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        4.6,
+        4.72
+      ]
+    },
+    {
+      "text": " produce",
+      "timestamp": [
+        4.72,
+        5
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        5,
+        5.14
+      ]
+    },
+    {
+      "text": " lot",
+      "timestamp": [
+        5.14,
+        5.28
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        5.28,
+        5.4
+      ]
+    },
+    {
+      "text": " change.",
+      "timestamp": [
+        5.4,
+        5.94
+      ]
+    },
+    {
+      "text": " I'd",
+      "timestamp": [
+        5.94,
+        6.58
+      ]
+    },
+    {
+      "text": " be",
+      "timestamp": [
+        6.58,
+        6.68
+      ]
+    },
+    {
+      "text": " interested",
+      "timestamp": [
+        6.68,
+        6.98
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        6.98,
+        7.26
+      ]
+    },
+    {
+      "text": " something",
+      "timestamp": [
+        7.26,
+        7.46
+      ]
+    },
+    {
+      "text": " more",
+      "timestamp": [
+        7.46,
+        7.76
+      ]
+    },
+    {
+      "text": " like",
+      "timestamp": [
+        7.76,
+        7.98
+      ]
+    },
+    {
+      "text": " 33",
+      "timestamp": [
+        7.98,
+        8.32
+      ]
+    },
+    {
+      "text": "%",
+      "timestamp": [
+        8.32,
+        8.78
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        8.78,
+        9.56
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        9.56,
+        9.64
+      ]
+    },
+    {
+      "text": " fee.",
+      "timestamp": [
+        9.64,
+        9.94
+      ]
+    },
+    {
+      "text": " It's",
+      "timestamp": [
+        9.94,
+        10.2
+      ]
+    },
+    {
+      "text": " not",
+      "timestamp": [
+        10.2,
+        10.26
+      ]
+    },
+    {
+      "text": " quite",
+      "timestamp": [
+        10.26,
+        10.52
+      ]
+    },
+    {
+      "text": " any",
+      "timestamp": [
+        10.52,
+        11
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        11,
+        11.12
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        11.12,
+        11.2
+      ]
+    },
+    {
+      "text": " options",
+      "timestamp": [
+        11.2,
+        11.48
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        11.48,
+        11.72
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        11.72,
+        11.84
+      ]
+    },
+    {
+      "text": " have",
+      "timestamp": [
+        11.84,
+        11.98
+      ]
+    },
+    {
+      "text": " up",
+      "timestamp": [
+        11.98,
+        12.1
+      ]
+    },
+    {
+      "text": " there,",
+      "timestamp": [
+        12.1,
+        12.62
+      ]
+    },
+    {
+      "text": " sort",
+      "timestamp": [
+        12.62,
+        13.1
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        13.1,
+        13.24
+      ]
+    },
+    {
+      "text": " cutting",
+      "timestamp": [
+        13.24,
+        13.46
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        13.46,
+        13.6
+      ]
+    },
+    {
+      "text": " middle",
+      "timestamp": [
+        13.6,
+        13.84
+      ]
+    },
+    {
+      "text": " between",
+      "timestamp": [
+        13.84,
+        14.1
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        14.1,
+        14.32
+      ]
+    },
+    {
+      "text": " 20",
+      "timestamp": [
+        14.32,
+        14.54
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        14.54,
+        14.68
+      ]
+    },
+    {
+      "text": " 50.",
+      "timestamp": [
+        14.68,
+        15.32
+      ]
+    },
+    {
+      "text": " But",
+      "timestamp": [
+        15.32,
+        16.62
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        16.62,
+        16.96
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        16.96,
+        17.26
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        17.26,
+        17.42
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        17.42,
+        17.68
+      ]
+    },
+    {
+      "text": " gets",
+      "timestamp": [
+        17.68,
+        18.66
+      ]
+    },
+    {
+      "text": " us",
+      "timestamp": [
+        18.66,
+        18.8
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        18.8,
+        18.96
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        18.96,
+        19.06
+      ]
+    },
+    {
+      "text": " place",
+      "timestamp": [
+        19.06,
+        19.28
+      ]
+    },
+    {
+      "text": " where",
+      "timestamp": [
+        19.28,
+        19.48
+      ]
+    },
+    {
+      "text": " we're",
+      "timestamp": [
+        19.48,
+        19.64
+      ]
+    },
+    {
+      "text": " getting",
+      "timestamp": [
+        19.64,
+        19.82
+      ]
+    },
+    {
+      "text": " some,",
+      "timestamp": [
+        19.82,
+        20.22
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        20.22,
+        20.98
+      ]
+    },
+    {
+      "text": " meaningful",
+      "timestamp": [
+        20.98,
+        21.38
+      ]
+    },
+    {
+      "text": " nudge",
+      "timestamp": [
+        21.38,
+        21.88
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        21.88,
+        22.48
+      ]
+    },
+    {
+      "text": " move",
+      "timestamp": [
+        22.48,
+        22.64
+      ]
+    },
+    {
+      "text": " us",
+      "timestamp": [
+        22.64,
+        22.78
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        22.78,
+        22.86
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        22.86,
+        22.94
+      ]
+    },
+    {
+      "text": " right",
+      "timestamp": [
+        22.94,
+        23.06
+      ]
+    },
+    {
+      "text": " direction.",
+      "timestamp": [
+        23.06,
+        23.8
+      ]
+    },
+    {
+      "text": " But",
+      "timestamp": [
+        23.8,
+        25
+      ]
+    },
+    {
+      "text": " it's",
+      "timestamp": [
+        25,
+        25.32
+      ]
+    },
+    {
+      "text": " kind",
+      "timestamp": [
+        25.32,
+        26.52
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        26.52,
+        26.66
+      ]
+    },
+    {
+      "text": " considers",
+      "timestamp": [
+        26.66,
+        27
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        27,
+        27.34
+      ]
+    },
+    {
+      "text": " affordability",
+      "timestamp": [
+        27.34,
+        27.84
+      ]
+    },
+    {
+      "text": " concerns",
+      "timestamp": [
+        27.84,
+        28.28
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        28.28,
+        28.6
+      ]
+    },
+    {
+      "text": " are",
+      "timestamp": [
+        28.6,
+        28.72
+      ]
+    },
+    {
+      "text": " coming",
+      "timestamp": [
+        28.72,
+        29.36
+      ]
+    },
+    {
+      "text": " up",
+      "timestamp": [
+        29.36,
+        29.6
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        29.6,
+        29.72
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        29.72,
+        29.78
+      ]
+    },
+    {
+      "text": " community.",
+      "timestamp": [
+        29.78,
+        30.44
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        30.44,
+        30.7
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        30.7,
+        30.9
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        30.9,
+        31.96
+      ]
+    },
+    {
+      "text": " other",
+      "timestamp": [
+        31.96,
+        32.48
+      ]
+    },
+    {
+      "text": " big",
+      "timestamp": [
+        32.48,
+        32.62
+      ]
+    },
+    {
+      "text": " thing",
+      "timestamp": [
+        32.62,
+        32.76
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        32.76,
+        32.9
+      ]
+    },
+    {
+      "text": " would",
+      "timestamp": [
+        32.9,
+        33
+      ]
+    },
+    {
+      "text": " say",
+      "timestamp": [
+        33,
+        33.12
+      ]
+    },
+    {
+      "text": " about",
+      "timestamp": [
+        33.12,
+        33.34
+      ]
+    },
+    {
+      "text": " affordability",
+      "timestamp": [
+        33.34,
+        33.94
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        33.94,
+        34.14
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        34.14,
+        34.24
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        34.24,
+        34.42
+      ]
+    },
+    {
+      "text": " honestly",
+      "timestamp": [
+        34.42,
+        35.02
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        35.02,
+        35.38
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        35.38,
+        35.52
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        35.52,
+        35.7
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        35.7,
+        35.76
+      ]
+    },
+    {
+      "text": " being",
+      "timestamp": [
+        35.76,
+        35.94
+      ]
+    },
+    {
+      "text": " framed",
+      "timestamp": [
+        35.94,
+        36.32
+      ]
+    },
+    {
+      "text": " as",
+      "timestamp": [
+        36.32,
+        36.56
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        36.56,
+        36.62
+      ]
+    },
+    {
+      "text": " false",
+      "timestamp": [
+        36.62,
+        37.44
+      ]
+    },
+    {
+      "text": " binary",
+      "timestamp": [
+        37.44,
+        37.8
+      ]
+    },
+    {
+      "text": " choice",
+      "timestamp": [
+        37.8,
+        38.4
+      ]
+    },
+    {
+      "text": " between",
+      "timestamp": [
+        38.4,
+        38.82
+      ]
+    },
+    {
+      "text": " an",
+      "timestamp": [
+        38.82,
+        39.1
+      ]
+    },
+    {
+      "text": " either",
+      "timestamp": [
+        39.1,
+        39.26
+      ]
+    },
+    {
+      "text": " or.",
+      "timestamp": [
+        39.26,
+        39.7
+      ]
+    },
+    {
+      "text": " You",
+      "timestamp": [
+        39.7,
+        39.84
+      ]
+    },
+    {
+      "text": " either",
+      "timestamp": [
+        39.84,
+        40.1
+      ]
+    },
+    {
+      "text": " get",
+      "timestamp": [
+        40.1,
+        40.38
+      ]
+    },
+    {
+      "text": " some",
+      "timestamp": [
+        40.38,
+        40.9
+      ]
+    },
+    {
+      "text": " action",
+      "timestamp": [
+        40.9,
+        41.18
+      ]
+    },
+    {
+      "text": " on",
+      "timestamp": [
+        41.18,
+        41.38
+      ]
+    },
+    {
+      "text": " climate",
+      "timestamp": [
+        41.38,
+        41.64
+      ]
+    },
+    {
+      "text": " change",
+      "timestamp": [
+        41.64,
+        42.04
+      ]
+    },
+    {
+      "text": " or",
+      "timestamp": [
+        42.04,
+        42.66
+      ]
+    },
+    {
+      "text": " you",
+      "timestamp": [
+        42.66,
+        42.86
+      ]
+    },
+    {
+      "text": " protect",
+      "timestamp": [
+        42.86,
+        43.18
+      ]
+    },
+    {
+      "text": " affordability",
+      "timestamp": [
+        43.18,
+        43.88
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        43.88,
+        44.2
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        44.2,
+        44.32
+      ]
+    },
+    {
+      "text": " it's",
+      "timestamp": [
+        44.32,
+        44.46
+      ]
+    },
+    {
+      "text": " impossible",
+      "timestamp": [
+        44.46,
+        44.86
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        44.86,
+        45.32
+      ]
+    },
+    {
+      "text": " get",
+      "timestamp": [
+        45.32,
+        45.44
+      ]
+    },
+    {
+      "text": " both",
+      "timestamp": [
+        45.44,
+        45.64
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        45.64,
+        45.76
+      ]
+    },
+    {
+      "text": " those",
+      "timestamp": [
+        45.76,
+        45.88
+      ]
+    },
+    {
+      "text": " outcomes.",
+      "timestamp": [
+        45.88,
+        46.38
+      ]
+    },
+    {
+      "text": " And",
+      "timestamp": [
+        46.38,
+        46.44
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        46.44,
+        46.56
+      ]
+    },
+    {
+      "text": " really",
+      "timestamp": [
+        46.56,
+        46.72
+      ]
+    },
+    {
+      "text": " just",
+      "timestamp": [
+        46.72,
+        46.98
+      ]
+    },
+    {
+      "text": " don't",
+      "timestamp": [
+        46.98,
+        47.36
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        47.36,
+        47.82
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        47.82,
+        48.02
+      ]
+    },
+    {
+      "text": " that's",
+      "timestamp": [
+        48.02,
+        48.26
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        48.26,
+        48.32
+      ]
+    },
+    {
+      "text": " viable,",
+      "timestamp": [
+        48.32,
+        49.04
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        49.04,
+        49.28
+      ]
+    },
+    {
+      "text": " don't",
+      "timestamp": [
+        49.28,
+        49.5
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        49.5,
+        49.7
+      ]
+    },
+    {
+      "text": " it's",
+      "timestamp": [
+        49.7,
+        49.88
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        49.88,
+        49.96
+      ]
+    },
+    {
+      "text": " right",
+      "timestamp": [
+        49.96,
+        50.1
+      ]
+    },
+    {
+      "text": " framing.",
+      "timestamp": [
+        50.1,
+        50.64
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        50.64,
+        50.74
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        50.74,
+        50.86
+      ]
+    },
+    {
+      "text": " it's",
+      "timestamp": [
+        50.86,
+        51.02
+      ]
+    },
+    {
+      "text": " inaccurate.",
+      "timestamp": [
+        51.02,
+        51.52
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        51.52,
+        51.7
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        51.7,
+        51.82
+      ]
+    },
+    {
+      "text": " it's",
+      "timestamp": [
+        51.82,
+        51.96
+      ]
+    },
+    {
+      "text": " false.",
+      "timestamp": [
+        51.96,
+        52.42
+      ]
+    },
+    {
+      "text": " And",
+      "timestamp": [
+        52.42,
+        52.82
+      ]
+    },
+    {
+      "text": " frankly,",
+      "timestamp": [
+        52.82,
+        53.24
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        53.24,
+        53.34
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        53.34,
+        53.48
+      ]
+    },
+    {
+      "text": " it's",
+      "timestamp": [
+        53.48,
+        53.66
+      ]
+    },
+    {
+      "text": " being",
+      "timestamp": [
+        53.66,
+        54.36
+      ]
+    },
+    {
+      "text": " used",
+      "timestamp": [
+        54.36,
+        54.8
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        54.8,
+        55.1
+      ]
+    },
+    {
+      "text": " scare",
+      "timestamp": [
+        55.1,
+        55.52
+      ]
+    },
+    {
+      "text": " people",
+      "timestamp": [
+        55.52,
+        55.84
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        55.84,
+        56.04
+      ]
+    },
+    {
+      "text": " kind",
+      "timestamp": [
+        56.04,
+        56.24
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        56.24,
+        56.36
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        56.36,
+        56.46
+      ]
+    },
+    {
+      "text": " bit",
+      "timestamp": [
+        56.46,
+        56.56
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        56.56,
+        56.68
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        56.68,
+        56.78
+      ]
+    },
+    {
+      "text": " boogeyman.",
+      "timestamp": [
+        56.78,
+        57.26
+      ]
+    },
+    {
+      "text": " I've",
+      "timestamp": [
+        57.26,
+        57.46
+      ]
+    },
+    {
+      "text": " seen",
+      "timestamp": [
+        57.46,
+        57.68
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        57.68,
+        57.86
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        57.86,
+        57.98
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        57.98,
+        58.06
+      ]
+    },
+    {
+      "text": " variety",
+      "timestamp": [
+        58.06,
+        58.28
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        58.28,
+        58.48
+      ]
+    },
+    {
+      "text": " other",
+      "timestamp": [
+        58.48,
+        58.66
+      ]
+    },
+    {
+      "text": " settings",
+      "timestamp": [
+        58.66,
+        59
+      ]
+    },
+    {
+      "text": " throughout",
+      "timestamp": [
+        59,
+        59.72
+      ]
+    },
+    {
+      "text": " my",
+      "timestamp": [
+        59.72,
+        59.92
+      ]
+    },
+    {
+      "text": " life,",
+      "timestamp": [
+        59.92,
+        60.38
+      ]
+    },
+    {
+      "text": " often",
+      "timestamp": [
+        60.38,
+        60.72
+      ]
+    },
+    {
+      "text": " around",
+      "timestamp": [
+        60.72,
+        60.98
+      ]
+    },
+    {
+      "text": " environmental",
+      "timestamp": [
+        60.98,
+        61.42
+      ]
+    },
+    {
+      "text": " issues",
+      "timestamp": [
+        61.42,
+        62.04
+      ]
+    },
+    {
+      "text": " before",
+      "timestamp": [
+        62.04,
+        62.5
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        62.5,
+        62.66
+      ]
+    },
+    {
+      "text": " moved",
+      "timestamp": [
+        62.66,
+        62.86
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        62.86,
+        63.04
+      ]
+    },
+    {
+      "text": " Bend",
+      "timestamp": [
+        63.04,
+        63.18
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        63.18,
+        63.3
+      ]
+    },
+    {
+      "text": " Seattle.",
+      "timestamp": [
+        63.3,
+        63.88
+      ]
+    },
+    {
+      "text": " And",
+      "timestamp": [
+        63.88,
+        64.84
+      ]
+    },
+    {
+      "text": " most",
+      "timestamp": [
+        64.84,
+        65.26
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        65.26,
+        65.42
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        65.42,
+        65.52
+      ]
+    },
+    {
+      "text": " research",
+      "timestamp": [
+        65.52,
+        65.78
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        65.78,
+        65.98
+      ]
+    },
+    {
+      "text": " stuff",
+      "timestamp": [
+        65.98,
+        66.16
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        66.16,
+        66.4
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        66.4,
+        66.86
+      ]
+    },
+    {
+      "text": " saw",
+      "timestamp": [
+        66.86,
+        67.64
+      ]
+    },
+    {
+      "text": " about",
+      "timestamp": [
+        67.64,
+        67.98
+      ]
+    },
+    {
+      "text": " those",
+      "timestamp": [
+        67.98,
+        68.18
+      ]
+    },
+    {
+      "text": " issues",
+      "timestamp": [
+        68.18,
+        68.4
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        68.4,
+        68.56
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        68.56,
+        68.62
+      ]
+    },
+    {
+      "text": " past",
+      "timestamp": [
+        68.62,
+        68.88
+      ]
+    },
+    {
+      "text": " showed",
+      "timestamp": [
+        68.88,
+        69.12
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        69.12,
+        69.36
+      ]
+    },
+    {
+      "text": " generally",
+      "timestamp": [
+        69.36,
+        70.04
+      ]
+    },
+    {
+      "text": " those",
+      "timestamp": [
+        70.04,
+        70.44
+      ]
+    },
+    {
+      "text": " binary",
+      "timestamp": [
+        70.44,
+        70.74
+      ]
+    },
+    {
+      "text": " choices",
+      "timestamp": [
+        70.74,
+        71.2
+      ]
+    },
+    {
+      "text": " are",
+      "timestamp": [
+        71.2,
+        71.52
+      ]
+    },
+    {
+      "text": " not",
+      "timestamp": [
+        71.52,
+        71.78
+      ]
+    },
+    {
+      "text": " actually",
+      "timestamp": [
+        71.78,
+        72.2
+      ]
+    },
+    {
+      "text": " how",
+      "timestamp": [
+        72.2,
+        72.38
+      ]
+    },
+    {
+      "text": " things",
+      "timestamp": [
+        72.38,
+        72.6
+      ]
+    },
+    {
+      "text": " work",
+      "timestamp": [
+        72.6,
+        72.98
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        72.98,
+        73.36
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        73.36,
+        73.52
+      ]
+    },
+    {
+      "text": " real",
+      "timestamp": [
+        73.52,
+        73.8
+      ]
+    },
+    {
+      "text": " world",
+      "timestamp": [
+        73.8,
+        74.18
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        74.18,
+        74.38
+      ]
+    },
+    {
+      "text": " as",
+      "timestamp": [
+        74.38,
+        74.58
+      ]
+    },
+    {
+      "text": " you",
+      "timestamp": [
+        74.58,
+        74.7
+      ]
+    },
+    {
+      "text": " implement",
+      "timestamp": [
+        74.7,
+        75.04
+      ]
+    },
+    {
+      "text": " stuff.",
+      "timestamp": [
+        75.04,
+        75.62
+      ]
+    },
+    {
+      "text": " And",
+      "timestamp": [
+        75.62,
+        75.64
+      ]
+    },
+    {
+      "text": " so",
+      "timestamp": [
+        75.64,
+        75.78
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        75.78,
+        76.36
+      ]
+    },
+    {
+      "text": " just",
+      "timestamp": [
+        76.36,
+        76.54
+      ]
+    },
+    {
+      "text": " want",
+      "timestamp": [
+        76.54,
+        76.7
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        76.7,
+        76.84
+      ]
+    },
+    {
+      "text": " call",
+      "timestamp": [
+        76.84,
+        77
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        77,
+        77.14
+      ]
+    },
+    {
+      "text": " out.",
+      "timestamp": [
+        77.14,
+        77.48
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        77.48,
+        77.54
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        77.54,
+        77.86
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        77.86,
+        78.08
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        78.08,
+        78.2
+      ]
+    },
+    {
+      "text": " can,",
+      "timestamp": [
+        78.2,
+        78.7
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        78.7,
+        79.24
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        79.24,
+        79.44
+      ]
+    },
+    {
+      "text": " as",
+      "timestamp": [
+        79.44,
+        79.56
+      ]
+    },
+    {
+      "text": " one",
+      "timestamp": [
+        79.56,
+        79.72
+      ]
+    },
+    {
+      "text": " commenter",
+      "timestamp": [
+        79.72,
+        80.34
+      ]
+    },
+    {
+      "text": " said",
+      "timestamp": [
+        80.34,
+        80.64
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        80.64,
+        80.88
+      ]
+    },
+    {
+      "text": " an",
+      "timestamp": [
+        80.88,
+        80.96
+      ]
+    },
+    {
+      "text": " email",
+      "timestamp": [
+        80.96,
+        81.32
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        81.32,
+        81.52
+      ]
+    },
+    {
+      "text": " us,",
+      "timestamp": [
+        81.52,
+        81.76
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        81.76,
+        81.82
+      ]
+    },
+    {
+      "text": " can",
+      "timestamp": [
+        81.82,
+        81.98
+      ]
+    },
+    {
+      "text": " walk",
+      "timestamp": [
+        81.98,
+        82.24
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        82.24,
+        82.48
+      ]
+    },
+    {
+      "text": " chew",
+      "timestamp": [
+        82.48,
+        82.7
+      ]
+    },
+    {
+      "text": " gum.",
+      "timestamp": [
+        82.7,
+        83.02
+      ]
+    },
+    {
+      "text": " We",
+      "timestamp": [
+        83.02,
+        83.12
+      ]
+    },
+    {
+      "text": " can",
+      "timestamp": [
+        83.12,
+        83.26
+      ]
+    },
+    {
+      "text": " protect",
+      "timestamp": [
+        83.26,
+        83.6
+      ]
+    },
+    {
+      "text": " affordability",
+      "timestamp": [
+        83.6,
+        84.28
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        84.28,
+        84.52
+      ]
+    },
+    {
+      "text": " our",
+      "timestamp": [
+        84.52,
+        84.6
+      ]
+    },
+    {
+      "text": " community.",
+      "timestamp": [
+        84.6,
+        85.24
+      ]
+    },
+    {
+      "text": " That's",
+      "timestamp": [
+        85.24,
+        85.7
+      ]
+    },
+    {
+      "text": " mostly",
+      "timestamp": [
+        85.7,
+        86.1
+      ]
+    },
+    {
+      "text": " about",
+      "timestamp": [
+        86.1,
+        86.42
+      ]
+    },
+    {
+      "text": " supply,",
+      "timestamp": [
+        86.42,
+        87.68
+      ]
+    },
+    {
+      "text": " but",
+      "timestamp": [
+        87.68,
+        88.42
+      ]
+    },
+    {
+      "text": " it's",
+      "timestamp": [
+        88.42,
+        88.58
+      ]
+    },
+    {
+      "text": " also",
+      "timestamp": [
+        88.58,
+        88.78
+      ]
+    },
+    {
+      "text": " about",
+      "timestamp": [
+        88.78,
+        89.1
+      ]
+    },
+    {
+      "text": " demand",
+      "timestamp": [
+        89.1,
+        89.48
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        89.48,
+        89.88
+      ]
+    },
+    {
+      "text": " our",
+      "timestamp": [
+        89.88,
+        89.96
+      ]
+    },
+    {
+      "text": " community.",
+      "timestamp": [
+        89.96,
+        90.5
+      ]
+    },
+    {
+      "text": " We",
+      "timestamp": [
+        90.5,
+        90.56
+      ]
+    },
+    {
+      "text": " have",
+      "timestamp": [
+        90.56,
+        90.7
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        90.7,
+        90.74
+      ]
+    },
+    {
+      "text": " lot",
+      "timestamp": [
+        90.74,
+        90.98
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        90.98,
+        91.1
+      ]
+    },
+    {
+      "text": " people",
+      "timestamp": [
+        91.1,
+        91.32
+      ]
+    },
+    {
+      "text": " who",
+      "timestamp": [
+        91.32,
+        91.54
+      ]
+    },
+    {
+      "text": " want",
+      "timestamp": [
+        91.54,
+        91.7
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        91.7,
+        91.8
+      ]
+    },
+    {
+      "text": " be",
+      "timestamp": [
+        91.8,
+        91.94
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        91.94,
+        92.14
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        92.14,
+        92.3
+      ]
+    },
+    {
+      "text": " wonderful",
+      "timestamp": [
+        92.3,
+        92.66
+      ]
+    },
+    {
+      "text": " place",
+      "timestamp": [
+        92.66,
+        93.08
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        93.08,
+        93.28
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        93.28,
+        93.44
+      ]
+    },
+    {
+      "text": " live,",
+      "timestamp": [
+        93.44,
+        93.72
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        93.72,
+        93.78
+      ]
+    },
+    {
+      "text": " it's",
+      "timestamp": [
+        93.78,
+        93.92
+      ]
+    },
+    {
+      "text": " those",
+      "timestamp": [
+        93.92,
+        94.06
+      ]
+    },
+    {
+      "text": " two",
+      "timestamp": [
+        94.06,
+        94.26
+      ]
+    },
+    {
+      "text": " pieces",
+      "timestamp": [
+        94.26,
+        94.54
+      ]
+    },
+    {
+      "text": " together",
+      "timestamp": [
+        94.54,
+        95
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        95,
+        95.3
+      ]
+    },
+    {
+      "text": " are",
+      "timestamp": [
+        95.3,
+        95.36
+      ]
+    },
+    {
+      "text": " driving",
+      "timestamp": [
+        95.36,
+        95.66
+      ]
+    },
+    {
+      "text": " affordability.",
+      "timestamp": [
+        95.66,
+        96.5
+      ]
+    },
+    {
+      "text": " We've",
+      "timestamp": [
+        96.5,
+        96.96
+      ]
+    },
+    {
+      "text": " done",
+      "timestamp": [
+        96.96,
+        97.1
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        97.1,
+        97.28
+      ]
+    },
+    {
+      "text": " lot.",
+      "timestamp": [
+        97.28,
+        97.58
+      ]
+    },
+    {
+      "text": " We",
+      "timestamp": [
+        97.58,
+        97.72
+      ]
+    },
+    {
+      "text": " will",
+      "timestamp": [
+        97.72,
+        97.9
+      ]
+    },
+    {
+      "text": " continue.",
+      "timestamp": [
+        97.9,
+        98.5
+      ]
+    },
+    {
+      "text": " This",
+      "timestamp": [
+        98.5,
+        98.62
+      ]
+    },
+    {
+      "text": " council",
+      "timestamp": [
+        98.62,
+        98.88
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        98.88,
+        99.04
+      ]
+    },
+    {
+      "text": " very",
+      "timestamp": [
+        99.04,
+        99.2
+      ]
+    },
+    {
+      "text": " committed",
+      "timestamp": [
+        99.2,
+        99.56
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        99.56,
+        99.8
+      ]
+    },
+    {
+      "text": " doing",
+      "timestamp": [
+        99.8,
+        99.98
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        99.98,
+        100.22
+      ]
+    },
+    {
+      "text": " going",
+      "timestamp": [
+        100.22,
+        100.84
+      ]
+    },
+    {
+      "text": " forward.",
+      "timestamp": [
+        100.84,
+        101.42
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        101.42,
+        101.72
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        101.72,
+        101.9
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        101.9,
+        102.04
+      ]
+    },
+    {
+      "text": " can",
+      "timestamp": [
+        102.04,
+        102.2
+      ]
+    },
+    {
+      "text": " do",
+      "timestamp": [
+        102.2,
+        102.38
+      ]
+    },
+    {
+      "text": " that,",
+      "timestamp": [
+        102.38,
+        102.72
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        102.72,
+        103.26
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        103.26,
+        103.64
+      ]
+    },
+    {
+      "text": " can",
+      "timestamp": [
+        103.64,
+        103.84
+      ]
+    },
+    {
+      "text": " take",
+      "timestamp": [
+        103.84,
+        104.08
+      ]
+    },
+    {
+      "text": " some",
+      "timestamp": [
+        104.08,
+        104.26
+      ]
+    },
+    {
+      "text": " action",
+      "timestamp": [
+        104.26,
+        104.64
+      ]
+    },
+    {
+      "text": " on,",
+      "timestamp": [
+        104.64,
+        106.38
+      ]
+    },
+    {
+      "text": " meaningful",
+      "timestamp": [
+        106.38,
+        107.22
+      ]
+    },
+    {
+      "text": " action",
+      "timestamp": [
+        107.22,
+        107.6
+      ]
+    },
+    {
+      "text": " on",
+      "timestamp": [
+        107.6,
+        107.92
+      ]
+    },
+    {
+      "text": " reducing",
+      "timestamp": [
+        107.92,
+        108.46
+      ]
+    },
+    {
+      "text": " our",
+      "timestamp": [
+        108.46,
+        108.76
+      ]
+    },
+    {
+      "text": " use",
+      "timestamp": [
+        108.76,
+        108.94
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        108.94,
+        109.1
+      ]
+    },
+    {
+      "text": " fossil",
+      "timestamp": [
+        109.1,
+        109.3
+      ]
+    },
+    {
+      "text": " fuels.",
+      "timestamp": [
+        109.3,
+        110.22
+      ]
+    },
+    {
+      "text": " So,",
+      "timestamp": [
+        110.22,
+        110.48
+      ]
+    },
+    {
+      "text": " but",
+      "timestamp": [
+        110.48,
+        111.7
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        111.7,
+        111.88
+      ]
+    },
+    {
+      "text": " would",
+      "timestamp": [
+        111.88,
+        111.96
+      ]
+    },
+    {
+      "text": " support",
+      "timestamp": [
+        111.96,
+        112.16
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        112.16,
+        112.38
+      ]
+    },
+    {
+      "text": " 33",
+      "timestamp": [
+        112.38,
+        112.84
+      ]
+    },
+    {
+      "text": "%",
+      "timestamp": [
+        112.84,
+        113.52
+      ]
+    },
+    {
+      "text": " goal.",
+      "timestamp": [
+        113.52,
+        114.02
+      ]
+    },
+    {
+      "text": " Okay.",
+      "timestamp": [
+        114.02,
+        114.5
+      ]
+    },
+    {
+      "text": " Ordering",
+      "timestamp": [
+        114.5,
+        115.92
+      ]
+    },
+    {
+      "text": " off",
+      "timestamp": [
+        115.92,
+        116.06
+      ]
+    },
+    {
+      "text": " menu.",
+      "timestamp": [
+        116.06,
+        116.62
+      ]
+    },
+    {
+      "text": " All",
+      "timestamp": [
+        116.62,
+        117.22
+      ]
+    },
+    {
+      "text": " right.",
+      "timestamp": [
+        117.22,
+        117.5
+      ]
+    },
+    {
+      "text": " It's",
+      "timestamp": [
+        117.5,
+        119.12
+      ]
+    },
+    {
+      "text": " all",
+      "timestamp": [
+        119.12,
+        119.16
+      ]
+    },
+    {
+      "text": " right.",
+      "timestamp": [
+        119.16,
+        119.36
+      ]
+    },
+    {
+      "text": " It's",
+      "timestamp": [
+        119.36,
+        119.44
+      ]
+    },
+    {
+      "text": " what",
+      "timestamp": [
+        119.44,
+        119.48
+      ]
+    },
+    {
+      "text": " we're",
+      "timestamp": [
+        119.48,
+        119.68
+      ]
+    },
+    {
+      "text": " here",
+      "timestamp": [
+        119.68,
+        119.72
+      ]
+    },
+    {
+      "text": " for.",
+      "timestamp": [
+        119.72,
+        119.96
+      ]
+    },
+    {
+      "text": " Go",
+      "timestamp": [
+        119.96,
+        120.16
+      ]
+    },
+    {
+      "text": " ahead.",
+      "timestamp": [
+        120.16,
+        120.54
+      ]
+    },
+    {
+      "text": " Councilor",
+      "timestamp": [
+        120.54,
+        121.76
+      ]
+    },
+    {
+      "text": " Meadows,",
+      "timestamp": [
+        121.76,
+        121.94
+      ]
+    },
+    {
+      "text": " I'm",
+      "timestamp": [
+        121.94,
+        122.1
+      ]
+    },
+    {
+      "text": " enthusiastic",
+      "timestamp": [
+        122.08,
+        122.96
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        122.96,
+        123.68
+      ]
+    },
+    {
+      "text": " your",
+      "timestamp": [
+        123.68,
+        124.78
+      ]
+    },
+    {
+      "text": " response",
+      "timestamp": [
+        124.78,
+        125.54
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        125.54,
+        126.22
+      ]
+    },
+    {
+      "text": " especially",
+      "timestamp": [
+        126.22,
+        126.94
+      ]
+    },
+    {
+      "text": " bringing",
+      "timestamp": [
+        126.94,
+        128.32
+      ]
+    },
+    {
+      "text": " up",
+      "timestamp": [
+        128.32,
+        128.68
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        128.68,
+        129.08
+      ]
+    },
+    {
+      "text": " transportation.",
+      "timestamp": [
+        129.08,
+        130.1
+      ]
+    },
+    {
+      "text": " And",
+      "timestamp": [
+        130.1,
+        130.78
+      ]
+    },
+    {
+      "text": " when",
+      "timestamp": [
+        130.78,
+        131.98
+      ]
+    },
+    {
+      "text": " you",
+      "timestamp": [
+        131.98,
+        132.42
+      ]
+    },
+    {
+      "text": " say",
+      "timestamp": [
+        132.42,
+        133.72
+      ]
+    },
+    {
+      "text": " that,",
+      "timestamp": [
+        133.72,
+        133.96
+      ]
+    },
+    {
+      "text": " what",
+      "timestamp": [
+        133.96,
+        134.08
+      ]
+    },
+    {
+      "text": " comes",
+      "timestamp": [
+        134.08,
+        134.3
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        134.3,
+        134.42
+      ]
+    },
+    {
+      "text": " my",
+      "timestamp": [
+        134.42,
+        134.56
+      ]
+    },
+    {
+      "text": " mind",
+      "timestamp": [
+        134.56,
+        134.82
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        134.82,
+        134.96
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        134.96,
+        135.08
+      ]
+    },
+    {
+      "text": " 53",
+      "timestamp": [
+        135.08,
+        135.48
+      ]
+    },
+    {
+      "text": "%",
+      "timestamp": [
+        135.48,
+        135.96
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        135.96,
+        136.28
+      ]
+    },
+    {
+      "text": " people",
+      "timestamp": [
+        136.28,
+        136.62
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        136.62,
+        137.06
+      ]
+    },
+    {
+      "text": " drive",
+      "timestamp": [
+        137.06,
+        137.56
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        137.56,
+        137.88
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        137.88,
+        138.04
+      ]
+    },
+    {
+      "text": " Bend",
+      "timestamp": [
+        138.04,
+        138.34
+      ]
+    },
+    {
+      "text": " every",
+      "timestamp": [
+        138.34,
+        138.72
+      ]
+    },
+    {
+      "text": " day",
+      "timestamp": [
+        138.72,
+        139
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        139,
+        139.22
+      ]
+    },
+    {
+      "text": " go",
+      "timestamp": [
+        139.22,
+        139.38
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        139.38,
+        139.52
+      ]
+    },
+    {
+      "text": " work",
+      "timestamp": [
+        139.52,
+        139.78
+      ]
+    },
+    {
+      "text": " because",
+      "timestamp": [
+        139.78,
+        140.88
+      ]
+    },
+    {
+      "text": " they",
+      "timestamp": [
+        140.88,
+        141.14
+      ]
+    },
+    {
+      "text": " cannot",
+      "timestamp": [
+        141.14,
+        141.34
+      ]
+    },
+    {
+      "text": " afford",
+      "timestamp": [
+        141.34,
+        141.54
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        141.54,
+        141.74
+      ]
+    },
+    {
+      "text": " live",
+      "timestamp": [
+        141.74,
+        141.84
+      ]
+    },
+    {
+      "text": " here.",
+      "timestamp": [
+        141.84,
+        142.08
+      ]
+    },
+    {
+      "text": " So",
+      "timestamp": [
+        142.08,
+        142.22
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        142.22,
+        142.96
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        142.96,
+        143.14
+      ]
+    },
+    {
+      "text": " something",
+      "timestamp": [
+        143.14,
+        143.34
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        143.34,
+        143.62
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        143.62,
+        144.08
+      ]
+    },
+    {
+      "text": " on",
+      "timestamp": [
+        144.08,
+        144.54
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        144.54,
+        144.6
+      ]
+    },
+    {
+      "text": " top",
+      "timestamp": [
+        144.6,
+        144.78
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        144.78,
+        144.9
+      ]
+    },
+    {
+      "text": " my",
+      "timestamp": [
+        144.9,
+        145.08
+      ]
+    },
+    {
+      "text": " mind",
+      "timestamp": [
+        145.08,
+        145.4
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        145.4,
+        145.64
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        145.64,
+        145.82
+      ]
+    },
+    {
+      "text": " would,",
+      "timestamp": [
+        145.82,
+        146.18
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        146.18,
+        146.3
+      ]
+    },
+    {
+      "text": " if",
+      "timestamp": [
+        146.3,
+        146.38
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        146.38,
+        146.8
+      ]
+    },
+    {
+      "text": " want",
+      "timestamp": [
+        146.8,
+        146.96
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        146.96,
+        147.06
+      ]
+    },
+    {
+      "text": " do",
+      "timestamp": [
+        147.06,
+        147.16
+      ]
+    },
+    {
+      "text": " something",
+      "timestamp": [
+        147.16,
+        147.34
+      ]
+    },
+    {
+      "text": " about",
+      "timestamp": [
+        147.34,
+        147.6
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        147.6,
+        147.74
+      ]
+    },
+    {
+      "text": " environment,",
+      "timestamp": [
+        147.74,
+        148.26
+      ]
+    },
+    {
+      "text": " getting",
+      "timestamp": [
+        148.26,
+        148.82
+      ]
+    },
+    {
+      "text": " people",
+      "timestamp": [
+        148.82,
+        149.08
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        149.08,
+        149.42
+      ]
+    },
+    {
+      "text": " live",
+      "timestamp": [
+        149.42,
+        149.8
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        149.8,
+        150.06
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        150.06,
+        150.16
+      ]
+    },
+    {
+      "text": " city",
+      "timestamp": [
+        150.16,
+        150.42
+      ]
+    },
+    {
+      "text": " where",
+      "timestamp": [
+        150.42,
+        150.86
+      ]
+    },
+    {
+      "text": " they",
+      "timestamp": [
+        150.86,
+        151.66
+      ]
+    },
+    {
+      "text": " work",
+      "timestamp": [
+        151.66,
+        151.98
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        151.98,
+        152.58
+      ]
+    },
+    {
+      "text": " be",
+      "timestamp": [
+        152.58,
+        152.84
+      ]
+    },
+    {
+      "text": " able",
+      "timestamp": [
+        152.84,
+        153.04
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        153.04,
+        153.24
+      ]
+    },
+    {
+      "text": " get",
+      "timestamp": [
+        153.24,
+        153.42
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        153.42,
+        153.56
+      ]
+    },
+    {
+      "text": " work,",
+      "timestamp": [
+        153.56,
+        153.9
+      ]
+    },
+    {
+      "text": " walk",
+      "timestamp": [
+        153.9,
+        154.76
+      ]
+    },
+    {
+      "text": " or",
+      "timestamp": [
+        154.76,
+        155.06
+      ]
+    },
+    {
+      "text": " bike",
+      "timestamp": [
+        155.06,
+        155.54
+      ]
+    },
+    {
+      "text": " or",
+      "timestamp": [
+        155.54,
+        155.96
+      ]
+    },
+    {
+      "text": " whatever",
+      "timestamp": [
+        155.96,
+        156.58
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        156.58,
+        156.82
+      ]
+    },
+    {
+      "text": " work,",
+      "timestamp": [
+        156.82,
+        157.2
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        157.2,
+        157.74
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        157.74,
+        157.92
+      ]
+    },
+    {
+      "text": " me",
+      "timestamp": [
+        157.92,
+        158.06
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        158.06,
+        158.16
+      ]
+    },
+    {
+      "text": " number",
+      "timestamp": [
+        158.16,
+        158.32
+      ]
+    },
+    {
+      "text": " one",
+      "timestamp": [
+        158.32,
+        158.46
+      ]
+    },
+    {
+      "text": " thing",
+      "timestamp": [
+        158.46,
+        158.68
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        158.68,
+        158.82
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        158.82,
+        158.9
+      ]
+    },
+    {
+      "text": " can",
+      "timestamp": [
+        158.9,
+        159.06
+      ]
+    },
+    {
+      "text": " do",
+      "timestamp": [
+        159.06,
+        159.34
+      ]
+    },
+    {
+      "text": " on",
+      "timestamp": [
+        159.34,
+        160.58
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        160.58,
+        160.82
+      ]
+    },
+    {
+      "text": " council.",
+      "timestamp": [
+        160.82,
+        161.56
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        161.56,
+        162.7
+      ]
+    },
+    {
+      "text": " am",
+      "timestamp": [
+        162.7,
+        163.5
+      ]
+    },
+    {
+      "text": " really",
+      "timestamp": [
+        163.5,
+        163.9
+      ]
+    },
+    {
+      "text": " struggling.",
+      "timestamp": [
+        163.9,
+        164.66
+      ]
+    },
+    {
+      "text": " It's",
+      "timestamp": [
+        164.66,
+        164.98
+      ]
+    },
+    {
+      "text": " kind",
+      "timestamp": [
+        164.98,
+        165.42
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        165.42,
+        165.54
+      ]
+    },
+    {
+      "text": " come",
+      "timestamp": [
+        165.54,
+        165.72
+      ]
+    },
+    {
+      "text": " as",
+      "timestamp": [
+        165.72,
+        165.86
+      ]
+    },
+    {
+      "text": " zero",
+      "timestamp": [
+        165.84,
+        166.2
+      ]
+    },
+    {
+      "text": " surprise",
+      "timestamp": [
+        166.2,
+        166.62
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        166.62,
+        166.84
+      ]
+    },
+    {
+      "text": " any",
+      "timestamp": [
+        166.84,
+        166.96
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        166.96,
+        167.06
+      ]
+    },
+    {
+      "text": " you,",
+      "timestamp": [
+        167.06,
+        167.28
+      ]
+    },
+    {
+      "text": " but",
+      "timestamp": [
+        167.28,
+        167.36
+      ]
+    },
+    {
+      "text": " I'm",
+      "timestamp": [
+        167.36,
+        167.54
+      ]
+    },
+    {
+      "text": " really",
+      "timestamp": [
+        167.54,
+        167.7
+      ]
+    },
+    {
+      "text": " struggling",
+      "timestamp": [
+        167.7,
+        168.1
+      ]
+    },
+    {
+      "text": " with",
+      "timestamp": [
+        168.1,
+        168.34
+      ]
+    },
+    {
+      "text": " this.",
+      "timestamp": [
+        168.34,
+        168.78
+      ]
+    },
+    {
+      "text": " And",
+      "timestamp": [
+        168.78,
+        169.52
+      ]
+    },
+    {
+      "text": " I'm",
+      "timestamp": [
+        169.52,
+        171.4
+      ]
+    },
+    {
+      "text": " struggling",
+      "timestamp": [
+        171.4,
+        171.66
+      ]
+    },
+    {
+      "text": " with",
+      "timestamp": [
+        171.66,
+        171.88
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        171.88,
+        171.98
+      ]
+    },
+    {
+      "text": " program",
+      "timestamp": [
+        171.98,
+        172.46
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        172.46,
+        173.14
+      ]
+    },
+    {
+      "text": " is,",
+      "timestamp": [
+        173.14,
+        173.96
+      ]
+    },
+    {
+      "text": " it",
+      "timestamp": [
+        173.96,
+        174.24
+      ]
+    },
+    {
+      "text": " kind",
+      "timestamp": [
+        174.24,
+        174.76
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        174.76,
+        175
+      ]
+    },
+    {
+      "text": " seems",
+      "timestamp": [
+        175,
+        175.24
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        175.24,
+        175.46
+      ]
+    },
+    {
+      "text": " me",
+      "timestamp": [
+        175.46,
+        175.68
+      ]
+    },
+    {
+      "text": " like",
+      "timestamp": [
+        175.68,
+        176.1
+      ]
+    },
+    {
+      "text": " we're",
+      "timestamp": [
+        176.1,
+        176.38
+      ]
+    },
+    {
+      "text": " robbing",
+      "timestamp": [
+        176.38,
+        176.82
+      ]
+    },
+    {
+      "text": " Peter",
+      "timestamp": [
+        176.82,
+        177.04
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        177.04,
+        177.22
+      ]
+    },
+    {
+      "text": " pay",
+      "timestamp": [
+        177.22,
+        177.38
+      ]
+    },
+    {
+      "text": " Paul.",
+      "timestamp": [
+        177.38,
+        177.72
+      ]
+    },
+    {
+      "text": " And",
+      "timestamp": [
+        177.72,
+        178.4
+      ]
+    },
+    {
+      "text": " especially",
+      "timestamp": [
+        178.4,
+        179.9
+      ]
+    }
+  ],
+  "text": " I'm interested in something more than a nudge, a very simple, low, gentle nudge, because I don't think it's going to produce a lot of change. I'd be interested in something more like 33% of the fee. It's not quite any of the options that we have up there, sort of cutting the middle between the 20 and 50. But I think that that gets us to a place where we're getting some, a meaningful nudge to move us in the right direction. But it's kind of considers the affordability concerns that are coming up in the community. I think the other big thing I would say about affordability is that I honestly think that this is being framed as a false binary choice between an either or. You either get some action on climate change or you protect affordability and that it's impossible to get both of those outcomes. And I really just don't think that that's a viable, I don't think it's the right framing. I think it's inaccurate. I think it's false. And frankly, I think it's being used to scare people and kind of a bit of a boogeyman. I've seen this in a variety of other settings throughout my life, often around environmental issues before I moved to Bend and Seattle. And most of the research and stuff that I saw about those issues in the past showed that generally those binary choices are not actually how things work in the real world and as you implement stuff. And so I just want to call that out. I think that we can, I think as one commenter said in an email to us, we can walk and chew gum. We can protect affordability in our community. That's mostly about supply, but it's also about demand in our community. We have a lot of people who want to be in this wonderful place that we live, and it's those two pieces together that are driving affordability. We've done a lot. We will continue. This council is very committed to doing that going forward. I think we can do that, and we can take some action on, meaningful action on reducing our use of fossil fuels. So, but I would support that 33% goal. Okay. Ordering off menu. All right. It's all right. It's what we're here for. Go ahead. Councilor Meadows, I'm enthusiastic by your response and especially bringing up the transportation. And when you say that, what comes to my mind is the 53% of people that drive in to Bend every day to go to work because they cannot afford to live here. So that is something that is on the top of my mind that I would, and if we want to do something about the environment, getting people to live in the city where they work and be able to get to work, walk or bike or whatever to work, is to me the number one thing that we can do on this council. I am really struggling. It's kind of come as zero surprise to any of you, but I'm really struggling with this. And I'm struggling with a program that is, it kind of seems to me like we're robbing Peter to pay Paul. And especially"
+}

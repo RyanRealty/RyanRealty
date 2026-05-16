@@ -1,0 +1,3603 @@
+{
+  "chunks": [
+    {
+      "text": " So",
+      "timestamp": [
+        0,
+        0.42
+      ]
+    },
+    {
+      "text": " now",
+      "timestamp": [
+        0.42,
+        0.6
+      ]
+    },
+    {
+      "text": " we're",
+      "timestamp": [
+        0.6,
+        0.74
+      ]
+    },
+    {
+      "text": " going",
+      "timestamp": [
+        0.74,
+        0.82
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        0.82,
+        0.92
+      ]
+    },
+    {
+      "text": " review",
+      "timestamp": [
+        0.92,
+        1.16
+      ]
+    },
+    {
+      "text": " some",
+      "timestamp": [
+        1.16,
+        1.46
+      ]
+    },
+    {
+      "text": " analysis",
+      "timestamp": [
+        1.46,
+        2.04
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        2.04,
+        2.26
+      ]
+    },
+    {
+      "text": " information",
+      "timestamp": [
+        2.26,
+        2.62
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        2.62,
+        3.42
+      ]
+    },
+    {
+      "text": " explores",
+      "timestamp": [
+        3.42,
+        3.98
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        3.98,
+        4.32
+      ]
+    },
+    {
+      "text": " impacts",
+      "timestamp": [
+        4.32,
+        4.72
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        4.72,
+        4.98
+      ]
+    },
+    {
+      "text": " implementing",
+      "timestamp": [
+        4.98,
+        5.38
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        5.38,
+        5.64
+      ]
+    },
+    {
+      "text": " fee",
+      "timestamp": [
+        5.64,
+        5.86
+      ]
+    },
+    {
+      "text": " on",
+      "timestamp": [
+        5.86,
+        6.1
+      ]
+    },
+    {
+      "text": " natural",
+      "timestamp": [
+        6.1,
+        6.28
+      ]
+    },
+    {
+      "text": " gas",
+      "timestamp": [
+        6.28,
+        6.52
+      ]
+    },
+    {
+      "text": " appliances",
+      "timestamp": [
+        6.52,
+        6.98
+      ]
+    },
+    {
+      "text": " at",
+      "timestamp": [
+        6.98,
+        7.16
+      ]
+    },
+    {
+      "text": " different",
+      "timestamp": [
+        7.16,
+        7.38
+      ]
+    },
+    {
+      "text": " fee",
+      "timestamp": [
+        7.38,
+        7.62
+      ]
+    },
+    {
+      "text": " levels.",
+      "timestamp": [
+        7.62,
+        8.4
+      ]
+    },
+    {
+      "text": " We",
+      "timestamp": [
+        8.4,
+        9.6
+      ]
+    },
+    {
+      "text": " introduced",
+      "timestamp": [
+        9.6,
+        10.38
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        10.38,
+        11.36
+      ]
+    },
+    {
+      "text": " proposed",
+      "timestamp": [
+        11.36,
+        11.54
+      ]
+    },
+    {
+      "text": " fee",
+      "timestamp": [
+        11.54,
+        11.88
+      ]
+    },
+    {
+      "text": " design",
+      "timestamp": [
+        11.88,
+        12.14
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        12.14,
+        12.42
+      ]
+    },
+    {
+      "text": " fee",
+      "timestamp": [
+        12.42,
+        12.56
+      ]
+    },
+    {
+      "text": " calculation",
+      "timestamp": [
+        12.56,
+        12.98
+      ]
+    },
+    {
+      "text": " at",
+      "timestamp": [
+        12.98,
+        13.38
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        13.38,
+        13.48
+      ]
+    },
+    {
+      "text": " work",
+      "timestamp": [
+        13.48,
+        13.68
+      ]
+    },
+    {
+      "text": " session",
+      "timestamp": [
+        13.68,
+        13.86
+      ]
+    },
+    {
+      "text": " on",
+      "timestamp": [
+        13.86,
+        14.12
+      ]
+    },
+    {
+      "text": " December",
+      "timestamp": [
+        14.12,
+        14.38
+      ]
+    },
+    {
+      "text": " 10th.",
+      "timestamp": [
+        14.38,
+        15.08
+      ]
+    },
+    {
+      "text": " I'm",
+      "timestamp": [
+        15.08,
+        15.6
+      ]
+    },
+    {
+      "text": " going",
+      "timestamp": [
+        15.6,
+        15.6
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        15.6,
+        15.72
+      ]
+    },
+    {
+      "text": " walk",
+      "timestamp": [
+        15.72,
+        15.9
+      ]
+    },
+    {
+      "text": " through",
+      "timestamp": [
+        15.9,
+        16.06
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        16.06,
+        16.18
+      ]
+    },
+    {
+      "text": " fee",
+      "timestamp": [
+        16.18,
+        16.32
+      ]
+    },
+    {
+      "text": " calculation",
+      "timestamp": [
+        16.32,
+        16.72
+      ]
+    },
+    {
+      "text": " once",
+      "timestamp": [
+        16.72,
+        17.18
+      ]
+    },
+    {
+      "text": " more",
+      "timestamp": [
+        17.18,
+        17.48
+      ]
+    },
+    {
+      "text": " since",
+      "timestamp": [
+        17.48,
+        17.74
+      ]
+    },
+    {
+      "text": " it's",
+      "timestamp": [
+        17.74,
+        17.98
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        17.98,
+        18.08
+      ]
+    },
+    {
+      "text": " foundation",
+      "timestamp": [
+        18.08,
+        18.42
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        18.42,
+        18.72
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        18.72,
+        18.8
+      ]
+    },
+    {
+      "text": " whole",
+      "timestamp": [
+        18.8,
+        18.94
+      ]
+    },
+    {
+      "text": " policy",
+      "timestamp": [
+        18.94,
+        19.4
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        19.4,
+        19.64
+      ]
+    },
+    {
+      "text": " it",
+      "timestamp": [
+        19.64,
+        19.76
+      ]
+    },
+    {
+      "text": " dictates",
+      "timestamp": [
+        19.76,
+        20.2
+      ]
+    },
+    {
+      "text": " what",
+      "timestamp": [
+        20.2,
+        20.42
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        20.42,
+        22.76
+      ]
+    },
+    {
+      "text": " maximum",
+      "timestamp": [
+        22.76,
+        23.04
+      ]
+    },
+    {
+      "text": " potential",
+      "timestamp": [
+        23.04,
+        23.3
+      ]
+    },
+    {
+      "text": " fee",
+      "timestamp": [
+        23.3,
+        23.64
+      ]
+    },
+    {
+      "text": " could",
+      "timestamp": [
+        23.64,
+        23.8
+      ]
+    },
+    {
+      "text": " be",
+      "timestamp": [
+        23.8,
+        23.9
+      ]
+    },
+    {
+      "text": " set",
+      "timestamp": [
+        23.9,
+        24.12
+      ]
+    },
+    {
+      "text": " at.",
+      "timestamp": [
+        24.12,
+        24.48
+      ]
+    },
+    {
+      "text": " In",
+      "timestamp": [
+        24.48,
+        24.96
+      ]
+    },
+    {
+      "text": " addition",
+      "timestamp": [
+        24.96,
+        25.3
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        25.3,
+        25.56
+      ]
+    },
+    {
+      "text": " have",
+      "timestamp": [
+        25.56,
+        25.84
+      ]
+    },
+    {
+      "text": " actually",
+      "timestamp": [
+        25.84,
+        26.34
+      ]
+    },
+    {
+      "text": " made",
+      "timestamp": [
+        26.34,
+        26.54
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        26.54,
+        26.62
+      ]
+    },
+    {
+      "text": " modification",
+      "timestamp": [
+        26.62,
+        27.02
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        27.02,
+        27.36
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        27.36,
+        27.5
+      ]
+    },
+    {
+      "text": " fee",
+      "timestamp": [
+        27.5,
+        27.62
+      ]
+    },
+    {
+      "text": " calculation",
+      "timestamp": [
+        27.62,
+        28.08
+      ]
+    },
+    {
+      "text": " since",
+      "timestamp": [
+        28.08,
+        29.02
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        29.02,
+        29.2
+      ]
+    },
+    {
+      "text": " talked",
+      "timestamp": [
+        29.2,
+        29.36
+      ]
+    },
+    {
+      "text": " about",
+      "timestamp": [
+        29.36,
+        29.58
+      ]
+    },
+    {
+      "text": " last",
+      "timestamp": [
+        29.58,
+        29.82
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        29.82,
+        30.02
+      ]
+    },
+    {
+      "text": " December",
+      "timestamp": [
+        30.02,
+        30.3
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        30.3,
+        30.52
+      ]
+    },
+    {
+      "text": " I",
+      "timestamp": [
+        30.52,
+        30.62
+      ]
+    },
+    {
+      "text": " want",
+      "timestamp": [
+        30.62,
+        30.72
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        30.72,
+        30.84
+      ]
+    },
+    {
+      "text": " talk",
+      "timestamp": [
+        30.84,
+        31
+      ]
+    },
+    {
+      "text": " through.",
+      "timestamp": [
+        31,
+        31.48
+      ]
+    },
+    {
+      "text": " So",
+      "timestamp": [
+        31.48,
+        33
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        33,
+        33.16
+      ]
+    },
+    {
+      "text": " fee",
+      "timestamp": [
+        33.16,
+        33.4
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        33.4,
+        33.72
+      ]
+    },
+    {
+      "text": " calculated",
+      "timestamp": [
+        33.72,
+        34.2
+      ]
+    },
+    {
+      "text": " on",
+      "timestamp": [
+        34.2,
+        34.58
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        34.58,
+        34.7
+      ]
+    },
+    {
+      "text": " per",
+      "timestamp": [
+        34.7,
+        34.86
+      ]
+    },
+    {
+      "text": " appliance",
+      "timestamp": [
+        34.86,
+        35.4
+      ]
+    },
+    {
+      "text": " basis.",
+      "timestamp": [
+        35.4,
+        36.08
+      ]
+    },
+    {
+      "text": " It",
+      "timestamp": [
+        36.08,
+        36.64
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        36.64,
+        36.78
+      ]
+    },
+    {
+      "text": " calculated",
+      "timestamp": [
+        36.78,
+        37.2
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        37.2,
+        37.94
+      ]
+    },
+    {
+      "text": " multiplying",
+      "timestamp": [
+        37.94,
+        38.42
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        38.42,
+        38.82
+      ]
+    },
+    {
+      "text": " social",
+      "timestamp": [
+        38.82,
+        39.06
+      ]
+    },
+    {
+      "text": " cost",
+      "timestamp": [
+        39.06,
+        39.36
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        39.36,
+        39.56
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        39.56,
+        39.9
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        39.9,
+        40.58
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        40.58,
+        40.68
+      ]
+    },
+    {
+      "text": " total",
+      "timestamp": [
+        40.68,
+        40.94
+      ]
+    },
+    {
+      "text": " amount",
+      "timestamp": [
+        40.94,
+        41.22
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        41.22,
+        41.44
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        41.44,
+        41.68
+      ]
+    },
+    {
+      "text": " produced",
+      "timestamp": [
+        41.68,
+        42.02
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        42.02,
+        42.34
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        42.34,
+        42.44
+      ]
+    },
+    {
+      "text": " appliance",
+      "timestamp": [
+        42.44,
+        42.9
+      ]
+    },
+    {
+      "text": " multiplied",
+      "timestamp": [
+        42.9,
+        43.94
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        43.94,
+        44.3
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        44.3,
+        44.42
+      ]
+    },
+    {
+      "text": " tier",
+      "timestamp": [
+        44.42,
+        44.78
+      ]
+    },
+    {
+      "text": " scaling",
+      "timestamp": [
+        44.78,
+        45.14
+      ]
+    },
+    {
+      "text": " factor",
+      "timestamp": [
+        45.14,
+        45.48
+      ]
+    },
+    {
+      "text": " based",
+      "timestamp": [
+        45.48,
+        45.8
+      ]
+    },
+    {
+      "text": " on",
+      "timestamp": [
+        45.8,
+        45.96
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        45.96,
+        46.08
+      ]
+    },
+    {
+      "text": " size",
+      "timestamp": [
+        46.08,
+        46.34
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        46.34,
+        46.52
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        46.52,
+        46.62
+      ]
+    },
+    {
+      "text": " home.",
+      "timestamp": [
+        46.62,
+        47.02
+      ]
+    },
+    {
+      "text": " The",
+      "timestamp": [
+        47.02,
+        47.66
+      ]
+    },
+    {
+      "text": " social",
+      "timestamp": [
+        47.66,
+        47.9
+      ]
+    },
+    {
+      "text": " cost",
+      "timestamp": [
+        47.9,
+        48.18
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        48.18,
+        48.32
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        48.32,
+        48.66
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        48.66,
+        48.84
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        48.84,
+        48.96
+      ]
+    },
+    {
+      "text": " monetary",
+      "timestamp": [
+        48.96,
+        49.36
+      ]
+    },
+    {
+      "text": " value",
+      "timestamp": [
+        49.36,
+        49.74
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        49.74,
+        50.08
+      ]
+    },
+    {
+      "text": " climate",
+      "timestamp": [
+        50.08,
+        50.28
+      ]
+    },
+    {
+      "text": " change",
+      "timestamp": [
+        50.28,
+        50.5
+      ]
+    },
+    {
+      "text": " damages",
+      "timestamp": [
+        50.5,
+        50.88
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        50.88,
+        51.24
+      ]
+    },
+    {
+      "text": " occur",
+      "timestamp": [
+        51.24,
+        51.42
+      ]
+    },
+    {
+      "text": " from",
+      "timestamp": [
+        51.42,
+        51.8
+      ]
+    },
+    {
+      "text": " each",
+      "timestamp": [
+        51.8,
+        52.02
+      ]
+    },
+    {
+      "text": " metric",
+      "timestamp": [
+        52.02,
+        52.48
+      ]
+    },
+    {
+      "text": " ton",
+      "timestamp": [
+        52.48,
+        53.12
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        53.12,
+        53.42
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        53.42,
+        53.64
+      ]
+    },
+    {
+      "text": " dioxide",
+      "timestamp": [
+        53.64,
+        54
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        54,
+        54.24
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        54.24,
+        54.36
+      ]
+    },
+    {
+      "text": " emitted.",
+      "timestamp": [
+        54.36,
+        54.82
+      ]
+    },
+    {
+      "text": " That",
+      "timestamp": [
+        54.82,
+        55.46
+      ]
+    },
+    {
+      "text": " number",
+      "timestamp": [
+        55.46,
+        55.76
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        55.76,
+        55.92
+      ]
+    },
+    {
+      "text": " informed",
+      "timestamp": [
+        55.92,
+        56.16
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        56.16,
+        56.5
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        56.5,
+        56.6
+      ]
+    },
+    {
+      "text": " model",
+      "timestamp": [
+        56.6,
+        56.8
+      ]
+    },
+    {
+      "text": " developed",
+      "timestamp": [
+        56.8,
+        57.06
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        57.06,
+        57.38
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        57.38,
+        57.48
+      ]
+    },
+    {
+      "text": " EPA.",
+      "timestamp": [
+        57.48,
+        58.02
+      ]
+    },
+    {
+      "text": " The",
+      "timestamp": [
+        58.02,
+        59.18
+      ]
+    },
+    {
+      "text": " total",
+      "timestamp": [
+        59.18,
+        59.54
+      ]
+    },
+    {
+      "text": " amount",
+      "timestamp": [
+        59.54,
+        59.82
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        59.82,
+        60.06
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        60.06,
+        60.36
+      ]
+    },
+    {
+      "text": " produced",
+      "timestamp": [
+        60.36,
+        60.76
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        60.76,
+        61.1
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        61.1,
+        61.2
+      ]
+    },
+    {
+      "text": " appliance",
+      "timestamp": [
+        61.2,
+        61.68
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        61.68,
+        62.06
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        62.06,
+        62.18
+      ]
+    },
+    {
+      "text": " part",
+      "timestamp": [
+        62.18,
+        62.42
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        62.42,
+        62.54
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        62.54,
+        62.58
+      ]
+    },
+    {
+      "text": " calculation",
+      "timestamp": [
+        62.58,
+        62.96
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        62.96,
+        63.28
+      ]
+    },
+    {
+      "text": " we've",
+      "timestamp": [
+        63.28,
+        63.44
+      ]
+    },
+    {
+      "text": " modified",
+      "timestamp": [
+        63.44,
+        63.8
+      ]
+    },
+    {
+      "text": " since",
+      "timestamp": [
+        63.8,
+        64.06
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        64.06,
+        64.26
+      ]
+    },
+    {
+      "text": " showed",
+      "timestamp": [
+        64.26,
+        64.46
+      ]
+    },
+    {
+      "text": " it",
+      "timestamp": [
+        64.46,
+        64.62
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        64.62,
+        64.7
+      ]
+    },
+    {
+      "text": " you",
+      "timestamp": [
+        64.7,
+        64.78
+      ]
+    },
+    {
+      "text": " last.",
+      "timestamp": [
+        64.78,
+        65.3
+      ]
+    },
+    {
+      "text": " To",
+      "timestamp": [
+        65.3,
+        66.28
+      ]
+    },
+    {
+      "text": " get",
+      "timestamp": [
+        66.28,
+        66.44
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        66.44,
+        66.56
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        66.56,
+        66.74
+      ]
+    },
+    {
+      "text": " number,",
+      "timestamp": [
+        66.74,
+        67.06
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        67.06,
+        67.18
+      ]
+    },
+    {
+      "text": " multiply",
+      "timestamp": [
+        67.18,
+        67.52
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        67.52,
+        67.8
+      ]
+    },
+    {
+      "text": " total",
+      "timestamp": [
+        67.8,
+        68.08
+      ]
+    },
+    {
+      "text": " average",
+      "timestamp": [
+        68.08,
+        68.44
+      ]
+    },
+    {
+      "text": " amount",
+      "timestamp": [
+        68.44,
+        68.82
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        68.82,
+        69.02
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        69.02,
+        69.32
+      ]
+    },
+    {
+      "text": " produced",
+      "timestamp": [
+        69.32,
+        69.64
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        69.64,
+        69.96
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        69.96,
+        70.1
+      ]
+    },
+    {
+      "text": " appliance",
+      "timestamp": [
+        70.1,
+        70.52
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        70.52,
+        71.86
+      ]
+    },
+    {
+      "text": " a",
+      "timestamp": [
+        71.86,
+        72.08
+      ]
+    },
+    {
+      "text": " year",
+      "timestamp": [
+        72.08,
+        72.38
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        72.38,
+        72.74
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        72.74,
+        72.94
+      ]
+    },
+    {
+      "text": " number",
+      "timestamp": [
+        72.94,
+        73.16
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        73.16,
+        73.3
+      ]
+    },
+    {
+      "text": " years",
+      "timestamp": [
+        73.3,
+        73.56
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        73.56,
+        73.72
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        73.72,
+        73.84
+      ]
+    },
+    {
+      "text": " equipment",
+      "timestamp": [
+        73.84,
+        74.12
+      ]
+    },
+    {
+      "text": " remains",
+      "timestamp": [
+        74.12,
+        74.46
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        74.46,
+        74.74
+      ]
+    },
+    {
+      "text": " service.",
+      "timestamp": [
+        74.74,
+        75.44
+      ]
+    },
+    {
+      "text": " The",
+      "timestamp": [
+        75.44,
+        75.98
+      ]
+    },
+    {
+      "text": " change",
+      "timestamp": [
+        75.98,
+        76.38
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        76.38,
+        76.58
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        76.58,
+        76.88
+      ]
+    },
+    {
+      "text": " made",
+      "timestamp": [
+        76.88,
+        77.4
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        77.4,
+        77.74
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        77.74,
+        77.92
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        77.92,
+        78.2
+      ]
+    },
+    {
+      "text": " are",
+      "timestamp": [
+        78.2,
+        78.34
+      ]
+    },
+    {
+      "text": " subtracting",
+      "timestamp": [
+        78.34,
+        79.06
+      ]
+    },
+    {
+      "text": " out",
+      "timestamp": [
+        79.06,
+        79.18
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        79.18,
+        79.38
+      ]
+    },
+    {
+      "text": " average",
+      "timestamp": [
+        79.38,
+        79.82
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        79.82,
+        80.18
+      ]
+    },
+    {
+      "text": " produced",
+      "timestamp": [
+        80.18,
+        80.66
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        80.66,
+        81
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        81,
+        81.18
+      ]
+    },
+    {
+      "text": " alternative",
+      "timestamp": [
+        81.18,
+        81.72
+      ]
+    },
+    {
+      "text": " electric",
+      "timestamp": [
+        81.72,
+        82.2
+      ]
+    },
+    {
+      "text": " equipment.",
+      "timestamp": [
+        82.2,
+        82.86
+      ]
+    },
+    {
+      "text": " Since",
+      "timestamp": [
+        82.86,
+        83.52
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        83.52,
+        83.66
+      ]
+    },
+    {
+      "text": " our",
+      "timestamp": [
+        83.66,
+        83.84
+      ]
+    },
+    {
+      "text": " case",
+      "timestamp": [
+        83.84,
+        84.08
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        84.08,
+        84.26
+      ]
+    },
+    {
+      "text": " Bend,",
+      "timestamp": [
+        84.26,
+        84.72
+      ]
+    },
+    {
+      "text": " most",
+      "timestamp": [
+        84.72,
+        85.32
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        85.32,
+        85.5
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        85.5,
+        85.58
+      ]
+    },
+    {
+      "text": " electric",
+      "timestamp": [
+        85.58,
+        85.8
+      ]
+    },
+    {
+      "text": " appliances",
+      "timestamp": [
+        85.8,
+        86.38
+      ]
+    },
+    {
+      "text": " also",
+      "timestamp": [
+        86.38,
+        86.86
+      ]
+    },
+    {
+      "text": " produce",
+      "timestamp": [
+        86.86,
+        87.3
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        87.3,
+        87.62
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        87.62,
+        87.9
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        87.9,
+        87.98
+      ]
+    },
+    {
+      "text": " short",
+      "timestamp": [
+        87.98,
+        88.18
+      ]
+    },
+    {
+      "text": " term.",
+      "timestamp": [
+        88.18,
+        88.66
+      ]
+    },
+    {
+      "text": " So",
+      "timestamp": [
+        88.66,
+        89.12
+      ]
+    },
+    {
+      "text": " what",
+      "timestamp": [
+        89.12,
+        89.26
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        89.26,
+        89.42
+      ]
+    },
+    {
+      "text": " get",
+      "timestamp": [
+        89.42,
+        89.62
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        89.62,
+        89.8
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        89.8,
+        89.96
+      ]
+    },
+    {
+      "text": " net",
+      "timestamp": [
+        89.96,
+        90.22
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        90.22,
+        90.5
+      ]
+    },
+    {
+      "text": " produced",
+      "timestamp": [
+        90.5,
+        90.88
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        90.88,
+        91.16
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        91.16,
+        91.26
+      ]
+    },
+    {
+      "text": " gas",
+      "timestamp": [
+        91.26,
+        91.48
+      ]
+    },
+    {
+      "text": " appliance",
+      "timestamp": [
+        91.48,
+        91.84
+      ]
+    },
+    {
+      "text": " compared",
+      "timestamp": [
+        91.84,
+        92.24
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        92.24,
+        92.76
+      ]
+    },
+    {
+      "text": " if",
+      "timestamp": [
+        92.76,
+        93.74
+      ]
+    },
+    {
+      "text": " an",
+      "timestamp": [
+        93.74,
+        93.88
+      ]
+    },
+    {
+      "text": " electric",
+      "timestamp": [
+        93.88,
+        94.18
+      ]
+    },
+    {
+      "text": " appliance",
+      "timestamp": [
+        94.18,
+        94.58
+      ]
+    },
+    {
+      "text": " was",
+      "timestamp": [
+        94.58,
+        94.84
+      ]
+    },
+    {
+      "text": " used",
+      "timestamp": [
+        94.84,
+        95.02
+      ]
+    },
+    {
+      "text": " instead.",
+      "timestamp": [
+        95.02,
+        95.7
+      ]
+    },
+    {
+      "text": " And",
+      "timestamp": [
+        95.7,
+        96.56
+      ]
+    },
+    {
+      "text": " then",
+      "timestamp": [
+        96.56,
+        96.7
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        96.7,
+        96.8
+      ]
+    },
+    {
+      "text": " last",
+      "timestamp": [
+        96.8,
+        97.06
+      ]
+    },
+    {
+      "text": " part",
+      "timestamp": [
+        97.06,
+        97.22
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        97.22,
+        97.32
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        97.32,
+        97.36
+      ]
+    },
+    {
+      "text": " calculation",
+      "timestamp": [
+        97.36,
+        97.72
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        97.72,
+        98.06
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        98.06,
+        98.2
+      ]
+    },
+    {
+      "text": " multiply,",
+      "timestamp": [
+        98.2,
+        98.9
+      ]
+    },
+    {
+      "text": " USED",
+      "timestamp": [
+        120.78,
+        121.06
+      ]
+    },
+    {
+      "text": " BY",
+      "timestamp": [
+        121.06,
+        121.14
+      ]
+    },
+    {
+      "text": " THE",
+      "timestamp": [
+        121.14,
+        121.26
+      ]
+    },
+    {
+      "text": " CITY",
+      "timestamp": [
+        121.26,
+        121.5
+      ]
+    },
+    {
+      "text": " OF",
+      "timestamp": [
+        121.5,
+        121.62
+      ]
+    },
+    {
+      "text": " ASHLAND,",
+      "timestamp": [
+        121.62,
+        122.14
+      ]
+    },
+    {
+      "text": " BUT",
+      "timestamp": [
+        122.14,
+        122.26
+      ]
+    },
+    {
+      "text": " THE",
+      "timestamp": [
+        122.26,
+        122.52
+      ]
+    },
+    {
+      "text": " TWO",
+      "timestamp": [
+        122.52,
+        122.86
+      ]
+    },
+    {
+      "text": " KEY",
+      "timestamp": [
+        122.86,
+        123.22
+      ]
+    },
+    {
+      "text": " DIFFERENCES",
+      "timestamp": [
+        123.22,
+        123.88
+      ]
+    },
+    {
+      "text": " ARE",
+      "timestamp": [
+        123.88,
+        124.02
+      ]
+    },
+    {
+      "text": " THE",
+      "timestamp": [
+        124.02,
+        124.16
+      ]
+    },
+    {
+      "text": " INCLUSION",
+      "timestamp": [
+        124.16,
+        124.64
+      ]
+    },
+    {
+      "text": " OF",
+      "timestamp": [
+        124.64,
+        124.86
+      ]
+    },
+    {
+      "text": " THE",
+      "timestamp": [
+        124.86,
+        125.12
+      ]
+    },
+    {
+      "text": " TIER",
+      "timestamp": [
+        125.12,
+        125.44
+      ]
+    },
+    {
+      "text": " SCALING",
+      "timestamp": [
+        125.44,
+        125.86
+      ]
+    },
+    {
+      "text": " FACTOR",
+      "timestamp": [
+        125.86,
+        126.32
+      ]
+    },
+    {
+      "text": " AND",
+      "timestamp": [
+        126.32,
+        126.54
+      ]
+    },
+    {
+      "text": " NOW",
+      "timestamp": [
+        126.54,
+        126.78
+      ]
+    },
+    {
+      "text": " THE",
+      "timestamp": [
+        126.78,
+        126.94
+      ]
+    },
+    {
+      "text": " PART",
+      "timestamp": [
+        126.94,
+        127.32
+      ]
+    },
+    {
+      "text": " WHERE",
+      "timestamp": [
+        127.32,
+        127.5
+      ]
+    },
+    {
+      "text": " WE",
+      "timestamp": [
+        127.5,
+        127.76
+      ]
+    },
+    {
+      "text": " USE",
+      "timestamp": [
+        127.76,
+        128.88
+      ]
+    },
+    {
+      "text": " THE",
+      "timestamp": [
+        128.88,
+        129.04
+      ]
+    },
+    {
+      "text": " NET",
+      "timestamp": [
+        129.04,
+        129.32
+      ]
+    },
+    {
+      "text": " CARBON",
+      "timestamp": [
+        129.32,
+        129.76
+      ]
+    },
+    {
+      "text": " PRODUCTION",
+      "timestamp": [
+        129.76,
+        129.98
+      ]
+    },
+    {
+      "text": " similar",
+      "timestamp": [
+        120,
+        120.22
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        120.22,
+        120.52
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        120.52,
+        120.62
+      ]
+    },
+    {
+      "text": " one",
+      "timestamp": [
+        120.62,
+        120.78
+      ]
+    },
+    {
+      "text": " used",
+      "timestamp": [
+        120.78,
+        120.98
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        120.98,
+        121.16
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        121.16,
+        121.26
+      ]
+    },
+    {
+      "text": " City",
+      "timestamp": [
+        121.26,
+        121.44
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        121.44,
+        121.62
+      ]
+    },
+    {
+      "text": " Ashland",
+      "timestamp": [
+        121.62,
+        122.02
+      ]
+    },
+    {
+      "text": " but",
+      "timestamp": [
+        122.02,
+        122.22
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        122.22,
+        122.52
+      ]
+    },
+    {
+      "text": " two",
+      "timestamp": [
+        122.52,
+        122.94
+      ]
+    },
+    {
+      "text": " key",
+      "timestamp": [
+        122.94,
+        123.16
+      ]
+    },
+    {
+      "text": " differences",
+      "timestamp": [
+        123.16,
+        123.66
+      ]
+    },
+    {
+      "text": " are",
+      "timestamp": [
+        123.66,
+        124.02
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        124.02,
+        124.16
+      ]
+    },
+    {
+      "text": " inclusion",
+      "timestamp": [
+        124.16,
+        124.44
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        124.44,
+        124.88
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        124.88,
+        125.12
+      ]
+    },
+    {
+      "text": " tier",
+      "timestamp": [
+        125.12,
+        125.4
+      ]
+    },
+    {
+      "text": " scaling",
+      "timestamp": [
+        125.4,
+        125.66
+      ]
+    },
+    {
+      "text": " factor",
+      "timestamp": [
+        125.66,
+        126.04
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        126.04,
+        126.54
+      ]
+    },
+    {
+      "text": " now",
+      "timestamp": [
+        126.54,
+        126.78
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        126.78,
+        126.94
+      ]
+    },
+    {
+      "text": " part",
+      "timestamp": [
+        126.94,
+        127.2
+      ]
+    },
+    {
+      "text": " where",
+      "timestamp": [
+        127.2,
+        127.44
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        127.44,
+        127.74
+      ]
+    },
+    {
+      "text": " use",
+      "timestamp": [
+        127.74,
+        128.84
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        128.84,
+        129.04
+      ]
+    },
+    {
+      "text": " net",
+      "timestamp": [
+        129.04,
+        129.28
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        129.28,
+        129.6
+      ]
+    },
+    {
+      "text": " produced",
+      "timestamp": [
+        129.6,
+        130.04
+      ]
+    },
+    {
+      "text": " rather",
+      "timestamp": [
+        130.04,
+        130.42
+      ]
+    },
+    {
+      "text": " than",
+      "timestamp": [
+        130.42,
+        130.72
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        130.72,
+        130.84
+      ]
+    },
+    {
+      "text": " total",
+      "timestamp": [
+        130.84,
+        131.14
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        131.14,
+        131.5
+      ]
+    },
+    {
+      "text": " produced",
+      "timestamp": [
+        131.5,
+        131.82
+      ]
+    },
+    {
+      "text": " by",
+      "timestamp": [
+        131.82,
+        132.08
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        132.08,
+        132.18
+      ]
+    },
+    {
+      "text": " gas",
+      "timestamp": [
+        132.18,
+        132.38
+      ]
+    },
+    {
+      "text": " appliance.",
+      "timestamp": [
+        132.38,
+        133.18
+      ]
+    },
+    {
+      "text": " Ashland",
+      "timestamp": [
+        133.18,
+        134.16
+      ]
+    },
+    {
+      "text": " did",
+      "timestamp": [
+        134.16,
+        134.34
+      ]
+    },
+    {
+      "text": " not",
+      "timestamp": [
+        134.34,
+        134.5
+      ]
+    },
+    {
+      "text": " need",
+      "timestamp": [
+        134.5,
+        134.62
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        134.62,
+        134.8
+      ]
+    },
+    {
+      "text": " determine",
+      "timestamp": [
+        134.8,
+        135.24
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        135.24,
+        135.48
+      ]
+    },
+    {
+      "text": " net",
+      "timestamp": [
+        135.48,
+        135.58
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        135.58,
+        135.82
+      ]
+    },
+    {
+      "text": " impact",
+      "timestamp": [
+        135.82,
+        136.14
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        136.14,
+        136.36
+      ]
+    },
+    {
+      "text": " their",
+      "timestamp": [
+        136.36,
+        136.46
+      ]
+    },
+    {
+      "text": " policy",
+      "timestamp": [
+        136.46,
+        136.78
+      ]
+    },
+    {
+      "text": " because",
+      "timestamp": [
+        136.78,
+        137.12
+      ]
+    },
+    {
+      "text": " Ashland's",
+      "timestamp": [
+        137.12,
+        137.62
+      ]
+    },
+    {
+      "text": " electricity",
+      "timestamp": [
+        137.62,
+        137.94
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        137.94,
+        138.4
+      ]
+    },
+    {
+      "text": " primarily",
+      "timestamp": [
+        138.4,
+        138.76
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        138.76,
+        139.2
+      ]
+    },
+    {
+      "text": " free.",
+      "timestamp": [
+        139.2,
+        139.84
+      ]
+    },
+    {
+      "text": " So",
+      "timestamp": [
+        139.84,
+        140.4
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        140.4,
+        140.64
+      ]
+    },
+    {
+      "text": " underscores",
+      "timestamp": [
+        140.64,
+        141.14
+      ]
+    },
+    {
+      "text": " an",
+      "timestamp": [
+        141.14,
+        141.28
+      ]
+    },
+    {
+      "text": " important",
+      "timestamp": [
+        141.28,
+        141.48
+      ]
+    },
+    {
+      "text": " distinction",
+      "timestamp": [
+        141.48,
+        141.8
+      ]
+    },
+    {
+      "text": " between",
+      "timestamp": [
+        141.8,
+        142.14
+      ]
+    },
+    {
+      "text": " our",
+      "timestamp": [
+        142.14,
+        142.5
+      ]
+    },
+    {
+      "text": " context",
+      "timestamp": [
+        142.5,
+        142.86
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        142.86,
+        143.06
+      ]
+    },
+    {
+      "text": " Ashland's",
+      "timestamp": [
+        143.06,
+        143.64
+      ]
+    },
+    {
+      "text": " which",
+      "timestamp": [
+        143.64,
+        143.82
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        143.82,
+        144.04
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        144.04,
+        144.42
+      ]
+    },
+    {
+      "text": " our",
+      "timestamp": [
+        144.42,
+        144.66
+      ]
+    },
+    {
+      "text": " electricity",
+      "timestamp": [
+        144.66,
+        145.02
+      ]
+    },
+    {
+      "text": " electricity",
+      "timestamp": [
+        144.68,
+        145.02
+      ]
+    },
+    {
+      "text": " today",
+      "timestamp": [
+        145.02,
+        145.38
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        145.38,
+        145.56
+      ]
+    },
+    {
+      "text": " not",
+      "timestamp": [
+        145.56,
+        145.74
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        145.74,
+        146.1
+      ]
+    },
+    {
+      "text": "-free.",
+      "timestamp": [
+        146.1,
+        146.5
+      ]
+    },
+    {
+      "text": " So",
+      "timestamp": [
+        146.5,
+        146.96
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        146.96,
+        147.12
+      ]
+    },
+    {
+      "text": " think",
+      "timestamp": [
+        147.12,
+        147.3
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        147.3,
+        147.42
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        147.42,
+        147.48
+      ]
+    },
+    {
+      "text": " best",
+      "timestamp": [
+        147.48,
+        147.68
+      ]
+    },
+    {
+      "text": " way",
+      "timestamp": [
+        147.68,
+        147.86
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        147.86,
+        148.04
+      ]
+    },
+    {
+      "text": " design",
+      "timestamp": [
+        148.04,
+        148.26
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        148.26,
+        148.42
+      ]
+    },
+    {
+      "text": " calculation",
+      "timestamp": [
+        148.42,
+        148.68
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        148.68,
+        149.1
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        149.1,
+        149.22
+      ]
+    },
+    {
+      "text": " account",
+      "timestamp": [
+        149.22,
+        149.46
+      ]
+    },
+    {
+      "text": " for",
+      "timestamp": [
+        149.46,
+        149.7
+      ]
+    },
+    {
+      "text": " that,",
+      "timestamp": [
+        149.7,
+        149.94
+      ]
+    },
+    {
+      "text": " which",
+      "timestamp": [
+        149.94,
+        150.08
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        150.08,
+        150.2
+      ]
+    },
+    {
+      "text": " what",
+      "timestamp": [
+        150.2,
+        150.4
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        150.4,
+        150.82
+      ]
+    },
+    {
+      "text": " net",
+      "timestamp": [
+        150.82,
+        151.58
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        151.58,
+        151.88
+      ]
+    },
+    {
+      "text": " does.",
+      "timestamp": [
+        151.88,
+        152.6
+      ]
+    },
+    {
+      "text": " And",
+      "timestamp": [
+        152.6,
+        153.9
+      ]
+    },
+    {
+      "text": " then",
+      "timestamp": [
+        153.9,
+        154.02
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        154.02,
+        154.14
+      ]
+    },
+    {
+      "text": " other",
+      "timestamp": [
+        154.14,
+        154.44
+      ]
+    },
+    {
+      "text": " thing",
+      "timestamp": [
+        154.44,
+        154.9
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        154.9,
+        155.1
+      ]
+    },
+    {
+      "text": " thinking",
+      "timestamp": [
+        155.1,
+        155.4
+      ]
+    },
+    {
+      "text": " about",
+      "timestamp": [
+        155.4,
+        155.76
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        155.76,
+        155.96
+      ]
+    },
+    {
+      "text": " calculation",
+      "timestamp": [
+        155.96,
+        156.36
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        156.36,
+        156.72
+      ]
+    },
+    {
+      "text": " terms",
+      "timestamp": [
+        156.72,
+        156.94
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        156.94,
+        157.1
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        157.1,
+        157.22
+      ]
+    },
+    {
+      "text": " net",
+      "timestamp": [
+        157.22,
+        157.44
+      ]
+    },
+    {
+      "text": " carbon",
+      "timestamp": [
+        157.44,
+        157.78
+      ]
+    },
+    {
+      "text": " impact",
+      "timestamp": [
+        157.78,
+        158.26
+      ]
+    },
+    {
+      "text": " highlights",
+      "timestamp": [
+        158.26,
+        159.26
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        159.26,
+        159.64
+      ]
+    },
+    {
+      "text": " that",
+      "timestamp": [
+        159.64,
+        159.8
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        159.8,
+        159.98
+      ]
+    },
+    {
+      "text": " relative",
+      "timestamp": [
+        159.98,
+        160.36
+      ]
+    },
+    {
+      "text": " greenhouse",
+      "timestamp": [
+        160.36,
+        160.84
+      ]
+    },
+    {
+      "text": " gas",
+      "timestamp": [
+        160.84,
+        161.28
+      ]
+    },
+    {
+      "text": " impact",
+      "timestamp": [
+        161.28,
+        162.12
+      ]
+    },
+    {
+      "text": " of",
+      "timestamp": [
+        162.12,
+        162.44
+      ]
+    },
+    {
+      "text": " using",
+      "timestamp": [
+        162.44,
+        162.68
+      ]
+    },
+    {
+      "text": " gas",
+      "timestamp": [
+        162.68,
+        163.1
+      ]
+    },
+    {
+      "text": " compared",
+      "timestamp": [
+        163.1,
+        163.52
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        163.52,
+        163.76
+      ]
+    },
+    {
+      "text": " electricity,",
+      "timestamp": [
+        163.76,
+        164.5
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        164.5,
+        165
+      ]
+    },
+    {
+      "text": " therefore",
+      "timestamp": [
+        165,
+        165.18
+      ]
+    },
+    {
+      "text": " fee",
+      "timestamp": [
+        165.44,
+        165.72
+      ]
+    },
+    {
+      "text": " amount",
+      "timestamp": [
+        165.72,
+        166.22
+      ]
+    },
+    {
+      "text": " are",
+      "timestamp": [
+        166.22,
+        166.94
+      ]
+    },
+    {
+      "text": " dependent",
+      "timestamp": [
+        166.94,
+        167.24
+      ]
+    },
+    {
+      "text": " on",
+      "timestamp": [
+        167.24,
+        167.6
+      ]
+    },
+    {
+      "text": " how",
+      "timestamp": [
+        167.6,
+        167.84
+      ]
+    },
+    {
+      "text": " clean",
+      "timestamp": [
+        167.84,
+        168.2
+      ]
+    },
+    {
+      "text": " our",
+      "timestamp": [
+        168.2,
+        168.44
+      ]
+    },
+    {
+      "text": " electricity",
+      "timestamp": [
+        168.44,
+        168.78
+      ]
+    },
+    {
+      "text": " supply",
+      "timestamp": [
+        168.78,
+        169.32
+      ]
+    },
+    {
+      "text": " is",
+      "timestamp": [
+        169.32,
+        169.64
+      ]
+    },
+    {
+      "text": " and",
+      "timestamp": [
+        169.64,
+        169.96
+      ]
+    },
+    {
+      "text": " how",
+      "timestamp": [
+        169.96,
+        170.18
+      ]
+    },
+    {
+      "text": " clean",
+      "timestamp": [
+        170.18,
+        170.44
+      ]
+    },
+    {
+      "text": " it",
+      "timestamp": [
+        170.44,
+        170.58
+      ]
+    },
+    {
+      "text": " will",
+      "timestamp": [
+        170.58,
+        170.66
+      ]
+    },
+    {
+      "text": " be",
+      "timestamp": [
+        170.66,
+        170.8
+      ]
+    },
+    {
+      "text": " in",
+      "timestamp": [
+        170.8,
+        170.94
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        170.94,
+        170.98
+      ]
+    },
+    {
+      "text": " future.",
+      "timestamp": [
+        170.98,
+        171.54
+      ]
+    },
+    {
+      "text": " So",
+      "timestamp": [
+        171.54,
+        172.28
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        172.28,
+        172.46
+      ]
+    },
+    {
+      "text": " develop",
+      "timestamp": [
+        172.46,
+        172.76
+      ]
+    },
+    {
+      "text": " this",
+      "timestamp": [
+        172.76,
+        173.12
+      ]
+    },
+    {
+      "text": " calculation",
+      "timestamp": [
+        173.12,
+        173.68
+      ]
+    },
+    {
+      "text": " we",
+      "timestamp": [
+        173.68,
+        174.28
+      ]
+    },
+    {
+      "text": " have",
+      "timestamp": [
+        174.28,
+        174.52
+      ]
+    },
+    {
+      "text": " to",
+      "timestamp": [
+        174.52,
+        174.66
+      ]
+    },
+    {
+      "text": " rely",
+      "timestamp": [
+        174.66,
+        174.82
+      ]
+    },
+    {
+      "text": " on",
+      "timestamp": [
+        174.82,
+        175.02
+      ]
+    },
+    {
+      "text": " assumptions",
+      "timestamp": [
+        175.02,
+        175.28
+      ]
+    },
+    {
+      "text": " about",
+      "timestamp": [
+        175.28,
+        175.7
+      ]
+    },
+    {
+      "text": " what",
+      "timestamp": [
+        175.7,
+        175.88
+      ]
+    },
+    {
+      "text": " the",
+      "timestamp": [
+        175.88,
+        176.02
+      ]
+    },
+    {
+      "text": " future",
+      "timestamp": [
+        176.02,
+        176.3
+      ]
+    },
+    {
+      "text": " electricity",
+      "timestamp": [
+        176.3,
+        176.9
+      ]
+    },
+    {
+      "text": " supply",
+      "timestamp": [
+        176.9,
+        177.38
+      ]
+    },
+    {
+      "text": " mix",
+      "timestamp": [
+        177.38,
+        177.74
+      ]
+    },
+    {
+      "text": " is.",
+      "timestamp": [
+        177.74,
+        179.12
+      ]
+    }
+  ],
+  "text": " So now we're going to review some analysis and information that explores the impacts of implementing a fee on natural gas appliances at different fee levels. We introduced the proposed fee design and fee calculation at the work session on December 10th. I'm going to walk through that fee calculation once more since it's the foundation of the whole policy and it dictates what the maximum potential fee could be set at. In addition we have actually made a modification to this fee calculation since we talked about last in December that I want to talk through. So the fee is calculated on a per appliance basis. It is calculated by multiplying the social cost of carbon by the total amount of carbon produced by the appliance multiplied by a tier scaling factor based on the size of the home. The social cost of carbon is the monetary value of climate change damages that occur from each metric ton of carbon dioxide that is emitted. That number is informed by a model developed by the EPA. The total amount of carbon produced by the appliance is the part of the calculation that we've modified since we showed it to you last. To get to this number, we multiply the total average amount of carbon produced by the appliance in a year by the number of years that the equipment remains in service. The change that we made is that we are subtracting out the average carbon produced by the alternative electric equipment. Since in our case in Bend, most of the electric appliances also produce carbon in the short term. So what we get is the net carbon produced by the gas appliance compared to if an electric appliance was used instead. And then the last part of the calculation is to multiply, USED BY THE CITY OF ASHLAND, BUT THE TWO KEY DIFFERENCES ARE THE INCLUSION OF THE TIER SCALING FACTOR AND NOW THE PART WHERE WE USE THE NET CARBON PRODUCTION similar to the one used by the City of Ashland but the two key differences are the inclusion of the tier scaling factor and now the part where we use the net carbon produced rather than the total carbon produced by the gas appliance. Ashland did not need to determine the net carbon impact in their policy because Ashland's electricity is primarily carbon free. So this underscores an important distinction between our context and Ashland's which is that our electricity electricity today is not carbon-free. So we think that the best way to design this calculation is to account for that, which is what this net carbon does. And then the other thing that thinking about this calculation in terms of the net carbon impact highlights is that the relative greenhouse gas impact of using gas compared to electricity, and therefore fee amount are dependent on how clean our electricity supply is and how clean it will be in the future. So to develop this calculation we have to rely on assumptions about what the future electricity supply mix is."
+}

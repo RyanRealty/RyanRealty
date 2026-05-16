@@ -1,0 +1,124 @@
+{
+  "words": [
+    {
+      "text": "The",
+      "startSec": 0.079,
+      "endSec": 0.159
+    },
+    {
+      "text": "",
+      "startSec": 0.159,
+      "endSec": 0.179
+    },
+    {
+      "text": "way",
+      "startSec": 0.179,
+      "endSec": 0.319
+    },
+    {
+      "text": "",
+      "startSec": 0.319,
+      "endSec": 0.379
+    },
+    {
+      "text": "Council",
+      "startSec": 0.379,
+      "endSec": 0.639
+    },
+    {
+      "text": "",
+      "startSec": 0.639,
+      "endSec": 0.74
+    },
+    {
+      "text": "plans",
+      "startSec": 0.74,
+      "endSec": 1.019
+    },
+    {
+      "text": "",
+      "startSec": 1.019,
+      "endSec": 1.039
+    },
+    {
+      "text": "to",
+      "startSec": 1.039,
+      "endSec": 1.12
+    },
+    {
+      "text": "",
+      "startSec": 1.12,
+      "endSec": 1.179
+    },
+    {
+      "text": "answer",
+      "startSec": 1.179,
+      "endSec": 1.48
+    },
+    {
+      "text": "",
+      "startSec": 1.48,
+      "endSec": 1.539
+    },
+    {
+      "text": "all",
+      "startSec": 1.539,
+      "endSec": 1.699
+    },
+    {
+      "text": "",
+      "startSec": 1.699,
+      "endSec": 1.739
+    },
+    {
+      "text": "three.",
+      "startSec": 1.74,
+      "endSec": 2.0
+    },
+    {
+      "text": "",
+      "startSec": 2.0,
+      "endSec": 2.359
+    },
+    {
+      "text": "Through",
+      "startSec": 2.359,
+      "endSec": 2.519
+    },
+    {
+      "text": "",
+      "startSec": 2.519,
+      "endSec": 2.579
+    },
+    {
+      "text": "targeted",
+      "startSec": 2.579,
+      "endSec": 2.919
+    },
+    {
+      "text": "",
+      "startSec": 2.919,
+      "endSec": 3.039
+    },
+    {
+      "text": "stakeholder",
+      "startSec": 3.039,
+      "endSec": 3.5
+    },
+    {
+      "text": "",
+      "startSec": 3.5,
+      "endSec": 3.559
+    },
+    {
+      "text": "engagement.",
+      "startSec": 3.559,
+      "endSec": 4.119
+    }
+  ],
+  "raw_keys": [
+    "characters",
+    "words",
+    "loss"
+  ]
+}

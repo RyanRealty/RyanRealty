@@ -1,0 +1,234 @@
+{
+  "words": [
+    {
+      "text": "The",
+      "startSec": 0.099,
+      "endSec": 0.219
+    },
+    {
+      "text": "",
+      "startSec": 0.219,
+      "endSec": 0.259
+    },
+    {
+      "text": "board",
+      "startSec": 0.259,
+      "endSec": 0.479
+    },
+    {
+      "text": "",
+      "startSec": 0.479,
+      "endSec": 0.56
+    },
+    {
+      "text": "voted",
+      "startSec": 0.56,
+      "endSec": 0.879
+    },
+    {
+      "text": "",
+      "startSec": 0.879,
+      "endSec": 0.939
+    },
+    {
+      "text": "eight",
+      "startSec": 0.939,
+      "endSec": 1.12
+    },
+    {
+      "text": "",
+      "startSec": 1.12,
+      "endSec": 1.139
+    },
+    {
+      "text": "to",
+      "startSec": 1.139,
+      "endSec": 1.279
+    },
+    {
+      "text": "",
+      "startSec": 1.279,
+      "endSec": 1.319
+    },
+    {
+      "text": "zero,",
+      "startSec": 1.319,
+      "endSec": 1.599
+    },
+    {
+      "text": "",
+      "startSec": 1.599,
+      "endSec": 2.019
+    },
+    {
+      "text": "asking",
+      "startSec": 2.019,
+      "endSec": 2.359
+    },
+    {
+      "text": "",
+      "startSec": 2.359,
+      "endSec": 2.399
+    },
+    {
+      "text": "Council",
+      "startSec": 2.399,
+      "endSec": 2.779
+    },
+    {
+      "text": "",
+      "startSec": 2.779,
+      "endSec": 2.819
+    },
+    {
+      "text": "for",
+      "startSec": 2.819,
+      "endSec": 2.899
+    },
+    {
+      "text": "",
+      "startSec": 2.899,
+      "endSec": 2.959
+    },
+    {
+      "text": "that",
+      "startSec": 2.96,
+      "endSec": 3.099
+    },
+    {
+      "text": "",
+      "startSec": 3.099,
+      "endSec": 3.139
+    },
+    {
+      "text": "pilot.",
+      "startSec": 3.139,
+      "endSec": 3.559
+    },
+    {
+      "text": "",
+      "startSec": 3.559,
+      "endSec": 3.56
+    },
+    {
+      "text": "But",
+      "startSec": 4.92,
+      "endSec": 5.019
+    },
+    {
+      "text": "",
+      "startSec": 5.019,
+      "endSec": 5.079
+    },
+    {
+      "text": "on",
+      "startSec": 5.079,
+      "endSec": 5.199
+    },
+    {
+      "text": "",
+      "startSec": 5.199,
+      "endSec": 5.239
+    },
+    {
+      "text": "Council,",
+      "startSec": 5.239,
+      "endSec": 5.659
+    },
+    {
+      "text": "",
+      "startSec": 5.659,
+      "endSec": 6.219
+    },
+    {
+      "text": "the",
+      "startSec": 6.219,
+      "endSec": 6.259
+    },
+    {
+      "text": "",
+      "startSec": 6.259,
+      "endSec": 6.319
+    },
+    {
+      "text": "debate",
+      "startSec": 6.319,
+      "endSec": 6.659
+    },
+    {
+      "text": "",
+      "startSec": 6.659,
+      "endSec": 6.739
+    },
+    {
+      "text": "over",
+      "startSec": 6.739,
+      "endSec": 6.899
+    },
+    {
+      "text": "",
+      "startSec": 6.899,
+      "endSec": 7.039
+    },
+    {
+      "text": "fee",
+      "startSec": 7.039,
+      "endSec": 7.119
+    },
+    {
+      "text": "",
+      "startSec": 7.119,
+      "endSec": 7.219
+    },
+    {
+      "text": "levels",
+      "startSec": 7.219,
+      "endSec": 7.659
+    },
+    {
+      "text": "",
+      "startSec": 7.659,
+      "endSec": 7.679
+    },
+    {
+      "text": "and",
+      "startSec": 7.679,
+      "endSec": 7.939
+    },
+    {
+      "text": "",
+      "startSec": 7.939,
+      "endSec": 7.979
+    },
+    {
+      "text": "exemptions",
+      "startSec": 7.98,
+      "endSec": 8.8
+    },
+    {
+      "text": "",
+      "startSec": 8.8,
+      "endSec": 8.88
+    },
+    {
+      "text": "got",
+      "startSec": 8.88,
+      "endSec": 9.059
+    },
+    {
+      "text": "",
+      "startSec": 9.059,
+      "endSec": 9.139
+    },
+    {
+      "text": "real.",
+      "startSec": 9.139,
+      "endSec": 9.399
+    }
+  ],
+  "raw_keys": [
+    "characters",
+    "words",
+    "loss"
+  ]
+}

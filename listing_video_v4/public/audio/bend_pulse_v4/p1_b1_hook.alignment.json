@@ -1,0 +1,234 @@
+{
+  "words": [
+    {
+      "text": "Bend",
+      "startSec": 0.119,
+      "endSec": 0.439
+    },
+    {
+      "text": "",
+      "startSec": 0.439,
+      "endSec": 0.5
+    },
+    {
+      "text": "is",
+      "startSec": 0.5,
+      "endSec": 0.639
+    },
+    {
+      "text": "",
+      "startSec": 0.639,
+      "endSec": 0.719
+    },
+    {
+      "text": "finalizing",
+      "startSec": 0.719,
+      "endSec": 1.339
+    },
+    {
+      "text": "",
+      "startSec": 1.339,
+      "endSec": 1.459
+    },
+    {
+      "text": "a",
+      "startSec": 1.459,
+      "endSec": 1.479
+    },
+    {
+      "text": "",
+      "startSec": 1.479,
+      "endSec": 1.499
+    },
+    {
+      "text": "climate",
+      "startSec": 1.5,
+      "endSec": 1.839
+    },
+    {
+      "text": "",
+      "startSec": 1.839,
+      "endSec": 1.879
+    },
+    {
+      "text": "pollution",
+      "startSec": 1.879,
+      "endSec": 2.319
+    },
+    {
+      "text": "",
+      "startSec": 2.319,
+      "endSec": 2.359
+    },
+    {
+      "text": "fee",
+      "startSec": 2.359,
+      "endSec": 2.599
+    },
+    {
+      "text": "",
+      "startSec": 2.599,
+      "endSec": 2.679
+    },
+    {
+      "text": "on",
+      "startSec": 2.679,
+      "endSec": 2.839
+    },
+    {
+      "text": "",
+      "startSec": 2.839,
+      "endSec": 2.899
+    },
+    {
+      "text": "new",
+      "startSec": 2.899,
+      "endSec": 3.079
+    },
+    {
+      "text": "",
+      "startSec": 3.079,
+      "endSec": 3.08
+    },
+    {
+      "text": "homes.",
+      "startSec": 3.08,
+      "endSec": 3.399
+    },
+    {
+      "text": "",
+      "startSec": 3.399,
+      "endSec": 3.919
+    },
+    {
+      "text": "It",
+      "startSec": 3.919,
+      "endSec": 3.979
+    },
+    {
+      "text": "",
+      "startSec": 3.979,
+      "endSec": 3.999
+    },
+    {
+      "text": "is",
+      "startSec": 4.0,
+      "endSec": 4.139
+    },
+    {
+      "text": "",
+      "startSec": 4.139,
+      "endSec": 4.159
+    },
+    {
+      "text": "the",
+      "startSec": 4.159,
+      "endSec": 4.299
+    },
+    {
+      "text": "",
+      "startSec": 4.299,
+      "endSec": 4.379
+    },
+    {
+      "text": "biggest",
+      "startSec": 4.38,
+      "endSec": 4.659
+    },
+    {
+      "text": "",
+      "startSec": 4.659,
+      "endSec": 4.699
+    },
+    {
+      "text": "housing",
+      "startSec": 4.699,
+      "endSec": 5.059
+    },
+    {
+      "text": "",
+      "startSec": 5.059,
+      "endSec": 5.079
+    },
+    {
+      "text": "policy",
+      "startSec": 5.079,
+      "endSec": 5.48
+    },
+    {
+      "text": "",
+      "startSec": 5.48,
+      "endSec": 5.5
+    },
+    {
+      "text": "decision",
+      "startSec": 5.5,
+      "endSec": 5.98
+    },
+    {
+      "text": "",
+      "startSec": 5.98,
+      "endSec": 6.019
+    },
+    {
+      "text": "the",
+      "startSec": 6.019,
+      "endSec": 6.179
+    },
+    {
+      "text": "",
+      "startSec": 6.179,
+      "endSec": 6.199
+    },
+    {
+      "text": "city",
+      "startSec": 6.199,
+      "endSec": 6.48
+    },
+    {
+      "text": "",
+      "startSec": 6.48,
+      "endSec": 6.5
+    },
+    {
+      "text": "has",
+      "startSec": 6.5,
+      "endSec": 6.679
+    },
+    {
+      "text": "",
+      "startSec": 6.679,
+      "endSec": 6.759
+    },
+    {
+      "text": "made",
+      "startSec": 6.759,
+      "endSec": 7.0
+    },
+    {
+      "text": "",
+      "startSec": 7.0,
+      "endSec": 7.039
+    },
+    {
+      "text": "in",
+      "startSec": 7.039,
+      "endSec": 7.279
+    },
+    {
+      "text": "",
+      "startSec": 7.279,
+      "endSec": 7.319
+    },
+    {
+      "text": "years.",
+      "startSec": 7.319,
+      "endSec": 7.659
+    }
+  ],
+  "raw_keys": [
+    "characters",
+    "words",
+    "loss"
+  ]
+}

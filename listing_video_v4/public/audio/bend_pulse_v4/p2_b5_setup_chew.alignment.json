@@ -1,0 +1,174 @@
+{
+  "words": [
+    {
+      "text": "Another",
+      "startSec": 0.079,
+      "endSec": 0.399
+    },
+    {
+      "text": "",
+      "startSec": 0.399,
+      "endSec": 0.439
+    },
+    {
+      "text": "councilor",
+      "startSec": 0.439,
+      "endSec": 0.919
+    },
+    {
+      "text": "",
+      "startSec": 0.919,
+      "endSec": 0.959
+    },
+    {
+      "text": "took",
+      "startSec": 0.959,
+      "endSec": 1.12
+    },
+    {
+      "text": "",
+      "startSec": 1.12,
+      "endSec": 1.139
+    },
+    {
+      "text": "the",
+      "startSec": 1.139,
+      "endSec": 1.279
+    },
+    {
+      "text": "",
+      "startSec": 1.279,
+      "endSec": 1.319
+    },
+    {
+      "text": "same",
+      "startSec": 1.319,
+      "endSec": 1.48
+    },
+    {
+      "text": "",
+      "startSec": 1.48,
+      "endSec": 1.579
+    },
+    {
+      "text": "line.",
+      "startSec": 1.579,
+      "endSec": 1.799
+    },
+    {
+      "text": "",
+      "startSec": 1.799,
+      "endSec": 2.319
+    },
+    {
+      "text": "Affordability",
+      "startSec": 2.319,
+      "endSec": 3.119
+    },
+    {
+      "text": "",
+      "startSec": 3.119,
+      "endSec": 3.159
+    },
+    {
+      "text": "and",
+      "startSec": 3.159,
+      "endSec": 3.259
+    },
+    {
+      "text": "",
+      "startSec": 3.259,
+      "endSec": 3.339
+    },
+    {
+      "text": "climate",
+      "startSec": 3.339,
+      "endSec": 3.619
+    },
+    {
+      "text": "",
+      "startSec": 3.619,
+      "endSec": 3.719
+    },
+    {
+      "text": "goals,",
+      "startSec": 3.72,
+      "endSec": 4.0
+    },
+    {
+      "text": "",
+      "startSec": 4.0,
+      "endSec": 4.139
+    },
+    {
+      "text": "in",
+      "startSec": 4.139,
+      "endSec": 4.239
+    },
+    {
+      "text": "",
+      "startSec": 4.239,
+      "endSec": 4.279
+    },
+    {
+      "text": "their",
+      "startSec": 4.279,
+      "endSec": 4.42
+    },
+    {
+      "text": "",
+      "startSec": 4.42,
+      "endSec": 4.539
+    },
+    {
+      "text": "view,",
+      "startSec": 4.539,
+      "endSec": 4.699
+    },
+    {
+      "text": "",
+      "startSec": 4.699,
+      "endSec": 5.099
+    },
+    {
+      "text": "are",
+      "startSec": 5.099,
+      "endSec": 5.299
+    },
+    {
+      "text": "",
+      "startSec": 5.299,
+      "endSec": 5.339
+    },
+    {
+      "text": "not",
+      "startSec": 5.339,
+      "endSec": 5.559
+    },
+    {
+      "text": "",
+      "startSec": 5.559,
+      "endSec": 5.839
+    },
+    {
+      "text": "mutually",
+      "startSec": 5.839,
+      "endSec": 6.279
+    },
+    {
+      "text": "",
+      "startSec": 6.279,
+      "endSec": 6.379
+    },
+    {
+      "text": "exclusive.",
+      "startSec": 6.379,
+      "endSec": 6.98
+    }
+  ],
+  "raw_keys": [
+    "characters",
+    "words",
+    "loss"
+  ]
+}

@@ -1,0 +1,2768 @@
+{
+  "generated_at": "2026-05-11T00:46:46.246Z",
+  "counts": {
+    "recommended": 35,
+    "asset_library": 80,
+    "listing_photos": 0,
+    "current": 10
+  },
+  "candidates": [
+    {
+      "id": "R-1",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/45d5e0b2-5c4a-423e-8e8b-85c93a475964.jpg",
+      "title": "cline falls oregon",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Connor DeMott · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@connord4",
+      "raw": {
+        "asset_id": "45d5e0b2-5c4a-423e-8e8b-85c93a475964",
+        "search_query": "cline falls oregon",
+        "subject_tags": [
+          "waterfall"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-2",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/394c3c89-4c70-4ef9-8591-8a13262b94b0.jpg",
+      "title": "cline falls oregon",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Sam M · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@sambynorthwest",
+      "raw": {
+        "asset_id": "394c3c89-4c70-4ef9-8591-8a13262b94b0",
+        "search_query": "cline falls oregon",
+        "subject_tags": [
+          "waterfall"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-3",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/1f6478c7-72c6-4064-bf56-c8edd89f7f9f.jpg",
+      "title": "redmond oregon city park",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Engin Yapici · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@yapici",
+      "raw": {
+        "asset_id": "1f6478c7-72c6-4064-bf56-c8edd89f7f9f",
+        "search_query": "redmond oregon city park",
+        "subject_tags": [
+          "park"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-4",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/c3b497ae-bc02-4979-a3ff-57a9454e519a.jpg",
+      "title": "redmond oregon city park",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Spencer DeMera · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@spencer_demera",
+      "raw": {
+        "asset_id": "c3b497ae-bc02-4979-a3ff-57a9454e519a",
+        "search_query": "redmond oregon city park",
+        "subject_tags": [
+          "river"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-5",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/3058376e-5c3e-47a0-b555-fe776eded5a0.jpg",
+      "title": "redmond oregon city park",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Vasu Pendyala · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@vasupendyalaa",
+      "raw": {
+        "asset_id": "3058376e-5c3e-47a0-b555-fe776eded5a0",
+        "search_query": "redmond oregon city park",
+        "subject_tags": [
+          "forest"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-6",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/f0a56b0a-7a33-4526-8572-3febb3df13c5.jpg",
+      "title": "redmond oregon city park",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Awar Meman · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@pdxphotographer",
+      "raw": {
+        "asset_id": "f0a56b0a-7a33-4526-8572-3febb3df13c5",
+        "search_query": "redmond oregon city park",
+        "subject_tags": [
+          "river",
+          "forest"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-7",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/e61db853-2813-4784-be6e-1db4b69024bc.jpg",
+      "title": "redmond oregon city park",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Liosha Shyp · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@liosha_shyp",
+      "raw": {
+        "asset_id": "e61db853-2813-4784-be6e-1db4b69024bc",
+        "search_query": "redmond oregon city park",
+        "subject_tags": [
+          "outdoor",
+          "park"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-8",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/e200ed25-b917-4397-a8ea-eca21d849c1d.jpg",
+      "title": "redmond oregon city park",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Kadri Karmo · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@kadribird",
+      "raw": {
+        "asset_id": "e200ed25-b917-4397-a8ea-eca21d849c1d",
+        "search_query": "redmond oregon city park",
+        "subject_tags": [
+          "river",
+          "sky"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-9",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/68e792d6-0566-4454-b031-6b81f9b2ca67.jpg",
+      "title": "redmond oregon city park",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Davis Patton · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@davispatton",
+      "raw": {
+        "asset_id": "68e792d6-0566-4454-b031-6b81f9b2ca67",
+        "search_query": "redmond oregon city park",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-10",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/9e7faf2e-93db-41bb-84de-001175aa87bb.jpg",
+      "title": "redmond oregon city park",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Tania Mirón · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@_xotm",
+      "raw": {
+        "asset_id": "9e7faf2e-93db-41bb-84de-001175aa87bb",
+        "search_query": "redmond oregon city park",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-11",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/a5ee2d54-97f9-45bf-9c01-65094898aeb4.jpg",
+      "title": "cline falls oregon",
+      "subtitle": "Score 21",
+      "meta": "unsplash · David Kovalenko · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@davidkovalenkoo",
+      "raw": {
+        "asset_id": "a5ee2d54-97f9-45bf-9c01-65094898aeb4",
+        "search_query": "cline falls oregon",
+        "subject_tags": [
+          "mountain",
+          "waterfall"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-12",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/f809f688-3c2b-4de4-a373-c7b9b08d744a.jpg",
+      "title": "cline falls oregon",
+      "subtitle": "Score 21",
+      "meta": "unsplash · David Kovalenko · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@davidkovalenkoo",
+      "raw": {
+        "asset_id": "f809f688-3c2b-4de4-a373-c7b9b08d744a",
+        "search_query": "cline falls oregon",
+        "subject_tags": [
+          "river"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-13",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/58c048d5-644c-4274-a474-c3f16b52e786.jpg",
+      "title": "cline falls oregon",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Leo_Visions · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@leo_visions_",
+      "raw": {
+        "asset_id": "58c048d5-644c-4274-a474-c3f16b52e786",
+        "search_query": "cline falls oregon",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-14",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/97070f5a-5e84-40fc-a576-6c245c8a5368.jpg",
+      "title": "cline falls oregon",
+      "subtitle": "Score 21",
+      "meta": "unsplash · David Kovalenko · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@davidkovalenkoo",
+      "raw": {
+        "asset_id": "97070f5a-5e84-40fc-a576-6c245c8a5368",
+        "search_query": "cline falls oregon",
+        "subject_tags": [
+          "forest",
+          "waterfall"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-15",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/7cf22592-9aae-47ee-b6bf-bed794b93379.jpg",
+      "title": "cline falls oregon",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Leo_Visions · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@leo_visions_",
+      "raw": {
+        "asset_id": "7cf22592-9aae-47ee-b6bf-bed794b93379",
+        "search_query": "cline falls oregon",
+        "subject_tags": [
+          "waterfall"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-16",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/04151fa1-c990-4580-9ae4-c971fe8cd29d.jpg",
+      "title": "Drive ingest: redmond_city_T9anjGRG_gM.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "04151fa1-c990-4580-9ae4-c971fe8cd29d",
+        "search_query": "Drive ingest: redmond_city_T9anjGRG_gM.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-17",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/462a1ccc-31b3-4985-b452-1dfc7e0d93f0.jpg",
+      "title": "Drive ingest: redmond_04_aIbtlE7pcKI.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "462a1ccc-31b3-4985-b452-1dfc7e0d93f0",
+        "search_query": "Drive ingest: redmond_04_aIbtlE7pcKI.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-18",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/b1165de3-3ea2-4a97-a4fd-d831901e5860.jpg",
+      "title": "Drive ingest: redmond_05_3NEesUdA5eA.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "b1165de3-3ea2-4a97-a4fd-d831901e5860",
+        "search_query": "Drive ingest: redmond_05_3NEesUdA5eA.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-19",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/bf3088e1-118c-4c64-b88d-ac7d2021c0c4.jpg",
+      "title": "Drive ingest: redmond_08_HEQOzRLTUxk.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "bf3088e1-118c-4c64-b88d-ac7d2021c0c4",
+        "search_query": "Drive ingest: redmond_08_HEQOzRLTUxk.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-20",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/234e9140-e0fe-4927-8130-9d22c26020ff.jpg",
+      "title": "Drive ingest: redmond_07_aEzm7Gb37a4.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "234e9140-e0fe-4927-8130-9d22c26020ff",
+        "search_query": "Drive ingest: redmond_07_aEzm7Gb37a4.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-21",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/90941498-3e8d-40f8-a5ea-7b92b7fc44ba.jpg",
+      "title": "Drive ingest: redmond_02_HMl9PO2TZfA.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "90941498-3e8d-40f8-a5ea-7b92b7fc44ba",
+        "search_query": "Drive ingest: redmond_02_HMl9PO2TZfA.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-22",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/45fe6e24-ca80-4cc9-a897-c33c49d607d5.jpg",
+      "title": "Drive ingest: redmond_03_z5qfzCEv3rM.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "45fe6e24-ca80-4cc9-a897-c33c49d607d5",
+        "search_query": "Drive ingest: redmond_03_z5qfzCEv3rM.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-23",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/94f3588f-171b-4c34-88a9-2681f96cb09e.jpg",
+      "title": "Drive ingest: redmond_01_aO8z_4FiSHc.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "94f3588f-171b-4c34-88a9-2681f96cb09e",
+        "search_query": "Drive ingest: redmond_01_aO8z_4FiSHc.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-24",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/1ca2fc2c-89c4-475f-a762-3bda1b16a6a7.jpg",
+      "title": "Drive ingest: redmond_09_eBlIOdyqpUU.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "1ca2fc2c-89c4-475f-a762-3bda1b16a6a7",
+        "search_query": "Drive ingest: redmond_09_eBlIOdyqpUU.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-25",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/2fbb1f04-dfa6-45d3-b678-44bff8ad1040.jpg",
+      "title": "Drive ingest: redmond_city_HAl6ZmOQKOE.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "2fbb1f04-dfa6-45d3-b678-44bff8ad1040",
+        "search_query": "Drive ingest: redmond_city_HAl6ZmOQKOE.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-26",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/fed2e432-2a1c-423f-ae11-7f465c9d26ff.jpg",
+      "title": "Drive ingest: redmond_06_f0nzTo0ywrE.jpg",
+      "subtitle": "Score 10",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "fed2e432-2a1c-423f-ae11-7f465c9d26ff",
+        "search_query": "Drive ingest: redmond_06_f0nzTo0ywrE.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-27",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/d13dbc6e-82d0-4d97-b10a-f7cb4598b39a.jpg",
+      "title": "redmond or airport",
+      "subtitle": "Score -7",
+      "meta": "unsplash · Josh Withers · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@joshwithers",
+      "raw": {
+        "asset_id": "d13dbc6e-82d0-4d97-b10a-f7cb4598b39a",
+        "search_query": "redmond or airport",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-28",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/856237b6-6ba1-46ed-9456-5a69190d5457.jpg",
+      "title": "redmond or airport",
+      "subtitle": "Score -7",
+      "meta": "unsplash · Shawn · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@shawnanggg",
+      "raw": {
+        "asset_id": "856237b6-6ba1-46ed-9456-5a69190d5457",
+        "search_query": "redmond or airport",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-29",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/a1464587-2d99-4f11-b912-927d6df2610f.jpg",
+      "title": "redmond or airport",
+      "subtitle": "Score -7",
+      "meta": "unsplash · isaac. · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@theisaacmatthew",
+      "raw": {
+        "asset_id": "a1464587-2d99-4f11-b912-927d6df2610f",
+        "search_query": "redmond or airport",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-30",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/0b41385c-0c36-447c-9389-9771fd7f1007.jpg",
+      "title": "redmond or airport",
+      "subtitle": "Score -7",
+      "meta": "unsplash · FIN · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@fin21",
+      "raw": {
+        "asset_id": "0b41385c-0c36-447c-9389-9771fd7f1007",
+        "search_query": "redmond or airport",
+        "subject_tags": [
+          "park"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-31",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/529a3790-fb12-435f-9098-5d90f858ed66.jpg",
+      "title": "redmond or airport",
+      "subtitle": "Score -7",
+      "meta": "unsplash · MUHAMMAD KAMRAN KHAN · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@sardarkamran128",
+      "raw": {
+        "asset_id": "529a3790-fb12-435f-9098-5d90f858ed66",
+        "search_query": "redmond or airport",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-32",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/d3d8b7be-c422-422c-981f-cc3795675133.jpg",
+      "title": "redmond or airport",
+      "subtitle": "Score -7",
+      "meta": "unsplash · Hat Trick · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@hattrick1996",
+      "raw": {
+        "asset_id": "d3d8b7be-c422-422c-981f-cc3795675133",
+        "search_query": "redmond or airport",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-33",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/13865e63-c2bf-45cf-9c64-853cb81fbe24.jpg",
+      "title": "redmond or airport",
+      "subtitle": "Score -7",
+      "meta": "unsplash · Austin · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@austin_7792",
+      "raw": {
+        "asset_id": "13865e63-c2bf-45cf-9c64-853cb81fbe24",
+        "search_query": "redmond or airport",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-34",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/f8258ae7-50af-476b-ad5c-bdf4d4977551.jpg",
+      "title": "redmond or airport",
+      "subtitle": "Score -7",
+      "meta": "unsplash · Shawn · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@shawnanggg",
+      "raw": {
+        "asset_id": "f8258ae7-50af-476b-ad5c-bdf4d4977551",
+        "search_query": "redmond or airport",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "R-35",
+      "section": "recommended",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/e61652d1-ddfb-4ffb-9fa4-a411d8d74f3e.jpg",
+      "title": "redmond or airport",
+      "subtitle": "Score -7",
+      "meta": "unsplash · MUHAMMAD KAMRAN KHAN · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@sardarkamran128",
+      "raw": {
+        "asset_id": "e61652d1-ddfb-4ffb-9fa4-a411d8d74f3e",
+        "search_query": "redmond or airport",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-1",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/8fdb900e-e175-4b62-9725-264b580b5126.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Porter Raab · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@porterraab",
+      "raw": {
+        "asset_id": "8fdb900e-e175-4b62-9725-264b580b5126",
+        "search_query": "high desert oregon home",
+        "subject_tags": [
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-2",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/c6e7d8c6-1938-4d88-aa96-cb6d6400af01.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Porter Raab · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@porterraab",
+      "raw": {
+        "asset_id": "c6e7d8c6-1938-4d88-aa96-cb6d6400af01",
+        "search_query": "high desert oregon home",
+        "subject_tags": [
+          "sunset"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-3",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/fdbbb944-47c1-4a82-bab4-848882ef4d56.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Emily Irene Photo Co. · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@emilyirenephotoco",
+      "raw": {
+        "asset_id": "fdbbb944-47c1-4a82-bab4-848882ef4d56",
+        "search_query": "high desert oregon home",
+        "subject_tags": [
+          "forest",
+          "road"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-4",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/c3dc38dd-80d2-4df7-9558-3761a21de3a1.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Sharad Bhat · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@sharadmbhat",
+      "raw": {
+        "asset_id": "c3dc38dd-80d2-4df7-9558-3761a21de3a1",
+        "search_query": "high desert oregon home",
+        "subject_tags": [
+          "mountain",
+          "sunset"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-5",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/dfd35c81-58af-4c6e-b0a7-fd711448ec6a.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Emma Swoboda · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@emmakphoto",
+      "raw": {
+        "asset_id": "dfd35c81-58af-4c6e-b0a7-fd711448ec6a",
+        "search_query": "high desert oregon home",
+        "subject_tags": [
+          "mountain",
+          "river",
+          "sunset",
+          "landscape"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-6",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/96e64dc4-8724-4b8f-9b08-293e1e7b3789.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Dudubangbang Travel · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@dudubangbang",
+      "raw": {
+        "asset_id": "96e64dc4-8724-4b8f-9b08-293e1e7b3789",
+        "search_query": "high desert oregon home",
+        "subject_tags": [
+          "road"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-7",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/7d256d6b-e47a-4a3d-bbaa-e61260077b72.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Troy Spoelma · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@spoelee4",
+      "raw": {
+        "asset_id": "7d256d6b-e47a-4a3d-bbaa-e61260077b72",
+        "search_query": "high desert oregon home",
+        "subject_tags": [
+          "mountain",
+          "sky",
+          "house"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-8",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/e37b3025-267c-43a0-af26-f8e72f30ad61.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Emma Swoboda · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@emmakphoto",
+      "raw": {
+        "asset_id": "e37b3025-267c-43a0-af26-f8e72f30ad61",
+        "search_query": "high desert oregon home",
+        "subject_tags": [
+          "house"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-9",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/b77e8bfc-d95b-4871-b755-2ab79110a984.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Marten Newhall · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@laughayette",
+      "raw": {
+        "asset_id": "b77e8bfc-d95b-4871-b755-2ab79110a984",
+        "search_query": "high desert oregon home",
+        "subject_tags": [
+          "mountain"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-10",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/0f6cc024-1581-4794-baf4-51bfba6701f7.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "meta": "unsplash · Sierra Houk · redmond, central-oregon, oregon",
+      "source": "unsplash",
+      "credit": "https://unsplash.com/@sierrahouk",
+      "raw": {
+        "asset_id": "0f6cc024-1581-4794-baf4-51bfba6701f7",
+        "search_query": "high desert oregon home",
+        "subject_tags": [
+          "road"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon",
+          "oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-11",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/ff7220c5-3fbc-4501-92cd-a444a01cd504.png",
+      "title": "Drive ingest: s08_piti.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "ff7220c5-3fbc-4501-92cd-a444a01cd504",
+        "search_query": "Drive ingest: s08_piti.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-12",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/949e95bb-f374-4c94-977f-5c6f68297044.png",
+      "title": "Drive ingest: s11_price_range.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "949e95bb-f374-4c94-977f-5c6f68297044",
+        "search_query": "Drive ingest: s11_price_range.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-13",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/22c11688-68e4-4bc5-8a37-37b70a87c4d3.png",
+      "title": "Drive ingest: s06_concessions.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "22c11688-68e4-4bc5-8a37-37b70a87c4d3",
+        "search_query": "Drive ingest: s06_concessions.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-14",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/da3efb2b-6e5a-4dca-bde5-5b4c8b2dfdc7.png",
+      "title": "Drive ingest: s10_hoa.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "da3efb2b-6e5a-4dca-bde5-5b4c8b2dfdc7",
+        "search_query": "Drive ingest: s10_hoa.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-15",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/1d5308dc-7a9c-4268-add6-1fcd93763508.png",
+      "title": "Drive ingest: s01_hook.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "1d5308dc-7a9c-4268-add6-1fcd93763508",
+        "search_query": "Drive ingest: s01_hook.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-16",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/d1043b78-610f-4ec1-acc6-99283a9e69ef.png",
+      "title": "Drive ingest: s03_dom.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "d1043b78-610f-4ec1-acc6-99283a9e69ef",
+        "search_query": "Drive ingest: s03_dom.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-17",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/2e84d30c-c47b-4213-a8d0-651a1eecbbe3.png",
+      "title": "Drive ingest: s07_financing.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "2e84d30c-c47b-4213-a8d0-651a1eecbbe3",
+        "search_query": "Drive ingest: s07_financing.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-18",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/75a59160-a16e-4896-a944-31dd1ff98202.png",
+      "title": "Drive ingest: s12_closing.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "75a59160-a16e-4896-a944-31dd1ff98202",
+        "search_query": "Drive ingest: s12_closing.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-19",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/d11e02ba-4f7e-4264-8d8d-f4840955f8e8.png",
+      "title": "Drive ingest: s04_inventory.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "d11e02ba-4f7e-4264-8d8d-f4840955f8e8",
+        "search_query": "Drive ingest: s04_inventory.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-20",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/55b34dab-f048-4370-832f-ac4eece80642.png",
+      "title": "Drive ingest: s05_sale_to_list.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "55b34dab-f048-4370-832f-ac4eece80642",
+        "search_query": "Drive ingest: s05_sale_to_list.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-21",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/3056c3d4-c350-43ff-b488-b31f639b80e8.png",
+      "title": "Drive ingest: s09_relist.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "3056c3d4-c350-43ff-b488-b31f639b80e8",
+        "search_query": "Drive ingest: s09_relist.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-22",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/0fe908ee-0b68-4717-bb8b-f210087ef12c.png",
+      "title": "Drive ingest: s02_median_price.png",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "0fe908ee-0b68-4717-bb8b-f210087ef12c",
+        "search_query": "Drive ingest: s02_median_price.png",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-23",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/a5db1522-343e-4ed9-bc4e-c978c776861f.jpg",
+      "title": "Drive ingest: smith_rock_JsD3HThXSrM.jpg",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "a5db1522-343e-4ed9-bc4e-c978c776861f",
+        "search_query": "Drive ingest: smith_rock_JsD3HThXSrM.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-24",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/f4c4621a-60a8-4105-b67e-b2db92981f7f.jpg",
+      "title": "Drive ingest: crooked_river_6LnZphgh6UQ.jpg",
+      "subtitle": "Score 5",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "f4c4621a-60a8-4105-b67e-b2db92981f7f",
+        "search_query": "Drive ingest: crooked_river_6LnZphgh6UQ.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-25",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/d61f0356-9425-4c1a-a717-90b2648ccd48.jpg",
+      "title": "Drive ingest: smith_rock_new_green_bush_mountain.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "d61f0356-9425-4c1a-a717-90b2648ccd48",
+        "search_query": "Drive ingest: smith_rock_new_green_bush_mountain.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-26",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/3f22bcd5-4382-4c3c-91d2-4619cdc22e19.jpg",
+      "title": "Drive ingest: smith_rock_new_falling.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "3f22bcd5-4382-4c3c-91d2-4619cdc22e19",
+        "search_query": "Drive ingest: smith_rock_new_falling.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-27",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/6b788d93-b023-4b51-b618-3934681c0aa6.jpg",
+      "title": "Drive ingest: high_desert_S-Ioh5aqA3Q.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "6b788d93-b023-4b51-b618-3934681c0aa6",
+        "search_query": "Drive ingest: high_desert_S-Ioh5aqA3Q.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-28",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/ff531c58-6608-49fa-8008-e82741b7b92d.jpg",
+      "title": "Drive ingest: smith_rock_new_smith_rock_view.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "ff531c58-6608-49fa-8008-e82741b7b92d",
+        "search_query": "Drive ingest: smith_rock_new_smith_rock_view.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-29",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/c3484611-3f1b-4571-bf61-e4af4fb0b334.jpg",
+      "title": "Drive ingest: smith_rock_p-7daFhaayQ.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "c3484611-3f1b-4571-bf61-e4af4fb0b334",
+        "search_query": "Drive ingest: smith_rock_p-7daFhaayQ.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-30",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/fc98dabc-57b3-4594-9ca9-6ad4973377b7.jpg",
+      "title": "Drive ingest: fort_rock_AqO86ol4KAY.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "fc98dabc-57b3-4594-9ca9-6ad4973377b7",
+        "search_query": "Drive ingest: fort_rock_AqO86ol4KAY.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-31",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/764d435b-409e-4b7a-88c9-64c3856952eb.jpg",
+      "title": "Drive ingest: high_desert_qSedl2kffPo.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "764d435b-409e-4b7a-88c9-64c3856952eb",
+        "search_query": "Drive ingest: high_desert_qSedl2kffPo.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-32",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/c1d11ef7-238a-482a-afa2-12f08096d0e0.jpg",
+      "title": "Drive ingest: smith_rock_new_going_up.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "c1d11ef7-238a-482a-afa2-12f08096d0e0",
+        "search_query": "Drive ingest: smith_rock_new_going_up.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-33",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/06c46df3-de81-4aee-8cce-efe76242f6f0.jpg",
+      "title": "Drive ingest: smith_rock_KXcgNnAx0cY.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "06c46df3-de81-4aee-8cce-efe76242f6f0",
+        "search_query": "Drive ingest: smith_rock_KXcgNnAx0cY.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-34",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/3a5f2345-13f1-4717-87ea-453800b0260e.jpg",
+      "title": "Drive ingest: smith_rock_new_panoramic.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "3a5f2345-13f1-4717-87ea-453800b0260e",
+        "search_query": "Drive ingest: smith_rock_new_panoramic.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-35",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/8556e6e8-0a45-45e7-9697-4e5ac215de15.jpg",
+      "title": "Drive ingest: high_desert_vpG6QggnAWk.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "8556e6e8-0a45-45e7-9697-4e5ac215de15",
+        "search_query": "Drive ingest: high_desert_vpG6QggnAWk.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-36",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/76e97166-0a60-44f6-bda3-d7d398c4b71f.jpg",
+      "title": "Drive ingest: smith_rock_4U0syBfFPxE.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "76e97166-0a60-44f6-bda3-d7d398c4b71f",
+        "search_query": "Drive ingest: smith_rock_4U0syBfFPxE.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-37",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/897818ac-e627-468e-99d0-4a3b2ffc6ae2.jpg",
+      "title": "Drive ingest: smith_rock_new_misery_ridge_trail.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "897818ac-e627-468e-99d0-4a3b2ffc6ae2",
+        "search_query": "Drive ingest: smith_rock_new_misery_ridge_trail.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-38",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/7d32d936-ffda-4141-9d0f-99471c9f2067.jpg",
+      "title": "Drive ingest: smith_rock_new_smith_rock_wide.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "7d32d936-ffda-4141-9d0f-99471c9f2067",
+        "search_query": "Drive ingest: smith_rock_new_smith_rock_wide.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-39",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/15d1e7d4-82ec-458b-a2d9-c5f4b1c0958e.jpg",
+      "title": "Drive ingest: smith_rock_WdfdrpeORJc.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "15d1e7d4-82ec-458b-a2d9-c5f4b1c0958e",
+        "search_query": "Drive ingest: smith_rock_WdfdrpeORJc.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-40",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/cbeb745f-2ded-479a-965f-856c9276d973.jpg",
+      "title": "Drive ingest: smith_rock_jHotbdkcUsE.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "cbeb745f-2ded-479a-965f-856c9276d973",
+        "search_query": "Drive ingest: smith_rock_jHotbdkcUsE.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-41",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/7a033c91-9058-44d4-80c1-f45455f6585b.jpg",
+      "title": "Drive ingest: crooked_river__XpfiVofZHA.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "7a033c91-9058-44d4-80c1-f45455f6585b",
+        "search_query": "Drive ingest: crooked_river__XpfiVofZHA.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-42",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/9dd5fe29-392e-4653-bb5a-5a0e598be83e.jpg",
+      "title": "Drive ingest: smith_rock_new_on_a_wire.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "9dd5fe29-392e-4653-bb5a-5a0e598be83e",
+        "search_query": "Drive ingest: smith_rock_new_on_a_wire.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-43",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/1376b583-d483-4f5a-a7aa-9363c8fa03c6.jpg",
+      "title": "Drive ingest: high_desert_YR-c7yJArpI.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "1376b583-d483-4f5a-a7aa-9363c8fa03c6",
+        "search_query": "Drive ingest: high_desert_YR-c7yJArpI.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-44",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/95909e00-ca0a-45e5-8148-90fe33e1c338.jpg",
+      "title": "Drive ingest: smith_rock_new_hiking_smith_rock.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "95909e00-ca0a-45e5-8148-90fe33e1c338",
+        "search_query": "Drive ingest: smith_rock_new_hiking_smith_rock.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-45",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/2b31e471-bc33-42d2-b697-2074577c8cc7.jpg",
+      "title": "Drive ingest: smith_rock_new_river_view.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "2b31e471-bc33-42d2-b697-2074577c8cc7",
+        "search_query": "Drive ingest: smith_rock_new_river_view.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-46",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/aa9efec6-c90c-4cc1-9ca3-ad4a8e59796b.jpg",
+      "title": "Drive ingest: smith_rock_FoHusPDISps.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "aa9efec6-c90c-4cc1-9ca3-ad4a8e59796b",
+        "search_query": "Drive ingest: smith_rock_FoHusPDISps.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-47",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/a2c321da-6798-4c52-825a-a7d51f64cae7.jpg",
+      "title": "Drive ingest: smith_rock_new_just_hanging.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "a2c321da-6798-4c52-825a-a7d51f64cae7",
+        "search_query": "Drive ingest: smith_rock_new_just_hanging.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-48",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/5c085fc0-344f-4806-8d3c-5eb8abe201ae.jpg",
+      "title": "Drive ingest: fort_rock_oT2mv15F_g4.jpg",
+      "subtitle": "Score 2",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "5c085fc0-344f-4806-8d3c-5eb8abe201ae",
+        "search_query": "Drive ingest: fort_rock_oT2mv15F_g4.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-49",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/90cf5b3b-e45e-467a-97d3-19a16034661a.jpg",
+      "title": "Drive ingest: v2_sport_climbing_cliff_02_1916908022.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "90cf5b3b-e45e-467a-97d3-19a16034661a",
+        "search_query": "Drive ingest: v2_sport_climbing_cliff_02_1916908022.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-50",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/c8054867-67bc-4fc6-9c52-f8de8c185fb4.jpg",
+      "title": "Drive ingest: v2_climber_silhouette_03_1864194382.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "c8054867-67bc-4fc6-9c52-f8de8c185fb4",
+        "search_query": "Drive ingest: v2_climber_silhouette_03_1864194382.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-51",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/87eb9436-265d-4348-ab8a-89fcd0a7d1fd.jpg",
+      "title": "Drive ingest: trail_runner_rocks_01_1317027845.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "87eb9436-265d-4348-ab8a-89fcd0a7d1fd",
+        "search_query": "Drive ingest: trail_runner_rocks_01_1317027845.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-52",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/f5471d99-87b9-424f-be53-0bb314129511.jpg",
+      "title": "Drive ingest: v2_rock_climber_outdoor_01_457797070.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "f5471d99-87b9-424f-be53-0bb314129511",
+        "search_query": "Drive ingest: v2_rock_climber_outdoor_01_457797070.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-53",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/6dbfc08b-76a6-4cd1-aa28-c8c79c501fd5.jpg",
+      "title": "Drive ingest: climber_desert_02_500308981.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "6dbfc08b-76a6-4cd1-aa28-c8c79c501fd5",
+        "search_query": "Drive ingest: climber_desert_02_500308981.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-54",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/c0a8eaa8-3558-4306-9bd2-f616465e271e.jpg",
+      "title": "Drive ingest: climber_chalk_03_1994376350.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "c0a8eaa8-3558-4306-9bd2-f616465e271e",
+        "search_query": "Drive ingest: climber_chalk_03_1994376350.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-55",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/553f3aea-c137-40c4-a1db-47423ac69efe.jpg",
+      "title": "Drive ingest: trail_runner_sunset_02_1199928640.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "553f3aea-c137-40c4-a1db-47423ac69efe",
+        "search_query": "Drive ingest: trail_runner_sunset_02_1199928640.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-56",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/aa2b3e28-8a77-4a97-9e89-14398f80815c.jpg",
+      "title": "Drive ingest: v3_runner_pine_02_335465318.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "aa2b3e28-8a77-4a97-9e89-14398f80815c",
+        "search_query": "Drive ingest: v3_runner_pine_02_335465318.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-57",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/b4ec8acb-41c1-48bb-be8e-ebe46f62db9a.jpg",
+      "title": "Drive ingest: trail_runner_sunset_00_1862128942.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "b4ec8acb-41c1-48bb-be8e-ebe46f62db9a",
+        "search_query": "Drive ingest: trail_runner_sunset_00_1862128942.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-58",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/0d272d34-adb3-4320-bbb6-2f013888405d.jpg",
+      "title": "Drive ingest: trail_runner_sunset_05_1339438316.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "0d272d34-adb3-4320-bbb6-2f013888405d",
+        "search_query": "Drive ingest: trail_runner_sunset_05_1339438316.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-59",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/40c2e449-f8c3-42be-b84d-599e2e89e883.jpg",
+      "title": "Drive ingest: v3_runner_desert_dirt_03_1540751084.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "40c2e449-f8c3-42be-b84d-599e2e89e883",
+        "search_query": "Drive ingest: v3_runner_desert_dirt_03_1540751084.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-60",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/3668df26-abfd-4c9f-8692-183579ff8a8a.jpg",
+      "title": "Drive ingest: climber_smith_rock_03_1868480926.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "3668df26-abfd-4c9f-8692-183579ff8a8a",
+        "search_query": "Drive ingest: climber_smith_rock_03_1868480926.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-61",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/8c0eef70-8322-4aa4-b2cc-e6f03eed5e0f.jpg",
+      "title": "Drive ingest: v2_rock_climber_outdoor_04_541872832.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "8c0eef70-8322-4aa4-b2cc-e6f03eed5e0f",
+        "search_query": "Drive ingest: v2_rock_climber_outdoor_04_541872832.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-62",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/d233d9f0-02ec-4b38-a11b-7d138303e83a.jpg",
+      "title": "Drive ingest: v2_sport_climbing_cliff_05_1017564148.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "d233d9f0-02ec-4b38-a11b-7d138303e83a",
+        "search_query": "Drive ingest: v2_sport_climbing_cliff_05_1017564148.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-63",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/f94e5d1d-aa01-4caf-8e73-bdf4bfeed5b7.jpg",
+      "title": "Drive ingest: climber_smith_rock_02_1869920665.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "f94e5d1d-aa01-4caf-8e73-bdf4bfeed5b7",
+        "search_query": "Drive ingest: climber_smith_rock_02_1869920665.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-64",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/6a9d2a6f-6011-4be0-a130-6e475ad057be.jpg",
+      "title": "Drive ingest: trail_runner_rocks_00_1473258362.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "6a9d2a6f-6011-4be0-a130-6e475ad057be",
+        "search_query": "Drive ingest: trail_runner_rocks_00_1473258362.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-65",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/f3796860-bad8-42e8-b6f1-94176c6ea5e6.jpg",
+      "title": "Drive ingest: v3_runner_desert_dirt_01_503894755.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "f3796860-bad8-42e8-b6f1-94176c6ea5e6",
+        "search_query": "Drive ingest: v3_runner_desert_dirt_01_503894755.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-66",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/262cc4ba-c8e1-4fcd-bb5a-f7115752fadf.jpg",
+      "title": "Drive ingest: trail_runner_sunset_03_1199928634.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "262cc4ba-c8e1-4fcd-bb5a-f7115752fadf",
+        "search_query": "Drive ingest: trail_runner_sunset_03_1199928634.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-67",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/b8e56e2b-2eb6-4e90-b7c8-7bd95e674105.jpg",
+      "title": "Drive ingest: climber_chalk_05_1436793845.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "b8e56e2b-2eb6-4e90-b7c8-7bd95e674105",
+        "search_query": "Drive ingest: climber_chalk_05_1436793845.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-68",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/ae512830-ba96-4b98-8a8f-1680857b6525.jpg",
+      "title": "Drive ingest: v2_traditional_climbing_05_1648564633.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "ae512830-ba96-4b98-8a8f-1680857b6525",
+        "search_query": "Drive ingest: v2_traditional_climbing_05_1648564633.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-69",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/3adde312-8629-4f1d-a762-b006226b1fe4.jpg",
+      "title": "Drive ingest: trail_runner_sunset_04_1399902605.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "3adde312-8629-4f1d-a762-b006226b1fe4",
+        "search_query": "Drive ingest: trail_runner_sunset_04_1399902605.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-70",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/e588416b-cbef-4919-bea6-d21efb3efde6.jpg",
+      "title": "Drive ingest: v3_runner_pine_00_655637533.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "e588416b-cbef-4919-bea6-d21efb3efde6",
+        "search_query": "Drive ingest: v3_runner_pine_00_655637533.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-71",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/e8ae4e38-9fb2-41b8-894f-53ed045690d8.jpg",
+      "title": "Drive ingest: v3_runner_mountain_04_1956076330.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "e8ae4e38-9fb2-41b8-894f-53ed045690d8",
+        "search_query": "Drive ingest: v3_runner_mountain_04_1956076330.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-72",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/603201fd-b42f-43e9-bad5-39bb04b36248.jpg",
+      "title": "Drive ingest: v2_sport_climbing_cliff_03_476847280.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "603201fd-b42f-43e9-bad5-39bb04b36248",
+        "search_query": "Drive ingest: v2_sport_climbing_cliff_03_476847280.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-73",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/1acce4ae-b5f2-4c20-a885-1b1e7327224f.jpg",
+      "title": "Drive ingest: v2_sport_climbing_cliff_01_1918660403.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "1acce4ae-b5f2-4c20-a885-1b1e7327224f",
+        "search_query": "Drive ingest: v2_sport_climbing_cliff_01_1918660403.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-74",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/74a9637d-8834-4409-8c72-0f6c700844e7.jpg",
+      "title": "Drive ingest: climber_desert_00_500314696.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "74a9637d-8834-4409-8c72-0f6c700844e7",
+        "search_query": "Drive ingest: climber_desert_00_500314696.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-75",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/a64726f8-4e18-4f38-a602-404379cfd345.jpg",
+      "title": "Drive ingest: climber_chalk_02_1221577849.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "a64726f8-4e18-4f38-a602-404379cfd345",
+        "search_query": "Drive ingest: climber_chalk_02_1221577849.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-76",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/9bb395f4-a706-4c9b-a9bd-cf3dd874a437.jpg",
+      "title": "Drive ingest: trail_runner_rocks_02_1317027842.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "9bb395f4-a706-4c9b-a9bd-cf3dd874a437",
+        "search_query": "Drive ingest: trail_runner_rocks_02_1317027842.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-77",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/58edc0bc-fb6b-4469-99a3-9256931f233e.jpg",
+      "title": "Drive ingest: v2_rock_climber_outdoor_00_1790560568.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "58edc0bc-fb6b-4469-99a3-9256931f233e",
+        "search_query": "Drive ingest: v2_rock_climber_outdoor_00_1790560568.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-78",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/dfab5725-5ca5-4130-8f6e-f306bbd42392.jpg",
+      "title": "Drive ingest: v3_runner_desert_dirt_00_477468874.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "dfab5725-5ca5-4130-8f6e-f306bbd42392",
+        "search_query": "Drive ingest: v3_runner_desert_dirt_00_477468874.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-79",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/877a3a3a-81ae-48fd-8b29-046fc146bed9.jpg",
+      "title": "Drive ingest: climber_smith_rock_01_1155877051.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "877a3a3a-81ae-48fd-8b29-046fc146bed9",
+        "search_query": "Drive ingest: climber_smith_rock_01_1155877051.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "A-80",
+      "section": "asset_library",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/ebf42b75-8ece-4d65-8f27-6609848fca8e.jpg",
+      "title": "Drive ingest: v2_traditional_climbing_01_527227666.jpg",
+      "subtitle": "Score -18",
+      "meta": "curated · Unknown · redmond, central-oregon",
+      "source": "curated",
+      "credit": "",
+      "raw": {
+        "asset_id": "ebf42b75-8ece-4d65-8f27-6609848fca8e",
+        "search_query": "Drive ingest: v2_traditional_climbing_01_527227666.jpg",
+        "subject_tags": [
+          "landscape",
+          "exterior"
+        ],
+        "geo_tags": [
+          "redmond",
+          "central-oregon"
+        ],
+        "approval": "approved"
+      }
+    },
+    {
+      "id": "CUR-1",
+      "section": "current",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_1.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #1",
+      "meta": "Photographer: Sierra Houk",
+      "source": "current-redmond-set",
+      "credit": "https://unsplash.com/@sierrahouk"
+    },
+    {
+      "id": "CUR-2",
+      "section": "current",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_2.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #2",
+      "meta": "Photographer: Marten Newhall",
+      "source": "current-redmond-set",
+      "credit": "https://unsplash.com/@laughayette"
+    },
+    {
+      "id": "CUR-3",
+      "section": "current",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_3.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #3",
+      "meta": "Photographer: Emma Swoboda",
+      "source": "current-redmond-set",
+      "credit": "https://unsplash.com/@emmakphoto"
+    },
+    {
+      "id": "CUR-4",
+      "section": "current",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_4.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #4",
+      "meta": "Photographer: Troy Spoelma",
+      "source": "current-redmond-set",
+      "credit": "https://unsplash.com/@spoelee4"
+    },
+    {
+      "id": "CUR-5",
+      "section": "current",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_5.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #5",
+      "meta": "Photographer: Dudubangbang Travel",
+      "source": "current-redmond-set",
+      "credit": "https://unsplash.com/@dudubangbang"
+    },
+    {
+      "id": "CUR-6",
+      "section": "current",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_6.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #6",
+      "meta": "Photographer: Emma Swoboda",
+      "source": "current-redmond-set",
+      "credit": "https://unsplash.com/@emmakphoto"
+    },
+    {
+      "id": "CUR-7",
+      "section": "current",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_7.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #7",
+      "meta": "Photographer: Sharad Bhat",
+      "source": "current-redmond-set",
+      "credit": "https://unsplash.com/@sharadmbhat"
+    },
+    {
+      "id": "CUR-8",
+      "section": "current",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_8.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #8",
+      "meta": "Photographer: Emily Irene Photo Co.",
+      "source": "current-redmond-set",
+      "credit": "https://unsplash.com/@emilyirenephotoco"
+    },
+    {
+      "id": "CUR-9",
+      "section": "current",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_9.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #9",
+      "meta": "Photographer: Porter Raab",
+      "source": "current-redmond-set",
+      "credit": "https://unsplash.com/@porterraab"
+    },
+    {
+      "id": "CUR-10",
+      "section": "current",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_10.jpg",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #10",
+      "meta": "Photographer: Porter Raab",
+      "source": "current-redmond-set",
+      "credit": "https://unsplash.com/@porterraab"
+    }
+  ]
+}

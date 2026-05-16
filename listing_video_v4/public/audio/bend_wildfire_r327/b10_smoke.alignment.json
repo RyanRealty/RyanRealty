@@ -1,0 +1,59 @@
+{
+  "words": [
+    {
+      "text": "Existing",
+      "startSec": 0.079,
+      "endSec": 0.539
+    },
+    {
+      "text": "",
+      "startSec": 0.539,
+      "endSec": 0.639
+    },
+    {
+      "text": "homes",
+      "startSec": 0.639,
+      "endSec": 0.959
+    },
+    {
+      "text": "",
+      "startSec": 0.959,
+      "endSec": 1.019
+    },
+    {
+      "text": "just",
+      "startSec": 1.019,
+      "endSec": 1.199
+    },
+    {
+      "text": "",
+      "startSec": 1.199,
+      "endSec": 1.219
+    },
+    {
+      "text": "get",
+      "startSec": 1.22,
+      "endSec": 1.339
+    },
+    {
+      "text": "",
+      "startSec": 1.339,
+      "endSec": 1.36
+    },
+    {
+      "text": "the",
+      "startSec": 1.36,
+      "endSec": 1.459
+    },
+    {
+      "text": "",
+      "startSec": 1.459,
+      "endSec": 1.479
+    },
+    {
+      "text": "smoke.",
+      "startSec": 1.48,
+      "endSec": 1.779
+    }
+  ]
+}

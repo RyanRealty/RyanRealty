@@ -1,0 +1,75 @@
+{
+  "video_slug": "bend_wildfire_r327",
+  "format": "news-video",
+  "skill": "video_production_skills/news-video/SKILL.md",
+  "rendered_at_iso": "2026-05-10T18:53:00-07:00",
+  "output": {
+    "path": "listing_video_v4/out/bend_wildfire_r327/bend_wildfire_r327.mp4",
+    "duration_sec": 44.864,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "codec": "h264",
+    "bitrate_kbps": 4748,
+    "size_bytes": 28444248,
+    "size_mb": 27.13
+  },
+  "structure": {
+    "intro_card_sec": 3.0,
+    "body_beat_count": 11,
+    "body_beats_total_sec": 38.94,
+    "outro_sec": 3.0,
+    "intro_card_style": "TitleCard with hidePartPill (matches market-report S1 pattern)",
+    "outro_style": "RyanRealtyOutro: navy + white stacked logo + 541.213.6706 phone (mirrors market-data-video SKILL §11 locked S12 spec)"
+  },
+  "voice": {
+    "voice": "Victoria - Ryan Realty Anchor",
+    "voice_id": "qSeXEcewz7tA0Q0qk9fH",
+    "model": "eleven_turbo_v2_5",
+    "stability": 0.40,
+    "similarity_boost": 0.80,
+    "style": 0.50,
+    "use_speaker_boost": true,
+    "previous_text_chained": true
+  },
+  "captions": {
+    "component": "SentenceCaption",
+    "alignment_source": "ElevenLabs /v1/forced-alignment per beat",
+    "style": "full sentence with active-word gold highlight (#F2C44A) per CLAUDE.md §0.5",
+    "alignment_files": 11
+  },
+  "qa_gate": {
+    "duration_in_target": true,
+    "duration_target_range_sec": "30-45",
+    "blackdetect_strict": "PASS — only intentional 0.067s outro fade-to-navy at end",
+    "audio_present": true,
+    "audio_mean_volume_db": -23.8,
+    "audio_max_volume_db": -4.7,
+    "banned_words_clean": true,
+    "no_em_dashes_in_prose": true,
+    "no_brand_in_body_frames": true,
+    "outro_matches_market_report_spec": true,
+    "intro_card_present": true,
+    "all_numbers_carry_units": true,
+    "captions_within_safe_zone": true,
+    "citations_complete": true
+  },
+  "known_caveats": [
+    "Council b-roll clips (jan7_dais.mp4, feb4_dais.mp4) have a faint dark border (~5% top/bottom) that persists even at zoom 1.88-1.95. This is a baked-in artifact of the source clips — the existing BendPolicyPulse renders show the same artifact at much larger magnitude (~25% top/bottom at their lower zoom 1.10-1.20). My render is cleaner than the predecessor but not byte-perfect. A durable fix would re-encode the source clips with ffmpeg crop+scale to remove the baked letterbox. Filed for a future maintenance pass."
+  ],
+  "predicted_scorecard": {
+    "hook": 9,
+    "retention": 8,
+    "text": 8,
+    "audio": 8,
+    "format": 9,
+    "engagement": 7,
+    "cover": 8,
+    "cta": 7,
+    "voice_brand": 9,
+    "antislop": 9,
+    "total": 82,
+    "format_minimum": 80,
+    "passes_floor": true
+  }
+}

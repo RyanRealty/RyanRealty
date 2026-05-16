@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What top brokerages actually post — IG listing reference</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #102742;
+    --cream: #faf8f4;
+    --ink: #1a1a1a;
+    --rule: rgba(16, 39, 66, 0.12);
+    --soft: rgba(16, 39, 66, 0.55);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1280px; margin: 0 auto; padding: 64px 32px 96px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--soft); margin-bottom: 8px; font-weight: 500;
+  }
+  h1 {
+    font-family: 'Playfair Display', Georgia, serif; font-weight: 500;
+    font-size: 48px; line-height: 1.1; margin: 0 0 24px;
+    color: var(--navy); letter-spacing: -0.01em;
+  }
+  h2 {
+    font-family: 'Playfair Display', Georgia, serif; font-weight: 500;
+    font-size: 32px; line-height: 1.15; margin: 64px 0 16px;
+    color: var(--navy); letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 14px; letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--navy); margin: 0 0 8px; font-weight: 600;
+  }
+  p { margin: 0 0 16px; max-width: 720px; font-size: 15px; }
+  .lead { font-size: 17px; max-width: 760px; color: rgba(16,39,66,0.85); }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 48px 0; }
+  .pattern-block { margin: 48px 0; }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px; margin: 24px 0;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 24px; margin: 24px 0;
+  }
+  .post {
+    background: white; border: 1px solid var(--rule);
+    border-radius: 4px; overflow: hidden;
+  }
+  .post img {
+    width: 100%; aspect-ratio: 1080 / 1350;
+    object-fit: cover; display: block;
+  }
+  .post .meta {
+    padding: 12px 14px; font-size: 12px;
+    color: var(--soft); letter-spacing: 0.04em;
+    border-top: 1px solid var(--rule);
+  }
+  .post .meta strong { color: var(--navy); font-weight: 600; }
+  .caption-card {
+    background: white; border: 1px solid var(--rule);
+    border-radius: 4px; padding: 24px; margin: 16px 0 32px;
+  }
+  .caption-card h4 {
+    font-size: 14px; margin: 0 0 8px;
+    color: var(--navy); font-weight: 600; letter-spacing: 0.02em;
+  }
+  .caption-card .copy {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px; line-height: 1.6; color: #2a2a2a;
+    white-space: pre-line; margin: 0;
+  }
+  .verdict {
+    background: var(--navy); color: var(--cream);
+    padding: 32px 40px; margin: 64px 0 0; border-radius: 4px;
+  }
+  .verdict h2 { color: var(--cream); margin-top: 0; }
+  .verdict p { color: rgba(250,248,244,0.92); max-width: 820px; }
+  .verdict ul { color: rgba(250,248,244,0.92); padding-left: 20px; }
+  .verdict ul li { margin-bottom: 8px; max-width: 800px; }
+  .pill {
+    display: inline-block; font-size: 11px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px;
+    background: rgba(16, 39, 66, 0.08); color: var(--navy);
+    margin-right: 6px; font-weight: 500;
+  }
+  .pill-bad { background: rgba(180,40,40,0.10); color: #9a2a2a; }
+  .pill-good { background: rgba(40,120,80,0.10); color: #1f6a3f; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="eyebrow">primary-source reference · scraped from instagram · 2026-05-13</div>
+  <h1>What top brokerages actually post for listings</h1>
+  <p class="lead">
+    Pulled 52 recent posts from Hilton &amp; Hyland, The Agency, Douglas Elliman, and Ryan Serhant via Apify.
+    Filtered to single-property listing posts. Here's what they're doing — primary source, not described, shown.
+  </p>
+
+  <hr>
+
+  <div class="pattern-block">
+    <h3>Pattern A — &ldquo;the photo IS the post&rdquo;</h3>
+    <h2>Unaltered photograph. No overlay. No logo. No spec line.</h2>
+    <p>
+      The most common pattern across Hilton &amp; Hyland, Douglas Elliman, and ~70% of The Agency's listings.
+      The professionally-shot property photo carries the entire post. Every overlay element &mdash; price, BR/BA, address,
+      &ldquo;JUST LISTED&rdquo; badge, brokerage logo, agent headshot &mdash; lives in the caption underneath the post, not on top of it.
+    </p>
+
+    <div class="grid-4">
+      <div class="post">
+        <img src="ig-refs/hiltonhyland_DI1kHgwzy8x.jpg" alt="Hilton Hyland Malibu Colony">
+        <div class="meta"><strong>@hiltonhyland</strong> · Malibu Colony · $18.95M</div>
+      </div>
+      <div class="post">
+        <img src="ig-refs/hiltonhyland_DTbJIw9lBUY.jpg" alt="Hilton Hyland Mt Olympus">
+        <div class="meta"><strong>@hiltonhyland</strong> · Mt Olympus · For Lease</div>
+      </div>
+      <div class="post">
+        <img src="ig-refs/hiltonhyland_DSoGtUoClq5.jpg" alt="Hilton Hyland Rexford Estate">
+        <div class="meta"><strong>@hiltonhyland</strong> · &ldquo;The Rexford Estate&rdquo; · Beverly Hills</div>
+      </div>
+      <div class="post">
+        <img src="ig-refs/hiltonhyland_DSBJbBZE9HK.jpg" alt="Hilton Hyland Mid-Century">
+        <div class="meta"><strong>@hiltonhyland</strong> · Mid-Century Modern · JUST LISTED</div>
+      </div>
+      <div class="post">
+        <img src="ig-refs/hiltonhyland_DRh6tfJgarm.jpg" alt="Hilton Hyland Historic Highlands">
+        <div class="meta"><strong>@hiltonhyland</strong> · Historic Highlands · JUST LISTED</div>
+      </div>
+      <div class="post">
+        <img src="ig-refs/douglaselliman_DYNK-NLFhOs.jpg" alt="Elliman Oceanfront Miami">
+        <div class="meta"><strong>@douglaselliman</strong> · Miami Beach Oceanfront · $24.99M</div>
+      </div>
+      <div class="post">
+        <img src="ig-refs/douglaselliman_DYDG7SolI-K.jpg" alt="Elliman Greenwich Estate">
+        <div class="meta"><strong>@douglaselliman</strong> · Greenwich · $21M · 5.5 acres</div>
+      </div>
+      <div class="post">
+        <img src="ig-refs/douglaselliman_DYFKp7xlov0.jpg" alt="Elliman Brownstone Central Park">
+        <div class="meta"><strong>@douglaselliman</strong> · Historic Brownstone · Lenox Hill</div>
+      </div>
+      <div class="post">
+        <img src="ig-refs/theagencyre_DYNvmouAcI5.jpg" alt="The Agency Malibu Bungalow">
+        <div class="meta"><strong>@theagencyre</strong> · Malibu PCH bungalow · $5.475M</div>
+      </div>
+    </div>
+
+    <div class="caption-card">
+      <h4>The caption underneath the Hilton &amp; Hyland Malibu Colony post (verbatim):</h4>
+      <p class="copy">New Listing | Architectural Digest-Caliber Living in Malibu Colony
+
+This restored and modernized Country English-style residence sits on approx. 34 feet of pristine beach frontage in the exclusive, guard-gated Malibu Colony. Featured on the cover of Architectural Digest, the home blends timeless charm with luxurious coastal living.
+
+Vaulted wood-paneled ceilings and a sun-filled open floor plan connect the gourmet kitchen, living room with fireplace, and elevated loft with sweeping views of the beach. The primary suite offers a cozy sitting area, walk-in closet, and elegant bath, while a separate guest suite provides added privacy.
+
+Outdoors, enjoy a spa, outdoor shower, multiple dining areas, fireplace, and BBQ—all set against the backdrop of the Pacific Ocean.
+
+Listed By: @chadrogerstv
+
+》23618 Malibu Colony Rd #56
+》$18,950,000 | $100,000/MO
+》4 BD | 3 BA | 2,030 SQFT
+》Malibu</p>
+    </div>
+
+  </div>
+
+  <hr>
+
+  <div class="pattern-block">
+    <h3>Pattern B — &ldquo;magazine cover&rdquo; (much less common, ~20% of posts)</h3>
+    <h2>Single editorial headline overlaid on a quiet portion of the hero photo.</h2>
+    <p>
+      Used by The Agency primarily. Serif white type. Selective italicization for emphasis on a couple of words
+      (property style, location). Price stated conversationally (&ldquo;for $19M&rdquo;), never as a stat-line.
+      Photo crop is intentional &mdash; the headline lands in a sky region, a dark ceiling, or another quiet area
+      so it doesn't compete with the architecture. Photo still dominates ~75% of the frame.
+    </p>
+
+    <div class="grid-2">
+      <div class="post">
+        <img src="ig-refs/theagencyre_DYSv1rckj6w.jpg" alt="The Agency Carthay Circle Spanish Revival">
+        <div class="meta"><strong>@theagencyre</strong> · Carthay Circle Spanish Revival · $3.2M</div>
+      </div>
+      <div class="post">
+        <img src="ig-refs/theagencyre_DYPpn96FAfi.jpg" alt="The Agency Santa Monica Modern">
+        <div class="meta"><strong>@theagencyre</strong> · 1628 Georgina Ave, Santa Monica · $19M</div>
+      </div>
+    </div>
+
+    <div class="caption-card">
+      <h4>The caption underneath The Agency's Carthay Circle post (verbatim):</h4>
+      <p class="copy">A beautifully restored 1920s Spanish Revival in the heart of Carthay Circle HPOZ, thoughtfully reimagined while preserving its original charm. Warm, timeless, and filled with natural light, the home offers 4 bedrooms and 3.5 baths with a refined mix of classic character and modern finishes.
+
+Original details like arched doorways and rich wood tones are paired with high-end materials including Viola Monet Calacatta stone, Zia Tile, white oak cabinetry, and Venetian plaster walls. The kitchen anchors the home with top-tier appliances and a clean, functional design.
+
+Fully updated systems including roof, plumbing, electrical, and HVAC make it completely turnkey. Outside, a private yard features a detached cabana and outdoor kitchen with BBQ, ideal for entertaining.
+
+Located minutes from Beverly Hills, West Hollywood, and the Miracle Mile, this home blends historic Los Angeles character with elevated modern living.
+
+6255 Del Valle Dr
+📍Los Angeles, CA
+Listed at $3,195,000 by @jordanginsburg_
+4 Beds, 3.5 Baths | 3,154 Sqft
+
+Staging: @francescagracehome
+Photos: @wil.myrs
+Designer: @thebuilderhub_</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="verdict">
+    <h2>What this means for the Tumalo listing</h2>
+    <p>
+      Every &ldquo;flyer&rdquo; we tried to build was the wrong category. Top brokerages don't post listing flyers.
+      They post unedited professional photographs &mdash; one photo per post or as a carousel &mdash; with a story-led caption
+      that does the heavy lifting that we kept trying to bake into the image.
+    </p>
+
+    <h3 style="color: var(--cream); margin-top: 32px;">What we should ship</h3>
+    <ul>
+      <li>
+        <strong>10 unaltered listing photos as IG carousel slides.</strong> Color-corrected, retouched for clarity, but
+        no overlay. No logo. No spec line. No JUST LISTED sticker. The photos already exist in the Spark CDN feed.
+      </li>
+      <li>
+        <strong>One H&amp;H-style listing caption</strong>, written in your voice, 250&ndash;400 words,
+        location-anchored opening, materials/architectural details middle, lifestyle closing,
+        structured property-details block at the bottom (》address 》price 》BR/BA 》sqft).
+      </li>
+      <li>
+        <strong>One optional Agency-style &ldquo;magazine cover&rdquo; variant</strong> &mdash; only on the strongest hero photo,
+        serif italic-emphasis headline placed in the sky portion. Used as slide 1 of the carousel OR as a single-image
+        announcement post. Built in Canva natively or as a clean Remotion comp.
+      </li>
+      <li>
+        <strong>An optional 4&ndash;6 page Cascade-Hasson-style lookbook PDF</strong>, served from the Tumalo listing page on
+        ryan-realty.com. Editorial register: cream/white, restrained serif headline, photography spreads
+        with single-line captions, agent close.
+      </li>
+    </ul>
+
+    <h3 style="color: var(--cream); margin-top: 32px;">What we should NOT do (every top brokerage avoids these)</h3>
+    <ul>
+      <li><span class="pill pill-bad">never</span> Brokerage logo on the image</li>
+      <li><span class="pill pill-bad">never</span> Agent headshot on the image</li>
+      <li><span class="pill pill-bad">never</span> Spec line baked into the image (BD · BA · SF · acres as overlay)</li>
+      <li><span class="pill pill-bad">never</span> Phone / email / web address on the image</li>
+      <li><span class="pill pill-bad">never</span> Open-house dates on the image (those go in stories, not posts)</li>
+      <li><span class="pill pill-bad">never</span> &ldquo;JUST LISTED&rdquo; stickers/badges over the photo</li>
+      <li><span class="pill pill-bad">never</span> Colored panels, borders, or frames around the photo</li>
+      <li><span class="pill pill-bad">never</span> Multi-photo collages (use carousels instead &mdash; one photo per slide)</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

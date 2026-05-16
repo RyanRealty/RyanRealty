@@ -1,0 +1,57 @@
+/* Shared stylesheet for Design System preview cards */
+@import url('../colors_and_type.css');
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.card-root {
+  padding: 24px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.row   { display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap; }
+.col   { display: flex; flex-direction: column; gap: 8px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+
+.swatch {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+}
+.swatch .chip { height: 56px; }
+.swatch .meta {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+}
+.swatch .meta b { color: var(--foreground); font-family: var(--font-sans); font-weight: 600; font-size: 12px; }
+
+.label-mono { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+.label-eyebrow { font-family: var(--font-sans); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-foreground); font-weight: 500; }
+
+/* Re-usable chip sizes for shadow/radius/spacing demos */
+.demo-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-size: 13px;
+  color: var(--foreground);
+}

@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Flyer Templates · Ryan Realty Design System v2</title>
+<link rel="stylesheet" href="_card.css">
+<style>
+
+/* ─── FONTS ─── */
+@font-face { font-family:'Amboqia Boriango'; src:url('../fonts/Amboqia_Boriango.otf') format('opentype'); }
+@font-face { font-family:'Azo Sans'; src:url('../fonts/AzoSans-Medium.ttf') format('truetype'); }
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+
+/* ─── TOKENS ─── */
+:root {
+  --rr-navy:      #102742;
+  --rr-navy-deep: #0a1a2e;
+  --rr-cream:     #faf8f4;
+  --rr-sand:      #e8e2d4;
+  --rr-sand-edge: #ede6d4;
+  --rr-fir:       #2e4a3a;
+  --rr-sky:       #8fb8d4;
+  --rr-sig-muted: #46607c;
+}
+
+/* ─── PAGE SHELL ─── */
+body { background:#f4f2ee; padding:60px 24px 100px; margin:0; }
+.page-header { max-width:720px; margin:0 auto 56px; }
+.page-eyebrow {
+  font-family:'Azo Sans',sans-serif; font-size:14px; letter-spacing:0.16em;
+  text-transform:uppercase; color:var(--rr-sig-muted); margin-bottom:18px;
+}
+.page-h1 {
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:72px; color:var(--rr-navy); line-height:1; letter-spacing:-0.01em;
+  margin:0 0 16px;
+}
+.page-sub {
+  font-family:'Geist',system-ui,sans-serif; font-size:18px; color:var(--rr-navy);
+  opacity:.75; line-height:1.5; margin:0 0 8px;
+}
+.page-note {
+  font-family:'Geist',system-ui,sans-serif; font-size:13px; color:var(--rr-sig-muted);
+  font-style:italic; margin:0;
+}
+
+/* ─── PICKER CARD WRAPPER ─── */
+.picker-stack { display:flex; flex-direction:column; gap:50px; max-width:720px; margin:0 auto; }
+
+.picker-card {
+  background:#fff;
+  border:1px solid var(--rr-sand);
+  border-radius:14px;
+  box-shadow:0 4px 6px -1px rgb(16 39 66/.10),0 2px 4px -2px rgb(16 39 66/.10);
+  padding:32px;
+  box-sizing:border-box;
+}
+
+.card-id {
+  font-family:'Geist',sans-serif; font-size:13px; font-weight:700;
+  color:var(--rr-navy); opacity:.4; letter-spacing:0.1em; text-transform:uppercase;
+  margin-bottom:4px;
+}
+.card-name {
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:36px; color:var(--rr-navy); line-height:1.1; margin:0 0 6px;
+}
+.card-desc {
+  font-family:'Geist',sans-serif; font-size:15px; font-style:italic;
+  color:var(--rr-navy); opacity:.7; margin:0 0 4px;
+}
+.card-rating { font-size:15px; margin:0 0 4px; }
+.card-use {
+  font-family:'Geist',sans-serif; font-size:11px; font-weight:500;
+  letter-spacing:0.1em; text-transform:uppercase; color:var(--rr-sig-muted); margin:0 0 28px;
+}
+
+/* ─── FLYER FRAME: 432×540 (half of 1080×1350 IG 4:5) ─── */
+.flyer-frame {
+  width:432px;
+  height:540px;
+  margin:0 auto;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  border-radius:6px;
+}
+
+/* ═══════════════════════════════════════════════
+   FOOTER STRIP SYSTEM — three variants, ~40-50px
+   ═══════════════════════════════════════════════ */
+
+/* Variant A — brand strip (logo left, text right) */
+.footer-a {
+  height:40px;
+  min-height:40px;
+  flex-shrink:0;
+  background:var(--rr-cream);
+  border-top:1px solid var(--rr-sand-edge);
+  display:flex;
+  align-items:center;
+  padding:0 12px;
+  gap:10px;
+  box-sizing:border-box;
+}
+.footer-a img.fa-logo {
+  height:28px;
+  width:auto;
+  display:block;
+  flex-shrink:0;
+}
+.footer-a .fa-rule {
+  width:1px;
+  height:20px;
+  background:var(--rr-navy);
+  opacity:.18;
+  flex-shrink:0;
+}
+.footer-a .fa-text {
+  font-family:'Geist',system-ui,sans-serif;
+  font-size:9.5px;
+  color:var(--rr-navy);
+  line-height:1.4;
+  flex:1;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Variant A dark (white logo + cream text — for dark-bg flyers) */
+.footer-a.on-dark {
+  background:rgba(10,26,46,.70);
+  border-top-color:rgba(255,255,255,.10);
+}
+.footer-a.on-dark .fa-rule { background:#fff; opacity:.2; }
+.footer-a.on-dark .fa-text { color:rgba(250,248,244,.80); }
+
+/* Variant B — broker portrait strip (photo left, text right) */
+.footer-b {
+  height:50px;
+  min-height:50px;
+  flex-shrink:0;
+  background:var(--rr-cream);
+  border-top:1px solid var(--rr-sand-edge);
+  display:flex;
+  align-items:center;
+  padding:0 12px;
+  gap:10px;
+  box-sizing:border-box;
+}
+.footer-b img.fb-portrait {
+  width:36px;
+  height:52px;
+  object-fit:cover;
+  border-radius:4px;
+  flex-shrink:0;
+  display:block;
+  margin:-6px 0; /* let portrait slightly overflow top/bottom */
+}
+.footer-b .fb-rule {
+  width:1px;
+  height:24px;
+  background:var(--rr-navy);
+  opacity:.18;
+  flex-shrink:0;
+}
+.footer-b .fb-text {
+  font-family:'Geist',system-ui,sans-serif;
+  font-size:9.5px;
+  color:var(--rr-navy);
+  line-height:1.45;
+  flex:1;
+  font-variant-numeric:tabular-nums;
+}
+.footer-b .fb-name {
+  font-size:10px;
+  font-weight:600;
+  display:block;
+}
+
+/* Variant B dark (for F8 navy bg) */
+.footer-b.on-dark {
+  background:rgba(10,26,46,.70);
+  border-top-color:rgba(255,255,255,.10);
+}
+.footer-b.on-dark .fb-rule { background:#fff; opacity:.2; }
+.footer-b.on-dark .fb-text { color:rgba(250,248,244,.80); }
+.footer-b.on-dark .fb-name { color:#faf8f4; }
+
+/* Variant C — logo-in-photo (no separate strip element; logo floats over photo) */
+.footer-c-logo {
+  position:absolute;
+  bottom:14px;
+  right:14px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:3px;
+}
+.footer-c-logo img {
+  height:44px !important;
+  width:auto !important;
+  max-width:none !important;
+  object-fit:contain !important;
+  display:block;
+  /* subtle drop shadow for legibility on photos */
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.50));
+}
+.footer-c-logo .fc-url {
+  font-family:'Geist',system-ui,sans-serif;
+  font-size:8.5px;
+  color:#fff;
+  letter-spacing:0.04em;
+  text-shadow:0 1px 3px rgba(0,0,0,.6);
+}
+
+/* ═══════════════════════════════════════════════
+   F1 — MUSEUM WALL
+   ═══════════════════════════════════════════════ */
+.f1 { background:#111; }
+.f1 .photo-hero {
+  flex:1;
+  position:relative;
+  overflow:hidden;
+}
+.f1 .photo-hero img {
+  width:100%; height:100%; object-fit:cover; display:block;
+}
+.f1 .scrim {
+  position:absolute; bottom:0; left:0; right:0; height:30%;
+  background:linear-gradient(to top,rgba(0,0,0,.80) 0%,transparent 100%);
+}
+.f1 .pill-status {
+  position:absolute; top:14px; left:14px;
+  background:var(--rr-navy); color:#fff;
+  font-family:'Geist',sans-serif; font-size:10px; font-weight:700;
+  letter-spacing:0.12em; text-transform:uppercase;
+  padding:4px 10px; border-radius:100px;
+}
+.f1 .addr-scrim {
+  position:absolute; bottom:16px; left:16px; right:64px;
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:17px; color:#fff; letter-spacing:0.05em; text-transform:uppercase; line-height:1.3;
+}
+
+/* ═══════════════════════════════════════════════
+   F2 — BROADSHEET STRIP
+   ═══════════════════════════════════════════════ */
+.f2 { background:var(--rr-sand); padding:0; }
+.f2 .masthead {
+  background:var(--rr-navy); color:var(--rr-cream); padding:11px 18px;
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:14px; letter-spacing:0.10em; text-transform:uppercase;
+  text-align:center; flex-shrink:0;
+}
+.f2 .photo-strip {
+  display:grid; grid-template-columns:1fr 1fr 1fr;
+  gap:2px; flex-shrink:0; height:150px;
+}
+.f2 .photo-strip img { width:100%; height:100%; object-fit:cover; display:block; }
+.f2 .headline {
+  padding:14px 18px 6px;
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:22px; color:var(--rr-navy); line-height:1.2;
+  flex-shrink:0;
+}
+.f2 .spec-bar {
+  background:var(--rr-navy); color:var(--rr-cream); padding:8px 18px;
+  font-size:11px; font-weight:500; font-variant-numeric:tabular-nums;
+  letter-spacing:0.03em; text-align:center; flex-shrink:0;
+  font-family:'Geist',system-ui,sans-serif;
+}
+.f2 .spacer { flex:1; }
+
+/* ═══════════════════════════════════════════════
+   F3 — STAT SPIKE
+   ═══════════════════════════════════════════════ */
+.f3 { background:var(--rr-cream); }
+.f3 .photo-top { flex-shrink:0; height:196px; overflow:hidden; }
+.f3 .photo-top img { width:100%; height:100%; object-fit:cover; display:block; }
+.f3 .stat-zone {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:0 20px; background:var(--rr-cream);
+}
+.f3 .big-num {
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:140px; color:var(--rr-navy); line-height:.9;
+  font-variant-numeric:tabular-nums;
+}
+.f3 .stat-label {
+  font-family:'Geist',sans-serif; font-size:13px; color:var(--rr-navy);
+  text-align:center; line-height:1.5; margin-top:10px; opacity:.80;
+}
+
+/* ═══════════════════════════════════════════════
+   F4 — CONTACT SHEET
+   ═══════════════════════════════════════════════ */
+.f4 { background:var(--rr-navy); padding:0; }
+.f4 .photo-grid {
+  flex:1; display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  grid-template-rows:1fr 1fr 1fr;
+  gap:2px; overflow:hidden;
+}
+.f4 .photo-grid img { width:100%; height:100%; object-fit:cover; display:block; }
+.f4 .photo-grid .span-2 { grid-column:1/3; grid-row:1/3; }
+.f4 .addr-bar {
+  padding:7px 12px;
+  font-family:'Geist',sans-serif;
+  font-size:9.5px; color:rgba(250,248,244,.85); font-weight:500; text-align:center;
+  font-variant-numeric:tabular-nums; letter-spacing:0.04em; flex-shrink:0;
+}
+
+/* ═══════════════════════════════════════════════
+   F5 — STORY POSTCARD
+   ═══════════════════════════════════════════════ */
+.f5 { background:var(--rr-cream); }
+.f5 .photo-top {
+  flex-shrink:0; height:196px; overflow:hidden;
+  margin:14px 14px 0; border-radius:8px;
+}
+.f5 .photo-top img { width:100%; height:100%; object-fit:cover; display:block; }
+.f5 .story-body {
+  flex:1; padding:16px 20px 0;
+  display:flex; flex-direction:column; justify-content:center;
+}
+.f5 .story-text {
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:15px; color:var(--rr-navy); line-height:1.65; text-align:center;
+  margin:0;
+}
+.f5 .price-tag {
+  font-family:'Geist',sans-serif; font-size:10px; font-weight:500;
+  color:var(--rr-navy); font-variant-numeric:tabular-nums;
+  text-align:center; margin-top:10px; opacity:.55;
+}
+
+/* ═══════════════════════════════════════════════
+   F6 — FARMSTEAD POSTCARD (brand-only)
+   ═══════════════════════════════════════════════ */
+.f6 {
+  background:var(--rr-cream);
+  align-items:center; justify-content:center;
+  padding:28px 24px;
+}
+.f6 .lockup-img { width:220px; display:block; margin:0 auto 20px; }
+.f6 .addr-text {
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:18px; letter-spacing:0.08em; text-transform:uppercase; color:var(--rr-navy);
+  text-align:center; line-height:1.35; margin-bottom:16px;
+}
+.f6 .horse-wrap { flex:1; width:100%; position:relative; }
+.f6 .horse-img {
+  width:90px; opacity:.25; position:absolute; bottom:0; right:0;
+}
+
+/* ═══════════════════════════════════════════════
+   F7 — PRICE DROP
+   ═══════════════════════════════════════════════ */
+.f7 { background:var(--rr-cream); }
+.f7 .price-bar {
+  background:var(--rr-navy); color:var(--rr-cream); padding:11px 18px;
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:17px; letter-spacing:0.08em; text-transform:uppercase;
+  text-align:center; flex-shrink:0;
+}
+.f7 .main-zone {
+  flex:1; display:grid; grid-template-columns:1fr 1fr; gap:0; overflow:hidden;
+}
+.f7 .price-col {
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  padding:18px 14px; background:var(--rr-cream); gap:6px;
+}
+.f7 .old-price {
+  font-family:'Geist',sans-serif; font-size:17px; font-weight:700;
+  color:var(--rr-sig-muted); font-variant-numeric:tabular-nums;
+  text-decoration:line-through; opacity:.7;
+}
+.f7 .arrow { font-size:22px; color:var(--rr-navy); line-height:1; }
+.f7 .new-price {
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:28px; color:var(--rr-navy); font-variant-numeric:tabular-nums; line-height:1;
+}
+.f7 .caption-line {
+  font-family:'Geist',sans-serif; font-size:11px; color:var(--rr-sig-muted);
+  font-style:italic; text-align:center; margin-top:2px; line-height:1.5;
+}
+.f7 .photo-col { overflow:hidden; }
+.f7 .photo-col img { width:100%; height:100%; object-fit:cover; display:block; }
+.f7 .spec-row {
+  padding:5px 16px;
+  font-family:'Geist',sans-serif; font-size:9.5px; color:var(--rr-sig-muted);
+  text-align:center; border-top:1px solid var(--rr-sand); flex-shrink:0;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════
+   F8 — TRACK RECORD PANEL
+   ═══════════════════════════════════════════════ */
+.f8 { background:var(--rr-navy); }
+.f8 .photo-band { flex-shrink:0; height:164px; position:relative; overflow:hidden; }
+.f8 .photo-band img { width:100%; height:100%; object-fit:cover; display:block; }
+.f8 .photo-band .scrim {
+  position:absolute; inset:0;
+  background:linear-gradient(to top,rgba(10,26,46,.85) 0%,rgba(10,26,46,.25) 100%);
+}
+.f8 .band-label {
+  position:absolute; bottom:12px; left:16px; right:16px;
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:17px; color:#fff; letter-spacing:0.03em; line-height:1.25;
+}
+.f8 .stats-zone {
+  padding:18px 16px 10px;
+  display:flex; flex-direction:column; gap:12px; flex-shrink:0;
+}
+.f8 .stat-row {
+  display:flex; align-items:baseline; gap:10px;
+}
+.f8 .stat-val {
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:46px; color:#faf8f4; font-variant-numeric:tabular-nums; line-height:1;
+  flex-shrink:0;
+}
+.f8 .stat-lbl {
+  font-family:'Geist',sans-serif; font-size:12px; color:rgba(250,248,244,.60);
+  letter-spacing:0.04em; line-height:1.3;
+}
+.f8 .slogan {
+  font-family:'Azo Sans',sans-serif; font-size:10px; font-style:italic;
+  color:rgba(250,248,244,.45); text-align:center; padding:0 16px 12px;
+  flex-shrink:0; letter-spacing:0.04em;
+}
+.f8 .spacer-push { flex:1; }
+
+/* ═══════════════════════════════════════════════
+   F9 — OPEN HOUSE INVITE
+   ═══════════════════════════════════════════════ */
+.f9 { background:var(--rr-cream); }
+.f9 .oh-headline {
+  padding:10px 16px 6px;
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:46px; color:var(--rr-navy); letter-spacing:0.03em; text-transform:uppercase;
+  text-align:center; line-height:1; flex-shrink:0;
+}
+.f9 .date-bar {
+  background:var(--rr-navy); color:var(--rr-cream); padding:8px 18px;
+  font-family:'Geist',sans-serif; font-size:15px; font-weight:600;
+  letter-spacing:0.06em; text-align:center; flex-shrink:0;
+}
+.f9 .photo-zone { flex:1; overflow:hidden; }
+.f9 .photo-zone img { width:100%; height:100%; object-fit:cover; display:block; }
+.f9 .addr-bottom {
+  padding:6px 16px; background:var(--rr-cream);
+  font-family:'Geist',sans-serif; font-size:9.5px; color:var(--rr-sig-muted);
+  text-align:center; flex-shrink:0; font-variant-numeric:tabular-nums;
+}
+.f9 .hosted-note {
+  font-size:9px; color:var(--rr-sig-muted); text-align:center;
+  padding-bottom:6px; font-family:'Geist',sans-serif;
+}
+
+/* ═══════════════════════════════════════════════
+   F10 — BUYER EDUCATION
+   ═══════════════════════════════════════════════ */
+.f10 { background:var(--rr-cream); }
+.f10 .thumb-strip {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:2px; height:68px; flex-shrink:0;
+}
+.f10 .thumb-strip img { width:100%; height:100%; object-fit:cover; display:block; }
+.f10 .stat-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:2px; background:var(--rr-sand); flex-shrink:0;
+}
+.f10 .stat-cell {
+  background:var(--rr-cream); padding:12px 14px;
+  display:flex; flex-direction:column; gap:1px;
+}
+.f10 .cell-label {
+  font-family:'Geist',sans-serif; font-size:8px; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.12em; color:var(--rr-sig-muted);
+}
+.f10 .cell-val {
+  font-family:'Amboqia Boriango','Playfair Display',Georgia,serif;
+  font-size:34px; color:var(--rr-navy); font-variant-numeric:tabular-nums; line-height:1;
+}
+.f10 .cell-sub {
+  font-family:'Geist',sans-serif; font-size:9px; color:var(--rr-sig-muted);
+}
+.f10 .explainer {
+  padding:10px 14px;
+  font-family:'Geist',sans-serif; font-size:11px; color:var(--rr-sig-muted);
+  line-height:1.55; flex-shrink:0; border-bottom:1px solid var(--rr-sand);
+}
+.f10 .qr-row {
+  padding:8px 14px;
+  display:flex; align-items:center; gap:10px; flex-shrink:0;
+}
+.f10 .qr-block {
+  width:38px; height:38px; border:2px solid var(--rr-navy); border-radius:4px;
+  display:grid; grid-template-columns:repeat(5,1fr); gap:2px; padding:3px;
+  flex-shrink:0;
+}
+.f10 .qr-dot { background:var(--rr-navy); border-radius:1px; }
+.f10 .qr-text {
+  font-family:'Geist',sans-serif; font-size:9px; color:var(--rr-sig-muted); line-height:1.4;
+}
+.f10 .qr-text strong { color:var(--rr-navy); font-weight:600; display:block; font-size:10px; }
+
+</style>
+</head>
+<body>
+
+<!-- ═══ PAGE HEADER ═══ -->
+<div class="page-header">
+  <div class="page-eyebrow">Ryan Realty · Design System v2</div>
+  <h1 class="page-h1">Flyer Templates</h1>
+  <p class="page-sub">10 social-feed patterns (1080×1350 IG portrait) rendered with 19496 Tumalo Reservoir · 3 BD · 3 BA · 2,325 SQFT · $1,225,000 · listed by Matt Ryan</p>
+  <p class="page-note">Optimized for IG / FB / LinkedIn feed. Compact footer signature only — full broker info lives in IG bio + post caption.</p>
+</div>
+
+<div class="picker-stack">
+
+  <!-- ══════════════════════════════════════
+       F1: MUSEUM WALL — Variant C footer
+       ══════════════════════════════════════ -->
+  <div class="picker-card">
+    <div class="card-id">F1</div>
+    <div class="card-name">Museum Wall</div>
+    <div class="card-desc">Just Listed · full-bleed hero photo, gallery presentation</div>
+    <div class="card-rating">★★★★★</div>
+    <div class="card-use">Use case: IG feed hero, FB post, Reels cover</div>
+
+    <div class="flyer-frame f1">
+      <div class="photo-hero">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175825195222000000-o.jpg"
+             alt="19496 Tumalo Reservoir — primary hero" loading="lazy">
+        <div class="scrim"></div>
+        <div class="pill-status">Just Listed</div>
+        <div class="addr-scrim">19496 Tumalo Reservoir · Bend</div>
+        <!-- Variant C — logo floats over photo -->
+        <div class="footer-c-logo">
+          <img src="../assets/brand/logo-stacked-white.png" alt="Ryan Realty">
+          <span class="fc-url">ryan-realty.com</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       F2: BROADSHEET STRIP — Variant A footer
+       ══════════════════════════════════════ -->
+  <div class="picker-card">
+    <div class="card-id">F2</div>
+    <div class="card-name">Broadsheet Strip</div>
+    <div class="card-desc">IG carousel cover · editorial three-panel photo treatment</div>
+    <div class="card-rating">★★★★</div>
+    <div class="card-use">Use case: IG carousel slide 1, FB feed, LinkedIn</div>
+
+    <div class="flyer-frame f2">
+      <div class="masthead">Ryan Realty · Bend, Oregon</div>
+      <div class="photo-strip">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175719779563000000-o.jpg"
+             alt="Aerial" loading="lazy">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175725529629000000-o.jpg"
+             alt="Living room" loading="lazy">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175728975287000000-o.jpg"
+             alt="Kitchen" loading="lazy">
+      </div>
+      <div class="headline">19496 Tumalo Reservoir Rd</div>
+      <div class="spec-bar">3 BD &nbsp;·&nbsp; 3 BA &nbsp;·&nbsp; 2,325 SQFT &nbsp;·&nbsp; 2.28 ACRES &nbsp;·&nbsp; $1,225,000</div>
+      <div class="spacer"></div>
+      <!-- Variant A -->
+      <div class="footer-a">
+        <img class="fa-logo" src="../assets/brand/ryan-realty-stacked-logo-blue.png" alt="Ryan Realty">
+        <div class="fa-rule"></div>
+        <div class="fa-text">Matthew Ryan · Principal Broker · 541.213.6706 · ryan-realty.com</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       F3: STAT SPIKE — Variant B footer
+       ══════════════════════════════════════ -->
+  <div class="picker-card">
+    <div class="card-id">F3</div>
+    <div class="card-name">Stat Spike</div>
+    <div class="card-desc">Land / acreage hero · big number as visual anchor</div>
+    <div class="card-rating">★★★★</div>
+    <div class="card-use">Use case: IG feed, carousel slide 2, buyer presentation</div>
+
+    <div class="flyer-frame f3">
+      <div class="photo-top">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175723357841000000-o.jpg"
+             alt="Tumalo grounds aerial" loading="lazy">
+      </div>
+      <div class="stat-zone">
+        <div class="big-num">2.28</div>
+        <div class="stat-label">acres of Tumalo · Three Sisters views<br>creek through the property</div>
+      </div>
+      <!-- Variant B -->
+      <div class="footer-b">
+        <img class="fb-portrait" src="../assets/team/matt-ryan.jpg" alt="Matt Ryan">
+        <div class="fb-rule"></div>
+        <div class="fb-text">
+          <span class="fb-name">Matthew Ryan · Principal Broker</span>
+          541.213.6706 · ryan-realty.com
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       F4: CONTACT SHEET — Variant A footer
+       ══════════════════════════════════════ -->
+  <div class="picker-card">
+    <div class="card-id">F4</div>
+    <div class="card-name">Contact Sheet</div>
+    <div class="card-desc">Just Listed · 6-photo asymmetric grid on navy</div>
+    <div class="card-rating">★★★★</div>
+    <div class="card-use">Use case: IG carousel cover, FB post, email header</div>
+
+    <div class="flyer-frame f4">
+      <div class="photo-grid">
+        <img class="span-2"
+             src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175825195222000000-o.jpg"
+             alt="Hero" loading="lazy">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175719779563000000-o.jpg"
+             alt="Aerial 1" loading="lazy">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175725529629000000-o.jpg"
+             alt="Living" loading="lazy">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175728975287000000-o.jpg"
+             alt="Kitchen" loading="lazy">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175741090616000000-o.jpg"
+             alt="Primary BR" loading="lazy">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260307035352655634000000-o.jpg"
+             alt="Aerial dusk" loading="lazy">
+      </div>
+      <div class="addr-bar">
+        19496 Tumalo Reservoir · Bend OR 97703 &nbsp;·&nbsp; $1,225,000 &nbsp;·&nbsp; 3 BD · 3 BA · 2,325 SQFT
+      </div>
+      <!-- Variant A dark -->
+      <div class="footer-a on-dark">
+        <img class="fa-logo" src="../assets/brand/logo-stacked-white.png" alt="Ryan Realty">
+        <div class="fa-rule"></div>
+        <div class="fa-text">Matthew Ryan · Principal Broker · 541.213.6706 · ryan-realty.com</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       F5: STORY POSTCARD — Variant B footer
+       ══════════════════════════════════════ -->
+  <div class="picker-card">
+    <div class="card-id">F5</div>
+    <div class="card-name">Story Postcard</div>
+    <div class="card-desc">Lifestyle property · narrative-first, one contained dusk photo</div>
+    <div class="card-rating">★★★★★</div>
+    <div class="card-use">Use case: IG feed lifestyle, caption slide, email hero</div>
+
+    <div class="flyer-frame f5">
+      <div class="photo-top">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260307035352655634000000-o.jpg"
+             alt="Aerial dusk" loading="lazy">
+      </div>
+      <div class="story-body">
+        <p class="story-text">Three Sisters views from nearly every room. A creek runs through the 2.28 acres. Deer move through the trees in the evenings. Three bedrooms, three baths, built in 1995. Twelve minutes to downtown Bend.</p>
+        <div class="price-tag">$1,225,000 · 19496 Tumalo Reservoir Rd, Bend OR 97703</div>
+      </div>
+      <!-- Variant B -->
+      <div class="footer-b">
+        <img class="fb-portrait" src="../assets/team/matt-ryan.jpg" alt="Matt Ryan">
+        <div class="fb-rule"></div>
+        <div class="fb-text">
+          <span class="fb-name">Matthew Ryan · Principal Broker</span>
+          541.213.6706 · ryan-realty.com
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       F6: FARMSTEAD POSTCARD — Variant C (no strip)
+       ══════════════════════════════════════ -->
+  <div class="picker-card">
+    <div class="card-id">F6</div>
+    <div class="card-name">Farmstead Postcard</div>
+    <div class="card-desc">Brand-only · heritage wordmark centerpiece · Coming Soon / Just Sold</div>
+    <div class="card-rating">★★★★★</div>
+    <div class="card-use">Use case: IG brand post, Coming Soon teaser, Just Sold announcement</div>
+
+    <div class="flyer-frame f6">
+      <img class="lockup-img" src="../assets/brand/illustration-05.png" alt="Ryan Realty signature lockup">
+      <div class="addr-text">19496 Tumalo Reservoir<br>Bend · Oregon</div>
+      <div class="horse-wrap">
+        <img class="horse-img" src="../assets/brand/navy-cream/element-running-horse.png" alt="">
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       F7: PRICE DROP — Variant A footer
+       ══════════════════════════════════════ -->
+  <div class="picker-card">
+    <div class="card-id">F7</div>
+    <div class="card-name">Price Drop</div>
+    <div class="card-desc">Price Reduction · two-column split with hero photo</div>
+    <div class="card-rating">★★★</div>
+    <div class="card-use">Use case: IG announcement, price-reduction re-marketing</div>
+
+    <div class="flyer-frame f7">
+      <div class="price-bar">Price Adjusted</div>
+      <div class="main-zone">
+        <div class="price-col">
+          <div class="old-price">$1,275,000</div>
+          <div class="arrow">↓</div>
+          <div class="new-price">$1,225,000</div>
+          <div class="caption-line">Same home.<br>Same lot.<br>New number.</div>
+        </div>
+        <div class="photo-col">
+          <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175825195222000000-o.jpg"
+               alt="Hero" loading="lazy">
+        </div>
+      </div>
+      <div class="spec-row">
+        3 BD · 3 BA · 2,325 SQFT · 2.28 ACRES · 19496 Tumalo Reservoir Rd
+      </div>
+      <!-- Variant A -->
+      <div class="footer-a">
+        <img class="fa-logo" src="../assets/brand/ryan-realty-stacked-logo-blue.png" alt="Ryan Realty">
+        <div class="fa-rule"></div>
+        <div class="fa-text">Matthew Ryan · Principal Broker · 541.213.6706 · ryan-realty.com</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       F8: TRACK RECORD PANEL — Variant B dark footer
+       ══════════════════════════════════════ -->
+  <div class="picker-card">
+    <div class="card-id">F8</div>
+    <div class="card-name">Track Record Panel</div>
+    <div class="card-desc">Broker brag · photo band + vertical stat stack on navy</div>
+    <div class="card-rating">★★★★</div>
+    <div class="card-use">Use case: IG social proof, listing appointment leave-behind</div>
+
+    <div class="flyer-frame f8">
+      <div class="photo-band">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175720531554000000-o.jpg"
+             alt="Aerial 2" loading="lazy">
+        <div class="scrim"></div>
+        <div class="band-label">Recent Tumalo / Westside Sales</div>
+      </div>
+      <div class="stats-zone">
+        <div class="stat-row">
+          <div class="stat-val">$42M</div>
+          <div class="stat-lbl">sold YTD</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-val">28</div>
+          <div class="stat-lbl">days avg on market</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-val">98%</div>
+          <div class="stat-lbl">list-to-close ratio</div>
+        </div>
+      </div>
+      <div class="slogan">We tell you the number, not the story.</div>
+      <div class="spacer-push"></div>
+      <!-- Variant B dark -->
+      <div class="footer-b on-dark">
+        <img class="fb-portrait" src="../assets/team/matt-ryan.jpg" alt="Matt Ryan">
+        <div class="fb-rule"></div>
+        <div class="fb-text">
+          <span class="fb-name">Matthew Ryan · Principal Broker</span>
+          541.213.6706 · ryan-realty.com
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       F9: OPEN HOUSE INVITE — Variant B footer
+       ══════════════════════════════════════ -->
+  <div class="picker-card">
+    <div class="card-id">F9</div>
+    <div class="card-name">Open House Invite</div>
+    <div class="card-desc">Open House · date-forward, full hero photo, portrait strip</div>
+    <div class="card-rating">★★★★</div>
+    <div class="card-use">Use case: IG feed, door-to-door invite, FB event post</div>
+
+    <div class="flyer-frame f9">
+      <div class="oh-headline">Open<br>House</div>
+      <div class="date-bar">Saturday · May 17 · 1–3 PM</div>
+      <div class="photo-zone">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175825195222000000-o.jpg"
+             alt="Hero" loading="lazy">
+      </div>
+      <div class="addr-bottom">19496 Tumalo Reservoir Rd · Bend, OR 97703 · $1,225,000 · 3 BD · 3 BA · 2,325 SQFT</div>
+      <!-- Variant B -->
+      <div class="footer-b">
+        <img class="fb-portrait" src="../assets/team/matt-ryan.jpg" alt="Matt Ryan">
+        <div class="fb-rule"></div>
+        <div class="fb-text">
+          <span class="fb-name">Matthew Ryan · Principal Broker</span>
+          541.213.6706 · ryan-realty.com · Hosted by Matt Ryan
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       F10: BUYER EDUCATION — Variant A footer
+       ══════════════════════════════════════ -->
+  <div class="picker-card">
+    <div class="card-id">F10</div>
+    <div class="card-name">Buyer Education</div>
+    <div class="card-desc">Market data · 4-photo context strip + 2×2 stat grid + explainer</div>
+    <div class="card-rating">★★★</div>
+    <div class="card-use">Use case: IG educational post, email nurture, listing presentation</div>
+
+    <div class="flyer-frame f10">
+      <div class="thumb-strip">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175719779563000000-o.jpg"
+             alt="Aerial 1" loading="lazy">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260307035352655634000000-o.jpg"
+             alt="Aerial dusk" loading="lazy">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175744600559000000-o.jpg"
+             alt="Grounds 1" loading="lazy">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175723357841000000-o.jpg"
+             alt="Aerial 3" loading="lazy">
+      </div>
+      <div class="stat-grid">
+        <div class="stat-cell">
+          <div class="cell-label">Median Sale · Tumalo</div>
+          <div class="cell-val">$895K</div>
+          <div class="cell-sub">trailing 12 months</div>
+        </div>
+        <div class="stat-cell">
+          <div class="cell-label">Days on Market</div>
+          <div class="cell-val">31</div>
+          <div class="cell-sub">avg, active listings</div>
+        </div>
+        <div class="stat-cell">
+          <div class="cell-label">Months of Supply</div>
+          <div class="cell-val">4.1</div>
+          <div class="cell-sub">balanced market</div>
+        </div>
+        <div class="stat-cell">
+          <div class="cell-label">Sale-to-List</div>
+          <div class="cell-val">97%</div>
+          <div class="cell-sub">closed transactions</div>
+        </div>
+      </div>
+      <div class="explainer">
+        Tumalo sits at 4.1 months of supply — a balanced market. Inventory is moving but not racing. Buyers have time to be deliberate; sellers who price correctly close quickly.
+      </div>
+      <div class="qr-row">
+        <div class="qr-block">
+          <div class="qr-dot"></div><div class="qr-dot"></div><div class="qr-dot"></div><div class="qr-dot"></div><div class="qr-dot"></div>
+          <div class="qr-dot"></div><div></div><div></div><div></div><div class="qr-dot"></div>
+          <div class="qr-dot"></div><div></div><div class="qr-dot"></div><div></div><div class="qr-dot"></div>
+          <div class="qr-dot"></div><div></div><div></div><div></div><div class="qr-dot"></div>
+          <div class="qr-dot"></div><div class="qr-dot"></div><div class="qr-dot"></div><div class="qr-dot"></div><div class="qr-dot"></div>
+        </div>
+        <div class="qr-text">
+          <strong>ryan-realty.com/tour</strong>
+          Schedule a showing or request the full market report.
+        </div>
+      </div>
+      <!-- Variant A -->
+      <div class="footer-a">
+        <img class="fa-logo" src="../assets/brand/ryan-realty-stacked-logo-blue.png" alt="Ryan Realty">
+        <div class="fa-rule"></div>
+        <div class="fa-text">Matthew Ryan · Principal Broker · 541.213.6706 · ryan-realty.com</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /picker-stack -->
+</body>
+</html>

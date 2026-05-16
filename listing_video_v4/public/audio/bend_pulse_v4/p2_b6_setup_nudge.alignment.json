@@ -1,0 +1,214 @@
+{
+  "words": [
+    {
+      "text": "And",
+      "startSec": 0.079,
+      "endSec": 0.199
+    },
+    {
+      "text": "",
+      "startSec": 0.199,
+      "endSec": 0.239
+    },
+    {
+      "text": "Council's",
+      "startSec": 0.239,
+      "endSec": 0.639
+    },
+    {
+      "text": "",
+      "startSec": 0.639,
+      "endSec": 0.699
+    },
+    {
+      "text": "read",
+      "startSec": 0.699,
+      "endSec": 0.899
+    },
+    {
+      "text": "",
+      "startSec": 0.899,
+      "endSec": 0.959
+    },
+    {
+      "text": "on",
+      "startSec": 0.959,
+      "endSec": 1.079
+    },
+    {
+      "text": "",
+      "startSec": 1.079,
+      "endSec": 1.1
+    },
+    {
+      "text": "what",
+      "startSec": 1.1,
+      "endSec": 1.279
+    },
+    {
+      "text": "",
+      "startSec": 1.279,
+      "endSec": 1.319
+    },
+    {
+      "text": "this",
+      "startSec": 1.319,
+      "endSec": 1.48
+    },
+    {
+      "text": "",
+      "startSec": 1.48,
+      "endSec": 1.559
+    },
+    {
+      "text": "fee",
+      "startSec": 1.559,
+      "endSec": 1.679
+    },
+    {
+      "text": "",
+      "startSec": 1.679,
+      "endSec": 1.719
+    },
+    {
+      "text": "is",
+      "startSec": 1.719,
+      "endSec": 1.899
+    },
+    {
+      "text": "",
+      "startSec": 1.899,
+      "endSec": 1.979
+    },
+    {
+      "text": "actually",
+      "startSec": 1.979,
+      "endSec": 2.359
+    },
+    {
+      "text": "",
+      "startSec": 2.359,
+      "endSec": 2.399
+    },
+    {
+      "text": "trying",
+      "startSec": 2.399,
+      "endSec": 2.699
+    },
+    {
+      "text": "",
+      "startSec": 2.699,
+      "endSec": 2.719
+    },
+    {
+      "text": "to",
+      "startSec": 2.72,
+      "endSec": 2.819
+    },
+    {
+      "text": "",
+      "startSec": 2.819,
+      "endSec": 2.879
+    },
+    {
+      "text": "do.",
+      "startSec": 2.879,
+      "endSec": 3.159
+    },
+    {
+      "text": "",
+      "startSec": 3.159,
+      "endSec": 3.619
+    },
+    {
+      "text": "Not",
+      "startSec": 3.619,
+      "endSec": 3.74
+    },
+    {
+      "text": "",
+      "startSec": 3.74,
+      "endSec": 3.779
+    },
+    {
+      "text": "a",
+      "startSec": 3.779,
+      "endSec": 3.859
+    },
+    {
+      "text": "",
+      "startSec": 3.859,
+      "endSec": 3.899
+    },
+    {
+      "text": "mandate.",
+      "startSec": 3.899,
+      "endSec": 4.379
+    },
+    {
+      "text": "",
+      "startSec": 4.379,
+      "endSec": 4.739
+    },
+    {
+      "text": "A",
+      "startSec": 4.739,
+      "endSec": 4.88
+    },
+    {
+      "text": "",
+      "startSec": 4.88,
+      "endSec": 4.92
+    },
+    {
+      "text": "signal",
+      "startSec": 4.92,
+      "endSec": 5.259
+    },
+    {
+      "text": "",
+      "startSec": 5.259,
+      "endSec": 5.299
+    },
+    {
+      "text": "to",
+      "startSec": 5.299,
+      "endSec": 5.42
+    },
+    {
+      "text": "",
+      "startSec": 5.42,
+      "endSec": 5.5
+    },
+    {
+      "text": "start",
+      "startSec": 5.5,
+      "endSec": 5.679
+    },
+    {
+      "text": "",
+      "startSec": 5.679,
+      "endSec": 5.719
+    },
+    {
+      "text": "the",
+      "startSec": 5.719,
+      "endSec": 5.799
+    },
+    {
+      "text": "",
+      "startSec": 5.799,
+      "endSec": 5.839
+    },
+    {
+      "text": "transition.",
+      "startSec": 5.839,
+      "endSec": 6.439
+    }
+  ],
+  "raw_keys": [
+    "characters",
+    "words",
+    "loss"
+  ]
+}

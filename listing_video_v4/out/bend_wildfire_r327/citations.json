@@ -1,0 +1,132 @@
+{
+  "video_slug": "bend_wildfire_r327",
+  "format": "news-video",
+  "topic": "Pine Mountain Fire (USFS prescribed burn that escaped 2026-05-07) intersected with Bend's Section R-327 wildfire mitigation building code (effective 2026-05-15)",
+  "rendered_at_iso": null,
+  "data_accuracy_gate": "All on-screen and spoken figures trace to a primary or near-primary source verified within 2026-05-10. No memory-recalled or estimated figures.",
+  "figures": [
+    {
+      "figure": "14 miles SE of Bend",
+      "claim": "Pine Mountain Fire is approximately 14 miles southeast of Bend",
+      "appears_in": ["b1_hook VO", "b1_hook overlay (\"14 MILES FROM BEND\")"],
+      "source": "OPB",
+      "url": "https://www.opb.org/article/2026/05/08/bend-prescribed-burn-turns-into-wildfire/",
+      "method": "WebFetch",
+      "verbatim_quote": "The fire on Pine Mountain, about 14 miles southeast of Bend, grew to 2,866 acres by Friday afternoon",
+      "fetched_at_iso": "2026-05-10T17:55:00-07:00"
+    },
+    {
+      "figure": "2,589 acres",
+      "claim": "Pine Mountain Fire current size as of 2026-05-10 9:20 AM",
+      "appears_in": ["b2_acres VO (\"twenty five hundred acres\")", "b2_acres overlay (\"2,589 ACRES\")"],
+      "source": "Central Oregon Fire Information",
+      "url": "https://centraloregonfire.org/2026/05/10/pine-mountain-fire-update-may-10-2026/",
+      "method": "WebFetch",
+      "verbatim_quote": "The Pine Mountain Fire is at 2,589 acres with a decrease in acreage due to mapping refinement following an infrared flight. The fire is 70% contained.",
+      "fetched_at_iso": "2026-05-10T17:55:00-07:00"
+    },
+    {
+      "figure": "Started Thursday (May 7)",
+      "claim": "Fire started when a USFS prescribed burn jumped containment lines on Thursday May 7, 2026",
+      "appears_in": ["b3_started VO", "b3_started overlay (\"STARTED THU MAY 7\")"],
+      "source": "Central Oregon Fire Information + OPB",
+      "url": "https://centraloregonfire.org/2026/05/07/prescribed-burning-cancelled-on-pine-mountain-thursday/",
+      "method": "WebFetch",
+      "verbatim_quote": "On Thursday morning, the Forest Service announced it was canceling the burn due to unfavorable conditions. The agency declared the burn had turned into a wildfire that afternoon.",
+      "fetched_at_iso": "2026-05-10T17:55:00-07:00"
+    },
+    {
+      "figure": "\"conditions they did not expect\"",
+      "claim": "USFS spokesperson said unexpected conditions caused the prescribed burn to escape",
+      "appears_in": ["b3_started VO"],
+      "source": "OPB (quoting Jaimie Olle, Central Oregon Fire Management Service)",
+      "url": "https://www.opb.org/article/2026/05/08/bend-prescribed-burn-turns-into-wildfire/",
+      "method": "WebFetch",
+      "verbatim_quote": "\"We experienced conditions that were unexpected,\" said Jaimie Olle, Central Oregon Fire Management Service spokesperson.",
+      "fetched_at_iso": "2026-05-10T17:55:00-07:00"
+    },
+    {
+      "figure": "70% contained",
+      "claim": "Fire is 70% contained as of 2026-05-10 9:20 AM",
+      "appears_in": ["b4_contained VO", "b4_contained overlay (\"70% CONTAINED · AS OF MAY 10 9:20 AM\")"],
+      "source": "Central Oregon Fire Information",
+      "url": "https://centraloregonfire.org/2026/05/10/pine-mountain-fire-update-may-10-2026/",
+      "method": "WebFetch",
+      "verbatim_quote": "The fire is 70% contained.",
+      "fetched_at_iso": "2026-05-10T17:55:00-07:00"
+    },
+    {
+      "figure": "May 15, 2026 (effective date for R-327)",
+      "claim": "Section R-327 wildfire mitigation building code takes effect May 15, 2026 for new residential building permits",
+      "appears_in": ["b6_code VO (\"May fifteenth\")", "b6_code overlay (\"MAY 15\")", "b8_sisters VO + overlay", "intro card subtitle"],
+      "source": "The Source Weekly",
+      "url": "https://www.bendsource.com/business/businessnews/city-of-bend-adopts-residential-wildfire-mitigation-building-code-effective-may-15/",
+      "method": "WebFetch",
+      "verbatim_quote": "The new requirements will take effect May 15, 2026, and apply to new residential building permit applications submitted on or after that date.",
+      "fetched_at_iso": "2026-05-10T17:55:00-07:00"
+    },
+    {
+      "figure": "Section R-327",
+      "claim": "Section R327 of the Oregon Residential Specialty Code is what Bend adopted",
+      "appears_in": ["b6_code VO", "b6_code overlay", "intro card subtitle"],
+      "source": "The Source Weekly + bendoregon.gov",
+      "url": "https://www.bendsource.com/business/businessnews/city-of-bend-adopts-residential-wildfire-mitigation-building-code-effective-may-15/",
+      "method": "WebFetch",
+      "verbatim_quote": "The Bend City Council has adopted Section R327 of the Oregon Residential Specialty Code, establishing home-hardening requirements designed to improve wildfire resilience for new, detached residential construction in Bend.",
+      "fetched_at_iso": "2026-05-10T17:55:00-07:00"
+    },
+    {
+      "figure": "Ignition-resistant siding, hardened roofing, sealed vents",
+      "claim": "R327 mandates noncombustible/ignition-resistant materials for roofing, gutters, windows, vents, and siding",
+      "appears_in": ["b7_what VO", "b7_what overlay (\"IGNITION-RESISTANT SIDING · ROOFING · VENTS\")"],
+      "source": "The Source Weekly",
+      "url": "https://www.bendsource.com/business/businessnews/city-of-bend-adopts-residential-wildfire-mitigation-building-code-effective-may-15/",
+      "method": "WebFetch",
+      "verbatim_quote": "The new requirements include the use of noncombustible or ignition resistant materials for exterior components such as roofing, gutters, windows, vents and siding.",
+      "fetched_at_iso": "2026-05-10T17:55:00-07:00"
+    },
+    {
+      "figure": "Sisters and unincorporated Deschutes County already have R-327",
+      "claim": "Sisters and unincorporated Deschutes County had already adopted R-327 prior to Bend's adoption",
+      "appears_in": ["b8_sisters VO", "b8_sisters overlay (\"SISTERS ✓ DESCHUTES CO ✓ BEND → MAY 15\")"],
+      "source": "The Source Weekly",
+      "url": "https://www.bendsource.com/business/businessnews/city-of-bend-adopts-residential-wildfire-mitigation-building-code-effective-may-15/",
+      "method": "WebFetch",
+      "verbatim_quote": "The code is already in effect for the City of Sisters and unincorporated areas of Deschutes County, supporting a consistent regional approach to community wildfire resilience.",
+      "fetched_at_iso": "2026-05-10T17:55:00-07:00"
+    },
+    {
+      "figure": "Only new permits / does not apply to existing homes",
+      "claim": "R327 applies only to new residential building permit applications, not to additions or renovations of existing buildings",
+      "appears_in": ["b9_new_only VO + overlay", "b10_smoke VO"],
+      "source": "The Source Weekly",
+      "url": "https://www.bendsource.com/business/businessnews/city-of-bend-adopts-residential-wildfire-mitigation-building-code-effective-may-15/",
+      "method": "WebFetch",
+      "verbatim_quote": "It does not apply to additions or renovations of existing buildings.",
+      "fetched_at_iso": "2026-05-10T17:55:00-07:00"
+    }
+  ],
+  "non_figure_assets": [
+    {
+      "kind": "council_b_roll",
+      "files": ["source_clips/bend_pulse/broll/jan7_dais.mp4", "source_clips/bend_pulse/broll/feb4_dais.mp4"],
+      "provenance": "Bend City Council public meeting recordings (Bend Granicus archive — public record). Used here as visually-appropriate b-roll for the policy-pivot beats (B5, B6). The clips do NOT depict the R-327 vote specifically — they are generic council-chamber footage from January 7 and February 4, 2026 work sessions. Used for visual symbolism only."
+    },
+    {
+      "kind": "unsplash_photos",
+      "credits_file": "listing_video_v4/public/source_clips/news_wildfire_r327/credits.json",
+      "license": "Unsplash License (free for commercial use, attribution appreciated). Photographer credits to be included in IG / TikTok caption footer."
+    }
+  ],
+  "voice_settings": {
+    "voice": "Victoria — Ryan Realty Anchor",
+    "voice_id": "qSeXEcewz7tA0Q0qk9fH",
+    "model": "eleven_turbo_v2_5",
+    "stability": 0.40,
+    "similarity_boost": 0.80,
+    "style": 0.50,
+    "use_speaker_boost": true,
+    "previous_text_chained": true,
+    "canonical_source": "video_production_skills/elevenlabs_voice/SKILL.md"
+  }
+}

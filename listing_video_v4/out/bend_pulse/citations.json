@@ -59,6 +59,18 @@
       "url": "https://bendoregon.gov/wp-content/uploads/2026/01/For-Approval-01.05.2026-BEDAB-Meeting-Minutes.pdf",
       "fetched_at_iso": "2026-05-09T22:21:00-07:00",
       "applicable_facts": ["coba_grid_capacity_concern", "ua_local_290_grid_capacity_concern", "bend_chamber_pilot_program_request", "chair_north_quote_social_cost_carbon", "vote_8_to_0_pilot_letter"]
+    },
+    {
+      "id": "bend_establishing_photo_cascade_road",
+      "type": "photo",
+      "source": "unsplash",
+      "url": "https://unsplash.com/photos/kxL_7qkIhck",
+      "creator": "Mick Haupt",
+      "creator_profile": "https://unsplash.com/@hunterrei",
+      "license": "Unsplash License (free use; on-screen credit in video)",
+      "asset_library_id": "ed86fc2f-756e-4152-b5bb-32690c3229f6",
+      "geo_note": "Central Oregon landscape road (asset library tagged bend, central-oregon)",
+      "used_in_compositions": ["BendPulsePart1 TitleCard establishing", "BendPulsePart1 hook bridge under Victoria VO"]
     }
   ],
   "verification_trace_per_figure": [
@@ -131,6 +143,6 @@
   ],
   "open_caveats": [
     "Re-verify the June 3 / June 17 / April 1 2027 dates against the actual Bend City Council agenda packet on bend.granicus.com before public publish.",
-    "All meeting clips are excerpted under fair-use commentary doctrine for local news. Each clip is short (≤ 15s), used to provide visual context for narration, and clearly attributed in the source pill. No license fee required for Oregon public records, but recommend an Oregon real-estate attorney review before commercial distribution."
+    "All meeting clips are excerpted under fair-use commentary doctrine for local news. Each clip is short, used to provide visual context for narration, and credited on screen per broll/manifest.json plus this file. No license fee required for Oregon public records, but recommend an Oregon real-estate attorney review before commercial distribution."
   ]
 }

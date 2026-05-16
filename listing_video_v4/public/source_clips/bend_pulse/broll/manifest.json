@@ -1,0 +1,45 @@
+{
+  "meeting_recordings": {
+    "jan7_dais": {
+      "credit": "Bend City Council Jan 7 2026 · Granicus public meeting archive",
+      "license": "public_record"
+    },
+    "feb4_dais": {
+      "credit": "Bend City Council Feb 4 2026 · Granicus public meeting archive",
+      "license": "public_record"
+    },
+    "feb11_fee_design": {
+      "credit": "Bend City Council work session Feb 11 2026 · staff electrification slides · Granicus",
+      "license": "public_record"
+    },
+    "feb11_fee_levels": {
+      "credit": "Bend City Council work session Feb 11 2026 · fee levels slide · Granicus",
+      "license": "public_record"
+    },
+    "feb11_grid_impact": {
+      "credit": "Bend City Council work session Feb 11 2026 · grid impact slide · Granicus",
+      "license": "public_record"
+    },
+    "feb11_approach": {
+      "credit": "Bend City Council work session Feb 11 2026 · policy approach slide · Granicus",
+      "license": "public_record"
+    },
+    "feb11_tcep": {
+      "credit": "Bend City Council work session Feb 11 2026 · TCEP committee slide · Granicus",
+      "license": "public_record"
+    },
+    "feb11_transmission": {
+      "credit": "Bend City Council work session Feb 11 2026 · transmission slide · Granicus",
+      "license": "public_record"
+    }
+  },
+  "stills": {
+    "cascade_road_bend_mick_haupt": {
+      "credit": "Photo Mick Haupt · Unsplash",
+      "creator_url": "https://unsplash.com/@hunterrei",
+      "photo_page": "https://unsplash.com/photos/kxL_7qkIhck",
+      "license": "unsplash",
+      "asset_library_id": "ed86fc2f-756e-4152-b5bb-32690c3229f6"
+    }
+  }
+}

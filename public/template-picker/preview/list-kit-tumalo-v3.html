@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tumalo Reservoir — Listing Kit v3 (brand-font edition)</title>
+<style>
+  @font-face {
+    font-family: 'Amboqia Boriango';
+    src: url('fonts/Amboqia_Boriango.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Azo Sans';
+    src: url('fonts/AzoSans-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --navy: #102742;
+    --cream: #faf8f4;
+    --ink: #1a1a1a;
+    --rule: rgba(16, 39, 66, 0.12);
+    --soft: rgba(16, 39, 66, 0.55);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Geist', system-ui, -apple-system, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1280px; margin: 0 auto; padding: 64px 32px 96px; }
+  .eyebrow {
+    font-family: 'Azo Sans', system-ui, sans-serif;
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--soft); margin-bottom: 8px; font-weight: 500;
+  }
+  h1 {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-weight: 400;
+    font-size: 64px; line-height: 1.02;
+    margin: 0 0 24px;
+    color: var(--navy); letter-spacing: -0.005em;
+  }
+  h2 {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-weight: 400;
+    font-size: 40px; line-height: 1.1;
+    margin: 64px 0 16px;
+    color: var(--navy); letter-spacing: -0.005em;
+  }
+  h3 {
+    font-family: 'Azo Sans', system-ui, sans-serif;
+    font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--navy); margin: 0 0 8px; font-weight: 500;
+  }
+  p { margin: 0 0 16px; max-width: 740px; font-size: 15px; }
+  .lead { font-size: 18px; max-width: 760px; color: rgba(16,39,66,0.85); line-height: 1.55; }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 56px 0; }
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(250,248,244,0.95);
+    backdrop-filter: blur(8px);
+    padding: 14px 32px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; gap: 32px; justify-content: center;
+    font-family: 'Azo Sans', system-ui, sans-serif;
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500;
+  }
+  .nav a { color: var(--navy); text-decoration: none; opacity: 0.65; }
+  .nav a:hover { opacity: 1; }
+
+  .carousel {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin: 24px 0 32px;
+  }
+  .slide {
+    background: white; border: 1px solid var(--rule);
+    border-radius: 4px; overflow: hidden; position: relative;
+  }
+  .slide img {
+    width: 100%; aspect-ratio: 1080 / 1350;
+    object-fit: cover; display: block;
+  }
+  .slide .index {
+    position: absolute; top: 10px; left: 12px;
+    background: rgba(16,39,66,0.65); color: var(--cream);
+    font-family: 'Azo Sans', system-ui, sans-serif;
+    font-size: 11px; letter-spacing: 0.10em; padding: 4px 9px;
+    border-radius: 999px; font-weight: 500;
+  }
+
+  .hero-pair {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 24px;
+    margin: 32px 0;
+  }
+  .hero-pair .hero-card {
+    background: white; border: 1px solid var(--rule); border-radius: 4px;
+    overflow: hidden;
+  }
+  .hero-pair .hero-card img {
+    width: 100%; aspect-ratio: 1080 / 1350;
+    object-fit: cover; display: block;
+  }
+  .hero-pair .hero-card .label {
+    padding: 14px 18px;
+    border-top: 1px solid var(--rule);
+    font-family: 'Azo Sans', system-ui, sans-serif;
+    font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--navy); font-weight: 500;
+  }
+  .hero-pair .hero-card .label small {
+    display: block; font-size: 11px; opacity: 0.6;
+    font-weight: 400; letter-spacing: 0.06em;
+    margin-top: 4px; text-transform: none;
+  }
+
+  .caption-card {
+    background: white; border: 1px solid var(--rule);
+    border-radius: 4px; padding: 28px 32px; margin: 24px 0 32px;
+    max-width: 760px;
+  }
+  .caption-card .copy {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-size: 14.5px; line-height: 1.65; color: #2a2a2a;
+    white-space: pre-line; margin: 0;
+  }
+  .caption-card .copy strong { color: var(--navy); }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px; margin: 24px 0;
+  }
+  .ref-post {
+    background: white; border: 1px solid var(--rule);
+    border-radius: 4px; overflow: hidden;
+  }
+  .ref-post img {
+    width: 100%; aspect-ratio: 1080 / 1350;
+    object-fit: cover; display: block;
+  }
+  .ref-post .ref-meta {
+    padding: 10px 12px;
+    font-family: 'Azo Sans', system-ui, sans-serif;
+    font-size: 11px; letter-spacing: 0.06em;
+    color: var(--soft);
+    border-top: 1px solid var(--rule);
+  }
+  .ref-post .ref-meta strong { color: var(--navy); font-weight: 500; }
+
+  .ask {
+    background: var(--navy); color: var(--cream);
+    padding: 40px; margin: 56px 0 0;
+    border-radius: 4px;
+  }
+  .ask h2 { color: var(--cream); margin: 0 0 16px; }
+  .ask h3 { color: rgba(250,248,244,0.75); margin: 24px 0 8px; }
+  .ask p { color: rgba(250,248,244,0.92); max-width: 820px; }
+  .ask ul { color: rgba(250,248,244,0.92); padding-left: 20px; }
+  .ask ul li { margin-bottom: 8px; max-width: 800px; }
+
+  .meta-row {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    margin: 0 0 32px;
+    font-family: 'Azo Sans', system-ui, sans-serif;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--soft);
+  }
+  .meta-row span strong { color: var(--navy); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="#kit">↓ Tumalo v3</a>
+  <a href="#patterns">↓ Patterns A · B · C</a>
+  <a href="#caption">↓ Caption</a>
+  <a href="#refs">↓ Reference set</a>
+  <a href="#ask">↓ Decisions</a>
+</nav>
+
+<div class="page">
+
+  <div class="eyebrow">19496 Tumalo Reservoir Rd · Listing Kit v3 · Brand-font edition</div>
+  <h1>The Tumalo kit, the way top brokerages publish it</h1>
+  <p class="lead">
+    Three patterns, all built with Ryan Realty's brand type — Amboqia Boriango for display, Azo Sans Medium for accent, Geist for body.
+    Every photo from the Spark MLS feed, color-corrected, cropped to IG-native portrait.
+    Patterns synthesized from 28 real listing posts scraped from Hilton &amp; Hyland, The Agency, Sotheby's, Compass, Douglas Elliman,
+    Aaron Kirman, Oppenheim Group, Coldwell Banker Global Luxury, and Nest Seekers.
+  </p>
+
+  <div class="meta-row">
+    <span><strong>1080 × 1350</strong> IG portrait</span>
+    <span>·</span>
+    <span><strong>Amboqia Boriango</strong> display</span>
+    <span>·</span>
+    <span><strong>Azo Sans Medium</strong> accent</span>
+    <span>·</span>
+    <span><strong>14</strong> source photos at 2048px</span>
+  </div>
+
+  <a id="patterns"></a>
+  <hr>
+
+  <h3>Pattern A · the photo IS the post</h3>
+  <h2>10-slide carousel · zero overlay</h2>
+  <p>
+    Dominant pattern across Sotheby's, Compass, H&amp;H, Elliman, Kirman, Oppenheim, NestSeekers.
+    The professionally-shot photo carries the entire post. Every text element lives in the caption beneath.
+  </p>
+  <div class="carousel">
+    <div class="slide"><span class="index">01</span><img src="../list-kits/19496-tumalo-reservoir/v3/pattern-a/01-hero-primary.jpg" alt=""></div>
+    <div class="slide"><span class="index">02</span><img src="../list-kits/19496-tumalo-reservoir/v3/pattern-a/02-aerial-dusk-1.jpg" alt=""></div>
+    <div class="slide"><span class="index">03</span><img src="../list-kits/19496-tumalo-reservoir/v3/pattern-a/03-aerial-1.jpg" alt=""></div>
+    <div class="slide"><span class="index">04</span><img src="../list-kits/19496-tumalo-reservoir/v3/pattern-a/04-grounds-1.jpg" alt=""></div>
+    <div class="slide"><span class="index">05</span><img src="../list-kits/19496-tumalo-reservoir/v3/pattern-a/05-living.jpg" alt=""></div>
+    <div class="slide"><span class="index">06</span><img src="../list-kits/19496-tumalo-reservoir/v3/pattern-a/06-kitchen.jpg" alt=""></div>
+    <div class="slide"><span class="index">07</span><img src="../list-kits/19496-tumalo-reservoir/v3/pattern-a/07-primary-br.jpg" alt=""></div>
+    <div class="slide"><span class="index">08</span><img src="../list-kits/19496-tumalo-reservoir/v3/pattern-a/08-primary-bath.jpg" alt=""></div>
+    <div class="slide"><span class="index">09</span><img src="../list-kits/19496-tumalo-reservoir/v3/pattern-a/09-aerial-dusk-2.jpg" alt=""></div>
+    <div class="slide"><span class="index">10</span><img src="../list-kits/19496-tumalo-reservoir/v3/pattern-a/10-aerial-3.jpg" alt=""></div>
+  </div>
+  <p style="font-size:13px; color:var(--soft);">
+    <em>Photo-set note:</em> all 14 Tumalo URLs in our codebase are exterior/dusk/aerial. The MLS reports 63 total photos.
+    Once we pull the remaining 49 from Spark, slides 05–08 should swap to interior shots (living, kitchen, primary suite, primary bath)
+    for a proper exterior→interior→exterior arc. Current slides are 10 strong exterior angles.
+  </p>
+
+  <hr>
+
+  <h3>Pattern B + C · single hero with editorial overlay</h3>
+  <h2>Two register options · choose one or run both</h2>
+  <p>
+    Both use Ryan Realty brand fonts. Use as a standalone announcement post, as carousel slide 1, or both.
+  </p>
+
+  <div class="hero-pair">
+    <div class="hero-card">
+      <img src="../list-kits/19496-tumalo-reservoir/v3/pattern-b/hero-overlay.jpg" alt="Pattern B: Amboqia editorial headline">
+      <div class="label">Pattern B · Amboqia Boriango editorial<small>The Agency register. Display serif, conversational price. Headline lands on the sky over the Cascade horizon.</small></div>
+    </div>
+    <div class="hero-card">
+      <img src="../list-kits/19496-tumalo-reservoir/v3/pattern-c/hero-magazine.jpg" alt="Pattern C: Azo Sans magazine">
+      <div class="label">Pattern C · Azo Sans magazine + brand mark<small>Coldwell Banker Global Luxury register. Sans-serif editorial caption, eyebrow location line, small white wordmark in corner.</small></div>
+    </div>
+  </div>
+
+  <a id="caption"></a>
+  <hr>
+
+  <h3>Caption · H&amp;H tag-block structure</h3>
+  <h2>Goes underneath all three patterns</h2>
+  <p>
+    Location-anchored opening, materials/architecture middle, lifestyle close,
+    then the 》 tag block. Banned-vocab clean. Same caption whether you ship Pattern A, B, or C.
+  </p>
+  <div class="caption-card">
+    <p class="copy"><strong>NEW LISTING | A Tumalo Retreat with Cascade Views</strong>
+
+Set on 2.28 acres just twelve minutes from downtown Bend, this single-level Tumalo retreat captures what Central Oregon mountain living has always been about — Cascade views from nearly every room, a creek running through mature trees, and a rural pace of life within reach of everything.
+
+Inside, a light-filled main level orients the living spaces toward the mountains. The kitchen opens to the dining and living rooms, framed by glass that pulls the Three Sisters skyline into the home. The primary suite sits in its own wing with a spa-style bath and direct deck access. Two additional bedrooms and a full bath complete the layout — three bedrooms, three baths, 2,325 square feet on a single level.
+
+Outside, the covered main deck is the room where evenings happen — listening to the creek, watching deer move through the trees, the Cascades catching the last light to the west. A heated three-car garage handles the practical side, with RV parking and a paved driveway.
+
+This is Tumalo at its quietest, with downtown Bend, The Bite, and Mt. Bachelor all within an easy drive.
+
+Listed by Matt Ryan | Ryan Realty
+
+》19496 Tumalo Reservoir Rd
+》$1,225,000
+》3 BD | 3 BA | 2,325 SQFT
+》2.28 acres | Tumalo, Oregon
+
+#RyanRealty #Bend #Tumalo #CentralOregon #CascadeViews #BendRealEstate #TumaloOregon #LuxuryRealEstate</p>
+  </div>
+
+  <a id="refs"></a>
+  <hr>
+
+  <h3>Reference set · 28 real listing posts</h3>
+  <h2>Primary-source evidence</h2>
+
+  <h3 style="margin-top:32px;">Pattern A · pure photograph (most common — 80%+ of all listing posts)</h3>
+  <div class="grid-3">
+    <div class="ref-post"><img src="ig-refs/hiltonhyland_DI1kHgwzy8x.jpg" alt=""><div class="ref-meta"><strong>@hiltonhyland</strong> · Malibu Colony · $18.95M</div></div>
+    <div class="ref-post"><img src="ig-refs/hiltonhyland_DTbJIw9lBUY.jpg" alt=""><div class="ref-meta"><strong>@hiltonhyland</strong> · Mt Olympus Spanish</div></div>
+    <div class="ref-post"><img src="ig-refs/hiltonhyland_DSoGtUoClq5.jpg" alt=""><div class="ref-meta"><strong>@hiltonhyland</strong> · Rexford Estate</div></div>
+    <div class="ref-post"><img src="ig-refs/douglaselliman_DYNK-NLFhOs.jpg" alt=""><div class="ref-meta"><strong>@douglaselliman</strong> · Miami · $24.99M</div></div>
+    <div class="ref-post"><img src="ig-refs/douglaselliman_DYDG7SolI-K.jpg" alt=""><div class="ref-meta"><strong>@douglaselliman</strong> · Greenwich · $21M</div></div>
+    <div class="ref-post"><img src="ig-refs/douglaselliman_DYFKp7xlov0.jpg" alt=""><div class="ref-meta"><strong>@douglaselliman</strong> · Lenox Hill brownstone</div></div>
+    <div class="ref-post"><img src="ig-refs/theagencyre_DYNvmouAcI5.jpg" alt=""><div class="ref-meta"><strong>@theagencyre</strong> · Malibu PCH · $5.475M</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/sothebysrealty_DYH8RSujhIX.jpg" alt=""><div class="ref-meta"><strong>@sothebysrealty</strong> · London prestige</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/sothebysrealty_DYNAAUfDug4.jpg" alt=""><div class="ref-meta"><strong>@sothebysrealty</strong> · Hyogo interior</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/sothebysrealty_DYFMuugnys8.jpg" alt=""><div class="ref-meta"><strong>@sothebysrealty</strong> · Toronto modern</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/compass_DYNA7Lgkp3x.jpg" alt=""><div class="ref-meta"><strong>@compass</strong> · Alys Beach coastal</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/compass_DYHmv4wHIQn.jpg" alt=""><div class="ref-meta"><strong>@compass</strong> · Maxwell Bay estate</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/compass_DYC9bZOE0Wo.jpg" alt=""><div class="ref-meta"><strong>@compass</strong> · SoHo/Tribeca duplex</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/aaronkirman_DX-FS64Sbiy.jpg" alt=""><div class="ref-meta"><strong>@aaronkirman</strong> · Holmby Hills · $34.45M</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/theoppenheimgroup_DYSeo68D8yF.jpg" alt=""><div class="ref-meta"><strong>@theoppenheimgroup</strong> · Woodland Hills · $2.495M</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/theoppenheimgroup_DYDZrLHEm4E.jpg" alt=""><div class="ref-meta"><strong>@theoppenheimgroup</strong> · Beverly Hills · $5.295M</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/nestseekers_DYIJpd6jnD-.jpg" alt=""><div class="ref-meta"><strong>@nestseekers</strong> · Southampton · $25.995M</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/nestseekers_DYIwPWhDdMy.jpg" alt=""><div class="ref-meta"><strong>@nestseekers</strong> · Ontario · $10.288M</div></div>
+  </div>
+
+  <h3 style="margin-top:48px;">Pattern B reference · italic-serif editorial overlay (The Agency)</h3>
+  <div class="grid-3">
+    <div class="ref-post"><img src="ig-refs/theagencyre_DYSv1rckj6w.jpg" alt=""><div class="ref-meta"><strong>@theagencyre</strong> · Carthay Circle · $3.2M</div></div>
+    <div class="ref-post"><img src="ig-refs/theagencyre_DYPpn96FAfi.jpg" alt=""><div class="ref-meta"><strong>@theagencyre</strong> · Santa Monica · $19M</div></div>
+  </div>
+
+  <h3 style="margin-top:48px;">Pattern C reference · magazine sans + brand mark (Coldwell Banker Global Luxury)</h3>
+  <div class="grid-3">
+    <div class="ref-post"><img src="ig-refs/r2/coldwellbankerluxury_DYSDG1skQXC.jpg" alt=""><div class="ref-meta"><strong>@coldwellbankerluxury</strong> · Pinecrest · $22.5M</div></div>
+    <div class="ref-post"><img src="ig-refs/r2/coldwellbankerluxury_DYIJzFtCc3R.jpg" alt=""><div class="ref-meta"><strong>@coldwellbankerluxury</strong> · Highland Park Tudor</div></div>
+  </div>
+
+  <a id="ask"></a>
+  <div class="ask">
+    <h2>Decisions before we ship</h2>
+
+    <h3>Brand fonts on the renders</h3>
+    <p>
+      Pattern B uses Amboqia Boriango for the headline ("A 2.28-Acre / Tumalo Retreat with / Cascade Views") and the price line.
+      Pattern C uses Azo Sans Medium for the caption and eyebrow, with the Ryan Realty wordmark in the top-right corner.
+      The state page itself now also runs on Amboqia + Azo Sans + Geist.
+    </p>
+
+    <h3>Interior photo backfill</h3>
+    <p>
+      Pattern A slides 05–08 should swap to interior shots once we pull the remaining 49 photos from Spark.
+      Want me to pull the full set and re-render the carousel with a proper exterior→interior→exterior arc?
+    </p>
+
+    <h3>Headline copy for Pattern B</h3>
+    <p>
+      Current: <em>"A 2.28-Acre / Tumalo Retreat with / Cascade Views"</em>. Alternatives if you want a different angle:
+    </p>
+    <ul>
+      <li><em>"Three Sisters Views / from Every Room / in Tumalo"</em></li>
+      <li><em>"A Single-Level Retreat / on 2.28 Acres / in Tumalo"</em></li>
+      <li><em>"Tumalo · Twelve Minutes / from Downtown Bend / 2.28 Acres"</em></li>
+      <li>A named property — <em>"Reservoir Ridge"</em> / <em>"The Tumalo House"</em> / your call</li>
+    </ul>
+
+    <h3>Pattern C caption tone</h3>
+    <p>
+      Current: <em>"A single-level Tumalo retreat / where the Cascades fill every window."</em> + <em>"TUMALO · OREGON · $1,225,000"</em>.
+      CB Luxury writes conversational sub-150-character captions. If yours feels off, give me a direction (more architectural, more lifestyle, more local color).
+    </p>
+
+    <h3>Caption — H&amp;H tag block vs. Nest Seekers</h3>
+    <p>
+      Current uses the H&amp;H 》block format (pipes, compact). Nest Seekers uses 📍 / price / __ / paragraphs (more spaced out, more global luxury feel).
+      Either is on-brand. Which one for Ryan Realty's default?
+    </p>
+
+    <p style="margin-top:32px;">
+      Nothing committed. Everything mirrored locally to <code>/public/template-picker/list-kits/.../v3/</code>.
+      Say go and I'll lock the format, build the source-of-truth into the list-kit producer SKILL.md, and run it on the next listing.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

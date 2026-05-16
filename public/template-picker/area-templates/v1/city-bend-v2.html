@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bend Oregon Homes for Sale — Live Market Data | Ryan Realty</title>
+  <meta name="description" content="478 active homes in Bend, Oregon. Live median sale price $694,900. Months of supply 4.4. Watch the 90-second market report. Ryan Realty, licensed Oregon principal broker." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --rr-navy: #102742;
+      --rr-navy-85: rgba(16, 39, 66, 0.85);
+      --rr-navy-12: rgba(16, 39, 66, 0.12);
+      --rr-navy-08: rgba(16, 39, 66, 0.08);
+      --rr-cream: #faf8f4;
+      --rr-white: #ffffff;
+      --rr-text: #102742;
+      --rr-muted: rgba(16, 39, 66, 0.62);
+      --rr-card-shadow: 0 1px 2px rgba(16, 39, 66, 0.04), 0 4px 12px rgba(16, 39, 66, 0.06);
+      --rr-card-shadow-hover: 0 1px 2px rgba(16, 39, 66, 0.06), 0 8px 24px rgba(16, 39, 66, 0.1);
+      --rr-font-display: 'Playfair Display', Georgia, serif;
+      --rr-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--rr-font-sans);
+      background: var(--rr-cream);
+      color: var(--rr-text);
+      font-size: 16px;
+      line-height: 1.5;
+      font-feature-settings: "tnum" on, "lnum" on;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; height: auto; }
+
+    /* TOP BAR */
+    .topbar { background: var(--rr-navy); color: var(--rr-cream); padding: 14px 0; font-size: 13px; font-weight: 500; letter-spacing: 0.02em; }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; }
+    .topbar a { opacity: 0.85; transition: opacity 0.2s; }
+    .topbar a:hover { opacity: 1; }
+
+    .crumbs { padding: 20px 0 8px; font-size: 13px; color: var(--rr-muted); font-weight: 500; }
+    .crumbs span { margin: 0 8px; }
+
+    /* HERO */
+    .hero { padding: 32px 0 56px; border-bottom: 1px solid var(--rr-navy-08); }
+    .hero-eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rr-muted); margin-bottom: 12px; }
+    .hero h1 { font-family: var(--rr-font-display); font-size: clamp(48px, 8vw, 88px); font-weight: 600; line-height: 1.02; letter-spacing: -0.015em; margin-bottom: 24px; color: var(--rr-navy); }
+    .hero-sub { font-size: 18px; line-height: 1.55; max-width: 680px; color: var(--rr-text); margin-bottom: 28px; }
+    .live-badge { display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--rr-navy); color: var(--rr-cream); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; border-radius: 999px; }
+    .live-dot { width: 8px; height: 8px; background: #6fcf7a; border-radius: 50%; box-shadow: 0 0 0 0 rgba(111, 207, 122, 0.5); animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(111, 207, 122, 0.5); } 50% { box-shadow: 0 0 0 8px rgba(111, 207, 122, 0); } }
+
+    section { padding: 56px 0; border-bottom: 1px solid var(--rr-navy-08); }
+    section.tight { padding: 40px 0; }
+    .section-head { margin-bottom: 32px; }
+    .section-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--rr-muted); margin-bottom: 10px; }
+    .section-head h2 { font-family: var(--rr-font-display); font-size: clamp(28px, 4vw, 44px); font-weight: 600; line-height: 1.1; letter-spacing: -0.012em; color: var(--rr-navy); margin-bottom: 10px; }
+    .section-head p { font-size: 16px; max-width: 680px; color: var(--rr-muted); }
+
+    /* VIDEO HERO BLOCK */
+    .video-feature {
+      background: var(--rr-navy);
+      color: var(--rr-cream);
+      border-radius: 18px;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 0;
+      box-shadow: var(--rr-card-shadow);
+      margin-top: 32px;
+    }
+    .video-feature-meta { padding: 48px 40px; display: flex; flex-direction: column; justify-content: center; }
+    .video-feature-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.6; margin-bottom: 14px; }
+    .video-feature h3 { font-family: var(--rr-font-display); font-size: 36px; font-weight: 600; line-height: 1.1; margin-bottom: 14px; letter-spacing: -0.01em; }
+    .video-feature p { font-size: 15px; line-height: 1.6; opacity: 0.85; margin-bottom: 20px; }
+    .video-feature .runtime { font-size: 12px; opacity: 0.6; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .video-feature video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* KPI CARDS */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .kpi-card { background: var(--rr-white); border: 1px solid var(--rr-navy-08); border-radius: 14px; padding: 24px; box-shadow: var(--rr-card-shadow); transition: box-shadow 0.2s, transform 0.2s; }
+    .kpi-card:hover { box-shadow: var(--rr-card-shadow-hover); transform: translateY(-1px); }
+    .kpi-label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rr-muted); margin-bottom: 10px; }
+    .kpi-value { font-family: var(--rr-font-display); font-size: 36px; font-weight: 600; line-height: 1.05; color: var(--rr-navy); letter-spacing: -0.01em; }
+    .kpi-sub { font-size: 13px; color: var(--rr-muted); margin-top: 6px; font-weight: 500; }
+    .kpi-delta { font-weight: 600; }
+    .kpi-delta.up { color: #2d7a2d; }
+
+    .health-card { background: var(--rr-navy); color: var(--rr-cream); border-radius: 14px; padding: 32px; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; margin-top: 24px; }
+    .health-label-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-bottom: 8px; }
+    .health-label-main { font-family: var(--rr-font-display); font-size: 32px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; }
+    .health-label-detail { font-size: 14px; opacity: 0.85; max-width: 540px; }
+    .health-score { font-family: var(--rr-font-display); font-size: 80px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+    .health-score-label { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; text-align: right; }
+
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 24px; }
+    .metric-card { background: var(--rr-white); border: 1px solid var(--rr-navy-08); border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .metric-card .label { font-size: 14px; font-weight: 500; color: var(--rr-text); }
+    .metric-card .value { font-family: var(--rr-font-display); font-size: 22px; font-weight: 600; color: var(--rr-navy); }
+
+    /* CHART */
+    .chart-wrap { background: var(--rr-white); border: 1px solid var(--rr-navy-08); border-radius: 14px; padding: 28px; box-shadow: var(--rr-card-shadow); }
+    .chart-meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+    .chart-title { font-family: var(--rr-font-display); font-size: 22px; font-weight: 600; }
+    .chart-source { font-size: 12px; color: var(--rr-muted); }
+    .chart-svg { width: 100%; height: 280px; display: block; }
+    .chart-grid line { stroke: var(--rr-navy-08); stroke-width: 1; }
+    .chart-axis-text { font-size: 11px; fill: var(--rr-muted); font-weight: 500; }
+    .chart-line { fill: none; stroke: var(--rr-navy); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .chart-area { fill: var(--rr-navy); opacity: 0.06; }
+    .chart-dot { fill: var(--rr-navy); }
+    .chart-dot-last-ring { fill: none; stroke: var(--rr-navy); stroke-width: 2; opacity: 0.3; }
+
+    /* LISTING CARDS */
+    .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .listing-card { background: var(--rr-white); border-radius: 14px; overflow: hidden; border: 1px solid var(--rr-navy-08); box-shadow: var(--rr-card-shadow); transition: box-shadow 0.2s, transform 0.2s; display: flex; flex-direction: column; cursor: pointer; }
+    .listing-card:hover { box-shadow: var(--rr-card-shadow-hover); transform: translateY(-2px); }
+    .listing-photo { aspect-ratio: 4/3; background: var(--rr-navy-08); background-size: cover; background-position: center; position: relative; }
+    .listing-dom-pill { position: absolute; top: 12px; right: 12px; background: var(--rr-white); padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--rr-navy); box-shadow: 0 2px 4px rgba(16, 39, 66, 0.15); }
+    .listing-video-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(16, 39, 66, 0); transition: background 0.3s; }
+    .listing-card:hover .listing-video-overlay { background: rgba(16, 39, 66, 0.32); }
+    .listing-play-btn { width: 64px; height: 64px; border-radius: 50%; background: rgba(255, 255, 255, 0.95); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); transform: scale(0.85); opacity: 0; transition: all 0.3s; }
+    .listing-card:hover .listing-play-btn { opacity: 1; transform: scale(1); }
+    .listing-play-btn::after { content: ''; width: 0; height: 0; border-left: 18px solid var(--rr-navy); border-top: 12px solid transparent; border-bottom: 12px solid transparent; margin-left: 5px; }
+    .listing-video-badge { position: absolute; top: 12px; left: 12px; background: var(--rr-navy); color: var(--rr-cream); padding: 4px 10px 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; letter-spacing: 0.04em; }
+    .listing-video-badge::before { content: ''; width: 0; height: 0; border-left: 7px solid var(--rr-cream); border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+    .listing-body { padding: 18px 20px 20px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .listing-price { font-family: var(--rr-font-display); font-size: 24px; font-weight: 600; color: var(--rr-navy); letter-spacing: -0.01em; }
+    .listing-addr { font-size: 14px; font-weight: 500; }
+    .listing-facts { font-size: 13px; color: var(--rr-muted); margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .listing-facts span:not(:last-child)::after { content: " ·"; }
+    .listing-subdiv { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rr-muted); margin-top: 6px; }
+
+    /* NEIGHBORHOOD PHOTO CARDS */
+    .neighborhood-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .neighborhood-card {
+      position: relative;
+      aspect-ratio: 4/5;
+      border-radius: 14px;
+      overflow: hidden;
+      background-size: cover;
+      background-position: center;
+      box-shadow: var(--rr-card-shadow);
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      display: block;
+    }
+    .neighborhood-card:hover { transform: translateY(-3px); box-shadow: var(--rr-card-shadow-hover); }
+    .neighborhood-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(16, 39, 66, 0.92) 0%, rgba(16, 39, 66, 0.55) 45%, rgba(16, 39, 66, 0.05) 100%);
+      transition: opacity 0.3s;
+    }
+    .neighborhood-card-inner {
+      position: absolute;
+      inset: 0;
+      padding: 24px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      color: var(--rr-cream);
+      z-index: 1;
+    }
+    .neighborhood-card .name { font-family: var(--rr-font-display); font-size: 28px; font-weight: 600; letter-spacing: -0.012em; line-height: 1.05; margin-bottom: 8px; }
+    .neighborhood-card .stats { font-size: 13px; opacity: 0.88; font-weight: 500; line-height: 1.5; }
+    .neighborhood-card .stats strong { font-weight: 700; font-family: var(--rr-font-display); font-size: 16px; }
+    .neighborhood-card .source { font-size: 10px; opacity: 0.55; margin-top: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* LEAD CAPTURE */
+    .lead-cta { background: var(--rr-navy); color: var(--rr-cream); border-radius: 18px; padding: 56px 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+    .lead-cta h2 { font-family: var(--rr-font-display); font-size: 40px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.1; margin-bottom: 16px; }
+    .lead-cta p { font-size: 16px; opacity: 0.85; }
+    .lead-form { display: flex; flex-direction: column; gap: 12px; }
+    .lead-form input { background: rgba(250, 248, 244, 0.1); border: 1px solid rgba(250, 248, 244, 0.25); color: var(--rr-cream); padding: 14px 18px; border-radius: 10px; font-size: 15px; font-family: inherit; }
+    .lead-form input::placeholder { color: rgba(250, 248, 244, 0.5); }
+    .lead-form button { background: var(--rr-cream); color: var(--rr-navy); border: none; padding: 14px 18px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.2s; }
+    .lead-form button:hover { opacity: 0.92; }
+    .lead-tiny { font-size: 11px; opacity: 0.6; margin-top: 6px; line-height: 1.4; }
+
+    /* METHODOLOGY */
+    .methodology { background: var(--rr-navy-08); padding: 28px 32px; border-radius: 12px; font-size: 13px; color: var(--rr-muted); line-height: 1.7; }
+    .methodology strong { color: var(--rr-text); font-weight: 600; }
+    .methodology ul { margin-left: 18px; margin-top: 10px; }
+    .methodology li { margin-bottom: 6px; }
+    .methodology code { background: var(--rr-white); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', Menlo, monospace; font-size: 11px; }
+
+    footer { background: var(--rr-navy); color: var(--rr-cream); padding: 48px 0 24px; margin-top: 0; }
+    footer .container { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; }
+    footer h4 { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-bottom: 16px; }
+    footer .brand-name { font-family: var(--rr-font-display); font-size: 28px; font-weight: 600; margin-bottom: 12px; }
+    footer .brand-detail { font-size: 13px; opacity: 0.75; line-height: 1.7; max-width: 320px; }
+    footer ul { list-style: none; }
+    footer li { margin-bottom: 8px; font-size: 14px; opacity: 0.85; }
+    footer .legal { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid rgba(250, 248, 244, 0.12); margin-top: 24px; font-size: 12px; opacity: 0.6; }
+
+    /* VIDEO MODAL */
+    .video-modal { position: fixed; inset: 0; background: rgba(16, 39, 66, 0.92); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 24px; }
+    .video-modal.open { display: flex; }
+    .video-modal-content { background: var(--rr-navy); border-radius: 12px; max-width: 920px; width: 100%; aspect-ratio: 16/9; position: relative; overflow: hidden; }
+    .video-modal video, .video-modal iframe { width: 100%; height: 100%; }
+    .video-modal-close { position: absolute; top: -40px; right: 0; background: none; border: none; color: var(--rr-cream); font-size: 24px; cursor: pointer; padding: 4px 12px; font-weight: 300; }
+
+    @media (max-width: 768px) {
+      .video-feature { grid-template-columns: 1fr; }
+      .video-feature-meta { padding: 32px 28px; }
+      .video-feature video { aspect-ratio: 16/9; }
+      .lead-cta { grid-template-columns: 1fr; padding: 36px 28px; }
+      footer .container { grid-template-columns: 1fr; gap: 32px; }
+      .health-card { grid-template-columns: 1fr; }
+      .health-score { font-size: 60px; }
+      .health-score-label { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container">
+    <span>Ryan Realty · Bend, Oregon · Principal Broker #201206613</span>
+    <span><a href="tel:5412136706">541.213.6706</a> · <a href="mailto:matt@ryan-realty.com">matt@ryan-realty.com</a></span>
+  </div>
+</div>
+
+<div class="container crumbs">
+  <a href="/">Ryan Realty</a><span>›</span><a href="/explore/">Areas</a><span>›</span>Bend
+</div>
+
+<header class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">Bend, Oregon · live market data</div>
+    <h1>Homes for Sale in Bend</h1>
+    <p class="hero-sub">478 active single-family homes. 235 pending. 65 new listings in the last 7 days. Pulled live from the Oregon RMLS feed and verified against City of Bend GIS boundaries.</p>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      Updated 2026-05-15 · 17:30 UTC
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Market Pulse</div>
+      <h2>The Bend market right now</h2>
+      <p>Every number on this page is pulled from the live RMLS feed, recomputed every 15 minutes, and traced to the row that produced it. No estimates. No "approximately."</p>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Active inventory</div><div class="kpi-value">478</div><div class="kpi-sub"><span class="kpi-delta up">+65</span> new in 7 days</div></div>
+      <div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value">235</div><div class="kpi-sub">0.49 pending-to-active ratio</div></div>
+      <div class="kpi-card"><div class="kpi-label">Median list price</div><div class="kpi-value">$789K</div><div class="kpi-sub">Active SFR</div></div>
+      <div class="kpi-card"><div class="kpi-label">Median close (90d)</div><div class="kpi-value">$695K</div><div class="kpi-sub">327 sold last 90 days</div></div>
+      <div class="kpi-card"><div class="kpi-label">Months of supply</div><div class="kpi-value">4.4</div><div class="kpi-sub">Balanced market</div></div>
+      <div class="kpi-card"><div class="kpi-label">Median days to pending</div><div class="kpi-value">12</div><div class="kpi-sub">days from list to under contract</div></div>
+    </div>
+
+    <div class="health-card">
+      <div>
+        <div class="health-label-eyebrow">Market Health</div>
+        <div class="health-label-main">Warm market, slight seller advantage</div>
+        <div class="health-label-detail">Sale-to-list 98.6%. 18% of sales close over asking. Absorption rate 25%. Sell-through 84% (last 90 days). Inventory grew by 59 listings net over the past 30 days, easing pressure off buyers.</div>
+      </div>
+      <div>
+        <div class="health-score">59</div>
+        <div class="health-score-label">Health Score</div>
+      </div>
+    </div>
+
+    <!-- VIDEO FEATURE -->
+    <div class="video-feature">
+      <div class="video-feature-meta">
+        <div class="video-feature-eyebrow">Watch · 90 seconds</div>
+        <h3>The Bend market in motion</h3>
+        <p>A short, citation-rich walkthrough of the YTD 2026 Bend numbers. Built by Ryan Realty from the same Spark + Supabase feeds that power the live pulse above — no third-party report aggregators, no "approximately."</p>
+        <div class="runtime">RUNTIME 0:55 · LIC. #201206613</div>
+      </div>
+      <div>
+        <video controls preload="metadata" poster="https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/shutterstock/518583457.jpg">
+          <source src="../../../v5_library/bend_market_report_ytd2026.mp4" type="video/mp4" />
+          Your browser does not support video playback.
+        </video>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Pricing Power</div>
+      <h2>Who has the advantage in Bend right now</h2>
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric-card"><span class="label">Sold under asking</span><span class="value">59.0%</span></div>
+      <div class="metric-card"><span class="label">Sold at asking</span><span class="value">22.6%</span></div>
+      <div class="metric-card"><span class="label">Sold over asking</span><span class="value">18.4%</span></div>
+      <div class="metric-card"><span class="label">Sale-to-list ratio</span><span class="value">98.6%</span></div>
+      <div class="metric-card"><span class="label">Active listings with price drops</span><span class="value">17.0%</span></div>
+      <div class="metric-card"><span class="label">Avg price drops per active</span><span class="value">0.26</span></div>
+      <div class="metric-card"><span class="label">90-day sell-through rate</span><span class="value">83.9%</span></div>
+      <div class="metric-card"><span class="label">90-day expired rate</span><span class="value">2.6%</span></div>
+      <div class="metric-card"><span class="label">New construction share of sold</span><span class="value">28.6%</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Trend</div>
+      <h2>12 months of median sale price</h2>
+      <p>Each point is the median closed sale price for that month, computed across all single-family residences sold in Bend. May 2026 reflects 45 closings through mid-month.</p>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-meta">
+        <div>
+          <div class="chart-title">Median sale price · monthly</div>
+          <div class="chart-source">Source: market_stats_cache · period_type=monthly · geo=city/bend</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 13px; color: var(--rr-muted); font-weight: 500;">Year over year (May)</div>
+          <div style="font-family: var(--rr-font-display); font-size: 22px; font-weight: 600; color: #2d7a2d;">↑ 3.9%</div>
+        </div>
+      </div>
+      <svg class="chart-svg" viewBox="0 0 720 280" preserveAspectRatio="none">
+        <g class="chart-grid">
+          <line x1="60" y1="40" x2="700" y2="40" /><line x1="60" y1="100" x2="700" y2="100" /><line x1="60" y1="160" x2="700" y2="160" /><line x1="60" y1="220" x2="700" y2="220" />
+        </g>
+        <text class="chart-axis-text" x="50" y="44" text-anchor="end">$820K</text>
+        <text class="chart-axis-text" x="50" y="104" text-anchor="end">$750K</text>
+        <text class="chart-axis-text" x="50" y="164" text-anchor="end">$680K</text>
+        <text class="chart-axis-text" x="50" y="224" text-anchor="end">$610K</text>
+        <text class="chart-axis-text" x="60" y="260" text-anchor="start">Jun '25</text>
+        <text class="chart-axis-text" x="234" y="260" text-anchor="middle">Sep '25</text>
+        <text class="chart-axis-text" x="408" y="260" text-anchor="middle">Dec '25</text>
+        <text class="chart-axis-text" x="582" y="260" text-anchor="middle">Mar '26</text>
+        <text class="chart-axis-text" x="700" y="260" text-anchor="end">May '26</text>
+        <path class="chart-area" d="M 60 148.64 L 118 100 L 176 100 L 234 130 L 292 93.57 L 350 147.14 L 408 145.43 L 466 165.04 L 524 138.57 L 582 143.71 L 640 162.19 L 700 57.23 L 700 220 L 60 220 Z" />
+        <path class="chart-line" d="M 60 148.64 L 118 100 L 176 100 L 234 130 L 292 93.57 L 350 147.14 L 408 145.43 L 466 165.04 L 524 138.57 L 582 143.71 L 640 162.19 L 700 57.23" />
+        <circle class="chart-dot" cx="60" cy="148.64" r="3" /><circle class="chart-dot" cx="118" cy="100" r="3" /><circle class="chart-dot" cx="176" cy="100" r="3" /><circle class="chart-dot" cx="234" cy="130" r="3" /><circle class="chart-dot" cx="292" cy="93.57" r="3" /><circle class="chart-dot" cx="350" cy="147.14" r="3" /><circle class="chart-dot" cx="408" cy="145.43" r="3" /><circle class="chart-dot" cx="466" cy="165.04" r="3" /><circle class="chart-dot" cx="524" cy="138.57" r="3" /><circle class="chart-dot" cx="582" cy="143.71" r="3" /><circle class="chart-dot" cx="640" cy="162.19" r="3" />
+        <circle class="chart-dot-last-ring" cx="700" cy="57.23" r="7" />
+        <circle class="chart-dot" cx="700" cy="57.23" r="3.5" />
+        <text class="chart-axis-text" x="700" y="48" text-anchor="end" style="font-weight: 600; fill: var(--rr-navy);">$800K</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">For Sale</div>
+      <h2>Featured Bend listings</h2>
+      <p>12 active properties sorted by list price. Cards with a play badge include a video tour — hover to preview, click to open the full tour. Tap any card for photos, history, and the comp set.</p>
+    </div>
+
+    <div class="listings-grid">
+      <!-- VIDEO LISTING: 19100 Macalpine ($8.75M, has_virtual_tour=true) -->
+      <div class="listing-card" onclick="openVideoModal('demo')">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260414195008257235000000-o.jpg');">
+          <div class="listing-video-badge">Video tour</div>
+          <div class="listing-dom-pill">29 days</div>
+          <div class="listing-video-overlay"><div class="listing-play-btn"></div></div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$8,750,000</div>
+          <div class="listing-addr">19100 Macalpine</div>
+          <div class="listing-facts"><span>5 bed</span><span>8 bath</span><span>9,971 sqft</span></div>
+          <div class="listing-subdiv">The Highlands at Broken Top</div>
+        </div>
+      </div>
+      <!-- VIDEO: 67480 Cloverdale ($8.7M) -->
+      <div class="listing-card" onclick="openVideoModal('demo')">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250602182006897066000000-o.jpg');">
+          <div class="listing-video-badge">Video tour</div>
+          <div class="listing-dom-pill">188 days</div>
+          <div class="listing-video-overlay"><div class="listing-play-btn"></div></div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$8,700,000</div>
+          <div class="listing-addr">67480 Cloverdale</div>
+          <div class="listing-facts"><span>6 bed</span><span>7 bath</span><span>9,075 sqft</span></div>
+          <div class="listing-subdiv">Outside city limits</div>
+        </div>
+      </div>
+      <!-- No video: 65255 Swalley ($11.9M) -->
+      <div class="listing-card">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250730224050303246000000-o.jpg');">
+          <div class="listing-dom-pill">256 days</div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$11,900,000</div>
+          <div class="listing-addr">65255 Swalley</div>
+          <div class="listing-facts"><span>3 bed</span><span>3 bath</span><span>2,268 sqft</span></div>
+          <div class="listing-subdiv">Outside city limits</div>
+        </div>
+      </div>
+      <!-- No video: 65930 Mariposa ($9.8M) -->
+      <div class="listing-card">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250622013748160907000000-o.jpg');">
+          <div class="listing-dom-pill">312 days</div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$9,800,000</div>
+          <div class="listing-addr">65930 Mariposa</div>
+          <div class="listing-facts"><span>7 bed</span><span>9 bath</span><span>10,771 sqft</span></div>
+          <div class="listing-subdiv">Grandridge</div>
+        </div>
+      </div>
+      <!-- No video: 18665 Macalpine ($6.9M) -->
+      <div class="listing-card">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20230321225147831977000000-o.jpg');">
+          <div class="listing-dom-pill">38 days</div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$6,900,000</div>
+          <div class="listing-addr">18665 Macalpine</div>
+          <div class="listing-facts"><span>—</span></div>
+          <div class="listing-subdiv">The Highlands at Broken Top</div>
+        </div>
+      </div>
+      <!-- No video: 18883 Sutherland ($5.999M) -->
+      <div class="listing-card">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250523145602460431000000-o.jpg');">
+          <div class="listing-dom-pill">89 days</div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$5,999,000</div>
+          <div class="listing-addr">18883 Sutherland</div>
+          <div class="listing-facts"><span>6 bed</span><span>9 bath</span><span>7,994 sqft</span></div>
+          <div class="listing-subdiv">The Highlands at Broken Top</div>
+        </div>
+      </div>
+      <!-- No video: 18780 Macalpine ($5.995M) -->
+      <div class="listing-card">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250715001258485571000000-o.jpg');">
+          <div class="listing-dom-pill">304 days</div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$5,995,000</div>
+          <div class="listing-addr">18780 Macalpine</div>
+          <div class="listing-facts"><span>5 bed</span><span>6 bath</span><span>6,772 sqft</span></div>
+          <div class="listing-subdiv">The Highlands at Broken Top</div>
+        </div>
+      </div>
+      <!-- No video: 66505 Gerking Market ($5.545M) -->
+      <div class="listing-card">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260114033852469054000000-o.jpg');">
+          <div class="listing-dom-pill">105 days</div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$5,545,000</div>
+          <div class="listing-addr">66505 Gerking Market</div>
+          <div class="listing-facts"><span>5 bed</span><span>5 bath</span><span>3,034 sqft</span></div>
+          <div class="listing-subdiv">Outside city limits</div>
+        </div>
+      </div>
+      <!-- VIDEO: 19365 Rim View ($4.995M, has_virtual_tour=true) -->
+      <div class="listing-card" onclick="openVideoModal('demo')">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20240507185628938255000000-o.jpg');">
+          <div class="listing-video-badge">Video tour</div>
+          <div class="listing-dom-pill">737 days</div>
+          <div class="listing-video-overlay"><div class="listing-play-btn"></div></div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$4,995,000</div>
+          <div class="listing-addr">19365 Rim View</div>
+          <div class="listing-facts"><span>4 bed</span><span>4 bath</span><span>4,972 sqft</span></div>
+          <div class="listing-subdiv">Lakes At Tanager PUD</div>
+        </div>
+      </div>
+      <!-- VIDEO: 21925 Bear Creek ($4.75M, has_virtual_tour=true) -->
+      <div class="listing-card" onclick="openVideoModal('demo')">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20251003050303533531000000-o.jpg');">
+          <div class="listing-video-badge">Video tour</div>
+          <div class="listing-dom-pill">27 days</div>
+          <div class="listing-video-overlay"><div class="listing-play-btn"></div></div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$4,750,000</div>
+          <div class="listing-addr">21925 Bear Creek</div>
+          <div class="listing-facts"><span>4 bed</span><span>3 bath</span><span>3,092 sqft</span></div>
+          <div class="listing-subdiv">Somerset</div>
+        </div>
+      </div>
+      <!-- No video: 21491 Bear Creek ($4.2M) -->
+      <div class="listing-card">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260506034541458845000000-o.jpg');">
+          <div class="listing-dom-pill">10 days</div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$4,200,000</div>
+          <div class="listing-addr">21491 Bear Creek</div>
+          <div class="listing-facts"><span>5 bed</span><span>4 bath</span><span>4,444 sqft</span></div>
+          <div class="listing-subdiv">Outside city limits</div>
+        </div>
+      </div>
+      <!-- No video: 61572 Hardin Martin ($4M, Tetherow) -->
+      <div class="listing-card">
+        <div class="listing-photo" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260331043248854169000000-o.jpg');">
+          <div class="listing-dom-pill">25 days</div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-price">$4,000,000</div>
+          <div class="listing-addr">61572 Hardin Martin</div>
+          <div class="listing-facts"><span>Tetherow</span></div>
+          <div class="listing-subdiv">Outside city limits</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Inside Bend</div>
+      <h2>The 13 neighborhoods of Bend</h2>
+      <p>Bend is officially divided into 13 named neighborhood districts by the City of Bend GIS. Each card links to a deep dive with live market data, schools, sub-subdivisions, and active listings inside the polygon.</p>
+    </div>
+    <div class="neighborhood-grid">
+      <a class="neighborhood-card" href="/cities/bend/awbrey-butte/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/635fa7dc-9e26-42b9-aafc-8e5c4227912d.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Awbrey Butte</div>
+          <div class="stats"><strong>69</strong> active homes · median <strong>$1.4M</strong></div>
+          <div class="source">City of Bend GIS · 2,273 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/boyd-acres/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/96a96f89-761d-42e3-a062-859ff4f283cf.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Boyd Acres</div>
+          <div class="stats"><strong>66</strong> active homes · median <strong>$685K</strong></div>
+          <div class="source">City of Bend GIS · 2,390 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/century-west/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/ab396e78-6461-410a-9a79-edc707a0c7c6.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Century West</div>
+          <div class="stats"><strong>36</strong> active homes · median <strong>$895K</strong></div>
+          <div class="source">City of Bend GIS · 1,544 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/larkspur/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/ed600698-b0be-40fe-abdb-ca7786755a6c.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Larkspur</div>
+          <div class="stats"><strong>29</strong> active homes · median <strong>$715K</strong></div>
+          <div class="source">City of Bend GIS · 1,917 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/mountain-view/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/b677e117-03a5-4bc8-957c-e02d79d9742d.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Mountain View</div>
+          <div class="stats"><strong>48</strong> active homes · median <strong>$650K</strong></div>
+          <div class="source">City of Bend GIS · 1,825 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/old-bend/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/e8f185e3-f226-433a-99ae-e7983d312eed.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Old Bend</div>
+          <div class="stats"><strong>9</strong> active homes · median <strong>$1.25M</strong></div>
+          <div class="source">City of Bend GIS · 237 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/old-farm-district/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/3204d0a0-4b49-45ce-96d4-e830caf74c10.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Old Farm District</div>
+          <div class="stats"><strong>51</strong> active homes · median <strong>$845K</strong></div>
+          <div class="source">City of Bend GIS · 2,064 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/orchard-district/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/0aa56515-ab13-478c-b0d8-2670002ed73a.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Orchard District</div>
+          <div class="stats"><strong>26</strong> active homes · median <strong>$595K</strong></div>
+          <div class="source">City of Bend GIS · 1,358 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/river-west/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/d43f6926-9e4a-4be0-b515-5f8980ae319e.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">River West</div>
+          <div class="stats"><strong>26</strong> active homes · median <strong>$1.05M</strong></div>
+          <div class="source">City of Bend GIS · 1,459 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/southeast-bend/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/74f1d224-3122-4e1a-baf2-42389174d779.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Southeast Bend</div>
+          <div class="stats"><strong>16</strong> active homes · median <strong>$598K</strong></div>
+          <div class="source">City of Bend GIS · 1,286 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/southern-crossing/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/4d8e77d3-97e9-40e3-ba0d-8fa5395aa6b4.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Southern Crossing</div>
+          <div class="stats"><strong>17</strong> active homes · median <strong>$725K</strong></div>
+          <div class="source">City of Bend GIS · 883 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/southwest-bend/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/549efee8-5602-48f5-9fcc-cb932eed803d.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Southwest Bend</div>
+          <div class="stats"><strong>29</strong> active homes · median <strong>$885K</strong></div>
+          <div class="source">City of Bend GIS · 1,590 ac</div>
+        </div>
+      </a>
+      <a class="neighborhood-card" href="/cities/bend/summit-west/" style="background-image: url('https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/shutterstock/518583457.jpg');">
+        <div class="neighborhood-card-inner">
+          <div class="name">Summit West</div>
+          <div class="stats"><strong>101</strong> active homes · median <strong>$1.5M</strong></div>
+          <div class="source">City of Bend GIS · 1,553 ac</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="lead-cta">
+      <div>
+        <h2>Be the first to see Bend listings.</h2>
+        <p>We post new Bend inventory to our buyer list before it hits Zillow. Sign up and we'll text you when a home matches your criteria. No pressure, no spam, ever.</p>
+      </div>
+      <form class="lead-form" onsubmit="alert('Form is a preview placeholder. Wires up to Follow Up Boss in production.'); return false;">
+        <input type="text" placeholder="Your name" required />
+        <input type="email" placeholder="Email address" required />
+        <input type="tel" placeholder="Mobile number" />
+        <button type="submit">Get on the Bend list</button>
+        <div class="lead-tiny">By tapping submit you agree to receive marketing texts and emails from Ryan Realty. Reply STOP to opt out. Standard rates apply.</div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="tight">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Methodology</div>
+      <h2>How we count</h2>
+    </div>
+    <div class="methodology">
+      <strong>Every number on this page traces to a row in the Ryan Realty database, with the query, filter, and timestamp that produced it.</strong>
+      <ul>
+        <li><strong>Live pulse</strong> — <code>market_pulse_live</code> where <code>geo_type='city'</code> and <code>geo_slug='bend'</code>. Methodology version <code>v3-2026-05-07</code>. Scope: PropertyType=A (single-family residence). Pulled 2026-05-15 17:30 UTC.</li>
+        <li><strong>Months of supply</strong> = active_count ÷ (closed_last_6_months ÷ 6). Thresholds: ≤ 4 seller's market, 4–6 balanced, ≥ 6 buyer's market.</li>
+        <li><strong>12-month trend</strong> — <code>market_stats_cache</code>, period_type=monthly. Each point uses every SFR close in that calendar month.</li>
+        <li><strong>Featured listings</strong> — top 12 active SFR by list price. Video badges on listings where <code>has_virtual_tour=true</code> in the MLS feed.</li>
+        <li><strong>Neighborhood photos</strong> — geo-tagged via <code>asset_library</code> · upgrade to per-neighborhood originals planned.</li>
+        <li><strong>Boundaries</strong> — City of Bend GIS Neighborhood Districts polygons + TIGER/Line 2024 city polygon (GEOID=4105800).</li>
+        <li><strong>Hero video</strong> — Bend YTD 2026 market report rendered locally from the Spark + Supabase feeds (Remotion + ElevenLabs Victoria voice, locked 2026-04-27).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div>
+      <div class="brand-name">Ryan Realty</div>
+      <div class="brand-detail">A Bend, Oregon brokerage operating under Matt Ryan's Principal Broker license. We sell homes, give honest market data, and never use the word "nestled."</div>
+    </div>
+    <div>
+      <h4>Areas</h4>
+      <ul>
+        <li><a href="/cities/bend/">Bend</a></li>
+        <li><a href="/cities/redmond/">Redmond</a></li>
+        <li><a href="/cities/sisters/">Sisters</a></li>
+        <li><a href="/cities/sunriver/">Sunriver</a></li>
+        <li><a href="/cities/la-pine/">La Pine</a></li>
+        <li><a href="/cities/terrebonne/">Terrebonne</a></li>
+        <li><a href="/cities/tumalo/">Tumalo</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Contact</h4>
+      <ul>
+        <li>541.213.6706</li>
+        <li>matt@ryan-realty.com</li>
+        <li>115 NW Oregon Avenue<br />Bend, OR 97703</li>
+      </ul>
+    </div>
+    <div class="legal">
+      Ryan Realty LLC · Oregon Principal Broker #201206613 · Equal Housing Opportunity · Listing data courtesy of Oregon Datashare RMLS
+    </div>
+  </div>
+</footer>
+
+<!-- VIDEO MODAL (demo) -->
+<div class="video-modal" id="videoModal" onclick="if(event.target.id==='videoModal')closeVideoModal()">
+  <div class="video-modal-content">
+    <button class="video-modal-close" onclick="closeVideoModal()">×</button>
+    <video id="modalVideo" controls preload="metadata">
+      <source src="../../../v5_library/bend_market_report_ytd2026.mp4" type="video/mp4" />
+    </video>
+  </div>
+</div>
+
+<script>
+  function openVideoModal(key) {
+    const modal = document.getElementById('videoModal');
+    modal.classList.add('open');
+    const vid = document.getElementById('modalVideo');
+    vid.currentTime = 0;
+    vid.play();
+  }
+  function closeVideoModal() {
+    const modal = document.getElementById('videoModal');
+    modal.classList.remove('open');
+    const vid = document.getElementById('modalVideo');
+    vid.pause();
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVideoModal(); });
+</script>
+
+</body>
+</html>

@@ -27,17 +27,17 @@ const gate = {
 const PARTS = [
   {
     mediaPath: '/v5_library/bend_pulse/bend_pulse_part1.mp4',
-    facebook: `Bend Policy Pulse — Part 1 of 3\n\nWe break down what the city is proposing on the climate pollution fee for new homes, using audio from the February 2026 council workshop (public record) plus short narration for context.\n\nPart 2 is the debate. Part 3 is the calendar.\n\nNarration uses AI voice. Clips are straight from the meeting video.`,
+    facebook: `Bend Policy Pulse — Part 1 of 3\n\nWe break down what the city is proposing on the climate pollution fee for new homes, using audio from the February 2026 council workshop (public record) plus short narration for context.\n\nPart 2 is the debate. Part 3 is the calendar.\n\nClips are straight from the meeting video.`,
     hashtags: ['#BendOregon', '#CentralOregon'],
   },
   {
     mediaPath: '/v5_library/bend_pulse/bend_pulse_part2.mp4',
-    facebook: `Bend Policy Pulse — Part 2 of 3\n\nThe debate slice. Builders, utilities, and climate advocates pressed different angles as Bend moved this fee forward. We stayed on public meeting video for the receipts.\n\nSeries order: Part 1 proposal basics, Part 2 (this), Part 3 dates.\n\nNarration uses AI voice.`,
+    facebook: `Bend Policy Pulse — Part 2 of 3\n\nThe debate slice. Builders, utilities, and climate advocates pressed different angles as Bend moved this fee forward. We stayed on public meeting video for the receipts.\n\nSeries order: Part 1 proposal basics, Part 2 (this), Part 3 dates.`,
     hashtags: ['#BendOregon', '#CentralOregon'],
   },
   {
     mediaPath: '/v5_library/bend_pulse/bend_pulse_part3.mp4',
-    facebook: `Bend Policy Pulse — Part 3 of 3\n\nClose the loop: meetings, hearings, and how the fee is scheduled to phase in. Always double check the city agenda for last-minute shifts.\n\nSeries: Part 1 proposal, Part 2 debate, Part 3 (this).\n\nNarration uses AI voice.`,
+    facebook: `Bend Policy Pulse — Part 3 of 3\n\nClose the loop: meetings, hearings, and how the fee is scheduled to phase in. Always double check the city agenda for last-minute shifts.\n\nSeries: Part 1 proposal, Part 2 debate, Part 3 (this).`,
     hashtags: ['#BendOregon', '#CentralOregon'],
   },
 ]

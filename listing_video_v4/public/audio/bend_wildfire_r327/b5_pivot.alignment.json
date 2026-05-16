@@ -1,0 +1,69 @@
+{
+  "words": [
+    {
+      "text": "Here",
+      "startSec": 0.079,
+      "endSec": 0.34
+    },
+    {
+      "text": "",
+      "startSec": 0.34,
+      "endSec": 0.359
+    },
+    {
+      "text": "is",
+      "startSec": 0.359,
+      "endSec": 0.5
+    },
+    {
+      "text": "",
+      "startSec": 0.5,
+      "endSec": 0.519
+    },
+    {
+      "text": "what",
+      "startSec": 0.519,
+      "endSec": 0.799
+    },
+    {
+      "text": "",
+      "startSec": 0.799,
+      "endSec": 0.859
+    },
+    {
+      "text": "nobody",
+      "startSec": 0.859,
+      "endSec": 1.259
+    },
+    {
+      "text": "",
+      "startSec": 1.259,
+      "endSec": 1.299
+    },
+    {
+      "text": "is",
+      "startSec": 1.299,
+      "endSec": 1.439
+    },
+    {
+      "text": "",
+      "startSec": 1.439,
+      "endSec": 1.459
+    },
+    {
+      "text": "talking",
+      "startSec": 1.459,
+      "endSec": 1.719
+    },
+    {
+      "text": "",
+      "startSec": 1.719,
+      "endSec": 1.799
+    },
+    {
+      "text": "about.",
+      "startSec": 1.799,
+      "endSec": 2.059
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "label": "p2_council_nudge",
+  "source_clip": "feb11_council_qna",
+  "source_start_sec": 48.08,
+  "source_end_sec": 57.56,
+  "duration_sec": 9.48,
+  "text": "We are nudging. We are sending a signal, which is sort of where we have landed as a council and why we're here with a fee, is trying to send a signal to start this transition, because it",
+  "output_file": "source_clips/bend_pulse/bites/p2_council_nudge.mp4"
+}

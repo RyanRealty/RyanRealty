@@ -1,0 +1,181 @@
+{
+  "city": "redmond",
+  "generated_at": "2026-05-11T00:49:48.638Z",
+  "photo_count": 8,
+  "selected_ids": [
+    "CUR-7",
+    "CUR-1",
+    "A-44",
+    "A-40",
+    "A-27",
+    "A-2",
+    "R-16",
+    "R-15"
+  ],
+  "photos": [
+    {
+      "slot": "img_1",
+      "selected_id": "CUR-7",
+      "source": "current-redmond-set",
+      "creator": "Photographer: Sharad Bhat",
+      "creator_url": "https://unsplash.com/@sharadmbhat",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #7",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_7.jpg",
+      "asset_id": null,
+      "search_query": "high desert oregon home",
+      "geo_tags": [],
+      "subject_tags": [],
+      "approval": "approved",
+      "preview_only": false
+    },
+    {
+      "slot": "img_2",
+      "selected_id": "CUR-1",
+      "source": "current-redmond-set",
+      "creator": "Photographer: Sierra Houk",
+      "creator_url": "https://unsplash.com/@sierrahouk",
+      "title": "high desert oregon home",
+      "subtitle": "Current set #1",
+      "src": "file:///Users/matthewryan/RyanRealty/video/market-report/public/redmond/img_1.jpg",
+      "asset_id": null,
+      "search_query": "high desert oregon home",
+      "geo_tags": [],
+      "subject_tags": [],
+      "approval": "approved",
+      "preview_only": false
+    },
+    {
+      "slot": "img_3",
+      "selected_id": "A-44",
+      "source": "curated",
+      "creator": "redmond, central-oregon",
+      "creator_url": null,
+      "title": "Drive ingest: smith_rock_new_hiking_smith_rock.jpg",
+      "subtitle": "Score 2",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/95909e00-ca0a-45e5-8148-90fe33e1c338.jpg",
+      "asset_id": "95909e00-ca0a-45e5-8148-90fe33e1c338",
+      "search_query": "Drive ingest: smith_rock_new_hiking_smith_rock.jpg",
+      "geo_tags": [
+        "redmond",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior"
+      ],
+      "approval": "approved",
+      "preview_only": false
+    },
+    {
+      "slot": "img_4",
+      "selected_id": "A-40",
+      "source": "curated",
+      "creator": "redmond, central-oregon",
+      "creator_url": null,
+      "title": "Drive ingest: smith_rock_jHotbdkcUsE.jpg",
+      "subtitle": "Score 2",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/cbeb745f-2ded-479a-965f-856c9276d973.jpg",
+      "asset_id": "cbeb745f-2ded-479a-965f-856c9276d973",
+      "search_query": "Drive ingest: smith_rock_jHotbdkcUsE.jpg",
+      "geo_tags": [
+        "redmond",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior"
+      ],
+      "approval": "approved",
+      "preview_only": false
+    },
+    {
+      "slot": "img_5",
+      "selected_id": "A-27",
+      "source": "curated",
+      "creator": "redmond, central-oregon",
+      "creator_url": null,
+      "title": "Drive ingest: high_desert_S-Ioh5aqA3Q.jpg",
+      "subtitle": "Score 2",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/6b788d93-b023-4b51-b618-3934681c0aa6.jpg",
+      "asset_id": "6b788d93-b023-4b51-b618-3934681c0aa6",
+      "search_query": "Drive ingest: high_desert_S-Ioh5aqA3Q.jpg",
+      "geo_tags": [
+        "redmond",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior"
+      ],
+      "approval": "approved",
+      "preview_only": false
+    },
+    {
+      "slot": "img_6",
+      "selected_id": "A-2",
+      "source": "unsplash",
+      "creator": "redmond, central-oregon, oregon",
+      "creator_url": "https://unsplash.com/@porterraab",
+      "title": "high desert oregon home",
+      "subtitle": "Score 21",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/c6e7d8c6-1938-4d88-aa96-cb6d6400af01.jpg",
+      "asset_id": "c6e7d8c6-1938-4d88-aa96-cb6d6400af01",
+      "search_query": "high desert oregon home",
+      "geo_tags": [
+        "redmond",
+        "central-oregon",
+        "oregon"
+      ],
+      "subject_tags": [
+        "sunset"
+      ],
+      "approval": "approved",
+      "preview_only": false
+    },
+    {
+      "slot": "img_7",
+      "selected_id": "R-16",
+      "source": "curated",
+      "creator": "redmond, central-oregon",
+      "creator_url": null,
+      "title": "Drive ingest: redmond_city_T9anjGRG_gM.jpg",
+      "subtitle": "Score 10",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/curated/04151fa1-c990-4580-9ae4-c971fe8cd29d.jpg",
+      "asset_id": "04151fa1-c990-4580-9ae4-c971fe8cd29d",
+      "search_query": "Drive ingest: redmond_city_T9anjGRG_gM.jpg",
+      "geo_tags": [
+        "redmond",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior"
+      ],
+      "approval": "approved",
+      "preview_only": false
+    },
+    {
+      "slot": "img_8",
+      "selected_id": "R-15",
+      "source": "unsplash",
+      "creator": "redmond, central-oregon, oregon",
+      "creator_url": "https://unsplash.com/@leo_visions_",
+      "title": "cline falls oregon",
+      "subtitle": "Score 21",
+      "src": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/unsplash/7cf22592-9aae-47ee-b6bf-bed794b93379.jpg",
+      "asset_id": "7cf22592-9aae-47ee-b6bf-bed794b93379",
+      "search_query": "cline falls oregon",
+      "geo_tags": [
+        "redmond",
+        "central-oregon",
+        "oregon"
+      ],
+      "subject_tags": [
+        "waterfall"
+      ],
+      "approval": "approved",
+      "preview_only": false
+    }
+  ]
+}

@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ryan Realty — Video Template Picker</title>
+<style>
+@font-face { font-family: 'Amboqia Boriango'; src: url('../fonts/Amboqia_Boriango.otf') format('opentype'); }
+@font-face { font-family: 'Azo Sans'; src: url('../fonts/AzoSans-Medium.ttf') format('truetype'); }
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --rr-navy: #102742;
+  --rr-navy-deep: #0a1a2e;
+  --rr-cream: #faf8f4;
+  --rr-sand: #e8e2d4;
+  --rr-fir: #2e4a3a;
+  --rr-sky: #8fb8d4;
+  font-variant-numeric: tabular-nums;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Geist', system-ui, sans-serif;
+  background: var(--rr-cream);
+  color: var(--rr-navy);
+  padding: 64px 32px 100px;
+}
+
+/* PAGE HEADER */
+.page-header {
+  max-width: 1100px;
+  margin: 0 auto 64px;
+  padding-bottom: 32px;
+  border-bottom: 2px solid var(--rr-sand);
+}
+.page-header .eyebrow {
+  font-family: 'Azo Sans', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--rr-navy);
+  opacity: 0.55;
+  margin-bottom: 16px;
+}
+.page-header h1 {
+  font-family: 'Amboqia Boriango', serif;
+  font-size: 72px;
+  color: var(--rr-navy);
+  line-height: 1.0;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+.page-header .subtitle {
+  font-family: 'Geist', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--rr-navy);
+  opacity: 0.75;
+  line-height: 1.5;
+  max-width: 860px;
+  margin-bottom: 10px;
+}
+.page-header .layout-note {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--rr-navy);
+  opacity: 0.45;
+  letter-spacing: 0.03em;
+}
+
+/* CARD STACK */
+.card-stack {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+
+/* TEMPLATE CARD */
+.template-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid var(--rr-sand);
+  box-shadow: 0 2px 8px rgba(16, 39, 66, 0.07), 0 8px 32px rgba(16, 39, 66, 0.06);
+  padding: 40px 40px 36px;
+}
+
+.card-top {
+  margin-bottom: 20px;
+}
+.template-id {
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rr-navy);
+  opacity: 0.4;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.template-name {
+  font-family: 'Amboqia Boriango', serif;
+  font-size: 36px;
+  color: var(--rr-navy);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+.template-desc {
+  font-family: 'Geist', sans-serif;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--rr-navy);
+  opacity: 0.7;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.template-meta {
+  font-family: 'Geist', 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--rr-navy);
+  opacity: 0.55;
+  letter-spacing: 0.02em;
+}
+.template-meta .stars {
+  color: var(--rr-navy);
+  opacity: 0.8;
+  letter-spacing: 0.04em;
+}
+
+/* STORYBOARD ROW */
+.storyboard-row {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+/* INDIVIDUAL FRAME: 220x391, 9:16 portrait */
+.frame {
+  position: relative;
+  width: 220px;
+  height: 391px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--rr-navy-deep);
+}
+.frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+/* Darken scrim for text readability */
+.frame .scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 26, 46, 0.28);
+  pointer-events: none;
+}
+/* Frame label (F0, F25%, etc.) */
+.frame .frame-label {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-family: 'Geist', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  opacity: 0.6;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  pointer-events: none;
+  z-index: 10;
+}
+/* Caption pill — bottom-center of frame */
+.frame .caption-pill {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(16, 39, 66, 0.70);
+  border-radius: 12px;
+  border-top: 1px solid var(--rr-sand);
+  padding: 6px 12px 7px;
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  max-width: 196px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  line-height: 1.35;
+  pointer-events: none;
+  z-index: 20;
+}
+.frame .caption-pill.small {
+  font-size: 11px;
+  padding: 4px 10px 5px;
+}
+/* Top address ribbon (thin bar at top) */
+.frame .top-ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 12px 9px;
+  background: rgba(16, 39, 66, 0.62);
+  border-bottom: 1px solid rgba(232, 226, 212, 0.3);
+  font-family: 'Amboqia Boriango', serif;
+  font-size: 12px;
+  color: #fff;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  pointer-events: none;
+  z-index: 20;
+}
+/* Big centered text overlay (for data-card frames) */
+.frame .center-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px 14px;
+  pointer-events: none;
+  z-index: 20;
+}
+.frame .center-overlay .big-price {
+  font-family: 'Amboqia Boriango', serif;
+  font-size: 28px;
+  color: #fff;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  font-variant-numeric: tabular-nums;
+}
+.frame .center-overlay .big-price.navy-bg {
+  color: var(--rr-cream);
+}
+.frame .center-overlay .sub-line {
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.82);
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+/* Full navy card frame */
+.frame.navy-card {
+  background: var(--rr-navy);
+}
+.frame.cream-card {
+  background: var(--rr-cream);
+}
+/* End-card footer bar — navy logo on cream-tinted bar */
+.frame .footer-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 68px;
+  background: rgba(10, 26, 46, 0.80);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+}
+.frame .footer-bar img {
+  width: 88px;
+  height: auto;
+  position: static;
+  object-fit: contain;
+}
+/* Kinetic stat reveal (end card data strip) */
+.frame .stat-strip {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 14px 16px;
+  background: rgba(10, 26, 46, 0.88);
+  pointer-events: none;
+  z-index: 20;
+}
+.frame .stat-strip .price-line {
+  font-family: 'Amboqia Boriango', serif;
+  font-size: 22px;
+  color: var(--rr-cream);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+}
+.frame .stat-strip .detail-line {
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(250,248,244,0.72);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+/* Place name overlay (mid-screen text) */
+.frame .place-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 20;
+}
+.frame .place-overlay .place-name {
+  font-family: 'Amboqia Boriango', serif;
+  font-size: 16px;
+  color: #fff;
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+}
+/* Sepia filter utility */
+.frame img.sepia {
+  filter: sepia(0.4) brightness(0.95);
+}
+/* Jax mascot overlay (small corner) */
+.frame .jax-overlay {
+  position: absolute;
+  bottom: 72px;
+  right: 10px;
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  z-index: 25;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+}
+/* Amboqia single word overlay */
+.frame .word-stamp {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Amboqia Boriango', serif;
+  font-size: 30px;
+  color: #fff;
+  letter-spacing: 0.04em;
+  text-shadow: 0 3px 12px rgba(0,0,0,0.55);
+  text-align: center;
+  pointer-events: none;
+  z-index: 20;
+}
+/* DOM counter pill */
+.frame .dom-counter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 20;
+}
+.frame .dom-counter .dom-big {
+  font-family: 'Amboqia Boriango', serif;
+  font-size: 40px;
+  color: var(--rr-cream);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+.frame .dom-counter .dom-label {
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(250,248,244,0.7);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* USE CASE CHIP */
+.use-case {
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--rr-navy);
+  opacity: 0.55;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-top: 4px;
+}
+
+/* FOOTER */
+.page-footer {
+  max-width: 1100px;
+  margin: 80px auto 0;
+  padding-top: 28px;
+  border-top: 1px solid var(--rr-sand);
+  font-family: 'Geist', sans-serif;
+  font-size: 12px;
+  color: var(--rr-navy);
+  opacity: 0.4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>
+</head>
+<body>
+
+<!-- PAGE HEADER -->
+<header class="page-header">
+  <p class="eyebrow">Ryan Realty · Design System v2</p>
+  <h1>Video Templates</h1>
+  <p class="subtitle">10 short-form video patterns rendered as 4-frame storyboards. Sample: 19496 Tumalo Reservoir · $1,225,000 · 3 BD · 3 BA · 2,325 SQFT · listed by Matt Ryan</p>
+  <p class="layout-note">Single-column layout. Scroll top to bottom.</p>
+</header>
+
+<main class="card-stack">
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <!-- V1: SLOW REVEAL -->
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <article class="template-card">
+    <div class="card-top">
+      <p class="template-id">V1</p>
+      <h2 class="template-name">Slow Reveal</h2>
+      <p class="template-desc">Premium cinematic. 3–4s beats. Lets the land breathe.</p>
+      <p class="template-meta">
+        <span class="stars">★★★★★</span> &nbsp;·&nbsp; Pacing 3–4s &nbsp;·&nbsp; Music: ambient piano &nbsp;·&nbsp; VO: narrative
+      </p>
+    </div>
+
+    <div class="storyboard-row">
+      <!-- F0 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260307035352655634000000-o.jpg" alt="Aerial dusk 1" loading="lazy">
+        <div class="scrim"></div>
+        <span class="frame-label">F0 · hook</span>
+        <div class="top-ribbon">19496 TUMALO RESERVOIR</div>
+      </div>
+      <!-- F25 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260307035353837808000000-o.jpg" alt="Aerial dusk 2" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.18);"></div>
+        <span class="frame-label">F25%</span>
+        <!-- no text — drone breathes -->
+      </div>
+      <!-- F50 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175725529629000000-o.jpg" alt="Living room" loading="lazy" style="object-position: center 30%;">
+        <div class="scrim"></div>
+        <span class="frame-label">F50%</span>
+        <div class="caption-pill">Three Sisters from the great room</div>
+      </div>
+      <!-- END -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260307035354882604000000-o.jpg" alt="Aerial dusk 3" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.52);"></div>
+        <span class="frame-label">End</span>
+        <div class="center-overlay">
+          <div class="big-price">$1,225,000</div>
+          <div class="sub-line">3 BD · 3 BA · 2,325 SQFT</div>
+          <div class="sub-line" style="margin-top:3px; opacity:0.65;">Tumalo · Bend, Oregon</div>
+        </div>
+        <div class="footer-bar">
+          <img src="../assets/brand/logo-white.png" alt="Ryan Realty">
+        </div>
+      </div>
+    </div>
+
+    <p class="use-case">Use: Just Listed luxury · acreage · Three Sisters views</p>
+  </article>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <!-- V2: CASCADE & CREEK -->
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <article class="template-card">
+    <div class="card-top">
+      <p class="template-id">V2</p>
+      <h2 class="template-name">Cascade &amp; Creek</h2>
+      <p class="template-desc">Lead with geography. Place before price. Local authority VO.</p>
+      <p class="template-meta">
+        <span class="stars">★★★★★</span> &nbsp;·&nbsp; Pacing 3–4s &nbsp;·&nbsp; Music: cinematic strings &nbsp;·&nbsp; VO: local authority
+      </p>
+    </div>
+
+    <div class="storyboard-row">
+      <!-- F0 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175723357841000000-o.jpg" alt="Aerial 3" loading="lazy">
+        <div class="scrim"></div>
+        <span class="frame-label">F0 · hook</span>
+        <div class="caption-pill">12 minutes from downtown Bend</div>
+      </div>
+      <!-- F25 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260307035354882604000000-o.jpg" alt="Aerial dusk 3 tilt" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.22);"></div>
+        <span class="frame-label">F25%</span>
+        <!-- tilt-down beat, no text -->
+      </div>
+      <!-- F50 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175744600559000000-o.jpg" alt="Grounds creek" loading="lazy" style="object-position: center 40%;">
+        <div class="scrim"></div>
+        <span class="frame-label">F50%</span>
+        <div class="caption-pill">A creek through 2.28 acres</div>
+      </div>
+      <!-- END -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175719779563000000-o.jpg" alt="Aerial 1" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.60);"></div>
+        <span class="frame-label">End</span>
+        <div class="stat-strip">
+          <div class="price-line">$1,225,000 · 3 BD · 3 BA · 2,325 SQFT</div>
+          <div class="detail-line">Tumalo · 1 day on market</div>
+        </div>
+        <div style="position:absolute;top:0;left:0;right:0;bottom:72px;display:flex;align-items:center;justify-content:center;z-index:18;pointer-events:none;">
+          <div style="text-align:center;">
+            <div style="font-family:'Amboqia Boriango',serif;font-size:20px;color:#fff;letter-spacing:0.04em;text-shadow:0 2px 10px rgba(0,0,0,0.5);">TUMALO</div>
+            <div style="font-family:'Azo Sans',sans-serif;font-size:10px;letter-spacing:0.18em;color:rgba(250,248,244,0.7);text-transform:uppercase;margin-top:5px;">BEND · OREGON</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="use-case">Use: Tumalo · rural acreage · land-and-home buyers</p>
+  </article>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <!-- V3: KINETIC STARTER -->
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <article class="template-card">
+    <div class="card-top">
+      <p class="template-id">V3</p>
+      <h2 class="template-name">Kinetic Starter</h2>
+      <p class="template-desc">12+ beats in 35s. Rapid-cut energy. Numbers flash through the frame.</p>
+      <p class="template-meta">
+        <span class="stars">★★★★</span> &nbsp;·&nbsp; Pacing 1.5–2.5s &nbsp;·&nbsp; Music: lo-fi beat &nbsp;·&nbsp; VO: direct
+      </p>
+    </div>
+
+    <div class="storyboard-row">
+      <!-- F0 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175728975287000000-o.jpg" alt="Kitchen" loading="lazy" style="object-position: center 35%;">
+        <div class="scrim" style="background:rgba(10,26,46,0.35);"></div>
+        <span class="frame-label">F0 · hook</span>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:20;pointer-events:none;">
+          <div style="font-family:'Geist',sans-serif;font-weight:700;font-size:17px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.5);line-height:1.3;">3 bed · 3 bath</div>
+          <div style="font-family:'Geist',sans-serif;font-weight:700;font-size:14px;color:rgba(255,255,255,0.85);margin-top:4px;">Tumalo</div>
+        </div>
+      </div>
+      <!-- F25 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175725529629000000-o.jpg" alt="Living" loading="lazy">
+        <div class="scrim"></div>
+        <span class="frame-label">F25%</span>
+        <div class="caption-pill small">2,325 sqft · 2.28 acres · $1,225,000</div>
+      </div>
+      <!-- F50 -->
+      <div class="frame navy-card">
+        <span class="frame-label" style="color:rgba(250,248,244,0.5);">F50%</span>
+        <div class="center-overlay">
+          <div style="font-family:'Amboqia Boriango',serif;font-size:18px;color:var(--rr-cream);line-height:1.3;letter-spacing:0.01em;text-align:center;">Listed today.<br>Three Sisters<br>from every room.</div>
+        </div>
+      </div>
+      <!-- END -->
+      <div class="frame cream-card">
+        <span class="frame-label" style="color:var(--rr-navy);opacity:0.45;">End</span>
+        <div class="center-overlay">
+          <div style="font-family:'Amboqia Boriango',serif;font-size:36px;color:var(--rr-navy);letter-spacing:-0.01em;font-variant-numeric:tabular-nums;">$1,225,000</div>
+          <div style="font-family:'Geist',sans-serif;font-size:11px;font-weight:500;color:var(--rr-navy);opacity:0.55;letter-spacing:0.06em;margin-top:8px;">TUMALO · BEND OR</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="use-case">Use: Just Listed mid-market with fast energy · first-day momentum</p>
+  </article>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <!-- V4: THE HARD CUT -->
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <article class="template-card">
+    <div class="card-top">
+      <p class="template-id">V4</p>
+      <h2 class="template-name">The Hard Cut</h2>
+      <p class="template-desc">Mid-market 2–2.5s beats. One data fact in VO. Pending reveal energy.</p>
+      <p class="template-meta">
+        <span class="stars">★★★★</span> &nbsp;·&nbsp; Pacing 2–2.5s &nbsp;·&nbsp; Music: chill cinematic &nbsp;·&nbsp; VO: narrative + one data fact
+      </p>
+    </div>
+
+    <div class="storyboard-row">
+      <!-- F0 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175825195222000000-o.jpg" alt="Hero primary exterior" loading="lazy" style="object-position: center 45%;">
+        <div class="scrim"></div>
+        <span class="frame-label">F0 · hook</span>
+        <div class="top-ribbon">19496 TUMALO RESERVOIR RD</div>
+      </div>
+      <!-- F25 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175720531554000000-o.jpg" alt="Aerial 2" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.20);"></div>
+        <span class="frame-label">F25%</span>
+        <!-- neighborhood context, no text -->
+      </div>
+      <!-- F50 -->
+      <div class="frame navy-card">
+        <span class="frame-label" style="color:rgba(250,248,244,0.4);">F50%</span>
+        <div class="center-overlay">
+          <div style="font-family:'Amboqia Boriango',serif;font-size:30px;color:var(--rr-cream);line-height:1.1;letter-spacing:-0.005em;font-variant-numeric:tabular-nums;">1 day</div>
+          <div style="font-family:'Geist',sans-serif;font-size:11px;font-weight:500;color:rgba(250,248,244,0.65);letter-spacing:0.14em;text-transform:uppercase;margin-top:6px;">on market</div>
+        </div>
+      </div>
+      <!-- END -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175724080591000000-o.jpg" alt="Aerial 4" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.60);"></div>
+        <span class="frame-label">End</span>
+        <div class="stat-strip">
+          <div class="price-line">$1,225,000</div>
+          <div class="detail-line">3 BD · 3 BA · 2,325 SQFT · 2.28 ac</div>
+          <div class="detail-line" style="margin-top:3px;">Listed 5/12/2026 · Bend OR 97703</div>
+        </div>
+        <div class="footer-bar">
+          <img src="../assets/brand/logo-white.png" alt="Ryan Realty">
+        </div>
+      </div>
+    </div>
+
+    <p class="use-case">Use: Pending reveal · Open House teaser · first 72-hour push</p>
+  </article>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <!-- V5: THE STORY -->
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <article class="template-card">
+    <div class="card-top">
+      <p class="template-id">V5</p>
+      <h2 class="template-name">The Story</h2>
+      <p class="template-desc">First-person narrative. VO carries the whole arc. Imagery supports, never leads.</p>
+      <p class="template-meta">
+        <span class="stars">★★★★★</span> &nbsp;·&nbsp; Pacing 3–4s &nbsp;·&nbsp; Music: ambient texture only &nbsp;·&nbsp; VO: fully narrative
+      </p>
+    </div>
+
+    <div class="storyboard-row">
+      <!-- F0 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175741900992000000-o.jpg" alt="Primary bath detail" loading="lazy" style="object-position: center 25%;">
+        <div class="scrim" style="background:rgba(10,26,46,0.18);"></div>
+        <span class="frame-label">F0 · hook</span>
+        <!-- No text — VO opens: "Every morning starts the same way in this house." -->
+      </div>
+      <!-- F25 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175725529629000000-o.jpg" alt="Living wider" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.30);"></div>
+        <span class="frame-label">F25%</span>
+        <div class="place-overlay">
+          <div class="place-name" style="font-size:14px;">Tumalo · Bend, Oregon</div>
+        </div>
+      </div>
+      <!-- F50 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175746136817000000-o.jpg" alt="Grounds 2" loading="lazy" style="object-position: center 35%;">
+        <div class="scrim" style="background:rgba(10,26,46,0.22);"></div>
+        <span class="frame-label">F50%</span>
+        <!-- narrative continues in VO -->
+      </div>
+      <!-- END -->
+      <div class="frame cream-card">
+        <span class="frame-label" style="color:var(--rr-navy);opacity:0.4;">End</span>
+        <div class="center-overlay">
+          <div style="font-family:'Geist',sans-serif;font-size:20px;font-weight:500;color:var(--rr-navy);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">$1,225,000</div>
+          <div style="font-family:'Geist',sans-serif;font-size:11px;color:var(--rr-navy);opacity:0.5;letter-spacing:0.06em;margin-top:8px;text-transform:uppercase;">19496 Tumalo Reservoir</div>
+          <div style="margin-top:16px;">
+            <img src="../assets/brand/logo-blue.png" alt="Ryan Realty" style="width:80px;height:auto;position:static;object-fit:contain;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="use-case">Use: Luxury · acreage narrative · relocating buyers who read</p>
+  </article>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <!-- V6: LIGHT + FORM -->
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <article class="template-card">
+    <div class="card-top">
+      <p class="template-id">V6</p>
+      <h2 class="template-name">Light + Form</h2>
+      <p class="template-desc">Silent, foley only. Architecture speaks. Single words punctuate.</p>
+      <p class="template-meta">
+        <span class="stars">★★★★</span> &nbsp;·&nbsp; Pacing 2.5–3.5s &nbsp;·&nbsp; Music: NONE &nbsp;·&nbsp; VO: NONE
+      </p>
+    </div>
+
+    <div class="storyboard-row">
+      <!-- F0 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175741090616000000-o.jpg" alt="Primary bedroom detail" loading="lazy" style="object-position: center 20%;">
+        <div class="scrim" style="background:rgba(10,26,46,0.15);"></div>
+        <span class="frame-label">F0 · hook</span>
+        <div class="word-stamp">Pine.</div>
+      </div>
+      <!-- F25 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175728975287000000-o.jpg" alt="Kitchen pull back" loading="lazy" style="object-position: center 30%;">
+        <div class="scrim" style="background:rgba(10,26,46,0.20);"></div>
+        <span class="frame-label">F25%</span>
+        <!-- pull back, no text -->
+      </div>
+      <!-- F50 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175725529629000000-o.jpg" alt="Living dimmed" loading="lazy" style="filter:brightness(0.75);">
+        <div class="scrim" style="background:rgba(10,26,46,0.38);"></div>
+        <span class="frame-label">F50%</span>
+        <div class="caption-pill small" style="background:rgba(16,39,66,0.62);">Built in 1995.</div>
+      </div>
+      <!-- END -->
+      <div class="frame cream-card">
+        <span class="frame-label" style="color:var(--rr-navy);opacity:0.4;">End</span>
+        <div class="center-overlay">
+          <div style="font-family:'Geist',sans-serif;font-size:17px;font-weight:400;color:var(--rr-navy);font-variant-numeric:tabular-nums;letter-spacing:0.01em;">$1,225,000</div>
+          <div style="width:36px;height:1px;background:var(--rr-navy);opacity:0.25;margin:12px auto;"></div>
+          <div style="font-family:'Geist',sans-serif;font-size:10px;font-weight:500;color:var(--rr-navy);opacity:0.45;letter-spacing:0.1em;text-transform:uppercase;">19496 Tumalo Reservoir</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="use-case">Use: Architecture-forward · custom builds · silence as signal</p>
+  </article>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <!-- V7: DATA DROP -->
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <article class="template-card">
+    <div class="card-top">
+      <p class="template-id">V7</p>
+      <h2 class="template-name">Data Drop</h2>
+      <p class="template-desc">Numbers lead. Black open. Price arrives first, photo second.</p>
+      <p class="template-meta">
+        <span class="stars">★★★★</span> &nbsp;·&nbsp; Pacing 2–3s &nbsp;·&nbsp; Music: synth bed &nbsp;·&nbsp; VO: data-driven
+      </p>
+    </div>
+
+    <div class="storyboard-row">
+      <!-- F0 -->
+      <div class="frame" style="background:#000;">
+        <span class="frame-label" style="color:rgba(250,248,244,0.4);">F0 · hook</span>
+        <div class="center-overlay">
+          <div style="font-family:'Amboqia Boriango',serif;font-size:42px;color:var(--rr-cream);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">$1,225,000</div>
+          <div style="font-family:'Geist',sans-serif;font-size:11px;font-weight:500;color:rgba(250,248,244,0.6);letter-spacing:0.12em;text-transform:uppercase;margin-top:10px;">Listed today</div>
+        </div>
+      </div>
+      <!-- F25 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175825195222000000-o.jpg" alt="Hero exterior" loading="lazy" style="object-position: center 45%;">
+        <div class="scrim" style="background:rgba(0,0,0,0.42);"></div>
+        <span class="frame-label">F25%</span>
+        <div class="dom-counter">
+          <div class="dom-big">1</div>
+          <div class="dom-label">days on market</div>
+        </div>
+      </div>
+      <!-- F50 -->
+      <div class="frame navy-card">
+        <span class="frame-label" style="color:rgba(250,248,244,0.4);">F50%</span>
+        <div class="center-overlay" style="padding:24px 16px;">
+          <div style="font-family:'Amboqia Boriango',serif;font-size:17px;color:var(--rr-cream);line-height:1.3;text-align:center;">List: $1,225,000</div>
+          <div style="font-family:'Geist',sans-serif;font-size:11px;font-weight:500;color:rgba(250,248,244,0.65);margin-top:6px;text-align:center;letter-spacing:0.06em;">1 of 2 offers in</div>
+        </div>
+      </div>
+      <!-- END -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175719779563000000-o.jpg" alt="Aerial 1" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.55);"></div>
+        <span class="frame-label">End</span>
+        <!-- Jax cameo corner -->
+        <img src="../assets/brand/blue-dog.png" alt="Jax" class="jax-overlay" style="bottom:76px;right:8px;width:52px;">
+        <div class="stat-strip">
+          <div class="price-line">Sale-to-list: 100%</div>
+          <div class="detail-line">3 BD · 3 BA · 2,325 SQFT · Tumalo</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="use-case">Use: Just Sold broker brag · hot listing · offer-round recap</p>
+  </article>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <!-- V8: TUMALO LIFE -->
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <article class="template-card">
+    <div class="card-top">
+      <p class="template-id">V8</p>
+      <h2 class="template-name">Tumalo Life</h2>
+      <p class="template-desc">10 seconds of place, then the property. Sells the latitude before the address.</p>
+      <p class="template-meta">
+        <span class="stars">★★★★★</span> &nbsp;·&nbsp; Pacing 2.5–3s &nbsp;·&nbsp; Music: warm acoustic &nbsp;·&nbsp; VO: lifestyle narrative
+      </p>
+    </div>
+
+    <div class="storyboard-row">
+      <!-- F0 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175719779563000000-o.jpg" alt="Aerial 1 context" loading="lazy">
+        <div class="scrim"></div>
+        <span class="frame-label">F0 · hook</span>
+        <div class="place-overlay">
+          <div class="place-name" style="font-size:20px;">Bend, Oregon</div>
+        </div>
+      </div>
+      <!-- F25 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175746136817000000-o.jpg" alt="Grounds 2 creek lifestyle" loading="lazy" style="object-position: center 35%;">
+        <div class="scrim"></div>
+        <span class="frame-label">F25%</span>
+        <div class="caption-pill">Float the Deschutes. Ski Bachelor.</div>
+      </div>
+      <!-- F50 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175825195222000000-o.jpg" alt="Hero primary reveal" loading="lazy" style="object-position: center 45%;">
+        <div class="scrim"></div>
+        <span class="frame-label">F50% · reveal</span>
+        <div class="top-ribbon">19496 TUMALO RESERVOIR</div>
+      </div>
+      <!-- END -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260307035352655634000000-o.jpg" alt="Aerial dusk 1 end" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.58);"></div>
+        <span class="frame-label">End</span>
+        <div class="stat-strip">
+          <div class="price-line">$1,225,000</div>
+          <div class="detail-line">3 BD · 3 BA · 2,325 SQFT · 2.28 ac</div>
+          <div class="detail-line" style="margin-top:2px;">Tumalo · 12 min to downtown Bend</div>
+        </div>
+        <div class="footer-bar">
+          <img src="../assets/brand/logo-white.png" alt="Ryan Realty">
+        </div>
+      </div>
+    </div>
+
+    <p class="use-case">Use: Relocating buyers · lifestyle properties · Tumalo &amp; rural Bend</p>
+  </article>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <!-- V9: JAX WALKS IT -->
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <article class="template-card">
+    <div class="card-top">
+      <p class="template-id">V9</p>
+      <h2 class="template-name">Jax Walks It</h2>
+      <p class="template-desc">Mascot cameo. Warm, approachable. Jax gives the house his sign-off.</p>
+      <p class="template-meta">
+        <span class="stars">★★★★</span> &nbsp;·&nbsp; Pacing 2.5–3s &nbsp;·&nbsp; Music: warm lo-fi &nbsp;·&nbsp; VO: first-person broker
+      </p>
+    </div>
+
+    <div class="storyboard-row">
+      <!-- F0 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175825195222000000-o.jpg" alt="Hero exterior — Jax at front door" loading="lazy" style="object-position: center 45%;">
+        <div class="scrim"></div>
+        <span class="frame-label">F0 · hook</span>
+        <!-- Jax overlay on front door scene -->
+        <img src="../assets/brand/blue-dog.png" alt="Jax" style="position:absolute;bottom:88px;left:18px;width:66px;height:66px;object-fit:contain;z-index:25;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5));">
+        <div class="caption-pill small">Day 1 on market</div>
+      </div>
+      <!-- F25 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175728975287000000-o.jpg" alt="Kitchen — Jax at island" loading="lazy" style="object-position: center 35%;">
+        <div class="scrim"></div>
+        <span class="frame-label">F25%</span>
+        <img src="../assets/brand/blue-dog.png" alt="Jax at island" style="position:absolute;bottom:76px;right:14px;width:60px;object-fit:contain;z-index:25;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.45));">
+        <div class="caption-pill small">12 min to downtown. Jax approves.</div>
+      </div>
+      <!-- F50 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175723357841000000-o.jpg" alt="Aerial 3 market context" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.30);"></div>
+        <span class="frame-label">F50%</span>
+        <!-- VO market context beat, no text -->
+      </div>
+      <!-- END -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175719779563000000-o.jpg" alt="Aerial end" loading="lazy">
+        <div class="scrim" style="background:rgba(10,26,46,0.62);"></div>
+        <span class="frame-label">End</span>
+        <!-- Matt headshot + Jax corner -->
+        <div style="position:absolute;top:26px;left:50%;transform:translateX(-50%);z-index:22;text-align:center;pointer-events:none;">
+          <img src="../assets/team/matt-ryan.jpg" alt="Matt Ryan" style="width:62px;height:62px;border-radius:50%;object-fit:cover;border:2px solid var(--rr-sand);position:static;">
+          <div style="font-family:'Geist',sans-serif;font-size:11px;font-weight:600;color:#fff;margin-top:6px;letter-spacing:0.04em;">Matt Ryan</div>
+          <div style="font-family:'Geist',sans-serif;font-size:10px;color:rgba(255,255,255,0.65);letter-spacing:0.06em;">541.213.6706</div>
+        </div>
+        <img src="../assets/brand/blue-dog.png" alt="Jax" style="position:absolute;bottom:76px;right:10px;width:54px;object-fit:contain;z-index:25;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4));">
+        <div class="stat-strip">
+          <div class="price-line">$1,225,000</div>
+          <div class="detail-line">3 BD · 3 BA · 2,325 SQFT · Tumalo</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="use-case">Use: Pet-friendly · family · rural properties · Jax fan engagement</p>
+  </article>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <!-- V10: POSTCARD -->
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <article class="template-card">
+    <div class="card-top">
+      <p class="template-id">V10</p>
+      <h2 class="template-name">Postcard</h2>
+      <p class="template-desc">Heritage/editorial. Sepia warm. Built-year stamp. Poetic VO.</p>
+      <p class="template-meta">
+        <span class="stars">★★★★</span> &nbsp;·&nbsp; Pacing 2.5–3.5s &nbsp;·&nbsp; Music: solo acoustic &nbsp;·&nbsp; VO: poetic
+      </p>
+    </div>
+
+    <div class="storyboard-row">
+      <!-- F0 -->
+      <div class="frame" style="background:#1a1208;">
+        <div style="position:absolute;inset:0;background:url('../assets/brand/scene-water-pageant.png') center/cover no-repeat;opacity:0.12;"></div>
+        <span class="frame-label" style="color:rgba(250,248,244,0.4);">F0 · hook</span>
+        <!-- Film grain + letter stamp -->
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:5;"></div>
+        <div class="center-overlay" style="z-index:20;">
+          <div style="font-family:'Azo Sans',sans-serif;font-size:10px;letter-spacing:0.24em;color:rgba(250,248,244,0.5);text-transform:uppercase;margin-bottom:10px;">Est.</div>
+          <div style="font-family:'Amboqia Boriango',serif;font-size:42px;color:var(--rr-cream);letter-spacing:0.02em;font-variant-numeric:tabular-nums;">1995</div>
+        </div>
+      </div>
+      <!-- F25 -->
+      <div class="frame cream-card" style="border:1px solid var(--rr-sand);">
+        <span class="frame-label" style="color:var(--rr-navy);opacity:0.4;">F25%</span>
+        <div class="center-overlay">
+          <div style="font-family:'Azo Sans',sans-serif;font-size:13px;letter-spacing:0.22em;text-transform:uppercase;color:var(--rr-navy);margin-bottom:8px;">TUMALO</div>
+          <div style="width:48px;height:1px;background:var(--rr-navy);opacity:0.25;margin:0 auto 10px;"></div>
+          <div style="font-family:'Azo Sans',sans-serif;font-size:10px;letter-spacing:0.20em;text-transform:uppercase;color:var(--rr-navy);opacity:0.6;">BEND, OREGON</div>
+        </div>
+      </div>
+      <!-- F50 -->
+      <div class="frame">
+        <img src="https://cdn.resize.sparkplatform.com/ore/1024x768/true/20260304175725529629000000-o.jpg" alt="Living sepia" loading="lazy" class="sepia">
+        <div class="scrim" style="background:rgba(30,20,5,0.30);"></div>
+        <span class="frame-label">F50%</span>
+        <!-- sepia heritage texture, no text -->
+      </div>
+      <!-- END -->
+      <div class="frame cream-card">
+        <span class="frame-label" style="color:var(--rr-navy);opacity:0.4;">End</span>
+        <div style="position:absolute;inset:0;background:url('../assets/brand/scene-water-pageant.png') center/cover no-repeat;opacity:0.06;pointer-events:none;"></div>
+        <div class="center-overlay" style="z-index:20;">
+          <div style="font-family:'Amboqia Boriango',serif;font-size:28px;color:var(--rr-navy);letter-spacing:-0.01em;font-variant-numeric:tabular-nums;line-height:1.1;">$1,225,000</div>
+          <div style="width:40px;height:1px;background:var(--rr-navy);opacity:0.2;margin:14px auto;"></div>
+          <img src="../assets/brand/logo-blue.png" alt="Ryan Realty" style="width:88px;height:auto;position:static;object-fit:contain;opacity:0.85;">
+        </div>
+      </div>
+    </div>
+
+    <p class="use-case">Use: Historic homes · character properties · Tumalo lifestyle · print-age buyers</p>
+  </article>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="page-footer">
+  <span>Ryan Realty · Design System v2 · Video Template Picker</span>
+  <span>10 templates · Single-column layout</span>
+</footer>
+
+</body>
+</html>

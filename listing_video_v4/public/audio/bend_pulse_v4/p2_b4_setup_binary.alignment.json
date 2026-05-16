@@ -1,0 +1,154 @@
+{
+  "words": [
+    {
+      "text": "One",
+      "startSec": 0.14,
+      "endSec": 0.259
+    },
+    {
+      "text": "",
+      "startSec": 0.259,
+      "endSec": 0.299
+    },
+    {
+      "text": "councilor",
+      "startSec": 0.299,
+      "endSec": 0.779
+    },
+    {
+      "text": "",
+      "startSec": 0.779,
+      "endSec": 0.799
+    },
+    {
+      "text": "pushed",
+      "startSec": 0.799,
+      "endSec": 1.1
+    },
+    {
+      "text": "",
+      "startSec": 1.1,
+      "endSec": 1.12
+    },
+    {
+      "text": "back",
+      "startSec": 1.12,
+      "endSec": 1.399
+    },
+    {
+      "text": "",
+      "startSec": 1.399,
+      "endSec": 1.5
+    },
+    {
+      "text": "hard",
+      "startSec": 1.5,
+      "endSec": 2.059
+    },
+    {
+      "text": "",
+      "startSec": 2.059,
+      "endSec": 2.099
+    },
+    {
+      "text": "on",
+      "startSec": 2.099,
+      "endSec": 2.22
+    },
+    {
+      "text": "",
+      "startSec": 2.22,
+      "endSec": 2.24
+    },
+    {
+      "text": "how",
+      "startSec": 2.24,
+      "endSec": 2.379
+    },
+    {
+      "text": "",
+      "startSec": 2.379,
+      "endSec": 2.399
+    },
+    {
+      "text": "the",
+      "startSec": 2.399,
+      "endSec": 2.48
+    },
+    {
+      "text": "",
+      "startSec": 2.48,
+      "endSec": 2.519
+    },
+    {
+      "text": "conversation",
+      "startSec": 2.519,
+      "endSec": 3.24
+    },
+    {
+      "text": "",
+      "startSec": 3.24,
+      "endSec": 3.279
+    },
+    {
+      "text": "has",
+      "startSec": 3.279,
+      "endSec": 3.399
+    },
+    {
+      "text": "",
+      "startSec": 3.399,
+      "endSec": 3.439
+    },
+    {
+      "text": "been",
+      "startSec": 3.439,
+      "endSec": 3.659
+    },
+    {
+      "text": "",
+      "startSec": 3.659,
+      "endSec": 3.679
+    },
+    {
+      "text": "framed",
+      "startSec": 3.679,
+      "endSec": 3.98
+    },
+    {
+      "text": "",
+      "startSec": 3.98,
+      "endSec": 4.019
+    },
+    {
+      "text": "in",
+      "startSec": 4.019,
+      "endSec": 4.099
+    },
+    {
+      "text": "",
+      "startSec": 4.099,
+      "endSec": 4.1
+    },
+    {
+      "text": "the",
+      "startSec": 4.1,
+      "endSec": 4.199
+    },
+    {
+      "text": "",
+      "startSec": 4.199,
+      "endSec": 4.239
+    },
+    {
+      "text": "community.",
+      "startSec": 4.239,
+      "endSec": 4.759
+    }
+  ],
+  "raw_keys": [
+    "characters",
+    "words",
+    "loss"
+  ]
+}

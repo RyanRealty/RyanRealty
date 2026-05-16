@@ -1,0 +1,69 @@
+{
+  "words": [
+    {
+      "text": "Ignition",
+      "startSec": 0.079,
+      "endSec": 0.479
+    },
+    {
+      "text": "",
+      "startSec": 0.479,
+      "endSec": 0.56
+    },
+    {
+      "text": "resistant",
+      "startSec": 0.56,
+      "endSec": 1.0
+    },
+    {
+      "text": "",
+      "startSec": 1.0,
+      "endSec": 1.039
+    },
+    {
+      "text": "siding.",
+      "startSec": 1.039,
+      "endSec": 1.74
+    },
+    {
+      "text": "",
+      "startSec": 1.74,
+      "endSec": 1.759
+    },
+    {
+      "text": "Hardened",
+      "startSec": 1.759,
+      "endSec": 2.079
+    },
+    {
+      "text": "",
+      "startSec": 2.079,
+      "endSec": 2.119
+    },
+    {
+      "text": "roofing.",
+      "startSec": 2.119,
+      "endSec": 2.48
+    },
+    {
+      "text": "",
+      "startSec": 2.48,
+      "endSec": 2.899
+    },
+    {
+      "text": "Sealed",
+      "startSec": 2.899,
+      "endSec": 3.139
+    },
+    {
+      "text": "",
+      "startSec": 3.139,
+      "endSec": 3.179
+    },
+    {
+      "text": "vents.",
+      "startSec": 3.179,
+      "endSec": 3.519
+    }
+  ]
+}
