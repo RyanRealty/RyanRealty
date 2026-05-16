@@ -208,7 +208,7 @@ Every page is purposeful and self-contained. Never split a single conceptual sec
 
 1. **One section per page.** A page = one purpose with a single H2 / SUBJECT PROPERTY / WHERE THE COMPS SIT subhead. If the section's narrative + tables + visuals can't fit one page, split it into two purposeful pages with distinct subheads (e.g., "Pricing strategy" → page A with the methods + range; page B with outlier explanation + verification trace). Never overflow.
 
-2. **Footer + header are sacrosanct.** Body content lives in the inner box only. For 8.5×11" letter at 96 DPI = 1056 px tall × 816 px wide with 81.6 px padding top/bottom, the usable inner region is approximately **y = 60–976 px** (top = below the logo + breadcrumb line; bottom = above the page-N-of-N + brokerage name footer line). No element's bounding-box bottom may exceed y = 976 relative to its containing `.page`.
+2. **Footer + header are sacrosanct.** Body content lives in the inner box only. For 8.5×11" letter at 96 DPI = 1056 px tall × 816 px wide, the usable inner region is bounded by the page padding (top) and the rendered footer's top edge (bottom). The footer band typically sits at y ≈ 1025 relative to its containing `.page`. **The bleed-check authority is the rendered footer's top edge, not a hardcoded constant** — page-layout styles drift across CMAs, so always read the actual footer position at QA time. No non-footer / non-header descendant's bounding-box bottom may exceed `footerTop − 4` relative to its containing `.page`.
 
 3. **Width tolerance: zero.** Body content stays within the page padding box. Horizontal overflow gets cropped by `overflow: hidden` on the page container, which silently truncates and looks broken in PDF. Keep all column widths summed under the inner-box width (816 − 64 padding = ~752 px usable).
 
@@ -223,18 +223,30 @@ Every page is purposeful and self-contained. Never split a single conceptual sec
 After build, run this in a headless browser load of the HTML:
 
 ```javascript
+// Run inside a headless browser load (puppeteer / playwright) of the rendered CMA HTML.
+// Reads each page's actual footer position rather than trusting a hardcoded ceiling,
+// and skips footer/header descendants so we don't flag the footer against itself.
 const pages = document.querySelectorAll('.page')
 const bleed = []
 pages.forEach((p, i) => {
-  const top = p.getBoundingClientRect().top
+  const pageTop = p.getBoundingClientRect().top
+  const footer = p.querySelector('.pg-footer, footer')
+  const header = p.querySelector('.pg-header, header')
+  // Fall back to 1056 - 31 (typical footer band height) if the page somehow has no footer.
+  const footerTop = footer ? footer.getBoundingClientRect().top - pageTop : 1025
   p.querySelectorAll('*').forEach((el) => {
+    // Don't flag footers/headers (or their descendants) against themselves.
+    if (el.tagName === 'FOOTER' || el.closest('.pg-footer, footer')) return
+    if (el.tagName === 'HEADER' || el.closest('.pg-header, header')) return
     const r = el.getBoundingClientRect()
-    if (r.bottom - top > 976) {
+    const bottom = r.bottom - pageTop
+    if (bottom > footerTop - 4) {
       bleed.push({
         page: i + 1,
         tag: el.tagName,
-        text: el.textContent.trim().slice(0, 60),
-        overshoot: Math.round(r.bottom - top - 976),
+        text: (el.textContent || '').trim().slice(0, 60),
+        overshoot: Math.round(bottom - (footerTop - 4)),
+        footerTop: Math.round(footerTop),
       })
     }
   })
@@ -244,7 +256,7 @@ if (bleed.length > 0) throw new Error(`Page-fit bleed: ${JSON.stringify(bleed)}`
 
 If `bleed.length > 0`, the CMA is NOT ready. Either split the offending section across N+2 (per the layout table) or trim the narrative. Re-run until zero bleed. Only then surface to Matt.
 
-Note: the inner box ranges slightly between the exemplar's `1056` letter portrait and `1100` legal-style stretches. The `976` ceiling is calibrated for 8.5×11" portrait. If a per-CMA stylesheet uses different page dimensions, recompute the ceiling: `pageHeightPx - 80` (footer band).
+Note: this check is **self-calibrating** — it reads each page's actual footer position rather than assuming a fixed ceiling, so it works whether the per-CMA stylesheet uses 1056 px letter portrait, 1100 px legal stretch, or anything in between. The 4 px buffer below `footerTop` is the minimum gap between body content and the footer band; widen it to 8–12 px if you want stricter visual breathing room.
 
 **Step 8 — Build the comp location map endpoint**
 

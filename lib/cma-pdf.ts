@@ -35,7 +35,7 @@ async function getBrowser(): Promise<Browser> {
   if (isVercel) {
     return puppeteer.launch({
       args: chromium.args,
-      defaultViewport: { width: 1024, height: 1320, deviceScaleFactor: 2 },
+      defaultViewport: { width: 1024, height: 1320, deviceScaleFactor: 1 },
       executablePath: await chromium.executablePath(CHROMIUM_REMOTE),
       headless: true,
     })
@@ -144,7 +144,7 @@ export async function renderCmaPdfBuffer(slug: string): Promise<RenderCmaPdfResu
   try {
     browser = await getBrowser()
     const page = await browser.newPage()
-    await page.setViewport({ width: 1024, height: 1320, deviceScaleFactor: 2 })
+    await page.setViewport({ width: 1024, height: 1320, deviceScaleFactor: 1 })
     await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 45_000 })
     await page.evaluate(async () => {
       const imgs = Array.from(document.images)
