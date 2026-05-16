@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.214.8 (2026-05-16)
+
+### Bug Fixes
+- fix(cma): drop Tumalo CMA image variants to clear 25 MB PDF cap
+
+---
+
+
 ## v1.214.7 (2026-05-16)
 
 ### Bug Fixes
