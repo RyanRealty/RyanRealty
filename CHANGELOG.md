@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.214.6 (2026-05-16)
+
+### Bug Fixes
+- fix(cma): layout discipline — one-page sections, no bleed; split Tumalo pricing across 2 pages
+
+---
+
+
 ## v1.214.5 (2026-05-16)
 
 ### Bug Fixes
