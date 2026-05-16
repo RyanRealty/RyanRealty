@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.214.5 (2026-05-16)
+
+### Bug Fixes
+- fix(cron): refresh-market-stats now iterates neighborhoods too
+
+---
+
+
 ## v1.214.4 (2026-05-16)
 
 ### Other
