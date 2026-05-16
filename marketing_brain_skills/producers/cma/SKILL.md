@@ -21,7 +21,20 @@ action_types:
 
 **Primary deliverable format:** PDF, generated server-side at `/api/cma/[slug]/pdf` via puppeteer-core + @sparticuz/chromium-min. The PDF uses the same Chrome engine that displays the HTML preview, so formatting is identical — no print-CSS surprises. The HTML is the source-of-truth, but anything that goes to a client (or to a broker who's signing it) is delivered as PDF. Append `?download=1` to force a download. Append `?info=1` to get a JSON metadata response (size in bytes, finalized-flag) without the binary body.
 
-**HARD CAP — 25 MB attachment limit (non-negotiable):** Every CMA PDF must come in under **25 MB** so it can be attached to a Gmail/Outlook email without compression or external links. Both `/api/cma/[slug]/pdf` and `/api/cma/[slug]/email` enforce this and reject with HTTP 413 if the render exceeds the cap. The cap is set by `MAX_PDF_BYTES = 25 * 1024 * 1024` in `app/api/cma/[slug]/pdf/route.ts`. To stay under: cover/flyer hero photos at **1280×960** Spark CDN variant, comp grid + flyer-thumbnail photos at **800×600**, comp-summary card photos at **640×480** or smaller. Spark CDN supports `320×240`, `640×480`, `800×600`, `1024×768`, `1280×960`, `1600×1200` — drop one tier if a build comes back over 25 MB. Target landing: 5–10 MB.
+**HARD CAP — 25 MB attachment limit (non-negotiable):** Every CMA PDF must come in under **25 MB** so it can be attached to a Gmail/Outlook email without compression or external links. Both `/api/cma/[slug]/pdf` and `/api/cma/[slug]/email` enforce this and reject with HTTP 413 if the render exceeds the cap. The cap is set by `MAX_PDF_BYTES = 25 * 1024 * 1024` in `app/api/cma/[slug]/pdf/route.ts`.
+
+Puppeteer's PDF backend re-encodes every image during render; the empirical bloat ratio is ~5× the raw image bytes per the Tumalo CMA (5.6 MB raw → 28 MB PDF). To stay under 25 MB the raw image budget is roughly **~5 MB total**, which sets the default tiers:
+
+| Use | Spark CDN variant | Displayed size | Notes |
+|---|---|---|---|
+| Cover hero | `800×600` | full-bleed at 100% page width | drop to `640×480` for >8 comps |
+| Per-flyer hero | `800×600` | full-bleed at 100% page width | same |
+| Comp-grid thumbnails (5-up) | `320×240` | 58 px tall × ~140 px wide | 640×480 is ~7× oversize for this display |
+| Per-flyer photo grid (3-up) | `320×240` | 91 px tall × ~220 px wide | same |
+| Subject gallery grid | `320×240` | 91 px tall | same |
+| Map | Google Static API at 640×640 | full-width body block | inlined as data URI by the PDF render |
+
+Spark CDN supports `320×240`, `640×480`, `800×600`, `1024×768`, `1280×960`, `1600×1200`. If a build still comes back over 25 MB, **drop one tier across all gallery uses first** (320 is the floor — any smaller looks visibly degraded in PDF), then drop heroes one tier. Target landing: 5–14 MB.
 
 **Repository lookup:** Every finalized CMA appears at `/admin/cmas` — the canonical place to find old CMAs, filter by broker or client, and re-open the PDF or HTML for any row.
 
@@ -291,7 +304,7 @@ The subject row at the top of the comp summary table should populate List with t
 - Map renders successfully (hit `/api/maps/cma-<slug>` and confirm 200)
 - All flyer hero photos load (HEAD-check each Spark CDN URL)
 - Page numbers in footers correct (no `X of Y` mismatches)
-- **PDF under 25 MB** — hit `/api/cma/<slug>/pdf?info=1` and confirm `under_attachment_cap: true`. If over, drop the next image tier (1280→1024 heroes, or 800→640 thumbs) and re-render.
+- **PDF under 25 MB** — hit `/api/cma/<slug>/pdf?info=1` and confirm `under_attachment_cap: true`. If over, drop the next image tier (heroes `800→640` or gallery `320→240` if any are still at a larger variant) and re-render. The Tumalo CMA landed at ~12 MB with 800×600 heroes and 320×240 thumbnails.
 
 **Step 12 — Write citations.json**
 
