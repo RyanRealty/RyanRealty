@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.215.0 (2026-05-17)
+
+### Features
+- feat(market-stats): route resort communities to neighborhood-level cache
+
+---
+
+
 ## v1.214.11 (2026-05-17)
 
 ### Maintenance
