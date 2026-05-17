@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.216.1 (2026-05-17)
+
+### Maintenance
+- docs(fub): UI setup runbook + route CLAUDE.md and ops-fub-crm to new workflow
+
+---
+
+
 ## v1.216.0 (2026-05-17)
 
 ### Features
