@@ -64,16 +64,16 @@ function tagsToAdd(person) {
   return Array.from(toAdd)
 }
 
-async function* iteratePeopleWithSellerTags() {
-  // FUB doesn't have a top-level tags endpoint, so we paginate all people
-  // and filter client-side. 13k people / 100 page = ~130 pages.
-  let offset = 0
-  const PAGE = 100
+async function* iteratePeopleByLegacyTag(tagName) {
+  // FUB supports tag filtering via /people?tags=<value>. Pagination via
+  // ?next=<cursor> from _metadata. ~3,481 people for Seller; we paginate at
+  // 100/page for ~35 pages.
+  let nextUrl = `/people?tags=${encodeURIComponent(tagName)}&limit=100&fields=id,name,tags`
   let seen = 0
-  while (true) {
-    const { status, json } = await fub('GET', `/people?limit=${PAGE}&offset=${offset}&fields=id,name,tags`)
+  while (nextUrl) {
+    const { status, json } = await fub('GET', nextUrl)
     if (status !== 200) {
-      console.error(`Page failed at offset ${offset}: status ${status}`)
+      console.error(`Page failed: status ${status}`)
       return
     }
     const people = json?.people || []
@@ -83,10 +83,23 @@ async function* iteratePeopleWithSellerTags() {
       seen++
       if (seen >= LIMIT) return
     }
-    if (people.length < PAGE) return
-    offset += PAGE
-    // Be friendly to FUB rate limits.
+    // Next cursor — strip the base URL prefix.
+    const next = json._metadata?.nextLink
+    nextUrl = next ? next.replace('https://api.followupboss.com/v1', '') : null
     await new Promise(r => setTimeout(r, 100))
+  }
+}
+
+async function* iterateAllSellerTaggedPeople() {
+  // Iterate across each legacy tag rule's match value, deduping by person id.
+  const seen = new Set()
+  for (const rule of TAG_RULES) {
+    for await (const p of iteratePeopleByLegacyTag(rule.match)) {
+      if (seen.has(p.id)) continue
+      seen.add(p.id)
+      yield p
+      if (seen.size >= LIMIT) return
+    }
   }
 }
 
@@ -104,7 +117,7 @@ async function main() {
   }
   const samples = []
 
-  for await (const person of iteratePeopleWithSellerTags()) {
+  for await (const person of iterateAllSellerTaggedPeople()) {
     stats.scanned++
     if (stats.scanned % 500 === 0) {
       console.log(`  scanned ${stats.scanned}…`)
