@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.217.0 (2026-05-17)
+
+### Features
+- feat(fub): execute the full seller workflow build via API
+
+---
+
+
 ## v1.216.5 (2026-05-17)
 
 ### Bug Fixes
