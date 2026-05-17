@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.216.0 (2026-05-17)
+
+### Features
+- feat(fub): simplified seller workflow — phase 1+2 (cleanup, code, schema)
+
+---
+
+
 ## v1.215.3 (2026-05-17)
 
 ### Maintenance
