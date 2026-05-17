@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.215.1 (2026-05-17)
+
+### Maintenance
+- docs: canonical agent reference for the database — one file, read first
+
+---
+
+
 ## v1.215.0 (2026-05-17)
 
 ### Features
