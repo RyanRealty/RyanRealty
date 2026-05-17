@@ -36,6 +36,7 @@ const ACTIVITY_NEW_LISTING = 'new_listing'
 const ACTIVITY_PRICE_DROP = 'price_drop'
 const ACTIVITY_STATUS_PENDING = 'status_pending'
 const ACTIVITY_STATUS_CLOSED = 'status_closed'
+const ACTIVITY_STATUS_ACTIVE = 'status_active'
 
 function isLikelyVideoUrl(url: string): boolean {
   const u = url.toLowerCase()
@@ -650,6 +651,7 @@ export async function syncSparkListingsDelta(options?: {
   let currentPage = 1
   let totalPages = 1
   const deltaListings: Array<{ key: string; status: string | null }> = []
+  const terminalTransitionKeys = new Set<string>()
 
   try {
     while (currentPage <= totalPages && pagesProcessed < maxPages) {
@@ -718,6 +720,8 @@ export async function syncSparkListingsDelta(options?: {
         const status = (row.StandardStatus ?? '').toString().toLowerCase()
         const isPending = /pending/i.test(status)
         const isClosed = /closed/i.test(status)
+        const isActive = /active/i.test(status) && !isPending
+        const isTerminalNow = isTerminalStatus(status)
         const newPrice = typeof row.ListPrice === 'number' && !Number.isNaN(row.ListPrice) ? row.ListPrice : null
 
         if (!existing) {
@@ -728,10 +732,13 @@ export async function syncSparkListingsDelta(options?: {
             payload: { ListNumber: listNumber, City: row.City, SubdivisionName: row.SubdivisionName },
           })
           if (!evErr) eventsEmitted++
+          if (isTerminalNow && listingKey) terminalTransitionKeys.add(listingKey)
         } else {
           const oldStatus = (existing.StandardStatus ?? '').toString().toLowerCase()
           const oldPending = /pending/i.test(oldStatus)
           const oldClosed = /closed/i.test(oldStatus)
+          const oldActive = /active/i.test(oldStatus) && !oldPending
+          const oldTerminal = isTerminalStatus(oldStatus)
           const oldPrice = existing.ListPrice != null && !Number.isNaN(Number(existing.ListPrice)) ? Number(existing.ListPrice) : null
           if (!oldPending && isPending) {
             const { error: evErr } = await supabase.from('activity_events').insert({
@@ -752,6 +759,15 @@ export async function syncSparkListingsDelta(options?: {
             if (!evErr) eventsEmitted++
             await supabase.from('listings').update({ media_finalized: true }).eq('ListNumber', listNumber)
           }
+          if (!oldActive && isActive) {
+            const { error: evErr } = await supabase.from('activity_events').insert({
+              listing_key: listingKey,
+              event_type: ACTIVITY_STATUS_ACTIVE,
+              event_at: nowIso,
+              payload: { ListNumber: listNumber, previous_status: oldStatus || null },
+            })
+            if (!evErr) eventsEmitted++
+          }
           if (newPrice != null && oldPrice != null && newPrice < oldPrice) {
             const { error: evErr } = await supabase.from('activity_events').insert({
               listing_key: listingKey,
@@ -761,6 +777,9 @@ export async function syncSparkListingsDelta(options?: {
             })
             if (!evErr) eventsEmitted++
           }
+          if (!oldTerminal && isTerminalNow && listingKey) {
+            terminalTransitionKeys.add(listingKey)
+          }
         }
       }
 
@@ -769,14 +788,15 @@ export async function syncSparkListingsDelta(options?: {
       currentPage += 1
     }
 
-    // --- History refresh for delta-synced listings ---
-    // Fetch history for each listing that was just updated, so listing_history stays current.
-    // This ensures the listing detail page always has timeline data for active listings.
-    if (deltaListings.length > 0 && accessToken) {
+    // --- Terminal-transition snapshot ---
+    // Only listings that JUST transitioned to terminal (Closed/Expired/Withdrawn/Canceled) get the
+    // full snapshot: history pull + aux hydration (Photos/Videos/OpenHouses/etc). Active/pending
+    // listings already have their status/price changes captured via activity_events above — they
+    // don't need a fresh history fetch every 10 min.
+    if (terminalTransitionKeys.size > 0 && accessToken) {
       const HISTORY_CONCURRENCY = 5
-      // Deduplicate by key, keep last status
       const byKey = new Map(deltaListings.map(d => [d.key, d.status]))
-      const uniqueKeys = [...byKey.keys()]
+      const uniqueKeys = [...terminalTransitionKeys]
       let keyIndex = 0
 
       const historyWorker = async () => {
@@ -1393,24 +1413,22 @@ export async function syncListingHistory(options?: {
 
       let items: Awaited<ReturnType<typeof fetchSparkListingHistory>>['items'] = []
       let hadSuccessfulHistoryFetch = false
+      // Try keys in order; accept the first OK response (including empty) and stop.
+      // Only fall through to the next key if the call errored entirely.
       for (const key of keysToTry) {
         const result = await fetchSparkListingHistory(accessToken, key)
-        if (result.ok && result.partial !== true) hadSuccessfulHistoryFetch = true
-        if (result.ok && result.items.length > 0) {
-          items = result.items
-          break
-        }
-        if (result.ok) items = result.items
+        if (!result.ok) continue
+        if (result.partial !== true) hadSuccessfulHistoryFetch = true
+        items = result.items
+        break
       }
       if (items.length === 0) {
         for (const key of keysToTry) {
           const result = await fetchSparkPriceHistory(accessToken, key)
-          if (result.ok && result.partial !== true) hadSuccessfulHistoryFetch = true
-          if (result.ok && result.items.length > 0) {
-            items = result.items
-            break
-          }
-          if (result.ok) items = result.items
+          if (!result.ok) continue
+          if (result.partial !== true) hadSuccessfulHistoryFetch = true
+          items = result.items
+          break
         }
       }
 
