@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.216.3 (2026-05-17)
+
+### Maintenance
+- perf(spark): cut redundant Spark API calls in delta + terminal-history syncs (#21)
+
+---
+
+
 ## v1.216.2 (2026-05-17)
 
 ### Other
