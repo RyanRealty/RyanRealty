@@ -29,9 +29,27 @@ configuration in FUB, not by this producer). Does NOT create new leads (leads
 are created by the lead-capture paths in `docs/MARKETING_LEAD_FLOW.md`).
 
 **Status:** Canonical
-**Locked:** 2026-05-13
+**Locked:** 2026-05-13 · **Updated:** 2026-05-17 (canonical seller workflow added)
 **Exemplar output:** Action row status transitions + `executor_response` jsonb in
 `marketing_brain_actions`.
+
+---
+
+## 0. The canonical seller workflow (2026-05-17 lock)
+
+**Read FIRST when working on anything seller-touching:**
+
+- **`docs/FUB_SELLER_WORKFLOW_2026-05-17.md`** — the locked spec. Defines the canonical kebab-case namespaced tag schema (`audience:seller`, `seller:{hot|warm|nurture|long-nurture|recovery|in-conversation|do-not-contact}`, `source:*`, `broker:*`), the 10-touch cadence over 60 days, the round-robin assignment rule, the 6 custom fields, and the architectural constraint (FUB blocks send-API for integrations — auto messages fire from FUB's own action-plan engine).
+- **`docs/FUB_AUDIT_2026-05-17.md`** — read-only audit that drove the redesign.
+- **`docs/FUB_UI_SETUP_RUNBOOK.md`** — Matt's one-time FUB UI setup runbook.
+
+**Anytime you receive an `ops:fub_*` action involving sellers:**
+
+1. Use only canonical tags (no Title Case `Seller`, no legacy `hot-seller` kebab without namespace, no `auto:seller-seq:*`). The full schema is in `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` §4.
+2. The master action plan name is `Seller Lead — Master Workflow` — do not enroll in any legacy `*KTS AP …` plan or `Seller - Home Evaluation Request` (id 5).
+3. Adding `seller:in-conversation` pauses the workflow. Adding `seller:do-not-contact` stops it.
+4. Pause-on-reply runs every 15 min via `/api/cron/seller-workflow-pause` — do not duplicate that logic.
+5. Round-robin assignment lives in `app/lp/seller-home-value/actions.ts` + Supabase `marketing_assignments` table — do not write your own assignment logic in this producer.
 
 ---
 
