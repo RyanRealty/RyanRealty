@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.215.2 (2026-05-17)
+
+### Maintenance
+- docs(fub): audit FUB instance + lock simplified seller workflow
+
+---
+
+
 ## v1.215.1 (2026-05-17)
 
 ### Maintenance
