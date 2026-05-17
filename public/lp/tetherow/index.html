@@ -196,10 +196,19 @@
     .ourwork-text ul { margin: 18px 0; padding-left: 20px; }
     .ourwork-text li { font-size: 15px; line-height: 1.65; margin-bottom: 8px; }
     .ourwork-credentials { background: var(--rr-cream-dim); border-radius: 14px; padding: 32px; }
-    .ourwork-cred-row { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--rr-navy-08); }
+    .ourwork-cred-row { display: flex; align-items: center; gap: 22px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--rr-navy-08); }
     .ourwork-cred-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .ourwork-cred-img { width: 80px; height: 80px; border-radius: 50%; background: var(--rr-navy); background-size: cover; background-position: center; flex-shrink: 0; }
-    .ourwork-cred-img.matt { background-image: url('/images/brokers/ryan-matt.png'); background-size: cover; background-color: var(--rr-cream-dim); }
+    .ourwork-cred-img {
+      width: 96px; height: 128px;
+      border-radius: 10px;
+      background: var(--rr-white);
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center bottom;
+      flex-shrink: 0;
+      box-shadow: 0 1px 2px rgba(16, 39, 66, 0.06);
+    }
+    .ourwork-cred-img.matt { background-image: url('/images/brokers/ryan-matt.png'); }
     .ourwork-cred-text strong { font-family: var(--rr-font-display); font-size: 22px; font-weight: 600; color: var(--rr-navy); display: block; margin-bottom: 4px; line-height: 1.1; }
     .ourwork-cred-text span { font-size: 13.5px; color: var(--rr-muted); display: block; line-height: 1.5; }
 
@@ -314,7 +323,7 @@
     <div class="section-head">
       <div class="section-eyebrow">Live market pulse</div>
       <h2>Inventory and absorption.</h2>
-      <p>Computed against the Tetherow polygon today. Pulled from the Oregon RMLS feed at the timestamps shown at the bottom of the page.</p>
+      <p>Pulled from the Oregon RMLS feed at the timestamps shown at the bottom of the page.</p>
     </div>
 
     <div class="kpi-grid">
@@ -789,7 +798,7 @@
         <span class="pipeline-status tracking">Tracking</span>
         <div>
           <h4>The hotel + F&B sale (JLL listing, ongoing 16 months)</h4>
-          <p>No public confirmation of a closed buyer as of May 2026. A new operator could trigger a brand refresh, rate-card change, F&B rebrand, or expansion application — any of which would move the comp set inside the polygon.</p>
+          <p>No public confirmation of a closed buyer as of May 2026. A new operator could trigger a brand refresh, rate-card change, F&B rebrand, or expansion application — any of which would move the Tetherow comp set.</p>
           <div class="source">Source: <a href="https://www.bendsource.com/business/tetherow-resort-owners-announce-intention-to-sell-hotel-food-beverage-operations-and-vacation-rentals-property-management-company-20526506">Source Weekly</a></div>
         </div>
       </div>
@@ -805,7 +814,7 @@
         <span class="pipeline-status tracking">Tracking</span>
         <div>
           <h4>Bend CityView planning portal · Tetherow parcels</h4>
-          <p>Active building permit pulls and any pending master-plan amendment applications. We monitor by parcel tax-lot and Skyline Ranch Road keyword on a 30-day cadence.</p>
+          <p>Active building permit pulls and any pending master-plan amendment applications.</p>
           <div class="source">Source: <a href="https://cityview.ci.bend.or.us/Portal/Planning/Locator">Bend CityView Planning Locator</a></div>
         </div>
       </div>
@@ -834,7 +843,7 @@
         <p>Your home is a David McLay Kidd home, in his hometown community, on a fescue course that jumped 25 spots on the Golf Digest list, in a master plan whose owner is recapitalizing the club asset. Every line of that matters when a buyer is evaluating $1.8M to $4M.</p>
         <p>What goes into the listing:</p>
         <ul>
-          <li>A CMA computed against the Tetherow polygon — not "comparable Bend homes" — anchored to the 27 closings of the past 12 months and the sale-to-list pattern in your sub-neighborhood.</li>
+          <li>A CMA built on Tetherow comps and the sale-to-list pattern in your sub-neighborhood, not citywide comparables.</li>
           <li>Copy written to the Tetherow buyer profile: the 7-minute drive to Old Mill, the McLay Kidd hometown angle, the Conde Nast pedigree, the club reinvestment story.</li>
           <li>HOA disclosure-pack diligence: reserve study summary, pending special assessments, the right CC&R sub-section references for your sub-neighborhood.</li>
           <li>Staging keyed to your sub-neighborhood's architectural pattern. Tartan Druim's John Muir plans don't show the same as Triple Knot's townhome footprint.</li>
@@ -874,7 +883,7 @@
     <div class="cma-grid">
       <div class="cma-pitch">
         <h2>A Tetherow CMA. Free. No pressure. No follow-up unless you ask.</h2>
-        <p>A 12-page comparative market analysis built against your sub-neighborhood, your floor plan range, your view category, and your HOA tier. Anchored to the 27 closings inside the Tetherow polygon over the past 365 days.</p>
+        <p>A 12-page comparative market analysis built against your sub-neighborhood, your floor plan range, your view category, and your HOA tier. Anchored to the 27 Tetherow closings of the past 365 days.</p>
         <ul>
           <li>Signed by a licensed Oregon principal broker</li>
           <li>Anchored to Tetherow closings, not citywide medians</li>
@@ -913,7 +922,7 @@
     <div class="methodology">
       <strong>Every figure on this page traces to a verified row in our database or a public source URL.</strong>
       <ul>
-        <li><strong>Live market pulse</strong> — Computed on the authoritative Tetherow neighborhood polygon (City of Bend GIS + Deschutes County GIS recorded sub-plats). PostGIS spatial join against Oregon RMLS feed via <code>market_stats_cache</code> rolling-365-day window, pulled 2026-05-16. Methodology version <code>v3-2026-05-07</code>.</li>
+        <li><strong>Live market pulse</strong> — Computed against the City of Bend GIS Tetherow boundary and the Deschutes County recorded sub-plats. Oregon RMLS feed via <code>market_stats_cache</code> rolling-365-day window, pulled 2026-05-16. Methodology <code>v3-2026-05-07</code>.</li>
         <li><strong>HOA dues + management</strong> — <a href="https://www.tetherowowners.com/">Tetherow Owners Association</a>, verified May 2026. Master $366/quarter; sub-neighborhood schedule confirmed against the TOA neighborhood pages.</li>
         <li><strong>HOA board composition</strong> — Tetherow Owners Association website, May 2026.</li>
         <li><strong>Litigation history</strong> — Free <a href="https://www.courts.oregon.gov/services/online/pages/records-calendars.aspx">Oregon Judicial Department records search</a>, May 2026. Full clearance requires the OJCIN paid subscription.</li>
@@ -935,7 +944,7 @@
   <div class="container">
     <div>
       <div class="brand-name">Ryan Realty</div>
-      <div class="brand-detail">A Bend, Oregon brokerage operating under Matt Ryan's Principal Broker license. We sell homes, give honest market data, and never use the word "nestled."</div>
+      <div class="brand-detail">A Bend, Oregon brokerage operating under Matt Ryan's Principal Broker license.</div>
     </div>
     <div>
       <h4>Reach us</h4>
