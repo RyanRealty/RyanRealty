@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.218.1 (2026-05-17)
+
+### Maintenance
+- docs(fub): complete build summary — what's live + the one UI step left
+
+---
+
+
 ## v1.218.0 (2026-05-17)
 
 ### Features
