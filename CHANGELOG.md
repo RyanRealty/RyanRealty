@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.214.10 (2026-05-17)
+
+### Other
+- finalize(cma): 19496 Tumalo Reservoir → public/cmas/ (Matt approved)
+
+---
+
+
 ## v1.214.9 (2026-05-16)
 
 ### Maintenance
