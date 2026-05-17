@@ -134,3 +134,6 @@ public/proof/
 
 # FUB setup state — generated at runtime, contains live FUB resource ids
 .tmp_env/fub-setup/state/
+
+# FUB audit raw dumps — large, regenerable via .tmp_env/fub-audit/fub-audit.mjs
+.tmp_env/fub-audit/dump/
