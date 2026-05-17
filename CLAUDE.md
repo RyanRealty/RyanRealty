@@ -706,7 +706,9 @@ Durable cross-session notes live in **`.auto-memory/`** (same pattern as Cowork 
 
 ---
 
-## Supabase `listings` Schema — MANDATORY READ before any SQL
+## Supabase Database — MANDATORY READ before any SQL
+
+**Canonical reference: [docs/DATABASE_FOR_AI_AGENTS.md](docs/DATABASE_FOR_AI_AGENTS.md).** Read this BEFORE writing any SQL or building any market report. It covers every table grouped by purpose, the cache model (`market_pulse_live` 10-min freshness, `market_stats_cache` 6-hour freshness), the 14 resort communities + 14 Bend neighborhoods + city/region levels, the `listings` 800-field reality with mixed-case quoting rules, methodology versioning, slug formats per geo_type, and gotchas. The `data/resort-communities.json` registry is the source of truth for resort/area communities. Don't aggregate raw `listings` for market reports — use the cache.
 
 **Project ID:** `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform` — `dwvlophlbvvygjfxcrhm.supabase.co`).
 
