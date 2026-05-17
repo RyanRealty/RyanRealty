@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.216.5 (2026-05-17)
+
+### Bug Fixes
+- fix(tetherow lp): headshots on white bg, drop polygon jargon + remaining editorial language
+
+---
+
+
 ## v1.216.4 (2026-05-17)
 
 ### Other
