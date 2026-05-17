@@ -17,7 +17,12 @@ action_types:
 
 **Status:** Canonical
 **Locked:** 2026-05-14
-**Exemplar output:** `public/cmas/cma-21042-robin/cma.html` (the source HTML, when finalized) + `/api/cma/cma-21042-robin/pdf` (the primary deliverable: a server-rendered PDF). Draft lives at `public/drafts/cma-<slug>/cma.html` during creation. The 21042 Robin Ave CMA is the canonical exemplar; clone its structure for new CMAs.
+**Exemplar outputs (two — use the one that matches your situation):**
+
+- `public/cmas/cma-19496-tumalo-reservoir/cma.html` + `/api/cma/cma-19496-tumalo-reservoir/pdf` — **canonical exemplar for the current rules** (finalized 2026-05-17). Rural acreage subject, 5 closed comps via distance-based RPC, 13 pages with the N+1 / N+2 / Final pricing+rationale+disclosure split, layout-discipline-compliant (zero footer/header bleed), 10.66 MB PDF. Use this as the structural reference for any new CMA.
+- `public/cmas/cma-21042-robin/cma.html` + `/api/cma/cma-21042-robin/pdf` — earlier reference (Whispering Pines subdivision, 8 closed comps via SubdivisionName filter). Predates the layout discipline rules + the empirical image budget — useful for sub-division-based comp selection but the page-fit and image-tier work was solved later in the Tumalo build.
+
+Draft lives at `public/drafts/cma-<slug>/cma.html` during creation; moves to `public/cmas/<slug>/cma.html` on Matt's ship-it.
 
 **Primary deliverable format:** PDF, generated server-side at `/api/cma/[slug]/pdf` via puppeteer-core + @sparticuz/chromium-min. The PDF uses the same Chrome engine that displays the HTML preview, so formatting is identical — no print-CSS surprises. The HTML is the source-of-truth, but anything that goes to a client (or to a broker who's signing it) is delivered as PDF. Append `?download=1` to force a download. Append `?info=1` to get a JSON metadata response (size in bytes, finalized-flag) without the binary body.
 
@@ -493,8 +498,9 @@ The `measured` step for a CMA is light — 90 days after delivery, the `performa
 - READ: `listings`, `brokers`, `listing_history`, `status_history`, `price_history`
 - WRITE: `marketing_brain_actions` (status transitions), `cmas`, `cma_comps`
 
-**Exemplar:**
-- `public/cmas/cma-21042-robin/cma.html` — the 21042 Robin Ave CMA for Kelly Hansen, signed by Matt Ryan (locked 2026-05-14). Clone its structure verbatim for new CMAs.
+**Exemplars (clone the one that matches your situation):**
+- `public/cmas/cma-19496-tumalo-reservoir/cma.html` — **canonical exemplar for current rules** (finalized 2026-05-17). Rural acreage subject signed by Matt Ryan, 5 closed comps via PostGIS distance RPC, 13 pages with the layout-discipline split, 10.66 MB PDF. The structural reference for any new CMA built under the post-2026-05-17 layout + image-budget rules.
+- `public/cmas/cma-21042-robin/cma.html` — earlier reference for Kelly Hansen, signed by Matt Ryan (locked 2026-05-14). Whispering Pines subdivision subject, 8 closed comps via SubdivisionName filter. Useful for the sub-division-based comp-selection pattern; the page-fit and image-tier work was solved later in the Tumalo build.
 
 **Known data quirks:**
 
