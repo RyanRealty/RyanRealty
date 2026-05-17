@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.216.2 (2026-05-17)
+
+### Other
+- preview: Tetherow resort landing page v1 (1,027 lines)
+
+---
+
+
 ## v1.216.1 (2026-05-17)
 
 ### Maintenance
