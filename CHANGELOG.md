@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.214.11 (2026-05-17)
+
+### Maintenance
+- docs(cma-skill): promote Tumalo CMA as canonical exemplar
+
+---
+
+
 ## v1.214.10 (2026-05-17)
 
 ### Other
