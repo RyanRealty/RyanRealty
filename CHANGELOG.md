@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.216.4 (2026-05-17)
+
+### Other
+- copy(tetherow lp): rewrite hero + section heads, drop strategy-telegraphing language
+
+---
+
+
 ## v1.216.3 (2026-05-17)
 
 ### Maintenance
