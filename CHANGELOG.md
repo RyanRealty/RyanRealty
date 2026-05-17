@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.218.0 (2026-05-17)
+
+### Features
+- feat(tetherow lp): banner image hero with overlay
+
+---
+
+
 ## v1.217.0 (2026-05-17)
 
 ### Features
