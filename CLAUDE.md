@@ -1,5 +1,7 @@
 # Data Accuracy — ABSOLUTE, NON-NEGOTIABLE (READ FIRST)
 
+> **Canonical database reference (read this BEFORE writing ANY SQL or market-report code):** [`docs/DATABASE_FOR_AI_AGENTS.md`](docs/DATABASE_FOR_AI_AGENTS.md). It covers every `public.*` table, the cache model (`market_pulse_live` 10–15 min freshness, `market_stats_cache` 6-hour freshness), the 14 resort communities + 14 Bend neighborhoods + cities, the `listings` mixed-case column quoting rule (the #1 cause of failed queries), slug formats per `geo_type`, and the SFR-only convention. **Don't aggregate raw `listings` for market reports — use the cache.** Registry source-of-truth: [`data/resort-communities.json`](data/resort-communities.json). Methodology current: `v4-2026-05-15` (rows in `public.cache_methodology_definitions`).
+
 **Every number that leaves this shop must be verified against the source of truth before it goes in front of a human, a social feed, an email, an MLS, a website, a video, a chart, a report, or a listing document.** No exceptions. Matt is a licensed principal broker. Publishing inaccurate data — price, inventory, DOM, YoY, sale-to-list, absorption, neighborhood stats, anything — is a compliance risk to Ryan Realty's license. This rule outranks speed, style, cost, and every other instruction in this file.
 
 ## What "verified" means (mandatory checklist before publish, send, or render)

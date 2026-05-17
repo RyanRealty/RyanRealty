@@ -6,6 +6,10 @@ alwaysApply: false
 
 # Supabase Data Layer Rules
 
+## Read first (REQUIRED)
+
+Before editing any file matched by this rule's globs (`app/actions/**`, `supabase/migrations/**`, `lib/**`), read **[docs/DATABASE_FOR_AI_AGENTS.md](../../docs/DATABASE_FOR_AI_AGENTS.md)** — the canonical agent-facing database reference. It covers every `public.*` table grouped by purpose, the cache model (`market_pulse_live` 10–15 min freshness, `market_stats_cache` 6-hour freshness), the 14 resort communities + 14 Bend neighborhoods registered as `geo_type='neighborhood'`, slug formats per geo_type, the `listings` mixed-case quoting rule, and the SFR-only convention. Don't aggregate raw `listings` for market reports — use the cache.
+
 ## Single source of truth for market stats
 **Always** use the pre-computed reporting cache functions. Never compute stats on the fly in a component or action:
 

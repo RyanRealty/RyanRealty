@@ -1,0 +1,72 @@
+---
+description: REQUIRED — read docs/DATABASE_FOR_AI_AGENTS.md before any database work, market report, listings query, or SQL migration
+alwaysApply: true
+---
+
+# Database canonical reference — MANDATORY
+
+**Before writing ANY SQL, market-report code, listings query, cron job, RPC, or migration against the Ryan Realty Supabase database, you MUST first read [docs/DATABASE_FOR_AI_AGENTS.md](../../docs/DATABASE_FOR_AI_AGENTS.md).**
+
+This rule is `alwaysApply: true` — it appears in every Cursor context. Treat it as a hard prerequisite, not a suggestion.
+
+## What this doc tells you (and you can't reliably get from anywhere else)
+
+- The 12-row **"I need X, where do I look?"** lookup table — instant routing from any data need to the right table/query
+- Every `public.*` table grouped by purpose (~100 tables) with row counts + one-line purpose
+- The **cache model** (`market_pulse_live` 10–15 min freshness; `market_stats_cache` 6-hour freshness) and exactly when each table is updated
+- The **14 resort/area communities** (Tetherow, Sunriver, Eagle Crest, Pronghorn, Caldera Springs, Awbrey Glen, NorthWest Crossing, Crosswater, Black Butte Ranch, Brasada Ranch, Widgi Creek, Vandevert Ranch, Three Rivers, Broken Top) — their canonical slugs, their child SubdivisionName aliases (100 total), and how the cache aggregates them
+- The **14 Bend neighborhood districts** with their canonical slugs
+- The **`listings` table mixed-case quoting rule** (`"ListPrice"`, `"StandardStatus"`, etc. — the #1 cause of failed queries) and the Tier 1/2/3 column breakdown
+- **Slug formats per geo_type** (city → `bend`, region → `central-oregon`, neighborhood → `tetherow`, subdivision → `slugify(SubdivisionName)`, `subdivision_flags.entity_key` → `city:slug`)
+- **Methodology versioning** (`cache_methodology_definitions` table; current is `v4-2026-05-15`) — every cache row traces back to its rule set
+- **Slow-turnover fallback** for Pronghorn / Crosswater / Vandevert Ranch (use `rolling_365d`, not `rolling_90d`)
+- **Don't-do-this anti-patterns** — including not aggregating raw `listings` for market reports
+
+## When this rule fires (your task touches any of these — read the doc)
+
+- Writing or reviewing SQL against `public.listings`, `public.market_stats_cache`, `public.market_pulse_live`, `public.boundaries`, `public.neighborhood_subdivisions`, `public.subdivision_flags`, or any of the 100+ tables in the schema
+- Building or modifying a market report (city, neighborhood, resort community, subdivision)
+- Generating Spark MLS-sourced data (CMAs, listing detail pages, market videos, blog posts)
+- Adding a new `supabase/migrations/*.sql` file
+- Adding a new server action in `app/actions/*.ts` that queries Supabase
+- Writing a new cron route in `app/api/cron/*`
+- Editing the cache RPCs (`compute_and_cache_period_stats`, `refresh_market_pulse`, `backfill_rolling`)
+- Resolving "where do I get market data for X?" / "is there a faster way to query Y?"
+- Working on community pages (`app/communities/`), city pages (`app/cities/`), or any geo-keyed UI
+
+## How to comply
+
+1. **Read [docs/DATABASE_FOR_AI_AGENTS.md](../../docs/DATABASE_FOR_AI_AGENTS.md) end-to-end on your first session that touches the DB.** ~850 lines, ~10 minutes. After that, treat it as a reference — re-open the relevant section.
+2. **Use the cache tables.** Do not aggregate raw `listings` for market-report deliverables. The cache is stamped with methodology + freshness; raw aggregations are not.
+3. **Use the canonical slug format for the geo_type you're querying.** See §8 of the doc for the format-per-type table.
+4. **Cite the section/table in your code or PR description** when you're shipping a change. Example: "Per docs/DATABASE_FOR_AI_AGENTS.md §3a, resort community market reports route through `geo_type='neighborhood'` with bare slug."
+5. **If you find a gap** (table, slug, alias, behavior not documented), update the doc IN THE SAME COMMIT as your change. Doc drift is a bug.
+
+## Why this rule exists
+
+The Ryan Realty database has ~100 tables, the `listings` table has ~130 first-class columns + a `details` JSONB blob (~70 more fields), and the market-data system has a multi-layer cache (live pulse + period-anchored cache + methodology versioning). Agents that skip the reference invent ad-hoc queries that:
+- Query the wrong table (e.g. raw `listings` instead of `market_stats_cache`)
+- Use the wrong slug format (`'bend:tetherow'` vs `'tetherow'`)
+- Miss SFR-only convention and mix lots/condos into home reports
+- Don't apply the methodology trace, so figures can't be audited later
+- Reinvent subdivision aliases when `neighborhood_subdivisions` already has them
+- Quote PascalCase columns wrong and silently get "column does not exist"
+
+Every one of those is a data accuracy bug per [CLAUDE.md §0](../../CLAUDE.md) and a compliance risk for Matt's broker license.
+
+## Related rules
+
+- [`.cursor/rules/data-architecture.mdc`](data-architecture.mdc) — high-level architecture decisions
+- [`.cursor/rules/supabase-data-layer.mdc`](supabase-data-layer.mdc) — Supabase query patterns + RPC usage
+- [`.cursor/rules/cma-data-model.mdc`](cma-data-model.mdc) — CMA-specific data model
+- [`.cursor/rules/production-parity.mdc`](production-parity.mdc) — migrations must apply with code
+- [`CLAUDE.md`](../../CLAUDE.md) §0 (Data Accuracy) and §3 ("Supabase Database — MANDATORY READ before any SQL")
+- [`AGENTS.md`](../../AGENTS.md) "What the other environment should read" table
+
+## Canonical paths (in priority order)
+
+1. **[`docs/DATABASE_FOR_AI_AGENTS.md`](../../docs/DATABASE_FOR_AI_AGENTS.md)** — the canonical reference (read this first)
+2. **[`data/resort-communities.json`](../../data/resort-communities.json)** — the 14-community registry (source of truth for parent→child aliases)
+3. **`public.cache_methodology_definitions`** — DB table; query for the active methodology version
+4. **`supabase/migrations/20260515170000_resort_communities_neighborhood_aliases.sql`** — the migration that established the resort-community taxonomy
+5. **[`docs/SPARK_API_REFERENCE.md`](../../docs/SPARK_API_REFERENCE.md)** — Spark MLS API reference (when you need to understand what Spark exposes vs what we cache)

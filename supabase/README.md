@@ -1,8 +1,10 @@
 # How to change your Supabase database (simple version)
 
+> **Agents: read [`../docs/DATABASE_FOR_AI_AGENTS.md`](../docs/DATABASE_FOR_AI_AGENTS.md) BEFORE writing any new migration, RPC, query, or market-report code.** That doc covers every `public.*` table grouped by purpose, the cache model (`market_pulse_live` 10–15 min freshness, `market_stats_cache` 6-hour freshness), the 14 resort communities + 14 Bend neighborhoods registered as `geo_type='neighborhood'`, the `listings` mixed-case quoting rule, slug formats per geo_type, methodology versioning, and the SFR-only convention. Registry source-of-truth: [`../data/resort-communities.json`](../data/resort-communities.json). Don't aggregate raw `listings` for market reports — use the cache. This is enforced by `.cursor/rules/database-canonical-reference.mdc` (alwaysApply), `.cursor/skills/database-canonical-reference/SKILL.md`, and `COMMENT ON TABLE` annotations on the live database.
+
 ---
 
-## What’s the idea?
+## What's the idea?
 
 - Your database (tables, columns) is defined by **SQL files** in this repo.
 - You run those files **once** and Supabase updates. Same files = same database everywhere.
