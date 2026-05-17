@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.215.3 (2026-05-17)
+
+### Maintenance
+- docs(enforcement): 6-layer enforcement that every agent reads DATABASE_FOR_AI_AGENTS.md
+
+---
+
+
 ## v1.215.2 (2026-05-17)
 
 ### Maintenance
