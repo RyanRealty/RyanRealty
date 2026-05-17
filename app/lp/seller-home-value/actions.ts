@@ -7,6 +7,8 @@ import {
   addPersonTags,
   createRealtimeTask,
   findPersonByEmail,
+  assignPersonToUser,
+  setPersonCustomFields,
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
@@ -14,6 +16,16 @@ import { createCmaRequest } from '@/lib/cma-request'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
+
+// ─── Broker routing constants ─────────────────────────────────────────────
+// FUB user ids verified 2026-05-17 via /v1/identity + /v1/users. The
+// FOLLOWUPBOSS_BROKER_USER_MAP env var can override these per-environment if
+// a broker is added/removed/swapped between Matt's accounts.
+const FUB_USER_MATT = 1
+const FUB_USER_REBECCA = 2
+
+type BrokerSlug = 'matt' | 'rebecca' | 'paul'
+type BrokerAssignment = { broker: BrokerSlug; userId: number }
 
 export type SellerLPTimeline = 'ready-now' | 'next-3-6' | 'next-6-12' | 'exploring'
 
@@ -28,7 +40,7 @@ export type SellerLPSubmission = {
 }
 
 export type SellerLPResult =
-  | { success: true; eventId: string; classification: 'hot' | 'warm' | 'nurture' | 'unknown'; alreadyKnown: boolean }
+  | { success: true; eventId: string; classification: 'hot' | 'warm' | 'nurture' | 'unknown'; alreadyKnown: boolean; assignedBroker: BrokerSlug | null }
   | { success: false; error: string }
 
 function getServiceSupabase() {
@@ -58,33 +70,110 @@ function parseAddress(raw: string): {
 
 function classifyTimeline(t: SellerLPTimeline | undefined): {
   classification: 'hot' | 'warm' | 'nurture' | 'unknown'
-  sequenceTag: string
+  tierTag: string  // canonical tag: seller:hot | seller:warm | seller:nurture
 } {
   switch (t) {
     case 'ready-now':
-      return { classification: 'hot', sequenceTag: 'auto:seller-seq:new' }
+      return { classification: 'hot', tierTag: 'seller:hot' }
     case 'next-3-6':
-      return { classification: 'warm', sequenceTag: 'auto:seller-seq:warm' }
+      return { classification: 'warm', tierTag: 'seller:warm' }
     case 'next-6-12':
-      return { classification: 'warm', sequenceTag: 'auto:seller-seq:warm' }
+      return { classification: 'warm', tierTag: 'seller:warm' }
     case 'exploring':
-      return { classification: 'nurture', sequenceTag: 'auto:seller-seq:watch' }
+      return { classification: 'nurture', tierTag: 'seller:nurture' }
     default:
-      return { classification: 'unknown', sequenceTag: 'auto:seller-seq:watch' }
+      return { classification: 'unknown', tierTag: 'seller:nurture' }
+  }
+}
+
+/**
+ * Round-robin between active brokers in the FUB "Seller Leads" group.
+ *
+ * Per docs/FUB_SELLER_WORKFLOW_2026-05-17.md §6:
+ *   - Hot leads default to Matt (override only if he's OOO — not implemented yet)
+ *   - Warm + nurture round-robin between Matt + Rebecca
+ *
+ * Reads the most-recent row in public.marketing_assignments for audience='seller'
+ * and picks the OTHER active broker. If no prior row exists, defaults to Matt.
+ */
+async function assignSellerLead(
+  classification: 'hot' | 'warm' | 'nurture' | 'unknown',
+): Promise<BrokerAssignment> {
+  // Hot leads always go to Matt first (highest-value, fastest response).
+  if (classification === 'hot') {
+    return { broker: 'matt', userId: FUB_USER_MATT }
+  }
+
+  // Warm/nurture/unknown: round-robin between Matt + Rebecca.
+  const supabase = getServiceSupabase()
+  if (!supabase) {
+    // Fail-safe: if Supabase is down, default to Matt so the lead is owned.
+    return { broker: 'matt', userId: FUB_USER_MATT }
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('marketing_assignments')
+      .select('broker')
+      .eq('audience', 'seller')
+      .order('assigned_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (error) {
+      console.warn('[seller-lp] marketing_assignments read failed:', error.message)
+      return { broker: 'matt', userId: FUB_USER_MATT }
+    }
+    // If last seller assignment was Matt, give this one to Rebecca, and vice versa.
+    if (data?.broker === 'matt') {
+      return { broker: 'rebecca', userId: FUB_USER_REBECCA }
+    }
+    return { broker: 'matt', userId: FUB_USER_MATT }
+  } catch (err) {
+    console.warn('[seller-lp] assignment lookup failed:', err)
+    return { broker: 'matt', userId: FUB_USER_MATT }
+  }
+}
+
+async function recordSellerAssignment(params: {
+  broker: BrokerSlug
+  userId: number
+  fubPersonId: number | null
+  tier: 'hot' | 'warm' | 'nurture' | 'unknown'
+  source: string
+}): Promise<void> {
+  const supabase = getServiceSupabase()
+  if (!supabase) return
+  const { error } = await supabase.from('marketing_assignments').insert({
+    audience: 'seller',
+    broker: params.broker,
+    fub_user_id: params.userId,
+    fub_person_id: params.fubPersonId,
+    source: params.source,
+    tier: params.tier === 'unknown' ? 'nurture' : params.tier,
+  })
+  if (error) {
+    console.warn('[seller-lp] marketing_assignments insert failed:', error.message)
   }
 }
 
 /**
  * Submit the dedicated seller landing page form.
  *
- * Multi-source intake: works whether the visitor is brand new (no identity),
- * already cookie-identified (fub_cid), or arriving with email/name from
- * an OAuth path. Always lands a FUB Seller Inquiry with audience:seller plus
- * a timeline classification tag, fires Meta CAPI Lead $500 with shared
- * event_id, and triggers a 5-min realtime task on hot leads.
+ * Per docs/FUB_SELLER_WORKFLOW_2026-05-17.md (locked 2026-05-17):
+ *  1. Resolve or create FUB person (email match > cookie > new)
+ *  2. Round-robin assign to Matt or Rebecca via public.marketing_assignments
+ *  3. Apply canonical kebab-case namespaced tags:
+ *       audience:seller + seller:{tier} + source:seller-lp + broker:{slug}
+ *  4. Write 6 custom fields (move timeline, tier, property address, etc.)
+ *  5. Create marketing_brain_actions row for the canonical CMA producer
+ *  6. Fire Meta CAPI Lead $500 with shared event_id
+ *  7. Create 5-min realtime task for hot leads
  *
- * Reuses the same downstream contract as submitValuationRequest so the
- * existing weekly cron / outreach pipeline picks the lead up unchanged.
+ * Downstream: a FUB Automation Rule (configured in FUB UI) listens for the
+ * `audience:seller` tag and enrolls the lead in the action plan
+ * `Seller Lead — Master Workflow`. FUB's own engine fires all email + SMS
+ * touches on schedule. Pause-on-reply is handled by the 15-min cron at
+ * /api/cron/seller-workflow-pause.
  */
 export async function submitSellerLPForm(submission: SellerLPSubmission): Promise<SellerLPResult> {
   try {
@@ -95,7 +184,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     const name = submission.name?.trim() ?? ''
     const phone = submission.phone?.trim() ?? ''
     const timeline = submission.timeline
-    const { classification, sequenceTag } = classifyTimeline(timeline)
+    const { classification, tierTag } = classifyTimeline(timeline)
 
     // ─── Resolve the FUB person ────────────────────────────────────────────
     // Priority: explicit email match > cookie-identified person id > new email-only.
@@ -126,6 +215,9 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
 
     // ─── Address parsing for downstream property matching ──────────────────
     const parsed = parseAddress(rawAddress)
+
+    // ─── Round-robin broker assignment (decided before FUB writes) ─────────
+    const assignment = await assignSellerLead(classification)
 
     // ─── Optional: persist the valuation request row ───────────────────────
     // Mirrors submitValuationRequest so the rest of the stack (auto-CMA, weekly
@@ -167,7 +259,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       source,
       sourceUrl: `${siteUrl}/lp/seller-home-value`,
       pageTitle: 'Seller LP — Home Value',
-      message: `Seller LP submission. Address: ${parsed.full}. Timeline: ${timeline ?? 'unspecified'}. Classification: ${classification}.`,
+      message: `Seller LP submission. Address: ${parsed.full}. Timeline: ${timeline ?? 'unspecified'}. Tier: ${classification}. Assigned: ${assignment.broker}.`,
       property: {
         street: parsed.street ?? undefined,
         city: parsed.city ?? undefined,
@@ -180,28 +272,44 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       console.warn('[seller-lp] FUB sendEvent failed:', eventResult.error)
     }
 
-    // ─── Apply audience + classification tags ─────────────────────────────
-    // We need a numeric FUB id to tag. If we created via sendEvent we may not
-    // have an id back; fall through gracefully — the weekly cron's
-    // chooseOutreachPlan handles untagged seller leads as a 'watch' default.
-    if (fubPersonId) {
-      const tags: string[] = ['audience:seller', sequenceTag, 'source:seller-lp']
-      if (classification === 'hot') tags.push('hot-seller')
-      else if (classification === 'warm') tags.push('warm-seller')
-      else if (classification === 'nurture') tags.push('nurture-only')
-      await addPersonTags(fubPersonId, tags)
-    } else if (email) {
-      // Best effort: re-fetch by email a few hundred ms after sendEvent so the
-      // tags land on the newly-created person.
+    // ─── Resolve final FUB person id (in case sendEvent just created it) ──
+    if (!fubPersonId && email) {
       const newlyCreated = await findPersonByEmail(email)
       if (newlyCreated?.id) {
-        const tags: string[] = ['audience:seller', sequenceTag, 'source:seller-lp']
-        if (classification === 'hot') tags.push('hot-seller')
-        else if (classification === 'warm') tags.push('warm-seller')
-        else if (classification === 'nurture') tags.push('nurture-only')
-        await addPersonTags(newlyCreated.id, tags)
         fubPersonId = newlyCreated.id
       }
+    }
+
+    // ─── Apply canonical tags + assign broker + write custom fields ───────
+    if (fubPersonId) {
+      // 1. Tags — canonical kebab-case namespaced schema (see docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4).
+      const tags: string[] = [
+        'audience:seller',
+        tierTag,                         // seller:hot | seller:warm | seller:nurture
+        'source:seller-lp',
+        `broker:${assignment.broker}`,
+      ]
+      await addPersonTags(fubPersonId, tags)
+
+      // 2. Broker assignment via FUB's assignedUserId.
+      await assignPersonToUser(fubPersonId, assignment.userId)
+
+      // 3. Custom fields — written via PUT /v1/people/{id} (see lib/followupboss.ts).
+      await setPersonCustomFields(fubPersonId, {
+        customMoveTimeline: timeline ?? 'unspecified',
+        customLeadTier: classification,
+        customIsSellerCurious: classification === 'nurture' ? 'true' : 'false',
+        customSellerPropertyAddress: parsed.full,
+      })
+
+      // 4. Record the assignment in our local ledger for the next round-robin.
+      await recordSellerAssignment({
+        broker: assignment.broker,
+        userId: assignment.userId,
+        fubPersonId,
+        tier: classification,
+        source: 'seller-lp',
+      })
     }
 
     // ─── 5-min realtime task for hot leads only ────────────────────────────
@@ -262,6 +370,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
           property_address: parsed.full,
           timeline: timeline ?? 'unspecified',
           classification,
+          assigned_broker: assignment.broker,
           value: 500,
           currency: 'USD',
         },
@@ -275,6 +384,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       eventId,
       classification,
       alreadyKnown,
+      assignedBroker: assignment.broker,
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

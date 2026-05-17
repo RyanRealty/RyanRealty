@@ -466,6 +466,91 @@ export async function addPersonNote(personId: number, body: string): Promise<boo
 }
 
 /**
+ * Assign a FUB person to a specific user (broker). This is what powers the
+ * round-robin between Matt and Rebecca for new seller leads. The userId is
+ * the FUB-side numeric id (Matt=1, Rebecca=2, Paul=3 as of 2026-05-17).
+ *
+ * Sets `assignedUserId` on the person record. FUB downstream rules can also
+ * read this for action-plan enrollment, smart-list filtering, and round-robin
+ * distribution checks.
+ *
+ * Returns true on success. Logs and swallows network/422 errors so the caller
+ * (typically a lead-capture path) can continue with the rest of the workflow.
+ */
+export async function assignPersonToUser(personId: number, userId: number): Promise<boolean> {
+  const auth = getAuth()
+  if (!auth) return false
+  if (!Number.isFinite(personId) || personId <= 0) return false
+  if (!Number.isFinite(userId) || userId <= 0) return false
+  try {
+    const res = await fetch(`${FUB_BASE}/people/${personId}`, {
+      method: 'PUT',
+      headers: fubHeaders(auth),
+      body: JSON.stringify({ assignedUserId: userId }),
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) {
+      console.warn(`[assignPersonToUser] PUT failed: personId=${personId} userId=${userId} status=${res.status}`)
+    }
+    return res.ok
+  } catch (err) {
+    console.error('[assignPersonToUser] Network error:', err)
+    return false
+  }
+}
+
+/**
+ * Write one or more custom field values on an existing FUB person.
+ *
+ * Field names are the FUB api-side `name` (e.g. `customMoveTimeline`,
+ * `customLeadTier`, `customCMADeliveredAt`). Field schema must already exist
+ * in the FUB account (set up via `.tmp_env/fub-setup/01-create-custom-fields.mjs`).
+ *
+ * The seller LP form uses this to write the timeline classification, tier,
+ * and property address that the FUB action plan + smart lists then key off.
+ *
+ * FUB PUT /people/{id} accepts custom fields as top-level properties on the
+ * body, NOT nested under a `customFields` key (verified against the live API
+ * 2026-05-17).
+ */
+export async function setPersonCustomFields(
+  personId: number,
+  fields: Record<string, string | number | null | undefined>,
+): Promise<boolean> {
+  const auth = getAuth()
+  if (!auth) return false
+  if (!Number.isFinite(personId) || personId <= 0) return false
+
+  // Drop undefined values (allow null + empty string through so FUB clears them).
+  const body: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(fields)) {
+    if (v === undefined) continue
+    if (!k.startsWith('custom')) {
+      console.warn(`[setPersonCustomFields] Skipping non-custom field: ${k}`)
+      continue
+    }
+    body[k] = v
+  }
+  if (Object.keys(body).length === 0) return false
+
+  try {
+    const res = await fetch(`${FUB_BASE}/people/${personId}`, {
+      method: 'PUT',
+      headers: fubHeaders(auth),
+      body: JSON.stringify(body),
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) {
+      console.warn(`[setPersonCustomFields] PUT failed: personId=${personId} status=${res.status}`)
+    }
+    return res.ok
+  } catch (err) {
+    console.error('[setPersonCustomFields] Network error:', err)
+    return false
+  }
+}
+
+/**
  * Update person stage and/or merge tags on an existing FUB person.
  * This is used to trigger FUB automation workflows in a controlled way.
  */
