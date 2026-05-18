@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.226.0 (2026-05-18)
+
+### Features
+- feat(fub): round-2 optimizations — cleanup + canonical lead tagger + path wiring
+
+---
+
+
 ## v1.225.1 (2026-05-18)
 
 ### Maintenance
