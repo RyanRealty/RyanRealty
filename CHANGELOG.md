@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.220.2 (2026-05-18)
+
+### Maintenance
+- docs(handoffs): analytics-unification handoff for the analytics agent
+
+---
+
+
 ## v1.220.1 (2026-05-18)
 
 ### Bug Fixes
