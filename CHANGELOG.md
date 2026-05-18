@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.232.0 (2026-05-18)
+
+### Features
+- feat(fub): agent-link attribution + expired-listings workflow + LP + skill
+
+---
+
+
 ## v1.231.2 (2026-05-18)
 
 ### Bug Fixes
