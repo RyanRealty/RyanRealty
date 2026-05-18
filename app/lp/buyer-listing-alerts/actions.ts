@@ -12,6 +12,7 @@ import {
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import { isHardStopped } from '@/lib/canonical-lead-tagger'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -209,8 +210,16 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
       if (newlyCreated?.id) fubPersonId = newlyCreated.id
     }
 
+    // ─── Compliance gate ───────────────────────────────────────────────────
+    // Skip workflow enrollment if person carries hard-stop tags.
+    // See docs/FUB_OPTIMIZATION_AUDIT_2026-05-17 §7.
+    const hardStopped = fubPersonId ? await isHardStopped(fubPersonId) : false
+    if (hardStopped) {
+      console.warn(`[buyer-lp] person ${fubPersonId} is compliance hard-stopped, skipping workflow enrollment`)
+    }
+
     // ─── Apply canonical tags + assign broker + write custom fields ────────
-    if (fubPersonId) {
+    if (fubPersonId && !hardStopped) {
       const tags: string[] = [
         'audience:buyer',
         tierTag,

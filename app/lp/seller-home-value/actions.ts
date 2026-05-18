@@ -14,6 +14,7 @@ import {
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { createCmaRequest } from '@/lib/cma-request'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
+import { isHardStopped } from '@/lib/canonical-lead-tagger'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -281,8 +282,18 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       }
     }
 
+    // ─── Compliance gate ───────────────────────────────────────────────────
+    // If this person carries do_not_email / Bounced / Unsubscribed /
+    // compliance:hard-stop, DO NOT apply audience:seller — that tag triggers
+    // the FUB automation rule which would enroll them in the action plan and
+    // start blasting emails. See docs/FUB_OPTIMIZATION_AUDIT_2026-05-17 §7.
+    const hardStopped = fubPersonId ? await isHardStopped(fubPersonId) : false
+    if (hardStopped) {
+      console.warn(`[seller-lp] person ${fubPersonId} is compliance hard-stopped, skipping workflow enrollment`)
+    }
+
     // ─── Apply canonical tags + assign broker + write custom fields ───────
-    if (fubPersonId) {
+    if (fubPersonId && !hardStopped) {
       // 1. Tags — canonical kebab-case namespaced schema (see docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4).
       const tags: string[] = [
         'audience:seller',

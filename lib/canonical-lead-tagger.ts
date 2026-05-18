@@ -113,10 +113,51 @@ async function recordAssignment(params: {
 }
 
 /**
+ * Compliance check: if the person carries any hard-stop tag we MUST NOT enroll
+ * them in any auto-touch workflow. Per docs/FUB_OPTIMIZATION_AUDIT_2026-05-17
+ * §7: 470 Bounced + 230 Unsubscribed records are hard-blocked via
+ * `do_not_email` + `compliance:hard-stop`. Tagging them `audience:seller` or
+ * `audience:buyer` would trigger the FUB automation rule which would enroll
+ * them in the master workflow and start blasting emails. That's a sender-
+ * reputation catastrophe.
+ *
+ * The action plans themselves should ALSO exclude these tags (Matt configures
+ * the audience filter in FUB UI), but the belt-and-suspenders approach is to
+ * skip applying the canonical audience tag in the first place.
+ */
+const HARD_STOP_TAGS = new Set([
+  'do_not_email',
+  'do_not_text',
+  'compliance:hard-stop',
+  'bounced',
+  'unsubscribed',
+  'complained',
+])
+
+export async function isHardStopped(personId: number): Promise<boolean> {
+  try {
+    const url = `https://api.followupboss.com/v1/people/${personId}?fields=id,tags`
+    const key = process.env.FOLLOWUPBOSS_API_KEY?.trim()
+    if (!key) return false
+    const auth = Buffer.from(`${key}:`).toString('base64')
+    const res = await fetch(url, { headers: { Authorization: `Basic ${auth}` }, cache: 'no-store' })
+    if (!res.ok) return false
+    const p = (await res.json()) as { tags?: string[] }
+    const lowerTags = (p.tags ?? []).map((t) => t.toLowerCase())
+    return lowerTags.some((t) => HARD_STOP_TAGS.has(t))
+  } catch {
+    return false  // fail-open: don't block enrollment on a network blip
+  }
+}
+
+/**
  * Apply the canonical tag schema + assignment to an existing FUB person.
  *
  * Designed to be called AFTER sendEvent() or any other person-create. Never
  * throws — returns { ok, broker, tags } so the caller can log + continue.
+ *
+ * Skips enrollment if the person carries a compliance hard-stop tag
+ * (do_not_email, Bounced, Unsubscribed, compliance:hard-stop, etc.).
  *
  * Usage:
  * ```
@@ -131,9 +172,16 @@ export async function canonicallyTagLead(params: CanonicalLeadParams): Promise<{
   broker?: BrokerSlug
   tagsApplied?: string[]
   error?: string
+  skipped?: 'compliance-hard-stop'
 }> {
   if (!Number.isFinite(params.fubPersonId) || params.fubPersonId <= 0) {
     return { ok: false, error: 'invalid fubPersonId' }
+  }
+
+  // Compliance check — skip enrollment if hard-stopped
+  if (await isHardStopped(params.fubPersonId)) {
+    console.warn(`[canonical-lead-tagger] Skipping enrollment for person ${params.fubPersonId}: compliance hard-stop tag present`)
+    return { ok: false, skipped: 'compliance-hard-stop' }
   }
 
   const tier = params.tier ?? 'nurture'
