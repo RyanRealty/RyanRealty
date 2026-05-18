@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.219.1 (2026-05-18)
+
+### Maintenance
+- docs(fub): correct cleanup report — 25 fields not 21 (5 KTS fields kept w/ real data)
+
+---
+
+
 ## v1.219.0 (2026-05-18)
 
 ### Features
