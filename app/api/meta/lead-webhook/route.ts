@@ -356,16 +356,24 @@ async function createFubContact(lead: ParsedLead): Promise<number | null> {
   else if (lead.buySellIntent === 'both') tags.push('Intent: Buying + Selling')
   else if (lead.buySellIntent === 'exploring') tags.push('Intent: Exploring')
 
+  // Canonical kebab-case namespaced tier tags per
+  // docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4. Replaces legacy hot-buyer /
+  // warm-seller / auto:seller-seq:new / nurture-only with canonical:
+  //   seller:hot, seller:warm, seller:nurture
+  //   buyer:hot, buyer:warm, buyer:nurture
   if (lead.possibleRealtor) {
     tags.push('possible-realtor')
   } else if (lead.intent === 'hot') {
-    tags.push(lead.audience === 'buyer' ? 'hot-buyer' : 'hot-seller')
-    if (lead.audience !== 'buyer') tags.push('auto:seller-seq:new')
+    tags.push(lead.audience === 'buyer' ? 'buyer:hot' : 'seller:hot')
   } else if (lead.intent === 'warm') {
-    tags.push(lead.audience === 'buyer' ? 'warm-buyer' : 'warm-seller')
+    tags.push(lead.audience === 'buyer' ? 'buyer:warm' : 'seller:warm')
   } else if (lead.intent === 'nurture') {
-    tags.push('nurture-only')
+    tags.push(lead.audience === 'buyer' ? 'buyer:nurture' : 'seller:nurture')
   }
+
+  // Source attribution in canonical schema (in addition to FUB-native source
+  // field which carries the campaign name)
+  tags.push(lead.audience === 'buyer' ? 'source:fb-ads-buyer' : 'source:fb-ads-seller')
 
   const body: Record<string, unknown> = {
     source,

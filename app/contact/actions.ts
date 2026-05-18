@@ -1,12 +1,24 @@
 'use server'
 
 import { generateEventId } from '@/lib/meta-pixel-helpers'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
+import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
 
 export type ContactFormState = { error?: string; success?: boolean; eventId?: string }
+
+/**
+ * Infer the audience (seller vs buyer) from the inquiry type. Defaults
+ * to buyer because property inquiries are buyer-side by default. Sellers
+ * are explicit via "seller" / "valuation" / "home value" keywords.
+ */
+function inferAudience(inquiryType: string): LeadAudience {
+  const lower = inquiryType.toLowerCase()
+  if (/seller|valuation|home value|sell|list my|appraisal/.test(lower)) return 'seller'
+  return 'buyer'
+}
 
 export async function submitContactForm(formData: FormData): Promise<ContactFormState> {
   const name = formData.get('name')?.toString()?.trim() ?? ''
@@ -33,6 +45,24 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   if (!res.ok) return { error: res.error ?? 'Failed to send' }
 
   await sendContactNotification({ name, email, phone, inquiryType, message }).catch(() => {})
+
+  // Canonical tagging — apply audience:* + source:* + broker:* + round-robin
+  // assignment to whatever FUB person sendEvent just touched. Fire-and-forget
+  // so it doesn't block the response. Per docs/FUB_OPTIMIZATION_AUDIT_2026-05-17.md §1.
+  void (async () => {
+    try {
+      const found = await findPersonByEmail(email)
+      if (found?.id) {
+        await canonicallyTagLead({
+          fubPersonId: found.id,
+          audience: inferAudience(inquiryType),
+          source: 'contact-form',
+        })
+      }
+    } catch (err) {
+      console.warn('[contact-form] canonical tagging failed (non-blocking):', err)
+    }
+  })()
 
   // Send to Meta CAPI for deduplication with browser pixel.
   // Every Lead carries an estimated value so Meta's bid algorithm can
