@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.234.6 (2026-05-18)
+
+### Maintenance
+- docs(memory): Chrome MCP visibility quirk affects useEffect verification
+
+---
+
+
 ## v1.234.5 (2026-05-18)
 
 ### Bug Fixes
