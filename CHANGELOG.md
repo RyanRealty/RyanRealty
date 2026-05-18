@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.231.0 (2026-05-18)
+
+### Features
+- feat(lp tetherow): v9 + v10 — buyer track + horizontal-scroll carousel + brand polish
+
+### Maintenance
+- chore: absorb in-flight marketing-brain WIP from parallel session
+- chore: absorb in-flight marketing-brain producer registrations + cron config
+
+---
+
+
 ## v1.230.2 (2026-05-18)
 
 ### Bug Fixes
