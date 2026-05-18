@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.225.0 (2026-05-18)
+
+### Features
+- feat(analytics): install Follow Up Boss pixel on Vercel + fix Badge variants
+
+---
+
+
 ## v1.224.2 (2026-05-18)
 
 ### Bug Fixes
