@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.230.0 (2026-05-18)
+
+### Features
+- feat(fub): finish everything API-doable — buyer plan steps + compliance gate
+
+---
+
+
 ## v1.229.0 (2026-05-18)
 
 ### Features
