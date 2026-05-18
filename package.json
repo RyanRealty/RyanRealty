@@ -99,9 +99,16 @@
     "backfill:listing-dom": "node scripts/backfill-listing-dom-metrics.mjs",
     "gate:preflight": "npx tsx scripts/preflight.ts",
     "gate:postflight": "npx tsx scripts/postflight.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "audit:brain": "node scripts/audit-brain.mjs",
+    "audit:brain:strict": "node scripts/audit-brain.mjs --strict",
+    "health:loop": "node scripts/loop-health-check.mjs",
+    "health:brain": "node scripts/brain-activity-report.mjs",
+    "validate:producer": "node scripts/validate-producer.mjs",
+    "install:hooks": "bash scripts/install-git-hooks.sh"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
     "@google-analytics/data": "^5.2.1",
     "@googlemaps/markerclusterer": "^2.6.2",
     "@heroicons/react": "^2.2.0",
