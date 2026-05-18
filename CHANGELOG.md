@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.234.0 (2026-05-18)
+
+### Features
+- feat(analytics): extend GA4 ingestor with lp + event scopes
+
+---
+
+
 ## v1.233.1 (2026-05-18)
 
 ### Bug Fixes
