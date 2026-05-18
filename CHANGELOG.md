@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.222.0 (2026-05-18)
+
+### Features
+- feat(fub): lead geo-tagging pipeline — neighborhoods, subdivisions, owner type
+
+---
+
+
 ## v1.221.1 (2026-05-18)
 
 ### Other
