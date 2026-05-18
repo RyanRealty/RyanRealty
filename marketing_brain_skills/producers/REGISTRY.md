@@ -60,6 +60,24 @@ Single-deliverable specialists. Each handles one or more `content:*` action_type
 | postcard-farm-mailer | `social_media_skills/postcard-farm-mailer/` | `content:postcard_mailer` | matt-review-draft | 8–15 min | USPS direct mail to 0.5-mile farm radius. at_list / at_sold variants |
 | yard-sign-rider | `social_media_skills/yard-sign-rider/` | `content:yard_sign` | matt-review-draft | 5–10 min | 18×24 main sign + rider variants (just_listed / open_house / under_contract / sold) |
 | neighbor-outreach-note | `social_media_skills/neighbor-outreach-note/` | `content:neighbor_note` | matt-review-draft | 5–10 min | Handwritten-style card text + flyer enclosure + Avery label sheet for 20-40 nearest neighbors |
+| broker-contact-card | `social_media_skills/broker-contact-card/` | `content:broker_card` | matt-review-draft | 3–5 min | NEW REGISTERED 2026-05-16 (re-applied 2026-05-17). Per-broker contact / signature block used inside CMA, blog bylines, lead-gen ad footer, listing-tour-video end card. Resolves from `public.brokers` row by email or slug. |
+| map_route_video | `video_production_skills/map_route_video/` | `content:map_route` | matt-review-draft | 8–15 min | NEW 2026-05-16. Animated route from listing to St Charles / school / Mt Bachelor / downtown. Google Routes API + Remotion polyline. |
+| school_district_overlay | `video_production_skills/school_district_overlay/` | `content:school_overlay` | matt-review-draft | 5–10 min | NEW 2026-05-16. BLS school boundary overlay for a listing or neighborhood. Sources from `boundaries` table. |
+| walkability_overlay | `video_production_skills/walkability_overlay/` | `content:walkability_overlay` | matt-review-draft | 5–10 min | NEW 2026-05-16. WalkScore-style isochrone (5/10/15 min) via Mapbox or Routes matrix. |
+| market_pulse_short | `video_production_skills/market_pulse_short/` | `content:market_pulse_short` | matt-review-draft | 5–10 min | NEW 2026-05-16. 9-15s recurring weekly market data short. Pulls from `market_pulse_live` + `market_stats_cache`. Victoria VO. |
+| clip_compilation | `video_production_skills/clip_compilation/` | `content:clip_compilation` | matt-review-draft | 10–20 min | NEW 2026-05-16. Stitches multiple existing short clips from asset library into compilation. Pure repurpose. |
+| virtual_staging | `social_media_skills/virtual_staging/` | `content:virtual_staging` | matt-review-draft | 5–10 min (~$0.50–$2/img) | NEW 2026-05-16. AI virtual staging of empty rooms. Replicate model. Always discloses "virtually staged" per NAR ethics. |
+| floor_plan_render | `social_media_skills/floor_plan_render/` | `content:floor_plan_render` | matt-review-draft | 5–10 min | NEW 2026-05-16. Cleans/brands MLS floor plan or generates 2D plan from Matterport scan. PDF + PNG output. |
+| comparable_grid | `social_media_skills/comparable_grid/` | `content:comparable_grid` | matt-review-draft | 5–10 min | NEW 2026-05-16. 3×2 or 3×3 image grid of comp sales for a listing or CMA. Delegated by `cma`. |
+| testimonial_card | `social_media_skills/testimonial_card/` | `content:testimonial_card` | matt-review-draft | 3–8 min | NEW 2026-05-16. Single-image client quote card. Voice-validated against pandering. 4:5 + 9:16 variants. |
+| map_static_card | `social_media_skills/map_static_card/` | `content:map_static_card` | matt-review-draft | 3–8 min | NEW 2026-05-16. Static branded Google Maps snippet for a listing or neighborhood. Location beat for carousels + email. |
+| newsletter | `social_media_skills/newsletter/` | `content:newsletter` | matt-review-draft | 10–20 min | NEW 2026-05-16. Monthly email newsletter to past clients + leads via Resend. Phase 10 smoke-test producer. |
+| listing-description | `social_media_skills/listing-description/` | `content:listing_description` | matt-review-draft | 5–10 min | NEW 2026-05-16. MLS Public Remarks + private remarks + showing instructions per listing. Fair-housing gated. |
+| cma-narrative | `marketing_brain_skills/producers/cma-narrative/` | `content:cma_narrative` | matt-review-draft | 8–15 min | NEW 2026-05-16. Long-form narrative cover letter + per-section commentary inside a CMA. Delegated by `cma`. |
+| market-report-blog | `social_media_skills/market-report-blog/` | `content:market_report_blog` | matt-review-draft | 10–20 min | NEW 2026-05-16. SEO-optimized monthly market report blog post for ryan-realty.com (AgentFire WordPress REST). |
+| meta-creative-variant | `social_media_skills/meta-creative-variant/` | `content:meta_creative_variant` | matt-review-draft | 5–10 min | NEW 2026-05-16. 3-5 creative variants (headline + primary text + image) for active FB seller-funnel ad sets. |
+| google-ads-copy | `social_media_skills/google-ads-copy/` | `content:google_ads_copy` | matt-review-draft | 5–10 min | NEW 2026-05-16. Search + Performance Max headlines + descriptions + sitelinks for Google Ads. Tied to SEO keywords. |
+| nextdoor-business-ad | `social_media_skills/nextdoor-business-ad/` | `content:nextdoor_business_ad` | matt-review-draft | 5–10 min | NEW 2026-05-16. Nextdoor for Business sponsored post or local awareness ad. Hyperlocal seller-funnel. |
 
 ---
 
@@ -74,6 +92,7 @@ These producers make changes to ryan-realty.com. All site changes land in a git 
 | site-performance | `marketing_brain_skills/producers/site-performance/` | `site:perf_fix`, `site:redirect_add`, `site:schema_add` | matt-review-PR | Applies lazy-load attributes, PNG→WebP conversion, 301 redirects in next.config.ts, or JSON-LD structured data; opens a PR |
 | site-property-landing | `marketing_brain_skills/producers/site-property-landing/` | `site:property_landing_create`, `site:property_landing_update` | matt-review-PR | Scaffolds a per-listing landing page at `/listings/<slug>`: gallery, video embed, 3D tour, floor plan, FUB showing form, ManyChat widget, RealEstateListing JSON-LD. shadcn/ui only |
 | site-matterport-embed | `marketing_brain_skills/producers/site-matterport-embed/` | `site:matterport_embed` | matt-review-PR | Embeds an existing Matterport 3D tour iframe on the property landing page. HEAD-validates the URL before commit. Mandatory at $750K+ per the matrix |
+| site-neighborhood-page | `marketing_brain_skills/producers/site-neighborhood-page/` | `site:neighborhood_page_create`, `site:neighborhood_page_update` | matt-review-PR | NEW 2026-05-16. Scaffolds or updates the canonical per-neighborhood landing page at `/neighborhoods/<slug>`. Sources facts from bend-market-bible.md. JSON-LD Place schema, lead-capture form, dynamic active-listing grid. shadcn/ui only. Opens a PR. |
 
 ---
 
@@ -89,6 +108,7 @@ These producers make changes to ad accounts, CRM, and email platform.
 | ops-reputation | `marketing_brain_skills/producers/ops-reputation/` | `ops:review_response`, `ops:review_request`, `ops:gbp_post`, `ops:gbp_qna` | matt-review-draft | Drafts in Matt's voice using 22-response GBP corpus; negative reviews flagged separately; Matt approves before any public post |
 | ops-fb-marketplace | `marketing_brain_skills/producers/ops-fb-marketplace/` | `ops:fb_marketplace_create`, `ops:fb_marketplace_update` | matt-explicit | Stages FB Marketplace listing bundles (title + description + photos + payload + instructions). FB Marketplace API does not permit programmatic real-estate listing creation, so producer NEVER auto-publishes — Matt loads manually in the FB app. 30–40% of business documented through Marketplace per Getty Group |
 | ops-manychat | `marketing_brain_skills/producers/ops-manychat/` | `ops:manychat_setup`, `ops:manychat_pause`, `ops:manychat_update` | matt-explicit | Configures ManyChat IG keyword automation per listing (SHOWING / OPENHOUSE / DETAILS / `<street>`). Captures lead via FUB webhook. Documented: 5 showings/mo → 23 showings/mo after setup |
+| ops-google-ads | `marketing_brain_skills/producers/ops-google-ads/` | `ops:google_budget`, `ops:google_pause`, `ops:google_resume`, `ops:google_keyword_swap`, `ops:google_negative_add` | matt-explicit | NEW 2026-05-16. Any Google Ads account change requires explicit Matt approval. ±25% daily budget band enforced. Sister to ops-meta-ads for the Google side of the seller funnel. |
 
 ---
 
@@ -97,6 +117,7 @@ These producers make changes to ad accounts, CRM, and email platform.
 | producer_name | path | action_types | approval | notes |
 |---|---|---|---|---|
 | comms-matt-alert | `marketing_brain_skills/producers/comms-matt-alert/` | `comms:matt_alert`, `comms:matt_summary`, `comms:team_update`, `comms:stakeholder_summary` | none (critical/high send immediately; medium/low/summary land in dashboard) | Routes alerts to iMessage (critical/high) or email + dashboard card (medium/low/summary). Voice-validates every message before send. |
+| comms-client-update | `marketing_brain_skills/producers/comms-client-update/` | `comms:client_weekly`, `comms:client_milestone`, `comms:past_client_touch` | matt-review-draft | NEW 2026-05-16. Per-client touchpoint communications: weekly seller status, milestone notes (offer accepted/inspection passed/closing), quarterly past-client touch (home-value + market snapshot). Sends via Resend with personalized fields. |
 
 ---
 
@@ -108,6 +129,7 @@ These producers run analysis and surface findings; they do not publish.
 |---|---|---|---|---|
 | analyze-anomaly | `marketing_brain_skills/analyze-anomaly/` | `analyze:drop_investigation`, `analyze:spike_investigation`, `analyze:metric_decomposition` | none (findings written to marketing_decisions; generate-briefs reads them) | Drills into flagged channel anomaly: inflection date, dimension decomposition, correlated events, hypothesis, recommended actions. |
 | analyze-experiment | `marketing_brain_skills/analyze-experiment/` | `analyze:ab_test_design`, `analyze:ab_test_readout` | none (rollout actions it enqueues go to site-edit which has matt-review-PR) | Designs A/B tests with power calculation; reads out completed tests with chi-square / t-test significance; declares winner or extends. |
+| analyze-competitor | `marketing_brain_skills/analyze-competitor/` | `analyze:competitor_scan`, `analyze:competitor_report` | none (findings written to marketing_decisions) | NEW 2026-05-16. Pulls and analyzes a named Bend competitor's marketing surface (Cascade Sotheby's, Hasson, Compass Bend, etc.). Post cadence, content mix, ad creative, listing count, agent growth. Sister to `competitor-recon` (which runs the weekly scrape). |
 
 ---
 

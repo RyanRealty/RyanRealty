@@ -143,6 +143,34 @@
     {
       "path": "/api/cron/strategy-revision-check",
       "schedule": "0 14 1 * *"
+    },
+    {
+      "path": "/api/cron/performance-pull-48h",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/performance-pull-7d",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/performance-pull-30d",
+      "schedule": "0 12 * * 0"
+    },
+    {
+      "path": "/api/cron/weekly-cycle",
+      "schedule": "0 14 * * 0"
+    },
+    {
+      "path": "/api/cron/snapshot-channels",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/producer-runtime",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/loop-health-check",
+      "schedule": "30 12 * * *"
     }
   ]
 }
