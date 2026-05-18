@@ -237,25 +237,217 @@ export async function deschutesDialLookup(
 }
 
 /**
- * Strategy 3 (stub): person email lookup once we have the owner name.
+ * Strategy 3: Tracerfy skip-trace (real-estate-focused).
  *
- * Apollo.io is B2B-focused and rarely surfaces residential homeowners'
- * personal emails. BatchSkipTracing (real-estate-focused) costs $0.20/lookup
- * but Matt doesn't have an account.
+ * Per docs/FAIRST_AMERICAN_IGNITE_AND_SKIPTRACE_RESEARCH_2026-05-17.md §2.1:
+ * Tracerfy is the API-first leader at our volume. $0.05/hit (free on miss),
+ * returns up to 8 phones + 5 emails + mailing + owner name + litigator flag.
+ * Bearer-token REST. No monthly minimum.
  *
- * For v2: integrate BatchSkipTracing or similar when Matt signs up. For now,
- * we return null and let Matt handle the manual skiptrace from the owner
- * name + mailing address that DIAL gave us.
+ * Note on First American Ignite: Matt has an Ignite account but Ignite
+ * itself has NO public API (it's a web portal). The Farming module is
+ * powered by Benutech's ReboConnect API, which DOES have programmatic
+ * access via a "Scholarship" subsidy program for affiliated brokers —
+ * multi-week sales cycle. Contact: Eric Bryant, 562.374.3226. Until that
+ * lands, Tracerfy is the primary phone+email enrichment provider.
  */
-export async function personEmailLookup(
-  _ownerName: string,
-  _city: string,
-): Promise<{ email?: string; phone?: string } | null> {
-  return null
+export type TracerfyEnrichment = {
+  email?: string
+  phone?: string
+  allPhones?: Array<{ value: string; type?: string; isLitigator?: boolean }>
+  allEmails?: string[]
+  litigator?: boolean
+  notes: string
+}
+
+export async function tracerfySkipTrace(params: {
+  streetAddress: string
+  city: string
+  state?: string
+  postalCode?: string | null
+  ownerName?: string
+}): Promise<TracerfyEnrichment | null> {
+  const key = process.env.TRACERFY_API_KEY?.trim()
+  const base = process.env.TRACERFY_API_BASE?.trim() ?? 'https://tracerfy.com/v1/api'
+  if (!key) {
+    console.warn('[tracerfy] TRACERFY_API_KEY missing — skiptrace unavailable')
+    return null
+  }
+
+  const body: Record<string, unknown> = {
+    address: params.streetAddress,
+    city: params.city,
+    state: params.state ?? 'OR',
+  }
+  if (params.postalCode) body.zip = params.postalCode
+  if (params.ownerName) body.full_name = params.ownerName
+
+  try {
+    const res = await fetch(`${base}/trace/lookup/`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    })
+    if (res.status === 404 || res.status === 204) return null  // no match — free
+    if (!res.ok) {
+      console.warn(`[tracerfy] non-OK: ${res.status}`, await res.text().catch(() => ''))
+      return null
+    }
+    const j = (await res.json()) as {
+      status?: string
+      phone_numbers?: Array<{ value?: string; phone?: string; type?: string; is_litigator?: boolean }>
+      emails?: Array<string | { email?: string; value?: string }>
+      litigator?: boolean
+      deceased?: boolean
+    }
+
+    const phonesRaw = (j.phone_numbers ?? [])
+      .map((p) => ({
+        value: (p.value ?? p.phone ?? '').toString().replace(/\D/g, ''),
+        type: p.type,
+        isLitigator: p.is_litigator ?? false,
+      }))
+      .filter((p) => p.value.length === 10 || p.value.length === 11)
+
+    const emailsRaw = (j.emails ?? [])
+      .map((e) => (typeof e === 'string' ? e : (e.email ?? e.value ?? '')))
+      .filter((e) => /@/.test(e))
+
+    if (phonesRaw.length === 0 && emailsRaw.length === 0) return null
+
+    const bestPhone =
+      phonesRaw.find((p) => !p.isLitigator && /mobile|cell/i.test(p.type ?? ''))?.value ??
+      phonesRaw.find((p) => !p.isLitigator)?.value ??
+      phonesRaw[0]?.value
+
+    return {
+      phone: bestPhone,
+      email: emailsRaw[0],
+      allPhones: phonesRaw,
+      allEmails: emailsRaw,
+      litigator: j.litigator ?? phonesRaw.some((p) => p.isLitigator),
+      notes: `Tracerfy returned ${phonesRaw.length} phones + ${emailsRaw.length} emails${j.litigator || phonesRaw.some((p) => p.isLitigator) ? ' (LITIGATOR FLAG — handle with care)' : ''}${j.deceased ? ' (DECEASED FLAG)' : ''}.`,
+    }
+  } catch (err) {
+    console.warn('[tracerfy] error:', err)
+    return null
+  }
 }
 
 /**
- * Run all three strategies in order, return the first useful result.
+ * DNC scrub via Tracerfy. Returns true if the number is on the National DNC
+ * registry — DO NOT cold-call. Matt's broker license is at risk on a TCPA
+ * violation. SMS + direct mail + door-knocking are still allowed; voice
+ * calls require prior consent if DNC-registered.
+ */
+export async function isPhoneOnDNC(phone: string): Promise<boolean | null> {
+  const key = process.env.TRACERFY_API_KEY?.trim()
+  const base = process.env.TRACERFY_API_BASE?.trim() ?? 'https://tracerfy.com/v1/api'
+  if (!key) return null
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length !== 10 && digits.length !== 11) return null
+
+  try {
+    const res = await fetch(`${base}/dnc/lookup/`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: digits }),
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const j = (await res.json()) as { on_dnc?: boolean; registered?: boolean; dnc?: boolean }
+    return Boolean(j.on_dnc ?? j.registered ?? j.dnc)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Strategy 4 (fallback): Apify property-owner-skip-trace actor.
+ *
+ * $0.12 per hit (free on miss). Lower hit rate than Tracerfy but uses a
+ * different data source — sometimes succeeds where Tracerfy missed.
+ * Reuses the APIFY_API_TOKEN we already have.
+ */
+export async function apifyPropertyOwnerSkipTrace(params: {
+  streetAddress: string
+  city: string
+  state?: string
+}): Promise<TracerfyEnrichment | null> {
+  const apifyToken = process.env.APIFY_API_TOKEN?.trim()
+  if (!apifyToken) return null
+  const actor = 'khadinakbar~skip-trace-property-owner'
+  try {
+    const res = await fetch(
+      `${APIFY_BASE}/acts/${actor}/run-sync-get-dataset-items?token=${apifyToken}&timeout=120`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          addresses: [{
+            address: params.streetAddress,
+            city: params.city,
+            state: params.state ?? 'OR',
+          }],
+        }),
+      },
+    )
+    if (!res.ok) return null
+    const items = (await res.json()) as Array<{ phones?: string[]; emails?: string[]; owner?: string }>
+    const item = items?.[0]
+    if (!item || (!item.phones?.length && !item.emails?.length)) return null
+    const phones = (item.phones ?? []).map((p) => ({
+      value: p.replace(/\D/g, ''),
+      type: undefined as string | undefined,
+      isLitigator: false,
+    }))
+    return {
+      phone: phones[0]?.value,
+      email: item.emails?.[0],
+      allPhones: phones,
+      allEmails: item.emails ?? [],
+      litigator: false,
+      notes: `Apify property-owner skip-trace returned ${phones.length} phones + ${(item.emails ?? []).length} emails.`,
+    }
+  } catch (err) {
+    console.warn('[apify-skiptrace] error:', err)
+    return null
+  }
+}
+
+/**
+ * Combined enrichment — Tracerfy first, Apify fallback. DNC-scrubs the
+ * best phone. Returns the first hit.
+ */
+export async function enrichOwnerContact(params: {
+  streetAddress: string
+  city: string
+  state?: string
+  postalCode?: string | null
+  ownerName?: string
+}): Promise<TracerfyEnrichment | null> {
+  let res = await tracerfySkipTrace(params)
+  if (!res) res = await apifyPropertyOwnerSkipTrace(params)
+  if (!res) return null
+
+  if (res.phone) {
+    const onDnc = await isPhoneOnDNC(res.phone)
+    if (onDnc === true) {
+      res.notes += ' Best phone is on DNC registry. DO NOT cold-call (TCPA risk). SMS / direct mail / door-knock allowed.'
+    } else if (onDnc === false) {
+      res.notes += ' Best phone passed DNC scrub.'
+    }
+  }
+  return res
+}
+
+/**
+ * Run all four strategies in order, return the first useful result.
  *
  * Updates the expired_listings.owner_lookup_status + last_owner_lookup_at
  * via the caller (the cron writes the row).
@@ -266,23 +458,47 @@ export async function lookupOwnerForExpiredListing(params: {
 }): Promise<OwnerLookupResult> {
   // Strategy 1: FUB internal match
   const fubMatch = await fubAddressMatch(params.streetAddress, params.city)
-  if (fubMatch) return fubMatch
+  if (fubMatch) {
+    // Even with a FUB match, try to enrich the phone/email if the existing
+    // FUB record is light (no email/phone). Skip for now to save credits.
+    return fubMatch
+  }
 
-  // Strategy 2: Deschutes DIAL
+  // Strategy 2: Deschutes DIAL (gives owner name + mailing)
   const dialMatch = await deschutesDialLookup(params.streetAddress, params.city)
   if (dialMatch) {
-    // Optionally enrich with email/phone (currently stub)
-    if (dialMatch.ownerName) {
-      const enrichment = await personEmailLookup(dialMatch.ownerName, params.city)
-      if (enrichment?.email || enrichment?.phone) {
-        return {
-          ...dialMatch,
-          ownerEmail: enrichment.email,
-          ownerPhone: enrichment.phone,
-        }
+    // Strategy 3+4: enrich with phone/email
+    const enrichment = await enrichOwnerContact({
+      streetAddress: params.streetAddress,
+      city: params.city,
+      state: 'OR',
+      ownerName: dialMatch.ownerName,
+    })
+    if (enrichment?.email || enrichment?.phone) {
+      return {
+        ...dialMatch,
+        ownerEmail: enrichment.email,
+        ownerPhone: enrichment.phone,
+        notes: `${dialMatch.notes ?? ''} ${enrichment.notes}`.trim(),
       }
     }
     return dialMatch
+  }
+
+  // Strategy 3+4 standalone: try skiptrace by address even without DIAL owner name
+  const directEnrichment = await enrichOwnerContact({
+    streetAddress: params.streetAddress,
+    city: params.city,
+    state: 'OR',
+  })
+  if (directEnrichment?.email || directEnrichment?.phone) {
+    return {
+      status: 'matched-apollo',
+      ownerEmail: directEnrichment.email,
+      ownerPhone: directEnrichment.phone,
+      source: 'tracerfy-direct',
+      notes: directEnrichment.notes,
+    }
   }
 
   // No match — placeholder pending manual lookup

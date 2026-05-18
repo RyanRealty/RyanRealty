@@ -150,15 +150,27 @@ This is the **automated** path. No form fill required. The cron continuously wat
 │     Strategy 1: FUB address match (FUB API streetAddress filter +        │
 │                  Supabase fub_person_geo.formatted_address fallback)     │
 │     Strategy 2: Apify-driven Deschutes County DIAL scrape                │
-│                  (https://dial.deschutes.org public records lookup)      │
-│     Strategy 3: Apollo / email enrichment from owner name (stub for v2)  │
+│                  (https://dial.deschutes.org public records lookup —      │
+│                   gives owner name + mailing address)                    │
+│     Strategy 3: Tracerfy skiptrace API ($0.05/hit, primary skip-trace)   │
+│                  Returns up to 8 phones + 5 emails for the owner.        │
+│                  Best phone preferred = mobile, non-litigator, deduped.  │
+│     Strategy 4: Apify property-owner-skip-trace actor (backup if         │
+│                  Tracerfy returns no contact). Same payload shape.       │
+│   ↓                                                                       │
+│   If we got a phone → run Tracerfy DNC lookup:                           │
+│     - on-DNC → tag owner-lookup:dnc-flagged; broker note added;          │
+│       cold-call blocked; SMS / direct mail / door-knock still allowed   │
+│     - cleared → tag owner-lookup:dnc-clear                               │
 │   ↓                                                                       │
 │   Branch on result:                                                      │
 │     a. FUB match → use existing person_id, tag + note + task             │
 │     b. DIAL match (got owner name + mailing addr but no email/phone) →   │
 │        create new FUB person with the real name + synthetic email        │
 │        keyed on ListingKey for dedupe                                    │
-│     c. No match → placeholder FUB person tagged owner-lookup:pending     │
+│     c. Tracerfy/Apify enriched (owner name + phone + email) →            │
+│        promote synthetic to real email; write phone to contact_phone     │
+│     d. No match → placeholder FUB person tagged owner-lookup:pending     │
 │   ↓                                                                       │
 │   Apply canonical tags: audience:seller, seller:hot,                     │
 │                          intent:expired-listing,                          │
@@ -192,7 +204,8 @@ This is the **automated** path. No form fill required. The cron continuously wat
 **Files involved:**
 
 - `app/api/cron/detect-expired-listings/route.ts` — the cron entry point
-- `lib/expired-owner-lookup.ts` — three lookup strategies
+- `app/api/admin/expired-listing-lookup/route.ts` — manual re-fire endpoint (Matt's tool)
+- `lib/expired-owner-lookup.ts` — four-strategy lookup chain + DNC scrub
 - `lib/expired-alert.ts` — Resend-based email alert formatter
 - `lib/followupboss.ts` — `sendEvent`, `addPersonTags`, `addPersonNote`, `createRealtimeTask`, `setPersonCustomFields`, `findPersonByEmail`
 - `lib/resend.ts` — `sendEmail`
@@ -204,6 +217,111 @@ This is the **automated** path. No form fill required. The cron continuously wat
 **Expected volume:** ~3–10 new expired listings per day in our service area. Cron is safe to run every hour because of the dedupe-by-listing_key constraint.
 
 **Smoke test (2026-05-17 18:30):** 2 Prineville listings queued for next cron run.
+
+---
+
+### 1.6 Manual owner re-lookup — `/api/admin/expired-listing-lookup`
+
+When Matt wants to re-fire owner enrichment on a specific listing (cron landed nothing, new provider credential added, stale data refresh, etc.).
+
+**Endpoint:** `POST /api/admin/expired-listing-lookup`
+**Auth:** `Bearer $CRON_SECRET`
+**Body:** `{ "listing_key": "..." }` OR `{ "street_address": "...", "city": "..." }`
+
+**Returns** the full `OwnerLookupResult` + supplemental skiptrace + DNC status + final consolidated contact `{ email, phone }`. If `listing_key` is included, also persists the enrichment back to the `expired_listings` row (`owner_name`, `contact_email`, `contact_phone`, `contact_source`, `enrichment_notes`, `owner_lookup_status`, `last_owner_lookup_at`).
+
+**Use cases:**
+- Cron returned `owner-lookup:pending` and Matt wants to retry with a refreshed Tracerfy quota
+- A new expired hit FUB before we wired skiptrace; manually backfill
+- Test specific addresses end-to-end without waiting for the next cron tick
+
+**Example call:**
+
+```bash
+curl -X POST https://ryan-realty.com/api/admin/expired-listing-lookup \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{ "listing_key": "220189422" }'
+```
+
+---
+
+## 1.7 Owner-lookup provider strategy (locked 2026-05-18)
+
+The expired-listing pipeline depends on getting accurate owner contact info fast. Here's the decision tree and what each provider buys us.
+
+### Tier 1 — Tracerfy (PRIMARY, API-first, $0.05/hit)
+
+- **What it is:** REST API skiptrace. Bearer-token auth, JSON in/out.
+- **Coverage:** Up to 8 phones + 5 emails per hit, with mobile/landline/voip classification and litigator flag.
+- **Best phone selection:** Mobile > non-litigator > active.
+- **DNC endpoint:** Same provider, `/dnc/lookup/` returns whether a phone is on the National DNC Registry.
+- **Env:** `TRACERFY_API_KEY`, `TRACERFY_API_BASE=https://tracerfy.com/v1/api` (default).
+- **Status:** Wired. Matt needs to sign up at https://tracerfy.com and drop the key into `.env.local` + Vercel.
+- **Why primary:** API-first, predictable cost, fastest to integrate, real-time DNC scrub.
+
+### Tier 2 — Apify property-owner-skip-trace (BACKUP, ~$0.10/hit)
+
+- **What it is:** Apify actor that runs a headless scrape against public records / data aggregators.
+- **Coverage:** Variable per address. No guaranteed phone+email.
+- **Env:** `APIFY_TOKEN` (already wired for DIAL scrape).
+- **When it runs:** Only if Tracerfy returns no contact (chained inside `enrichOwnerContact()`).
+- **Why backup:** Slower (actor cold-start), higher cost per result, no native DNC scrub.
+
+### Tier 3 — First American Ignite (web-only, MANUAL)
+
+- **What it is:** Title-company-provided farming + skiptrace portal (https://firstam.com/agent/ignite). Bulk address-list-to-owner-name + email/phone lookups.
+- **Coverage:** Strong on owner name + mailing address. Variable on phone/email (depends on tier).
+- **Integration:** **No public API.** Web portal only. Logins, exports to CSV.
+- **Status:** Matt has access. **Used manually** for batch farming pulls, not real-time per-listing.
+- **Subsidized API path: Benutech ReboConnect via Scholarship Program** — Benutech powers Ignite Farming. Their Scholarship offers a subsidized API tier to affiliated brokers. **Contact: Eric Bryant at Benutech, 562.374.3226.** Multi-week sales cycle, so not blocking the immediate wire-up. Worth pursuing for the long-term cost reduction.
+
+### Tier 4 — Deschutes County DIAL (already wired)
+
+- **What it is:** Apify scrape of https://dial.deschutes.org public-records.
+- **Coverage:** Owner name + mailing address only — no phone/email.
+- **Role:** Authoritative on owner identity (county records). Drives the Tracerfy/Apify query (we use the owner name to disambiguate when multiple people live at the same address).
+
+### The chain inside `lookupOwnerForExpiredListing()`
+
+```
+1. FUB address match              ─►  has email/phone?  ─► done
+                                  │
+                                  └►  partial → continue
+2. DIAL scrape                    ─►  got owner name?   ─► continue
+                                  │
+                                  └►  nothing → continue
+3. Tracerfy skiptrace             ─►  got phone/email?  ─► continue
+                                  │
+                                  └►  nothing → continue
+4. Apify property-owner-skiptrace ─►  got phone/email?  ─► continue
+                                  │
+                                  └►  nothing → mark pending, alert Matt
+5. DNC scrub (if phone)           ─►  on-DNC?           ─► tag dnc-flagged
+                                  │
+                                  └►  cleared → tag dnc-clear
+```
+
+Cost ceiling per new expired (worst case all 4 tiers run): ~$0.20 + Apify minutes. Realistic average: $0.05–0.07.
+
+### DNC compliance (broker-license protection)
+
+Cold-calling a number on the National DNC Registry without prior consent is a TCPA violation. Matt holds the principal broker license — exposure is real.
+
+**Code-side enforcement:**
+- Every phone returned by `enrichOwnerContact()` is automatically scrubbed against Tracerfy's `/dnc/lookup/` before being written to the FUB Note or `expired_listings.contact_phone` field.
+- DNC-flagged phones are still stored (for SMS/door-knock/direct-mail outreach — all legal) but carry an inline warning in the enrichment_notes: `"Best phone is on DNC registry. DO NOT cold-call (TCPA risk). SMS / direct mail / door-knock allowed."`
+- FUB Note also surfaces the warning at the top of the body.
+
+**Outreach matrix:**
+
+| Channel | DNC-flagged number | DNC-clear number |
+|---|---|---|
+| Cold call (voice) | ❌ never | ✅ allowed |
+| SMS | ✅ allowed (TCPA-clean as long as no autodialer) | ✅ allowed |
+| Direct mail | ✅ allowed | ✅ allowed |
+| Door-knock | ✅ allowed | ✅ allowed |
+| Email | ✅ allowed (different statute — CAN-SPAM) | ✅ allowed |
 
 ---
 
@@ -254,7 +372,7 @@ Every lead carries the following structured tags. Filterable in FUB UI smart lis
 | `tenure:*` | `recent`, `long-term` | Imported from county records |
 | `industry:*` | `realtor` | Bulk migration of competitor realtor records |
 | `compliance:*` | `hard-stop` | Bulk migration of bounced/unsubscribed/realtor records |
-| `owner-lookup:*` | `pending`, `resolved` | Expired-listing cron — whether we have the actual owner info |
+| `owner-lookup:*` | `pending`, `resolved`, `dnc-flagged`, `dnc-clear` | Expired-listing cron — owner info status + DNC scrub result |
 
 Full spec: `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` §4.
 
@@ -366,7 +484,8 @@ lib/
   canonical-lead-tagger.ts         — Universal post-process tagger + isHardStopped gate
   agent-attribution.ts             — Cookie parser for ?agent= attribution
   lead-geocode.ts                  — Geocode + spatial lookup helper
-  expired-owner-lookup.ts          — 3-strategy owner-lookup chain
+  expired-owner-lookup.ts          — 4-strategy owner-lookup chain + DNC scrub
+                                     (FUB → DIAL → Tracerfy → Apify-skiptrace)
   expired-alert.ts                 — Resend email alert formatter
   resend.ts                        — Resend client + sendEmail()
   cma-request.ts                   — Queues content:cma brain action
@@ -380,6 +499,7 @@ app/
   actions/agent-attribution-read.ts — Server-side cookie reader
   api/cron/detect-expired-listings/ — Hourly auto-detection cron
   api/cron/seller-workflow-pause/  — 15-min pause-on-reply cron (both audiences)
+  api/admin/expired-listing-lookup/ — Manual re-fire owner enrichment (Bearer)
   api/meta/lead-webhook/           — FB lead-gen webhook (canonical schema)
 
 components/
