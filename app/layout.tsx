@@ -16,6 +16,7 @@ import AuthErrorRedirect from "../components/AuthErrorRedirect";
 import FubIdentityBridge from "../components/FubIdentityBridge";
 import AgentAttributionBridge from "../components/AgentAttributionBridge";
 import GoogleAnalytics from "../components/GoogleAnalytics";
+import FollowUpBossPixel from "../components/FollowUpBossPixel";
 import MetaPixel from "../components/MetaPixel";
 import PageViewTracker from "../components/PageViewTracker";
 import SignUpTracker from "../components/tracking/SignUpTracker";
@@ -182,6 +183,7 @@ export default async function RootLayout({
             </a>
           )}
           <GoogleAnalytics />
+          <FollowUpBossPixel />
           <MetaPixel />
           {/* PageViewTracker uses useSearchParams — must be in a Suspense boundary so static generation doesn't bail. */}
           <Suspense fallback={null}>
