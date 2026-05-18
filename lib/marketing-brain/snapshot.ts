@@ -41,6 +41,10 @@ export type Scope =
   | 'sequence'
   | 'channel'
   | 'source'
+  | 'lp'
+  | 'event'
+  | 'page_event'
+  | 'audience'
 
 export interface MetricRow {
   date: string // YYYY-MM-DD
