@@ -73,6 +73,7 @@ export type EventName =
   | 'neighborhood_view'
   | 'broker_view'
   | 'contact_agent'
+  | 'view_landing_page'
 
 function pushDataLayer(obj: Record<string, unknown>) {
   if (typeof window === 'undefined') return
@@ -115,6 +116,90 @@ export function trackEvent(eventName: EventName, params: Record<string, unknown>
 export function trackPageView(pageType: string, params: Record<string, unknown> = {}) {
   pushDataLayer({ event: 'page_view', page_type: pageType, ...params })
   fireGaEvent('page_view', { page_type: pageType, ...params })
+}
+
+// ----------------------------------------------------------------------------
+// Landing page context — UTM capture + sessionStorage persistence.
+// See marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md for
+// the LP tracking convention this implements.
+// ----------------------------------------------------------------------------
+
+export type LpContext = {
+  lp_variant: string
+  lp_source?: string
+  lp_medium?: string
+  lp_campaign?: string
+  lp_content?: string
+  lp_term?: string
+}
+
+const LP_CONTEXT_STORAGE_KEY = 'rr_lp_context'
+
+/**
+ * Read UTM params from the URL and any previously captured LP context from
+ * sessionStorage. URL params win on conflict (a deeper-link landing always
+ * re-captures). Returns undefined keys for missing params — never empty
+ * strings, so they drop cleanly from GA4 event params.
+ */
+export function getLpContext(lpVariant?: string): LpContext {
+  if (typeof window === 'undefined') {
+    return { lp_variant: lpVariant ?? 'unknown' }
+  }
+  const url = new URL(window.location.href)
+  const fromUrl: Partial<LpContext> = {
+    lp_source: url.searchParams.get('utm_source') ?? undefined,
+    lp_medium: url.searchParams.get('utm_medium') ?? undefined,
+    lp_campaign: url.searchParams.get('utm_campaign') ?? undefined,
+    lp_content: url.searchParams.get('utm_content') ?? undefined,
+    lp_term: url.searchParams.get('utm_term') ?? undefined,
+  }
+  let fromStorage: Partial<LpContext> = {}
+  try {
+    const raw = window.sessionStorage.getItem(LP_CONTEXT_STORAGE_KEY)
+    if (raw) fromStorage = JSON.parse(raw) as Partial<LpContext>
+  } catch {
+    // sessionStorage may be unavailable (private browsing) — fall through.
+  }
+  const merged: LpContext = {
+    lp_variant: lpVariant ?? fromStorage.lp_variant ?? 'unknown',
+    lp_source: fromUrl.lp_source ?? fromStorage.lp_source,
+    lp_medium: fromUrl.lp_medium ?? fromStorage.lp_medium,
+    lp_campaign: fromUrl.lp_campaign ?? fromStorage.lp_campaign,
+    lp_content: fromUrl.lp_content ?? fromStorage.lp_content,
+    lp_term: fromUrl.lp_term ?? fromStorage.lp_term,
+  }
+  return merged
+}
+
+function persistLpContext(ctx: LpContext) {
+  if (typeof window === 'undefined') return
+  try {
+    window.sessionStorage.setItem(LP_CONTEXT_STORAGE_KEY, JSON.stringify(ctx))
+  } catch {
+    // sessionStorage may be unavailable — fail silently; the URL still carries the truth.
+  }
+}
+
+/**
+ * Fire the canonical `view_landing_page` event for a landing page mount.
+ * Persists the captured UTM context to sessionStorage so any later
+ * trackEvent call on this LP can enrich its event params via getLpContext().
+ *
+ * Returns the captured context so the caller (typically <LandingPageTracker>)
+ * can also pass it to scroll-depth and CTA handlers without re-reading the URL.
+ */
+export function trackLandingPageView(lpVariant: string): LpContext {
+  const ctx = getLpContext(lpVariant)
+  persistLpContext(ctx)
+  trackEvent('view_landing_page', {
+    lp_variant: ctx.lp_variant,
+    lp_source: ctx.lp_source,
+    lp_medium: ctx.lp_medium,
+    lp_campaign: ctx.lp_campaign,
+    lp_content: ctx.lp_content,
+    lp_term: ctx.lp_term,
+  })
+  return ctx
 }
 
 function trackFbq(event: string, params?: Record<string, unknown>) {

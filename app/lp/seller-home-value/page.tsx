@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { SoldStoryCard } from '@/components/seller-lp/SoldStoryCard'
+import LandingPageTracker from '@/components/LandingPageTracker'
 import SellerLPForm from './SellerLPForm'
 import {
   getBendMarketSnapshot,
@@ -94,6 +95,7 @@ export default async function SellerHomeValuePage() {
 
   return (
     <div className="bg-background text-foreground">
+      <LandingPageTracker lpVariant="seller-home-value" />
       {/* JSON-LD structured data for Google rich results */}
       <script
         type="application/ld+json"

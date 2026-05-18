@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import LandingPageTracker from '@/components/LandingPageTracker'
 import BuyerLPForm from './BuyerLPForm'
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ const BROKER_PHONE_TEL = '+15417033095'
 export default function BuyerLPPage() {
   return (
     <main className="min-h-screen bg-background">
+      <LandingPageTracker lpVariant="buyer-listing-alerts" />
       <section className="mx-auto max-w-3xl px-4 py-10 sm:py-16">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">

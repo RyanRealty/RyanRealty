@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { trackEvent, getLpContext } from '@/lib/tracking'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -55,6 +56,31 @@ export default function BuyerLPForm() {
     startTransition(async () => {
       const r = await submitBuyerLPForm(submission)
       if (r.success) {
+        const lp = getLpContext('buyer-listing-alerts')
+        try {
+          trackEvent('generate_lead', {
+            source: 'buyer_lp',
+            lp_variant: lp.lp_variant,
+            lp_source: lp.lp_source,
+            lp_campaign: lp.lp_campaign,
+            timeline: submission.timeline,
+            budget_max: submission.budgetMax,
+            search_area_count: submission.searchAreas.length,
+          })
+        } catch {
+          // Tracking helper unavailable (no consent) — server-side lead still landed.
+        }
+        if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+          try {
+            window.fbq('track', 'Lead', {
+              content_name: 'buyer_lp_listing_alerts',
+              value: 250,
+              currency: 'USD',
+            })
+          } catch {
+            // Pixel suppressed (consent gate) — server-side lead still landed.
+          }
+        }
         setResult({ ok: true, msg: "Got it — your first batch of matches will be in your inbox within 30 minutes." })
       } else {
         setResult({ ok: false, msg: r.error })
