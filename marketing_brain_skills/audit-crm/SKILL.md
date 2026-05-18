@@ -58,8 +58,8 @@ Tags in FUB that identify a lead as a qualified seller (from `docs/FB_SELLER_CAM
 
 | Tag | Meaning | Included in north-star |
 |---|---|---|
-| `hot-seller` | Timeline 0–3 months, ASAP | Yes |
-| `warm-seller` | Timeline 3–12 months | Yes |
+| `hot-seller` | Timeline 0-3 months, ASAP | Yes |
+| `warm-seller` | Timeline 3-12 months | Yes |
 | `seller` | General seller tag (organic or broad funnel) | Yes |
 | `seller-lead` | Broad seller-pipeline tag | Yes |
 | `nurture-only` | Just exploring; no active timeline | **No** |
@@ -81,7 +81,7 @@ Per `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` (5-minute webhook response requirement
 
 ## Source quality weighted score
 
-Formula for each source's `quality_score` (0–100):
+Formula for each source's `quality_score` (0-100):
 
 ```
 quality_score = 
@@ -91,9 +91,9 @@ quality_score =
   × 100
 
 where:
-  qualified_lead_ratio  = qualified_seller_leads / new_leads  (0–1)
-  deal_closed_won_ratio = deals_closed_won / new_leads         (0–1)
-  avg_deal_value_score  = source_avg_deal_value / max_peer_avg_deal_value  (0–1, normalised)
+  qualified_lead_ratio  = qualified_seller_leads / new_leads  (0-1)
+  deal_closed_won_ratio = deals_closed_won / new_leads         (0-1)
+  avg_deal_value_score  = source_avg_deal_value / max_peer_avg_deal_value  (0-1, normalised)
 ```
 
 **Important:** because the ingestor does not break down `qualified_seller_leads` or `deals_closed_won` per source (only per account), those figures are allocated proportionally to source lead share. The quality score is therefore a relative ranking across sources, not an absolute conversion-rate guarantee. When the ingestor is enhanced to track per-source outcomes, this allocation step should be removed.
@@ -124,7 +124,7 @@ Approximated as:
 untagged_pct = (window_new_leads - window_qualified_seller_leads) / window_new_leads × 100
 ```
 
-Flag threshold: `TAGGING_DRIFT_THRESHOLD_PCT = 10` — if > 10% of new leads in the window carry no seller-stage tag, a tagging-drift opportunity is emitted.
+Flag threshold: `TAGGING_DRIFT_THRESHOLD_PCT = 10`.  if > 10% of new leads in the window carry no seller-stage tag, a tagging-drift opportunity is emitted.
 
 This is an approximation. Leads tagged `nurture-only` or untagged both appear in the numerator. True tagging drift (no tag at all on day 0) would require per-person tag inspection in FUB, not available in the aggregated ingestor data.
 
@@ -205,8 +205,8 @@ GET /api/marketing-brain/audit/crm?asOfDate=2026-05-12&windowDays=30
 Authorization: Bearer $CRON_SECRET
 ```
 
-- `asOfDate` — optional YYYY-MM-DD. Defaults to yesterday.
-- `windowDays` — optional integer 1–90. Defaults to 30.
+- `asOfDate`.  optional YYYY-MM-DD. Defaults to yesterday.
+- `windowDays`.  optional integer 1-90. Defaults to 30.
 - Returns `CRMAuditReport` as JSON.
 
 ---
@@ -218,7 +218,7 @@ Same 10-tag set as `marketing-brain:diagnose-performance`. Tags used by this ski
 | Tag | When emitted |
 |---|---|
 | `investigate_drop` | response-time compliance < 50%, north-star WoW drop > 20%, tagging drift flagged |
-| `review_targeting` | low-quality high-volume source, response-time compliance 50–80% |
+| `review_targeting` | low-quality high-volume source, response-time compliance 50-80% |
 | `check_tracking` | no response-time data, or worsening trend |
 | `expand_to_similar_audience` | high-quality source with low volume |
 | `pause_underperformer` | pipeline stage stalled with no funnel advances |
@@ -230,7 +230,7 @@ Same 10-tag set as `marketing-brain:diagnose-performance`. Tags used by this ski
 
 ## Related skills
 
-- `marketing-brain:snapshot-channels` (`app/api/cron/marketing-snapshot-fub/`) — upstream; writes the FUB rows this skill reads.
-- `marketing-brain:diagnose-performance` — parallel; same `marketing_channel_daily` table, different analysis focus (channel-level, all channels).
-- `marketing-brain:generate-briefs` — downstream; consumes `opportunities[].recommended_action` to decide what CRM-improvement content to create.
-- `marketing-brain:weekly-cycle` — orchestrates snapshot + diagnose + audit-crm + generate-briefs in sequence.
+- `marketing-brain:snapshot-channels` (`app/api/cron/marketing-snapshot-fub/`).  upstream; writes the FUB rows this skill reads.
+- `marketing-brain:diagnose-performance`.  parallel; same `marketing_channel_daily` table, different analysis focus (channel-level, all channels).
+- `marketing-brain:generate-briefs`.  downstream; consumes `opportunities[].recommended_action` to decide what CRM-improvement content to create.
+- `marketing-brain:weekly-cycle`.  orchestrates snapshot + diagnose + audit-crm + generate-briefs in sequence.

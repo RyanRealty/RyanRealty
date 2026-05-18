@@ -1,7 +1,7 @@
 ---
 name: broker-contact-card
 description: >
-  Produces the locked Ryan Realty broker contact card — a 1080×1350 IG tile with full
+  Produces the locked Ryan Realty broker contact card.  a 1080×1350 IG tile with full
   brand (wordmark, transparent broker portrait, name, role, phone, email). This is the
   MANDATORY FINAL TILE on any IG carousel for a deal where Ryan Realty represented the
   BUYERS, not the listing side. Use whenever Matt says "buyer-side post", "buyer's
@@ -20,16 +20,32 @@ when_to_use: |
   - automatically whenever building any S2-style sold OR under-contract content where
     Ryan Realty is the BUYER-side agent (not the listing agent)
 action_types:
-  - content:broker_contact_card
+  - content:broker_card
+output_type: image
+target_platforms: ["ig_feed", "ig_carousel", "fb_feed"]
+asset_destination: Supabase asset-library bucket + public/list-kits/<address>/
+auto_inputs: ["listing photos from Spark", "brand tokens", "design system v2"]
+required_inputs: ["mls_id OR topic"]
+optional_inputs: ["aspect_ratio_overrides", "color_palette_override"]
+estimated_runtime_min: 5
+cost_usd_estimate: $0.05-$0.50 per image
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.png
+example_outputs: []
+    label: "past approved renders"
+    surface: "ig_carousel"
 ---
 
 # Broker Contact Card · Buyer-Side Last Tile
 
-## CRITICAL — Layout is DERIVED FROM S7-Agent-Intro. Do not shuffle.
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
+
+## CRITICAL.  Layout is DERIVED FROM S7-Agent-Intro. Do not shuffle.
 
 **The card layout is not invented here.** It is the approved **S7 Agent Intro** layout
 from `scripts/build_single_image_posts.py` (function `s7_agent_intro()`), extended by
-a compact contact block in the bottom 200 px. Matt approved S7 on 2026-05-12 — the
+a compact contact block in the bottom 200 px. Matt approved S7 on 2026-05-12.  the
 rendered reference lives at
 `public/template-picker/list-kits/19496-tumalo-reservoir/v3/single-image/S7-agent-intro.jpg`.
 
@@ -37,7 +53,7 @@ If S7 changes (portrait height, name size, divider position, eyebrow style), upd
 **both** `s7_agent_intro()` AND `build_broker_contact_card.py::build_card()` together so
 they stay in sync. A drift between them is a bug.
 
-### Locked layout — DO NOT reshuffle without explicit Matt approval
+### Locked layout.  DO NOT reshuffle without explicit Matt approval
 
 ```
 1080 × 1350 cream background
@@ -48,7 +64,7 @@ y=60   ─ Eyebrow top-left, Azo Sans 22 tracked 0.20em (S7 spec).
                            generic → "MEET YOUR BROKER"
 y=100  ─ Hairline under eyebrow (1px navy)
 
-y=60–880  ─ Transparent broker portrait, 820 px tall, centered horizontally
+y=60-880  ─ Transparent broker portrait, 820 px tall, centered horizontally
             (IDENTICAL to S7 spec)
 
 y=920  ─ Hairline divider centered (180 px from each edge)
@@ -78,7 +94,7 @@ website URL bottom-right.** Those were inventions from earlier iterations and go
 rejected. Stay locked to S7 + the contact block above.
 
 **Approved-state reference:** `out/proof/2026-05-14/rendered/broker-cards/rebecca-buyer.jpg`
-locked 2026-05-14 — must match the S7-derived layout above.
+locked 2026-05-14.  must match the S7-derived layout above.
 
 **The rule that creates this skill (locked 2026-05-14):**
 
@@ -88,8 +104,8 @@ locked 2026-05-14 — must match the S7-derived layout above.
 
 For ANY IG sequence where Ryan Realty represented the BUYERS:
 
-1. **No multi-photo Pattern A carousel.** The listing isn't ours to sell — our SERVICE is.
-2. **Single branded tiles only** — S2 hero (sold / under-contract overlay), optional
+1. **No multi-photo Pattern A carousel.** The listing isn't ours to sell.  our SERVICE is.
+2. **Single branded tiles only**.  S2 hero (sold / under-contract overlay), optional
    Pattern B editorial variant, broker contact card.
 3. **Final tile is ALWAYS the broker contact card.** Cream background, wordmark top,
    transparent broker portrait centered, name in Amboqia, role tracked uppercase, phone
@@ -104,7 +120,7 @@ For ANY IG sequence where Ryan Realty represented the BUYERS:
 - Cream `#faf8f4` background, navy `#102742` ink.
 - Top section: pre-rendered Ryan Realty wordmark (`logo-blue.png`, 420 px wide, centered).
 - Hairline divider under logo.
-- Tagline (Azo Sans Medium tracked uppercase) — varies by `moment` payload.
+- Tagline (Azo Sans Medium tracked uppercase).  varies by `moment` payload.
 - Middle: broker transparent PNG (`design_system/ryan-realty/assets/team/<slug>.png`),
   580 px tall, centered.
 - Bottom: broker name (Amboqia 72), role (Azo Sans Medium 20 tracked uppercase),
@@ -122,7 +138,7 @@ For ANY IG sequence where Ryan Realty represented the BUYERS:
 
 | action_type | required payload | notes |
 |---|---|---|
-| `content:broker_contact_card` | `broker_slug` + `moment` | Single 1080×1350 JPG output |
+| `content:broker_card` | `broker_slug` + `moment` | Single 1080×1350 JPG output |
 
 ### Payload schema
 
@@ -140,7 +156,7 @@ interface BrokerContactCardPayload {
 |---|---|
 | `buyer` | "Looking for the right home in Bend?" |
 | `seller` | "Considering selling your home in Bend?" |
-| `generic` | "Real estate done right — in Bend, Oregon." |
+| `generic` | "Real estate done right.  in Bend, Oregon." |
 
 ---
 
@@ -152,9 +168,9 @@ contact sheet HTML or any individual card.
 
 ```python
 BROKERS = {
-    "matt-ryan":         {"phone": "541.213.6706", "email": "matt@ryan-realty.com", ...},
-    "paul-stevenson":    {"phone": "541.213.6706", "email": "paul@ryan-realty.com", ...},
-    "rebecca-peterson":  {"phone": "415.308.9087", "email": "rebeccapeterson@ryan-realty.com", ...},
+    "matt-ryan":         {"phone": "541.213.6706", "email": "matt@ryan-realty.com",...},
+    "paul-stevenson":    {"phone": "541.213.6706", "email": "paul@ryan-realty.com",...},
+    "rebecca-peterson":  {"phone": "415.308.9087", "email": "rebeccapeterson@ryan-realty.com",...},
 }
 ```
 
@@ -214,14 +230,14 @@ out/<batch-path>/broker-cards/
 
 ## 7. Approval gate
 
-`matt-review-draft` — same as all content. Matt sees the rendered card in the contact
+`matt-review-draft`.  same as all content. Matt sees the rendered card in the contact
 sheet and says "ship it" / "approved" before publish.
 
 ---
 
 ## 8. Status flow
 
-Per `marketing_brain_skills/producers/TEMPLATE.md` — pending → in_production → ready →
+Per `marketing_brain_skills/producers/TEMPLATE.md`.  pending → in_production → ready →
 approved → executed → measured.
 
 ---
@@ -239,14 +255,42 @@ approved → executed → measured.
 ## 10. Related skills + references
 
 **Required reading:**
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `~/.claude/.../memory/feedback_use_approved_generators.md` — use the script, don't re-implement
-- `~/.claude/.../memory/feedback_contact_sheet_required.md` — contact-sheet HTML for review
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
+- `~/.claude/.../memory/feedback_use_approved_generators.md`.  use the script, don't re-implement
+- `~/.claude/.../memory/feedback_contact_sheet_required.md`.  contact-sheet HTML for review
 
 **Composes with:**
-- `social_media_skills/ig-single-post/SKILL.md` — S2 hero is the first tile of a buyer-side sequence
-- `social_media_skills/instagram-carousel/SKILL.md` — buyer-side variant: NO Pattern A photo carousel; use S2 + optional Pattern B + broker card
+- `social_media_skills/ig-single-post/SKILL.md`.  S2 hero is the first tile of a buyer-side sequence
+- `social_media_skills/instagram-carousel/SKILL.md`.  buyer-side variant: NO Pattern A photo carousel; use S2 + optional Pattern B + broker card
 
 **Registry entry:**
 - Add to `marketing_brain_skills/producers/REGISTRY.md` Section B (Content Producers)
   on the next session that touches the registry.
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

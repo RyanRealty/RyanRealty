@@ -9,20 +9,32 @@ action_types:
   - site:perf_fix
   - site:redirect_add
   - site:schema_add
+output_type: web-page
+target_platforms: ["agentfire_blog"]
+asset_destination: app/ (Next.js) via GitHub PR; opens PR to main for matt-review-PR approval
+auto_inputs: ["design system v2 tokens", "shadcn/ui components", "site routing"]
+required_inputs: ["page_slug OR neighborhood_slug"]
+optional_inputs: ["hero_image_override", "schema_overrides"]
+estimated_runtime_min: 20
+cost_usd_estimate: $0.50-$2 per page (Anthropic for copy + JSON-LD scaffold)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.html
+example_outputs: []
+    label: "live neighborhood pages"
+    surface: "agentfire_blog"
 ---
 
 # Site Performance Producer
 
 **Scope:** Technical fixes to the Next.js app that improve Core Web Vitals, crawl
-efficiency, or structured-data richness — without changing user-visible copy or
+efficiency, or structured-data richness.  without changing user-visible copy or
 scaffolding new pages. This producer handles three fix types: lazy-loading images on
 existing pages, adding 301 redirects to `next.config.ts`, and adding JSON-LD
 `<Script>` blocks to existing pages. It does NOT write copy (that is `site-edit`),
 does NOT create new pages (that is `site-page-create`), and does NOT run image
-conversion tooling — it applies `loading="lazy"` attributes and `decoding="async"`
+conversion tooling.  it applies `loading="lazy"` attributes and `decoding="async"`
 in the JSX source.
 
-Every fix lands in a branch + PR — never directly on `main`.
+Every fix lands in a branch + PR.  never directly on `main`.
 
 **Status:** Canonical  
 **Locked:** 2026-05-13  
@@ -33,24 +45,24 @@ Every fix lands in a branch + PR — never directly on `main`.
 ## 1. Scope
 
 ### In scope
-- `site:perf_fix` with `fix_type='lazy_load'` — add `loading="lazy"` +
+- `site:perf_fix` with `fix_type='lazy_load'`.  add `loading="lazy"` +
   `decoding="async"` to `<Image>` or `<img>` elements below the fold on a specific page
-- `site:perf_fix` with `fix_type='image_optimize'` — convert a referenced PNG in
+- `site:perf_fix` with `fix_type='image_optimize'`.  convert a referenced PNG in
   `public/` to WebP using `sharp` or `cwebp` CLI; update the import/src reference in
   the page file
-- `site:perf_fix` with `fix_type='font_strategy'` — adjust font display strategy in
+- `site:perf_fix` with `fix_type='font_strategy'`.  adjust font display strategy in
   `app/layout.tsx` (e.g. add `display: 'swap'` to a `next/font` call)
-- `site:redirect_add` — append a redirect entry to the `redirects()` array in
+- `site:redirect_add`.  append a redirect entry to the `redirects()` array in
   `next.config.ts`
-- `site:schema_add` — inject a `<Script type="application/ld+json">` block into a
+- `site:schema_add`.  inject a `<Script type="application/ld+json">` block into a
   specific page file
 
 ### Out of scope
 - Changing copy, metadata, or CTAs → `site-edit`
 - Creating new page files → `site-page-create`
-- Bulk image audit or conversion of all images across the repo — escalate to Matt;
+- Bulk image audit or conversion of all images across the repo.  escalate to Matt;
   this producer handles one targeted fix per action row
-- Editing the Next.js image `remotePatterns` configuration (security-sensitive) — escalate
+- Editing the Next.js image `remotePatterns` configuration (security-sensitive).  escalate
 - Adding new npm packages → escalate; `sharp` is already a dependency in this repo
 
 ---
@@ -67,9 +79,9 @@ Every fix lands in a branch + PR — never directly on `main`.
 
 ```typescript
 interface SitePerformancePayload {
-  page_path?: string           // e.g. "/sell" or "/about-us" — omit for redirect or layout-level fixes
+  page_path?: string           // e.g. "/sell" or "/about-us".  omit for redirect or layout-level fixes
   fix_type: 'lazy_load' | 'image_optimize' | 'font_strategy' | 'redirect' | 'schema'
-  details: Record<string, unknown>   // fix-specific data — see §4 per fix type
+  details: Record<string, unknown>   // fix-specific data.  see §4 per fix type
   rationale: string            // why this fix improves Core Web Vitals, SEO, or UX
 }
 
@@ -114,7 +126,7 @@ interface SitePerformanceActionRow {
   data_evidence: {
     audit_source?: string      // e.g. 'audit-website' (PageSpeed data)
     opportunity_area?: string  // e.g. 'LCP 4.2s on /sell; hero image not lazy'
-    signal_evidence?: string   // e.g. 'GSC: 404 on /old-blog/:slug — 340 external links'
+    signal_evidence?: string   // e.g. 'GSC: 404 on /old-blog/:slug.  340 external links'
   }
   generation_reason: string
   status: 'pending'
@@ -125,7 +137,7 @@ interface SitePerformanceActionRow {
 
 ## 4. The recipe
 
-**Step 1 — Read the action row and claim it**
+**Step 1.  Read the action row and claim it**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -135,17 +147,17 @@ WHERE id = '<id>' AND status = 'pending';
 
 Confirm `status` was 'pending'. If not, stop and report.
 
-**Step 2 — Load mandatory references**
+**Step 2.  Load mandatory references**
 
-- `CLAUDE.md` "Draft-First, Commit-Last" — PR is the draft; never push to main
-- `CLAUDE.md` "Design System Rules — MANDATORY" — do not break shadcn/ui compliance
+- `CLAUDE.md` "Draft-First, Commit-Last".  PR is the draft; never push to main
+- `CLAUDE.md` "Design System Rules.  MANDATORY".  do not break shadcn/ui compliance
   while applying fixes
-- `next.config.ts` — read the current config before editing redirects
+- `next.config.ts`.  read the current config before editing redirects
 
 Voice guidelines are NOT required for this producer (no copy changes). Skip the voice
 validation step.
 
-**Step 3 — Route to fix-specific procedure**
+**Step 3.  Route to fix-specific procedure**
 
 Dispatch based on `payload.fix_type`:
 
@@ -162,7 +174,7 @@ Dispatch based on `payload.fix_type`:
 3. For each identified image, add `loading="lazy"` and `decoding="async"`.
    - For `<Image>` from `next/image`: the `loading` prop is valid; also confirm
      `priority` is NOT set (priority overrides lazy). Do not remove `priority` from
-     hero images — that would hurt LCP, not help it.
+     hero images.  that would hurt LCP, not help it.
    - For bare `<img>` (uncommon but may exist): add both attributes.
 4. Do NOT add `loading="lazy"` to the first image on the page or any image in the
    hero section. Lazy-loading above-fold images increases LCP.
@@ -185,11 +197,7 @@ Dispatch based on `payload.fix_type`:
    ```bash
    cd /Users/matthewryan/RyanRealty && node -e "
      const sharp = require('sharp');
-     sharp('public<source_path>')
-       .webp({ quality: 85 })
-       .toFile('public<output_path>')
-       .then(() => console.log('Done'))
-       .catch(e => { console.error(e); process.exit(1); });
+     sharp('public<source_path>').webp({ quality: 85 }).toFile('public<output_path>').then(() => console.log('Done')).catch(e => { console.error(e); process.exit(1); });
    "
    ```
    
@@ -216,7 +224,7 @@ Dispatch based on `payload.fix_type`:
 2. Locate the `next/font` import that matches `payload.details.font_variable`.
 3. Add or update the `display` option per `payload.details.change`.
 4. Verify the change does not break the `className` export from the font call.
-5. Do NOT change `Geist` font configuration without reading the current call first —
+5. Do NOT change `Geist` font configuration without reading the current call first. 
    Geist is the canonical body font per Design System v2; changing its weight set or
    subsets could break page typography.
 
@@ -271,7 +279,7 @@ Dispatch based on `payload.fix_type`:
    ```
 4. The `<Script>` element uses `strategy="afterInteractive"` only if the schema is
    dynamic. For static JSON-LD (RealEstateAgent, LocalBusiness, FAQPage), do NOT add
-   a `strategy` prop — Next.js renders it in `<head>` by default when no strategy is
+   a `strategy` prop.  Next.js renders it in `<head>` by default when no strategy is
    set, which is correct for SEO.
 
    Correction to that: for `<Script>` components with `dangerouslySetInnerHTML`,
@@ -284,7 +292,7 @@ Dispatch based on `payload.fix_type`:
 
 ---
 
-**Step 4 (all fix types) — Run TypeScript type check**
+**Step 4 (all fix types).  Run TypeScript type check**
 
 ```bash
 cd /Users/matthewryan/RyanRealty && npx tsc --noEmit 2>&1
@@ -295,7 +303,7 @@ If TypeScript errors:
 - Attempt to fix once (e.g., missing type import)
 - If still failing: set `status='killed'`; surface tsc output to Matt
 
-**Step 5 — Create branch and commit**
+**Step 5.  Create branch and commit**
 
 Branch: `site-perf/<action_id>` (first 8 chars of UUID)
 
@@ -320,7 +328,7 @@ Files to stage depend on fix type:
 - `redirect`: `next.config.ts`
 - `schema`: `app/<page_path>/page.tsx`
 
-**Step 6 — Open GitHub PR**
+**Step 6.  Open GitHub PR**
 
 ```bash
 gh pr create \
@@ -335,7 +343,7 @@ gh pr create \
 <Concise description of what was changed and why>
 
 ## Expected impact
-<Rationale from payload.rationale — e.g. "Removes render-blocking hero image fetch on /sell; expect LCP improvement of ~0.8s per PageSpeed audit">
+<Rationale from payload.rationale.  e.g. "Removes render-blocking hero image fetch on /sell; expect LCP improvement of ~0.8s per PageSpeed audit">
 
 ## Files changed
 <list of files>
@@ -346,12 +354,12 @@ gh pr create \
 ## Approval gate
 Matt merges this PR in GitHub. No additional action row approval needed.
 
-🤖 Generated with Claude Code / marketing brain — site-performance producer
+🤖 Generated with Claude Code / marketing brain.  site-performance producer
 EOF
 )"
 ```
 
-**Step 7 — Update action row to 'ready'**
+**Step 7.  Update action row to 'ready'**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -366,10 +374,10 @@ SET status = 'ready',
 WHERE id = '<id>';
 ```
 
-**Step 8 — Surface to Matt**
+**Step 8.  Surface to Matt**
 
 ```
-Draft ready: site-performance — <fix_type> on <target>
+Draft ready: site-performance.  <fix_type> on <target>
 
   PR
     URL: <pr_url>
@@ -397,12 +405,12 @@ Then stop. Wait for Matt to merge.
 
 | tool | purpose | env var / path |
 |---|---|---|
-| Read (file) | Read target page file, `next.config.ts`, `app/layout.tsx` before editing | — |
-| Edit (file) | Apply targeted string replacement or attribute addition | — |
-| Bash: `ls public/<path>` | Confirm image source path exists | — |
+| Read (file) | Read target page file, `next.config.ts`, `app/layout.tsx` before editing |.  |
+| Edit (file) | Apply targeted string replacement or attribute addition |.  |
+| Bash: `ls public/<path>` | Confirm image source path exists |.  |
 | Bash: `node -e "require('sharp')..."` | PNG → WebP conversion | `sharp` in node_modules |
 | Bash: `npx tsc --noEmit` | TypeScript compile check | runs in `/Users/matthewryan/RyanRealty` |
-| Bash: `git checkout -b`, `git add`, `git commit`, `git push` | Branch, stage, commit, push | — |
+| Bash: `git checkout -b`, `git add`, `git commit`, `git push` | Branch, stage, commit, push |.  |
 | Bash: `gh pr create` | Open GitHub PR | active `gh` session |
 | Supabase MCP | Update `marketing_brain_actions` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 
@@ -436,7 +444,7 @@ app/<page_path>/page.tsx             (Script JSON-LD block injected)
 
 | approval_type | what it means | who can grant |
 |---|---|---|
-| `matt-review-PR` | Matt merges the PR in GitHub | Matt only — via GitHub UI |
+| `matt-review-PR` | Matt merges the PR in GitHub | Matt only.  via GitHub UI |
 
 Voice validation is not applicable here. No copy changes.
 
@@ -463,7 +471,7 @@ approved
   ▼ (Vercel build + deploy completes)
 executed
   │
-  ▼ (48–72h: audit-website or PageSpeed captures CWV delta)
+  ▼ (48-72h: audit-website or PageSpeed captures CWV delta)
 measured
 ```
 
@@ -504,18 +512,40 @@ WHERE id='<id>';
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `CLAUDE.md` "Draft-First, Commit-Last" — PR = draft; never push to main
-- `CLAUDE.md` "Design System Rules — MANDATORY" — verify fixes do not break shadcn compliance
-- `next.config.ts` — always read in full before editing (redirect safe-append rule)
+- `CLAUDE.md` "Draft-First, Commit-Last".  PR = draft; never push to main
+- `CLAUDE.md` "Design System Rules.  MANDATORY".  verify fixes do not break shadcn compliance
+- `next.config.ts`.  always read in full before editing (redirect safe-append rule)
 
 **Codebase patterns to match:**
-- `next.config.ts` `redirects()` array — read before appending; preserve all existing entries
-- `app/layout.tsx` — canonical `next/font` configuration; Geist is the body font
-- Next.js `<Image>` component from `next/image` — `priority` vs `loading="lazy"` are mutually exclusive
+- `next.config.ts` `redirects()` array.  read before appending; preserve all existing entries
+- `app/layout.tsx`.  canonical `next/font` configuration; Geist is the body font
+- Next.js `<Image>` component from `next/image`.  `priority` vs `loading="lazy"` are mutually exclusive
 
 **Playbooks and pipeline docs:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section C, row `site-performance`
-- `marketing_brain_skills/audit-website/SKILL.md` — the brain component that surfaces perf issues and generates these action rows
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section C, row `site-performance`
+- `marketing_brain_skills/audit-website/SKILL.md`.  the brain component that surfaces perf issues and generates these action rows
 
 **Registry entry:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section C, row `site-performance`
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section C, row `site-performance`
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+

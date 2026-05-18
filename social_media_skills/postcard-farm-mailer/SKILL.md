@@ -2,9 +2,9 @@
 name: postcard-farm-mailer
 description: >
   USPS direct-mail postcard producer for the 0.5-mile farm radius around a Ryan Realty listing.
-  Two variants discriminated by `postcard_moment` payload: (a) `at_list` — "Your neighbor at
+  Two variants discriminated by `postcard_moment` payload: (a) `at_list`.  "Your neighbor at
   <street> just hit the market" with hero exterior + price + QR to the property page; (b)
-  `at_sold` — "Your neighbor's home just sold for $<sold_price>" with hero + sale-to-list pct
+  `at_sold`.  "Your neighbor's home just sold for $<sold_price>" with hero + sale-to-list pct
   + DOM + QR + "thinking about your home's value? scan or call." Doubles as a market-proof
   piece that seeds future seller leads in the farm. 6×9 (default) or 4×6 format at 300dpi
   USPS-compliant print. Emits front PDF, back PDF, PNG digital proofs, geocoded mailing-list
@@ -21,45 +21,61 @@ when_to_use: |
   - "/postcard <address>"
 action_types:
   - content:postcard_mailer
+output_type: image
+target_platforms: ["ig_feed", "ig_carousel", "fb_feed"]
+asset_destination: Supabase asset-library bucket + public/list-kits/<address>/
+auto_inputs: ["listing photos from Spark", "brand tokens", "design system v2"]
+required_inputs: ["mls_id OR topic"]
+optional_inputs: ["aspect_ratio_overrides", "color_palette_override"]
+estimated_runtime_min: 5
+cost_usd_estimate: $0.05-$0.50 per image
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.png
+example_outputs: []
+    label: "past approved renders"
+    surface: "ig_carousel"
 ---
 
-# Postcard Farm Mailer — Ryan Realty At-List / At-Sold Direct Mail
+# Postcard Farm Mailer.  Ryan Realty At-List / At-Sold Direct Mail
+
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
 
 **Scope.** Produce one print-ready USPS direct-mail postcard for the 0.5-mile farm radius
-around a single listing, in one of two moments — `at_list` (neighbor announcement when the
+around a single listing, in one of two moments.  `at_list` (neighbor announcement when the
 property hits the market) or `at_sold` (neighbor announcement when it closes). Output is a
 front PDF, back PDF, digital-proof PNGs, a geocoded mailing-list CSV, and a citations.json
 for every figure shown. Does NOT execute the print order, place mail with USPS, dedup against
-prior mailing cohorts beyond the radius query, or wire into the FUB lead capture flow — those
+prior mailing cohorts beyond the radius query, or wire into the FUB lead capture flow.  those
 are handled by `ops/postcard-print-order/` (TODO) and the FUB inbound webhook respectively.
 
 **Status.** Canonical (v1). Locked 2026-05-14.
 
-**Producer category.** Section B — Content Producer.
+**Producer category.** Section B.  Content Producer.
 
 **Exemplar output:** `out/postcard/<slug>/`.
 
 ---
 
-## 1. Required references — load before any work
+## 1. Required references.  load before any work
 
 | Reference | Why |
 |---|---|
-| `CLAUDE.md` §0 — Data Accuracy mandate | Every figure shown (price, sold price, DOM, sale-to-list pct) traces to live Supabase / Spark. Outranks everything. |
-| `CLAUDE.md` §0.5 — Draft-First, Commit-Last | Render PDFs to `out/`, surface to Matt, wait for explicit approval before any print order is placed or any tracked file commits. |
+| `CLAUDE.md` §0.  Data Accuracy mandate | Every figure shown (price, sold price, DOM, sale-to-list pct) traces to live Supabase / Spark. Outranks everything. |
+| `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Render PDFs to `out/`, surface to Matt, wait for explicit approval before any print order is placed or any tracked file commits. |
 | `CLAUDE.md` "Voice + content" | Phone discipline (`541.213.6706` direct vs `541.703.3095` FUB-tracked inbound), web `ryan-realty.com`, banned vocab union. |
 | `CLAUDE.md` "Supabase listings Schema" | Mixed-case quoted column names. PostGIS on `"Latitude"` / `"Longitude"`. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register (navy `#102742` monochrome on cream `#faf8f4`), Amboqia display, Geist body, pre-rendered wordmark. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
 | `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes (honest, transparent, neighborly). |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint. |
-| `automation_skills/content_engine/SKILL.md` | Content routing bus — every `content:*` action dispatches through here. |
+| `automation_skills/content_engine/SKILL.md` | Content routing bus.  every `content:*` action dispatches through here. |
 | `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned-content gate. No "stunning," no manufactured urgency, no AI-generated property photos. |
 | `marketing_brain_skills/producers/TEMPLATE.md` | Producer skeleton (10 sections). |
 | `marketing_brain_skills/producers/REGISTRY.md` | Section B row pointer. |
 
 USPS reference (external, version-locked at build time):
-- USPS Direct Mail design specs: [PDF Form 3602-R Postage Statement](https://pe.usps.com/) — 6×9 and 4×6 dimensions, indicia placement, address-block clear zone, IMb barcode space.
+- USPS Direct Mail design specs: [PDF Form 3602-R Postage Statement](https://pe.usps.com/).  6×9 and 4×6 dimensions, indicia placement, address-block clear zone, IMb barcode space.
 
 ---
 
@@ -76,8 +92,8 @@ type PostcardMoment = 'at_list' | 'at_sold'
 type PostcardSize = '6x9' | '4x6'
 
 interface PostcardFarmMailerPayload {
-  mls_id: string                      // required — e.g. "220189422"
-  postcard_moment: PostcardMoment     // required — at_list or at_sold
+  mls_id: string                      // required.  e.g. "220189422"
+  postcard_moment: PostcardMoment     // required.  at_list or at_sold
   mailing_radius_miles?: number       // default 0.5
   size?: PostcardSize                 // default '6x9'
 }
@@ -112,7 +128,7 @@ interface PostcardFarmMailerActionRow {
 
 ## 4. The recipe
 
-**Step 1 — Read the action row.**
+**Step 1.  Read the action row.**
 Query `marketing_brain_actions` by `id`. Confirm `status='pending'`. Immediately UPDATE
 `status='in_production'` and `executed_at=now()`.
 
@@ -122,9 +138,9 @@ SET status='in_production', executed_at=now()
 WHERE id='<action_id>' AND status='pending';
 ```
 
-**Step 2 — Load mandatory references.** Per §1.
+**Step 2.  Load mandatory references.** Per §1.
 
-**Step 3 — Pull and verify the listing record (live Supabase, this session).**
+**Step 3.  Pull and verify the listing record (live Supabase, this session).**
 
 ```sql
 SELECT "MlsId", "StreetNumber", "StreetName", "City", "PostalCode",
@@ -145,9 +161,9 @@ Verify:
   surface to caller.
 - `"Latitude"` and `"Longitude"` are present and finite (PostGIS radius query needs them).
 - `"ListAgentEmail"` resolves to one of three brokers (matt-ryan / paul-stevenson /
-  rebecca-peterson). If not, surface — never substitute.
+  rebecca-peterson). If not, surface.  never substitute.
 
-**Step 4 — Compute derived figures.**
+**Step 4.  Compute derived figures.**
 
 For `at_sold`:
 - `sale_to_list_pct = round(("ClosePrice" / "ListPrice") * 100, 1)`.
@@ -159,7 +175,7 @@ For `at_list`:
 
 Every derived figure must show its computation in citations.json (raw query result + formula).
 
-**Step 5 — Generate the mailing list (PostGIS radius query).**
+**Step 5.  Generate the mailing list (PostGIS radius query).**
 
 `mailing_radius_miles` defaults to `0.5`. Convert to meters: `radius_m = miles * 1609.344`.
 
@@ -183,7 +199,7 @@ LIMIT 2000;
 ```
 
 If the parcels table isn't wired, fall back to a geocoding-service radius query (see §5
-Tools used) — document the source in citations.json under a top-level `mailing_list` key.
+Tools used).  document the source in citations.json under a top-level `mailing_list` key.
 
 NCOA-compliant address normalization runs as a post-step if the brokerage's USPS NCOA
 subscription is active (env var `USPS_NCOA_ENABLED=true`). Otherwise skip and flag in
@@ -194,39 +210,39 @@ Write `out/postcard/<slug>/mailing-list.csv` with the header `address,city,state
 If the radius query returns 0 rows → surface to caller (Failure §9). Do not render the
 postcard for a mailing list of zero.
 
-**Step 6 — Resolve assets.**
+**Step 6.  Resolve assets.**
 
 | Asset | Path |
 |---|---|
 | Heritage wordmark | `design_system/ryan-realty/assets/brand/logo-blue.png` |
 | Hero exterior photo | First exterior shot from `"PhotoURL"` array (front elevation if discoverable) |
-| Listing-agent headshot | `design_system/ryan-realty/assets/team/<slug>.png` (transparent — for back side) |
+| Listing-agent headshot | `design_system/ryan-realty/assets/team/<slug>.png` (transparent.  for back side) |
 | Fonts | `design_system/ryan-realty/fonts/Amboqia_Boriango.otf`, Geist via next/font |
 
 If any required asset is missing on disk: stop, surface to caller, do not substitute.
 
-**Step 7 — Generate the QR code.**
+**Step 7.  Generate the QR code.**
 
 QR target URL: `https://ryan-realty.com/listing/<mls_id>?utm_source=postcard&utm_medium=mail&utm_campaign=<postcard_moment>_<slug>`.
 
-QR rendered at 300×300 px, ECC level M (15% error correction — survives postal handling),
+QR rendered at 300×300 px, ECC level M (15% error correction.  survives postal handling),
 black on cream `#faf8f4` background, no logo overlay, no rounded modules (compatibility >
 prettiness for print scanning).
 
 Save to `out/postcard/<slug>/qr.png`.
 
-**Step 8 — Build the front PDF.**
+**Step 8.  Build the front PDF.**
 
 See §6 Front design spec for full layout coordinates. Render via the compositor script
 (see §5 Tools). Output: `out/postcard/<slug>/<moment>-front.pdf` + `<moment>-front.png`
 (digital proof, same pixel canvas exported as PNG).
 
-**Step 9 — Build the back PDF.**
+**Step 9.  Build the back PDF.**
 
 See §7 Back design spec. Reserve the USPS-compliant address block area and Imb barcode
 clear zone. Output: `out/postcard/<slug>/<moment>-back.pdf` + `<moment>-back.png`.
 
-**Step 10 — Write citations.json.**
+**Step 10.  Write citations.json.**
 
 One entry per figure shown on the front or back, plus a `mailing_list` block with the
 PostGIS query and row count.
@@ -264,9 +280,9 @@ PostGIS query and row count.
 }
 ```
 
-**Step 11 — Run the QA gate.** See §8. Write `out/postcard/<slug>/design_scorecard.json`.
+**Step 11.  Run the QA gate.** See §8. Write `out/postcard/<slug>/design_scorecard.json`.
 
-**Step 12 — UPDATE the action row.**
+**Step 12.  UPDATE the action row.**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -281,7 +297,7 @@ SET status='ready',
 WHERE id='<action_id>';
 ```
 
-**Step 13 — Surface draft to Matt.** Per §6 surface format. Stop. Wait for explicit approval.
+**Step 13.  Surface draft to Matt.** Per §6 surface format. Stop. Wait for explicit approval.
 
 ---
 
@@ -292,10 +308,10 @@ WHERE id='<action_id>';
 | Supabase MCP | listing pull + action row updates | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | Spark MLS API | listing fallback if Supabase row is stale | `SPARK_API_BASE_URL`, `SPARK_API_KEY` |
 | PostGIS (Supabase) | radius query against `parcels` (or fallback geocoder) | same Supabase creds |
-| Geocoding fallback | radius if `parcels` table absent | TBD — Google Geocoding or Mapbox (env: `GEOCODER_API_KEY`) |
+| Geocoding fallback | radius if `parcels` table absent | TBD.  Google Geocoding or Mapbox (env: `GEOCODER_API_KEY`) |
 | USPS NCOA | address normalization (optional) | `USPS_NCOA_API_KEY`, `USPS_NCOA_ENABLED` |
-| QR codegen | property page QR | `node lib/qr-generate.mjs` (build if absent — uses `qrcode` npm package) |
-| Compositor | PDF + PNG render at 300dpi | `node lib/render-postcard.mjs` (build if absent — same canvas/fonts pipeline as `lib/render-just-listed-flyer.mjs` per `flyer-design/SKILL.md`) |
+| QR codegen | property page QR | `node lib/qr-generate.mjs` (build if absent.  uses `qrcode` npm package) |
+| Compositor | PDF + PNG render at 300dpi | `node lib/render-postcard.mjs` (build if absent.  same canvas/fonts pipeline as `lib/render-just-listed-flyer.mjs` per `flyer-design/SKILL.md`) |
 | Heritage wordmark | brand stamp | `design_system/ryan-realty/assets/brand/logo-blue.png` |
 | Listing-agent headshot | back-side credit | `design_system/ryan-realty/assets/team/<slug>.png` |
 
@@ -315,22 +331,22 @@ All coordinates below are for 6×9. The compositor scales proportionally for 4×
 | Block | Y range | Spec |
 |---|---|---|
 | **Hero photo** | `y = 0 → y = 1620` (top 60%) | `object-fit: cover`, 1.15 zoom on the structure. Bleeds full-width. Source: first exterior from `"PhotoURL"`. |
-| **Heritage wordmark** | `x = 1500 → x = 1700, y = 60 → y = ~140` | `logo-blue.png` 200 px wide (or `logo-white.png` 200 px wide if the hero photo is light-dominant at top-right — auto-detect via luminance sample). |
-| **Headline** | `y = 1700 → y = 1820` | Amboqia Boriango, 96 px, navy `#102742` on cream `#faf8f4`, line-height 1.05, left-aligned at `x = 75`. **at_list:** `Just listed on <street name>.` **at_sold:** `Sold on <street name>.` NO address number — neighbors already know which house. |
+| **Heritage wordmark** | `x = 1500 → x = 1700, y = 60 → y = ~140` | `logo-blue.png` 200 px wide (or `logo-white.png` 200 px wide if the hero photo is light-dominant at top-right.  auto-detect via luminance sample). |
+| **Headline** | `y = 1700 → y = 1820` | Amboqia Boriango, 96 px, navy `#102742` on cream `#faf8f4`, line-height 1.05, left-aligned at `x = 75`. **at_list:** `Just listed on <street name>.` **at_sold:** `Sold on <street name>.` NO address number.  neighbors already know which house. |
 | **Price line** | `y = 1860 → y = 1940` | Amboqia Boriango, 56 px, navy, tabular-nums, left-aligned at `x = 75`. **at_list:** `$895,000` (rounded). **at_sold:** `$<sold_price>` (rounded). |
 | **at_sold subline** | `y = 1960 → y = 2010` | Geist 500, 28 px, navy 0.75 opacity, tabular-nums. Format: `98.5% of list  ·  38 days`. (Skipped on at_list.) |
 | **CTA line (at_sold)** | `y = 2200 → y = 2300` | Geist 500, 32 px, navy. `Curious what your home is worth?` |
 | **QR code** | `x = 1400 → x = 1700, y = 2280 → y = 2580` | 300 × 300 px, black on cream, ECC level M. Scans to `ryan-realty.com/listing/<mls_id>?utm_source=postcard&...`. |
-| **Bottom strip — phone + web** | `y = 2600 → y = 2640` | Geist 500, 24 px, navy, tabular-nums, centered. Format: `541.213.6706  ·  ryan-realty.com`. |
+| **Bottom strip.  phone + web** | `y = 2600 → y = 2640` | Geist 500, 24 px, navy, tabular-nums, centered. Format: `541.213.6706  ·  ryan-realty.com`. |
 
 Background: cream `#faf8f4` fills any area not covered by the hero photo. No gradient. No
 texture. No drop shadow on the wordmark. No drop shadow on the QR.
 
 ### Headline rules
 
-- **No address number on the front.** "Just listed on NW Riverview Drive." — not "1234 NW
+- **No address number on the front.** "Just listed on NW Riverview Drive.".  not "1234 NW
   Riverview Drive." Neighbors know the house from the photo + street name.
-- **Sentence case + period.** Not "JUST LISTED" or "Just Listed!" — declarative.
+- **Sentence case + period.** Not "JUST LISTED" or "Just Listed!".  declarative.
 - **No exclamation marks anywhere on the postcard.**
 - **No "stunning," "must-see," "won't last," "hidden gem,"** any banned-vocab union word.
   See `marketing_brain_skills/brand-voice/voice_guidelines.md`.
@@ -339,30 +355,30 @@ texture. No drop shadow on the wordmark. No drop shadow on the QR.
 
 ## 7. Back design spec
 
-**Canvas (6×9 portrait — USPS standard layout).** Same `1800 × 2700 px` at 300dpi.
+**Canvas (6×9 portrait.  USPS standard layout).** Same `1800 × 2700 px` at 300dpi.
 Address-block side per USPS Domestic Mail Manual section 202.4. Reference: USPS Form 3602-R.
 
 ### Layout (6×9, top to bottom)
 
 | Block | Y range | Spec |
 |---|---|---|
-| **Indicia placeholder** | `x = 1430 → x = 1730, y = 75 → y = 285` | Geist 500, 22 px, navy, right-aligned, 4-line block: `FIRST-CLASS MAIL` / `US POSTAGE PAID` / `PERMIT NO. XXXX` / `BEND OR`. Replace `XXXX` with active permit number at print time (TBD — flagged in surface format if missing). |
+| **Indicia placeholder** | `x = 1430 → x = 1730, y = 75 → y = 285` | Geist 500, 22 px, navy, right-aligned, 4-line block: `FIRST-CLASS MAIL` / `US POSTAGE PAID` / `PERMIT NO. XXXX` / `BEND OR`. Replace `XXXX` with active permit number at print time (TBD.  flagged in surface format if missing). |
 | **Return address** | `x = 75 → x = 700, y = 75 → y = 280` | Geist 500, 22 px, navy, left-aligned, 4-line block: `Ryan Realty` / `<office street>` / `Bend, OR 97701` / blank or website. Office street pulled from `app_config.ryan_realty_office_address` (Supabase). |
 | **Heritage wordmark** | `x = 75 → x = 350, y = 320 → y = 410` | `logo-blue.png` 280 px wide. |
 | **Listing-agent headshot** | `x = 400 → x = 540, y = 320 → y = 460` | `assets/team/<slug>.png` (transparent), 140 px wide, vertically centered next to the wordmark. |
 | **Agent name + role** | `x = 560 → x = 1100, y = 340 → y = 440` | Geist 500, 26 px, navy, two lines: `<Full Name>` / `Principal Broker` (or `Broker`). |
 | **Ask copy block** | `x = 75 → x = 1100, y = 540 → y = 940` | Amboqia Boriango, 48 px, navy, line-height 1.15. **at_list:** `Your neighbor's home just hit the market. Curious what yours is worth? Scan or call us.` **at_sold:** `Your neighbor's home just sold for $<sold_price>. Curious what yours is worth? Scan or call us.` |
 | **FUB-tracked phone CTA** | `x = 75 → x = 1100, y = 980 → y = 1040` | Geist 500, 36 px, navy, tabular-nums. Format: `541.703.3095  ·  ryan-realty.com`. **MUST be the FUB-tracked phone, NOT the direct `541.213.6706`.** This is an inbound-lead surface. |
-| **USPS address-block clear zone** | `x = 900 → x = 1700, y = 1700 → y = 2200` | **RESERVED — no graphics, no text, no background fill other than cream.** This is the recipient address area; the mail house prints into it. Must be at least 4 5/8 × 1 7/8 inches (1387 × 562 px at 300dpi). 6×9 has room; 4×6 is tighter. |
-| **IMb barcode clear zone** | `x = 900 → x = 1700, y = 2220 → y = 2440` | **RESERVED — no graphics.** Intelligent Mail barcode space per USPS DMM 708.4.0. Min 4 5/8 × 5/8 inches. |
+| **USPS address-block clear zone** | `x = 900 → x = 1700, y = 1700 → y = 2200` | **RESERVED.  no graphics, no text, no background fill other than cream.** This is the recipient address area; the mail house prints into it. Must be at least 4 5/8 × 1 7/8 inches (1387 × 562 px at 300dpi). 6×9 has room; 4×6 is tighter. |
+| **IMb barcode clear zone** | `x = 900 → x = 1700, y = 2220 → y = 2440` | **RESERVED.  no graphics.** Intelligent Mail barcode space per USPS DMM 708.4.0. Min 4 5/8 × 5/8 inches. |
 | **Bottom border** | `y = 2640 → y = 2680` | Hairline navy rule, 2 px tall, full width minus 75 px insets, 0.85 opacity. Aesthetic only. |
 
 ### Back-side rules
 
 - **Phone discipline.** Direct phone `541.213.6706` is used on the FRONT only. The BACK uses
-  the FUB-tracked `541.703.3095` because the back is the inbound-CTA surface — calls must
+  the FUB-tracked `541.703.3095` because the back is the inbound-CTA surface.  calls must
   route through Follow Up Boss for attribution.
-- **No banned vocab.** "Curious," "scan," "call us" — neighbor-tone. Not "Don't miss out,"
+- **No banned vocab.** "Curious," "scan," "call us".  neighbor-tone. Not "Don't miss out,"
   "Act fast," "Find out today!"
 - **Indicia is a placeholder.** Real permit number comes from the mail house. If unset,
   surface the missing field to Matt.
@@ -389,7 +405,7 @@ Any `fail` = non-ship.
 | 9 | QR scans | Decode QR with a QR reader; URL matches `ryan-realty.com/listing/<mls_id>?utm_source=postcard&...` |
 | 10 | Phone discipline | Front uses `541.213.6706` (direct). Back uses `541.703.3095` (FUB-tracked). Never reversed |
 | 11 | Headline format | Sentence case, ends with period, no exclamation, no address number |
-| 12 | Banned vocab clean | Grep all on-canvas text against voice_guidelines.md §6 union — zero hits |
+| 12 | Banned vocab clean | Grep all on-canvas text against voice_guidelines.md §6 union.  zero hits |
 | 13 | Data verified | Every figure traces to `citations.json` with source/filter/value/fetched_at |
 | 14 | Sold variant has sold_price | If `postcard_moment='at_sold'`, `"ClosePrice"` is non-null in source |
 | 15 | Font integrity | Amboqia Boriango + Geist loaded from disk; no system fallback in render |
@@ -399,7 +415,7 @@ Any `fail` = non-ship.
 | 19 | Mailing list count | >= 50 addresses (else surface for radius adjustment) |
 | 20 | File size | Each PDF < 25 MB (USPS DM upload tolerance) |
 
-If S14 fails (sold variant missing ClosePrice), stop and surface — never invent a sold price.
+If S14 fails (sold variant missing ClosePrice), stop and surface.  never invent a sold price.
 
 ---
 
@@ -427,7 +443,7 @@ out/postcard/<slug>/
 ### Surface format (present to Matt exactly like this)
 
 ```
-Postcard ready for review — <postcard_moment> · <street name>
+Postcard ready for review.  <postcard_moment> · <street name>
 
   FRONT
     Path: out/postcard/<slug>/<moment>-front.pdf
@@ -446,15 +462,15 @@ Postcard ready for review — <postcard_moment> · <street name>
     NCOA normalized: <true | false (flag if subscription off)>
 
   VERIFICATION TRACE
-    - $895,000 — Supabase listings, MlsId='220189422', column ListPrice, fetched 2026-05-14T14:32:00Z
-    - 98.5% of list — derived (ClosePrice 882000 / ListPrice 895000), fetched 2026-05-14T14:32:00Z
-    - 38 days — Supabase listings, column CumulativeDaysOnMarket, fetched 2026-05-14T14:32:00Z
+    - $895,000.  Supabase listings, MlsId='220189422', column ListPrice, fetched 2026-05-14T14:32:00Z
+    - 98.5% of list.  derived (ClosePrice 882000 / ListPrice 895000), fetched 2026-05-14T14:32:00Z
+    - 38 days.  Supabase listings, column CumulativeDaysOnMarket, fetched 2026-05-14T14:32:00Z
 
   citations.json: out/postcard/<slug>/citations.json
   scorecard.json: out/postcard/<slug>/design_scorecard.json
 
   PRINT ORDER (pending approval): not placed
-  PERMIT NUMBER: <set | MISSING — flag>
+  PERMIT NUMBER: <set | MISSING.  flag>
 
 Reply "ship it" / "approved" / "go" to commit + push and queue the print order.
 ```
@@ -465,7 +481,7 @@ Then stop. Do not commit. Do not push. Do not place the print order. Wait for ex
 
 ## 10. Approval gate
 
-`matt-review-draft` — Matt sees the front + back PDFs, the digital proofs, the mailing-list
+`matt-review-draft`.  Matt sees the front + back PDFs, the digital proofs, the mailing-list
 count, and the verification trace; replies "ship it" / "approved" / "go" before any commit,
 publish, or print order.
 
@@ -587,19 +603,19 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 ## 14. Related skills and references
 
 **Required reading before executing:**
-- `CLAUDE.md` §0 — Data Accuracy (outranks everything)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last (outranks everything)
-- `CLAUDE.md` "Voice + content" — phone discipline (direct vs FUB-tracked)
-- `CLAUDE.md` "Supabase listings Schema" — mixed-case quoted columns
-- `design_system/ryan-realty/SKILL.md` — heritage register
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — banned vocab + tone
+- `CLAUDE.md` §0.  Data Accuracy (outranks everything)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
+- `CLAUDE.md` "Voice + content".  phone discipline (direct vs FUB-tracked)
+- `CLAUDE.md` "Supabase listings Schema".  mixed-case quoted columns
+- `design_system/ryan-realty/SKILL.md`.  heritage register
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab + tone
 
 **Sibling producers:**
-- `social_media_skills/flyer-design/SKILL.md` — print/digital flyer companion (Just Listed,
+- `social_media_skills/flyer-design/SKILL.md`.  print/digital flyer companion (Just Listed,
   Feature Sheet, Open House)
-- `social_media_skills/ig-single-post/SKILL.md` — S1 Just Listed / S2 Just Sold variant for
+- `social_media_skills/ig-single-post/SKILL.md`.  S1 Just Listed / S2 Just Sold variant for
   the IG feed
-- `social_media_skills/list-kit/SKILL.md` — at-Active orchestrator (may include this producer
+- `social_media_skills/list-kit/SKILL.md`.  at-Active orchestrator (may include this producer
   in a future kit expansion)
 
 **Capabilities used:**
@@ -608,16 +624,36 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 - Compositor via `lib/render-postcard.mjs` (PDF + PNG)
 
 **Downstream actions:**
-- `ops:postcard_print_order` — mail-house upload + print + USPS drop (separate producer, TBD)
-- FUB inbound webhook — calls to `541.703.3095` attributed to this campaign via UTM stamps
+- `ops:postcard_print_order`.  mail-house upload + print + USPS drop (separate producer, TBD)
+- FUB inbound webhook.  calls to `541.703.3095` attributed to this campaign via UTM stamps
   on the QR target URL and the FUB phone-call ingestion pipeline
 
 **Playbooks and pipeline docs:**
-- `automation_skills/content_engine/SKILL.md` — content routing bus
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned-content gate
-- `marketing_brain_skills/producers/TEMPLATE.md` — producer skeleton
-- `marketing_brain_skills/producers/REGISTRY.md` — Section B row
+- `automation_skills/content_engine/SKILL.md`.  content routing bus
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned-content gate
+- `marketing_brain_skills/producers/TEMPLATE.md`.  producer skeleton
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section B row
 
 **External references:**
-- USPS Direct Mail design specs (DMM 202.4 — address block; DMM 708.4.0 — IMb barcode)
+- USPS Direct Mail design specs (DMM 202.4.  address block; DMM 708.4.0.  IMb barcode)
 - USPS Form 3602-R (postage statement reference for permit indicia layout)
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

@@ -9,6 +9,16 @@ description: >
 action_types:
   - analyze:ab_test_design
   - analyze:ab_test_readout
+output_type: operational
+target_platforms: []
+asset_destination: no asset; state mutation only (logged in marketing_decisions)
+auto_inputs: ["current campaign/account state"]
+required_inputs: ["account_id OR campaign_id"]
+optional_inputs: ["budget_delta_pct", "pause_reason"]
+estimated_runtime_min: 3
+cost_usd_estimate: $0.01-$0.10 per call (mostly API quota; minimal Anthropic)
+thumbnail_uri: out/proof/2026-05-17/exemplars/sample.html
+example_outputs: []
 ---
 
 # analyze-experiment
@@ -18,7 +28,7 @@ test duration, and variant specifications from a stated hypothesis, then persist
 design so the content pipeline knows which variants to create and track. The readout path
 pulls performance data for a live test, computes statistical significance, declares a
 winner or extends the test, and writes the verdict. This skill never publishes a variant
-or changes a live page — it only produces structured data.
+or changes a live page.  it only produces structured data.
 
 **Status:** Canonical
 **Locked:** 2026-05-13
@@ -29,14 +39,14 @@ or changes a live page — it only produces structured data.
 ## 1. Scope
 
 ### In scope
-- `analyze:ab_test_design` — power calculation, sample-size estimate, duration estimate, variant specs, design persistence
-- `analyze:ab_test_readout` — fetch variant performance from analytics tables, compute significance, declare winner or verdict, write findings, enqueue follow-up actions
+- `analyze:ab_test_design`.  power calculation, sample-size estimate, duration estimate, variant specs, design persistence
+- `analyze:ab_test_readout`.  fetch variant performance from analytics tables, compute significance, declare winner or verdict, write findings, enqueue follow-up actions
 
 ### Out of scope
-- Creating the actual variant content — that is `content:*` producers dispatched by the brain after a design is approved
-- Deploying a variant to the live site — that is `site:*` producers
-- Running the A/B testing infrastructure (epsilon-greedy routing, traffic splits) — that is `automation_skills/automation/ab_testing/`
-- Alerting Matt about test results — `generate-briefs` reads the readout findings and enqueues a `comms:matt_summary` if warranted
+- Creating the actual variant content.  that is `content:*` producers dispatched by the brain after a design is approved
+- Deploying a variant to the live site.  that is `site:*` producers
+- Running the A/B testing infrastructure (epsilon-greedy routing, traffic splits).  that is `automation_skills/automation/ab_testing/`
+- Alerting Matt about test results.  `generate-briefs` reads the readout findings and enqueues a `comms:matt_summary` if warranted
 
 ---
 
@@ -54,14 +64,14 @@ interface ExperimentPayload {
   action: 'design' | 'readout';
   hypothesis: string;            // e.g. "Changing the hero CTA from 'Get a valuation' to 'See what your home is worth' increases form submissions"
   primary_metric: string;        // e.g. 'form_submission_rate', 'ctr', 'qualified_seller_leads'
-  secondary_metrics?: string[];  // optional — tracked but not used for winner declaration
+  secondary_metrics?: string[];  // optional.  tracked but not used for winner declaration
   practical_significance?: number; // MDE as decimal (e.g. 0.10 for 10% lift). Default: 0.10
   variants?: Array<{
     name: string;                // 'control' | 'treatment_a' | 'treatment_b'
     description: string;         // what is different in this variant
   }>;
-  test_id?: string;              // for readout — the experiment's marketing_decisions row ID
-  test_data?: Record<string, unknown>; // for readout — override with pre-fetched data
+  test_id?: string;              // for readout.  the experiment's marketing_decisions row ID
+  test_data?: Record<string, unknown>; // for readout.  override with pre-fetched data
 }
 ```
 
@@ -90,7 +100,7 @@ interface ExperimentActionRow {
 
 ## 4. The recipe
 
-### Step 1 — Read the action row and claim it
+### Step 1.  Read the action row and claim it
 
 ```sql
 UPDATE marketing_brain_actions
@@ -104,9 +114,9 @@ Branch on `payload.action`:
 
 ---
 
-### §4A — Design sub-recipe
+### §4A.  Design sub-recipe
 
-**Step A1 — Extract parameters**
+**Step A1.  Extract parameters**
 
 From payload: `hypothesis`, `primary_metric`, `practical_significance` (default 0.10),
 `variants` (generate if absent).
@@ -127,11 +137,11 @@ WHERE channel = '<relevant channel>'
 If data is still unavailable, set a conservative baseline of 0.02 (2% conversion rate)
 and note this assumption in the design output.
 
-**Step A2 — Power calculation**
+**Step A2.  Power calculation**
 
 Use two-proportion z-test power calculation with:
-- α = 0.05 (Type I error rate — 95% confidence level)
-- Power = 0.80 (Type II error rate — 80% power to detect true effect)
+- α = 0.05 (Type I error rate.  95% confidence level)
+- Power = 0.80 (Type II error rate.  80% power to detect true effect)
 - MDE = `practical_significance` (minimum detectable effect, default 0.10 = 10% relative lift)
 - `baseline_rate` = `current_baseline_rate` (from data or conservative default)
 - `treatment_rate` = `baseline_rate * (1 + MDE)`
@@ -157,7 +167,7 @@ Show the full computation in the design output. Never use a black-box library re
 without printing the intermediate values. This is the data accuracy mandate applied
 to statistical claims.
 
-**Step A3 — Estimate test duration**
+**Step A3.  Estimate test duration**
 
 ```
 total_sessions_needed = n_per_variant * number_of_variants
@@ -180,7 +190,7 @@ If the estimated duration exceeds 90 days, note in the design: "Test may not rea
 significance within a reasonable window at current traffic levels. Consider broadening
 the surface or increasing the MDE threshold."
 
-**Step A4 — Generate variants if not provided**
+**Step A4.  Generate variants if not provided**
 
 If `payload.variants` is empty, generate based on `hypothesis`:
 - Always generate exactly 2 variants: `control` (current state) and `treatment_a` (the change proposed in the hypothesis).
@@ -196,7 +206,7 @@ interface VariantSpec {
 }
 ```
 
-**Step A5 — Persist design**
+**Step A5.  Persist design**
 
 ```typescript
 interface ExperimentDesign {
@@ -231,14 +241,14 @@ INSERT INTO marketing_decisions (
   decision_type, description, decided_at, outcome, metadata
 ) VALUES (
   'experiment_design',
-  '<hypothesis — first 200 chars>',
+  '<hypothesis.  first 200 chars>',
   now(),
   'design_produced',
   '<ExperimentDesign as jsonb>'::jsonb
 ) RETURNING id;
 ```
 
-Capture the returned `id` — this is the `test_id` that `analyze:ab_test_readout` will
+Capture the returned `id`.  this is the `test_id` that `analyze:ab_test_readout` will
 reference later.
 
 Enqueue variant-creation actions for each non-control variant:
@@ -273,9 +283,9 @@ WHERE id = '<action_id>';
 
 ---
 
-### §4B — Readout sub-recipe
+### §4B.  Readout sub-recipe
 
-**Step B1 — Load the design**
+**Step B1.  Load the design**
 
 Retrieve the original experiment design from `marketing_decisions` by `test_id`:
 
@@ -293,7 +303,7 @@ Compute `test_start_date` = `decided_at` from the design row.
 Compute `test_end_date` = `now()`.
 Compute `actual_duration_days` = days between start and end.
 
-**Step B2 — Pull variant performance data**
+**Step B2.  Pull variant performance data**
 
 For each variant, query `content_performance` or `marketing_channel_daily` for conversions
 and exposure (impressions, sessions, or send volume depending on the primary_metric surface):
@@ -315,7 +325,7 @@ the variant creative labels.
 
 If `payload.test_data` is provided, use it directly (for offline or pre-pulled data).
 
-**Step B3 — Compute statistical significance**
+**Step B3.  Compute statistical significance**
 
 For conversion-rate metrics (binary): chi-square test.
 
@@ -346,9 +356,9 @@ df = Welch-Satterthwaite approximation
 ```
 
 Show all intermediate values in the readout output. The verdict must be derivable from
-the printed numbers — do not summarize without showing the computation.
+the printed numbers.  do not summarize without showing the computation.
 
-**Step B4 — Sample size check**
+**Step B4.  Sample size check**
 
 Compare `n_per_variant` from design vs actual sample collected per variant.
 
@@ -359,7 +369,7 @@ If actual < `n_per_variant * 0.80` (less than 80% of required sample):
   `daily_traffic` is the realized daily rate from the test period.
 - Recommend extending the test by `days_remaining`.
 
-**Step B5 — Declare verdict**
+**Step B5.  Declare verdict**
 
 | condition | verdict | next step |
 |---|---|---|
@@ -368,7 +378,7 @@ If actual < `n_per_variant * 0.80` (less than 80% of required sample):
 | p >= 0.05 AND sufficient sample | `'inconclusive_sufficient_sample'` | Evaluate cost to extend; likely kill and reframe hypothesis |
 | p >= 0.05 AND insufficient sample | `'inconclusive_insufficient_sample'` | Extend by computed `days_remaining` |
 
-**Step B6 — Build ExperimentReadout and persist**
+**Step B6.  Build ExperimentReadout and persist**
 
 ```typescript
 interface ExperimentReadout {
@@ -407,14 +417,14 @@ INSERT INTO marketing_decisions (
   decision_type, description, decided_at, outcome, metadata
 ) VALUES (
   'experiment_readout',
-  '<verdict: treatment_wins | control_wins | inconclusive> — <hypothesis first 100 chars>',
+  '<verdict: treatment_wins | control_wins | inconclusive>.  <hypothesis first 100 chars>',
   now(),
   '<verdict>',
   '<ExperimentReadout as jsonb>'::jsonb
 );
 ```
 
-**Step B7 — Enqueue follow-up actions**
+**Step B7.  Enqueue follow-up actions**
 
 If verdict = `'treatment_wins'`:
 ```sql
@@ -425,16 +435,16 @@ VALUES ('site:copy_update', '<surface target>', '<site-edit producer>', '{"varia
 
 If verdict = `'inconclusive_insufficient_sample'`:
 ```sql
--- Enqueue extension (no new content — just extend the window in marketing_decisions)
+-- Enqueue extension (no new content.  just extend the window in marketing_decisions)
 INSERT INTO marketing_brain_actions (action_type, target, assigned_producer, payload, generation_reason, status)
 VALUES ('analyze:ab_test_readout', 'experiment:<test_id>', 'marketing_brain_skills/analyze-experiment', '{"action": "readout", "test_id": "<test_id>", "hypothesis": "...", "primary_metric": "..."}'::jsonb, 'Re-read experiment <test_id> after extension window', 'pending');
 ```
 
 If verdict = `'control_wins'` or `'inconclusive_sufficient_sample'`:
 - Enqueue a `comms:matt_summary` row with the verdict summary so Matt can consider a reframe.
-- Do not auto-enqueue a new design — a human insight should inform the next hypothesis.
+- Do not auto-enqueue a new design.  a human insight should inform the next hypothesis.
 
-**Step B8 — Update action row**
+**Step B8.  Update action row**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -457,8 +467,8 @@ WHERE id = '<action_id>';
 | tool | purpose | env var / path |
 |---|---|---|
 | Supabase MCP | read `marketing_channel_daily`, `content_performance`, `marketing_decisions`; write new `marketing_decisions` rows and enqueue follow-up actions | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
-| No external statistical library | all formulas computed explicitly inline | chi-square critical value = 3.841 (df=1, α=0.05) — hardcoded constant, not looked up dynamically |
-| No external APIs | all data is from Supabase cache; no live ad API calls | —  |
+| No external statistical library | all formulas computed explicitly inline | chi-square critical value = 3.841 (df=1, α=0.05).  hardcoded constant, not looked up dynamically |
+| No external APIs | all data is from Supabase cache; no live ad API calls |.   |
 
 ---
 
@@ -540,19 +550,41 @@ killed        <- set on missing test_id (readout), insufficient data, or query e
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `CLAUDE.md` §0 — Data Accuracy: all statistical inputs must trace to a live Supabase query; show intermediate computations
-- `marketing_brain_skills/diagnose-performance/SKILL.md` — significance thresholds and anomaly definitions inform what the brain considers "worth testing"
-- `automation_skills/automation/ab_testing/SKILL.md` — the infrastructure layer that routes traffic to variants and tags events; this skill reads what that infrastructure produces
-- `marketing_brain_skills/generate-briefs/SKILL.md` — downstream consumer of readout verdicts; generate-briefs decides what to tell Matt and what new hypotheses to propose
+- `CLAUDE.md` §0.  Data Accuracy: all statistical inputs must trace to a live Supabase query; show intermediate computations
+- `marketing_brain_skills/diagnose-performance/SKILL.md`.  significance thresholds and anomaly definitions inform what the brain considers "worth testing"
+- `automation_skills/automation/ab_testing/SKILL.md`.  the infrastructure layer that routes traffic to variants and tags events; this skill reads what that infrastructure produces
+- `marketing_brain_skills/generate-briefs/SKILL.md`.  downstream consumer of readout verdicts; generate-briefs decides what to tell Matt and what new hypotheses to propose
 
 **Downstream producers (triggered by this skill's output):**
-- `marketing_brain_skills/producers/site-edit/SKILL.md` — rolls out winning variants to site pages
-- `marketing_brain_skills/producers/comms-matt-alert/SKILL.md` — receives `comms:matt_summary` actions enqueued for inconclusive or control-wins verdicts
+- `marketing_brain_skills/producers/site-edit/SKILL.md`.  rolls out winning variants to site pages
+- `marketing_brain_skills/producers/comms-matt-alert/SKILL.md`.  receives `comms:matt_summary` actions enqueued for inconclusive or control-wins verdicts
 
-**Statistical reference (embedded — no external dependency):**
+**Statistical reference (embedded.  no external dependency):**
 - Chi-square critical value: 3.841 (df=1, α=0.05, two-tailed)
 - z-scores used in power calc: z_alpha=1.960 (α=0.05, two-tailed), z_beta=0.842 (power=0.80)
 - Welch-Satterthwaite df approximation: standard formula, computed inline
 
 **Registry entry:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section F, row `analyze-experiment`
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section F, row `analyze-experiment`
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+

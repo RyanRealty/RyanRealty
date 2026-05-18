@@ -7,20 +7,20 @@ description: Use this skill whenever the user says "generate VO", "synth the voi
 
 ## Canonical references
 
-This is a capability skill. The two top-tier rule layers — [`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md) (brand) and [`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md) (platform rules) — apply to all output. Per CLAUDE.md "Skill self-binding", every Ryan Realty content piece loads both before producing.
+This is a capability skill. The two top-tier rule layers.  [`design_system/ryan-realty/SKILL.md`](. /. /design_system/ryan-realty/SKILL.md) (brand) and [`social_media_skills/platform-best-practices/SKILL.md`](. /. /social_media_skills/platform-best-practices/SKILL.md) (platform rules).  apply to all output. Per CLAUDE.md "Skill self-binding", every Ryan Realty content piece loads both before producing.
 
 ---
 
-## Voice (LOCKED — permanent as of 2026-04-27)
+## Voice (LOCKED.  permanent as of 2026-04-27)
 
 | Field | Value |
 |---|---|
-| Name | Victoria — Ryan Realty Anchor |
+| Name | Victoria.  Ryan Realty Anchor |
 | Voice ID | `qSeXEcewz7tA0Q0qk9fH` |
-| Saved as | "Victoria — Ryan Realty Anchor" on account |
-| Locked | 2026-04-27 — permanent, no substitutions |
+| Saved as | "Victoria.  Ryan Realty Anchor" on account |
+| Locked | 2026-04-27.  permanent, no substitutions |
 
-**No other voice is permitted.** Not Ellen (`BIvP0GN1cAtSRTxNHnWS` — predecessor, superseded 2026-04-27). Not any other ElevenLabs voice. Not any other TTS provider. Victoria only.
+**No other voice is permitted.** Not Ellen (`BIvP0GN1cAtSRTxNHnWS`.  predecessor, superseded 2026-04-27). Not any other ElevenLabs voice. Not any other TTS provider. Victoria only.
 
 ---
 
@@ -40,7 +40,7 @@ Decision rule: if the script contains any place name from the IPA list below, us
 
 > **This section is the authoritative spec.** Every other skill file that references ElevenLabs settings MUST match these values exactly. When in doubt, defer to this file.
 >
-> Updated 2026-05-07 per Matt directive — tuned for conversational delivery; canonical source: `video_production_skills/elevenlabs_voice/SKILL.md`.
+> Updated 2026-05-07 per Matt directive.  tuned for conversational delivery; canonical source: `video_production_skills/elevenlabs_voice/SKILL.md`.
 
 ```json
 {
@@ -68,7 +68,7 @@ Chain every sentence in a clip using `previous_text`. This gives ElevenLabs the 
 
 - For sentence N: `previous_text` = sentence N-1 (verbatim, no modifications).
 - For the first sentence in a clip: `previous_text` = empty string or omit.
-- Never skip chaining on interior sentences — prosody breaks are audible and are a QA fail.
+- Never skip chaining on interior sentences.  prosody breaks are audible and are a QA fail.
 
 ---
 
@@ -108,7 +108,7 @@ ElevenLabs renders numerals inconsistently. Spell all numbers out in the ingesti
 | 12% | "twelve percent" |
 | 2,847 | "two thousand eight hundred forty seven" |
 
-Do not use commas as separators in spelled-out numbers. Do not use "and" before the last element (say "four hundred seventy five" not "four hundred and seventy five") — Victoria reads it cleaner without "and."
+Do not use commas as separators in spelled-out numbers. Do not use "and" before the last element (say "four hundred seventy five" not "four hundred and seventy five").  Victoria reads it cleaner without "and."
 
 ---
 
@@ -122,13 +122,13 @@ Do not use commas as separators in spelled-out numbers. Do not use "and" before 
 
 ---
 
-## Python code example — canonical POST
+## Python code example.  canonical POST
 
 ```python
 import os, requests, json
 
 ELEVEN_API_KEY = os.environ["ELEVENLABS_API_KEY"]
-VOICE_ID = "qSeXEcewz7tA0Q0qk9fH"  # Victoria — locked permanent
+VOICE_ID = "qSeXEcewz7tA0Q0qk9fH"  # Victoria.  locked permanent
 
 def generate_vo(text: str, previous_text: str = "", output_path: str = "vo.mp3") -> str:
     """
@@ -144,7 +144,7 @@ def generate_vo(text: str, previous_text: str = "", output_path: str = "vo.mp3")
         "text": text,
         "model_id": "eleven_turbo_v2_5",  # use eleven_v3 only if phoneme tags present
         "voice_settings": {
-            # Updated 2026-05-07 per Matt directive — conversational delivery; canonical source: video_production_skills/elevenlabs_voice/SKILL.md
+            # Updated 2026-05-07 per Matt directive.  conversational delivery; canonical source: video_production_skills/elevenlabs_voice/SKILL.md
             "stability": 0.40,
             "similarity_boost": 0.80,
             "style": 0.50,
@@ -218,13 +218,13 @@ The returned JSON contains `words[]` with `{ text, start, end }` in seconds. Map
 ## Pre-flight checklist (before any VO generation)
 
 ```
-[ ] ELEVENLABS_API_KEY loaded from .env.local (key name "ryan-realty-automation")
-[ ] Voice ID confirmed: qSeXEcewz7tA0Q0qk9fH (Victoria — do not look this up from memory)
+[ ] ELEVENLABS_API_KEY loaded from.env.local (key name "ryan-realty-automation")
+[ ] Voice ID confirmed: qSeXEcewz7tA0Q0qk9fH (Victoria.  do not look this up from memory)
 [ ] Model: eleven_turbo_v2_5 (switch to eleven_v3 only if phoneme tags needed)
 [ ] Settings object typed out: stability 0.40, similarity_boost 0.80, style 0.50, use_speaker_boost true
 [ ] previous_text chained for every sentence after the first
 [ ] All numbers spelled out in full
-[ ] Banned words grep: stunning/nestled/boasts/charming/luxurious/spacious/cozy etc. — ZERO hits
+[ ] Banned words grep: stunning/nestled/boasts/charming/luxurious/spacious/cozy etc. ZERO hits
 [ ] No em-dashes, no semicolons in script
 [ ] IPA tags in place for any Central Oregon place name in the IPA list above
 [ ] Forced-alignment call queued to run immediately after each MP3 generates
@@ -237,11 +237,11 @@ The returned JSON contains `words[]` with `{ text, start, end }` in seconds. Map
 
 | Anti-pattern | Why it fails |
 |---|---|
-| Using any voice other than Victoria | Different prosody, different timbre — rejects at QA |
+| Using any voice other than Victoria | Different prosody, different timbre.  rejects at QA |
 | Using `multilingual_v2` model | Wrong prosody character for English-only content |
 | Using `eleven_v3` for non-phoneme clips | Slower, different voice character than approved renders |
 | Skipping `previous_text` on interior sentences | Prosody breaks audible at sentence boundaries |
 | Sending numerals ("$475,000") instead of spelled-out text | ElevenLabs mispronounces currency figures inconsistently |
 | Using Ellen voice ID `BIvP0GN1cAtSRTxNHnWS` | Predecessor voice, superseded 2026-04-27, do not use |
-| Skipping forced-alignment call | Captions will fall back to clock-time sync — violates caption hard rules |
+| Skipping forced-alignment call | Captions will fall back to clock-time sync.  violates caption hard rules |
 | stability > 0.65 | Voice becomes monotone; loses the warmth that makes Victoria work for real estate |

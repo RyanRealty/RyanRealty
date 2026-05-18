@@ -1,12 +1,12 @@
 ---
 name: linkedin-document-carousel
 description: >
-  Canonical producer for Ryan Realty native LinkedIn document carousels — 8–12 slide vector
+  Canonical producer for Ryan Realty native LinkedIn document carousels.  8-12 slide vector
   PDFs uploaded directly to LinkedIn as a document post (not a link to Canva, not an image
   carousel). LinkedIn document posts run ~24% engagement vs ~6% for static images and reach
   exactly the $700K+ Bend buyer profile: tech relocators, remote workers, corporate
-  transferees. NOT a listing brochure — the framing is always insight-first. Slide 1 is a
-  bold market claim, slides 2–8 build the case with verified Supabase + MLS + named-source
+  transferees. NOT a listing brochure.  the framing is always insight-first. Slide 1 is a
+  bold market claim, slides 2-8 build the case with verified Supabase + MLS + named-source
   data, slide 9 is a quiet DM-for-the-brief offer. Navy/cream monochrome, Amboqia display,
   Geist body, no gold, no emoji, no hashtags on slides. Use this whenever Matt says "build a
   linkedin carousel for <listing>", "linkedin pdf for <MLS#>", "linkedin document for
@@ -25,13 +25,29 @@ when_to_use: |
   - "build a linkedin pdf about <neighborhood>"
 action_types:
   - content:linkedin_doc_carousel
+output_type: image
+target_platforms: ["ig_feed", "ig_carousel", "fb_feed"]
+asset_destination: Supabase asset-library bucket + public/list-kits/<address>/
+auto_inputs: ["listing photos from Spark", "brand tokens", "design system v2"]
+required_inputs: ["mls_id OR topic"]
+optional_inputs: ["aspect_ratio_overrides", "color_palette_override"]
+estimated_runtime_min: 5
+cost_usd_estimate: $0.05-$0.50 per image
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.png
+example_outputs: []
+    label: "past approved renders"
+    surface: "ig_carousel"
 ---
 
-# LinkedIn Document Carousel — Native PDF Insight Deck
+# LinkedIn Document Carousel.  Native PDF Insight Deck
 
-**Scope.** Render one native LinkedIn document carousel (8–12 slide PDF, 1080×1080 per slide,
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
+
+**Scope.** Render one native LinkedIn document carousel (8-12 slide PDF, 1080×1080 per slide,
 vector with embedded fonts) plus the LinkedIn-native caption that ships with it. Framed as a
-McKinsey-Insights-grade market analysis, not a listing brochure — even when a specific listing
+McKinsey-Insights-grade market analysis, not a listing brochure.  even when a specific listing
 is the trigger, that listing is a proof point inside a larger market thesis. Companion to
 `instagram-carousel` (multi-slide IG/FB) and `ig-single-post` (single IG/FB image). Owns the
 LinkedIn document-post format end-to-end: PDF render, caption draft, slide-by-slide citation
@@ -39,28 +55,28 @@ trace, QA gate, and review surfacing.
 
 **Status.** Canonical. Locked 2026-05-14.
 
-**Producer category.** Section B — Content Producer (per
+**Producer category.** Section B.  Content Producer (per
 `marketing_brain_skills/producers/REGISTRY.md`).
 
 **Exemplar output:** `out/linkedin-doc/<slug>/`
 
 ---
 
-## 1. Required references — load before doing any work
+## 1. Required references.  load before doing any work
 
 | Reference | Why |
 |---|---|
-| `CLAUDE.md` §0 — Data Accuracy mandate | Every figure on every slide traces to a verified primary source. Outranks every other rule. |
-| `CLAUDE.md` §0.5 — Draft-First, Commit-Last | Render to `out/`, surface, wait for explicit approval. Outranks every other rule. |
-| `CLAUDE.md` "Voice + content" — #RyanRealtyBend HARD RULE | The trailing block of the caption MUST be `#RyanRealtyBend` followed by 3–6 topical tags. LinkedIn honors hashtags; do not strip them. |
+| `CLAUDE.md` §0.  Data Accuracy mandate | Every figure on every slide traces to a verified primary source. Outranks every other rule. |
+| `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Render to `out/`, surface, wait for explicit approval. Outranks every other rule. |
+| `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE | The trailing block of the caption MUST be `#RyanRealtyBend` followed by 3-6 topical tags. LinkedIn honors hashtags; do not strip them. |
 | `CLAUDE.md` "Supabase listings Schema" | Mixed-case column names require double quotes. Re-read before any SQL. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register, navy/cream-only palette, Amboqia/Geist/Azo Sans Medium type tiers, asset cheat sheet. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
 | `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes; LinkedIn voice register. |
 | `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint reference. |
-| `social_media_skills/platform-best-practices/SKILL.md` | 2026 LinkedIn rule layer — document-post format, cadence, hashtag use. |
+| `social_media_skills/platform-best-practices/SKILL.md` | 2026 LinkedIn rule layer.  document-post format, cadence, hashtag use. |
 | `social_media_skills/instagram-carousel/SKILL.md` | Persistent-footer + continuity conventions inherited here (footer position, logo discipline, tabular numerals). |
-| `automation_skills/content_engine/SKILL.md` | Content routing bus — every `content:*` action routes through here. |
+| `automation_skills/content_engine/SKILL.md` | Content routing bus.  every `content:*` action routes through here. |
 | `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned content gate. |
 | `marketing_brain_skills/producers/TEMPLATE.md` | Producer skeleton. |
 | `marketing_brain_skills/producers/REGISTRY.md` | Section B row entry. |
@@ -71,9 +87,9 @@ trace, QA gate, and review surfacing.
 
 ### In scope
 
-- One native LinkedIn document carousel per call: 8–12 slides, 1080×1080 px each (preferred) or
+- One native LinkedIn document carousel per call: 8-12 slides, 1080×1080 px each (preferred) or
   1080×1350 px each (acceptable secondary aspect), exported as a single vector PDF.
-- The accompanying LinkedIn caption (3–5 sentences + trailing hashtag block).
+- The accompanying LinkedIn caption (3-5 sentences + trailing hashtag block).
 - A per-figure `citations.json` for every numeric or sourced claim on every slide.
 - A `provenance.json` for any photo asset used inside the PDF.
 - A `design_scorecard.json` recording QA gate results.
@@ -82,7 +98,7 @@ trace, QA gate, and review surfacing.
 
 ### Out of scope
 
-- Image-based LinkedIn carousels (those are uploaded as multi-image posts, not as documents — use
+- Image-based LinkedIn carousels (those are uploaded as multi-image posts, not as documents.  use
   `instagram-carousel` with `aspect_ratio: 1080x1080` and cross-post to LinkedIn).
 - Long-form LinkedIn articles (handled by `social_media_skills/blog-post/SKILL.md` with a
   LinkedIn variant).
@@ -119,12 +135,12 @@ interface LinkedinDocCarouselPayload {
   city?: string
   neighborhood?: string
 
-  // The bold claim of slide 1 — the entire deck is built to support this thesis.
-  // 6–12 words. No clichés. No hedging.
+  // The bold claim of slide 1.  the entire deck is built to support this thesis.
+  // 6-12 words. No clichés. No hedging.
   // Example: "Tumalo rural is undervalued by 8%."
   market_insight_thesis: string
 
-  // Total slide count including cover and CTA. Default 9. Range 8–12.
+  // Total slide count including cover and CTA. Default 9. Range 8-12.
   slide_count?: number
 
   // Aspect ratio. Default '1080x1080'. '1080x1350' also acceptable.
@@ -153,7 +169,7 @@ interface LinkedinDocCarouselActionRow {
 
 Validation rules before the producer renders anything:
 
-1. `market_insight_thesis` is present, non-empty, 6–12 words, contains zero banned vocab.
+1. `market_insight_thesis` is present, non-empty, 6-12 words, contains zero banned vocab.
 2. `topic_type` resolves to exactly one of the three values.
 3. If `topic_type === 'listing'`: `mls_id` is present and the listing row exists in Supabase.
 4. If `topic_type !== 'listing'`: at least one of `city` or `neighborhood` is present.
@@ -165,7 +181,7 @@ Missing or invalid field → surface to caller, do not render.
 
 ## 5. The recipe
 
-**Step 1 — Read the action row**
+**Step 1.  Read the action row**
 
 Query `marketing_brain_actions` by `id`. Confirm `status='pending'`. Validate the payload
 against §4. Immediately:
@@ -176,12 +192,12 @@ SET status='in_production', executed_at=now()
 WHERE id='<id>' AND status='pending';
 ```
 
-**Step 2 — Load mandatory references**
+**Step 2.  Load mandatory references**
 
 Per §1. Do not proceed without loading `CLAUDE.md` §0, `CLAUDE.md` §0.5, the design system
 SKILL.md, and the brand-voice guidelines.
 
-**Step 3 — Resolve the listing or topic context**
+**Step 3.  Resolve the listing or topic context**
 
 If `topic_type === 'listing'`:
 
@@ -198,13 +214,13 @@ WHERE "MlsId" = '<mls_id>';
 ```
 
 Resolve the listing agent from `"ListAgentFullName"` / `"ListAgentEmail"` to one of
-`matt-ryan`, `paul-stevenson`, `rebecca-peterson`. If unresolvable, surface to caller — do not
+`matt-ryan`, `paul-stevenson`, `rebecca-peterson`. If unresolvable, surface to caller.  do not
 guess.
 
 If `topic_type !== 'listing'`: pull the relevant market_stats_cache / market_pulse_live row(s)
 for the geography in the payload. Print the raw row(s) for the verification trace.
 
-**Step 4 — Build the per-slide content plan**
+**Step 4.  Build the per-slide content plan**
 
 Produce a `config.json` at `out/linkedin-doc/<slug>/config.json` BEFORE running any render. The
 config enumerates every slide, every figure on every slide, and the source query that produced
@@ -232,15 +248,14 @@ the figure. The build pipeline only renders from this config.
       "supporting": "↓ 8.0% vs Bend SFR median $/sqft of $393",
       "source": "Supabase market_pulse_live · 2026-05-14T14:00:00Z"
     }
-    // ... index 3 through slide_count
+    //... index 3 through slide_count
   ]
 }
 ```
 
-Per CLAUDE.md §0, every figure in the config must trace to a live source pull in this session
-— no inheriting numbers from prior chats, payloads, or web articles.
+Per CLAUDE.md §0, every figure in the config must trace to a live source pull in this session.  no inheriting numbers from prior chats, payloads, or web articles.
 
-**Step 5 — Pull and verify every figure**
+**Step 5.  Pull and verify every figure**
 
 For every slide that contains a number, percentage, day count, or other claim:
 
@@ -257,16 +272,16 @@ For every slide that contains a number, percentage, day count, or other claim:
 If a stat can't be verified, cut the slide or rephrase to a qualitative claim that doesn't
 require the number. Never approximate.
 
-**Step 6 — Validate the thesis against the data**
+**Step 6.  Validate the thesis against the data**
 
 Re-read `market_insight_thesis` against the supporting figures. If the supporting data does
-not actually back the thesis, surface to Matt with the specific gap — the thesis changes, not
+not actually back the thesis, surface to Matt with the specific gap.  the thesis changes, not
 the data.
 
-**Step 7 — Render the PDF**
+**Step 7.  Render the PDF**
 
 ```bash
-# Compositor lives at lib/render-linkedin-doc-carousel.mjs (build if absent — uses the same
+# Compositor lives at lib/render-linkedin-doc-carousel.mjs (build if absent.  uses the same
 # canvas + fonts + brand assets pipeline as lib/render-ig-single-post.mjs).
 #
 # Two render paths are acceptable; pick one and hold it:
@@ -275,7 +290,7 @@ the data.
 #      sharp + hummus / pdf-lib. Slower but matches the Remotion stack already used for
 #      video and IG carousels.
 #
-# Default: option (1) — Playwright HTML -> PDF. Faster, smaller files, vector-clean.
+# Default: option (1).  Playwright HTML -> PDF. Faster, smaller files, vector-clean.
 node lib/render-linkedin-doc-carousel.mjs \
   --config out/linkedin-doc/<slug>/config.json \
   --out out/linkedin-doc/<slug>/carousel.pdf
@@ -286,11 +301,11 @@ Pre-render asset audit:
 - Fonts on disk:
   - `design_system/ryan-realty/fonts/Amboqia_Boriango.otf`
   - `design_system/ryan-realty/fonts/AzoSans-Medium.ttf`
-  - Geist (404/500/600/700) — load via local `@font-face` referencing the next/font/geist
+  - Geist (404/500/600/700).  load via local `@font-face` referencing the next/font/geist
     package, or bundled from `design_system/ryan-realty/fonts/` if a fallback file is staged.
 - Logos on disk:
-  - `design_system/ryan-realty/assets/brand/logo-blue.png` (heritage navy on cream — footer)
-  - `design_system/ryan-realty/assets/brand/logo-white.png` (reversed — CTA slide if used)
+  - `design_system/ryan-realty/assets/brand/logo-blue.png` (heritage navy on cream.  footer)
+  - `design_system/ryan-realty/assets/brand/logo-white.png` (reversed.  CTA slide if used)
 - Broker headshot on disk: `design_system/ryan-realty/assets/team/<list_agent_slug>.png`.
 - Jax mascot (brand-led variants): `design_system/ryan-realty/assets/brand/blue-dog.png`.
 - Hero photo on disk (listing variant) or pulled from Supabase `"PhotoURL"` / Spark.
@@ -298,29 +313,29 @@ Pre-render asset audit:
 If any asset is missing: stop, surface to caller, do not fall back to system fonts or substitute
 images.
 
-**Step 8 — Embed fonts in the PDF**
+**Step 8.  Embed fonts in the PDF**
 
 Verify in the rendered PDF that Amboqia Boriango, Geist (each weight used), and Azo Sans Medium
-(if used) are embedded — not just referenced. A PDF that ships without embedded fonts will
+(if used) are embedded.  not just referenced. A PDF that ships without embedded fonts will
 re-flow on a viewer's machine, breaking the design lock-up.
 
 Validation: `pdffonts out/linkedin-doc/<slug>/carousel.pdf` must list every used family with
 the "emb" column set to `yes`. Any `no` is a non-ship.
 
-**Step 9 — Draft the LinkedIn caption**
+**Step 9.  Draft the LinkedIn caption**
 
 Write `out/linkedin-doc/<slug>/caption.md`. Format (see §7 for full spec):
 
-- 3–5 sentence intro. Bold the headline claim (`**...**`). Reference the document below.
+- 3-5 sentence intro. Bold the headline claim (`**...**`). Reference the document below.
 - One CTA at the end: a single short sentence directing readers to comment / DM / save.
-- Trailing hashtag block: `#RyanRealtyBend` first, then 3–6 topical tags. Each hashtag on its
-  own line OR space-separated — both work on LinkedIn; pick one style and hold it across the
+- Trailing hashtag block: `#RyanRealtyBend` first, then 3-6 topical tags. Each hashtag on its
+  own line OR space-separated.  both work on LinkedIn; pick one style and hold it across the
   caption.
 - Zero emoji. Zero exclamation marks. Zero em-dashes in body. Zero semicolons.
 - No links inside the caption body (LinkedIn deprioritizes posts with outbound links). Document
   posts work because the PDF IS the artifact.
 
-**Step 10 — Write citations.json**
+**Step 10.  Write citations.json**
 
 One entry per figure shown anywhere on any slide. Required for the QA gate.
 
@@ -330,7 +345,7 @@ One entry per figure shown anywhere on any slide. Required for the QA gate.
     {
       "slide": 2,
       "figure": "$362",
-      "label": "Median $/sqft — Tumalo rural — last 12 months",
+      "label": "Median $/sqft.  Tumalo rural.  last 12 months",
       "source": "Supabase market_pulse_live",
       "filter": "geography='tumalo_rural', period='last_12_months', property_type='A'",
       "column": "median_price_per_sqft",
@@ -345,12 +360,12 @@ One entry per figure shown anywhere on any slide. Required for the QA gate.
 For any photo on a slide, write a `provenance.json` entry: source (MLS / approved photographer),
 file path, license.
 
-**Step 11 — Run the QA gate**
+**Step 11.  Run the QA gate**
 
 See §9. Write results to `out/linkedin-doc/<slug>/design_scorecard.json`. Any fail is a non-ship
 until resolved.
 
-**Step 12 — UPDATE the action row to ready**
+**Step 12.  UPDATE the action row to ready**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -366,7 +381,7 @@ SET status='ready',
 WHERE id='<id>';
 ```
 
-**Step 13 — Surface to Matt**
+**Step 13.  Surface to Matt**
 
 Per §8 surface format. Then stop. Do not commit. Do not push. Wait for explicit approval.
 
@@ -390,7 +405,7 @@ fir green. No sky blue. Two-color palette per CLAUDE.md (locked 2026-05-13).
 - Right: slide numeral. Geist 500, `14 px` (square) / `16 px` (portrait), `rgba(16,39,66,0.65)`,
   right-aligned, `40 px` from right edge, vertically centered. Format: `3 / 9` with spaces
   around the slash.
-- No phone number, no URL, no agent name, no "Ryan Realty" text — the wordmark image carries
+- No phone number, no URL, no agent name, no "Ryan Realty" text.  the wordmark image carries
   the brand. Never re-typeset the wordmark.
 
 **Content safe zone.** All slide content within `56 px` inset on left/right and `56 px` from
@@ -403,10 +418,10 @@ ratio, day figure. Non-negotiable.
 
 ## 7. Per-slide-type recipes
 
-The default 9-slide composition. For an 8-slide deck, drop slide 5. For 10–12 slides, expand
-the data-context block (slides 6–7) with additional comparison stats.
+The default 9-slide composition. For an 8-slide deck, drop slide 5. For 10-12 slides, expand
+the data-context block (slides 6-7) with additional comparison stats.
 
-### 7.1 Slide 1 — Cover (market claim)
+### 7.1 Slide 1.  Cover (market claim)
 
 The scroll-stop. Must work as a standalone image.
 
@@ -419,7 +434,7 @@ The scroll-stop. Must work as a standalone image.
 - **Thesis** (Amboqia Boriango, 60 px, navy, line-height `1.10`, max 2 lines, centered
   vertically in the content area):
   The `market_insight_thesis` verbatim. E.g. `Tumalo rural is undervalued by 8%.` Title case
-  is fine here — this is the hero. Sentence ends with a period.
+  is fine here.  this is the hero. Sentence ends with a period.
 - **Document indicator** (Geist 500, 13 px, `rgba(16,39,66,0.55)`, UPPERCASE, letter-spacing
   `0.12em`, `y = content_area_bottom - 40`):
   `SWIPE → <slide_count - 1> SLIDES`. The arrow is the actual `→` Unicode glyph.
@@ -427,7 +442,7 @@ The scroll-stop. Must work as a standalone image.
 NOT a "Just Listed" cover. Even when `topic_type === 'listing'`, the thesis is a market claim,
 not a listing announcement.
 
-### 7.2 Slides 2–3 — Data chart slides
+### 7.2 Slides 2-3.  Data chart slides
 
 The headline data points that prove the thesis. One primary stat per slide.
 
@@ -435,7 +450,7 @@ The headline data points that prove the thesis. One primary stat per slide.
 - **Category kicker** (Azo Sans Medium, 14 px, navy, UPPERCASE, letter-spacing `0.12em`,
   `y = 80, x = 56`): the stat label with period and geography baked in. E.g.
   `MEDIAN $/SQFT · TUMALO RURAL · LAST 12 MONTHS`.
-- **Primary stat** (Amboqia Boriango, 96–120 px square / 112–144 px portrait, navy,
+- **Primary stat** (Amboqia Boriango, 96-120 px square / 112-144 px portrait, navy,
   tabular-nums, centered horizontally, vertically `y = 280` for square / `y = 360` for
   portrait): the lead number with units. E.g. `$362`, `38 days`, `4.2 months`.
 - **Supporting figure** (Geist 500, 28 px square / 30 px portrait, navy, tabular-nums, centered,
@@ -448,7 +463,7 @@ The headline data points that prove the thesis. One primary stat per slide.
 No chart graphics on these slides. The number IS the visual. Charts (if used at all) belong on
 the dedicated chart slide (§7.4).
 
-### 7.3 Slides 4–5 — Proof slides (context photo + 2–3 specific data points)
+### 7.3 Slides 4-5.  Proof slides (context photo + 2-3 specific data points)
 
 Bridge from headline stat to lived context. One interior, context, or location photo plus
 overlaid data points.
@@ -473,7 +488,7 @@ overlaid data points.
 
 Every data point on the slide must have a `citations.json` entry.
 
-### 7.4 Slides 6–7 — Market context (comparison or trend)
+### 7.4 Slides 6-7.  Market context (comparison or trend)
 
 The wider market frame that makes the thesis defensible. Comparison stats with verified primary
 sources.
@@ -481,15 +496,15 @@ sources.
 - **Background:** cream `#faf8f4`.
 - **Category kicker** (Azo Sans Medium, 14 px, navy, UPPERCASE, letter-spacing `0.12em`,
   `y = 80, x = 56`): the comparison frame. E.g. `TUMALO RURAL VS BEND SFR · 2024 → 2026`.
-- **Comparison table** (3–4 rows max, `y = 220`, content width with `56 px` gutter):
+- **Comparison table** (3-4 rows max, `y = 220`, content width with `56 px` gutter):
   - Header row (Geist 500, 14 px, navy `rgba(16,39,66,0.75)`, UPPERCASE, letter-spacing
     `0.08em`, bottom border `1 px solid rgba(16,39,66,0.18)`).
   - Body rows: label column (Geist 500, 20 px, navy, left), value columns (Geist 600, 28 px,
     navy, tabular-nums, right-aligned). Row separator `1 px solid rgba(16,39,66,0.10)` between
     body rows.
-  - Each column gets a clear period or geography header — never "2024" alone; always "2024 H1
+  - Each column gets a clear period or geography header.  never "2024" alone; always "2024 H1
     · Tumalo" or similar.
-- **OR — single-metric trend line** (one Recharts/SVG-style line plot, 800 px wide × 320 px
+- **OR.  single-metric trend line** (one Recharts/SVG-style line plot, 800 px wide × 320 px
   tall, centered):
   - Line stroke: navy `#102742`, 2.5 px.
   - Plot area: cream background, axis lines `rgba(16,39,66,0.18)`, grid lines
@@ -498,15 +513,15 @@ sources.
   - Data labels at min and max points only: Geist 500, 14 px, navy, tabular-nums.
 - **Caption** (Geist 400, 18 px, navy, `y = data_block_bottom + 32, x = 56`, max 2 lines): one
   sentence that names the comparison and the takeaway. E.g.
-  `Tumalo rural $/sqft has tracked 6–10% below Bend SFR for eight straight quarters.`
+  `Tumalo rural $/sqft has tracked 6-10% below Bend SFR for eight straight quarters.`
 - **Source line** (Geist 400, 14 px, `rgba(16,39,66,0.55)`, centered, `48 px` above footer):
   `Source: <source> · <period>`.
 
-### 7.5 Slide 8 — Implication ("what this means")
+### 7.5 Slide 8.  Implication ("what this means")
 
 The pull quote slide. One idea that ties the data back to a buyer or seller decision.
 
-- **Background:** cream `#faf8f4` (or navy `#102742` for emphasis — pick one rhythm and hold
+- **Background:** cream `#faf8f4` (or navy `#102742` for emphasis.  pick one rhythm and hold
   it; never alternate). Default cream.
 - **Category kicker** (Azo Sans Medium, 14 px, navy, UPPERCASE, letter-spacing `0.16em`,
   `y = 80, x = 56`): `WHAT THIS MEANS`.
@@ -520,9 +535,9 @@ The pull quote slide. One idea that ties the data back to a buyer or seller deci
 
 No exclamation marks. No "Don't miss out." No hype.
 
-### 7.6 Slide 9 — CTA (DM-for-the-brief offer)
+### 7.6 Slide 9.  CTA (DM-for-the-brief offer)
 
-Always the last slide. A quiet, specific offer — not a hard sell.
+Always the last slide. A quiet, specific offer.  not a hard sell.
 
 - **Background:** navy `#102742` full bleed (footer band switches to navy on this slide only,
   with `logo-white.png` instead of `logo-blue.png`).
@@ -534,13 +549,13 @@ Always the last slide. A quiet, specific offer — not a hard sell.
   - For `market_brief`: `Comment GUIDE for the full <city> market brief.`
   - For `neighborhood_insight`: `Comment GUIDE for the full <neighborhood> brief.`
   - Alternate: `DM us for the full brief.` if the post is below 500 comments and Matt prefers
-    the DM route. Default to the comment route — it produces visible engagement signal.
+    the DM route. Default to the comment route.  it produces visible engagement signal.
 - **Broker block** (centered, `y = 520`):
   - Headshot (`design_system/ryan-realty/assets/team/<list_agent_slug>.png`, transparent),
     `160 px` wide, centered, `border-radius: 50%` crop.
   - Name (Geist 500, 22 px, cream, centered, `24 px` below headshot): the broker's full name.
   - Role (Geist 400, 16 px, `rgba(250,248,244,0.75)`, centered, `8 px` below name): the broker's
-    title — `Owner / Principal Broker` (Matt) or `Broker` (Paul, Rebecca).
+    title.  `Owner / Principal Broker` (Matt) or `Broker` (Paul, Rebecca).
 - **Contact line** (Geist 400, 18 px, cream, tabular-nums on phone, centered, `48 px` above
   footer):
   `541.703.3095 · ryan-realty.com`
@@ -549,7 +564,7 @@ Always the last slide. A quiet, specific offer — not a hard sell.
   on slide 9 are redundant when the contact line is right there.)
 
 The CTA slide carries the only navy background in the deck and the only `logo-white.png`. The
-rest of the deck is cream-on-cream-on-cream — restraint is the brand register here.
+rest of the deck is cream-on-cream-on-cream.  restraint is the brand register here.
 
 ---
 
@@ -562,7 +577,7 @@ rest of the deck is cream-on-cream-on-cream — restraint is the brand register 
 ```
 out/linkedin-doc/<slug>/
 ├── config.json              ← slide content plan (data + layout map)
-├── carousel.pdf             ← the deliverable — vector PDF, embedded fonts
+├── carousel.pdf             ← the deliverable.  vector PDF, embedded fonts
 ├── caption.md               ← the LinkedIn-native caption that ships with the PDF
 ├── citations.json           ← one entry per figure shown
 ├── provenance.json          ← photo source + license per photo
@@ -579,7 +594,7 @@ out/linkedin-doc/<slug>/
 ### Surface format (present to Matt exactly like this)
 
 ```
-LinkedIn document carousel ready for review — <topic_type> · <slug>
+LinkedIn document carousel ready for review.  <topic_type> · <slug>
 
   PDF
     Path: out/linkedin-doc/<slug>/carousel.pdf
@@ -596,7 +611,7 @@ LinkedIn document carousel ready for review — <topic_type> · <slug>
     "<the verbatim thesis from slide 1>"
 
   VERIFICATION TRACE
-    - <figure>  — <source>, <filter>, fetched <iso>
+    - <figure>.  <source>, <filter>, fetched <iso>
     [one line per figure across all slides]
 
   citations.json: out/linkedin-doc/<slug>/citations.json
@@ -623,19 +638,19 @@ Run before surfacing. Write to `design_scorecard.json`. Any `fail` = non-ship un
 | 6 | Slide numeral format | Every slide shows `<index> / <slide_count>` with spaces around the slash |
 | 7 | Tabular numerals | Every price, percentage, day count, ratio renders with `font-variant-numeric: tabular-nums` |
 | 8 | Data verified | Every figure on every slide traces to `citations.json` with `source`, `filter`, `column`, `value`, `fetched_at` |
-| 9 | Thesis backed by data | The supporting figures on slides 2–7 substantiate the slide-1 thesis; the QA agent re-reads the thesis against the data and confirms |
+| 9 | Thesis backed by data | The supporting figures on slides 2-7 substantiate the slide-1 thesis; the QA agent re-reads the thesis against the data and confirms |
 | 10 | Photo integrity | If any slide has a photo: source traced in `provenance.json`; no watermarks; no AI fakes |
 | 11 | Safe zone | No critical content within 56 px of left/right or 56 px of top; nothing within 16 px of footer top edge |
-| 12 | Color compliance | Navy `#102742` + cream `#faf8f4` only on slides 1–(n-1); navy + cream on CTA slide. Zero gold (`#D4AF37`, `#C8A864`). Zero fir, zero sky. No off-brand hex |
-| 13 | Banned vocab clean | Grep every on-slide text element AND `caption.md` against the banned vocab union — zero hits |
-| 14 | No emoji | Grep canvas + caption for emoji code points — zero hits |
-| 15 | No exclamation marks | Grep canvas + caption — zero `!` characters in body copy (allowed only inside a verbatim quote attributed to a third-party source) |
-| 16 | No em-dashes / semicolons | Grep canvas + caption — zero `—` or `;` in body copy (em-dash allowed only as a "no data" placeholder on a data slide) |
-| 17 | Hashtag rule | `caption.md` trailing hashtag block leads with `#RyanRealtyBend`; 4–7 hashtags total |
+| 12 | Color compliance | Navy `#102742` + cream `#faf8f4` only on slides 1-(n-1); navy + cream on CTA slide. Zero gold (`#D4AF37`, `#C8A864`). Zero fir, zero sky. No off-brand hex |
+| 13 | Banned vocab clean | Grep every on-slide text element AND `caption.md` against the banned vocab union.  zero hits |
+| 14 | No emoji | Grep canvas + caption for emoji code points.  zero hits |
+| 15 | No exclamation marks | Grep canvas + caption.  zero `!` characters in body copy (allowed only inside a verbatim quote attributed to a third-party source) |
+| 16 | No em-dashes / semicolons | Grep canvas + caption.  zero `. ` or `;` in body copy (em-dash allowed only as a "no data" placeholder on a data slide) |
+| 17 | Hashtag rule | `caption.md` trailing hashtag block leads with `#RyanRealtyBend`; 4-7 hashtags total |
 | 18 | No links in caption | `caption.md` body contains zero `http://` / `https://` / `www.` URLs (LinkedIn deprioritizes link posts; document IS the artifact) |
 | 19 | Broker resolution | List agent / list_agent_slug resolves to one of three brokers; headshot file exists |
 | 20 | File size | `carousel.pdf` < 10 MB (LinkedIn document upload soft limit; 100 MB hard limit, but stay well under) |
-| 21 | CTA route | Slide n contact line uses `541.703.3095` (FUB-tracked bio phone) — NOT `541.213.6706` (direct line). Per CLAUDE.md voice rules: bio phone for inbound lead capture |
+| 21 | CTA route | Slide n contact line uses `541.703.3095` (FUB-tracked bio phone).  NOT `541.213.6706` (direct line). Per CLAUDE.md voice rules: bio phone for inbound lead capture |
 
 Photo slides may be downgraded to cream-only if no MLS-traced or documentary photo is available.
 NEVER stand in an AI-generated photo.
@@ -650,17 +665,17 @@ to the PDF; the PDF does the work.
 **Format:**
 
 ```
-**<Headline claim — bold first sentence, verbatim the slide-1 thesis or a tighter restatement>**
+**<Headline claim.  bold first sentence, verbatim the slide-1 thesis or a tighter restatement>**
 
-<Sentence 2 — the specific data point that makes the claim defensible. One figure with its
+<Sentence 2.  the specific data point that makes the claim defensible. One figure with its
 unit. No hedging.>
 
-<Sentence 3 — the implication for a buyer or seller. One sentence. Active voice.>
+<Sentence 3.  the implication for a buyer or seller. One sentence. Active voice.>
 
-<Optional sentence 4 — a second data point or comparison if it strengthens the case without
+<Optional sentence 4.  a second data point or comparison if it strengthens the case without
 repeating slide content.>
 
-<CTA sentence — one short imperative. "Comment GUIDE for the full brief." or "DM for the
+<CTA sentence.  one short imperative. "Comment GUIDE for the full brief." or "DM for the
 data behind this." Never "Reach out!", never "Don't miss out!", never exclamation marks.>
 
 #RyanRealtyBend
@@ -673,7 +688,7 @@ data behind this." Never "Reach out!", never "Don't miss out!", never exclamatio
 
 **Constraints:**
 
-- 3–5 body sentences. Word count target: 80–150 words.
+- 3-5 body sentences. Word count target: 80-150 words.
 - Bold the headline claim with markdown `**...**` (LinkedIn renders this as bold in the post
   preview).
 - No emoji. No exclamation marks. No em-dashes in body. No semicolons in body. No "delve,"
@@ -681,8 +696,8 @@ data behind this." Never "Reach out!", never "Don't miss out!", never exclamatio
   "unlock."
 - No outbound URLs in the body (LinkedIn deprioritizes link posts).
 - Hashtag block at the end. `#RyanRealtyBend` first, mandatory per CLAUDE.md "Voice + content"
-  HARD RULE (locked 2026-05-14). 4–7 hashtags total. Topical tags must be specific to the
-  thesis — never generic `#realestate`, `#realtor`, `#dreamhome`.
+  HARD RULE (locked 2026-05-14). 4-7 hashtags total. Topical tags must be specific to the
+  thesis.  never generic `#realestate`, `#realtor`, `#dreamhome`.
 - "You / your" is the subject. "Our team" for broker identity. Never "I."
 - One CTA only. Never two competing calls to action.
 
@@ -695,7 +710,7 @@ Last 12 months: Tumalo rural closed at $362/sqft median, Bend SFR closed at $393
 held for eight straight quarters across 247 closed sales.
 
 A buyer with $1.1M can step into Tumalo rural at meaningfully less per square foot than the
-Bend median — same school district, fewer neighbors, faster trail access.
+Bend median.  same school district, fewer neighbors, faster trail access.
 
 Comment GUIDE for the full Tumalo brief.
 
@@ -710,7 +725,7 @@ Comment GUIDE for the full Tumalo brief.
 
 ## 11. Voice register
 
-LinkedIn carries gravitas. Match the tone of a McKinsey Insights piece — short paragraphs,
+LinkedIn carries gravitas. Match the tone of a McKinsey Insights piece.  short paragraphs,
 declarative claims, every claim cited. Reference: `marketing_brain_skills/brand-voice/voice_guidelines.md`.
 
 **Apply:**
@@ -722,11 +737,11 @@ declarative claims, every claim cited. Reference: `marketing_brain_skills/brand-
   in `citations.json`.
 - Percentages: one decimal, signed arrow: `↑ 2.1% YoY` / `↓ 8.0% vs Bend SFR`.
 - Days: integer + "days": `38 days`.
-- Unavailable data: em-dash `—` placeholder (the only allowed em-dash usage).
+- Unavailable data: em-dash `. ` placeholder (the only allowed em-dash usage).
 - Phone (CTA slide): `541.703.3095` (dotted, FUB-tracked bio phone).
 - Web: `ryan-realty.com` (hyphenated lowercase).
 
-**Banned vocab (zero tolerance — see voice_guidelines.md §6 for the full union):**
+**Banned vocab (zero tolerance.  see voice_guidelines.md §6 for the full union):**
 
 Real-estate clichés: `stunning`, `nestled`, `boasts`, `charming`, `pristine`, `gorgeous`,
 `breathtaking`, `must-see`, `dream home`, `meticulously maintained`, `entertainer's dream`,
@@ -751,7 +766,7 @@ data" placeholder.)
 
 ## 12. Approval gate
 
-`matt-review-draft` — Matt sees the rendered PDF + caption + citations + scorecard, then says
+`matt-review-draft`.  Matt sees the rendered PDF + caption + citations + scorecard, then says
 "ship it" / "approved" / "go" before any commit or LinkedIn upload.
 
 | approval_type | what it means | who can grant |
@@ -777,7 +792,7 @@ successful PDF render is never approval. Wait for the words.
         ▼
     approved       ← approved_by='matt', approved_at=now()
         │ publish step completes (commit + push to repo; LinkedIn upload is manual per
-        │ CLAUDE.md §0.5 — LinkedIn document upload is not an automated API path)
+        │ CLAUDE.md §0.5.  LinkedIn document upload is not an automated API path)
         ▼
     executed       ← terminal success
         │ 48h post-publish
@@ -829,7 +844,7 @@ WHERE id='<id>';
 | Fonts on disk | Amboqia Boriango, Azo Sans Medium | `design_system/ryan-realty/fonts/` |
 | Geist | body / UI / data font | local `@font-face` or next/font/geist |
 | Brand assets | logos, mascot, headshots | `design_system/ryan-realty/assets/` |
-| Asset library CLI | post-approval registration | `node lib/asset-library.mjs register ...` |
+| Asset library CLI | post-approval registration | `node lib/asset-library.mjs register...` |
 
 ---
 
@@ -841,15 +856,15 @@ WHERE id='<id>';
 | Thesis fails banned-vocab check | Banned word inside the thesis | Surface to caller with the offending word and the voice_guidelines.md rule. Do not silently rewrite Matt's claim. |
 | Listing row not found | `topic_type === 'listing'` and Supabase returns 0 rows for `mls_id` | Surface to caller with the query and the empty result. Suggest verifying the MLS# or switching `topic_type` to `market_brief`. |
 | Source data unavailable for thesis | Market query returns 0 rows or the supporting stat doesn't exist for the geography / period | Surface to Matt with the exact query, the row count, and a suggestion to broaden the geography (e.g. "Tumalo rural" → "Tumalo CCD") or tighten the period. Do not render with placeholder numbers. |
-| Thesis not backed by data | QA gate check #9 fails — supporting figures don't substantiate the slide-1 claim | Surface to Matt with the gap: the thesis, the supporting figure values, and why the data doesn't carry the thesis. Offer to rewrite the thesis to match the data, or pause for Matt's call. |
+| Thesis not backed by data | QA gate check #9 fails.  supporting figures don't substantiate the slide-1 claim | Surface to Matt with the gap: the thesis, the supporting figure values, and why the data doesn't carry the thesis. Offer to rewrite the thesis to match the data, or pause for Matt's call. |
 | PDF font embedding fails | `pdffonts` output shows `emb=no` for any used family | Stop. Verify font files are on disk and reachable to the render pipeline. Re-render. Never ship without embedded fonts. |
 | Photo source untraced | Photo on a proof slide doesn't appear in `provenance.json` | Stop. Pull source from MLS / approved photographer. If no source available, drop the photo and convert the slide to a cream-only data layout. Never use untraced or AI-generated photos. |
 | Broker not resolved | `list_agent_slug` doesn't map to one of three brokers, or listing agent on the row isn't a Ryan Realty broker | Surface to Matt; offer fallback to `matt-ryan` for brand-led variants or pause to disambiguate. |
-| Banned vocab on canvas | Grep hits in any slide text element | Stop. Rewrite the offending line. Re-validate. If the violation is in the thesis itself, escalate to Matt for a rewrite — do not silently swap words. |
+| Banned vocab on canvas | Grep hits in any slide text element | Stop. Rewrite the offending line. Re-validate. If the violation is in the thesis itself, escalate to Matt for a rewrite.  do not silently swap words. |
 | Em-dash or semicolon in caption | Grep hits in `caption.md` body | Rewrite to a period or line break. Re-validate. (Em-dashes allowed only as a "no data" placeholder on data slides.) |
 | Caption missing `#RyanRealtyBend` | Hashtag block doesn't lead with the brand tag | Stop. Add `#RyanRealtyBend` as the first hashtag. The rule is HARD per CLAUDE.md "Voice + content" (locked 2026-05-14). |
 | Caption contains an outbound URL | Grep finds `http://`, `https://`, or `www.` in caption body | Strip the URL. LinkedIn deprioritizes link posts. The PDF IS the artifact. If the URL is genuinely necessary, surface to Matt for a call. |
-| File size > 10 MB | LinkedIn document soft limit exceeded | Run a PDF compression pass (`gs -sDEVICE=pdfwrite -dPDFSETTINGS=/ebook ...`) or downsample any embedded photos to 1080 px max width before re-render. Hard limit is 100 MB; the deliverable should be well below 10 MB. |
+| File size > 10 MB | LinkedIn document soft limit exceeded | Run a PDF compression pass (`gs -sDEVICE=pdfwrite -dPDFSETTINGS=/ebook...`) or downsample any embedded photos to 1080 px max width before re-render. Hard limit is 100 MB; the deliverable should be well below 10 MB. |
 | Render timeout | Playwright / Remotion process hangs > 10 min | Kill the process. Report to Matt with the last successful slide index and the error log. Do not present a partial deck. |
 | Missing env var | Supabase / Spark / asset path not in env | Report to Matt with the specific variable, the tool that needs it, and what to set. Do not guess or hard-code. |
 
@@ -857,21 +872,21 @@ WHERE id='<id>';
 
 - **Default aspect:** chose `1080x1080` because LinkedIn's document viewer is mobile-first and
   square slides minimize scroll within a single slide. Matt may prefer `1080x1350` for parity
-  with IG carousels — overridable via payload `aspect_ratio`.
+  with IG carousels.  overridable via payload `aspect_ratio`.
 - **Default slide count:** 9. Matches the 1 cover + 2 data + 2 proof + 2 context + 1 implication
-  + 1 CTA structure cleanly. 8 collapses the proof block; 10–12 expand context.
-- **CTA route — comment vs DM:** defaulted to comment ("Comment GUIDE") because comments are
+  + 1 CTA structure cleanly. 8 collapses the proof block; 10-12 expand context.
+- **CTA route.  comment vs DM:** defaulted to comment ("Comment GUIDE") because comments are
   visible engagement signal that lifts the post's organic reach on LinkedIn. DM-only routes
   hide the signal. Matt can override via a payload field in a future revision.
-- **Hashtag count:** defaulted to 5 (one brand tag + 3–4 topical tags). LinkedIn's algorithm
-  doesn't penalize hashtags but doesn't reward stuffing past 5–7 either. Stay tight.
+- **Hashtag count:** defaulted to 5 (one brand tag + 3-4 topical tags). LinkedIn's algorithm
+  doesn't penalize hashtags but doesn't reward stuffing past 5-7 either. Stay tight.
 
 ---
 
 ## 16. What not to do
 
 1. **Do not write a listing brochure.** Even when `topic_type === 'listing'`, the framing is
-   "what this $1.1M sale in Tumalo tells us about the Central Oregon market" — not "tour this
+   "what this $1.1M sale in Tumalo tells us about the Central Oregon market".  not "tour this
    beautiful home." If the deliverable reads as a brochure, restructure or route to `flyer-design`
    instead.
 2. **Do not fabricate numbers.** Every figure on every slide traces. No "approximately," no
@@ -885,7 +900,7 @@ WHERE id='<id>';
    banned here.
 6. **Do not re-typeset the wordmark.** Use `logo-blue.png` (footer) and `logo-white.png` (CTA
    slide footer). Typing "Ryan Realty" in Amboqia is not the wordmark.
-7. **Do not exceed 12 slides.** LinkedIn document posts perform best in the 8–12 range. More
+7. **Do not exceed 12 slides.** LinkedIn document posts perform best in the 8-12 range. More
    slides reduce completion rate and dilute the thesis.
 8. **Do not put a hashtag on the slide canvas.** Hashtags go in the caption only. Slides are
    clean.
@@ -894,7 +909,7 @@ WHERE id='<id>';
 10. **Do not use exclamation marks.** Anywhere. The brand voice is direct and kind, not
     exclamatory.
 11. **Do not commit or upload before Matt explicitly approves.** Render to `out/linkedin-doc/<slug>/`,
-    show paths, wait for "ship it." Per CLAUDE.md §0.5 — draft-first, commit-last.
+    show paths, wait for "ship it." Per CLAUDE.md §0.5.  draft-first, commit-last.
 12. **Do not skip the citations.json.** A deck without citations is a deck that can't be defended
     when a viewer asks "where did you get that number?" The citations exist so the answer is
     one click away for Matt and one paragraph away for the producer next session.
@@ -903,19 +918,39 @@ WHERE id='<id>';
 
 ## 17. See also
 
-- `social_media_skills/instagram-carousel/SKILL.md` — multi-slide IG/FB companion (Patterns A/B/C/D)
-- `social_media_skills/ig-single-post/SKILL.md` — single IG/FB image post (S1–S10 templates)
-- `social_media_skills/flyer-design/SKILL.md` — static print/digital flyers
-- `social_media_skills/blog-post/SKILL.md` — long-form blog posts (LinkedIn article variant
+- `social_media_skills/instagram-carousel/SKILL.md`.  multi-slide IG/FB companion (Patterns A/B/C/D)
+- `social_media_skills/ig-single-post/SKILL.md`.  single IG/FB image post (S1-S10 templates)
+- `social_media_skills/flyer-design/SKILL.md`.  static print/digital flyers
+- `social_media_skills/blog-post/SKILL.md`.  long-form blog posts (LinkedIn article variant
   candidate)
-- `social_media_skills/list-kit/SKILL.md` — at-Active orchestrator (may dispatch a LinkedIn doc
+- `social_media_skills/list-kit/SKILL.md`.  at-Active orchestrator (may dispatch a LinkedIn doc
   carousel as one fan-out deliverable in a future revision)
-- `social_media_skills/platform-best-practices/SKILL.md` — 2026 LinkedIn rule layer
-- `marketing_brain_skills/producers/TEMPLATE.md` — producer skeleton
-- `marketing_brain_skills/producers/REGISTRY.md` — Section B row entry
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — banned vocab union, voice attributes
-- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` — Matt's writing fingerprint
-- `automation_skills/content_engine/SKILL.md` — content routing bus
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
-- `design_system/ryan-realty/SKILL.md` — brand system (authoritative)
-- `design_system/ryan-realty/colors_and_type.css` — color + type tokens
+- `social_media_skills/platform-best-practices/SKILL.md`.  2026 LinkedIn rule layer
+- `marketing_brain_skills/producers/TEMPLATE.md`.  producer skeleton
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section B row entry
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union, voice attributes
+- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
+- `automation_skills/content_engine/SKILL.md`.  content routing bus
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
+- `design_system/ryan-realty/SKILL.md`.  brand system (authoritative)
+- `design_system/ryan-realty/colors_and_type.css`.  color + type tokens
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

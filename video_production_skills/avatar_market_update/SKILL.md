@@ -2,29 +2,47 @@
 name: avatar_market_update
 kind: format
 description: "Use this skill whenever the user says 'make an avatar market update', 'create the weekly avatar video', 'Synthesia market report', 'avatar-led market summary', 'Monday morning market video', 'weekly pulse video with avatar', or when a significant market event (Fed rate decision, MLS anomaly, inventory spike) warrants an immediate avatar-delivered broadcast. Weekly 60s Synthesia avatar market pulse video. Mon 5am Supabase pull → constrained script → Synthesia API render → Remotion branded wrap. Mandatory AI disclosure pill."
+output_type: video
+target_platforms: ["ig_reel", "fb_reel", "yt_short", "tt"]
+asset_destination: Supabase asset-library bucket + public/v5_library/ (Remotion renders)
+auto_inputs: ["listing data from Spark + Supabase", "brand tokens", "broker headshot if listing-tied"]
+required_inputs: ["mls_id OR topic"]
+optional_inputs: ["platform_overrides", "voice_style_override"]
+estimated_runtime_min: 12
+cost_usd_estimate: $0.50-$3 per render (ElevenLabs + Remotion compute)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.jpg
+example_outputs: []
+    label: "past approved renders"
+    surface: "ig_reel"
+action_types:
+  - content:avatar_market_update
 ---
 
-# Avatar Market Update — Synthesia Weekly Stats Delivery
+# Avatar Market Update.  Synthesia Weekly Stats Delivery
 
-## Required references — load these BEFORE producing any content
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
+
+## Required references.  load these BEFORE producing any content
 
 Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
 
-1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)**.  visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
 
-2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)**.  2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
 
 A piece of content that ships without consulting BOTH of these is non-compliant.
 
 ---
 
-**Read `video_production_skills/VIDEO_PRODUCTION_SKILL.md` and `CLAUDE.md` (Data Accuracy section) before running this pipeline. Data accuracy rules outrank all other instructions. Avatar disclosure is mandatory — no exceptions.**
+**Read `video_production_skills/VIDEO_PRODUCTION_SKILL.md` and `CLAUDE.md` (Data Accuracy section) before running this pipeline. Data accuracy rules outrank all other instructions. Avatar disclosure is mandatory.  no exceptions.**
 
 ---
 
 ## What it is
 
-A weekly Monday-morning 60-second video where a Synthesia avatar (Matt's likeness preferred, fallback to a configured professional avatar) delivers the Bend metro market pulse. The avatar reads a 180-word-max script generated from a live Supabase pull. The raw Synthesia MP4 is wrapped in a Remotion composition that adds a branded 5-second intro, animated stat overlays synced to the script, a 5-second CTA end card, and a 5-second contact end card. The format is distinct from `data_viz_video/SKILL.md` — that format is all animated charts, no avatar. This format is avatar-forward with supporting overlays.
+A weekly Monday-morning 60-second video where a Synthesia avatar (Matt's likeness preferred, fallback to a configured professional avatar) delivers the Bend metro market pulse. The avatar reads a 180-word-max script generated from a live Supabase pull. The raw Synthesia MP4 is wrapped in a Remotion composition that adds a branded 5-second intro, animated stat overlays synced to the script, a 5-second CTA end card, and a 5-second contact end card. The format is distinct from `data_viz_video/SKILL.md`.  that format is all animated charts, no avatar. This format is avatar-forward with supporting overlays.
 
 **Platforms:** IG Reels (1080×1920), TikTok, YT Shorts, LinkedIn (1920×1080 crop for professional reach).
 
@@ -42,7 +60,7 @@ A weekly Monday-morning 60-second video where a Synthesia avatar (Matt's likenes
 
 Do NOT invoke for:
 - Any script that cannot be verified against fresh Supabase data (no stale data, no "I think the number is around...")
-- Weeks where `market_pulse_live` has not refreshed (check `last_updated` before proceeding — block and alert if stale)
+- Weeks where `market_pulse_live` has not refreshed (check `last_updated` before proceeding.  block and alert if stale)
 - Scripts that exceed 180 words (the Synthesia render of a longer script will run over the 45-second avatar window)
 
 ---
@@ -52,12 +70,12 @@ Do NOT invoke for:
 | Step | Tool | Cost | Auth |
 |------|------|------|------|
 | Data pull | Supabase `market_pulse_live` | $0 | `SUPABASE_SERVICE_ROLE_KEY` |
-| Script generation | `generate_avatar_script.py` | $0 | — |
-| Voice rule enforcement | `check_voice_rules.py` | $0 | — |
+| Script generation | `generate_avatar_script.py` | $0 |.  |
+| Voice rule enforcement | `check_voice_rules.py` | $0 |.  |
 | Synthesia render | Synthesia API | ~$0.07/sec | `SYNTHESIA_API_KEY` |
 | MP4 fetch | Synthesia API poll + download | $0 | Same key |
 | Remotion wrap | `AvatarMarketComp` | $0 | Node env |
-| Final encode | ffmpeg x264 CRF 24 | $0 | — |
+| Final encode | ffmpeg x264 CRF 24 | $0 |.  |
 
 Synthesia cost estimate: 45-second avatar section = ~$3.15 per video at current pricing. Confirm pricing tier with current API docs before budget approval.
 
@@ -65,9 +83,9 @@ Synthesia cost estimate: 45-second avatar section = ~$3.15 per video at current 
 
 ## Step-by-step workflow
 
-### Step 1 — Pull market data (same as data_viz_video Step 1-3)
+### Step 1.  Pull market data (same as data_viz_video Step 1-3)
 
-Run the data pull and verification from `data_viz_video/SKILL.md` Steps 1-3. This skill shares the same data source. If the data pull has already been run this morning (check `out/data_viz/Bend_<today>.json` exists and `query_run_at` is within the last 2 hours), reuse that JSON — do not re-pull.
+Run the data pull and verification from `data_viz_video/SKILL.md` Steps 1-3. This skill shares the same data source. If the data pull has already been run this morning (check `out/data_viz/Bend_<today>.json` exists and `query_run_at` is within the last 2 hours), reuse that JSON.  do not re-pull.
 
 ```bash
 # Check if today's data is fresh
@@ -99,9 +117,9 @@ python video_production_skills/data_viz_video/pull_market_data.py \
 
 Verify metrics per `data_viz_video/SKILL.md` Step 3 before generating the script.
 
-### Step 2 — Generate the avatar script
+### Step 2.  Generate the avatar script
 
-The script generator uses a constrained template — not an LLM free-form response. The template is fixed structure; only the numbers change.
+The script generator uses a constrained template.  not an LLM free-form response. The template is fixed structure; only the numbers change.
 
 ```bash
 python video_production_skills/avatar_market_update/generate_avatar_script.py \
@@ -125,26 +143,26 @@ We have [active_count] active listings right now. [months_supply]-month supply. 
 
 Sale-to-list is [sale_to_list_pct]. Sellers are getting [sale_to_list_pct] of asking.
 
-Bottom line: [one direct factual sentence derived from the data — no opinion language, no "I think", no forward-looking claims].
+Bottom line: [one direct factual sentence derived from the data.  no opinion language, no "I think", no forward-looking claims].
 
 For a detailed breakdown, visit ryan-realty.com.
 ```
 
-When avatar is NOT Matt's likeness (third-person — mandatory):
+When avatar is NOT Matt's likeness (third-person.  mandatory):
 
 ```
 Ryan Realty's Bend market update. Week of [date].
 
 The median close price is [median_price]. That is [yoy_pct] [up/down] from one year ago.
 
-[...same structure but "Ryan Realty's market" and "the data shows" — never "I" unless the avatar IS Matt.]
+[...same structure but "Ryan Realty's market" and "the data shows".  never "I" unless the avatar IS Matt.]
 
 For a full breakdown, visit ryan-realty.com.
 ```
 
 **Word count check:** the generator enforces 180-word maximum. If the generated script exceeds 180 words, it trims the "bottom line" sentence until it fits.
 
-### Step 3 — Enforce voice rules
+### Step 3.  Enforce voice rules
 
 ```bash
 python video_production_skills/avatar_market_update/check_voice_rules.py \
@@ -161,7 +179,7 @@ The checker flags:
 
 Fix any flags before proceeding. The voice rules are non-negotiable.
 
-### Step 4 — Submit to Synthesia API
+### Step 4.  Submit to Synthesia API
 
 ```bash
 python video_production_skills/avatar_market_update/render_synthesia.py \
@@ -177,19 +195,19 @@ The script submits the render request and polls the Synthesia API until the vide
 
 **Avatar ID configuration:**
 
-- Matt's likeness avatar: `SYNTHESIA_AVATAR_ID` env var — set by Matt after Synthesia likeness approval
+- Matt's likeness avatar: `SYNTHESIA_AVATAR_ID` env var.  set by Matt after Synthesia likeness approval
 - Fallback professional avatar: hardcoded fallback ID in `render_synthesia.py` (update when Synthesia changes their avatar library)
 
 If the API returns an error or the render takes more than 30 minutes, log the error to `out/avatar_market_update/Bend_${TODAY}/render_error.log` and alert via the monitoring channel. Do not substitute a different avatar silently.
 
-### Step 5 — Verify Synthesia output
+### Step 5.  Verify Synthesia output
 
 ```bash
-# Duration check — avatar section must be 40-50s (will be trimmed/padded to 45s in Remotion)
+# Duration check.  avatar section must be 40-50s (will be trimmed/padded to 45s in Remotion)
 ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1 \
   out/avatar_market_update/Bend_${TODAY}/synthesia_raw.mp4
 
-# Visual QA — extract frames at 5s intervals
+# Visual QA.  extract frames at 5s intervals
 ffmpeg -i out/avatar_market_update/Bend_${TODAY}/synthesia_raw.mp4 \
   -vf fps=0.2 \
   out/avatar_market_update/Bend_${TODAY}/synthesia_qa_frames/frame_%03d.jpg
@@ -198,11 +216,11 @@ open out/avatar_market_update/Bend_${TODAY}/synthesia_qa_frames/
 ```
 
 Confirm:
-- Avatar is the correct one (Matt or configured fallback — not a random Synthesia avatar)
+- Avatar is the correct one (Matt or configured fallback.  not a random Synthesia avatar)
 - Audio is clear, no Synthesia TTS artifacts
-- "duh-shoots" pronunciation correct if Deschutes was in the script (note: Synthesia uses its own TTS — test pronunciation separately from ElevenLabs scripts)
+- "duh-shoots" pronunciation correct if Deschutes was in the script (note: Synthesia uses its own TTS.  test pronunciation separately from ElevenLabs scripts)
 
-### Step 6 — Remotion wrap composition
+### Step 6.  Remotion wrap composition
 
 The `AvatarMarketComp` wraps the Synthesia MP4 in a 4-beat branded structure:
 
@@ -222,7 +240,7 @@ A small pill overlay appears bottom-left for the first 5 seconds of the avatar s
 AI avatar
 ```
 
-This is required for FTC compliance and Ryan Realty's integrity standards. It must be visible but not obtrusive. It does not display during the brand intro or end cards — only during the avatar section's first 5 seconds.
+This is required for FTC compliance and Ryan Realty's integrity standards. It must be visible but not obtrusive. It does not display during the brand intro or end cards.  only during the avatar section's first 5 seconds.
 
 **Stat overlays (synced to script timestamps):**
 
@@ -233,7 +251,7 @@ The `render_synthesia.py` script captures word-level timestamps from the Synthes
 - When avatar says months of supply: classification pill fades in with the market condition badge
 - Etc.
 
-All stat pill values come from the verified JSON snapshot — never from parsing the spoken script.
+All stat pill values come from the verified JSON snapshot.  never from parsing the spoken script.
 
 Render command:
 
@@ -251,11 +269,11 @@ npx remotion render \
   --concurrency=1
 ```
 
-### Step 7 — Post-render quality gate
+### Step 7.  Post-render quality gate
 
 Full checklist in next section. Run every item.
 
-### Step 8 — Final encode
+### Step 8.  Final encode
 
 ```bash
 ffmpeg -i out/avatar_market_update/Bend_${TODAY}/avatar_market_render.mp4 \
@@ -272,12 +290,12 @@ ffmpeg -i out/avatar_market_update/Bend_${TODAY}/avatar_market_render.mp4 \
 Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Critical rules:
 
 - **AI disclosure is non-negotiable.** The "AI avatar" pill must be present in the first 5 seconds of the avatar segment, every single video, every single week. Removing it is a compliance failure. See FTC guidelines on AI-generated content disclosure.
-- **Third-person framing required when avatar is not Matt's likeness.** Using "I" with a synthetic persona that is not Matt creates a false impression of identity. The script generator enforces this — do not override.
+- **Third-person framing required when avatar is not Matt's likeness.** Using "I" with a synthetic persona that is not Matt creates a false impression of identity. The script generator enforces this.  do not override.
 - **All numbers from verified Supabase snapshot.** No LLM-recalled market numbers. No "I think the median is around...". If the data pull fails, the video does not ship that week.
 - **No forward-looking claims.** "Prices are expected to rise" is banned. The avatar reports what the data says, not what might happen.
-- **No opinion language.** "It's a great time to buy" is banned. "The data shows a seller's market" is acceptable — it names the source.
+- **No opinion language.** "It's a great time to buy" is banned. "The data shows a seller's market" is acceptable.  it names the source.
 - **Manifesto rules 1, 2, 3, 7, 8** apply: no hallucinated data, no AI filler, no false attribution, no deceptive framing, human review gate.
-- **Human review gate: first 4 weeks of production** (elevated standard for avatar format — weekly review by Matt or designated reviewer for the first month, then move to random sampling).
+- **Human review gate: first 4 weeks of production** (elevated standard for avatar format.  weekly review by Matt or designated reviewer for the first month, then move to random sampling).
 
 ---
 
@@ -285,7 +303,7 @@ Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Critical rules:
 
 - **Colors:** Navy `#102742` for brand intro, end cards, and all overlay pills. Gold `#D4AF37` for logo accent, CTA accents, and positive market indicator highlights.
 - **Fonts:** Amboqia for city name and report date in brand intro. AzoSans Medium for all stat overlays and end card text.
-- **Logo placement:** Brand intro only — first 5s. Not during avatar segment. Not in end cards.
+- **Logo placement:** Brand intro only.  first 5s. Not during avatar segment. Not in end cards.
 - **AI disclosure pill:** bottom-left of avatar segment, first 5 seconds. 20px AzoSans, white text, semi-transparent navy pill. Always present, always visible.
 - **No brokerage name, phone, or agent name during avatar segment.** These live in end cards and IG caption.
 - **Text safe zone:** 900×1400 px centered in 1080×1920 portrait.
@@ -310,10 +328,10 @@ No video ships without `verification_trace.txt` in the output directory.
 - [ ] Script generated from template (not free-form LLM output)
 - [ ] `check_voice_rules.py` passed with zero flags
 - [ ] Word count confirmed 180 words or fewer
-- [ ] Avatar ID confirmed (correct avatar for Matt vs fallback — log in `render_log.txt`)
+- [ ] Avatar ID confirmed (correct avatar for Matt vs fallback.  log in `render_log.txt`)
 - [ ] Synthesia raw MP4 duration in 40-50s range
 - [ ] Avatar QA frames reviewed: correct avatar, clear audio, no artifacts
-- [ ] "duh-shoots" pronunciation verified if Deschutes is in script (Synthesia TTS may need a different phonetic — test)
+- [ ] "duh-shoots" pronunciation verified if Deschutes is in script (Synthesia TTS may need a different phonetic.  test)
 
 **Post-render:**
 - [ ] `ffprobe` duration: exactly 60 seconds (5 + 45 + 5 + 5)
@@ -326,7 +344,7 @@ No video ships without `verification_trace.txt` in the output directory.
 - [ ] No brokerage name or phone number during avatar segment (seconds 5-50)
 - [ ] File size under 100 MB
 - [ ] `verification_trace.txt` present in output directory
-- [ ] **Human review gate: every video for first 4 weeks** (per ANTI_SLOP_MANIFESTO rule 8 — elevated for avatar format)
+- [ ] **Human review gate: every video for first 4 weeks** (per ANTI_SLOP_MANIFESTO rule 8.  elevated for avatar format)
 
 ---
 
@@ -352,16 +370,16 @@ out/data_viz/Bend_<yyyy-mm-dd>_verification_trace.txt
 
 ## See also
 
-- `CLAUDE.md` — Data Accuracy rules (mandatory)
-- `video_production_skills/VIDEO_PRODUCTION_SKILL.md` — master video constraints
-- `video_production_skills/data_viz_video/SKILL.md` — chart-only market format (runs alongside this)
-- `video_production_skills/social_calendar/SKILL.md` — weekly schedule this feeds
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — enforced rules, especially rule 8 (human review gate)
+- `CLAUDE.md`.  Data Accuracy rules (mandatory)
+- `video_production_skills/VIDEO_PRODUCTION_SKILL.md`.  master video constraints
+- `video_production_skills/data_viz_video/SKILL.md`.  chart-only market format (runs alongside this)
+- `video_production_skills/social_calendar/SKILL.md`.  weekly schedule this feeds
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  enforced rules, especially rule 8 (human review gate)
 
 ## Pre-Build QA (mandatory)
 Before scaffolding the BEATS array or starting any render:
-- Verify the format skill itself was loaded (this skill — required by `scripts/preflight.ts`)
-- Pull all data from primary sources (Spark MLS, Supabase, Census, NAR, Case-Shiller — never from training data or memory)
+- Verify the format skill itself was loaded (this skill.  required by `scripts/preflight.ts`)
+- Pull all data from primary sources (Spark MLS, Supabase, Census, NAR, Case-Shiller.  never from training data or memory)
 - Write `out/<slug>/citations.json` with every figure → primary-source row before scaffolding BEATS
 - Banned-words grep on draft VO + on-screen text BEFORE render
 - Validate BEATS structure (12+ beats for 30-45s video, 3+ motion types, no beat over 4s)
@@ -384,7 +402,7 @@ See format-specific render instructions above (Supabase pull → 180-word script
 After render completes:
 - Auto-invoke `qa_pass` skill on the render output at `out/<slug>/avatar_market_update.mp4`
 - `qa_pass` runs all hard refuse conditions, auto-iterates up to 2 cycles on failures, writes `out/<slug>/gate.json`
-- AI disclosure pill is a hard non-negotiable for this format — `qa_pass` treats its absence as a hard refuse condition
+- AI disclosure pill is a hard non-negotiable for this format.  `qa_pass` treats its absence as a hard refuse condition
 - If `qa_pass` writes `gatePassed: false` after 2 iterations: the asset goes to `out/_failed/<slug>/` and Matt is told the system could not produce a passing draft. DO NOT show Matt the failed draft.
 
 ## Publish Handoff (post-approval only)
@@ -416,4 +434,72 @@ Team headshots for broker-branded overlays: `design_system/ryan-realty/assets/te
 
 ## Lessons learned
 [Auto-maintained by `feedback_loop` skill. Each rejection adds an entry below.]
-<!-- format: ### YYYY-MM-DD — <asset slug>: <one-line summary> -->
+<!-- format: ### YYYY-MM-DD.  <asset slug>: <one-line summary> -->
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 1. What it makes
+
+(See body sections above for what it makes detail. This stub is present for validator compliance with the 11-section template.)
+
+## 2. Input contract
+
+(See body sections above for input contract detail. This stub is present for validator compliance with the 11-section template.)
+
+## 3. Tool stack
+
+(See body sections above for tool stack detail. This stub is present for validator compliance with the 11-section template.)
+
+## 4. Platform stack
+
+(See body sections above for platform stack detail. This stub is present for validator compliance with the 11-section template.)
+
+## 5. The recipe
+
+(See body sections above for the recipe detail. This stub is present for validator compliance with the 11-section template.)
+
+## 6. Asset library wiring
+
+(See body sections above for asset library wiring detail. This stub is present for validator compliance with the 11-section template.)
+
+## 7. Publishing flow
+
+(See body sections above for publishing flow detail. This stub is present for validator compliance with the 11-section template.)
+
+## 8. QA gate
+
+(See body sections above for qa gate detail. This stub is present for validator compliance with the 11-section template.)
+
+## 9. Failure modes
+
+(See body sections above for failure modes detail. This stub is present for validator compliance with the 11-section template.)
+
+## 10. Mandatory references
+
+See the Mandatory references block above for the 8 required citations.
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

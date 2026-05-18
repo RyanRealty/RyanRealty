@@ -71,7 +71,7 @@ Each layer writes to `competitor_intel` with:
 |---|---|---|
 | `scrapeAlgorithmIntel` | `apify/rag-web-browser` | RAG crawl of platform newsrooms and industry blogs |
 | `scrapeFormatTrends` | `apify/rag-web-browser` | Same actor, different source URLs |
-| `scrapeAudioAndHashtagTrends` | `apify/rag-web-browser` | TikTok Creative Center is JavaScript-heavy; see TODO in source if actor cannot parse it — alternative: `clockworks/free-tiktok-scraper` |
+| `scrapeAudioAndHashtagTrends` | `apify/rag-web-browser` | TikTok Creative Center is JavaScript-heavy; see TODO in source if actor cannot parse it.  alternative: `clockworks/free-tiktok-scraper` |
 
 All three functions reuse `runApifyActor` from `lib/marketing-brain/competitor-recon.ts`. The same `APIFY_API_TOKEN` env var is required.
 
@@ -79,7 +79,7 @@ All three functions reuse `runApifyActor` from `lib/marketing-brain/competitor-r
 
 ## Weekly cadence
 
-**Schedule:** Mondays 08:00 UTC — one hour after `marketing-competitor-recon` (07:00 UTC).
+**Schedule:** Mondays 08:00 UTC.  one hour after `marketing-competitor-recon` (07:00 UTC).
 
 ```json
 { "path": "/api/cron/marketing-platform-trends", "schedule": "0 8 * * 1" }
@@ -115,7 +115,7 @@ Applicable trends on active platforms (TikTok, Instagram, Meta, YouTube) go to `
 
 ### Step 3: Hashtag relevance gate
 
-Hashtags that do not match the Bend / Central Oregon / real estate relevance keyword list are placed in `skip` with reason "not relevant to category" — no voice rule needed.
+Hashtags that do not match the Bend / Central Oregon / real estate relevance keyword list are placed in `skip` with reason "not relevant to category".  no voice rule needed.
 
 ### Output buckets
 
@@ -146,7 +146,7 @@ Hashtags that do not match the Bend / Central Oregon / real estate relevance key
 }
 ```
 
-Every field is typed in `lib/marketing-brain/platform-trends.ts`. No free-form strings — `generate-briefs` reads the typed fields directly.
+Every field is typed in `lib/marketing-brain/platform-trends.ts`. No free-form strings.  `generate-briefs` reads the typed fields directly.
 
 ---
 
@@ -179,7 +179,7 @@ If `APIFY_API_TOKEN` is absent, the route returns 500 and writes a `trend_check_
 
 1. Add the entry to the appropriate source array constant in `lib/marketing-brain/platform-trends.ts` (`ALGORITHM_INTEL_SOURCES`, `FORMAT_TREND_SOURCES`, or `AUDIO_HASHTAG_SOURCES`).
 2. Set the `platform` field to the appropriate `TrendPlatform` value.
-3. No other changes required — the scraper functions iterate the arrays dynamically.
+3. No other changes required.  the scraper functions iterate the arrays dynamically.
 4. Test with a one-off curl: `GET /api/cron/marketing-platform-trends` with `Authorization: Bearer $CRON_SECRET`.
 
 ---
@@ -196,7 +196,7 @@ If `APIFY_API_TOKEN` is absent, the route returns 500 and writes a `trend_check_
 
 ## Related skills
 
-- `marketing-brain:competitor-recon` — runs at 07:00 Monday; shares `runApifyActor` helper and `competitor_intel` table.
-- `marketing-brain:generate-briefs` — downstream; reads `ryan_realty_adaptations.act_on` to inform format and audio choices in new content briefs.
-- `marketing-brain:weekly-cycle` — orchestrates snapshot → competitor-recon → platform-trends → generate-briefs in sequence.
-- `marketing-brain:brand-voice` — the voice guidelines this skill enforces are canonical at `marketing_brain_skills/brand-voice/voice_guidelines.md`.
+- `marketing-brain:competitor-recon`.  runs at 07:00 Monday; shares `runApifyActor` helper and `competitor_intel` table.
+- `marketing-brain:generate-briefs`.  downstream; reads `ryan_realty_adaptations.act_on` to inform format and audio choices in new content briefs.
+- `marketing-brain:weekly-cycle`.  orchestrates snapshot → competitor-recon → platform-trends → generate-briefs in sequence.
+- `marketing-brain:brand-voice`.  the voice guidelines this skill enforces are canonical at `marketing_brain_skills/brand-voice/voice_guidelines.md`.

@@ -36,7 +36,7 @@ The marketing brain's competitive intelligence layer. Monitors 8 Bend-area broke
 
 Slugs are locked in the migration (`supabase/migrations/20260512160600_competitor_intel.sql`) and the `CompetitorSlug` type in `lib/marketing-brain/competitor-recon.ts`. Never invent a new slug without updating both.
 
-Social handles and URLs in `COMPETITOR_TARGETS` are marked `verified: false` for local competitors — confirm against live profiles before depending on them. National brands (opendoor, offerpad) are `verified: true`.
+Social handles and URLs in `COMPETITOR_TARGETS` are marked `verified: false` for local competitors.  confirm against live profiles before depending on them. National brands (opendoor, offerpad) are `verified: true`.
 
 ---
 
@@ -82,8 +82,8 @@ Every row written to `competitor_intel` follows:
 | `source` | `google_maps_reviews` \| `google_serp` \| `instagram_profile` \| `tiktok_profile` \| `fb_ad_library` |
 | `data_type` | `review` (GMB) \| `serp_position` (SERP) \| `post` (IG/TikTok) \| `profile_metric` (IG account-level) \| `ad` (FB Ad Library) |
 | `competitor` | One of the 10 slugs above |
-| `data` | Source-specific JSONB — see scraper function JSDoc for field names |
-| `apify_run_id` | Apify run UUID — use to audit raw dataset at apify.com |
+| `data` | Source-specific JSONB.  see scraper function JSDoc for field names |
+| `apify_run_id` | Apify run UUID.  use to audit raw dataset at apify.com |
 
 `observation_date` is the date the cron ran (YYYY-MM-DD), not a scraped publication date. Downstream queries should group by `(competitor, source, observation_date)` to see week-over-week deltas.
 
@@ -91,7 +91,7 @@ Every row written to `competitor_intel` follows:
 
 ## Cron schedule
 
-**Daily 07:00 UTC, Mon-Fri** — one source per weekday. Defined in `vercel.json`:
+**Daily 07:00 UTC, Mon-Fri**.  one source per weekday. Defined in `vercel.json`:
 
 ```json
 { "path": "/api/cron/marketing-competitor-recon", "schedule": "0 7 * * 1-5" }
@@ -110,7 +110,7 @@ The route detects Vercel cron requests (via the `x-vercel-cron: 1` header) and r
 
 Each weekday run handles ~10 competitors × 1 source × 30-90s/scraper = 5-15 min, comfortably under the 800s `maxDuration` cap on Vercel Pro. The pre-2026-05-14 single-Monday schedule (`0 7 * * 1`) repeatedly timed out because the full 50-call pass exceeded the previous 300s `maxDuration`.
 
-For manual full passes (all sources × all competitors in one call), invoke without filters — but note this can exceed `maxDuration` if Apify is slow that day. Prefer per-source manual runs:
+For manual full passes (all sources × all competitors in one call), invoke without filters.  but note this can exceed `maxDuration` if Apify is slow that day. Prefer per-source manual runs:
 
 ```sh
 curl -H "Authorization: Bearer $CRON_SECRET" \
@@ -132,10 +132,10 @@ Omit either param to expand to all competitors or all sources for that dimension
 
 | Query | Behavior |
 |---|---|
-| (none) + Vercel cron header | Rotate by day-of-week (single source) — the production cron path |
-| (none) + manual curl | Run ALL sources × ALL competitors — may exceed maxDuration; avoid |
+| (none) + Vercel cron header | Rotate by day-of-week (single source).  the production cron path |
+| (none) + manual curl | Run ALL sources × ALL competitors.  may exceed maxDuration; avoid |
 | `?source=X` | One source × all competitors |
-| `?competitor=Y` | All sources × one competitor — may exceed maxDuration |
+| `?competitor=Y` | All sources × one competitor.  may exceed maxDuration |
 | `?source=X&competitor=Y` | Single combo (fastest; ideal for actor input debugging) |
 
 ---
@@ -161,7 +161,7 @@ Omit either param to expand to all competitors or all sources for that dimension
 | Actor run FAILED | Error in `errors[]` array in response | Check Apify run log at apify.com; usually rate limit or input shape mismatch |
 | Actor input shape mismatch | 0 rows, Apify run SUCCEEDED | See TODO comments in each scraper; refine input after checking actor's live schema |
 | Instagram/TikTok handle not configured | `error: "no instagram handle configured"` | Update handle in `COMPETITOR_TARGETS` and set `verified: true` after confirming |
-| Supabase insert error | Error mentioning batch offset | Check `competitor_intel` RLS — service_role must have INSERT grant (migration sets this) |
+| Supabase insert error | Error mentioning batch offset | Check `competitor_intel` RLS.  service_role must have INSERT grant (migration sets this) |
 | Apify poll timeout (>5 min) | Timeout error in scraper | Reduce `maxReviews`/`resultsLimit`/`maxAds` in that actor's input |
 
 ---
@@ -178,6 +178,6 @@ Omit either param to expand to all competitors or all sources for that dimension
 
 ## Related skills
 
-- `marketing-brain:snapshot-channels` — writes to `marketing_channel_daily` (Ryan Realty's own channels).
-- `marketing-brain:diagnose-performance` — reads from both tables to surface competitive deltas.
-- `marketing-brain:weekly-cycle` — invokes competitor-recon as step 2 of the weekly pass (after snapshot-channels).
+- `marketing-brain:snapshot-channels`.  writes to `marketing_channel_daily` (Ryan Realty's own channels).
+- `marketing-brain:diagnose-performance`.  reads from both tables to surface competitive deltas.
+- `marketing-brain:weekly-cycle`.  invokes competitor-recon as step 2 of the weekly pass (after snapshot-channels).

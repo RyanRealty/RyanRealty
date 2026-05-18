@@ -3,7 +3,7 @@ name: under-contract-announcement
 description: >
   Canonical producer for the single 1080×1350 static "Under Contract" post Ryan Realty drops on
   Instagram and Facebook the day a listing flips to Pending in the MLS. Data-only, calm reporting
-  voice — never celebration. The point is social proof for sellers vetting agents: a clean fact
+  voice.  never celebration. The point is social proof for sellers vetting agents: a clean fact
   card ("Under contract in 4 days. $22K over asking.") that reads like a track record, not a
   victory lap. No "Just sold!", no "We did it!", no exclamation marks, no emoji, no fireworks.
   Outputs one PNG plus a paired caption.md and citations.json. Use this whenever Matt says
@@ -17,13 +17,29 @@ when_to_use: |
   - "pending announcement for <address>"
   - "social post for <MLS#> going pending"
   - "build the pending post"
-  - "we went pending on <address> — make the post"
+  - "we went pending on <address>.  make the post"
   - "draft the under contract for <slug>"
 action_types:
   - content:under_contract_announcement
+output_type: text
+target_platforms: ["email", "agentfire_blog"]
+asset_destination: Supabase asset-library bucket + out/proof/<date>/<slug>/
+auto_inputs: ["brand voice rules", "market data from Supabase"]
+required_inputs: ["topic OR mls_id"]
+optional_inputs: ["tone_override", "length_override"]
+estimated_runtime_min: 8
+cost_usd_estimate: $0.10-$0.50 per piece (Anthropic tokens for drafting + voice check)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.html
+example_outputs: []
+    label: "past approved drafts"
+    surface: "email"
 ---
 
-# Under Contract Announcement — Pending Listing Post
+# Under Contract Announcement.  Pending Listing Post
+
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
 
 **Scope.** Build one 1080×1350 single-image post (PNG) for Instagram and Facebook feeds plus a
 paired caption when a listing transitions from Active to Pending in the MLS. The post is a
@@ -34,7 +50,7 @@ orchestrator). This producer fires once per listing per pending transition.
 
 **Status.** Canonical. Locked 2026-05-14.
 
-**Producer category.** Section B — Content Producer.
+**Producer category.** Section B.  Content Producer.
 
 **Exemplar output path:** `out/under-contract/<slug>/`.
 
@@ -55,12 +71,12 @@ orchestrator). This producer fires once per listing per pending transition.
 
 ### Out of scope
 
-- Just Sold posts (closed listings) — use `social_media_skills/ig-single-post/SKILL.md` template
+- Just Sold posts (closed listings).  use `social_media_skills/ig-single-post/SKILL.md` template
   S2. Different status, different copy, different stat panel (sold price + sale-to-list).
-- Just Listed posts (new Active listings) — use `social_media_skills/ig-single-post/SKILL.md`
+- Just Listed posts (new Active listings).  use `social_media_skills/ig-single-post/SKILL.md`
   template S1 or the full `social_media_skills/list-kit/SKILL.md` orchestrator.
-- Carousels (multi-slide swipe posts) — use `social_media_skills/instagram-carousel/SKILL.md`.
-- Email blasts, blog posts, video reels, GBP posts — those are separate producers.
+- Carousels (multi-slide swipe posts).  use `social_media_skills/instagram-carousel/SKILL.md`.
+- Email blasts, blog posts, video reels, GBP posts.  those are separate producers.
 - Publishing. This producer surfaces a draft; commit + push + publish happen only after Matt
   says "ship it" per `CLAUDE.md` §0.5 (Draft-First, Commit-Last).
 
@@ -82,7 +98,7 @@ orchestrator). This producer fires once per listing per pending transition.
 
 The brain enqueues this action_type when the nightly listing audit
 (`automation_skills/listing_trigger/SKILL.md`) detects an `Active → Pending` status transition.
-Manual invocation via `marketing_brain_skills/produce/SKILL.md` is supported — Matt names the
+Manual invocation via `marketing_brain_skills/produce/SKILL.md` is supported.  Matt names the
 MLS#; the produce skill writes the action row.
 
 ---
@@ -91,11 +107,11 @@ MLS#; the produce skill writes the action row.
 
 ```typescript
 interface UnderContractAnnouncementPayload {
-  mls_id: string                        // required — e.g. "220189422"
-  list_price: number                    // required — pulled from Supabase listings."ListPrice"
-  pending_timestamp: string             // required — ISO timestamp from listings.pending_timestamp
-  dom_at_pending: number                // required — integer days; (pending - list)/24h, floored
-  expected_close_date_iso?: string      // optional ISO date — renders subline if present
+  mls_id: string                        // required.  e.g. "220189422"
+  list_price: number                    // required.  pulled from Supabase listings."ListPrice"
+  pending_timestamp: string             // required.  ISO timestamp from listings.pending_timestamp
+  dom_at_pending: number                // required.  integer days; (pending - list)/24h, floored
+  expected_close_date_iso?: string      // optional ISO date.  renders subline if present
 }
 ```
 
@@ -108,7 +124,7 @@ surface to caller, do not render. Never invent a date or guess DOM from a vague 
 
 ## 4. The recipe
 
-**Step 1 — Read the action row**
+**Step 1.  Read the action row**
 
 Query `marketing_brain_actions` by `id`. Confirm `status='pending'`. Immediately:
 
@@ -118,9 +134,9 @@ SET status='in_production', executed_at=now()
 WHERE id='<action_id>' AND status='pending';
 ```
 
-**Step 2 — Load mandatory references** (see §13 for the full list).
+**Step 2.  Load mandatory references** (see §13 for the full list).
 
-**Step 3 — Pull and verify source data**
+**Step 3.  Pull and verify source data**
 
 Every figure on the canvas comes from a live query in this session. Never inherit payload
 numbers without re-verifying.
@@ -134,15 +150,15 @@ FROM listings WHERE "MlsId" = '<mls_id>' LIMIT 1;
 
 Re-confirm:
 
-- `StandardStatus = 'Pending'` (if Active, the row is stale — surface).
+- `StandardStatus = 'Pending'` (if Active, the row is stale.  surface).
 - `pending_timestamp` non-null, matches payload within 1-day tolerance for TZ drift.
 - `ListPrice` matches payload exactly.
 - Re-compute `dom_at_pending = floor((pending_timestamp - ListDate) / 86400)`. If it differs
   from the payload value, live wins; surface the discrepancy.
 
-`dom_at_pending == 0` renders as `1 day` — never "0 days," never "same day."
+`dom_at_pending == 0` renders as `1 day`.  never "0 days," never "same day."
 
-**Step 4 — Resolve listing agent and assets**
+**Step 4.  Resolve listing agent and assets**
 
 Map `ListAgentEmail` (preferred) or `ListAgentFullName` to one of three broker slugs:
 `matt-ryan` / `paul-stevenson` / `rebecca-peterson`. Headshot path:
@@ -152,9 +168,9 @@ surface; this producer is Ryan Realty listings only.
 Pull the MLS hero photo from `"PhotoURL"` (or Spark API `/listings/<MlsId>/media` fallback).
 Source-trace to `provenance.json`. Never substitute stock or AI.
 
-**Step 5 — Compose the 1080×1350 canvas**
+**Step 5.  Compose the 1080×1350 canvas**
 
-Build per §6. Use the same compositor pattern as `lib/render-ig-single-post.mjs` — same fonts,
+Build per §6. Use the same compositor pattern as `lib/render-ig-single-post.mjs`.  same fonts,
 brand assets pipeline, sRGB color space. If a compositor doesn't exist, extend the
 ig-single-post renderer with a `template === 'UC'` path; do not fork.
 
@@ -166,12 +182,12 @@ node lib/render-under-contract.mjs \
 
 Slug format: `<mls_id>-<street-name-slugified>` (e.g. `220189422-nw-riverview-drive`).
 
-**Step 6 — Write the caption** per §5.
+**Step 6.  Write the caption** per §5.
 
-**Step 7 — Run the QA gate** per §7. Write results to `design_scorecard.json`. Any `fail` =
+**Step 7.  Run the QA gate** per §7. Write results to `design_scorecard.json`. Any `fail` =
 non-ship.
 
-**Step 8 — Write citations.json** — one entry per figure shown on the canvas:
+**Step 8.  Write citations.json**.  one entry per figure shown on the canvas:
 
 ```json
 {
@@ -187,7 +203,7 @@ non-ship.
 }
 ```
 
-**Step 9 — UPDATE the action row to ready**
+**Step 9.  UPDATE the action row to ready**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -201,7 +217,7 @@ SET status='ready',
 WHERE id='<action_id>';
 ```
 
-**Step 10 — Surface draft to Matt**
+**Step 10.  Surface draft to Matt**
 
 Use the format in §6. Stop. Do not commit. Do not push. Wait for "ship it" / "approved" / "go."
 
@@ -243,26 +259,26 @@ Thanks to our buyers, the seller, and the agent across the table for a clean dea
 
 ### Caption voice rules (hard)
 
-- **No exclamation marks.** Anywhere — eyebrow, body, address line. The post is a fact card.
+- **No exclamation marks.** Anywhere.  eyebrow, body, address line. The post is a fact card.
 - **No celebration language.** "Just sold!" / "We did it!" / "Off the market!" / "Another one
-  in the books" / "Honored" / "Blessed" / "Humbled" / "Thrilled" — all non-compliant.
+  in the books" / "Honored" / "Blessed" / "Humbled" / "Thrilled".  all non-compliant.
 - **No emoji.** Anywhere. Banned per CLAUDE.md "Voice + content."
-- **No manufactured scarcity.** "Act fast," "won't last," "before it's gone" — banned.
-- **No em-dashes (—) or semicolons in body.** Em-dash is missing-data placeholder only.
+- **No manufactured scarcity.** "Act fast," "won't last," "before it's gone".  banned.
+- **No em-dashes (. ) or semicolons in body.** Em-dash is missing-data placeholder only.
 - **`#RyanRealtyBend` leads the hashtag block.** HARD RULE (CLAUDE.md "Voice + content").
 - **Currency rounded to nearest thousand.** `$895,000` in body; `$895K` in the 》 line.
-- **Days = integer + "days"** (`4 days`). Single-day deal renders `One day on market.` —
+- **Days = integer + "days"** (`4 days`). Single-day deal renders `One day on market.`. 
   brevity carries it; no padding.
 
 ---
 
-## 6. Visual spec — 1080 × 1350 canvas
+## 6. Visual spec.  1080 × 1350 canvas
 
 Canvas 1080 × 1350 px, sRGB PNG. Background cream `#faf8f4` (`--rr-cream`). Safe zone: 54 px
 left/right, 40 px top. Color compliance: navy + cream only (no gold, no off-brand hex). The
 MLS hero photo's natural colors are allowed inside its crop.
 
-**Persistent layers** — inherited verbatim from `social_media_skills/ig-single-post/SKILL.md`
+**Persistent layers**.  inherited verbatim from `social_media_skills/ig-single-post/SKILL.md`
 §4. Footer band (`y = 1170 → 1350`, 180 px, navy 0.94 opacity, `logo-white.png` 64 px tall
 40 px from left, `541.213.6706 · ryan-realty.com` right-aligned in Geist 400 16 px). Broker
 headshot (`assets/team/<slug>.png` transparent, 120 px circular at `y = 1010, x = 54`, with
@@ -294,7 +310,7 @@ out/under-contract/<slug>/
 ### Draft surface format (present to Matt exactly like this)
 
 ```
-Draft ready: under-contract-announcement — <address>
+Draft ready: under-contract-announcement.  <address>
 
   IMAGE
     Path: out/under-contract/<slug>/post.png
@@ -307,10 +323,10 @@ Draft ready: under-contract-announcement — <address>
     Banned-word grep: clean ✓
 
   VERIFICATION TRACE
-    - <dom_at_pending> days — Supabase listings, MlsId='<mls_id>', computed from ListDate +
+    - <dom_at_pending> days.  Supabase listings, MlsId='<mls_id>', computed from ListDate +
       pending_timestamp, fetched <iso>
-    - $<list_price> — Supabase listings, MlsId='<mls_id>', column ListPrice, fetched <iso>
-    - <expected close date if present> — Supabase listings, MlsId='<mls_id>',
+    - $<list_price>.  Supabase listings, MlsId='<mls_id>', column ListPrice, fetched <iso>
+    - <expected close date if present>.  Supabase listings, MlsId='<mls_id>',
       column expected_close_date, fetched <iso>
 
   CITATIONS
@@ -340,9 +356,9 @@ Run before surfacing the draft. Write results to `design_scorecard.json`. Any `f
 | 9 | Broker headshot | Resolved PNG at 120 px circular, name + role rendered |
 | 10 | Color + font integrity | Navy + cream only (no gold, no off-brand hex); Amboqia/Geist/Azo Sans Medium loaded from disk; tabular-nums on all numbers |
 | 11 | Data verified | Every figure traces to `citations.json` with source, filter, fetched_at |
-| 12 | Caption — hashtags | `#RyanRealtyBend` is the FIRST hashtag in the trailing block |
-| 13 | Caption — banned vocab + punctuation | grep clean against union list; zero em-dashes, semicolons, exclamation marks, emoji |
-| 14 | Caption — celebration + scarcity | Zero "Just sold!", "We did it!", "Off the market!", "Honored," "Blessed," "Thrilled," "act fast," "won't last," "before it's gone" |
+| 12 | Caption.  hashtags | `#RyanRealtyBend` is the FIRST hashtag in the trailing block |
+| 13 | Caption.  banned vocab + punctuation | grep clean against union list; zero em-dashes, semicolons, exclamation marks, emoji |
+| 14 | Caption.  celebration + scarcity | Zero "Just sold!", "We did it!", "Off the market!", "Honored," "Blessed," "Thrilled," "act fast," "won't last," "before it's gone" |
 | 15 | Currency + day formatting | Price rounded to nearest $1,000 (stats line) / `$<N>K` (》 line); integer + " days"; `dom == 0` → `1 day` |
 | 16 | Safe zone | All non-footer content within 54 px / 40 px insets |
 
@@ -353,7 +369,7 @@ surface with the specific check + literal triggering value.
 
 ## 9. Approval gate
 
-`matt-review-draft` — Matt sees the rendered PNG + caption.md + verification trace and replies
+`matt-review-draft`.  Matt sees the rendered PNG + caption.md + verification trace and replies
 "ship it" / "approved" / "go" before any commit, push, or publish step.
 
 Silence is not approval. A passing QA scorecard is necessary, not sufficient. A successful
@@ -412,9 +428,9 @@ WHERE id='<id>';
 |---|---|---|
 | `pending_timestamp` missing or null | Supabase row has `pending_timestamp = NULL` despite `StandardStatus='Pending'` | Stop. Surface to Matt with the MLS#. Possible upstream MLS sync issue. Set `status='killed'`. Do not invent a timestamp. |
 | Status reverted to Active | Listing went Pending then back to Active before render | Stop. Surface. QA step 2 (status check) catches this. `status='killed'` with stale-data note. |
-| MLS hero photo missing or 404 | `PhotoURL` null or returns 4xx | Try Spark MLS API `/listings/<MlsId>/media`. If still missing, surface — never substitute stock or AI. |
+| MLS hero photo missing or 404 | `PhotoURL` null or returns 4xx | Try Spark MLS API `/listings/<MlsId>/media`. If still missing, surface.  never substitute stock or AI. |
 | DOM computation fails | `ListDate` null, negative result, or mismatch vs. payload | Print both values (payload vs. live). Surface the discrepancy. Live data wins; do not silently override. |
-| Listing agent not in roster | `ListAgentEmail` doesn't map to one of the three brokers | Stop. Surface — this producer is for Ryan Realty listings only. |
+| Listing agent not in roster | `ListAgentEmail` doesn't map to one of the three brokers | Stop. Surface.  this producer is for Ryan Realty listings only. |
 | Banned vocab in caption | Grep hit against the union list | Re-write the offending sentence using corpus voice rules. Max 2 auto-iterations; then surface. |
 | Hashtag rule violated | `#RyanRealtyBend` missing or not first | Auto-fix: re-emit with `#RyanRealtyBend` leading. Re-grep. Surface if auto-fix fails. |
 | Font missing on disk | Amboqia / Geist / Azo Sans Medium not present | Stop. Report file path. Do NOT ship with system fonts. |
@@ -428,7 +444,7 @@ WHERE id='<id>';
   showings; use DOM + price as the two facts. If Matt wants showings, pull from ShowingTime.
 - **Co-listed listings.** Headshot defaults to the Ryan Realty broker (or primary
   `ListAgentEmail` if both are Ryan Realty). Outside co-list → surface.
-- **Pending sub-statuses.** Any status containing `Pending` is treated as pending. "Pending —
+- **Pending sub-statuses.** Any status containing `Pending` is treated as pending. "Pending. 
   Taking Backups" gets the same template; surface only if Matt wants distinct copy.
 
 ---
@@ -449,36 +465,36 @@ WHERE id='<id>';
 
 **Required reading (load before executing):**
 
-- `CLAUDE.md` §0 — Data Accuracy mandate (outranks everything).
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last (outranks everything).
-- `CLAUDE.md` "Voice + content" — #RyanRealtyBend HARD RULE.
-- `design_system/ryan-realty/SKILL.md` — brand visual system, navy/cream, type tiers.
-- `design_system/ryan-realty/colors_and_type.css` — authoritative tokens.
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice attributes + banned vocab.
-- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` — Matt's writing fingerprint.
-- `social_media_skills/ig-single-post/SKILL.md` §4 — footer + broker headshot inherited verbatim.
-- `social_media_skills/platform-best-practices/SKILL.md` — 2026 platform rule layer.
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate.
-- `automation_skills/content_engine/SKILL.md` — content routing bus (invocation path).
+- `CLAUDE.md` §0.  Data Accuracy mandate (outranks everything).
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything).
+- `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE.
+- `design_system/ryan-realty/SKILL.md`.  brand visual system, navy/cream, type tiers.
+- `design_system/ryan-realty/colors_and_type.css`.  authoritative tokens.
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice attributes + banned vocab.
+- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint.
+- `social_media_skills/ig-single-post/SKILL.md` §4.  footer + broker headshot inherited verbatim.
+- `social_media_skills/platform-best-practices/SKILL.md`.  2026 platform rule layer.
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate.
+- `automation_skills/content_engine/SKILL.md`.  content routing bus (invocation path).
 
 **Sibling and contractual:**
 
-- `social_media_skills/list-kit/SKILL.md` — Active orchestrator (the at-Active sibling).
-- `social_media_skills/instagram-carousel/SKILL.md` — multi-slide alternative if Matt wants more.
-- `automation_skills/listing_trigger/SKILL.md` — nightly status-change scan that enqueues this
+- `social_media_skills/list-kit/SKILL.md`.  Active orchestrator (the at-Active sibling).
+- `social_media_skills/instagram-carousel/SKILL.md`.  multi-slide alternative if Matt wants more.
+- `automation_skills/listing_trigger/SKILL.md`.  nightly status-change scan that enqueues this
   action_type.
 
 **Producer skeleton + registry:**
 
-- `marketing_brain_skills/producers/TEMPLATE.md` — producer template.
-- `marketing_brain_skills/producers/REGISTRY.md` — Section B, row `under-contract-announcement`.
+- `marketing_brain_skills/producers/TEMPLATE.md`.  producer template.
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section B, row `under-contract-announcement`.
 
 ---
 
 ## 14. What not to do
 
 1. **Never use celebration language or exclamation marks.** "Just sold!" / "We did it!" /
-   "Off the market!" — banned. The post is a fact card.
+   "Off the market!".  banned. The post is a fact card.
 2. **Never add emoji.** Anywhere.
 3. **Never invent a date, DOM, or price.** Every number traces to live Supabase.
 4. **Never substitute the hero photo.** MLS-sourced only. No stock, no AI, no similar-property
@@ -491,3 +507,23 @@ WHERE id='<id>';
    route to `ig-single-post` S2 or S1 instead.
 10. **Never round in a way that changes the narrative.** `$894,750 → $895,000` is fine;
     `$894,750 → $900,000` is not.
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

@@ -11,7 +11,7 @@ description: >
 action_types: []
 ---
 
-# Marketing Brain — Inbox
+# Marketing Brain.  Inbox
 
 **Scope:** Owns the read side of the marketing brain. Anything that turns an
 inbound email at `marketing@ryan-realty.com` into a tracked action row lives
@@ -20,8 +20,8 @@ off to the matching producer the moment a confident parse is dispatched.
 
 **Status:** Canonical
 **Locked:** 2026-05-14
-**Receiver path:** `/api/cron/marketing-inbox-poll` (Path B — cron poll every 2 min)
-**Upgrade path:** Gmail Push via Cloud Pub/Sub (Path A) — same receiver logic, swap the trigger.
+**Receiver path:** `/api/cron/marketing-inbox-poll` (Path B.  cron poll every 2 min)
+**Upgrade path:** Gmail Push via Cloud Pub/Sub (Path A).  same receiver logic, swap the trigger.
 
 ---
 
@@ -39,9 +39,9 @@ off to the matching producer the moment a confident parse is dispatched.
   silent.
 
 Do NOT use this skill for:
-- Drafting outbound marketing email — that is `ops-email-send`.
-- Generating brain-side digests Matt receives daily — that is `daily-digest`.
-- Anything to do with FUB email parsing — `ops-fub-crm` and the FUB
+- Drafting outbound marketing email.  that is `ops-email-send`.
+- Generating brain-side digests Matt receives daily.  that is `daily-digest`.
+- Anything to do with FUB email parsing.  `ops-fub-crm` and the FUB
   ingestor own that.
 
 ---
@@ -50,10 +50,10 @@ Do NOT use this skill for:
 
 | Reference | Why |
 |---|---|
-| `docs/handoffs/marketing-inbox-agent.md` | The original handoff brief — architecture, work items, definition of done |
+| `docs/handoffs/marketing-inbox-agent.md` | The original handoff brief.  architecture, work items, definition of done |
 | `docs/handoffs/marketing-inbox-admin-setup.md` | The one-time Workspace Admin step required to unlock the read path |
-| `CLAUDE.md` §0 — Data Accuracy | Any reply containing numbers must trace |
-| `CLAUDE.md` §0.5 — Draft-First | Confirmation replies do not need draft-first since they describe the routing, not the deliverable; the deliverable still does |
+| `CLAUDE.md` §0.  Data Accuracy | Any reply containing numbers must trace |
+| `CLAUDE.md` §0.5.  Draft-First | Confirmation replies do not need draft-first since they describe the routing, not the deliverable; the deliverable still does |
 | `marketing_brain_skills/producers/REGISTRY.md` | Single source of truth for valid action_types |
 | `marketing_brain_skills/produce/SKILL.md` | The natural-language entry point this skill mirrors |
 | `marketing_brain_skills/producers/comms-matt-alert/SKILL.md` | Triage path for unparseable email |
@@ -159,7 +159,7 @@ retry never inserts a duplicate.
 | action_type = 'unknown' | Insert `comms:matt_alert` ("unknown intent") |
 
 The threshold is held in `INBOX_PARSE_CONFIDENCE_THRESHOLD` in
-`inbox-parser.ts`. Tune cautiously — lower threshold = more autonomous, more
+`inbox-parser.ts`. Tune cautiously.  lower threshold = more autonomous, more
 risk of misrouting; higher threshold = more triage volume on Matt.
 
 ---
@@ -190,7 +190,7 @@ When a new producer is added to `marketing_brain_skills/producers/REGISTRY.md`:
 3. **Add a row to `app/marketing/request/deliverables.ts`** under the right
    group (For a listing / Market reports / Neighborhoods / News, evergreen,
    and social / Email, ads, and reviews / Website). Use broker-friendly
-   wording — `label` and `description` are what the broker sees, `prompt`
+   wording.  `label` and `description` are what the broker sees, `prompt`
    is the verb-led sentence the email body will contain.
 4. (Optional) Add an example phrasing to the parser system prompt if the
    action_type is ambiguous with a sibling type.
@@ -200,7 +200,7 @@ If a parser response references an action_type that is missing from
 missing from the producer registry only, the dispatcher routes it to
 `comms:matt_alert` with a `no producer registered` reason. If it is
 missing from the broker request page only, brokers can still ask for it
-in free-text via the "Anything else" textarea or by emailing directly —
+in free-text via the "Anything else" textarea or by emailing directly. 
 the page menu is not the security boundary. All three paths are safe.
 
 ---
@@ -245,7 +245,7 @@ To add a new deliverable to the menu:
    ```
 4. Commit + push. The page rebuilds on deploy; no other changes needed.
 
-Voice rules apply to `label`, `description`, and `prompt` — no em-dashes,
+Voice rules apply to `label`, `description`, and `prompt`.  no em-dashes,
 no banned tropes, sentence case. The reply layer's voice gate doesn't
 validate these strings at runtime (they're static), so they're inspected
 at review time.
@@ -283,12 +283,12 @@ When email volume justifies near-real-time latency:
 
 1. Provision a Cloud Pub/Sub topic in the `ryanrealty` GCP project.
 2. Grant `roles/pubsub.publisher` to `gmail-api-push@system.gserviceaccount.com`.
-3. Call `users.watch` with the topic name. The watch expires every 7 days —
+3. Call `users.watch` with the topic name. The watch expires every 7 days. 
    add a cron at `0 0 * * 0` to refresh.
 4. Replace the cron route with a webhook endpoint at
    `/api/inbound/marketing-email-push` that consumes the Pub/Sub message and
    calls `pollMarketingInbox({ maxMessages: 25 })`. The Pub/Sub message body
-   is the `historyId`, not the email itself — the poll still does the
+   is the `historyId`, not the email itself.  the poll still does the
    `messages.list` step.
 5. Remove the `*/2 * * * *` cron entry.
 
@@ -296,7 +296,7 @@ The orchestrator is unchanged. Path A is strictly a trigger swap.
 
 ---
 
-## 10. Cost ledger (verified expected — actuals to be measured)
+## 10. Cost ledger (verified expected.  actuals to be measured)
 
 | Component | Per-message cost | Monthly at 100 emails/day |
 |---|---|---|
@@ -316,7 +316,7 @@ Path A swap adds ~$1/month for Pub/Sub at this volume.
 Every outbound confirmation goes through `applyBrandVoice()` from
 `lib/marketing-brain/generate-briefs.ts`. The current banned-content list
 catches em-dashes, AI filler, fake-urgency tropes, banned vocabulary, and
-the standard real estate clichés. A violation does NOT auto-rewrite — it
+the standard real estate clichés. A violation does NOT auto-rewrite.  it
 fails the send and records the violation list so a human can edit the
 template if it keeps tripping.
 

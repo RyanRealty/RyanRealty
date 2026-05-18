@@ -162,6 +162,17 @@ export async function runMeasurementLoop(opts: RunMeasurementLoopOptions = {}): 
     }
   }
 
+  // After upserts, write a roll-up marketing_decisions row so generate-briefs
+  // can use it as supplemental context and so Matt has an audit trail of each
+  // measurement-loop run. Soft-fail: a write error here does not affect the
+  // returned report or any measurement data already written.
+  if (!opts.dryRun && report.measurements_succeeded > 0) {
+    await persistLoopDigest(report).catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('runMeasurementLoop: digest write failed (non-fatal):', msg)
+    })
+  }
+
   return report
 }
 
@@ -334,6 +345,81 @@ async function measureMetaPost(platform: 'instagram' | 'facebook', postId: strin
 // ---------------------------------------------------------------------------
 // Persistence
 // ---------------------------------------------------------------------------
+
+/**
+ * Write a single roll-up row to marketing_decisions after a successful loop
+ * run. decision_type='performance_loop_completed'. data_observed includes:
+ *   - top_3_winners: the three candidates with the highest north_star_attributed_seller_leads
+ *   - bottom_3_losers: the three with the lowest
+ *   - loop stats from the report
+ *
+ * generate-briefs reads this for additional context in the next cycle, and
+ * the dashboard surfaces it in the digest view.
+ */
+async function persistLoopDigest(report: MeasurementLoopReport): Promise<void> {
+  const supabase = getSupabase()
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 86_400_000).toISOString()
+
+  // Pull the top and bottom performers by north_star_attributed_seller_leads
+  // from the last 90 days of content_performance where metrics_7d is populated.
+  const { data: perfRows } = await supabase
+    .from('content_performance')
+    .select('action_id, platform, north_star_attributed_seller_leads, metrics_7d, posted_at')
+    .gte('posted_at', ninetyDaysAgo)
+    .not('metrics_7d', 'is', null)
+    .order('north_star_attributed_seller_leads', { ascending: false })
+    .limit(50)
+
+  const rows = (perfRows ?? []) as Array<{
+    action_id: string
+    platform: string
+    north_star_attributed_seller_leads: number | null
+    metrics_7d: Record<string, unknown> | null
+    posted_at: string
+  }>
+
+  const sorted = [...rows].sort(
+    (a, b) =>
+      (b.north_star_attributed_seller_leads ?? 0) - (a.north_star_attributed_seller_leads ?? 0)
+  )
+
+  const top3 = sorted.slice(0, 3).map((r) => ({
+    action_id: r.action_id,
+    platform: r.platform,
+    north_star_attributed_seller_leads: r.north_star_attributed_seller_leads ?? 0,
+    posted_at: r.posted_at,
+  }))
+
+  const bottom3 = sorted.slice(-3).map((r) => ({
+    action_id: r.action_id,
+    platform: r.platform,
+    north_star_attributed_seller_leads: r.north_star_attributed_seller_leads ?? 0,
+    posted_at: r.posted_at,
+  }))
+
+  await supabase.from('marketing_decisions').insert({
+    decision_type: 'performance_loop_completed',
+    decision_summary: `Measurement loop: ${report.measurements_succeeded} new snapshots across ${report.candidates_found} candidates.`,
+    data_observed: {
+      loop_stats: {
+        scanned_actions: report.scanned_actions,
+        candidates_found: report.candidates_found,
+        measurements_succeeded: report.measurements_succeeded,
+        measurements_skipped: report.measurements_skipped,
+        measurements_failed: report.measurements_failed,
+        error_count: report.errors.length,
+      },
+      top_3_winners: top3,
+      bottom_3_losers: bottom3,
+      completed_at: new Date().toISOString(),
+    },
+    rules_cited: ['measurement-loop: 24h/7d/30d platform metrics ingestion'],
+    predicted_outcome: {},
+    actual_outcome: {},
+    reviewer: 'marketing_brain:measurement-loop',
+    final_decision: 'recorded',
+  })
+}
 
 async function persistMeasurement(candidate: MeasurementCandidate, metrics: MeasurementMetrics): Promise<boolean> {
   const supabase = getSupabase()

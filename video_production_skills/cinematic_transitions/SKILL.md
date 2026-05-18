@@ -5,11 +5,11 @@ description: >
   Five Remotion transition components (CrossfadeTransition, LightLeakTransition, and
   others) that layer between PhotoBeat sequences using overlapping Sequence pairs.
   Support library for listing_reveal, listing_launch, neighborhood_tour, and other
-  format skills. Do NOT invoke as a standalone content-production skill — no content
+  format skills. Do NOT invoke as a standalone content-production skill.  no content
   ships from this file alone.
 ---
 
-# Skill 3 — Cinematic Transitions
+# Skill 3.  Cinematic Transitions
 
 Five Remotion transition components that layer between existing PhotoBeat sequences.
 Each wraps a single layer (outgoing OR incoming) and is used in overlapping
@@ -19,13 +19,13 @@ Sequence pairs so both layers are live simultaneously during the transition wind
 
 ## CRITICAL: Never paint solid black or charcoal
 
-Per `VIDEO_PRODUCTION_SKILL.md` Section 7 #1 — the existing Sequence overlap
+Per `VIDEO_PRODUCTION_SKILL.md` Section 7 #1.  the existing Sequence overlap
 pattern prevents dark flashes at cuts. That pattern relies on every component
 having `background: 'transparent'` on its root `<div>`. All five transition
 components follow this rule. Do not add a background color to the wrapper div.
 
 The LightLeakTransition overlay uses `mixBlendMode: 'screen'` and a warm
-orange radial gradient — it is luminous/additive, never solid.
+orange radial gradient.  it is luminous/additive, never solid.
 
 ---
 
@@ -36,9 +36,9 @@ orange radial gradient — it is luminous/additive, never solid.
 **Default duration:** 0.4s
 
 Smoothest, simplest transition. Ramps `opacity` of the wrapped layer.
-- `mode: 'out'` — wraps outgoing layer, opacity 1 → 0
-- `mode: 'in'`  — wraps incoming layer, opacity 0 → 1
-- `easing` — `'linear' | 'easeInOut' | 'easeOutCubic'` (default `easeInOut`)
+- `mode: 'out'`.  wraps outgoing layer, opacity 1 → 0
+- `mode: 'in'`.  wraps incoming layer, opacity 0 → 1
+- `easing`.  `'linear' | 'easeInOut' | 'easeOutCubic'` (default `easeInOut`)
 
 **When to use:** Everywhere as the default. Soft, luxury, doesn't draw
 attention to itself. Best for $1M+ listings where the shot composition is
@@ -46,7 +46,7 @@ the star. Also appropriate for any price tier when you have no reason to
 use a more expressive transition.
 
 **Avoid:** When the built-in `crossfadeIn`/`crossfadeOut` props on PhotoBeat
-already handle the fade — don't double-fade the same layer.
+already handle the fade.  don't double-fade the same layer.
 
 ---
 
@@ -56,15 +56,15 @@ already handle the fade — don't double-fade the same layer.
 
 Warm orange/gold bloom that mimics an analog film light leak. The overlay
 blooms in over the first 50% of the duration and fades out over the second 50%.
-- `intensity` — `'subtle' | 'medium' | 'strong'` (peak opacity 0.35 / 0.55 / 0.72)
-- `position` — `{ x: string; y: string }` radial gradient hotspot, default `'50% 30%'`
+- `intensity`.  `'subtle' | 'medium' | 'strong'` (peak opacity 0.35 / 0.55 / 0.72)
+- `position`.  `{ x: string; y: string }` radial gradient hotspot, default `'50% 30%'`
 
 Note: LightLeakTransition is a standalone overlay, not a wrapper. Place it
-inside an overlapping Sequence at the transition point — it does not need
+inside an overlapping Sequence at the transition point.  it does not need
 `mode` because it is not wrapping a content layer.
 
 **When to use:** Cinematic warmth at scene-register changes, e.g. interior →
-exterior shot at the 50% pattern interrupt. Use sparingly — once or twice per
+exterior shot at the 50% pattern interrupt. Use sparingly.  once or twice per
 video max.
 
 **Avoid at:** $1M+ listings (too "gram-y" for the restrained luxury register).
@@ -77,15 +77,15 @@ video max.
 
 Snap horizontal pan blur. Outgoing translates off-screen with peak motion
 blur at midpoint; incoming arrives from opposite side.
-- `direction: 'lr'` — motion is leftward (out exits left, in enters from right)
-- `direction: 'rl'` — motion is rightward
-- `mode: 'in' | 'out'` — wrap the incoming or outgoing layer
+- `direction: 'lr'`.  motion is leftward (out exits left, in enters from right)
+- `direction: 'rl'`.  motion is rightward
+- `mode: 'in' | 'out'`.  wrap the incoming or outgoing layer
 
 **When to use:** High-energy register, viral cut tempo. Best at the 25%
 re-hook beat to signal "new chapter" with kinetic motion. Under $500K
 listings where an upbeat peppy tone fits.
 
-**Avoid at:** $1M+ listings — too aggressive for the restrained luxury register.
+**Avoid at:** $1M+ listings.  too aggressive for the restrained luxury register.
 
 ---
 
@@ -94,16 +94,16 @@ listings where an upbeat peppy tone fits.
 **Default duration:** 0.4s
 
 Clean horizontal/vertical carousel push. Outgoing travels fully off-screen
-while incoming enters from opposite. No blur — orderly spatial feel.
+while incoming enters from opposite. No blur.  orderly spatial feel.
 - `direction: 'left' | 'right' | 'up' | 'down'`
 - `mode: 'in' | 'out'`
 
 **When to use:** Orderly transitions between adjacent rooms, e.g. kitchen →
-dining room. Use `direction` to imply spatial flow — if kitchen is "left of"
+dining room. Use `direction` to imply spatial flow.  if kitchen is "left of"
 dining, push `'left'`.
 
 **Avoid:** For scene-register changes (use CrossfadeTransition or LightLeak
-instead). Push is a spatial metaphor — it implies the viewer is moving
+instead). Push is a spatial metaphor.  it implies the viewer is moving
 through a physical space.
 
 ---
@@ -119,7 +119,7 @@ simultaneously for longer. Includes scale pulse: outgoing 1 → 0.96, incoming
 - `direction: 'left' | 'right' | 'up' | 'down'`
 - `mode: 'in' | 'out'`
 
-**When to use:** Two beats that share the same visual register — e.g. both
+**When to use:** Two beats that share the same visual register.  e.g. both
 interiors of the same wing. The overlap makes the transition feel like a
 reveal rather than a cut.
 
@@ -137,14 +137,14 @@ The overlap window is the transition duration:
 const FPS = 30;
 const endOfBeatA = 90; // frame where beat A content ends
 
-// Outgoing layer — crossfade out over 0.4s starting 9 frames before end
+// Outgoing layer.  crossfade out over 0.4s starting 9 frames before end
 <Sequence from={endOfBeatA - 0.3 * FPS} durationInFrames={Math.ceil(0.4 * FPS)}>
   <CrossfadeTransition durationSec={0.4} mode="out">
     <BeatA />
   </CrossfadeTransition>
 </Sequence>
 
-// Incoming layer — crossfade in over 0.4s starting at same point
+// Incoming layer.  crossfade in over 0.4s starting at same point
 <Sequence from={endOfBeatA - 0.3 * FPS} durationInFrames={Math.ceil(0.4 * FPS)}>
   <CrossfadeTransition durationSec={0.4} mode="in">
     <BeatB />

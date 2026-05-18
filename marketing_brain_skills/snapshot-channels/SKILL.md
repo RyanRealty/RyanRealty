@@ -62,14 +62,14 @@ app/api/cron/marketing-snapshot-<channel>/route.ts
 Every row is `(date, channel, scope, scope_id, metric, value, metadata, source)`.
 
 **Scope levels.**
-- `account` — channel-wide totals. `scope_id = ''`.
-- `campaign` — a Meta Ads campaign, a GA4 event-name aggregation, an email sequence.
-- `adset` / `ad` — Meta Ads creative-level.
-- `post` — a single published piece.
-- `page` — a GA4 page path, a Meta Page section.
-- `source` — traffic source / medium (e.g. `google / organic`).
-- `channel` — default channel grouping (e.g. `organic_social`).
-- `video` — a single video asset.
+- `account`.  channel-wide totals. `scope_id = ''`.
+- `campaign`.  a Meta Ads campaign, a GA4 event-name aggregation, an email sequence.
+- `adset` / `ad`.  Meta Ads creative-level.
+- `post`.  a single published piece.
+- `page`.  a GA4 page path, a Meta Page section.
+- `source`.  traffic source / medium (e.g. `google / organic`).
+- `channel`.  default channel grouping (e.g. `organic_social`).
+- `video`.  a single video asset.
 
 **Metric naming.** Snake_case, one concept per metric. Use `sessions` not `Sessions`. Use `lead_events` not `leads` so it's not confused with FUB-confirmed leads (different metric).
 
@@ -131,12 +131,12 @@ Common failure modes:
 - **Token expired.** Re-auth that platform via `/api/<channel>/authorize`.
 - **Rate limit.** Re-run with a tighter date range or wait an hour.
 - **Schema change in source API.** Check the channel's helper lib for breaking changes; update the row decomposition.
-- **Missing env var.** Surface to Matt — never silently default to zero.
+- **Missing env var.** Surface to Matt.  never silently default to zero.
 
 ---
 
 ## Related skills
 
-- `marketing-brain:diagnose-performance` — reads from `marketing_channel_daily` to compute deltas.
-- `marketing-brain:weekly-cycle` — invokes this skill as step 1 of the weekly pass.
-- `marketing-brain:competitor-recon` — parallel skill that writes to `competitor_intel`, not this table.
+- `marketing-brain:diagnose-performance`.  reads from `marketing_channel_daily` to compute deltas.
+- `marketing-brain:weekly-cycle`.  invokes this skill as step 1 of the weekly pass.
+- `marketing-brain:competitor-recon`.  parallel skill that writes to `competitor_intel`, not this table.

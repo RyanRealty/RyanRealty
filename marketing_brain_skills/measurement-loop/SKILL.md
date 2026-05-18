@@ -5,7 +5,7 @@ description: Daily measurement of executed action rows. Pulls per-post metrics f
 
 # marketing-brain: measurement-loop
 
-The brain's feedback layer. Without this, the brain proposes briefs and producers ship them — but nothing ever measures whether the work converted. The measurement loop closes that gap: every executed action row gets measured at 24h, 7d, and 30d intervals, the metrics land in `public.content_performance`, and downstream consumers weight future decisions by what actually worked.
+The brain's feedback layer. Without this, the brain proposes briefs and producers ship them.  but nothing ever measures whether the work converted. The measurement loop closes that gap: every executed action row gets measured at 24h, 7d, and 30d intervals, the metrics land in `public.content_performance`, and downstream consumers weight future decisions by what actually worked.
 
 **Status:** Scaffolded 2026-05-14. Active for Meta Graph (Instagram + Facebook) only. TikTok / YouTube / LinkedIn / X / GBP integrations are TODOs in `measurePlatformPost()`.
 
@@ -26,7 +26,7 @@ For purely **proposing** content, use `marketing_brain_skills/run/` (the brain c
 
 | Reference | Why |
 |---|---|
-| `CLAUDE.md` §0 — Data Accuracy | Every metric we surface traces to a platform API source |
+| `CLAUDE.md` §0.  Data Accuracy | Every metric we surface traces to a platform API source |
 | `marketing_brain_skills/producers/REGISTRY.md` Section D + E | Producers that write `executor_response.published_posts` |
 | `marketing_brain_skills/tools_registry/meta-graph/SKILL.md` | Auth + endpoint patterns for the live measurement path |
 | `lib/marketing-brain/measurement-loop.ts` | The implementation |
@@ -43,13 +43,13 @@ interface PublishedPost {
   platform: 'instagram' | 'facebook' | 'tiktok' | 'youtube' | 'linkedin' | 'x' | 'gbp' | 'blog'
   platform_post_id: string  // the platform's native id (IG media id, FB post id, etc.)
   url?: string              // optional shareable URL
-  published_at: string      // ISO 8601 — when it actually went live
+  published_at: string      // ISO 8601.  when it actually went live
 }
 
 // Written to: marketing_brain_actions.executor_response
 {
   published_posts: PublishedPost[]
-  // ...other producer-specific fields
+  //..other producer-specific fields
 }
 ```
 
@@ -71,7 +71,7 @@ Three windows per post: 24h, 7d, 30d.
 
 Window tolerance: ±24h. The loop measures within the tolerance window, then skips that (post, window) combo for the rest of its life.
 
-Saturday / Sunday cron runs are OK — backlog accumulates and gets caught up Monday.
+Saturday / Sunday cron runs are OK.  backlog accumulates and gets caught up Monday.
 
 ---
 
@@ -120,7 +120,7 @@ Daily 15:00 UTC (08:00 PT summer / 07:00 PT winter) per `vercel.json`. Runs AFTE
 ## Manual invocation
 
 ```sh
-# Dry run — show candidates, don't write
+# Dry run.  show candidates, don't write
 curl -H "Authorization: Bearer $CRON_SECRET" \
   "https://ryanrealty.vercel.app/api/cron/marketing-measurement-loop?dryRun=true"
 
@@ -135,9 +135,9 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 
 | Failure | Symptom | Resolution |
 |---|---|---|
-| No `executor_response.published_posts` on any executed row | `scanned > 0, candidates_found = 0` | Producers aren't writing the contract — Producer Authoring update |
+| No `executor_response.published_posts` on any executed row | `scanned > 0, candidates_found = 0` | Producers aren't writing the contract.  Producer Authoring update |
 | Meta token expired or revoked | `errors[]` populated with 401/403 | Refresh via Meta Graph Explorer; update `NEXT_PUBLIC_META_PAGE_ACCESS_TOKEN` in Vercel |
-| Post deleted on platform after publish | `errors[]` 404 — write null metrics row with `metadata.deleted: true` for the audit trail | Producer should handle re-publish, not the loop |
+| Post deleted on platform after publish | `errors[]` 404.  write null metrics row with `metadata.deleted: true` for the audit trail | Producer should handle re-publish, not the loop |
 | Platform stub returns null | `measurements_skipped` increments | Expected behavior for unwired platforms |
 | Same window measured twice | `isAlreadyMeasured()` short-circuits before fetch | Idempotent by design |
 
@@ -167,7 +167,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 
 ## Related skills
 
-- `marketing_brain_skills/run/` — the cycle that generates the briefs being measured
-- `marketing_brain_skills/tools_registry/meta-graph/` — the live measurement API
-- `marketing_brain_skills/audit-findings/PROTOCOL.md` — `existing_producers_validated` uses this data
-- `marketing_brain_skills/producers/*/SKILL.md` — producers MUST write the published_posts contract
+- `marketing_brain_skills/run/`.  the cycle that generates the briefs being measured
+- `marketing_brain_skills/tools_registry/meta-graph/`.  the live measurement API
+- `marketing_brain_skills/audit-findings/PROTOCOL.md`.  `existing_producers_validated` uses this data
+- `marketing_brain_skills/producers/*/SKILL.md`.  producers MUST write the published_posts contract

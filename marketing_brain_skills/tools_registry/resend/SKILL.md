@@ -1,6 +1,6 @@
 ---
 name: tools_registry-resend
-description: Use this skill when a task involves sending transactional or marketing email through Resend — including ops-email-send blasts, comms-matt-alert email tier, CMA delivery, contact-form notifications, saved-search alerts, or any programmatic send from mail.ryan-realty.com. Covers authentication, the current blocked-send state (domain unverified as of 2026-05-14), send patterns, batch sends, audience management, failure modes, CAN-SPAM requirements, and the DNS unblock path.
+description: Use this skill when a task involves sending transactional or marketing email through Resend.  including ops-email-send blasts, comms-matt-alert email tier, CMA delivery, contact-form notifications, saved-search alerts, or any programmatic send from mail.ryan-realty.com. Covers authentication, the current blocked-send state (domain unverified as of 2026-05-14), send patterns, batch sends, audience management, failure modes, CAN-SPAM requirements, and the DNS unblock path.
 ---
 
 # Resend Tool Skill
@@ -9,27 +9,27 @@ description: Use this skill when a task involves sending transactional or market
 
 This is a capability skill used by email-producing brain components. Every task that invokes this skill also loads:
 
-- `CLAUDE.md` §0 — Data Accuracy mandate (outranks all other instructions)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last (never send without Matt's explicit approval)
-- `marketing_brain_skills/producers/ops-email-send/SKILL.md` — the producer that calls this tool for newsletters and blasts
-- `marketing_brain_skills/producers/comms-matt-alert/SKILL.md` — the producer that calls this tool for the email tier of alerts
+- `CLAUDE.md` §0.  Data Accuracy mandate (outranks all other instructions)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (never send without Matt's explicit approval)
+- `marketing_brain_skills/producers/ops-email-send/SKILL.md`.  the producer that calls this tool for newsletters and blasts
+- `marketing_brain_skills/producers/comms-matt-alert/SKILL.md`.  the producer that calls this tool for the email tier of alerts
 
 ---
 
-## CRITICAL: DOMAIN NOT VERIFIED — ALL SENDS FROM mail.ryan-realty.com BLOCKED
+## CRITICAL: DOMAIN NOT VERIFIED.  ALL SENDS FROM mail.ryan-realty.com BLOCKED
 
 **As of 2026-05-14, `mail.ryan-realty.com` is not verified on Resend.**
 
 This is a hard block. Resend rejects every outbound send from `noreply@mail.ryan-realty.com` with HTTP 403 / "domain not verified." This affects every email-producing brain component:
 
-- `ops-email-send` — newsletters, blasts, announcements
-- `comms-matt-alert` — email tier (medium/low/summary urgency)
-- `lib/resend.ts` — CMA delivery, contact-form notifications, saved-search alerts, valuation auto-responses
-- `app/api/cma-drafts/[id]/send/route.ts` — seller CMA report delivery
+- `ops-email-send`.  newsletters, blasts, announcements
+- `comms-matt-alert`.  email tier (medium/low/summary urgency)
+- `lib/resend.ts`.  CMA delivery, contact-form notifications, saved-search alerts, valuation auto-responses
+- `app/api/cma-drafts/[id]/send/route.ts`.  seller CMA report delivery
 
 **Nothing ships email via Resend until Matt completes the DNS verification steps below.**
 
-The temporary fallback for one-off sends (e.g. an AgentFire support ticket) is the Gmail service-account path at `scripts/seo-send-agentfire-support-ticket-gmail.mjs`. That is a workaround for ad-hoc sends only — not a production substitute for the Resend pipeline.
+The temporary fallback for one-off sends (e.g. an AgentFire support ticket) is the Gmail service-account path at `scripts/seo-send-agentfire-support-ticket-gmail.mjs`. That is a workaround for ad-hoc sends only.  not a production substitute for the Resend pipeline.
 
 ---
 
@@ -68,7 +68,7 @@ The rule: Resend is the transactional and marketing email platform. Direct clien
 | `RESEND_WEBHOOK_SECRET` | resend.com → Webhooks → signing secret | Required only for `app/api/webhooks/resend/route.ts` |
 
 ```ts
-// lib/resend.ts — canonical client getter (already implemented)
+// lib/resend.ts.  canonical client getter (already implemented)
 function getClient(): Resend | null {
   const key = process.env.RESEND_API_KEY
   if (!key?.trim()) return null
@@ -97,12 +97,12 @@ Base URL: `https://api.resend.com`
 
 ---
 
-## Send pattern — single email
+## Send pattern.  single email
 
 The canonical implementation lives in `lib/resend.ts`. Read it before writing any new send path. Do not re-implement the client instantiation or error-capture pattern.
 
 ```ts
-// Raw API equivalent of lib/resend.ts::sendEmail — for reference only
+// Raw API equivalent of lib/resend.ts::sendEmail.  for reference only
 // Always call lib/resend.ts::sendEmail in application code, not this raw fetch
 const res = await fetch('https://api.resend.com/emails', {
   method: 'POST',
@@ -121,16 +121,16 @@ const res = await fetch('https://api.resend.com/emails', {
 })
 ```
 
-The `from` address **must** match a verified sending domain. Until `mail.ryan-realty.com` is verified, this call returns 422 / 403. The only working `from` address today is `onboarding@resend.dev` (Resend's sandbox — for testing only, never for production sends to real recipients).
+The `from` address **must** match a verified sending domain. Until `mail.ryan-realty.com` is verified, this call returns 422 / 403. The only working `from` address today is `onboarding@resend.dev` (Resend's sandbox.  for testing only, never for production sends to real recipients).
 
 ---
 
-## Send pattern — batch
+## Send pattern.  batch
 
 `lib/resend.ts::sendBatchEmails` today sends serially (one call per email in a loop). For segments over ~50 recipients, replace with a true batch call:
 
 ```ts
-// Batch — up to 100 per call; use for bulk segment sends
+// Batch.  up to 100 per call; use for bulk segment sends
 const res = await fetch('https://api.resend.com/emails/batch', {
   method: 'POST',
   headers: {
@@ -141,14 +141,14 @@ const res = await fetch('https://api.resend.com/emails/batch', {
     {
       from: 'Ryan Realty <noreply@mail.ryan-realty.com>',
       to: ['lead1@example.com'],
-      subject: '...',
-      html: '...',
+      subject: '..',
+      html: '..',
     },
     {
       from: 'Ryan Realty <noreply@mail.ryan-realty.com>',
       to: ['lead2@example.com'],
-      subject: '...',
-      html: '...',
+      subject: '..',
+      html: '..',
     },
     // up to 100 items
   ]),
@@ -181,7 +181,7 @@ Store the Resend `id` returned from `/emails` on the `marketing_brain_actions` r
 
 ## Audience management (marketing tier)
 
-Resend audiences are contact lists for marketing (non-transactional) sends. Ryan Realty is not yet using audience-managed sends — the current pattern sends directly to individual addresses pulled from FUB. If the newsletter grows past ad-hoc FUB exports, migrate to:
+Resend audiences are contact lists for marketing (non-transactional) sends. Ryan Realty is not yet using audience-managed sends.  the current pattern sends directly to individual addresses pulled from FUB. If the newsletter grows past ad-hoc FUB exports, migrate to:
 
 1. Create an audience at resend.com → Audiences
 2. Sync FUB opt-in segment to the audience via `POST /audiences/{id}/contacts`
@@ -206,10 +206,10 @@ At Ryan Realty's current volume (daily digest + occasional blasts + CMA delivery
 
 Matt is a licensed principal broker. Marketing email has legal requirements. Every bulk email send must include:
 
-1. **Unsubscribe link** — a one-click opt-out mechanism in every email footer. Resend does not auto-inject this; the template HTML must include it. Route unsubscribe clicks to an endpoint that sets a suppression flag in FUB and/or Resend's suppression list.
-2. **Physical address footer** — Ryan Realty's physical address must appear in every marketing email. Current address: confirm from the listings office address in Supabase or CLAUDE.md before use; do not hard-code from memory.
-3. **Honest subject line** — no deceptive subjects. No fake urgency ("Your account will close in 24h").
-4. **Sender identity** — from name must clearly identify Ryan Realty as the sender.
+1. **Unsubscribe link**.  a one-click opt-out mechanism in every email footer. Resend does not auto-inject this; the template HTML must include it. Route unsubscribe clicks to an endpoint that sets a suppression flag in FUB and/or Resend's suppression list.
+2. **Physical address footer**.  Ryan Realty's physical address must appear in every marketing email. Current address: confirm from the listings office address in Supabase or CLAUDE.md before use; do not hard-code from memory.
+3. **Honest subject line**.  no deceptive subjects. No fake urgency ("Your account will close in 24h").
+4. **Sender identity**.  from name must clearly identify Ryan Realty as the sender.
 
 Transactional emails (CMA delivery, contact-form notifications, valuation auto-responses) are exempt from CAN-SPAM's unsubscribe requirement but must still meet the honest-sender and non-deceptive-subject requirements.
 
@@ -217,7 +217,7 @@ Transactional emails (CMA delivery, contact-form notifications, valuation auto-r
 
 ---
 
-## DNS verification checklist — THE UNBLOCK PATH
+## DNS verification checklist.  THE UNBLOCK PATH
 
 **Matt completes this. The agent documents and surfaces it; Matt executes the Cloudflare steps.**
 
@@ -228,27 +228,27 @@ Full step-by-step: `docs/resend-dns-verification-steps-2026-05-14.md`
 Summary:
 
 1. Log in at `https://resend.com` → Domains
-2. Find or add `mail.ryan-realty.com`; Resend shows the exact records to add (values are account- and region-specific — use Resend's values verbatim, not the placeholders below)
+2. Find or add `mail.ryan-realty.com`; Resend shows the exact records to add (values are account- and region-specific.  use Resend's values verbatim, not the placeholders below)
 3. Log in at `https://dash.cloudflare.com/` → `ryan-realty.com` zone → DNS
 4. Add the four records Resend provides:
 
 | Type | Host (Cloudflare field) | Value | Priority | Proxy |
 |---|---|---|---|---|
 | MX | `mail` | `feedback-smtp.us-east-1.amazonses.com` | 10 | OFF (grey cloud) |
-| TXT | `mail` | `v=spf1 include:amazonses.com ~all` | — | OFF |
-| TXT | `resend._domainkey` (exact selector Resend shows) | (long DKIM key — copy verbatim) | — | OFF |
-| TXT | `_dmarc` | `v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@ryan-realty.com` | — | OFF |
+| TXT | `mail` | `v=spf1 include:amazonses.com ~all` |.  | OFF |
+| TXT | `resend._domainkey` (exact selector Resend shows) | (long DKIM key.  copy verbatim) |.  | OFF |
+| TXT | `_dmarc` | `v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@ryan-realty.com` |.  | OFF |
 
 5. Proxying must be OFF (grey cloud) on every record. Cloudflare proxying intercepts DNS resolution and breaks Resend's verification.
 6. Back in Resend dashboard → Domains → click "Verify DNS records"
-7. All records should turn green within 5–60 minutes (Cloudflare propagation is fast, typically under 5 minutes)
+7. All records should turn green within 5-60 minutes (Cloudflare propagation is fast, typically under 5 minutes)
 8. Test with a live send: `node --env-file=.env.local scripts/seo-send-agentfire-support-ticket.mjs`
 9. On success, document verification date in `.auto-memory/memory_marketing_brain_decisions.md`
 
 **Before any send attempt, always check domain status.** A fast pre-flight:
 
 ```ts
-// Verify domain status — run before any production send
+// Verify domain status.  run before any production send
 const domainsRes = await fetch('https://api.resend.com/domains', {
   headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
 })
@@ -279,10 +279,10 @@ const mailDomain = data?.find((d: { name: string }) => d.name === 'mail.ryan-rea
 
 `lib/resend.ts` is the canonical send wrapper. It exports:
 
-- `sendEmail(options)` — single email; returns `{ id?, error? }`; handles missing key, Sentry error capture, and dev-mode skip
-- `sendBatchEmails(emails[])` — serial loop over `sendEmail`; for segments >50, replace with true `/emails/batch` call (see pattern above)
-- `sendContactNotification(params)` — contact-form notification helper; sends to `ADMIN_EMAIL` env var
-- `getResendClient()` — returns raw `Resend` SDK instance for callers that need direct SDK access
+- `sendEmail(options)`.  single email; returns `{ id?, error? }`; handles missing key, Sentry error capture, and dev-mode skip
+- `sendBatchEmails(emails[])`.  serial loop over `sendEmail`; for segments >50, replace with true `/emails/batch` call (see pattern above)
+- `sendContactNotification(params)`.  contact-form notification helper; sends to `ADMIN_EMAIL` env var
+- `getResendClient()`.  returns raw `Resend` SDK instance for callers that need direct SDK access
 
 Do not re-implement the client instantiation or the Sentry error capture. Call `sendEmail()` from `lib/resend.ts` in all application code. Raw fetch calls are for reference only.
 
@@ -304,7 +304,7 @@ All of these are currently blocked pending domain verification.
 ## Pre-flight checklist (before any production send)
 
 ```
-[ ] RESEND_API_KEY confirmed in .env.local and Vercel env
+[ ] RESEND_API_KEY confirmed in.env.local and Vercel env
 [ ] Domain mail.ryan-realty.com status is 'verified' in Resend dashboard (GET /domains)
 [ ] From address is noreply@mail.ryan-realty.com (matches the verified domain)
 [ ] Subject line is honest, non-deceptive, sentence case
@@ -322,14 +322,14 @@ All of these are currently blocked pending domain verification.
 
 | Resource | Purpose |
 |---|---|
-| `lib/resend.ts` | Canonical implementation — `sendEmail`, `sendBatchEmails`, `sendContactNotification` |
+| `lib/resend.ts` | Canonical implementation.  `sendEmail`, `sendBatchEmails`, `sendContactNotification` |
 | `marketing_brain_skills/producers/ops-email-send/SKILL.md` | Producer for newsletter and blast sends; dispatches through this tool |
 | `marketing_brain_skills/producers/comms-matt-alert/SKILL.md` | Alert producer; routes medium/low/summary urgency to the email tier |
-| `lib/cma-delivery.ts` | CMA report delivery — uses `sendEmail` |
+| `lib/cma-delivery.ts` | CMA report delivery.  uses `sendEmail` |
 | `app/api/webhooks/resend/route.ts` | Delivery event webhook handler (delivered, bounced, unsubscribed, etc.) |
 | `docs/resend-dns-verification-steps-2026-05-14.md` | Detailed Cloudflare DNS steps to unblock the domain |
 | `docs/seo-execution-log-2026-05-14.md` | Discovery log: Resend unverified, Gmail API fallback used, unblock path documented |
 | `video_production_skills/API_INVENTORY.md` §Resend | Live verification status as of 2026-04-27 |
-| https://resend.com/domains | Resend domain verification UI — start here for the unblock |
-| https://resend.com/docs/api-reference/emails | REST API reference — `/emails`, `/emails/batch`, `/emails/{id}` |
-| https://dash.cloudflare.com | DNS management for ryan-realty.com — add Resend's MX/SPF/DKIM/DMARC records here |
+| https://resend.com/domains | Resend domain verification UI.  start here for the unblock |
+| https://resend.com/docs/api-reference/emails | REST API reference.  `/emails`, `/emails/batch`, `/emails/{id}` |
+| https://dash.cloudflare.com | DNS management for ryan-realty.com.  add Resend's MX/SPF/DKIM/DMARC records here |

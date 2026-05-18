@@ -9,20 +9,20 @@ description: Use this skill when a task involves YouTube Analytics, YouTube Data
 
 This is a capability skill used by the marketing brain's ingestion and (future) publishing layer. Every task that invokes this skill also loads:
 
-- `CLAUDE.md` §0 — Data Accuracy mandate (outranks all other instructions)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `marketing_brain_skills/tools_registry/supabase/SKILL.md` — destination for all ingested rows
+- `CLAUDE.md` §0.  Data Accuracy mandate (outranks all other instructions)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
+- `marketing_brain_skills/tools_registry/supabase/SKILL.md`.  destination for all ingested rows
 
 ---
 
 ## Scope
 
-**YouTube Data API v3** and **YouTube Analytics API v2** serve different purposes and require separate OAuth scopes. They are never interchangeable — confirm which one you need before writing a call.
+**YouTube Data API v3** and **YouTube Analytics API v2** serve different purposes and require separate OAuth scopes. They are never interchangeable.  confirm which one you need before writing a call.
 
 | API | What it returns | Required scope |
 |---|---|---|
 | YouTube Data API v3 | Channel metadata, video list, snippet, statistics (public view/like/comment counts), content details (duration), upload resumable session | `youtube.readonly` or `youtube.upload` |
-| YouTube Analytics API v2 | Private analytics metrics: views, watch time, average view percentage, CTR, subscriber churn, card click rate — all date-ranged | `yt-analytics.readonly` |
+| YouTube Analytics API v2 | Private analytics metrics: views, watch time, average view percentage, CTR, subscriber churn, card click rate.  all date-ranged | `yt-analytics.readonly` |
 
 **Use this tool for:**
 
@@ -38,12 +38,12 @@ This is a capability skill used by the marketing brain's ingestion and (future) 
 
 | Data you want | Why not | Use instead |
 |---|---|---|
-| Audience retention, average view percentage, CTR | Not in Data API v3 — only public `statistics` (views, likes, comments) | YouTube Analytics API v2 |
+| Audience retention, average view percentage, CTR | Not in Data API v3.  only public `statistics` (views, likes, comments) | YouTube Analytics API v2 |
 | Ryan Realty competitor channel stats | Data API quota is only 10k units/day; costly for repeated pulls | Apify `apify/youtube-channel-scraper` (see apify/SKILL.md) |
 
 ---
 
-## CRITICAL GOTCHA #1 — Analytics requires its own scope
+## CRITICAL GOTCHA #1.  Analytics requires its own scope
 
 `youtube.upload` alone does NOT grant access to the YouTube Analytics API. The scopes are entirely separate. Calling the Analytics API with only `youtube.upload` in the token returns:
 
@@ -60,11 +60,11 @@ https://www.googleapis.com/auth/yt-analytics.readonly # Analytics API v2
 https://www.googleapis.com/auth/youtube.force-ssl     # channel profile writes
 ```
 
-The re-auth to add `yt-analytics.readonly` was performed 2026-05-13. If a new OAuth flow is built (new Google Cloud project, new OAuth client, refreshed consent screen), all four scopes must be included. A token that is missing `yt-analytics.readonly` will silently succeed at Data API calls and fail only when the first Analytics call fires — a confusing failure mode.
+The re-auth to add `yt-analytics.readonly` was performed 2026-05-13. If a new OAuth flow is built (new Google Cloud project, new OAuth client, refreshed consent screen), all four scopes must be included. A token that is missing `yt-analytics.readonly` will silently succeed at Data API calls and fail only when the first Analytics call fires.  a confusing failure mode.
 
 ---
 
-## CRITICAL GOTCHA #2 — Impressions are channel-level only; not available at video dimension
+## CRITICAL GOTCHA #2.  Impressions are channel-level only; not available at video dimension
 
 The YouTube Analytics API v2 exposes `impressions` and `impressionsClickThroughRate` **only at the channel level** (`ids=channel==MINE`, no `dimensions` parameter). Requesting these metrics at the video dimension (`dimensions=video`) returns:
 
@@ -76,18 +76,18 @@ This was verified live 2026-05-13. The ingestor (`lib/youtube.ts` `getYouTubeTop
 
 **Architecture consequence:** the ingestor runs two separate Analytics queries per day:
 
-1. **Account scope** — `ids=channel==MINE`, no `dimensions`, includes impressions + CTR.
-2. **Video scope** — `ids=channel==MINE`, `dimensions=video`, excludes impressions + CTR.
+1. **Account scope**.  `ids=channel==MINE`, no `dimensions`, includes impressions + CTR.
+2. **Video scope**.  `ids=channel==MINE`, `dimensions=video`, excludes impressions + CTR.
 
 Any new code that queries per-video Analytics must follow this split. Never add `impressions` or `impressionsClickThroughRate` to a query that also includes `dimensions=video`.
 
-Note: the `videoRows()` function in the route still emits `impressions` and `impressions_click_through_rate` metric rows from the `YouTubeVideoMetrics` interface (values resolve to 0 from the `-1` column index). These rows are architectural placeholders — the values are not meaningful until a future Data API–side query populates them separately.
+Note: the `videoRows()` function in the route still emits `impressions` and `impressions_click_through_rate` metric rows from the `YouTubeVideoMetrics` interface (values resolve to 0 from the `-1` column index). These rows are architectural placeholders.  the values are not meaningful until a future Data API-side query populates them separately.
 
 ---
 
 ## Authentication
 
-### OAuth 2.0 — Google Cloud
+### OAuth 2.0.  Google Cloud
 
 | Variable | Source |
 |---|---|
@@ -97,19 +97,19 @@ Note: the `videoRows()` function in the route still emits `impressions` and `imp
 
 **Refresh token storage:** `public.youtube_auth` in Supabase (`id='default'` row). Columns: `access_token`, `refresh_token`, `expires_at`, `updated_at`.
 
-**Authorization URL:** `/api/youtube/authorize` — initiates the Google OAuth consent flow. Visit this when the token is missing or after scope changes.
+**Authorization URL:** `/api/youtube/authorize`.  initiates the Google OAuth consent flow. Visit this when the token is missing or after scope changes.
 
 **Token lifecycle:**
 
 ```ts
-// lib/youtube.ts — canonical implementation
+// lib/youtube.ts.  canonical implementation
 export async function getYouTubeAccessToken(): Promise<string>
 // Reads youtube_auth.access_token. If token is within 60s of expiry,
 // calls refreshYouTubeToken(refresh_token) → updates the row → returns
 // new access_token. Throws if youtube_auth row is missing.
 ```
 
-All callers pass the resolved `accessToken` string directly into fetch headers. No caller re-implements refresh logic — always call `getYouTubeAccessToken()`.
+All callers pass the resolved `accessToken` string directly into fetch headers. No caller re-implements refresh logic.  always call `getYouTubeAccessToken()`.
 
 ---
 
@@ -117,7 +117,7 @@ All callers pass the resolved `accessToken` string directly into fetch headers. 
 
 Per the platform playbook (`social_media_skills/platform-best-practices/SKILL.md`), the single most important YouTube metric is **`average_view_percentage`** (audience retention).
 
-**Rationale:** YouTube's recommendation algorithm (Suggested + Browse features) optimizes for watch time and retention. After an initial test window, videos above the channel's baseline retention get expanded distribution; videos below get suppressed. Impressions and CTR determine whether a viewer clicks — but retention determines whether the algorithm keeps showing the video at all.
+**Rationale:** YouTube's recommendation algorithm (Suggested + Browse features) optimizes for watch time and retention. After an initial test window, videos above the channel's baseline retention get expanded distribution; videos below get suppressed. Impressions and CTR determine whether a viewer clicks.  but retention determines whether the algorithm keeps showing the video at all.
 
 **How it is stored:** `marketing_channel_daily` rows with `metric='average_view_percentage'`, `scope='video'`, `scope_id=<videoId>`. The account-level version (`scope='account'`, `scope_id=''`) represents the channel average across all content for that day.
 
@@ -171,7 +171,7 @@ Response shape:
 }
 ```
 
-When no data exists for the date (new channel, zero activity, or date is too recent), `rows` is omitted entirely — treat as empty array, not as an error.
+When no data exists for the date (new channel, zero activity, or date is too recent), `rows` is omitted entirely.  treat as empty array, not as an error.
 
 ### YouTube Data API v3
 
@@ -193,7 +193,7 @@ GET /videos
 Authorization: Bearer {accessToken}
 ```
 
-Returns `snippet.title`, `snippet.publishedAt`, `contentDetails.duration` (ISO 8601 — parse with a duration parser), `statistics.viewCount/likeCount/commentCount`.
+Returns `snippet.title`, `snippet.publishedAt`, `contentDetails.duration` (ISO 8601.  parse with a duration parser), `statistics.viewCount/likeCount/commentCount`.
 
 **Channel video list (use playlistItems over search to avoid quota cost):**
 
@@ -205,7 +205,7 @@ GET /playlistItems
 Authorization: Bearer {accessToken}
 ```
 
-The uploads playlist ID is `UC` → `UU` prefix swap on the channel ID. **Prefer `/playlistItems` over `/search` for listing own channel videos** — `search.list` costs 100 quota units per call vs. 1 unit for `playlistItems.list`.
+The uploads playlist ID is `UC` → `UU` prefix swap on the channel ID. **Prefer `/playlistItems` over `/search` for listing own channel videos**.  `search.list` costs 100 quota units per call vs. 1 unit for `playlistItems.list`.
 
 ---
 
@@ -239,7 +239,7 @@ YouTube Data API has a **10,000 unit daily quota** (default; can be increased vi
 | `channels.list` | 1 unit |
 | `videos.list` (any number of IDs, up to 50) | 1 unit |
 | `playlistItems.list` | 1 unit |
-| `search.list` | 100 units — expensive; avoid for own-channel video listing |
+| `search.list` | 100 units.  expensive; avoid for own-channel video listing |
 | Analytics `reports.query` | 0 units (Analytics API has independent quota) |
 
 **Budget at current usage:** the daily cron calls `channels.list` 0× (channel ID is hardcoded from first auth), `videos.list` once per 15-video batch (1 unit), and no `search.list`. Total per-day Data API cost: approximately 1 unit. Well within the 10k limit. If future features add `search.list` calls (competitor recon, etc.), route those through Apify instead.
@@ -254,7 +254,7 @@ YouTube Data API has a **10,000 unit daily quota** (default; can be increased vi
 
 1. POST to `/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status` with JSON metadata → receive `location` header (session URL).
 2. PUT the video stream to the session URL.
-3. Response body contains `{ id: string }` — the new YouTube video ID.
+3. Response body contains `{ id: string }`.  the new YouTube video ID.
 
 **Action type:** `content:market_youtube_longform`. When `generate-briefs.ts` emits this action type, the assigned producer (`video_production_skills/youtube-long-form-market-report`) calls `uploadYouTubeVideoFromUrl()` as its publish step. The upload requires `youtube.upload` scope, which is already in the stored token.
 
@@ -268,12 +268,12 @@ YouTube Data API has a **10,000 unit daily quota** (default; can be increased vi
 |---|---|---|
 | Missing `yt-analytics.readonly` scope | `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT` on any Analytics call | Re-authorize at `/api/youtube/authorize`. All four scopes must be included in the consent screen. |
 | `impressions` in video-dimension query | `400 Unknown identifier (impressions) given in field parameters.metrics` | Remove `impressions` and `impressionsClickThroughRate` from the per-video metrics list. Query these at account scope only. |
-| `youtube_auth` row missing | `Error: YouTube not connected — visit /api/youtube/authorize` on `getYouTubeAccessToken()` | First-time setup: complete OAuth flow at `/api/youtube/authorize`. |
+| `youtube_auth` row missing | `Error: YouTube not connected.  visit /api/youtube/authorize` on `getYouTubeAccessToken()` | First-time setup: complete OAuth flow at `/api/youtube/authorize`. |
 | Token expired, no refresh token | `401` on Analytics or Data API call; refresh token is null in DB | Re-authorize. Google invalidates refresh tokens after 6 months of non-use or if the OAuth client is rotated. |
 | Quota exceeded | `403 quotaExceeded` from Data API v3 | Quota resets at midnight Pacific. Do not add `search.list` calls without first budgeting the 100-unit cost. Request a quota increase from Google Cloud Console if the channel grows and needs more frequent video list pulls. |
-| New video not yet in Analytics | Analytics rows return zero or empty for video uploaded within 24–48h | Expected behavior — YouTube Analytics processing lag. The ingestor tolerates empty rows (`rows` absent = all-zeros). Backfill once data is available. |
-| Analytics zero-row response misread as error | Ingestor throws instead of returning zeros | Callers must check for missing `rows` key before indexing — `json.rows?.[0] ?? []` pattern (already in `getYouTubeAnalyticsDay`). |
-| Upload stream failure (Vercel timeout) | `Error: YouTube upload failed: 5xx` | Long-form videos approaching 300s Vercel function limit. Workaround: upload from a local script or a background queue instead of a Vercel function. The resumable session URL is valid for 7 days — can be resumed from a different execution context. |
+| New video not yet in Analytics | Analytics rows return zero or empty for video uploaded within 24-48h | Expected behavior.  YouTube Analytics processing lag. The ingestor tolerates empty rows (`rows` absent = all-zeros). Backfill once data is available. |
+| Analytics zero-row response misread as error | Ingestor throws instead of returning zeros | Callers must check for missing `rows` key before indexing.  `json.rows?.[0] ?? []` pattern (already in `getYouTubeAnalyticsDay`). |
+| Upload stream failure (Vercel timeout) | `Error: YouTube upload failed: 5xx` | Long-form videos approaching 300s Vercel function limit. Workaround: upload from a local script or a background queue instead of a Vercel function. The resumable session URL is valid for 7 days.  can be resumed from a different execution context. |
 
 ---
 
@@ -286,9 +286,9 @@ Key exports:
 | Function | What it does |
 |---|---|
 | `getYouTubeAccessToken()` | Reads + auto-refreshes the stored OAuth token |
-| `getYouTubeAnalyticsDay(date, accessToken)` | Account-level daily Analytics — 12 metrics |
+| `getYouTubeAnalyticsDay(date, accessToken)` | Account-level daily Analytics.  12 metrics |
 | `getYouTubeTopVideoMetrics(endDate, accessToken, limit)` | Per-video Analytics (top N by views, 30-day window) + Data API metadata |
-| `uploadYouTubeVideoFromUrl(options)` | Resumable upload from a URL — returns the new video ID |
+| `uploadYouTubeVideoFromUrl(options)` | Resumable upload from a URL.  returns the new video ID |
 
 **Cron entry point:** `app/api/cron/marketing-snapshot-youtube/route.ts` (daily 06:30 UTC). Auth: `Authorization: Bearer $CRON_SECRET`. Backfill via `?startDate=&endDate=` query params.
 
@@ -305,9 +305,9 @@ Key exports:
 
 ```
 [ ] Confirm which API: Data API v3 (metadata/upload) vs Analytics API v2 (metrics)
-[ ] Confirm all four OAuth scopes are in the stored token — especially yt-analytics.readonly
+[ ] Confirm all four OAuth scopes are in the stored token.  especially yt-analytics.readonly
 [ ] impressions + impressionsClickThroughRate are NOT in any dimensions=video query
-[ ] Token resolved via getYouTubeAccessToken() — never pass raw env vars as the token
+[ ] Token resolved via getYouTubeAccessToken().  never pass raw env vars as the token
 [ ] Quota budget checked: no search.list calls without accounting for 100 units each
 [ ] New video uploads: set containsSyntheticMedia=true if ElevenLabs VO or AI footage present
 [ ] Empty rows handled: rows absent from Analytics response = zeros, not error
@@ -319,14 +319,14 @@ Key exports:
 
 | Resource | Purpose |
 |---|---|
-| `lib/youtube.ts` | Canonical implementation — token refresh, Analytics queries, upload |
-| `app/api/cron/marketing-snapshot-youtube/route.ts` | Daily ingestor cron — account + video scope, upsert pattern |
+| `lib/youtube.ts` | Canonical implementation.  token refresh, Analytics queries, upload |
+| `app/api/cron/marketing-snapshot-youtube/route.ts` | Daily ingestor cron.  account + video scope, upsert pattern |
 | `lib/marketing-brain/diagnose.ts` | Retention anomaly detection; YouTube severity thresholds |
 | `lib/marketing-brain/generate-briefs.ts` | `capitalize_on_spike` → `content:market_youtube_longform` action row |
 | `marketing_brain_skills/tools_registry/supabase/SKILL.md` | `marketing_channel_daily` table schema; upsert pattern |
 | `video_production_skills/youtube-long-form-market-report/SKILL.md` | Producer for the `market_youtube_longform` action type |
-| `social_media_skills/platform-best-practices/SKILL.md` | Platform rule layer — why `average_view_percentage` is the locked primary metric |
+| `social_media_skills/platform-best-practices/SKILL.md` | Platform rule layer.  why `average_view_percentage` is the locked primary metric |
 | `CLAUDE.md` "Marketing Brain Architecture" | Status flow, action-type categories, approval gates |
 | https://developers.google.com/youtube/v3/docs | YouTube Data API v3 reference |
-| https://developers.google.com/youtube/analytics/data_model | YouTube Analytics API v2 — metrics, dimensions, filters |
+| https://developers.google.com/youtube/analytics/data_model | YouTube Analytics API v2.  metrics, dimensions, filters |
 | https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas | Quota monitor + increase requests |

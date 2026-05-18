@@ -6,24 +6,24 @@ description: >
   pricing, API access status, and block-format prompt templates. Covers Kling, Veo,
   Runway, Luma, Grok Imagine, ElevenLabs, Suno, Synthesia, Replicate, fal.ai. Used by
   format skills to pick the right generation tool at build time. Do NOT invoke as a
-  standalone content-production skill — no content ships from this file alone.
+  standalone content-production skill.  no content ships from this file alone.
 ---
 
-# AI Video Platforms — Selection, Pricing, Prompt Architecture
+# AI Video Platforms.  Selection, Pricing, Prompt Architecture
 
 **When to use.** You're picking *which* AI generation tool to fire and *what* prompt format to use. Image generation, photo-to-video, text-to-video, multi-image-to-video, voiceover, music. This skill is the source of truth for the platform landscape, current pricing, API access status, and the block-format prompt template that produces non-slop output.
 
-**Read first:** [VIDEO_PRODUCTION_SKILL.md](../VIDEO_PRODUCTION_SKILL.md) §4 (the "AI when warranted" rules — interiors banned, hero exteriors + landscape inserts only). Then [`../quality_gate/SKILL.md`](../quality_gate/SKILL.md) — every AI clip must clear the 6-phase gate before it's stitched.
+**Read first:** [VIDEO_PRODUCTION_SKILL.md](. /VIDEO_PRODUCTION_SKILL.md) §4 (the "AI when warranted" rules.  interiors banned, hero exteriors + landscape inserts only). Then [`. /quality_gate/SKILL.md`](. /quality_gate/SKILL.md).  every AI clip must clear the 6-phase gate before it's stitched.
 
-**Companion file:** [`platform_research.md`](platform_research.md) — competitive research dump from 2026-04-14 covering Veo, Kling, Runway, Pika, Luma, Sora-sunsetting, ElevenLabs, Suno, Synthesia, fal.ai. Refer back when a new model ships and you need a benchmark.
+**Companion file:** [`platform_research.md`](platform_research.md).  competitive research dump from 2026-04-14 covering Veo, Kling, Runway, Pika, Luma, Sora-sunsetting, ElevenLabs, Suno, Synthesia, fal.ai. Refer back when a new model ships and you need a benchmark.
 
 ---
 
 ## The hard rule (re-read every time)
 
-**No AI video for listing interiors.** Locked in v4b — Wan 2.7 cloud drift, Kling on a horse, Hailuo on a stagecoach all shipped as slop. AI is reserved for **aerials and exterior depth shots, abstract/macro/nature B-roll, stat-card backgrounds, and Synthesia-only avatars**. Never interior architecture, never reflective surfaces, never faces (except Synthesia, which is a separate skill at [`../news_video/SKILL.md`](../news_video/SKILL.md)).
+**No AI video for listing interiors.** Locked in v4b.  Wan 2.7 cloud drift, Kling on a horse, Hailuo on a stagecoach all shipped as slop. AI is reserved for **aerials and exterior depth shots, abstract/macro/nature B-roll, stat-card backgrounds, and Synthesia-only avatars**. Never interior architecture, never reflective surfaces, never faces (except Synthesia, which is a separate skill at [`. /news_video/SKILL.md`](. /news_video/SKILL.md)).
 
-For viral video specifically: **zero real estate visuals**. Visuals are science / nature / macro / abstract only. The stat overlay or VO is the only housing tether. (See [`../quality_gate/SKILL.md`](../quality_gate/SKILL.md) §1.3.)
+For viral video specifically: **zero real estate visuals**. Visuals are science / nature / macro / abstract only. The stat overlay or VO is the only housing tether. (See [`. /quality_gate/SKILL.md`](. /quality_gate/SKILL.md) §1.3.)
 
 ---
 
@@ -31,18 +31,18 @@ For viral video specifically: **zero real estate visuals**. Visuals are science 
 
 | Need | Tool | Access | Cost | Status |
 |------|------|--------|------|--------|
-| Hero shot, best quality (#1 ELO) | **Kling 3.0** | Replicate or Kling Studio $6.99/mo, Pro $29.99/mo, Ultra $59.99/mo (4K) | 5s 1080p ≈ 20 credits | Shipped Feb 5, 2026 — multi-character lip-sync, 15s clips, 4K, Motion Brush |
+| Hero shot, best quality (#1 ELO) | **Kling 3.0** | Replicate or Kling Studio $6.99/mo, Pro $29.99/mo, Ultra $59.99/mo (4K) | 5s 1080p ≈ 20 credits | Shipped Feb 5, 2026.  multi-character lip-sync, 15s clips, 4K, Motion Brush |
 | Multi-character dialogue | Kling 3.0 | Same | Same | Use this over Veo if dialogue is needed |
-| Cost-effective API | **Veo 3.1** | Google AI Pro $19.99/mo (90 videos) OR API $0.10–0.50/sec | Recent price cut April 2026 | Best Gemini integration |
-| Pro camera control (dolly/crane/orbit) | Runway Gen-4 / Gen-4.5 | $12/mo Standard (625 credits), $28–35/mo Pro | Gen-4.5 = 5 credits/sec; Gen-4 = 10 credits/sec | Best motion brush UX |
-| Physics-compliant motion + natural-language object edits | Luma Dream Machine | $30/mo+ | — | "Modify with Instructions" is the differentiator |
-| Photo-to-video (default workflow) | Kling 2.1 / 3.0 i2v via Replicate | `REPLICATE_API_TOKEN` | $0.02–0.07/clip | Default for scout phase |
-| Static image generation | Flux Pro / Midjourney / Grok Imagine | Replicate or direct | $0.025 (Flux Dev) — $0.05 (Flux Pro) per image | Flux Pro for photoreal, Grok for speed + native audio |
-| Speed/value iteration | **Grok Imagine** | xAI subscription, SuperGrok $30/mo | $0.04/sec via CometAPI | Fastest — under 20s gen, native audio sync |
-| Stock-avatar talking head | Synthesia (150+ stock + custom) | `SYNTHESIA_API_KEY` | Per-minute metered | Use [`../news_video/SKILL.md`](../news_video/SKILL.md) |
+| Cost-effective API | **Veo 3.1** | Google AI Pro $19.99/mo (90 videos) OR API $0.10-0.50/sec | Recent price cut April 2026 | Best Gemini integration |
+| Pro camera control (dolly/crane/orbit) | Runway Gen-4 / Gen-4.5 | $12/mo Standard (625 credits), $28-35/mo Pro | Gen-4.5 = 5 credits/sec; Gen-4 = 10 credits/sec | Best motion brush UX |
+| Physics-compliant motion + natural-language object edits | Luma Dream Machine | $30/mo+ |.  | "Modify with Instructions" is the differentiator |
+| Photo-to-video (default workflow) | Kling 2.1 / 3.0 i2v via Replicate | `REPLICATE_API_TOKEN` | $0.02-0.07/clip | Default for scout phase |
+| Static image generation | Flux Pro / Midjourney / Grok Imagine | Replicate or direct | $0.025 (Flux Dev).  $0.05 (Flux Pro) per image | Flux Pro for photoreal, Grok for speed + native audio |
+| Speed/value iteration | **Grok Imagine** | xAI subscription, SuperGrok $30/mo | $0.04/sec via CometAPI | Fastest.  under 20s gen, native audio sync |
+| Stock-avatar talking head | Synthesia (150+ stock + custom) | `SYNTHESIA_API_KEY` | Per-minute metered | Use [`. /news_video/SKILL.md`](. /news_video/SKILL.md) |
 | AI voiceover | ElevenLabs | Direct API | Tier-based | Use SSML phoneme tags for "Deschutes" (master skill §7.3) |
-| Original music | Suno | Direct API | Tier-based | Future — not yet keyed |
-| Aerial flythrough (free) | Google Earth Studio | Browser, manual | Free | See [`../google_maps_flyover/SKILL.md`](../google_maps_flyover/SKILL.md) |
+| Original music | Suno | Direct API | Tier-based | Future.  not yet keyed |
+| Aerial flythrough (free) | Google Earth Studio | Browser, manual | Free | See [`. /google_maps_flyover/SKILL.md`](. /google_maps_flyover/SKILL.md) |
 | Aggregator (one key, many models) | fal.ai | `FAL_KEY` | Per-model passthrough | Useful when juggling 4+ models |
 
 ### Deprecations / changes you must know
@@ -63,8 +63,8 @@ For viral video specifically: **zero real estate visuals**. Visuals are science 
 | fal.ai | `FAL_KEY` | KEYED |
 | Meta Graph (IG+FB) | `META_PAGE_ACCESS_TOKEN` | KEYED |
 | TikTok | `TIKTOK_CLIENT_KEY/SECRET` | KEYED (needs OAuth) |
-| ElevenLabs | — | NOT KEYED |
-| Runway | — | NOT KEYED |
+| ElevenLabs |.  | NOT KEYED |
+| Runway |.  | NOT KEYED |
 
 ---
 
@@ -87,7 +87,7 @@ Negative prompt: [artifacts to avoid]
 
 **Focal lengths:** 24mm (wide environmental), 35mm (documentary), 50mm (standard), 85mm (portrait compression), 100mm (macro), 135mm (extreme compression).
 
-**Camera movement:** dolly in/out, gimbal tracking, crane up/down, whip pan, handheld, locked-off. Use exact phrases — vague verbs like "moves" produce inconsistent results.
+**Camera movement:** dolly in/out, gimbal tracking, crane up/down, whip pan, handheld, locked-off. Use exact phrases.  vague verbs like "moves" produce inconsistent results.
 
 **Lighting:** softbox, Kino Flo, practicals, rim light, chiaroscuro, volumetric.
 
@@ -105,7 +105,7 @@ Delete these before the prompt fires. They signal slop:
 
 ### Working examples
 
-**PASS — Macro ice crystal formation:**
+**PASS.  Macro ice crystal formation:**
 ```
 Macro close-up of frost crystals forming on a leaf.
 Camera: 100mm macro, gimbal dolly left at 5% forward motion, f/1.4
@@ -115,7 +115,7 @@ Color Palette: cool cyan crystal, warm amber rim, charcoal leaf
 Duration: 5 seconds
 ```
 
-**PASS — Fluid dynamics (housing tether via stat overlay only):**
+**PASS.  Fluid dynamics (housing tether via stat overlay only):**
 ```
 High-speed fluid dynamics: ink droplet impacts still water, mushroom cloud of expanding dye.
 Camera: 35mm, locked-off on overhead rig, f/8 sharp focus
@@ -125,10 +125,10 @@ Color Palette: amber plume, teal water, charcoal background
 Duration: 4 seconds
 ```
 
-**FAIL — Generic narrative (banned):**
+**FAIL.  Generic narrative (banned):**
 > A beautiful stunning aerial drone footage of Bend, Oregon showing majestic mountains and cinematic golden hour light with amazing epic orchestral music vibes. 4K ultra HD masterpiece quality.
 
-**FAIL — Real estate visual (violates hard rule):**
+**FAIL.  Real estate visual (violates hard rule):**
 > A realtor walking through a modern luxury kitchen with stainless steel appliances and granite countertops.
 
 ---
@@ -141,10 +141,10 @@ Run BEFORE firing any Kling / Runway / Veo call. Skipping = slop.
 
 - [ ] **Depth:** clear foreground / subject / background layers (FG ≥ 8 ft from subject)
 - [ ] **One focal subject** (no crowds, no competing elements)
-- [ ] **No human motion required** (static poses only — walking/turning = morph hell)
+- [ ] **No human motion required** (static poses only.  walking/turning = morph hell)
 - [ ] **No visible text/signage** (AI hallucinates text mutations)
 - [ ] **Natural motion implied** (water, foliage, smoke, light, flags = permission for secondary motion)
-- [ ] **Center-weighted composition** (primary subject in center 40–60%)
+- [ ] **Center-weighted composition** (primary subject in center 40-60%)
 - [ ] **No fine-detail edges** (nothing critical within 10% of frame edge)
 - [ ] **Landscape source, safe-crop to 9:16** (prefer 16:9 source, vertical-crop after generation)
 
@@ -153,10 +153,10 @@ Run BEFORE firing any Kling / Runway / Veo call. Skipping = slop.
 - [ ] Block-format template exactly (scene, camera, lighting, stock, palette, speed, duration)
 - [ ] Zero banned vocabulary
 - [ ] Focal length specified (not "wide" or "tight")
-- [ ] Camera movement explicit (dolly/track/lock — not vague "moves")
+- [ ] Camera movement explicit (dolly/track/lock.  not vague "moves")
 - [ ] Specific film stock or DP reference (not "high quality")
 - [ ] Three named colors for palette (not adjectives)
-- [ ] Duration 5–8 seconds unless explicit reason otherwise
+- [ ] Duration 5-8 seconds unless explicit reason otherwise
 - [ ] Negative prompt verbatim from `feedback_ai_photo_to_video_scale.md`
 
 ### Approval
@@ -169,9 +169,9 @@ Run BEFORE firing any Kling / Runway / Veo call. Skipping = slop.
 
 ```
 1. Scout phase   → Kling 2.1 Standard, 720p, 5s, ≈ $0.02/clip
-2. Iterate       → 1–2 variations at the same cheap tier
+2. Iterate       → 1-2 variations at the same cheap tier
 3. Matt approves
-4. Hero render   → Kling 2.1 Pro 1080p 8–10s ≈ $0.08, OR wait for Veo 3.1 access
+4. Hero render   → Kling 2.1 Pro 1080p 8-10s ≈ $0.08, OR wait for Veo 3.1 access
 ```
 
 Never batch-generate at 1080p before Matt's approval. Iteration belongs at the cheap tier.
@@ -214,13 +214,13 @@ Poll every 2s until `status === "succeeded"` → `prediction.output` is the vide
 
 ```
 <concept-name>/
-  ├── brief.md              — idea, hook, platform, visual concept
-  ├── prompt.md             — final approved block-format prompt
-  ├── preview_720.mp4       — scout output
-  ├── final_1080.mp4        — post-processed hero
-  ├── thumb.png             — 1080×1920 first-frame grab
-  ├── caption.md            — per-platform captions + DM CTA + hashtags
-  └── dm_trigger.md         — DM keyword + expected followup
+  ├── brief.md.  idea, hook, platform, visual concept
+  ├── prompt.md.  final approved block-format prompt
+  ├── preview_720.mp4.  scout output
+  ├── final_1080.mp4.  post-processed hero
+  ├── thumb.png.  1080×1920 first-frame grab
+  ├── caption.md.  per-platform captions + DM CTA + hashtags
+  └── dm_trigger.md.  DM keyword + expected followup
 ```
 
 Store in Drive: `06_Marketing & Brand > Marketing > Video Production > [Season]/[Month]`.
@@ -237,7 +237,7 @@ Store in Drive: `06_Marketing & Brand > Marketing > Video Production > [Season]/
 - [ ] Stat overlay or VO is the ONLY housing tether
 - [ ] Visual could plausibly air on a science/nature YouTube channel
 - [ ] Post-processing applied (stabilize, color lock, speed ramp, grain)
-- [ ] Export: 1080×1920, H.264, 24–30 fps, 6 Mbps
+- [ ] Export: 1080×1920, H.264, 24-30 fps, 6 Mbps
 - [ ] Artifacts saved to Drive with naming convention above
 - [ ] Caption written with DM CTA ("DM me 'strategy'")
 - [ ] Posted via Meta Graph / TikTok Content Posting / YouTube Data API

@@ -11,7 +11,7 @@ description: >
 action_types: []
 ---
 
-# Marketing Brain — Produce
+# Marketing Brain.  Produce
 
 **Scope:** Parses Matt's natural-language request into a structured action row,
 writes it to `marketing_brain_actions`, then dispatches the matching producer.
@@ -34,7 +34,7 @@ Matt says any of:
 - "write a blog post on the Bend inventory spike"
 - "create a market report video for Bend"
 - "make a carousel for the Awbrey Butte listing"
-- "produce a just-listed flyer for..."
+- "produce a just-listed flyer for.."
 - "send a seller alert email to the list"
 - "/produce <anything>"
 
@@ -50,19 +50,19 @@ Matt says any of:
 | Reference | Why |
 |---|---|
 | `marketing_brain_skills/producers/REGISTRY.md` | The lookup table: action_type → assigned_producer |
-| `CLAUDE.md` §0 — Data Accuracy | All figures in the deliverable must trace to verified sources |
-| `CLAUDE.md` §0.5 — Draft-First, Commit-Last | Nothing committed until Matt approves |
+| `CLAUDE.md` §0.  Data Accuracy | All figures in the deliverable must trace to verified sources |
+| `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Nothing committed until Matt approves |
 
 ---
 
 ## 3. Procedure
 
-### Step 1 — Parse Matt's request
+### Step 1.  Parse Matt's request
 
 Extract three things from Matt's message:
 
 **action_type:** Match Matt's words to an `action_type` from
-`marketing_brain_skills/producers/REGISTRY.md`. Use Sections A–F.
+`marketing_brain_skills/producers/REGISTRY.md`. Use Sections A-F.
 
 Common mappings:
 | Matt says | action_type |
@@ -86,7 +86,7 @@ Common mappings:
 | "update home page", "edit site copy" | `site:copy_update` |
 
 **target:** What the action is about. Format:
-- For listings: `mls:<MlsId>` (e.g. `mls:220189422`) — resolve from address if Matt gives one
+- For listings: `mls:<MlsId>` (e.g. `mls:220189422`).  resolve from address if Matt gives one
 - For city/market: `city:<CityName>` (e.g. `city:Bend`)
 - For neighborhoods: `neighborhood:<name>` (e.g. `neighborhood:Awbrey Butte`)
 - For website pages: page path (e.g. `/listings`, `/`)
@@ -95,15 +95,15 @@ Common mappings:
 - Unknown: `manual:<slug>` (derive from Matt's words)
 
 **payload:** Any specifics Matt gave. Common fields:
-- `address` — if Matt gave an address instead of MLS#
-- `city` — for market reports
-- `open_house_date` — for open house flyers
-- `topic` — for blog posts and news clips
-- `campaign_id` — for Meta Ads
-- `target_audience` — if Matt specified
+- `address`.  if Matt gave an address instead of MLS#
+- `city`.  for market reports
+- `open_house_date`.  for open house flyers
+- `topic`.  for blog posts and news clips
+- `campaign_id`.  for Meta Ads
+- `target_audience`.  if Matt specified
 - Any other detail Matt included
 
-### Step 2 — Resolve address to MLS# (if needed)
+### Step 2.  Resolve address to MLS# (if needed)
 
 If Matt gave an address instead of an MLS# and the action needs a listing:
 
@@ -119,20 +119,20 @@ LIMIT 10;
 If multiple matches: present candidates to Matt and ask him to pick one.
 Never guess. Never pick the most recent or highest-priced without asking.
 
-### Step 3 — Disambiguate if action_type is ambiguous
+### Step 3.  Disambiguate if action_type is ambiguous
 
 If the request could map to more than one action_type, ask Matt ONE
 clarifying question before proceeding:
 
 Examples:
-- "listing video or listing reel? (video = 60–90s tour, reel = 40–48s viral)"
+- "listing video or listing reel? (video = 60-90s tour, reel = 40-48s viral)"
 - "short-form market video or YouTube long-form?"
 - "just-listed flyer or full feature sheet?"
 - "GBP post or Instagram carousel?"
 
 Never guess. One disambiguation question, then proceed.
 
-### Step 4 — Look up assigned_producer
+### Step 4.  Look up assigned_producer
 
 Read `marketing_brain_skills/producers/REGISTRY.md`. Find the row where
 `action_types` contains the resolved `action_type`. Copy the `path` value
@@ -141,7 +141,7 @@ as `assigned_producer`.
 If no matching row exists in the registry: surface to Matt that this
 action_type has no registered producer yet and offer the closest alternative.
 
-### Step 5 — Write the action row
+### Step 5.  Write the action row
 
 ```sql
 INSERT INTO public.marketing_brain_actions (
@@ -186,7 +186,7 @@ RETURNING id;
 
 Capture the returned `id` as `<action_id>`.
 
-### Step 6 — Dispatch the producer
+### Step 6.  Dispatch the producer
 
 **For content actions** (`action_type LIKE 'content:%'`):
 Route through `automation_skills/content_engine/SKILL.md` with the action row id.
@@ -204,14 +204,14 @@ Route directly to the producer at `<assigned_producer>/SKILL.md`.
 > Target: `<target>`. Payload: `<payload>`.
 > Execute per that SKILL.md. Surface output when ready.
 
-### Step 7 — Surface draft and wait
+### Step 7.  Surface draft and wait
 
 When the producer reports the draft is ready, surface it to Matt using the
 producer's standard surface format (see §6 of that producer's SKILL.md).
 
 Then STOP. Do not commit. Do not push. Wait for Matt's explicit approval.
 
-### Step 8 — On approval
+### Step 8.  On approval
 
 Matt says "ship it" / "approved" / "go":
 
@@ -227,8 +227,8 @@ Matt says "ship it" / "approved" / "go":
 ### Pattern: ambiguous listing format
 ```
 Matt: "make a video for 1234 NW Foo St"
-Brain: "Listing reel (40–48s viral, no VO captions only) or listing tour
-       (60–90s with Victoria VO)? Both use the same MLS photos."
+Brain: "Listing reel (40-48s viral, no VO captions only) or listing tour
+       (60-90s with Victoria VO)? Both use the same MLS photos."
 Matt: "reel"
 Brain: → action_type='content:listing_reel', dispatches listing_reveal producer
 ```
@@ -236,10 +236,10 @@ Brain: → action_type='content:listing_reel', dispatches listing_reveal produce
 ### Pattern: address with multiple matches
 ```
 Matt: "flyer for the Bend listing"
-Brain: "Found 3 active listings in Bend — which one?
-       1. 1234 NW Riverview Dr — $849,000
-       2. 567 SW Canyon Blvd — $625,000
-       3. 890 Brookswood Blvd — $1,150,000"
+Brain: "Found 3 active listings in Bend.  which one?
+       1. 1234 NW Riverview Dr.  $849,000
+       2. 567 SW Canyon Blvd.  $625,000
+       3. 890 Brookswood Blvd.  $1,150,000"
 Matt: "the Riverview one"
 Brain: → target='mls:220189422', proceeds
 ```
@@ -263,7 +263,7 @@ Brain: → action_type='content:news_clip', target='topic:wildfire-risk-2026'
 ```
 Matt: "pause the Facebook seller campaign"
 Brain: → action_type='ops:meta_ads_pause', target='campaign_id:<id>'
-       → This requires EXPLICIT Matt approval — confirms before executing.
+       → This requires EXPLICIT Matt approval.  confirms before executing.
        → "Confirm: pause campaign '<name>' (campaign_id: <id>)? This stops all ad delivery."
 ```
 
@@ -272,7 +272,7 @@ Brain: → action_type='ops:meta_ads_pause', target='campaign_id:<id>'
 ## 5. What produce does NOT do
 
 - Does not run audits or diagnose channels (that is the brain's job in the cycle)
-- Does not invent action_types not in the registry — surface to Matt if needed
+- Does not invent action_types not in the registry.  surface to Matt if needed
 - Does not skip the draft-first approval gate, ever
 - Does not commit or push without Matt's explicit approval
 - Does not dispatch multiple producers in parallel for a single request
@@ -282,8 +282,8 @@ Brain: → action_type='ops:meta_ads_pause', target='campaign_id:<id>'
 
 ## 6. See also
 
-- `marketing_brain_skills/run/SKILL.md` — full brain cycle invocation
-- `marketing_brain_skills/producers/REGISTRY.md` — producer lookup (action_type → path)
-- `automation_skills/content_engine/SKILL.md` — content action dispatch bus
-- `CLAUDE.md` §0 — Data Accuracy (outranks everything)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last (outranks everything)
+- `marketing_brain_skills/run/SKILL.md`.  full brain cycle invocation
+- `marketing_brain_skills/producers/REGISTRY.md`.  producer lookup (action_type → path)
+- `automation_skills/content_engine/SKILL.md`.  content action dispatch bus
+- `CLAUDE.md` §0.  Data Accuracy (outranks everything)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)

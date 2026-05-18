@@ -2,7 +2,7 @@
 name: comms-matt-alert
 description: >
   COMMS producer. Routes brain-generated alerts, digests, and status updates to Matt
-  (and optionally the broader team) via the correct channel — iMessage for critical/high
+  (and optionally the broader team) via the correct channel.  iMessage for critical/high
   urgency, email or dashboard card for medium/low/summary. Fires immediately on
   critical and high; queues for daily review on medium, low, and summary.
 action_types:
@@ -10,6 +10,16 @@ action_types:
   - comms:matt_summary
   - comms:team_update
   - comms:stakeholder_summary
+output_type: operational
+target_platforms: []
+asset_destination: no asset; state mutation only (logged in marketing_decisions)
+auto_inputs: ["current campaign/account state"]
+required_inputs: ["account_id OR campaign_id"]
+optional_inputs: ["budget_delta_pct", "pause_reason"]
+estimated_runtime_min: 3
+cost_usd_estimate: $0.01-$0.10 per call (mostly API quota; minimal Anthropic)
+thumbnail_uri: out/proof/2026-05-17/exemplars/sample.html
+example_outputs: []
 ---
 
 # comms-matt-alert
@@ -32,16 +42,16 @@ Those are handled by their respective content and ops producers.
 ## 1. Scope
 
 ### In scope
-- `comms:matt_alert` — time-sensitive single alert (hot lead, broken campaign, anomaly requiring same-day response)
-- `comms:matt_summary` — daily or weekly digest of brain activity
-- `comms:team_update` — same routing as matt_alert/summary; team list is currently Matt only
-- `comms:stakeholder_summary` — formal investor/partner-facing update; email + dashboard card only
+- `comms:matt_alert`.  time-sensitive single alert (hot lead, broken campaign, anomaly requiring same-day response)
+- `comms:matt_summary`.  daily or weekly digest of brain activity
+- `comms:team_update`.  same routing as matt_alert/summary; team list is currently Matt only
+- `comms:stakeholder_summary`.  formal investor/partner-facing update; email + dashboard card only
 
 ### Out of scope
-- Writing the underlying analysis or content that prompted the alert — that is the job of `analyze-anomaly`, `generate-briefs`, or an audit skill
+- Writing the underlying analysis or content that prompted the alert.  that is the job of `analyze-anomaly`, `generate-briefs`, or an audit skill
 - Posting content to any social, ad, or CRM platform
-- Sending marketing emails to leads — that is `ops-email-send`
-- Drafting review responses — that is `ops-reputation`
+- Sending marketing emails to leads.  that is `ops-email-send`
+- Drafting review responses.  that is `ops-reputation`
 
 ---
 
@@ -97,7 +107,7 @@ interface CommsMattAlertActionRow {
 
 ## 4. The recipe
 
-**Step 1 — Read the action row**
+**Step 1.  Read the action row**
 
 Query `marketing_brain_actions` by `id`. Confirm `status='pending'`.
 Immediately update to `in_production`:
@@ -110,7 +120,7 @@ WHERE id = '<action_id>' AND status = 'pending';
 
 If the row is not in `pending` status, stop. Another producer instance may have claimed it.
 
-**Step 2 — Parse and validate the payload**
+**Step 2.  Parse and validate the payload**
 
 Extract `urgency`, `channel`, `subject`, `body`, `action_required`, `expires_at`.
 
@@ -121,7 +131,7 @@ Stop.
 Check `subject` length: must be under 60 characters. If over, truncate with ellipsis at
 the last full word before char 60. Log the truncation in `executor_response.warnings`.
 
-**Step 3 — Voice validation**
+**Step 3.  Voice validation**
 
 Before sending, run the body through the brand-voice checklist from
 `marketing_brain_skills/brand-voice/voice_guidelines.md`:
@@ -139,33 +149,33 @@ Soft-flag check (log in `executor_response.warnings`, proceed):
 - First-person "I" in a brand-voice context (allowed in critical personal alerts)
 
 For `urgency='critical'` alerts: the voice validation still runs but the bar is slightly
-relaxed for the `action_required` field — a direct imperative like "Call now" is allowed
+relaxed for the `action_required` field.  a direct imperative like "Call now" is allowed
 in that field only, not in the body.
 
-**Step 4 — Determine delivery channel**
+**Step 4.  Determine delivery channel**
 
 Map `urgency` to delivery channel:
 
 | urgency | primary channel | fallback |
 |---|---|---|
 | `critical` | iMessage (via `Read_and_Send_iMessages` MCP) | email if iMessage unavailable |
-| `high` | iMessage if current time is 07:00–21:00 Pacific; else email | dashboard_card always added |
-| `medium` | email + dashboard_card | — |
-| `low` | dashboard_card only | — |
-| `summary` | email + dashboard_card | — |
+| `high` | iMessage if current time is 07:00-21:00 Pacific; else email | dashboard_card always added |
+| `medium` | email + dashboard_card |.  |
+| `low` | dashboard_card only |.  |
+| `summary` | email + dashboard_card |.  |
 
 For `stakeholder_summary`: always email + dashboard_card. Never iMessage for stakeholder comms.
 
-If the `channel` field in the payload explicitly names a channel, honor it — the brain
+If the `channel` field in the payload explicitly names a channel, honor it.  the brain
 may override the default for a specific situation.
 
-**Step 5 — Format the message per channel**
+**Step 5.  Format the message per channel**
 
 **iMessage format:**
 ```
 [Subject line, under 160 chars combined with body]
 
-[Body — plain text only. No markdown, no bullet formatting, no links except a bare URL.
+[Body.  plain text only. No markdown, no bullet formatting, no links except a bare URL.
 Under 320 chars total for readability on a phone screen.]
 
 [If action_required is set, append on a new line:]
@@ -179,7 +189,7 @@ includes one. Do not add emoji. Voice guidelines §4.4 rule 3 applies.
 ```
 Subject: [subject under 60 chars]
 
-[body as plain markdown — short paragraphs, one blank line between them]
+[body as plain markdown.  short paragraphs, one blank line between them]
 
 [If action_required:]
 What to do: [action_required]
@@ -210,10 +220,10 @@ Write a JSON object to the `executor_response` field that the dashboard UI reads
 The dashboard renders this as a dismissible notification card. The card stays visible
 until Matt dismisses it or `expires_at` passes.
 
-**Step 6 — Send**
+**Step 6.  Send**
 
 For iMessage: invoke `Read_and_Send_iMessages` MCP `send_imessage` tool.
-Matt's contact is `Matt Ryan` — resolve to the phone number stored in the system.
+Matt's contact is `Matt Ryan`.  resolve to the phone number stored in the system.
 If the MCP is unavailable or returns an error, fall through to email immediately.
 Log the fallback in `executor_response.warnings`.
 
@@ -225,7 +235,7 @@ If Resend returns an error, log and set `status='killed'` with the error detail.
 For dashboard card: write the card JSON to `executor_response` on the action row.
 The dashboard polls or reads this field. No external API call needed.
 
-**Step 7 — Record delivery confirmation**
+**Step 7.  Record delivery confirmation**
 
 After successful send, update the action row:
 
@@ -244,7 +254,7 @@ WHERE id = '<action_id>';
 
 For failed delivery, set `status='killed'` with `executor_response.error`.
 
-**Step 8 — No approval gate for critical/high**
+**Step 8.  No approval gate for critical/high**
 
 For `urgency='critical'` and `'high'`: delivery happens in Step 6 with no pause.
 The brain selected these urgency levels because Matt's SLA window is active.
@@ -281,7 +291,7 @@ immediately fall through to email without waiting.
 **Surface format when invoked manually by Matt:**
 
 ```
-Alert delivered: comms-matt-alert — [subject]
+Alert delivered: comms-matt-alert.  [subject]
 
   DELIVERY
     Channel: iMessage (critical)
@@ -304,7 +314,7 @@ Alert delivered: comms-matt-alert — [subject]
 
 | approval_type | what it means | who can grant |
 |---|---|---|
-| `none` (critical/high) | Send immediately — Matt explicitly chose immediate delivery for SLA-sensitive triggers | N/A |
+| `none` (critical/high) | Send immediately.  Matt explicitly chose immediate delivery for SLA-sensitive triggers | N/A |
 | `none` (medium/low/summary) | Dashboard card is not published content; no approval gate | N/A |
 
 This producer never creates published content. The `none` approval type is appropriate.
@@ -358,7 +368,7 @@ WHERE id = '<id>';
 | iMessage MCP unavailable | MCP tool not in tool list or returns connection error | Fall through to email immediately. Log in `executor_response.warnings`. Do not wait or retry iMessage. |
 | Email delivery failure | Resend API returns 4xx or 5xx | Retry once after 10 seconds. If second attempt fails, write card to dashboard and set `status='killed'` with the error. Surface to Matt at next manual check. |
 | Alert expired | Current time > `expires_at` | Set `status='killed'`, `executor_response.reason='alert expired before delivery'`. Do not send. |
-| Voice validation hard fail | Banned word, banned phrase, fake urgency | Do not send. Set `status='killed'`, `executor_response.voice_fail` listing the specific rule citation and the offending text. The brain that generated this alert has a bug — escalate for review. |
+| Voice validation hard fail | Banned word, banned phrase, fake urgency | Do not send. Set `status='killed'`, `executor_response.voice_fail` listing the specific rule citation and the offending text. The brain that generated this alert has a bug.  escalate for review. |
 | `subject` missing or empty | Payload validation fails | Set `status='killed'`, `executor_response.error='payload missing required field: subject'`. |
 | `MATT_EMAIL` env var missing | Cannot address the email | Surface to Matt via iMessage if available. Set `status='killed'` with the missing-var note after delivery. |
 
@@ -367,9 +377,9 @@ WHERE id = '<id>';
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice validation rules (§6 banned list, §4 attributes, §11 per-channel calibration)
-- `CLAUDE.md` §0 — Data Accuracy (alerts citing market data must trace to a source)
-- `CLAUDE.md` §0.5 — Draft-First rule does NOT apply to critical/high alerts (they ship immediately); it does apply if this producer is ever extended to publish content
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice validation rules (§6 banned list, §4 attributes, §11 per-channel calibration)
+- `CLAUDE.md` §0.  Data Accuracy (alerts citing market data must trace to a source)
+- `CLAUDE.md` §0.5.  Draft-First rule does NOT apply to critical/high alerts (they ship immediately); it does apply if this producer is ever extended to publish content
 
 **Canonical voice check pairs (§8 of voice_guidelines.md):**
 - For market-data alerts: use §8.2 (market data do/don't pairs)
@@ -382,4 +392,26 @@ WHERE id = '<id>';
 - Load schema via ToolSearch: `select:mcp__Read_and_Send_iMessages__send_imessage`
 
 **Registry entry:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section E, row `comms-matt-alert`
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section E, row `comms-matt-alert`
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+

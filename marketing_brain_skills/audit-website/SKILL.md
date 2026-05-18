@@ -1,6 +1,6 @@
 ---
 name: marketing-brain-audit-website
-description: Audit Ryan Realty's website performance — traffic sources, SEO, conversion funnel, page-level engagement, and lead-gen path effectiveness. Produces a structured WebsiteAuditReport consumed by generate-briefs. Reads from public.marketing_channel_daily (ga4 + gsc + fub channels only — no direct API calls). Manual trigger at /api/marketing-brain/audit/website. Core logic in lib/marketing-brain/audit-website.ts.
+description: Audit Ryan Realty's website performance.  traffic sources, SEO, conversion funnel, page-level engagement, and lead-gen path effectiveness. Produces a structured WebsiteAuditReport consumed by generate-briefs. Reads from public.marketing_channel_daily (ga4 + gsc + fub channels only.  no direct API calls). Manual trigger at /api/marketing-brain/audit/website. Core logic in lib/marketing-brain/audit-website.ts.
 ---
 
 # marketing-brain: audit-website
@@ -27,7 +27,7 @@ Website performance audit for the marketing brain. Reads the metrics written by 
 | Funnel | `analyzeFunnel` | ga4, fub | account |
 | Top pages | `analyzeTopPages` | ga4 | page |
 | SEO | `analyzeSEO` | gsc | source, page |
-| Opportunities | `findOpportunities` | synthesized | — |
+| Opportunities | `findOpportunities` | synthesized |.  |
 
 ---
 
@@ -35,7 +35,7 @@ Website performance audit for the marketing brain. Reads the metrics written by 
 
 - Minimum **14 non-zero days** of ga4 `sessions` data for the window before the audit runs.
 - When this threshold is not met, `auditWebsite` returns `status: 'insufficient_data'` immediately with a `missing_data` array listing which channels and metrics are short, and an empty `opportunities` array.
-- GSC and FUB data that falls below 14 days is noted in `missing_data` but does not by itself block the audit — the audit degrades gracefully (SEO or funnel sections will have sparse data).
+- GSC and FUB data that falls below 14 days is noted in `missing_data` but does not by itself block the audit.  the audit degrades gracefully (SEO or funnel sections will have sparse data).
 
 ---
 
@@ -105,7 +105,7 @@ Opportunities are ranked high → medium → low, then by area (funnel > page > 
 | Trigger | Area | Severity | Action |
 |---|---|---|---|
 | Funnel drop-off >= 80% at any step | funnel | high | `audit_landing_page` or `investigate_drop` |
-| Funnel drop-off 50–79% at any step | funnel | medium | `audit_landing_page` or `investigate_drop` |
+| Funnel drop-off 50-79% at any step | funnel | medium | `audit_landing_page` or `investigate_drop` |
 | High-traffic page with low conversion (> 2× median sessions) | page | high | `audit_landing_page` |
 | High-traffic page with low conversion (within 2× median) | page | medium | `audit_landing_page` |
 | Page in top-quartile impressions, bottom-quartile CTR | seo | medium | `test_new_creative` |
@@ -123,11 +123,11 @@ A strict subset of the 10 tags defined in `lib/marketing-brain/diagnose.ts`. The
 |---|---|
 | `audit_landing_page` | High-traffic page or funnel step not converting |
 | `investigate_drop` | Funnel crash, position loss, or declining source |
-| `capitalize_on_spike` | GSC query gaining ground — content opportunity |
-| `test_new_creative` | High impressions, low CTR — title/meta refresh needed |
-| `pause_underperformer` | (reserved for future funnel logic — not currently emitted) |
+| `capitalize_on_spike` | GSC query gaining ground.  content opportunity |
+| `test_new_creative` | High impressions, low CTR.  title/meta refresh needed |
+| `pause_underperformer` | (reserved for future funnel logic.  not currently emitted) |
 
-All 10 tags from `diagnose.ts` remain in scope for future extensions. Do not add new tags here — extend `diagnose.ts` first, then update this table.
+All 10 tags from `diagnose.ts` remain in scope for future extensions. Do not add new tags here.  extend `diagnose.ts` first, then update this table.
 
 ---
 
@@ -162,7 +162,7 @@ generate-briefs
 
 ## Related skills
 
-- `marketing-brain:snapshot-channels` — upstream; writes ga4, gsc, fub rows to `marketing_channel_daily`.
-- `marketing-brain:diagnose-performance` — sibling; computes WoW/MoM deltas and anomaly z-scores per channel. Shares the `RecommendedAction` vocabulary.
-- `marketing-brain:generate-briefs` — downstream; consumes `WebsiteAuditReport.opportunities`.
-- `marketing-brain:weekly-cycle` — orchestrates snapshot + diagnose + audit + generate-briefs in sequence.
+- `marketing-brain:snapshot-channels`.  upstream; writes ga4, gsc, fub rows to `marketing_channel_daily`.
+- `marketing-brain:diagnose-performance`.  sibling; computes WoW/MoM deltas and anomaly z-scores per channel. Shares the `RecommendedAction` vocabulary.
+- `marketing-brain:generate-briefs`.  downstream; consumes `WebsiteAuditReport.opportunities`.
+- `marketing-brain:weekly-cycle`.  orchestrates snapshot + diagnose + audit + generate-briefs in sequence.

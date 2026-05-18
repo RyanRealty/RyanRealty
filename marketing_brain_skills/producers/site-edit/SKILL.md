@@ -8,16 +8,28 @@ action_types:
   - site:copy_update
   - site:meta_update
   - site:cta_update
+output_type: web-page
+target_platforms: ["agentfire_blog"]
+asset_destination: app/ (Next.js) via GitHub PR; opens PR to main for matt-review-PR approval
+auto_inputs: ["design system v2 tokens", "shadcn/ui components", "site routing"]
+required_inputs: ["page_slug OR neighborhood_slug"]
+optional_inputs: ["hero_image_override", "schema_overrides"]
+estimated_runtime_min: 20
+cost_usd_estimate: $0.50-$2 per page (Anthropic for copy + JSON-LD scaffold)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.html
+example_outputs: []
+    label: "live neighborhood pages"
+    surface: "agentfire_blog"
 ---
 
 # Site Edit Producer
 
-**Scope:** Targeted edits to existing Next.js page files in the `app/` directory —
+**Scope:** Targeted edits to existing Next.js page files in the `app/` directory. 
 hero subheads, paragraph text, button labels, SEO metadata, OG tags, and CTA
 placement or color. This producer does NOT create new pages (that is
 `site-page-create`) and does NOT touch performance/redirect infrastructure (that is
 `site-performance`). It operates only on text, metadata, and CTA attributes inside
-files that already exist. Every change lands in a git branch and a GitHub PR — never
+files that already exist. Every change lands in a git branch and a GitHub PR.  never
 directly on `main`.
 
 **Status:** Canonical  
@@ -29,19 +41,19 @@ directly on `main`.
 ## 1. Scope
 
 ### In scope
-- `site:copy_update` — change hero subheads, paragraph body text, button labels, or any
+- `site:copy_update`.  change hero subheads, paragraph body text, button labels, or any
   string inside an existing `.tsx` or `.ts` page file
-- `site:meta_update` — change the `export const metadata` block: `title`, `description`,
+- `site:meta_update`.  change the `export const metadata` block: `title`, `description`,
   `openGraph.title`, `openGraph.description`, `twitter.title`, `twitter.description`
-- `site:cta_update` — change CTA button text, destination `href`, or shadcn color token
+- `site:cta_update`.  change CTA button text, destination `href`, or shadcn color token
   (e.g. `variant="default"` to `variant="secondary"`) on an existing `<Button>` element
 
 ### Out of scope
 - Creating new routes or page files → `site-page-create`
 - Adding `loading="lazy"` attributes, redirects, or JSON-LD → `site-performance`
 - Any change to shared components (`components/ui/`, `components/home/`, etc.) that
-  affects more than the single target page — escalate to Matt
-- Changes to `app/layout.tsx` — escalate; any layout change is site-wide
+  affects more than the single target page.  escalate to Matt
+- Changes to `app/layout.tsx`.  escalate; any layout change is site-wide
 
 ---
 
@@ -62,7 +74,7 @@ interface SiteEditPayload {
   changes: Array<{
     target_selector?: string  // component name or JSX attribute (e.g. "ContentPageHero subtitle")
     target_label?: string     // human description e.g. "hero subheadline"
-    before_text: string       // current copy exactly as it appears in the file — for confirmation
+    before_text: string       // current copy exactly as it appears in the file.  for confirmation
     after_text: string        // new copy
     rationale: string         // why this change moves the needle (stored in commit message)
   }>
@@ -94,7 +106,7 @@ interface SiteEditActionRow {
 
 ## 4. The recipe
 
-**Step 1 — Read the action row and claim it**
+**Step 1.  Read the action row and claim it**
 
 Query `marketing_brain_actions` by `id`. Confirm `status='pending'`. Immediately
 set `status='in_production'` and `executed_at=now()`.
@@ -107,15 +119,15 @@ WHERE id = '<id>' AND status = 'pending';
 
 If status is not 'pending', stop: report the current status to Matt and do nothing.
 
-**Step 2 — Load mandatory references**
+**Step 2.  Load mandatory references**
 
 Before touching any file:
-- `CLAUDE.md` §0 — Data Accuracy mandate (any market figures in copy must be verified)
-- `CLAUDE.md` "Draft-First, Commit-Last" — the PR is the draft; Matt merges; never push to main
-- `design_system/ryan-realty/SKILL.md` — brand register; shadcn token system
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice validation
+- `CLAUDE.md` §0.  Data Accuracy mandate (any market figures in copy must be verified)
+- `CLAUDE.md` "Draft-First, Commit-Last".  the PR is the draft; Matt merges; never push to main
+- `design_system/ryan-realty/SKILL.md`.  brand register; shadcn token system
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice validation
 
-**Step 3 — Resolve the file path**
+**Step 3.  Resolve the file path**
 
 Map `payload.page_path` to a filesystem path:
 - `/sell` → `app/sell/page.tsx`
@@ -126,7 +138,7 @@ Map `payload.page_path` to a filesystem path:
 
 Read the resolved file in full before making any edit.
 
-**Step 4 — Validate brand voice on all `after_text` values**
+**Step 4.  Validate brand voice on all `after_text` values**
 
 For each change in `payload.changes`, check `after_text` against
 `marketing_brain_skills/brand-voice/voice_guidelines.md`. Specifically verify:
@@ -149,7 +161,7 @@ If any `after_text` fails voice validation:
 - Set `generation_reason` prefixed with `VOICE_FAIL: <rule>` so generate-briefs can revise
 - Stop. Do not proceed to Step 5.
 
-**Step 5 — Validate `before_text` exists in the file**
+**Step 5.  Validate `before_text` exists in the file**
 
 For each change, confirm `before_text` appears in the file exactly as written. If
 `before_text` is not found:
@@ -159,10 +171,10 @@ For each change, confirm `before_text` appears in the file exactly as written. I
 - Report to Matt: "Could not locate the target text. The page may have changed since
   the action row was written. Please update `before_text` to match the current file."
 
-If `target_selector` or `target_label` is provided, use it for context only — the
+If `target_selector` or `target_label` is provided, use it for context only.  the
 canonical match is `before_text`. Never do fuzzy matching; exact string match only.
 
-**Step 6 — Apply the edits**
+**Step 6.  Apply the edits**
 
 For each change in `payload.changes` (in order):
 
@@ -183,10 +195,10 @@ Never add hex colors or inline styles.
 Apply all changes atomically (all changes in the array apply to one file save, not
 one save per change).
 
-**Step 7 — Design token compliance check**
+**Step 7.  Design token compliance check**
 
 After editing, scan the modified file for:
-- Any hex color (`#[0-9a-fA-F]{3,6}`) that is NOT inside a comment — flag it; shadcn
+- Any hex color (`#[0-9a-fA-F]{3,6}`) that is NOT inside a comment.  flag it; shadcn
   tokens only in JSX
 - Any raw `<button>`, `<select>`, `<input>` tags not wrapped by a shadcn component
   (these should not appear in a copy-only edit, but check)
@@ -194,9 +206,9 @@ After editing, scan the modified file for:
 
 If violations found: revert the edit, halt with `status='killed'`, explain the
 violation. This producer does not introduce design token violations even if the file
-already had them — report but do not add new ones.
+already had them.  report but do not add new ones.
 
-**Step 8 — Run TypeScript type check**
+**Step 8.  Run TypeScript type check**
 
 ```bash
 cd /Users/matthewryan/RyanRealty && npx tsc --noEmit 2>&1
@@ -208,7 +220,7 @@ If TypeScript errors exist:
 - `executor_response = {error: "TypeScript compile failed", tsc_output: "<first 20 lines of error>"}`
 - Do not open a PR
 
-**Step 9 — Create a git branch and commit**
+**Step 9.  Create a git branch and commit**
 
 Branch naming: `site-edit/<action_id>` where `<action_id>` is the first 8 chars of
 the `id` UUID (e.g. `site-edit/a1b2c3d4`).
@@ -227,7 +239,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 git push origin site-edit/<action_id>
 ```
 
-**Step 10 — Open the GitHub PR**
+**Step 10.  Open the GitHub PR**
 
 ```bash
 gh pr create \
@@ -239,7 +251,7 @@ gh pr create \
 - Action row: `<id>`
 
 ## Changes
-<one bullet per change: target_label — before_text → after_text>
+<one bullet per change: target_label.  before_text → after_text>
 
 ## Rationale
 <payload.changes[0].rationale>
@@ -257,12 +269,12 @@ No hex color violations. All edits use shadcn/ui token system.
 ## Approval gate
 Matt merges this PR in GitHub. Do NOT approve via the action row in the brain.
 
-🤖 Generated with Claude Code / marketing brain — site-edit producer
+🤖 Generated with Claude Code / marketing brain.  site-edit producer
 EOF
 )"
 ```
 
-**Step 11 — Update the action row to 'ready'**
+**Step 11.  Update the action row to 'ready'**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -278,10 +290,10 @@ SET status = 'ready',
 WHERE id = '<id>';
 ```
 
-**Step 12 — Surface to Matt**
+**Step 12.  Surface to Matt**
 
 ```
-Draft ready: site-edit — <page_path>
+Draft ready: site-edit.  <page_path>
 
   PR
     URL: <pr_url>
@@ -308,11 +320,11 @@ Then stop. Wait for Matt to merge the PR.
 
 | tool | purpose | env var / path |
 |---|---|---|
-| Read (file) | Read existing page.tsx before editing | — |
-| Edit (file) | Apply exact string replacement | — |
+| Read (file) | Read existing page.tsx before editing |.  |
+| Edit (file) | Apply exact string replacement |.  |
 | Bash: `npx tsc --noEmit` | TypeScript compile check | runs in `/Users/matthewryan/RyanRealty` |
-| Bash: `git checkout -b` | Create branch | — |
-| Bash: `git add`, `git commit`, `git push` | Stage, commit, push branch | — |
+| Bash: `git checkout -b` | Create branch |.  |
+| Bash: `git add`, `git commit`, `git push` | Stage, commit, push branch |.  |
 | Bash: `gh pr create` | Open GitHub PR | `GH_TOKEN` or active gh session |
 | Supabase MCP | Read + update `marketing_brain_actions` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 
@@ -334,7 +346,7 @@ app/<page_path>/page.tsx   (edited on branch site-edit/<action_id>)
 
 | approval_type | what it means | who can grant |
 |---|---|---|
-| `matt-review-PR` | Matt merges the PR in GitHub | Matt only — via GitHub UI |
+| `matt-review-PR` | Matt merges the PR in GitHub | Matt only.  via GitHub UI |
 
 This producer does NOT use `matt-review-draft`. The PR is the draft. Matt
 evaluates the diff in GitHub and merges to ship. The action row advances from
@@ -361,7 +373,7 @@ ready             ← executor_response = {branch_name, pr_url, files_changed}
   ▼ (Matt merges PR in GitHub)
 approved
   │
-  ▼ (Vercel build completes — detected via Vercel MCP or manual update)
+  ▼ (Vercel build completes.  detected via Vercel MCP or manual update)
 executed
   │
   ▼ (48h post-deploy: audit-website captures conversion delta)
@@ -407,17 +419,39 @@ WHERE id='<id>';
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `CLAUDE.md` §0 — Data Accuracy (any market stat in copy must be verified against Supabase)
-- `CLAUDE.md` "Draft-First, Commit-Last" — PR = draft; never commit to main
-- `CLAUDE.md` "Design System Rules — MANDATORY" — shadcn/ui only; no raw HTML; no hex colors
-- `CLAUDE.md` "Design System v2 — Heritage + Web Registers" — navy `#102742` primary; Geist body
-- `design_system/ryan-realty/SKILL.md` — brand visual system (color tokens, type, registers)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice enforcement (mandatory before every edit)
+- `CLAUDE.md` §0.  Data Accuracy (any market stat in copy must be verified against Supabase)
+- `CLAUDE.md` "Draft-First, Commit-Last".  PR = draft; never commit to main
+- `CLAUDE.md` "Design System Rules.  MANDATORY".  shadcn/ui only; no raw HTML; no hex colors
+- `CLAUDE.md` "Design System v2.  Heritage + Web Registers".  navy `#102742` primary; Geist body
+- `design_system/ryan-realty/SKILL.md`.  brand visual system (color tokens, type, registers)
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement (mandatory before every edit)
 
 **Playbooks and pipeline docs:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section C, row `site-edit`
-- `marketing_brain_skills/producers/TEMPLATE.md` — producer structural template
-- `automation_skills/content_engine/SKILL.md` — content routing reference
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section C, row `site-edit`
+- `marketing_brain_skills/producers/TEMPLATE.md`.  producer structural template
+- `automation_skills/content_engine/SKILL.md`.  content routing reference
 
 **Registry entry:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section C, row `site-edit`
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section C, row `site-edit`
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+

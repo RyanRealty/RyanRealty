@@ -3,12 +3,12 @@ name: ops-fb-marketplace
 description: >
   Prepares a Facebook Marketplace listing payload (title, description, photos, price, specs,
   location, category mapping) for a given residential listing and stages a copy-paste-ready
-  bundle Matt loads into his personal Facebook app. This producer does NOT auto-publish —
+  bundle Matt loads into his personal Facebook app. This producer does NOT auto-publish. 
   Facebook Marketplace does not permit programmatic listing creation for residential real
   estate brokers (as of 2026 platform policy). Output is a structured payload + downloaded
   high-quality photos + step-by-step screenshot-ready instructions. Marketplace is the
   highest-volume FREE lead source documented for residential brokers (Shawn Getty reports
-  30–40% of business through Marketplace). Use whenever Matt says "fb marketplace for
+  30-40% of business through Marketplace). Use whenever Matt says "fb marketplace for
   <address>", "facebook marketplace listing for <MLS#>", "build the marketplace post for
   <listing>", or "marketplace for the new listing".
 when_to_use: |
@@ -19,25 +19,39 @@ when_to_use: |
   - "marketplace for the new listing"
   - "stage a marketplace listing for <MLS#>"
   - "marketplace bundle for <slug>"
-  - "marketplace update for <MLS#>" (post-active edit — price change, photo refresh)
+  - "marketplace update for <MLS#>" (post-active edit.  price change, photo refresh)
 action_types:
   - ops:fb_marketplace_create
   - ops:fb_marketplace_update
+output_type: operational
+target_platforms: []
+asset_destination: no asset; state mutation only (logged in marketing_decisions)
+auto_inputs: ["current campaign/account state"]
+required_inputs: ["account_id OR campaign_id"]
+optional_inputs: ["budget_delta_pct", "pause_reason"]
+estimated_runtime_min: 3
+cost_usd_estimate: $0.01-$0.10 per call (mostly API quota; minimal Anthropic)
+thumbnail_uri: out/proof/2026-05-17/exemplars/sample.html
+example_outputs: []
 ---
 
-# ops-fb-marketplace — Facebook Marketplace Listing Producer
+# ops-fb-marketplace.  Facebook Marketplace Listing Producer
+
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
 
 **Scope.** Stages everything Matt needs to publish a Ryan Realty residential listing on his
 personal Facebook Marketplace via the Facebook iOS / Android app. Generates the title,
 description, price, photo set (downloaded + resized), category mapping, and a copy-paste-ready
-instruction sheet. Producer never touches the Marketplace itself — Facebook does not permit
+instruction sheet. Producer never touches the Marketplace itself.  Facebook does not permit
 programmatic Marketplace listing creation by residential real estate brokers via Graph API.
 The deliverable is a staged bundle on disk; Matt does the final 90-second manual upload
 through the FB app.
 
 **Status.** Canonical.
 **Locked.** 2026-05-14.
-**Producer category.** Section D — Operational Producer.
+**Producer category.** Section D.  Operational Producer.
 **Exemplar output:** `out/fb-marketplace/<slug>/` directory with payload, photos, title, description, instructions, citations.
 
 ---
@@ -46,23 +60,23 @@ through the FB app.
 
 ### In scope
 
-- `ops:fb_marketplace_create` — first-time stage of a new active or coming-soon listing for FB Marketplace.
-- `ops:fb_marketplace_update` — refresh an already-staged listing after a price change, photo update, or status flip (active → pending → sold). Refresh writes a new bundle alongside the original.
+- `ops:fb_marketplace_create`.  first-time stage of a new active or coming-soon listing for FB Marketplace.
+- `ops:fb_marketplace_update`.  refresh an already-staged listing after a price change, photo update, or status flip (active → pending → sold). Refresh writes a new bundle alongside the original.
 - Pulling the listing record from Supabase (`listings`) and verifying every figure (price, beds, baths, sqft, year built) against the live row before staging.
 - Downloading the listing's MLS photos from `PhotoURL`, resizing to FB Marketplace's 1080×1080 max, ordering hero first.
 - Stripping `PublicRemarks` of banned vocabulary, em-dashes, semicolons, exclamation marks, and AI filler, then condensing to ≤ 1500 chars.
 - Mapping the MLS `PropertyType` to FB Marketplace's residential category tree (`For Sale > Real Estate > Homes for Sale`, `Apartments / Condos for Sale`, `Townhouses for Sale`, `Multi-Family Homes`, `Manufactured / Mobile Homes`, `Land for Sale`).
-- Generating step-by-step instructions Matt follows in the FB app — every tap, every field, in order, with screenshot anchors.
+- Generating step-by-step instructions Matt follows in the FB app.  every tap, every field, in order, with screenshot anchors.
 - Updating the `marketing_brain_actions` row through `pending → in_production → ready → approved → executed → measured` per the shared status flow.
 
 ### Out of scope
 
-- **Auto-publishing to FB Marketplace.** Not permitted by FB policy for residential brokers — full stop. If a future Graph API or partner integration opens, the producer adds the call as Step 8.5; until then, manual upload is the only path.
+- **Auto-publishing to FB Marketplace.** Not permitted by FB policy for residential brokers.  full stop. If a future Graph API or partner integration opens, the producer adds the call as Step 8.5; until then, manual upload is the only path.
 - **Organic FB posts.** Handled by the `publisher` capability in `automation_skills/`.
 - **FB Lead Gen ads.** Handled by `social_media_skills/facebook-lead-gen-ad/` + `ops-meta-ads`.
 - **IG / TikTok / X captions.** Handled by `ig-single-post` and siblings. Marketplace prose is its own register (no hashtags, no link-in-bio, plain factual).
 - **Pricing analysis / CMA.** Producer trusts `ListPrice` from Supabase.
-- **Lead capture from inquiries.** Marketplace messages land in Matt's FB Messenger — `ops-fub-crm` + the Messenger forwarding integration handle inbound leads.
+- **Lead capture from inquiries.** Marketplace messages land in Matt's FB Messenger.  `ops-fub-crm` + the Messenger forwarding integration handle inbound leads.
 
 ---
 
@@ -79,7 +93,7 @@ through the FB app.
 interface FbMarketplacePayload {
   mls_id: string;                     // MLS number, e.g. '220189422'
   category?: string;                  // Default 'For Sale > Real Estate > Homes for Sale'
-  make_public?: boolean;              // Default true — vs 'Friends only'
+  make_public?: boolean;              // Default true.  vs 'Friends only'
   update_reason?:                     // ONLY for ops:fb_marketplace_update
     | 'price_change'
     | 'photo_refresh'
@@ -110,7 +124,7 @@ interface FbMarketplaceActionRow {
   payload: FbMarketplacePayload;
   data_evidence: {
     audit_source?: string;          // e.g. 'listing_trigger' or 'manual'
-    opportunity_area?: string;      // e.g. 'new active listing — Marketplace is highest-volume free channel'
+    opportunity_area?: string;      // e.g. 'new active listing.  Marketplace is highest-volume free channel'
     signal_evidence?: string;       // e.g. 'StandardStatus flipped Active 2026-05-14 09:12 UTC'
   };
   generation_reason: string;        // Human-readable why this action exists
@@ -122,7 +136,7 @@ interface FbMarketplaceActionRow {
 
 ## 4. The recipe
 
-### Step 1 — Read the action row and claim it
+### Step 1.  Read the action row and claim it
 
 Query `marketing_brain_actions` by `id`. Confirm `status='pending'`. Immediately transition to
 `in_production`:
@@ -135,22 +149,22 @@ WHERE id = '<action_id>' AND status = 'pending';
 
 If the row is not `status='pending'` (another agent picked it up), halt silently.
 
-### Step 2 — Load mandatory references
+### Step 2.  Load mandatory references
 
 Before pulling any data:
 
-- `CLAUDE.md` §0 — Data Accuracy mandate (every figure traces; outranks everything)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last (Matt sees the bundle before publish)
-- `CLAUDE.md` "Voice + content" — voice attributes, banned vocab, phone + web format
-- `design_system/ryan-realty/SKILL.md` — heritage register (the photos and prose carry the brand here; no on-canvas typography)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — banned vocab union
-- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` — Matt's writing fingerprint (Marketplace prose mirrors GBP response register: direct, factual, neutral, no clichés)
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
-- `marketing_brain_skills/producers/TEMPLATE.md` — producer skeleton
+- `CLAUDE.md` §0.  Data Accuracy mandate (every figure traces; outranks everything)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (Matt sees the bundle before publish)
+- `CLAUDE.md` "Voice + content".  voice attributes, banned vocab, phone + web format
+- `design_system/ryan-realty/SKILL.md`.  heritage register (the photos and prose carry the brand here; no on-canvas typography)
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union
+- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint (Marketplace prose mirrors GBP response register: direct, factual, neutral, no clichés)
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
+- `marketing_brain_skills/producers/TEMPLATE.md`.  producer skeleton
 
-Note: do NOT load `social_media_skills/platform-best-practices/SKILL.md` for this producer — that file's IG/TikTok/YouTube rules don't apply to Marketplace, which is a closer-to-Craigslist marketplace format with its own conventions (no hashtags, no emoji, plain prose, photo-first).
+Note: do NOT load `social_media_skills/platform-best-practices/SKILL.md` for this producer.  that file's IG/TikTok/YouTube rules don't apply to Marketplace, which is a closer-to-Craigslist marketplace format with its own conventions (no hashtags, no emoji, plain prose, photo-first).
 
-### Step 3 — Pull the listing row from Supabase
+### Step 3.  Pull the listing row from Supabase
 
 Mixed-case columns must be double-quoted per CLAUDE.md "Supabase listings Schema":
 
@@ -189,10 +203,10 @@ If the query returns zero rows: set `status='killed'`, surface "Listing `<mls_id
 
 If `StandardStatus` is `'Closed'` or `'Withdrawn'` or `'Expired'`: surface to Matt before proceeding. Marketplace listings for sold / withdrawn properties violate FB Commerce Policy and risk an account-level strike. Default: do not stage. Override requires explicit Matt direction.
 
-### Step 4 — Verify every figure
+### Step 4.  Verify every figure
 
 Per CLAUDE.md §0, every number that lands in the title or description must be re-verified
-against the row just pulled — never inherited from the action row's payload or prior context:
+against the row just pulled.  never inherited from the action row's payload or prior context:
 
 | figure | verified from |
 |---|---|
@@ -201,29 +215,29 @@ against the row just pulled — never inherited from the action row's payload or
 | Sqft | `"TotalLivingAreaSqFt"` |
 | Lot | `"LotSizeAcres"` (preferred for rural / acreage listings) |
 | Year built | `year_built` |
-| Price | `"ListPrice"` — round to nearest $1,000 in display |
+| Price | `"ListPrice"`.  round to nearest $1,000 in display |
 | City | `"City"` |
 | Neighborhood | `"SubdivisionName"` if present, else city |
 
 If any figure is null when expected (e.g. `BedroomsTotal IS NULL` on a SFR), surface to Matt: figure missing from MLS row. Do not stage with a placeholder. Do not estimate.
 
-### Step 5 — Build the title
+### Step 5.  Build the title
 
-Format (under 100 chars — FB Marketplace truncates aggressively):
+Format (under 100 chars.  FB Marketplace truncates aggressively):
 
 ```
-<Beds>BR/<Bath>BA <Property Type> in <Neighborhood> — $<price>
+<Beds>BR/<Bath>BA <Property Type> in <Neighborhood>.  $<price>
 ```
 
-Note: per banned-punctuation rules in CLAUDE.md, em-dashes (—) are banned as punctuation in body copy. **The em-dash in the title is an explicit exception** for this producer because FB Marketplace's title parsing benefits from a clean visual break and the title is a single fragment, not body prose. If Matt instructs otherwise, replace with a bullet `·` or pipe `|`.
+Note: per banned-punctuation rules in CLAUDE.md, em-dashes (. ) are banned as punctuation in body copy. **The em-dash in the title is an explicit exception** for this producer because FB Marketplace's title parsing benefits from a clean visual break and the title is a single fragment, not body prose. If Matt instructs otherwise, replace with a bullet `·` or pipe `|`.
 
 Examples:
-- `3BR/2BA Single Family in Tumalo — $895,000`
-- `2BR/2BA Condo in Old Mill — $625,000`
-- `Acreage Lot in Sisters — $475,000` (land — no BR/BA)
+- `3BR/2BA Single Family in Tumalo.  $895,000`
+- `2BR/2BA Condo in Old Mill.  $625,000`
+- `Acreage Lot in Sisters.  $475,000` (land.  no BR/BA)
 
 Title validation:
-- `length(title) ≤ 100`. If `> 100`, drop the neighborhood and use the city instead. If still `> 100`, drop the property type and use only `<beds>BR/<baths>BA in <city> — $<price>`.
+- `length(title) ≤ 100`. If `> 100`, drop the neighborhood and use the city instead. If still `> 100`, drop the property type and use only `<beds>BR/<baths>BA in <city>.  $<price>`.
 - No banned vocab. No exclamation marks. No emoji.
 - Price always rounded to the nearest $1,000.
 
@@ -238,7 +252,7 @@ Property type label mapping from MLS `"PropertyType"` / `"PropertySubType"`:
 | `Residential Income` | `Multi-Family` |
 | `Land` | `Acreage Lot` (or `Lot` if `LotSizeAcres < 1`) |
 
-### Step 6 — Build the description (≤ 1500 chars)
+### Step 6.  Build the description (≤ 1500 chars)
 
 Section structure, in order, separated by blank lines:
 
@@ -248,7 +262,7 @@ Section structure, in order, separated by blank lines:
 
 <Beds> bed | <Baths> bath | <Sqft> sqft | <Lot> acres | Built <YearBuilt>
 
-<Cleaned PublicRemarks body — 2-3 paragraphs>
+<Cleaned PublicRemarks body.  2-3 paragraphs>
 
 Listed by Ryan Realty.
 Call 541.213.6706 or visit ryan-realty.com/listings/<slug>.
@@ -292,12 +306,12 @@ Brokerage licensed in Oregon.
 
 - "You/your" addressed at the buyer (per CLAUDE.md voice). "We/our team" for the brokerage. Never "I."
 - Sentence case (no Title Case mid-sentence).
-- Plain neutral pro tone — Marketplace audience skews value-conscious; aspirational marketing prose underperforms factual specs. Mirror Matt's GBP-response register.
-- No hashtags anywhere — Marketplace's description doesn't honor them and they look like spam to the audience.
+- Plain neutral pro tone.  Marketplace audience skews value-conscious; aspirational marketing prose underperforms factual specs. Mirror Matt's GBP-response register.
+- No hashtags anywhere.  Marketplace's description doesn't honor them and they look like spam to the audience.
 - No "Don't miss out!" / "Won't last!" / "Act fast!" / "Schedule today!" pressure or scarcity framing.
 - No emoji.
 
-### Step 7 — Download and resize photos
+### Step 7.  Download and resize photos
 
 Source: `"PhotoURL"` column (delimited list of MLS photo URLs).
 
@@ -307,7 +321,7 @@ mkdir -p out/fb-marketplace/<slug>/photos/
 #   - Max 1080×1080 (FB Marketplace upscales smaller, downscales larger lossy)
 #   - JPEG quality 90
 #   - Hero photo (first URL) gets filename 01_hero.jpg
-#   - Remaining photos numbered 02_*.jpg, 03_*.jpg, ...
+#   - Remaining photos numbered 02_*.jpg, 03_*.jpg,...
 #   - Max 10 photos (FB Marketplace cap for residential real estate)
 ```
 
@@ -316,12 +330,12 @@ Use `lib/asset-library.mjs` (per `video_production_skills/asset-library/SKILL.md
 
 **Photo discipline:**
 
-- Hero photo (01) is always the exterior wide angle. If `PhotoURL[0]` is interior, surface to Matt — MLS uploaded interior-first, which is unusual; confirm hero choice before staging.
-- Skip floorplan PNGs, virtual-stage AI composites, and any URL containing `/floorplan/` or `/360/` or `/virtual-tour/` — FB Marketplace audiences expect real-room photos.
+- Hero photo (01) is always the exterior wide angle. If `PhotoURL[0]` is interior, surface to Matt.  MLS uploaded interior-first, which is unusual; confirm hero choice before staging.
+- Skip floorplan PNGs, virtual-stage AI composites, and any URL containing `/floorplan/` or `/360/` or `/virtual-tour/`.  FB Marketplace audiences expect real-room photos.
 - Skip photos with visible MLS watermarks if `provenance.json` doesn't allow watermarked use (most ORMLS photos are clean).
 - If `PhotoURL` returns fewer than 5 usable URLs: surface to Matt. Marketplace listings with < 5 photos chronically underperform; better to wait for the photographer to deliver more.
 
-### Step 8 — Map the FB Marketplace category
+### Step 8.  Map the FB Marketplace category
 
 ```typescript
 const categoryMap: Record<string, string> = {
@@ -341,14 +355,14 @@ The resolved category goes into `listing-payload.json` and is recited verbatim i
 If `payload.category` is provided and differs from the mapped value, honor the payload override
 and log the override reason in the surface message.
 
-### Step 9 — Write the bundle to disk
+### Step 9.  Write the bundle to disk
 
 Bundle layout in §6. The `listing-payload.json` carries: `mls_id`, `slug`, `title`,
 `category`, `make_public`, `price_usd`, `address.{street, city, state, postal_code}`,
 `specs.{beds, baths, sqft, lot_acres, year_built, property_type}`,
 `location.{lat, lon}`, `photo_count`, `description_chars`.
 
-### Step 10 — Run the QA gate
+### Step 10.  Run the QA gate
 
 Before surfacing, verify:
 
@@ -375,7 +389,7 @@ Before surfacing, verify:
 Any `fail` = do not surface. Either auto-fix (re-clean the description) or escalate to Matt
 with the specific failing check.
 
-### Step 11 — Write `citations.json`
+### Step 11.  Write `citations.json`
 
 One entry per figure displayed in title or description. Shape (one example; one entry per
 figure shown):
@@ -398,9 +412,9 @@ figure shown):
 Required entries: `ListPrice`, `BedroomsTotal`, `BathroomsTotal`, `TotalLivingAreaSqFt`,
 `LotSizeAcres` (if used), `year_built`, `City`, `SubdivisionName` (if used), `MlsId`.
 
-### Step 12 — Write `instructions.md`
+### Step 12.  Write `instructions.md`
 
-This file is Matt's manual-upload script — every tap, every field, in order, with the exact
+This file is Matt's manual-upload script.  every tap, every field, in order, with the exact
 values resolved for this listing. The producer fills in:
 
 1. Open FB app → Marketplace → Sell → Items.
@@ -408,9 +422,9 @@ values resolved for this listing. The producer fills in:
 3. Add photos: AirDrop or sync the `photos/` folder; verify `01_hero.jpg` is first.
 4. Title: copy from `title.txt`.
 5. Price: from payload.
-6. Condition: `Used — Like New` (FB Marketplace requires a condition field for items).
+6. Condition: `Used.  Like New` (FB Marketplace requires a condition field for items).
 7. Description: copy from `description.md`.
-8. Location: `<city>, OR` (city-level only — never the exact street; FB doesn't surface
+8. Location: `<city>, OR` (city-level only.  never the exact street; FB doesn't surface
    street-level addresses anyway, and broker compliance prefers city-level).
 9. Audience: `Public` (when `make_public=true`).
 10. Publish.
@@ -420,7 +434,7 @@ Estimated upload time: ~90 seconds in the FB app. The producer writes these elev
 `instructions.md` with the resolved values inlined so Matt can read the file once and follow
 without bouncing back to the payload.
 
-### Step 13 — Surface the bundle to Matt
+### Step 13.  Surface the bundle to Matt
 
 Set `status='ready'`, populate `executor_response` with `{draft_path, title, category,
 photo_count, description_chars, qa_gate: "passed"}`. Surface using the §6 surface-format
@@ -459,7 +473,7 @@ out/fb-marketplace/<slug>/
 ├── photos/
 │   ├── 01_hero.jpg
 │   ├── 02_*.jpg
-│   ├── ...
+│   ├──...
 │   └── 10_*.jpg
 └── citations.json
 ```
@@ -470,7 +484,7 @@ Special characters stripped, lowercase, hyphenated.
 **Surface format (present to Matt exactly like this):**
 
 ```
-FB Marketplace bundle ready — <title>
+FB Marketplace bundle ready.  <title>
 
   DELIVERABLE
     Path: out/fb-marketplace/<slug>/
@@ -481,14 +495,14 @@ FB Marketplace bundle ready — <title>
     Estimated upload time: ~90 seconds in the FB app.
 
   INSTRUCTIONS
-    out/fb-marketplace/<slug>/instructions.md — 12 numbered steps, copy-paste-ready.
+    out/fb-marketplace/<slug>/instructions.md.  12 numbered steps, copy-paste-ready.
     AirDrop or sync the photos folder to your phone first.
 
   VERIFICATION TRACE
-    - $<price> — Supabase listings, "MlsId"='<mls_id>', "ListPrice" = <value>, fetched <iso>
-    - <n> bed / <n> bath — Supabase listings, BedroomsTotal / BathroomsTotal, fetched <iso>
-    - <n> sqft — Supabase listings, TotalLivingAreaSqFt, fetched <iso>
-    - Built <year> — Supabase listings, year_built, fetched <iso>
+    - $<price>.  Supabase listings, "MlsId"='<mls_id>', "ListPrice" = <value>, fetched <iso>
+    - <n> bed / <n> bath.  Supabase listings, BedroomsTotal / BathroomsTotal, fetched <iso>
+    - <n> sqft.  Supabase listings, TotalLivingAreaSqFt, fetched <iso>
+    - Built <year>.  Supabase listings, year_built, fetched <iso>
     [one line per figure]
 
   citations.json: out/fb-marketplace/<slug>/citations.json
@@ -580,7 +594,7 @@ WHERE id = '<id>';
 
 | failure | symptoms | recovery |
 |---|---|---|
-| Listing not found in Supabase | `SELECT ... WHERE "MlsId"='<id>'` returns 0 rows | `status='killed'`. Surface the MLS#. |
+| Listing not found in Supabase | `SELECT... WHERE "MlsId"='<id>'` returns 0 rows | `status='killed'`. Surface the MLS#. |
 | `PublicRemarks` unsalvageable | After cleaning, > 3 banned words remain with no substitute, or `< 100` chars total | `status='ready'`, `qa_gate='banned_vocab_unsalvageable'`. Surface the words + proposed substitutes. Matt can (a) hand-rewrite, (b) set `matt_override_banned_vocab=true`, or (c) cancel. |
 | Photos can't be downloaded | `PhotoURL` returns < 5 usable URLs, or > 50% HTTP 4xx/5xx | `status='ready'`, `qa_gate='photos_insufficient'`. Surface count + failing URLs. Matt decides: wait, ship-as-is if `≥ 5`, or cancel. |
 | Title exceeds 100 chars after fallback shortenings | `length(title) > 100` after dropping both neighborhood and property type | Surface candidate shortenings; Matt picks or hand-writes. |
@@ -598,30 +612,30 @@ WHERE id = '<id>';
 
 **Required reading before executing:**
 
-- `CLAUDE.md` §0 — Data Accuracy mandate (outranks everything)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last (outranks everything)
-- `CLAUDE.md` "Voice + content" — voice attributes, banned vocab, phone/web format
-- `CLAUDE.md` "Supabase listings Schema" — mixed-case column quoting
-- `design_system/ryan-realty/SKILL.md` — brand register (Marketplace is voice-first, not visual; SKILL grounds the prose tone)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — banned vocab union
-- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` — Matt's writing fingerprint (Marketplace prose mirrors GBP register)
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
+- `CLAUDE.md` §0.  Data Accuracy mandate (outranks everything)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
+- `CLAUDE.md` "Voice + content".  voice attributes, banned vocab, phone/web format
+- `CLAUDE.md` "Supabase listings Schema".  mixed-case column quoting
+- `design_system/ryan-realty/SKILL.md`.  brand register (Marketplace is voice-first, not visual; SKILL grounds the prose tone)
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union
+- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint (Marketplace prose mirrors GBP register)
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
 
 **Capabilities used inside this producer:**
 
-- `lib/asset-library.mjs` per `video_production_skills/asset-library/SKILL.md` — photo download + resize
-- `lib/voice-validate.mjs` per `marketing_brain_skills/brand-voice/voice_guidelines.md` — banned-vocab grep
+- `lib/asset-library.mjs` per `video_production_skills/asset-library/SKILL.md`.  photo download + resize
+- `lib/voice-validate.mjs` per `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned-vocab grep
 
 **Companion producers:**
 
-- `social_media_skills/list-kit/SKILL.md` — the at-Active orchestrator that may emit `ops:fb_marketplace_create` as one of its fan-out actions alongside `content:ig_single_post` (S1), `content:ig_carousel`, and `content:flyer`.
-- `social_media_skills/facebook-lead-gen-ad/SKILL.md` — Paid FB lead-gen lives here (companion paid channel; Marketplace is the free one).
-- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md` — When a Marketplace inquiry lands in Matt's FB Messenger, the Messenger-to-FUB forwarding integration creates a lead via this producer.
+- `social_media_skills/list-kit/SKILL.md`.  the at-Active orchestrator that may emit `ops:fb_marketplace_create` as one of its fan-out actions alongside `content:ig_single_post` (S1), `content:ig_carousel`, and `content:flyer`.
+- `social_media_skills/facebook-lead-gen-ad/SKILL.md`.  Paid FB lead-gen lives here (companion paid channel; Marketplace is the free one).
+- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md`.  When a Marketplace inquiry lands in Matt's FB Messenger, the Messenger-to-FUB forwarding integration creates a lead via this producer.
 
 **Playbooks and pipeline docs:**
 
-- `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` — paid Meta context (separate from Marketplace; reading it grounds the relative role of Marketplace as the *free* high-volume channel)
-- `docs/MARKETING_LEAD_FLOW.md` — Messenger-to-FUB lead path for Marketplace inquiries
+- `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`.  paid Meta context (separate from Marketplace; reading it grounds the relative role of Marketplace as the *free* high-volume channel)
+- `docs/MARKETING_LEAD_FLOW.md`.  Messenger-to-FUB lead path for Marketplace inquiries
 
 **Producer template:**
 
@@ -629,7 +643,7 @@ WHERE id = '<id>';
 
 **Registry entry:**
 
-- `marketing_brain_skills/producers/REGISTRY.md` — Section D, row `ops-fb-marketplace` (to be added by the parent orchestrator that wires this skill into the registry).
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section D, row `ops-fb-marketplace` (to be added by the parent orchestrator that wires this skill into the registry).
 
 ---
 
@@ -640,3 +654,16 @@ WHERE id = '<id>';
 3. **Never ship a description with banned vocab unless `matt_override_banned_vocab=true` is explicit on the payload.**
 4. **Never substitute photos with AI / virtual-stage renders.** Hard fail per ANTI_SLOP_MANIFESTO.
 5. **Never set `status='executed'` based on a passing QA gate alone.** `executed` requires Matt's confirmed live URL.
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`

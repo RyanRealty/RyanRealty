@@ -7,7 +7,7 @@ description: >
   and pushes the lead into Follow Up Boss via webhook. Default keyword set is
   SHOWING / OPENHOUSE / DETAILS / <STREET_NAME>. Documented uplift from content-matrix research:
   5 showings/month → 23 showings/month per listing after the automation is live. Supports three
-  operations — `setup` (build the flow at-Active), `pause` (remove showing triggers at-Sold),
+  operations.  `setup` (build the flow at-Active), `pause` (remove showing triggers at-Sold),
   and `update` (price change, address fix, agent reassignment). Use whenever Matt says "set up
   manychat for <address>", "configure manychat keywords for <MLS#>", "build the manychat
   automation for <listing>", or "manychat for <address>".
@@ -25,9 +25,23 @@ action_types:
   - ops:manychat_setup
   - ops:manychat_pause
   - ops:manychat_update
+output_type: operational
+target_platforms: []
+asset_destination: no asset; state mutation only (logged in marketing_decisions)
+auto_inputs: ["current campaign/account state"]
+required_inputs: ["account_id OR campaign_id"]
+optional_inputs: ["budget_delta_pct", "pause_reason"]
+estimated_runtime_min: 3
+cost_usd_estimate: $0.01-$0.10 per call (mostly API quota; minimal Anthropic)
+thumbnail_uri: out/proof/2026-05-17/exemplars/sample.html
+example_outputs: []
 ---
 
-# ops-manychat — ManyChat IG DM Automation Producer
+# ops-manychat.  ManyChat IG DM Automation Producer
+
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
 
 **Scope.** Configures a ManyChat keyword-triggered Instagram DM flow per Ryan Realty listing.
 Each listing gets its own flow with four default keyword triggers (`SHOWING`, `OPENHOUSE`,
@@ -39,7 +53,7 @@ record (that is `ops-fub-crm`), nor the landing page itself (that is `site-page-
 
 **Status.** Canonical. Locked 2026-05-14.
 
-**Producer category.** Section D — Operational Producer (per `marketing_brain_skills/producers/REGISTRY.md`).
+**Producer category.** Section D.  Operational Producer (per `marketing_brain_skills/producers/REGISTRY.md`).
 
 **Exemplar output:** `out/manychat/<slug>/` plus a row mutation in `marketing_brain_actions`
 with `executor_response.flow_id` set after a successful ManyChat API call.
@@ -50,17 +64,17 @@ with `executor_response.flow_id` set after a successful ManyChat API call.
 
 | Reference | Why |
 |---|---|
-| `CLAUDE.md` §0 — Data Accuracy mandate | Address, MLS ID, agent name, scheduler URL all trace to verified sources. No fabricating. Outranks all. |
-| `CLAUDE.md` §0.5 — Draft-First, Commit-Last | Show flow config to Matt before sending to ManyChat API. Wait for explicit approval. Outranks all. |
-| `CLAUDE.md` "Voice + content" | Flow messages obey brand voice — no exclamation marks, no banned vocab, "you/your" subject, warm/direct/honest. |
-| `design_system/ryan-realty/SKILL.md` | Brand register — message copy reads like Ryan Realty, not generic auto-DM. |
+| `CLAUDE.md` §0.  Data Accuracy mandate | Address, MLS ID, agent name, scheduler URL all trace to verified sources. No fabricating. Outranks all. |
+| `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Show flow config to Matt before sending to ManyChat API. Wait for explicit approval. Outranks all. |
+| `CLAUDE.md` "Voice + content" | Flow messages obey brand voice.  no exclamation marks, no banned vocab, "you/your" subject, warm/direct/honest. |
+| `design_system/ryan-realty/SKILL.md` | Brand register.  message copy reads like Ryan Realty, not generic auto-DM. |
 | `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes; phrasing of greetings + closings. |
-| `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint — flow copy mirrors this register. |
+| `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint.  flow copy mirrors this register. |
 | `docs/MARKETING_LEAD_FLOW.md` | FUB webhook contract; tag conventions; conditional logic for seller-intent tagging. |
 | `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §2 | Conditional lead-form tag mapping (hot-seller / warm-seller / nurture-only). |
-| `marketing_brain_skills/producers/TEMPLATE.md` | Producer skeleton — section order and status flow SQL. |
+| `marketing_brain_skills/producers/TEMPLATE.md` | Producer skeleton.  section order and status flow SQL. |
 | `marketing_brain_skills/producers/REGISTRY.md` | Section D row pointer. |
-| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned content gate — applies to flow messages just like captions. |
+| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned content gate.  applies to flow messages just like captions. |
 
 ---
 
@@ -97,7 +111,7 @@ type ManychatAction = 'setup' | 'pause' | 'update';
 interface ManychatPayload {
   mls_id: string;                   // required for all actions
   action?: ManychatAction;          // default 'setup'
-  keywords?: string[];              // optional override — UPPERCASE, no spaces
+  keywords?: string[];              // optional override.  UPPERCASE, no spaces
   // Update-only fields (action === 'update'):
   new_price?: number;
   new_address?: string;
@@ -126,14 +140,14 @@ interface ManychatActionRow {
 ```
 
 Validation: `mls_id` is required for every action. `keywords` (if supplied) must be UPPERCASE,
-2–20 chars each, no spaces, no punctuation. `new_*` fields are only honored when
+2-20 chars each, no spaces, no punctuation. `new_*` fields are only honored when
 `action === 'update'`.
 
 ---
 
 ## 4. The recipe
 
-### Step 1 — Read the action row
+### Step 1.  Read the action row
 
 ```sql
 UPDATE marketing_brain_actions
@@ -143,7 +157,7 @@ WHERE id = '<action_id>' AND status = 'pending';
 
 If row is not `status='pending'`, halt silently (another agent already owns it).
 
-### Step 2 — Verify env vars before any work
+### Step 2.  Verify env vars before any work
 
 Required: `MANYCHAT_API_KEY` (Public API, Pro account), `FUB_API_KEY` (used server-side at
 the webhook target for signature validation), `FUB_INBOUND_WEBHOOK_URL` (production:
@@ -152,17 +166,17 @@ the webhook target for signature validation), `FUB_INBOUND_WEBHOOK_URL` (product
 If any is missing or blank, halt. Surface the specific var names, set `status='killed'`
 with `executor_response.error='env_missing'`. Stop.
 
-### Step 3 — Load mandatory references
+### Step 3.  Load mandatory references
 
-- `CLAUDE.md` §0 — Data Accuracy
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
+- `CLAUDE.md` §0.  Data Accuracy
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `docs/MARKETING_LEAD_FLOW.md` — FUB webhook contract and tagging conventions
+- `docs/MARKETING_LEAD_FLOW.md`.  FUB webhook contract and tagging conventions
 
-### Step 4 — Pull the listing record (Supabase, live)
+### Step 4.  Pull the listing record (Supabase, live)
 
 The flow copy needs verified address, street name, list agent, and the public landing page
-URL. Never inherit these from the action row payload — re-pull live.
+URL. Never inherit these from the action row payload.  re-pull live.
 
 ```sql
 SELECT
@@ -191,9 +205,9 @@ Resolve:
 - `landing_page_url` = `https://ryan-realty.com/listings/<slug>`.
 - `scheduler_url` = `https://ryan-realty.com/schedule-showing/<slug>`.
 
-### Step 5 — Resolve keyword list
+### Step 5.  Resolve keyword list
 
-If `payload.keywords` is supplied, use it verbatim after validation (UPPERCASE, 2–20 chars,
+If `payload.keywords` is supplied, use it verbatim after validation (UPPERCASE, 2-20 chars,
 no spaces, no punctuation). Otherwise build the default:
 
 ```
@@ -214,14 +228,14 @@ For each keyword in the resolved list, if it is already in use by another active
 - If `SHOWING`, `OPENHOUSE`, or `DETAILS` collides (which should never happen with the
   one-flow-per-listing rule), halt. Surface to Matt with the colliding flow's ID and name.
 
-### Step 6 — Build the flow config JSON
+### Step 6.  Build the flow config JSON
 
 The flow is a 7-step linear graph. The structure of the JSON payload that gets sent to the
 ManyChat `/fb/sending/sendFlow` and `/fb/page/createFlow` endpoints is:
 
 ```json
 {
-  "name": "Listing — <Street Number> <Street Name> (<MlsId>)",
+  "name": "Listing.  <Street Number> <Street Name> (<MlsId>)",
   "triggers": [
     {
       "type": "keyword_match",
@@ -257,8 +271,8 @@ ManyChat `/fb/sending/sendFlow` and `/fb/page/createFlow` endpoints is:
       "text": "What's your timeline?",
       "options": [
         { "label": "This month", "next": "step_4_capture", "tag": "timeline-this-month" },
-        { "label": "1–3 months", "next": "step_4_capture", "tag": "timeline-1-3mo" },
-        { "label": "3–6 months", "next": "step_4_capture", "tag": "timeline-3-6mo" },
+        { "label": "1-3 months", "next": "step_4_capture", "tag": "timeline-1-3mo" },
+        { "label": "3-6 months", "next": "step_4_capture", "tag": "timeline-3-6mo" },
         { "label": "Just looking", "next": "step_4_capture", "tag": "timeline-just-looking" }
       ]
     },
@@ -303,7 +317,7 @@ ManyChat `/fb/sending/sendFlow` and `/fb/page/createFlow` endpoints is:
     {
       "id": "step_7_closing",
       "type": "text",
-      "text": "Thanks. <list_agent_first_name> will follow up shortly.\n\n— Ryan Realty"
+      "text": "Thanks. <list_agent_first_name> will follow up shortly.\n\n.  Ryan Realty"
     }
   ]
 }
@@ -311,24 +325,24 @@ ManyChat `/fb/sending/sendFlow` and `/fb/page/createFlow` endpoints is:
 
 All placeholder tokens (`<Street Name>`, `<list_agent_first_name>`, `<landing_page_url>`,
 `<scheduler_url>`, etc.) are resolved at build time. The JSON sent to ManyChat must contain
-no unresolved `<>` placeholders. Run a grep on the serialized JSON for `<` before sending —
+no unresolved `<>` placeholders. Run a grep on the serialized JSON for `<` before sending. 
 zero hits, or halt.
 
-### Step 7 — Voice gate the flow copy
+### Step 7.  Voice gate the flow copy
 
 Grep every `text` and `prompt` and `label` and `options[].label` against the banned vocab
 union in `marketing_brain_skills/brand-voice/voice_guidelines.md` §6. Also grep for:
 
 - Exclamation marks (banned in flow copy except in user-facing brand assets where also banned).
-- Em-dashes (`—`) in body copy. The default flow uses an em-dash in step 7 (`— Ryan Realty`)
-  which is allowed ONLY as a signature dash. Body sentences may not contain `—`.
+- Em-dashes (`. `) in body copy. The default flow uses an em-dash in step 7 (`.  Ryan Realty`)
+  which is allowed ONLY as a signature dash. Body sentences may not contain `. `.
 - Semicolons.
 - AI filler: "delve," "leverage," "tapestry," "robust," "seamless," etc.
 - Banned phrases: "your real estate journey," "we are passionate," "premier brokerage," etc.
 
 Any hit → halt. Re-write the offending copy. Re-validate. Do not relax the gate.
 
-### Step 8 — Write the draft to disk
+### Step 8.  Write the draft to disk
 
 ```
 out/manychat/<slug>/
@@ -338,7 +352,7 @@ out/manychat/<slug>/
 └── citations.json            ← MLS data trace per CLAUDE.md §0
 ```
 
-`citations.json` shape — one entry per resolved field used in flow copy (address, list agent,
+`citations.json` shape.  one entry per resolved field used in flow copy (address, list agent,
 landing URL, scheduler URL):
 
 ```json
@@ -356,23 +370,23 @@ landing URL, scheduler URL):
 }
 ```
 
-### Step 9 — Transition to `ready` and surface to Matt
+### Step 9.  Transition to `ready` and surface to Matt
 
 Transition the row per §8 SQL (`status='ready'`, populate `executor_response` with
 `draft_path`, `flow_name`, `keywords`, `flow_id: null`, `voice_gate: 'pass'`). Then surface
 the draft per §6. Stop and wait.
 
-### Step 10 — Execute (post-approval only)
+### Step 10.  Execute (post-approval only)
 
-After Matt's explicit approval words (`matt-explicit` gate — see §7), transition to
+After Matt's explicit approval words (`matt-explicit` gate.  see §7), transition to
 `status='approved'` per §8 SQL, then call the ManyChat API.
 
-**`setup`** — `POST /fb/page/createFlow` with `flow-config.json` as body. Capture `flow_id`
+**`setup`**.  `POST /fb/page/createFlow` with `flow-config.json` as body. Capture `flow_id`
 from the 200 response; write to `out/manychat/<slug>/flow-id.txt`. Then `POST
-/fb/page/publishFlow` with `{ "flow_id": "<flow_id>" }`. On 4xx/5xx, do not retry blindly —
+/fb/page/publishFlow` with `{ "flow_id": "<flow_id>" }`. On 4xx/5xx, do not retry blindly. 
 surface the response body to Matt and halt (see §9).
 
-**`pause`** — Look up the existing `flow_id` from `marketing_brain_actions` history (most
+**`pause`**.  Look up the existing `flow_id` from `marketing_brain_actions` history (most
 recent `ops:manychat_setup` row for the same `mls_id`, status `executed`). If absent, query
 ManyChat for flows tagged `listing-<mls_id>` and pick the one in `status='active'`. If still
 ambiguous, surface to Matt. Then `POST /fb/page/updateFlow` with a body that keeps only the
@@ -380,23 +394,23 @@ ambiguous, surface to Matt. Then `POST /fb/page/updateFlow` with a body that kee
 home went under contract. If you'd like to see similar homes, reply here." Step 5 swaps the
 scheduler link for `https://ryan-realty.com/listings/<slug>?status=sold` (similar-home page).
 
-**`update`** — Re-render the flow config JSON with the new fields (price, address, keywords,
+**`update`**.  Re-render the flow config JSON with the new fields (price, address, keywords,
 agent), then `POST /fb/page/updateFlow` with the existing `flow_id` and the new config body.
 Write a `change-log.json` to `out/manychat/<slug>/` showing field-level diffs.
 
 All three operations carry the `Authorization: Bearer <MANYCHAT_API_KEY>` header and
 `Content-Type: application/json`.
 
-### Step 11 — Capture results, transition to `executed`
+### Step 11.  Capture results, transition to `executed`
 
-Update the action row per the `executed` transition in §8 — populate `executor_response`
+Update the action row per the `executed` transition in §8.  populate `executor_response`
 with the resolved `flow_id`, `published: true`, `keywords_deployed`, the raw ManyChat
 response, and `executed_at`.
 
-### Step 12 — Confirm to Matt
+### Step 12.  Confirm to Matt
 
 ```
-ManyChat executed — <setup | pause | update> · <address>
+ManyChat executed.  <setup | pause | update> · <address>
 
   Flow ID:  <flow_id>
   Keywords: <comma-separated>
@@ -418,7 +432,7 @@ delta to `content_performance`.
 |---|---|---|
 | ManyChat Public API | Flow create / update / publish; keyword check | `MANYCHAT_API_KEY` |
 | Supabase MCP | Listing lookup + action row transitions | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
-| FUB inbound webhook | Lead delivery target (not called directly — ManyChat calls it server-side) | `FUB_INBOUND_WEBHOOK_URL`, `FUB_API_KEY` |
+| FUB inbound webhook | Lead delivery target (not called directly.  ManyChat calls it server-side) | `FUB_INBOUND_WEBHOOK_URL`, `FUB_API_KEY` |
 | `lib/manychat.ts` (build if absent) | API wrapper for ManyChat REST calls | repo path |
 | Voice gate grep | banned vocab + punctuation check | `marketing_brain_skills/brand-voice/voice_guidelines.md` §6 |
 
@@ -441,7 +455,7 @@ out/manychat/<slug>/
 **Surface format (present to Matt exactly like this for `setup`):**
 
 ```
-ManyChat flow draft — <slug>
+ManyChat flow draft.  <slug>
 
   ADDRESS
     <StreetNumber> <StreetName>, <City> (MLS# <mls_id>)
@@ -455,13 +469,13 @@ ManyChat flow draft — <slug>
     <STREET_NAME_UPPER>
 
   FLOW STEPS
-    1. Greeting — "Hi. Thanks for reaching out about <Street>..."
-    2. Qualifying Q1 — agent representation (Yes / No / I'm an agent)
-    3. Qualifying Q2 — timeline (4 options)
-    4. Capture — first name + phone
-    5. Send links — property page + showing scheduler
+    1. Greeting.  "Hi. Thanks for reaching out about <Street>..."
+    2. Qualifying Q1.  agent representation (Yes / No / I'm an agent)
+    3. Qualifying Q2.  timeline (4 options)
+    4. Capture.  first name + phone
+    5. Send links.  property page + showing scheduler
     6. Webhook → FUB inbound (<FUB_INBOUND_WEBHOOK_URL>)
-    7. Closing — "Thanks. <FirstName> will follow up shortly."
+    7. Closing.  "Thanks. <FirstName> will follow up shortly."
 
   VOICE GATE: pass (no banned vocab, no exclamation marks, no semicolons)
 
@@ -469,10 +483,10 @@ ManyChat flow draft — <slug>
     out/manychat/<slug>/{flow-config.json, keywords.txt, citations.json}
 
   VERIFICATION TRACE
-    - Address — Supabase listings, MlsId='<mls_id>', fetched <iso>
-    - List agent — Supabase listings, MlsId='<mls_id>', fetched <iso>
-    - Landing page URL — derived from slug; verified live (HEAD 200)
-    - Scheduler URL — derived from slug; verified live (HEAD 200)
+    - Address.  Supabase listings, MlsId='<mls_id>', fetched <iso>
+    - List agent.  Supabase listings, MlsId='<mls_id>', fetched <iso>
+    - Landing page URL.  derived from slug; verified live (HEAD 200)
+    - Scheduler URL.  derived from slug; verified live (HEAD 200)
 
 Reply "set up manychat for <address>" / "approved" / "go" to send to ManyChat and publish.
 ```
@@ -494,7 +508,7 @@ Then stop. Do not call the ManyChat API. Wait.
 
 | approval_type | what it means | who can grant |
 |---|---|---|
-| `matt-explicit` | Matt explicitly names the action and listing verbatim — never inferred from a passing voice gate or a successful draft build | Matt only |
+| `matt-explicit` | Matt explicitly names the action and listing verbatim.  never inferred from a passing voice gate or a successful draft build | Matt only |
 
 **Approval words:** `"set up manychat for <address>"`, `"approved"`, `"go"`, `"ship it"`,
 `"proceed"`. Plain `"yes"` is acceptable only if the immediately preceding turn from this
@@ -574,15 +588,15 @@ WHERE id='<id>';
 | failure | symptoms | recovery |
 |---|---|---|
 | Missing env var | `MANYCHAT_API_KEY`, `FUB_API_KEY`, or `FUB_INBOUND_WEBHOOK_URL` not set or blank | Halt at Step 2. Surface the specific var name. Set `status='killed'`, `executor_response.error='env_missing'`. Do not hard-code. |
-| Listing not found or agent unresolved | Supabase returns 0 rows for `MlsId`, or `ListAgentFullName` is null/empty | Halt at Step 4. Surface: "MlsId=<id> not found" or "ListAgentFullName empty — cannot personalize." Set `status='killed'`. Do not infer from another field. |
+| Listing not found or agent unresolved | Supabase returns 0 rows for `MlsId`, or `ListAgentFullName` is null/empty | Halt at Step 4. Surface: "MlsId=<id> not found" or "ListAgentFullName empty.  cannot personalize." Set `status='killed'`. Do not infer from another field. |
 | Keyword collision | Street-name token collides → auto-fallback to `<StreetNumber+StreetName>` and re-check. `SHOWING`/`OPENHOUSE`/`DETAILS` collision → halt (structural leak, should never happen). | Note fallback in surface message; halt + surface on reserved-token collision or double-fallback collision. |
 | Voice gate fails | Banned vocab, exclamation, em-dash in body, semicolon, or banned phrase in any flow text | Halt at Step 7. Rewrite copy, re-validate. Max 2 auto-iterations before surfacing the specific rule + failing line. |
-| ManyChat API 4xx | 400 (malformed), 401 (bad token), 403 (no Pro plan), 422 (validation — usually an unresolved placeholder) | Halt. Surface the response body. Do not retry — these are not transient. |
+| ManyChat API 4xx | 400 (malformed), 401 (bad token), 403 (no Pro plan), 422 (validation.  usually an unresolved placeholder) | Halt. Surface the response body. Do not retry.  these are not transient. |
 | ManyChat API 5xx | 500/502/503/504 on `createFlow` or `publishFlow` | Exponential backoff (1s, 4s, 16s). After 3 consecutive 5xx, halt and surface. |
 | FUB webhook unreachable | `FUB_INBOUND_WEBHOOK_URL` HEAD returns non-200, or ManyChat reports the webhook step failed at publish | Halt. Surface: "Verify the endpoint at `app/api/leads/manychat-inbound/route.ts` is deployed." Set `status='killed'`. |
-| Unresolved placeholder | Serialized flow JSON contains a literal `<` after build | Halt. Surface the specific token — almost always a null Supabase column or missing payload field. |
+| Unresolved placeholder | Serialized flow JSON contains a literal `<` after build | Halt. Surface the specific token.  almost always a null Supabase column or missing payload field. |
 | Pause/update: flow not found | `pause` has no prior executed setup row + no ManyChat-tagged flow for `listing-<mls_id>`; or `update` targets a `flow_id` that returns 404 | Halt. Surface: "No active flow for MlsId=<id>. Re-run as `setup` to rebuild." Set `status='killed'`. |
-| ManyChat endpoint shape drift | Public API route names listed here (`createFlow`, `updateFlow`, `publishFlow`, `getKeywords`) may differ in the live API version | On first run, verify endpoints against current ManyChat docs. Surface any 404 immediately — do not retry against a different route silently. |
+| ManyChat endpoint shape drift | Public API route names listed here (`createFlow`, `updateFlow`, `publishFlow`, `getKeywords`) may differ in the live API version | On first run, verify endpoints against current ManyChat docs. Surface any 404 immediately.  do not retry against a different route silently. |
 
 ---
 
@@ -590,47 +604,47 @@ WHERE id='<id>';
 
 **Required reading before executing:**
 
-- `CLAUDE.md` §0 — Data Accuracy mandate (outranks everything)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last (outranks everything)
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — banned vocab union, voice
+- `CLAUDE.md` §0.  Data Accuracy mandate (outranks everything)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union, voice
   attributes
-- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` — Matt's writing fingerprint
-- `docs/MARKETING_LEAD_FLOW.md` — FUB webhook contract, conditional tagging rules
-- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §2 — seller-intent tag taxonomy
+- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
+- `docs/MARKETING_LEAD_FLOW.md`.  FUB webhook contract, conditional tagging rules
+- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §2.  seller-intent tag taxonomy
 
 **Capabilities used inside this producer:**
 
-- `lib/manychat.ts` — REST wrapper (build if absent); follows the pattern of
+- `lib/manychat.ts`.  REST wrapper (build if absent); follows the pattern of
   `lib/followupboss.ts`
-- Supabase MCP — listings table read + `marketing_brain_actions` write
-- Voice gate grep — checks every flow message against
+- Supabase MCP.  listings table read + `marketing_brain_actions` write
+- Voice gate grep.  checks every flow message against
   `marketing_brain_skills/brand-voice/voice_guidelines.md` §6
 
 **Sister producers commonly chained with this:**
 
-- `marketing_brain_skills/producers/ops-fub-crm` — the inbound webhook lands a row in FUB
+- `marketing_brain_skills/producers/ops-fub-crm`.  the inbound webhook lands a row in FUB
   that triggers tag application + sequence enrollment; this producer hands the lead off,
   but the FUB-side handling is owned there
-- `marketing_brain_skills/producers/site-page-create` — owns the landing page that the flow
+- `marketing_brain_skills/producers/site-page-create`.  owns the landing page that the flow
   links to; verify the page exists before publishing the flow
-- `social_media_skills/list-kit/SKILL.md` — the at-Active orchestrator that typically
+- `social_media_skills/list-kit/SKILL.md`.  the at-Active orchestrator that typically
   generates the `ops:manychat_setup` action row alongside video, flyers, carousel, and
   single-post deliverables
 
 **Playbooks and pipeline docs:**
 
-- `automation_skills/content_engine/SKILL.md` — content routing bus (this producer is
+- `automation_skills/content_engine/SKILL.md`.  content routing bus (this producer is
   ops, not content, so it does NOT route through here)
-- `social_media_skills/platform-best-practices/SKILL.md` — IG DM rules and engagement-bait
+- `social_media_skills/platform-best-practices/SKILL.md`.  IG DM rules and engagement-bait
   prohibitions
 
 **Banned content gate:**
 
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — applies to flow message copy
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  applies to flow message copy
 
 **Registry entry:**
 
-- `marketing_brain_skills/producers/REGISTRY.md` — Section D, row `ops-manychat`
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section D, row `ops-manychat`
 
 ---
 
@@ -640,15 +654,28 @@ WHERE id='<id>';
    draft surface ≠ approval. The `matt-explicit` gate is per-action-row.
 2. **Never inherit listing data from the action row payload.** Re-pull Supabase per CLAUDE.md §0.
 3. **Never use exclamation marks, em-dashes in body, or semicolons in flow copy.** The only
-   allowed em-dash is the signature dash in step 7 (`— Ryan Realty`).
+   allowed em-dash is the signature dash in step 7 (`.  Ryan Realty`).
 4. **Never write "I" as the subject.** Voice is "you/your" + "we/our team." Rewrite "I'll get
    back to you" as "<FirstName> will follow up shortly."
 5. **Never strip the qualifying questions to shorten the flow.** Agent-check + timeline drive
    the FUB tag logic that underpins the 5 → 23 showings/month uplift.
-6. **Never auto-retry a ManyChat 4xx response.** 400/401/403/422 are signal — surface and
+6. **Never auto-retry a ManyChat 4xx response.** 400/401/403/422 are signal.  surface and
    wait. Only 5xx is retriable.
 7. **Never inject hashtags into flow messages.** DMs are a hashtag-stripped surface per the
    CLAUDE.md "Voice + content" rule.
 8. **Never hard-code the FUB webhook URL or overwrite another listing's keyword.** Read
    `FUB_INBOUND_WEBHOOK_URL` from env; a `SHOWING`/`OPENHOUSE`/`DETAILS` collision is a
-   structural leak — halt, do not resolve silently.
+   structural leak.  halt, do not resolve silently.
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`

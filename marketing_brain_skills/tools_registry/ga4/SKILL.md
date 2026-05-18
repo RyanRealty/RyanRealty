@@ -9,9 +9,9 @@ description: Use this skill when a task involves "GA4 analytics", "Google Analyt
 
 This is a capability skill used by the marketing brain's ingestion, audit, and diagnostic layers. Every task that invokes this skill also loads:
 
-- `CLAUDE.md` §0 — Data Accuracy mandate (outranks all other instructions)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `marketing_brain_skills/tools_registry/supabase/SKILL.md` — where ingested rows land
+- `CLAUDE.md` §0.  Data Accuracy mandate (outranks all other instructions)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
+- `marketing_brain_skills/tools_registry/supabase/SKILL.md`.  where ingested rows land
 
 ---
 
@@ -34,9 +34,9 @@ This is a capability skill used by the marketing brain's ingestion, audit, and d
 | Data source | Use instead |
 |---|---|
 | Ryan Realty paid ad performance (reach, impressions, ROAS) | Meta Graph API (`meta-graph/SKILL.md`) |
-| Google organic search positions and click-through rates | Google Search Console (`gsc/` — pending) |
-| Competitor website traffic | GA4 never exposes cross-property data — use Apify (`apify/SKILL.md`) |
-| Lead pipeline and CRM data | Follow Up Boss (`follow-up-boss/` — pending) |
+| Google organic search positions and click-through rates | Google Search Console (`gsc/`.  pending) |
+| Competitor website traffic | GA4 never exposes cross-property data.  use Apify (`apify/SKILL.md`) |
+| Lead pipeline and CRM data | Follow Up Boss (`follow-up-boss/`.  pending) |
 | MLS / listing data | Spark API (`spark-mls/SKILL.md`) or Supabase `listings` table |
 | Social platform metrics (followers, video plays, engagement) | Platform-specific APIs (meta-graph, youtube-data, tiktok-api) |
 
@@ -54,19 +54,19 @@ The rule: GA4 answers "what happened on our website." Every other analytics ques
 
 **Service account:** `viewer@ryanrealty.iam.gserviceaccount.com`
 
-This account is shared with GSC ingestion. It must be added as a **Viewer** in GA4 Admin → Property → Property Access Management. The Viewer role is sufficient for all Data API read operations. Do not grant Editor or Admin — read-only is intentional.
+This account is shared with GSC ingestion. It must be added as a **Viewer** in GA4 Admin → Property → Property Access Management. The Viewer role is sufficient for all Data API read operations. Do not grant Editor or Admin.  read-only is intentional.
 
 The same service account JSON is referenced by both the GA4 and GSC ingestors. When the JSON is rotated (GCP Console → Service Accounts → Keys → Add Key), update it in both `.env.local` and Vercel environment variables, then redeploy.
 
 ```ts
-// lib/marketing-brain/ga4-client.ts — canonical client setup
+// lib/marketing-brain/ga4-client.ts.  canonical client setup
 import { BetaAnalyticsDataClient } from '@google-analytics/data'
 
 function getGA4Client(): BetaAnalyticsDataClient {
   const credentialsJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
   if (!credentialsJson) {
     throw new Error(
-      'GOOGLE_SERVICE_ACCOUNT_JSON is not set. Add the service account JSON string to .env.local and Vercel env.',
+      'GOOGLE_SERVICE_ACCOUNT_JSON is not set. Add the service account JSON string to.env.local and Vercel env.',
     )
   }
   const credentials = JSON.parse(credentialsJson)
@@ -91,9 +91,9 @@ SDK: `@google-analytics/data` (npm). Wraps the REST API; preferred over raw fetc
 
 Base URL: `https://analyticsdata.googleapis.com/v1beta/properties/{property_id}`
 
-All calls below also work through the `@google-analytics/data` SDK client — the SDK method names map 1:1 to the REST endpoints.
+All calls below also work through the `@google-analytics/data` SDK client.  the SDK method names map 1:1 to the REST endpoints.
 
-### `runReport` — standard date-range report
+### `runReport`.  standard date-range report
 
 The workhorse. Use for all historical queries (daily snapshot, weekly audit, monthly baseline).
 
@@ -111,9 +111,9 @@ const [response] = await client.runReport({
 
 Date string formats accepted: `'YYYY-MM-DD'`, `'today'`, `'yesterday'`, `'NdaysAgo'` (e.g. `'30daysAgo'`).
 
-### `runRealtimeReport` — last 30 minutes
+### `runRealtimeReport`.  last 30 minutes
 
-Use sparingly — real-time data is sampled more aggressively and is not archived to `marketing_channel_daily`.
+Use sparingly.  real-time data is sampled more aggressively and is not archived to `marketing_channel_daily`.
 
 ```ts
 const [response] = await client.runRealtimeReport({
@@ -123,7 +123,7 @@ const [response] = await client.runRealtimeReport({
 })
 ```
 
-### `batchRunReports` — multiple reports in one round trip
+### `batchRunReports`.  multiple reports in one round trip
 
 Use when a single cron job needs 3+ distinct slices (e.g., traffic sources + top pages + conversion events in one call). Reduces latency and quota consumption.
 
@@ -164,7 +164,7 @@ const [batchResponse] = await client.batchRunReports({
 |---|---|---|
 | `sessions` | Total sessions in the date range | Primary volume metric for channel comparison |
 | `totalUsers` | Unique users | Deduped by user_id / device fingerprint |
-| `screenPageViews` | Total page views (includes repeated views of same URL) | Rename from `pageviews` in GA4 — old UA name no longer valid |
+| `screenPageViews` | Total page views (includes repeated views of same URL) | Rename from `pageviews` in GA4.  old UA name no longer valid |
 | `engagementRate` | Sessions with ≥10s active, ≥1 conversion, or ≥2 pageviews | Replaces bounce rate as the primary quality metric in GA4 |
 | `averageSessionDuration` | Avg seconds per session | |
 | `engagementDuration` | Total engaged time in seconds | Useful for content quality audits |
@@ -188,7 +188,7 @@ const [batchResponse] = await client.batchRunReports({
 
 ## Custom events tracked on ryan-realty.com
 
-These are the canonical on-site conversion events. The list below is the source of truth for `LEAD_EVENT_NAMES` in `app/actions/ga4-report.ts`. Cross-check against the GA4 Admin → Events list before adding new filter queries — a new event only appears after it fires at least once in the property.
+These are the canonical on-site conversion events. The list below is the source of truth for `LEAD_EVENT_NAMES` in `app/actions/ga4-report.ts`. Cross-check against the GA4 Admin → Events list before adding new filter queries.  a new event only appears after it fires at least once in the property.
 
 | Event name | Trigger |
 |---|---|
@@ -208,7 +208,7 @@ These are the canonical on-site conversion events. The list below is the source 
 
 ## Common report recipes
 
-### Top traffic sources — last 7 days
+### Top traffic sources.  last 7 days
 
 ```ts
 const [response] = await client.runReport({
@@ -221,7 +221,7 @@ const [response] = await client.runReport({
 })
 ```
 
-### Top pages by sessions — last 30 days
+### Top pages by sessions.  last 30 days
 
 ```ts
 const [response] = await client.runReport({
@@ -239,7 +239,7 @@ const [response] = await client.runReport({
 })
 ```
 
-### Conversion funnel — custom lead events, last 30 days
+### Conversion funnel.  custom lead events, last 30 days
 
 ```ts
 const [response] = await client.runReport({
@@ -257,7 +257,7 @@ const [response] = await client.runReport({
 })
 ```
 
-### YoY comparison — same window across two years
+### YoY comparison.  same window across two years
 
 ```ts
 const [response] = await client.runReport({
@@ -269,11 +269,11 @@ const [response] = await client.runReport({
   dimensions: [{ name: 'sessionSource' }],
   metrics: [{ name: 'sessions' }, { name: 'conversions' }],
 })
-// response.rows → each row has two metric sets — one per dateRange
+// response.rows → each row has two metric sets.  one per dateRange
 // Access via row.metricValues[0] (current) and row.metricValues[1] (prior)
 ```
 
-### Engagement by device — last 7 days
+### Engagement by device.  last 7 days
 
 ```ts
 const [response] = await client.runReport({
@@ -300,7 +300,7 @@ GA4 Data API is **free** within standard quota limits.
 | Concurrent requests | 10 per project | Serialize cron calls; do not fan out more than 10 simultaneous runReport calls |
 | Real-time requests | 10 per project per minute | Avoid calling runRealtimeReport in bulk loops |
 
-Ryan Realty's traffic volume means individual runReport calls are well within token budget. The daily snapshot ingestor (`snapshot-channels-ga4`) runs one batchRunReports call per day — total token consumption is negligible. No billing alerts are necessary at current scale.
+Ryan Realty's traffic volume means individual runReport calls are well within token budget. The daily snapshot ingestor (`snapshot-channels-ga4`) runs one batchRunReports call per day.  total token consumption is negligible. No billing alerts are necessary at current scale.
 
 **Future scale note:** GA4 applies sampling to queries that touch more than 10M events within the date range. At that threshold, set `samplingLevel: 'LARGE'` on the request or split into smaller date windows (e.g., weekly chunks). Ryan Realty's property is nowhere near this threshold today; document for future awareness only.
 
@@ -346,9 +346,9 @@ This server action exposes the `LEAD_EVENT_NAMES` constant and a helper for fetc
 | `GOOGLE_SERVICE_ACCOUNT_JSON` malformed | `SyntaxError: Unexpected token` in JSON.parse | Verify the env var is the full JSON string, not a file path. In Vercel, paste the raw JSON content (not the file path). |
 | `GA4_PROPERTY_ID` missing or wrong format | `404 NOT_FOUND` or `Error: GA4_PROPERTY_ID is not set` | Check GA4 Admin → Property Settings → Property ID. Ensure the value is the numeric ID (e.g., `123456789`), not the measurement ID (`G-XXXXXXXXXX`). |
 | Quota exceeded | `429 RESOURCE_EXHAUSTED` | Unlikely at current volume. If hit: split batchRunReports into smaller batches; add exponential backoff (start at 2s). Check GCP Console → APIs & Services → GA4 Data API → Quotas for current usage. |
-| GA4 not yet ingesting (new property) | `runReport` returns 0 rows; no error | Wait 24–48 hours after property creation for the first data to appear. Check GA4 DebugView to confirm events are firing. |
+| GA4 not yet ingesting (new property) | `runReport` returns 0 rows; no error | Wait 24-48 hours after property creation for the first data to appear. Check GA4 DebugView to confirm events are firing. |
 | Custom event not configured | `eventName` filter returns 0 rows | Confirm the event appears in GA4 Admin → Events. Events only appear after they fire at least once. Check `LEAD_EVENT_NAMES` list against the GA4 Admin event list before building a filter. |
-| Real-time data lag | `runRealtimeReport` returns users but `runReport` for today shows 0 | GA4 processes standard reports with a ~24–48 hour delay. Always query `yesterday` or earlier for stable figures in production snapshots. Never query `today` for archived rows. |
+| Real-time data lag | `runRealtimeReport` returns users but `runReport` for today shows 0 | GA4 processes standard reports with a ~24-48 hour delay. Always query `yesterday` or earlier for stable figures in production snapshots. Never query `today` for archived rows. |
 | Sampling on large date ranges | Response includes `"samplingSpacesSize"` and `"samplingReadRowsCount"` | Ryan Realty volume does not trigger this. If it appears: add `samplingLevel: 'LARGE'` to the request, or split into weekly sub-requests and sum the results manually. |
 
 ---
@@ -356,11 +356,11 @@ This server action exposes the `LEAD_EVENT_NAMES` constant and a helper for fetc
 ## Pre-flight checklist (before any new GA4 report query)
 
 ```
-[ ] GOOGLE_SERVICE_ACCOUNT_JSON confirmed in .env.local (valid JSON, not a file path)
-[ ] GA4_PROPERTY_ID confirmed — numeric ID matching the target property in GA4 Admin
+[ ] GOOGLE_SERVICE_ACCOUNT_JSON confirmed in.env.local (valid JSON, not a file path)
+[ ] GA4_PROPERTY_ID confirmed.  numeric ID matching the target property in GA4 Admin
 [ ] Service account viewer@ryanrealty.iam.gserviceaccount.com confirmed in GA4 Property Access Management
 [ ] Dimension and metric names verified against GA4 API dimension/metric explorer (names differ from UA)
-[ ] Date range uses stable windows (yesterday or earlier) — never query today for production ingestion
+[ ] Date range uses stable windows (yesterday or earlier).  never query today for production ingestion
 [ ] Custom event names cross-checked against GA4 Admin → Events list before building inListFilter
 [ ] batchRunReports used when making 3+ simultaneous requests in one cron execution
 [ ] fetched_at timestamp written to every row for audit trail
@@ -372,13 +372,13 @@ This server action exposes the `LEAD_EVENT_NAMES` constant and a helper for fetc
 
 | Resource | Purpose |
 |---|---|
-| `app/api/cron/marketing-snapshot-ga4/route.ts` | Daily 06:30 UTC ingestion — batchRunReports → marketing_channel_daily |
-| `lib/marketing-brain/audit-website.ts` | Funnel analysis + page leak detection — direct Data API calls |
+| `app/api/cron/marketing-snapshot-ga4/route.ts` | Daily 06:30 UTC ingestion.  batchRunReports → marketing_channel_daily |
+| `lib/marketing-brain/audit-website.ts` | Funnel analysis + page leak detection.  direct Data API calls |
 | `app/actions/ga4-report.ts` | `LEAD_EVENT_NAMES` + on-site lead-event tracking for per-listing attribution |
-| `lib/marketing-brain/diagnose-performance.ts` | Anomaly detection — reads from marketing_channel_daily cache |
+| `lib/marketing-brain/diagnose-performance.ts` | Anomaly detection.  reads from marketing_channel_daily cache |
 | `marketing_brain_skills/tools_registry/supabase/SKILL.md` | Supabase schema, connection, and upsert patterns |
-| `marketing_brain_skills/tools_registry/gsc/SKILL.md` | GSC tool skill (stub) — shares the same service account |
+| `marketing_brain_skills/tools_registry/gsc/SKILL.md` | GSC tool skill (stub).  shares the same service account |
 | `CLAUDE.md` "Marketing Brain Architecture" | Status flow, action-type categories, approval gates |
 | https://developers.google.com/analytics/devguides/reporting/data/v1 | GA4 Data API v1beta reference |
-| https://ga-dev-tools.google/ga4/dimensions-metrics-explorer/ | Live dimension + metric name lookup — use this to verify names before coding |
+| https://ga-dev-tools.google/ga4/dimensions-metrics-explorer/ | Live dimension + metric name lookup.  use this to verify names before coding |
 | https://console.cloud.google.com/apis/api/analyticsdata.googleapis.com | GCP quota dashboard for the Data API |

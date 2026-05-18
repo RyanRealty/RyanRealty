@@ -14,7 +14,7 @@ Audits paid Meta Ads performance at both the account and per-campaign level. Com
 - The weekly brain cycle needs a paid-ads verdict before generating content briefs.
 - Matt wants to know which campaign is wasting spend or needs new creative.
 - A sudden CPL spike needs to be attributed to a specific campaign or a tracking failure.
-- Before increasing or cutting ad budget — confirm the current state of all three campaigns.
+- Before increasing or cutting ad budget.  confirm the current state of all three campaigns.
 - You are writing or debugging `lib/marketing-brain/audit-ads.ts`.
 
 ---
@@ -26,7 +26,7 @@ Every audit is evaluated against the structure locked in `docs/FB_SELLER_CAMPAIG
 | Campaign | Audience type | Daily budget | Role |
 |---|---|---|---|
 | Cold Acquisition | Broad Bend metro | $30 | Find new homeowners who don't know Ryan Realty |
-| Lookalike | 1% Lookalike from FUB past sellers | $20 | 30–50% lower CPL than cold |
+| Lookalike | 1% Lookalike from FUB past sellers | $20 | 30-50% lower CPL than cold |
 | Retargeting | Site visitors to `/sell/*` in last 30 days | $10 | Highest-ROI type, warm leads |
 
 **Total locked budget: $60/day = ~$1,800/month.**
@@ -36,7 +36,7 @@ Campaign role is inferred from campaign name keywords:
 - **lookalike**: "lookalike", "lal", "similar", "past seller", "seed"
 - **retargeting**: "retarg", "retarget", "remarketing", "site visitor", "website"
 
-Campaigns that match none of these are classified as `unknown` — a campaign structure opportunity flag.
+Campaigns that match none of these are classified as `unknown`.  a campaign structure opportunity flag.
 
 ---
 
@@ -60,9 +60,9 @@ Fetches campaign-scope rows from `marketing_channel_daily` and computes for each
 | `flags` | Per-campaign flags (see thresholds below) |
 
 Flags raised per campaign:
-- `underperforming_cpl` (high) — CPL > 2x account average CPL
-- `no_conversions` (medium) — spend > $0, conversions = 0
-- `low_spend` (low) — spend < $5 for the window (likely paused)
+- `underperforming_cpl` (high).  CPL > 2x account average CPL
+- `no_conversions` (medium).  spend > $0, conversions = 0
+- `low_spend` (low).  spend < $5 for the window (likely paused)
 
 ### 2. `detectCreativeFatigue(windowDays, asOfDate)`
 
@@ -78,7 +78,7 @@ Returns a `FatigueSignal` with `flagged: true` when fatigue is confirmed. Also r
 
 Computes actual spend vs expected spend (`$60/day × windowDays`) and per-role expected vs actual.
 
-**Budget drift = actual spend outside 85%–110% of playbook target.**
+**Budget drift = actual spend outside 85%-110% of playbook target.**
 
 Returns account-level and per-role `BudgetEfficiency`. Unknown-role campaigns are reported separately.
 
@@ -138,8 +138,8 @@ interface Opportunity {
 
 | Threshold | Value | Rule |
 |---|---|---|
-| Creative fatigue — CPM | > 25% WoW | Must co-occur with CTR drop to flag fatigue |
-| Creative fatigue — CTR | < −15% WoW | Must co-occur with CPM rise to flag fatigue |
+| Creative fatigue.  CPM | > 25% WoW | Must co-occur with CTR drop to flag fatigue |
+| Creative fatigue.  CTR | < −15% WoW | Must co-occur with CPM rise to flag fatigue |
 | Budget drift (high) | > 110% of target | Over-pacing |
 | Budget drift (low) | < 85% of target | Under-pacing |
 | CPL underperformance | > 2x account CPL | Flag campaign as underperforming |
@@ -166,13 +166,13 @@ interface Opportunity {
 ## Data requirements
 
 Reads only from `public.marketing_channel_daily`:
-- `channel='meta_ads'`, `scope='account'` — account-level totals (spend, cpm, ctr, conversions)
-- `channel='meta_ads'`, `scope='campaign'` — per-campaign rows with `metadata.campaign_name`
-- `channel='fub'`, `scope='account'`, `metric='qualified_seller_leads'` — FUB lead count
+- `channel='meta_ads'`, `scope='account'`.  account-level totals (spend, cpm, ctr, conversions)
+- `channel='meta_ads'`, `scope='campaign'`.  per-campaign rows with `metadata.campaign_name`
+- `channel='fub'`, `scope='account'`, `metric='qualified_seller_leads'`.  FUB lead count
 
 The ingestor (`app/api/cron/marketing-snapshot-meta-ads/route.ts`) must have run for the window. No direct API calls are made from `audit-ads.ts`.
 
-**Minimum data for reliable output:** 14 days for fatigue detection (needs a prior 7-day window). The 7-day fatigue check degrades gracefully when prior-week data is missing — it returns `flagged: false` with null WoW values.
+**Minimum data for reliable output:** 14 days for fatigue detection (needs a prior 7-day window). The 7-day fatigue check degrades gracefully when prior-week data is missing.  it returns `flagged: false` with null WoW values.
 
 ---
 
@@ -184,7 +184,7 @@ Authorization: Bearer $CRON_SECRET
 ```
 
 - `asOfDate` optional. Defaults to yesterday UTC.
-- `windowDays` optional integer (1–365). Defaults to 30.
+- `windowDays` optional integer (1-365). Defaults to 30.
 - Returns `AdsAuditReport` JSON.
 
 ---
@@ -195,14 +195,14 @@ Authorization: Bearer $CRON_SECRET
 
 **Adding a new flag type:** add to the `CampaignFlag['type']` union, implement the detection logic in `analyzeCampaignPerformance`, add an opportunity derivation case in `findOpportunities`, and document the threshold in the table above.
 
-**Changing thresholds:** update the named constants at the top of `audit-ads.ts` (`FATIGUE_CPM_WOW_THRESHOLD`, `FATIGUE_CTR_WOW_THRESHOLD`, `BUDGET_HIGH_THRESHOLD`, `BUDGET_LOW_THRESHOLD`, `CPL_RATIO_THRESHOLD`, `TRACKING_GAP_THRESHOLD`) and the locked-thresholds table in this file. Threshold changes require Matt sign-off — they gate what gets flagged as an opportunity.
+**Changing thresholds:** update the named constants at the top of `audit-ads.ts` (`FATIGUE_CPM_WOW_THRESHOLD`, `FATIGUE_CTR_WOW_THRESHOLD`, `BUDGET_HIGH_THRESHOLD`, `BUDGET_LOW_THRESHOLD`, `CPL_RATIO_THRESHOLD`, `TRACKING_GAP_THRESHOLD`) and the locked-thresholds table in this file. Threshold changes require Matt sign-off.  they gate what gets flagged as an opportunity.
 
 ---
 
 ## Related skills
 
-- `marketing-brain:diagnose-performance` — upstream signal layer; provides `RecommendedAction` vocabulary used by this skill.
-- `marketing-brain:snapshot-channels` — upstream ingestor; writes the `meta_ads` rows this skill reads.
-- `marketing-brain:generate-briefs` — downstream; consumes `AdsAuditReport.opportunities` to propose creative or budget changes.
-- `marketing-brain:weekly-cycle` — orchestrates snapshot + diagnose + audit-ads + generate-briefs in sequence.
-- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` — source of truth for the 3-campaign architecture and budget targets.
+- `marketing-brain:diagnose-performance`.  upstream signal layer; provides `RecommendedAction` vocabulary used by this skill.
+- `marketing-brain:snapshot-channels`.  upstream ingestor; writes the `meta_ads` rows this skill reads.
+- `marketing-brain:generate-briefs`.  downstream; consumes `AdsAuditReport.opportunities` to propose creative or budget changes.
+- `marketing-brain:weekly-cycle`.  orchestrates snapshot + diagnose + audit-ads + generate-briefs in sequence.
+- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`.  source of truth for the 3-campaign architecture and budget targets.

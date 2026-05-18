@@ -27,6 +27,7 @@ import {
 } from '@/lib/pinterest'
 import { getThreadsAccessToken, publishThreadsVideo } from '@/lib/threads'
 import { publishNextdoorPost } from '@/lib/nextdoor'
+import { assertNoDashes, DashViolationError } from '@/lib/punctuation-guard'
 
 /** Fan-out can exceed 60s when Meta poll finishes slowly or FB reel upload is large. */
 export const maxDuration = 300
@@ -144,7 +145,14 @@ function resolveCaption(body: PublishRequest, platform: Platform): string {
   const hashtags = body.hashtagsPerPlatform?.[platform] ?? []
   const base = perPlatform ?? body.captionDefault ?? body.caption ?? ''
   const hashtagSuffix = hashtags.length ? `\n\n${hashtags.join(' ')}` : ''
-  return `${base}${hashtagSuffix}`.trim()
+  const finalCaption = `${base}${hashtagSuffix}`.trim()
+
+  // P0 hard-fail guard: em-dash + en-dash ban at the platform boundary.
+  // Per voice_guidelines.md section 6.1 and CLAUDE.md. Locked 2026-05-15;
+  // code-level enforcement re-applied 2026-05-18 (parallel-session regression).
+  assertNoDashes(finalCaption, { source: `publish:${platform}:caption` })
+
+  return finalCaption
 }
 
 const GATE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000

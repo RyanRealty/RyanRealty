@@ -16,14 +16,30 @@ when_to_use: |
   - "closing announcement for <address or MLS#>"
   - "sold post + linkedin"
   - "wrap up the deal at <address>"
-  - "we closed on <address> — make the posts"
+  - "we closed on <address>.  make the posts"
   - "just sold for <MLS#>"
   - "/sold-deal-summary <address or MLS#>"
 action_types:
   - content:sold_deal_summary
+output_type: text
+target_platforms: ["email", "agentfire_blog"]
+asset_destination: Supabase asset-library bucket + out/proof/<date>/<slug>/
+auto_inputs: ["brand voice rules", "market data from Supabase"]
+required_inputs: ["topic OR mls_id"]
+optional_inputs: ["tone_override", "length_override"]
+estimated_runtime_min: 8
+cost_usd_estimate: $0.10-$0.50 per piece (Anthropic tokens for drafting + voice check)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.html
+example_outputs: []
+    label: "past approved drafts"
+    surface: "email"
 ---
 
-# Sold Deal Summary — IG Just Sold Post + LinkedIn Market-Insight Post
+# Sold Deal Summary.  IG Just Sold Post + LinkedIn Market-Insight Post
+
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
 
 **Scope.** Given one closed Ryan Realty listing, emit two deliverables from one verified data
 pull: an Instagram/Facebook 1080×1350 "Just Sold" static image (S2 template, rendered via
@@ -34,27 +50,27 @@ PNG.
 
 **Status.** Canonical. Locked 2026-05-14.
 
-**Producer category.** Section B — Content Producer (per
+**Producer category.** Section B.  Content Producer (per
 `marketing_brain_skills/producers/REGISTRY.md`).
 
 **Exemplar output:** `out/sold-deal/<slug>/`
 
 ---
 
-## 1. Required references — load before producing
+## 1. Required references.  load before producing
 
 | Reference | Why |
 |---|---|
-| `CLAUDE.md` §0 — Data Accuracy mandate | Every number (sold price, DOM, sale-to-list pct) traces. Outranks all. |
-| `CLAUDE.md` §0.5 — Draft-First, Commit-Last | Render to `out/`, surface both deliverables, wait for explicit approval. |
-| `CLAUDE.md` "Voice + content" — #RyanRealtyBend HARD RULE | IG caption MUST lead its trailing hashtag block with `#RyanRealtyBend`. LinkedIn body is EXEMPT (LinkedIn doesn't honor hashtags well). |
+| `CLAUDE.md` §0.  Data Accuracy mandate | Every number (sold price, DOM, sale-to-list pct) traces. Outranks all. |
+| `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Render to `out/`, surface both deliverables, wait for explicit approval. |
+| `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE | IG caption MUST lead its trailing hashtag block with `#RyanRealtyBend`. LinkedIn body is EXEMPT (LinkedIn doesn't honor hashtags well). |
 | `design_system/ryan-realty/SKILL.md` | Heritage register, navy/cream, type tiers. The IG post inherits S2 conventions. |
 | `marketing_brain_skills/brand-voice/voice_guidelines.md` | Voice attributes, banned vocab union. Applies to BOTH the IG caption AND the LinkedIn body. |
-| `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint — terse, useful, no flourish. |
+| `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` | Matt's writing fingerprint.  terse, useful, no flourish. |
 | `social_media_skills/ig-single-post/SKILL.md` | The S2 Just Sold template renderer. This producer delegates the IG image to it. |
-| `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer — LinkedIn native text vs link-post rules; no-hashtag convention. |
+| `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer.  LinkedIn native text vs link-post rules; no-hashtag convention. |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus. |
-| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned content gate — applies to text as well as visual. |
+| `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned content gate.  applies to text as well as visual. |
 | `marketing_brain_skills/producers/TEMPLATE.md` | Producer skeleton. |
 | `marketing_brain_skills/producers/REGISTRY.md` | Section B row pointer. |
 
@@ -66,7 +82,7 @@ PNG.
 |---|---|---|
 | `content:sold_deal_summary` | `mls_id`, `sold_price`, `close_date`, `dom_total`, `sale_to_list_pct` | One call → IG PNG + IG caption + LinkedIn body |
 
-Captions and the LinkedIn body are first-class deliverables — not afterthoughts on the visual.
+Captions and the LinkedIn body are first-class deliverables.  not afterthoughts on the visual.
 
 **Trigger contexts:** brain-generated when a Supabase scan detects `StandardStatus: Pending →
 Closed` in the last 24h; manual via `produce/SKILL.md` when Matt names a closed address;
@@ -78,16 +94,16 @@ post-close fan-out from `list-kit/SKILL.md` when a kit listing closes.
 
 ```typescript
 interface SoldDealSummaryPayload {
-  // Required — every field traces to the Supabase listings row at close.
+  // Required.  every field traces to the Supabase listings row at close.
   mls_id: string              // e.g. "220189422"
-  sold_price: number          // ClosePrice — actual integer dollars from Supabase
+  sold_price: number          // ClosePrice.  actual integer dollars from Supabase
   close_date: string          // CloseDate, ISO yyyy-mm-dd
   dom_total: number           // Cumulative days from list to close (integer)
   sale_to_list_pct: number    // (ClosePrice / ListPrice) × 100, one-decimal precision
 
-  // Optional — derived or supplied
+  // Optional.  derived or supplied
   linkedin_angle?: string     // 1-line market-insight framing. If absent, recipe derives one.
-  list_agent?: string         // ListAgentFullName — for IG broker headshot resolution
+  list_agent?: string         // ListAgentFullName.  for IG broker headshot resolution
   hero_photo?: string         // URL or path to closing photo (MLS or in-house)
   address?: string            // Composed from "StreetNumber" + "StreetName" if absent
   city?: string               // Bend / Redmond / Sisters / Tumalo / etc.
@@ -112,7 +128,7 @@ rendering. Payload values are inputs, not gospel.
 
 ## 4. The recipe
 
-**Step 1 — Read the action row.** Query `marketing_brain_actions` by `id`. Confirm
+**Step 1.  Read the action row.** Query `marketing_brain_actions` by `id`. Confirm
 `status='pending'`. Transition immediately:
 
 ```sql
@@ -121,12 +137,12 @@ SET status='in_production', executed_at=now()
 WHERE id='<id>' AND status='pending';
 ```
 
-If status is anything other than `pending` at pickup, abort — the row is already being worked.
+If status is anything other than `pending` at pickup, abort.  the row is already being worked.
 
-**Step 2 — Load mandatory references** per §1. Voice rules and the IG #RyanRealtyBend +
+**Step 2.  Load mandatory references** per §1. Voice rules and the IG #RyanRealtyBend +
 LinkedIn no-hashtag rules are enforced at the QA gate, not after the fact.
 
-**Step 3 — Pull and verify source data.** Query Supabase live. Do not trust payload numbers.
+**Step 3.  Pull and verify source data.** Query Supabase live. Do not trust payload numbers.
 
 ```sql
 SELECT
@@ -154,12 +170,12 @@ Verification checks:
 - `< 100`: format as `<pct>% of list` (e.g. `97.4% of list`).
 - Exactly `100.0`: format as `Sold at list`.
 
-**Step 4 — Resolve the listing agent.** Map `"ListAgentEmail"` → `matt-ryan` /
+**Step 4.  Resolve the listing agent.** Map `"ListAgentEmail"` → `matt-ryan` /
 `paul-stevenson` / `rebecca-peterson`. The broker headshot is required for the IG post (S2
 template, per `ig-single-post/SKILL.md` §4). Buyer-side close where Ryan Realty repped the
 buyer = surface to Matt; this producer expects a listing-side close.
 
-**Step 5 — Build the IG/FB Just Sold image (S2 template).** Delegate to
+**Step 5.  Build the IG/FB Just Sold image (S2 template).** Delegate to
 `social_media_skills/ig-single-post/SKILL.md` with `template: 'S2'`:
 
 ```json
@@ -180,14 +196,14 @@ PNG lands at `out/sold-deal/<slug>/ig-post.png`. `ig-single-post` writes its own
 `citations.json`, `provenance.json`, `fonts_used.json`, `design_scorecard.json` next to the
 PNG; copy those into the sold-deal draft folder.
 
-**Step 6 — Write the IG H&H caption** at `out/sold-deal/<slug>/caption-ig.md`:
+**Step 6.  Write the IG H&H caption** at `out/sold-deal/<slug>/caption-ig.md`:
 
 ```
-[Location-anchored close — name the neighborhood or street, one specific anchor]
+[Location-anchored close.  name the neighborhood or street, one specific anchor]
 
-[Deal-detail middle — sold price, DOM, sale-to-list outcome; 1–3 sentences, no clichés]
+[Deal-detail middle.  sold price, DOM, sale-to-list outcome; 1-3 sentences, no clichés]
 
-[Lifestyle close — one specific local detail relevant to the buyer's win]
+[Lifestyle close.  one specific local detail relevant to the buyer's win]
 
 》 <Address>  ·  Sold at $<rounded sold_price>  ·  <dom_total> days  ·  <sale-to-list framed>
 
@@ -208,15 +224,15 @@ Voice constraints (enforced at QA gate):
 - Days = `<int> days`. Pct = one decimal with `+` or `%-of-list` per Step 3.
 - `#RyanRealtyBend` is the FIRST hashtag in the trailing block. Locked 2026-05-14.
 
-**Step 7 — Write the LinkedIn native text post** at `out/sold-deal/<slug>/linkedin-post.md`.
+**Step 7.  Write the LinkedIn native text post** at `out/sold-deal/<slug>/linkedin-post.md`.
 **No image required.** Per `platform-best-practices/SKILL.md`, LinkedIn rewards native text
 (no external link) and paragraph structure over link-shares.
 
-Length target: 150–300 words. Aim for ~200.
+Length target: 150-300 words. Aim for ~200.
 
 Structure:
 
-1. **Opening hook (1–2 sentences).** A market insight, not a self-congratulation. What does
+1. **Opening hook (1-2 sentences).** A market insight, not a self-congratulation. What does
    this close tell a reader about the Deschutes / Bend / Sisters / Tumalo / Redmond market?
    Example openings:
    - "What this Tumalo close tells us about how lenders see Deschutes County rural in 2026."
@@ -229,12 +245,12 @@ Structure:
    signal (rural lender constraints, HOA dynamics, school zone shift). The opening must
    connect to the data, not float free of it.
 
-2. **Middle (3–5 sentences).** The deal as proof point. State the verified facts: sold price
+2. **Middle (3-5 sentences).** The deal as proof point. State the verified facts: sold price
    rounded to nearest $1,000; DOM `<int> days`; sale-to-list framed per Step 3; the market
    context the opening claimed. Treat the LinkedIn reader as an intelligent peer (relocation
    buyer, remote tech professional, investor, another broker). Specific numbers do the work.
 
-3. **Close (1–2 sentences).** A clean offer. Options:
+3. **Close (1-2 sentences).** A clean offer. Options:
    - "If you're tracking the Bend market and want our buyer/seller guides as we update them,
      DM us."
    - "We publish a weekly Bend market read by neighborhood. Reply 'guide' for the next one."
@@ -251,7 +267,7 @@ LinkedIn-specific voice rules:
 - One topic per paragraph; line breaks between paragraphs.
 - Banned vocab union applies per `voice_guidelines.md`.
 
-**Step 8 — Write `citations.json`.** One entry per figure shown in either deliverable.
+**Step 8.  Write `citations.json`.** One entry per figure shown in either deliverable.
 
 ```json
 {
@@ -286,9 +302,9 @@ LinkedIn-specific voice rules:
 }
 ```
 
-**Step 9 — Run the QA gate** (§8). Any `fail` blocks the draft from entering `ready`.
+**Step 9.  Run the QA gate** (§8). Any `fail` blocks the draft from entering `ready`.
 
-**Step 10 — Update the action row.**
+**Step 10.  Update the action row.**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -304,7 +320,7 @@ SET status='ready',
 WHERE id='<action_id>';
 ```
 
-**Step 11 — Surface both deliverables to Matt** (§6). Wait for explicit approval.
+**Step 11.  Surface both deliverables to Matt** (§6). Wait for explicit approval.
 
 ---
 
@@ -343,7 +359,7 @@ out/sold-deal/<slug>/
 **Surface format (present to Matt exactly like this):**
 
 ```
-Sold deal summary ready — <address> · MLS <mls_id>
+Sold deal summary ready.  <address> · MLS <mls_id>
 
   IG / FB POST (S2 Just Sold)
     Image:   out/sold-deal/<slug>/ig-post.png
@@ -357,9 +373,9 @@ Sold deal summary ready — <address> · MLS <mls_id>
     <paste linkedin-post.md contents inline>
 
   VERIFICATION TRACE
-    - $<sold_price>     — Supabase listings, MlsId='<mls_id>', column ClosePrice, fetched <iso>
-    - <dom_total> days  — Supabase listings, MlsId='<mls_id>', column CumulativeDaysOnMarket, fetched <iso>
-    - <sale_to_list_pct>% — computed from ClosePrice / ListPrice, fetched <iso>
+    - $<sold_price>.  Supabase listings, MlsId='<mls_id>', column ClosePrice, fetched <iso>
+    - <dom_total> days.  Supabase listings, MlsId='<mls_id>', column CumulativeDaysOnMarket, fetched <iso>
+    - <sale_to_list_pct>%.  computed from ClosePrice / ListPrice, fetched <iso>
 
   CITATIONS
     out/sold-deal/<slug>/citations.json
@@ -444,19 +460,19 @@ Run before surfacing the draft. Write results to `scorecard.json`. Any `fail` = 
 | 10 | LinkedIn body has no hashtags | Grep returns zero `#` tokens in linkedin-post.md |
 | 11 | LinkedIn body has no image embed | linkedin-post.md is text only |
 | 12 | LinkedIn body word count | 150 ≤ words ≤ 300 |
-| 13 | Banned vocab clean (IG) | Grep `caption-ig.md` against `voice_guidelines.md` §6 union — zero hits |
-| 14 | Banned vocab clean (LinkedIn) | Grep `linkedin-post.md` against `voice_guidelines.md` §6 union — zero hits |
+| 13 | Banned vocab clean (IG) | Grep `caption-ig.md` against `voice_guidelines.md` §6 union.  zero hits |
+| 14 | Banned vocab clean (LinkedIn) | Grep `linkedin-post.md` against `voice_guidelines.md` §6 union.  zero hits |
 | 15 | No "honored to" / "humbled to" / "journey" | Zero hits in either deliverable |
 | 16 | No exclamation marks | Zero hits in either deliverable |
 | 17 | No emoji | Zero emoji in either deliverable |
 | 18 | Numbers reconcile | Every number in IG caption + LinkedIn body matches a row in `citations.json` |
 | 19 | Sale-to-list framing | Format matches Step 3 rules (over asking / of list / sold at list) |
-| 20 | LinkedIn angle relevance | If `linkedin_angle` supplied, opening references location, price tier, DOM, or pct — not generic |
+| 20 | LinkedIn angle relevance | If `linkedin_angle` supplied, opening references location, price tier, DOM, or pct.  not generic |
 | 21 | Phone correctness | LinkedIn = `541.703.3095` (FUB-tracked); `541.213.6706` only if explicitly Matt's direct |
 | 22 | URL correctness | `ryan-realty.com` (hyphenated, lowercase) |
 
-Cosmetic fails (16–22): auto-fix once and re-run. Beyond one attempt, surface to Matt.
-Data-accuracy fails (1–6, 18): never auto-fix — go straight to Matt for resolution.
+Cosmetic fails (16-22): auto-fix once and re-run. Beyond one attempt, surface to Matt.
+Data-accuracy fails (1-6, 18): never auto-fix.  go straight to Matt for resolution.
 
 ---
 
@@ -464,7 +480,7 @@ Data-accuracy fails (1–6, 18): never auto-fix — go straight to Matt for reso
 
 | failure | symptoms | recovery |
 |---|---|---|
-| close_date in future | `"CloseDate"` > today | Abort. `status='killed'` with `executor_response.error='close_date_in_future'`. Surface to Matt — likely a misfired audit. |
+| close_date in future | `"CloseDate"` > today | Abort. `status='killed'` with `executor_response.error='close_date_in_future'`. Surface to Matt.  likely a misfired audit. |
 | sale_to_list_pct negative or missing | Recomputed value `<= 0` or null | Abort. Verify ListPrice and ClosePrice. Null ListPrice on a closed listing = surface to Matt (data integrity issue). |
 | sale_to_list_pct > 130 | Recompute returns >130% | Pause. Likely a price-improvement not reflected in `"ListPrice"`. Surface to Matt with price history. |
 | StandardStatus not Closed | Row shows `Active` / `Pending` / `Withdrawn` / `Expired` | Abort. Producer only acts on closes; the row may have been written from a misread audit signal. |
@@ -473,15 +489,15 @@ Data-accuracy fails (1–6, 18): never auto-fix — go straight to Matt for reso
 | LinkedIn angle unrelated to listing context | Supplied `linkedin_angle` doesn't reference location / price tier / DOM / pct | Auto-derive a new angle from listing context (per Step 7). Note override in `scorecard.json`. |
 | Banned vocab on either deliverable | Grep returns ≥1 hit in `caption-ig.md` or `linkedin-post.md` | Auto-rewrite the offending sentence once. If still fails, surface to Matt with the specific banned word cited. |
 | Render failure | `ig-single-post` returns non-zero exit | Inherit the error from `ig-single-post`. Do not present a half-built bundle. |
-| Caption exceeds IG body limit | Caption > 2200 chars (IG hard cap) | Auto-trim the lifestyle close. If still over, surface — H&H structure should never run this long. |
+| Caption exceeds IG body limit | Caption > 2200 chars (IG hard cap) | Auto-trim the lifestyle close. If still over, surface.  H&H structure should never run this long. |
 | Co-listing with another brokerage | Edge case: deal where Ryan Realty co-listed | Out of scope. Surface to Matt; he handles disclosure manually. |
-| FUB phone not configured | LinkedIn body should reference `541.703.3095` but value missing from env | Hard-code from CLAUDE.md "Voice + content" — `541.703.3095` is the documented FUB-tracked bio phone. |
+| FUB phone not configured | LinkedIn body should reference `541.703.3095` but value missing from env | Hard-code from CLAUDE.md "Voice + content".  `541.703.3095` is the documented FUB-tracked bio phone. |
 
 **Open spec questions** (handled inline; documented here for the next iteration):
-- Should a follow-up LinkedIn comment (1–2 weeks later) auto-generate from the same close to
+- Should a follow-up LinkedIn comment (1-2 weeks later) auto-generate from the same close to
   seed re-engagement? Currently out of scope. If the brain decides it's worth it, add a
   separate `content:sold_deal_followup` action_type and a sibling producer.
-- Should the IG post auto-tag the buyer's brokerage? Currently no — privacy default. Matt
+- Should the IG post auto-tag the buyer's brokerage? Currently no.  privacy default. Matt
   can manually tag after publish.
 
 ---
@@ -500,7 +516,7 @@ Data-accuracy fails (1–6, 18): never auto-fix — go straight to Matt for reso
    either deliverable.
 7. Never use emoji in either deliverable.
 8. Never publish a sold post without the listing agent's headshot (S2 requires it). If the
-   agent can't be resolved, surface to Matt — don't fall back to Jax.
+   agent can't be resolved, surface to Matt.  don't fall back to Jax.
 9. Never AI-generate the closing photo. Per `ANTI_SLOP_MANIFESTO`.
 10. Never commit either deliverable before Matt's explicit approval. Per `CLAUDE.md` §0.5.
 11. Never reuse a sold-deal-summary from a prior close. Every close is a fresh data pull and a
@@ -511,28 +527,48 @@ Data-accuracy fails (1–6, 18): never auto-fix — go straight to Matt for reso
 ## 12. Related skills and references
 
 **Required reading before executing:**
-- `CLAUDE.md` §0 — Data Accuracy (outranks everything)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last (outranks everything)
-- `CLAUDE.md` "Voice + content" — #RyanRealtyBend HARD RULE + LinkedIn no-hashtag exception
-- `design_system/ryan-realty/SKILL.md` — brand visual system
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice enforcement
-- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` — Matt's writing fingerprint
+- `CLAUDE.md` §0.  Data Accuracy (outranks everything)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
+- `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE + LinkedIn no-hashtag exception
+- `design_system/ryan-realty/SKILL.md`.  brand visual system
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
+- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's writing fingerprint
 
 **Format skill delegated to:**
-- `social_media_skills/ig-single-post/SKILL.md` — S2 Just Sold template renderer
+- `social_media_skills/ig-single-post/SKILL.md`.  S2 Just Sold template renderer
 
 **Capabilities used:**
 - Banned-vocab grep against `marketing_brain_skills/brand-voice/voice_guidelines.md` §6 union
 
 **Playbooks and pipeline docs:**
-- `automation_skills/content_engine/SKILL.md` — content routing bus
-- `social_media_skills/platform-best-practices/SKILL.md` — 2026 platform rule layer (LinkedIn
+- `automation_skills/content_engine/SKILL.md`.  content routing bus
+- `social_media_skills/platform-best-practices/SKILL.md`.  2026 platform rule layer (LinkedIn
   native-text + no-hashtag convention, IG hashtag-first convention)
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
-- `social_media_skills/list-kit/SKILL.md` — orchestrator that may call this producer at the
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
+- `social_media_skills/list-kit/SKILL.md`.  orchestrator that may call this producer at the
   end of a listing's lifecycle
 
 **Registry entry:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section B, row `sold-deal-summary`,
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section B, row `sold-deal-summary`,
   action_type `content:sold_deal_summary`, path
   `social_media_skills/sold-deal-summary/SKILL.md`
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

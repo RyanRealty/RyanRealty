@@ -1,6 +1,6 @@
 ---
 name: tools_registry-spark-mls
-description: Use this skill when a task involves "Spark API", "MLS listing data", "live inventory", "active listings from MLS", "recent sales", "closed listings", "days on market", "Spark reconciliation", "ORMLS", "FlexMLS", "SparkAPI replication endpoint", or any task requiring what the MLS is reporting right now — as opposed to the eventual-consistency Supabase mirror. Covers authentication, endpoint patterns, RETS filter syntax, the mandatory Spark x Supabase reconciliation gate, failure modes, and which producers call this tool.
+description: Use this skill when a task involves "Spark API", "MLS listing data", "live inventory", "active listings from MLS", "recent sales", "closed listings", "days on market", "Spark reconciliation", "ORMLS", "FlexMLS", "SparkAPI replication endpoint", or any task requiring what the MLS is reporting right now.  as opposed to the eventual-consistency Supabase mirror. Covers authentication, endpoint patterns, RETS filter syntax, the mandatory Spark x Supabase reconciliation gate, failure modes, and which producers call this tool.
 ---
 
 # Spark API (FlexMLS / ORMLS Replication) Tool Skill
@@ -9,9 +9,9 @@ description: Use this skill when a task involves "Spark API", "MLS listing data"
 
 This is a capability skill used by market-data producers and the listing sync pipeline. Every task that invokes this skill also loads:
 
-- `CLAUDE.md` §0 — Data Accuracy mandate (outranks all other instructions; governs every number produced from this API)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `video_production_skills/market-data-video/SKILL.md` — primary consumer for market-report deliverables
+- `CLAUDE.md` §0.  Data Accuracy mandate (outranks all other instructions; governs every number produced from this API)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
+- `video_production_skills/market-data-video/SKILL.md`.  primary consumer for market-report deliverables
 
 ---
 
@@ -26,13 +26,13 @@ This is a capability skill used by market-data producers and the listing sync pi
 | Recent closed sales for MoS and YoY calculations | Spark's `/recent-sales` returns closes faster than the nightly sync |
 | Pre-render reconciliation gate (see below) | Required hard gate per CLAUDE.md §0 before any market deliverable renders |
 | Listing detail for a single MLS number | `/listings/{ListingKey}` is the authoritative source |
-| Agent roster | `/agents` — fresher than any local cache |
+| Agent roster | `/agents`.  fresher than any local cache |
 
 **Do NOT use Spark API for:**
 
 | Data source | Use instead |
 |---|---|
-| Historical closed-sale analytics (6+ months ago) | Supabase `listings` table — reconciled, indexed, queryable with SQL |
+| Historical closed-sale analytics (6+ months ago) | Supabase `listings` table.  reconciled, indexed, queryable with SQL |
 | Full-text search across listing remarks | Supabase full-text index |
 | Aggregated market stats (median price, absorption) already in cache | `market_stats_cache` or `market_pulse_live` in Supabase |
 | Social publishing, email, or CRM data | Meta Graph API, Resend, FUB REST API |
@@ -52,10 +52,10 @@ The rule: Spark answers "what is the MLS reporting right now." Supabase answers 
 | `BRIDGE_API_KEY` | Bridge Interactive / RESO alternate feed | NOT provisioned |
 | `RESO_API_KEY` | RESO Web API alternate feed | NOT provisioned |
 
-If a feature requires `SPARK_TOKEN`, `BRIDGE_API_KEY`, or `RESO_API_KEY`, surface that requirement to Matt before building — do not assume these credentials exist.
+If a feature requires `SPARK_TOKEN`, `BRIDGE_API_KEY`, or `RESO_API_KEY`, surface that requirement to Matt before building.  do not assume these credentials exist.
 
 ```ts
-// lib/spark-odata.ts — canonical getter
+// lib/spark-odata.ts.  canonical getter
 function getApiKey(): string {
   const key = process.env.SPARK_API_KEY?.trim()
   if (!key) throw new Error('SPARK_API_KEY is not set')
@@ -71,7 +71,7 @@ const res = await fetch(`${process.env.SPARK_API_BASE_URL}/listings/search?${par
 })
 ```
 
-`SPARK_API_BASE_URL` must never be hard-coded. Always read from env. The replication endpoint (`replication.sparkapi.com`) is distinct from the general Spark platform endpoint (`sparkapi.com`) — they serve different data sets. Ryan Realty's account is provisioned against the replication endpoint.
+`SPARK_API_BASE_URL` must never be hard-coded. Always read from env. The replication endpoint (`replication.sparkapi.com`) is distinct from the general Spark platform endpoint (`sparkapi.com`).  they serve different data sets. Ryan Realty's account is provisioned against the replication endpoint.
 
 ---
 
@@ -129,7 +129,7 @@ Spark uses an OData-style `_filter` parameter. Predicates are separated by `And`
 
 | Code | Type |
 |---|---|
-| `A` | Residential SFR — the default for all market-data deliverables |
+| `A` | Residential SFR.  the default for all market-data deliverables |
 | `B` | Condo / Townhouse |
 | `C` | Land / Lot |
 | `D` | Multi-Family |
@@ -152,7 +152,7 @@ _pagination=1&_limit=200&_skip=200  → second page
 
 The response envelope includes `D.Pagination.Total` (total matching count) and `D.Pagination.TotalPages`. Loop until `_skip >= D.Pagination.Total`.
 
-### Full example — active SFR in Bend with pagination
+### Full example.  active SFR in Bend with pagination
 
 ```ts
 const baseUrl = process.env.SPARK_API_BASE_URL  // https://replication.sparkapi.com/v1
@@ -171,7 +171,7 @@ while (true) {
   if (!res.ok) throw new Error(`Spark search failed: ${res.status}`)
   const body = await res.json()
   const results: SparkListing[] = body.D?.Results ?? []
-  allListings.push(...results)
+  allListings.push(..results)
   const total: number = body.D?.Pagination?.Total ?? 0
   skip += limit
   if (skip >= total) break
@@ -189,7 +189,7 @@ MoS = active_listings / (closed_last_6_months / 6)
 | MoS | Market verdict |
 |---|---|
 | <= 4 months | Seller's market |
-| 4 – 6 months | Balanced market |
+| 4 - 6 months | Balanced market |
 | >= 6 months | Buyer's market |
 
 The verdict pill in any deliverable must match the computed MoS against these thresholds exactly. A "seller's market" verdict next to 4.3 months is a ship-blocker.
@@ -198,7 +198,7 @@ The verdict pill in any deliverable must match the computed MoS against these th
 
 ---
 
-## Spark x Supabase reconciliation gate (MANDATORY — hard pre-render blocker)
+## Spark x Supabase reconciliation gate (MANDATORY.  hard pre-render blocker)
 
 Per CLAUDE.md §0, before any market-data deliverable renders, the agent must run this gate:
 
@@ -211,11 +211,11 @@ Reconciliation trace example (required in citations.json):
   active_listings_bend_sfr
     Supabase (market_stats_cache, city='Bend', type='A', fetched 2026-05-14): 312
     Spark (live query, StandardStatus Eq 'Active' And PropertyType Eq 'A' And City Eq 'Bend'): 314
-    delta: 0.6% — within 1% threshold, Spark value used
+    delta: 0.6%.  within 1% threshold, Spark value used
 ```
 
 **Which source wins:**
-- Spark wins for active inventory counts and current DOM — it is the live feed.
+- Spark wins for active inventory counts and current DOM.  it is the live feed.
 - Supabase wins for reconciled historical close data once the nightly sync has run past the Spark cutover date.
 - When in conflict beyond the 1% threshold, surface to Matt. Never silently pick one.
 
@@ -231,7 +231,7 @@ Document every cross-check in `citations.json` alongside the render. One entry p
 | Wrong base URL | 401 or 404 on every request | Verify `SPARK_API_BASE_URL=https://replication.sparkapi.com/v1` in env; do not use `sparkapi.com` (general endpoint) |
 | OData filter apostrophe escaping | 400 Bad Request with "filter parse error" | Single-quoted string values must not contain unescaped apostrophes. For values with apostrophes (e.g., city names), double the apostrophe: `City Eq 'O''Brien'`. URL-encode the entire `_filter` value before sending. |
 | Rate limit | 429 Too Many Requests | Spark allows approximately 10 requests per second. Serialize requests; do not use `Promise.all` across concurrent Spark calls in the same cron execution. Add 100ms delay between pages if 429 appears. |
-| Pagination truncation | Result count less than expected; `D.Pagination.Total` > returned rows | Not an error — pagination is required. Loop using `_skip` until `skip >= Total`. |
+| Pagination truncation | Result count less than expected; `D.Pagination.Total` > returned rows | Not an error.  pagination is required. Loop using `_skip` until `skip >= Total`. |
 | `SPARK_TOKEN` / `BRIDGE_API_KEY` required | Feature fails; endpoint requires OAuth flow | These credentials are not provisioned. Surface to Matt before building any feature that needs them. |
 | Empty result on valid filter | `D.Results` is `[]` | Check filter syntax. Test the filter string in isolation on a simpler query (e.g., no date range) to isolate which predicate is wrong. Confirm the date format is `YYYY-MM-DD` (not ISO 8601 with time). |
 | Stale data vs Supabase | Spark shows fewer actives than expected | The replication feed has a lag window. For time-sensitive deliverables, note the `fetched_at_iso` in citations.json and disclose the lag if material. |
@@ -242,10 +242,10 @@ Document every cross-check in `citations.json` alongside the render. One entry p
 
 `lib/spark.ts` and `lib/spark-odata.ts` are the canonical Spark clients in this repo. Read both before writing any new Spark call.
 
-- `lib/spark.ts` — lower-level fetch helpers: `fetchSparkListingsPage`, `fetchSparkListingHistory`, `fetchSparkPriceHistory`, `fetchSparkHistoricalListings`. Used by the sync pipeline.
-- `lib/spark-odata.ts` — OData client with the `SparkListing` interface and `fetchListings` function. Canonical for query-by-filter patterns.
-- `app/actions/sync-spark.ts` — server action that drives the full sync (all pages, upsert to Supabase). Read this for the pagination loop pattern before re-implementing it.
-- `app/api/cron/sync-delta/route.ts` — delta-sync cron entry point (runs on a schedule; fetches only recently modified listings).
+- `lib/spark.ts`.  lower-level fetch helpers: `fetchSparkListingsPage`, `fetchSparkListingHistory`, `fetchSparkPriceHistory`, `fetchSparkHistoricalListings`. Used by the sync pipeline.
+- `lib/spark-odata.ts`.  OData client with the `SparkListing` interface and `fetchListings` function. Canonical for query-by-filter patterns.
+- `app/actions/sync-spark.ts`.  server action that drives the full sync (all pages, upsert to Supabase). Read this for the pagination loop pattern before re-implementing it.
+- `app/api/cron/sync-delta/route.ts`.  delta-sync cron entry point (runs on a schedule; fetches only recently modified listings).
 
 Do not re-implement `fetchListings` or the pagination loop. Call the existing helpers.
 
@@ -254,7 +254,7 @@ Do not re-implement `fetchListings` or the pagination loop. Call the existing he
 ## Pre-flight checklist (before any Spark query in a market deliverable)
 
 ```
-[ ] SPARK_API_KEY confirmed present in .env.local (not empty, not a placeholder)
+[ ] SPARK_API_KEY confirmed present in.env.local (not empty, not a placeholder)
 [ ] SPARK_API_BASE_URL confirmed as https://replication.sparkapi.com/v1
 [ ] PropertyType filter is set ('A' for SFR unless brief says otherwise)
 [ ] Date range filter uses YYYY-MM-DD format (not ISO 8601 with time component)
@@ -284,12 +284,12 @@ Do not re-implement `fetchListings` or the pagination loop. Call the existing he
 
 | Resource | Purpose |
 |---|---|
-| `lib/spark-odata.ts` | Canonical OData client — `SparkListing` type, `fetchListings` function |
+| `lib/spark-odata.ts` | Canonical OData client.  `SparkListing` type, `fetchListings` function |
 | `lib/spark.ts` | Lower-level helpers for sync pipeline |
-| `app/actions/sync-spark.ts` | Full-sync server action — pagination loop reference implementation |
-| `app/api/cron/sync-delta/route.ts` | Delta-sync cron — recently-modified listing fetch pattern |
+| `app/actions/sync-spark.ts` | Full-sync server action.  pagination loop reference implementation |
+| `app/api/cron/sync-delta/route.ts` | Delta-sync cron.  recently-modified listing fetch pattern |
 | `CLAUDE.md` §0 "Data Accuracy" | Reconciliation gate requirements; MoS formula; thresholds |
 | `video_production_skills/market-data-video/SKILL.md` §22 | Full data dictionary for all market tables Spark feeds into |
 | `video_production_skills/VIDEO_PRODUCTION_SKILL.md` §0 | Pre-render Spark x Supabase reconciliation gate (full spec) |
 | https://sparkapi.com/docs | Official Spark API documentation |
-| https://reso.org/data-dictionary | RESO data dictionary — field name canonical reference |
+| https://reso.org/data-dictionary | RESO data dictionary.  field name canonical reference |

@@ -8,6 +8,18 @@ description: >
 action_types:
   - site:page_create
   - site:landing_page_create
+output_type: web-page
+target_platforms: ["agentfire_blog"]
+asset_destination: app/ (Next.js) via GitHub PR; opens PR to main for matt-review-PR approval
+auto_inputs: ["design system v2 tokens", "shadcn/ui components", "site routing"]
+required_inputs: ["page_slug OR neighborhood_slug"]
+optional_inputs: ["hero_image_override", "schema_overrides"]
+estimated_runtime_min: 20
+cost_usd_estimate: $0.50-$2 per page (Anthropic for copy + JSON-LD scaffold)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.html
+example_outputs: []
+    label: "live neighborhood pages"
+    surface: "agentfire_blog"
 ---
 
 # Site Page Create Producer
@@ -18,7 +30,7 @@ codebase patterns (shadcn/ui components, server components where possible, desig
 tokens from `app/globals.css`, Geist body font, Amboqia Boriango for hero H1 only).
 Also adds the new route to `app/sitemap.ts` and, for landing pages, wires the
 lead-capture form to `app/actions/lead-capture.ts`. Every new page lands in a
-branch + PR — never directly on `main`.
+branch + PR.  never directly on `main`.
 
 This producer does NOT edit existing pages (that is `site-edit`) and does NOT
 handle performance fixes (that is `site-performance`).
@@ -32,8 +44,8 @@ handle performance fixes (that is `site-performance`).
 ## 1. Scope
 
 ### In scope
-- `site:page_create` — new informational, neighborhood, or FAQ page at a new route
-- `site:landing_page_create` — new campaign landing page with optional lead-capture
+- `site:page_create`.  new informational, neighborhood, or FAQ page at a new route
+- `site:landing_page_create`.  new campaign landing page with optional lead-capture
   form, wired to `app/actions/lead-capture.ts` and the CAPI fan-out
 - Adding the new route to `app/sitemap.ts`
 - Setting `export const metadata` (title, description, OG, Twitter) in the new file
@@ -43,9 +55,9 @@ handle performance fixes (that is `site-performance`).
 ### Out of scope
 - Editing existing page files → `site-edit`
 - Performance, redirects, schema markup on existing pages → `site-performance`
-- Creating shared components (anything under `components/`) — escalate to Matt
-- Creating API routes (`app/api/`) — escalate to Matt
-- Pages that require database writes other than the existing `lead-capture` action — escalate
+- Creating shared components (anything under `components/`).  escalate to Matt
+- Creating API routes (`app/api/`).  escalate to Matt
+- Pages that require database writes other than the existing `lead-capture` action.  escalate
 
 ---
 
@@ -60,20 +72,20 @@ handle performance fixes (that is `site-performance`).
 
 ```typescript
 interface SitePageCreatePayload {
-  page_path: string            // new route — must NOT already exist, e.g. "/sell/duplex-bend"
+  page_path: string            // new route.  must NOT already exist, e.g. "/sell/duplex-bend"
   page_type: 'landing' | 'content' | 'neighborhood' | 'faq'
   template: 'hero+features+cta' | 'long_form_seo' | 'lead_gen'
   title: string                // used as H1 and metadata.title
-  meta_description: string     // 150–160 chars; used in metadata.description
+  meta_description: string     // 150-160 chars; used in metadata.description
   hero: {
-    headline: string           // Amboqia Boriango H1 — direct, specific, no clichés
-    subhead: string            // Geist body — one sentence, value-first
+    headline: string           // Amboqia Boriango H1.  direct, specific, no clichés
+    subhead: string            // Geist body.  one sentence, value-first
     image_path?: string        // optional: path relative to /public, e.g. "/images/bend-river.webp"
-    cta_text: string           // Button label — action verb, specific
-    cta_url: string            // Destination — absolute path or /route
+    cta_text: string           // Button label.  action verb, specific
+    cta_url: string            // Destination.  absolute path or /route
   }
   sections: Array<{
-    heading: string            // Section H2 — Geist 600 or Amboqia for display moments
+    heading: string            // Section H2.  Geist 600 or Amboqia for display moments
     body: string               // Paragraph or bullet list copy
     image_path?: string        // optional section image
   }>
@@ -110,7 +122,7 @@ interface SitePageCreateActionRow {
 
 ## 4. The recipe
 
-**Step 1 — Read the action row and claim it**
+**Step 1.  Read the action row and claim it**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -120,31 +132,31 @@ WHERE id = '<id>' AND status = 'pending';
 
 Confirm `status` was 'pending'. If not, stop and report.
 
-**Step 2 — Load mandatory references**
+**Step 2.  Load mandatory references**
 
 Before writing a single line of code:
-- `CLAUDE.md` §0 — Data Accuracy (any market figures cited in page body must be verified)
-- `CLAUDE.md` "Draft-First, Commit-Last" — PR is the draft; Matt merges to ship
-- `CLAUDE.md` "Design System Rules — MANDATORY" — shadcn/ui only; no raw HTML elements
-- `CLAUDE.md` "Design System v2 — Heritage + Web Registers" — Web register for UI pages
-- `design_system/ryan-realty/SKILL.md` — brand register; fonts; color tokens; radii
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice; banned words
-- `app/actions/lead-capture.ts` — if `lead_form` is present, read the existing action signature
+- `CLAUDE.md` §0.  Data Accuracy (any market figures cited in page body must be verified)
+- `CLAUDE.md` "Draft-First, Commit-Last".  PR is the draft; Matt merges to ship
+- `CLAUDE.md` "Design System Rules.  MANDATORY".  shadcn/ui only; no raw HTML elements
+- `CLAUDE.md` "Design System v2.  Heritage + Web Registers".  Web register for UI pages
+- `design_system/ryan-realty/SKILL.md`.  brand register; fonts; color tokens; radii
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice; banned words
+- `app/actions/lead-capture.ts`.  if `lead_form` is present, read the existing action signature
 
-**Step 3 — Confirm the route does not already exist**
+**Step 3.  Confirm the route does not already exist**
 
 Check that `app/<page_path>/page.tsx` does NOT exist. If it does:
 - Set `status='killed'`
 - `executor_response = {error: "Route already exists: app/<page_path>/page.tsx. Use site-edit to modify it."}`
 - Stop.
 
-**Step 4 — Validate all copy for brand voice**
+**Step 4.  Validate all copy for brand voice**
 
 Before generating any file, validate every string that will appear in the page against
 `marketing_brain_skills/brand-voice/voice_guidelines.md`:
 
-- `payload.hero.headline` — no clichés, no banned words, no exclamation marks
-- `payload.hero.subhead` — direct, specific, one clause max
+- `payload.hero.headline`.  no clichés, no banned words, no exclamation marks
+- `payload.hero.subhead`.  direct, specific, one clause max
 - Every `section.heading` and `section.body`
 - `payload.lead_form.success_message` if present
 - `payload.title` and `payload.meta_description`
@@ -164,7 +176,7 @@ If any payload copy fails:
 - `executor_response = {voice_fail: true, violations: [{field, rule_violated, text}]}`
 - Stop. Do not create the file.
 
-**Step 5 — Verify any market figures cited in `sections[].body`**
+**Step 5.  Verify any market figures cited in `sections[].body`**
 
 If any section body contains price figures, inventory counts, days on market, median
 values, or any other real estate statistics:
@@ -175,7 +187,7 @@ values, or any other real estate statistics:
 - If the figure cannot be verified: remove it from the section body rather than
   publishing an unverified stat
 
-**Step 6 — Scaffold the page file**
+**Step 6.  Scaffold the page file**
 
 Create `app/<page_path>/page.tsx`. Follow the conventions observed in
 `app/sell/page.tsx` and `app/page.tsx`:
@@ -183,11 +195,11 @@ Create `app/<page_path>/page.tsx`. Follow the conventions observed in
 **File structure:**
 ```typescript
 import type { Metadata } from 'next'
-// shadcn/ui imports only — never raw HTML for UI
+// shadcn/ui imports only.  never raw HTML for UI
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-// ... other shadcn components as needed
+//... other shadcn components as needed
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -226,21 +238,21 @@ export default async function <PageName>Page() {
 **Design system rules for new pages (Web register):**
 - Background: `bg-background` (maps to cream `#faf8f4` via CSS var)
 - Primary action buttons: `<Button>` with `variant="default"` (`bg-primary text-primary-foreground`)
-- Card containers: `<Card>` from `@/components/ui/card` — never raw `<div className="rounded...">`
-- H1 / hero headline: Amboqia Boriango — apply via `font-display` class or inline style using the CSS var
+- Card containers: `<Card>` from `@/components/ui/card`.  never raw `<div className="rounded...">`
+- H1 / hero headline: Amboqia Boriango.  apply via `font-display` class or inline style using the CSS var
   `--font-display` from `design_system/ryan-realty/colors_and_type.css`. Only the hero H1 uses Amboqia.
-- All other text: Geist (default font-sans — already loaded via `next/font/geist` in `app/layout.tsx`)
-- Navy primary: `text-primary` or `bg-primary` — never `text-[#102742]` or `bg-[#102742]`
+- All other text: Geist (default font-sans.  already loaded via `next/font/geist` in `app/layout.tsx`)
+- Navy primary: `text-primary` or `bg-primary`.  never `text-[#102742]` or `bg-[#102742]`
 - No gold anywhere. Gold is removed from v2 system.
 - Radii: use Tailwind radius utilities that map to the token ladder:
   `rounded-lg` (10px), `rounded-xl` (14px), `rounded-2xl` (18px)
-- Shadows: `shadow-sm`, `shadow-md` — navy-tinted via CSS var; no custom box-shadow
+- Shadows: `shadow-sm`, `shadow-md`.  navy-tinted via CSS var; no custom box-shadow
 
 **Template implementations:**
 
 *`hero+features+cta`:*
 - Hero: full-width section with H1, subhead, and primary Button
-- Features: 2–3 `<Card>` elements in a responsive grid with heading + body per `sections[]`
+- Features: 2-3 `<Card>` elements in a responsive grid with heading + body per `sections[]`
 - CTA: `<Button>` linking to `payload.hero.cta_url`
 
 *`long_form_seo`:*
@@ -264,7 +276,7 @@ implementing the form. Use a server action (`'use server'`) form submission patt
 matching the existing codebase. Do NOT write a custom fetch to an API route if a
 server action exists.
 
-**Step 7 — Add route to sitemap**
+**Step 7.  Add route to sitemap**
 
 Read `app/sitemap.ts`. Add an entry for the new route:
 
@@ -277,7 +289,7 @@ Read `app/sitemap.ts`. Add an entry for the new route:
 }
 ```
 
-**Step 8 — Run TypeScript type check**
+**Step 8.  Run TypeScript type check**
 
 ```bash
 cd /Users/matthewryan/RyanRealty && npx tsc --noEmit 2>&1
@@ -288,7 +300,7 @@ If TypeScript errors:
 - Fix the errors (type imports, missing return types, invalid props)
 - If unfixable within 2 iterations: set `status='killed'`, surface the tsc output to Matt
 
-**Step 9 — Create branch and commit**
+**Step 9.  Create branch and commit**
 
 Branch: `site-page-create/<action_id>` (first 8 chars of id UUID)
 
@@ -306,7 +318,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 git push origin site-page-create/<action_id>
 ```
 
-**Step 10 — Open GitHub PR**
+**Step 10.  Open GitHub PR**
 
 ```bash
 gh pr create \
@@ -344,12 +356,12 @@ shadcn/ui only. No raw HTML UI elements. No hex overrides.
 ## Approval gate
 Matt merges this PR in GitHub to make the page live.
 
-🤖 Generated with Claude Code / marketing brain — site-page-create producer
+🤖 Generated with Claude Code / marketing brain.  site-page-create producer
 EOF
 )"
 ```
 
-**Step 11 — Update action row to 'ready'**
+**Step 11.  Update action row to 'ready'**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -366,10 +378,10 @@ SET status = 'ready',
 WHERE id = '<id>';
 ```
 
-**Step 12 — Surface to Matt**
+**Step 12.  Surface to Matt**
 
 ```
-Draft ready: site-page-create — <page_path>
+Draft ready: site-page-create.  <page_path>
 
   PR
     URL: <pr_url>
@@ -382,7 +394,7 @@ Draft ready: site-page-create — <page_path>
     H1: <payload.hero.headline>
     CTA: <payload.hero.cta_text> → <payload.hero.cta_url>
     Sections: <N>
-    Lead form: <yes — wired to lead-capture.ts / no>
+    Lead form: <yes.  wired to lead-capture.ts / no>
 
   VERIFICATION TRACE
     <one line per market stat, or "No market statistics on this page.">
@@ -393,7 +405,7 @@ Draft ready: site-page-create — <page_path>
   VALIDATION
     Voice: PASS
     TypeScript: PASS (zero errors)
-    Design tokens: PASS — shadcn/ui only
+    Design tokens: PASS.  shadcn/ui only
 
 Matt merges the PR in GitHub to ship. The page goes live on Vercel deploy.
 ```
@@ -406,11 +418,11 @@ Then stop. Wait for Matt to merge.
 
 | tool | purpose | env var / path |
 |---|---|---|
-| Read (file) | Read `app/actions/lead-capture.ts`, `app/sitemap.ts`, existing pages for pattern reference | — |
-| Write (file) | Create `app/<page_path>/page.tsx` | — |
-| Edit (file) | Append route entry to `app/sitemap.ts` | — |
+| Read (file) | Read `app/actions/lead-capture.ts`, `app/sitemap.ts`, existing pages for pattern reference |.  |
+| Write (file) | Create `app/<page_path>/page.tsx` |.  |
+| Edit (file) | Append route entry to `app/sitemap.ts` |.  |
 | Bash: `npx tsc --noEmit` | TypeScript compile check | runs in `/Users/matthewryan/RyanRealty` |
-| Bash: `git checkout -b`, `git add`, `git commit`, `git push` | Branch, stage, commit, push | — |
+| Bash: `git checkout -b`, `git add`, `git commit`, `git push` | Branch, stage, commit, push |.  |
 | Bash: `gh pr create` | Open GitHub PR | active `gh` session |
 | Supabase MCP | Update `marketing_brain_actions`; query market figures if present in sections | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 
@@ -431,7 +443,7 @@ app/sitemap.ts                 (updated, on branch)
 
 | approval_type | what it means | who can grant |
 |---|---|---|
-| `matt-review-PR` | Matt merges the PR in GitHub | Matt only — via GitHub UI |
+| `matt-review-PR` | Matt merges the PR in GitHub | Matt only.  via GitHub UI |
 
 ---
 
@@ -497,19 +509,41 @@ WHERE id='<id>';
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `CLAUDE.md` §0 — Data Accuracy (market figures in page body must be verified)
-- `CLAUDE.md` "Draft-First, Commit-Last" — PR = draft; never push to main
-- `CLAUDE.md` "Design System Rules — MANDATORY" — shadcn/ui only
-- `CLAUDE.md` "Design System v2 — Heritage + Web Registers" — Web register for new pages
-- `design_system/ryan-realty/SKILL.md` — color tokens, type families, radii, shadow ladder
-- `design_system/ryan-realty/colors_and_type.css` — CSS variable definitions
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice enforcement
-- `app/actions/lead-capture.ts` — read before implementing any lead form
+- `CLAUDE.md` §0.  Data Accuracy (market figures in page body must be verified)
+- `CLAUDE.md` "Draft-First, Commit-Last".  PR = draft; never push to main
+- `CLAUDE.md` "Design System Rules.  MANDATORY".  shadcn/ui only
+- `CLAUDE.md` "Design System v2.  Heritage + Web Registers".  Web register for new pages
+- `design_system/ryan-realty/SKILL.md`.  color tokens, type families, radii, shadow ladder
+- `design_system/ryan-realty/colors_and_type.css`.  CSS variable definitions
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
+- `app/actions/lead-capture.ts`.  read before implementing any lead form
 
 **Codebase patterns to match:**
-- `app/sell/page.tsx` — example of a server component page with metadata and shadcn components
-- `app/page.tsx` — example of a complex page with Suspense boundaries and server data
-- `app/sitemap.ts` — existing sitemap structure to extend
+- `app/sell/page.tsx`.  example of a server component page with metadata and shadcn components
+- `app/page.tsx`.  example of a complex page with Suspense boundaries and server data
+- `app/sitemap.ts`.  existing sitemap structure to extend
 
 **Registry entry:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section C, row `site-page-create`
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section C, row `site-page-create`
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+

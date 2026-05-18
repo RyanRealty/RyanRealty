@@ -7,7 +7,7 @@ description: >
   build speed. Use this skill when the user says "check the asset library",
   "register this asset", "reuse the X photo", "what photos do we have for Bend",
   "ingest from Drive", "add this folder from Rich", or whenever a content build
-  needs to fetch or store media — because asset-library-FIRST is the default
+  needs to fetch or store media.  because asset-library-FIRST is the default
   sourcing rule. If you are about to call an external API (Unsplash, Shutterstock,
   Pexels, Pixabay, Replicate, Vertex, etc.) to obtain a photo or video, check the
   asset library first. Use this skill also when a build fails on a photo-diversity
@@ -15,18 +15,18 @@ description: >
   Matt sends ("Here are the photos from Rich"), or when Matt asks "what do we
   have" for any media type. The library auto-registers every fetched stock photo,
   every generated AI image, every downloaded stock video, and every rendered MP4
-  the pipeline produces — closing the loop so future builds find them.
+  the pipeline produces.  closing the loop so future builds find them.
 ---
 
-# Asset Library — Ryan Realty
+# Asset Library.  Ryan Realty
 
 ## Canonical references
 
-This is a capability skill. The two top-tier rule layers — [`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md) (brand) and [`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md) (platform rules) — apply to all output. Per CLAUDE.md "Skill self-binding", every Ryan Realty content piece loads both before producing.
+This is a capability skill. The two top-tier rule layers.  [`design_system/ryan-realty/SKILL.md`](. /. /design_system/ryan-realty/SKILL.md) (brand) and [`social_media_skills/platform-best-practices/SKILL.md`](. /. /social_media_skills/platform-best-practices/SKILL.md) (platform rules).  apply to all output. Per CLAUDE.md "Skill self-binding", every Ryan Realty content piece loads both before producing.
 
 ---
 
-**Version:** 1.0 — Authored 2026-05-07  
+**Version:** 1.0.  Authored 2026-05-07  
 **Cross-references:** `media-sourcing/SKILL.md`, `market-data-video/SKILL.md`
 
 ---
@@ -87,7 +87,7 @@ audio/elevenlabs:bend:2026-05-07/voiceover.mp3
 
 ---
 
-## Schema — key fields per asset record
+## Schema.  key fields per asset record
 
 | Field | Type | Notes |
 |---|---|---|
@@ -119,7 +119,7 @@ Full schema: `data/asset-library/schema.json`.
 |---|---|
 | `approved` | Ready to use in production renders. Free assets (Unsplash, Pexels) auto-approve on registration. |
 | `intake` | Fetched but pending review. Shutterstock previews land here (watermarked; need license before production). |
-| `rejected` | Failed QA — wrong geography, people-as-subject, off-brand. Excluded from search results by default. |
+| `rejected` | Failed QA.  wrong geography, people-as-subject, off-brand. Excluded from search results by default. |
 | `expired` | License term ended or asset removed from source. Do not use. |
 
 ---
@@ -218,10 +218,10 @@ The orchestrator for this is `video/market-report/scripts/fetch-photos.mjs`.
    download files to `public/asset-library/photos/<source>/` and call
    `register()` with full metadata.
 2. `fetch-photos.mjs` (the orchestrator) calls `search()`, copies the top N
-   files to `video/market-report/public/<slug>/img_1.jpg ... img_N.jpg` (the
+   files to `video/market-report/public/<slug>/img_1.jpg.. img_N.jpg` (the
    naming convention `build-cities.mjs` expects), and calls `markUsed()`.
 3. `build-cities.mjs` calls `assignPhotoSlots()` which enforces the no-repeat
-   rule via a `Set` diversity assertion — throws rather than silently duping.
+   rule via a `Set` diversity assertion.  throws rather than silently duping.
 
 ---
 
@@ -249,7 +249,7 @@ extraction, YouTube upload, clip trimming) without scanning the filesystem.
 ## Cost tracking
 
 Shutterstock assets carry `license_metadata.license_cost_usd` once licensed.
-`stats()` returns `total_license_cost_usd` — the running total across all
+`stats()` returns `total_license_cost_usd`.  the running total across all
 licensed assets. This feeds the monthly media cost report.
 
 Pexels and Unsplash are free; their records carry `license_required: false`.
@@ -289,10 +289,10 @@ node --env-file=.env.local lib/drive-ingest.mjs --folder <id> --dry-run
 
 **What happens:**
 1. JWT-authenticates against the Google service account (`GOOGLE_SERVICE_ACCOUNT_*`)
-2. Lists every file in the folder (recursive — descends into subfolders)
+2. Lists every file in the folder (recursive.  descends into subfolders)
 3. For each file, infers type from MIME / extension (photo / video / audio)
 4. Downloads to `/tmp/rr-drive-ingest/<uuid>.<ext>`
-5. Calls `register()` — uploads to Storage, inserts the row, links source_id `drive:<file-id>` for future dedup
+5. Calls `register()`.  uploads to Storage, inserts the row, links source_id `drive:<file-id>` for future dedup
 6. Carries Drive metadata into `license_metadata.drive_file_id` so we can trace back
 
 **The service account must have read access to the folder.** Either:
@@ -300,7 +300,7 @@ node --env-file=.env.local lib/drive-ingest.mjs --folder <id> --dry-run
 - Or the folder is in a shared drive the service account is a member of
 
 **Tagging strategy on ingest:**
-- `--geo` accepts CSV: `--geo "bend,old-mill,deschutes-river"` — every ingested file gets all the tags
+- `--geo` accepts CSV: `--geo "bend,old-mill,deschutes-river"`.  every ingested file gets all the tags
 - `--subject` same: `--subject "exterior,architecture,evening-light"`
 - For mixed folders, ingest in batches with different tags. E.g. all of `Bend Listings/123 Main St/exterior/` gets `--geo "bend" --subject "exterior,123-main-st"`
 
@@ -322,11 +322,11 @@ Every script that produces a media asset registers it automatically:
 
 ## Cross-references
 
-- `media-sourcing/SKILL.md` §1.5 — asset-library is the canonical first lookup
+- `media-sourcing/SKILL.md` §1.5.  asset-library is the canonical first lookup
   before any external source in every sourcing decision.
-- `market-data-video/SKILL.md` §20 — photo diversity rule (no repeats per
+- `market-data-video/SKILL.md` §20.  photo diversity rule (no repeats per
   render) enforced by `assignPhotoSlots()` which reads image slots from library.
-- `market-data-video/SKILL.md` §21 — Shutterstock integration roadmap
+- `market-data-video/SKILL.md` §21.  Shutterstock integration roadmap
   (Matt's go/no-go on production licensing pending).
-- `video/market-report/scripts/fetch-photos.mjs` — the asset-library-FIRST
+- `video/market-report/scripts/fetch-photos.mjs`.  the asset-library-FIRST
   orchestrator for market-report photo pipelines.

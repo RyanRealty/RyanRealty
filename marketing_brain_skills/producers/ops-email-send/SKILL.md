@@ -10,9 +10,19 @@ action_types:
   - ops:email_newsletter
   - ops:email_blast
   - ops:email_template_update
+output_type: operational
+target_platforms: []
+asset_destination: no asset; state mutation only (logged in marketing_decisions)
+auto_inputs: ["current campaign/account state"]
+required_inputs: ["account_id OR campaign_id"]
+optional_inputs: ["budget_delta_pct", "pause_reason"]
+estimated_runtime_min: 3
+cost_usd_estimate: $0.01-$0.10 per call (mostly API quota; minimal Anthropic)
+thumbnail_uri: out/proof/2026-05-17/exemplars/sample.html
+example_outputs: []
 ---
 
-# ops-email-send — Email Send Operational Producer
+# ops-email-send.  Email Send Operational Producer
 
 **Scope:** Handles the draft, validate, and send pipeline for outbound emails to
 Ryan Realty's FUB segments. Produces newsletter sends, one-off blast emails, and
@@ -21,9 +31,9 @@ Validates content against voice guidelines before surfacing to Matt. Pulls
 recipient count from FUB or Supabase before surfacing. Never sends without Matt's
 explicit "yes" / "approved" / "go."
 
-Does NOT generate social posts or video — those go through the content producers.
+Does NOT generate social posts or video.  those go through the content producers.
 Does NOT manage FUB email sequences (sequence config changes are owned by
-`ops-fub-crm`). Does NOT send through FUB's built-in mailer — Resend is the
+`ops-fub-crm`). Does NOT send through FUB's built-in mailer.  Resend is the
 canonical transactional email provider for Ryan Realty.
 
 **Status:** Canonical
@@ -36,18 +46,18 @@ canonical transactional email provider for Ryan Realty.
 ## 1. Scope
 
 ### In scope
-- `ops:email_newsletter` — monthly or periodic newsletter to a named segment
-- `ops:email_blast` — one-off email to a segment or filter (e.g. announcement,
+- `ops:email_newsletter`.  monthly or periodic newsletter to a named segment
+- `ops:email_blast`.  one-off email to a segment or filter (e.g. announcement,
   market alert, listing drop, event invite)
-- `ops:email_template_update` — update a Resend transactional template body or
+- `ops:email_template_update`.  update a Resend transactional template body or
   subject line; surface the diff for Matt's review before saving
 
 ### Out of scope
-- FUB action plan / drip sequence emails — handled by `ops-fub-crm`
-- Social media DM or comment replies — handled by the `engagement_bot` capability
-- Email sequence copy creation — handled by content producers + Matt's approval
+- FUB action plan / drip sequence emails.  handled by `ops-fub-crm`
+- Social media DM or comment replies.  handled by the `engagement_bot` capability
+- Email sequence copy creation.  handled by content producers + Matt's approval
 - Sending from any domain other than `mail.ryan-realty.com`
-- Cold-email outreach to purchased lists — never; FUB segments only
+- Cold-email outreach to purchased lists.  never; FUB segments only
 
 ---
 
@@ -67,9 +77,9 @@ interface EmailSendPayload {
   recipient_segment: string;
   // Named segment: 'past_clients' | 'sphere' | 'cold_seller_leads' |
   // 'hot_seller' | 'warm_seller' | 'nurture_only' | 'all_buyers'
-  // — OR — a FUB People API filter object as a JSON string.
+  //.  OR.  a FUB People API filter object as a JSON string.
   subject: string;               // Email subject line
-  preview_text?: string;         // Preheader text (50–90 chars ideal)
+  preview_text?: string;         // Preheader text (50-90 chars ideal)
   body_html: string;             // Full HTML body
   body_text: string;             // Plain-text version (required; not auto-generated)
   send_at?: string;              // ISO timestamp; send immediately if absent
@@ -103,7 +113,7 @@ interface EmailSendActionRow {
 
 ## 4. The recipe
 
-### Step 1 — Read the action row
+### Step 1.  Read the action row
 
 ```sql
 UPDATE marketing_brain_actions
@@ -113,15 +123,15 @@ WHERE id = '<action_id>' AND status = 'pending';
 
 If row is not `status='pending'`, halt silently.
 
-### Step 2 — Load mandatory references
+### Step 2.  Load mandatory references
 
-- `CLAUDE.md` §0 — Data Accuracy mandate
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice validation rules
-- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` — Matt's voice
+- `CLAUDE.md` §0.  Data Accuracy mandate
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice validation rules
+- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's voice
   patterns (warmth, specificity, forward-looking close, first-name usage)
 
-### Step 3 — Verify Resend sender domain
+### Step 3.  Verify Resend sender domain
 
 Before doing any other work, confirm `mail.ryan-realty.com` is verified in Resend:
 
@@ -139,7 +149,7 @@ if status != 'verified':
   → executor_response = { "error": "domain_not_verified", "domain": "mail.ryan-realty.com",
       "current_status": "<status>", "dns_records_needed": "<from response>" }
   → Surface to Matt:
-    "Cannot send — mail.ryan-realty.com is not verified in Resend
+    "Cannot send.  mail.ryan-realty.com is not verified in Resend
      (current status: [status]).
      DNS records needed: [records from API response].
      Action row [id] killed. Re-queue once DNS is confirmed."
@@ -149,7 +159,7 @@ if status != 'verified':
 This check is mandatory on every run. Token rotation or domain re-verification
 can change this state between sessions.
 
-### Step 4 — Pull recipient count
+### Step 4.  Pull recipient count
 
 **Named segment:** Query FUB People API with the appropriate tag/stage filter
 for the segment name. Map segment names to FUB filters:
@@ -175,14 +185,14 @@ contacts in FUB. Verify the segment name or filter is correct before proceeding.
 
 **Filter string:** Parse the filter JSON and execute the same count query.
 
-### Step 5 — Voice validation
+### Step 5.  Voice validation
 
 Run the subject line, preview text, and body against the voice validation rules
 from `marketing_brain_skills/brand-voice/voice_guidelines.md`. Specifically check:
 
 **Banned in subject lines:**
 - Exclamation marks (unless the subject contains a factual number or
-  a question — rare exceptions; flag, don't auto-reject)
+  a question.  rare exceptions; flag, don't auto-reject)
 - Banned vocabulary: stunning, nestled, boasts, charming, pristine, gorgeous,
   breathtaking, must-see, dream home, meticulously maintained, entertainer's
   dream, tucked away, hidden gem, truly, spacious, cozy, luxurious,
@@ -191,7 +201,7 @@ from `marketing_brain_skills/brand-voice/voice_guidelines.md`. Specifically chec
   white-glove
 - Hedging: may, could, potentially
 - Exclamation marks in body copy (body rule)
-- Em-dashes as punctuation (allowed as data placeholder `—`)
+- Em-dashes as punctuation (allowed as data placeholder `. `)
 - Emoji anywhere
 
 **Required in body:**
@@ -202,7 +212,7 @@ from `marketing_brain_skills/brand-voice/voice_guidelines.md`. Specifically chec
 - Days as integer + "days": "38 days"
 
 **Voice pattern check (corpus-based):**
-Read 3–5 examples from `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`
+Read 3-5 examples from `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`
 and confirm the tone matches: genuine, specific, names a detail, uses first-name
 (in personalized sends), forward-looking close ("please don't hesitate to reach
 out"), not promotional.
@@ -212,7 +222,7 @@ If a violation is ambiguous, surface to Matt with the specific rule cited and
 the specific phrase flagged: "Flag: [phrase] may violate [rule]. My suggested
 fix: [alternative]. Confirm or override?"
 
-### Step 6 — Render preview
+### Step 6.  Render preview
 
 Write two files:
 
@@ -221,7 +231,7 @@ The full HTML body with realistic placeholder data (or actual personalization
 tokens in `{{first_name}}` format if Resend templates are in use).
 
 **`out/email-drafts/<slug>/preview.txt`**
-The plain-text version. Required — Resend sends multipart MIME; no text version
+The plain-text version. Required.  Resend sends multipart MIME; no text version
 means the email may be flagged as spam.
 
 **`out/email-drafts/<slug>/citations.json`**
@@ -240,10 +250,10 @@ One entry per market statistic in the body:
 
 Every market stat in the email body must have a citations entry. No trace = no ship.
 
-### Step 7 — Surface to Matt for explicit approval
+### Step 7.  Surface to Matt for explicit approval
 
 ```
-Email draft ready — [action_type] to [segment] ([recipient_count] contacts)
+Email draft ready.  [action_type] to [segment] ([recipient_count] contacts)
 
   SUBJECT
     [subject line]
@@ -258,7 +268,7 @@ Email draft ready — [action_type] to [segment] ([recipient_count] contacts)
     [send_at formatted as "YYYY-MM-DD HH:MM UTC" or "Immediate on approval"]
 
   SENDER
-    mail.ryan-realty.com — Resend domain verified ✓
+    mail.ryan-realty.com.  Resend domain verified ✓
 
   PREVIEW FILES
     HTML:  out/email-drafts/<slug>/preview.html
@@ -281,7 +291,7 @@ Reply "no" or "kill" to cancel.
 
 Set `status='ready'` in `marketing_brain_actions`. Stop. Wait for Matt.
 
-### Step 8 — Send via Resend API (post-approval only)
+### Step 8.  Send via Resend API (post-approval only)
 
 After Matt's explicit approval, set `status='approved'`:
 
@@ -319,7 +329,7 @@ PATCH https://api.resend.com/templates/<template_id>
 Body: { "subject": <subject>, "html": <body_html> }
 ```
 
-### Step 9 — Update action row with delivery status
+### Step 9.  Update action row with delivery status
 
 ```sql
 UPDATE marketing_brain_actions
@@ -335,10 +345,10 @@ SET status = 'executed',
 WHERE id = '<action_id>';
 ```
 
-### Step 10 — Confirm to Matt
+### Step 10.  Confirm to Matt
 
 ```
-Sent — [action_type] to [segment]
+Sent.  [action_type] to [segment]
 
   [recipient_count] emails sent via Resend.
   Subject: [subject]
@@ -381,7 +391,7 @@ Example: `blast-hot-seller-2026-05-13`
 |---|---|---|
 | `matt-explicit` | Matt explicitly says "ship it," "approved," "go," or "send" | Matt only |
 
-**This producer uses:** `matt-explicit` — every email send requires one click of
+**This producer uses:** `matt-explicit`.  every email send requires one click of
 explicit approval per send. Silence is not approval.
 
 ---
@@ -403,7 +413,7 @@ approved        ← approved_by='matt', approved_at=now()
   ▼ (Resend API confirms delivery)
 executed        ← message_ids captured; executor_response populated
   │
-  ▼ (48–72h open/click rate check)
+  ▼ (48-72h open/click rate check)
 measured
 
 killed          ← domain unverified, segment empty, voice validation fails
@@ -417,7 +427,7 @@ killed          ← domain unverified, segment empty, voice validation fails
 | failure | symptoms | recovery |
 |---|---|---|
 | `mail.ryan-realty.com` unverified | Resend domain status != 'verified' | Halt immediately. Surface DNS records needed. Status='killed'. |
-| `RESEND_API_KEY` missing | `process.env.RESEND_API_KEY` undefined | Set status='killed'. "RESEND_API_KEY not set — no email sent." |
+| `RESEND_API_KEY` missing | `process.env.RESEND_API_KEY` undefined | Set status='killed'. "RESEND_API_KEY not set.  no email sent." |
 | Segment returns 0 contacts | FUB totalCount = 0 | Halt. Surface: "Segment [name] returned 0 contacts. Verify segment name." |
 | Voice validation fails (fixable) | Banned word, banned punctuation | Auto-fix and re-validate. Max 2 auto-fix attempts. After 2, surface specific violation to Matt with the rule cited. |
 | Voice validation fails (unfixable) | Brand integrity conflict | Surface to Matt without the broken draft. Provide specific rule citation + suggested rewrite. |
@@ -430,19 +440,41 @@ killed          ← domain unverified, segment empty, voice validation fails
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `CLAUDE.md` §0 — Data Accuracy mandate (every stat needs a trace)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice enforcement
-- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` — Matt's voice patterns
+- `CLAUDE.md` §0.  Data Accuracy mandate (every stat needs a trace)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  voice enforcement
+- `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's voice patterns
 
 **Capabilities used:**
-- `lib/fub.ts` — segment count queries via FUB People API
-- Resend API (`RESEND_API_KEY`) — send + template management
+- `lib/fub.ts`.  segment count queries via FUB People API
+- Resend API (`RESEND_API_KEY`).  send + template management
 
 **Brain components that generate ops:email_* action rows:**
-- `marketing_brain_skills/weekly-cycle/` — newsletter trigger on cadence
-- `automation_skills/triggers/listing_trigger/` — just-listed email to sphere
-- `marketing_brain_skills/generate-briefs/` — blast triggers from signals
+- `marketing_brain_skills/weekly-cycle/`.  newsletter trigger on cadence
+- `automation_skills/triggers/listing_trigger/`.  just-listed email to sphere
+- `marketing_brain_skills/generate-briefs/`.  blast triggers from signals
 
 **Registry entry:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section D, row `ops-email-send`
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section D, row `ops-email-send`
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+

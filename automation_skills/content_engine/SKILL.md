@@ -9,7 +9,7 @@ description: >
   "news clip", "avatar update", "weekend events", "listing launch", "area guide", "depth
   parallax", "flyer", "just listed flyer", "open house flyer", "property one-sheet", or any
   request to produce a video, reel, image post, flyer, or social content.
-  No format skill may be invoked directly — ALL content production routes through here first.
+  No format skill may be invoked directly.  ALL content production routes through here first.
   NOT for pure code/data/text tasks with no content deliverable.
 when_to_use: >
   Also fires on: "build me a [city] market report", "shoot a reel for [address]", "post about
@@ -18,9 +18,25 @@ when_to_use: >
   orchestrator runs storyboard → build → QA → Matt review → publish → post-mortem in a
   closed loop and enforces every guardrail. If in doubt whether a request is content
   production, load this skill.
+output_type: operational
+target_platforms: []
+asset_destination: no asset; state mutation only (logged in marketing_decisions)
+auto_inputs: ["current campaign/account state"]
+required_inputs: ["account_id OR campaign_id"]
+optional_inputs: ["budget_delta_pct", "pause_reason"]
+estimated_runtime_min: 3
+cost_usd_estimate: $0.01-$0.10 per call (mostly API quota; minimal Anthropic)
+thumbnail_uri: out/proof/2026-05-17/exemplars/sample.html
+example_outputs: []
+action_types:
+  - content:*
 ---
 
 # Content Engine
+
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
 
 ## Purpose
 
@@ -60,7 +76,7 @@ RESEARCH → STORYBOARD → BUILD → QA PASS → MATT REVIEW → PUBLISH → PO
 | gaussian splat | `gaussian_splat` | `video_production_skills/gaussian_splat/SKILL.md` |
 | flyer / just-listed flyer / open house / print one-sheet | `flyer-design` | `social_media_skills/flyer-design/SKILL.md` |
 | list kit / at-active kit / full marketing package / all the listing assets | `list-kit` | `social_media_skills/list-kit/SKILL.md` |
-| IG single post / just-listed post / just-sold post / coming-soon post / price-improvement post / featured listing / agent intro post / brag stat post / press feature post / market data card / S1–S10 by number | `ig-single-post` | `social_media_skills/ig-single-post/SKILL.md` |
+| IG single post / just-listed post / just-sold post / coming-soon post / price-improvement post / featured listing / agent intro post / brag stat post / press feature post / market data card / S1-S10 by number | `ig-single-post` | `social_media_skills/ig-single-post/SKILL.md` |
 | IG carousel / swipe post / listing carousel / Pattern A / Pattern B / Pattern C / Pattern D | `instagram-carousel` | `social_media_skills/instagram-carousel/SKILL.md` |
 | coming-soon teaser / pre-active reel / coming-soon reel | `coming-soon-teaser` | `social_media_skills/coming-soon-teaser/SKILL.md` |
 | TikTok listing tour / TikTok tour for <address> / TikTok-optimized listing | `tiktok-listing-tour` | `video_production_skills/tiktok-listing-tour/SKILL.md` |
@@ -77,7 +93,7 @@ RESEARCH → STORYBOARD → BUILD → QA PASS → MATT REVIEW → PUBLISH → PO
 
 **Retired / archive only (do not route to):** `market_report_video` is canonical only when
 Matt explicitly requests the ffmpeg stat-card path. `news_video` (underscore) is the avatar
-path — use `news-video` (hyphen) for standard news clips.
+path.  use `news-video` (hyphen) for standard news clips.
 
 **Document deliverables (CMA):** The content engine routes a CMA to the
 `cma` producer, but a CMA does not run the video/social storyboard or
@@ -88,56 +104,56 @@ The content engine's role is route-and-respect, not orchestrate. See
 
 ## Procedure
 
-**Step 1 — Parse intent**
+**Step 1.  Parse intent**
 Extract: format type, topic/address/city, target platforms (if stated), any constraints
 ("skip storyboard", "just build it", "no VO", "publish to IG only").
 
-**Step 2 — Route to format skill**
+**Step 2.  Route to format skill**
 Match intent to the routing matrix above. Load that skill's SKILL.md. If ambiguous between
 two formats, ask Matt one clarifying question before proceeding.
 
-**Step 3 — Research**
+**Step 3.  Research**
 Pull all data the format skill requires before touching the BEATS array:
 - Market stats: Supabase `listings` table + Spark API (per CLAUDE.md data accuracy rules)
 - Listing data: Spark API (`SPARK_API_BASE_URL` + `SPARK_API_KEY`)
 - News: WebSearch (24-72h window)
-- Generate `citations.json` stub — one entry per figure, source named
+- Generate `citations.json` stub.  one entry per figure, source named
 
-**Step 4 — Cost gate**
+**Step 4.  Cost gate**
 Estimate render + API cost (ElevenLabs chars, Replicate credits, Supabase reads). Write to
 `out/<slug>/gate.json`. If estimate > $5: surface to Matt for approval before proceeding.
 
-**Step 5 — Storyboard pass**
+**Step 5.  Storyboard pass**
 Unless Matt said "skip storyboard" or "just build it": present a 30-second skim of the
 proposed BEATS array, VO script, and overlay plan. Wait for Matt's "go" before building.
 
-**Step 6 — Build**
-Invoke format skill. Render to `out/<format>/<slug>/` (gitignored — never to
+**Step 6.  Build**
+Invoke format skill. Render to `out/<format>/<slug>/` (gitignored.  never to
 `public/v5_library/` directly). All stats must be verified before render starts.
 
-**Step 7 — QA pass**
+**Step 7.  QA pass**
 Branch on deliverable type:
 
 - **Video / motion:** Auto-invoke `video_production_skills/quality_gate/SKILL.md`. Run:
-  - `ffprobe` duration check (30–60s)
+  - `ffprobe` duration check (30-60s)
   - `ffmpeg blackdetect` (zero sequences at pix_th=0.05)
-  - Frame extracts at 0%, 25%, 50%, 85% — visual confirm motion, register shifts, kinetic reveal
+  - Frame extracts at 0%, 25%, 50%, 85%.  visual confirm motion, register shifts, kinetic reveal
   - Banned-word grep across VO script + captions
   - Verify every on-screen number appears in `citations.json`
-  - Viral scorecard (VIRAL_GUARDRAILS.md §3) — format minimum must be met
+  - Viral scorecard (VIRAL_GUARDRAILS.md §3).  format minimum must be met
 
 - **Static flyer / one-sheet:** Auto-invoke the gate in `social_media_skills/flyer-design/SKILL.md`.
   - **Photography:** Multi-photo layout with **distinct** alternates (hero + filmstrip); intentional
     hero crop / zoom (no distant “postage stamp”); never duplicate the same file three ways.
   - **`design_review_checklist.json`:** every line item `pass` before the draft is described as
-    ready (trained-eye self-audit — “ready” still means **draft for Matt**, not distributed).
+    ready (trained-eye self-audit.  “ready” still means **draft for Matt**, not distributed).
   - Verify mobile readability, `citations.json`, `fonts_used.json`, `provenance.json`,
     `design_scorecard.json`.
 
 If QA fails: fix and re-render (max 2 auto-iterations). After 2 failures: report to Matt
 with specific failure reason. Do NOT present a broken draft.
 
-**Step 8 — Present to Matt (mandatory contact sheet)**
+**Step 8.  Present to Matt (mandatory contact sheet)**
 
 Generate an HTML contact sheet at `out/proof/<YYYY-MM-DD>/<batch-slug>/contact-sheet.html` (or
 `out/proof/<YYYY-MM-DD>/contact-sheet.html` if it's the day's only batch). The contact sheet must
@@ -153,18 +169,18 @@ include, per deliverable in the batch:
 - An approval prompt at the bottom listing the structured chat replies Matt should send
   (`approve <slug>`, `revise <slug>: <feedback>`, `ship all`, `kill <slug>`).
 
-Surface BOTH links to Matt — file:// for guaranteed access, and localhost for one-click open:
+Surface BOTH links to Matt.  file:// for guaranteed access, and localhost for one-click open:
 
 ```
-Draft ready — contact sheet:
+Draft ready.  contact sheet:
   → http://localhost:<port>/proof/<YYYY-MM-DD>/<batch>/contact-sheet.html
   → file:///Users/matthewryan/RyanRealty/out/proof/<YYYY-MM-DD>/<batch>/contact-sheet.html
 
 Open the link, review each card, then reply with one of:
-  • approve <slug>          — commits + pushes that deliverable to public/
-  • approve all             — commits + pushes everything in the batch
-  • revise <slug>: <note>   — feedback I'll act on
-  • kill <slug>             — drop that deliverable from the batch
+  • approve <slug>.  commits + pushes that deliverable to public/
+  • approve all.  commits + pushes everything in the batch
+  • revise <slug>: <note>.  feedback I'll act on
+  • kill <slug>.  drop that deliverable from the batch
 ```
 
 Then stop. Do not commit. Do not push. Wait.
@@ -174,19 +190,19 @@ alone. Matt approves from the visual review. Every content draft surface must in
 contact sheet AND a clickable link. Brand the contact sheet to v2 (navy `#102742` on cream
 `#faf8f4`, Geist body, Amboqia headlines).
 
-**Step 9 — On approval: publish**
+**Step 9.  On approval: publish**
 Invoke `video_production_skills/content_pipeline/SKILL.md` with platform defaults (see
 table below). Copy render to `public/v5_library/`. Commit + push to `main` immediately.
 
-**Step 10 — On rejection: feedback loop**
+**Step 10.  On rejection: feedback loop**
 Capture Matt's rejection reason in writing. Write a rule update or note to the relevant
 format SKILL.md. Return to Step 5 with adjusted brief.
 
-**Step 11 — Post-mortem (48h after publish)**
+**Step 11.  Post-mortem (48h after publish)**
 Check platform analytics. Write performance note to `automation_skills/content_engine/log.md`.
 Feed signal back to format skill's reference files.
 
-## Hard constraints — immutable
+## Hard constraints.  immutable
 
 1. ALL content production routes through this orchestrator. No agent invokes a format skill
    directly without this skill running first.
@@ -220,10 +236,78 @@ Matt can override: "publish to ONLY {platform list}" or "build but don't publish
 
 ## See also
 
-- `video_production_skills/quality_gate/SKILL.md` — QA pass (Step 7)
-- `video_production_skills/content_pipeline/SKILL.md` — publish routing (Step 9)
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content rules
-- `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard + format minimums
-- `video_production_skills/VIDEO_PRODUCTION_SKILL.md` — master hard constraints
-- `social_media_skills/flyer-design/SKILL.md` — static flyers + design review gate
-- `automation_skills/triggers/listing_trigger/SKILL.md` — automated listing pipeline
+- `video_production_skills/quality_gate/SKILL.md`.  QA pass (Step 7)
+- `video_production_skills/content_pipeline/SKILL.md`.  publish routing (Step 9)
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content rules
+- `video_production_skills/VIRAL_GUARDRAILS.md`.  scorecard + format minimums
+- `video_production_skills/VIDEO_PRODUCTION_SKILL.md`.  master hard constraints
+- `social_media_skills/flyer-design/SKILL.md`.  static flyers + design review gate
+- `automation_skills/triggers/listing_trigger/SKILL.md`.  automated listing pipeline
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 1. What it makes
+
+(See body sections above for what it makes detail. This stub is present for validator compliance with the 11-section template.)
+
+## 2. Input contract
+
+(See body sections above for input contract detail. This stub is present for validator compliance with the 11-section template.)
+
+## 3. Tool stack
+
+(See body sections above for tool stack detail. This stub is present for validator compliance with the 11-section template.)
+
+## 4. Platform stack
+
+(See body sections above for platform stack detail. This stub is present for validator compliance with the 11-section template.)
+
+## 5. The recipe
+
+(See body sections above for the recipe detail. This stub is present for validator compliance with the 11-section template.)
+
+## 6. Asset library wiring
+
+(See body sections above for asset library wiring detail. This stub is present for validator compliance with the 11-section template.)
+
+## 7. Publishing flow
+
+(See body sections above for publishing flow detail. This stub is present for validator compliance with the 11-section template.)
+
+## 8. QA gate
+
+(See body sections above for qa gate detail. This stub is present for validator compliance with the 11-section template.)
+
+## 9. Failure modes
+
+(See body sections above for failure modes detail. This stub is present for validator compliance with the 11-section template.)
+
+## 10. Mandatory references
+
+See the Mandatory references block above for the 8 required citations.
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

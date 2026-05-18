@@ -4,28 +4,28 @@ kind: capability
 description: >
   Visual system reference: photo selection criteria, color tokens, font tiers, thumbnail
   architecture, and creative philosophy for all Ryan Realty deliverables. Consult before
-  any creative decision (photo pick, color, layout, motion style). Support library — all
+  any creative decision (photo pick, color, layout, motion style). Support library.  all
   format skills load this for brand compliance. Do NOT invoke as a standalone
   content-production skill; no content ships from this file alone.
 ---
 
-# Brand Assets — Visual System, Photo Selection, Creative Intelligence
+# Brand Assets.  Visual System, Photo Selection, Creative Intelligence
 
 ## Canonical references
 
-This is a capability skill. The two top-tier rule layers — [`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md) (brand) and [`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md) (platform rules) — apply to all output. Per CLAUDE.md "Skill self-binding", every Ryan Realty content piece loads both before producing.
+This is a capability skill. The two top-tier rule layers.  [`design_system/ryan-realty/SKILL.md`](. /. /design_system/ryan-realty/SKILL.md) (brand) and [`social_media_skills/platform-best-practices/SKILL.md`](. /. /social_media_skills/platform-best-practices/SKILL.md) (platform rules).  apply to all output. Per CLAUDE.md "Skill self-binding", every Ryan Realty content piece loads both before producing.
 
 ---
 
-**When to use.** Any time you're picking a photo, choosing a color, picking a font, designing a stat card, scaffolding a thumbnail, or making a creative decision for any deliverable that ships to the public. This skill is the agent's creative brain — consult it before choosing a visual treatment, text layout, color scheme, motion style, format, or thumbnail.
+**When to use.** Any time you're picking a photo, choosing a color, picking a font, designing a stat card, scaffolding a thumbnail, or making a creative decision for any deliverable that ships to the public. This skill is the agent's creative brain.  consult it before choosing a visual treatment, text layout, color scheme, motion style, format, or thumbnail.
 
-**Read first:** [VIDEO_PRODUCTION_SKILL.md](../VIDEO_PRODUCTION_SKILL.md) §5 (brand colors, fonts, banned words) — the master skill is the source of truth for video brand rules. This file extends those rules into static design and explains the *why*.
+**Read first:** [VIDEO_PRODUCTION_SKILL.md](. /VIDEO_PRODUCTION_SKILL.md) §5 (brand colors, fonts, banned words).  the master skill is the source of truth for video brand rules. This file extends those rules into static design and explains the *why*.
 
 ---
 
 ## Core creative philosophy
 
-**Ryan Realty content must feel like it was made by someone who lives in Bend and loves data — not by a marketing agency.**
+**Ryan Realty content must feel like it was made by someone who lives in Bend and loves data.  not by a marketing agency.**
 
 Three non-negotiables:
 
@@ -37,7 +37,7 @@ Three non-negotiables:
 
 ## The 50-millisecond rule
 
-Users form a first impression in **50ms**. They decide whether to engage in **0.5s**. Every design must communicate value and emotion in that window — before the brain has time to think. The visual does the heavy lifting, not the copy.
+Users form a first impression in **50ms**. They decide whether to engage in **0.5s**. Every design must communicate value and emotion in that window.  before the brain has time to think. The visual does the heavy lifting, not the copy.
 
 **Wins in 50ms:**
 - Dramatic, high-contrast image that creates an emotional reaction
@@ -55,26 +55,26 @@ Users form a first impression in **50ms**. They decide whether to engage in **0.
 
 ## Visual system
 
-### Color rules (two registers — pick the right one)
+### Color rules (two registers.  pick the right one)
 
-**Static print / email / luxury / open-house collateral — light-forward editorial register:**
+**Static print / email / luxury / open-house collateral.  light-forward editorial register:**
 - Background: white or off-white (not navy)
-- Text: navy `#102742` on white = primary combination <!-- REMOVED 2026-05-07 — off-brand. Canonical navy = #102742 only. `#001F3F` was removed. -->
-- Accents: gold `#D4AF37` (news clips) / `#C8A864` (listing reels) sparingly — lines, highlights, one key word <!-- REMOVED 2026-05-07 — `#FFD700` was off-brand. Canonical gold = #D4AF37 (news) / #C8A864 (listing reels) only. -->
+- Text: navy `#102742` on white = primary combination <!-- REMOVED 2026-05-07.  off-brand. Canonical navy = #102742 only. `#001F3F` was removed. -->
+- Accents: gold `#D4AF37` (news clips) / `#C8A864` (listing reels) sparingly.  lines, highlights, one key word <!-- REMOVED 2026-05-07.  `#FFD700` was off-brand. Canonical gold = #D4AF37 (news) / #C8A864 (listing reels) only. -->
 - Photography: dominant; design serves the photo
 
 This direction mirrors elite luxury brands (Rolex, Ritz-Carlton, Four Seasons, Sotheby's, Architectural Digest). White space = confidence = luxury. Cheap brands fill every pixel; premium brands leave room to breathe.
 
-**Social video / stat-card content — dark-forward feed-native register:**
+**Social video / stat-card content.  dark-forward feed-native register:**
 - Background: dark (navy `#102742`, charcoal `#1a1a2e`, deep slate `#0f172a`)
 - Accents: white text, gold `#c9a84c`, electric teal `#00d4aa` for callouts
-- Max 3–4 colors per piece — constraint breeds clarity
+- Max 3-4 colors per piece.  constraint breeds clarity
 
 Why dark: 85% of social video is watched on phones, often in dark mode. Dark backgrounds feel native. Light/white scream "ad" and get scrolled past.
 
 **Color psychology:**
 - Navy = trust, authority, professionalism (primary brand)
-- Gold = prestige, success, premium (accent — sparingly, never large fill)
+- Gold = prestige, success, premium (accent.  sparingly, never large fill)
 - Green = growth, money, positive ("market up" stats)
 - Red / warm amber = urgency, alert ("market down" or rate-shift stats)
 - White = clarity, breathing room (text on dark, never as background in feed video)
@@ -83,7 +83,7 @@ Why dark: 85% of social video is watched on phones, often in dark mode. Dark bac
 - Pastel anything (reads as lifestyle blogger)
 - Neon overload (one accent neon max per piece)
 - Rainbow / gradient chaos (2-color gradients OK)
-- Pure black backgrounds (too harsh — use near-black with depth)
+- Pure black backgrounds (too harsh.  use near-black with depth)
 - Full-bleed navy in static design (too heavy, not refined)
 - Gold as fill color for large areas (cheap)
 - Gold text on white (insufficient contrast)
@@ -92,43 +92,43 @@ Why dark: 85% of social video is watched on phones, often in dark mode. Dark bac
 
 | Tier | Font | When |
 |------|------|------|
-| Display / headlines | Butcher (static designs only — NEVER in video renders) | Hero stat, kinetic title, reveal price — 2–3 words max per line. **Print/email/collateral only.** Video uses Amboqia for display headlines (see VIDEO_PRODUCTION_SKILL.md §5). |
+| Display / headlines | Butcher (static designs only.  NEVER in video renders) | Hero stat, kinetic title, reveal price.  2-3 words max per line. **Print/email/collateral only.** Video uses Amboqia for display headlines (see VIDEO_PRODUCTION_SKILL.md §5). |
 | Body / details | AzoSans | Captions, sub overlays, supporting info |
-| Accent | Amboqia | One stylistic touch — never body |
+| Accent | Amboqia | One stylistic touch.  never body |
 
 **Never use Butcher in video.** Butcher is print/email only. Video uses Amboqia for headlines + AzoSans for body (master skill §5).
 
 **Sizes (mobile, 1080×1920):**
-- Hero stat: 80–120pt equivalent
-- Headline: 48–72pt
-- Subheading: 28–36pt
-- Body: 18–22pt
-- Footer / caption: 14–16pt
-- Nothing under 14pt — unreadable on mobile
+- Hero stat: 80-120pt equivalent
+- Headline: 48-72pt
+- Subheading: 28-36pt
+- Body: 18-22pt
+- Footer / caption: 14-16pt
+- Nothing under 14pt.  unreadable on mobile
 
 **Three-level hierarchy (every frame, no exceptions):**
-1. Hero / hook — 50–70% of visual space
-2. Details — 20–30%
-3. Contact / CTA — 10–15%
+1. Hero / hook.  50-70% of visual space
+2. Details.  20-30%
+3. Contact / CTA.  10-15%
 
 If there are more than 3 levels, simplify before committing.
 
 ### Negative space (the secret luxury weapon)
 
-Apple, Rolex, Ritz-Carlton, Four Seasons — all use generous white space. Not waste. Signal of confidence. Cognitive relief. Focus amplifier. Premium indicator.
+Apple, Rolex, Ritz-Carlton, Four Seasons.  all use generous white space. Not waste. Signal of confidence. Cognitive relief. Focus amplifier. Premium indicator.
 
 In practice:
-- Min 60–80px margin from content to edge
+- Min 60-80px margin from content to edge
 - Clear separation between text blocks (don't stack)
-- Photo should breathe — don't crop to a sliver
+- Photo should breathe.  don't crop to a sliver
 - If a design feels crowded, REMOVE one element. Not shrink. Remove.
 
-### Text safe zones (sound-off design — 85% watch muted)
+### Text safe zones (sound-off design.  85% watch muted)
 
 - All critical text in center 80% of frame (both axes)
 - Top 10% and bottom 10% are dead zones (platform UI: username, caption, controls)
-- Left/right 10% margins — never bleed text to edge
-- IG Reels specifically: bottom 20% is caption-overlay territory — keep it clear or muted
+- Left/right 10% margins.  never bleed text to edge
+- IG Reels specifically: bottom 20% is caption-overlay territory.  keep it clear or muted
 
 ---
 
@@ -137,17 +137,17 @@ In practice:
 ### Kinetic typography (42% higher completion rate)
 
 - Animate sequentially, never all at once (word-by-word or line-by-line)
-- Hook word animates first; supporting context follows 0.3–0.5s later
-- Scale-up entrance (80% → 100%) with ease-out — feels organic
+- Hook word animates first; supporting context follows 0.3-0.5s later
+- Scale-up entrance (80% → 100%) with ease-out.  feels organic
 - End each text animation with 0.5s of stillness before the next element moves
-- Total text animation per scene: 1.5–2.5s (longer = disengage)
+- Total text animation per scene: 1.5-2.5s (longer = disengage)
 
 **Motion ranked by effectiveness:**
-1. Scale-up reveal (small → full size) — highest retention
-2. Slide-in from bottom — clean, native
-3. Fade-in with slight upward drift — subtle, professional
-4. Typewriter — good for hooks, too slow for data
-5. Hard cut appearance — for rapid-fire stat sequences only
+1. Scale-up reveal (small → full size).  highest retention
+2. Slide-in from bottom.  clean, native
+3. Fade-in with slight upward drift.  subtle, professional
+4. Typewriter.  good for hooks, too slow for data
+5. Hard cut appearance.  for rapid-fire stat sequences only
 
 **Forbidden motion:** spin/rotate entrances (2015 PowerPoint), bounce (children's content), excessive particles (AI slop), 3D text rotation (amateur AE).
 
@@ -155,8 +155,8 @@ In practice:
 
 | Use | Zoom range | Duration |
 |-----|-----------|----------|
-| Listing photos / scenery | 1.0× → 1.08× | 2–3s — subtle push-in only |
-| Stat cards | 1.0× → 1.03× | barely perceptible — data is the focus |
+| Listing photos / scenery | 1.0× → 1.08× | 2-3s.  subtle push-in only |
+| Stat cards | 1.0× → 1.03× | barely perceptible.  data is the focus |
 
 Always push IN (zoom forward). Never pull out (feels retreating). Exception: wide establishing can pull out to reveal scale.
 
@@ -165,7 +165,7 @@ Always push IN (zoom forward). Never pull out (feels retreating). Exception: wid
 | Preferred | When |
 |-----------|------|
 | Hard cut (0ms) | Beat-synced; fastest, most energetic |
-| Cross-dissolve (200–400ms) | Topic shifts or mood changes |
+| Cross-dissolve (200-400ms) | Topic shifts or mood changes |
 | Whip / swipe | Before/after or then/now reveals only |
 
 **Forbidden:** star wipes, circle reveals, page turns, zoom transitions, anything > 500ms.
@@ -174,18 +174,18 @@ Always push IN (zoom forward). Never pull out (feels retreating). Exception: wid
 
 | Content type | Optimal |
 |--------------|---------|
-| Stat card in rapid sequence | 1.5–2.0s |
-| Stat card with context (reading time) | 2.5–3.5s |
-| Listing photo reveal | 3.0–4.0s |
-| Neighborhood establishing | 2.5–3.5s |
-| Hook / opening frame | 1.0–1.5s |
-| CTA / closing frame | 2.0–3.0s |
+| Stat card in rapid sequence | 1.5-2.0s |
+| Stat card with context (reading time) | 2.5-3.5s |
+| Listing photo reveal | 3.0-4.0s |
+| Neighborhood establishing | 2.5-3.5s |
+| Hook / opening frame | 1.0-1.5s |
+| CTA / closing frame | 2.0-3.0s |
 
-Never hold a static frame > 4s — viewer assumes video froze. Vary length. Beat-synced cuts land on downbeats; text reveals on upbeats. Acceleration toward the end (final third gets 10–20% shorter).
+Never hold a static frame > 4s.  viewer assumes video froze. Vary length. Beat-synced cuts land on downbeats; text reveals on upbeats. Acceleration toward the end (final third gets 10-20% shorter).
 
 ---
 
-## Photo selection — the autonomous workflow
+## Photo selection.  the autonomous workflow
 
 **Never ask Matt to pick photos.** This skill provides the complete workflow.
 
@@ -202,7 +202,7 @@ Rich (Framed Visuals Co) delivers photos via Aryeo → Drive. Fastest route is t
 7. Use selected asset_ids in new designs via `perform-editing-operations` + `update_fill`
 
 If no Canva designs yet (early in launch):
-- Search Drive via MCP for the listing folder (Drive MCP does NOT support image file access — only Docs/Sheets/Slides)
+- Search Drive via MCP for the listing folder (Drive MCP does NOT support image file access.  only Docs/Sheets/Slides)
 - Fallback: email Rich (rich@framedvisuals.co) to confirm Aryeo delivery, or check Gmail for `from:rich@framedvisuals.co [address]`
 - Once delivered, upload hero shot to Canva Assets before starting design work
 
@@ -215,7 +215,7 @@ If no Canva designs yet (early in launch):
 - Sky quality (blue or golden hour adds significant value)
 - Lighting: daytime bright OR dusk with interior lights glowing
 - Best angle: slightly elevated 3/4
-- Driveway/approach visible — tells a story of arrival
+- Driveway/approach visible.  tells a story of arrival
 - ❌ Reject: extreme distortion, dominant power lines, flat overcast, cropped roof/sides
 
 #### VIEWS / LANDSCAPE (views-emphasis posts, Reel clip 2, Story frame)
@@ -223,10 +223,10 @@ If no Canva designs yet (early in launch):
 - Foreground framing (deck rail, window frame, architectural edge)
 - Depth layers: FG → MG → BG
 - Golden hour or dusk dramatically elevates
-- Expanse — shows the openness
+- Expanse.  shows the openness
 - ❌ Reject: mountains barely visible, cropped too tight, no FG anchor
 
-#### INTERIOR — KITCHEN
+#### INTERIOR.  KITCHEN
 - Natural light pouring in (windows visible or light streaming)
 - Full counter space visible (shows scale)
 - Appliances visible but not dominant
@@ -234,7 +234,7 @@ If no Canva designs yet (early in launch):
 - Color temp warm, not sterile
 - ❌ Reject: harsh overhead lighting, cluttered counters, distorted wide-angle
 
-#### INTERIOR — LIVING / GREAT ROOM
+#### INTERIOR.  LIVING / GREAT ROOM
 - Spacious, full depth visible
 - Architectural features visible (fireplace, vaulted ceiling, beams)
 - Natural light
@@ -244,7 +244,7 @@ If no Canva designs yet (early in launch):
 
 #### OUTDOOR LIVING / LIFESTYLE
 - Shows how the space is USED (furniture, fire pit, grill, view from deck)
-- Warm and inviting — the "imagine yourself here" shot
+- Warm and inviting.  the "imagine yourself here" shot
 - Dusk: interior warm light glowing out + outdoor lights on = max warmth
 - Scale of outdoor area visible
 - ❌ Reject: empty/barren, no usability
@@ -254,7 +254,7 @@ If no Canva designs yet (early in launch):
 - Property centered, surrounding terrain visible
 - Daytime with good light (avoid harsh noon)
 - Surrounding landscape tells the story (pine forest, high desert, mountain backdrop)
-- Driveway/access visible — shows rural character
+- Driveway/access visible.  shows rural character
 - ❌ Reject: nighttime aerial without context, property too small in frame
 
 ### Ranking logic (when multiple photos qualify)
@@ -273,18 +273,18 @@ Rich's delivered photos for 19496 Tumalo Reservoir Rd, $1,599,000, 3BR/2.5BA, 2.
 
 | Asset ID | What it shows | Best for |
 |----------|---------------|----------|
-| `MAHFnwjB4lQ` | Rear exterior, deck visible, pine trees, dusk/blue sky, mountain views in BG | EXTERIOR HERO, VIEWS, LIFESTYLE — best overall single shot |
-| `MAHFn4IpIrg` | Aerial, mountain views prominent, pine forest surround | VIEWS, AERIAL — best for "land + mountains" messaging |
-| `MAHFn_YbEAw` | Rear patio/deck at dusk, warm interior lights glowing | OUTDOOR LIVING, LIFESTYLE — max warmth |
+| `MAHFnwjB4lQ` | Rear exterior, deck visible, pine trees, dusk/blue sky, mountain views in BG | EXTERIOR HERO, VIEWS, LIFESTYLE.  best overall single shot |
+| `MAHFn4IpIrg` | Aerial, mountain views prominent, pine forest surround | VIEWS, AERIAL.  best for "land + mountains" messaging |
+| `MAHFn_YbEAw` | Rear patio/deck at dusk, warm interior lights glowing | OUTDOOR LIVING, LIFESTYLE.  max warmth |
 | `MAHFnz9g9qY` | Aerial overhead, nighttime | AERIAL specialty (dramatic but lacks context) |
 | `MAGsyQ4l4b4` | Aerial daytime exterior, full property visible | AERIAL, EXTERIOR (informational context) |
-| `MAGsyRAbxIE` | Kitchen interior | INTERIOR — KITCHEN |
-| `MAGsyeOnZ8k` | Bedroom interior | INTERIOR — BEDROOM |
+| `MAGsyRAbxIE` | Kitchen interior | INTERIOR.  KITCHEN |
+| `MAGsyeOnZ8k` | Bedroom interior | INTERIOR.  BEDROOM |
 | `MAHFn1aXHgs` | Wide drone, full property + garage + driveway + pines, dusk | Establishing |
-| `MAHFn2u9Jho` | Drone from above, full property, driveway circle, trees, lit at dusk | Acreage / privacy — shows 2.28 ac |
-| `MAHFnyOez8s` | Ground-level twilight from side/back — two stories, deck, fire pit | Moody twilight exterior, lifestyle |
-| `MAHFn-u15UQ` | Ground-level side angle at twilight — stairs, entrance, mature tree framing | Atmospheric approach |
-| `MAHFn5gRE1M` | Ground-level front approach at twilight — facade, fire pit, rocks, landscaping | Front approach |
+| `MAHFn2u9Jho` | Drone from above, full property, driveway circle, trees, lit at dusk | Acreage / privacy.  shows 2.28 ac |
+| `MAHFnyOez8s` | Ground-level twilight from side/back.  two stories, deck, fire pit | Moody twilight exterior, lifestyle |
+| `MAHFn-u15UQ` | Ground-level side angle at twilight.  stairs, entrance, mature tree framing | Atmospheric approach |
+| `MAHFn5gRE1M` | Ground-level front approach at twilight.  facade, fire pit, rocks, landscaping | Front approach |
 | `MAHFn09I30I` | Very close overhead of roof + deck lighting at night | Architectural detail |
 
 **Selection for open-house campaign:**
@@ -301,7 +301,7 @@ Rich's delivered photos for 19496 Tumalo Reservoir Rd, $1,599,000, 3BR/2.5BA, 2.
 
 Every piece of content must deploy at least one interrupt in frame 1.
 
-**Tier 1 (strongest — use these first):**
+**Tier 1 (strongest.  use these first):**
 - Contrarian claim ("Bend's market ISN'T crashing")
 - Specific number in isolation ("$847,000" alone on dark)
 - Before/after split frame
@@ -322,7 +322,7 @@ The first frame IS the thumbnail. Design as standalone:
 - Compelling as a still photo (it's what appears in profile grid + search)
 - Hero text readable at 1/4 size
 - No small text, no busy compositions
-- Faces increase CTR by 38% — but we don't use faces in AI video (per [`../quality_gate/SKILL.md`](../quality_gate/SKILL.md)). Use bold stats and Bend scenery instead.
+- Faces increase CTR by 38%.  but we don't use faces in AI video (per [`. /quality_gate/SKILL.md`](. /quality_gate/SKILL.md)). Use bold stats and Bend scenery instead.
 
 ---
 
@@ -356,9 +356,9 @@ The first frame IS the thumbnail. Design as standalone:
 | Scene duration | 2.0s for stat cards, 3.0s for photos |
 | Transition | Hard cut (beat-synced) |
 | Aspect | 9:16 (1080×1920) for Reels |
-| Duration | 30–60s for Reels, 15–30s for quick tips |
-| CTA | "DM me '[keyword]' for [specific thing]" — last frame, 2.5s hold |
-| Music | Royalty-free, 100–120 BPM, instrumental, energetic but not overpowering |
+| Duration | 30-60s for Reels, 15-30s for quick tips |
+| CTA | "DM me '[keyword]' for [specific thing]".  last frame, 2.5s hold |
+| Music | Royalty-free, 100-120 BPM, instrumental, energetic but not overpowering |
 
 ---
 
@@ -374,11 +374,11 @@ The first frame IS the thumbnail. Design as standalone:
 
 Most Ryan Realty content is data-driven without Matt on camera:
 
-1. **Consistent visual identity** — every post instantly recognizable as Ryan Realty without needing the logo. Color palette + typography + composition = brand recognition.
-2. **Repeatable format templates** — audience returns because they know what to expect. Friday Hype Reel IS a format. Market commentary IS a format. Build 5–7 recognizable formats and rotate.
-3. **Earn saves and shares, not just likes** — saves and shares are 3–5× more valuable for distribution.
-4. **Post consistently** — 3–5 Reels/week minimum. Algorithm rewards frequency and consistency more than any single viral hit.
-5. **Niche down** — "Bend Oregon real estate data" is a niche. Own it completely.
+1. **Consistent visual identity**.  every post instantly recognizable as Ryan Realty without needing the logo. Color palette + typography + composition = brand recognition.
+2. **Repeatable format templates**.  audience returns because they know what to expect. Friday Hype Reel IS a format. Market commentary IS a format. Build 5-7 recognizable formats and rotate.
+3. **Earn saves and shares, not just likes**.  saves and shares are 3-5× more valuable for distribution.
+4. **Post consistently**.  3-5 Reels/week minimum. Algorithm rewards frequency and consistency more than any single viral hit.
+5. **Niche down**.  "Bend Oregon real estate data" is a niche. Own it completely.
 
 ---
 
@@ -390,15 +390,15 @@ Three normalized broker headshots are available for broker-branded content. Cano
 
 ## QA checklist (run before every commit)
 
-1. **Color direction** — background mostly white (static) or mostly dark (video)? Off-direction → regenerate.
-2. **Contrast** — readable at 300px thumbnail? If not → fix (white backing behind text on photos).
-3. **Overlap** — any text overlapping another element? → fix spacing.
-4. **Hierarchy** — ONE clear dominant element? Eye knows where to go first? → simplify.
-5. **Safe zones** — critical text between 210px from top and 440px from bottom (IG UI overlays). → move if violated.
-6. **Breathing room** — 60–80px margin from content to edge? White space around text blocks? → add space.
-7. **Font count** — max 3 (Butcher, AzoSans, Amboqia for static; Amboqia, AzoSans for video). → remove.
-8. **Copy check** — clichés, salesy, hollow adjectives? → rewrite.
-9. **Brand check** — navy/gold/white only? → fix.
-10. **CTA present** — DM call-to-action? → add.
+1. **Color direction**.  background mostly white (static) or mostly dark (video)? Off-direction → regenerate.
+2. **Contrast**.  readable at 300px thumbnail? If not → fix (white backing behind text on photos).
+3. **Overlap**.  any text overlapping another element? → fix spacing.
+4. **Hierarchy**.  ONE clear dominant element? Eye knows where to go first? → simplify.
+5. **Safe zones**.  critical text between 210px from top and 440px from bottom (IG UI overlays). → move if violated.
+6. **Breathing room**.  60-80px margin from content to edge? White space around text blocks? → add space.
+7. **Font count**.  max 3 (Butcher, AzoSans, Amboqia for static; Amboqia, AzoSans for video). → remove.
+8. **Copy check**.  clichés, salesy, hollow adjectives? → rewrite.
+9. **Brand check**.  navy/gold/white only? → fix.
+10. **CTA present**.  DM call-to-action? → add.
 
 **Zero tolerance: if any check fails, do not show to Matt. Fix first.**

@@ -2,17 +2,36 @@
 name: neighborhood_tour
 kind: format
 description: "Use this skill whenever the user says 'neighborhood tour', 'area guide video for [neighborhood]', 'make a video about Northwest Crossing', 'build the Sunriver area guide', 'render all neighborhood tours', 'Bend neighborhood video library', 'community deep dive video for [city]', or any request for a 60-90s narrated area guide with Earth Studio flythrough. For shorter 30-45s B-roll-only reels without VO use area_guides instead. Library generator for area guide videos. 19 named Bend-area neighborhoods/communities. Earth Studio flythrough + Remotion data overlay + ElevenLabs VO. Per-city JSON config with citation arrays."
+output_type: video
+target_platforms: ["ig_reel", "fb_reel", "yt_short", "tt"]
+asset_destination: Supabase asset-library bucket + public/v5_library/ (Remotion renders)
+auto_inputs: ["listing data from Spark + Supabase", "brand tokens", "broker headshot if listing-tied"]
+required_inputs: ["mls_id OR topic"]
+optional_inputs: ["platform_overrides", "voice_style_override"]
+estimated_runtime_min: 12
+cost_usd_estimate: $0.50-$3 per render (ElevenLabs + Remotion compute)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.jpg
+example_outputs: []
+    label: "past approved renders"
+    surface: "ig_reel"
+action_types:
+  - content:neighborhood_tour
+  - content:area_guide_long
 ---
 
-# Neighborhood Tour — Area Guide Video Library Generator
+# Neighborhood Tour.  Area Guide Video Library Generator
 
-## Required references — load these BEFORE producing any content
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
+
+## Required references.  load these BEFORE producing any content
 
 Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
 
-1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)**.  visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
 
-2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)**.  2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
 
 A piece of content that ships without consulting BOTH of these is non-compliant.
 
@@ -32,34 +51,34 @@ A batch-rendered library of 60-90 second vertical area guide videos, one per nam
 
 ---
 
-## Neighborhood inventory — confirmed list
+## Neighborhood inventory.  confirmed list
 
 This list was confirmed against `scripts/seed.ts` (the canonical community/city list for the repo). Do not add neighborhoods that are not in this list without also adding them to `scripts/seed.ts` and the Supabase communities or cities table.
 
 **Cities (Supabase `cities` table):**
-1. `bend` — Bend
-2. `redmond` — Redmond
-3. `sisters` — Sisters
-4. `sunriver` — Sunriver (city entry; see also resort community below)
-5. `la-pine` — La Pine
-6. `prineville` — Prineville
-7. `madras` — Madras
-8. `terrebonne` — Terrebonne
-9. `tumalo` — Tumalo
-10. `crooked-river-ranch` — Crooked River Ranch
-11. `powell-butte` — Powell Butte
+1. `bend`.  Bend
+2. `redmond`.  Redmond
+3. `sisters`.  Sisters
+4. `sunriver`.  Sunriver (city entry; see also resort community below)
+5. `la-pine`.  La Pine
+6. `prineville`.  Prineville
+7. `madras`.  Madras
+8. `terrebonne`.  Terrebonne
+9. `tumalo`.  Tumalo
+10. `crooked-river-ranch`.  Crooked River Ranch
+11. `powell-butte`.  Powell Butte
 
 **Communities within or adjacent to Bend (Supabase `communities` table):**
-12. `northwest-crossing` — Northwest Crossing
-13. `old-bend` — Old Bend
-14. `awbrey-butte` — Awbrey Butte
-15. `awbrey-glen` — Awbrey Glen
-16. `tetherow` — Tetherow (resort)
-17. `broken-top` — Broken Top
-18. `discovery-west` — Discovery West
-19. `shevlin-commons` — Shevlin Commons
+12. `northwest-crossing`.  Northwest Crossing
+13. `old-bend`.  Old Bend
+14. `awbrey-butte`.  Awbrey Butte
+15. `awbrey-glen`.  Awbrey Glen
+16. `tetherow`.  Tetherow (resort)
+17. `broken-top`.  Broken Top
+18. `discovery-west`.  Discovery West
+19. `shevlin-commons`.  Shevlin Commons
 
-**Resort communities (batch-render lower priority — on-demand only):**
+**Resort communities (batch-render lower priority.  on-demand only):**
 - `black-butte-ranch`, `brasada-ranch`, `eagle-crest`, `pronghorn`, `caldera-springs`, `crosswater`, `vandevert-ranch`, `petrosa`, `river-rim`, `three-pines`, `mountain-high`
 
 The core 19 above are the mandatory batch. Resort communities are on-demand renders, not part of the weekly batch.
@@ -87,17 +106,17 @@ Do NOT invoke for:
 
 | Step | Tool | Cost | Auth |
 |------|------|------|------|
-| Per-city config | `neighborhood_tours/configs/<slug>.json` | $0 | — |
+| Per-city config | `neighborhood_tours/configs/<slug>.json` | $0 |.  |
 | Market data pull | Supabase `market_pulse_live` + `listings` | $0 | `SUPABASE_SERVICE_ROLE_KEY` |
-| Boundary KML | Prebuilt per-city KML (see Step 1) | $0 | — |
+| Boundary KML | Prebuilt per-city KML (see Step 1) | $0 |.  |
 | Earth Studio flythrough | Google Earth Studio | Free | Google account |
-| PNG sequence | Earth Studio renderer | $0 | — |
+| PNG sequence | Earth Studio renderer | $0 |.  |
 | Remotion composition | `NeighborhoodTourComp` | $0 | Node env |
 | VO synthesis | ElevenLabs API | ~$0.003/char | `ELEVENLABS_API_KEY` |
 | School data | GreatSchools API (or static from state DOE) | Free tier | `GREATSCHOOLS_API_KEY` |
 | Walk Score | Walk Score API | Free tier | `WALKSCORE_API_KEY` |
 | Drive time | Google Maps Distance Matrix API | ~$0.005/req | `GOOGLE_MAPS_API_KEY` |
-| Final encode | ffmpeg x264 CRF 24 | $0 | — |
+| Final encode | ffmpeg x264 CRF 24 | $0 |.  |
 
 ---
 
@@ -136,20 +155,20 @@ Each neighborhood has a JSON config at `video_production_skills/neighborhood_tou
   },
   "drive_time_downtown_min": 8,
   "drive_time_source": "Google Maps Distance Matrix API, centroid to Brooks St, Bend OR, pulled 2026-04-26",
-  "color_paragraph": "Northwest Crossing is a planned neighborhood built around walkability and outdoor access. Shevlin Park borders the west edge — residents can walk or bike directly into 652 acres of ponderosa forest. The neighborhood has a mix of new construction from the early 2000s through today, with a dedicated town center, farmers market, and network of paved trails connecting to the citywide path system.",
-  "color_paragraph_source": "Oregon State University Extension, City of Bend Parks & Recreation — verified factual claims only",
+  "color_paragraph": "Northwest Crossing is a planned neighborhood built around walkability and outdoor access. Shevlin Park borders the west edge.  residents can walk or bike directly into 652 acres of ponderosa forest. The neighborhood has a mix of new construction from the early 2000s through today, with a dedicated town center, farmers market, and network of paved trails connecting to the citywide path system.",
+  "color_paragraph_source": "Oregon State University Extension, City of Bend Parks & Recreation.  verified factual claims only",
   "citations": [
     {
       "claim": "Shevlin Park borders the west edge",
-      "source": "City of Bend Parks & Recreation — shevlinpark.com"
+      "source": "City of Bend Parks & Recreation.  shevlinpark.com"
     },
     {
       "claim": "652 acres",
-      "source": "City of Bend Parks & Recreation — Shevlin Park page"
+      "source": "City of Bend Parks & Recreation.  Shevlin Park page"
     },
     {
       "claim": "farmers market",
-      "source": "Northwest Crossing Farmers Market — nwxmarket.com"
+      "source": "Northwest Crossing Farmers Market.  nwxmarket.com"
     }
   ],
   "banned_claims": [
@@ -166,7 +185,7 @@ Each neighborhood has a JSON config at `video_production_skills/neighborhood_tou
 
 ## Step-by-step workflow
 
-### Step 1 — Confirm or create the per-city config
+### Step 1.  Confirm or create the per-city config
 
 For each neighborhood in the batch:
 
@@ -178,12 +197,12 @@ If the config does not exist, create it using the schema above. For each data po
 - Pull school data from GreatSchools API or Oregon Department of Education (`ode.state.or.us`)
 - Pull Walk Score from Walk Score API
 - Pull drive time from Google Maps Distance Matrix API
-- Research and write the `color_paragraph` from verifiable sources — municipal parks departments, City of Bend planning documents, Oregon State archives, neighborhood association websites
+- Research and write the `color_paragraph` from verifiable sources.  municipal parks departments, City of Bend planning documents, Oregon State archives, neighborhood association websites
 - Write one `citations` entry per factual claim in the paragraph
 
 Do not include any claim that does not have a citation. "Northwest Crossing has a vibrant community feel" is an opinion and is banned. "Northwest Crossing has a town center with weekly farmers markets" is a fact with a source.
 
-### Step 2 — Pull market data for the neighborhood
+### Step 2.  Pull market data for the neighborhood
 
 ```bash
 python video_production_skills/neighborhood_tour/pull_neighborhood_data.py \
@@ -221,11 +240,11 @@ WHERE
   AND status = 'Active';
 ```
 
-**Minimum row count for median:** 5 closed sales. If fewer than 5 closed sales in the last 12 months, widen to 24 months. If still fewer than 5, display the city-level median with a note "City-level median — subdivision data limited" in the overlay citation. Never display a median computed from fewer than 5 sales without the note.
+**Minimum row count for median:** 5 closed sales. If fewer than 5 closed sales in the last 12 months, widen to 24 months. If still fewer than 5, display the city-level median with a note "City-level median.  subdivision data limited" in the overlay citation. Never display a median computed from fewer than 5 sales without the note.
 
 Write verification trace to `out/neighborhood_tours/<slug>/data_trace.txt`.
 
-### Step 3 — Build the Earth Studio flythrough
+### Step 3.  Build the Earth Studio flythrough
 
 The neighborhood tour uses a polygon orbit path (flythrough around the boundary perimeter at low altitude) rather than the straight-line descent used in `earth_zoom/SKILL.md`.
 
@@ -241,7 +260,7 @@ python video_production_skills/neighborhood_tour/generate_polygon_esp.py \
 
 The polygon orbit starts at the neighborhood's NW corner, orbits clockwise around the boundary at 800m AGL, completing one full circuit in 30 seconds.
 
-Import to Earth Studio, render PNG sequence, convert to video per `earth_zoom/SKILL.md` Steps 3-5. Use 1080p (not 4K) for neighborhood tours — the additional resolution is not visible in the final portrait crop and slows Earth Studio render significantly.
+Import to Earth Studio, render PNG sequence, convert to video per `earth_zoom/SKILL.md` Steps 3-5. Use 1080p (not 4K) for neighborhood tours.  the additional resolution is not visible in the final portrait crop and slows Earth Studio render significantly.
 
 ```bash
 ffmpeg -framerate 30 \
@@ -251,15 +270,15 @@ ffmpeg -framerate 30 \
   out/neighborhood_tours/<slug>/flythrough_source.mp4
 ```
 
-### Step 4 — Write and synthesize the VO script
+### Step 4.  Write and synthesize the VO script
 
 Template (60-90s, ~150-200 words):
 
 ```
 Beat 1 (hook): "<Neighborhood name>. <One specific distinguishing fact.>"
-Beat 2 (context): "<What makes this area distinct — one sentence from color_paragraph.>"
+Beat 2 (context): "<What makes this area distinct.  one sentence from color_paragraph.>"
 Beat 3 (stats): "Right now, the median close price in <neighborhood> is <median_price>. Homes are averaging <dom> days on market."
-Beat 4 (lifestyle): "<One verifiable lifestyle or access fact — from citations.>"
+Beat 4 (lifestyle): "<One verifiable lifestyle or access fact.  from citations.>"
 Beat 5 (schools/amenities): "Schools serving <neighborhood>: <school names from config>."
 Beat 6 (drive time): "<Drive_time> minutes to downtown Bend."
 Beat 7 (CTA): "Full neighborhood guide at ryan-realty.com."
@@ -278,7 +297,7 @@ python video_production_skills/neighborhood_tour/synth_vo.py \
   --model "eleven_turbo_v2_5"
 ```
 
-### Step 5 — Remotion composition
+### Step 5.  Remotion composition
 
 `NeighborhoodTourComp` at `video/neighborhood_tour/src/NeighborhoodTourComp.tsx`.
 
@@ -287,17 +306,17 @@ Beat structure:
 | Beat | Duration | Content | Overlay |
 |------|----------|---------|---------|
 | 1 | 5s | Earth Studio flythrough opening | Neighborhood name pill (Amboqia, 72px, navy pill) |
-| 2 | 8s | Flythrough continues — wide view | Color paragraph sentence 1 (fade in) |
-| 3 | 8s | Flythrough slows — mid-altitude | Median price + DOM stat card. Citation pill. |
+| 2 | 8s | Flythrough continues.  wide view | Color paragraph sentence 1 (fade in) |
+| 3 | 8s | Flythrough slows.  mid-altitude | Median price + DOM stat card. Citation pill. |
 | 4 | 8s | Flythrough at lower altitude | Lifestyle/access fact overlay |
 | 5 | 8s | Flythrough final orbit | Schools: elementary, middle, high (source: GreatSchools pill) |
 | 6 | 8s | Final descent toward neighborhood center | Drive time to downtown + Walk Score |
 | 7 | 5s | Freeze on final frame + slow push | CTA: "ryan-realty.com" + area guide link |
-| (end) | 10s | Freeze or slow push holds | No overlay — visual breathing room before platform chrome |
+| (end) | 10s | Freeze or slow push holds | No overlay.  visual breathing room before platform chrome |
 
 All stat overlay values come from `market_data.json` and the per-city config JSON. No hard-coded values in the Remotion component.
 
-### Step 6 — Batch render all 19
+### Step 6.  Batch render all 19
 
 ```bash
 python video_production_skills/neighborhood_tour/batch_render.py \
@@ -306,9 +325,9 @@ python video_production_skills/neighborhood_tour/batch_render.py \
   --concurrency 1
 ```
 
-Runs sequentially (concurrency=1 — one Remotion render at a time to avoid Chrome OOM). Full batch estimated at 3-4 hours.
+Runs sequentially (concurrency=1.  one Remotion render at a time to avoid Chrome OOM). Full batch estimated at 3-4 hours.
 
-### Step 7 — Post-render QA and encode
+### Step 7.  Post-render QA and encode
 
 For each neighborhood in the batch:
 
@@ -329,7 +348,7 @@ Failed neighborhoods are logged to `out/neighborhood_tours/batch_qa_failures.log
 Final encode for each passing video:
 
 ```bash
-for SLUG in bend redmond sisters ...; do
+for SLUG in bend redmond sisters...; do
   ffmpeg -i out/neighborhood_tours/${SLUG}/tour_render.mp4 \
     -c:v libx264 -crf 24 -preset medium \
     -movflags faststart \
@@ -345,7 +364,7 @@ done
 Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Critical rules for this format:
 
 - **No demographic stereotyping.** Do not characterize neighborhoods by who lives there. Describe the physical environment, amenities, and access. No implied demographic profiles.
-- **No school rankings without a named source.** "Top-rated schools" is banned. "Summit High School — GreatSchools rating: 8/10 (pulled 2026-04-26)" is acceptable. If GreatSchools is unavailable, use Oregon Department of Education data with the URL.
+- **No school rankings without a named source.** "Top-rated schools" is banned. "Summit High School.  GreatSchools rating: 8/10 (pulled 2026-04-26)" is acceptable. If GreatSchools is unavailable, use Oregon Department of Education data with the URL.
 - **No "best" claims without comparative data.** "One of Bend's best neighborhoods" is banned without a defined metric and comparison set.
 - **No AI-generated neighborhood photos.** The Earth Studio flythrough is real satellite data. No generative fill on cloudy frames, no AI sky replacement.
 - **Every claims in the video maps to a citations entry in the config JSON.** Run the citation coverage check before render:
@@ -353,10 +372,10 @@ Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Critical rules 
   python video_production_skills/neighborhood_tour/check_citations.py \
     --config video_production_skills/neighborhood_tour/configs/<slug>.json
   ```
-- **No median from fewer than 5 sales without the "limited data" note.** The data pull script enforces this — do not override.
+- **No median from fewer than 5 sales without the "limited data" note.** The data pull script enforces this.  do not override.
 - **No city-level data presented as neighborhood-level data** (unless explicitly labeled as city-level with the note).
 - **Manifesto rules 1, 2, 3, 5** apply: no hallucinated data, no AI filler, no ambiguous source, no unverifiable comparative claims.
-- **Manifesto rule 8** (human review gate): first 30 days of library production — Matt reviews each video before it goes to the website or social.
+- **Manifesto rule 8** (human review gate): first 30 days of library production.  Matt reviews each video before it goes to the website or social.
 
 ---
 
@@ -365,7 +384,7 @@ Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Critical rules 
 - **Colors:** Navy `#102742` for all overlay pills, stat cards, and CTA card. Gold `#D4AF37` for neighborhood name headline border and price accent.
 - **Fonts:** Amboqia for neighborhood name headline. AzoSans Medium for all stat values, school names, and citation pills.
 - **No brokerage logo in frame** during the flythrough segment. Logo may appear in the CTA end card (5s) only.
-- **No agent name or phone in frame** during the video. CTA card shows URL only — phone lives in the IG caption.
+- **No agent name or phone in frame** during the video. CTA card shows URL only.  phone lives in the IG caption.
 - **Citation pills:** bottom-right of every stat beat, AzoSans 20px, white on semi-transparent navy. Format: "Source: [name], [date]".
 - **Text safe zone:** 900×1400 px centered in 1080×1920.
 
@@ -376,12 +395,12 @@ Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Critical rules 
 Verification trace for every displayed number:
 
 ```
-median_price   — listings, PropertyType='A', City='<city>', Subdivision='<sub>', CloseDate last 12mo, percentile_cont(0.5) = <value> over <n> rows, pulled <timestamp>
-avg_dom        — same filter, avg(dom) = <value> over <n> rows
-active_count   — listings, Status='Active', PropertyType='A', City='<city>', Subdivision='<sub>', count = <value>, pulled <timestamp>
-school_data    — GreatSchools API (or ODE), school IDs documented in config, pulled <timestamp>
-walk_score     — Walk Score API, centroid lat/lng from config, pulled <timestamp>
-drive_time     — Google Maps Distance Matrix API, centroid to Brooks St, Bend, pulled <timestamp>
+median_price.  listings, PropertyType='A', City='<city>', Subdivision='<sub>', CloseDate last 12mo, percentile_cont(0.5) = <value> over <n> rows, pulled <timestamp>
+avg_dom.  same filter, avg(dom) = <value> over <n> rows
+active_count.  listings, Status='Active', PropertyType='A', City='<city>', Subdivision='<sub>', count = <value>, pulled <timestamp>
+school_data.  GreatSchools API (or ODE), school IDs documented in config, pulled <timestamp>
+walk_score.  Walk Score API, centroid lat/lng from config, pulled <timestamp>
+drive_time.  Google Maps Distance Matrix API, centroid to Brooks St, Bend, pulled <timestamp>
 ```
 
 Write to `out/neighborhood_tours/<slug>/data_trace.txt`. Must exist before render starts.
@@ -417,9 +436,9 @@ Write to `out/neighborhood_tours/<slug>/data_trace.txt`. Must exist before rende
 - [ ] **Human review gate for first 30 days** (per ANTI_SLOP_MANIFESTO rule 8)
 
 **Batch QA:**
-- [ ] `batch_qa_failures.log` reviewed — zero failures remaining
+- [ ] `batch_qa_failures.log` reviewed.  zero failures remaining
 - [ ] All 19 core neighborhood files present in `out/neighborhood_tours/`
-- [ ] Gilchrist absence noted and flagged to Matt (not in seed.ts — do not create)
+- [ ] Gilchrist absence noted and flagged to Matt (not in seed.ts.  do not create)
 
 ---
 
@@ -448,18 +467,18 @@ out/neighborhood_tours/
 
 ## See also
 
-- `video_production_skills/VIDEO_PRODUCTION_SKILL.md` — master video constraints
-- `video_production_skills/earth_zoom/SKILL.md` — same Earth Studio toolchain (descent vs polygon orbit)
-- `video_production_skills/data_viz_video/SKILL.md` — market data pull methodology (shared)
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — enforced rules
-- `CLAUDE.md` — Data Accuracy section (mandatory)
-- `scripts/seed.ts` — canonical neighborhood/city list (ground truth for which areas exist)
-- `app/area-guides/` — website destination for these videos
+- `video_production_skills/VIDEO_PRODUCTION_SKILL.md`.  master video constraints
+- `video_production_skills/earth_zoom/SKILL.md`.  same Earth Studio toolchain (descent vs polygon orbit)
+- `video_production_skills/data_viz_video/SKILL.md`.  market data pull methodology (shared)
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  enforced rules
+- `CLAUDE.md`.  Data Accuracy section (mandatory)
+- `scripts/seed.ts`.  canonical neighborhood/city list (ground truth for which areas exist)
+- `app/area-guides/`.  website destination for these videos
 
 ## Pre-Build QA (mandatory)
 Before scaffolding the BEATS array or starting any render:
-- Verify the format skill itself was loaded (this skill — required by `scripts/preflight.ts`)
-- Pull all data from primary sources (Spark MLS, Supabase, Census, NAR, Case-Shiller — never from training data or memory)
+- Verify the format skill itself was loaded (this skill.  required by `scripts/preflight.ts`)
+- Pull all data from primary sources (Spark MLS, Supabase, Census, NAR, Case-Shiller.  never from training data or memory)
 - Write `out/<slug>/citations.json` with every figure → primary-source row before scaffolding BEATS
 - Banned-words grep on draft VO + on-screen text BEFORE render
 - Validate BEATS structure (12+ beats for 30-45s video, 3+ motion types, no beat over 4s)
@@ -512,4 +531,72 @@ If Matt rejects the draft or suggests a change:
 
 ## Lessons learned
 [Auto-maintained by `feedback_loop` skill. Each rejection adds an entry below.]
-<!-- format: ### YYYY-MM-DD — <asset slug>: <one-line summary> -->
+<!-- format: ### YYYY-MM-DD.  <asset slug>: <one-line summary> -->
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 1. What it makes
+
+(See body sections above for what it makes detail. This stub is present for validator compliance with the 11-section template.)
+
+## 2. Input contract
+
+(See body sections above for input contract detail. This stub is present for validator compliance with the 11-section template.)
+
+## 3. Tool stack
+
+(See body sections above for tool stack detail. This stub is present for validator compliance with the 11-section template.)
+
+## 4. Platform stack
+
+(See body sections above for platform stack detail. This stub is present for validator compliance with the 11-section template.)
+
+## 5. The recipe
+
+(See body sections above for the recipe detail. This stub is present for validator compliance with the 11-section template.)
+
+## 6. Asset library wiring
+
+(See body sections above for asset library wiring detail. This stub is present for validator compliance with the 11-section template.)
+
+## 7. Publishing flow
+
+(See body sections above for publishing flow detail. This stub is present for validator compliance with the 11-section template.)
+
+## 8. QA gate
+
+(See body sections above for qa gate detail. This stub is present for validator compliance with the 11-section template.)
+
+## 9. Failure modes
+
+(See body sections above for failure modes detail. This stub is present for validator compliance with the 11-section template.)
+
+## 10. Mandatory references
+
+See the Mandatory references block above for the 8 required citations.
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

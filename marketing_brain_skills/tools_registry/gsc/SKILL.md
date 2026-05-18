@@ -9,9 +9,9 @@ description: Use this skill when a task involves Google Search Console, organic 
 
 This is a capability skill used by the marketing brain's organic-channel ingestor and website audit layer. Every task that invokes this skill also loads:
 
-- `CLAUDE.md` §0 — Data Accuracy mandate (outranks all other instructions)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `marketing_brain_skills/tools_registry/supabase/SKILL.md` — where ingested rows land (`marketing_channel_daily`)
+- `CLAUDE.md` §0.  Data Accuracy mandate (outranks all other instructions)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
+- `marketing_brain_skills/tools_registry/supabase/SKILL.md`.  where ingested rows land (`marketing_channel_daily`)
 
 ---
 
@@ -40,7 +40,7 @@ The rule: GSC is the source of truth for every organic-search metric on ryan-rea
 
 ---
 
-## Authentication — CRITICAL GOTCHAS
+## Authentication.  CRITICAL GOTCHAS
 
 ### Service account
 
@@ -49,22 +49,22 @@ Email:  viewer@ryanrealty.iam.gserviceaccount.com
 Scope:  https://www.googleapis.com/auth/webmasters.readonly
 ```
 
-Env vars (all three Vercel environments — Production, Preview, Development):
+Env vars (all three Vercel environments.  Production, Preview, Development):
 
 | Variable | Value / notes |
 |---|---|
 | `GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL` | `viewer@ryanrealty.iam.gserviceaccount.com` |
-| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | PEM string with literal `\n` sequences — the code does `.replace(/\\n/g, '\n')` before passing to JWT |
-| `GOOGLE_SEARCH_CONSOLE_SITE_URL` | `https://ryan-realty.com/` — verified across all 3 envs 2026-05-13 |
+| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | PEM string with literal `\n` sequences.  the code does `.replace(/\\n/g, '\n')` before passing to JWT |
+| `GOOGLE_SEARCH_CONSOLE_SITE_URL` | `https://ryan-realty.com/`.  verified across all 3 envs 2026-05-13 |
 
-### URL-prefix property — the hardest GSC gotcha (verified 2026-05-13)
+### URL-prefix property.  the hardest GSC gotcha (verified 2026-05-13)
 
 GSC has two property types for the same domain: **URL-prefix** (`https://ryan-realty.com/`) and **domain** (`sc-domain:ryan-realty.com`). They are separate properties with separate permission grants.
 
 The service account has `siteFullUser` access on **`https://ryan-realty.com/`** only. It does NOT have access to `sc-domain:ryan-realty.com`.
 
 **Consequences:**
-- Code that passes `sc-domain:ryan-realty.com` as `siteUrl` gets HTTP 403 — even with a valid token and correct credentials.
+- Code that passes `sc-domain:ryan-realty.com` as `siteUrl` gets HTTP 403.  even with a valid token and correct credentials.
 - The error message is indistinguishable from "wrong credentials." This is the first thing to check on a 403.
 - `GOOGLE_SEARCH_CONSOLE_SITE_URL` is locked to `https://ryan-realty.com/` in Vercel to prevent accidental drift.
 
@@ -91,12 +91,12 @@ Returns every property the service account can see, with `siteEntry[]` from `web
 
 ## Canonical implementation
 
-**`app/actions/search-console-report.ts`** — the low-level wrapper. Uses `googleapis` `JWT` auth. Makes three parallel `searchanalytics.query` calls per invocation: account totals (no dimension, rowLimit 1), top 25 queries by impressions, top 25 pages by impressions. Returns a typed `SearchConsoleSummary` or `{ ok: false, error: string }`.
+**`app/actions/search-console-report.ts`**.  the low-level wrapper. Uses `googleapis` `JWT` auth. Makes three parallel `searchanalytics.query` calls per invocation: account totals (no dimension, rowLimit 1), top 25 queries by impressions, top 25 pages by impressions. Returns a typed `SearchConsoleSummary` or `{ ok: false, error: string }`.
 
-**`app/api/cron/marketing-snapshot-gsc/route.ts`** — the daily ingestor. Calls `getSearchConsoleSummary()` once per day in the requested date range. Decomposes the summary into `MetricRow[]` and calls `upsertMetricRows()` from `lib/marketing-brain/snapshot.ts`.
+**`app/api/cron/marketing-snapshot-gsc/route.ts`**.  the daily ingestor. Calls `getSearchConsoleSummary()` once per day in the requested date range. Decomposes the summary into `MetricRow[]` and calls `upsertMetricRows()` from `lib/marketing-brain/snapshot.ts`.
 
 ```ts
-// Auth pattern — canonical
+// Auth pattern.  canonical
 const auth = new google.auth.JWT({
   email: process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL!.trim(),
   key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY!.trim().replace(/\\n/g, '\n'),
@@ -107,7 +107,7 @@ const webmasters = google.webmasters({ version: 'v3', auth })
 
 ---
 
-## Search Analytics API — endpoint and query patterns
+## Search Analytics API.  endpoint and query patterns
 
 **Endpoint:**
 
@@ -122,7 +122,7 @@ POST https://www.googleapis.com/webmaster/v3/sites/{siteUrl}/searchAnalytics/que
 | Field | Type | Notes |
 |---|---|---|
 | `startDate` | `YYYY-MM-DD` | Inclusive. Max range: 16 months from today. Requesting beyond that returns 400. |
-| `endDate` | `YYYY-MM-DD` | Inclusive. GSC has a 2–3 day processing lag — very recent dates return zeros. |
+| `endDate` | `YYYY-MM-DD` | Inclusive. GSC has a 2-3 day processing lag.  very recent dates return zeros. |
 | `dimensions` | `string[]` | `['query']`, `['page']`, `['device']`, `['country']`, or combinations. Omit for account totals. |
 | `rowLimit` | `number` | Max 25000. Truncates silently if results exceed this. |
 | `aggregationType` | `'auto' | 'byPage' | 'byProperty'` | Use `'auto'` for all standard pulls. |
@@ -135,7 +135,7 @@ POST https://www.googleapis.com/webmaster/v3/sites/{siteUrl}/searchAnalytics/que
   clicks: number
   impressions: number
   ctr: number       // decimal, e.g. 0.032 = 3.2%
-  position: number  // average — INVERSE METRIC (1 = top, 50 = bottom)
+  position: number  // average.  INVERSE METRIC (1 = top, 50 = bottom)
 }
 ```
 
@@ -168,7 +168,7 @@ Rows land in `public.marketing_channel_daily` with `channel = 'gsc'`:
 
 ### audit-website SEO analysis
 
-`lib/marketing-brain/audit-website.ts` reads from `marketing_channel_daily` (no direct GSC API calls at audit time). It aggregates the ingested rows using `fetchMetricsByScope(['gsc'], ...)` over a configurable window (default 30 days vs prior 30 days):
+`lib/marketing-brain/audit-website.ts` reads from `marketing_channel_daily` (no direct GSC API calls at audit time). It aggregates the ingested rows using `fetchMetricsByScope(['gsc'],..)` over a configurable window (default 30 days vs prior 30 days):
 
 ```ts
 const GSC_METRICS = ['impressions', 'clicks', 'avg_position']
@@ -183,11 +183,11 @@ The audit flags three SEO opportunity types:
 
 | Signal | Condition | Recommended action |
 |---|---|---|
-| **Losing query** | `position_delta > 1` over 7d (rank got worse — position number went up) | `investigate_drop` → brain emits `content:blog_post` |
+| **Losing query** | `position_delta > 1` over 7d (rank got worse.  position number went up) | `investigate_drop` → brain emits `content:blog_post` |
 | **Low-CTR query** | CTR in bottom quartile of top queries AND position in top 20 | `test_new_creative` → brain emits `site:meta_update` |
-| **Gaining query** | `position_delta < -1` over 7d (rank improved — position number went down) | `capitalize_on_spike` → brain emits `content:blog_post` + `content:ig_carousel` |
+| **Gaining query** | `position_delta < -1` over 7d (rank improved.  position number went down) | `capitalize_on_spike` → brain emits `content:blog_post` + `content:ig_carousel` |
 
-### Tracked brand + category queries (locked — competitor-recon basis)
+### Tracked brand + category queries (locked.  competitor-recon basis)
 
 These 10 queries are monitored weekly for Ryan Realty's organic positions:
 
@@ -208,7 +208,7 @@ These are the same queries the Apify Google SERP actor tracks for competitor pos
 
 ---
 
-## Inverse metric gotcha — MANDATORY
+## Inverse metric gotcha.  MANDATORY
 
 `position` (and `avg_position`) is an **inverse metric**: lower values are better (rank 1 beats rank 50).
 
@@ -227,7 +227,7 @@ avg_response_time_minutes, days_on_market, unsubscribe_rate
 
 ## Data freshness
 
-GSC has a **2–3 day processing delay**. Rows ingested for very recent dates (yesterday, 2 days ago) will return zeros or partial data. The ingestor is idempotent — backfilling the same date range after the lag clears overwrites the partial rows. Do not alert on zero-impression days for the last 2–3 days; they are expected.
+GSC has a **2-3 day processing delay**. Rows ingested for very recent dates (yesterday, 2 days ago) will return zeros or partial data. The ingestor is idempotent.  backfilling the same date range after the lag clears overwrites the partial rows. Do not alert on zero-impression days for the last 2-3 days; they are expected.
 
 ---
 
@@ -237,8 +237,8 @@ GSC Search Analytics API is **free**. No per-query cost.
 
 | Limit | Value | Ryan Realty usage |
 |---|---|---|
-| Queries per minute | 1,200 per project | Well below — 3 calls/day per ingestor run |
-| Batch quota | 50 batches per 100 seconds | Not applicable — calls are parallel, not batched |
+| Queries per minute | 1,200 per project | Well below.  3 calls/day per ingestor run |
+| Batch quota | 50 batches per 100 seconds | Not applicable.  calls are parallel, not batched |
 | Max date range | 16 months | Daily ingestor: 1-day window. Backfills stay well under. |
 | Max rowLimit | 25,000 | Daily ingestor uses 25 (top queries/pages). Full-audit pulls could request up to 1,000. |
 
@@ -248,12 +248,12 @@ GSC Search Analytics API is **free**. No per-query cost.
 
 | Failure | Symptom | Resolution |
 |---|---|---|
-| Wrong property type | 403 Forbidden — even with valid credentials | Check `GOOGLE_SEARCH_CONSOLE_SITE_URL`. Must be `https://ryan-realty.com/` (URL-prefix), NOT `sc-domain:ryan-realty.com`. Hit `/api/marketing-brain/gsc-properties` to list accessible properties. |
+| Wrong property type | 403 Forbidden.  even with valid credentials | Check `GOOGLE_SEARCH_CONSOLE_SITE_URL`. Must be `https://ryan-realty.com/` (URL-prefix), NOT `sc-domain:ryan-realty.com`. Hit `/api/marketing-brain/gsc-properties` to list accessible properties. |
 | Service account not granted access | 403 Forbidden | In GSC → Settings → Users and permissions, add `viewer@ryanrealty.iam.gserviceaccount.com` with `Full User` on the URL-prefix property. |
-| Private key newline encoding | JWT auth fails — `error:0906D06C:PEM routines` | The Vercel env stores literal `\n` sequences. The code does `.replace(/\\n/g, '\n')` — if this line is missing or doubled, the key is malformed. Verify the replacement is present in `search-console-report.ts`. |
-| Date range > 16 months | 400 Bad Request | Reduce the backfill window. The ingestor's `parseDateRange()` does not cap this — add a guard if backfills are ever automated beyond 12 months. |
-| rowLimit exceeded | Silently truncates at 25,000 | The daily ingestor uses rowLimit 25 — not a risk. If a future audit pull requests more than 25,000 rows, results are silently incomplete. Add pagination via `startRow` offset if needed. |
-| Zero rows on recent dates | Summary row is undefined → all metrics return 0 | Expected — GSC 2–3 day lag. The ingestor writes zeros for those rows; subsequent backfills overwrite once data arrives. Do not treat zero rows as a signal failure. |
+| Private key newline encoding | JWT auth fails.  `error:0906D06C:PEM routines` | The Vercel env stores literal `\n` sequences. The code does `.replace(/\\n/g, '\n')`.  if this line is missing or doubled, the key is malformed. Verify the replacement is present in `search-console-report.ts`. |
+| Date range > 16 months | 400 Bad Request | Reduce the backfill window. The ingestor's `parseDateRange()` does not cap this.  add a guard if backfills are ever automated beyond 12 months. |
+| rowLimit exceeded | Silently truncates at 25,000 | The daily ingestor uses rowLimit 25.  not a risk. If a future audit pull requests more than 25,000 rows, results are silently incomplete. Add pagination via `startRow` offset if needed. |
+| Zero rows on recent dates | Summary row is undefined → all metrics return 0 | Expected.  GSC 2-3 day lag. The ingestor writes zeros for those rows; subsequent backfills overwrite once data arrives. Do not treat zero rows as a signal failure. |
 | `SEARCH_CONSOLE_NOT_CONFIGURED` error | Client email or private key env var missing | Confirm both `GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL` and `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` are set in Vercel → Project Settings → Environment Variables for all three environments. |
 
 ---
@@ -266,7 +266,7 @@ Schedule: 30 6 * * *   (06:30 UTC daily)
 Auth:     Authorization: Bearer $CRON_SECRET
 ```
 
-Runs alongside the GA4, FUB, Meta, X, LinkedIn, GBP, YouTube, and TikTok snapshot crons — all fire at 06:30 UTC. The GSC ingestor defaults to yesterday's date and processes a single day per run. Backfill by passing `?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`.
+Runs alongside the GA4, FUB, Meta, X, LinkedIn, GBP, YouTube, and TikTok snapshot crons.  all fire at 06:30 UTC. The GSC ingestor defaults to yesterday's date and processes a single day per run. Backfill by passing `?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`.
 
 ---
 
@@ -289,7 +289,7 @@ Downstream consumers:
 
 ```
 [ ] GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL confirmed in Vercel env (all 3)
-[ ] GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY confirmed — PEM string present, not base64
+[ ] GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY confirmed.  PEM string present, not base64
 [ ] GOOGLE_SEARCH_CONSOLE_SITE_URL = 'https://ryan-realty.com/' (URL-prefix, not sc-domain)
 [ ] /api/marketing-brain/gsc-properties returns the URL-prefix property for the service account
 [ ] Last ingestor run returned rowsUpserted > 0 for a date 3+ days ago (confirm lag window)
@@ -303,14 +303,14 @@ Downstream consumers:
 
 | Resource | Purpose |
 |---|---|
-| `app/actions/search-console-report.ts` | Canonical low-level wrapper — JWT auth, three-parallel-call pattern, `SearchConsoleSummary` type |
-| `app/api/cron/marketing-snapshot-gsc/route.ts` | Daily ingestor — date iteration, `rowsForDay()` decomposition, upsert |
+| `app/actions/search-console-report.ts` | Canonical low-level wrapper.  JWT auth, three-parallel-call pattern, `SearchConsoleSummary` type |
+| `app/api/cron/marketing-snapshot-gsc/route.ts` | Daily ingestor.  date iteration, `rowsForDay()` decomposition, upsert |
 | `app/api/marketing-brain/gsc-properties/route.ts` | Diagnostic: lists every GSC property the service account can see |
-| `lib/marketing-brain/audit-website.ts` | SEO audit layer — reads `marketing_channel_daily`, derives position deltas, flags opportunities |
+| `lib/marketing-brain/audit-website.ts` | SEO audit layer.  reads `marketing_channel_daily`, derives position deltas, flags opportunities |
 | `lib/marketing-brain/generate-briefs.ts` | Emits `content:blog_post`, `site:meta_update`, `content:ig_carousel` from seo audit signals |
-| `lib/marketing-brain/diagnose.ts` | `INVERSE_METRICS` list + `classifySignificance()` — critical for correct position-metric direction |
+| `lib/marketing-brain/diagnose.ts` | `INVERSE_METRICS` list + `classifySignificance()`.  critical for correct position-metric direction |
 | `lib/marketing-brain/snapshot.ts` | `upsertMetricRows()`, `fetchMetricsByScope()`, `MetricRow` type, `isAuthorizedCron()` |
-| `marketing_brain_skills/tools_registry/apify/SKILL.md` | Apify google-search-scraper — competitor SERP positions (GSC only shows our own) |
+| `marketing_brain_skills/tools_registry/apify/SKILL.md` | Apify google-search-scraper.  competitor SERP positions (GSC only shows our own) |
 | `marketing_brain_skills/tools_registry/supabase/SKILL.md` | `marketing_channel_daily` schema and upsert conventions |
 | `.auto-memory/memory_marketing_brain_decisions.md` | GSC URL-prefix gotcha, inverse-metric bug fix, OAuth status table |
 | https://developers.google.com/webmaster-tools/v1/searchanalytics | Search Analytics API reference |

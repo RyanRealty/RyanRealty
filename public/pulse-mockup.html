@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+<title>Market Pulse — working mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #102742;
+    --cream: #faf8f4;
+    --foreground: #1a1a1a;
+    --background: #ffffff;
+    --muted: #6b6b6b;
+    --border: rgba(16, 39, 66, 0.10);
+    --rose: #be123c;
+    --amber: #b45309;
+    --emerald: #047857;
+    --violet: #6d28d9;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--cream); color: var(--foreground); font-family: 'Geist', system-ui, -apple-system, sans-serif; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .display { font-family: 'DM Serif Display', Georgia, serif; }
+
+  /* Hero */
+  header.hero { background: var(--background); border-bottom: 1px solid var(--border); padding: 28px 0; }
+  .hero .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  .hero .kicker { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  .hero h1 { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px; line-height: 1.05; margin: 0 0 6px; color: var(--foreground); }
+  @media (min-width: 640px) { .hero h1 { font-size: 36px; } }
+  .hero .lead { color: var(--muted); margin: 0; max-width: 720px; font-size: 14px; }
+  .hero .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; margin-top: 18px; }
+  @media (min-width: 640px) { .hero .stats { grid-template-columns: repeat(4, 1fr); } }
+  .stat .label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .stat .value { font-family: 'DM Serif Display', serif; font-size: 22px; margin-top: 1px; font-variant-numeric: tabular-nums; }
+
+  /* Filters */
+  .filters { position: sticky; top: 0; z-index: 30; background: rgba(250,248,244,0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 10px 0; }
+  .filters .wrap { max-width: 480px; margin: 0 auto; padding: 0 12px; }
+  .chip-row { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0; scrollbar-width: none; }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .filter-chip { flex-shrink: 0; border: 1px solid var(--border); background: white; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--foreground); }
+  .filter-chip.active { background: var(--navy); color: white; border-color: var(--navy); }
+
+  /* Feed */
+  main.feed { max-width: 480px; margin: 0 auto; padding: 14px 12px 60px; }
+  .feed-list { display: flex; flex-direction: column; gap: 14px; }
+
+  /* Card frame */
+  article.card { position: relative; aspect-ratio: 9/16; border-radius: 18px; overflow: hidden; background: var(--foreground); color: white; box-shadow: 0 6px 18px rgba(16,39,66,0.10); contain: layout style; }
+  article.card.brand-navy { background: var(--navy); }
+  article.card.cream { background: var(--cream); color: var(--navy); }
+
+  .photo { position: absolute; inset: 0; background: linear-gradient(180deg, #1f2937, #111827); }
+  .photo img, .photo video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gtop { position: absolute; top: 0; left: 0; right: 0; height: 28%; background: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent); pointer-events: none; }
+  .gbot { position: absolute; bottom: 0; left: 0; right: 0; height: 55%; background: linear-gradient(to top, rgba(0,0,0,0.92), rgba(0,0,0,0.30) 50%, transparent); pointer-events: none; }
+  .card.brand-video .gbot { background: linear-gradient(to top, rgba(16,39,66,0.95) 0%, rgba(16,39,66,0.30) 50%, transparent 100%); }
+  .card.brand-broker .gbot { background: linear-gradient(to top, var(--navy) 0%, rgba(16,39,66,0.95) 35%, transparent 100%); height: 40%; }
+
+  /* Top row: chip + time */
+  .top-row { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; z-index: 3; }
+  .chip { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+  .chip.new { background: var(--navy); color: white; }
+  .chip.sold { background: var(--foreground); color: white; border: 1px solid rgba(255,255,255,0.3); }
+  .chip.pending { background: var(--amber); color: white; }
+  .chip.drop { background: var(--rose); color: white; }
+  .chip.cream { background: var(--cream); color: var(--navy); }
+  .chip.amber { background: rgba(245, 158, 11, 0.95); color: white; }
+  .chip.emerald { background: rgba(5, 150, 105, 0.95); color: white; }
+  .chip.violet { background: rgba(109, 40, 217, 0.95); color: white; }
+  .chip.rose { background: rgba(190, 18, 60, 0.95); color: white; }
+  .time { background: rgba(255,255,255,0.20); color: white; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; backdrop-filter: blur(8px); }
+  .brand-tag { background: rgba(255,255,255,0.18); color: white; padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; backdrop-filter: blur(8px); }
+
+  /* Right floating actions (listing only) */
+  .actions { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 3; }
+  .actions button { width: 46px; height: 46px; border-radius: 999px; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; color: white; border: 0; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer; transition: transform 180ms, background 180ms; }
+  .actions button:hover { background: rgba(255,255,255,0.28); transform: scale(1.06); }
+  .actions button:active { transform: scale(0.94); }
+  .actions button.liked { background: rgba(239, 68, 68, 0.18); }
+  .actions button svg { width: 24px; height: 24px; }
+  .actions span.lbl { font-size: 10px; font-weight: 600; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+
+  /* Bottom content */
+  .body-zone { position: absolute; bottom: 16px; left: 14px; right: 14px; z-index: 3; }
+  .listing .body-zone { right: 70px; }
+  .label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.85; margin: 0 0 2px; }
+  .price { font-family: 'DM Serif Display', serif; font-size: 36px; line-height: 1; margin: 0; font-weight: 400; }
+  .loc { font-size: 14px; font-weight: 500; margin-top: 10px; line-height: 1.2; }
+  .proof { font-size: 12px; opacity: 0.75; margin-top: 4px; }
+  .attr { font-size: 11px; font-weight: 500; opacity: 0.55; margin-top: 12px; }
+  .strike { text-decoration: line-through; opacity: 0.7; font-size: 12px; }
+  .delta { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--rose); color: white; font-size: 11px; font-weight: 600; }
+
+  .lifestyle h3, .brand h3 { font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.05; margin: 0; font-weight: 400; }
+  .brand h3.big { font-size: 32px; }
+  .lifestyle .body, .brand .body { font-size: 13px; opacity: 0.92; margin-top: 8px; }
+  .lifestyle .body { margin-bottom: 0; padding-right: 54px; }
+  .arrow-cta { width: 44px; height: 44px; border-radius: 999px; background: var(--cream); color: var(--navy); display: flex; align-items: center; justify-content: center; position: absolute; right: 0; bottom: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 200ms; }
+  article.lifestyle:hover .arrow-cta { transform: translateX(2px); }
+  .cta-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; padding: 11px 16px; border-radius: 999px; background: var(--cream); color: var(--navy); font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; border: 0; transition: background 150ms; }
+  .cta-btn:hover { background: white; }
+
+  .credit { position: absolute; left: 14px; bottom: 4px; font-size: 9px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.55; z-index: 3; color: white; }
+
+  /* Broker portrait */
+  .portrait { position: absolute; inset: 0 0 32% 0; }
+  .portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+
+  /* Skeleton */
+  .skel { background: rgba(0,0,0,0.06); border-radius: 18px; aspect-ratio: 9/16; position: relative; overflow: hidden; }
+  .skel::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: skel-pulse 1.6s ease-in-out infinite; }
+  @keyframes skel-pulse { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+  /* Snapshot card */
+  .snap { aspect-ratio: 9/16; border-radius: 18px; background: var(--navy); color: var(--cream); padding: 22px; display: flex; flex-direction: column; }
+  .snap .kicker { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.75; }
+  .snap .geo { font-family: 'DM Serif Display', serif; font-size: 28px; margin-top: 2px; }
+  .snap .health { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; background: rgba(190, 18, 60, 0.2); color: #ffd6df; margin-top: 6px; align-self: flex-start; }
+  .snap .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .snap .m .label { font-size: 11px; letter-spacing: 0.14em; opacity: 0.7; }
+  .snap .m .v { font-family: 'DM Serif Display', serif; font-size: 22px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .snap .ftr { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.15); display: flex; justify-content: space-between; font-size: 13px; }
+
+  /* Review (broker social proof) card */
+  .card.review .photo img { filter: brightness(0.85); }
+  .card.review .gbot { display: none; }
+  .card.review::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(16,39,66,0.20) 0%, rgba(16,39,66,0.45) 38%, rgba(16,39,66,0.92) 88%); z-index: 1; }
+  .review-body { position: absolute; left: 0; right: 0; top: 58px; bottom: 100px; padding: 16px 22px; display: flex; flex-direction: column; justify-content: flex-end; z-index: 2; color: white; }
+  .review-body .stars { font-size: 15px; letter-spacing: 3px; color: #fbbf24; margin-bottom: 10px; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+  .review-body blockquote { font-family: 'DM Serif Display', serif; font-size: 19px; line-height: 1.25; margin: 0; font-weight: 400; text-shadow: 0 1px 4px rgba(0,0,0,0.35); }
+  .review-body .reviewer { margin-top: 12px; font-size: 12px; opacity: 0.92; }
+  .review-body .reviewer strong { font-weight: 600; }
+  .review-footer { position: absolute; left: 16px; right: 16px; bottom: 16px; z-index: 3; }
+  .review-footer .row { display: flex; align-items: center; gap: 10px; }
+  .review-footer .avatar { width: 44px; height: 44px; border-radius: 999px; overflow: hidden; background: var(--cream); border: 2px solid rgba(255,255,255,0.85); flex-shrink: 0; }
+  .review-footer .avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .review-footer .meta { font-size: 11px; color: rgba(255,255,255,0.85); line-height: 1.3; }
+  .review-footer .meta .name { font-weight: 600; color: white; }
+  .review-footer .cta-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 10px 18px; border-radius: 999px; background: var(--cream); color: var(--navy); font-size: 13px; font-weight: 600; cursor: pointer; border: 0; width: 100%; justify-content: center; }
+
+  /* Heart burst */
+  .heart-burst { position: absolute; width: 110px; height: 110px; pointer-events: none; z-index: 10; }
+  .heart-burst svg { width: 100%; height: 100%; filter: drop-shadow(0 2px 12px rgba(0,0,0,0.45)); }
+  .heart-burst.animate { animation: heart-pop 720ms cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  @keyframes heart-pop {
+    0% { opacity: 0; transform: scale(0.2); }
+    35% { opacity: 1; transform: scale(1.4); }
+    100% { opacity: 0; transform: scale(1.05); }
+  }
+  .heart-burst .particle { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border-radius: 999px; background: white; }
+  .heart-burst.animate .particle { animation: particle-fly 720ms ease-out forwards; }
+  @keyframes particle-fly {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.6); }
+  }
+
+  /* Banner for the mockup */
+  .mockup-banner { background: var(--navy); color: var(--cream); padding: 10px 16px; font-size: 12px; text-align: center; }
+  .mockup-banner code { background: rgba(255,255,255,0.15); padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace; }
+  .mockup-banner a { color: var(--cream); text-decoration: underline; }
+
+  /* Like count display */
+  .pers-display { position: fixed; bottom: 16px; right: 16px; background: var(--navy); color: var(--cream); padding: 10px 14px; border-radius: 14px; font-size: 11px; box-shadow: 0 6px 18px rgba(16,39,66,0.25); z-index: 40; max-width: 280px; line-height: 1.4; }
+  .pers-display strong { display: block; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7; margin-bottom: 4px; }
+  .pers-display .row { display: flex; justify-content: space-between; gap: 8px; }
+  .pers-display button { margin-top: 6px; background: rgba(255,255,255,0.15); color: var(--cream); border: 0; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  Working mockup of <code>/pulse</code> — same components, real data, lazy video, anonymous likes, signal tracking. Scroll, double-tap to like, watch the market-report video autoplay when in view.
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Bend · Oregon</p>
+    <h1>The Central Oregon market pulse</h1>
+    <p class="lead">Every new listing, every sold home, every price drop. Live from the MLS, in order.</p>
+    <div class="stats">
+      <div class="stat"><div class="label">Active listings</div><div class="value">1,601</div></div>
+      <div class="stat"><div class="label">Median list</div><div class="value">$739K</div></div>
+      <div class="stat"><div class="label">Months of supply</div><div class="value">6.4 mo</div></div>
+      <div class="stat"><div class="label">Market</div><div class="value">Hot</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="wrap">
+    <div class="chip-row" id="cities-row">
+      <button class="filter-chip active" data-city="">All cities</button>
+      <button class="filter-chip" data-city="Bend">Bend</button>
+      <button class="filter-chip" data-city="Redmond">Redmond</button>
+      <button class="filter-chip" data-city="Sisters">Sisters</button>
+      <button class="filter-chip" data-city="Sunriver">Sunriver</button>
+      <button class="filter-chip" data-city="La Pine">La Pine</button>
+      <button class="filter-chip" data-city="Madras">Madras</button>
+      <button class="filter-chip" data-city="Prineville">Prineville</button>
+      <button class="filter-chip" data-city="Terrebonne">Terrebonne</button>
+    </div>
+    <div class="chip-row" id="events-row" style="margin-top: 4px;">
+      <button class="filter-chip active" data-event="">All events</button>
+      <button class="filter-chip" data-event="new_listing">Just listed</button>
+      <button class="filter-chip" data-event="status_closed">Just sold</button>
+      <button class="filter-chip" data-event="status_pending">Pending</button>
+      <button class="filter-chip" data-event="price_drop">Price drop</button>
+    </div>
+  </div>
+</div>
+
+<main class="feed">
+  <div class="feed-list" id="feed"></div>
+</main>
+
+<div class="pers-display">
+  <strong>Live signals</strong>
+  <div class="row"><span>Likes</span><span id="sig-total">0</span></div>
+  <div class="row"><span>Top city</span><span id="sig-city">—</span></div>
+  <div class="row"><span>Top category</span><span id="sig-cat">—</span></div>
+  <button onclick="window.PULSE.resetSignals()">Reset</button>
+</div>
+
+<script>
+  // ====== REAL DATA from Supabase as of 2026-05-18 ======
+  const LISTINGS = [
+    {"id":"l1","event_type":"status_pending","event_at":"2026-05-18T16:01:08Z","listing_key":"20260323222551355759000000","ListNumber":"220217738","ListPrice":1259000,"OriginalListPrice":1259000,"BedroomsTotal":3,"BathroomsTotal":2,"TotalLivingAreaSqFt":2139,"StreetNumber":"60755","StreetName":"Currant","City":"Bend","SubdivisionName":"7th Mtn Golf Village","PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260323222636241200000000-o.jpg","ListAgentName":"Ryan Buccola","ListOfficeName":"RE/MAX Key Properties","virtual_tour_url":null,"has_virtual_tour":false,"days_to_pending":null},
+    {"id":"l2","event_type":"price_drop","event_at":"2026-05-18T16:01:08Z","listing_key":"20260327171232778960000000","ListNumber":"220218446","ListPrice":689000,"OriginalListPrice":718000,"BedroomsTotal":3,"BathroomsTotal":3,"TotalLivingAreaSqFt":2055,"StreetNumber":"3054","StreetName":"Clubhouse","City":"Bend","SubdivisionName":"Rivers Edge Village","PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260405181338452663000000-o.jpg","ListAgentName":"Sheri Hilton","ListOfficeName":"Bend Premier Real Estate LLC","payload":{"new_price":649000,"previous_price":689000},"has_virtual_tour":true},
+    {"id":"l3","event_type":"status_pending","event_at":"2026-05-18T15:51:13Z","listing_key":"20251111172839899518000000","ListNumber":"220211861","ListPrice":339900,"OriginalListPrice":349900,"BedroomsTotal":3,"BathroomsTotal":2,"TotalLivingAreaSqFt":1564,"StreetNumber":"499","StreetName":"8th","City":"Madras","SubdivisionName":"Palmain","PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20251111174012379481000000-o.jpg","ListAgentName":"Ali Stensgar-Alire","ListOfficeName":"Signet Realty","days_to_pending":null},
+    {"id":"l4","event_type":"price_drop","event_at":"2026-05-18T15:51:13Z","listing_key":"20260319203657961557000000","ListNumber":"220220486","ListPrice":1350000,"OriginalListPrice":1350000,"BedroomsTotal":4,"BathroomsTotal":3,"TotalLivingAreaSqFt":3011,"StreetNumber":"19158","StreetName":"Chiloquin","City":"Bend","SubdivisionName":"Renaissance@Shevlin","PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260501030939936199000000-o.jpg","ListAgentName":"Sam DeLay","ListOfficeName":"Varsity Real Estate","payload":{"new_price":1299000,"previous_price":1350000},"has_virtual_tour":true},
+    {"id":"l5","event_type":"price_drop","event_at":"2026-05-18T15:41:03Z","listing_key":"20260212185601838900000000","ListNumber":"220215251","ListPrice":394900,"OriginalListPrice":399900,"BedroomsTotal":3,"BathroomsTotal":2,"TotalLivingAreaSqFt":1232,"StreetNumber":"13536","StreetName":"Cinder","City":"Terrebonne","SubdivisionName":"Crr","PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260212195934949919000000-o.jpg","ListAgentName":"Korren Bower","ListOfficeName":"Cascade Hasson SIR","payload":{"new_price":384999,"previous_price":394900}},
+    {"id":"l6","event_type":"status_pending","event_at":"2026-05-18T15:41:03Z","listing_key":"20260218195911385316000000","ListNumber":"220216788","ListPrice":683500,"OriginalListPrice":775000,"BedroomsTotal":3,"BathroomsTotal":2,"TotalLivingAreaSqFt":1781,"StreetNumber":"2903","StreetName":"Fairway Heights","City":"Bend","SubdivisionName":"Rivers Edge Village","PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260310190847573002000000-o.jpg","ListAgentName":"Fred Johnson","ListOfficeName":"Duke Warner Realty ERA Powered","days_to_pending":null},
+    {"id":"l7","event_type":"price_drop","event_at":"2026-05-18T15:30:37Z","listing_key":"20260323183351306231000000","ListNumber":"220219637","ListPrice":814888,"OriginalListPrice":839888,"BedroomsTotal":5,"BathroomsTotal":3,"TotalLivingAreaSqFt":2099,"StreetNumber":"19975","StreetName":"Rock Bluff","City":"Bend","SubdivisionName":"Elkhorn Estates","PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260420153455769152000000-o.jpg","ListAgentName":"Lyle Laver","ListOfficeName":"Coldwell Banker Bain","payload":{"new_price":794888,"previous_price":814888}},
+    {"id":"l8","event_type":"price_drop","event_at":"2026-05-18T15:00:45Z","listing_key":"20260228031102765424000000","ListNumber":"220216547","ListPrice":540000,"OriginalListPrice":540000,"BedroomsTotal":3,"BathroomsTotal":2,"TotalLivingAreaSqFt":1560,"StreetNumber":"52495","StreetName":"Lost Ponderosa","City":"La Pine","SubdivisionName":"Ahern Acres","PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260304233903951319000000-o.jpg","ListAgentName":"Tisha Anderson","ListOfficeName":"La Pine Realty","payload":{"new_price":525000,"previous_price":540000}},
+    {"id":"l9","event_type":"status_closed","event_at":"2026-05-18T15:00:45Z","listing_key":"20260515174422495543000000","ListNumber":"220221562","ListPrice":1695000,"OriginalListPrice":1695000,"BedroomsTotal":3,"BathroomsTotal":3,"TotalLivingAreaSqFt":2408,"StreetNumber":"61510","StreetName":"Longview","City":"Bend","SubdivisionName":null,"PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260515180646263711000000-o.jpg","ListAgentName":"Priscilla Martin","ListOfficeName":"Stellar Realty Northwest","payload":{"ListPrice":1695000,"ClosePrice":1650000},"days_to_pending":0},
+    {"id":"l10","event_type":"price_drop","event_at":"2026-05-18T14:50:38Z","listing_key":"20250712181521767476000000","ListNumber":"220205817","ListPrice":475000,"OriginalListPrice":585000,"BedroomsTotal":3,"BathroomsTotal":3,"TotalLivingAreaSqFt":3314,"StreetNumber":"15188","StreetName":"Pyrola","City":"La Pine","SubdivisionName":"Ponderosa Pines","PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250714215639980489000000-o.jpg","ListAgentName":"Tisha Anderson","ListOfficeName":"La Pine Realty","payload":{"new_price":455000,"previous_price":475000}},
+  ];
+
+  // Lifestyle cards from asset library
+  const LIFESTYLE = [
+    {id:"smith-rock", category:"outdoor", kicker:"Day trip", headline:"Climb at Smith Rock", body:"World-class climbing twenty-five minutes north. Pack water.", image:"/asset-library/photos/unsplash/bbca6dec-43d4-49fe-81a9-0b25b60b420a.jpg", credit:"Photo via Unsplash"},
+    {id:"old-mill-summer", category:"event", kicker:"Bend events", headline:"Summer at the Old Mill", body:"Concerts, floaters, and the river footbridge. Bend in three smokestacks.", image:"/asset-library/photos/stock/113232e1-1bd0-499e-8247-4c85c2386878.jpg"},
+    {id:"mt-bachelor", category:"outdoor", kicker:"In the Cascades", headline:"Bachelor opens in November", body:"Lift tickets and season passes go on sale every fall.", image:"/asset-library/photos/wikimedia/a2341149-3272-4130-bdeb-f4d27fef8300.jpg", credit:"Photo via Wikimedia"},
+    {id:"cascade-lakes", category:"outdoor", kicker:"Sunday drive", headline:"Cascade Lakes Scenic Byway", body:"Sixty-six miles of alpine lakes west of Bend. Open through October.", image:"/asset-library/photos/unsplash/1f868da9-f1eb-47bd-9954-8e7b294aeaa2.jpg", credit:"Photo via Unsplash"},
+    {id:"three-sisters", category:"outdoor", kicker:"Postcard", headline:"Three Sisters at sunrise", body:"South, Middle, and North. Bend's western horizon, lit pink.", image:"/asset-library/photos/unsplash/a718f230-7ea8-43fa-ac28-ed1fbbd2704c.jpg", credit:"Photo by Mick Haupt"},
+    {id:"sparks-lake", category:"outdoor", kicker:"Cascade Lakes", headline:"Sparks Lake at sunrise", body:"Twenty-eight miles from downtown. Quietest water in Central Oregon.", image:"/asset-library/photos/unsplash/face42ef-2cc3-453d-a87d-de7d55f85d2d.jpg", credit:"Photo via Unsplash"},
+    {id:"still-vibrato", category:"dining", kicker:"Where to start the day", headline:"Still Vibrato", body:"Downtown Bend coffee bar. Drip and a quiet morning crowd.", image:"/asset-library/photos/unsplash/4a8123ab-4db4-4c6c-b5b5-c782d0bf6b9f.jpg", credit:"Photo via Unsplash"},
+    {id:"downtown-walk", category:"culture", kicker:"Walk it", headline:"Downtown Bend", body:"Wall, Minnesota, Bond. Locally owned shops on every block.", image:"/asset-library/photos/unsplash/0a37e880-6b0c-4274-b765-5412fb539fe6.jpg", credit:"Photo via Unsplash"},
+  ];
+
+  const BRAND_CARDS = [
+    {id:"market-video", kicker:"YTD market report", headline:"Central Oregon · the numbers so far.", body:"A short read on what sold and where the market is moving.", body2:"Produced by Ryan Realty.", video:"/v5_library/bend_market_report_ytd2026.mp4", image:"/asset-library/photos/wikimedia/b7abdbf0-113c-471c-a514-f0e0e7bb6578.jpg", cta:"Watch the latest"},
+    {id:"valuation", kicker:"For sellers", headline:"What is your home worth this week?", body:"A real number from a local broker. Not a third-party estimate.", body2:"No spam. We text you a one-page valuation within a day.", image:"/asset-library/photos/unsplash/ed86fc2f-756e-4152-b5bb-32690c3229f6.jpg", cta:"Get my valuation"},
+  ];
+
+  // Review cards — real Google reviews paired with the real Matt-sold listing
+  // the reviewer's transaction was for (where mappable). Used as the broker
+  // social-proof slot. Reviewer photos are GBP avatars where we have them;
+  // headshot is Matt's transparent PNG as a small avatar bottom-left.
+  const REVIEW_CARDS = [
+    {
+      id: "review-mayfield",
+      reviewer: "Audra Hedberg",
+      source: "Google",
+      rating: 5,
+      quote: "We had an excellent experience working with Matt. He was smart, understood our needs right away, and acted quickly while staying calm and patient throughout the process. Even in a tough market, he sold our home faster than we expected.",
+      listing: { address: "17130 Mayfield · Bend", price: 755000, closeDate: "Oct 2025" },
+      image: "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250707195500825929000000-o.jpg",
+      broker: { name: "Matt Ryan", headshot: "/images/brokers/ryan-matt.png" },
+      cta: "Work with Matt",
+    },
+    {
+      id: "review-penhollow",
+      reviewer: "Doug Millard",
+      source: "Google",
+      rating: 5,
+      quote: "From the start of our journey to the end, Matt was right at every turn. Selling a house is an emotional roller coaster and Matt helped manage the downs while predicting the ups.",
+      listing: { address: "20401 Penhollow · Bend", price: 639000, closeDate: "Jul 2025" },
+      image: "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250612225447609640000000-o.jpg",
+      broker: { name: "Matt Ryan", headshot: "/images/brokers/ryan-matt.png" },
+      cta: "Work with Matt",
+    },
+    {
+      id: "review-old-bend",
+      reviewer: "Gary Timms",
+      source: "Google",
+      rating: 5,
+      quote: "Matt did a great job helping us sell our home. His presentation and marketing were professional and thorough. He was patient, low pressure with us and provided expert guidance.",
+      listing: { address: "64350 Old Bend Redmond Hwy", price: 1030000, closeDate: "Sept 2025" },
+      image: "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250710165230326281000000-o.jpg",
+      broker: { name: "Matt Ryan", headshot: "/images/brokers/ryan-matt.png" },
+      cta: "Work with Matt",
+    },
+  ];
+
+  const REGION_SNAPSHOT = {label:"Central Oregon", active:1601, median:739450, mos:6.42, health:"Hot", sold30d:251, newWeek:126, dom:53};
+
+  // ====== STATE ======
+  const STATE = {
+    likes: new Set(JSON.parse(localStorage.getItem('pulse:likes') || '[]')),
+    signals: JSON.parse(localStorage.getItem('pulse:signals_v1') || '{"likes_by_category":{},"likes_by_city":{},"likes_by_event_type":{}}'),
+    selectedCity: "",
+    selectedEvent: "",
+  };
+
+  function persistSignals() {
+    localStorage.setItem('pulse:signals_v1', JSON.stringify(STATE.signals));
+    updateSignalDisplay();
+  }
+  function persistLikes() {
+    localStorage.setItem('pulse:likes', JSON.stringify([...STATE.likes]));
+  }
+  function bumpSignal(record, key, by=1) {
+    if (!key) return;
+    record[key] = (record[key] || 0) + by;
+  }
+  function topKey(obj) {
+    let best = null, bestVal = -1;
+    for (const k in obj) { if (obj[k] > bestVal) { best = k; bestVal = obj[k]; } }
+    return best;
+  }
+  function updateSignalDisplay() {
+    document.getElementById('sig-total').textContent = STATE.likes.size;
+    document.getElementById('sig-city').textContent = topKey(STATE.signals.likes_by_city) || '—';
+    document.getElementById('sig-cat').textContent = topKey(STATE.signals.likes_by_category) || '—';
+  }
+
+  function recordLike(ctx) {
+    if (ctx.category) bumpSignal(STATE.signals.likes_by_category, ctx.category);
+    if (ctx.city) bumpSignal(STATE.signals.likes_by_city, ctx.city);
+    if (ctx.event_type) bumpSignal(STATE.signals.likes_by_event_type, ctx.event_type);
+    persistSignals();
+  }
+
+  // ====== FORMAT HELPERS ======
+  function formatPrice(v) {
+    if (v == null) return null;
+    return '$' + Math.round(v).toLocaleString('en-US');
+  }
+  function formatPriceShort(v) {
+    if (v == null) return null;
+    if (v >= 1_000_000) return '$' + (v/1_000_000).toFixed(v >= 10_000_000 ? 0 : 1) + 'M';
+    if (v >= 1000) return '$' + Math.round(v/1000) + 'K';
+    return '$' + Math.round(v).toLocaleString('en-US');
+  }
+  function relTime(iso) {
+    const t = new Date(iso).getTime();
+    const ms = Date.now() - t;
+    const m = Math.floor(ms/60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + 'm ago';
+    const h = Math.floor(m/60);
+    if (h < 24) return h + 'h ago';
+    const d = Math.floor(h/24);
+    if (d === 1) return 'yesterday';
+    if (d < 7) return d + 'd ago';
+    return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  }
+  function eventChipMeta(e) {
+    switch (e) {
+      case 'price_drop': return { label: 'Price drop', cls: 'drop' };
+      case 'status_pending': return { label: 'Under contract', cls: 'pending' };
+      case 'status_closed': return { label: 'Just sold', cls: 'sold' };
+      case 'new_listing':
+      default: return { label: 'Just listed', cls: 'new' };
+    }
+  }
+  function socialProof(l) {
+    if (l.event_type === 'status_closed' && l.payload) {
+      const list = l.payload.ListPrice, close = l.payload.ClosePrice;
+      if (list && close) {
+        const pct = ((close - list) / list) * 100;
+        if (Math.abs(pct) < 0.5) return 'Sold at list price';
+        return pct >= 0 ? 'Sold ' + pct.toFixed(1) + '% over list' : 'Sold ' + Math.abs(pct).toFixed(1) + '% under list';
+      }
+    }
+    if (l.event_type === 'status_pending' && l.days_to_pending != null && l.days_to_pending >= 0) {
+      return l.days_to_pending === 0 ? 'Pending same day' : l.days_to_pending === 1 ? 'Pending in 1 day' : 'Pending in ' + l.days_to_pending + ' days';
+    }
+    if (l.event_type === 'price_drop' && l.payload) {
+      const pct = ((l.payload.new_price - l.payload.previous_price) / l.payload.previous_price) * 100;
+      return 'Reduced ' + Math.abs(pct).toFixed(1) + '%';
+    }
+    if (l.event_type === 'new_listing') {
+      return 'Hit the market ' + relTime(l.event_at);
+    }
+    return null;
+  }
+
+  // ====== RENDER ======
+  function listingCard(l) {
+    const chip = eventChipMeta(l.event_type);
+    const liked = STATE.likes.has(l.listing_key);
+    const proof = socialProof(l);
+    let headline, label = '', sub = '';
+    if (l.event_type === 'status_closed') {
+      label = 'Sold for';
+      headline = formatPrice(l.payload?.ClosePrice ?? l.ListPrice);
+    } else if (l.event_type === 'price_drop' && l.payload) {
+      label = 'Now';
+      headline = formatPrice(l.payload.new_price);
+      sub = '<span class="strike">Was ' + formatPriceShort(l.payload.previous_price) + '</span>';
+      const pct = ((l.payload.new_price - l.payload.previous_price) / l.payload.previous_price * 100);
+      sub += '<span class="delta">' + pct.toFixed(1) + '%</span>';
+    } else {
+      headline = formatPrice(l.ListPrice);
+    }
+    const article = document.createElement('article');
+    article.className = 'card listing';
+    article.dataset.kind = 'listing';
+    article.dataset.listingKey = l.listing_key;
+    article.dataset.city = l.City || '';
+    article.dataset.eventType = l.event_type;
+    article.innerHTML = `
+      <div class="photo"><img data-src="${l.PhotoURL}" loading="lazy" alt=""/></div>
+      <div class="gtop"></div>
+      <div class="gbot"></div>
+      <div class="top-row">
+        <span class="chip ${chip.cls}">${chip.label}</span>
+        <span class="time">${relTime(l.event_at)}</span>
+      </div>
+      <div class="actions">
+        <button class="like-btn ${liked ? 'liked' : ''}" data-listing-key="${l.listing_key}" data-city="${l.City||''}" data-event="${l.event_type}" data-price="${l.ListPrice||0}" aria-label="${liked ? 'Unlike' : 'Like'}">
+          <svg viewBox="0 0 24 24" fill="${liked?'#ef4444':'none'}" stroke="${liked?'#ef4444':'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <span class="lbl">Like</span>
+        <button class="share-btn" aria-label="Share">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7Z"/></svg>
+        </button>
+        <span class="lbl">Share</span>
+      </div>
+      <div class="body-zone">
+        ${label ? `<p class="label">${label}</p>` : ''}
+        <p class="price">${headline}</p>
+        ${sub ? `<p style="margin-top:4px;">${sub}</p>` : ''}
+        <p class="loc">${l.StreetNumber} ${l.StreetName}<br>${[l.SubdivisionName, l.City].filter(Boolean).filter(s => s !== 'N/A').join(', ')}</p>
+        ${proof ? `<p class="proof">${proof}</p>` : ''}
+        ${l.ListAgentName ? `<p class="attr">Listed by ${l.ListAgentName} · ${l.ListOfficeName || ''}</p>` : ''}
+      </div>
+    `;
+    article.addEventListener('dblclick', (e) => doubleTapLike(article, e));
+    return article;
+  }
+
+  function reviewCard(r) {
+    const article = document.createElement('article');
+    article.className = 'card review';
+    article.dataset.kind = 'review';
+    article.dataset.id = r.id;
+    const stars = Array.from({length: Math.round(r.rating || 5)}, () => `<svg viewBox="0 0 24 24" width="18" height="18" fill="#fbbf24" stroke="#fbbf24" stroke-width="1.5" stroke-linejoin="round"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`).join('');
+    const priceK = '$' + Math.round(r.listing.price / 1000) + 'K';
+    article.innerHTML = `
+      <div class="photo"><img data-src="${r.image}" loading="lazy" alt="A home sold by Matt Ryan"/></div>
+      <div class="top-row">
+        <span class="chip cream">Sold by Matt Ryan</span>
+        <span class="brand-tag">Ryan Realty</span>
+      </div>
+      <div class="review-body">
+        <div class="stars">${stars}</div>
+        <blockquote>&ldquo;${r.quote}&rdquo;</blockquote>
+        <p class="reviewer"><strong>${r.reviewer}</strong> · ${r.source} review</p>
+      </div>
+      <div class="review-footer">
+        <div class="row">
+          <div class="avatar"><img src="${r.broker.headshot}" alt="${r.broker.name}"/></div>
+          <div class="meta">
+            <div class="name">Marketed by ${r.broker.name}</div>
+            <div>${r.listing.address} · Sold ${priceK} · ${r.listing.closeDate}</div>
+          </div>
+        </div>
+        <button class="cta-btn" onclick="event.stopPropagation(); window.open('/contact?source=pulse_review_card&review_id=${r.id}', '_self');">
+          <span>${r.cta}</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    `;
+    return article;
+  }
+
+  function lifestyleCard(c) {
+    const article = document.createElement('article');
+    article.className = 'card lifestyle';
+    article.dataset.kind = 'lifestyle';
+    article.dataset.category = c.category;
+    article.innerHTML = `
+      <div class="photo"><img data-src="${c.image}" loading="lazy" alt="${c.headline}"/></div>
+      <div class="gbot"></div>
+      <div class="top-row"><span class="chip ${categoryToneClass(c.category)}">${c.kicker}</span></div>
+      <div class="body-zone">
+        <h3>${c.headline}</h3>
+        <p class="body">${c.body}</p>
+        <div class="arrow-cta"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+      </div>
+      ${c.credit ? `<span class="credit">${c.credit}</span>` : ''}
+    `;
+    article.addEventListener('click', () => {
+      recordLike({ category: c.category });
+    });
+    return article;
+  }
+
+  function brandCard(b) {
+    const article = document.createElement('article');
+    article.className = 'card brand brand-navy ' + (b.video ? 'brand-video' : '') + (b.broker ? ' brand-broker' : '');
+    article.dataset.kind = 'brand';
+    article.dataset.id = b.id;
+    if (b.broker) {
+      article.innerHTML = `
+        <div class="portrait"><img data-src="${b.image}" loading="lazy" alt="${b.headline}"/></div>
+        <div class="gbot"></div>
+        <div class="top-row"><span class="chip cream">${b.kicker}</span><span class="brand-tag">Ryan Realty</span></div>
+        <div class="body-zone">
+          <h3 class="big">${b.headline}</h3>
+          <p class="body">${b.body}</p>
+          ${b.body2 ? `<p class="body" style="opacity:0.65;margin-top:4px;">${b.body2}</p>` : ''}
+          <button class="cta-btn">${b.cta} →</button>
+        </div>
+      `;
+    } else if (b.video) {
+      article.innerHTML = `
+        <div class="photo"><video data-video-src="${b.video}" poster="${b.image}" muted loop playsinline preload="metadata"></video></div>
+        <div class="gbot"></div>
+        <div class="top-row"><span class="chip cream">${b.kicker}</span><span class="brand-tag">Ryan Realty</span></div>
+        <div class="body-zone">
+          <h3>${b.headline}</h3>
+          <p class="body">${b.body}</p>
+          ${b.body2 ? `<p class="body" style="opacity:0.65;margin-top:4px;">${b.body2}</p>` : ''}
+          <button class="cta-btn">${b.cta} →</button>
+        </div>
+      `;
+    } else {
+      article.innerHTML = `
+        <div class="photo"><img data-src="${b.image}" loading="lazy" alt=""/></div>
+        <div class="gbot"></div>
+        <div class="top-row"><span class="chip cream">${b.kicker}</span><span class="brand-tag">Ryan Realty</span></div>
+        <div class="body-zone">
+          <h3>${b.headline}</h3>
+          <p class="body">${b.body}</p>
+          ${b.body2 ? `<p class="body" style="opacity:0.65;margin-top:4px;">${b.body2}</p>` : ''}
+          <button class="cta-btn">${b.cta} →</button>
+        </div>
+      `;
+    }
+    return article;
+  }
+
+  function snapshotCard() {
+    const r = REGION_SNAPSHOT;
+    const article = document.createElement('article');
+    article.className = 'snap';
+    article.innerHTML = `
+      <div>
+        <span class="kicker">Central Oregon</span>
+        <div class="geo">${r.label}</div>
+        <span class="health">${r.health}</span>
+      </div>
+      <div class="grid">
+        <div class="m"><div class="label">Median list</div><div class="v">$${Math.round(r.median/1000)}K</div></div>
+        <div class="m"><div class="label">Months of supply</div><div class="v">${r.mos.toFixed(1)} mo</div></div>
+        <div class="m"><div class="label">Active</div><div class="v">${r.active.toLocaleString()}</div></div>
+        <div class="m"><div class="label">Sold (30d)</div><div class="v">${r.sold30d}</div></div>
+        <div class="m"><div class="label">New this week</div><div class="v">${r.newWeek}</div></div>
+        <div class="m"><div class="label">Median DOM</div><div class="v">${r.dom}d</div></div>
+      </div>
+      <div class="ftr"><span>See the full market report</span><span>→</span></div>
+    `;
+    return article;
+  }
+
+  function categoryToneClass(c) {
+    switch (c) {
+      case 'event': return 'amber';
+      case 'outdoor': return 'emerald';
+      case 'neighborhood': return 'navy';
+      case 'culture': return 'violet';
+      case 'dining': return 'rose';
+      default: return 'navy';
+    }
+  }
+
+  // ====== SCORE + RERANK ======
+  function scoreLifestyle(c) {
+    return Math.min((STATE.signals.likes_by_category[c.category] || 0) * 2, 6);
+  }
+  function scoreListing(l) {
+    let s = 0;
+    if (l.City) s += (STATE.signals.likes_by_city[l.City] || 0) * 1.5;
+    if (l.event_type) s += (STATE.signals.likes_by_event_type[l.event_type] || 0) * 1.0;
+    return s;
+  }
+  function rerank(items, scoreFn) {
+    if (items.length < 2) return items;
+    return items.map((item, idx) => ({item, idx, score: scoreFn(item) + (Math.random() < 0.12 ? Math.random()*0.8 : 0)}))
+      .sort((a, b) => b.score === a.score ? a.idx - b.idx : b.score - a.score)
+      .map(x => x.item);
+  }
+
+  // ====== BUILD FEED ======
+  function buildFeed() {
+    const feed = document.getElementById('feed');
+    feed.innerHTML = '';
+
+    // Filter listings
+    let listings = LISTINGS.slice();
+    if (STATE.selectedCity) listings = listings.filter(l => l.City === STATE.selectedCity);
+    if (STATE.selectedEvent) listings = listings.filter(l => l.event_type === STATE.selectedEvent);
+
+    // Rerank lifestyle by signals
+    const rankedLifestyle = rerank(LIFESTYLE.slice(), scoreLifestyle);
+
+    let lifeIdx = 0, brandIdx = 0, reviewIdx = 0;
+    const snapAt = 6, brandAt = [3, 9], lifestyleAt = [2, 5, 8, 11], reviewAt = [5, 10];
+
+    listings.forEach((l, i) => {
+      const pos = i + 1;
+      feed.appendChild(listingCard(l));
+
+      if (lifestyleAt.includes(pos) && rankedLifestyle.length > 0) {
+        const c = rankedLifestyle[lifeIdx % rankedLifestyle.length];
+        feed.appendChild(lifestyleCard(c));
+        lifeIdx++;
+      }
+      if (brandAt.includes(pos)) {
+        const b = BRAND_CARDS[brandIdx % BRAND_CARDS.length];
+        feed.appendChild(brandCard(b));
+        brandIdx++;
+      }
+      if (reviewAt.includes(pos) && REVIEW_CARDS.length > 0) {
+        feed.appendChild(reviewCard(REVIEW_CARDS[reviewIdx % REVIEW_CARDS.length]));
+        reviewIdx++;
+      }
+      if (pos === snapAt) {
+        feed.appendChild(snapshotCard());
+      }
+    });
+
+    if (listings.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.padding = '40px 20px';
+      empty.style.textAlign = 'center';
+      empty.style.color = 'var(--muted)';
+      empty.innerHTML = '<p style="font-family: \'DM Serif Display\', serif; font-size: 22px; color: var(--foreground);">No matching activity</p><p style="font-size: 13px; margin-top: 8px;">Try a different city or event filter.</p>';
+      feed.appendChild(empty);
+    }
+
+    initLazyLoad();
+    initLikeButtons();
+    initShareButtons();
+    initVideoAutoplay();
+    initCtaLikes();
+  }
+
+  // ====== LAZY LOAD ======
+  function initLazyLoad() {
+    const lazyImages = document.querySelectorAll('img[data-src]');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          img.src = img.dataset.src;
+          img.removeAttribute('data-src');
+          observer.unobserve(img);
+        }
+      });
+    }, { rootMargin: '600px 0px' });
+    lazyImages.forEach(img => observer.observe(img));
+  }
+
+  // ====== VIDEO AUTOPLAY ======
+  function initVideoAutoplay() {
+    const videos = document.querySelectorAll('video[data-video-src]');
+    let activeVideo = null;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const v = entry.target;
+        if (!v.src && entry.isIntersecting && entry.intersectionRatio > 0.1) {
+          // Lazy attach src on first approach
+          v.src = v.dataset.videoSrc;
+        }
+        if (entry.isIntersecting && entry.intersectionRatio > 0.55) {
+          if (activeVideo && activeVideo !== v) activeVideo.pause();
+          activeVideo = v;
+          v.play().catch(() => undefined);
+        } else if (entry.intersectionRatio < 0.3) {
+          v.pause();
+          if (activeVideo === v) activeVideo = null;
+        }
+      });
+    }, { threshold: [0, 0.1, 0.55, 1] });
+    videos.forEach(v => observer.observe(v));
+  }
+
+  // ====== LIKE BUTTON ======
+  function initLikeButtons() {
+    document.querySelectorAll('.like-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const card = btn.closest('article');
+        const key = btn.dataset.listingKey;
+        const city = btn.dataset.city;
+        const eventType = btn.dataset.event;
+        toggleLike(card, key, { city, event_type: eventType });
+      });
+    });
+  }
+
+  function initCtaLikes() {
+    document.querySelectorAll('article.lifestyle').forEach(card => {
+      card.addEventListener('click', () => {
+        recordLike({ category: card.dataset.category });
+      }, { capture: true, once: false });
+    });
+  }
+
+  function initShareButtons() {
+    document.querySelectorAll('.share-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (navigator.share) navigator.share({ url: window.location.href, title: 'Central Oregon market pulse' }).catch(() => {});
+        else navigator.clipboard?.writeText(window.location.href);
+        btn.style.transform = 'scale(1.2)';
+        setTimeout(() => btn.style.transform = '', 200);
+      });
+    });
+  }
+
+  function toggleLike(card, key, ctx) {
+    const wasLiked = STATE.likes.has(key);
+    if (wasLiked) {
+      STATE.likes.delete(key);
+    } else {
+      STATE.likes.add(key);
+      recordLike(ctx);
+      if (navigator.vibrate) navigator.vibrate(8);
+      heartBurst(card);
+    }
+    persistLikes();
+    const btn = card.querySelector('.like-btn');
+    if (btn) {
+      btn.classList.toggle('liked', !wasLiked);
+      const svg = btn.querySelector('svg');
+      if (svg) svg.setAttribute('fill', !wasLiked ? 'currentColor' : 'none');
+    }
+  }
+
+  function doubleTapLike(card, e) {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const key = card.dataset.listingKey;
+    const ctx = { city: card.dataset.city, event_type: card.dataset.eventType };
+    if (!STATE.likes.has(key)) {
+      STATE.likes.add(key);
+      recordLike(ctx);
+      persistLikes();
+      const btn = card.querySelector('.like-btn');
+      if (btn) {
+        btn.classList.add('liked');
+        btn.querySelector('svg').setAttribute('fill', 'currentColor');
+      }
+    }
+    heartBurst(card, x, y);
+    if (navigator.vibrate) navigator.vibrate(8);
+  }
+
+  function heartBurst(card, x, y) {
+    const rect = card.getBoundingClientRect();
+    if (x == null) x = rect.width / 2;
+    if (y == null) y = rect.height / 2;
+    const burst = document.createElement('div');
+    burst.className = 'heart-burst animate';
+    burst.style.left = (x - 55) + 'px';
+    burst.style.top = (y - 55) + 'px';
+    burst.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.5-9.1C1 8.6 3.3 5.2 6.6 5.2c2 0 3.5 1 4.4 2.4l1 1.5 1-1.5C13.9 6.2 15.4 5.2 17.4 5.2c3.3 0 5.6 3.4 4.1 6.7C19.5 16.4 12 21 12 21z" fill="rgba(255,255,255,0.97)"/></svg>';
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const dx = Math.cos(angle) * 70;
+      const dy = Math.sin(angle) * 70;
+      const p = document.createElement('span');
+      p.className = 'particle';
+      p.style.setProperty('--dx', dx + 'px');
+      p.style.setProperty('--dy', dy + 'px');
+      burst.appendChild(p);
+    }
+    card.appendChild(burst);
+    setTimeout(() => burst.remove(), 750);
+  }
+
+  // ====== FILTER WIRING ======
+  document.getElementById('cities-row').addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') return;
+    document.querySelectorAll('#cities-row .filter-chip').forEach(c => c.classList.remove('active'));
+    e.target.classList.add('active');
+    STATE.selectedCity = e.target.dataset.city;
+    buildFeed();
+  });
+  document.getElementById('events-row').addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') return;
+    document.querySelectorAll('#events-row .filter-chip').forEach(c => c.classList.remove('active'));
+    e.target.classList.add('active');
+    STATE.selectedEvent = e.target.dataset.event;
+    buildFeed();
+  });
+
+  // ====== PUBLIC API for reset button ======
+  window.PULSE = {
+    resetSignals: () => {
+      STATE.likes.clear();
+      STATE.signals = { likes_by_category:{}, likes_by_city:{}, likes_by_event_type:{} };
+      persistLikes();
+      persistSignals();
+      buildFeed();
+    }
+  };
+
+  // ====== INIT ======
+  updateSignalDisplay();
+  buildFeed();
+</script>
+
+</body>
+</html>

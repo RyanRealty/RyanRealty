@@ -1,8 +1,8 @@
 ---
 name: ops-fub-crm
 description: >
-  Executes CRM mutations in Follow Up Boss — tag apply/remove, sequence
-  start/stop, task creation, and agent routing changes — based on a structured
+  Executes CRM mutations in Follow Up Boss.  tag apply/remove, sequence
+  start/stop, task creation, and agent routing changes.  based on a structured
   action row from the marketing brain. Requires Matt's explicit approval for
   operations affecting more than 5 leads; single-lead ops surface a draft for
   review. Enforces count verification before any bulk operation to prevent
@@ -12,9 +12,19 @@ action_types:
   - ops:fub_sequence_change
   - ops:fub_task_create
   - ops:fub_routing
+output_type: operational
+target_platforms: []
+asset_destination: no asset; state mutation only (logged in marketing_decisions)
+auto_inputs: ["current campaign/account state"]
+required_inputs: ["account_id OR campaign_id"]
+optional_inputs: ["budget_delta_pct", "pause_reason"]
+estimated_runtime_min: 3
+cost_usd_estimate: $0.01-$0.10 per call (mostly API quota; minimal Anthropic)
+thumbnail_uri: out/proof/2026-05-17/exemplars/sample.html
+example_outputs: []
 ---
 
-# ops-fub-crm — Follow Up Boss CRM Operational Producer
+# ops-fub-crm.  Follow Up Boss CRM Operational Producer
 
 **Scope:** Executes mutations to the Follow Up Boss CRM on behalf of the marketing
 brain. Handles tag management, sequence enrollment, task creation, and agent
@@ -39,35 +49,35 @@ are created by the lead-capture paths in `docs/MARKETING_LEAD_FLOW.md`).
 
 **Read FIRST when working on anything seller-touching:**
 
-- **`docs/FUB_SELLER_WORKFLOW_2026-05-17.md`** — the locked spec. Defines the canonical kebab-case namespaced tag schema (`audience:seller`, `seller:{hot|warm|nurture|long-nurture|recovery|in-conversation|do-not-contact}`, `source:*`, `broker:*`), the 10-touch cadence over 60 days, the round-robin assignment rule, the 6 custom fields, and the architectural constraint (FUB blocks send-API for integrations — auto messages fire from FUB's own action-plan engine).
-- **`docs/FUB_AUDIT_2026-05-17.md`** — read-only audit that drove the redesign.
-- **`docs/FUB_UI_SETUP_RUNBOOK.md`** — Matt's one-time FUB UI setup runbook.
+- **`docs/FUB_SELLER_WORKFLOW_2026-05-17.md`**.  the locked spec. Defines the canonical kebab-case namespaced tag schema (`audience:seller`, `seller:{hot|warm|nurture|long-nurture|recovery|in-conversation|do-not-contact}`, `source:*`, `broker:*`), the 10-touch cadence over 60 days, the round-robin assignment rule, the 6 custom fields, and the architectural constraint (FUB blocks send-API for integrations.  auto messages fire from FUB's own action-plan engine).
+- **`docs/FUB_AUDIT_2026-05-17.md`**.  read-only audit that drove the redesign.
+- **`docs/FUB_UI_SETUP_RUNBOOK.md`**.  Matt's one-time FUB UI setup runbook.
 
 **Anytime you receive an `ops:fub_*` action involving sellers:**
 
 1. Use only canonical tags (no Title Case `Seller`, no legacy `hot-seller` kebab without namespace, no `auto:seller-seq:*`). The full schema is in `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` §4.
-2. The master action plan name is `Seller Lead — Master Workflow` — do not enroll in any legacy `*KTS AP …` plan or `Seller - Home Evaluation Request` (id 5).
+2. The master action plan name is `Seller Lead.  Master Workflow`.  do not enroll in any legacy `*KTS AP …` plan or `Seller - Home Evaluation Request` (id 5).
 3. Adding `seller:in-conversation` pauses the workflow. Adding `seller:do-not-contact` stops it.
-4. Pause-on-reply runs every 15 min via `/api/cron/seller-workflow-pause` — do not duplicate that logic.
-5. Round-robin assignment lives in `app/lp/seller-home-value/actions.ts` + Supabase `marketing_assignments` table — do not write your own assignment logic in this producer.
+4. Pause-on-reply runs every 15 min via `/api/cron/seller-workflow-pause`.  do not duplicate that logic.
+5. Round-robin assignment lives in `app/lp/seller-home-value/actions.ts` + Supabase `marketing_assignments` table.  do not write your own assignment logic in this producer.
 
 ---
 
 ## 1. Scope
 
 ### In scope
-- `ops:fub_tag_fix` — apply or remove one or more tags on a lead or filtered set
-- `ops:fub_sequence_change` — enroll a lead in a sequence, stop a sequence, or
+- `ops:fub_tag_fix`.  apply or remove one or more tags on a lead or filtered set
+- `ops:fub_sequence_change`.  enroll a lead in a sequence, stop a sequence, or
   move a lead from one sequence to another
-- `ops:fub_task_create` — create a task (call, email, follow-up) for the assigned
+- `ops:fub_task_create`.  create a task (call, email, follow-up) for the assigned
   listing agent, with due date and note
-- `ops:fub_routing` — change the assigned agent for one or more leads
+- `ops:fub_routing`.  change the assigned agent for one or more leads
 
 ### Out of scope
-- Exporting leads for audience building — handled by `scripts/export-fub-custom-audience.mjs`
-- Sending direct emails or SMS — handled by `ops-email-send`
-- Creating new lead records — handled by webhook ingest paths in `app/api/`
-- Deleting lead records — never automated; requires Matt's manual action in FUB UI
+- Exporting leads for audience building.  handled by `scripts/export-fub-custom-audience.mjs`
+- Sending direct emails or SMS.  handled by `ops-email-send`
+- Creating new lead records.  handled by webhook ingest paths in `app/api/`
+- Deleting lead records.  never automated; requires Matt's manual action in FUB UI
 
 ---
 
@@ -77,7 +87,7 @@ are created by the lead-capture paths in `docs/MARKETING_LEAD_FLOW.md`).
 |---|---|---|
 | `ops:fub_tag_fix` | `action`, `lead_ids` or `filter`, `payload.tags`, `payload.operation` | `operation`: `'apply'` or `'remove'` |
 | `ops:fub_sequence_change` | `action`, `lead_ids` or `filter`, `payload.sequence_id`, `payload.operation` | `operation`: `'start'`, `'stop'`, or `'move'` |
-| `ops:fub_task_create` | `action`, `lead_ids`, `payload.task_type`, `payload.due_date`, `payload.note` | Always explicit `lead_ids` — never filter for task creation |
+| `ops:fub_task_create` | `action`, `lead_ids`, `payload.task_type`, `payload.due_date`, `payload.note` | Always explicit `lead_ids`.  never filter for task creation |
 | `ops:fub_routing` | `action`, `lead_ids` or `filter`, `payload.assigned_agent_id` | Agent ID must be a valid FUB user ID |
 
 ### Payload schema
@@ -88,7 +98,7 @@ interface FubOpsPayload {
           'task_create' | 'route_change';
   lead_ids: string[] | { filter: Record<string, unknown> };
   // Explicit list of FUB person IDs (numeric strings), OR a FUB People API
-  // filter object. Filter is only allowed for tag and routing ops — never
+  // filter object. Filter is only allowed for tag and routing ops.  never
   // for task creation (tasks require explicit IDs for accountability).
   payload: Record<string, unknown>;
   // Action-specific fields:
@@ -131,7 +141,7 @@ interface FubCrmActionRow {
 
 ## 4. The recipe
 
-### Step 1 — Read the action row
+### Step 1.  Read the action row
 
 ```sql
 UPDATE marketing_brain_actions
@@ -141,15 +151,15 @@ WHERE id = '<action_id>' AND status = 'pending';
 
 If row is not `status='pending'`, halt silently (another agent has it).
 
-### Step 2 — Load mandatory references
+### Step 2.  Load mandatory references
 
-- `CLAUDE.md` §0 — Data Accuracy mandate
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `docs/MARKETING_LEAD_FLOW.md` — understand tag conventions, sequence logic, and
+- `CLAUDE.md` §0.  Data Accuracy mandate
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
+- `docs/MARKETING_LEAD_FLOW.md`.  understand tag conventions, sequence logic, and
   the conditional tagging rules (hot-seller / warm-seller / nurture-only)
-- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §2 — lead form conditional logic tags
+- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §2.  lead form conditional logic tags
 
-### Step 3 — Resolve lead_ids (filter path)
+### Step 3.  Resolve lead_ids (filter path)
 
 If `payload.lead_ids` is a filter object (not an explicit array), query the FUB
 People API to count and preview matching leads:
@@ -165,7 +175,7 @@ Extract `totalCount` from the response. Compare to `payload.expected_count`:
 ```
 if totalCount > expected_count * 1.5:
   → HALT. Surface to Matt:
-    "Filter returned {totalCount} leads — {1.5x * expected_count:.0f} above the
+    "Filter returned {totalCount} leads.  {1.5x * expected_count:.0f} above the
      expected {expected_count}. The filter may be too broad.
      Filter used: {JSON.stringify(filter)}.
      Reply 'proceed' to continue anyway, or provide a corrected filter."
@@ -177,7 +187,7 @@ If `totalCount` is within acceptable range, fetch all matching IDs by paginating
 the People API (FUB default limit 25, max 100 per page). Collect all `id` values.
 Replace `payload.lead_ids` with the resolved explicit array before proceeding.
 
-### Step 4 — Determine approval gate
+### Step 4.  Determine approval gate
 
 ```
 if resolved_lead_count > 5:
@@ -186,22 +196,21 @@ else:
   approval_gate = 'matt-review-draft'
 ```
 
-### Step 5 — Surface to Matt
+### Step 5.  Surface to Matt
 
-**For bulk ops (> 5 leads) — explicit approval required:**
+**For bulk ops (> 5 leads).  explicit approval required:**
 
 ```
-Proposed FUB CRM change — [action_type] on [lead_count] leads
+Proposed FUB CRM change.  [action_type] on [lead_count] leads
 
   OPERATION
     Type:     [action] ([tag name] / [sequence name] / [agent name])
     Scope:    [lead_count] leads
     Segment:  [target from action row]
 
-  AFFECTED LEADS (sample — first 5)
-    [lead_id] — [name] — [current tags/stage]
-    [lead_id] — [name] — [current tags/stage]
-    ... ([lead_count - 5] more)
+  AFFECTED LEADS (sample.  first 5)
+    [lead_id].  [name].  [current tags/stage]
+    [lead_id].  [name].  [current tags/stage]... ([lead_count - 5] more)
 
   RATIONALE
     [payload.rationale]
@@ -215,10 +224,10 @@ Reply "yes" / "approved" / "go" to execute across all [lead_count] leads.
 Reply "no" or "kill" to cancel.
 ```
 
-**For single-lead ops (≤ 5 leads) — draft review:**
+**For single-lead ops (≤ 5 leads).  draft review:**
 
 ```
-CRM update draft — [action_type]
+CRM update draft.  [action_type]
 
   Lead: [name] (FUB ID: [id])
   Change: [human-readable description]
@@ -229,7 +238,7 @@ Reply "ship it" / "go" / "approved" to apply.
 
 Set `status='ready'` in the action row. Stop. Wait for Matt.
 
-### Step 6 — Execute via FUB API (post-approval only)
+### Step 6.  Execute via FUB API (post-approval only)
 
 After Matt's explicit approval, set `status='approved'`:
 
@@ -245,9 +254,9 @@ Execute operations. Batch when lead count > 50 to respect FUB rate limits
 **Tag apply:**
 ```
 PUT https://api.followupboss.com/v1/people/<person_id>
-Body: { "tags": [...current_tags, ...new_tags] }
+Body: { "tags": [...current_tags,...new_tags] }
 ```
-FUB tags are set as a full replacement array — always merge with existing tags,
+FUB tags are set as a full replacement array.  always merge with existing tags,
 never overwrite the full tag list unless removal is intended.
 
 **Tag remove:**
@@ -292,7 +301,7 @@ PUT https://api.followupboss.com/v1/people/<person_id>
 Body: { "assignedTo": <assigned_agent_name>, "assignedUserId": <assigned_agent_id> }
 ```
 
-### Step 7 — Capture per-lead results, update action row
+### Step 7.  Capture per-lead results, update action row
 
 Accumulate results for every person_id processed:
 
@@ -300,7 +309,7 @@ Accumulate results for every person_id processed:
 {
   "person_id": "12345",
   "status": "success" | "error",
-  "api_response": { ... },
+  "api_response": {... },
   "error_detail": "..." // only on error
 }
 ```
@@ -322,13 +331,13 @@ SET status = 'executed',
 WHERE id = '<action_id>';
 ```
 
-### Step 8 — Confirm to Matt
+### Step 8.  Confirm to Matt
 
 ```
-Executed — FUB CRM [action]
+Executed.  FUB CRM [action]
 
   [success_count] of [total_requested] leads updated successfully.
-  [error_count > 0: "X failed — see executor_response for detail."]
+  [error_count > 0: "X failed.  see executor_response for detail."]
 
 Action row [action_id] → status: executed.
 ```
@@ -342,7 +351,7 @@ Action row [action_id] → status: executed.
 | FUB REST API v1 | People read + write, tasks, action plans | `FOLLOWUPBOSS_API_KEY` |
 | Supabase MCP | Action row updates | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | `lib/followupboss.ts` | `findPersonByEmail`, `fubHeaders`, `FubPerson` types | imported |
-| `lib/fub.ts` | `pushToFub` — event-based FUB writes | imported (for event logging) |
+| `lib/fub.ts` | `pushToFub`.  event-based FUB writes | imported (for event logging) |
 
 ---
 
@@ -415,25 +424,47 @@ killed          ← filter too broad (unresolved), Matt says no, API error after
 | Sequence/action plan not found | FUB returns 404 on sequence_id | Halt the sequence op entirely. Surface to Matt: "Sequence ID [id] not found in FUB. Verify the sequence exists and the ID matches." |
 | Tag write stomps existing tags | Tags are set as full array replacement | Always fetch current tags before write. Never send a tags array without merging with current. |
 | FUB rate limit (429) | HTTP 429 on bulk write | Back off 10s, retry. If 3 consecutive 429s, pause for 60s and retry once more. Log retries in executor_response. |
-| Task creation without explicit IDs | Filter used for task_create | Hard-block. Task creation requires explicit lead_ids — filter path is disabled for this action type. Surface to Matt. |
+| Task creation without explicit IDs | Filter used for task_create | Hard-block. Task creation requires explicit lead_ids.  filter path is disabled for this action type. Surface to Matt. |
 
 ---
 
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `CLAUDE.md` §0 — Data Accuracy mandate
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `docs/MARKETING_LEAD_FLOW.md` — tag conventions, sequence names, conditional tagging rules
-- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §2 — seller intent tags (hot-seller, warm-seller, nurture-only)
+- `CLAUDE.md` §0.  Data Accuracy mandate
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
+- `docs/MARKETING_LEAD_FLOW.md`.  tag conventions, sequence names, conditional tagging rules
+- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §2.  seller intent tags (hot-seller, warm-seller, nurture-only)
 
 **Capabilities used:**
-- `lib/followupboss.ts` — `findPersonByEmail`, `fubHeaders`, auth helpers
-- `lib/fub.ts` — `pushToFub` for event-type writes
+- `lib/followupboss.ts`.  `findPersonByEmail`, `fubHeaders`, auth helpers
+- `lib/fub.ts`.  `pushToFub` for event-type writes
 
 **Brain components that generate ops:fub_* action rows:**
-- `marketing_brain_skills/audit-crm/` — surfaces tag gaps, SLA failures, unrouted leads
-- `marketing_brain_skills/generate-briefs/` — creates routing + sequence action rows from signals
+- `marketing_brain_skills/audit-crm/`.  surfaces tag gaps, SLA failures, unrouted leads
+- `marketing_brain_skills/generate-briefs/`.  creates routing + sequence action rows from signals
 
 **Registry entry:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section D, row `ops-fub-crm`
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section D, row `ops-fub-crm`
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+

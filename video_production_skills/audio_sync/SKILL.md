@@ -10,12 +10,12 @@ description: >
   content-production skill.
 ---
 
-# Skill 4 — Music/Audio Sync (Beat Detection)
+# Skill 4.  Music/Audio Sync (Beat Detection)
 
 ## Overview
 
 Input: a music bed or combined VO+music track (mp3 or wav).
-Output: `beats.json` — a JSON file containing tempo, beat timestamps, downbeat timestamps, and onset timestamps.
+Output: `beats.json`.  a JSON file containing tempo, beat timestamps, downbeat timestamps, and onset timestamps.
 
 The Remotion composition imports `beats.json` and snaps cut `startSec` values to the nearest detected beat, within a ±0.15s tolerance window, using `snapToNearestBeat()` from `listing_video_v4/src/lib/beats.ts`.
 
@@ -23,7 +23,7 @@ The Remotion composition imports `beats.json` and snaps cut `startSec` values to
 
 ## When to Use
 
-Use this skill any time the video has a music bed where cuts should feel locked to the music — the editing energy comes from the rhythm, not from arbitrary timer cuts.
+Use this skill any time the video has a music bed where cuts should feel locked to the music.  the editing energy comes from the rhythm, not from arbitrary timer cuts.
 
 **Trigger condition:** music bed present + cuts are timed by hand → run beat detection and snap.
 
@@ -31,20 +31,20 @@ Use this skill any time the video has a music bed where cuts should feel locked 
 
 ## When NOT to Use
 
-- **VO-only videos with no music bed.** The current Vandevert v5.9 cut is VO-only (`// VO only — no music bed. Matt adds music in post.`). Beat detection is irrelevant for that cut; skip this skill entirely.
+- **VO-only videos with no music bed.** The current Vandevert v5.9 cut is VO-only (`// VO only.  no music bed. Matt adds music in post.`). Beat detection is irrelevant for that cut; skip this skill entirely.
 - **Narration-paced docs or testimonials** where the edit follows speech rhythm, not musical rhythm.
 
 ---
 
 ## Register Warning: Luxury vs. Sub-$500K
 
-Beat-aligned cuts produce a "TikTok-y" energy — fast, rhythmic, punchy. That energy can **clash with $1M+ luxury register**, which reads better with breathing room and deliberate pacing.
+Beat-aligned cuts produce a "TikTok-y" energy.  fast, rhythmic, punchy. That energy can **clash with $1M+ luxury register**, which reads better with breathing room and deliberate pacing.
 
 | Price tier | Beat-snapping strategy |
 |---|---|
 | **Sub-$500K / starter homes** | Snap **every** cut to the nearest beat. Full grid-lock feel. |
-| **$500K–$1M mid-market** | Snap most cuts; give emotional beats (hero exterior, final reveal) a half-beat of breathing room. |
-| **$1M+ luxury** | Snap only the **re-hook moments** — at ~25% and ~50% of total runtime (the pattern interrupts). Leave every other cut free-floating. The score should feel like it's supporting the image, not driving it. |
+| **$500K-$1M mid-market** | Snap most cuts; give emotional beats (hero exterior, final reveal) a half-beat of breathing room. |
+| **$1M+ luxury** | Snap only the **re-hook moments**.  at ~25% and ~50% of total runtime (the pattern interrupts). Leave every other cut free-floating. The score should feel like it's supporting the image, not driving it. |
 
 ---
 
@@ -57,7 +57,7 @@ pip install -r requirements.txt
 
 Optional (more accurate downbeat detection, harder install):
 ```bash
-# pip install madmom   # see requirements.txt — commented out
+# pip install madmom   # see requirements.txt.  commented out
 ```
 
 ---
@@ -97,7 +97,7 @@ python scripts/detect_beats.py \
 | Field | Source | Description |
 |---|---|---|
 | `beats` | `librosa.beat.beat_track` | Every beat in the bar grid |
-| `downbeats` | Every 4th beat from index 0 (heuristic) | Approximate bar-1-beat-1 timestamps. **Limitation:** librosa does not ship a robust downbeat detector — this is a ÷4 approximation. For high-accuracy downbeats on complex arrangements, see `madmom` (commented out in requirements.txt). |
+| `downbeats` | Every 4th beat from index 0 (heuristic) | Approximate bar-1-beat-1 timestamps. **Limitation:** librosa does not ship a robust downbeat detector.  this is a ÷4 approximation. For high-accuracy downbeats on complex arrangements, see `madmom` (commented out in requirements.txt). |
 | `onsets` | `librosa.onset.onset_detect` | Sharp transients (percussive hits, string attacks). Often more useful than beats for cut points in energetic tracks. |
 
 ---
@@ -105,7 +105,7 @@ python scripts/detect_beats.py \
 ## Using in Remotion
 
 ```ts
-import beatsData from '../public/audio/beats.json';
+import beatsData from '. /public/audio/beats.json';
 import type { BeatsManifest } from './lib/beats';
 import { snapToNearestBeat, snapBeatsArray, enforceBeatBounds } from './lib/beats';
 
@@ -133,7 +133,7 @@ Files should land in `listing_video_v4/public/audio/library/`.
 
 ## Verification Checklist (before any video ships with beat-snapped cuts)
 
-1. Run `detect_beats.py` fresh — do not reuse a cached `beats.json` from a prior session.
+1. Run `detect_beats.py` fresh.  do not reuse a cached `beats.json` from a prior session.
 2. Print the human-readable trace output and confirm tempo + beat count are plausible for the track.
 3. After snapping, visually scrub the Remotion preview at every cut point. The cut should land on a musical accent, not a dead silence.
 4. Run `enforceBeatBounds` and confirm no beat exceeds 4s (hard cap from master skill).

@@ -5,7 +5,7 @@ description: The synthesis layer of the marketing brain. Gathers signals from al
 
 # marketing-brain: generate-briefs
 
-The most important skill in the marketing brain. Everything upstream — the four audits, the diagnose layer, competitor-recon, platform-trends — feeds into this skill. It decides what content to make, in what format, for which audience, based on what the data actually says. It enforces the brand voice before anything ships.
+The most important skill in the marketing brain. Everything upstream.  the four audits, the diagnose layer, competitor-recon, platform-trends.  feeds into this skill. It decides what content to make, in what format, for which audience, based on what the data actually says. It enforces the brand voice before anything ships.
 
 ---
 
@@ -32,7 +32,7 @@ The most important skill in the marketing brain. Everything upstream — the fou
 | `platformTrends` | `gatherPlatformTrends()` | Algorithm signals, format trends, audio trends |
 | `competitorRows` | Supabase `competitor_intel` | Recent competitor SERP and video observations |
 
-Every sub-audit fails softly — if `auditAds` throws, the rest of the pipeline still runs with an empty ads result. No single source failure stops brief generation.
+Every sub-audit fails softly.  if `auditAds` throws, the rest of the pipeline still runs with an empty ads result. No single source failure stops brief generation.
 
 ---
 
@@ -62,7 +62,7 @@ Tie-breaking: severity descending, then source priority (crm > ads > website > c
 | `audit-ads` `test_new_creative` | `fb_ad_creative` × 3 variants: data, question, contrarian | facebook | matches campaign audience from audit |
 | `audit-ads` `capitalize_on_spike` | `ig_reel` | instagram, tiktok | matches winning campaign audience |
 | `audit-website` `seo` (losing query or low CTR) | `blog_post` targeting that query | blog | `search_intent_match` |
-| `audit-website` `page` (high traffic, low conversion) | **NO brief** — CRO task. Logged as `marketing_decisions` only | — | — |
+| `audit-website` `page` (high traffic, low conversion) | **NO brief**.  CRO task. Logged as `marketing_decisions` only |.  |.  |
 | `competitor` `serp_gap` | `blog_post` targeting the gap query | blog | `search_intent_match` |
 | `competitor` `format_gap` | `tiktok_reel` or `ig_reel` adapted to our voice | tiktok or instagram | `brand_default` |
 | `platform-trend` `act_on` | Format matching the trend type on the trend's platform | trend's platform | `brand_default` |
@@ -76,10 +76,10 @@ Tie-breaking: severity descending, then source priority (crm > ads > website > c
 
 Every brief's hook, body, and CTA are concatenated and checked against `marketing_brain_skills/brand-voice/voice_guidelines.md` §6 hard-fail rules in four layers:
 
-1. **§6.1 Banned punctuation** — em dash (—), semicolon (;), dramatic ellipsis-colon pattern. Checked by regex.
-2. **§6.2 Banned words** — 31 real-estate clichés + AI-filler words + vague qualifiers. Checked by whole-word regex, case-insensitive.
-3. **§6.3 Banned phrases** — 19 specific phrases including hype openings, pandering, talking-down constructions, marketing slop, and fake urgency. Substring match, case-insensitive.
-4. **§6.4 Banned tropes** — regex patterns for agent-as-hero framing, market-doom/hype language, and guaranteed-outcome claims.
+1. **§6.1 Banned punctuation**.  em dash (. ), semicolon (;), dramatic ellipsis-colon pattern. Checked by regex.
+2. **§6.2 Banned words**.  31 real-estate clichés + AI-filler words + vague qualifiers. Checked by whole-word regex, case-insensitive.
+3. **§6.3 Banned phrases**.  19 specific phrases including hype openings, pandering, talking-down constructions, marketing slop, and fake urgency. Substring match, case-insensitive.
+4. **§6.4 Banned tropes**.  regex patterns for agent-as-hero framing, market-doom/hype language, and guaranteed-outcome claims.
 
 All violations are collected (not just the first). `applyBrandVoice` returns `{ passed: boolean; violations: string[] }` with each violation citing the specific guideline section (e.g., `§6.2 Banned words: "stunning"`).
 
@@ -109,14 +109,14 @@ interface GeneratedBrief {
   body?: string                          // Supporting copy (optional for short formats)
   cta?: string                           // Call to action (optional)
   target_audience: string                // out_of_state_seller | brand_default | search_intent_match | past_seller_lookalike | site_visitor_seller
-  data_sources: DataSource[]             // [{ type, evidence }] — sourced signals that triggered this brief
+  data_sources: DataSource[]             // [{ type, evidence }].  sourced signals that triggered this brief
   predicted_outcome: PredictedOutcome    // { primary_metric, expected_value, rationale }
   generation_reason: string              // Human-readable explanation of why this brief was created
   voice_validation: VoiceValidation      // { passed: boolean, violations: string[] }
 }
 ```
 
-Every field maps directly to a column in `content_briefs`. Persistence is a straight destructure — no transform needed.
+Every field maps directly to a column in `content_briefs`. Persistence is a straight destructure.  no transform needed.
 
 ---
 
@@ -146,7 +146,7 @@ Two categories:
 
 Default `maxBriefs=10`. Beyond 10 the brain is generating noise. If 10 briefs per week is too many for the production team to execute, lower the cap. The ranking ensures the most important briefs are always in the first N slots.
 
-The cap applies to the total brief count, not the opportunity count. A single `test_new_creative` opportunity generates 3 brief variants — those count as 3 against the cap.
+The cap applies to the total brief count, not the opportunity count. A single `test_new_creative` opportunity generates 3 brief variants.  those count as 3 against the cap.
 
 ---
 
@@ -168,7 +168,7 @@ Returns:
   "asOfDate": "2026-05-11",
   "dryRun": false,
   "count": 7,
-  "briefs": [ ...GeneratedBrief[] ]
+  "briefs": [..GeneratedBrief[] ]
 }
 ```
 
@@ -178,11 +178,11 @@ Returns:
 
 | Skill | Relationship |
 |---|---|
-| `audit-ads` | Upstream — provides `AdsAuditReport.opportunities` |
-| `audit-crm` | Upstream — provides `CRMAuditReport.opportunities`, north-star metric |
-| `audit-website` | Upstream — provides `WebsiteAuditReport.opportunities` (SEO, funnel, page) |
-| `diagnose-performance` | Upstream — provides `InsightSummary` per channel |
-| `platform-trends` | Upstream — provides `PlatformTrendsReport.ryan_realty_adaptations.act_on` |
-| `competitor-recon` | Upstream — provides `competitor_intel` rows |
-| `brand-voice` | Enforced at every brief — `applyBrandVoice` runs §6 rules on every hook/body/cta |
-| `snapshot-channels` | Foundation — populates `marketing_channel_daily` that all audits read |
+| `audit-ads` | Upstream.  provides `AdsAuditReport.opportunities` |
+| `audit-crm` | Upstream.  provides `CRMAuditReport.opportunities`, north-star metric |
+| `audit-website` | Upstream.  provides `WebsiteAuditReport.opportunities` (SEO, funnel, page) |
+| `diagnose-performance` | Upstream.  provides `InsightSummary` per channel |
+| `platform-trends` | Upstream.  provides `PlatformTrendsReport.ryan_realty_adaptations.act_on` |
+| `competitor-recon` | Upstream.  provides `competitor_intel` rows |
+| `brand-voice` | Enforced at every brief.  `applyBrandVoice` runs §6 rules on every hook/body/cta |
+| `snapshot-channels` | Foundation.  populates `marketing_channel_daily` that all audits read |

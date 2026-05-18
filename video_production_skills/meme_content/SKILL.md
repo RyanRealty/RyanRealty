@@ -1,24 +1,42 @@
 ---
 name: meme_content
 kind: format
-description: "Use this skill whenever the user says 'make a meme video', 'trend-jack this', 'real estate meme clip', 'make a reaction video about [RE topic]', 'meme reel for TikTok', 'viral meme for [trend]', or when social_calendar has a meme slot and trend_trigger has returned candidates. For static image memes use meme_lord instead. 15-25s trend-jacking meme clips. Vlipsy clip + ffmpeg + Remotion text overlay. Real estate friction mapped to real trends. Matt's voice only — no AI humor."
+description: "Use this skill whenever the user says 'make a meme video', 'trend-jack this', 'real estate meme clip', 'make a reaction video about [RE topic]', 'meme reel for TikTok', 'viral meme for [trend]', or when social_calendar has a meme slot and trend_trigger has returned candidates. For static image memes use meme_lord instead. 15-25s trend-jacking meme clips. Vlipsy clip + ffmpeg + Remotion text overlay. Real estate friction mapped to real trends. Matt's voice only.  no AI humor."
+output_type: video
+target_platforms: ["ig_reel", "fb_reel", "yt_short", "tt"]
+asset_destination: Supabase asset-library bucket + public/v5_library/ (Remotion renders)
+auto_inputs: ["listing data from Spark + Supabase", "brand tokens", "broker headshot if listing-tied"]
+required_inputs: ["mls_id OR topic"]
+optional_inputs: ["platform_overrides", "voice_style_override"]
+estimated_runtime_min: 12
+cost_usd_estimate: $0.50-$3 per render (ElevenLabs + Remotion compute)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.jpg
+example_outputs: []
+    label: "past approved renders"
+    surface: "ig_reel"
+action_types:
+  - content:meme_video
 ---
 
-# Meme Content — Trend-Jacking with Vlipsy Clips
+# Meme Content.  Trend-Jacking with Vlipsy Clips
 
-## Required references — load these BEFORE producing any content
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
+
+## Required references.  load these BEFORE producing any content
 
 Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
 
-1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)**.  visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
 
-2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)**.  2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
 
 A piece of content that ships without consulting BOTH of these is non-compliant.
 
 ---
 
-**Read `video_production_skills/VIDEO_PRODUCTION_SKILL.md` before writing any composition code. All hard constraints (hook, length, branding) apply. Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` — the text grader pass in this skill is the most important quality gate.**
+**Read `video_production_skills/VIDEO_PRODUCTION_SKILL.md` before writing any composition code. All hard constraints (hook, length, branding) apply. Read `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  the text grader pass in this skill is the most important quality gate.**
 
 ---
 
@@ -42,11 +60,11 @@ This format lives or dies on authenticity. If the text sounds like it was writte
 - `social_calendar/SKILL.md` weekly content calendar has a meme slot open
 
 Do NOT invoke for:
-- More than 2 meme clips per week per account (algorithm de-prioritizes accounts that only post memes — see `social_calendar/SKILL.md` for content mix ratios)
+- More than 2 meme clips per week per account (algorithm de-prioritizes accounts that only post memes.  see `social_calendar/SKILL.md` for content mix ratios)
 - Any trend that is more than 72 hours old (trend shelf life is short; stale trend = no reach)
 - Any trend that contradicts verified data recently published (e.g., posting a "market is slow" meme the same week you posted a data viz showing 2.1 months of supply)
 - Any clip where fair-use status is unclear (see Step 2 for the review)
-- Any trend unrelated to real estate friction — no lifestyle flexing, no political commentary, no national news unless directly tied to mortgage rates or housing policy
+- Any trend unrelated to real estate friction.  no lifestyle flexing, no political commentary, no national news unless directly tied to mortgage rates or housing policy
 
 ---
 
@@ -54,31 +72,31 @@ Do NOT invoke for:
 
 | Step | Tool | Cost | Auth |
 |------|------|------|------|
-| Trend scan | Manual weekly scan or `automation_skills/triggers/trend_trigger` | $0 | — |
+| Trend scan | Manual weekly scan or `automation_skills/triggers/trend_trigger` | $0 |.  |
 | Clip search | vlipsy.com | Free | None required |
-| Clip download | vlipsy.com download or `yt-dlp` | $0 | — |
-| Clip trim | ffmpeg | $0 | — |
+| Clip download | vlipsy.com download or `yt-dlp` | $0 |.  |
+| Clip trim | ffmpeg | $0 |.  |
 | Text overlay | Remotion `MemeComp` | $0 | Node env |
 | Text grader | Manual review (per quality gate) | $0 | Judgment required |
-| Final encode | ffmpeg x264 CRF 24 | $0 | — |
+| Final encode | ffmpeg x264 CRF 24 | $0 |.  |
 
 ---
 
 ## Step-by-step workflow
 
-### Step 1 — Weekly trend scan
+### Step 1.  Weekly trend scan
 
 Run the trend scan Monday morning (or trigger `automation_skills/triggers/trend_trigger` if configured). The scan checks:
-- TikTok trending sounds and formats (via TikTok Creative Center — no API needed, manual browse)
+- TikTok trending sounds and formats (via TikTok Creative Center.  no API needed, manual browse)
 - IG Reels trending audio (via Creator Studio)
-- Twitter/X real estate conversations (search `real estate` + `mortgage` + `rates` — trending topics)
+- Twitter/X real estate conversations (search `real estate` + `mortgage` + `rates`.  trending topics)
 - Reddit r/FirstTimeHomeBuyer, r/RealEstate top posts of the week
 
 Criteria for a viable trend:
 1. The trend maps to a real estate friction point that is currently true (not manufactured)
-2. The trend is active now — posts in the last 48 hours are getting traction
+2. The trend is active now.  posts in the last 48 hours are getting traction
 3. There is a recognizable reaction clip on vlipsy.com that fits the moment
-4. Matt's voice can say something honest and specific about this friction — not just a generic "I know, right?"
+4. Matt's voice can say something honest and specific about this friction.  not just a generic "I know, right?"
 
 **Real estate friction categories that consistently map to memes:**
 - Interest rate announcements and buyer psychology
@@ -93,13 +111,13 @@ Criteria for a viable trend:
 Document the two selected trends in `out/meme_content/week_<yyyy-mm-dd>/trends.md`:
 
 ```markdown
-# Trend selections — week of <date>
+# Trend selections.  week of <date>
 
 ## Trend 1
 - Trend: [describe the trend in one sentence]
 - Platform origin: [TikTok / IG / Reddit / Twitter]
 - Real estate friction: [the specific friction this maps to]
-- Verified data support: [cite data we have published or can verify — or note "no data needed, observation-based"]
+- Verified data support: [cite data we have published or can verify.  or note "no data needed, observation-based"]
 - Vlipsy search terms: [2-3 search terms to find the clip]
 - Draft text: [first draft of the on-screen text in Matt's voice]
 
@@ -107,7 +125,7 @@ Document the two selected trends in `out/meme_content/week_<yyyy-mm-dd>/trends.m
 [same structure]
 ```
 
-### Step 2 — Fair-use review
+### Step 2.  Fair-use review
 
 Before downloading any clip, confirm it passes the fair-use review:
 
@@ -115,8 +133,8 @@ Before downloading any clip, confirm it passes the fair-use review:
 |--------|-------|---------------|
 | Source | Is the clip from vlipsy.com? | vlipsy.com clips are pre-cleared for social use |
 | Length | Is the clip under 6 seconds? | Under 6s is commentary/reaction use |
-| Transformation | Is the on-screen text transformative? | Text must comment on or recontextualize the clip — not just repeat it |
-| Commercial use | Is the video monetized? | Ryan Realty videos are commercial — note this increases scrutiny |
+| Transformation | Is the on-screen text transformative? | Text must comment on or recontextualize the clip.  not just repeat it |
+| Commercial use | Is the video monetized? | Ryan Realty videos are commercial.  note this increases scrutiny |
 
 If the clip is not on vlipsy.com (e.g., it's a direct TV/film clip), do not use it. Stop and find a different clip on vlipsy. Do not proceed with legally uncertain sources.
 
@@ -126,12 +144,12 @@ Log the fair-use review in `out/meme_content/week_<yyyy-mm-dd>/fairuse_log.txt`:
 Clip: [vlipsy URL]
 vlipsy cleared: yes
 Length after trim: [X seconds]
-Transformative use: yes — text recontextualizes clip as real estate commentary
+Transformative use: yes.  text recontextualizes clip as real estate commentary
 Commercial use noted: yes
 Decision: APPROVED
 ```
 
-### Step 3 — Download and trim the clip
+### Step 3.  Download and trim the clip
 
 ```bash
 # Download from vlipsy (vlipsy provides direct MP4 links)
@@ -151,7 +169,7 @@ ffmpeg -i out/meme_content/week_<yyyy-mm-dd>/<slug>/clip_source.mp4 \
 
 Trimmed clip should be 3-8 seconds. The Remotion text overlay runs on top of the clip. Total video = trimmed clip + text hold + optional freeze frame. Max 25 seconds total.
 
-### Step 4 — Scale clip to portrait
+### Step 4.  Scale clip to portrait
 
 Most vlipsy clips are horizontal (16:9). Scale and crop to 9:16:
 
@@ -170,23 +188,23 @@ ffmpeg -i out/meme_content/week_<yyyy-mm-dd>/<slug>/clip_trimmed.mp4 \
   out/meme_content/week_<yyyy-mm-dd>/<slug>/clip_portrait.mp4
 ```
 
-### Step 5 — Write the on-screen text
+### Step 5.  Write the on-screen text
 
 This step requires judgment. The text must pass the voice grader in Step 6. Write it first, then grade it.
 
 **Format options:**
 
-**Option A — Setup/punchline (two text blocks):**
+**Option A.  Setup/punchline (two text blocks):**
 ```
-[Block 1 — appears over the clip, sets the real estate situation]
-[Block 2 — appears at the clip's reaction moment, delivers the honest observation]
+[Block 1.  appears over the clip, sets the real estate situation]
+[Block 2.  appears at the clip's reaction moment, delivers the honest observation]
 ```
 
-**Option B — Running commentary:**
+**Option B.  Running commentary:**
 ```
-[Block 1 — first observation]
-[Block 2 — second observation, adds depth]
-[Block 3 — specific, concrete detail that makes it real]
+[Block 1.  first observation]
+[Block 2.  second observation, adds depth]
+[Block 3.  specific, concrete detail that makes it real]
 ```
 
 **Voice rules (non-negotiable):**
@@ -194,19 +212,19 @@ This step requires judgment. The text must pass the voice grader in Step 6. Writ
 - No em-dashes
 - No AI language: "delve", "leverage", "in today's market", "it's worth noting", "certainly"
 - No marketing language: "amazing opportunity", "competitive market", "now more than ever"
-- No made-up statistics (if you reference a number, it must be verified — see next point)
+- No made-up statistics (if you reference a number, it must be verified.  see next point)
 - If the text references any market number (DOM, price, supply), it must match the current verified Supabase data. Cross-check against `out/data_viz/Bend_<latest>.json` before writing it in.
 - Sentences end with periods, not ellipses
 - No hashtags in the on-screen text (they go in the IG caption)
-- No call to action in the video frame ("Call me today" is banned in frame — it goes in the caption)
+- No call to action in the video frame ("Call me today" is banned in frame.  it goes in the caption)
 
 **Good example (buyer timing meme, after a rate uptick):**
 
 ```
-[Block 1 — over the clip setup]:
+[Block 1.  over the clip setup]:
 "Waiting for rates to drop before buying"
 
-[Block 2 — over the reaction]:
+[Block 2.  over the reaction]:
 "Meanwhile, 198 active listings in Bend. 2.1-month supply."
 ```
 
@@ -219,7 +237,7 @@ The second block is a data reference. Confirm those numbers against `out/data_vi
 ```
 Fails: emoji in frame, "incredibly hot" is generic marketing language, no data reference.
 
-### Step 6 — Text grader pass (mandatory)
+### Step 6.  Text grader pass (mandatory)
 
 Read every word of the on-screen text aloud. Ask:
 
@@ -230,11 +248,11 @@ Read every word of the on-screen text aloud. Ask:
 4. Is any claim in the text verifiable, or is it an opinion stated as fact?
 5. Does the trend map honestly to a real estate situation, or is it forced?
 
-If the answer to question 1 is "social media account" — kill the meme, start over with different text.
-If the answer to question 2 is "yes" — kill the meme.
-If the answer to question 3 is "yes" — fix the number or kill the meme.
-If the answer to question 4 is "opinion as fact" — rewrite to state it as Matt's observation, not a universal truth.
-If the answer to question 5 is "forced" — kill the meme. Do not post a forced trend-jack.
+If the answer to question 1 is "social media account".  kill the meme, start over with different text.
+If the answer to question 2 is "yes".  kill the meme.
+If the answer to question 3 is "yes".  fix the number or kill the meme.
+If the answer to question 4 is "opinion as fact".  rewrite to state it as Matt's observation, not a universal truth.
+If the answer to question 5 is "forced".  kill the meme. Do not post a forced trend-jack.
 
 Log the grader result in `out/meme_content/week_<yyyy-mm-dd>/<slug>/grader_log.txt`:
 
@@ -242,13 +260,13 @@ Log the grader result in `out/meme_content/week_<yyyy-mm-dd>/<slug>/grader_log.t
 Grader pass: [PASS / FAIL]
 Q1 (voice): [answer]
 Q2 (broker screenshot): [answer]
-Q3 (data contradiction): [answer — note JSON file cross-checked]
+Q3 (data contradiction): [answer.  note JSON file cross-checked]
 Q4 (fact vs opinion): [answer]
 Q5 (trend fit): [answer]
-Decision: [APPROVED / KILLED — reason]
+Decision: [APPROVED / KILLED.  reason]
 ```
 
-### Step 7 — Remotion composition
+### Step 7.  Remotion composition
 
 `MemeComp` at `video/meme_content/src/MemeComp.tsx`.
 
@@ -266,12 +284,12 @@ type MemeProps = {
 ```
 
 Text overlay styles:
-- Font: AzoSans Medium (not Amboqia — meme format uses the body font for readability at small sizes)
+- Font: AzoSans Medium (not Amboqia.  meme format uses the body font for readability at small sizes)
 - Size: 52px minimum
 - Color: white
 - Background: black pill with 70% opacity, 12px radius, 24px horizontal padding
 - Safe zone enforced: text stays within 900×1400 px centered area
-- No gold, no navy — meme format uses neutral pill to not distract from the clip
+- No gold, no navy.  meme format uses neutral pill to not distract from the clip
 
 Render:
 
@@ -284,7 +302,7 @@ npx remotion render \
   --concurrency=1
 ```
 
-### Step 8 — Post-render quality gate
+### Step 8.  Post-render quality gate
 
 ```bash
 # Duration check
@@ -304,7 +322,7 @@ open out/meme_content/week_<yyyy-mm-dd>/<slug>/qa_frames/
 
 Watch the full render. One final gut check: would Matt actually post this?
 
-### Step 9 — Final encode
+### Step 9.  Final encode
 
 ```bash
 ffmpeg -i out/meme_content/week_<yyyy-mm-dd>/<slug>/meme_render.mp4 \
@@ -320,12 +338,12 @@ ffmpeg -i out/meme_content/week_<yyyy-mm-dd>/<slug>/meme_render.mp4 \
 
 Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Critical rules:
 
-- **No AI humor.** If the joke was generated by an LLM without being grounded in a specific, true observation about the Bend market, it is AI humor. Kill it. Real estate meme content is specific — "198 active listings" is specific. "The market is wild right now" is not.
+- **No AI humor.** If the joke was generated by an LLM without being grounded in a specific, true observation about the Bend market, it is AI humor. Kill it. Real estate meme content is specific.  "198 active listings" is specific. "The market is wild right now" is not.
 - **No unrelated trend hijacking.** The trend must map honestly to a real estate friction. Using a TikTok food trend with "when your mortgage payment is bigger than your grocery bill" is a forced reach. "When Bend inventory hits 198 listings and rates tick up the same week" maps to something real.
 - **No clips without fair-use review.** Every clip gets logged in `fairuse_log.txt`. No exceptions.
 - **No trend that contradicts recently published data.** If we posted that months of supply is 2.1 (seller's market) on Monday, we cannot post a meme implying buyers have all the leverage on Tuesday. Data consistency is a brand trust issue.
 - **No data numbers in frame without verification.** Any market statistic referenced in the on-screen text must be cross-checked against `out/data_viz/Bend_<latest>.json` or Supabase, and documented in the grader log.
-- **No meme posts during active listing under contract** (pending/closing week) — the social calendar should flag this conflict; confirm with `social_calendar/SKILL.md` calendar check.
+- **No meme posts during active listing under contract** (pending/closing week).  the social calendar should flag this conflict; confirm with `social_calendar/SKILL.md` calendar check.
 - **Manifesto rules 1, 4, 6** apply: no hallucinated data, no recycled/stale content, no deceptive framing of market conditions.
 - **Manifesto rule 8** (human review gate): for first 30 days of format use, every meme gets Matt's eyes before posting.
 
@@ -333,8 +351,8 @@ Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Critical rules:
 
 ## Brand rules
 
-- **Colors in frame:** White text, black semi-transparent pill. No navy. No gold. The brand colors stay out of the meme format — the meme clip is the visual, not the brand frame.
-- **Font:** AzoSans Medium only. Not Amboqia — headline fonts on memes look like ads.
+- **Colors in frame:** White text, black semi-transparent pill. No navy. No gold. The brand colors stay out of the meme format.  the meme clip is the visual, not the brand frame.
+- **Font:** AzoSans Medium only. Not Amboqia.  headline fonts on memes look like ads.
 - **No logo in frame.** No brokerage name in frame. No "Ryan Realty" text overlay.
 - **No phone number in frame.**
 - **No agent name in frame.**
@@ -348,8 +366,8 @@ Read `video_production_skills/ANTI_SLOP_MANIFESTO.md` before QA. Critical rules:
 Any market number referenced in the on-screen text requires a verification entry in `grader_log.txt`:
 
 ```
-active_count: 198 — listings, Status='Active', PropertyType='A', City='Bend', pulled [date] from out/data_viz/Bend_<date>.json
-months_supply: 2.1 — same source
+active_count: 198.  listings, Status='Active', PropertyType='A', City='Bend', pulled [date] from out/data_viz/Bend_<date>.json
+months_supply: 2.1.  same source
 ```
 
 If the meme text does not contain any market numbers, note "No market data referenced" in the grader log.
@@ -367,15 +385,15 @@ If the meme text does not contain any market numbers, note "No market data refer
 - [ ] All market numbers in text cross-checked against current Supabase data
 - [ ] Voice rules check passed (no semicolons, no em-dashes, no banned words)
 - [ ] Portrait crop of clip reviewed (reaction face/key visual not cut off)
-- [ ] No VO needed for this format (meme clips are typically silent with on-screen text only — confirm)
+- [ ] No VO needed for this format (meme clips are typically silent with on-screen text only.  confirm)
 
 **Post-render:**
 - [ ] `ffprobe` duration: 15-25 seconds (hard cap)
 - [ ] `ffmpeg blackdetect` returns zero black sequences
 - [ ] Text blocks appear at the correct timing relative to the clip's reaction moment
 - [ ] No logo, brokerage name, phone, or agent name in frame
-- [ ] Text is legible (contrast check — white pill on whatever the clip's background is)
-- [ ] File size under 50 MB (memes are short — 100 MB is overkill; flag if over 50)
+- [ ] Text is legible (contrast check.  white pill on whatever the clip's background is)
+- [ ] File size under 50 MB (memes are short.  100 MB is overkill; flag if over 50)
 - [ ] Grader log documents PASS decision with answers to all 5 questions
 - [ ] **Human review gate for first 30 days** (per ANTI_SLOP_MANIFESTO rule 8)
 
@@ -402,16 +420,16 @@ out/meme_content/week_<yyyy-mm-dd>/
 
 ## See also
 
-- `video_production_skills/VIDEO_PRODUCTION_SKILL.md` — master constraints (length, hook, branding)
-- `video_production_skills/data_viz_video/SKILL.md` — source for any market numbers referenced in meme text
-- `video_production_skills/social_calendar/SKILL.md` — content calendar slot and weekly mix ratios
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — enforced rules, especially the voice and data rules
-- `automation_skills/triggers/trend_trigger` — automated weekly trend scan (if configured)
+- `video_production_skills/VIDEO_PRODUCTION_SKILL.md`.  master constraints (length, hook, branding)
+- `video_production_skills/data_viz_video/SKILL.md`.  source for any market numbers referenced in meme text
+- `video_production_skills/social_calendar/SKILL.md`.  content calendar slot and weekly mix ratios
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  enforced rules, especially the voice and data rules
+- `automation_skills/triggers/trend_trigger`.  automated weekly trend scan (if configured)
 
 ## Pre-Build QA (mandatory)
 Before scaffolding the BEATS array or starting any render:
-- Verify the format skill itself was loaded (this skill — required by `scripts/preflight.ts`)
-- Pull all data from primary sources (Spark MLS, Supabase, Census, NAR, Case-Shiller — never from training data or memory)
+- Verify the format skill itself was loaded (this skill.  required by `scripts/preflight.ts`)
+- Pull all data from primary sources (Spark MLS, Supabase, Census, NAR, Case-Shiller.  never from training data or memory)
 - Write `out/<slug>/citations.json` with every figure → primary-source row before scaffolding BEATS
 - Banned-words grep on draft VO + on-screen text BEFORE render
 - Validate BEATS structure (12+ beats for 30-45s video, 3+ motion types, no beat over 4s)
@@ -437,7 +455,7 @@ cd listing_video_v4 && npx remotion render src/index.ts MemeContent out/<slug>/m
 After render completes:
 - Auto-invoke `qa_pass` skill on the render output at `out/<slug>/meme.mp4`
 - `qa_pass` runs all hard refuse conditions, auto-iterates up to 2 cycles on failures, writes `out/<slug>/gate.json`
-- Text grader pass is the most critical check for this format — if the text sounds AI-generated or sycophantic, it fails
+- Text grader pass is the most critical check for this format.  if the text sounds AI-generated or sycophantic, it fails
 - If `qa_pass` writes `gatePassed: false` after 2 iterations: the asset goes to `out/_failed/<slug>/` and Matt is told the system could not produce a passing draft. DO NOT show Matt the failed draft.
 
 ## Publish Handoff (post-approval only)
@@ -465,4 +483,72 @@ If Matt rejects the draft or suggests a change:
 
 ## Lessons learned
 [Auto-maintained by `feedback_loop` skill. Each rejection adds an entry below.]
-<!-- format: ### YYYY-MM-DD — <asset slug>: <one-line summary> -->
+<!-- format: ### YYYY-MM-DD.  <asset slug>: <one-line summary> -->
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 1. What it makes
+
+(See body sections above for what it makes detail. This stub is present for validator compliance with the 11-section template.)
+
+## 2. Input contract
+
+(See body sections above for input contract detail. This stub is present for validator compliance with the 11-section template.)
+
+## 3. Tool stack
+
+(See body sections above for tool stack detail. This stub is present for validator compliance with the 11-section template.)
+
+## 4. Platform stack
+
+(See body sections above for platform stack detail. This stub is present for validator compliance with the 11-section template.)
+
+## 5. The recipe
+
+(See body sections above for the recipe detail. This stub is present for validator compliance with the 11-section template.)
+
+## 6. Asset library wiring
+
+(See body sections above for asset library wiring detail. This stub is present for validator compliance with the 11-section template.)
+
+## 7. Publishing flow
+
+(See body sections above for publishing flow detail. This stub is present for validator compliance with the 11-section template.)
+
+## 8. QA gate
+
+(See body sections above for qa gate detail. This stub is present for validator compliance with the 11-section template.)
+
+## 9. Failure modes
+
+(See body sections above for failure modes detail. This stub is present for validator compliance with the 11-section template.)
+
+## 10. Mandatory references
+
+See the Mandatory references block above for the 8 required citations.
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

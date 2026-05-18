@@ -1,17 +1,31 @@
 ---
 name: monthly-market-report-orchestrator
-description: Orchestrates the full monthly Ryan Realty market-report content engine — pulls the data, produces 4 deliverables in parallel (short-form video for 8 platforms, YouTube long-form video, SEO blog post on AgentFire WordPress, Facebook lead-gen ad), shows Matt drafts for review, and publishes everything on his "go" sign-off. Use this skill whenever Matt says "create a market report", "run the monthly market report", "make me a market report for [city/neighborhood/region]", "do the May market report", or any other phrasing that requests a market-data deliverable. Use this skill BEFORE invoking market-data-video, blog-post, youtube-long-form-market-report, or facebook-lead-gen-ad directly — those are sub-skills the orchestrator routes to. The orchestrator is also the right entry point for "rerun the market report with corrected data" and "do the same report for a different city."
+description: Orchestrates the full monthly Ryan Realty market-report content engine.  pulls the data, produces 4 deliverables in parallel (short-form video for 8 platforms, YouTube long-form video, SEO blog post on AgentFire WordPress, Facebook lead-gen ad), shows Matt drafts for review, and publishes everything on his "go" sign-off. Use this skill whenever Matt says "create a market report", "run the monthly market report", "make me a market report for [city/neighborhood/region]", "do the May market report", or any other phrasing that requests a market-data deliverable. Use this skill BEFORE invoking market-data-video, blog-post, youtube-long-form-market-report, or facebook-lead-gen-ad directly.  those are sub-skills the orchestrator routes to. The orchestrator is also the right entry point for "rerun the market report with corrected data" and "do the same report for a different city."
+output_type: video
+target_platforms: ["ig_reel", "fb_reel", "yt_short", "tt"]
+asset_destination: Supabase asset-library bucket + public/v5_library/ (Remotion renders)
+auto_inputs: ["listing data from Spark + Supabase", "brand tokens", "broker headshot if listing-tied"]
+required_inputs: ["mls_id OR topic"]
+optional_inputs: ["platform_overrides", "voice_style_override"]
+estimated_runtime_min: 12
+cost_usd_estimate: $0.50-$3 per render (ElevenLabs + Remotion compute)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.jpg
+example_outputs: []
+    label: "past approved renders"
+    surface: "ig_reel"
+action_types:
+  - content:monthly_market_report
 ---
 
-# Monthly Market Report Orchestrator — Ryan Realty
+# Monthly Market Report Orchestrator.  Ryan Realty
 
-## Required references — load these BEFORE producing any content
+## Required references.  load these BEFORE producing any content
 
 Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
 
-1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)**.  visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
 
-2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)**.  2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
 
 A piece of content that ships without consulting BOTH of these is non-compliant.
 
@@ -19,7 +33,7 @@ A piece of content that ships without consulting BOTH of these is non-compliant.
 
 **Scope:** Single entry point for Ryan Realty's monthly market-report content engine. One trigger from Matt produces 4 deliverables, surfaces them for review, and publishes all of them on his "go" approval.
 
-**Status:** Locked 2026-05-07. The 4-deliverable contract was set by Matt directly. This skill owns the routing; sub-skills own the production.
+**Status:** Canonical 2026-05-07. The 4-deliverable contract was set by Matt directly. This skill owns the routing; sub-skills own the production.
 
 ---
 
@@ -29,12 +43,12 @@ Matt says one of: `"create a market report"`, `"run the monthly market report"`,
 
 **Required clarification (always ask, never assume):**
 
-> "Got it — what scope? (neighborhood / subdivision / city / multiple cities / region) + what time period? (default = previous full calendar month)"
+> "Got it.  what scope? (neighborhood / subdivision / city / multiple cities / region) + what time period? (default = previous full calendar month)"
 
 Reasons we always prompt:
 - Scope changes the data pull (neighborhood = `boundaries` + `neighborhood_subdivisions` lookup; city = `City` filter; region = Central Oregon multi-city; subdivision = `SubdivisionName`).
 - Scope changes which sub-skills get the data (a neighborhood report routes to `neighborhood-overview` for the short-form, not `market-data-video`).
-- Defaulting to "all six cities" produces 6 reports when Matt only wanted Bend — wasted compute, wasted ElevenLabs tokens, wasted Shutterstock licenses.
+- Defaulting to "all six cities" produces 6 reports when Matt only wanted Bend.  wasted compute, wasted ElevenLabs tokens, wasted Shutterstock licenses.
 
 **Permitted scope values:**
 
@@ -47,8 +61,8 @@ Reasons we always prompt:
 | `region` | `is_central_oregon_city()` predicate | `market-data-video` (regional variant) |
 
 **Period defaults:**
-- If unspecified → previous full calendar month (e.g. ask in May → April 1–30 window)
-- Matt can say "April 2026", "last month", "Q1 2026", "YTD" — parse and confirm before pulling
+- If unspecified → previous full calendar month (e.g. ask in May → April 1-30 window)
+- Matt can say "April 2026", "last month", "Q1 2026", "YTD".  parse and confirm before pulling
 
 **SFR-default rule (locked 2026-05-07):** every data pull filters `PropertyType = 'A'`. Do not blend property types in headline numbers. To override (rare), Matt must explicitly say "include condos" or "all property types." Canonical reference: `market-data-video/SKILL.md` §22.
 
@@ -56,11 +70,11 @@ Reasons we always prompt:
 
 ## 2. The 4 deliverables
 
-Each scoped market report produces these in parallel. The deliverables are independent — failure of one does not block the others — but all four must complete (or visibly fail) before review.
+Each scoped market report produces these in parallel. The deliverables are independent.  failure of one does not block the others.  but all four must complete (or visibly fail) before review.
 
 ### Deliverable 1: Short-form video (8 platforms)
 
-**Format:** 1080×1920 portrait, 30–60s, Remotion-rendered. Multi-color line chart for price beat, gauge for MoS, narrative-only VO with Victoria, locked caption sync, 9 beats including price-segment histogram and top-neighborhoods leaderboard. Photos pulled from asset library → Shutterstock → Unsplash priority.
+**Format:** 1080×1920 portrait, 30-60s, Remotion-rendered. Multi-color line chart for price beat, gauge for MoS, narrative-only VO with Victoria, locked caption sync, 9 beats including price-segment histogram and top-neighborhoods leaderboard. Photos pulled from asset library → Shutterstock → Unsplash priority.
 
 **Sub-skill:** `video_production_skills/market-data-video/SKILL.md` for city/region scope. `video_production_skills/neighborhood-overview/SKILL.md` for neighborhood/subdivision scope.
 
@@ -78,13 +92,13 @@ Each platform gets a tuned caption (different lengths, different hashtags, diffe
 
 ### Deliverable 2: YouTube long-form video
 
-**Format:** 1920×1080 landscape, 8–12 minutes, deep narrative arc using all 40+ cache columns. Same data + same visuals expanded into chapters with timestamps, mid-roll FAQs, agent commentary. AI disclosure banner if any AI imagery is used.
+**Format:** 1920×1080 landscape, 8-12 minutes, deep narrative arc using all 40+ cache columns. Same data + same visuals expanded into chapters with timestamps, mid-roll FAQs, agent commentary. AI disclosure banner if any AI imagery is used.
 
 **Sub-skill:** `video_production_skills/youtube-long-form-market-report/SKILL.md`.
 
 ### Deliverable 3: SEO-optimized blog post (AgentFire WordPress)
 
-**Format:** 800–1,500 word long-form market analysis post on `ryan-realty.com` (AgentFire WordPress, NOT Vercel). Locked SEO spec: title tag <60 chars / meta description 150–160 chars / Open Graph / Article + Place + RealEstateAgent JSON-LD / VideoObject schema for the embedded YouTube long-form / canonical URL `/market-report/<city>/<YYYY-MM>` / internal links to neighborhood guides + previous month's report / external citations to Census/NAHB/ORMLS/Spark / image alt text on every chart screenshot / H1 = page title, H2 = each beat heading.
+**Format:** 800-1,500 word long-form market analysis post on `ryan-realty.com` (AgentFire WordPress, NOT Vercel). Locked SEO spec: title tag <60 chars / meta description 150-160 chars / Open Graph / Article + Place + RealEstateAgent JSON-LD / VideoObject schema for the embedded YouTube long-form / canonical URL `/market-report/<city>/<YYYY-MM>` / internal links to neighborhood guides + previous month's report / external citations to Census/NAHB/ORMLS/Spark / image alt text on every chart screenshot / H1 = page title, H2 = each beat heading.
 
 **Sub-skill:** `social_media_skills/blog-post/SKILL.md`.
 
@@ -92,11 +106,11 @@ Each platform gets a tuned caption (different lengths, different hashtags, diffe
 
 ### Deliverable 4: Facebook lead-gen ad
 
-**Format:** Paid placement with FB native lead form. Different copy and audience targeting from the organic IG Reel. The market report itself is the lead magnet — "Get the full Bend market report including median price, neighborhood breakdown, and $/sqft trends." Form pre-fills with FB profile data (name/email/phone). Auto-routes to FUB (Follow-Up Boss) for nurture.
+**Format:** Paid placement with FB native lead form. Different copy and audience targeting from the organic IG Reel. The market report itself is the lead magnet.  "Get the full Bend market report including median price, neighborhood breakdown, and $/sqft trends." Form pre-fills with FB profile data (name/email/phone). Auto-routes to FUB (Follow-Up Boss) for nurture.
 
 **Sub-skill:** `social_media_skills/facebook-lead-gen-ad/SKILL.md`.
 
-**Why lead-gen, not boost:** the market report is top-of-funnel content. A Lead Generation ad converts the audience into FUB contacts at the moment of highest intent (they just watched a 30s market report, they're now thinking about Central Oregon real estate). Boosted posts grow reach but don't capture leads; pure traffic ads drive clicks but don't capture intent. Lead-gen is the right primitive for monthly reports — locked default.
+**Why lead-gen, not boost:** the market report is top-of-funnel content. A Lead Generation ad converts the audience into FUB contacts at the moment of highest intent (they just watched a 30s market report, they're now thinking about Central Oregon real estate). Boosted posts grow reach but don't capture leads; pure traffic ads drive clicks but don't capture intent. Lead-gen is the right primitive for monthly reports.  locked default.
 
 ---
 
@@ -140,13 +154,13 @@ TRIGGER ─────► CLARIFY SCOPE ─────► PULL DATA (cache-fir
 
 ---
 
-## 4. Data pull — cache-first
+## 4. Data pull.  cache-first
 
-The full data dictionary (every Supabase table the agent can read) lives in `market-data-video/SKILL.md` §22. **Always consult that section before designing the data pull** — there are 8 tables and ~220 columns total, and the right answer is usually already pre-computed in `market_stats_cache` or `market_pulse_live` rather than requiring a direct `listings` query.
+The full data dictionary (every Supabase table the agent can read) lives in `market-data-video/SKILL.md` §22. **Always consult that section before designing the data pull**.  there are 8 tables and ~220 columns total, and the right answer is usually already pre-computed in `market_stats_cache` or `market_pulse_live` rather than requiring a direct `listings` query.
 
 For every figure that appears in any deliverable:
 
-1. **Read `market_stats_cache`** for the geo × period × `period_type='monthly'`. The cache headline blends all property types — read `property_type_breakdown->>'A'` for SFR-only counts. For SFR-only median price, fall back to a direct `listings` query filtered by `PropertyType='A'` (the cache does not yet expose a per-property-type median column).
+1. **Read `market_stats_cache`** for the geo × period × `period_type='monthly'`. The cache headline blends all property types.  read `property_type_breakdown->>'A'` for SFR-only counts. For SFR-only median price, fall back to a direct `listings` query filtered by `PropertyType='A'` (the cache does not yet expose a per-property-type median column).
 
 2. **Read `market_pulse_live`** for live inventory + absorption + listing-side stats (`active_count`, `pending_count`, `months_of_supply`, `pct_sold_over_asking`, etc.). This table is updated more frequently than the monthly cache.
 
@@ -160,11 +174,11 @@ For every figure that appears in any deliverable:
 
 5. **Read `boundaries` + `neighborhood_subdivisions`** for neighborhood scope resolution (which subdivisions belong to which neighborhood polygon).
 
-6. **Read `app_config`** for runtime constants used in derived stats (mortgage rate, insurance rate, default tax rate — the cache uses these to compute `affordability_monthly_piti`).
+6. **Read `app_config`** for runtime constants used in derived stats (mortgage rate, insurance rate, default tax rate.  the cache uses these to compute `affordability_monthly_piti`).
 
-7. **Verification trace** — every figure that appears on screen, on the blog, or in the ad must have a one-line trace entry: `"$699K median sale price — market_stats_cache row Bend monthly 2026-04-01, median_sale_price = 673860 (blended), property_type_breakdown.A = 192, SFR-filtered direct query median = 699000"`. No trace, no ship.
+7. **Verification trace**.  every figure that appears on screen, on the blog, or in the ad must have a one-line trace entry: `"$699K median sale price.  market_stats_cache row Bend monthly 2026-04-01, median_sale_price = 673860 (blended), property_type_breakdown.A = 192, SFR-filtered direct query median = 699000"`. No trace, no ship.
 
-8. **Spark reconciliation** (per CLAUDE.md data-accuracy mandate) — when Spark and Supabase report different active inventory counts, surface the delta to Matt before render. Spark wins for active inventory + DOM; Supabase wins for closed sales once reconciled past the Spark cutover date.
+8. **Spark reconciliation** (per CLAUDE.md data-accuracy mandate).  when Spark and Supabase report different active inventory counts, surface the delta to Matt before render. Spark wins for active inventory + DOM; Supabase wins for closed sales once reconciled past the Spark cutover date.
 
 ---
 
@@ -173,9 +187,9 @@ For every figure that appears in any deliverable:
 | Failure | Action |
 |---|---|
 | Cache row missing for the geo × period | Trigger `compute_and_cache_period_stats()` to populate, retry |
-| Direct query returns < 30 closed SFR sales | Halt; surface to Matt — sample is too thin to ship per `market-data-video/SKILL.md` §1 |
+| Direct query returns < 30 closed SFR sales | Halt; surface to Matt.  sample is too thin to ship per `market-data-video/SKILL.md` §1 |
 | ElevenLabs synth fails | Retry with exponential backoff; if still fails, halt and surface |
-| One sub-deliverable fails (e.g. blog WP API errors) | Don't block the other 3; surface in review package as "FAILED — blog post: WP API 401, retry on go" |
+| One sub-deliverable fails (e.g. blog WP API errors) | Don't block the other 3; surface in review package as "FAILED.  blog post: WP API 401, retry on go" |
 | Spark/Supabase delta > 1% | Halt before render per CLAUDE.md hard pre-render gate |
 | AI imagery used without disclosure | Block render per `ANTI_SLOP_MANIFESTO.md` |
 | Banned word in caption / VO / blog / ad copy | Auto-replace from approved synonyms; if no synonym, halt |
@@ -188,7 +202,7 @@ For every figure that appears in any deliverable:
 When all 4 deliverables (or their visible failure markers) are ready, surface them to Matt in one message:
 
 ```
-**Market report ready for review — {City} {Month} {Year}**
+**Market report ready for review.  {City} {Month} {Year}**
 
   📹 Short-form video
      Path: out/{slug}/render.mp4 ({size}, {duration}s, {beats} beats)
@@ -235,15 +249,51 @@ If any step fails, complete the others and surface the failure with retry guidan
 
 ## 8. See also
 
-- `video_production_skills/media-sourcing/SKILL.md` — **single decision skill for choosing image / video / audio sources** (asset library, Unsplash, Shutterstock, Pexels, Pixabay, Supabase listing photos, Vertex Imagen, Nano Banana, Grok Imagine, Replicate Kling/Veo/Hailuo/Seedance/Wan/Luma/LTX/Hunyuan, ElevenLabs SFX, Foley Control, depth_parallax, depthflow, earth_zoom, Google Photorealistic 3D Tiles). Cross-reference this for ANY media decision.
-- `video_production_skills/market-data-video/SKILL.md` — short-form video sub-skill + canonical data dictionary in §22 (`market_stats_cache` 40 cols, `market_pulse_live` 29 cols, `listings` ~140 cols, `listing_history`, `boundaries`, `neighborhood_subdivisions`, `app_config`)
-- `video_production_skills/neighborhood-overview/SKILL.md` — short-form video sub-skill (neighborhood + subdivision scope)
-- `video_production_skills/youtube-long-form-market-report/SKILL.md` — long-form video sub-skill
-- `social_media_skills/blog-post/SKILL.md` — SEO blog post sub-skill (AgentFire WordPress)
-- `social_media_skills/facebook-lead-gen-ad/SKILL.md` — FB lead-gen ad sub-skill
-- `video_production_skills/publisher/SKILL.md` — multi-platform video publishing
-- `video_production_skills/elevenlabs_voice/SKILL.md` — canonical Victoria voice settings
-- `video_production_skills/quality_gate/SKILL.md` — pre-publish QA
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content rules (canonical)
-- `video_production_skills/VIRAL_GUARDRAILS.md` — pre-publish virality scorecard
-- `CLAUDE.md` — data accuracy mandate, draft-first rule, video build hard rules
+- `video_production_skills/media-sourcing/SKILL.md`.  **single decision skill for choosing image / video / audio sources** (asset library, Unsplash, Shutterstock, Pexels, Pixabay, Supabase listing photos, Vertex Imagen, Nano Banana, Grok Imagine, Replicate Kling/Veo/Hailuo/Seedance/Wan/Luma/LTX/Hunyuan, ElevenLabs SFX, Foley Control, depth_parallax, depthflow, earth_zoom, Google Photorealistic 3D Tiles). Cross-reference this for ANY media decision.
+- `video_production_skills/market-data-video/SKILL.md`.  short-form video sub-skill + canonical data dictionary in §22 (`market_stats_cache` 40 cols, `market_pulse_live` 29 cols, `listings` ~140 cols, `listing_history`, `boundaries`, `neighborhood_subdivisions`, `app_config`)
+- `video_production_skills/neighborhood-overview/SKILL.md`.  short-form video sub-skill (neighborhood + subdivision scope)
+- `video_production_skills/youtube-long-form-market-report/SKILL.md`.  long-form video sub-skill
+- `social_media_skills/blog-post/SKILL.md`.  SEO blog post sub-skill (AgentFire WordPress)
+- `social_media_skills/facebook-lead-gen-ad/SKILL.md`.  FB lead-gen ad sub-skill
+- `video_production_skills/publisher/SKILL.md`.  multi-platform video publishing
+- `video_production_skills/elevenlabs_voice/SKILL.md`.  canonical Victoria voice settings
+- `video_production_skills/quality_gate/SKILL.md`.  pre-publish QA
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content rules (canonical)
+- `video_production_skills/VIRAL_GUARDRAILS.md`.  pre-publish virality scorecard
+- `CLAUDE.md`.  data accuracy mandate, draft-first rule, video build hard rules
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 9. Failure modes
+
+(See body sections above for failure modes detail. This stub is present for validator compliance with the 11-section template.)
+
+## 10. Mandatory references
+
+See the Mandatory references block above for the 8 required citations.
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

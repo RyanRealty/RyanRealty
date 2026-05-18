@@ -56,6 +56,11 @@ import { auditCRM } from './audit-crm'
 import { generateInsightSummary, InsightSummary } from './diagnose'
 import { gatherPlatformTrends, PlatformTrendsReport } from './platform-trends'
 import type { Channel } from './snapshot'
+import {
+  gatherPerformanceBias,
+  applyBiasToOpportunities,
+  type PerformanceBiasReport,
+} from './performance-bias'
 
 // ---------------------------------------------------------------------------
 // Supabase client
@@ -147,8 +152,14 @@ interface RankedOpportunity {
   recommended_action: string
   /** north_star_weight=2 when the opportunity's area relates to qualified_seller_leads. */
   north_star_weight: 1 | 2
-  /** Final ranking score: severity_score * north_star_weight */
+  /** Final ranking score: severity_score * north_star_weight, then multiplied by bias_multiplier. */
   rank_score: number
+  /**
+   * Performance-bias multiplier applied in synthesizeOpportunities.
+   * 1.0 = no historical data or neutral. > 1.0 = winning format boost.
+   * < 1.0 = under-performing format penalty.
+   */
+  bias_multiplier?: number
   /** Raw metadata for brief construction. */
   meta: Record<string, unknown>
 }
@@ -165,6 +176,8 @@ export interface SignalBundle {
   cadenceGaps: CadenceGap[]
   activeListingNeeds: ActiveListingNeed[]
   auditFindings: AuditFindingsSnapshot | null
+  /** Historical post-performance bias report. Empty (total_posts_analyzed=0) when no data exists. */
+  performanceBias: PerformanceBiasReport
 }
 
 /**
@@ -667,7 +680,24 @@ export async function gatherSignals(asOfDate: string, windowDays: number = WINDO
     return null
   })
 
-  const [websiteAudit, adsAudit, crmAudit, insightResults, platformTrends, competitorRows, cadenceGaps, activeListingNeeds, auditFindings] =
+  // Performance bias — reads last 30 days of content_performance to weight
+  // winning formats upward in opportunity ranking. Returns an empty report
+  // (no-op) when no historical data exists or on query error.
+  const emptyBiasReport: PerformanceBiasReport = {
+    computed_at: new Date().toISOString(),
+    window_days: 30,
+    total_posts_analyzed: 0,
+    winners: [],
+    losers: [],
+    format_bias_map: {},
+    platform_bias_map: {},
+  }
+  const performanceBiasPromise = gatherPerformanceBias(supabase).catch((e) => {
+    console.error('gatherSignals performanceBias:', e instanceof Error ? e.message : String(e))
+    return emptyBiasReport
+  })
+
+  const [websiteAudit, adsAudit, crmAudit, insightResults, platformTrends, competitorRows, cadenceGaps, activeListingNeeds, auditFindings, performanceBias] =
     await Promise.all([
       auditWebsite(asOfDate, windowDays).catch((e) => {
         console.error('gatherSignals auditWebsite:', e instanceof Error ? e.message : String(e))
@@ -698,11 +728,12 @@ export async function gatherSignals(asOfDate: string, windowDays: number = WINDO
       cadencePromise,
       listingNeedsPromise,
       auditFindingsPromise,
+      performanceBiasPromise,
     ])
 
   const channelInsights = insightResults.filter((i): i is InsightSummary => i !== null)
 
-  return { asOfDate, websiteAudit, adsAudit, crmAudit, channelInsights, platformTrends, competitorRows, cadenceGaps, activeListingNeeds, auditFindings }
+  return { asOfDate, websiteAudit, adsAudit, crmAudit, channelInsights, platformTrends, competitorRows, cadenceGaps, activeListingNeeds, auditFindings, performanceBias }
 }
 
 // ---------------------------------------------------------------------------
@@ -896,7 +927,29 @@ export function synthesizeOpportunities(signals: SignalBundle): RankedOpportunit
     })
   }
 
-  // Rank descending by rank_score, then severity, then source priority
+  // Apply performance bias BEFORE the final sort. applyBiasToOpportunities
+  // multiplies rank_score by the format-level bias_score from the last 30 days
+  // of content_performance. Formats with strong north-star attribution float up;
+  // formats that historically under-performed float down. No-op when there is no
+  // historical data (format_bias_map is empty).
+  //
+  // RankedOpportunity does not have a .format field directly. The bias is applied
+  // via the recommended_action-to-format mapping that mapOpportunityToBriefs uses.
+  // We expose a lightweight proxy: opportunities whose meta.format matches a key
+  // in format_bias_map receive the multiplier. Opportunities without a meta.format
+  // receive bias_multiplier=1.0 (no change). This keeps the bias additive and
+  // backward-compatible.
+  if (signals.performanceBias.total_posts_analyzed > 0) {
+    const { format_bias_map } = signals.performanceBias
+    for (const opp of opps) {
+      const fmt = (opp.meta.format as string | undefined) ?? ''
+      const multiplier = format_bias_map[fmt] ?? 1.0
+      opp.bias_multiplier = multiplier
+      opp.rank_score = opp.rank_score * multiplier
+    }
+  }
+
+  // Rank descending by rank_score (now bias-adjusted), then severity, then source priority
   const sourcePriority: Record<RankedOpportunity['source'], number> = {
     'audit-crm': 0, 'audit-ads': 1, 'audit-website': 2, 'competitor': 3,
     'platform-trend': 4, 'diagnose': 5, 'cadence': 6, 'listing_coverage': 7,
@@ -981,6 +1034,10 @@ export function applyBrandVoice(brief: Pick<GeneratedBrief, 'hook' | 'body' | 'c
  *
  * Returns an empty array for opportunities that should NOT generate a brief
  * (e.g., page leaks — those are CRO tasks logged as marketing_decisions only).
+ *
+ * When signals.performanceBias has data, each brief's predicted_outcome.rationale
+ * is annotated with the bias score for that format so Matt can see which formats
+ * the brain is actively boosting or suppressing.
  */
 export function mapOpportunityToBriefs(
   opportunity: RankedOpportunity,
@@ -2044,6 +2101,25 @@ export function mapOpportunityToBriefs(
     }))
   }
 
+  // Append performance bias annotation to predicted_outcome.rationale when
+  // the brain has historical data for the brief's format. This surfaces the
+  // learning-loop signal in Matt's review so format choices are transparent.
+  const { format_bias_map, total_posts_analyzed, window_days } = signals.performanceBias
+  if (total_posts_analyzed > 0) {
+    for (const brief of briefs) {
+      const biasScore = format_bias_map[brief.format]
+      if (biasScore !== undefined && biasScore !== 1.0) {
+        const pctAbove = ((biasScore - 1.0) * 100).toFixed(1)
+        const direction = biasScore > 1.0 ? 'above' : 'below'
+        const biasNote = `Recent performance bias: ${brief.format} showed ${Math.abs(Number(pctAbove))}% ${direction} baseline over the last ${window_days} days (bias score ${biasScore.toFixed(3)}, ${total_posts_analyzed} posts analyzed).`
+        brief.predicted_outcome = {
+          ...brief.predicted_outcome,
+          rationale: `${brief.predicted_outcome.rationale} ${biasNote}`,
+        }
+      }
+    }
+  }
+
   // Apply brand voice validation to every brief
   return briefs.map((brief): GeneratedBrief => ({
     ...brief,
@@ -2062,11 +2138,16 @@ export function mapOpportunityToBriefs(
  * with decision_type='audit_finding' only.
  *
  * When dryRun=true, skips all DB writes and returns the would-be inserts.
+ *
+ * @param performanceBias - Optional bias report from gatherPerformanceBias.
+ *   When provided, a summary is included in data_observed for traceability.
+ *   Omitting it keeps all existing callers working unchanged.
  */
 export async function persistBriefs(
   briefs: GeneratedBrief[],
   opportunities: RankedOpportunity[],
-  opts: GenerateOptions = {}
+  opts: GenerateOptions = {},
+  performanceBias?: PerformanceBiasReport
 ): Promise<PersistResult> {
   if (opts.dryRun || briefs.length === 0) {
     return { inserted: 0, ids: [], errors: [] }
@@ -2249,6 +2330,16 @@ export async function persistBriefs(
           severity: matchedOpp.severity,
           headline: matchedOpp.headline,
         } : null,
+        performance_bias_applied: performanceBias && performanceBias.total_posts_analyzed > 0
+          ? {
+              computed_at: performanceBias.computed_at,
+              window_days: performanceBias.window_days,
+              total_posts_analyzed: performanceBias.total_posts_analyzed,
+              winner_count: performanceBias.winners.length,
+              loser_count: performanceBias.losers.length,
+              format_bias_map: performanceBias.format_bias_map,
+            }
+          : null,
       },
       rules_cited: brief.voice_validation.violations.length > 0
         ? brief.voice_validation.violations
@@ -2316,7 +2407,9 @@ export async function generateWeeklyBriefs(
   // Step 5: persist. If any insert errors, stamp them onto the briefs'
   // generation_reason so the caller (weekly-cycle) can surface them in
   // the report's errors array without changing the return type.
-  const persist = await persistBriefs(allBriefs, usedOpportunities, opts)
+  // Pass the bias report so each marketing_decisions row records which
+  // formats were boosted or penalized during this cycle.
+  const persist = await persistBriefs(allBriefs, usedOpportunities, opts, signals.performanceBias)
   if (persist.errors.length > 0) {
     const errorBlob = persist.errors.join(' || ')
     for (const b of allBriefs) {

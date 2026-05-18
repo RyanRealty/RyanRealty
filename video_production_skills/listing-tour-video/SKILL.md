@@ -1,17 +1,31 @@
 ---
 name: listing-tour-video
 description: Use this skill whenever the user says "create a listing video for this address", "make a listing tour", "produce a property video for [address]", "MLS video for [ListingKey]", "coming-soon video for this listing", "property showcase video", "re-render the listing video with new photos", or "generate both MLS and branded cuts". For short 40-48s viral social reels use listing_reveal instead. Produce a fully automated 60-90s branded listing tour video from a single MLS ListingKey, with ElevenLabs VO, Google 3D aerial establishing shot, Wan 2.7 i2v animated hero photos, and Remotion render.
+output_type: video
+target_platforms: ["ig_reel", "fb_reel", "yt_short", "tt"]
+asset_destination: Supabase asset-library bucket + public/v5_library/ (Remotion renders)
+auto_inputs: ["listing data from Spark + Supabase", "brand tokens", "broker headshot if listing-tied"]
+required_inputs: ["mls_id OR topic"]
+optional_inputs: ["platform_overrides", "voice_style_override"]
+estimated_runtime_min: 12
+cost_usd_estimate: $0.50-$3 per render (ElevenLabs + Remotion compute)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.jpg
+example_outputs: []
+    label: "past approved renders"
+    surface: "ig_reel"
+action_types:
+  - content:listing_video
 ---
 
-# Listing Tour Video Skill — Ryan Realty
+# Listing Tour Video Skill.  Ryan Realty
 
-## Required references — load these BEFORE producing any content
+## Required references.  load these BEFORE producing any content
 
 Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
 
-1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)**.  visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
 
-2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../../social_media_skills/platform-best-practices/SKILL.md)**.  2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
 
 A piece of content that ships without consulting BOTH of these is non-compliant.
 
@@ -21,15 +35,15 @@ A piece of content that ships without consulting BOTH of these is non-compliant.
 
 These are non-negotiable. A listing video that violates any of these does not ship.
 
-1. **No black text cards interrupting photo flow.** Photos run continuously — captions overlay the photo, they do not replace it. The video must NEVER show a frame that is text-on-black-or-navy except the final 2-3s end card. If you're rendering a beat where the VO says "Three bedrooms" — show the bedroom photo with "Three bedrooms" overlay. Don't cut to a black card.
+1. **No black text cards interrupting photo flow.** Photos run continuously.  captions overlay the photo, they do not replace it. The video must NEVER show a frame that is text-on-black-or-navy except the final 2-3s end card. If you're rendering a beat where the VO says "Three bedrooms".  show the bedroom photo with "Three bedrooms" overlay. Don't cut to a black card.
 
-2. **No dollar amounts spoken in VO.** Price is visual data only — show it on screen, never say it. ("Listed at one million two hundred twenty-five thousand" is banned in voiceover. The number can appear in an on-screen pill / end-card stat strip.)
+2. **No dollar amounts spoken in VO.** Price is visual data only.  show it on screen, never say it. ("Listed at one million two hundred twenty-five thousand" is banned in voiceover. The number can appear in an on-screen pill / end-card stat strip.)
 
-3. **`eleven_turbo_v2_5` model — never `eleven_v3` for listing videos.** IPA phoneme tags are silently SKIPPED on v3. Tumalo must pronounce as TUM-uh-low (`ˈtʌm.ə.loʊ`), Deschutes as duh-shoots (`dəˈʃuːts`) — only turbo_v2_5 honors the phoneme tags.
+3. **`eleven_turbo_v2_5` model.  never `eleven_v3` for listing videos.** IPA phoneme tags are silently SKIPPED on v3. Tumalo must pronounce as TUM-uh-low (`ˈtʌm.ə.loʊ`), Deschutes as duh-shoots (`dəˈʃuːts`).  only turbo_v2_5 honors the phoneme tags.
 
-4. **Opening hook frame (frames 0-30 = first 1s):** First frame is a photo (NOT logo, NOT text-only card) — already in motion at frame 0 (slow push-in / pan engaged). On-screen text overlay appears by frame 12-18 (0.4-0.6s) with the *hook* — neighborhood + key differentiator. For Tumalo example: "Tumalo, OR · Cascade views · 2.28 acres" Geist 500 cream pill bottom-third, NOT just the address. The opening tile is the social-feed thumbnail — it must read at 90×160 thumbnail size and make people stop scrolling.
+4. **Opening hook frame (frames 0-30 = first 1s):** First frame is a photo (NOT logo, NOT text-only card).  already in motion at frame 0 (slow push-in / pan engaged). On-screen text overlay appears by frame 12-18 (0.4-0.6s) with the *hook*.  neighborhood + key differentiator. For Tumalo example: "Tumalo, OR · Cascade views · 2.28 acres" Geist 500 cream pill bottom-third, NOT just the address. The opening tile is the social-feed thumbnail.  it must read at 90×160 thumbnail size and make people stop scrolling.
 
-5. **Motion variety — at least 4 different motion types per 30s video.** Acceptable primitives:
+5. **Motion variety.  at least 4 different motion types per 30s video.** Acceptable primitives:
    - Slow push-in (Ken Burns subset, OK in moderation)
    - Slow pull-out
    - Slow pan (horizontal or vertical)
@@ -42,23 +56,23 @@ These are non-negotiable. A listing video that violates any of these does not sh
    
    **Never repeat the same primitive on two consecutive beats.** A video that's all Ken Burns is rejected.
 
-6. **Photo variety across beats — never two consecutive same-register beats.** Mix: aerial → interior → grounds → aerial → exterior → detail → aerial. Visual register changes every beat. No 3 aerial-dusks in a row.
+6. **Photo variety across beats.  never two consecutive same-register beats.** Mix: aerial → interior → grounds → aerial → exterior → detail → aerial. Visual register changes every beat. No 3 aerial-dusks in a row.
 
 7. **Captions: smooth, not choppy.**
    - Full sentence visible at all times (NEVER word-by-word fade-in)
    - Active-word highlight via weight transition only (500 → 700), NO scale spring (the 1.0→1.08 spring is what made the Tumalo video chop)
    - 300ms crossfade between sentences (NOT hard cut, NOT swap-on-frame)
-   - White Geist 500 with subtle `text-shadow: 0 2px 4px rgba(0,0,0,0.6)` — never on a navy/colored pill, never with a colored background
-   - Forced-alignment from ElevenLabs `/v1/forced-alignment` JSON — synced to actual spoken word timestamps, never to a generic clock
+   - White Geist 500 with subtle `text-shadow: 0 2px 4px rgba(0,0,0,0.6)`.  never on a navy/colored pill, never with a colored background
+   - Forced-alignment from ElevenLabs `/v1/forced-alignment` JSON.  synced to actual spoken word timestamps, never to a generic clock
 
-8. **Music — every video gets a UNIQUE track. Never reuse a clip across videos.** Maintain a per-render music manifest at `out/list-kits/<slug>/music-manifest.json` recording the source + clip ID used. If a track has been used in a prior render in the same season, source a different one. Acceptable sources in priority order:
-   1. ElevenLabs Music API (`/v1/music/compose`) — generate unique track per video, parameterize by mood + tempo + duration
-   2. Mixkit royalty-free library (https://mixkit.co/free-stock-music/) — curated, varied, downloadable, license-free
-   3. Pixabay Music (https://pixabay.com/music/) — same, broader catalog
+8. **Music.  every video gets a UNIQUE track. Never reuse a clip across videos.** Maintain a per-render music manifest at `out/list-kits/<slug>/music-manifest.json` recording the source + clip ID used. If a track has been used in a prior render in the same season, source a different one. Acceptable sources in priority order:
+   1. ElevenLabs Music API (`/v1/music/compose`).  generate unique track per video, parameterize by mood + tempo + duration
+   2. Mixkit royalty-free library (https://mixkit.co/free-stock-music/).  curated, varied, downloadable, license-free
+   3. Pixabay Music (https://pixabay.com/music/).  same, broader catalog
    
    **Banned (over-reused):** `audio/music_bed_v5.mp3` and any other track ending in `_v[1-9].mp3` that's been used >1 time. Check the music manifest before picking a track.
 
-9. **End card has design treatment — not plain navy + logo.** Acceptable end-card patterns:
+9. **End card has design treatment.  not plain navy + logo.** Acceptable end-card patterns:
    - Property photo + dark scrim + stacked navy logo + address callout
    - Cascade silhouette / heritage illustration backdrop + stacked navy logo + address
    - Three-Sisters dusk aerial under-exposed + cream logo overlay + address
@@ -77,9 +91,9 @@ These are non-negotiable. A listing video that violates any of these does not sh
 
 **QC / anti-slideshow (mandatory in Cursor):** Use the project skill **`listing-tour-reel-qc`** (`.cursor/skills/listing-tour-reel-qc/SKILL.md`) after every render: run `node scripts/listing-tour-qc-render.mjs <mp4>` and **Read** the extracted PNGs. Do not sign off on “motion” without that pass.
 
-**Scope:** Produce a fully automated 60–90s listing tour video from a single MLS `ListingKey`. Pulls listing data and photos from Supabase `ryan-realty-platform`, generates narration via ElevenLabs (Matt's voice clone), optionally opens with a Google Photorealistic 3D Tiles aerial establishing shot, animates hero photos via Replicate Wan 2.7 i2v, and renders + compresses in Remotion. Outputs two MP4s from one composition flag: branded (Ryan Realty logo, Matt's name, phone) and MLS-compliant unbranded (MLS number, "Contact your agent" card only).
+**Scope:** Produce a fully automated 60-90s listing tour video from a single MLS `ListingKey`. Pulls listing data and photos from Supabase `ryan-realty-platform`, generates narration via ElevenLabs (Matt's voice clone), optionally opens with a Google Photorealistic 3D Tiles aerial establishing shot, animates hero photos via Replicate Wan 2.7 i2v, and renders + compresses in Remotion. Outputs two MP4s from one composition flag: branded (Ryan Realty logo, Matt's name, phone) and MLS-compliant unbranded (MLS number, "Contact your agent" card only).
 
-**Status:** Stack fully keyed and tested as of 2026-04-21. Remotion 4.0.290, `@remotion/three`, `@react-three/fiber`, Three.js 0.171.0 verified in repo. Supabase (587k listings, 3.8M listing_history rows), ElevenLabs, Replicate, ffmpeg, and Resend all confirmed live.
+**Status:** Canonical fully keyed and tested as of 2026-04-21. Remotion 4.0.290, `@remotion/three`, `@react-three/fiber`, Three.js 0.171.0 verified in repo. Supabase (587k listings, 3.8M listing_history rows), ElevenLabs, Replicate, ffmpeg, and Resend all confirmed live.
 
 **Use this skill whenever** the task is:
 - "Create a listing video for this address" (resolve address -> `ListingKey` first)
@@ -100,13 +114,13 @@ These are non-negotiable. A listing video that violates any of these does not sh
 
 Confirm every item before proceeding. Missing any one of these will fail the render mid-pipeline.
 
-**1.1 — Environment variables.** All must be present in `/Users/matthewryan/RyanRealty/.env.local`:
+**1.1.  Environment variables.** All must be present in `/Users/matthewryan/RyanRealty/.env.local`:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://[ref].supabase.co
-SUPABASE_SERVICE_ROLE_KEY=...            # service role — bypasses RLS for listing pull
+SUPABASE_SERVICE_ROLE_KEY=...            # service role.  bypasses RLS for listing pull
 ELEVENLABS_API_KEY=...                   # Matt's voice clone key
-ELEVENLABS_VOICE_ID=qSeXEcewz7tA0Q0qk9fH # Victoria — locked permanent 2026-04-27. Never substitute.
+ELEVENLABS_VOICE_ID=qSeXEcewz7tA0Q0qk9fH # Victoria.  locked permanent 2026-04-27. Never substitute.
 REPLICATE_API_TOKEN=...                  # Wan 2.7 i2v
 OPENAI_API_KEY=...                       # narration script drafting
 RESEND_API_KEY=...                       # delivery email to matt@ryan-realty.com
@@ -120,18 +134,18 @@ grep -E "ELEVENLABS|REPLICATE|OPENAI|RESEND|GOOGLE_MAPS|SUPABASE_SERVICE" \
   awk -F= '{print $1, (length($2)>0 ? "OK" : "MISSING")}'
 ```
 
-**1.2 — Font files.** Both fonts must exist at the public path Remotion's `staticFile()` resolves to:
+**1.2.  Font files.** Both fonts must exist at the public path Remotion's `staticFile()` resolves to:
 
 ```
 /Users/matthewryan/RyanRealty/public/fonts/Amboqia_Boriango.otf
 /Users/matthewryan/RyanRealty/public/fonts/AzoSans-Medium.ttf
 ```
 
-**1.3 — ffmpeg.** `ffmpeg -version` must return 4.x+. Used for compression and concat.
+**1.3.  ffmpeg.** `ffmpeg -version` must return 4.x+. Used for compression and concat.
 
-**1.4 — Node + Remotion.** `npx remotion --version` must return 4.0.290. Run from `/Users/matthewryan/RyanRealty/`.
+**1.4.  Node + Remotion.** `npx remotion --version` must return 4.0.290. Run from `/Users/matthewryan/RyanRealty/`.
 
-**1.5 — 3D Tiles API key.** The same `GOOGLE_MAPS_API_KEY` covers Photorealistic 3D Tiles. Confirm the key has both `Map Tiles API` and `Maps JavaScript API` enabled in Google Cloud Console. If the key lacks those permissions, Act 1 is skipped automatically (see section 5).
+**1.5.  3D Tiles API key.** The same `GOOGLE_MAPS_API_KEY` covers Photorealistic 3D Tiles. Confirm the key has both `Map Tiles API` and `Maps JavaScript API` enabled in Google Cloud Console. If the key lacks those permissions, Act 1 is skipped automatically (see section 5).
 
 ---
 
@@ -139,9 +153,9 @@ grep -E "ELEVENLABS|REPLICATE|OPENAI|RESEND|GOOGLE_MAPS|SUPABASE_SERVICE" \
 
 | Parameter | Type | Required | Default | Notes |
 |---|---|---|---|---|
-| `listingKey` | string | YES | — | MLS `ListingKey` from Supabase `listings` table |
-| `heroPhotoOverride` | string | no | — | Full URL; replaces photo at `Order=0` if provided |
-| `narrationScriptOverride` | string | no | — | Bypasses LLM draft + voice generation; must be pre-verified copy |
+| `listingKey` | string | YES |.  | MLS `ListingKey` from Supabase `listings` table |
+| `heroPhotoOverride` | string | no |.  | Full URL; replaces photo at `Order=0` if provided |
+| `narrationScriptOverride` | string | no |.  | Bypasses LLM draft + voice generation; must be pre-verified copy |
 | `musicTrack` | string | no | `"ambient-warm"` | Filename (without extension) from `public/music/`. No auto-generation. |
 | `branded` | boolean | no | `true` | `false` = MLS-compliant unbranded cut; skips Act 1, replaces closing card |
 | `aspectRatio` | `"16:9"` \| `"9:16"` | no | **`"9:16"`** (implemented default) | Repo `video/listing-tour` renders **1080×1920** for Reels/TikTok. Optional 16:9 MLS web variant would be a second composition if needed later. |
@@ -159,11 +173,11 @@ await runListingTourVideo({
 
 ---
 
-## 3. Data Pull — Supabase Queries
+## 3. Data Pull.  Supabase Queries
 
 Run all three queries before touching the composition. Print the row counts and raw values. No number enters the render without a printed trace.
 
-**3.1 — Listing row**
+**3.1.  Listing row**
 
 ```sql
 SELECT
@@ -198,7 +212,7 @@ WHERE "ListingKey" = '[INPUT_LISTING_KEY]'
 --       print what PropertyType returned, and confirm with Matt before proceeding.
 ```
 
-**3.2 — Listing photos**
+**3.2.  Listing photos**
 
 ```sql
 SELECT
@@ -213,7 +227,7 @@ ORDER BY "Order" ASC;
 
 -- PRINT: row count. A listing with <4 photos cannot produce a full tour.
 -- Minimum usable: 6 photos. Ideal: 12-18.
--- If <6: halt, email Matt: "ListingKey [X] has only N photos — minimum 6 required."
+-- If <6: halt, email Matt: "ListingKey [X] has only N photos.  minimum 6 required."
 ```
 
 If `listing_media` does not exist as a standalone table, photos may be denormalized onto the `listings` row as a JSON array column. Check:
@@ -224,9 +238,9 @@ WHERE table_name = 'listings'
   AND column_name ILIKE '%media%' OR column_name ILIKE '%photo%';
 ```
 
-**3.3 — Neighborhood comp stats (ZIP-level, SFR)**
+**3.3.  Neighborhood comp stats (ZIP-level, SFR)**
 
-These numbers appear in Act 4. They must trace to this query — no hard-coded values.
+These numbers appear in Act 4. They must trace to this query.  no hard-coded values.
 
 ```sql
 SELECT
@@ -255,7 +269,7 @@ WHERE "PropertyType" = 'A'
 
 **Verification trace template** (fill before render):
 ```
-ListingKey [X] — listings table, PropertyType='A', 1 row returned.
+ListingKey [X].  listings table, PropertyType='A', 1 row returned.
 Photos: N rows from listing_media WHERE ListingKey='[X]', ordered by Order ASC.
 ZIP comp stats: [ZIP], PropertyType='A', Closed/Sold, CloseDate >= [DATE],
   N rows → avg_dom=[D], median_price_per_sqft=[$X], median_list_price=[$Y].
@@ -268,20 +282,20 @@ ZIP comp stats: [ZIP], PropertyType='A', Closed/Sold, CloseDate >= [DATE],
 Base: 90s @ 30fps = 2700 frames. For 75s: multiply budgets by 0.833. For 60s: multiply by 0.667.
 
 ```
-Act 1:  frames 0–119     (0–4s)    — 3D Tiles aerial establishing shot
-Act 2:  frames 120–419   (4–14s)   — Hero exterior + price/beds/baths/sqft overlay + voice
-Act 3:  frames 420–1799  (14–60s)  — 8–12 interior photos, Ken Burns + selective i2v
-Act 4:  frames 1800–2249 (60–75s)  — Exterior/lifestyle frames + neighborhood data layer
-Act 5:  frames 2250–2699 (75–90s)  — CTA voice + closing card
+Act 1:  frames 0-119     (0-4s).  3D Tiles aerial establishing shot
+Act 2:  frames 120-419   (4-14s).  Hero exterior + price/beds/baths/sqft overlay + voice
+Act 3:  frames 420-1799  (14-60s).  8-12 interior photos, Ken Burns + selective i2v
+Act 4:  frames 1800-2249 (60-75s).  Exterior/lifestyle frames + neighborhood data layer
+Act 5:  frames 2250-2699 (75-90s).  CTA voice + closing card
 ```
 
-**Act 1 — 3D Tiles aerial (branded only, 120 frames)**
-- Skip entirely on `branded=false`. MLS does not permit Google promotional video in unbranded cuts, and the Google Photorealistic 3D Tiles promotional video cap is 30s per session — the full tour exceeds that if Act 1 is included in the unbranded file.
+**Act 1.  3D Tiles aerial (branded only, 120 frames)**
+- Skip entirely on `branded=false`. MLS does not permit Google promotional video in unbranded cuts, and the Google Photorealistic 3D Tiles promotional video cap is 30s per session.  the full tour exceeds that if Act 1 is included in the unbranded file.
 - Camera starts at ~500m altitude directly above `[Latitude, Longitude]` from the listing row, dolly-push to ~80m altitude over 4s.
 - Google Maps attribution must be rendered in-frame (bottom-left, white, 12px AzoSans) on every frame of Act 1. This is a Google ToS requirement, not optional.
-- Bend 3D Tiles vintage is ~2022–23 (see gotcha #1). For listings in post-2023 developments, verify the parcel renders as a completed structure before using. If it appears as dirt or missing: skip Act 1, begin at Act 2.
+- Bend 3D Tiles vintage is ~2022-23 (see gotcha #1). For listings in post-2023 developments, verify the parcel renders as a completed structure before using. If it appears as dirt or missing: skip Act 1, begin at Act 2.
 
-**Act 2 — Hero exterior (300 frames)**
+**Act 2.  Hero exterior (300 frames)**
 - Hero photo = `Order=0` from the photo query (or `heroPhotoOverride`).
 - Submit hero to Replicate Wan 2.7 i2v with a slow outward dolly prompt. Cache result by `ListingKey + MediaKey`. See section 7 for i2v call pattern.
 - If i2v fails or returns in >90s: fall back to Ken Burns (slow zoom 1.0→1.08 over 300 frames).
@@ -290,24 +304,24 @@ Act 5:  frames 2250–2699 (75–90s)  — CTA voice + closing card
   - Beds / Baths: `[BedroomsTotal] BD · [BathroomsTotalInteger] BA`
   - Square feet: `[LivingArea] SF`
   - Year built: `Built [YearBuilt]` (omit if null)
-- Voice line over frames 150–420: "Welcome to [StreetNumber] [StreetName]. Here's what makes it home."
+- Voice line over frames 150-420: "Welcome to [StreetNumber] [StreetName]. Here's what makes it home."
 
-**Act 3 — Interior walk (1380 frames, ~46s)**
+**Act 3.  Interior walk (1380 frames, ~46s)**
 - Assign photos `Order=1` through `Order=N` (up to 12 photos). Skip `Order=0` (already used).
-- Frame budget per photo at 90s target: `1380 / photo_count` (floor, with remainder added to last photo). Each photo gets 4–6s.
-- Ken Burns on all photos. Select 2–3 for i2v (kitchen, primary suite, and the best view or outdoor shot). i2v prompts for interiors: slow horizontal track, no rotation.
+- Frame budget per photo at 90s target: `1380 / photo_count` (floor, with remainder added to last photo). Each photo gets 4-6s.
+- Ken Burns on all photos. Select 2-3 for i2v (kitchen, primary suite, and the best view or outdoor shot). i2v prompts for interiors: slow horizontal track, no rotation.
 - Voice covers each space in sequence. Narration is generated once (section 6) and sliced to match photo timing.
 
-**Act 4 — Exterior + neighborhood stats (450 frames)**
+**Act 4.  Exterior + neighborhood stats (450 frames)**
 - Pull `Order=N+1` onward for yard/deck/view shots. Use remaining photos.
 - Neighborhood data layer (bottom third, fades in at frame 1900):
-  - `Avg. Days on Market: [avg_dom]` — from comp query
+  - `Avg. Days on Market: [avg_dom]`.  from comp query
   - `Median $/sqft in [PostalCode]: $[median_price_per_sqft]`
   - Only render this layer if comp query returned ≥ 5 rows.
 
-**Act 5 — Closing card (450 frames)**
-- Branded: solid navy `#102742` background + white Ryan Realty logo + `541.213.6706`. This card is locked per `feedback_market_report_closing_standard.md`. No gradient, no glow, no additional CTA text. Voice: "I'm Matt Ryan with Ryan Realty. Give me a call — I'd love to walk you through it."
-- Unbranded: solid navy background + MLS listing number + "Contact your agent for a showing." No logo, no name, no phone. Voice: "Ask your agent about [StreetNumber] [StreetName] — MLS [ListingId]."
+**Act 5.  Closing card (450 frames)**
+- Branded: solid navy `#102742` background + white Ryan Realty logo + `541.213.6706`. This card is locked per `feedback_market_report_closing_standard.md`. No gradient, no glow, no additional CTA text. Voice: "I'm Matt Ryan with Ryan Realty. Give me a call.  I'd love to walk you through it."
+- Unbranded: solid navy background + MLS listing number + "Contact your agent for a showing." No logo, no name, no phone. Voice: "Ask your agent about [StreetNumber] [StreetName].  MLS [ListingId]."
 
 ---
 
@@ -334,7 +348,7 @@ import { ThreeCanvas } from '@remotion/three';
 import { TilesRenderer } from '3d-tiles-renderer/r3f';
 import { GoogleCloudAuthPlugin } from '3d-tiles-renderer/plugins';
 
-// Font injection — MUST use CSS @font-face via DOM style tag,
+// Font injection.  MUST use CSS @font-face via DOM style tag,
 // NOT the FontFace API. FontFace API blocks past delayRender timeout
 // in long renders. Pattern from /work/jackstraw_video/src/fonts.ts.
 import './fonts';
@@ -520,7 +534,7 @@ const PhotoOrVideo: React.FC<{
 
 // ─── Aerial scene (Act 1) ─────────────────────────────────────────────────────
 // Uses 3d-tiles-renderer r3f path + GoogleCloudAuthPlugin.
-// Google Maps attribution must appear in every frame — bottom-left, white text.
+// Google Maps attribution must appear in every frame.  bottom-left, white text.
 // Reference: https://github.com/NASA-AMMOS/3DTilesRendererJS
 const AerialScene: React.FC<{
   lat: number;
@@ -540,10 +554,10 @@ const AerialScene: React.FC<{
           url="https://tile.googleapis.com/v1/3dtiles/root.json"
           plugins={[new GoogleCloudAuthPlugin({ apiToken: tilesApiKey })]}
         />
-        {/* Camera at [lng, lat, altitude] — implement as a useFrame hook */}
+        {/* Camera at [lng, lat, altitude].  implement as a useFrame hook */}
       </ThreeCanvas>
 
-      {/* Google Maps attribution — ToS required, not optional */}
+      {/* Google Maps attribution.  ToS required, not optional */}
       <div style={{
         position: 'absolute',
         bottom: 16,
@@ -770,11 +784,11 @@ const ClosingCard: React.FC<{
 );
 ```
 
-Font loader (copy this pattern exactly — do NOT use `FontFace` API):
+Font loader (copy this pattern exactly.  do NOT use `FontFace` API):
 
 ```ts
 // src/video/listing-tour/fonts.ts
-// Pattern from /work/jackstraw_video/src/fonts.ts — verified working.
+// Pattern from /work/jackstraw_video/src/fonts.ts.  verified working.
 import { staticFile } from 'remotion';
 
 const inject = (family: string, url: string, weight = '400') => {
@@ -800,9 +814,9 @@ inject('Azo Sans', staticFile('fonts/AzoSans-Medium.ttf'), '500');
 
 ## 6. Voice Generation
 
-**6.1 — Draft the narration (LLM call)**
+**6.1.  Draft the narration (LLM call)**
 
-Narration is drafted via OpenAI API (model `gpt-4o`) with a strict prompt. Branding rule: authentic, genuine, service-oriented, historic Bend. No em dashes. No hyphens in prose. Never state the obvious about the reader. No salesy language. The draft is a plain script only — no stage directions, no asterisks, no parentheticals.
+Narration is drafted via OpenAI API (model `gpt-4o`) with a strict prompt. Branding rule: authentic, genuine, service-oriented, historic Bend. No em dashes. No hyphens in prose. Never state the obvious about the reader. No salesy language. The draft is a plain script only.  no stage directions, no asterisks, no parentheticals.
 
 ```python
 import openai, os
@@ -813,7 +827,7 @@ def draft_narration(listing: dict, photos: list[dict]) -> str:
 
     prompt = f"""You are writing a 60-word voiceover script for a listing tour video.
 The broker is Matt Ryan, Ryan Realty, Bend Oregon.
-Listing: {listing['StreetNumber']} {listing['StreetName']}, {listing['City']} —
+Listing: {listing['StreetNumber']} {listing['StreetName']}, {listing['City']}. 
   {listing['BedroomsTotal']} beds, {listing['BathroomsTotalInteger']} baths,
   {listing['LivingArea']} sq ft, listed at ${listing['ListPrice']:,.0f}.
 Photo sequence covers: {rooms_str}.
@@ -823,7 +837,7 @@ Rules:
 - Open with: "Welcome to [address]. Here's what makes it home."
 - Describe 3-4 key spaces in order.
 - Close (branded): "I'm Matt Ryan with Ryan Realty. Give me a call."
-- Close (unbranded): "Ask your agent about [address] — MLS [ListingId]."
+- Close (unbranded): "Ask your agent about [address].  MLS [ListingId]."
 - No em dashes. No hyphens in prose. No salesy language.
 - Authentic voice. Never state the obvious about the viewer.
 - Plain text only. No stage directions.
@@ -837,7 +851,7 @@ Return the script only. Target 65-70 words."""
     return resp.choices[0].message.content.strip()
 ```
 
-**6.2 — Generate audio via ElevenLabs**
+**6.2.  Generate audio via ElevenLabs**
 
 Cache by `ListingKey` so re-renders skip the API call.
 
@@ -869,7 +883,7 @@ def generate_voiceover(listing_key: str, script: str) -> str:
         "text": script,
         "model_id": "eleven_turbo_v2_5",
         "voice_settings": {
-            # Updated 2026-05-07 per Matt directive — conversational delivery; canonical source: video_production_skills/elevenlabs_voice/SKILL.md
+            # Updated 2026-05-07 per Matt directive.  conversational delivery; canonical source: video_production_skills/elevenlabs_voice/SKILL.md
             "stability": 0.40,
             "similarity_boost": 0.80,
             "style": 0.50,
@@ -888,9 +902,9 @@ def generate_voiceover(listing_key: str, script: str) -> str:
     return f"voiceovers/{slug}.mp3"
 ```
 
-Expected response: binary MP3 audio, `Content-Type: audio/mpeg`. If you get JSON back, it is an error — print it before raising.
+Expected response: binary MP3 audio, `Content-Type: audio/mpeg`. If you get JSON back, it is an error.  print it before raising.
 
-**6.3 — Wan 2.7 i2v for hero + 2-3 interior hero photos**
+**6.3.  Wan 2.7 i2v for hero + 2-3 interior hero photos**
 
 ```python
 import replicate, time, urllib.request
@@ -924,7 +938,7 @@ def run_i2v(image_url: str, prompt: str, listing_key: str, media_key: str) -> st
         urllib.request.urlretrieve(url, out_path)
         return f"i2v/{slug}.mp4"
     except Exception as e:
-        print(f"[i2v] FAILED for {media_key}: {e} — falling back to Ken Burns")
+        print(f"[i2v] FAILED for {media_key}: {e}.  falling back to Ken Burns")
         return None
 ```
 
@@ -948,7 +962,7 @@ Prompt templates:
 
 ## 7. Render + Compress + Deliver
 
-**7.1 — Remotion render**
+**7.1.  Remotion render**
 
 ```bash
 # From /Users/matthewryan/RyanRealty/
@@ -957,22 +971,22 @@ npx remotion render \
   ListingTour \
   /tmp/listing_tour_${LISTING_KEY}_branded.mp4 \
   --props='{"branded":true,...}' \
-  --concurrency=1 \  # concurrency=1 required per render_pipeline/SKILL.md — Chrome OOMs higher
+  --concurrency=1 \  # concurrency=1 required per render_pipeline/SKILL.md.  Chrome OOMs higher
   --log=verbose
 ```
 
 Render both cuts in sequence:
 ```bash
 # Branded
-npx remotion render ... --props='{"branded":true}' -o /tmp/${SLUG}_branded_16x9.mp4
+npx remotion render... --props='{"branded":true}' -o /tmp/${SLUG}_branded_16x9.mp4
 
 # Unbranded (skip Act 1 automatically via branded=false prop)
-npx remotion render ... --props='{"branded":false}' -o /tmp/${SLUG}_unbranded_16x9.mp4
+npx remotion render... --props='{"branded":false}' -o /tmp/${SLUG}_unbranded_16x9.mp4
 ```
 
 9:16 variant (IG Reels): pass `aspectRatio:"9:16"` and override `width=1080 height=1920` via a second `<Composition>` registration.
 
-**7.2 — ffmpeg compress**
+**7.2.  ffmpeg compress**
 
 Target: <4 MB for IG upload. Web/MLS cut: <15 MB, no hard size limit.
 
@@ -987,7 +1001,7 @@ ffmpeg -i /tmp/${SLUG}_branded_16x9.mp4 \
 
 # Check file size
 du -sh /tmp/${SLUG}_branded_16x9_compressed.mp4
-# If >4 MB: bump CRF to 28, re-run. Do not go above CRF 30 — quality degrades visibly.
+# If >4 MB: bump CRF to 28, re-run. Do not go above CRF 30.  quality degrades visibly.
 
 # Unbranded MLS cut (no size target; use CRF 22 for quality)
 ffmpeg -i /tmp/${SLUG}_unbranded_16x9.mp4 \
@@ -997,7 +1011,7 @@ ffmpeg -i /tmp/${SLUG}_unbranded_16x9.mp4 \
   /tmp/${SLUG}_unbranded_16x9_compressed.mp4
 ```
 
-**7.3 — Resend email to Matt**
+**7.3.  Resend email to Matt**
 
 ```python
 import resend, os
@@ -1014,7 +1028,7 @@ def deliver(listing: dict, branded_path: str, unbranded_path: str) -> None:
     resend.Emails.send({
         "from":    "listings@ryan-realty.com",
         "to":      "matt@ryan-realty.com",
-        "subject": f"Listing Tour Ready: {address} — MLS {listing['ListingId']}",
+        "subject": f"Listing Tour Ready: {address}.  MLS {listing['ListingId']}",
         "html":    f"""
           <p>Both cuts rendered and attached.</p>
           <p><strong>{address}</strong> · MLS {listing['ListingId']}</p>
@@ -1037,36 +1051,36 @@ If attachments exceed Resend's 40 MB combined limit: upload to Supabase Storage 
 
 Run this before the Resend call. Any failure blocks delivery.
 
-**8.1 — Data verification trace**
+**8.1.  Data verification trace**
 
 Print one line per stat that appears in the rendered video:
 
 ```
-ListPrice: $[X] — listings table, ListingKey='[KEY]', 1 row, ListPrice=[X]
-BedroomsTotal: [N] — same row
-BathroomsTotalInteger: [N] — same row
-LivingArea: [N] — same row
-YearBuilt: [N] — same row (or OMITTED — field is null)
-avg_dom: [N] — listings, PropertyType='A', PostalCode='[ZIP]',
+ListPrice: $[X].  listings table, ListingKey='[KEY]', 1 row, ListPrice=[X]
+BedroomsTotal: [N].  same row
+BathroomsTotalInteger: [N].  same row
+LivingArea: [N].  same row
+YearBuilt: [N].  same row (or OMITTED.  field is null)
+avg_dom: [N].  listings, PropertyType='A', PostalCode='[ZIP]',
               StandardStatus IN ('Closed','Sold'), CloseDate >= [DATE],
               [N] rows, AVG(DaysOnMarket)=[X]
-median_price_per_sqft: $[X] — same query, PERCENTILE_CONT(0.5)=[X]
+median_price_per_sqft: $[X].  same query, PERCENTILE_CONT(0.5)=[X]
 ```
 
 If any stat line cannot be completed with an actual query result: cut that stat from the video. Re-render. Do not ship with a question mark next to any number.
 
-**8.2 — Banned punctuation grep**
+**8.2.  Banned punctuation grep**
 
 ```bash
 # Check narration script file for banned characters
-grep -n "—\|–\| - " /tmp/narration_${SLUG}.txt && echo "FAIL: em/en dash or prose hyphen found" || echo "OK"
+grep -n ". \|-\| - " /tmp/narration_${SLUG}.txt && echo "FAIL: em/en dash or prose hyphen found" || echo "OK"
 ```
 
-**8.3 — Closing card lock check**
+**8.3.  Closing card lock check**
 
 Verify the composition's `ClosingCard` component has no gradient, no glow, and no text other than logo, phone, and (for unbranded) MLS number. If anything was modified from the pattern in section 5, revert.
 
-**8.4 — Google attribution check (branded Act 1 only)**
+**8.4.  Google attribution check (branded Act 1 only)**
 
 Confirm the `AerialScene` component renders `"Map data ©2025 Google"` text in every frame of Act 1. If Act 1 was skipped due to missing tiles, this check is N/A.
 
@@ -1121,7 +1135,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS listing_tour_renders_uq
   ON listing_tour_renders (listing_key, branded, aspect_ratio, duration_target);
 ```
 
-On each run: INSERT ... ON CONFLICT DO UPDATE. Check `rendered_at` — if a render exists and is less than 24h old with no input changes, return the cached paths.
+On each run: INSERT... ON CONFLICT DO UPDATE. Check `rendered_at`.  if a render exists and is less than 24h old with no input changes, return the cached paths.
 
 ---
 
@@ -1129,12 +1143,12 @@ On each run: INSERT ... ON CONFLICT DO UPDATE. Check `rendered_at` — if a rend
 
 | # | Gotcha | Wrong | Right |
 |---|--------|-------|-------|
-| 1 | Google 3D Tiles Bend vintage is 2022–23. Post-2023 listings (Jackstraw, new NWX phases, etc.) appear as construction dirt. | Trust that tiles show the completed home | Query `reference_google_tiles_bend_predates_jackstraw.md`, do a spot-check render of Act 1 before delivering |
+| 1 | Google 3D Tiles Bend vintage is 2022-23. Post-2023 listings (Jackstraw, new NWX phases, etc.) appear as construction dirt. | Trust that tiles show the completed home | Query `reference_google_tiles_bend_predates_jackstraw.md`, do a spot-check render of Act 1 before delivering |
 | 2 | Google Photorealistic 3D Tiles promotional-video cap is 30 seconds per usage session | Include Act 1 in the unbranded MLS cut | Act 1 is branded only. Unbranded cut starts at Act 2 |
 | 3 | Google Maps attribution is a ToS hard requirement in every 3D Tiles frame | Omit attribution to keep the frame clean | `"Map data ©2025 Google"` bottom-left, white, 12px, every Act 1 frame |
 | 4 | Wan 2.7 i2v occasionally fails on images it classifies as containing copyrighted interior elements (furniture brands, art) | Retry in a loop | On any non-2xx or timeout: set `i2vUrl = null`, Ken Burns fires automatically |
 | 5 | ElevenLabs rate limit is 2 concurrent requests on most plans | Fire multiple voice requests in parallel | Generate serially. If you get 429: back off 10s and retry once |
-| 6 | Font loading via `FontFace` API blocks past the `delayRender` timeout in Remotion long renders | `new FontFace(...).load().then(...)` | CSS `@font-face` via DOM `<style>` injection — see fonts.ts pattern in section 5 |
+| 6 | Font loading via `FontFace` API blocks past the `delayRender` timeout in Remotion long renders | `new FontFace(...).load().then(...)` | CSS `@font-face` via DOM `<style>` injection.  see fonts.ts pattern in section 5 |
 | 7 | `ClosePrice` on the `listings` table is populated for 2026 rows only | Use `ClosePrice` for pre-2026 YoY comparisons | Pre-2026 price data requires `listing_history` table. See `reference_closeprice_data_gap.md` |
 | 8 | `PropertyType='A'` is SFR. Listing tours run on any property type the agent uploads, but comp stats must filter `PropertyType='A'` for apples-to-apples SFR stats | Mix property types in comp query | Comp stats query always includes `AND "PropertyType" = 'A'`. See `reference_listings_property_types.md` |
 | 9 | `listing_media` may not exist as a standalone table. Photos may be a JSON array column on `listings`. | Fail silently and produce a zero-photo render | Query `information_schema.columns` first; handle both shapes |
@@ -1152,35 +1166,55 @@ On each run: INSERT ... ON CONFLICT DO UPDATE. Check `rendered_at` — if a rend
 - Agent needs both branded and unbranded cuts for a listing (single run handles both)
 
 **Do not invoke when:**
-- No specific `ListingKey` — general market video → `market-data-video`
+- No specific `ListingKey`.  general market video → `market-data-video`
 - Subdivision or development showcase without a specific active listing → `development-showcase`
 - Neighborhood walkability or lifestyle reel → `lifestyle-community`
 - Aerial-only or 3D Tiles map animation with no listing anchor → `neighborhood-overview`
 
 ---
 
-## 12. Broker headshots — closing card
+## 12. Broker headshots.  closing card
 
 Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
 
-- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
-- `paul-stevenson.jpg` — Paul Stevenson
-- `rebecca-peterson.jpg` — Rebecca Peterson
+- `matt-ryan.jpg`.  Matt Ryan (owner / principal broker)
+- `paul-stevenson.jpg`.  Paul Stevenson
+- `rebecca-peterson.jpg`.  Rebecca Peterson
 
 All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
 
-**Closing card rule (branded cut only):** The branded video closing card must include the listing agent's headshot alongside the Ryan Realty logo and contact info. Resolve `ListAgentFullName` from the Supabase `listings` row to the correct headshot path. The headshot renders as a circular crop (`border-radius: 50%`, `120 px` diameter) beside the stacked white logo. Unbranded MLS cut: no headshot, no agent name — logo + MLS number only. For brand-led videos with no specific listing (market reports, neighborhood guides), omit the headshot; use Jax from `assets/brand/blue-dog.png` if a personality element is needed.
+**Closing card rule (branded cut only):** The branded video closing card must include the listing agent's headshot alongside the Ryan Realty logo and contact info. Resolve `ListAgentFullName` from the Supabase `listings` row to the correct headshot path. The headshot renders as a circular crop (`border-radius: 50%`, `120 px` diameter) beside the stacked white logo. Unbranded MLS cut: no headshot, no agent name.  logo + MLS number only. For brand-led videos with no specific listing (market reports, neighborhood guides), omit the headshot; use Jax from `assets/brand/blue-dog.png` if a personality element is needed.
 
 ---
 
 ## 13. See Also
 
-- `development-showcase/SKILL.md` — new-construction development videos using 3D massing models when MLS listing photos are insufficient
-- `neighborhood-overview/SKILL.md` — Google 3D Tiles + Supabase neighborhood boundary flyovers with market stat overlays, no specific listing required
-- `market-data-video/SKILL.md` — Remotion market report reels driven entirely by Supabase aggregate queries (monthly/quarterly stats, absorption, DOM trends)
-- `lifestyle-community/SKILL.md` — community and lifestyle reels (parks, trails, downtown Bend, events) for top-of-funnel social, no listing anchor
-- `reference_ai_virtual_tour_workflow.md` — full i2v pipeline notes: Wan 2.7 model versioning, room sequence ordering, ffmpeg concat patterns
-- `feedback_market_report_closing_standard.md` — locked closing card spec (solid navy, white logo, 541.213.6706)
-- `reference_google_tiles_bend_predates_jackstraw.md` — Bend 3D Tiles vintage verification; which neighborhoods are safe to use in Act 1
-- `reference_closeprice_data_gap.md` — ClosePrice NULL issue for pre-2026 rows
-- `reference_listings_property_types.md` — PropertyType code table; always filter `'A'` for SFR comp stats
+- `development-showcase/SKILL.md`.  new-construction development videos using 3D massing models when MLS listing photos are insufficient
+- `neighborhood-overview/SKILL.md`.  Google 3D Tiles + Supabase neighborhood boundary flyovers with market stat overlays, no specific listing required
+- `market-data-video/SKILL.md`.  Remotion market report reels driven entirely by Supabase aggregate queries (monthly/quarterly stats, absorption, DOM trends)
+- `lifestyle-community/SKILL.md`.  community and lifestyle reels (parks, trails, downtown Bend, events) for top-of-funnel social, no listing anchor
+- `reference_ai_virtual_tour_workflow.md`.  full i2v pipeline notes: Wan 2.7 model versioning, room sequence ordering, ffmpeg concat patterns
+- `feedback_market_report_closing_standard.md`.  locked closing card spec (solid navy, white logo, 541.213.6706)
+- `reference_google_tiles_bend_predates_jackstraw.md`.  Bend 3D Tiles vintage verification; which neighborhoods are safe to use in Act 1
+- `reference_closeprice_data_gap.md`.  ClosePrice NULL issue for pre-2026 rows
+- `reference_listings_property_types.md`.  PropertyType code table; always filter `'A'` for SFR comp stats
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

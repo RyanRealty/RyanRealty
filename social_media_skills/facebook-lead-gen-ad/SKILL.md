@@ -1,17 +1,32 @@
 ---
 name: facebook-lead-gen-ad
-description: Create and launch Facebook Lead Generation ads with native FB lead forms that route captured leads to Follow-Up Boss (FUB) for nurture. Use this skill whenever the user requests a Facebook ad, says "make a Facebook ad for [topic]", "launch the FB ad for the market report", "boost this on Facebook" (note: redirect to lead-gen, not boost — see §1), "create a lead-gen campaign", or asks for paid social with form-based lead capture. Use this skill ALWAYS when the monthly-market-report-orchestrator routes deliverable #4. The locked default for monthly market reports is a Lead Generation ad (not boosted post, not traffic ad) because the report itself is the lead magnet — see §2 for the rationale. This skill creates the ad, attaches the form, sets targeting and budget, and surfaces it as a draft for Matt's "go" before launch.
+description: Create and launch Facebook Lead Generation ads with native FB lead forms that route captured leads to Follow-Up Boss (FUB) for nurture. Use this skill whenever the user requests a Facebook ad, says "make a Facebook ad for [topic]", "launch the FB ad for the market report", "boost this on Facebook" (note: redirect to lead-gen, not boost.  see §1), "create a lead-gen campaign", or asks for paid social with form-based lead capture. Use this skill ALWAYS when the monthly-market-report-orchestrator routes deliverable #4. The locked default for monthly market reports is a Lead Generation ad (not boosted post, not traffic ad) because the report itself is the lead magnet.  see §2 for the rationale. This skill creates the ad, attaches the form, sets targeting and budget, and surfaces it as a draft for Matt's "go" before launch.
+output_type: paid-ad
+target_platforms: ["fb_feed", "ig_feed"]
+asset_destination: Supabase asset-library bucket + Meta Ads Manager (after publish)
+auto_inputs: ["active campaign metadata from Meta Graph API", "brand voice", "docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md targeting"]
+required_inputs: ["campaign_id OR audience"]
+optional_inputs: ["variant_count", "creative_theme"]
+estimated_runtime_min: 7
+cost_usd_estimate: $0.20-$1 per variant set (Anthropic + image gen)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.png
+example_outputs: []
+    label: "live seller funnel campaign reference"
+    surface: "fb_feed"
+action_types:
+  - content:fb_lead_gen_ad
+  - content:fb_ad
 ---
 
-# Facebook Lead-Gen Ad Skill — Ryan Realty
+# Facebook Lead-Gen Ad Skill.  Ryan Realty
 
-## Required references — load these BEFORE producing any content
+## Required references.  load these BEFORE producing any content
 
 Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
 
-1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)** — visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)**.  visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
 
-2. **[`social_media_skills/platform-best-practices/SKILL.md`](../platform-best-practices/SKILL.md)** — 2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../platform-best-practices/SKILL.md)**.  2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
 
 A piece of content that ships without consulting BOTH of these is non-compliant.
 
@@ -19,7 +34,7 @@ A piece of content that ships without consulting BOTH of these is non-compliant.
 
 **Scope:** Generate Meta (Facebook + Instagram) Lead Generation ad campaigns where the market report content acts as the lead magnet. Captures leads via FB native lead form → routes to Follow-Up Boss (FUB) for nurture. Locked default for the `monthly-market-report-orchestrator` deliverable #4.
 
-**Status:** Locked 2026-05-07 per Matt directive — Lead Generation is the default ad type for monthly market reports.
+**Status:** Canonical 2026-05-07 per Matt directive.  Lead Generation is the default ad type for monthly market reports.
 
 **Repo wiring:** Before proposing URLs, webhooks, UTMs, or server-side events, read **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** (live pipeline: pixel, CAPI, FUB, Supabase, weekly crons). For seller-acquisition launch specifics use **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`**.
 
@@ -35,8 +50,8 @@ A piece of content that ships without consulting BOTH of these is non-compliant.
 
 **Do NOT use this skill for:**
 - Boosted Reels / posts (use `automation_skills/automation/buffer_poster/SKILL.md` for organic-with-paid-amplification)
-- Pure traffic ads driving clicks to the website (rare for our use case — leads > clicks for residential RE)
-- Retargeting campaigns (separate skill — different audience strategy)
+- Pure traffic ads driving clicks to the website (rare for our use case.  leads > clicks for residential RE)
+- Retargeting campaigns (separate skill.  different audience strategy)
 - Awareness / brand-only campaigns (no lead capture goal)
 
 **If the user says "boost this on Facebook":** clarify with them. Boosted posts grow reach but don't capture leads. For monthly market reports, Lead Generation is the locked default because the goal is FUB-routed lead capture. Confirm intent before defaulting to a boost.
@@ -47,9 +62,9 @@ A piece of content that ships without consulting BOTH of these is non-compliant.
 
 | Ad type | Why it's wrong (or right) for monthly market reports |
 |---|---|
-| **Boosted post** | Cheapest, highest reach. But: NO lead capture. Reach without a list-build is wasted on monthly reports — you've already built awareness, you need conversion. |
-| **Traffic ad** (drive clicks to blog) | Decent for SEO + awareness. But: lead capture happens on the blog only IF the visitor opts into a popup or form. Form friction is high (typing on mobile in browser). Lead-gen ads pre-fill the form with FB profile data — near-zero friction. |
-| **Lead Generation ad** (LOCKED DEFAULT) | The market report is the lead magnet. Form pre-fills with name/email/phone from the user's FB profile. They tap "Submit" once — done. Lead lands in FUB seconds later for nurture. The audience is already in market — they just watched a 30s reel about Bend real estate. Conversion rate ≈ 8–15% vs traffic ad ≈ 1–2%. |
+| **Boosted post** | Cheapest, highest reach. But: NO lead capture. Reach without a list-build is wasted on monthly reports.  you've already built awareness, you need conversion. |
+| **Traffic ad** (drive clicks to blog) | Decent for SEO + awareness. But: lead capture happens on the blog only IF the visitor opts into a popup or form. Form friction is high (typing on mobile in browser). Lead-gen ads pre-fill the form with FB profile data.  near-zero friction. |
+| **Lead Generation ad** (LOCKED DEFAULT) | The market report is the lead magnet. Form pre-fills with name/email/phone from the user's FB profile. They tap "Submit" once.  done. Lead lands in FUB seconds later for nurture. The audience is already in market.  they just watched a 30s reel about Bend real estate. Conversion rate ≈ 8-15% vs traffic ad ≈ 1-2%. |
 
 **Rationale:** Top-of-funnel = capture intent at the moment of highest interest. The market report does the awareness lift; the ad's job is the email-capture conversion. FUB then runs the nurture (drip emails, listing alerts, eventual handoff to Matt for showings).
 
@@ -81,31 +96,31 @@ Meta Ads Manager has 3 levels: Campaign → Ad Set → Ad. The lead-gen pattern 
 ### 4.1 Campaign
 - **Objective:** `LEAD_GENERATION`
 - **Buying type:** `AUCTION` (default; reserve buys are for branding)
-- **Special ad category:** `HOUSING` (REQUIRED by Meta for real estate ads — restricts age/gender/zip targeting per Fair Housing Act)
-- **Name pattern:** `RR Market Report — {City} {Month YYYY} Lead Gen`
+- **Special ad category:** `HOUSING` (REQUIRED by Meta for real estate ads.  restricts age/gender/zip targeting per Fair Housing Act)
+- **Name pattern:** `RR Market Report.  {City} {Month YYYY} Lead Gen`
 
 ### 4.2 Ad set
 - **Optimization goal:** `LEAD_GENERATION`
 - **Billing event:** `IMPRESSIONS` (Meta optimizes for completions but bills per impression)
-- **Daily budget:** $20–$50 default — Matt confirms per campaign
+- **Daily budget:** $20-$50 default.  Matt confirms per campaign
 - **Schedule:** Run for 14 days from launch (covers the month's discovery window)
 - **Targeting** (constrained by Housing category):
   - Geo: city + 25mi radius (e.g. Bend OR + 25mi captures Redmond, Sisters, Tumalo)
-  - Age: 25–65 (Housing category enforces ≥18, no upper-age targeting nuance)
+  - Age: 25-65 (Housing category enforces ≥18, no upper-age targeting nuance)
   - Gender: All
   - Detailed targeting: interests in `Real estate`, `Home buying`, `Mortgage`, `Real estate investing`. EXCLUDE: agents/brokers (interest in `Real estate agent` job role).
-  - Lookalike audience: 1% lookalike based on the FUB-imported "engaged buyers" custom audience (if available — falls back to interest targeting only)
+  - Lookalike audience: 1% lookalike based on the FUB-imported "engaged buyers" custom audience (if available.  falls back to interest targeting only)
 
 ### 4.3 Ad creative
 - **Format:** Video ad (the short-form vertical reel from `market-data-video/SKILL.md`)
-- **Aspect:** 1:1 (1080×1080) preferred for FB feed — re-render OR center-crop the 9:16 short-form. Reels placement uses 9:16 directly.
+- **Aspect:** 1:1 (1080×1080) preferred for FB feed.  re-render OR center-crop the 9:16 short-form. Reels placement uses 9:16 directly.
 - **Primary text** (above video, 125 chars max for in-feed):
   ```
-  Bend's median home price hit $699K in April, down 13% from last year. Get the full market breakdown — neighborhoods, days on market, and what it means for buyers and sellers.
+  Bend's median home price hit $699K in April, down 13% from last year. Get the full market breakdown.  neighborhoods, days on market, and what it means for buyers and sellers.
   ```
 - **Headline** (below video, 27 chars max):
   ```
-  Bend Market Report — April 2026
+  Bend Market Report.  April 2026
   ```
 - **Description** (40 chars max):
   ```
@@ -122,10 +137,10 @@ Pre-fill these from the user's FB profile (no typing required):
 - Email
 - Phone (optional but ask)
 
-Custom question (optional — high-intent filter):
+Custom question (optional.  high-intent filter):
 - "Are you currently in the market to buy or sell a home in Central Oregon?"
-  - Yes, buying in 0–6 months
-  - Yes, selling in 0–6 months
+  - Yes, buying in 0-6 months
+  - Yes, selling in 0-6 months
   - Both
   - Just exploring
 
@@ -180,7 +195,7 @@ Access-Token: {META_PAGE_TOKEN}
 }
 ```
 
-Form ID returned — store in `.env.local`. Reuse across campaigns by passing the same `form_id` in each Ad's `lead_gen_form_id`.
+Form ID returned.  store in `.env.local`. Reuse across campaigns by passing the same `form_id` in each Ad's `lead_gen_form_id`.
 
 ---
 
@@ -205,7 +220,7 @@ That route:
      "lastName": "{last_name}",
      "emails": [{"value": "{email}", "type": "Primary"}],
      "phones": [{"value": "{phone}", "type": "Mobile"}],
-     "source": "Facebook Lead Ad — Bend Market Report April 2026",
+     "source": "Facebook Lead Ad.  Bend Market Report April 2026",
      "tags": ["FB Lead Ad", "Market Report"],
      "stage": "Lead",
      "customFields": {
@@ -222,13 +237,13 @@ That route:
 
 ## 7. Generation flow (when called by orchestrator)
 
-1. **Receive video + copy from orchestrator** — the `monthly-market-report-orchestrator` provides:
+1. **Receive video + copy from orchestrator**.  the `monthly-market-report-orchestrator` provides:
    - The short-form video MP4 (re-cropped to 1:1 if needed)
    - The headline stat (e.g. "$699K median, down 13.4%")
    - The verification trace
    - The blog post URL (for the thank-you screen + post-form follow-up)
 
-2. **Generate ad copy** (per §4.3 patterns) — primary text, headline, description, CTA. Run through banned-word grep.
+2. **Generate ad copy** (per §4.3 patterns).  primary text, headline, description, CTA. Run through banned-word grep.
 
 3. **Upload video** to Meta:
    ```
@@ -237,23 +252,23 @@ That route:
 
 4. **Create campaign** (per §4.1 spec).
 
-5. **Create ad set** (per §4.2 spec) — under the campaign just created.
+5. **Create ad set** (per §4.2 spec).  under the campaign just created.
 
-6. **Create ad creative** (per §4.3 spec) — using the uploaded video ID + lead form ID.
+6. **Create ad creative** (per §4.3 spec).  using the uploaded video ID + lead form ID.
 
-7. **Create ad** — under the ad set, attached to the creative.
+7. **Create ad**.  under the ad set, attached to the creative.
 
-8. **Set status to PAUSED** initially (Meta default for new ads is ACTIVE — explicitly set PAUSED).
+8. **Set status to PAUSED** initially (Meta default for new ads is ACTIVE.  explicitly set PAUSED).
 
-9. **Surface to Matt** — preview URL:
+9. **Surface to Matt**.  preview URL:
    ```
    https://www.facebook.com/ads/manager/creation/creation/?act={ad-account-id}&campaign_id={campaign-id}&ad_set_id={adset-id}&ad_id={ad-id}
    ```
    And a copy-only preview for the inline review:
    ```
-   📢 Facebook Lead-Gen Ad — DRAFT (paused)
+   📢 Facebook Lead-Gen Ad.  DRAFT (paused)
 
-   Campaign: RR Market Report — Bend April 2026 Lead Gen
+   Campaign: RR Market Report.  Bend April 2026 Lead Gen
    Daily budget: $30
    Run length: 14 days
    Audience: Bend OR + 25mi, age 25-65, real estate interest
@@ -269,14 +284,14 @@ That route:
    On approval: status PAUSED → ACTIVE, leads route to FUB pipeline {pipeline-id}.
    ```
 
-10. **On Matt's "go"** — flip to ACTIVE:
+10. **On Matt's "go"**.  flip to ACTIVE:
     ```
     POST /v18.0/{ad-id}
     {"status": "ACTIVE"}
     ```
     Same for the ad set and campaign.
 
-11. **Confirm to Matt** — campaign live, daily spend cap set, leads will route to FUB starting now.
+11. **Confirm to Matt**.  campaign live, daily spend cap set, leads will route to FUB starting now.
 
 ---
 
@@ -289,15 +304,15 @@ Before flipping PAUSED → ACTIVE:
 - [ ] Daily budget set + total budget cap if specified
 - [ ] Run length defined (default 14 days)
 - [ ] Geo targeting = correct city + 25mi radius
-- [ ] Age range = 25–65 (or as specified)
+- [ ] Age range = 25-65 (or as specified)
 - [ ] Lead form attached + has all required fields (first/last/email/phone/intent)
 - [ ] Privacy policy URL valid (`https://ryan-realty.com/privacy`)
 - [ ] Thank-you screen text approved
 - [ ] FUB webhook configured + verified
-- [ ] Video uploaded (1:1 or 9:16 — Meta auto-handles cross-placement)
+- [ ] Video uploaded (1:1 or 9:16.  Meta auto-handles cross-placement)
 - [ ] Ad copy passes banned-word grep
 - [ ] Banned-word grep on lead form copy too
-- [ ] Status currently PAUSED — DON'T flip to ACTIVE without Matt's "go"
+- [ ] Status currently PAUSED.  DON'T flip to ACTIVE without Matt's "go"
 
 ---
 
@@ -320,11 +335,11 @@ GET /v18.0/{campaign-id}/insights?fields=impressions,reach,cost_per_result,actio
 
 Surface in a one-line summary:
 ```
-📊 Bend Market Report Lead Gen — Day 7
+📊 Bend Market Report Lead Gen.  Day 7
    Spend: $210 / $420 budget (50%)
    Leads: 28 captured (avg CPL $7.50)
    Intent: 9 buying / 6 selling / 3 both / 10 exploring
-   Top segment: Bend 25mi + age 30-45 + interest "real estate" — CPL $5.20
+   Top segment: Bend 25mi + age 30-45 + interest "real estate".  CPL $5.20
 ```
 
 ---
@@ -333,25 +348,45 @@ Surface in a one-line summary:
 
 Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
 
-- `matt-ryan.jpg` — Matt Ryan (owner / principal broker)
-- `paul-stevenson.jpg` — Paul Stevenson
-- `rebecca-peterson.jpg` — Rebecca Peterson
+- `matt-ryan.jpg`.  Matt Ryan (owner / principal broker)
+- `paul-stevenson.jpg`.  Paul Stevenson
+- `rebecca-peterson.jpg`.  Rebecca Peterson
 
 All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
 
-**Agent-face creative guidance:** For listing-specific lead-gen ads, test an agent-face creative variant alongside the property-photo version. Agent-face ads (broker headshot + listing address as text overlay, no photo of the home) frequently outperform property-only creatives for lead capture because they signal a real person is on the other end. Resolve the listing agent from `ListAgentFullName` in the Supabase `listings` row and use that broker's headshot. For brand-led campaigns (monthly market report, buyer/seller guide), omit the individual headshot — use the Ryan Realty logo from `design_system/ryan-realty/assets/brand/logo-blue.png`.
+**Agent-face creative guidance:** For listing-specific lead-gen ads, test an agent-face creative variant alongside the property-photo version. Agent-face ads (broker headshot + listing address as text overlay, no photo of the home) frequently outperform property-only creatives for lead capture because they signal a real person is on the other end. Resolve the listing agent from `ListAgentFullName` in the Supabase `listings` row and use that broker's headshot. For brand-led campaigns (monthly market report, buyer/seller guide), omit the individual headshot.  use the Ryan Realty logo from `design_system/ryan-realty/assets/brand/logo-blue.png`.
 
 ---
 
 ## 11. See also
 
-- `video_production_skills/monthly-market-report-orchestrator/SKILL.md` — the orchestrator that calls this skill
-- `video_production_skills/market-data-video/SKILL.md` — the short-form video this ad uses + canonical data dictionary
-- `video_production_skills/media-sourcing/SKILL.md` — image / video sourcing decision tree (the ad re-uses the short-form video, so any media decisions cascade from there)
-- `social_media_skills/blog-post/SKILL.md` — the blog post the lead receives in the thank-you email
-- `automation_skills/automation/publish/SKILL.md` — sister skill for organic publishing (this skill is the paid counterpart)
-- `automation_skills/automation/engagement_bot/SKILL.md` — handles inbound DMs / comments from the ad
+- `video_production_skills/monthly-market-report-orchestrator/SKILL.md`.  the orchestrator that calls this skill
+- `video_production_skills/market-data-video/SKILL.md`.  the short-form video this ad uses + canonical data dictionary
+- `video_production_skills/media-sourcing/SKILL.md`.  image / video sourcing decision tree (the ad re-uses the short-form video, so any media decisions cascade from there)
+- `social_media_skills/blog-post/SKILL.md`.  the blog post the lead receives in the thank-you email
+- `automation_skills/automation/publish/SKILL.md`.  sister skill for organic publishing (this skill is the paid counterpart)
+- `automation_skills/automation/engagement_bot/SKILL.md`.  handles inbound DMs / comments from the ad
 - Meta Marketing API: https://developers.facebook.com/docs/marketing-api
 - Meta Lead Ads: https://developers.facebook.com/docs/marketing-api/guides/lead-ads
 - Follow-Up Boss API: https://docs.followupboss.com/
 - Fair Housing Act compliance: https://www.facebook.com/business/m/special-ad-categories
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

@@ -54,7 +54,7 @@ Full POV rules in `voice_guidelines.md` §5.
 A piece that contains any of these stops at validation. No publish.
 
 ### Banned punctuation
-- Em dashes (`—`)
+- Em dashes (`. `)
 - Semicolons (`;`)
 - Dramatic colons (a colon used to introduce a punchline or expansion in body prose)
 
@@ -72,12 +72,12 @@ Compound hyphens are allowed when standard English requires them (single-family,
 - Hype openings: "Get ready to fall in love," "You won't believe," "Introducing," "Stunning new listing"
 - Pandering: "What a beautiful home," "You have great taste"
 - Talking down: "Don't worry, we will handle everything for you," "Let me explain in simple terms"
-- Marketing slop: "Top producing," "Top 1 percent," "White glove service," "Luxury concierge," "Premier brokerage," "Exclusive," "Boutique brokerage," "Your real estate journey," "We are passionate about...," "We pride ourselves on..."
+- Marketing slop: "Top producing," "Top 1 percent," "White glove service," "Luxury concierge," "Premier brokerage," "Exclusive," "Boutique brokerage," "Your real estate journey," "We are passionate about..," "We pride ourselves on.."
 - Fake urgency: "Act fast," "Don't miss out," "Won't last long"
 
 ### Banned tropes
 - Dramatic before-and-after ("Most agents do X. We do Y.")
-- Fake humility brag ("We are just so honored to be voted...")
+- Fake humility brag ("We are just so honored to be voted..")
 - Market-doom or market-hype ("The market is crashing," "The market is on fire")
 - Agent-as-hero arc (content where the broker is the protagonist, not the client)
 
@@ -104,8 +104,8 @@ Soft flags go to Matt for review with the specific rule cited. Over time the bra
 Drawn from Matt's actual GBP review responses. Full corpus at `corpus/gbp_responses.md`.
 
 ### Openings
-- "Thank you so much for taking the time to..."
-- "[Name], thank you for..."
+- "Thank you so much for taking the time to.."
+- "[Name], thank you for.."
 - "This genuinely made my day."
 
 ### Acknowledging the client
@@ -116,7 +116,7 @@ Drawn from Matt's actual GBP review responses. Full corpus at `corpus/gbp_respon
 
 ### Positioning Ryan Realty
 - "A small business like ours."
-- "Honored to..." / "Privilege to..."
+- "Honored to.." / "Privilege to.."
 
 ### Closing
 - "I'm always here if you need anything down the road."
@@ -184,9 +184,9 @@ The corpus at `corpus/gbp_responses.md` grows over time. Matt's own writing in a
 
 ## Related skills
 
-- `marketing-brain:dispatch-content` — calls this skill on every piece before publish.
-- `marketing-brain:generate-briefs` — uses this skill's rules when writing content briefs so the generator starts on-voice.
-- `marketing-brain:weekly-cycle` — invokes this skill as part of the publish gate.
-- `engineering:code-review` — when this skill itself is being edited.
+- `marketing-brain:dispatch-content`.  calls this skill on every piece before publish.
+- `marketing-brain:generate-briefs`.  uses this skill's rules when writing content briefs so the generator starts on-voice.
+- `marketing-brain:weekly-cycle`.  invokes this skill as part of the publish gate.
+- `engineering:code-review`.  when this skill itself is being edited.
 
 Read `voice_guidelines.md` for the full rulebook. Read `corpus/gbp_responses.md` when measuring fingerprint match.

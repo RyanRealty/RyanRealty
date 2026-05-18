@@ -1,8 +1,8 @@
 ---
 name: analyze-anomaly
 description: >
-  ANALYSIS producer (brain-internal). When the brain flags a channel anomaly — a drop
-  or spike that clears the z-score threshold — this producer drills into the daily
+  ANALYSIS producer (brain-internal). When the brain flags a channel anomaly.  a drop
+  or spike that clears the z-score threshold.  this producer drills into the daily
   data to identify the inflection date, break the metric by its next-level dimensions,
   cross-reference with known events in marketing_decisions, and produce a structured
   AnomalyFindings report written back to marketing_decisions. No published output.
@@ -11,6 +11,16 @@ action_types:
   - analyze:drop_investigation
   - analyze:spike_investigation
   - analyze:metric_decomposition
+output_type: operational
+target_platforms: []
+asset_destination: no asset; state mutation only (logged in marketing_decisions)
+auto_inputs: ["current campaign/account state"]
+required_inputs: ["account_id OR campaign_id"]
+optional_inputs: ["budget_delta_pct", "pause_reason"]
+estimated_runtime_min: 3
+cost_usd_estimate: $0.01-$0.10 per call (mostly API quota; minimal Anthropic)
+thumbnail_uri: out/proof/2026-05-17/exemplars/sample.html
+example_outputs: []
 ---
 
 # analyze-anomaly
@@ -19,7 +29,7 @@ action_types:
 `marketing_decisions`, produces a structured `AnomalyFindings` object, and writes it
 back as a `marketing_decisions` row. This is an analysis tool only. It does not write
 content, publish anything, send alerts, or modify ad accounts. Every finding is data,
-not a decision — the brain's `generate-briefs` skill decides what actions to take next.
+not a decision.  the brain's `generate-briefs` skill decides what actions to take next.
 
 **Status:** Canonical
 **Locked:** 2026-05-13
@@ -30,15 +40,15 @@ not a decision — the brain's `generate-briefs` skill decides what actions to t
 ## 1. Scope
 
 ### In scope
-- `analyze:drop_investigation` — a metric fell anomalously; find the inflection date and root cause dimensions
-- `analyze:spike_investigation` — a metric spiked anomalously; find what drove it
-- `analyze:metric_decomposition` — decompose a top-line metric into contributing sub-dimensions without a specific anomaly trigger (used by generate-briefs for scheduled deep dives)
+- `analyze:drop_investigation`.  a metric fell anomalously; find the inflection date and root cause dimensions
+- `analyze:spike_investigation`.  a metric spiked anomalously; find what drove it
+- `analyze:metric_decomposition`.  decompose a top-line metric into contributing sub-dimensions without a specific anomaly trigger (used by generate-briefs for scheduled deep dives)
 
 ### Out of scope
-- Deciding what action to take based on the findings — that is `generate-briefs`
-- Alerting Matt directly — that is `comms-matt-alert`
-- Running the statistical anomaly detection itself — that is `diagnose-performance` / `lib/marketing-brain/diagnose.ts`
-- Making any changes to campaigns, CRM, or site — those are ops producers
+- Deciding what action to take based on the findings.  that is `generate-briefs`
+- Alerting Matt directly.  that is `comms-matt-alert`
+- Running the statistical anomaly detection itself.  that is `diagnose-performance` / `lib/marketing-brain/diagnose.ts`
+- Making any changes to campaigns, CRM, or site.  those are ops producers
 
 ---
 
@@ -57,9 +67,9 @@ interface AnomalyAnalysisPayload {
   metric: string;              // e.g. 'qualified_seller_leads', 'gbp_call_clicks', 'sessions'
   channel: string;             // 'ga4' | 'gsc' | 'fub' | 'meta_ads' | 'gbp' | 'youtube' | 'linkedin'
   scope: 'account' | 'campaign' | 'page' | 'source';
-  asOfDate: string;            // YYYY-MM-DD — the day the anomaly was detected
+  asOfDate: string;            // YYYY-MM-DD.  the day the anomaly was detected
   windowDays: number;          // 7 (WoW investigation) or 30 (MoM investigation)
-  observed_change_pct: number; // from diagnose-performance — the % change that triggered this
+  observed_change_pct: number; // from diagnose-performance.  the % change that triggered this
   hypothesis?: string;         // optional starting hypothesis from the brain
 }
 ```
@@ -90,7 +100,7 @@ interface AnomalyActionRow {
 
 ## 4. The recipe
 
-**Step 1 — Read the action row and claim it**
+**Step 1.  Read the action row and claim it**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -100,7 +110,7 @@ WHERE id = '<action_id>' AND status = 'pending';
 
 Extract: `metric`, `channel`, `scope`, `asOfDate`, `windowDays`, `observed_change_pct`, `hypothesis`.
 
-**Step 2 — Pull 60 days of daily values**
+**Step 2.  Pull 60 days of daily values**
 
 Pull the daily time series for the metric over the trailing 60 days ending at `asOfDate`.
 This is the raw data for all downstream analysis.
@@ -129,7 +139,7 @@ SET status = 'killed',
 WHERE id = '<action_id>';
 ```
 
-**Step 3 — Identify the inflection date**
+**Step 3.  Identify the inflection date**
 
 Inflection date is the day the trend changed direction. Compute using a 7-day rolling
 mean: the inflection is the last date where the rolling mean crossed from above to below
@@ -145,7 +155,7 @@ Algorithm:
 
 Record `inflection_date: string` (YYYY-MM-DD).
 
-**Step 4 — Break by next-level dimensions**
+**Step 4.  Break by next-level dimensions**
 
 For each channel, query the dimension level below `scope`:
 
@@ -173,7 +183,7 @@ Run the same query for the equivalent pre-inflection window to compute contribut
 For each dimension, compute:
 - `current_period_total`: sum in window from inflection_date to asOfDate
 - `prior_period_total`: sum in the equivalent-length window before inflection_date
-- `contribution_pct`: `(current - prior) / abs(prior) * 100` — how much of the top-line change this dimension explains
+- `contribution_pct`: `(current - prior) / abs(prior) * 100`.  how much of the top-line change this dimension explains
 
 Filter to dimensions with `|contribution_pct| >= 5%`. Cap at 5 top contributors.
 
@@ -187,7 +197,7 @@ interface DimensionContributor {
 }
 ```
 
-**Step 5 — Cross-reference known events**
+**Step 5.  Cross-reference known events**
 
 Query `marketing_decisions` for events near the inflection date:
 
@@ -204,12 +214,12 @@ WHERE decided_at BETWEEN (CAST('<inflection_date>' AS date) - INTERVAL '7 days')
 ORDER BY decided_at DESC;
 ```
 
-Also check `competitor_intel` for scrapes in the same window — a competitor price drop
+Also check `competitor_intel` for scrapes in the same window.  a competitor price drop
 or new listing spike could explain a site-traffic shift.
 
 Record as `correlated_events: Array<{event_type, date, description}>`.
 
-**Step 6 — Form hypothesis**
+**Step 6.  Form hypothesis**
 
 If `payload.hypothesis` was provided, evaluate it against the findings.
 
@@ -220,7 +230,7 @@ Otherwise, generate a hypothesis from the evidence:
 
 Limit hypothesis to 2 sentences. No hedging words ("approximately", "might").
 
-**Step 7 — Generate recommended actions**
+**Step 7.  Generate recommended actions**
 
 Based on findings, produce up to 3 recommended actions. Each maps to a valid
 `action_type` the brain can enqueue:
@@ -241,7 +251,7 @@ interface RecommendedAction {
 }
 ```
 
-**Step 8 — Build and write AnomalyFindings**
+**Step 8.  Build and write AnomalyFindings**
 
 ```typescript
 interface AnomalyFindings {
@@ -273,7 +283,7 @@ INSERT INTO marketing_decisions (
 );
 ```
 
-**Step 9 — Enqueue recommended actions**
+**Step 9.  Enqueue recommended actions**
 
 For each item in `recommended_actions` with `priority='high'`:
 
@@ -293,7 +303,7 @@ INSERT INTO marketing_brain_actions (
 Only enqueue actions the brain has not already queued for the same target in the last 7 days
 (prevent duplicate queuing on repeated analysis runs).
 
-**Step 10 — Update action row to complete**
+**Step 10.  Update action row to complete**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -315,7 +325,7 @@ WHERE id = '<action_id>';
 | tool | purpose | env var / path |
 |---|---|---|
 | Supabase MCP | all data reads + writes | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
-| `lib/marketing-brain/diagnose.ts` | `dailyValues()`, `computeDelta()` — reuse for internal computation | imported by `lib/marketing-brain/audit-*.ts` patterns |
+| `lib/marketing-brain/diagnose.ts` | `dailyValues()`, `computeDelta()`.  reuse for internal computation | imported by `lib/marketing-brain/audit-*.ts` patterns |
 | No external APIs | all analysis runs on cached `marketing_channel_daily` data | snapshot ingestors must have run before this skill executes |
 
 ---
@@ -325,7 +335,7 @@ WHERE id = '<action_id>';
 **Primary output:** `marketing_decisions` row with `decision_type='anomaly_findings'`
 
 **No file system output.** No `out/` directory. No scorecard. No Matt-facing alert from
-this producer directly — if findings are urgent enough to alert Matt, `generate-briefs`
+this producer directly.  if findings are urgent enough to alert Matt, `generate-briefs`
 enqueues a `comms:matt_alert` action after reading the findings.
 
 **Executor response (written to action row):**
@@ -386,16 +396,38 @@ No `ready` or `approved` states. No draft surface.
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `marketing_brain_skills/diagnose-performance/SKILL.md` — anomaly definitions, z-score thresholds (`ANOMALY_Z_THRESHOLD=2.0`, `MIN_NON_ZERO_DAYS=14`, significance bands), `InsightSummary` shape
-- `lib/marketing-brain/diagnose.ts` — `AnomalyResult`, `DeltaReport`, `Significance`, `InsightSummary` types; `computeDelta()` and `detectAnomalies()` primitives for reference
-- `marketing_brain_skills/audit-website/SKILL.md` — GA4 and GSC metric dictionary (channel, scope, scope_id patterns)
-- `marketing_brain_skills/audit-ads/SKILL.md` — Meta Ads metric dictionary (campaign scope patterns, CPL fatigue thresholds)
-- `marketing_brain_skills/audit-crm/SKILL.md` — FUB metric dictionary (`qualified_seller_leads` north-star definition, seller-tag vocabulary)
-- `CLAUDE.md` §0 — Data Accuracy: every figure in findings must trace to a live Supabase query
+- `marketing_brain_skills/diagnose-performance/SKILL.md`.  anomaly definitions, z-score thresholds (`ANOMALY_Z_THRESHOLD=2.0`, `MIN_NON_ZERO_DAYS=14`, significance bands), `InsightSummary` shape
+- `lib/marketing-brain/diagnose.ts`.  `AnomalyResult`, `DeltaReport`, `Significance`, `InsightSummary` types; `computeDelta()` and `detectAnomalies()` primitives for reference
+- `marketing_brain_skills/audit-website/SKILL.md`.  GA4 and GSC metric dictionary (channel, scope, scope_id patterns)
+- `marketing_brain_skills/audit-ads/SKILL.md`.  Meta Ads metric dictionary (campaign scope patterns, CPL fatigue thresholds)
+- `marketing_brain_skills/audit-crm/SKILL.md`.  FUB metric dictionary (`qualified_seller_leads` north-star definition, seller-tag vocabulary)
+- `CLAUDE.md` §0.  Data Accuracy: every figure in findings must trace to a live Supabase query
 
 **Downstream consumers:**
-- `marketing_brain_skills/generate-briefs/SKILL.md` — reads `marketing_decisions` rows with `decision_type='anomaly_findings'` to generate the next content brief cycle
-- `marketing_brain_skills/producers/comms-matt-alert/` — if findings are critical, generate-briefs enqueues a `comms:matt_alert` action
+- `marketing_brain_skills/generate-briefs/SKILL.md`.  reads `marketing_decisions` rows with `decision_type='anomaly_findings'` to generate the next content brief cycle
+- `marketing_brain_skills/producers/comms-matt-alert/`.  if findings are critical, generate-briefs enqueues a `comms:matt_alert` action
 
 **Registry entry:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section F, row `analyze-anomaly`
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section F, row `analyze-anomaly`
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+

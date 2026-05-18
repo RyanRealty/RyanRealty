@@ -2,7 +2,7 @@
 name: ig-single-post
 description: >
   Canonical renderer for Ryan Realty single-image Instagram + Facebook feed posts at 1080×1350.
-  Handles the S1–S10 template catalog: S1 Just Listed, S2 Just Sold, S3 Open House, S4 Coming
+  Handles the S1-S10 template catalog: S1 Just Listed, S2 Just Sold, S3 Open House, S4 Coming
   Soon, S5 Price Improvement, S6 Featured Listing of the Week, S7 Agent Intro, S8 Brag Stat,
   S9 Press Feature, S10 Market Data Card. Payload-discriminated by `template` field. Enforces
   brand typography (Amboqia display, Geist body, Azo Sans Medium accent), data accuracy, voice
@@ -19,23 +19,39 @@ when_to_use: |
   - "price improvement post for <MLS#>"
   - "featured listing of the week"
   - "agent intro post for <broker>"
-  - "brag stat post — <stat>"
+  - "brag stat post.  <stat>"
   - "press feature post"
   - "market data card for <city>"
-  - any reference to S1, S2, ..., S10 by template number
+  - any reference to S1, S2,..., S10 by template number
 action_types:
   - content:ig_single_post
+output_type: text
+target_platforms: ["email", "agentfire_blog"]
+asset_destination: Supabase asset-library bucket + out/proof/<date>/<slug>/
+auto_inputs: ["brand voice rules", "market data from Supabase"]
+required_inputs: ["topic OR mls_id"]
+optional_inputs: ["tone_override", "length_override"]
+estimated_runtime_min: 8
+cost_usd_estimate: $0.10-$0.50 per piece (Anthropic tokens for drafting + voice check)
+thumbnail_uri: out/proof/2026-05-17/exemplars/<slug>/sample.html
+example_outputs: []
+    label: "past approved drafts"
+    surface: "email"
 ---
 
-# Instagram Single Post — S1–S10 Template Renderer
+# Instagram Single Post.  S1-S10 Template Renderer
 
-## CRITICAL — Canonical generator (read BEFORE rendering)
+**Status:** Canonical  
+**Locked:** 2026-05-17  
+
+
+## CRITICAL.  Canonical generator (read BEFORE rendering)
 
 **This skill does not describe S-template layouts in prose. The layouts live in code.** Before rendering for any new listing:
 
-1. **READ the approved-state reference:** `public/template-picker/preview/list-kit-tumalo-v3.html` — the canonical Tumalo Reservoir v3 state page Matt approved. Every new listing renders against it.
-2. **VIEW the 10 approved S-template renders:** `public/template-picker/list-kits/19496-tumalo-reservoir/v3/single-image/S1-just-listed.jpg ... S10-market-data.jpg`. These ARE the spec.
-3. **READ the canonical generator:** `scripts/build_single_image_posts.py` — produces all 10 templates. The function `s1_just_listed()`, `s2_just_sold()`, etc. each define the exact layout (font sizes, scrim values, text positions, source photo).
+1. **READ the approved-state reference:** `public/template-picker/preview/list-kit-tumalo-v3.html`.  the canonical Tumalo Reservoir v3 state page Matt approved. Every new listing renders against it.
+2. **VIEW the 10 approved S-template renders:** `public/template-picker/list-kits/19496-tumalo-reservoir/v3/single-image/S1-just-listed.jpg... S10-market-data.jpg`. These ARE the spec.
+3. **READ the canonical generator:** `scripts/build_single_image_posts.py`.  produces all 10 templates. The function `s1_just_listed()`, `s2_just_sold()`, etc. each define the exact layout (font sizes, scrim values, text positions, source photo).
 4. **Adapt by writing a listing-specific adapter** at `scripts/build_<slug>_<moment>_posts.py` (see `scripts/build_schoolhouse_sold_posts.py` + `scripts/build_beaumont_pending_posts.py` for working examples). Copy the helpers + S-function from `build_single_image_posts.py`. Change SRC paths + listing data + text content only. **Never re-implement layout, fonts, scrim values, or text positions.**
 
 **The approved S2 (Just Sold) layout (for example):**
@@ -63,12 +79,12 @@ Locked 2026-05-14 per `~/.claude/.../memory/feedback_use_approved_generators.md`
 **Scope.** Render one 1080×1350 single-image Instagram feed post per call, selecting from
 ten locked templates via the `template` payload field. Companion to `instagram-carousel`
 (multi-slide) and `flyer-design` (print/digital flyers). Owns the visual realization of every
-S-template. Does NOT generate caption text — captions are emitted by the caller (typically
+S-template. Does NOT generate caption text.  captions are emitted by the caller (typically
 `list-kit` or the brain via `produce`).
 
 **Status.** Canonical. Locked 2026-05-14.
 
-**Producer category.** Section B — Content Producer.
+**Producer category.** Section B.  Content Producer.
 
 ---
 
@@ -76,13 +92,13 @@ S-template. Does NOT generate caption text — captions are emitted by the calle
 
 | Reference | Why |
 |---|---|
-| `CLAUDE.md` §0 — Data Accuracy | Every number traces. Outranks all. |
-| `CLAUDE.md` §0.5 — Draft-First, Commit-Last | Render to `out/`, surface, wait for approval. |
-| `CLAUDE.md` "Voice + content" — #RyanRealtyBend HARD RULE | Captions emitted by caller must include `#RyanRealtyBend` first in hashtag block. |
+| `CLAUDE.md` §0.  Data Accuracy | Every number traces. Outranks all. |
+| `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Render to `out/`, surface, wait for approval. |
+| `CLAUDE.md` "Voice + content".  #RyanRealtyBend HARD RULE | Captions emitted by caller must include `#RyanRealtyBend` first in hashtag block. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register, navy/cream, Amboqia/Geist/Azo Sans Medium type tiers. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
 | `marketing_brain_skills/brand-voice/voice_guidelines.md` | Banned vocab union; voice attributes. |
-| `social_media_skills/instagram-carousel/SKILL.md` | Footer band spec, broker headshot rule, photo discipline — single-post inherits these conventions. |
+| `social_media_skills/instagram-carousel/SKILL.md` | Footer band spec, broker headshot rule, photo discipline.  single-post inherits these conventions. |
 | `social_media_skills/platform-best-practices/SKILL.md` | 2026 platform rule layer. |
 | `video_production_skills/ANTI_SLOP_MANIFESTO.md` | Banned content gate. |
 | `automation_skills/content_engine/SKILL.md` | Content routing bus. |
@@ -121,7 +137,7 @@ type IgSinglePostTemplate =
 
 interface IgSinglePostPayload {
   template: IgSinglePostTemplate
-  // Template-specific fields — see §2 catalog summary
+  // Template-specific fields.  see §2 catalog summary
   [key: string]: unknown
 }
 ```
@@ -146,7 +162,7 @@ Missing required field → surface to caller, do not render.
 **Safe zone.** All other content within `54 px` inset on left/right and `40 px` from top.
 Content area is `y = 0 → y = 1170` (1170 px tall, 972 px wide content with 54 px insets).
 
-**Broker headshot** (templates S1–S6 only — per-listing content):
+**Broker headshot** (templates S1-S6 only.  per-listing content):
 - Source: `design_system/ryan-realty/assets/team/<resolved>.png`.
 - Resolved via `list_agent` payload field → matt-ryan / paul-stevenson / rebecca-peterson.
 - Size: 120 px wide circular crop (`border-radius: 50%`), placed bottom-left of content area
@@ -154,7 +170,7 @@ Content area is `y = 0 → y = 1170` (1170 px tall, 972 px wide content with 54 
 - Agent name (Geist 500, 14 px, `#102742`, two lines): `<Full Name>` / `Principal Broker` (or
   role).
 
-For S7 (Agent Intro), the headshot is the hero — full-frame, see §5.7.
+For S7 (Agent Intro), the headshot is the hero.  full-frame, see §5.7.
 For S8, S9, S10 (brand-led), no headshot. Use the Jax mascot from `assets/brand/blue-dog.png`
 in the same corner instead (120 px wide, original aspect, no circle crop).
 
@@ -162,7 +178,7 @@ in the same corner instead (120 px wide, original aspect, no circle crop).
 
 ## 5. Per-template recipes
 
-### 5.1 S1 — Just Listed
+### 5.1 S1.  Just Listed
 
 **Eyebrow** (Azo Sans Medium, 14 px, navy `#102742`, UPPERCASE, letter-spacing 0.16em, top of
 content area at `y = 80, x = 54`):
@@ -184,7 +200,7 @@ The street address line. E.g. `1234 NW Riverview Drive`.
 
 **Broker headshot block** (per §4 spec).
 
-### 5.2 S2 — Just Sold
+### 5.2 S2.  Just Sold
 
 **Eyebrow**: `JUST SOLD · <CITY>` (same style as S1).
 
@@ -200,7 +216,7 @@ The street address line. E.g. `1234 NW Riverview Drive`.
 
 **Broker headshot block** (per §4).
 
-### 5.3 S3 — Open House
+### 5.3 S3.  Open House
 
 **Eyebrow**: `OPEN HOUSE · <DAY OF WEEK>` (e.g. `OPEN HOUSE · SATURDAY`).
 
@@ -209,7 +225,7 @@ The street address line. E.g. `1234 NW Riverview Drive`.
 **Headline** (Amboqia, 56 px, navy): the address.
 
 **Time block** (Geist 500, 32 px, navy, tabular-nums, `y = 800`):
-`<open_start_local> – <open_end_local>` (e.g. `11:00 AM – 1:00 PM`).
+`<open_start_local> - <open_end_local>` (e.g. `11:00 AM - 1:00 PM`).
 
 **Date sub-line** (Geist 400, 20 px, navy 0.85 opacity, `y = 850`):
 `<full date>` (e.g. `Saturday, May 17, 2026`).
@@ -219,25 +235,25 @@ The street address line. E.g. `1234 NW Riverview Drive`.
 
 **Broker headshot block** (per §4).
 
-### 5.4 S4 — Coming Soon
+### 5.4 S4.  Coming Soon
 
 **Eyebrow**: `COMING SOON · <CITY>` (Azo Sans Medium, same style).
 
-**Hero photo**: 600 px tall. **Exterior only** — never an interior shot. If `hero_photo` looks
+**Hero photo**: 600 px tall. **Exterior only**.  never an interior shot. If `hero_photo` looks
 interior, surface to caller.
 
 **Headline** (Amboqia, 56 px, navy): the address (street + city).
 
 **Date line** (Geist 500, 24 px, navy, `y = 820`):
-`Hitting the market <date>`. E.g. `Hitting the market May 24`. Format: `<Month> <day>` — no
+`Hitting the market <date>`. E.g. `Hitting the market May 24`. Format: `<Month> <day>`.  no
 year if same year.
 
 **Price line** (Geist 500, 22 px, navy 0.85 opacity, `y = 870`):
-`Listed at $<price>` (rounded). If price isn't finalized, render `Price TBD` — never invent.
+`Listed at $<price>` (rounded). If price isn't finalized, render `Price TBD`.  never invent.
 
 **Broker headshot block** (per §4).
 
-### 5.5 S5 — Price Improvement
+### 5.5 S5.  Price Improvement
 
 **Eyebrow**: `PRICE IMPROVEMENT · <CITY>`.
 
@@ -256,23 +272,23 @@ year if same year.
 
 **Broker headshot block** (per §4).
 
-### 5.6 S6 — Featured Listing of the Week
+### 5.6 S6.  Featured Listing of the Week
 
 **Eyebrow** (Azo Sans Medium, 14 px, navy, letter-spacing 0.18em, top center):
 `FEATURED LISTING OF THE WEEK`.
 
-**Hero photo**: 700 px tall (taller than other templates — this is the editorial moment).
+**Hero photo**: 700 px tall (taller than other templates.  this is the editorial moment).
 
 **Editorial headline** (Amboqia Boriango, 48 px, navy, line-height 1.10, max 2 lines, `y = 850`):
 The editorial subhead. E.g. `A barn on twelve acres in Tumalo.` Pulled from `editorial_subhead`
 payload. Not the address.
 
 **Address + price line** (Geist 400, 16 px, navy 0.65 opacity, tabular-nums, `y = 980`):
-`<Address>  ·  $<price>`. This is small intentionally — the editorial line carries the post.
+`<Address>  ·  $<price>`. This is small intentionally.  the editorial line carries the post.
 
 **Broker headshot block** (per §4).
 
-### 5.7 S7 — Agent Intro
+### 5.7 S7.  Agent Intro
 
 **Eyebrow**: `THE TEAM AT RYAN REALTY`.
 
@@ -292,9 +308,9 @@ The broker's title. Owner / Principal Broker (Matt) · Broker (Paul, Rebecca).
 **Signature neighborhoods** (Geist 400, 14 px, navy 0.55 opacity, `y = 1010`):
 `Signature: <neighborhoods joined with ·>` (max 4 neighborhoods).
 
-No separate headshot block — the portrait IS the post.
+No separate headshot block.  the portrait IS the post.
 
-### 5.8 S8 — Brag Stat
+### 5.8 S8.  Brag Stat
 
 **Eyebrow**: `RYAN REALTY · <STAT_PERIOD>` (e.g. `RYAN REALTY · LAST 12 MONTHS`).
 
@@ -312,7 +328,7 @@ The number with units. E.g. `38 days`, `$895K`, `97% of list`.
 
 **Jax mascot** in the corner per §4 spec.
 
-### 5.9 S9 — Press Feature
+### 5.9 S9.  Press Feature
 
 **Eyebrow**: `AS SEEN IN · <PUBLICATION>` (UPPERCASE, Azo Sans Medium 14 px, letter-spacing
 0.16em).
@@ -320,14 +336,14 @@ The number with units. E.g. `38 days`, `$895K`, `97% of list`.
 **No hero photo.** Cream background.
 
 **Pull quote** (Amboqia, 44 px, navy, line-height 1.20, `y = 320`, max 4 lines):
-`"<quote_from_article>"` — opening + closing typographic quote marks.
+`"<quote_from_article>"`.  opening + closing typographic quote marks.
 
 **Attribution** (Geist 400, 18 px, navy 0.65 opacity, `y = 720`):
 `<article_title>  ·  <publication_name>  ·  <published_date>`.
 
 **Jax mascot** in the corner per §4 spec.
 
-### 5.10 S10 — Market Data Card
+### 5.10 S10.  Market Data Card
 
 **Eyebrow**: `<CITY OR NEIGHBORHOOD> · <PERIOD>` (e.g. `BEND · MAY 2026`).
 
@@ -360,15 +376,15 @@ node lib/render-ig-single-post.mjs \
   --out out/ig-single-post/<slug>/post.png
 ```
 
-Compositor lives at `lib/render-ig-single-post.mjs` (build if absent — uses the same canvas /
+Compositor lives at `lib/render-ig-single-post.mjs` (build if absent.  uses the same canvas /
 fonts / brand assets pipeline as `lib/render-just-listed-flyer.mjs` per `flyer-design/SKILL.md`).
 
 Pre-render asset audit:
 - Fonts on disk: `Amboqia_Boriango.otf`, `AzoSans-Medium.ttf`, Geist (next/font/geist).
 - Logo on disk: `design_system/ryan-realty/assets/brand/logo-white.png`.
-- Broker headshot on disk (if S1–S6): `design_system/ryan-realty/assets/team/<slug>.png`.
+- Broker headshot on disk (if S1-S6): `design_system/ryan-realty/assets/team/<slug>.png`.
 - Jax mascot on disk (if S8/S9/S10): `design_system/ryan-realty/assets/brand/blue-dog.png`.
-- Hero photo on disk (if S1–S6) or pull from Supabase / Spark.
+- Hero photo on disk (if S1-S6) or pull from Supabase / Spark.
 
 If any asset missing: stop, surface to caller, do not fall back to system fonts or substitute
 images.
@@ -424,9 +440,9 @@ Run before surfacing the draft. Write results to `design_scorecard.json`. Any `f
 | 7 | Photo integrity | If template uses a hero, photo is from MLS / approved source, traced in `provenance.json`, no watermarks, no AI fake |
 | 8 | Safe zone | No critical content within 54 px of left/right or 40 px of top |
 | 9 | Color compliance | Navy `#102742` + cream `#faf8f4` only. No gold. No off-brand hex |
-| 10 | Banned words clean | Grep all on-image text against `voice_guidelines.md` §6 union — zero hits |
-| 11 | Broker resolution | S1–S6: `list_agent` resolved to one of three brokers. Headshot present |
-| 12 | Pattern C font discipline | If the post is editorial (S6), body uses Geist 500 — not Azo Sans Medium |
+| 10 | Banned words clean | Grep all on-image text against `voice_guidelines.md` §6 union.  zero hits |
+| 11 | Broker resolution | S1-S6: `list_agent` resolved to one of three brokers. Headshot present |
+| 12 | Pattern C font discipline | If the post is editorial (S6), body uses Geist 500.  not Azo Sans Medium |
 | 13 | File size | < 3 MB PNG |
 
 If S6 includes an `editorial_subhead` that contains banned vocab: stop, surface for revision.
@@ -435,13 +451,13 @@ If S6 includes an `editorial_subhead` that contains banned vocab: stop, surface 
 
 ## 9. Approval gate
 
-`matt-review-draft` — Matt sees the rendered PNG + caption (from caller) and says "ship it" /
+`matt-review-draft`.  Matt sees the rendered PNG + caption (from caller) and says "ship it" /
 "approved" / "go" before any commit or publish.
 
 Surface format:
 
 ```
-Single post ready for review — <template> · <address-or-subject>
+Single post ready for review.  <template> · <address-or-subject>
 
   IMAGE
     Path: out/ig-single-post/<slug>/post.png
@@ -483,7 +499,7 @@ The producer transitions:
 |---|---|---|
 | Missing payload field | template selected but required field absent | Surface to caller with the specific missing field; do not render |
 | Broker not resolved | `list_agent` doesn't map to matt-ryan / paul-stevenson / rebecca-peterson | Surface; offer fallback to Jax for brand-led variants, or ask Matt to disambiguate |
-| Hero photo missing | S1–S6 needs hero, payload has no `hero_photo` path or URL | Surface; offer to fetch from Spark / Supabase or pause |
+| Hero photo missing | S1-S6 needs hero, payload has no `hero_photo` path or URL | Surface; offer to fetch from Spark / Supabase or pause |
 | AI-generated photo detected | `provenance.json` source flagged AI | Hard fail per ANTI_SLOP_MANIFESTO. Do not render |
 | Banned vocab on canvas | grep hit in headline / eyebrow / source line | Stop. Re-write the copy. Re-validate |
 | Font fallback at render | Amboqia / Geist / Azo Sans Medium not on disk | Stop. Report missing file. Do not ship with system fonts |
@@ -497,7 +513,7 @@ The producer transitions:
 1. **Never use AI-generated property photos.** Hard fail per ANTI_SLOP_MANIFESTO.
 2. **Never substitute fonts.** If Amboqia or Geist or Azo Sans Medium isn't on disk, stop.
 3. **Never invent numbers.** Every stat traces. S10 requires `stat_source` and S8 requires
-   `stat_period` for a reason — without those, the post does not ship.
+   `stat_period` for a reason.  without those, the post does not ship.
 4. **Never mix templates.** One post = one template. Don't combine S1's headline with S6's
    editorial subhead.
 5. **Never re-typeset the wordmark.** Always use the pre-rendered PNG.
@@ -505,7 +521,7 @@ The producer transitions:
 7. **Never use em-dashes or semicolons** in on-image copy.
 8. **Never use gold** (`#D4AF37`, `#C8A864`). Monochrome navy on cream only.
 9. **Never claim a quality without evidence.** S8 brags must be sourced. "Top producing" /
-   "#1 in Bend" / "Award-winning" — non-compliant without a cited basis in the same post.
+   "#1 in Bend" / "Award-winning".  non-compliant without a cited basis in the same post.
 10. **Never publish without the caller's caption passing #RyanRealtyBend validation.** The
     renderer doesn't write captions, but it refuses to enter `ready` state if the caller's
     caption is missing or malformed (when caption is supplied via payload).
@@ -514,12 +530,32 @@ The producer transitions:
 
 ## 13. See also
 
-- `social_media_skills/instagram-carousel/SKILL.md` — multi-slide companion (Patterns A/B/C/D)
-- `social_media_skills/flyer-design/SKILL.md` — static flyers (print + digital)
-- `social_media_skills/list-kit/SKILL.md` — the at-Active orchestrator (S1 default trigger)
-- `marketing_brain_skills/producers/TEMPLATE.md` — producer skeleton
-- `marketing_brain_skills/producers/REGISTRY.md` — Section B row
-- `automation_skills/content_engine/SKILL.md` — content routing bus
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — banned vocab union
-- `design_system/ryan-realty/SKILL.md` — brand system
-- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
+- `social_media_skills/instagram-carousel/SKILL.md`.  multi-slide companion (Patterns A/B/C/D)
+- `social_media_skills/flyer-design/SKILL.md`.  static flyers (print + digital)
+- `social_media_skills/list-kit/SKILL.md`.  the at-Active orchestrator (S1 default trigger)
+- `marketing_brain_skills/producers/TEMPLATE.md`.  producer skeleton
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section B row
+- `automation_skills/content_engine/SKILL.md`.  content routing bus
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`.  banned vocab union
+- `design_system/ryan-realty/SKILL.md`.  brand system
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content gate
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`

@@ -9,10 +9,10 @@ description: Use this skill when a task involves "FUB", "Follow Up Boss", "CRM",
 
 This is a capability skill used by the marketing brain's CRM layer. Every task that invokes this skill also loads:
 
-- `CLAUDE.md` §0 — Data Accuracy mandate (outranks all other instructions)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `lib/marketing-brain/audit-crm.ts` — analytics layer (reads FUB data from Supabase)
-- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md` — write-back producer (mutates FUB via API)
+- `CLAUDE.md` §0.  Data Accuracy mandate (outranks all other instructions)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last
+- `lib/marketing-brain/audit-crm.ts`.  analytics layer (reads FUB data from Supabase)
+- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md`.  write-back producer (mutates FUB via API)
 
 ---
 
@@ -20,9 +20,9 @@ This is a capability skill used by the marketing brain's CRM layer. Every task t
 
 Follow Up Boss (FUB) is Ryan Realty's CRM. Every lead Ryan Realty generates lands in FUB before any human touches it.
 
-**The brain READS FUB indirectly** — the daily ingestor at `app/api/cron/marketing-snapshot-fub/route.ts` pulls from the FUB v1 API and writes rows to `public.marketing_channel_daily` (channel `'fub'`). The audit-crm layer reads exclusively from Supabase, never from FUB directly at audit time.
+**The brain READS FUB indirectly**.  the daily ingestor at `app/api/cron/marketing-snapshot-fub/route.ts` pulls from the FUB v1 API and writes rows to `public.marketing_channel_daily` (channel `'fub'`). The audit-crm layer reads exclusively from Supabase, never from FUB directly at audit time.
 
-**The brain WRITES to FUB directly** — the `ops-fub-crm` producer calls the FUB API for: tag apply/remove, sequence enrollment/stop, task creation, and agent routing changes. These are ops-tier actions requiring Matt's explicit approval for bulk operations.
+**The brain WRITES to FUB directly**.  the `ops-fub-crm` producer calls the FUB API for: tag apply/remove, sequence enrollment/stop, task creation, and agent routing changes. These are ops-tier actions requiring Matt's explicit approval for bulk operations.
 
 ### Lead intake sources flowing into FUB
 
@@ -52,24 +52,24 @@ Follow Up Boss (FUB) is Ryan Realty's CRM. Every lead Ryan Realty generates land
 | Creating new lead records | webhook ingest routes in `app/api/` |
 | Sending email to leads | `ops-email-send` producer + Resend |
 | Exporting leads for Meta custom audiences | `scripts/export-fub-custom-audience.mjs` |
-| Deleting lead records | Manual action in FUB UI — never automated |
+| Deleting lead records | Manual action in FUB UI.  never automated |
 | Supabase analytics queries against `marketing_channel_daily` | Supabase tool skill directly |
 
 ---
 
 ## Authentication
 
-**Auth type:** HTTP Basic — API key as the username, empty string as the password.
+**Auth type:** HTTP Basic.  API key as the username, empty string as the password.
 
 | env var | purpose | where to get it |
 |---|---|---|
-| `FOLLOWUPBOSS_API_KEY` | Primary API key — all v1 API calls | FUB Admin → Integrations → API |
+| `FOLLOWUPBOSS_API_KEY` | Primary API key.  all v1 API calls | FUB Admin → Integrations → API |
 | `FUB_API_KEY` | Script-side alias (same key, different name convention) | Same key; `lib/fub-client.mjs` accepts both |
 | `FOLLOWUPBOSS_SYSTEM` | Optional X-System header (identifies the integration in FUB) | Set to `'ryan-realty-platform'` |
 | `FOLLOWUPBOSS_SYSTEM_KEY` | Optional X-System-Key header (system-level auth in FUB) | Provided by FUB support if required |
 
 ```ts
-// Canonical auth helper — lib/fub-snapshot.ts (used by the ingestor)
+// Canonical auth helper.  lib/fub-snapshot.ts (used by the ingestor)
 export function getFubHeaders(): HeadersInit | null {
   const apiKey = process.env.FOLLOWUPBOSS_API_KEY?.trim()
   if (!apiKey) return null
@@ -85,7 +85,7 @@ export function getFubHeaders(): HeadersInit | null {
 }
 ```
 
-**Never use `Authorization: Bearer ...`** — FUB v1 uses Basic auth (base64 of `apiKey:`). Bearer auth returns 401.
+**Never use `Authorization: Bearer..`**.  FUB v1 uses Basic auth (base64 of `apiKey:`). Bearer auth returns 401.
 
 Stored in:
 - `.env.local` (local dev)
@@ -93,7 +93,7 @@ Stored in:
 
 ---
 
-## CRITICAL gotcha #1 — Case-insensitive AND multi-form tag matching
+## CRITICAL gotcha #1.  Case-insensitive AND multi-form tag matching
 
 **Do not simplify the tag matching set.** The playbook documents tags in kebab-case (`hot-seller`, `warm-seller`, `seller`, `seller-lead`) but actual production data uses at least three more forms: Title Case from the webhook (`Seller Lead`, `Seller Intent`, `Hot Seller`, `Warm Seller`), landing-page form tags (`LP-Home-Value`), and automation tags fired by the FUB workflow engine (`auto:seller-seq:new`).
 
@@ -127,13 +127,13 @@ function isSellerLead(tags: string[] | null | undefined): boolean {
 }
 ```
 
-**Comparison is case-insensitive** (`raw.toLowerCase().trim()`). Never remove the case-insensitive step — a tag arriving as `Seller Lead` from the webhook would silently miss a case-sensitive `has()` check and drop qualified leads from the north-star count.
+**Comparison is case-insensitive** (`raw.toLowerCase().trim()`). Never remove the case-insensitive step.  a tag arriving as `Seller Lead` from the webhook would silently miss a case-sensitive `has()` check and drop qualified leads from the north-star count.
 
-**`nurture-only` is excluded by design** — those leads are not yet qualified.
+**`nurture-only` is excluded by design**.  those leads are not yet qualified.
 
 ---
 
-## CRITICAL gotcha #2 — /v1/people does NOT accept createdAfter / createdBefore
+## CRITICAL gotcha #2.  /v1/people does NOT accept createdAfter / createdBefore
 
 The FUB v1 `/people` endpoint returns HTTP 400 if you pass `createdAfter` or `createdBefore` as query parameters. The documented workaround is to paginate using `sort=-created` (newest first) and stop when the oldest item on a page falls before the window start.
 
@@ -154,9 +154,9 @@ Key behaviors:
 - Sorts by `-created` (newest first) so most windows terminate early.
 - Stops as soon as the newest item on a page is older than `startDateISO`.
 - Hard-caps at 200 pages to prevent infinite loops on large databases.
-- Works for `/people`, `/events`, and `/deals` — all three endpoints share the same missing-date-filter behavior.
+- Works for `/people`, `/events`, and `/deals`.  all three endpoints share the same missing-date-filter behavior.
 
-**Do not attempt `?createdAfter=...` or `?createdBefore=...`** — it fails with 400. Do not use `fetchAllPages()` for date-windowed pulls — it will scan the entire lead database.
+**Do not attempt `?createdAfter=..` or `?createdBefore=..`**.  it fails with 400. Do not use `fetchAllPages()` for date-windowed pulls.  it will scan the entire lead database.
 
 ---
 
@@ -170,10 +170,10 @@ All endpoints use Basic auth (see Authentication section).
 
 | endpoint | method | purpose | gotchas |
 |---|---|---|---|
-| `/people` | GET | Lead list — paginated | No date-filter params (see gotcha #2). Use `sort=-created` + client-side filter. Paginate with `limit` + `offset`. Response key is `people` (plural). |
+| `/people` | GET | Lead list.  paginated | No date-filter params (see gotcha #2). Use `sort=-created` + client-side filter. Paginate with `limit` + `offset`. Response key is `people` (plural). |
 | `/people/{id}` | GET | Single lead detail | Returns full person object including tags, stage, source, assigned agent |
 | `/events` | GET | Activity events (calls, emails, notes, appointments) | Same no-date-filter gotcha as /people |
-| `/deals` | GET | Deal pipeline — all deals | Accepts full-table fetch (no date filter needed for pipeline snapshot). Response key is `deals`. |
+| `/deals` | GET | Deal pipeline.  all deals | Accepts full-table fetch (no date filter needed for pipeline snapshot). Response key is `deals`. |
 | `/users` | GET | Broker roster | Use to resolve agent IDs before routing operations. Returns all FUB users for the account. |
 
 ### Pagination pattern (fetchAllPages)
@@ -194,12 +194,12 @@ offset += pageSize
 
 | endpoint | method | purpose | key behavior |
 |---|---|---|---|
-| `/people/{id}` | PUT | Update tags, stage, assigned agent | Tags are a full replacement array — always merge with existing tags before writing |
+| `/people/{id}` | PUT | Update tags, stage, assigned agent | Tags are a full replacement array.  always merge with existing tags before writing |
 | `/tasks` | POST | Create a task for a broker | Requires explicit `personId`, `type`, `dueDate`, `assignedUserId` |
 | `/actionPlans/subscriptions` | POST | Enroll a lead in a sequence | Requires `personId`, `actionPlanId`, `assignedUserId` |
 | `/actionPlans/subscriptions/{id}` | DELETE | Stop an active sequence | Must first fetch active subscription ID for the person + sequence pair |
 
-**Tag write rule (enforced in ops-fub-crm):** FUB's PUT `/people/{id}` sets the full tags array. Always fetch current tags before writing, then compute `[...currentTags, ...tagsToAdd]` or `currentTags.filter(t => !tagsToRemove.includes(t))`. Never overwrite the full tag list without a merge step.
+**Tag write rule (enforced in ops-fub-crm):** FUB's PUT `/people/{id}` sets the full tags array. Always fetch current tags before writing, then compute `[..currentTags,..tagsToAdd]` or `currentTags.filter(t => !tagsToRemove.includes(t))`. Never overwrite the full tag list without a merge step.
 
 ---
 
@@ -259,16 +259,16 @@ Defined in `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` and locked in `lib/marketing-br
 
 | compliance % | severity | generates |
 |---|---|---|
-| < 50% | high | `ops:fub_task_create` action row — broker task flagging the breach |
-| 50–80% | medium | `ops:fub_sequence_change` action row — tighten auto-followup sequence |
+| < 50% | high | `ops:fub_task_create` action row.  broker task flagging the breach |
+| 50-80% | medium | `ops:fub_sequence_change` action row.  tighten auto-followup sequence |
 | worsening trend (>= 80% but trending up) | low | alert only; no action row |
-| no data | medium | `check_tracking` alert — FUB may not be surfacing `firstAgentResponseTime` |
+| no data | medium | `check_tracking` alert.  FUB may not be surfacing `firstAgentResponseTime` |
 
 ---
 
 ## Source quality scoring
 
-`analyzeSourceQuality()` in `audit-crm.ts` computes a 0–100 weighted composite per lead source over the window:
+`analyzeSourceQuality()` in `audit-crm.ts` computes a 0-100 weighted composite per lead source over the window:
 
 ```
 quality_score = (qualified_lead_ratio × 0.50)
@@ -278,7 +278,7 @@ quality_score = (qualified_lead_ratio × 0.50)
 
 Where `qualified_lead_ratio = qualified_seller_leads / new_leads` and `avg_deal_value_score` is each source's average deal value normalised to [0,1] relative to the peer maximum.
 
-**Current limitation:** the ingestor does not break down `qualified_seller_leads` or `deals_closed_won` by source in Supabase — only `new_leads` is tracked at `scope='source'`. Source quality ratios are allocated proportionally from account-level totals. This is documented in the code as an approximation and should be flagged as such in any deliverable citing source quality scores.
+**Current limitation:** the ingestor does not break down `qualified_seller_leads` or `deals_closed_won` by source in Supabase.  only `new_leads` is tracked at `scope='source'`. Source quality ratios are allocated proportionally from account-level totals. This is documented in the code as an approximation and should be flagged as such in any deliverable citing source quality scores.
 
 ---
 
@@ -294,7 +294,7 @@ A pipeline stall is flagged when a stage's count grew over the window but `contr
 
 ## Cost model
 
-FUB charges a flat SaaS subscription — the REST API is included at no additional cost per call. No per-request quota to manage at Ryan Realty's volume (hundreds of leads/week, well below any documented rate limit).
+FUB charges a flat SaaS subscription.  the REST API is included at no additional cost per call. No per-request quota to manage at Ryan Realty's volume (hundreds of leads/week, well below any documented rate limit).
 
 **Rate limit:** FUB v1 enforces approximately 50 requests/second for reads and approximately 100 requests/10 seconds for writes. The ingestor serializes all calls sequentially within a single cron execution. The ops-fub-crm producer batches write operations with 10s back-off on 429.
 
@@ -321,7 +321,7 @@ FUB charges a flat SaaS subscription — the REST API is included at no addition
 
 **Default (Vercel cron):** Daily at 06:30 UTC. Pulls yesterday's data only.
 
-**Backfill:** `GET /api/cron/marketing-snapshot-fub?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` — iterates day-by-day within the range and writes one metric set per day. Requires `Authorization: Bearer $CRON_SECRET`.
+**Backfill:** `GET /api/cron/marketing-snapshot-fub?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`.  iterates day-by-day within the range and writes one metric set per day. Requires `Authorization: Bearer $CRON_SECRET`.
 
 **Entry point:** `app/api/cron/marketing-snapshot-fub/route.ts`
 
@@ -334,12 +334,12 @@ FUB charges a flat SaaS subscription — the REST API is included at no addition
 | consumer | what it does |
 |---|---|
 | `app/api/cron/marketing-snapshot-fub/route.ts` | Daily FUB snapshot ingestor; writes to `marketing_channel_daily` |
-| `lib/marketing-brain/audit-crm.ts` | CRM analytics — response_time, source_quality, pipeline_health, tagging_drift, north_star; reads from Supabase only |
+| `lib/marketing-brain/audit-crm.ts` | CRM analytics.  response_time, source_quality, pipeline_health, tagging_drift, north_star; reads from Supabase only |
 | `lib/marketing-brain/generate-briefs.ts` | Emits `ops:fub_tag_fix`, `ops:fub_sequence_change`, `ops:fub_task_create`, `ops:fub_routing` action rows from audit-crm opportunities |
 | `marketing_brain_skills/producers/ops-fub-crm/SKILL.md` | Executes FUB mutations post-Matt-approval; enforces count guardrail before bulk ops |
-| `lib/fub.ts` | `pushToFub()` — direct event push for lead intake from web forms and IDX |
+| `lib/fub.ts` | `pushToFub()`.  direct event push for lead intake from web forms and IDX |
 | `lib/fub-client.mjs` | Script-side FUB client (people lookup, note create, people list) |
-| `lib/fub-snapshot.ts` | `getFubHeaders()` — canonical auth helper used by the ingestor |
+| `lib/fub-snapshot.ts` | `getFubHeaders()`.  canonical auth helper used by the ingestor |
 
 ---
 
@@ -352,7 +352,7 @@ FUB charges a flat SaaS subscription — the REST API is included at no addition
 | `marketing_brain_skills/producers/ops-fub-crm/SKILL.md` | Write-back producer; approval gate; per-op FUB API call patterns |
 | `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §2 | Seller lead tag definitions; SLA thresholds; conditional tagging rules |
 | `docs/MARKETING_LEAD_FLOW.md` | End-to-end lead flow from ad click to FUB record; webhook + dedup detail |
-| `lib/fub-snapshot.ts` | Auth helper — canonical pattern for `getFubHeaders()` |
+| `lib/fub-snapshot.ts` | Auth helper.  canonical pattern for `getFubHeaders()` |
 | `lib/fub.ts` | Event push for web-form lead intake |
 | `lib/fub-client.mjs` | Script-side people lookup and note creation |
-| https://docs.followupboss.com/reference | FUB v1 API reference — endpoint schemas, filter params, response shapes |
+| https://docs.followupboss.com/reference | FUB v1 API reference.  endpoint schemas, filter params, response shapes |

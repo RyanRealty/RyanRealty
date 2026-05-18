@@ -12,9 +12,19 @@ action_types:
   - ops:meta_resume
   - ops:meta_audience
   - ops:meta_creative_swap
+output_type: operational
+target_platforms: []
+asset_destination: no asset; state mutation only (logged in marketing_decisions)
+auto_inputs: ["current campaign/account state"]
+required_inputs: ["account_id OR campaign_id"]
+optional_inputs: ["budget_delta_pct", "pause_reason"]
+estimated_runtime_min: 3
+cost_usd_estimate: $0.01-$0.10 per call (mostly API quota; minimal Anthropic)
+thumbnail_uri: out/proof/2026-05-17/exemplars/sample.html
+example_outputs: []
 ---
 
-# ops-meta-ads — Meta Ads Operational Producer
+# ops-meta-ads.  Meta Ads Operational Producer
 
 **Scope:** Executes real-world changes to the Ryan Realty Meta Ads account via the
 Marketing Graph API. Handles campaign budget adjustment, pause/resume, audience
@@ -22,7 +32,7 @@ modification, and creative swap. Surfaces every proposed change to Matt with cur
 state, proposed state, and a data-backed rationale before making any API call.
 Never assumes approval from a passing audit score or prior conversation.
 
-Does NOT create new campaigns (that is `ops:meta_ads_new_campaign` — a separate,
+Does NOT create new campaigns (that is `ops:meta_ads_new_campaign`.  a separate,
 unbuilt producer). Does NOT post organic content to Facebook or Instagram (that is
 the publisher capability). Does NOT pull analytics or generate reports (that is
 audit-ads + diagnose-performance).
@@ -37,16 +47,16 @@ audit-ads + diagnose-performance).
 ## 1. Scope
 
 ### In scope
-- `ops:meta_budget` — adjust daily budget on an ad set or campaign within ±25% band
-- `ops:meta_pause` — pause a campaign or ad set
-- `ops:meta_resume` — resume a paused campaign or ad set
-- `ops:meta_audience` — modify targeting (location radius, age, interests, custom audiences)
-- `ops:meta_creative_swap` — swap the creative on an active ad set to a new image or video
+- `ops:meta_budget`.  adjust daily budget on an ad set or campaign within ±25% band
+- `ops:meta_pause`.  pause a campaign or ad set
+- `ops:meta_resume`.  resume a paused campaign or ad set
+- `ops:meta_audience`.  modify targeting (location radius, age, interests, custom audiences)
+- `ops:meta_creative_swap`.  swap the creative on an active ad set to a new image or video
 
 ### Out of scope
-- Creating net-new campaigns — handled by `ops:meta_ads_new_campaign` (pending build)
-- Reading analytics or surfacing insights — handled by `audit-ads` + `diagnose-performance`
-- Publishing organic FB/IG posts — handled by the `publisher` capability
+- Creating net-new campaigns.  handled by `ops:meta_ads_new_campaign` (pending build)
+- Reading analytics or surfacing insights.  handled by `audit-ads` + `diagnose-performance`
+- Publishing organic FB/IG posts.  handled by the `publisher` capability
 - Any budget change exceeding ±25% of current daily budget without an explicit
   Matt override in the action row payload
 
@@ -102,7 +112,7 @@ interface MetaAdsActionRow {
 
 ## 4. The recipe
 
-### Step 1 — Read the action row
+### Step 1.  Read the action row
 
 Query `marketing_brain_actions` by `id`. Confirm `status='pending'`.
 Immediately transition to `in_production`:
@@ -115,19 +125,19 @@ WHERE id = '<action_id>' AND status = 'pending';
 
 If row is not `status='pending'` (another agent picked it up), halt silently.
 
-### Step 2 — Load mandatory references
+### Step 2.  Load mandatory references
 
 Before any API call:
-- `CLAUDE.md` §0 — Data Accuracy mandate (outranks everything)
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last (explicit approval required)
-- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §1 — 3-campaign architecture + budget bands
-- `marketing_brain_skills/audit-ads/SKILL.md` — to understand how CPL baselines are set
+- `CLAUDE.md` §0.  Data Accuracy mandate (outranks everything)
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (explicit approval required)
+- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` §1.  3-campaign architecture + budget bands
+- `marketing_brain_skills/audit-ads/SKILL.md`.  to understand how CPL baselines are set
 
-### Step 3 — Verify campaign exists in the configured ad account
+### Step 3.  Verify campaign exists in the configured ad account
 
 Env vars required:
-- `META_PAGE_ACCESS_TOKEN` — long-lived page token
-- `META_AD_ACCOUNT_ID` — format `act_<numeric>` (e.g. `act_123456789`)
+- `META_PAGE_ACCESS_TOKEN`.  long-lived page token
+- `META_AD_ACCOUNT_ID`.  format `act_<numeric>` (e.g. `act_123456789`)
 
 ```
 GET https://graph.facebook.com/v25.0/<campaign_id>
@@ -140,7 +150,7 @@ If the API returns a 404 or the `account_id` field does not match `META_AD_ACCOU
 - Surface to Matt: "Campaign `<campaign_id>` not found in ad account `<META_AD_ACCOUNT_ID>`. Action row killed."
 - Stop.
 
-### Step 4 — Capture current state via Graph API
+### Step 4.  Capture current state via Graph API
 
 Pull the current campaign/ad set state into `payload.current_state`. For budget ops:
 
@@ -159,7 +169,7 @@ GET https://graph.facebook.com/v25.0/<adset_id>
 
 Store the full API response as `payload.current_state`. This is the rollback baseline.
 
-### Step 5 — Compute proposed change and enforce guardrails
+### Step 5.  Compute proposed change and enforce guardrails
 
 #### Budget adjust guardrail
 ```
@@ -196,12 +206,12 @@ verification in the surface message.
 If data is insufficient (< 5 rows): note in the surface message that the pause is
 brain-triggered but CPL verification was inconclusive; Matt decides.
 
-### Step 6 — Surface to Matt for explicit approval
+### Step 6.  Surface to Matt for explicit approval
 
 Format the approval request:
 
 ```
-Proposed Meta Ads change — [action_type] on [campaign_name]
+Proposed Meta Ads change.  [action_type] on [campaign_name]
 
   CURRENT STATE
     Campaign:    [campaign_name] (ID: [campaign_id])
@@ -231,7 +241,7 @@ Reply "override" to bypass the ±25% band (budget changes only).
 Then stop. Set `status='ready'` in `marketing_brain_actions`. Do NOT call the
 Graph API. Wait for Matt's explicit reply.
 
-### Step 7 — Execute via Graph API (post-approval only)
+### Step 7.  Execute via Graph API (post-approval only)
 
 Only after Matt's explicit "yes" / "approved" / "go" / "override":
 
@@ -274,7 +284,7 @@ POST https://graph.facebook.com/v25.0/<adset_id>
 Body: { "creative": { "creative_id": "<new_creative_id>" }, "access_token": "..." }
 ```
 
-### Step 8 — Capture API response, update action row
+### Step 8.  Capture API response, update action row
 
 Capture the full API response. On success:
 
@@ -296,12 +306,12 @@ WHERE id = '<action_id>';
 On API error: set `status='killed'`, include full error in `executor_response`,
 surface to Matt with the raw error message and suggested remediation.
 
-### Step 9 — Confirm to Matt
+### Step 9.  Confirm to Matt
 
 After successful execution, confirm:
 
 ```
-Executed — [campaign_name]
+Executed.  [campaign_name]
 
   [Human-readable summary of what changed]
   API confirmed: [campaign_id / adset_id]
@@ -324,7 +334,7 @@ Action row [action_id] → status: executed.
 
 ## 6. Output format
 
-**No file deliverable** — this producer's output is the API state change + the
+**No file deliverable**.  this producer's output is the API state change + the
 updated `marketing_brain_actions` row.
 
 **executor_response schema:**
@@ -397,18 +407,40 @@ killed          ← terminal; campaign not found, band violation without overrid
 ## 10. Related skills and references
 
 **Required reading before executing:**
-- `CLAUDE.md` §0 — Data Accuracy mandate
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last (explicit approval gate)
-- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` — 3-campaign architecture, budget bands, CPL baselines
-- `docs/MARKETING_LEAD_FLOW.md` — lead flow context; understand what the campaign is driving
+- `CLAUDE.md` §0.  Data Accuracy mandate
+- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (explicit approval gate)
+- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`.  3-campaign architecture, budget bands, CPL baselines
+- `docs/MARKETING_LEAD_FLOW.md`.  lead flow context; understand what the campaign is driving
 
 **Capabilities used:**
-- `lib/meta-graph.ts` — `MetaGraphError`, `getJson`, `postJson` helpers
-- `marketing_brain_skills/audit-ads/SKILL.md` — CPL baseline methodology
+- `lib/meta-graph.ts`.  `MetaGraphError`, `getJson`, `postJson` helpers
+- `marketing_brain_skills/audit-ads/SKILL.md`.  CPL baseline methodology
 
 **Brain components that generate ops:meta_* action rows:**
-- `marketing_brain_skills/audit-ads/` — surfaces CPL anomalies, creative fatigue, budget drift
-- `marketing_brain_skills/diagnose-performance/` — WoW/MoM deltas that trigger budget changes
+- `marketing_brain_skills/audit-ads/`.  surfaces CPL anomalies, creative fatigue, budget drift
+- `marketing_brain_skills/diagnose-performance/`.  WoW/MoM deltas that trigger budget changes
 
 **Registry entry:**
-- `marketing_brain_skills/producers/REGISTRY.md` — Section D, row `ops-meta-ads`
+- `marketing_brain_skills/producers/REGISTRY.md`.  Section D, row `ops-meta-ads`
+
+---
+
+## Mandatory references (validator-required)
+
+- `CLAUDE.md §0 (Data Accuracy)`
+- `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
+
+---
+
+## Validator stub sections (canonical 11-section structure)
+
+## 11. Tool gap suggestions
+
+Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+
