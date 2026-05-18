@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.234.7 (2026-05-18)
+
+### Maintenance
+- docs(marketing): add MARKETING_ANALYTICS_PLAYBOOK.md — Matt-facing best practices
+
+---
+
+
 ## v1.234.6 (2026-05-18)
 
 ### Maintenance
