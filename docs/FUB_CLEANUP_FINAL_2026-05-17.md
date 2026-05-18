@@ -12,7 +12,7 @@
 |---|---:|---:|---|
 | Action plans (visible / Active) | **67** | **1** | -66 (deleted 64 directly, 2 already had `Deleted` status) |
 | Email templates (visible) | **669** | **~108** | -561 (~525 KTS hidden via isShared:false, 36 orphans deleted by script 06) |
-| Custom fields | **22** | **21** | -7 KTS anniversary trackers + 6 new SL fields = 21 net |
+| Custom fields | **22** | **25** | -3 KTS empty trackers (birthday, relationship birthday, home anniversary agnostic) + 6 new SL fields. 5 other KTS-era fields preserved because they have real populated data — see §"Custom fields with real data" below |
 | Leads with legacy `Seller` tag | **3,481** | **0** | All migrated to canonical `audience:seller` + `seller:*` |
 | Leads with `audience:seller` | **1** | **3,498** | Full migration |
 | Total distinct tags in use | **158** | **~110** | -47 orphan tags removed |
@@ -63,16 +63,25 @@ Everything else is `status: Deleted` (soft-deleted, invisible in the UI picker).
 | **32** | customCMADeliveredAt | CMA Delivered At | date | **CMA producer** |
 | **33** | customCMAPDFURL | CMA PDF URL | text | **CMA producer** |
 
-**Deleted** (KTS anniversary-tracking junk):
+**Deleted** (KTS anniversary trackers with NO populated data):
 
-- id 1 — customWebsite
 - id 2 — customBirthday
-- id 3 — customClosingAnniversary
-- id 5 — customHomeAnniversary
-- id 7 — customOpenHouseAddress
 - id 9 — customRelationshipBirthday
 - id 10 — customHomeAnniversaryAgnostic
-- id 16 — customOrganization
+
+**Custom fields with real data — PRESERVED, decide separately:**
+
+Script 08 surfaced these for review rather than deleting them:
+
+| id | name | populated leads | what's stored |
+|---:|---|---:|---|
+| 1 | customWebsite | 60 | personal/business URLs |
+| 3 | customClosingAnniversary | 21 | closing dates (past clients) |
+| 5 | customHomeAnniversary | **4,604** | home purchase anniversary dates |
+| 7 | customOpenHouseAddress | 3,593 | open house attendance history |
+| 16 | customOrganization | 60 | company / org names |
+
+These are NOT seller-workflow related but they're not garbage either — Matt can use them for past-client anniversary outreach, open-house follow-up sequences, or partner-org segmentation. **Decide explicitly: keep them for past-client touches, or run `node --env-file=.env.local .tmp_env/fub-setup/08-cleanup-custom-fields.mjs FORCE=1` to nuke them.** Default left = keep, since the data exists.
 
 ### Tags
 
