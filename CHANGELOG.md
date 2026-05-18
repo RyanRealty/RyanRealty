@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.224.0 (2026-05-18)
+
+### Features
+- feat(loop-closure): wire brain-to-publish-to-track-to-strategy loop end to end
+
+---
+
+
 ## v1.223.1 (2026-05-18)
 
 ### Maintenance
