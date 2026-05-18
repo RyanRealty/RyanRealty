@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.219.0 (2026-05-18)
+
+### Features
+- feat(fub): ultra-simple cleanup — hide 525 KTS templates + final report
+- feat(fub): add script 11 to scrub stray source / medium / utm tags
+- feat(fub): add script 10 to strip legacy seller tags post-migration
+- feat(fub): add script 09 to strip orphan / junk tags from every lead
+- feat(fub): add script 08 to clean up KTS-era custom fields
+- feat(fub): add script 07 to delete the 4 remaining KTS action plans
+- feat(fub): add script 06 to cleanup orphan / KTS email templates
+
+### Bug Fixes
+- fix(fub): script 03 bulk-tag-migration uses sort=id (stable cursor)
+
+---
+
+
 ## v1.218.1 (2026-05-17)
 
 ### Maintenance
