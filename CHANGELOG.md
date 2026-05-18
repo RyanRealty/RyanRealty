@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.227.0 (2026-05-18)
+
+### Features
+- feat(fub): Phase C — Buyer Lead Master Workflow live end-to-end
+
+---
+
+
 ## v1.226.1 (2026-05-18)
 
 ### Maintenance
