@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.221.0 (2026-05-18)
+
+### Features
+- feat(tetherow lp): location map, mid-page CTA, broker accuracy, trust strip
+
+---
+
+
 ## v1.220.2 (2026-05-18)
 
 ### Maintenance
