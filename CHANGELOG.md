@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.229.0 (2026-05-18)
+
+### Features
+- feat(analytics): LP tracking convention + ga4-instrumentation skill
+
+---
+
+
 ## v1.228.0 (2026-05-18)
 
 ### Features
