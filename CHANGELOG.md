@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.234.5 (2026-05-18)
+
+### Bug Fixes
+- fix(analytics): LandingPageTracker gates fire on gtag readiness + always listens
+
+---
+
+
 ## v1.234.4 (2026-05-18)
 
 ### Bug Fixes
