@@ -101,7 +101,7 @@ async function getFolderDocs(session, kind, guid) {
 
 function buildV4Name(entry, liveDoc) {
   const saleNumber = (entry.saleNumber || '').trim()
-  const formName = String(entry.formName || '').trim()
+  let formName = String(entry.formName || '').trim()
   const executed = entry.executed === true
   // Extension: prefer originalFileName, then liveDoc.fileName, then liveDoc.extension.
   let ext = fileExtension(entry.originalFileName || '')
@@ -109,6 +109,17 @@ function buildV4Name(entry, liveDoc) {
   if (!ext && liveDoc?.extension) ext = String(liveDoc.extension).toLowerCase().replace(/^\./, '')
   if (!ext) ext = 'pdf'
 
+  if (!formName) return null
+
+  // Strip any trailing extension from formName itself — deriveFormName
+  // historically only stripped .pdf, so non-PDF source files end up with
+  // ".png" / ".jpg" / ".zip" / ".eml" / ".docx" embedded in the formName,
+  // which then collides with the ext field below and produces invalid
+  // double-extension filenames like "foo.png.png".
+  formName = formName.replace(
+    /\.(pdf|png|jpe?g|gif|zip|heic|tif{1,2}|bmp|webp|eml|htm|html|docx?|xlsx?|csv|txt|msg|rtf|ppt|pptx|svg)$/i,
+    ''
+  ).trim()
   if (!formName) return null
 
   const parts = []

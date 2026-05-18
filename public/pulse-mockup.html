@@ -72,6 +72,7 @@
   .chip.emerald { background: rgba(5, 150, 105, 0.95); color: white; }
   .chip.violet { background: rgba(109, 40, 217, 0.95); color: white; }
   .chip.rose { background: rgba(190, 18, 60, 0.95); color: white; }
+  .chip.news { background: rgba(26, 26, 26, 0.95); color: white; border: 1px solid rgba(255,255,255,0.18); }
   .time { background: rgba(255,255,255,0.20); color: white; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; backdrop-filter: blur(8px); }
   .brand-tag { background: rgba(255,255,255,0.18); color: white; padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; backdrop-filter: blur(8px); }
 
@@ -174,7 +175,7 @@
 <body>
 
 <div class="mockup-banner">
-  Working mockup of <code>/pulse</code> — same components, real data, lazy video, anonymous likes, signal tracking. Scroll, double-tap to like, watch the market-report video autoplay when in view.
+  Working mockup of <code>/pulse</code> · Listings stream from <code>activity_events</code> · Lifestyle cards stream from <code>blog_posts</code> (44 published) · Producer videos from <code>v5_library</code> · Reviews from <code>lib/testimonials</code> · Same brain, every surface.
 </div>
 
 <header class="hero">
@@ -241,16 +242,19 @@
     {"id":"l10","event_type":"price_drop","event_at":"2026-05-18T14:50:38Z","listing_key":"20250712181521767476000000","ListNumber":"220205817","ListPrice":475000,"OriginalListPrice":585000,"BedroomsTotal":3,"BathroomsTotal":3,"TotalLivingAreaSqFt":3314,"StreetNumber":"15188","StreetName":"Pyrola","City":"La Pine","SubdivisionName":"Ponderosa Pines","PhotoURL":"https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250714215639980489000000-o.jpg","ListAgentName":"Tisha Anderson","ListOfficeName":"La Pine Realty","payload":{"new_price":455000,"previous_price":475000}},
   ];
 
-  // Lifestyle cards from asset library
+  // Lifestyle cards now come DIRECTLY from the marketing brain.
+  // Source: public.blog_posts WHERE status='published'. Same content the
+  // brain ships to social channels — when a post is published, it lands
+  // here automatically. No hand-curation.
   const LIFESTYLE = [
-    {id:"smith-rock", category:"outdoor", kicker:"Day trip", headline:"Climb at Smith Rock", body:"World-class climbing twenty-five minutes north. Pack water.", image:"/asset-library/photos/unsplash/bbca6dec-43d4-49fe-81a9-0b25b60b420a.jpg", credit:"Photo via Unsplash"},
-    {id:"old-mill-summer", category:"event", kicker:"Bend events", headline:"Summer at the Old Mill", body:"Concerts, floaters, and the river footbridge. Bend in three smokestacks.", image:"/asset-library/photos/stock/113232e1-1bd0-499e-8247-4c85c2386878.jpg"},
-    {id:"mt-bachelor", category:"outdoor", kicker:"In the Cascades", headline:"Bachelor opens in November", body:"Lift tickets and season passes go on sale every fall.", image:"/asset-library/photos/wikimedia/a2341149-3272-4130-bdeb-f4d27fef8300.jpg", credit:"Photo via Wikimedia"},
-    {id:"cascade-lakes", category:"outdoor", kicker:"Sunday drive", headline:"Cascade Lakes Scenic Byway", body:"Sixty-six miles of alpine lakes west of Bend. Open through October.", image:"/asset-library/photos/unsplash/1f868da9-f1eb-47bd-9954-8e7b294aeaa2.jpg", credit:"Photo via Unsplash"},
-    {id:"three-sisters", category:"outdoor", kicker:"Postcard", headline:"Three Sisters at sunrise", body:"South, Middle, and North. Bend's western horizon, lit pink.", image:"/asset-library/photos/unsplash/a718f230-7ea8-43fa-ac28-ed1fbbd2704c.jpg", credit:"Photo by Mick Haupt"},
-    {id:"sparks-lake", category:"outdoor", kicker:"Cascade Lakes", headline:"Sparks Lake at sunrise", body:"Twenty-eight miles from downtown. Quietest water in Central Oregon.", image:"/asset-library/photos/unsplash/face42ef-2cc3-453d-a87d-de7d55f85d2d.jpg", credit:"Photo via Unsplash"},
-    {id:"still-vibrato", category:"dining", kicker:"Where to start the day", headline:"Still Vibrato", body:"Downtown Bend coffee bar. Drip and a quiet morning crowd.", image:"/asset-library/photos/unsplash/4a8123ab-4db4-4c6c-b5b5-c782d0bf6b9f.jpg", credit:"Photo via Unsplash"},
-    {id:"downtown-walk", category:"culture", kicker:"Walk it", headline:"Downtown Bend", body:"Wall, Minnesota, Bond. Locally owned shops on every block.", image:"/asset-library/photos/unsplash/0a37e880-6b0c-4274-b765-5412fb539fe6.jpg", credit:"Photo via Unsplash"},
+    {id:"wildfire-standards", category:"news", kicker:"Local housing news", headline:"Bend considers wildfire-resistant building standards", body:"Cost versus safety. Council meets this week.", image:"https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=1080&q=80&fm=jpg&fit=max", href:"/blog/bend-wildfire-resistant-building-standards", publishedAt:"2026-04-01"},
+    {id:"eagle-crest", category:"neighborhood", kicker:"Community spotlight", headline:"Eagle Crest · affordable resort living in Redmond", body:"Central Oregon resort living at a fraction of Sunriver or Brasada.", image:"https://images.unsplash.com/photo-1600566753190-17f0baa2a6c0?w=1080&q=80&fm=jpg&fit=max", href:"/blog/eagle-crest-affordable-resort-redmond", publishedAt:"2026-02-05"},
+    {id:"arts-culture", category:"culture", kicker:"Lifestyle & living", headline:"The arts and culture scene in Central Oregon", body:"Not just an outdoor playground. The culture has grown substantially.", image:"https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1080&q=80&fm=jpg&fit=max", href:"/blog/arts-culture-central-oregon", publishedAt:"2026-01-18"},
+    {id:"brasada-ranch", category:"neighborhood", kicker:"Community spotlight", headline:"Brasada Ranch · the high desert resort", body:"Views, golf course, equestrian facilities east of Bend.", image:"https://images.unsplash.com/photo-1724533687925-aa205b97e60e?w=1080&q=80&fm=jpg&fit=max", href:"/blog/brasada-ranch-central-oregon", publishedAt:"2026-01-15"},
+    {id:"remote-work", category:"culture", kicker:"Lifestyle & living", headline:"Working remote from Central Oregon", body:"The practical reality of internet speeds, coworking, and quality of life.", image:"https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1080&q=80&fm=jpg&fit=max", href:"/blog/working-remote-central-oregon", publishedAt:"2026-01-10"},
+    {id:"middle-housing", category:"news", kicker:"Local housing news", headline:"Middle housing is reshaping Bend's neighborhoods", body:"Four years after HB 2001, density is appearing block by block.", image:"https://images.unsplash.com/photo-1619626484761-e0ac2b597aad?w=1080&q=80&fm=jpg&fit=max", href:"/blog/middle-housing-reshaping-bend-neighborhoods", publishedAt:"2025-12-18"},
+    {id:"kids-bend", category:"culture", kicker:"Lifestyle & living", headline:"Raising kids in Bend · a parent's honest take", body:"Outdoor access is real. Community is strong. The trade-offs are real too.", image:"https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=1080&q=80&fm=jpg&fit=max", href:"/blog/raising-kids-bend-parents-guide", publishedAt:"2025-12-15"},
+    {id:"sunriver-living", category:"neighborhood", kicker:"Community spotlight", headline:"Sunriver · year-round living vs. vacation home", body:"Sunriver works as both. The two lifestyles look very different.", image:"https://images.unsplash.com/photo-1619626484761-e0ac2b597aad?w=1080&q=80&fm=jpg&fit=max", href:"/blog/sunriver-year-round-living-vs-vacation", publishedAt:"2025-12-10"},
   ];
 
   const BRAND_CARDS = [
@@ -579,6 +583,7 @@
       case 'neighborhood': return 'navy';
       case 'culture': return 'violet';
       case 'dining': return 'rose';
+      case 'news': return 'news';
       default: return 'navy';
     }
   }

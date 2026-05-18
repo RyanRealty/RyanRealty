@@ -175,18 +175,89 @@ the UI.
 | `SKYSLOPE_APPLY_PACE_MS` | 80 | Delay between PATCH bursts |
 | `SKYSLOPE_INCLUDE_ARCHIVED` | (unset) | Set to `1` to include archived folders |
 
+## Checklist assignment + missing-docs report (after rename completes)
+
+Once filenames are in v4 form, attach every doc to the appropriate
+checklist activity. The Files API surfaces `POST /api/files/{kind}s/{guid}/checklist-items/{activityId}`
+with body `{ documentGuid: ... }` for this purpose.
+
+8. **Survey checklist activity names** so the classifier knows what
+   exists in each folder.
+   ```bash
+   node scripts/skyslope-checklist-survey.mjs > tmp/skyslope-{date}/checklist-activities.json
+   ```
+
+9. **Dry-run the assignment** to see what the classifier matches and
+   what's left over.
+   ```bash
+   node scripts/skyslope-checklist-assign.mjs tmp/skyslope-{date}/dry-run.jsonl \
+     > tmp/skyslope-{date}/assign-dryrun.jsonl
+   ```
+   Inspect the top activityNames by doc count to spot over-aggressive
+   classification (the early v1 dumped 475 docs into "Sale Addendums"
+   via a too-broad fallback — that's been tightened, but stay alert).
+   "no_activity_match" should be ~25–35% (sale-side docs uploaded to
+   listing folders that have no matching activity — leave alone).
+
+10. **Apply the assignments** live.
+    ```bash
+    SKYSLOPE_APPLY_ASSIGNMENTS=1 SKYSLOPE_ASSIGN_CONCURRENCY=4 \
+      node scripts/skyslope-checklist-assign.mjs tmp/skyslope-{date}/dry-run.jsonl \
+      > tmp/skyslope-{date}/assign-apply.jsonl
+    ```
+    The POST endpoint is idempotent — re-running on already-attached
+    docs returns 200 with a `already_attached` action.
+
+11. **Missing-docs report** — every Required activity with 0 attached
+    docs is a TC follow-up item.
+    ```bash
+    node scripts/skyslope-checklist-missing-report.mjs \
+      tmp/skyslope-{date}/checklist-missing.md \
+      --json tmp/skyslope-{date}/checklist-missing.json
+    ```
+
+## Gmail search for missing docs (optional, post-assignment)
+
+For Required activities that ended up empty, search Matt's Gmail for
+likely attachments. This is a subagent task — too many sequential
+Gmail API calls for the main loop. Delegate via
+`general-purpose` subagent and feed it `checklist-missing.json`. The
+subagent emits candidates to `gmail-candidates.jsonl` for Matt to
+review.
+
+Gmail search strategy (the subagent follows this):
+- For each folder, build a broad query: `(LastName1 OR LastName2)
+  "<street part of address>" has:attachment newer_than:18m`
+- Pull threads, filter for relevant-looking ones, fetch full content
+- For each attachment, score against the folder's `missing_activities`
+  list using filename keywords (FIRPTA, EM, smoke, title, etc.)
+- Emit candidates with confidence reason
+
+The output is REVIEW MATERIAL — Matt decides which candidates to
+upload to SkySlope.
+
 ## When to use each script
 
 - **First-time run on a brand-new dataset**: full `rename-documents-v2`
-  pipeline (steps 1–7).
+  pipeline (steps 1–7) → assignment (8–10) → missing report (11) →
+  Gmail search.
 - **Re-run after taxonomy improvements**: `redetect-v3.mjs` against the
   previous cache so you don't re-enumerate folders.
+- **Re-rename to v4 from an existing v3 cache**: `rename-v4-from-cache.mjs`
+  — strips date and OREF# from cached `.to` values, leaving the v4
+  three-field format.
 - **Only fixing missed X cases**: `force-x.mjs` against the previous
   cache.
 - **Only fixing extension mismatches**: `recover-failed.mjs` against
   the previous apply log.
+- **Only fixing cross-endpoint failures**: `recover-altfolder-by-cache.mjs`
+  — uses the cache to find the alt folder containing the shared
+  document.
 - **Auditing folder state without renaming**: `folder-gap-report.mjs`
   alone.
+- **Inventorying which docs are attached to which checklist activity**:
+  any of the gap/missing report scripts plus a direct
+  `GET /api/files/{kind}s/{guid}` call.
 
 ## Don't write new mutation scripts
 

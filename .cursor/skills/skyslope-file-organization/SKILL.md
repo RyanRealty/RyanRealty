@@ -257,35 +257,64 @@ synthesized data.
 
 ## The procedure (end-to-end)
 
-For step-by-step commands, read `references/procedure.md`. Quick
-summary of the eight scripts and their order:
+For step-by-step commands, read `references/procedure.md`. The
+pipeline runs in two phases:
+
+### Phase 1: Rename every document to v4
 
 1. `skyslope-forms-rename-documents-v2.mjs` — full pipeline dry-run
    (enumerate → OCR → detect → emit cache)
-2. `skyslope-forms-apply-from-cache.mjs` — JSON-body PATCH from cache
-3. `skyslope-forms-recover-failed.mjs` — extension-aware retry
-4. `skyslope-forms-recover-crossendpoint.mjs` — sibling-folder retry
-5. `skyslope-forms-force-x.mjs` — shared-doc X reconciliation
-6. `skyslope-forms-verify.mjs` — post-apply state check
-7. `skyslope-forms-folder-gap-report.mjs` — folder-level audit
-8. `skyslope-forms-redetect-v3.mjs` — re-OCR + recompute against an
-   existing cache (use when iterating on the taxonomy without
-   re-enumerating folders)
+2. `skyslope-forms-redetect-v3.mjs` — re-OCR an existing cache when
+   iterating on the taxonomy
+3. `skyslope-forms-rename-v4-from-cache.mjs` — apply v4 names from a
+   v3 cache (strips date + OREF# to leave `{sale#}_{FormName}_X.{ext}`)
+4. `skyslope-forms-apply-from-cache.mjs` — generic cache → PATCH apply
+5. `skyslope-forms-recover-failed.mjs` — extension-aware retry
+6. `skyslope-forms-recover-crossendpoint.mjs` — sibling-folder retry
+7. `skyslope-forms-recover-altfolder-by-cache.mjs` — alt folder via
+   cache (covers cases where the sibling-folder lookup fails)
+8. `skyslope-forms-force-x.mjs` — shared-doc X reconciliation
+9. `skyslope-forms-verify.mjs` — post-apply state check
 
-All eight share auth via `skyslope-files-api.mjs` (HMAC + Session,
+### Phase 2: Assign every document to its checklist activity
+
+10. `skyslope-checklist-survey.mjs` — list every distinct activityName
+    across folders (one-time survey when SkySlope adds new activities)
+11. `skyslope-checklist-classifier.mjs` — module that maps each doc's
+    category + OREF# + filename to ordered activityName candidates
+12. `skyslope-checklist-assign.mjs` — POST every doc to its activity
+    via `/api/files/{kind}s/{guid}/checklist-items/{activityId}` (dry-
+    run by default; `SKYSLOPE_APPLY_ASSIGNMENTS=1` to write)
+13. `skyslope-checklist-missing-report.mjs` — list every Required
+    activity with 0 attached docs (these are the gaps to chase down)
+14. `skyslope-forms-folder-gap-report.mjs` — folder-level metadata
+    audit (blank addresses, missing parties, dup folders)
+
+### Phase 3: Gmail search for missing docs
+
+Delegate to a `general-purpose` subagent with the
+`checklist-missing.json` and the Gmail MCP. The subagent searches
+Matt's Gmail by parties + address + form-type keywords and produces
+`gmail-candidates.jsonl` with one row per (folder, missing_activity,
+attachment) candidate. Matt reviews; uploads stay manual for now.
+
+All scripts share auth via `skyslope-files-api.mjs` (HMAC + Session,
 credentials in `.env.local`).
 
 For a working knowledge of SkySlope's API quirks (PATCH method,
-pseudo-rows, shared docs, rate limits, pagination), read
-`references/api-quirks.md`.
+pseudo-rows, shared docs, checklist endpoint, rate limits,
+pagination), read `references/api-quirks.md`.
 
 ## Reference files
 
-- `references/naming-convention.md` — full format spec, regex,
-  examples, anti-examples
+- `references/naming-convention.md` — full v4 format spec, regex,
+  examples, anti-examples (including the receipts-and-images decision
+  tree)
 - `references/oref-signers.md` — who signs each document category
 - `references/api-quirks.md` — every SkySlope API gotcha encountered
-- `references/procedure.md` — step-by-step pipeline commands
+  (PATCH method, pseudo-rows, shared docs, checklist endpoint)
+- `references/procedure.md` — step-by-step pipeline commands for all
+  three phases (rename, assign, Gmail search)
 
 Read whichever is closest to the problem you're solving. The skill
 body above carries the high-level rules; the references carry the

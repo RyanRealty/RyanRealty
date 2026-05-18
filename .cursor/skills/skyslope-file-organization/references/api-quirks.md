@@ -120,8 +120,16 @@ Code reference: `scripts/skyslope-forms-force-x.mjs`.
 ## Folder-level mutation is not exposed
 
 The Files API as we have it scoped (HMAC + Session via
-`api-latest.skyslope.com`) only exposes PATCH for document filenames.
-We've found no endpoint for:
+`api-latest.skyslope.com`) only exposes the following mutation
+endpoints we use:
+
+- `PATCH /api/files/{kind}s/{guid}/documents/{documentGuid}` —
+  rename document (JSON body `{ FileName }`)
+- `POST /api/files/{kind}s/{guid}/checklist-items/{activityId}` —
+  assign a document to a checklist activity (JSON body
+  `{ documentGuid }`)
+
+We have NOT found endpoints for:
 
 - Adding/removing parties on a folder
 - Editing the property address, MLS number, or status
@@ -131,6 +139,36 @@ We've found no endpoint for:
 All of those are SkySlope UI work. The folder gap report
 (`scripts/skyslope-forms-folder-gap-report.mjs`) surfaces folders that
 need that UI work — but the script doesn't try to fix them.
+
+## Checklist assignment specifics
+
+The endpoint is:
+```
+POST /api/files/{kind}s/{folderGuid}/checklist-items/{activityId}
+Content-Type: application/json
+{ "documentGuid": "<doc-guid>" }
+```
+
+Where:
+- `{kind}` is `listing` or `sale`
+- `{folderGuid}` is the `listingGuid` or `saleGuid`
+- `{activityId}` is the `activityId` integer from
+  `folder.checklist.activities[].activityId` (NOT the `order` field)
+- `documentGuid` is the document's `id` from
+  `GET /api/files/{kind}s/{guid}/documents`
+
+Idempotent: re-POSTing an already-attached doc returns 200 (no
+duplicate). The script's `already_attached` action catches this
+before the POST to save round-trips.
+
+Errors observed in production:
+- 422 "Unable to find document with guid" — same root cause as the
+  rename endpoint: the doc lives in the sale-side table but was
+  addressed via listing endpoint (or vice versa). Cross-endpoint
+  retry applies.
+- 404 — activityId doesn't exist in this folder. Caller bug; the
+  classifier should have picked an activity from the folder's actual
+  activities list.
 
 ## Rate limiting
 
