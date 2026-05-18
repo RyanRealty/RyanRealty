@@ -51,42 +51,61 @@ function getServiceSupabase() {
 }
 
 /**
- * Geocode an address via Google Geocoding API, biased to Oregon.
- *
- * Returns null if the API fails, ZERO_RESULTS, or any non-OK status.
+ * Geocode an address via Google Geocoding API, biased to Oregon. Retries on
+ * transient errors (OVER_QUERY_LIMIT, UNKNOWN_ERROR, network) with exp
+ * backoff up to 3 attempts. Returns null only after final retry failure.
  */
-export async function geocodeAddress(address: string): Promise<GeocodeResult | null> {
+export async function geocodeAddress(address: string, maxAttempts = 3): Promise<GeocodeResult | null> {
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
   if (!key) {
     console.warn('[lead-geocode] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY missing')
     return null
   }
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}&region=us&components=country:US|administrative_area:OR`
-  try {
-    const res = await fetch(url, { cache: 'no-store' })
-    if (!res.ok) {
-      console.warn(`[lead-geocode] HTTP ${res.status} from Google`)
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' })
+      if (res.status === 429 || res.status >= 500) {
+        const wait = 500 * attempt
+        console.warn(`[lead-geocode] HTTP ${res.status}, retry ${attempt}/${maxAttempts} in ${wait}ms`)
+        await new Promise(r => setTimeout(r, wait))
+        continue
+      }
+      if (!res.ok) {
+        console.warn(`[lead-geocode] HTTP ${res.status} from Google (non-retryable)`)
+        return null
+      }
+      const j = (await res.json()) as {
+        status: string
+        results?: Array<{
+          formatted_address: string
+          geometry: { location: { lat: number; lng: number }; location_type: string }
+        }>
+      }
+      if (j.status === 'OK' && j.results?.length) {
+        const top = j.results[0]
+        return {
+          lat: top.geometry.location.lat,
+          lng: top.geometry.location.lng,
+          confidence: top.geometry.location_type,
+          formatted: top.formatted_address,
+        }
+      }
+      if (j.status === 'OVER_QUERY_LIMIT' || j.status === 'UNKNOWN_ERROR') {
+        const wait = 500 * attempt
+        console.warn(`[lead-geocode] Google status ${j.status}, retry ${attempt}/${maxAttempts} in ${wait}ms`)
+        await new Promise(r => setTimeout(r, wait))
+        continue
+      }
+      // ZERO_RESULTS, REQUEST_DENIED, etc — no retry
       return null
+    } catch (err) {
+      const wait = 500 * attempt
+      console.warn(`[lead-geocode] network error retry ${attempt}/${maxAttempts}:`, err)
+      await new Promise(r => setTimeout(r, wait))
     }
-    const j = (await res.json()) as {
-      status: string
-      results?: Array<{
-        formatted_address: string
-        geometry: { location: { lat: number; lng: number }; location_type: string }
-      }>
-    }
-    if (j.status !== 'OK' || !j.results?.length) return null
-    const top = j.results[0]
-    return {
-      lat: top.geometry.location.lat,
-      lng: top.geometry.location.lng,
-      confidence: top.geometry.location_type,
-      formatted: top.formatted_address,
-    }
-  } catch (err) {
-    console.warn('[lead-geocode] network error:', err)
-    return null
   }
+  return null
 }
 
 /**
