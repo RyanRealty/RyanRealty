@@ -676,3 +676,68 @@ Note: `other/reel` and `other/single_image` are "other" because the classifier c
 3. **Taxonomy refinement** — `other/reel` (81 posts) and `other/single_image` (56 posts) are the largest buckets. Inspect sample URLs and add keyword patterns to the classifier for the topics that dominate these (likely lifestyle/brand/testimonial content)
 4. **Classification timeout fix** — reduce upsert batch to 25 rows; add try/catch per row as fallback
 5. **Local competitor handle verification** — most Bend brokerages returned 0-1 posts. Verify their IG handles manually; many may have changed or the `@` prefix stripping in the script is doubling (handle already had `@`, script strips it, but the actor still returned empty)
+
+---
+
+## 2026-05-17 evening — Analytics unification + GA4 cleanup landed (DRAFT — pending verification)
+
+Two-site unification per `docs/handoffs/analytics-unification.md` plus an in-flight GA4 account cleanup per Matt's directive "one account, no extras."
+
+### Phase A — GA4 admin cleanup
+1. **Trashed property `528042320`** ("ryanrealty" stream `13892162098`, measurement ID `G-4Y4LSYR5ZZ`, stream was named "Ryan Realty Stream(VOID)") in the "Ryan Realty Ads Account". 35-day retention then permanent delete.
+2. **Trashed the entire "Ryan Realty Ads Account"** (account ID `387301939`). Same 35-day retention.
+3. **Root cause for the brain seeing ~2% of traffic was actually TWO things, not one.** The handoff doc thought only WordPress was the problem. The other problem was a destination split inside the Google tag for the keeper property `527333348`: the gtag for measurement ID `G-ST40W4WM6T` had TWO destinations configured — itself AND the void `G-4Y4LSYR5ZZ`. Every gtag fire from the Vercel app was being mirrored to both. **Fix:** removed the void destination by re-assigning it to a new throwaway tag named "ORPHAN-do-not-install (absorbed void destination)" which is never installed anywhere. The void destination will auto-clean when property `528042320` permanently deletes in 35 days. Until then it points at an orphan tag never reached by any page.
+
+End state: **one** account ("Ryan Realty", `386736554`), **one** property ("Ryan Realty", `527333348`), **one** measurement ID `G-ST40W4WM6T`. This is what the brain reads via `GOOGLE_GA4_PROPERTY_ID=527333348`.
+
+### Phase B — Two-site pixel unification
+1. **Discovery — handoff doc audit was wrong about FUB on WordPress.** The 2026-05-16 audit claimed FUB was not installed on either site. Re-verifying via FUB admin (`Admin → Pixel`) showed `WT-QPDMEALA` ALREADY installed on `ryan-realty.com` for ~weeks. The earlier audit grepped for `app.followupboss.com/pixel/` but the actual FUB pixel URL pattern is `widgetbe.com/agent` + `widgetTracker("create", "WT-QPDMEALA")`. **Verified via curl:** `ryan-realty.com` HTML contained `widgetbe.com`, `WT-QPDMEALA`, `widgetTracker` already.
+2. **Authored `components/FollowUpBossPixel.tsx`** — inline `<Script id="fub-pixel" strategy="afterInteractive">` that loads the FUB widget tracker, gated on `hasAnalyticsConsent()` from `CookieConsentBanner` (same gate as `GoogleAnalytics.tsx`). Wired into `app/layout.tsx` next to `<GoogleAnalytics />` and `<MetaPixel />`.
+3. **Added `NEXT_PUBLIC_FUB_PIXEL_ID=WT-QPDMEALA`** to `.env.local` and all three Vercel envs (production + development via `vercel env add`, preview via the API workaround documented in 2026-05-15).
+4. **Build-blocker fix in `components/ui/badge.tsx`** — `app/admin/(protected)/kpi-dashboard/page.tsx:96` references Badge `variant="success"` and `variant="warning"` but those variants weren't defined in the `cva` config. Vercel prod build was failing on this BEFORE my changes (unrelated tech debt). Added `success` and `warning` variants matching the existing `soft-popular` and `soft-price-drop` styling. Unblocks production deploy.
+5. **WordPress GA4 swap** — in AgentFire admin → Site Settings → AgentFire Settings → Header/Footer Scripts & Metas → "Head after opening tag" field, the GA4 tag (`gtag/js?id=...` + `gtag('config', '...')`) had two occurrences of `G-5FM3WEY062`. Both replaced with `G-ST40W4WM6T` by updating the ACF CodeMirror via `cm.setValue()` + `cm.save()` and clicking Update. Backend save confirmed via post-save inspection (2 of new, 0 of old, FUB pixel `WT-QPDMEALA` still present and untouched, Meta Pixel `1546878946032105` still present and untouched).
+
+**End state public HTML — verified 2026-05-17:**
+
+| Site | GA4 | FUB pixel | Meta Pixel |
+|---|---|---|---|
+| `ryan-realty.com` (WordPress / AgentFire) | `G-ST40W4WM6T` ✓ | `WT-QPDMEALA` ✓ | `1546878946032105` ✓ |
+| `ryanrealty.vercel.app` (Next.js) | `G-ST40W4WM6T` (env-driven, client-rendered) ✓ | `WT-QPDMEALA` (env-driven, client-rendered) ✓ | `1546878946032105` ✓ |
+
+### New gotchas (must remember)
+
+- **AgentFire ACF code editors are CodeMirror, not plain textareas.** The hidden backing textarea is `id="acf-field_5841e3f4b8fea"` for the "Head after opening tag" field. To edit programmatically, find the `.CodeMirror` DOM element in the same field wrapper, get its `.CodeMirror` JS instance, and call `setValue(newValue)` then `save()`. Setting the textarea value directly is insufficient — CodeMirror caches its own buffer and the WordPress save handler reads from it.
+- **The FUB pixel uses `widgetbe.com/agent` + `widgetTracker("create", "WT-...")`, NOT `app.followupboss.com/pixel/<id>.js`.** Any pixel-presence audit must grep for `widgetbe.com` or the `WT-` token, not the path-based URL. The earlier handoff audit (2026-05-16) got this wrong and showed FUB as missing on WordPress when it was actually present.
+- **GA4 "Google tag" destinations are an under-known fan-out point.** A single measurement ID can have multiple destinations attached to it, causing every gtag fire to mirror to all of them. Audit via GA4 Admin → Streams → Stream details → "Configure tag settings" → "Manage Google tag" → Destinations list. If you trash a property without also detaching its destination from the surviving Google tag, hits continue firing to the trash for 35 days.
+- **GA4 won't let you outright delete a destination.** The UI forces re-assignment to "another Google tag" before removing. The workaround used here: create an `ORPHAN-do-not-install` tag, assign the destination to it, never install that tag anywhere. When the underlying property permanently deletes (35 days post-trash), the destination auto-cleans.
+- **Vercel `redeploy` rebuilds from the ORIGINAL deployment's commit, not from `origin/main`.** To pick up new env vars AND fresh source, push a commit to `main`; auto-deploy from the push gives the right combination. `vercel redeploy <old-url>` only re-runs the build with new env vars against the OLD source commit — useless if `main` has moved.
+- **Build was already broken before this session.** `components/ui/badge.tsx` was missing `success`/`warning` variants that `kpi-dashboard/page.tsx:96` references. Vercel had been refusing prod deploys for some time. This session unblocked it.
+
+### Brain visibility next 24h
+
+Once AgentFire's CDN propagates the new GA4 tag site-wide (5-15 min per the AgentFire skill doc), every WordPress page view will land in property `527333348`. The brain reads that property via `GOOGLE_GA4_PROPERTY_ID=527333348` daily at 06:30 UTC via `app/api/cron/marketing-snapshot-ga4/route.ts`. Within ~24h, `marketing_channel_daily` rows for scope='page' channel='ga4' should start showing WordPress paths (`/`, `/contact/`, `/about-us/`, `/explore/bend/<neighborhood>/`, market-update blog URLs) alongside the existing Vercel paths (`/admin/social`, `/dashboard`, `/lp/seller-home-value`, `/cma-drafts/...`, `/login`). The `audit-website` skill should transition from `insufficient_data` to emitting real `site:*` opportunities once full traffic lands.
+
+### Verification queries (run +24h)
+
+```sql
+-- WordPress paths should appear here for the first time
+SELECT scope_id, sum(value)::int as views
+FROM public.marketing_channel_daily
+WHERE channel='ga4' AND metric='page_views' AND scope='page' AND date >= current_date - 1
+GROUP BY scope_id ORDER BY views DESC LIMIT 30;
+
+-- audit-website opportunities should start surfacing
+SELECT id, action_type, target, status, created_at
+FROM public.marketing_brain_actions
+WHERE action_type LIKE 'site:%' AND created_at >= current_date - 2
+ORDER BY created_at DESC;
+```
+
+### Out of scope for this session — Matt's broader directive
+
+Matt asked for a much bigger GA4 build-out: every lead interaction tracked as a custom event, conversions marked, funnel Explorations built, audiences defined for remarketing, custom dimensions for `listing_mls` / `lead_source` / `broker_assigned`, and BigQuery export. That work was scoped as Phase C + D in the plan I proposed mid-session. NOT done in this session — just the cleanup + unification. Phase C/D should be a separate session focused on the GA4 build-out as a producer skill, with the brain's GA4 ingestor extended to pull the new richness.
+
+### Commits this session
+
+- `41cfae6` — `feat(analytics): install Follow Up Boss pixel on Vercel + fix Badge variants` (3 files: `app/layout.tsx`, `components/FollowUpBossPixel.tsx`, `components/ui/badge.tsx`)
+
