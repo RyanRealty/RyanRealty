@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.220.1 (2026-05-18)
+
+### Bug Fixes
+- fix(tetherow lp): absolute paths for hero + course images
+
+---
+
+
 ## v1.220.0 (2026-05-18)
 
 ### Features
