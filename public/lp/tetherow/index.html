@@ -94,13 +94,20 @@
     a { color: inherit; text-decoration: none; }
     img { display: block; max-width: 100%; height: auto; }
 
-    /* TOP BAR — minimal, no nav (landing page convention) */
-    .topbar { background: var(--rr-navy); color: var(--rr-cream); padding: 12px 0; font-size: 13px; font-weight: 500; }
-    .topbar .container { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
-    .topbar a { opacity: 0.85; transition: opacity 0.2s; }
-    .topbar a:hover { opacity: 1; }
-    .topbar-cta { background: var(--rr-cream); color: var(--rr-navy); padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: 12px; letter-spacing: 0.04em; }
+    /* TOP BAR — logo + license, no nav (landing page convention) */
+    .topbar { background: var(--rr-navy); color: var(--rr-cream); padding: 14px 0; font-size: 13px; font-weight: 500; }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .topbar-left { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+    .topbar-logo { display: block; height: 28px; width: auto; }
+    .topbar-license { font-size: 11.5px; opacity: 0.7; letter-spacing: 0.04em; }
+    .topbar a { opacity: 1; transition: opacity 0.2s; }
+    .topbar a:hover { opacity: 0.9; }
+    .topbar-cta { background: var(--rr-cream); color: var(--rr-navy); padding: 7px 16px; border-radius: 999px; font-weight: 700; font-size: 12px; letter-spacing: 0.04em; white-space: nowrap; }
     .topbar-cta:hover { opacity: 0.9; }
+    @media (max-width: 640px) {
+      .topbar-license { display: none; }
+      .topbar-logo { height: 22px; }
+    }
 
     /* STICKY SCROLL CTA — appears after the viewer scrolls past the hero */
     .scroll-cta {
@@ -174,6 +181,23 @@
     .section-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--rr-muted); margin-bottom: 12px; }
     .section-head h2 { font-family: var(--rr-font-display); font-size: clamp(30px, 4.4vw, 48px); font-weight: 600; line-height: 1.1; letter-spacing: -0.012em; color: var(--rr-navy); margin-bottom: 12px; }
     .section-head p { font-size: 17px; line-height: 1.55; max-width: 740px; color: var(--rr-muted); }
+
+    /* ABOUT TETHEROW — overview section (rich SEO + AEO content) */
+    .about-section { background: var(--rr-cream); padding: 72px 0 56px; }
+    .about-grid { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 56px; align-items: start; }
+    @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 36px; } }
+    .about-prose p { font-size: 17px; line-height: 1.68; color: var(--rr-text); margin-bottom: 16px; }
+    .about-prose p:first-child { font-size: 19px; line-height: 1.55; color: var(--rr-navy); font-weight: 500; }
+    .about-facts { background: var(--rr-white); border: 1px solid var(--rr-navy-08); border-radius: 16px; padding: 28px 30px; box-shadow: var(--rr-card-shadow); position: sticky; top: 24px; }
+    .about-facts-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rr-muted); margin-bottom: 16px; }
+    .about-facts dl { margin: 0; }
+    .about-facts dt { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rr-muted); margin-top: 14px; margin-bottom: 4px; }
+    .about-facts dt:first-of-type { margin-top: 0; }
+    .about-facts dd { font-family: var(--rr-font-display); font-size: 20px; font-weight: 600; color: var(--rr-navy); line-height: 1.2; margin: 0; letter-spacing: -0.005em; }
+    .about-facts dd .sub { display: block; font-family: var(--rr-font-sans); font-size: 12.5px; font-weight: 500; color: var(--rr-muted); margin-top: 2px; letter-spacing: 0; }
+    .about-toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+    .about-toc a { background: var(--rr-navy-04); color: var(--rr-navy); padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; transition: background 0.2s; }
+    .about-toc a:hover { background: var(--rr-navy); color: var(--rr-cream); }
 
     /* TWO-COLUMN INTRO ROW (the McLay Kidd hook) */
     .kidd-row { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
@@ -267,9 +291,53 @@
     .happening-source a { text-decoration: underline; text-decoration-color: var(--rr-navy-12); text-underline-offset: 3px; }
     .happening-source a:hover { text-decoration-color: var(--rr-navy); }
 
-    /* SUB-NEIGHBORHOODS — photo cards */
-    .subnbh-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-    .subnbh-card { position: relative; aspect-ratio: 4/5; border-radius: 14px; overflow: hidden; background: var(--rr-navy); background-size: cover; background-position: center; box-shadow: var(--rr-card-shadow); transition: transform 0.3s, box-shadow 0.3s; display: block; }
+    /* SUB-NEIGHBORHOODS — horizontal scroll carousel (Matt directive 2026-05-18) */
+    .subnbh-scroller-wrap { position: relative; }
+    .subnbh-scroller {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      overflow-y: visible;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      padding: 8px 0 24px;
+      margin: 0 -24px;
+      padding-left: 24px;
+      padding-right: 24px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--rr-navy-12) transparent;
+      -webkit-overflow-scrolling: touch;
+    }
+    .subnbh-scroller::-webkit-scrollbar { height: 6px; }
+    .subnbh-scroller::-webkit-scrollbar-track { background: transparent; }
+    .subnbh-scroller::-webkit-scrollbar-thumb { background: var(--rr-navy-12); border-radius: 4px; }
+    .subnbh-scroller::-webkit-scrollbar-thumb:hover { background: rgba(16, 39, 66, 0.24); }
+    .subnbh-scroller-wrap::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 24px;
+      width: 60px;
+      background: linear-gradient(to right, transparent, var(--rr-cream) 90%);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .subnbh-scroller-wrap.at-end::after { opacity: 0; transition: opacity 0.2s; }
+    .subnbh-card {
+      position: relative;
+      flex: 0 0 280px;
+      aspect-ratio: 4/5;
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--rr-navy);
+      background-size: cover;
+      background-position: center;
+      box-shadow: var(--rr-card-shadow);
+      transition: transform 0.3s, box-shadow 0.3s;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
     .subnbh-card:hover { transform: translateY(-3px); box-shadow: var(--rr-card-shadow-hover); }
     .subnbh-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(16, 39, 66, 0.94) 0%, rgba(16, 39, 66, 0.55) 50%, rgba(16, 39, 66, 0.1) 100%); }
     .subnbh-card-inner { position: absolute; inset: 0; padding: 24px 22px; display: flex; flex-direction: column; justify-content: flex-end; color: var(--rr-cream); z-index: 1; }
@@ -277,6 +345,14 @@
     .subnbh-card .type { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; margin-bottom: 10px; }
     .subnbh-card .dues { font-size: 13.5px; opacity: 0.92; font-weight: 500; line-height: 1.4; }
     .subnbh-card .dues strong { font-family: var(--rr-font-display); font-size: 17px; font-weight: 700; }
+    .scroller-nav { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+    .scroller-arrow { width: 40px; height: 40px; border-radius: 50%; background: var(--rr-white); border: 1px solid var(--rr-navy-08); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.1s; color: var(--rr-navy); font-size: 18px; box-shadow: var(--rr-card-shadow); }
+    .scroller-arrow:hover { background: var(--rr-navy); color: var(--rr-cream); border-color: var(--rr-navy); }
+    .scroller-arrow:active { transform: scale(0.95); }
+    .scroller-arrow:disabled { opacity: 0.35; cursor: not-allowed; }
+    .scroller-progress { flex: 1; height: 3px; background: var(--rr-navy-08); border-radius: 4px; overflow: hidden; }
+    .scroller-progress-bar { height: 100%; background: var(--rr-navy); width: 0%; transition: width 0.18s ease-out; }
+    .scroller-hint { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--rr-muted); white-space: nowrap; }
 
     /* PIPELINE */
     .pipeline-list { background: var(--rr-cream-dim); border-radius: 16px; padding: 28px 32px; }
@@ -482,6 +558,55 @@
     .compare-table .row-label { font-weight: 600; color: var(--rr-navy); }
     .compare-table .num { font-variant-numeric: tabular-nums; }
 
+    /* BUYER TRACK */
+    .buyer-section { background: var(--rr-navy); color: var(--rr-cream); }
+    .buyer-section .section-head h2 { color: var(--rr-cream); }
+    .buyer-section .section-head p { color: rgba(250, 248, 244, 0.78); }
+    .buyer-section .section-eyebrow { color: rgba(250, 248, 244, 0.55); }
+    .buyer-grid { display: grid; grid-template-columns: 1.15fr 1fr 0.75fr; gap: 18px; align-items: stretch; }
+    @media (max-width: 900px) { .buyer-grid { grid-template-columns: 1fr; } }
+    .buyer-card { background: rgba(250, 248, 244, 0.06); border: 1px solid rgba(250, 248, 244, 0.16); border-radius: 16px; padding: 28px 28px 30px; display: flex; flex-direction: column; }
+    .buyer-card.primary { background: rgba(250, 248, 244, 0.1); border-color: rgba(250, 248, 244, 0.3); }
+    .buyer-card-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(250, 248, 244, 0.7); margin-bottom: 10px; }
+    .buyer-card h3 { font-family: var(--rr-font-display); font-size: 24px; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; color: var(--rr-cream); margin-bottom: 8px; }
+    .buyer-card p { font-size: 14px; line-height: 1.55; color: rgba(250, 248, 244, 0.82); margin-bottom: 18px; flex: 1; }
+    .buyer-form { display: flex; flex-direction: column; gap: 10px; }
+    .buyer-form input, .buyer-form select { background: rgba(250, 248, 244, 0.1); border: 1px solid rgba(250, 248, 244, 0.25); color: var(--rr-cream); padding: 13px 16px; border-radius: 9px; font-size: 14px; font-family: inherit; transition: border-color 0.2s, background 0.2s; }
+    .buyer-form input:focus, .buyer-form select:focus { outline: none; border-color: rgba(250, 248, 244, 0.6); background: rgba(250, 248, 244, 0.15); }
+    .buyer-form input::placeholder { color: rgba(250, 248, 244, 0.5); }
+    .buyer-form select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23faf8f4' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 38px; cursor: pointer; }
+    .buyer-form select option { background: var(--rr-navy); color: var(--rr-cream); }
+    .buyer-form button { background: var(--rr-cream); color: var(--rr-navy); border: none; padding: 13px 18px; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.2s, transform 0.1s; margin-top: 4px; }
+    .buyer-form button:hover { opacity: 0.92; }
+    .buyer-form button:active { transform: scale(0.99); }
+    .buyer-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .buyer-tiny { font-size: 11px; opacity: 0.5; line-height: 1.4; margin-top: 6px; }
+    .buyer-form-success { display: none; padding: 18px 4px; }
+    .buyer-form-success.visible { display: block; animation: fadeInStep 0.4s ease-out; }
+    .buyer-form-success-check { width: 44px; height: 44px; border-radius: 50%; background: rgba(111, 207, 122, 0.18); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 22px; color: #6fcf7a; }
+    .buyer-form-success p { font-size: 13.5px; line-height: 1.55; opacity: 0.85; margin-bottom: 4px; }
+
+    /* PER-LISTING SHOWING BUTTON — full-width CTA at body bottom */
+    .listing-showing-btn {
+      width: 100%;
+      background: var(--rr-navy);
+      color: var(--rr-cream);
+      padding: 11px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      border: none;
+      margin-top: 12px;
+      transition: opacity 0.2s, transform 0.1s, background 0.2s;
+      text-transform: uppercase;
+      font-family: inherit;
+    }
+    .listing-showing-btn:hover { opacity: 0.92; }
+    .listing-showing-btn:active { transform: scale(0.99); }
+    .listing-body { padding-bottom: 16px !important; }
+
     /* MULTI-STEP FORM */
     .step-progress { display: flex; justify-content: space-between; margin-bottom: 22px; gap: 8px; }
     .step-pill { flex: 1; height: 4px; background: rgba(250, 248, 244, 0.16); border-radius: 4px; transition: background 0.3s; }
@@ -565,10 +690,15 @@
 </head>
 <body>
 
-<!-- TOP BAR — minimal landing page convention -->
+<!-- TOP BAR — logo left, CTA right -->
 <div class="topbar">
   <div class="container">
-    <span><strong>Ryan Realty</strong> · Bend, Oregon · Principal Broker #201206613</span>
+    <div class="topbar-left">
+      <a href="/" aria-label="Ryan Realty home">
+        <img class="topbar-logo" src="/brand/logo-header-white.png" alt="Ryan Realty" width="140" height="28" />
+      </a>
+      <span class="topbar-license">Bend, Oregon · Principal Broker #201206613</span>
+    </div>
     <a class="topbar-cta" href="#cma">What's my home worth?</a>
   </div>
 </div>
@@ -592,7 +722,7 @@
   <div class="hero-overlay" role="presentation"></div>
   <div class="container">
     <div class="hero-eyebrow">Tetherow Resort + Golf Club · Bend, Oregon</div>
-    <h1>The Tetherow market, mid-2026.</h1>
+    <h1 id="hero-h1">The Tetherow market, <span data-dyn-month-year>May 2026</span>.</h1>
     <p class="hero-sub">27 homes traded last year at a median $1,848,500. 15 active right now from $1.7M to $4M. 26-day median market velocity. McLay Kidd country, west Bend, inside the 700-acre master plan.</p>
     <div class="hero-stats">
       <div class="hero-stat">
@@ -615,6 +745,59 @@
   </div>
 </header>
 
+<!-- ABOUT TETHEROW — rich overview, SEO + AEO anchor -->
+<section class="about-section">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Overview</div>
+      <h2>What is Tetherow?</h2>
+    </div>
+    <div class="about-grid">
+      <div class="about-prose">
+        <p>Tetherow is a 700-acre master-planned resort community on the west side of Bend, Oregon, anchored by a David McLay Kidd-designed Scottish-links golf course that opened in 2008. Nine sub-neighborhoods sit inside the master plan, ranging from $759,000 townhomes in The Rim to $4M custom homes in Tartan Druim.</p>
+        <p>The community spans about 700 acres of high-desert pine and fescue, seven minutes from the Old Mill District, 25 from Mt. Bachelor, and 35 from Redmond Municipal Airport. Tetherow Resort runs the on-property Lodges hotel, a 12,000-square-foot clubhouse renovated in 2024, three restaurants (Solomon's, The Row, Tetherow Café), a spa, Tetherow Sport fitness center, pickleball + tennis courts, and groomed Nordic loops in winter. Shevlin Park's 660-acre trail network sits across the road.</p>
+        <p>The golf course made its largest competitive jump in the 2023-24 Golf Digest 100 Greatest Public ranking, climbing 25 spots to #57 — the biggest leap on the list. Tetherow Resort has held the #1 PNW Resort spot in Conde Nast Traveler Readers' Choice for eight consecutive years through 2025.</p>
+        <p>Twenty-seven homes traded inside the master plan in the past 12 months at a median close price of $1,848,500 and a 26-day median market velocity. Sale-to-list ratio averages 94.2%. Active inventory today: 15 homes from $759K to $4M. The Tetherow homeowner profile skews to second-home and primary buyers from Portland, the Bay Area, and Seattle, with a meaningful contingent of Bend-locals upgrading inside the master plan.</p>
+        <p>The HOA structure layers a master assessment ($1,464 / year) against sub-neighborhood dues that range from $2,004 in Crescent / North Forty to $8,244 in Triple Knot. Club membership (golf / sport / social tiers) is separate from HOA dues and not transferred automatically with the home — diligence on the transfer terms is the single most important item on a Tetherow purchase.</p>
+        <div class="about-toc">
+          <a href="#location">Location + drive times</a>
+          <a href="#hoa">HOA tiers + board</a>
+          <a href="#course">The course</a>
+          <a href="#lifestyle">Amenities</a>
+          <a href="#membership">Club membership</a>
+          <a href="#happenings">Current events</a>
+          <a href="#inventory">Active inventory</a>
+          <a href="#buyer">Buyer track</a>
+          <a href="#cma">Seller value report</a>
+        </div>
+      </div>
+      <aside class="about-facts">
+        <div class="about-facts-eyebrow">Tetherow at a glance</div>
+        <dl>
+          <dt>Founded</dt>
+          <dd>2008<span class="sub">Golf course + clubhouse open</span></dd>
+          <dt>Size</dt>
+          <dd>700 acres<span class="sub">Nine sub-neighborhoods</span></dd>
+          <dt>Location</dt>
+          <dd>West Bend, Oregon<span class="sub">7 min to Old Mill</span></dd>
+          <dt>Architect</dt>
+          <dd>David McLay Kidd<span class="sub">Bandon Dunes pedigree</span></dd>
+          <dt>Course rank</dt>
+          <dd>#57 in U.S.<span class="sub">Golf Digest 100 Greatest Public</span></dd>
+          <dt>Recognition</dt>
+          <dd>#1 PNW Resort<span class="sub">Conde Nast 8 consecutive years</span></dd>
+          <dt>12-month closings</dt>
+          <dd>27<span class="sub">Median $1,848,500</span></dd>
+          <dt>Active today</dt>
+          <dd>15<span class="sub">$759K to $4M</span></dd>
+          <dt>Master HOA</dt>
+          <dd>$1,464 / year<span class="sub">Plus sub-neighborhood dues</span></dd>
+        </dl>
+      </aside>
+    </div>
+  </div>
+</section>
+
 <!-- THE McLAY KIDD ANGLE — the differentiator nobody else writes -->
 <section>
   <div class="container">
@@ -634,7 +817,7 @@
 </section>
 
 <!-- LOCATION -->
-<section>
+<section id="location">
   <div class="container">
     <div class="section-head">
       <div class="section-eyebrow">Location</div>
@@ -723,7 +906,7 @@
 </section>
 
 <!-- THE HOA — crown jewel section -->
-<section class="hoa-section">
+<section class="hoa-section" id="hoa">
   <div class="container">
     <div class="section-head">
       <div class="section-eyebrow">Inside the HOA</div>
@@ -806,7 +989,7 @@
 </section>
 
 <!-- THE COURSE + RANKINGS -->
-<section>
+<section id="course">
   <div class="container">
     <div class="section-head">
       <div class="section-eyebrow">The course</div>
@@ -894,7 +1077,7 @@
 </section>
 
 <!-- LIFESTYLE / AMENITIES -->
-<section class="lifestyle-section">
+<section class="lifestyle-section" id="lifestyle">
   <div class="container">
     <div class="section-head">
       <div class="section-eyebrow">Lifestyle + amenities</div>
@@ -956,7 +1139,7 @@
 </section>
 
 <!-- MEMBERSHIP TIERS -->
-<section class="membership-section">
+<section class="membership-section" id="membership">
   <div class="container">
     <div class="section-head">
       <div class="section-eyebrow">The Tetherow Club</div>
@@ -1008,7 +1191,7 @@
 </section>
 
 <!-- WHAT'S HAPPENING — current events -->
-<section>
+<section id="happenings">
   <div class="container">
     <div class="section-head">
       <div class="section-eyebrow">Current events</div>
@@ -1018,19 +1201,10 @@
 
     <div class="happenings">
       <div class="happening-card">
-        <div class="happening-date">JANUARY 2024 · ONGOING</div>
-        <h4>Ownership selling the hotel + F&B + vacation rentals. Keeping the golf club.</h4>
-        <p>Chris van der Velde and his partners announced intent to sell the Tetherow Lodges, Event Pavilion, all restaurants (Solomon's, The Row, Tetherow Café), and Tetherow Management LLC (the vacation rental property management arm) through JLL Capital Markets. The golf club and all recreational facilities are NOT for sale. Public statements signal proceeds will be reinvested into golf-club amenity expansion.</p>
-        <p>As of May 2026, no public reporting confirms a buyer or closed sale. We're watching it.</p>
-        <div class="happening-source">Sources: <a href="https://www.bendsource.com/business/tetherow-resort-owners-announce-intention-to-sell-hotel-food-beverage-operations-and-vacation-rentals-property-management-company-20526506">Source Weekly</a> · <a href="https://bendbulletin.com/2024/01/19/owners-selling-part-of-tetherow-resort-but-will-retain-golf-course/">Bend Bulletin</a> · <a href="https://ktvz.com/news/business/2024/01/17/tetherow-resort-puts-its-hotel-food-golf-club-not-for-sale-at-this-time/">KTVZ</a></div>
-      </div>
-
-      <div class="happening-card">
-        <div class="happening-date">SPRING 2024 · COMPLETED</div>
-        <h4>$3M clubhouse renovation finished ahead of the 16th golf season.</h4>
-        <p>New members' area. Intimate dining room at Solomon's. Refreshed golf shop. New outdoor patio overlooking the course. Project managed via Tetherow's Troon operating partnership.</p>
-        <p>Ownership spending on the club asset. The kind of capital reinvestment that anchors property values.</p>
-        <div class="happening-source">Source: <a href="https://troon.com/press-releases/tetherow-better-than-ever-as-it-tees-off-its-16th-golf-season">Troon press release</a></div>
+        <div class="happening-date">2025 · CONDE NAST 8TH CONSECUTIVE YEAR</div>
+        <h4>Tetherow Resort returns to #1 PNW Resort in Conde Nast Readers' Choice for the 8th consecutive year.</h4>
+        <p>Most resort communities in Central Oregon do not have this kind of brand decade in their pocket. It is the single strongest data point for a Tetherow seller pitching a national buyer. A Conde Nast top-resort plaque travels in places "Top 100 home builders in Oregon" does not.</p>
+        <div class="happening-source">Sources: <a href="https://www.bendsource.com/business/conde-nast-names-tetherow-resort-the-no-1-resort-in-the-pnw-19970660/">Source Weekly</a> · <a href="https://tetherow.com/blog/">Tetherow Resort blog</a></div>
       </div>
 
       <div class="happening-card">
@@ -1042,17 +1216,26 @@
       </div>
 
       <div class="happening-card">
-        <div class="happening-date">CONTINUOUS RECOGNITION</div>
-        <h4>Tetherow Resort returns to #1 PNW Resort in Conde Nast Readers' Choice for the 8th consecutive year.</h4>
-        <p>Most resort communities in Central Oregon do not have this kind of brand decade in their pocket. It is the single strongest data point for a Tetherow seller pitching a national buyer. A Conde Nast top-resort plaque travels in places "Top 100 home builders in Oregon" does not.</p>
-        <div class="happening-source">Sources: <a href="https://www.bendsource.com/business/conde-nast-names-tetherow-resort-the-no-1-resort-in-the-pnw-19970660/">Source Weekly</a> · <a href="https://tetherow.com/blog/">Tetherow Resort blog</a></div>
+        <div class="happening-date">JANUARY 2024 · STILL ONGOING (16+ MONTHS)</div>
+        <h4>Ownership selling the hotel + F&B + vacation rentals. Keeping the golf club.</h4>
+        <p>Chris van der Velde and his partners announced intent to sell the Tetherow Lodges, Event Pavilion, all restaurants (Solomon's, The Row, Tetherow Café), and Tetherow Management LLC (the vacation rental property management arm) through JLL Capital Markets. The golf club and all recreational facilities are NOT for sale. Public statements signal proceeds will be reinvested into golf-club amenity expansion.</p>
+        <p>As of <span data-dyn-month-year>May 2026</span>, no public reporting confirms a buyer or closed sale. We're watching it.</p>
+        <div class="happening-source">Sources: <a href="https://www.bendsource.com/business/tetherow-resort-owners-announce-intention-to-sell-hotel-food-beverage-operations-and-vacation-rentals-property-management-company-20526506">Source Weekly</a> · <a href="https://bendbulletin.com/2024/01/19/owners-selling-part-of-tetherow-resort-but-will-retain-golf-course/">Bend Bulletin</a> · <a href="https://ktvz.com/news/business/2024/01/17/tetherow-resort-puts-its-hotel-food-golf-club-not-for-sale-at-this-time/">KTVZ</a></div>
+      </div>
+
+      <div class="happening-card">
+        <div class="happening-date">SPRING 2024 · COMPLETED</div>
+        <h4>$3M clubhouse renovation finished ahead of the 16th golf season.</h4>
+        <p>New members' area. Intimate dining room at Solomon's. Refreshed golf shop. New outdoor patio overlooking the course. Project managed via Tetherow's Troon operating partnership.</p>
+        <p>Ownership spending on the club asset. The kind of capital reinvestment that anchors property values.</p>
+        <div class="happening-source">Source: <a href="https://troon.com/press-releases/tetherow-better-than-ever-as-it-tees-off-its-16th-golf-season">Troon press release</a></div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ACTIVE LISTINGS -->
-<section>
+<section id="inventory">
   <div class="container">
     <div class="section-head">
       <div class="section-eyebrow">For sale right now</div>
@@ -1070,6 +1253,7 @@
           <div class="listing-price">$4,000,000</div>
           <div class="listing-addr">61572 Hardin Martin</div>
           <div class="listing-facts"><span>Tetherow</span></div>
+          <button type="button" class="listing-showing-btn" data-property="61572 Hardin Martin · $4,000,000">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1081,6 +1265,7 @@
           <div class="listing-price">$3,999,900</div>
           <div class="listing-addr">61594 Hosmer Lake</div>
           <div class="listing-facts"><span>4 bed</span><span>5 bath</span><span>5,000 sqft</span></div>
+          <button type="button" class="listing-showing-btn" data-property="61594 Hosmer Lake · $3,999,900">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1092,6 +1277,7 @@
           <div class="listing-price">$3,999,000</div>
           <div class="listing-addr">61859 Hosmer Lake</div>
           <div class="listing-facts"><span>4 bed</span><span>5 bath</span><span>5,140 sqft</span></div>
+          <button type="button" class="listing-showing-btn" data-property="61859 Hosmer Lake · $3,999,000">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1104,6 +1290,7 @@
           <div class="listing-price">$3,600,000</div>
           <div class="listing-addr">19209 Cartwright</div>
           <div class="listing-facts"><span>4 bed</span><span>5 bath</span><span>4,348 sqft</span></div>
+          <button type="button" class="listing-showing-btn" data-property="19209 Cartwright · $3,600,000 (pending)">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1115,6 +1302,7 @@
           <div class="listing-price">$3,499,995</div>
           <div class="listing-addr">19345 Roswell</div>
           <div class="listing-facts"><span>Tetherow</span></div>
+          <button type="button" class="listing-showing-btn" data-property="19345 Roswell · $3,499,995">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1126,6 +1314,7 @@
           <div class="listing-price">$3,495,000</div>
           <div class="listing-addr">61913 Hosmer Lake</div>
           <div class="listing-facts"><span>5 bed</span><span>6 bath</span><span>4,265 sqft</span></div>
+          <button type="button" class="listing-showing-btn" data-property="61913 Hosmer Lake · $3,495,000">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1137,6 +1326,7 @@
           <div class="listing-price">$3,460,000</div>
           <div class="listing-addr">19136 Cartwright</div>
           <div class="listing-facts"><span>Tetherow</span></div>
+          <button type="button" class="listing-showing-btn" data-property="19136 Cartwright · $3,460,000">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1148,6 +1338,7 @@
           <div class="listing-price">$3,200,000</div>
           <div class="listing-addr">61865 Hosmer Lake</div>
           <div class="listing-facts"><span>4 bed</span><span>4 bath</span><span>4,613 sqft</span></div>
+          <button type="button" class="listing-showing-btn" data-property="61865 Hosmer Lake · $3,200,000">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1160,6 +1351,7 @@
           <div class="listing-price">$2,998,000</div>
           <div class="listing-addr">61438 Weinhard</div>
           <div class="listing-facts"><span>5 bed</span><span>6 bath</span><span>4,189 sqft</span></div>
+          <button type="button" class="listing-showing-btn" data-property="61438 Weinhard · $2,998,000 (pending)">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1172,6 +1364,7 @@
           <div class="listing-price">$2,895,000</div>
           <div class="listing-addr">61785 Hosmer Lake</div>
           <div class="listing-facts"><span>3 bed</span><span>4 bath</span><span>3,338 sqft</span></div>
+          <button type="button" class="listing-showing-btn" data-property="61785 Hosmer Lake · $2,895,000">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1184,6 +1377,7 @@
           <div class="listing-price">$2,650,000</div>
           <div class="listing-addr">61612 Hosmer Lake</div>
           <div class="listing-facts"><span>3 bed</span><span>4 bath</span><span>3,312 sqft</span></div>
+          <button type="button" class="listing-showing-btn" data-property="61612 Hosmer Lake · $2,650,000">Schedule a showing</button>
         </div>
       </div>
       <div class="listing-card">
@@ -1195,6 +1389,143 @@
           <div class="listing-price">$2,295,000</div>
           <div class="listing-addr">61636 Hosmer Lake</div>
           <div class="listing-facts"><span>4 bed</span><span>4 bath</span><span>3,233 sqft</span></div>
+          <button type="button" class="listing-showing-btn" data-property="61636 Hosmer Lake · $2,295,000">Schedule a showing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BUYER TRACK — parallel to seller flow per Matt directive 2026-05-18 -->
+<section class="buyer-section" id="buyer">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Looking to buy</div>
+      <h2>Ready to buy in Tetherow?</h2>
+      <p>Three doors in. Schedule a showing on a specific home, get on the list for new Tetherow matches, or request the buyer's guide if you're still in research mode.</p>
+      <p style="margin-top: 14px; font-size: 14.5px; color: rgba(250, 248, 244, 0.92);">Prefer to talk first? Call Matt direct at <a href="tel:+15412136706" style="color: var(--rr-cream); text-decoration: underline; text-decoration-color: rgba(250, 248, 244, 0.35); text-underline-offset: 4px; font-weight: 600;">541.213.6706</a>.</p>
+    </div>
+
+    <div class="buyer-grid">
+      <!-- Card 1 — Schedule a showing (primary) -->
+      <div class="buyer-card primary">
+        <div class="buyer-card-eyebrow">Highest intent</div>
+        <h3>Schedule a showing</h3>
+        <p>Pick a home from the active inventory above. We'll confirm a tour window inside the next 48 hours. Members-only homes are accessible via our broker relationships at Tetherow.</p>
+        <form class="buyer-form" id="showing-form" method="POST" action="/api/cma">
+          <input type="hidden" name="campaign" value="lp-tetherow-v1" />
+          <input type="hidden" name="resort" value="tetherow" />
+          <input type="hidden" name="intent" value="buyer" />
+          <input type="hidden" name="tags" value="buyer-intent,resort:tetherow,lp:tetherow-landing-v1,showing-request" />
+          <select name="property" required id="showing-property">
+            <option value="" disabled selected>Which home?</option>
+            <option value="61572 Hardin Martin · $4,000,000">61572 Hardin Martin · $4,000,000</option>
+            <option value="61594 Hosmer Lake · $3,999,900">61594 Hosmer Lake · $3,999,900</option>
+            <option value="61859 Hosmer Lake · $3,999,000">61859 Hosmer Lake · $3,999,000</option>
+            <option value="19209 Cartwright · $3,600,000 (pending)">19209 Cartwright · $3,600,000 (pending)</option>
+            <option value="19345 Roswell · $3,499,995">19345 Roswell · $3,499,995</option>
+            <option value="61913 Hosmer Lake · $3,495,000">61913 Hosmer Lake · $3,495,000</option>
+            <option value="19136 Cartwright · $3,460,000">19136 Cartwright · $3,460,000</option>
+            <option value="61865 Hosmer Lake · $3,200,000">61865 Hosmer Lake · $3,200,000</option>
+            <option value="61438 Weinhard · $2,998,000 (pending)">61438 Weinhard · $2,998,000 (pending)</option>
+            <option value="61785 Hosmer Lake · $2,895,000">61785 Hosmer Lake · $2,895,000</option>
+            <option value="61612 Hosmer Lake · $2,650,000">61612 Hosmer Lake · $2,650,000</option>
+            <option value="61636 Hosmer Lake · $2,295,000">61636 Hosmer Lake · $2,295,000</option>
+            <option value="Multiple / browsing">More than one (tour day)</option>
+          </select>
+          <input type="text" name="name" placeholder="Your name" required autocomplete="name" />
+          <input type="email" name="email" placeholder="Email address" required autocomplete="email" />
+          <input type="tel" name="phone" placeholder="Mobile number" required autocomplete="tel" />
+          <button type="submit">Request showing</button>
+          <div class="buyer-tiny">By submitting, you agree to receive a marketing communication via SMS, AI voice call, or email from Ryan Realty. Reply STOP to unsubscribe.</div>
+        </form>
+        <div class="buyer-form-success" id="showing-success">
+          <div class="buyer-form-success-check">✓</div>
+          <p style="font-family: var(--rr-font-display); font-size: 20px; font-weight: 600; color: var(--rr-cream); margin-bottom: 8px;">Showing request received.</p>
+          <p>A Ryan Realty broker will confirm a tour window inside 48 hours.</p>
+        </div>
+      </div>
+
+      <!-- Card 2 — Custom alerts -->
+      <div class="buyer-card">
+        <div class="buyer-card-eyebrow">Set + forget</div>
+        <h3>Custom Tetherow alerts</h3>
+        <p>Tell us what you want. We'll email when new Tetherow homes match your criteria. No drip sequence, no spam, just the homes.</p>
+        <form class="buyer-form" id="alerts-form" method="POST" action="/api/cma">
+          <input type="hidden" name="campaign" value="lp-tetherow-v1" />
+          <input type="hidden" name="resort" value="tetherow" />
+          <input type="hidden" name="intent" value="buyer" />
+          <input type="hidden" name="tags" value="buyer-intent,resort:tetherow,lp:tetherow-landing-v1,custom-alerts" />
+          <div class="buyer-form-row">
+            <select name="price_min" required>
+              <option value="" disabled selected>Min price</option>
+              <option value="500000">$500K</option>
+              <option value="1000000">$1M</option>
+              <option value="1500000">$1.5M</option>
+              <option value="2000000">$2M</option>
+              <option value="2500000">$2.5M</option>
+              <option value="3000000">$3M</option>
+            </select>
+            <select name="price_max" required>
+              <option value="" disabled selected>Max price</option>
+              <option value="1500000">$1.5M</option>
+              <option value="2000000">$2M</option>
+              <option value="2500000">$2.5M</option>
+              <option value="3000000">$3M</option>
+              <option value="4000000">$4M</option>
+              <option value="6000000">$6M+</option>
+            </select>
+          </div>
+          <select name="beds_min" required>
+            <option value="" disabled selected>Minimum bedrooms</option>
+            <option value="2">2+</option>
+            <option value="3">3+</option>
+            <option value="4">4+</option>
+            <option value="5">5+</option>
+          </select>
+          <select name="subdivision">
+            <option value="any" selected>Any Tetherow sub-neighborhood</option>
+            <option value="Heath">Heath</option>
+            <option value="Crescent / North Forty">Crescent / North Forty</option>
+            <option value="Glen / Cascade Vista">Glen / Cascade Vista</option>
+            <option value="Tartan Druim">Tartan Druim</option>
+            <option value="Highlands Ridge">Highlands Ridge</option>
+            <option value="Outrider Overlook">Outrider Overlook</option>
+            <option value="Trailhead">Trailhead</option>
+            <option value="Triple Knot">Triple Knot</option>
+            <option value="The Rim">The Rim</option>
+          </select>
+          <input type="email" name="email" placeholder="Email address" required autocomplete="email" />
+          <input type="text" name="name" placeholder="Your name" required autocomplete="name" />
+          <button type="submit">Send me matches</button>
+          <div class="buyer-tiny">One daily digest if a match shows up. Unsubscribe one click.</div>
+        </form>
+        <div class="buyer-form-success" id="alerts-success">
+          <div class="buyer-form-success-check">✓</div>
+          <p style="font-family: var(--rr-font-display); font-size: 20px; font-weight: 600; color: var(--rr-cream); margin-bottom: 8px;">Alerts set.</p>
+          <p>You'll get an email the next time a Tetherow home matches your criteria.</p>
+        </div>
+      </div>
+
+      <!-- Card 3 — Buyer's guide (lowest friction, top-of-funnel) -->
+      <div class="buyer-card">
+        <div class="buyer-card-eyebrow">Soft start</div>
+        <h3>The Tetherow buyer's guide</h3>
+        <p>Request the in-depth Tetherow buyer's guide: HOA tiers, club membership, what each sub-neighborhood actually feels like, the builder roster, and how the resort handed Tetherow homes 27 closings in the last year. Delivered in your inbox.</p>
+        <form class="buyer-form" id="guide-form" method="POST" action="/api/cma">
+          <input type="hidden" name="campaign" value="lp-tetherow-v1" />
+          <input type="hidden" name="resort" value="tetherow" />
+          <input type="hidden" name="intent" value="buyer-soft" />
+          <input type="hidden" name="tags" value="buyer-intent-soft,resort:tetherow,lp:tetherow-landing-v1,buyers-guide-requested" />
+          <input type="email" name="email" placeholder="Your email" required autocomplete="email" />
+          <input type="text" name="name" placeholder="First name (optional)" autocomplete="given-name" />
+          <button type="submit">Send the guide</button>
+          <div class="buyer-tiny">One email. No phone follow-up unless you reply.</div>
+        </form>
+        <div class="buyer-form-success" id="guide-success">
+          <div class="buyer-form-success-check">✓</div>
+          <p style="font-family: var(--rr-font-display); font-size: 20px; font-weight: 600; color: var(--rr-cream); margin-bottom: 8px;">Sent.</p>
+          <p>The Tetherow buyer's guide is on its way to your inbox.</p>
         </div>
       </div>
     </div>
@@ -1286,79 +1617,89 @@
   </div>
 </section>
 
-<!-- SUB-NEIGHBORHOODS -->
+<!-- SUB-NEIGHBORHOODS — horizontal scroll carousel -->
 <section>
   <div class="container">
     <div class="section-head">
       <div class="section-eyebrow">Sub-communities</div>
-      <h2>11 neighborhoods inside the 700-acre master plan.</h2>
-      <p>Each with its own architectural guidelines, lot size, dues schedule, and turnover pattern. Tap any card for the sub-neighborhood profile.</p>
+      <h2>Nine neighborhoods inside the 700-acre master plan.</h2>
+      <p>Each with its own architectural guidelines, lot size, dues schedule, and turnover pattern. Drag, scroll, or use the arrows to browse. Tap any card for the sub-neighborhood profile (Heath ships this week, the other eight follow).</p>
     </div>
 
-    <div class="subnbh-grid">
-      <a class="subnbh-card" href="#cma" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260414191237293313000000-o.jpg');">
-        <div class="subnbh-card-inner">
-          <div class="type">Single-family golf homes</div>
-          <div class="name">Heath</div>
-          <div class="dues"><strong>~$2,244</strong> annual dues · golf-frontage ½-acre+</div>
+    <div class="subnbh-scroller-wrap" id="subnbh-scroller-wrap">
+      <div class="subnbh-scroller" id="subnbh-scroller" role="region" aria-label="Tetherow sub-neighborhoods" tabindex="0">
+        <a class="subnbh-card" href="/lp/tetherow/heath/" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260414191237293313000000-o.jpg');">
+          <div class="subnbh-card-inner">
+            <div class="type">Single-family golf homes</div>
+            <div class="name">Heath</div>
+            <div class="dues"><strong>~$2,244</strong> annual dues · golf-frontage ½-acre+</div>
+          </div>
+        </a>
+        <a class="subnbh-card" href="#cma" data-subnbh="crescent" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260202150805735982000000-o.jpg');">
+          <div class="subnbh-card-inner">
+            <div class="type">Single-family golf homes</div>
+            <div class="name">Crescent · North Forty</div>
+            <div class="dues"><strong>~$2,004</strong> annual dues · established ½-acre lots</div>
+          </div>
+        </a>
+        <a class="subnbh-card" href="#cma" data-subnbh="glen" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260409234505888120000000-o.jpg');">
+          <div class="subnbh-card-inner">
+            <div class="type">Single-family golf homes</div>
+            <div class="name">Glen · Cascade Vista</div>
+            <div class="dues"><strong>~$2,124</strong> annual dues · established</div>
+          </div>
+        </a>
+        <a class="subnbh-card" href="#cma" data-subnbh="tartan-druim" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260331043248854169000000-o.jpg');">
+          <div class="subnbh-card-inner">
+            <div class="type">Gated · custom homes</div>
+            <div class="name">Tartan Druim</div>
+            <div class="dues">39 lots · architect John Muir · originally $949K to $1.5M lots in 2016</div>
+          </div>
+        </a>
+        <a class="subnbh-card" href="#cma" data-subnbh="highlands-ridge" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260109193315010197000000-o.jpg');">
+          <div class="subnbh-card-inner">
+            <div class="type">Planned community</div>
+            <div class="name">Highlands Ridge</div>
+            <div class="dues"><strong>~$3,524 to $4,916</strong> annual · walkable to amenities</div>
+          </div>
+        </a>
+        <a class="subnbh-card" href="#cma" data-subnbh="outrider-overlook" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260311192940248814000000-o.jpg');">
+          <div class="subnbh-card-inner">
+            <div class="type">Planned community</div>
+            <div class="name">Outrider Overlook</div>
+            <div class="dues"><strong>~$2,172 to $4,900</strong> annual · walkable</div>
+          </div>
+        </a>
+        <a class="subnbh-card" href="#cma" data-subnbh="trailhead" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260420202050087023000000-o.jpg');">
+          <div class="subnbh-card-inner">
+            <div class="type">Vacation rental + planned</div>
+            <div class="name">Trailhead</div>
+            <div class="dues"><strong>~$2,160</strong> annual · Cairn Cottages</div>
+          </div>
+        </a>
+        <a class="subnbh-card" href="#cma" data-subnbh="triple-knot" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260302194730907464000000-o.jpg');">
+          <div class="subnbh-card-inner">
+            <div class="type">Townhomes</div>
+            <div class="name">Triple Knot</div>
+            <div class="dues"><strong>~$8,244</strong> annual · highest dues at Tetherow</div>
+          </div>
+        </a>
+        <a class="subnbh-card" href="#cma" data-subnbh="the-rim" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260515155142642818000000-o.jpg');">
+          <div class="subnbh-card-inner">
+            <div class="type">Townhomes</div>
+            <div class="name">The Rim</div>
+            <div class="dues"><strong>~$4,200</strong> annual · monthly billing</div>
+          </div>
+        </a>
+      </div>
+      <div class="scroller-nav">
+        <button class="scroller-arrow" id="subnbh-prev" type="button" aria-label="Scroll left">‹</button>
+        <button class="scroller-arrow" id="subnbh-next" type="button" aria-label="Scroll right">›</button>
+        <div class="scroller-progress" aria-hidden="true">
+          <div class="scroller-progress-bar" id="subnbh-progress"></div>
         </div>
-      </a>
-      <a class="subnbh-card" href="#cma" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260202150805735982000000-o.jpg');">
-        <div class="subnbh-card-inner">
-          <div class="type">Single-family golf homes</div>
-          <div class="name">Crescent · North Forty</div>
-          <div class="dues"><strong>~$2,004</strong> annual dues · established ½-acre lots</div>
-        </div>
-      </a>
-      <a class="subnbh-card" href="#cma" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260409234505888120000000-o.jpg');">
-        <div class="subnbh-card-inner">
-          <div class="type">Single-family golf homes</div>
-          <div class="name">Glen · Cascade Vista</div>
-          <div class="dues"><strong>~$2,124</strong> annual dues · established</div>
-        </div>
-      </a>
-      <a class="subnbh-card" href="#cma" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260331043248854169000000-o.jpg');">
-        <div class="subnbh-card-inner">
-          <div class="type">Gated · custom homes</div>
-          <div class="name">Tartan Druim</div>
-          <div class="dues">39 lots · architect John Muir · originally $949K to $1.5M lots in 2016</div>
-        </div>
-      </a>
-      <a class="subnbh-card" href="#cma" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260109193315010197000000-o.jpg');">
-        <div class="subnbh-card-inner">
-          <div class="type">Planned community</div>
-          <div class="name">Highlands Ridge</div>
-          <div class="dues"><strong>~$3,524 to $4,916</strong> annual · walkable to amenities</div>
-        </div>
-      </a>
-      <a class="subnbh-card" href="#cma" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260311192940248814000000-o.jpg');">
-        <div class="subnbh-card-inner">
-          <div class="type">Planned community</div>
-          <div class="name">Outrider Overlook</div>
-          <div class="dues"><strong>~$2,172 to $4,900</strong> annual · walkable</div>
-        </div>
-      </a>
-      <a class="subnbh-card" href="#cma" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260420202050087023000000-o.jpg');">
-        <div class="subnbh-card-inner">
-          <div class="type">Vacation rental + planned</div>
-          <div class="name">Trailhead</div>
-          <div class="dues"><strong>~$2,160</strong> annual · Cairn Cottages</div>
-        </div>
-      </a>
-      <a class="subnbh-card" href="#cma" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260302194730907464000000-o.jpg');">
-        <div class="subnbh-card-inner">
-          <div class="type">Townhomes</div>
-          <div class="name">Triple Knot</div>
-          <div class="dues"><strong>~$8,244</strong> annual · highest dues at Tetherow</div>
-        </div>
-      </a>
-      <a class="subnbh-card" href="#cma" style="background-image: url('https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260515155142642818000000-o.jpg');">
-        <div class="subnbh-card-inner">
-          <div class="type">Townhomes</div>
-          <div class="name">The Rim</div>
-          <div class="dues"><strong>~$4,200</strong> annual · monthly billing</div>
-        </div>
-      </a>
+        <span class="scroller-hint">1 OF 9</span>
+      </div>
     </div>
   </div>
 </section>
@@ -2024,6 +2365,127 @@
       }, { threshold: 0.45 });
       document.querySelectorAll('section').forEach(function(s) { sectionObserver.observe(s); });
     }
+
+    /* ---------------------------------------------------------------
+       6. SUB-NEIGHBORHOOD SCROLLER — arrows + progress + position hint
+       --------------------------------------------------------------- */
+    var scroller = document.getElementById('subnbh-scroller');
+    var scrollerWrap = document.getElementById('subnbh-scroller-wrap');
+    var prevBtn = document.getElementById('subnbh-prev');
+    var nextBtn = document.getElementById('subnbh-next');
+    var progressBar = document.getElementById('subnbh-progress');
+    var positionHint = scrollerWrap ? scrollerWrap.querySelector('.scroller-hint') : null;
+
+    if (scroller && prevBtn && nextBtn) {
+      var totalCards = scroller.querySelectorAll('.subnbh-card').length;
+      var cardWidth = 280 + 16; // flex-basis + gap
+
+      function updateScroller() {
+        var scrollLeft = scroller.scrollLeft;
+        var scrollWidth = scroller.scrollWidth - scroller.clientWidth;
+        var pct = scrollWidth > 0 ? Math.min(100, (scrollLeft / scrollWidth) * 100) : 0;
+        if (progressBar) progressBar.style.width = pct + '%';
+        var activeIndex = Math.min(totalCards, Math.round(scrollLeft / cardWidth) + 1);
+        if (positionHint) positionHint.textContent = activeIndex + ' OF ' + totalCards;
+        prevBtn.disabled = scrollLeft <= 4;
+        nextBtn.disabled = scrollLeft >= scrollWidth - 4;
+        scrollerWrap.classList.toggle('at-end', scrollLeft >= scrollWidth - 4);
+      }
+
+      scroller.addEventListener('scroll', updateScroller, { passive: true });
+      prevBtn.addEventListener('click', function() {
+        scroller.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+        gtagEvent('subnbh_scroller_prev');
+      });
+      nextBtn.addEventListener('click', function() {
+        scroller.scrollBy({ left: cardWidth, behavior: 'smooth' });
+        gtagEvent('subnbh_scroller_next');
+      });
+      // Keyboard navigation when scroller has focus
+      scroller.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowRight') { scroller.scrollBy({ left: cardWidth, behavior: 'smooth' }); e.preventDefault(); }
+        else if (e.key === 'ArrowLeft') { scroller.scrollBy({ left: -cardWidth, behavior: 'smooth' }); e.preventDefault(); }
+      });
+      updateScroller();
+    }
+
+    /* ---------------------------------------------------------------
+       7. BUYER TRACK FORMS — wire submit + fire analytics
+       --------------------------------------------------------------- */
+    function wireBuyerForm(formId, successId, fbContentName) {
+      var form = document.getElementById(formId);
+      if (!form) return;
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Lightweight client-side validation
+        var fields = form.querySelectorAll('input[required], select[required]');
+        var allValid = true;
+        fields.forEach(function(f) {
+          if (!f.value || (f.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.value))) {
+            f.style.borderColor = '#e08070';
+            allValid = false;
+          } else { f.style.borderColor = ''; }
+        });
+        if (!allValid) return;
+        gtagEvent(formId + '_submit', { source: 'tetherow_lp_buyer_track', form: formId });
+        if (typeof fbq === 'function') {
+          fbq('track', 'Lead', { content_name: fbContentName, value: 0.0, currency: 'USD' });
+        }
+        form.style.display = 'none';
+        var success = document.getElementById(successId);
+        if (success) success.classList.add('visible');
+        // TODO production: fetch('/api/cma', { method: 'POST', body: new FormData(form) })
+      });
+    }
+    wireBuyerForm('showing-form', 'showing-success', 'Tetherow LP, showing request');
+    wireBuyerForm('alerts-form', 'alerts-success', 'Tetherow LP, custom alerts');
+    wireBuyerForm('guide-form', 'guide-success', 'Tetherow LP, buyer guide');
+
+    /* ---------------------------------------------------------------
+       8. PER-LISTING SHOWING CTA — pre-fill the showing form + scroll to buyer track
+       --------------------------------------------------------------- */
+    document.querySelectorAll('.listing-showing-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var property = btn.getAttribute('data-property');
+        var propertySelect = document.getElementById('showing-property');
+        if (propertySelect && property) {
+          // If the option exists pre-fill, otherwise add it as a custom option
+          var match = Array.prototype.find.call(propertySelect.options, function(o) { return o.value === property; });
+          if (match) {
+            propertySelect.value = property;
+          } else {
+            var opt = document.createElement('option');
+            opt.value = property;
+            opt.textContent = property;
+            propertySelect.appendChild(opt);
+            propertySelect.value = property;
+          }
+        }
+        var buyerSection = document.getElementById('buyer');
+        if (buyerSection) buyerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        gtagEvent('listing_showing_click', { property: property });
+        if (typeof fbq === 'function') {
+          fbq('trackCustom', 'ListingShowingRequest', { property: property });
+        }
+      });
+    });
+
+    /* ---------------------------------------------------------------
+       9. DYNAMIC DATE INJECTION — keep the page from going stale
+       Replaces every <span data-dyn-month-year> with the current month + year.
+       Note: this is client-side only; for SEO the v11 migration to a Next.js
+       dynamic route (see docs/proposed/site-community-page-skill.md) will
+       server-render this same value at request time.
+       --------------------------------------------------------------- */
+    (function injectCurrentMonthYear() {
+      try {
+        var now = new Date();
+        var monthYear = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        document.querySelectorAll('[data-dyn-month-year]').forEach(function(el) {
+          el.textContent = monthYear;
+        });
+      } catch (err) { /* leave the SSR fallback in place */ }
+    })();
 
     // First fire: viewer landed
     gtagEvent('lp_loaded', { lp: 'tetherow-v1' });
