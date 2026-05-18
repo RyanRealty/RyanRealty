@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.234.2 (2026-05-18)
+
+### Maintenance
+- docs(ga4): document Funnel Explorations to build manually
+
+---
+
+
 ## v1.234.1 (2026-05-18)
 
 ### Bug Fixes
