@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.230.1 (2026-05-18)
+
+### Bug Fixes
+- fix(fub): never message realtors — exclude on every workflow + smart list
+
+---
+
+
 ## v1.230.0 (2026-05-18)
 
 ### Features
