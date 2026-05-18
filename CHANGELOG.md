@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.234.3 (2026-05-18)
+
+### Bug Fixes
+- fix(types): add lp / event / page_event / audience to Scope union
+
+---
+
+
 ## v1.234.2 (2026-05-18)
 
 ### Maintenance
