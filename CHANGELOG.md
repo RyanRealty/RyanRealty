@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.233.1 (2026-05-18)
+
+### Bug Fixes
+- fix(types): pulse-feed.ts withTimeout fallback — proper unknown[] cast
+
+---
+
+
 ## v1.233.0 (2026-05-18)
 
 ### Features
