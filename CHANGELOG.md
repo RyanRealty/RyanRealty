@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.223.0 (2026-05-18)
+
+### Features
+- feat(db): fub_person_geo + lookup_address_geo RPC + boundaries spatial index
+
+---
+
+
 ## v1.222.0 (2026-05-18)
 
 ### Features
