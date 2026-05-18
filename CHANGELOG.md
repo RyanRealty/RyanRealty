@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.231.2 (2026-05-18)
+
+### Bug Fixes
+- fix(deps): add stub fetchers for performance-pull cron — unblock build
+
+---
+
+
 ## v1.231.1 (2026-05-18)
 
 ### Bug Fixes
