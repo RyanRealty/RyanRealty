@@ -215,12 +215,11 @@
     .ourwork-text p { font-size: 16px; line-height: 1.7; margin-bottom: 14px; color: var(--rr-text); }
     .ourwork-text ul { margin: 18px 0; padding-left: 20px; }
     .ourwork-text li { font-size: 15px; line-height: 1.65; margin-bottom: 8px; }
-    .ourwork-credentials { background: var(--rr-cream-dim); border-radius: 14px; padding: 32px; }
-    .ourwork-cred-row { display: flex; align-items: center; gap: 22px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--rr-navy-08); }
-    .ourwork-cred-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .ourwork-credentials { background: var(--rr-cream-dim); border-radius: 14px; padding: 36px; }
+    .ourwork-cred-row { display: flex; align-items: center; gap: 24px; }
     .ourwork-cred-img {
-      width: 96px; height: 128px;
-      border-radius: 10px;
+      width: 140px; height: 180px;
+      border-radius: 12px;
       background: var(--rr-white);
       background-size: contain;
       background-repeat: no-repeat;
@@ -229,8 +228,51 @@
       box-shadow: 0 1px 2px rgba(16, 39, 66, 0.06);
     }
     .ourwork-cred-img.matt { background-image: url('/images/brokers/ryan-matt.png'); }
-    .ourwork-cred-text strong { font-family: var(--rr-font-display); font-size: 22px; font-weight: 600; color: var(--rr-navy); display: block; margin-bottom: 4px; line-height: 1.1; }
-    .ourwork-cred-text span { font-size: 13.5px; color: var(--rr-muted); display: block; line-height: 1.5; }
+    .ourwork-cred-text strong { font-family: var(--rr-font-display); font-size: 26px; font-weight: 600; color: var(--rr-navy); display: block; margin-bottom: 4px; line-height: 1.1; }
+    .ourwork-cred-text .role { font-size: 13.5px; color: var(--rr-muted); display: block; line-height: 1.5; margin-bottom: 6px; }
+    .ourwork-cred-text .license { font-size: 11.5px; color: var(--rr-muted); display: block; letter-spacing: 0.04em; }
+    .ourwork-cred-text .contact { font-size: 13.5px; color: var(--rr-navy); display: block; line-height: 1.6; margin-top: 10px; font-weight: 500; }
+
+    /* LOCATION / MAP */
+    .location-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 36px; align-items: stretch; }
+    .location-map { border-radius: 16px; overflow: hidden; box-shadow: var(--rr-card-shadow); background: var(--rr-navy); min-height: 360px; }
+    .location-map img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .location-anchors { display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+    .location-anchor { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--rr-navy-08); }
+    .location-anchor:last-child { border-bottom: none; }
+    .location-anchor-time { font-family: var(--rr-font-display); font-size: 28px; font-weight: 600; color: var(--rr-navy); min-width: 78px; line-height: 1; }
+    .location-anchor-text strong { display: block; font-size: 15px; font-weight: 600; color: var(--rr-navy); margin-bottom: 2px; }
+    .location-anchor-text span { font-size: 13px; color: var(--rr-muted); }
+
+    /* MID-PAGE CTA STRIP */
+    .midcta {
+      background: var(--rr-navy);
+      color: var(--rr-cream);
+      border-radius: 16px;
+      padding: 36px 40px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 32px;
+      align-items: center;
+    }
+    .midcta h3 { font-family: var(--rr-font-display); font-size: 28px; font-weight: 600; line-height: 1.2; margin-bottom: 6px; letter-spacing: -0.01em; }
+    .midcta p { font-size: 14.5px; opacity: 0.85; line-height: 1.55; max-width: 520px; }
+    .midcta-btn { background: var(--rr-cream); color: var(--rr-navy); padding: 16px 28px; border-radius: 10px; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; transition: opacity 0.2s; }
+    .midcta-btn:hover { opacity: 0.92; }
+
+    /* TRUST STRIP — above the main form */
+    .truststrip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1px;
+      background: rgba(250, 248, 244, 0.16);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .trust-item { background: rgba(250, 248, 244, 0.06); padding: 16px 20px; text-align: center; }
+    .trust-value { font-family: var(--rr-font-display); font-size: 22px; font-weight: 600; color: var(--rr-cream); line-height: 1.1; margin-bottom: 4px; }
+    .trust-label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
 
     /* THE CMA — main lead form */
     .cma-section {
@@ -277,7 +319,8 @@
     footer .legal { grid-column: 1 / -1; padding-top: 24px; border-top: 1px solid rgba(250, 248, 244, 0.12); margin-top: 28px; font-size: 12px; opacity: 0.62; line-height: 1.65; }
 
     @media (max-width: 900px) {
-      .kidd-row, .cma-grid, .ourwork-grid, .course-grid { grid-template-columns: 1fr; gap: 32px; }
+      .kidd-row, .cma-grid, .ourwork-grid, .course-grid, .location-grid { grid-template-columns: 1fr; gap: 32px; }
+      .midcta { grid-template-columns: 1fr; padding: 28px 24px; }
       footer .container { grid-template-columns: 1fr; gap: 28px; }
     }
   </style>
@@ -335,6 +378,41 @@
         </div>
       </div>
       <div class="kidd-img" style="background-image: url('/lp/tetherow/img/tetherow-course-118.jpg');" role="img" aria-label="Tetherow golf course"></div>
+    </div>
+  </div>
+</section>
+
+<!-- LOCATION -->
+<section>
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Location</div>
+      <h2>Seven minutes from the Old Mill.</h2>
+      <p>Tetherow sits on 700 acres west of Bend on Skyline Ranch Road. Closer to downtown than Pronghorn or Brasada, closer to Mt. Bachelor than Broken Top.</p>
+    </div>
+
+    <div class="location-grid">
+      <div class="location-map">
+        <img src="/lp/tetherow/img/tetherow-location-map.png" alt="Tetherow location map showing proximity to downtown Bend, Mt. Bachelor, and Redmond Municipal Airport" />
+      </div>
+      <div class="location-anchors">
+        <div class="location-anchor">
+          <div class="location-anchor-time">7 min</div>
+          <div class="location-anchor-text"><strong>Old Mill District</strong><span>Downtown Bend · dining + Deschutes riverfront</span></div>
+        </div>
+        <div class="location-anchor">
+          <div class="location-anchor-time">25 min</div>
+          <div class="location-anchor-text"><strong>Mt. Bachelor</strong><span>Lift-served skiing + summer alpine access</span></div>
+        </div>
+        <div class="location-anchor">
+          <div class="location-anchor-time">35 min</div>
+          <div class="location-anchor-text"><strong>Redmond (RDM)</strong><span>Commercial airport · daily PDX/SEA/SFO/DEN</span></div>
+        </div>
+        <div class="location-anchor">
+          <div class="location-anchor-time">10 min</div>
+          <div class="location-anchor-text"><strong>Shevlin Park</strong><span>660 acres · adjoining trail network</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -459,6 +537,19 @@
         <li><strong>Brendan Leary</strong><span>Homeowner Director</span></li>
         <li><strong>Keith Levesque</strong><span>Homeowner Director</span></li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<!-- MID-PAGE CTA -->
+<section class="tight">
+  <div class="container">
+    <div class="midcta">
+      <div>
+        <h3>Curious what your sub-neighborhood is doing?</h3>
+        <p>A free CMA built against your specific Tetherow sub-neighborhood — Heath, Tartan Druim, Triple Knot, The Rim — using the actual closings of the last 12 months. No phone follow-up unless you ask.</p>
+      </div>
+      <a class="midcta-btn" href="#cma">Get my Tetherow CMA</a>
     </div>
   </div>
 </section>
@@ -877,21 +968,9 @@
           <div class="ourwork-cred-img matt"></div>
           <div class="ourwork-cred-text">
             <strong>Matt Ryan</strong>
-            <span>Principal Broker · Oregon #201206613<br />Owner, Ryan Realty LLC<br />Bend native · 115 NW Oregon Ave</span>
-          </div>
-        </div>
-        <div class="ourwork-cred-row">
-          <div class="ourwork-cred-img" style="background-image: url('/images/brokers/stevenson-paul.png');"></div>
-          <div class="ourwork-cred-text">
-            <strong>Paul Stevenson</strong>
-            <span>Principal Broker<br />Luxury resort specialist</span>
-          </div>
-        </div>
-        <div class="ourwork-cred-row">
-          <div class="ourwork-cred-img" style="background-image: url('/images/brokers/peterson-rebecca.png');"></div>
-          <div class="ourwork-cred-text">
-            <strong>Rebecca Peterson</strong>
-            <span>Broker<br />Buyer specialist · west Bend</span>
+            <span class="role">Owner &amp; Principal Broker · Ryan Realty LLC<br />Residential · Luxury Homes · Relocation</span>
+            <span class="license">Oregon Principal Broker · License #201206613</span>
+            <span class="contact">541.213.6706 · matt@ryan-realty.com<br />115 NW Oregon Avenue, Bend</span>
           </div>
         </div>
       </div>
@@ -915,6 +994,11 @@
         </ul>
       </div>
       <div class="cma-form-wrap">
+        <div class="truststrip">
+          <div class="trust-item"><div class="trust-value">#201206613</div><div class="trust-label">OR Principal Broker</div></div>
+          <div class="trust-item"><div class="trust-value">27</div><div class="trust-label">Tetherow trades, 12mo</div></div>
+          <div class="trust-item"><div class="trust-value">94.2%</div><div class="trust-label">Avg sale-to-list</div></div>
+        </div>
         <div class="cma-form-eyebrow">Tetherow CMA request</div>
         <div class="cma-form-title">Four fields. CMA in your inbox.</div>
         <form class="cma-form" id="tetherow-cma-form" method="POST" action="/api/cma">
