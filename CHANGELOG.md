@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.230.2 (2026-05-18)
+
+### Bug Fixes
+- fix(deps): add @anthropic-ai/sdk to unblock Vercel build
+- fix(fub): remove round-robin — all leads route to Matt
+
+---
+
+
 ## v1.230.1 (2026-05-18)
 
 ### Bug Fixes
