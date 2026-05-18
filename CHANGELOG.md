@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.224.2 (2026-05-18)
+
+### Bug Fixes
+- fix(lead-geocode): add retry on transient errors (429/5xx + OVER_QUERY_LIMIT)
+
+---
+
+
 ## v1.224.1 (2026-05-18)
 
 ### Bug Fixes
