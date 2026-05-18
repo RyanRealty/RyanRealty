@@ -134,7 +134,7 @@ broker:paul                  ← assigned to Paul
 
 ## 6. Assignment rule
 
-**Round-robin between Matt + Rebecca** for warm/nurture; hot leads default to Matt (override only on Matt's OOO).
+**All inbound seller leads route to Matt.** Per Matt's 2026-05-17 directive: "no round robin. I will get all listings and leads." Rebecca + Paul remain in FUB and can have leads manually reassigned via the FUB UI on a per-lead basis. The `marketing_assignments` ledger still records every assignment for audit + future flexibility — broker column will always be `'matt'` until policy changes.
 
 Implementation in `app/lp/seller-home-value/actions.ts`:
 

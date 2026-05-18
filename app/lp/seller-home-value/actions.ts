@@ -24,7 +24,8 @@ const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCas
 // FOLLOWUPBOSS_BROKER_USER_MAP env var can override these per-environment if
 // a broker is added/removed/swapped between Matt's accounts.
 const FUB_USER_MATT = 1
-const FUB_USER_REBECCA = 2
+// Rebecca (id 2) + Paul (id 3) remain in FUB but no auto-route per Matt
+// 2026-05-17. Manual reassignment via FUB UI only.
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 type BrokerAssignment = { broker: BrokerSlug; userId: number }
@@ -89,51 +90,17 @@ function classifyTimeline(t: SellerLPTimeline | undefined): {
 }
 
 /**
- * Round-robin between active brokers in the FUB "Seller Leads" group.
+ * Broker assignment — ALL seller LP leads route to Matt.
  *
- * Per docs/FUB_SELLER_WORKFLOW_2026-05-17.md §6:
- *   - Hot leads default to Matt (override only if he's OOO — not implemented yet)
- *   - Warm + nurture round-robin between Matt + Rebecca
- *
- * Reads the most-recent row in public.marketing_assignments for audience='seller'
- * and picks the OTHER active broker. If no prior row exists, defaults to Matt.
+ * Per Matt's 2026-05-17 directive: "no round robin. I will get all listings
+ * and leads." The marketing_assignments ledger still records every
+ * assignment for audit + future flexibility, but every new submission goes
+ * to Matt. Rebecca can be manually reassigned in FUB UI on a per-lead basis.
  */
 async function assignSellerLead(
-  classification: 'hot' | 'warm' | 'nurture' | 'unknown',
+  _classification: 'hot' | 'warm' | 'nurture' | 'unknown',
 ): Promise<BrokerAssignment> {
-  // Hot leads always go to Matt first (highest-value, fastest response).
-  if (classification === 'hot') {
-    return { broker: 'matt', userId: FUB_USER_MATT }
-  }
-
-  // Warm/nurture/unknown: round-robin between Matt + Rebecca.
-  const supabase = getServiceSupabase()
-  if (!supabase) {
-    // Fail-safe: if Supabase is down, default to Matt so the lead is owned.
-    return { broker: 'matt', userId: FUB_USER_MATT }
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('marketing_assignments')
-      .select('broker')
-      .eq('audience', 'seller')
-      .order('assigned_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (error) {
-      console.warn('[seller-lp] marketing_assignments read failed:', error.message)
-      return { broker: 'matt', userId: FUB_USER_MATT }
-    }
-    // If last seller assignment was Matt, give this one to Rebecca, and vice versa.
-    if (data?.broker === 'matt') {
-      return { broker: 'rebecca', userId: FUB_USER_REBECCA }
-    }
-    return { broker: 'matt', userId: FUB_USER_MATT }
-  } catch (err) {
-    console.warn('[seller-lp] assignment lookup failed:', err)
-    return { broker: 'matt', userId: FUB_USER_MATT }
-  }
+  return { broker: 'matt', userId: FUB_USER_MATT }
 }
 
 async function recordSellerAssignment(params: {

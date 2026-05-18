@@ -94,13 +94,9 @@ Compliance gates:
 
 ---
 
-## 5. Assignment rule (round-robin)
+## 5. Assignment rule
 
-Reuses `marketing_assignments` Supabase ledger. Same logic as seller:
-- Hot buyers default to Matt (fastest response on inventory)
-- Warm + nurture round-robin between Matt + Rebecca
-
-Same code path: `lib/canonical-lead-tagger.ts` picks the next broker for `audience='buyer'`.
+**All inbound buyer leads route to Matt.** Per Matt's 2026-05-17 directive: "no round robin. I will get all listings and leads." Rebecca + Paul remain in FUB; manual reassignment in FUB UI only. The `marketing_assignments` ledger records every assignment (broker = `'matt'`) for audit + future flexibility.
 
 ---
 

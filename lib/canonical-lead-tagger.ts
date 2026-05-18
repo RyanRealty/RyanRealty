@@ -52,7 +52,8 @@ export type CanonicalLeadParams = {
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 
 const FUB_USER_MATT = 1
-const FUB_USER_REBECCA = 2
+// Rebecca + Paul exist as FUB users (ids 2 + 3) but no auto-route to them
+// per Matt's 2026-05-17 directive. Manual reassignment via FUB UI only.
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -62,30 +63,20 @@ function getServiceSupabase() {
 }
 
 /**
- * Round-robin between Matt + Rebecca. Hot leads default to Matt for
- * fastest response.
+ * Broker assignment — ALL inbound leads route to Matt.
+ *
+ * Per Matt's 2026-05-17 directive: "no round robin. I will get all listings
+ * and leads." Round-robin code was previously here; removed. Rebecca remains
+ * in the FUB "Seller Leads" group and can have leads manually reassigned via
+ * the FUB UI, but every NEW LP / contact-form / FB-ad submission auto-routes
+ * to Matt.
+ *
+ * If the policy ever changes, restore the round-robin lookup against the
+ * marketing_assignments ledger here. The ledger keeps recording every
+ * assignment for audit + future flexibility.
  */
-async function pickBroker(audience: LeadAudience, tier: 'hot' | 'warm' | 'nurture'): Promise<{ broker: BrokerSlug; userId: number }> {
-  if (tier === 'hot') return { broker: 'matt', userId: FUB_USER_MATT }
-
-  const supabase = getServiceSupabase()
-  if (!supabase) return { broker: 'matt', userId: FUB_USER_MATT }
-
-  try {
-    const { data, error } = await supabase
-      .from('marketing_assignments')
-      .select('broker')
-      .eq('audience', audience)
-      .order('assigned_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (error) return { broker: 'matt', userId: FUB_USER_MATT }
-    return data?.broker === 'matt'
-      ? { broker: 'rebecca', userId: FUB_USER_REBECCA }
-      : { broker: 'matt', userId: FUB_USER_MATT }
-  } catch {
-    return { broker: 'matt', userId: FUB_USER_MATT }
-  }
+async function pickBroker(_audience: LeadAudience, _tier: 'hot' | 'warm' | 'nurture'): Promise<{ broker: BrokerSlug; userId: number }> {
+  return { broker: 'matt', userId: FUB_USER_MATT }
 }
 
 async function recordAssignment(params: {

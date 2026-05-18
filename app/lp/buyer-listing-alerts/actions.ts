@@ -18,7 +18,8 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
 
 const FUB_USER_MATT = 1
-const FUB_USER_REBECCA = 2
+// Rebecca (id 2) + Paul (id 3) remain in FUB but no auto-route per Matt
+// 2026-05-17. Manual reassignment via FUB UI only.
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 type BrokerAssignment = { broker: BrokerSlug; userId: number }
@@ -67,35 +68,15 @@ function classifyTimeline(t: BuyerLPTimeline | undefined): {
 }
 
 /**
- * Round-robin between Matt + Rebecca. Hot leads default to Matt for
- * fastest response.
+ * Broker assignment — ALL buyer LP leads route to Matt.
  *
- * Mirror of seller LP's assignSellerLead — reads marketing_assignments
- * ledger filtered by audience='buyer' for stable alternation.
+ * Per Matt's 2026-05-17 directive: "no round robin. I will get all listings
+ * and leads." Rebecca can be manually reassigned in FUB UI on a per-lead basis.
  */
 async function assignBuyerLead(
-  classification: 'hot' | 'warm' | 'nurture' | 'unknown',
+  _classification: 'hot' | 'warm' | 'nurture' | 'unknown',
 ): Promise<BrokerAssignment> {
-  if (classification === 'hot') {
-    return { broker: 'matt', userId: FUB_USER_MATT }
-  }
-  const supabase = getServiceSupabase()
-  if (!supabase) return { broker: 'matt', userId: FUB_USER_MATT }
-
-  try {
-    const { data, error } = await supabase
-      .from('marketing_assignments')
-      .select('broker')
-      .eq('audience', 'buyer')
-      .order('assigned_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (error) return { broker: 'matt', userId: FUB_USER_MATT }
-    if (data?.broker === 'matt') return { broker: 'rebecca', userId: FUB_USER_REBECCA }
-    return { broker: 'matt', userId: FUB_USER_MATT }
-  } catch {
-    return { broker: 'matt', userId: FUB_USER_MATT }
-  }
+  return { broker: 'matt', userId: FUB_USER_MATT }
 }
 
 async function recordBuyerAssignment(params: {

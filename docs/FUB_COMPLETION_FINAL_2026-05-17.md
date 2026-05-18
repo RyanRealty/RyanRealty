@@ -15,7 +15,7 @@ submitSellerLPForm() / submitBuyerLPForm()
 2. Compliance gate: if person carries do_not_email / Bounced / Unsubscribed /
    compliance:hard-stop → skip workflow enrollment (lead still saved + broker
    still alerted, but no auto-touches will fire)
-3. Round-robin assign (Matt or Rebecca; hot → Matt default)
+3. Assign to Matt (per 2026-05-17 directive — no round-robin; all leads to Matt)
 4. Apply canonical tags: audience:seller|buyer + tier + source + broker
 5. Write custom fields (seller: 4; buyer: 5)
 6. Round-robin ledger insert
