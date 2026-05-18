@@ -3,15 +3,14 @@ name: agent-coop-eflyer
 description: >
   Producer that builds an agent-to-agent email blast (eflyer) for one Ryan Realty listing,
   targeting buyer's agents who are likely holding clients in the listing's price range. Emits
-  a responsive HTML email, a print-ready PDF for ZipYourFlyer upload, a plain-text body
-  fallback, and a sub-60-character subject line. Voice is peer-to-peer broker.  "your client?"
-  angle, no consumer sales hype. Producer prepares the artifacts and surfaces them; Matt
-  handles the actual send via ZipYourFlyer ($19-$29 blast to 20,000+ Central Oregon agents)
-  or a manual Resend push to a local agent list. Email body is hashtag-stripping surface. 
-  no #RyanRealtyBend in the body. Use this whenever Matt says "agent coop eflyer for
-  <address>", "agent-to-agent email for <MLS#>", "buyer agent blast", "build the coop flyer",
-  "agent email for <listing>", or any phrasing that asks for a flyer aimed at other agents
-  rather than at consumers.
+  a responsive HTML email, a print-ready PDF (for an in-person print or attached send), a
+  plain-text body fallback, and a sub-60-character subject line. Voice is peer-to-peer broker.
+  "your client?" angle, no consumer sales hype. Producer prepares the artifacts and surfaces
+  them; Matt sends via Resend from the `mail.ryan-realty.com` sender to a manually managed
+  local agent list. Email body is hashtag-stripping surface — no #RyanRealtyBend in the body.
+  Use this whenever Matt says "agent coop eflyer for <address>", "agent-to-agent email for
+  <MLS#>", "buyer agent blast", "build the coop flyer", "agent email for <listing>", or any
+  phrasing that asks for a flyer aimed at other agents rather than at consumers.
 when_to_use: |
   Trigger when Matt says any of:
   - "agent coop eflyer for <address>"
@@ -21,7 +20,6 @@ when_to_use: |
   - "buyer agent blast for <address or MLS#>"
   - "build the coop flyer for <address or MLS#>"
   - "agent email for <listing or MLS#>"
-  - "ZipYourFlyer blast for <address>"
   - "coop blast for <MLS#>"
   - "/build-agent-coop-eflyer <address or MLS#>"
 action_types:
@@ -48,9 +46,8 @@ example_outputs: []
 
 **Scope.** Build one agent-to-agent email blast for a single Ryan Realty listing. Output is an
 HTML email + PDF + plain-text body + subject line.  the artifacts only. Distribution happens
-outside this producer: Matt uploads the PDF/HTML to ZipYourFlyer, or sends via Resend from the
-`mail.ryan-realty.com` sender to a manually managed local agent list. The producer never
-sends.
+outside this producer: Matt sends via Resend from the `mail.ryan-realty.com` sender to a
+manually managed local agent list. The producer never sends.
 
 **Status.** Canonical. Locked 2026-05-14.
 
@@ -64,7 +61,7 @@ sends.
 
 ### In scope
 - One responsive HTML email (max body width 640 px, inlined CSS, light + dark mode tested).
-- One print-ready single-page PDF (8.5" × 11" letter, 300 dpi) for ZipYourFlyer upload.
+- One print-ready single-page PDF (8.5" × 11" letter, 300 dpi) for in-person print or attached send.
 - One plain-text `body.md` for text-only fallback in mixed-MIME sends.
 - One `subject-line.txt` with the exact subject line.  strictly under 60 characters.
 - One `citations.json` per CLAUDE.md §0 with every figure traced to its source.
@@ -72,7 +69,7 @@ sends.
   banned vocab.
 
 ### Out of scope
-- Sending the email. Matt performs the send via ZipYourFlyer or manual Resend upload.
+- Sending the email. Matt performs the send via Resend (`mail.ryan-realty.com` sender).
 - Building a CMA, BPO, comp grid, or seller net sheet. Different producers own those.
 - Consumer-facing flyers (Just Listed / Feature Sheet / Open House).  `social_media_skills/flyer-design/SKILL.md` owns those.
 - Single IG post variants. `social_media_skills/ig-single-post/SKILL.md` owns S1-S10.
@@ -379,9 +376,8 @@ at QA.  do not duplicate the list here (it drifts).
 | `sips` / `ffmpeg` | Hero resize to 1200×675 | local CLI |
 | `fetch` HEAD | Showing link validation | n/a |
 | Resend (send-side, NOT called by producer) | Sender `mail.ryan-realty.com` for manual Matt-driven blast | `RESEND_API_KEY` |
-| ZipYourFlyer (send-side, NOT called by producer) | $19-$29 blast to 20,000+ Central Oregon agents | Manual upload by Matt |
 
-The producer never calls Resend or ZipYourFlyer. It outputs the artifacts and stops.
+The producer never calls Resend. It outputs the artifacts and stops.
 
 ---
 
@@ -394,7 +390,7 @@ The producer never calls Resend or ZipYourFlyer. It outputs the artifacts and st
 ```
 out/agent-coop/<slug>/
 ├── eflyer.html              ← responsive email HTML, inlined CSS, dark-mode tested
-├── eflyer.pdf               ← single-page 8.5" × 11" PDF for ZipYourFlyer upload
+├── eflyer.pdf               ← single-page 8.5" × 11" PDF (print + attach fallback)
 ├── subject-line.txt         ← exact subject line, ≤ 60 chars, single line, no trailing newline
 ├── body.md                  ← plain-text fallback body
 ├── citations.json           ← one entry per figure
@@ -431,9 +427,8 @@ Agent co-op eflyer ready.  MLS #<mls_id> · <short address>
   citations.json: out/agent-coop/<slug>/citations.json
 
   DISTRIBUTION (manual.  producer does NOT send)
-    (a) ZipYourFlyer upload.  eflyer.pdf.  $19-$29 blast
-    (b) Manual Resend.  sender mail.ryan-realty.com → local agent list
-        (verify domain status before sending)
+    Manual Resend.  sender mail.ryan-realty.com → local agent list
+    (verify domain status before sending)
 
 Reply "ship it" / "approved" / "go" to commit the artifacts to main.
 ```
@@ -467,9 +462,8 @@ One entry per figure shown.  repeat the shape for every price, count, day, year,
 subject-line.txt content, and the QA scorecard. He says "ship it" / "approved" / "go" before
 any commit lands on `main` and before any send happens.
 
-Send is always manual. The producer surfaces the artifacts and the two distribution paths
-(ZipYourFlyer upload OR manual Resend); Matt executes whichever path makes sense for the
-listing.
+Send is always manual. The producer surfaces the artifacts and the Resend distribution path
+(sender `mail.ryan-realty.com` → local agent list); Matt executes the send when ready.
 
 ---
 
@@ -509,7 +503,7 @@ The producer transitions:
 - `in_production → ready` after the QA gate passes (Step 14 SQL; populates `executor_response`).
 - The orchestrator / produce skill handles `ready → approved → executed → measured`.
 
-`executed` here means the artifacts are committed to `main` and ready for Matt to upload to ZipYourFlyer or send via Resend. The actual delivery to inboxes is a manual step outside the producer. Full status semantics in `marketing_brain_skills/producers/TEMPLATE.md` §8.
+`executed` here means the artifacts are committed to `main` and ready for Matt to send via Resend. The actual delivery to inboxes is a manual step outside the producer. Full status semantics in `marketing_brain_skills/producers/TEMPLATE.md` §8.
 
 ---
 
@@ -518,18 +512,16 @@ The producer transitions:
 | failure | symptoms | recovery |
 |---|---|---|
 | Showing link 404 | HEAD returns 4xx/5xx | Surface URL + status. Offer to swap to default `ryan-realty.com/listings/<mls_id>` if not already in use. Don't render until resolved |
-| Resend sender domain unverified | `mail.ryan-realty.com` not verified | Surface dashboard link + DNS records. Still emit artifacts.  ZipYourFlyer path remains viable; flag Resend status in surface block |
+| Resend sender domain unverified | `mail.ryan-realty.com` not verified | Surface dashboard link + DNS records. Still emit artifacts; flag Resend status in surface block. Matt sends manually from another verified address until propagation completes |
 | Subject line over 60 chars | length check fails after auto-derive | Drop prefix/city tokens, re-derive, re-check. Max 2 attempts before surfacing for Matt to pick a hook |
 | Banned vocab hit | grep returns ≥ 1 | Rewrite offending sentence. Re-validate. Max 2 auto-iterations |
 | Hero photo missing / watermarked | `PhotoURL[0]` null, 404, or visibly watermarked | Stop. Surface to Matt. Never fall back to AI / stock per ANTI_SLOP_MANIFESTO |
 | Listing agent not in three-broker set | resolution fails | Set `status='killed'`. Coop blasts are in-house only |
 | Listing status not Active / Coming Soon | pending / closed / withdrawn / expired | Surface to Matt. Compliance flag.  don't render |
 | Outlook rendering broken | manual preview shows broken layout | Replace any flex/grid with `<table>`, inline more CSS, re-render. Outlook is the floor |
-| ZipYourFlyer PDF rejected | Matt reports upload failed | Verify dimensions (8.5"×11"), DPI (≥ 300), single page, < 10 MB. Re-render |
 
 ### Open spec questions
 
-- ZipYourFlyer preferred upload format (PDF vs HTML vs MJML): producer ships both PDF and HTML; Matt picks per upload.
 - Resend domain verification status: producer flags status at surface step, not at render.
 - Auto-open HTML preview in browser at surface step: default no; Matt opens via `open out/.../eflyer.html`.
 
@@ -544,7 +536,7 @@ The producer transitions:
 5. Never use exclamation marks, em-dashes in body, or semicolons. Subject connector em-dash is the single allowed exception.
 6. Never use gold (`#D4AF37`, `#C8A864`). Navy + cream only.
 7. Never ship a stat without a `citations.json` entry.  $/sqft, DOM, year built, every figure traces.
-8. Never own the recipient list. ZipYourFlyer's database or Matt's Resend audience hold the list.
+8. Never own the recipient list. Matt's Resend audience holds the list.
 9. Never render an Outlook-broken layout. Outlook is the floor.
 
 ---

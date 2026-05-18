@@ -120,8 +120,14 @@ This is the new tier. Until 2026-Q1 the shop used DepthFlow + Remotion masked ov
 - **When to use:** when we need a polished, real-photography asset (luxury interior, professional lifestyle shot) and no AI generation will produce the right specificity. Tetherow / luxury content is the main candidate.
 - **License before use.** Search returns previews; don't ship a preview-watermarked asset.
 
-### Pexels — ❌ not connected
-- `PEXELS_API_KEY` is commented out. Add only if Unsplash inventory ever runs thin for a specific search.
+### Pexels — `PEXELS_API_KEY` ✅ LIVE (verified 2026-05-18)
+- **Endpoint:** `https://api.pexels.com/v1/search` (photos), `https://api.pexels.com/videos/search` (videos).
+- **Quota:** Free tier — **25,000 requests/month**. As of 2026-05-18: 24,669 remaining for this billing cycle.
+- **Auth header:** `Authorization: <api-key>` (NOT `Bearer`).
+- **Code path:** `lib/pexels-api.ts` (`searchPexelsPhotos`); admin route `/api/admin/stock/pexels/search`; UI at `/admin/stock-photos`.
+- **Env scope:** `.env.local` + Vercel Production + Preview + Development all set 2026-05-18.
+- **When to use:** as a secondary stock source when Unsplash inventory runs thin for a specific search. Particularly useful for landscape b-roll, generic interior photography, and editorial stock that Unsplash misses.
+- **License:** free for commercial use with attribution preferred (not required). Same general license model as Unsplash.
 
 ---
 
@@ -139,17 +145,22 @@ This is the new tier. Until 2026-Q1 the shop used DepthFlow + Remotion masked ov
 
 ## §6 — DISTRIBUTION
 
-### Resend — `RESEND_API_KEY` ✅ (send-only restricted key)
+### Resend — `RESEND_API_KEY` ✅ (send-only restricted key) — **DOMAIN VERIFIED 2026-05-18**
 - **Endpoint:** `https://api.resend.com/emails` (POST).
-- **Verified senders** as of 2026-04-27: only `onboarding@resend.dev` (Resend's testing sandbox) confirmed working. **`mail.ryan-realty.com` returned "domain not verified."** This is a drift between `lib/resend.ts` (which uses `noreply@mail.ryan-realty.com` as default) and what's actually verified at Resend. **Action item for Matt:** add and verify `mail.ryan-realty.com` (and `ryan-realty.com`) in the Resend dashboard.
-- **Existing usage:** CMA delivery, contact-form notifications, valuation responses (`lib/resend.ts`).
-- **Untapped:** transactional drip on listing status changes ("Your offer was accepted — here's the next-steps email"); weekly market-report email blast to FUB segments.
+- **Verified senders as of 2026-05-18:** `mail.ryan-realty.com` is **VERIFIED**. Test send from `noreply@mail.ryan-realty.com` → `delivered@resend.dev` returned 200 OK + email id `cba489fc-347f-4aad-80a3-30dd26db8176`.
+- **DNS records (all live globally — verified at Google 8.8.8.8, Cloudflare 1.1.1.1, OpenDNS 208.67.222.222 on 2026-05-18):**
+  - `send.mail.ryan-realty.com` → MX 10 `feedback-smtp.us-east-1.amazonses.com`
+  - `send.mail.ryan-realty.com` → TXT `v=spf1 include:amazonses.com ~all`
+  - `resend._domainkey.mail.ryan-realty.com` → TXT `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNAD...`
+  - `_dmarc.ryan-realty.com` → TXT `v=DMARC1; p=none;`
+- **Existing usage:** CMA delivery, contact-form notifications, valuation responses (`lib/resend.ts`). **Newly unblocked:** `ops-email-send`, `newsletter`, `comms-client-update`, `agent-coop-eflyer` producers.
+- **Limitation:** current key is send-only. Cannot trigger domain re-verify or list domains programmatically. For autonomous domain management, create a second full-access key as `RESEND_FULL_KEY`.
 
-### Meta Graph (Instagram + Facebook) — `META_PAGE_ACCESS_TOKEN` ❌ EXPIRED
-- **Status as of 2026-04-27:** `{"error":{"message":"The access token could not be decrypted","code":190}}` — the token is no longer valid.
-- The token note in `.env.local` says the issued token from 2026-04-14 has `data_access_expires_at: 2026-07-13`, but the API now rejects it outright. Likely re-grant window already closed or the token format changed. **This is blocking IG/FB publishing right now.**
-- **Action item for Matt:** re-run the Graph API Explorer flow (FB app `Ryan Realty` 901712509522992 → page `Ryan Realty Bend` 138563319329985) and write a new long-lived Page Access Token to `.env.local`.
-- Other Meta credentials (Pixel, App ID, App Secret, IG Business Account ID, FB Page ID, CAPI token) verified-by-config — not re-tested.
+### Meta Graph (Instagram + Facebook) — `META_PAGE_ACCESS_TOKEN` ✅ LIVE (verified 2026-05-18)
+- **Status as of 2026-05-18:** token is **valid and never expires** (`expires_at: 0`, `is_valid: true`). Full publishing scopes confirmed: `instagram_content_publish`, `pages_manage_posts`, `pages_manage_engagement`, `ads_management`, `leads_retrieval`, `instagram_branded_content_ads_brand`, and 20+ more.
+- App: `Ryan Realty` (901712509522992) → Page `Ryan Realty Bend` (138563319329985).
+- **The 2026-04-27 inventory line saying this was expired was WRONG.** Cross-verification on 2026-05-18 against `https://graph.facebook.com/debug_token` confirmed the token is healthy and IG/FB publishing is live.
+- Other Meta credentials (Pixel, App ID, App Secret, IG Business Account ID, FB Page ID, CAPI token) verified-by-config — all in place.
 
 ### TikTok — `TIKTOK_CLIENT_KEY` + `TIKTOK_CLIENT_SECRET` ⚠️
 - **App status:** Draft (pending products/scopes config) at `https://developers.tiktok.com/app/7629121889511966727/pending`.
