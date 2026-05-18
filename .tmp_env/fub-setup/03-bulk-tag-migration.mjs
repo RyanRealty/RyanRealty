@@ -68,7 +68,10 @@ async function* iteratePeopleByLegacyTag(tagName) {
   // FUB supports tag filtering via /people?tags=<value>. Pagination via
   // ?next=<cursor> from _metadata. ~3,481 people for Seller; we paginate at
   // 100/page for ~35 pages.
-  let nextUrl = `/people?tags=${encodeURIComponent(tagName)}&limit=100&fields=id,name,tags`
+  // sort=id is critical: when we add a tag, lastActivity gets bumped, which
+  // causes the default cursor (lastActivity DESC) to revisit the same leads
+  // repeatedly. Stable id sort means we walk the list exactly once.
+  let nextUrl = `/people?tags=${encodeURIComponent(tagName)}&limit=100&sort=id&fields=id,name,tags`
   let seen = 0
   while (nextUrl) {
     const { status, json } = await fub('GET', nextUrl)
