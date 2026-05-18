@@ -63,10 +63,14 @@ async function* iterateAllPeople(extraFields = 'tags,source') {
   }
 }
 
+// FUB requires sourceId (numeric) to MOVE leads between sources, not source
+// string. Setting source:'Ryan-Realty.com' in the PUT body is a no-op
+// (FUB returns 400 silently). The sourceId must point to the source
+// registry entry (24 = Ryan-Realty.com per /v1/people probe 2026-05-17).
 const SOURCE_MAP = {
-  'Website': 'Ryan-Realty.com',
-  'ryan-realty': 'Ryan-Realty.com',
-  'ryanrealty.vercel.app': 'Ryan-Realty.com',  // also gets env:preview tag
+  'Website': { sourceId: 24, label: 'Ryan-Realty.com' },
+  'ryan-realty': { sourceId: 24, label: 'Ryan-Realty.com' },
+  'ryanrealty.vercel.app': { sourceId: 24, label: 'Ryan-Realty.com' },
 }
 
 async function main() {
@@ -96,16 +100,16 @@ async function main() {
 
     if (!sourceUpdate && !needsBuyerTag && !needsPreviewTag) continue
 
-    // Build mutation
+    // Build mutation. FUB requires sourceId (numeric), not source string.
     const body = {}
-    if (sourceUpdate) body.source = sourceUpdate
+    if (sourceUpdate) body.sourceId = sourceUpdate.sourceId
     const tagsToAdd = []
     if (needsBuyerTag) tagsToAdd.push('audience:buyer')
     if (needsPreviewTag) tagsToAdd.push('env:preview')
 
     if (sourceUpdate) {
       stats.src_normalize++
-      if (samples.src.length < 5) samples.src.push({ id: p.id, name: p.name, from: p.source, to: sourceUpdate })
+      if (samples.src.length < 5) samples.src.push({ id: p.id, name: p.name, from: p.source, to: sourceUpdate.label })
     }
     if (needsBuyerTag) {
       stats.buyer_backfilled++
