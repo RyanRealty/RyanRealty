@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.235.1 (2026-05-18)
+
+### Maintenance
+- chore(infra): verify Pexels + Resend + Meta + Replicate; purge ZipYourFlyer
+
+### Other
+- site-subdivision-page(tetherow/heath): first subdivision exemplar
+
+---
+
+
 ## v1.235.0 (2026-05-18)
 
 ### Features
