@@ -359,3 +359,10 @@ export async function publishLinkedInVideoFromUrl(
 
   return postJson.id
 }
+
+/**
+ * Stub for the performance-pull cron — see meta-graph stub for context.
+ */
+export async function fetchLinkedInPostMetrics(_postId: string): Promise<Record<string, unknown>> {
+  throw new Error('platform_skipped:linkedin:fetcher_not_implemented')
+}

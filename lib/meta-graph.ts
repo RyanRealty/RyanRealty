@@ -1074,3 +1074,12 @@ export async function getMetaAdsInsights(date: string): Promise<{
 
   return { accountRow, campaignRows }
 }
+
+/**
+ * Stub for the performance-pull cron — full per-post Meta (IG+FB)
+ * metrics fetcher was scaffolded but not implemented. Returns a
+ * "skipped" sentinel.
+ */
+export async function fetchMetaPostMetrics(_postId: string): Promise<Record<string, unknown>> {
+  throw new Error('platform_skipped:meta:fetcher_not_implemented')
+}

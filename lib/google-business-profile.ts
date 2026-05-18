@@ -485,3 +485,14 @@ export async function publishGoogleBusinessLocalPost(
 
   return json.name
 }
+
+/**
+ * Stub for the performance-pull cron — full per-post GBP metrics fetcher
+ * was scaffolded by the cron route author but never implemented in this
+ * lib. Returns a "skipped" sentinel so the cron's catch-block records a
+ * `performance_skipped` row instead of erroring out. Replace this with
+ * a real implementation once GBP per-post performance is wired.
+ */
+export async function fetchGbpPostMetrics(_postId: string): Promise<Record<string, unknown>> {
+  throw new Error('platform_skipped:gbp:fetcher_not_implemented')
+}

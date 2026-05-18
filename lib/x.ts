@@ -774,3 +774,10 @@ export async function getXAnalytics(accessToken: string, date: string): Promise<
 
   return { date, userId, account, topTweets, errors }
 }
+
+/**
+ * Stub for the performance-pull cron — see meta-graph stub for context.
+ */
+export async function fetchXPostMetrics(_postId: string): Promise<Record<string, unknown>> {
+  throw new Error('platform_skipped:x:fetcher_not_implemented')
+}
