@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.233.0 (2026-05-18)
+
+### Features
+- feat(producers): author 6 page-type SKILL.mds — search-authority LP stack
+
+### Maintenance
+- chore: absorb sibling-agent WIP round 2 (parallel session)
+
+---
+
+
 ## v1.232.1 (2026-05-18)
 
 ### Bug Fixes
