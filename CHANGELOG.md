@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.226.1 (2026-05-18)
+
+### Maintenance
+- docs(fub): round 2 complete + sourceId bug-fix in script 21
+
+---
+
+
 ## v1.226.0 (2026-05-18)
 
 ### Features
