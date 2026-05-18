@@ -1,0 +1,107 @@
+{
+  "_meta": {
+    "generated_at": "2026-05-18",
+    "purpose": "Canonical end-to-end test fixture. Any producer should accept this payload and produce a valid output to out/<producer>/19496-tumalo-reservoir-rd/.",
+    "schema_version": "1",
+    "verification_trace": "Bend market data: market_stats_cache geo_slug=bend rolling_30d ending 2026-05-17. Listing data: listings ListingKey=20260225192329433521000000."
+  },
+  "producer": "PRODUCER_SLUG_REPLACE_ME",
+  "target": "mls:20260225192329433521000000",
+  "target_slug": "19496-tumalo-reservoir-rd",
+  "listing": {
+    "listing_key": "20260225192329433521000000",
+    "mls_id": "TBD",
+    "street_number": "19496",
+    "street_name": "Tumalo Reservoir Rd",
+    "city": "Bend",
+    "state": "Oregon",
+    "zip": "97703",
+    "list_price": 1225000,
+    "list_price_display": "$1,225,000",
+    "bedrooms": 3,
+    "bathrooms": 3,
+    "sqft": 2325,
+    "sqft_display": "2,325 sqft",
+    "year_built": 1995,
+    "lot_acres": 2.28,
+    "subdivision": "Tumalo",
+    "status": "Active",
+    "latitude": 44.138729,
+    "longitude": -121.349064,
+    "list_agent_name": "Matt Ryan",
+    "list_agent_email": "matt@ryan-realty.com",
+    "primary_photo_url": "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260304175825195222000000-o.jpg",
+    "primary_photo_path": "public/template-picker/list-kits/19496-tumalo-reservoir/v3/pattern-a/01-hero-primary.jpg",
+    "remarks_short": "Tumalo is one of Central Oregon's best kept secrets. Wide open spaces, a tight knit community, and a rural pace of life just minutes from Bend. Three Sisters views dominate nearly every room."
+  },
+  "market": {
+    "geo_label": "Bend",
+    "geo_slug": "bend",
+    "period_start": "2026-04-17",
+    "period_end": "2026-05-17",
+    "sold_count": 115,
+    "median_sale_price": 690000,
+    "median_sale_price_display": "$690,000",
+    "median_dom": 10,
+    "median_dom_display": "10 days",
+    "median_ppsf": 381,
+    "median_ppsf_display": "$381 / sqft",
+    "sale_to_list_ratio": 0.974,
+    "sale_to_list_display": "97.4%",
+    "market_health_score": 74.29,
+    "market_health_label": "Hot",
+    "yoy_median_price_delta_pct": -18.5,
+    "yoy_median_price_display": "↓ 18.5% YoY",
+    "yoy_dom_change_days": -11.0,
+    "yoy_inventory_change_pct": -5.77,
+    "end_of_period_inventory": 457,
+    "methodology_version": "v3-2026-05-07",
+    "trace": "market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17"
+  },
+  "brokers": {
+    "matt_ryan": {
+      "slug": "matt-ryan",
+      "name": "Matt Ryan",
+      "role": "Principal Broker",
+      "email": "matt@ryan-realty.com",
+      "phone_brand": "541.213.6706",
+      "phone_fub": "541.703.3095",
+      "headshot_path": "design_system/ryan-realty/assets/team/matt-ryan.png",
+      "license": "201206613"
+    }
+  },
+  "brand_assets": {
+    "hero_photo_path": "public/template-picker/list-kits/19496-tumalo-reservoir/v3/pattern-a/01-hero-primary.jpg",
+    "logo_blue_path": "design_system/ryan-realty/assets/brand/logo-blue.png",
+    "logo_white_path": "design_system/ryan-realty/assets/brand/logo-white.png"
+  },
+  "extras": {
+    "open_house": {
+      "saturday": "11AM – 1PM",
+      "address_display": "19496 TUMALO RESERVOIR RD"
+    },
+    "sold_deal": {
+      "sold_price": 1180000,
+      "sold_price_display": "$1,180,000",
+      "days_on_market": 38,
+      "sale_to_list": "96.3%"
+    },
+    "testimonial": {
+      "quote": "Matt sold our Tumalo property in 12 days, $40K over asking.",
+      "attribution": "S. & J. Thompson · Tumalo sellers"
+    },
+    "drive_times": {
+      "downtown_bend": "12 min",
+      "mt_bachelor": "44 min",
+      "st_charles_bend": "21 min",
+      "tumalo_elementary": "3 min"
+    },
+    "weekend_events_may_23_24": [
+      "Bend Brews & Beyond, Old Mill, Sat noon–8pm",
+      "New Found Glory + Plain White T's, Hayden Homes, Sat",
+      "OperaBend — \"The Medium\", COCC Wille Hall, Sat 7pm + Sun 3pm",
+      "Zarna Garg, Tower Theatre, Sun 7pm",
+      "Emo Social, Volcanic Theatre Pub, Sat 10:30pm"
+    ]
+  }
+}
