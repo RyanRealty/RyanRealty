@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.234.4 (2026-05-18)
+
+### Bug Fixes
+- fix(types): fetchMetaPostMetrics stub now takes optional platform arg
+
+---
+
+
 ## v1.234.3 (2026-05-18)
 
 ### Bug Fixes
