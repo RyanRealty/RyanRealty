@@ -202,6 +202,39 @@ These three are the minimum useful set. All three export to Google Ads as remark
 | GA4 ↔ Google Search Console | Verify Admin → Product links → Search Console. Already linked; brain pulls GSC separately but the in-GA4 join makes Search Console clicks visible alongside on-site events. | SEO insight in GA4 reports. |
 | GA4 ↔ BigQuery (free export) | OPTIONAL — defer until needed. Free tier supports our volume. Unlocks raw event-level data instead of aggregated reports — gives the brain access to single-user paths through the site. | Deep brain analysis (future). |
 
+### Funnel Explorations — the answers Matt should be able to see in GA4 UI
+
+These live in GA4 → **Explore** tab (NOT Reports). Each is a saved Exploration. Build via Explore → Blank → Add Funnel Exploration template. The Funnel Exploration auto-fills the structure; you fill in the steps + breakdown dimension.
+
+**Seller Funnel Exploration** — the highest-leverage one. Answers "what % of seller LP visitors convert?"
+
+| Step | Step name | Event / Condition |
+|---|---|---|
+| 1 | LP visit | `view_landing_page` where `lp_variant` matches `"seller-*"` (or `pagePath` contains `"/lp/seller"`) |
+| 2 | Form opened | `form_start` |
+| 3 | Form submitted | `generate_lead` where `source` = `"seller_lp"` |
+
+Breakdown dimension: `lp_variant`. Time period: last 30 days. Save as "Seller Funnel — LP visit → form → lead".
+
+**Buyer Funnel Exploration**
+
+| Step | Step name | Event / Condition |
+|---|---|---|
+| 1 | LP visit | `view_landing_page` where `lp_variant` matches `"buyer-*"` |
+| 2 | Form submitted | `generate_lead` where `source` = `"buyer_lp"` |
+
+Breakdown: `lp_campaign`. Save as "Buyer Funnel — LP visit → lead".
+
+**FB Campaign Breakdown Exploration**
+
+Use the **Free Form** template (not Funnel). Dimensions: `sessionSource / sessionMedium` + `sessionCampaignName`. Metrics: `sessions`, `Key event count` (filtered to `generate_lead`), `engagement rate`. Filter `sessionMedium` = `"paid_social"`. Save as "FB Ads — sessions × conversions × campaign".
+
+**Per-Listing Performance Exploration**
+
+Use Free Form. Dimensions: `customEvent:listing_key` + `pagePath`. Metrics: `sessions`, `screenPageViews`, `Key event count` filtered to `schedule_tour_click + contact_agent_click + generate_lead`. Save as "Per-Listing Engagement".
+
+**Why these aren't built by an agent:** the GA4 Explore tab is a heavy JS interface — building one via Chrome MCP takes 10+ clicks per step and is fragile to UI shifts. Matt or a future session does each in ~5 minutes through the live UI. Once built, they're saved per-property and live forever in the Explore Library.
+
 ---
 
 ## Layer 3 — Brain ingestor scope
