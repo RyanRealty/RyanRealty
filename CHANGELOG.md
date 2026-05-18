@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.225.1 (2026-05-18)
+
+### Maintenance
+- docs(memory): log analytics-unification + GA4 cleanup session 2026-05-17
+
+---
+
+
 ## v1.225.0 (2026-05-18)
 
 ### Features
