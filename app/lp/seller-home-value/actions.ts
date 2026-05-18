@@ -13,6 +13,7 @@ import {
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { createCmaRequest } from '@/lib/cma-request'
+import { geocodeAndTagLead } from '@/lib/lead-geocode'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -302,7 +303,22 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         customSellerPropertyAddress: parsed.full,
       })
 
-      // 4. Record the assignment in our local ledger for the next round-robin.
+      // 4. Geocode the property address + spatial lookup → apply
+      //    neighborhood / subdivision / city / geo tags. This makes the lead
+      //    filterable in FUB smart lists by neighborhood for targeted
+      //    ad campaigns. Fire-and-forget — never blocks lead capture.
+      void geocodeAndTagLead({
+        fubPersonId,
+        address: parsed.full,
+        sourceType: 'lp-form',
+        state: parsed.state ?? undefined,
+      }).then((geoResult) => {
+        if (geoResult.ok && geoResult.tags.length > 0) {
+          return addPersonTags(fubPersonId!, geoResult.tags)
+        }
+      }).catch((e) => console.warn('[seller-lp] geocode failed (non-blocking):', e))
+
+      // 5. Record the assignment in our local ledger for the next round-robin.
       await recordSellerAssignment({
         broker: assignment.broker,
         userId: assignment.userId,
