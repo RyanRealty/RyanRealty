@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.224.1 (2026-05-18)
+
+### Bug Fixes
+- fix(fub): v2 normalize + geocode scripts with retry + completeness audit
+
+---
+
+
 ## v1.224.0 (2026-05-18)
 
 ### Features
