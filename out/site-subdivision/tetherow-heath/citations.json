@@ -1,0 +1,144 @@
+{
+  "produced_at": "2026-05-18T00:00:00Z",
+  "producer": "site-subdivision-page",
+  "community_slug": "tetherow",
+  "subdivision_slug": "heath",
+  "route": "/lp/tetherow/heath/",
+  "data_sources": [
+    {
+      "section": "kpi_grid_and_market_pulse",
+      "source": "market_stats_cache",
+      "project_id": "dwvlophlbvvygjfxcrhm",
+      "filter": "geo_slug='tetherow' AND period_type='rolling_365d'",
+      "fetched_at": "2026-05-18T00:00:00Z",
+      "methodology_version": "v3-2026-05-07",
+      "verification": {
+        "geo_label": "Tetherow",
+        "sold_count": 27,
+        "median_sale_price": 1848500,
+        "median_dom": 26,
+        "avg_sale_to_list_ratio": 0.94162592592592592593,
+        "median_ppsf": 569.13,
+        "end_of_period_inventory": 15,
+        "period_start": "2025-05-16",
+        "period_end": "2026-05-16",
+        "computed_at": "2026-05-16T14:59:45Z"
+      },
+      "note": "Heath is not tagged as a distinct subdivision in the Oregon MLS. SubdivisionName for every Heath address is 'Tetherow'. KPI values reflect the full Tetherow community as the closest verified anchor for a Heath valuation. Footnote in the live market pulse section discloses this constraint."
+    },
+    {
+      "section": "active_inventory",
+      "source": "listings",
+      "filter": "SubdivisionName='Tetherow' AND StandardStatus IN ('Active','ActiveUnderContract','Pending') AND PropertyType='A'",
+      "fetched_at": "2026-05-18T00:00:00Z",
+      "row_count_at_fetch": 12,
+      "render_cap": 8,
+      "sample_top_3": [
+        {"ListPrice": 4000000, "Street": "61572 Hardin Martin"},
+        {"ListPrice": 3999900, "Street": "61594 Hosmer Lake"},
+        {"ListPrice": 3999000, "Street": "61859 Hosmer Lake"}
+      ]
+    },
+    {
+      "section": "recent_closings",
+      "source": "listings",
+      "filter": "SubdivisionName='Tetherow' AND StandardStatus IN ('Closed','Sold') AND CloseDate >= NOW() - INTERVAL '365 days' AND PropertyType='A'",
+      "fetched_at": "2026-05-18T00:00:00Z",
+      "row_count_at_fetch": 15,
+      "render_cap": 10,
+      "sample_first_2": [
+        {"CloseDate": "2026-04-20", "ClosePrice": 1365000, "StreetName": "Kindle Rock", "sale_to_list_pct": 100.4},
+        {"CloseDate": "2026-04-03", "ClosePrice": 2190000, "StreetName": "Triple Knot", "sale_to_list_pct": 100.0}
+      ],
+      "note": "Hosmer Lake Dr and Cartwright Dr closings fall within the Heath sub-plat. Other Tetherow sub-plats (Triple Knot, Crescent, etc.) also appear in this filter because the MLS does not separate sub-plat at the SubdivisionName level."
+    },
+    {
+      "section": "map_centroid",
+      "source": "boundaries",
+      "filter": "geo_slug='tetherow-phase-1' (used as Heath proxy; no Heath-specific polygon registered)",
+      "polygon_source": "Deschutes County GIS Subdivisions (OBJECTID for Tetherow Phase 1)",
+      "polygon_source_url": "https://maps.deschutes.org/arcgis/rest/services/OpenData/BoundaryFD/MapServer/4",
+      "tetherow_phase_1_centroid": {
+        "lat": 44.031627,
+        "lng": -121.36059,
+        "acres": 599.7
+      },
+      "heath_anchor_used_for_map": {
+        "lat": 44.0335,
+        "lng": -121.359,
+        "note": "Tetherow Phase 1 centroid shifted slightly north toward Hosmer Lake Dr where Heath addresses concentrate. No Heath-specific recorded plat exists in Deschutes County GIS."
+      }
+    },
+    {
+      "section": "hoa_dues",
+      "source": "public/lp/tetherow/index.html (static parent LP, line 931)",
+      "filter": "Manual sourced from TOA published assessment schedule",
+      "verification": {
+        "heath_sub_quarterly": 195,
+        "heath_sub_annualized": 780,
+        "master_annual": 1464,
+        "total_annual": 2244,
+        "manager": "TOA (Tetherow Owners Association)"
+      },
+      "note": "Annualized total 195*4 + 1464 = 2244 per home, matches the static parent LP table."
+    },
+    {
+      "section": "course_recognition",
+      "source": "Golf Digest America's 100 Greatest Public Courses 2023-24 ranking",
+      "verification": {
+        "rank": "#57",
+        "delta": "+25 spots from prior list (largest jump on the list)",
+        "course_par": 72,
+        "course_designer": "David McLay Kidd"
+      }
+    },
+    {
+      "section": "static_content_inheritance",
+      "source": "data/resort-communities.json (updated this PR)",
+      "row": "tetherow.sub_neighborhoods[heath]",
+      "note": "Heath row added under Tetherow in this PR. Mirrors HEATH config object in app/lp/tetherow/heath/page.tsx for type-safe server render."
+    },
+    {
+      "section": "broker_attribution",
+      "source": "lib/followupboss.ts + app/actions/agent-attribution-read.ts",
+      "filter": "cookie rr_agent_attribution -> Matt default if absent",
+      "note": "Per 2026-05-17 Matt directive: all CMA leads route to Matt (FUB user id 1) by default; agent attribution cookie overrides if the visitor came from a per-broker ad URL."
+    }
+  ],
+  "voice_validation": {
+    "scanned_files": [
+      "app/lp/tetherow/heath/page.tsx",
+      "app/lp/tetherow/heath/_components/HeathCmaForm.tsx",
+      "app/lp/tetherow/heath/actions.ts"
+    ],
+    "banned_words_found": 0,
+    "em_dash_in_visitor_text": 0,
+    "em_dash_in_code_or_data_placeholder": "allowed per CLAUDE.md (data placeholder exception)",
+    "semicolons_in_prose": 0,
+    "result": "PASS"
+  },
+  "typescript_check": {
+    "command": "npx tsc --noEmit",
+    "heath_route_errors": 0,
+    "result": "PASS"
+  },
+  "design_system": {
+    "shadcn_components_used": ["Button", "Card", "CardContent", "Badge", "Separator", "Breadcrumb", "BreadcrumbItem", "BreadcrumbLink", "BreadcrumbList", "BreadcrumbPage", "BreadcrumbSeparator"],
+    "client_form_components": ["Input", "Label", "Select"],
+    "custom_css_classes_used": 0,
+    "result": "PASS"
+  },
+  "jsonld": {
+    "schemas": ["Place", "RealEstateAgent"],
+    "containedInPlace": "Tetherow (/lp/tetherow/)"
+  },
+  "dependencies": {
+    "parent_route_status": "MISSING at PR open time (app/lp/tetherow/page.tsx not yet on main)",
+    "parent_route_note": "Per task brief, a sibling agent is porting the static Tetherow LP to app/lp/tetherow/page.tsx in parallel. Heath links to /lp/tetherow/ in breadcrumb + parent sidebar + buyer cross-link + footer. If the parent route is missing at merge time, those links 404 until the parent PR merges. The Heath page itself renders independent of the parent route."
+  },
+  "follow_up_required": [
+    "Verify the parent Tetherow page route lands at app/lp/tetherow/page.tsx (sibling agent's PR). Once both PRs are merged, the Heath breadcrumb, parent sidebar 'See all Tetherow communities' button, and the '#buyer' deep links all resolve.",
+    "Once a per-Heath builder roster is curated, replace the parent-roster placeholder in HEATH.builders with a Heath-specific list.",
+    "When Heath gets its own recorded plat polygon registered in the boundaries table, swap the map centroid from the Tetherow Phase 1 proxy to the real Heath centroid."
+  ]
+}

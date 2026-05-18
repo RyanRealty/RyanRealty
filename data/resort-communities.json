@@ -26,6 +26,30 @@
         "Campbell Road",
         "Roald West"
       ],
+      "sub_neighborhoods": [
+        {
+          "slug": "heath",
+          "name": "Heath",
+          "type": "Single-family golf homes",
+          "hoa_annual_estimate": 2244,
+          "hoa_sub_quarterly": 195,
+          "hoa_master_annual": 1464,
+          "hoa_manager": "TOA (Tetherow Owners Association)",
+          "lot_size_note": "Golf-frontage ½-acre and larger lots",
+          "character": "Original Tetherow phase. Established build-out feel. Direct course frontage on the McLay Kidd holes. Heath sits on the north side of Tetherow Phase 1, anchored by Hosmer Lake Drive and Cartwright.",
+          "description": "Original Tetherow phase. Single-family golf homes on ½-acre and larger lots fronting the McLay Kidd course. Established built-out feel.",
+          "image_hint": "Heath at Tetherow course-frontage exterior — hand-pick from a Hosmer Lake or Cartwright MLS photo set",
+          "mls_aliases": [
+            "Tetherow"
+          ],
+          "boundary_centroid": {
+            "lat": 44.0335,
+            "lng": -121.359,
+            "note": "Approximated from Tetherow Phase 1 polygon centroid (Deschutes County GIS) shifted slightly north toward Hosmer Lake Dr. No Heath-specific recorded plat polygon exists; Heath addresses fall within the Tetherow Phase 1 boundary."
+          },
+          "data_thin_note": "MLS does not tag Heath separately. SubdivisionName is always 'Tetherow'. Page uses parent Tetherow stats with a footnote."
+        }
+      ],
       "child_count": 8,
       "verification": {
         "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
