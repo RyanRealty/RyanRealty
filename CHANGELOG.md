@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.236.0 (2026-05-18)
+
+### Features
+- feat(fub-expired): wire Tracerfy + Apify skiptrace + DNC scrub into expired-listing owner lookup
+
+---
+
+
 ## v1.235.1 (2026-05-18)
 
 ### Maintenance
