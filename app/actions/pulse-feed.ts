@@ -146,7 +146,7 @@ export async function getPulseFeed(options: PulseFeedQuery): Promise<PulseFeedRe
       .or(`ListingKey.in.(${keyList}),ListNumber.in.(${keyList})`)
       .then((r) => r),
     QUERY_TIMEOUT_MS,
-    { data: null as Array<Record<string, unknown>> | null, error: null },
+    { data: null, error: null } as unknown as { data: unknown[] | null; error: { message: string } | null },
     'listings join'
   )
   const listingRows = listingsResult?.data ?? null
@@ -266,7 +266,7 @@ async function _getRegionSnapshotUncached(): Promise<PulseRegionSnapshot | null>
       .maybeSingle()
       .then((r) => r),
     QUERY_TIMEOUT_MS,
-    { data: null as Record<string, unknown> | null, error: null },
+    { data: null, error: null } as unknown as { data: unknown | null; error: { message: string } | null },
     'region snapshot'
   )
   const data = result?.data as Record<string, unknown> | null
@@ -308,7 +308,7 @@ async function _getCitySnapshotsUncached(cityLabels: string[]): Promise<PulseCit
       .in('geo_label', cityLabels)
       .then((r) => r),
     QUERY_TIMEOUT_MS,
-    { data: null as Array<Record<string, unknown>> | null, error: null },
+    { data: null, error: null } as unknown as { data: unknown[] | null; error: { message: string } | null },
     'city snapshots'
   )
   const rows = (result?.data ?? []) as Array<Record<string, unknown>>
