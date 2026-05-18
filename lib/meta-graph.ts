@@ -1080,6 +1080,9 @@ export async function getMetaAdsInsights(date: string): Promise<{
  * metrics fetcher was scaffolded but not implemented. Returns a
  * "skipped" sentinel.
  */
-export async function fetchMetaPostMetrics(_postId: string): Promise<Record<string, unknown>> {
+export async function fetchMetaPostMetrics(
+  _postId: string,
+  _platform?: string,
+): Promise<Record<string, unknown>> {
   throw new Error('platform_skipped:meta:fetcher_not_implemented')
 }
