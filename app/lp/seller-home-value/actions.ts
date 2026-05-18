@@ -15,6 +15,7 @@ import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { createCmaRequest } from '@/lib/cma-request'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
+import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -90,16 +91,25 @@ function classifyTimeline(t: SellerLPTimeline | undefined): {
 }
 
 /**
- * Broker assignment — ALL seller LP leads route to Matt.
+ * Broker assignment for seller LP leads.
  *
- * Per Matt's 2026-05-17 directive: "no round robin. I will get all listings
- * and leads." The marketing_assignments ledger still records every
- * assignment for audit + future flexibility, but every new submission goes
- * to Matt. Rebecca can be manually reassigned in FUB UI on a per-lead basis.
+ * Per Matt's 2026-05-17 directives:
+ *   1. "No round robin. I will get all listings and leads." (default)
+ *   2. "If Rebecca or Paul have their ads point to their landing page on
+ *       the website, then by default those leads will be theirs." (override)
+ *
+ * Resolution order:
+ *   - If a `?agent=<slug>` cookie is present (set by ad → landing page), route
+ *     to that broker. Honors `agent=matt`, `agent=rebecca`, `agent=paul`.
+ *   - Otherwise route to Matt by default.
+ *
+ * Manual reassignment in FUB UI works on a per-lead basis regardless.
  */
 async function assignSellerLead(
   _classification: 'hot' | 'warm' | 'nurture' | 'unknown',
 ): Promise<BrokerAssignment> {
+  const attributed = await readAttributedAgentServer()
+  if (attributed) return { broker: attributed.broker, userId: attributed.userId }
   return { broker: 'matt', userId: FUB_USER_MATT }
 }
 

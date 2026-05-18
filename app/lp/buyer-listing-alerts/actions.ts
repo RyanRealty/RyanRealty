@@ -13,6 +13,7 @@ import {
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
+import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -68,14 +69,17 @@ function classifyTimeline(t: BuyerLPTimeline | undefined): {
 }
 
 /**
- * Broker assignment — ALL buyer LP leads route to Matt.
+ * Broker assignment for buyer LP leads.
  *
- * Per Matt's 2026-05-17 directive: "no round robin. I will get all listings
- * and leads." Rebecca can be manually reassigned in FUB UI on a per-lead basis.
+ * Same logic as seller LP: default to Matt unless `?agent=<slug>` cookie
+ * routes to a specific broker. See app/lp/seller-home-value/actions.ts
+ * for the full rationale.
  */
 async function assignBuyerLead(
   _classification: 'hot' | 'warm' | 'nurture' | 'unknown',
 ): Promise<BrokerAssignment> {
+  const attributed = await readAttributedAgentServer()
+  if (attributed) return { broker: attributed.broker, userId: attributed.userId }
   return { broker: 'matt', userId: FUB_USER_MATT }
 }
 
