@@ -127,6 +127,22 @@
     {
       "path": "/api/cron/marketing-snapshot-youtube",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/producer-dispatcher",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/publisher-sweep",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/seller-lead-attribution",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/strategy-revision-check",
+      "schedule": "0 14 1 * *"
     }
   ]
 }
