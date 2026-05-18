@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.238.0 (2026-05-18)
+
+### Features
+- feat(producers): 21 producer scripts + 7 ops handlers + unified runner + end-to-end test
+
+---
+
+
 ## v1.237.0 (2026-05-18)
 
 ### Features
