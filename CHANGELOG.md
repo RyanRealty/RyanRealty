@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.234.1 (2026-05-18)
+
+### Bug Fixes
+- fix(types): pulse-feed.ts all 3 withTimeout fallbacks — unblock build
+
+### Maintenance
+- docs(memory): log GA4 build-out session 2 — full audit + all artifacts
+
+---
+
+
 ## v1.234.0 (2026-05-18)
 
 ### Features
