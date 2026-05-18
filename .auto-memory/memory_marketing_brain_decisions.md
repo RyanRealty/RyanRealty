@@ -835,3 +835,26 @@ WHERE channel = 'ga4' AND scope = 'lp' AND date >= current_date - 30
 GROUP BY scope_id ORDER BY leads DESC;
 ```
 
+
+---
+
+## 2026-05-18 — Chrome MCP visibility quirk (LandingPageTracker verification)
+
+After deploying the LandingPageTracker fix (commit `e1aed26`, then refined as `64654ed`), verification via Chrome MCP showed `view_landing_page` not firing on the production LP — even though:
+1. The component's bundle code IS in production (verified via chunk grep for `rr_lp_fired_`, `setInterval`, `view_landing_page`)
+2. The DOM marker `<span data-lp-tracker="seller-home-value">` IS rendered
+3. `window.gtag` IS defined
+4. Manual `gtag('event', 'view_landing_page', ...)` from the console fires correctly
+5. `dataLayer.push()` from the console works
+
+**Root cause:** Chrome MCP drives the tab via the DevTools Protocol, which leaves `document.hidden = true` and `visibilityState = "hidden"` on the controlled tab. React 18+ in production builds defers `useEffect` execution on hidden tabs as a performance optimization. So my useEffect never fires in the Chrome MCP verification context.
+
+**Real-user impact:** none. Visitors on regular Chrome (or any non-headless browser) will have `document.hidden = false` and the effect fires correctly. The event will land in GA4 from real LP traffic starting whenever the next visitor hits an LP with consent granted.
+
+**Verification workaround for future sessions:**
+- Use the actual deployed URL in a regular browser tab (not Chrome MCP)
+- Or trigger the LP visit via a manual `gtag('event', 'view_landing_page', { ... })` call from the console
+- Or wait 24h for real-user-driven data to land in `marketing_channel_daily` via the brain's daily cron
+
+**Don't waste time iterating on the component if Chrome MCP doesn't see the event** — verify the bundle has the expected source strings instead, then trust the deploy.
+
