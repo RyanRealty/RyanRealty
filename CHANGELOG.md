@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.232.1 (2026-05-18)
+
+### Bug Fixes
+- fix(types): pulse-feed.ts activity_events fallback type — unblock build
+
+---
+
+
 ## v1.232.0 (2026-05-18)
 
 ### Features
