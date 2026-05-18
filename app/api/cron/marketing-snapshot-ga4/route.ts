@@ -122,6 +122,31 @@ function rowsForDay(date: string, summary: Awaited<ReturnType<typeof getGA4Summa
     },
   ])
 
+  // Per-LP-variant funnel — scope `lp`, scope_id is the variant slug,
+  // metric encodes the event ('view_landing_page_count', 'generate_lead_count', etc.)
+  // The downstream brain dashboard joins on lp_variant + computes
+  // conversion_pct = generate_lead_count / view_landing_page_count.
+  const lpFunnelRows: MetricRow[] = d.lpFunnels.map((f) => ({
+    ...base,
+    scope: 'lp',
+    scope_id: f.lpVariant,
+    metric: `${f.eventName}_count`,
+    value: f.eventCount,
+    metadata: { lp_variant: f.lpVariant, event_name: f.eventName, users: f.users },
+  }))
+
+  // Per-event aggregates — scope `event`, scope_id is the event_name.
+  // Captures the rich engagement-event taxonomy from lib/tracking.ts beyond
+  // just the 9 LEAD_EVENT_NAMES. Used by audit-website's engagement signal.
+  const eventRows: MetricRow[] = d.topEvents.map((e) => ({
+    ...base,
+    scope: 'event',
+    scope_id: e.eventName,
+    metric: 'event_count',
+    value: e.eventCount,
+    metadata: { event_name: e.eventName, users: e.users },
+  }))
+
   const socialChannelRows: MetricRow[] = d.socialChannels.flatMap((c) => [
     {
       ...base,
@@ -148,6 +173,8 @@ function rowsForDay(date: string, summary: Awaited<ReturnType<typeof getGA4Summa
     ...leadEventRows,
     ...leadSourceRows,
     ...socialChannelRows,
+    ...lpFunnelRows,
+    ...eventRows,
   ]
 }
 

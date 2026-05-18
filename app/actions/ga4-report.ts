@@ -53,6 +53,24 @@ export type GA4Summary = {
     users: number
     engagementRate: number
   }[]
+  /** Per-LP-variant aggregates. One row per (lp_variant, event_name) pair.
+   *  Populated from the `lp_variant` custom dimension once it propagates
+   *  (~24h after registration in GA4 Admin). Used by the ingestor to write
+   *  scope=`lp` rows into marketing_channel_daily. */
+  lpFunnels: {
+    lpVariant: string
+    eventName: string
+    eventCount: number
+    users: number
+  }[]
+  /** Per-event aggregates across the whole property (NOT filtered to
+   *  LEAD_EVENT_NAMES). Captures the rich engagement-event taxonomy from
+   *  lib/tracking.ts. */
+  topEvents: {
+    eventName: string
+    eventCount: number
+    users: number
+  }[]
 }
 
 export type GA4ReportResult = { ok: true; data: GA4Summary } | { ok: false; error: string }
@@ -85,7 +103,7 @@ export async function getGA4Summary(
       },
     })
 
-    const [summaryResponse, sourceResponse, pageResponse, leadEventsResponse, leadSourcesResponse, socialChannelsResponse] = await Promise.all([
+    const [summaryResponse, sourceResponse, pageResponse, leadEventsResponse, leadSourcesResponse, socialChannelsResponse, lpFunnelsResponse, topEventsResponse] = await Promise.all([
       client.runReport({
         property: `properties/${propertyId}`,
         dateRanges: [{ startDate, endDate }],
@@ -175,6 +193,47 @@ export async function getGA4Summary(
         orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
         limit: 20,
       }),
+      // Per-LP-variant funnel: rows for (lp_variant × event) where lp_variant
+      // is the custom dimension registered 2026-05-18. Filters to funnel-relevant
+      // events. Populates the `lp` scope in marketing_channel_daily.
+      client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'customEvent:lp_variant' }, { name: 'eventName' }],
+        metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }],
+        dimensionFilter: {
+          filter: {
+            fieldName: 'eventName',
+            inListFilter: {
+              values: [
+                'view_landing_page',
+                'generate_lead',
+                'valuation_requested',
+                'tour_requested',
+                'cma_downloaded',
+                'sign_up',
+                'newsletter_signup',
+                'click_cta',
+                'scroll_depth',
+              ],
+              caseSensitive: false,
+            },
+          },
+        },
+        orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+        limit: 100,
+      }),
+      // Top events across the whole property — NOT filtered to LEAD_EVENT_NAMES.
+      // Captures the rich engagement-event taxonomy beyond just the 9 lead events.
+      // Populates the `event` scope in marketing_channel_daily.
+      client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'eventName' }],
+        metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }],
+        orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+        limit: 50,
+      }),
     ])
 
     const summary = summaryResponse[0]
@@ -183,6 +242,8 @@ export async function getGA4Summary(
     const leadEventsBreakdown = leadEventsResponse[0]
     const leadSourcesBreakdown = leadSourcesResponse[0]
     const socialChannelsBreakdown = socialChannelsResponse[0]
+    const lpFunnelsBreakdown = lpFunnelsResponse[0]
+    const topEventsBreakdown = topEventsResponse[0]
 
     const row = summary.rows?.[0]
     if (!row || !row.metricValues?.length) {
@@ -202,6 +263,8 @@ export async function getGA4Summary(
           topLeadEvents: [],
           leadSources: [],
           socialChannels: [],
+          lpFunnels: [],
+          topEvents: [],
         },
       }
     }
@@ -254,6 +317,26 @@ export async function getGA4Summary(
     const sessions = parseInt(String(vals[0]?.value ?? 0), 10)
     const leadEventRate = sessions > 0 ? totalLeadEvents / sessions : 0
 
+    // Per-LP-variant funnel rows. `(not set)` lp_variant values are dropped —
+    // those are non-LP page hits firing events that happen to have lp_variant
+    // unset, which we don't want polluting the LP scope.
+    const lpFunnels = (lpFunnelsBreakdown.rows ?? [])
+      .map((r) => {
+        const lpVariant = String(r.dimensionValues?.[0]?.value || '')
+        const eventName = String(r.dimensionValues?.[1]?.value || '(unknown)')
+        const eventCount = parseInt(String(r.metricValues?.[0]?.value ?? 0), 10)
+        const users = parseInt(String(r.metricValues?.[1]?.value ?? 0), 10)
+        return { lpVariant, eventName, eventCount, users }
+      })
+      .filter((r) => r.lpVariant && r.lpVariant !== '(not set)')
+
+    const topEvents = (topEventsBreakdown.rows ?? []).map((r) => {
+      const eventName = String(r.dimensionValues?.[0]?.value || '(unknown)')
+      const eventCount = parseInt(String(r.metricValues?.[0]?.value ?? 0), 10)
+      const users = parseInt(String(r.metricValues?.[1]?.value ?? 0), 10)
+      return { eventName, eventCount, users }
+    })
+
     return {
       ok: true,
       data: {
@@ -270,6 +353,8 @@ export async function getGA4Summary(
         topLeadEvents,
         leadSources,
         socialChannels,
+        lpFunnels,
+        topEvents,
       },
     }
   } catch (e) {
