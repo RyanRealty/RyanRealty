@@ -123,7 +123,7 @@ export async function getPulseFeed(options: PulseFeedQuery): Promise<PulseFeedRe
       .range(offset, offset + eventBuffer - 1)
       .then((r) => r),
     QUERY_TIMEOUT_MS,
-    { data: null as Array<{ id: string; listing_key: string; event_type: string; event_at: string; payload?: Record<string, unknown> }> | null, error: null },
+    { data: null, error: null } as unknown as Awaited<ReturnType<typeof supabase.from<'activity_events'>['select']>>,
     'activity_events query'
   )
   const events = eventsResult?.data ?? null
