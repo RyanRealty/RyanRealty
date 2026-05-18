@@ -151,6 +151,52 @@ Cross-reference: §7 Canonical phrases has Matt's natural-voice lexicon from the
 - "Grateful to everyone who made this happen." (vague, performative)
 - Any list of transaction participants. The post is not credits.
 
+### 4.7 Authentic, not salesy
+
+**Locked 2026-05-17 per Matt's direct directive.** This rule applies to every email, SMS, social caption, ad copy, blog, video script, listing description. It is the operating philosophy behind every sentence Ryan Realty publishes.
+
+The five operating rules:
+
+1. **Never pander.** No "happy to walk you through it." No "we'd love to help." No "thrilled to be working with you." No flattery without information. Pandering is the assumption that the reader needs warmth manufactured for them. Our clients are adults; we don't have to wrap every sentence in butter.
+
+2. **Never editorialize.** No "the market has been doing some interesting things." No "your property has a few things working in its favor." No "a clear story for the right buyer matters more than the list price." Either we have the specific number or we don't say it. Editorializing is what brokers do when they don't have data and want to sound smart. We don't.
+
+3. **Honest and transparent.** If the market is soft, the email says it's soft. If we don't have a number yet, we say "I'll have it in two days" not "we're still working on something good." If a listing has a known issue, the message mentions it. Hiding things is a worse sin than naming them.
+
+4. **Never overtly state.** No "we'll help you find your dream home." No "we're here for you every step of the way." No "we're a small business that cares about you." Telling the reader our character is the slowest way to prove it. Show through the work: the email arrives on time, the data is correct, the question gets answered, the follow-up happens. Character is a residue of action, not a tagline.
+
+5. **Authentic, not salesy.** No "act fast." No "this one won't last." No "don't miss this opportunity." No "let's schedule a quick call." The reader can tell when copy was written to close vs written to help. Help reads like a colleague writing to a friend. Sales reads like a script. Our copy should always read like the first.
+
+**Practical patterns that pass:**
+
+- "Wanted to make sure the analysis came through." (just a check-in, no spin)
+- "A property near you closed recently. Worth a look if you're thinking about timing." (information without urgency)
+- "If anything's changed on your end, timing, plans, the property, let me know." (direct, low-pressure invitation)
+- "No pressure, just checking in." (says exactly what it is)
+- "I'll have the latest numbers in the next day or two." (commits to a real timeline, doesn't dress it up)
+
+**Practical patterns that fail:**
+
+- "Hope this finds you well!" — pandering opener
+- "We'd love to learn more about what you're looking for!" — pandering + salesy
+- "Don't hesitate to reach out!" — pandering signoff
+- "We've got some exciting options for you to consider!" — editorializing + salesy + exclamation
+- "Your dream home is closer than you think!" — overtly stated value
+- "We pride ourselves on personalized service" — overt characterization
+- "Let's hop on a quick call to discuss your needs!" — sales script language
+- "The market is moving fast, time to act!" — fake urgency
+- "Just touching base!" — pandering filler
+
+**Self-check before sending any external copy:**
+
+- Did I describe a feeling instead of a fact? Cut.
+- Did I praise something without naming it? Cut.
+- Did I tell the reader who we are? Cut. Let them figure it out.
+- Did I add a sentence that exists only to be warm? Cut.
+- Could this paragraph be replaced with one direct sentence? Replace it.
+
+If the email reads like a competent human texting a friend an honest update, ship it. If it reads like a real-estate-agent template, rewrite.
+
 ---
 
 ## 5. Point of view rules
