@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.237.0 (2026-05-18)
+
+### Features
+- feat(producers): add 8 standalone producer scripts for print/social/ad deliverables
+
+---
+
+
 ## v1.236.0 (2026-05-18)
 
 ### Features
