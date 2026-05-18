@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.228.0 (2026-05-18)
+
+### Features
+- feat(lp tetherow): v8 — comprehensive sweep, search authority + conversion-maximizing
+
+### Bug Fixes
+- fix(fub): brand voice rewrite of all 14 workflow templates + picker cleanup
+
+---
+
+
 ## v1.227.0 (2026-05-18)
 
 ### Features
