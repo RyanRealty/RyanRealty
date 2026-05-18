@@ -69,33 +69,39 @@ async function fubGET<T = unknown>(path: string): Promise<T | null> {
 type FubPersonLite = { id: number; name?: string; tags?: string[] }
 
 /**
- * Fetch all currently-enrolled seller workflow leads.
+ * Fetch all currently-enrolled workflow leads (seller AND buyer).
  *
- * Filter: must have audience:seller AND one of seller:hot/warm/nurture/long-nurture
- *         AND NOT seller:in-conversation AND NOT seller:do-not-contact.
+ * Filter:
+ *   - Seller: audience:seller AND one of seller:hot/warm/nurture/long-nurture
+ *             AND NOT seller:in-conversation AND NOT seller:do-not-contact
+ *   - Buyer:  audience:buyer  AND one of buyer:hot/warm/nurture/long-nurture
+ *             AND NOT buyer:in-conversation  AND NOT buyer:do-not-contact
  *
- * FUB doesn't support multi-tag intersection filters via the API, so we
- * over-fetch and filter client-side. Capped to most-recent 500 active
- * sellers — anyone older than that has already cycled through the 60-day
- * workflow and is in the long-nurture pool.
+ * Returns each with its `_audience` for the pause-tag logic. FUB doesn't
+ * support multi-tag intersection via API, so we over-fetch + filter client-side.
  */
-async function fetchEnrolledSellers(): Promise<FubPersonLite[]> {
-  // Use tagsAnd query param if FUB supports it; otherwise scan recent people.
-  const data = await fubGET<{ people: FubPersonLite[] }>(
-    `/people?tags=audience:seller&limit=100&sort=-lastActivity&fields=id,name,tags`,
-  )
-  const people = data?.people ?? []
-  return people.filter((p) => {
-    const tags = (p.tags ?? []).map((t) => t.toLowerCase())
-    if (!tags.includes('audience:seller')) return false
-    const tier = tags.some((t) =>
-      ['seller:hot', 'seller:warm', 'seller:nurture'].includes(t),
+type EnrolledLead = FubPersonLite & { _audience: 'seller' | 'buyer' }
+
+async function fetchEnrolledLeads(): Promise<EnrolledLead[]> {
+  const out: EnrolledLead[] = []
+  for (const audience of ['seller', 'buyer'] as const) {
+    const data = await fubGET<{ people: FubPersonLite[] }>(
+      `/people?tags=audience:${audience}&limit=100&sort=-lastActivity&fields=id,name,tags`,
     )
-    if (!tier) return false
-    if (tags.includes('seller:in-conversation')) return false
-    if (tags.includes('seller:do-not-contact')) return false
-    return true
-  })
+    const people = data?.people ?? []
+    for (const p of people) {
+      const tags = (p.tags ?? []).map((t) => t.toLowerCase())
+      if (!tags.includes(`audience:${audience}`)) continue
+      const tier = tags.some((t) =>
+        [`${audience}:hot`, `${audience}:warm`, `${audience}:nurture`].includes(t),
+      )
+      if (!tier) continue
+      if (tags.includes(`${audience}:in-conversation`)) continue
+      if (tags.includes(`${audience}:do-not-contact`)) continue
+      out.push({ ...p, _audience: audience })
+    }
+  }
+  return out
 }
 
 /**
@@ -141,7 +147,7 @@ export async function GET(request: NextRequest) {
   const startedAt = Date.now()
   const sinceIso = new Date(Date.now() - LOOKBACK_MINUTES * 60_000).toISOString()
 
-  const enrolled = await fetchEnrolledSellers()
+  const enrolled = await fetchEnrolledLeads()
   const results = {
     scanned: enrolled.length,
     paused: 0,
@@ -161,7 +167,7 @@ export async function GET(request: NextRequest) {
         results.skipped++
         continue
       }
-      const ok = await addPersonTags(person.id, ['seller:in-conversation'])
+      const ok = await addPersonTags(person.id, [`${person._audience}:in-conversation`])
       if (ok) {
         results.paused++
         results.paused_people.push({ id: person.id, name: person.name })
