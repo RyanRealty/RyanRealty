@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.235.0 (2026-05-18)
+
+### Features
+- feat(fub): Phase 4 expired-listings — full owner-lookup + alerts + flow doc
+
+---
+
+
 ## v1.234.7 (2026-05-18)
 
 ### Maintenance
