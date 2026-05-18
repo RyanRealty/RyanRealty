@@ -7,6 +7,41 @@ Each smart list is a one-click filter in FUB. Each can be exported to CSV for a 
 
 ---
 
+## ⚠️ MANDATORY EXCLUDE on every smart list — never message realtors
+
+**Per Matt's 2026-05-17 directive:** every smart list MUST exclude:
+
+- Tag `Realtor` (case-insensitive — covers `Realtor`, `realtor`, etc.)
+- Tag `Real Estate`
+- Tag `industry:realtor` (canonical)
+- Tag `compliance:hard-stop`
+- Tag `do_not_email`
+- Tag `Bounced`
+- Tag `Unsubscribed`
+- Stage `Real Estate Agent`
+
+Without these excludes, a single smart-list-driven email blast would hit 2,316+ industry contacts (fellow realtors, brokers, agents) and 694 hard-blocked records. Sender reputation destroyed in one click.
+
+**FUB UI filter pattern:** every smart list below should add this exclude group:
+
+```
+WHERE [your filter conditions] AND
+      NOT tag CONTAINS "Realtor" AND
+      NOT tag CONTAINS "Real Estate" AND
+      NOT tag CONTAINS "industry:realtor" AND
+      NOT tag CONTAINS "compliance:hard-stop" AND
+      NOT tag CONTAINS "do_not_email" AND
+      NOT tag CONTAINS "Bounced" AND
+      NOT tag CONTAINS "Unsubscribed" AND
+      NOT stage = "Real Estate Agent"
+```
+
+The code-side compliance gate in `lib/canonical-lead-tagger.ts` enforces the same exclusions when the LP form runs, so new leads with these tags never enter the workflow in the first place. The smart-list filter is the second layer for when Matt manually exports a list for an ad campaign or email blast.
+
+---
+
+---
+
 ## How to build each one
 
 **FUB UI → Smart Lists → New Smart List**

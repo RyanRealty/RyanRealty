@@ -54,17 +54,17 @@ Action plan pauses (FUB automation rule on tag {audience}:in-conversation → st
 
 ---
 
-## The 2 things Matt still needs to do in FUB UI (~5 min)
+## The things Matt still needs to do in FUB UI (~10 min total)
 
-The FUB API blocks `POST /v1/automations` for integrations (403). These have to be set up by hand.
+The FUB API blocks `POST /v1/automations` and the audience-filter on action plans for integrations (403). These have to be set up by hand.
 
 ### 1. Automation Rule — Seller (2 min)
 
 **Settings → Automations → New Automation**
 
 - **Name:** `Seller LP → Master Workflow`
-- **When (any one of):**
-  - Tag `audience:seller` is added (any source)
+- **When:**
+  - Tag `audience:seller` is added
 - **Then:**
   - Enroll in Action Plan: `Seller Lead — Master Workflow` (id 69)
 
@@ -74,11 +74,28 @@ The FUB API blocks `POST /v1/automations` for integrations (403). These have to 
 
 - **Name:** `Buyer LP → Master Workflow`
 - **When:**
-  - Tag `audience:buyer` is added (any source)
+  - Tag `audience:buyer` is added
 - **Then:**
   - Enroll in Action Plan: `Buyer Lead — Master Workflow` (id 70)
 
-### Optional — Pause-on-reply automations (1 min each)
+### 3. Audience-filter on BOTH action plans — exclude realtors + compliance (3 min)
+
+**Open action plan id 69 (seller) → Audience Filter** (or "Enrollment Rules" / "Filters" depending on FUB UI version) and add EXCLUSIONS for:
+
+- Tag `Realtor`
+- Tag `Real Estate`
+- Tag `industry:realtor`
+- Tag `compliance:hard-stop`
+- Tag `do_not_email`
+- Tag `Bounced`
+- Tag `Unsubscribed`
+- Stage `Real Estate Agent`
+
+**Then open action plan id 70 (buyer) and add the same exclusion list.**
+
+This is the second layer behind the code-side gate in `lib/canonical-lead-tagger.ts`. Even if a Realtor-tagged person somehow gets `audience:seller` applied (e.g., via a CSV import that bypasses our LP form), the action plan still skips them at enrollment.
+
+### 4. Optional — Pause-on-reply automations (1 min each)
 
 - **When** tag `seller:in-conversation` added → **Stop** Action Plan `Seller Lead — Master Workflow`
 - **When** tag `buyer:in-conversation` added → **Stop** Action Plan `Buyer Lead — Master Workflow`

@@ -113,25 +113,48 @@ async function recordAssignment(params: {
 }
 
 /**
- * Compliance check: if the person carries any hard-stop tag we MUST NOT enroll
- * them in any auto-touch workflow. Per docs/FUB_OPTIMIZATION_AUDIT_2026-05-17
- * §7: 470 Bounced + 230 Unsubscribed records are hard-blocked via
- * `do_not_email` + `compliance:hard-stop`. Tagging them `audience:seller` or
- * `audience:buyer` would trigger the FUB automation rule which would enroll
- * them in the master workflow and start blasting emails. That's a sender-
- * reputation catastrophe.
+ * Compliance / audience-exclusion check: if the person carries any hard-stop
+ * tag we MUST NOT enroll them in any auto-touch workflow. Three categories:
  *
- * The action plans themselves should ALSO exclude these tags (Matt configures
- * the audience filter in FUB UI), but the belt-and-suspenders approach is to
- * skip applying the canonical audience tag in the first place.
+ *   1. Compliance / opt-out (sender reputation):
+ *      do_not_email, do_not_text, compliance:hard-stop, bounced, unsubscribed,
+ *      complained
+ *
+ *   2. Industry contacts (fellow realtors — NEVER drip these):
+ *      realtor, real estate, real estate agent, industry:realtor
+ *      Per Matt's 2026-05-17 directive: realtors who carry the Realtor tag
+ *      (2,316 records as of audit) are competitors / industry contacts.
+ *      They should never receive our seller/buyer drip emails.
+ *
+ *   3. Test pollution (defense-in-depth — we deleted obvious tests but new
+ *      ones may show up):
+ *      test record - delete, test-delete-me
+ *
+ * Per docs/FUB_OPTIMIZATION_AUDIT_2026-05-17 §7 + Matt 2026-05-17 realtor
+ * directive. Tagging them `audience:seller` or `audience:buyer` would
+ * trigger the FUB automation rule which would enroll them in the master
+ * workflow and start blasting emails. The action plans themselves should
+ * ALSO exclude these tags (Matt configures the audience filter in FUB UI),
+ * but the belt-and-suspenders approach is to skip applying the canonical
+ * audience tag in the first place.
  */
 const HARD_STOP_TAGS = new Set([
+  // Compliance / opt-out
   'do_not_email',
   'do_not_text',
   'compliance:hard-stop',
   'bounced',
   'unsubscribed',
   'complained',
+  // Industry contacts — realtors / fellow brokers / agents
+  'realtor',
+  'real estate',
+  'real estate agent',
+  'real-estate-agent',
+  'industry:realtor',
+  // Test pollution
+  'test record - delete',
+  'test-delete-me',
 ])
 
 export async function isHardStopped(personId: number): Promise<boolean> {
