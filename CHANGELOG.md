@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.220.0 (2026-05-18)
+
+### Features
+- feat(tetherow lp): swap hero to actual Tetherow course aerial
+
+---
+
+
 ## v1.219.1 (2026-05-18)
 
 ### Maintenance
