@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.223.1 (2026-05-18)
+
+### Maintenance
+- docs(fub): smart-lists starter pack — neighborhood-targeted lists for ads
+
+---
+
+
 ## v1.223.0 (2026-05-18)
 
 ### Features
