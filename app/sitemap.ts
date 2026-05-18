@@ -50,6 +50,10 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/sell`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/sell/plan`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}${valuationPath()}`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    // Per-community LPs (Tier 2 in the city > community > subdivision > listing
+    // search-authority stack). Tetherow is the first port from static HTML to
+    // the Next.js dynamic route + ISR exemplar.
+    { url: `${baseUrl}/lp/tetherow/`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/buy`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/lp/tetherow/heath/`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
     { url: `${baseUrl}/our-homes`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
