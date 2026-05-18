@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.231.1 (2026-05-18)
+
+### Bug Fixes
+- fix(analytics): LandingPageTracker fires on consent grant + leaves DOM marker
+
+---
+
+
 ## v1.231.0 (2026-05-18)
 
 ### Features
