@@ -741,3 +741,97 @@ Matt asked for a much bigger GA4 build-out: every lead interaction tracked as a 
 
 - `41cfae6` — `feat(analytics): install Follow Up Boss pixel on Vercel + fix Badge variants` (3 files: `app/layout.tsx`, `components/FollowUpBossPixel.tsx`, `components/ui/badge.tsx`)
 
+
+---
+
+## 2026-05-18 — GA4 build-out session 2 (Phase C/D execution)
+
+Follow-on to the 2026-05-17 unification session. Matt directive: "Take all the time you need. Make sure everything is tracking correctly." This session built out the analytics layer beyond the pixel plumbing.
+
+### What shipped
+
+**Canonical skill authored:** [`marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md`](../marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md) (389 lines) — the contract between site event firing, GA4 admin config, and brain ingestor scope. Includes LP tracking convention, UTM standard (kebab-case campaign IDs pair to `marketing_brain_actions.id` for attribution), full operational playbook, and verification queries. Registered in [`tools_registry/REGISTRY.md`](../marketing_brain_skills/tools_registry/REGISTRY.md) (17 of 33 authored).
+
+**Site code shipped to main:**
+- `components/LandingPageTracker.tsx` — fires `view_landing_page` on mount, captures UTM context to sessionStorage so the LP's form can enrich `generate_lead`, wires scroll-depth listeners (25/50/75/100). Uses sessionStorage guard + cookie-consent event listener (handles the consent-gate race).
+- `lib/tracking.ts` — added `view_landing_page` event, `LpContext` type, `getLpContext()`, `trackLandingPageView()`.
+- `app/lp/seller-home-value/page.tsx` + `app/lp/buyer-listing-alerts/page.tsx` — wired the tracker.
+- `app/lp/buyer-listing-alerts/BuyerLPForm.tsx` — was firing **ZERO** analytics on submit; now fires `trackEvent('generate_lead')` + Meta Lead pixel with LP context.
+
+**WordPress event tagger script** — added to AgentFire admin → Header/Footer Scripts → "Head after opening tag". Live in production HTML (verified). Catches CTA clicks via:
+- `data-event` attribute (explicit wins)
+- Text patterns ("home value", "tour", "contact", "schedule", "CMA")
+- `tel:` → `call_initiated`
+- `mailto:` → `email_agent`
+- Generic `.btn / .button / [class*="cta"]` → `click_cta`
+Plus scroll_depth at 25/50/75/100 and form-submit detection (newsletter, valuation, contact).
+
+**GA4 admin configured (property 527333348):**
+- **12 custom dimensions registered** — 3 pre-existing (Price Range, Property Location, Property Type) + 9 new (LP Variant, Source Detail, LP Source, LP Campaign, Listing Key, Broker Slug, City Slug, Community Slug, CTA Location). Propagation lag ~24h before they appear in reports.
+- **Key events:** 3 of 10 currently marked (`generate_lead`, `contact_agent`, `form_start`). The other 7 (`tour_requested`, `valuation_requested`, `cma_downloaded`, `sign_up`, `newsletter_signup`, `schedule_tour_click`, `contact_agent_click`, `open_house_rsvp`) appear in GA4 only after they fire at least once — they'll auto-appear from real traffic within days.
+- **Audiences:** 2 of 3 saved (`CMA Downloaders`, `Active Buyers (3+ listings)`). `Engaged Sellers (no convert 30d)` save didn't take — needs UI retry. 9 audiences total in the property now.
+
+**Brain ingestor extension** — `app/api/cron/marketing-snapshot-ga4/route.ts` + `app/actions/ga4-report.ts` now pull two new scopes into `marketing_channel_daily`:
+- `scope='lp'` — per-LP-variant funnel rows. One row per (lp_variant, event_name). Metric format `<event_name>_count` so dashboard joins can compute `conversion_pct = generate_lead_count / view_landing_page_count` per LP.
+- `scope='event'` — per-event aggregates across all events (not just LEAD_EVENT_NAMES). Captures the ~40 events from `lib/tracking.ts` that audit-website couldn't see before.
+
+### Pre-existing build blockers I had to fix to ship the analytics work
+
+The Vercel build was broken from other agents' commits in five separate ways. Each blocked my deploys until fixed:
+
+1. `components/ui/badge.tsx` — missing `success` + `warning` variants used by KPI dashboard. (Fixed 2026-05-17.)
+2. `@anthropic-ai/sdk` not in `package.json` despite being imported by admin + cron routes. (Fixed.)
+3. Four missing fetcher functions in `lib/{meta-graph,linkedin,x,google-business-profile}.ts` imported by `app/api/cron/performance-pull-{30d,48h,7d}/route.ts`. Stubbed with `platform_skipped:<x>:fetcher_not_implemented` matching the existing skipped-platform pattern. (Fixed.)
+4. + 5. `app/actions/pulse-feed.ts` had three withTimeout fallback objects with strict-typed `Record<string, unknown>` payloads that didn't match Supabase's loose response shape. Fixed by casting each to `{ data: unknown[] \| null; error: { message: string } \| null }` via double-unknown cast. (Fixed.)
+
+Pattern recognition: every cross-session-collision commit absorbed by another agent inherits whatever broken state was on disk. Need a "verify build green before push" hook to stop the rot.
+
+### Commits this session
+
+- `7a71c86` → `e2987ac` — feat(analytics): LP tracking convention + ga4-instrumentation skill
+- `41cfae6` — feat(analytics): install Follow Up Boss pixel on Vercel + fix Badge variants
+- `a4676a0` — docs(memory): log analytics-unification + GA4 cleanup session 2026-05-17
+- `6d511ae` — fix(deps): add @anthropic-ai/sdk to unblock Vercel build
+- `1b2f840` → `16f2478` — fix(analytics): LandingPageTracker fires on consent grant + leaves DOM marker
+- `ce42f01` → ... — fix(deps): add stub fetchers for performance-pull cron
+- `c4b2003` → `8b61efd` — fix(types): pulse-feed.ts all 3 withTimeout fallbacks
+- `ddec540` → `4c34507` — feat(analytics): extend GA4 ingestor with lp + event scopes
+- WordPress AgentFire admin script update (not a git commit — lives in AgentFire's ACF storage)
+
+### Known gaps the next session can pick up
+
+1. **3 funnel Explorations in GA4 Explore tab** — not built this session. Seller funnel, buyer funnel, FB-campaign breakdown. Need to be done by hand in the GA4 UI; they unlock self-serve answers in GA4 reports.
+2. **Engaged Sellers (no convert 30d) audience** — save didn't take, needs UI retry with the include/exclude condition gates.
+3. **`schedule_tour_click` vs `schedule_showing_click`** duplicate event names in `lib/tracking.ts` `EventName` union. Plus `view_city` vs `city_view`. Cleanup deferred — doesn't break the brain, just inflates the taxonomy.
+4. **Verify LP tracker on production** — once a clean deploy lands (current deploy queue still processing the all-fix commit `8b61efd`), confirm `view_landing_page` fires with `lp_variant`, `lp_source`, `lp_campaign` params and the hidden `<span data-lp-tracker="...">` marker is in the DOM.
+5. **Custom dimensions propagation (~24h)** — the 9 new dimensions registered today won't populate reports until ~tomorrow. Brain ingestor extension queries `customEvent:lp_variant` and will return zero rows until then; this is expected.
+
+### Verification queries
+
+```sql
+-- Did the brain pick up the new lp/event scopes?
+SELECT scope, count(*) AS rows, count(DISTINCT scope_id) AS unique_ids
+FROM public.marketing_channel_daily
+WHERE channel = 'ga4' AND date >= current_date - 1
+GROUP BY scope
+ORDER BY scope;
+-- Expected scopes after first cron run with new ingestor:
+--   account, channel, event (new), lp (new), page, source
+
+-- Did WordPress paths land in marketing_channel_daily after the GA4 swap?
+SELECT scope_id, sum(value)::int AS views
+FROM public.marketing_channel_daily
+WHERE channel = 'ga4' AND scope = 'page' AND date >= current_date - 1
+GROUP BY scope_id ORDER BY views DESC LIMIT 30;
+-- Should include WordPress URLs (/, /about-us/, /explore/bend/<n>/, blog URLs)
+-- alongside Vercel paths (/admin/social, /dashboard, /lp/seller-home-value).
+
+-- Per-LP conversion (after lp_variant custom dimension propagates ~24h):
+SELECT scope_id AS lp_variant,
+  sum(case when metric = 'view_landing_page_count' then value else 0 end)::int AS lp_views,
+  sum(case when metric = 'generate_lead_count' then value else 0 end)::int AS leads
+FROM public.marketing_channel_daily
+WHERE channel = 'ga4' AND scope = 'lp' AND date >= current_date - 30
+GROUP BY scope_id ORDER BY leads DESC;
+```
+
