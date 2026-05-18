@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.221.1 (2026-05-18)
+
+### Other
+- copy(tetherow lp): rewrite CMA jargon in homeowner language
+
+---
+
+
 ## v1.221.0 (2026-05-18)
 
 ### Features
