@@ -39,10 +39,25 @@ import { sendExpiredAlertEmail } from '@/lib/expired-alert'
 export const maxDuration = 300
 export const dynamic = 'force-dynamic'
 
+/**
+ * Service area + price floor — LOCKED 2026-05-19 per Matt's directive.
+ *
+ * Cities: Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine ONLY.
+ * Madras and Prineville are intentionally excluded — too far from Ryan
+ * Realty's geographic focus + the data sources we use for owner lookup
+ * (Deschutes DIAL) don't cover Jefferson + Crook counties.
+ *
+ * Price floor: ListPrice > $500,000. Sub-$500K expireds aren't worth the
+ * skiptrace credit + outreach cost given Matt's target market.
+ *
+ * Both filters are server-side at query time — keeps the row cap meaningful
+ * and the Tracerfy budget predictable.
+ */
 const SERVICE_AREA_CITIES = [
-  'Bend', 'Redmond', 'Sisters', 'Sunriver', 'Tumalo',
-  'La Pine', 'Madras', 'Prineville',
+  'Bend', 'Redmond', 'Sisters', 'Sunriver', 'Tumalo', 'La Pine',
 ]
+
+const MIN_LIST_PRICE = 500_000
 
 const LOOKBACK_HOURS = 24
 const MAX_PER_RUN = 30  // cap per-run so a backlog doesn't blow up
@@ -86,6 +101,7 @@ async function fetchNewExpiredListings(supabase: ReturnType<typeof getSupabase>)
     .gt('status_change_timestamp', since)
     .in('City', SERVICE_AREA_CITIES)
     .eq('PropertyType', 'A')  // SFR only per CLAUDE.md convention
+    .gt('ListPrice', MIN_LIST_PRICE)  // $500K floor — Matt directive 2026-05-19
     .order('status_change_timestamp', { ascending: false })
     .limit(MAX_PER_RUN * 2)  // over-fetch; some will already be in expired_listings
 

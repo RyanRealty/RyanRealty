@@ -140,9 +140,10 @@ This is the **automated** path. No form fill required. The cron continuously wat
 │   Query Supabase.listings for new Expired/Canceled/Withdrawn in last 24h │
 │     - StandardStatus IN ('Expired','Canceled','Withdrawn')               │
 │     - status_change_timestamp > now() - 24h                              │
-│     - City IN (Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine,        │
-│                Madras, Prineville)                                       │
+│     - City IN (Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine)        │
+│       Madras + Prineville EXCLUDED — outside focus area, no DIAL cover. │
 │     - PropertyType = 'A' (SFR only)                                      │
+│     - ListPrice > $500,000  (sub-$500K skip — not worth credit + time)   │
 │   ↓                                                                       │
 │   Dedupe against public.expired_listings.listing_key                     │
 │   ↓                                                                       │
@@ -219,9 +220,13 @@ This is the **automated** path. No form fill required. The cron continuously wat
 - `public.fub_person_geo` — fallback address-match lookup
 - `vercel.json` — cron registration: `"0 * * * *"`
 
-**Expected volume:** ~3–10 new expired listings per day in our service area. Cron is safe to run every hour because of the dedupe-by-listing_key constraint.
+**Expected volume:** ~1–4 new expired listings per day under the tightened rule (6 cities, $500K+ SFR). Cron is safe to run every hour because of the dedupe-by-listing_key constraint.
 
-**Smoke test (2026-05-17 18:30):** 2 Prineville listings queued for next cron run.
+**Service area + price floor — locked 2026-05-19 (Matt directive):**
+
+- Cities: **Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine** only. Madras + Prineville EXCLUDED.
+- Price: **ListPrice > $500,000** (SFR only).
+- Source-of-truth constants: `SERVICE_AREA_CITIES` + `MIN_LIST_PRICE` at the top of `app/api/cron/detect-expired-listings/route.ts`.
 
 ---
 
