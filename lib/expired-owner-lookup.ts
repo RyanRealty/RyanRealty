@@ -251,12 +251,62 @@ export async function deschutesDialLookup(
  * multi-week sales cycle. Contact: Eric Bryant, 562.374.3226. Until that
  * lands, Tracerfy is the primary phone+email enrichment provider.
  */
+/**
+ * Tracerfy response shape (verified live against /v1/api/trace/lookup/ on
+ * 2026-05-18 with address "2055 York, Bend, OR 97701" — returned 3 persons,
+ * 5 credits deducted).
+ *
+ * Pricing: 5 credits per address regardless of person count = $0.10/lookup at
+ * the $0.0200/credit rate. (Earlier doc said $0.05 — that was wrong.)
+ */
+type TracerfyPhone = {
+  number?: string
+  type?: string         // "Mobile" | "Landline" | "VOIP" | etc.
+  dnc?: boolean         // inline DNC scrub — no separate call needed
+  carrier?: string
+  rank?: number         // 1 = primary
+}
+type TracerfyEmail = {
+  email?: string
+  rank?: number
+}
+type TracerfyPerson = {
+  first_name?: string
+  last_name?: string
+  full_name?: string
+  dob?: string
+  age?: string
+  deceased?: boolean
+  property_owner?: boolean
+  litigator?: boolean
+  mailing_address?: { street?: string; city?: string; state?: string; zip?: string }
+  phones?: TracerfyPhone[]
+  emails?: TracerfyEmail[]
+}
+type TracerfyLookupResponse = {
+  address?: string
+  city?: string
+  state?: string
+  zip?: string
+  find_owner?: boolean
+  hit?: boolean
+  persons_count?: number
+  credits_deducted?: number
+  persons?: TracerfyPerson[]
+}
+
 export type TracerfyEnrichment = {
   email?: string
   phone?: string
-  allPhones?: Array<{ value: string; type?: string; isLitigator?: boolean }>
-  allEmails?: string[]
+  /** DNC status of the chosen best phone, inline from Tracerfy. */
+  phoneIsOnDnc?: boolean
+  ownerName?: string
+  isPropertyOwner?: boolean
   litigator?: boolean
+  deceased?: boolean
+  allPhones?: Array<{ value: string; type?: string; dnc?: boolean; carrier?: string; rank?: number }>
+  allEmails?: string[]
+  creditsUsed?: number
   notes: string
 }
 
@@ -278,6 +328,7 @@ export async function tracerfySkipTrace(params: {
     address: params.streetAddress,
     city: params.city,
     state: params.state ?? 'OR',
+    find_owner: true,         // tell Tracerfy we want the owner specifically
   }
   if (params.postalCode) body.zip = params.postalCode
   if (params.ownerName) body.full_name = params.ownerName
@@ -293,45 +344,74 @@ export async function tracerfySkipTrace(params: {
       body: JSON.stringify(body),
       cache: 'no-store',
     })
-    if (res.status === 404 || res.status === 204) return null  // no match — free
+    if (res.status === 404 || res.status === 204) return null
     if (!res.ok) {
       console.warn(`[tracerfy] non-OK: ${res.status}`, await res.text().catch(() => ''))
       return null
     }
-    const j = (await res.json()) as {
-      status?: string
-      phone_numbers?: Array<{ value?: string; phone?: string; type?: string; is_litigator?: boolean }>
-      emails?: Array<string | { email?: string; value?: string }>
-      litigator?: boolean
-      deceased?: boolean
-    }
+    const j = (await res.json()) as TracerfyLookupResponse
 
-    const phonesRaw = (j.phone_numbers ?? [])
-      .map((p) => ({
-        value: (p.value ?? p.phone ?? '').toString().replace(/\D/g, ''),
-        type: p.type,
-        isLitigator: p.is_litigator ?? false,
-      }))
-      .filter((p) => p.value.length === 10 || p.value.length === 11)
+    if (!j.hit || !j.persons || j.persons.length === 0) return null
 
-    const emailsRaw = (j.emails ?? [])
-      .map((e) => (typeof e === 'string' ? e : (e.email ?? e.value ?? '')))
-      .filter((e) => /@/.test(e))
+    // Person selection: prefer property_owner=true, then non-deceased,
+    // non-litigator. Otherwise first person (Tracerfy returns rank-ordered).
+    const sortedPersons = [...j.persons].sort((a, b) => {
+      const aScore =
+        (a.property_owner ? 100 : 0) +
+        (a.deceased ? -50 : 0) +
+        (a.litigator ? -25 : 0)
+      const bScore =
+        (b.property_owner ? 100 : 0) +
+        (b.deceased ? -50 : 0) +
+        (b.litigator ? -25 : 0)
+      return bScore - aScore
+    })
+    const best = sortedPersons[0]
 
-    if (phonesRaw.length === 0 && emailsRaw.length === 0) return null
+    // Phone selection within best person: prefer Mobile, non-DNC, lowest rank.
+    const allPhonesRaw = (best.phones ?? []).map((p) => ({
+      value: (p.number ?? '').replace(/\D/g, ''),
+      type: p.type,
+      dnc: p.dnc ?? false,
+      carrier: p.carrier,
+      rank: p.rank ?? 99,
+    })).filter((p) => p.value.length === 10 || p.value.length === 11)
 
     const bestPhone =
-      phonesRaw.find((p) => !p.isLitigator && /mobile|cell/i.test(p.type ?? ''))?.value ??
-      phonesRaw.find((p) => !p.isLitigator)?.value ??
-      phonesRaw[0]?.value
+      allPhonesRaw.find((p) => !p.dnc && /mobile/i.test(p.type ?? '')) ??
+      allPhonesRaw.find((p) => /mobile/i.test(p.type ?? '')) ??
+      allPhonesRaw.find((p) => !p.dnc) ??
+      allPhonesRaw[0]
+
+    const allEmailsRaw = (best.emails ?? [])
+      .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
+      .map((e) => e.email ?? '')
+      .filter((e) => /@/.test(e))
+
+    if (!bestPhone && allEmailsRaw.length === 0) return null
+
+    const totalPhones = j.persons.reduce((sum, p) => sum + (p.phones?.length ?? 0), 0)
+    const totalEmails = j.persons.reduce((sum, p) => sum + (p.emails?.length ?? 0), 0)
+
+    const flags: string[] = []
+    if (best.litigator) flags.push('LITIGATOR FLAG')
+    if (best.deceased) flags.push('DECEASED')
+    if (best.property_owner === false) flags.push('NOT PROPERTY OWNER (likely tenant/prior resident)')
+    if (bestPhone?.dnc) flags.push('BEST PHONE ON DNC — DO NOT cold-call (TCPA risk). SMS / direct mail / door-knock allowed.')
+    const flagStr = flags.length ? ` ${flags.map((f) => `[${f}]`).join(' ')}` : ''
 
     return {
-      phone: bestPhone,
-      email: emailsRaw[0],
-      allPhones: phonesRaw,
-      allEmails: emailsRaw,
-      litigator: j.litigator ?? phonesRaw.some((p) => p.isLitigator),
-      notes: `Tracerfy returned ${phonesRaw.length} phones + ${emailsRaw.length} emails${j.litigator || phonesRaw.some((p) => p.isLitigator) ? ' (LITIGATOR FLAG — handle with care)' : ''}${j.deceased ? ' (DECEASED FLAG)' : ''}.`,
+      phone: bestPhone?.value,
+      email: allEmailsRaw[0],
+      phoneIsOnDnc: bestPhone?.dnc,
+      ownerName: best.full_name,
+      isPropertyOwner: best.property_owner,
+      litigator: best.litigator,
+      deceased: best.deceased,
+      allPhones: allPhonesRaw,
+      allEmails: allEmailsRaw,
+      creditsUsed: j.credits_deducted,
+      notes: `Tracerfy: ${j.persons_count ?? j.persons.length} persons, ${totalPhones} phones, ${totalEmails} emails, ${j.credits_deducted ?? '?'} credits.${flagStr}`,
     }
   } catch (err) {
     console.warn('[tracerfy] error:', err)
@@ -401,18 +481,21 @@ export async function apifyPropertyOwnerSkipTrace(params: {
     const items = (await res.json()) as Array<{ phones?: string[]; emails?: string[]; owner?: string }>
     const item = items?.[0]
     if (!item || (!item.phones?.length && !item.emails?.length)) return null
-    const phones = (item.phones ?? []).map((p) => ({
+    const phones = (item.phones ?? []).map((p, idx) => ({
       value: p.replace(/\D/g, ''),
       type: undefined as string | undefined,
-      isLitigator: false,
+      dnc: undefined as boolean | undefined,
+      carrier: undefined as string | undefined,
+      rank: idx + 1,
     }))
     return {
       phone: phones[0]?.value,
       email: item.emails?.[0],
+      ownerName: item.owner,
       allPhones: phones,
       allEmails: item.emails ?? [],
       litigator: false,
-      notes: `Apify property-owner skip-trace returned ${phones.length} phones + ${(item.emails ?? []).length} emails.`,
+      notes: `Apify property-owner skip-trace: ${phones.length} phones + ${(item.emails ?? []).length} emails.`,
     }
   } catch (err) {
     console.warn('[apify-skiptrace] error:', err)
@@ -421,8 +504,12 @@ export async function apifyPropertyOwnerSkipTrace(params: {
 }
 
 /**
- * Combined enrichment — Tracerfy first, Apify fallback. DNC-scrubs the
- * best phone. Returns the first hit.
+ * Combined enrichment — Tracerfy first, Apify fallback.
+ *
+ * Tracerfy returns DNC status inline on every phone (phones[].dnc), so the
+ * separate /dnc/lookup/ call is SKIPPED on the Tracerfy path — saves credits.
+ * The Apify path doesn't carry DNC, so we run the extra /dnc/lookup/ call
+ * there only.
  */
 export async function enrichOwnerContact(params: {
   streetAddress: string
@@ -431,19 +518,25 @@ export async function enrichOwnerContact(params: {
   postalCode?: string | null
   ownerName?: string
 }): Promise<TracerfyEnrichment | null> {
-  let res = await tracerfySkipTrace(params)
-  if (!res) res = await apifyPropertyOwnerSkipTrace(params)
-  if (!res) return null
+  // Strategy 1: Tracerfy (includes inline DNC)
+  const tracerfyRes = await tracerfySkipTrace(params)
+  if (tracerfyRes) return tracerfyRes
 
-  if (res.phone) {
-    const onDnc = await isPhoneOnDNC(res.phone)
+  // Strategy 2: Apify fallback (no inline DNC — run separate scrub)
+  const apifyRes = await apifyPropertyOwnerSkipTrace(params)
+  if (!apifyRes) return null
+
+  if (apifyRes.phone) {
+    const onDnc = await isPhoneOnDNC(apifyRes.phone)
     if (onDnc === true) {
-      res.notes += ' Best phone is on DNC registry. DO NOT cold-call (TCPA risk). SMS / direct mail / door-knock allowed.'
+      apifyRes.phoneIsOnDnc = true
+      apifyRes.notes += ' Best phone is on DNC registry. DO NOT cold-call (TCPA risk). SMS / direct mail / door-knock allowed.'
     } else if (onDnc === false) {
-      res.notes += ' Best phone passed DNC scrub.'
+      apifyRes.phoneIsOnDnc = false
+      apifyRes.notes += ' Best phone passed DNC scrub.'
     }
   }
-  return res
+  return apifyRes
 }
 
 /**

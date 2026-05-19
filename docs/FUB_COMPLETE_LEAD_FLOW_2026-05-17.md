@@ -152,13 +152,18 @@ This is the **automated** path. No form fill required. The cron continuously wat
 │     Strategy 2: Apify-driven Deschutes County DIAL scrape                │
 │                  (https://dial.deschutes.org public records lookup —      │
 │                   gives owner name + mailing address)                    │
-│     Strategy 3: Tracerfy skiptrace API ($0.05/hit, primary skip-trace)   │
-│                  Returns up to 8 phones + 5 emails for the owner.        │
-│                  Best phone preferred = mobile, non-litigator, deduped.  │
+│     Strategy 3: Tracerfy skiptrace API (~$0.10/lookup, 5 credits each).  │
+│                  Returns persons[] each with phones[] + emails[].        │
+│                  EVERY phone carries an inline `dnc` boolean — no        │
+│                  separate /dnc/lookup/ call needed on this path.         │
+│                  Person selection prefers property_owner=true,           │
+│                  non-deceased, non-litigator.                            │
+│                  Phone selection prefers Mobile + dnc=false + rank=1.    │
 │     Strategy 4: Apify property-owner-skip-trace actor (backup if         │
-│                  Tracerfy returns no contact). Same payload shape.       │
+│                  Tracerfy returns no contact). NO inline DNC — we make   │
+│                  a separate /dnc/lookup/ call on the Apify path only.    │
 │   ↓                                                                       │
-│   If we got a phone → run Tracerfy DNC lookup:                           │
+│   Best phone DNC status (inline from Tracerfy, or scrubbed from Apify):  │
 │     - on-DNC → tag owner-lookup:dnc-flagged; broker note added;          │
 │       cold-call blocked; SMS / direct mail / door-knock still allowed   │
 │     - cleared → tag owner-lookup:dnc-clear                               │
@@ -250,7 +255,7 @@ curl -X POST https://ryan-realty.com/api/admin/expired-listing-lookup \
 
 The expired-listing pipeline depends on getting accurate owner contact info fast. Here's the decision tree and what each provider buys us.
 
-### Tier 1 — Tracerfy (PRIMARY, API-first, $0.05/hit)
+### Tier 1 — Tracerfy (PRIMARY, API-first, ~$0.10/lookup (5 credits @ $0.02))
 
 - **What it is:** REST API skiptrace. Bearer-token auth, JSON in/out.
 - **Coverage:** Up to 8 phones + 5 emails per hit, with mobile/landline/voip classification and litigator flag.
@@ -302,7 +307,11 @@ The expired-listing pipeline depends on getting accurate owner contact info fast
                                   └►  cleared → tag dnc-clear
 ```
 
-Cost ceiling per new expired (worst case all 4 tiers run): ~$0.20 + Apify minutes. Realistic average: $0.05–0.07.
+**Verified pricing (live test 2026-05-18 against `/v1/api/trace/lookup/` for `2055 York, Bend, OR 97701` — returned 3 persons, 5 credits used).** Tracerfy charges **5 credits per address (~$0.10/lookup)** regardless of person count. Inline `phones[].dnc` field means we do NOT need to make a separate `/dnc/lookup/` call on Tracerfy results — saves credits.
+
+Cost ceiling per new expired (worst case Tracerfy + Apify both run): ~$0.20 + Apify minutes. Realistic average: ~$0.10/listing when Tracerfy hits on the first call.
+
+**Current Tracerfy balance:** 2000 credits = ~400 lookups runway from a $40 starter buy.
 
 ### DNC compliance (broker-license protection)
 
