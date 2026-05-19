@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.240.0 (2026-05-19)
+
+### Features
+- feat(producers): wave 3-6 — video, site, comms, analyze + payload wrappers + gallery
+
+---
+
+
 ## v1.239.1 (2026-05-19)
 
 ### Maintenance
