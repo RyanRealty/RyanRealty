@@ -300,11 +300,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (fubPersonId) {
-      await supabase
+      const { error: linkErr } = await supabase
         .from('listing_alerts')
         .update({ fub_lead_id: String(fubPersonId) })
         .eq('id', alertId)
-        .catch(() => null)
+      if (linkErr) {
+        console.warn('[listing-alerts/subscribe] fub_lead_id back-link failed:', linkErr.message)
+      }
     }
   } catch (err) {
     console.error('[listing-alerts/subscribe] FUB integration error (non-fatal):', err)
