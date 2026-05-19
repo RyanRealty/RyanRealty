@@ -44,8 +44,8 @@ export const PRODUCERS = {
   //   data_viz_video             — needs multi-color chart Remotion
   //   avatar_market_update       — needs Synthesia/HeyGen avatar pipeline
   //   meme_content               — needs meme-format Remotion comp
-  //   earth_zoom                 — needs Google Earth Studio + 3D Tiles
-  //   google_maps_flyover        — needs Photorealistic 3D Tiles cinematic
+  //   earth_zoom                 — ✅ DONE 2026-05-19 (re-added at bottom)
+  //   google_maps_flyover        — ✅ DONE 2026-05-19 (re-added at bottom)
   //   news_video_avatar          — needs avatar-driven news Remotion
   //   tiktok_listing_tour        — needs TikTok-optimized Remotion comp
   //   map_route_video            — needs Google Maps Directions polyline anim
@@ -106,6 +106,11 @@ export const PRODUCERS = {
   'market_report_video':           { runner: 'python3', script: 'scripts/build_market_report_video.py', section: 'B' },
   'cma':                           { runner: 'python3', script: 'scripts/build_cma_wrapper.py', section: 'B' },
   'flyer_design':                  { runner: 'python3', script: 'scripts/build_flyer_design_wrapper.py', section: 'B' },
+
+  // ─── Real Remotion + Photorealistic 3D Tiles productions (added 2026-05-19) ──
+  // Source comp at video/tumalo-aerial/. Wrapper verifies MP4 + refreshes sidecars.
+  'earth_zoom':                    { runner: 'python3', script: 'scripts/build_earth_zoom_real.py', section: 'B' },
+  'google_maps_flyover':           { runner: 'python3', script: 'scripts/build_google_maps_flyover_real.py', section: 'B' },
   'ig_single_post':                { runner: 'python3', script: 'scripts/build_ig_single_post_wrapper.py', section: 'B' },
 }
 
