@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.239.1 (2026-05-19)
+
+### Maintenance
+- docs(fb-seller): launch runbook — Matt's 30-min FB campaign launch
+
+---
+
+
 ## v1.239.0 (2026-05-19)
 
 ### Features
