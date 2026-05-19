@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.245.0 (2026-05-19)
+
+### Features
+- feat(producers): re-add earth_zoom + google_maps_flyover to inventory (real productions)
+
+---
+
+
 ## v1.244.0 (2026-05-19)
 
 ### Features
