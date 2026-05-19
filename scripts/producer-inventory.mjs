@@ -31,22 +31,32 @@ export const PRODUCERS = {
   'nextdoor_business_ad':          { runner: 'python3', script: 'scripts/build_nextdoor_business_ad.py', section: 'B' },
   'virtual_staging':               { runner: 'python3', script: 'scripts/build_virtual_staging.py', section: 'B' },
 
-  // ─── Section B — video producers (Python + PIL + ffmpeg + ElevenLabs) ─────
-  'listing_reveal':                { runner: 'python3', script: 'scripts/build_listing_reveal.py', section: 'B' },
-  'news_video':                    { runner: 'python3', script: 'scripts/build_news_video.py', section: 'B' },
-  'area_guides':                   { runner: 'python3', script: 'scripts/build_area_guides.py', section: 'B' },
-  'data_viz_video':                { runner: 'python3', script: 'scripts/build_data_viz_video.py', section: 'B' },
-  'avatar_market_update':          { runner: 'python3', script: 'scripts/build_avatar_market_update.py', section: 'B' },
-  'meme_content':                  { runner: 'python3', script: 'scripts/build_meme_content.py', section: 'B' },
-  'earth_zoom':                    { runner: 'python3', script: 'scripts/build_earth_zoom.py', section: 'B' },
-  'google_maps_flyover':           { runner: 'python3', script: 'scripts/build_google_maps_flyover.py', section: 'B' },
-  'news_video_avatar':             { runner: 'python3', script: 'scripts/build_news_video_avatar.py', section: 'B' },
-  'tiktok_listing_tour':           { runner: 'python3', script: 'scripts/build_tiktok_listing_tour.py', section: 'B' },
-  'map_route_video':               { runner: 'python3', script: 'scripts/build_map_route_video.py', section: 'B' },
-  'school_district_overlay':       { runner: 'python3', script: 'scripts/build_school_district_overlay.py', section: 'B' },
-  'walkability_overlay':           { runner: 'python3', script: 'scripts/build_walkability_overlay.py', section: 'B' },
-  'clip_compilation':              { runner: 'python3', script: 'scripts/build_clip_compilation.py', section: 'B' },
-  'youtube_long_form_market_report':{ runner: 'python3', script: 'scripts/build_youtube_long_form_market_report.py', section: 'B' },
+  // ─── Section B — video producers (slop slideshow mockups REMOVED 2026-05-19) ───
+  // The following 14 producers were built as 10-15s PIL slideshows + Victoria
+  // VO. They satisfy the test runner (file exists, has audio, sidecars present)
+  // but DO NOT fulfill their SKILL.md spec. Each needs a real Remotion
+  // composition (see video/cascade-peaks/ for the canonical 3D-tiles pattern).
+  // Until then they are NOT in the inventory:
+  //
+  //   listing_reveal             — needs kinetic stat reveal Remotion comp
+  //   news_video                 — needs caption-pill news clip Remotion
+  //   area_guides                — needs 6-beat area-guide Remotion
+  //   data_viz_video             — needs multi-color chart Remotion
+  //   avatar_market_update       — needs Synthesia/HeyGen avatar pipeline
+  //   meme_content               — needs meme-format Remotion comp
+  //   earth_zoom                 — needs Google Earth Studio + 3D Tiles
+  //   google_maps_flyover        — needs Photorealistic 3D Tiles cinematic
+  //   news_video_avatar          — needs avatar-driven news Remotion
+  //   tiktok_listing_tour        — needs TikTok-optimized Remotion comp
+  //   map_route_video            — needs Google Maps Directions polyline anim
+  //   school_district_overlay    — needs school boundary GeoJSON overlay anim
+  //   walkability_overlay        — needs isochrone overlay anim
+  //   youtube_long_form_market_report — needs 8-12 min Remotion long-form
+  //
+  // The video producers that ARE real (use existing canonical Remotion comps)
+  // are listed below in the existing-asset wrappers section.
+
+  'clip_compilation':              { runner: 'python3', script: 'scripts/build_clip_compilation.py', section: 'B' },  // stitches 3 real bend_pulse parts — actually real
 
   // ─── Section B — text producers (Node mjs) ────────────────────────────────
   'newsletter':                    { runner: 'node', script: 'scripts/build-newsletter.mjs', section: 'B' },
