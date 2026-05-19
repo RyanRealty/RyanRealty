@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.238.1 (2026-05-19)
+
+### Bug Fixes
+- fix(fub-expired): rewrite Tracerfy parser against verified live schema + skip redundant DNC call
+
+---
+
+
 ## v1.238.0 (2026-05-18)
 
 ### Features
