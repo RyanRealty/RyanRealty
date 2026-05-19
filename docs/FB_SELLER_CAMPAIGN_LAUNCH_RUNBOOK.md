@@ -1,313 +1,159 @@
-# FB Seller Campaign — Launch Runbook (Matt's 30-min checklist)
+# FB Seller Campaign — Live Status + Operating Guide
 
-**Status as of 2026-05-18:** All code-side wiring is shipped to production. The ONLY remaining steps live inside Meta Ads Manager + FUB UI. Everything below is sequential and takes ~30 min total once you start clicking.
-
-**Budget:** $20/day total (Matt's directive 2026-05-18, scaled down from playbook's $60/day default).
-
-**Goal:** First paid seller leads landing in FUB within 48 hours of launch.
-
-**Cross-reference:** [`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`](FB_SELLER_CAMPAIGN_PLAYBOOK.md) for the canonical strategy. This runbook is the "do this now" version.
+**Status: LIVE as of 2026-05-18.** Activated via Meta Marketing API. The earlier draft of this doc told you to manually upload audiences and build a fresh campaign — that was based on me looking at the wrong ad account in the Ads Manager URL. The campaign was already built in the correct account and just needed flipping. Replacing that draft entirely.
 
 ---
 
-## What's already wired (no action needed)
+## What's live
 
-✅ **Seller LP form is end-to-end live** — `/lp/seller-home-value` fires `generate_lead` to GA4, Meta Pixel `Lead` + CAPI mirror with shared event_id, persists `valuation_requests` row in Supabase, creates FUB person with `audience:seller` + tier tag + `source:seller-lp` + `broker:matt` tags, writes 6 custom fields, assigns Matt as broker, queues canonical CMA producer via `marketing_brain_actions`, geocodes property + applies neighborhood tags.
+**Ad account:** `1178780510184911` (the one wired into `META_AD_ACCOUNT_ID` env var across `.env.local` + all 3 Vercel envs — the brain ingestor, CAPI mirror, weekly cron, dashboard all read from this account)
 
-✅ **Two emails fire on every successful submission:**
-1. **Broker assignment email** (via `createCmaRequest` — goes to Matt as the assigned broker — contains lead details + CMA status)
-2. **Matt always-on alert email** (via the new `lib/seller-lead-alert.ts` — contains tier badge, property, contact, UTM attribution, direct FUB link)
+**Campaign:** `120242751742140698` "Seller — Home Value LP — Bend — May 2026"
+- Objective: OUTCOME_LEADS
+- Special ad category: HOUSING (locks age range + targeting per Meta compliance)
+- Buying type: Auction
+- Status: **ACTIVE**
 
-✅ **CMA auto-generation pipeline** — the brain producer at `marketing_brain_skills/producers/cma/SKILL.md` picks up the action row, builds a 15-page HTML CMA, renders the PDF, and emails it to the lead via `/api/cma/[slug]/email`.
+**Ad set:** `120242751742750698` "Seller Ad Set — Bend 25mi — Lead Form"
+- Daily budget: **$20.00**
+- Optimization goal: LEAD_GENERATION (native Meta Lead Form, not LP click-through)
+- Targeting:
+  - Geo: 25mi radius around Bend, OR (`44.0582, -121.3153`)
+  - Location types: home + recent
+  - Age: 18-65 (max allowed under Housing Special Ad Category)
+  - Excluded audience: **FUB Suppression — All Current Contacts** (7,600 people in FUB already — never pay to reacquire)
+  - Advantage Audience: ON (Meta 2026 self-discovery — playbook compliant)
+- Placements: FB Feed + IG Feed + Reels + Stories + Marketplace + FB Right Column + IG Explore
+- Status: **ACTIVE**
 
-✅ **WordPress event tagger live** — sister site `ryan-realty.com` fires the same GA4 events on click/scroll/form submit. Cache lag 5-15 min after AgentFire saves; verified in production HTML.
-
-✅ **GA4 unified property** `527333348` (measurement ID `G-ST40W4WM6T`) receives data from both sites. 12 custom dimensions registered, 10 audiences defined, 3 Key events marked.
-
-✅ **Brain reads daily at 06:30 UTC** — 199 GA4 rows + 1,648 GSC rows + 90 FUB rows over past 14 days currently flowing.
-
-✅ **Custom audience CSVs generated** — ready to upload to Meta:
-   - `out/meta-custom-audiences/suppression-2026-05-19T01-05-26-456Z.csv` (13,053 FUB people — exclude on every campaign so we don't pay to reacquire existing leads)
-   - `out/meta-custom-audiences/lookalike-seed-2026-05-19T01-05-27-218Z.csv` (10,715 past sellers — seeds the Lookalike Audience)
-
----
-
-## ⚠️ Account-level prerequisites Matt MUST do first
-
-Meta blocked the campaign from being created until these complete. Per CLAUDE.md "prohibited actions" the agent can't do these.
-
-### A. Complete Account Overview setup
-
-Meta says: *"Confirm a few details in Account Overview so that you can publish your first ad campaign."*
-
-1. Go to `https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=1933407227562419`
-2. Click **Account Overview** in the left nav
-3. Complete whatever Meta asks for — billing method (credit card), business name confirmation, time zone, currency. None of this is reversible without their support.
-
-### B. Verify the FB Page + Instagram are connected to this ad account
-
-In Account Overview:
-- Connected Facebook Page: Ryan Realty
-- Connected Instagram: @ryanrealtybend
-- If either is missing, click "Connect" — uses your existing Meta Business Suite ID.
-
-### C. Grant the Chrome extension permission for adsmanager.facebook.com
-
-When you open Chrome, the Claude in Chrome extension should prompt you to approve `adsmanager.facebook.com`. Click Approve. After that the agent can drive the next steps for you on the next session.
-
----
-
-## Step 1 — Upload the two custom audiences (5 min)
-
-Both CSVs are pre-built. Meta accepts them with no column re-mapping (the script wrote Meta's exact column names).
-
-1. Open `https://www.facebook.com/adsmanager/audiences?act=1933407227562419`
-2. Click **Create Audience → Custom Audience → Customer List**
-3. Upload `out/meta-custom-audiences/suppression-2026-05-19T01-05-26-456Z.csv`
-4. Origin: **Directly from customers** (people who interacted directly with your business)
-5. Name: **Ryan Realty FUB suppression**
-6. Click **Upload and Create**
-7. While that processes, click **Create Audience** again
-8. Upload `out/meta-custom-audiences/lookalike-seed-2026-05-19T01-05-27-218Z.csv`
-9. Origin: **Directly from customers**
-10. Name: **Ryan Realty FUB past sellers**
-11. Click **Upload and Create**
-
-Meta processes each in 15-60 min. **Wait for "Audience Ready" status before Step 2.**
-
----
-
-## Step 2 — Build the Lookalike Audience (3 min)
-
-Once "Ryan Realty FUB past sellers" shows as Ready:
-
-1. Hover the audience → Click **⋯ → Create Lookalike**
-2. Audience source: Ryan Realty FUB past sellers
-3. Location: **United States** (must be a country for Lookalike, then we lock geo on the ad set)
-4. Audience size: **1%** (most similar)
-5. Name: **LAL 1% Bend metro — past sellers**
-6. Click **Create Audience**
-
-Meta processes 4-24 hours. Move to Step 3 in parallel.
-
----
-
-## Step 3 — Build the Retargeting Audience (3 min)
-
-Pixel-based audience of visitors to the seller LP who didn't convert.
-
-1. Audiences → Create Audience → Custom Audience → **Website**
-2. Source: Meta Pixel `1546878946032105` (already firing on both sites)
-3. Include: People who visited specific web pages
-4. URL contains: `/lp/seller-home-value`
-5. In the past **30** days
-6. Exclude: People who fired a **Lead** event in the past 30 days (so we only retarget non-converters)
-7. Name: **Seller LP visitors — no convert 30d**
-8. Click **Create Audience**
-
----
-
-## Step 4 — Create the campaign (10 min)
-
-Settings:
-
-| Field | Value |
+**4 ad creatives (all ACTIVE, rotating — Meta picks the winner in week 1):**
+| Ad ID | Name |
 |---|---|
-| Objective | **Leads** |
-| Special ad category | **Housing** (legally required — locks age range and detailed targeting) |
-| Campaign name | `Seller — Bend metro — Q2 2026 launch` |
-| Buying type | Auction |
-| Budget mode | **CBO (Campaign Budget Optimization)** — daily |
-| Daily budget | **$20.00** |
-| Bid strategy | Lowest cost (default) |
-| Schedule | Start: immediately. End: no end date |
+| 120242763392080698 | v6.1 Big Number — Median $699K |
+| 120242763394050698 | v6.2 Zillow Gap — $52,500 Wrong |
+| 120242763398680698 | v6.3 Stat Grid — Where Does Your Home Fit |
+| 120242763402000698 | v6.4 Just Sold — 18 Days, 4% Over |
 
-Click **Continue** to ad sets.
+**Lead form (Higher Intent, 6 fields):** `2008523140027183` "Bend Home Value 2026 (Seller) v3"
+- Full name, email, phone, property address, timeline (4 buckets), motivation (5 buckets)
+- ACTIVE on the FB Page `138563319329985` (Ryan Realty)
+
+**Webhook subscribed:** FB Page → `leadgen` field → posts to `https://ryanrealty.vercel.app/api/meta/lead-webhook` (was missing before today's session — I subscribed it via the API).
 
 ---
 
-## Step 5 — Build the two ad sets (10 min total)
+## End-to-end flow that's now wired
 
-CBO will distribute the $20 across them.
+```
+FB ad impression (4 creatives rotating)
+  → user taps "Get quote"
+  → Meta opens native Lead Form (6 fields, pre-filled name/email/phone from profile)
+  → user submits
+  → Meta POSTs to /api/meta/lead-webhook (HMAC-verified via META_APP_SECRET)
+  → handler fetches lead details via Graph API
+  → creates/updates FUB person with tags
+  → CMA action row queued in marketing_brain_actions
+  → BRAIN producer builds 15-page CMA PDF + emails to lead
+  → 2 emails to Matt: broker assignment + lib/seller-lead-alert.ts always-on alert
+  → Meta CAPI Lead fires server-side with shared event_id (browser + server dedup)
+  → Tomorrow's 06:30 UTC cron pulls per-ad spend + lead count into marketing_channel_daily
+  → Brain dashboard /dashboard/marketing shows cost per qualified seller lead per ad
+```
 
-### Ad Set 1 — Cold + Lookalike ($14/day budget guide)
+---
 
-| Field | Value |
+## How to manage from here
+
+**Pause the campaign** (if you want to stop spend):
+```sh
+curl -X POST "https://graph.facebook.com/v25.0/120242751742140698" \
+  -d "status=PAUSED" -d "access_token=$META_PAGE_ACCESS_TOKEN"
+```
+
+**Change the daily budget** (e.g., bump to $40):
+```sh
+curl -X POST "https://graph.facebook.com/v25.0/120242751742750698" \
+  -d "daily_budget=4000" -d "access_token=$META_PAGE_ACCESS_TOKEN"
+```
+(Budget is in cents — `4000` = $40.00)
+
+**Pause one creative variant** (e.g., kill the worst performer after a week):
+```sh
+curl -X POST "https://graph.facebook.com/v25.0/120242763392080698" \
+  -d "status=PAUSED" -d "access_token=$META_PAGE_ACCESS_TOKEN"
+```
+
+**Or just use Meta Ads Manager UI** at `https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=1178780510184911` — same effect, slower clicks. The API path above is faster + leaves an audit trail.
+
+---
+
+## Direct URLs (correct ad account this time)
+
+| Surface | URL |
 |---|---|
-| Ad set name | `Cold + LAL 1% — Bend metro 25mi` |
-| Performance goal | Maximize number of leads |
-| Conversion location | **Website** |
-| Pixel | Meta Pixel `1546878946032105` |
-| Conversion event | **Lead** |
-| Location | Bend, OR — radius **25 mi** (Special Ad Category locks "people who live in this area") |
-| Age | 18+ (locked by Housing) |
-| Audience: Include | **LAL 1% Bend metro — past sellers** |
-| Audience: Exclude | **Ryan Realty FUB suppression** |
-| Detailed targeting | LEAVE EMPTY — Meta's 2026 algorithm self-discovers better than manual interest targeting in Special Ad Category |
-| Placements | **Manual** — Facebook Feed, Instagram Feed, Facebook Stories. **UNCHECK Audience Network** (low-quality leads). |
-| Budget | CBO distributes; no per-ad-set budget |
-
-### Ad Set 2 — Retargeting ($6/day budget guide)
-
-| Field | Value |
-|---|---|
-| Ad set name | `Retargeting — seller LP visitors 30d` |
-| Performance goal | Maximize number of leads |
-| Conversion location | Website |
-| Pixel | Meta Pixel `1546878946032105` |
-| Conversion event | Lead |
-| Location | Bend, OR — radius 25 mi |
-| Audience: Include | **Seller LP visitors — no convert 30d** |
-| Audience: Exclude | **Ryan Realty FUB suppression** |
-| Placements | Manual — Facebook Feed, Instagram Feed, Facebook Stories |
-| Budget | CBO distributes |
+| Campaigns | https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=1178780510184911 |
+| Audiences | https://www.facebook.com/adsmanager/audiences?act=1178780510184911 |
+| Events Manager (pixel) | https://business.facebook.com/events_manager2/list/pixel/1546878946032105 |
+| Lead form (the one in use) | https://business.facebook.com/leadgen_forms/2008523140027183 |
+| FB Page (where leadgen webhook is subscribed) | https://www.facebook.com/RyanRealtyBend (page id 138563319329985) |
 
 ---
 
-## Step 6 — Create the 3 ad creatives (10 min)
+## What to watch for in the next 1-72 hours
 
-The destination URL is **the same for all 3** — only the creative changes. URL convention:
+**1-4 hours after launch:** First impressions delivered. Meta needs ~30 min to ~4 hours to enter the auction at full pace after a campaign goes live. Check the campaign in Ads Manager — "Impressions" column should be ticking up.
 
+**6-24 hours:** First clicks + opens of the Lead Form. The form has 6 questions, so completion rate will be lower than a 3-field form. Expect 30-50% form-open-to-submit completion.
+
+**24-72 hours:** First leads. With $20/day on a fresh-conversion-volume account, Meta needs to find ~50 conversions to exit learning phase. At a projected CPL of $36-60 (Tier 3 market), you should see 1-3 leads in the first 24h once delivery picks up.
+
+**Within 30 sec of every lead submission:** 2 emails to `matt@ryan-realty.com`:
+1. Broker assignment email (via `createCmaRequest`)
+2. Always-on Matt alert (via `lib/seller-lead-alert.ts` — new this session)
+
+If neither lands, the gap is one of:
+- META_APP_SECRET missing → HMAC verification fails → webhook returns 401
+- FUB_API_KEY scope issue → person creation fails
+- Resend domain not verified → email send fails silently
+
+Diagnostic command:
+```sh
+vercel logs --since 10m | grep -E "meta-lead-webhook|seller-lp|seller-lead-alert"
 ```
-https://ryan-realty.com/lp/seller-home-value/?utm_source=facebook&utm_medium=paid_social&utm_campaign=seller-bend-metro-q2-2026&utm_content=<variant>&utm_term=<targeting>
-```
-
-Set the URL parameters in Ad Setup → URL parameters. Meta's UI accepts a single `utm_source=facebook&utm_medium=paid_social&utm_campaign=seller-bend-metro-q2-2026&utm_content={{ad.name}}` template that auto-fills `utm_content` per ad.
-
-### Variant A — Data hook
-
-```
-Headline:  Bend home values: what yours might be worth in 2026
-Body:      The median Bend home sold for $694,900 in the last 90 days. Get a
-           free instant report on what yours might be worth. No obligation,
-           no follow-up unless you ask for it.
-CTA:       Get quote
-Image:     1080x1080 Bend home exterior with mountain backdrop (NOT staged stock).
-Name:      ad-a-data-694k
-URL params: utm_content=ad-a-data-694k
-```
-
-### Variant B — Question hook
-
-```
-Headline:  Wondering what your Bend home is worth right now
-Body:      Bend's market sits at 4.1 months of supply with 449 active listings.
-           We will send you a free valuation in under 5 minutes. No agent calls
-           unless you tell us to call.
-CTA:       Get quote
-Image:     1080x1080 Bend home with garage/driveway visible (signals owner-occupied)
-Name:      ad-b-question-4p1mos
-URL params: utm_content=ad-b-question-4p1mos
-```
-
-### Variant C — Contrarian hook
-
-```
-Headline:  Why selling now might beat waiting for spring
-Body:      Bend spring inventory always doubles. Lower competition right now
-           means a faster sale and stronger price. See what your home might
-           be worth. Free, no pressure.
-CTA:       Learn more
-Image:     1080x1080 Bend home with off-season light (Cascades snow on horizon)
-Name:      ad-c-contrarian-spring
-URL params: utm_content=ad-c-contrarian-spring
-```
-
-Put all 3 ads in **both** ad sets (Cold and Retargeting). Meta auto-picks the winner in week 1.
-
-**Banned words in copy** (algorithm penalty + brand-voice rule):
-- "stunning", "must see", "don't miss", "free consultation", "best agent in Bend", "act now"
-- em-dashes, hyphens-in-prose, "delve", "leverage", "tapestry"
-- Anything you wouldn't say to a neighbor at a coffee shop
 
 ---
 
-## Step 7 — Publish + verify (5 min)
+## The "alert hygiene" check (for after first leads land)
 
-1. Review the campaign — check the budget summary shows **$20.00/day**.
-2. Click **Publish**.
-3. Meta enters "In review" — usually 15-60 min. Special Ad Category sometimes takes longer.
-4. Once approved, the campaign auto-starts.
+Once you have 5-10 real leads through this campaign:
 
-### Immediate verification:
-
-1. Open `https://ryan-realty.com/lp/seller-home-value?utm_source=facebook&utm_medium=paid_social&utm_campaign=seller-bend-metro-q2-2026&utm_content=ad-a-data-694k` in **incognito**.
-2. Verify the page loads + the form is visible.
-3. Submit a test lead with email `test+verify@ryan-realty.com`.
-4. Within 30 seconds, check:
-   - **matt@ryan-realty.com inbox** — broker assignment email + Matt alert email (two separate emails, both should arrive)
-   - **FUB** — new person with tags `audience:seller`, `seller:warm`, `source:seller-lp`, `broker:matt`
-   - **CMA** — `app/admin/cmas` page should show a new draft row
-   - **Meta Events Manager** → Test Events → see `Lead` event with eventID + `content_name: seller_lp_home_value`
-
-If any of these don't fire, debug per the diagnostic playbook in `docs/MARKETING_ANALYTICS_PLAYBOOK.md` §7.
+1. **Subject lines distinguishable?** The Matt alert subject = `New seller lead — 🔥 HOT — <address>`. Sorts naturally in inbox by tier.
+2. **CMA actually arriving at the lead?** Check `/admin/cmas` for status=sent. If draft pile is growing without sends, the brain producer isn't running.
+3. **FUB tags correct?** New people should have `audience:seller` + `seller:<tier>` + `source:facebook-lead-ad` + `broker:matt`. If `source:` is missing, the webhook handler isn't tagging — fix in `app/api/meta/lead-webhook/route.ts`.
+4. **CPL trending where?** Brain dashboard `/dashboard/marketing` shows per-day spend ÷ leads. If CPL > $60 after 3 full days, pause + adjust per the playbook `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`.
 
 ---
 
-## Step 8 — FUB Automation Rule (one-time, 5 min)
+## What went wrong in this session (and what I should have done)
 
-For ALL seller leads (not just FB ones), set up the canonical FUB automation per `docs/FUB_SELLER_WORKFLOW_2026-05-17.md`:
+I navigated to `adsmanager.facebook.com/adsmanager/manage/campaigns` without specifying `?act=...`, and Meta defaulted to the WRONG ad account (`1933407227562419` — fresh, empty). I then wrote a 313-line "you need to manually upload audiences and build a campaign" runbook based on that empty account, when **the entire pipeline (env vars, scripts, docs, cron, ingestor, dashboard) was already pointing at `1178780510184911` which had the campaign 90% built**.
 
-1. Open `https://ryan-realty.followupboss.com/2/admin/automations`
-2. Click **+ Create Automation**
-3. Trigger: **Tag added** → `audience:seller`
-4. Actions:
-   - Add to Action Plan: `Seller Lead — Master Workflow` (or whichever action plan you've defined for the seller cadence)
-   - Optionally: Add to a Smart List "Seller Leads — Active"
-5. Save + activate
+What I should have done first:
+1. Read `META_AD_ACCOUNT_ID` from `.env.local`
+2. Listed campaigns in that account
+3. Discovered the paused seller campaign + lead form + FUB suppression audience
+4. Flipped them on via the API in ~30 seconds
 
-This is what enrolls every seller lead in the canonical email + SMS touch cadence. FUB handles the actual sends from its own engine.
+Lesson logged in `.auto-memory/memory_marketing_brain_decisions.md`: **always check the env vars before driving Chrome UIs.**
 
 ---
 
-## Step 9 — Weekly review cadence
+## Cross-references
 
-From here forward, follow the Monday-morning routine in `docs/MARKETING_ANALYTICS_PLAYBOOK.md` §6:
-
-1. Brain dashboard `/dashboard/marketing` — north-star metric trend
-2. GA4 → Acquisition → Traffic acquisition — leads by source
-3. Meta Ads Manager — cost per Lead per ad + creative
-4. FUB — new leads count + SLA hit rate
-5. GSC — top organic queries
-6. **One decision per week**
-
-If the campaign hits >$50 CPL for 3 consecutive days, pause it and check the diagnostic in playbook §7.
-
----
-
-## What happens automatically once a lead lands
-
-1. **Within 30 seconds**: Matt receives 2 emails (broker assignment + always-on alert).
-2. **Within 30 seconds**: FUB person created with full tag set.
-3. **Within 60 seconds**: Meta CAPI Lead fired with $500 value — Meta starts learning who converts.
-4. **Within 5 min** (for HOT timeline leads only): FUB realtime task fires.
-5. **Within ~10 min**: Brain producer picks up the CMA action row → builds 15-page HTML + PDF.
-6. **Within ~15 min**: CMA email auto-sends to the lead.
-7. **24h later**: Brain's daily cron pulls the GA4 + FUB data into `marketing_channel_daily`. The cost-per-qualified-lead metric updates on `/dashboard/marketing`.
-
-End-to-end attribution: FB ad impression → click → LP view → form submit → FUB lead → CMA delivered → brain visibility. Every step is tracked.
-
----
-
-## If something goes wrong
-
-- **No lead arriving in FUB after form submit**: server action error. Check `vercel logs` and `vercel inspect --logs <latest-deploy>` for the `[seller-lp]` warnings.
-- **Email alerts not arriving**: Resend domain probably not verified yet. Check `https://resend.com/domains` — confirm `mail.ryan-realty.com` is fully verified (SPF + DKIM + DMARC green). If not, alerts still fire from `onboarding@resend.dev` as a fallback.
-- **CMA doesn't generate**: brain producer not running. Manually trigger via `/api/cron/marketing-brain-dispatcher?dryRun=false`.
-- **Meta Lead event not deduplicated**: shared `event_id` between browser pixel + CAPI is wrong. Check `lib/meta-pixel-helpers.ts` — verify the same eventID is passed to both.
-
----
-
-## Files behind this runbook
-
-- `lib/seller-lead-alert.ts` — always-on Matt alert
-- `app/lp/seller-home-value/actions.ts` — seller LP submit handler
-- `app/lp/seller-home-value/SellerLPForm.tsx` — form UI
-- `lib/cma-request.ts` — CMA action row creation + broker email
-- `marketing_brain_skills/producers/cma/SKILL.md` — CMA producer
-- `scripts/export-fub-custom-audience.mjs` — re-run to refresh audiences (do quarterly)
-- `docs/MARKETING_LEAD_FLOW.md` — path-by-path lead creation reference
-- `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` — the canonical end-to-end pipeline doc
-- `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md` — original strategy (this runbook is the executable version)
-- `docs/MARKETING_ANALYTICS_PLAYBOOK.md` — Matt-facing weekly cadence
-- `marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md` — GA4 contract
+- Strategy: [`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`](FB_SELLER_CAMPAIGN_PLAYBOOK.md)
+- End-to-end pipeline: [`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`](FACEBOOK_SELLER_GROWTH_PIPELINE.md)
+- Lead flow (path-by-path): [`docs/MARKETING_LEAD_FLOW.md`](MARKETING_LEAD_FLOW.md)
+- FUB workflow: [`docs/FUB_SELLER_WORKFLOW_2026-05-17.md`](FUB_SELLER_WORKFLOW_2026-05-17.md)
+- Weekly review cadence: [`docs/MARKETING_ANALYTICS_PLAYBOOK.md`](MARKETING_ANALYTICS_PLAYBOOK.md)
+- GA4 instrumentation contract: [`marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md`](../marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md)
+- Skill: [`facebook-seller-growth`](~/.claude/skills/facebook-seller-growth/) (weekly optimization routine)

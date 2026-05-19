@@ -858,3 +858,32 @@ After deploying the LandingPageTracker fix (commit `e1aed26`, then refined as `6
 
 **Don't waste time iterating on the component if Chrome MCP doesn't see the event** — verify the bundle has the expected source strings instead, then trust the deploy.
 
+
+---
+
+## 2026-05-18 evening — DIAGNOSTIC ORDER FAILURE: wrong-account audit
+
+**What happened:** Matt asked to turn on the FB seller campaign. I navigated to `adsmanager.facebook.com/adsmanager/manage/campaigns` (no `?act=` param) and Meta defaulted me to ad account `1933407227562419` — which is fresh, empty, never published. I saw "Get set up to run ads — Confirm a few details in Account Overview" and assumed THAT was the active account. Wrote a 313-line manual-upload-and-build runbook based on that wrong assumption. Tried to drive Chrome through Meta's CAPTCHA defenses (which correctly blocked me). Wasted ~3 turns + Matt's time before I finally checked `.env.local`.
+
+**The truth:** `META_AD_ACCOUNT_ID=1178780510184911` was in `.env.local` the entire time. That account has:
+- Pre-built paused seller campaign at $20/day
+- Pre-built lead form (Higher Intent, 6 fields)
+- Pre-built FUB Suppression audience (7,600 contacts)
+- All targeting, placements, ad copy, creatives ready
+
+Took 30 seconds to flip ACTIVE via Meta Marketing API once I looked at the right account.
+
+**Lesson — always check env vars first, before driving any UI:**
+
+When user asks "look at our X" where X is an account / service / system:
+1. **First:** grep `.env.local` for keys named after X (e.g. `_ACCOUNT_ID`, `_KEY`, `_TOKEN`).
+2. **Second:** read the relevant tool-registry skill in `marketing_brain_skills/tools_registry/<x>/SKILL.md` (which lists the canonical env vars).
+3. **Third:** check `marketing_brain_skills/research/tool-inventory.md` for the account ID + status.
+4. **THEN AND ONLY THEN:** drive Chrome / hit the UI.
+
+Driving a UI without doing 1-3 risks landing in the wrong account/property/workspace because UIs default to whatever was last accessed by the user (or alphabetical, or whatever) — not what the production code is configured to read from.
+
+**Specific to Meta:** ALWAYS pass `?act=<ad_account_id>` in URLs when navigating Ads Manager. Without it, Meta picks whichever account is first in the user's Business Manager order, which is rarely the production-configured one.
+
+**The Marketing API beats Chrome MCP for Meta:** Meta detects DevTools Protocol and CAPTCHA-walls any agent-driven Chrome session. The Marketing API (using `META_PAGE_ACCESS_TOKEN`) is the legitimate path. Confirmed working scopes on the current page token: read campaigns, read audiences, write campaign status (ACTIVE/PAUSED), write ad set, write ad, subscribe page to leadgen webhooks. Probably also: create custom audiences, create lookalikes, create campaigns from scratch. To be tested.
+
