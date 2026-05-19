@@ -242,20 +242,20 @@ export async function GET(req: NextRequest) {
         sent_at: new Date().toISOString(),
       }))
       if (matchRows.length > 0) {
-        await supabase
+        const { error: upsertErr } = await supabase
           .from('listing_alert_matches')
           .upsert(matchRows, { onConflict: 'alert_id,listing_id,match_type', ignoreDuplicates: false })
-          .catch((err: unknown) => {
-            console.warn(`[listing-alerts/digest] match upsert failed for ${sub.email}:`, err)
-          })
+        if (upsertErr) {
+          console.warn(`[listing-alerts/digest] match upsert failed for ${sub.email}:`, upsertErr.message)
+        }
       }
-      await supabase
+      const { error: updateErr } = await supabase
         .from('listing_alerts')
         .update({ last_sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('id', sub.id)
-        .catch((err: unknown) => {
-          console.warn(`[listing-alerts/digest] last_sent_at update failed for ${sub.email}:`, err)
-        })
+      if (updateErr) {
+        console.warn(`[listing-alerts/digest] last_sent_at update failed for ${sub.email}:`, updateErr.message)
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       detail.error = msg
