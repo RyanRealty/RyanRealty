@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.244.0 (2026-05-19)
+
+### Features
+- feat(tetherow lp): draw boundary polygon on Static Map + harden CTA colors
+
+---
+
+
 ## v1.243.0 (2026-05-19)
 
 ### Features
