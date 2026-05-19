@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.239.0 (2026-05-19)
+
+### Features
+- feat(seller-lp): always-on Resend email alert to Matt on every new lead
+
+---
+
+
 ## v1.238.1 (2026-05-19)
 
 ### Bug Fixes
