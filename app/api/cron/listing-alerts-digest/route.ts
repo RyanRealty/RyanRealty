@@ -30,7 +30,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
 import { findMatches, MAX_MATCHES_PER_DIGEST } from '@/lib/listing-alerts/match-engine'
-import { ListingAlertsDigest } from '@/lib/listing-alerts/email-template'
+import { ListingAlertsDigestEmail } from '@/lib/listing-alerts/email-template'
 import type {
   DigestCronSummary,
   DigestRunResult,
@@ -202,12 +202,21 @@ export async function GET(req: NextRequest) {
         to: sub.email,
         subject: digestSubject(sub.community_slug, sub.city_slug, matches.length),
         replyTo: 'matt@ryan-realty.com',
-        react: ListingAlertsDigest({
-          subscriberName: sub.name,
+        react: ListingAlertsDigestEmail({
+          recipientName: sub.name,
+          searchLabel: sub.community_slug
+            ? `${sub.community_slug} homes`
+            : sub.city_slug
+              ? `homes in ${sub.city_slug}`
+              : 'matching homes',
           matches: visibleMatches,
-          overflowCount: overflow,
-          communitySlug: sub.community_slug,
-          citySlug: sub.city_slug,
+          totalMatches: matches.length,
+          siteUrl: siteUrl(),
+          browseAllUrl: sub.community_slug
+            ? `${siteUrl()}/lp/${sub.community_slug}/`
+            : sub.city_slug
+              ? `${siteUrl()}/lp/${sub.city_slug}/`
+              : `${siteUrl()}/listings`,
           unsubscribeUrl: unsubscribeUrl(sub.unsubscribe_token),
         }),
       })
