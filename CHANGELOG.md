@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.242.0 (2026-05-19)
+
+### Features
+- feat(brand): strict brand-compliance pass — logo PNG + tagline + Geist on every producer output
+
+---
+
+
 ## v1.241.0 (2026-05-19)
 
 ### Features
