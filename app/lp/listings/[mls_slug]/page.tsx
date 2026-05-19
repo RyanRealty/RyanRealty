@@ -41,9 +41,19 @@ import {
 } from '@/lib/listing-page/data'
 import { mlsNumberFromSlug } from '@/lib/listing-page/slug'
 
-export const dynamic = 'force-static'
+// ISR: pages render on first hit and cache for 1 hour. We do NOT pre-render
+// any specific MLS slug at build time (the listings table is 25K+ rows;
+// pre-rendering is wasteful), and we do NOT set `force-static` because that
+// combined with no generateStaticParams() makes Next.js treat the route as
+// having zero known params and 404 every request. Default rendering + a
+// `revalidate` + an empty generateStaticParams() is the right config for an
+// on-demand catalog of pages.
+export const revalidate = 3600 // 1 hour
 export const dynamicParams = true
-export const revalidate = 3600 // 1 hour — listing data turns over fast
+
+export async function generateStaticParams() {
+  return [] // render any [mls_slug] on demand
+}
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const RYAN_PHONE = '541.213.6706'
