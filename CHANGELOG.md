@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.240.1 (2026-05-19)
+
+### Bug Fixes
+- fix(fub-expired): tighten service area + add $500K price floor
+- fix(heath): remove invalid 'source' field on FubEventPerson — unblock Vercel build
+
+---
+
+
 ## v1.240.0 (2026-05-19)
 
 ### Features
