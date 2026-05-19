@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.242.1 (2026-05-19)
+
+### Maintenance
+- chore(producers): pull 14 slop video producers from inventory until real Remotion comps land
+
+---
+
+
 ## v1.242.0 (2026-05-19)
 
 ### Features
