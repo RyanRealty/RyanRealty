@@ -9,6 +9,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/listing-alerts-digest",
+      "schedule": "5 14 * * *"
+    },
+    {
       "path": "/api/cron/detect-expired-listings",
       "schedule": "0 * * * *"
     },
