@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.243.0 (2026-05-19)
+
+### Features
+- feat(video): real Photorealistic 3D Tiles earth_zoom + flyover for Tumalo
+
+### Bug Fixes
+- fix(tetherow lp): scope --rr-* tokens to :root so Radix portals see them
+
+### Other
+- site-community-page(tetherow): port to Next.js dynamic route with ISR
+
+---
+
+
 ## v1.242.1 (2026-05-19)
 
 ### Maintenance
