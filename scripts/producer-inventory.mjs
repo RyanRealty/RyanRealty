@@ -82,6 +82,21 @@ export const PRODUCERS = {
 
   // ─── Section F — analysis producers ───────────────────────────────────────
   'analyze-experiment':            { runner: 'node', script: 'scripts/build-analyze-experiment.mjs', section: 'F' },
+
+  // ─── Section A — orchestrators (fan out to sub-producers) ─────────────────
+  'list_kit_orchestrator':                { runner: 'node', script: 'scripts/build-list-kit-orchestrator.mjs', section: 'A' },
+  'monthly_market_report_orchestrator':   { runner: 'node', script: 'scripts/build-monthly-market-report-orchestrator.mjs', section: 'A' },
+  'listing_launch_orchestrator':          { runner: 'node', script: 'scripts/build-listing-launch-orchestrator.mjs', section: 'A' },
+
+  // ─── Section B — existing-asset wrappers (copy canonical pre-rendered) ────
+  'listing_tour_video':            { runner: 'python3', script: 'scripts/build_listing_tour_video.py', section: 'B' },
+  'neighborhood_tour':             { runner: 'python3', script: 'scripts/build_neighborhood_tour.py', section: 'B' },
+  'market_data_video':             { runner: 'python3', script: 'scripts/build_market_data_video.py', section: 'B' },
+  'market_pulse_short':            { runner: 'python3', script: 'scripts/build_market_pulse_short.py', section: 'B' },
+  'market_report_video':           { runner: 'python3', script: 'scripts/build_market_report_video.py', section: 'B' },
+  'cma':                           { runner: 'python3', script: 'scripts/build_cma_wrapper.py', section: 'B' },
+  'flyer_design':                  { runner: 'python3', script: 'scripts/build_flyer_design_wrapper.py', section: 'B' },
+  'ig_single_post':                { runner: 'python3', script: 'scripts/build_ig_single_post_wrapper.py', section: 'B' },
 }
 
 export default PRODUCERS
