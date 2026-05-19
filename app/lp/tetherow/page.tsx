@@ -1355,13 +1355,22 @@ export default async function TetherowLandingPage() {
 
 function TetherowGlobalStyle() {
   // Inline the --rr-* tokens used by the page. Mirrors the static exemplar's
-  // :root block. Wrapped inside .tetherow-lp so the tokens stay scoped to this
-  // route and never leak to the broader app.
+  // :root block.
+  //
+  // IMPORTANT: scoped to :root (not .tetherow-lp) on purpose. Radix portals
+  // (Dialog used by TetherowExitModal etc.) render their children inside a
+  // portal mounted on document.body — OUTSIDE this page's wrapper div. If
+  // the tokens are only defined on `.tetherow-lp`, every `var(--rr-cream)` /
+  // `var(--rr-navy)` inside the portaled modal resolves to undefined and the
+  // modal renders transparent / white-on-white. Making them :root-scoped on
+  // this route fixes both the modal AND any descendant components that mount
+  // via portal. The token names are namespaced (--rr-*) so they cannot
+  // collide with shadcn's --primary / --foreground tokens.
   return (
     <style
       dangerouslySetInnerHTML={{
         __html: `
-        .tetherow-lp {
+        :root {
           --rr-navy: #102742;
           --rr-cream: #faf8f4;
           --rr-text: #102742;
