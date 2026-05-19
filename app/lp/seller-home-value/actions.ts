@@ -16,6 +16,8 @@ import { createCmaRequest } from '@/lib/cma-request'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
+import { sendSellerLeadAlertEmail } from '@/lib/seller-lead-alert'
+import { headers } from 'next/headers'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -353,6 +355,47 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       if (!created.ok) {
         console.warn('[seller-lp] createCmaRequest failed:', created.error)
       }
+    }
+
+    // ─── Always-on Matt alert (Resend email) ──────────────────────────────
+    // Matt 2026-05-18: "Once they land in Follow Up Boss as a new user,
+    // I need to always make sure I'm getting an alert." Fire a dedicated
+    // email to MATT_ALERT_EMAIL on every new seller LP submission, in
+    // addition to the broker-assignment email from createCmaRequest.
+    // Fire-and-forget — lead capture is the priority.
+    try {
+      const headersList = await headers()
+      const referer = headersList.get('referer') ?? ''
+      let utmSource: string | null = null
+      let utmMedium: string | null = null
+      let utmCampaign: string | null = null
+      let utmContent: string | null = null
+      try {
+        const refUrl = new URL(referer)
+        utmSource = refUrl.searchParams.get('utm_source')
+        utmMedium = refUrl.searchParams.get('utm_medium')
+        utmCampaign = refUrl.searchParams.get('utm_campaign')
+        utmContent = refUrl.searchParams.get('utm_content')
+      } catch {
+        // Referer not parseable — no UTMs to capture.
+      }
+      void sendSellerLeadAlertEmail({
+        fubPersonId,
+        email: email || null,
+        phone: phone || null,
+        name: name || null,
+        address: parsed.full,
+        timeline: timeline ?? null,
+        classification,
+        assignedBroker: assignment.broker,
+        utmSource,
+        utmMedium,
+        utmCampaign,
+        utmContent,
+        alreadyKnown,
+      }).catch((e) => console.warn('[seller-lp] Matt alert email failed:', e))
+    } catch (e) {
+      console.warn('[seller-lp] Matt alert prep failed:', e)
     }
 
     // ─── Meta CAPI Lead $500 with dedup event_id ──────────────────────────
