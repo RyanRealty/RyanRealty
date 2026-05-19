@@ -352,7 +352,7 @@ footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--rule);
 </head>
 <body>
 <div class="page">
-<div class="stamp">Ryan Realty · ${fixture._meta.generated_at} · Producer Gallery · 54 producers · 100% green</div>
+<div class="stamp">Ryan Realty · ${fixture._meta.generated_at} · Producer Gallery · ${totalProducers} producers · ${failed === 0 ? '100% green' : `${passed}/${totalProducers} green`}</div>
 <h1>Producer Gallery</h1>
 <p class="lead">Every brain-callable producer in <code>marketing_brain_skills/producers/REGISTRY.md</code>, fired end-to-end against the canonical Tumalo fixture. Real artifacts shown at proper size. Each output is on disk at <code>out/&lt;producer&gt;/${TARGET_SLUG}/</code> with the four canonical sidecars (citations, provenance, design_scorecard, card).</p>
 

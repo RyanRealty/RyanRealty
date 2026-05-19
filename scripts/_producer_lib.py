@@ -52,19 +52,113 @@ HERO_FALLBACK = BRAND_DIR / "assets" / "hero" / "hero-old-mill-master-4k.jpg"
 
 
 def font(size: int, hero: bool = False, accent: bool = False) -> ImageFont.FreeTypeFont:
-    """Load Amboqia (hero=True), AzoSans (accent=True), or Helvetica fallback."""
-    if hero and AMBOQIA_PATH.exists():
+    """Load Amboqia (hero=True), AzoSans (accent=True). STRICT — no fallback.
+
+    Raises FileNotFoundError if the brand font is missing. We never ship
+    Helvetica or Arial on Ryan Realty deliverables. Tagline: 'It's About
+    Relationships.' Per design_system/ryan-realty/SKILL.md.
+    """
+    if hero:
+        if not AMBOQIA_PATH.exists():
+            raise FileNotFoundError(f"Amboqia Boriango missing at {AMBOQIA_PATH}. Brand fonts are mandatory.")
         return ImageFont.truetype(str(AMBOQIA_PATH), size)
-    if accent and AZO_PATH.exists():
+    if accent:
+        if not AZO_PATH.exists():
+            raise FileNotFoundError(f"AzoSans Medium missing at {AZO_PATH}. Brand fonts are mandatory.")
         return ImageFont.truetype(str(AZO_PATH), size)
-    for f in [
-        "/System/Library/Fonts/Helvetica.ttc",
-        "/System/Library/Fonts/Avenir.ttc",
-        "/System/Library/Fonts/Supplemental/Arial.ttf",
-    ]:
-        if Path(f).exists():
-            return ImageFont.truetype(f, size)
-    return ImageFont.load_default()
+    # Default body — fall back to Amboqia at a smaller size since we don't
+    # have a brand body sans available (Geist is web-only). Amboqia degrades
+    # gracefully at body sizes for short labels.
+    if not AMBOQIA_PATH.exists():
+        raise FileNotFoundError(f"Amboqia Boriango missing at {AMBOQIA_PATH}. Brand fonts are mandatory.")
+    return ImageFont.truetype(str(AMBOQIA_PATH), size)
+
+
+# ── Brand stamp ──────────────────────────────────────────────────────────────
+# Every heritage-register PNG/JPG output gets a canonical brand bar at the bottom:
+#   navy strip · cream "It's About Relationships." tagline · phone · web
+# Heritage uses the pre-rendered wordmark image (NEVER re-typeset).
+
+BRAND_TAGLINE = "It's About Relationships."
+BRAND_PHONE = "541.213.6706"
+BRAND_WEB = "ryan-realty.com"
+BRAND_PLACE = "BEND · OREGON"
+
+def brand_stamp(img: "Image.Image", style: str = "heritage", height_pct: float = 0.075) -> "Image.Image":
+    """Stamp the canonical brand bar at the bottom of an image.
+
+    style:
+      'heritage' — navy bar with cream wordmark + tagline + phone (default).
+      'light'    — cream bar with navy text (use when image's bottom is dark).
+      'minimal'  — single-line cream-on-navy with only tagline + phone (for square ads).
+
+    height_pct: bar height as fraction of image height. 0.075 = ~7.5%.
+    """
+    W, H = img.size
+    bar_h = max(int(H * height_pct), 80)
+    bar_top = H - bar_h
+
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    d = ImageDraw.Draw(img)
+
+    # Bar
+    fill_color = NAVY if style != "light" else CREAM
+    text_color = CREAM if style != "light" else NAVY
+    d.rectangle([0, bar_top, W, H], fill=fill_color)
+
+    # Wordmark — use logo-white.png on navy, logo-blue.png on cream
+    wordmark_path = LOGO_WHITE_PATH if style != "light" else LOGO_BLUE_PATH
+    if wordmark_path.exists():
+        try:
+            wm = Image.open(wordmark_path).convert("RGBA")
+            wm_w, wm_h = wm.size
+            target_h = int(bar_h * 0.55)
+            scale = target_h / wm_h
+            new_w = int(wm_w * scale)
+            wm = wm.resize((new_w, target_h), Image.LANCZOS)
+            wm_x = 30
+            wm_y = bar_top + (bar_h - target_h) // 2
+            img.paste(wm, (wm_x, wm_y), wm)
+        except Exception:
+            # If logo paste fails, fall back to typeset wordmark (last resort)
+            wf = font(int(bar_h * 0.40), hero=True)
+            d.text((30, bar_top + int(bar_h * 0.20)), "Ryan Realty", font=wf, fill=text_color)
+
+    # Tagline — center
+    if style != "minimal":
+        tf = font(int(bar_h * 0.25), accent=True)
+        tagline_w = text_w(d, BRAND_TAGLINE, tf)
+        d.text(((W - tagline_w) // 2, bar_top + int(bar_h * 0.36)), BRAND_TAGLINE, font=tf, fill=text_color)
+
+    # Right side: phone + web
+    rf = font(int(bar_h * 0.22), accent=True)
+    contact = f"{BRAND_PHONE}  ·  {BRAND_WEB}"
+    contact_w = text_w(d, contact, rf)
+    d.text((W - contact_w - 30, bar_top + int(bar_h * 0.40)), contact, font=rf, fill=text_color)
+
+    return img
+
+
+def heritage_canvas(W: int, H: int) -> "Image.Image":
+    """Create a cream-background canvas pre-sized for heritage-register stamping.
+
+    Use this instead of Image.new() when you want the canonical heritage
+    starting state. The bottom is reserved for brand_stamp() — keep your
+    content in the top ~92.5% of the canvas.
+    """
+    return Image.new("RGB", (W, H), CREAM)
+
+
+def add_brand_eyebrow(img: "Image.Image", text: str, color: tuple = None) -> "Image.Image":
+    """Add a top-left tracked eyebrow label (e.g., 'RYAN REALTY · BEND · OREGON')."""
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    d = ImageDraw.Draw(img)
+    color = color or NAVY
+    ef = font(20, accent=True)
+    d.text((40, 40), text.upper(), font=ef, fill=color)
+    return img
 
 
 def text_w(draw: ImageDraw.ImageDraw, text: str, fnt: ImageFont.FreeTypeFont) -> int:
