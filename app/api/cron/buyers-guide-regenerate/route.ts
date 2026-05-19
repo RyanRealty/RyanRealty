@@ -1,26 +1,31 @@
 /**
- * Buyers-guide regeneration cron — weekly, Sunday 3am PT (10am UTC).
+ * Buyers-guide regeneration status cron — weekly Sunday 3am PT (10am UTC).
  *
- * Walks every community with a registered guide directory under
- * `public/guides/<slug>/` and regenerates the PDF if its manifest reports
- * a `generatedAt` timestamp older than 7 days. Calls the Puppeteer script
- * at `scripts/buyers-guide/generate-pdf.mjs`.
+ * Reports freshness of every per-community guide PDF under
+ * `public/guides/<slug>/`. Returns the set of guides with a stale or
+ * missing manifest so an operator (or a separate worker) can regenerate
+ * them.
  *
- * Runs against the deployed Vercel app (BUYERS_GUIDE_BASE_URL env var) so
- * the PDF reflects current production data, not the dev server's view.
+ * Why this isn't a full Puppeteer regenerator in this route:
+ * Vercel serverless functions don't ship with a Chromium binary, and
+ * spawning `node scripts/buyers-guide/generate-pdf.mjs` from inside a
+ * serverless function makes Turbopack try to statically resolve the
+ * script path as a module (it can't), which fails the build. Real
+ * regeneration runs out-of-band via `npm run buyers-guide:regen <slug>`
+ * locally or in a dedicated worker. This cron's job is to surface what
+ * needs attention, not to do the work.
  *
  * Auth: Authorization: Bearer $CRON_SECRET.
  *
- * Spec: marketing_brain_skills/producers/buyers-guide/SKILL.md §4.3 Step 5.
+ * Spec: marketing_brain_skills/producers/buyers-guide/SKILL.md §4.3
  */
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { spawn } from 'node:child_process'
 
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300
+export const maxDuration = 60
 
 const STALE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -32,7 +37,9 @@ function authorize(req: NextRequest): boolean {
 
 type ManifestLite = { generatedAt?: string; slug?: string }
 
-async function listGuideCommunities(): Promise<Array<{ slug: string; manifest: ManifestLite | null }>> {
+async function listGuideCommunities(): Promise<
+  Array<{ slug: string; manifest: ManifestLite | null }>
+> {
   const guidesDir = path.join(process.cwd(), 'public', 'guides')
   let entries: string[]
   try {
@@ -64,89 +71,43 @@ function isStale(manifest: ManifestLite | null): boolean {
   return Date.now() - generatedMs > STALE_THRESHOLD_MS
 }
 
-async function regenerate(communitySlug: string, baseUrl: string): Promise<{ ok: boolean; durationMs: number; error?: string }> {
-  return new Promise((resolve) => {
-    const startedAt = Date.now()
-    const scriptPath = path.join(process.cwd(), 'scripts', 'buyers-guide', 'generate-pdf.mjs')
-    const args = [
-      scriptPath,
-      '--community',
-      communitySlug,
-      '--out',
-      path.join('public', 'guides', communitySlug, `${communitySlug}-buyers-guide.pdf`),
-      '--base-url',
-      baseUrl,
-    ]
-    const child = spawn('node', args, { stdio: ['ignore', 'pipe', 'pipe'] })
-    let stderr = ''
-    child.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString()
-    })
-    child.on('exit', (code) => {
-      const durationMs = Date.now() - startedAt
-      if (code === 0) {
-        resolve({ ok: true, durationMs })
-      } else {
-        resolve({ ok: false, durationMs, error: `exit ${code}: ${stderr.slice(0, 500)}` })
-      }
-    })
-    child.on('error', (err) => {
-      resolve({ ok: false, durationMs: Date.now() - startedAt, error: err.message })
-    })
-  })
-}
-
 export async function GET(req: NextRequest) {
   if (!authorize(req)) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
   }
-
-  const baseUrl = (
-    process.env.BUYERS_GUIDE_BASE_URL ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    'https://ryan-realty.com'
-  ).replace(/\/$/, '')
 
   const startedAt = Date.now()
   const communities = await listGuideCommunities()
   const results: Array<{
     slug: string
     stale: boolean
-    regenerated: boolean
-    durationMs?: number
-    error?: string
+    generatedAt: string | null
   }> = []
 
-  let regenerated = 0
-  let skipped = 0
-  let errors = 0
+  let staleCount = 0
+  let freshCount = 0
+  let missingCount = 0
 
   for (const c of communities) {
     const stale = isStale(c.manifest)
-    if (!stale) {
-      results.push({ slug: c.slug, stale: false, regenerated: false })
-      skipped++
-      continue
-    }
-    const r = await regenerate(c.slug, baseUrl)
     results.push({
       slug: c.slug,
-      stale: true,
-      regenerated: r.ok,
-      durationMs: r.durationMs,
-      error: r.error,
+      stale,
+      generatedAt: c.manifest?.generatedAt ?? null,
     })
-    if (r.ok) regenerated++
-    else errors++
+    if (!c.manifest) missingCount++
+    else if (stale) staleCount++
+    else freshCount++
   }
 
   return NextResponse.json({
     ok: true,
     scanned: communities.length,
-    regenerated,
-    skipped,
-    errors,
+    fresh: freshCount,
+    stale: staleCount,
+    missing: missingCount,
     durationMs: Date.now() - startedAt,
+    note: 'Regeneration runs out-of-band. Trigger via `node scripts/buyers-guide/generate-pdf.mjs --community <slug>` locally or from a dedicated worker.',
     results,
   })
 }
