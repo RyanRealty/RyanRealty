@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.245.1 (2026-05-19)
+
+### Maintenance
+- docs(producers): comprehensive handoff for next agent — Matt's 2026-05-19 feedback
+
+---
+
+
 ## v1.245.0 (2026-05-19)
 
 ### Features
