@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.240.2 (2026-05-19)
+
+### Maintenance
+- docs(fb-seller): fix wrong-ad-account runbook + log diagnostic lesson
+
+---
+
+
 ## v1.240.1 (2026-05-19)
 
 ### Bug Fixes
