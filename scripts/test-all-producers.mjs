@@ -26,7 +26,7 @@ import { readFile, readdir, stat, mkdir, writeFile } from 'fs/promises'
 import { readFileSync, existsSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { PRODUCERS, ACTION_TO_PRODUCER } from './run-producer.mjs'
+import { PRODUCERS } from './producer-inventory.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..')
