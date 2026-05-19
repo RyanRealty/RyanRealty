@@ -175,7 +175,7 @@ function ShowingCard({
           <Button
             type="submit"
             disabled={submitting}
-            className="mt-1 rounded-[9px] bg-[color:var(--rr-cream)] py-[13px] text-[14px] font-bold tracking-[0.02em] text-[color:var(--rr-navy)] hover:opacity-90"
+            className="mt-1 rounded-[9px] bg-[#faf8f4] py-[13px] text-[14px] font-bold tracking-[0.02em] text-[#102742] hover:opacity-90"
           >
             {submitting ? 'Sending...' : 'Request showing'}
           </Button>
@@ -329,7 +329,7 @@ function AlertsCard() {
           <Button
             type="submit"
             disabled={submitting}
-            className="mt-1 rounded-[9px] bg-[color:var(--rr-cream)] py-[13px] text-[14px] font-bold tracking-[0.02em] text-[color:var(--rr-navy)] hover:opacity-90"
+            className="mt-1 rounded-[9px] bg-[#faf8f4] py-[13px] text-[14px] font-bold tracking-[0.02em] text-[#102742] hover:opacity-90"
           >
             {submitting ? 'Sending...' : 'Send me matches'}
           </Button>
@@ -412,7 +412,7 @@ function GuideCard() {
           <Button
             type="submit"
             disabled={submitting}
-            className="mt-1 rounded-[9px] bg-[color:var(--rr-cream)] py-[13px] text-[14px] font-bold tracking-[0.02em] text-[color:var(--rr-navy)] hover:opacity-90"
+            className="mt-1 rounded-[9px] bg-[#faf8f4] py-[13px] text-[14px] font-bold tracking-[0.02em] text-[#102742] hover:opacity-90"
           >
             {submitting ? 'Sending...' : 'Send the guide'}
           </Button>

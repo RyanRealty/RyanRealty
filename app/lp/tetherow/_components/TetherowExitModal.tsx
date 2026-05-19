@@ -123,7 +123,7 @@ export function TetherowExitModal() {
             <Button
               type="submit"
               disabled={submitting}
-              className="rounded-[10px] bg-[color:var(--rr-navy)] px-[22px] py-3 text-[15px] font-bold tracking-[0.02em] text-[color:var(--rr-cream)] hover:opacity-90"
+              className="rounded-[10px] bg-[#102742] px-[22px] py-3 text-[15px] font-bold tracking-[0.02em] text-[#faf8f4] hover:opacity-90"
             >
               {submitting ? 'Sending...' : 'Send me the data pack'}
             </Button>

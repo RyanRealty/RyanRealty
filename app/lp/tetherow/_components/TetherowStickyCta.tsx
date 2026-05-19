@@ -56,7 +56,7 @@ export function TetherowStickyCta() {
         </div>
         <a
           href="#cma"
-          className="whitespace-nowrap rounded-lg bg-[color:var(--rr-cream)] px-[22px] py-3 text-[14px] font-bold tracking-[0.02em] text-[color:var(--rr-navy)] transition hover:opacity-90 active:scale-[0.98]"
+          className="whitespace-nowrap rounded-lg bg-[#faf8f4] px-[22px] py-3 text-[14px] font-bold tracking-[0.02em] text-[#102742] transition hover:opacity-90 active:scale-[0.98]"
         >
           Get my value report
         </a>

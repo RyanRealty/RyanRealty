@@ -21,6 +21,8 @@
  *     Deschutes County GIS Subdivisions, OBJECTID=2743, CSNUM=17513).
  */
 import 'server-only'
+import { promises as fs } from 'node:fs'
+import path from 'node:path'
 import { createServiceClient } from '@/lib/supabase/service'
 import tetherowConfig from '@/data/resort-community-tetherow.json'
 
@@ -96,6 +98,11 @@ export type TetherowBoundary = {
   acres: number | null
   source: string | null
   sourceUrl: string | null
+  /** Polygon vertices [lng, lat], usable to draw the boundary on a static
+   *  map or for client-side rendering. Baked from a union of all Tetherow
+   *  subdivision polygons in public.boundaries — see
+   *  data/tetherow/tetherow-polygon.json. */
+  polygon: Array<[number, number]> | null
 }
 
 /** Pull the rolling-365d Tetherow KPI row. */
@@ -293,50 +300,50 @@ export async function fetchTetherowPeerComparison(): Promise<TetherowPeerRow[]> 
   }
 }
 
-/** Pull the Tetherow Phase 1 boundary centroid + acres. */
+/** Pull the Tetherow resort boundary — centroid, acres, and polygon vertices.
+ *
+ *  Reads a stable baked JSON file at data/tetherow/tetherow-polygon.json
+ *  which is the union of every Tetherow phase polygon in public.boundaries
+ *  (Phases 2-7, Golf Homes, Vacation Homes, North Forty, Rim) — verified
+ *  against Deschutes County GIS Subdivisions. Falls back to the hard-coded
+ *  centroid if the file read fails. */
 export async function fetchTetherowBoundary(): Promise<TetherowBoundary | null> {
   try {
-    const supabase = createServiceClient()
-    // boundaries table uses PostGIS — use a raw RPC equivalent via .rpc would
-    // be the cleanest path, but for the centroid we lean on a small SQL-friendly
-    // .select() with computed columns isn't possible via supabase-js. Use a
-    // pre-computed view or a direct row read of stored centroid columns when
-    // available; otherwise fall back to the values verified at build time
-    // (Deschutes County GIS Subdivisions, 2026-05-18: lat 44.031627, lng
-    // -121.360590, 599.7 acres).
-    const { data, error } = await supabase
-      .from('boundaries')
-      .select('geo_slug, source, source_url, centroid_lat, centroid_lng, area_acres')
-      .eq('geo_slug', tetherowConfig.boundary_geo_slug)
-      .order('area_acres', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-    if (!error && data) {
-      const r = data as Record<string, unknown>
-      const lat = r['centroid_lat']
-      const lng = r['centroid_lng']
-      if (typeof lat === 'number' && typeof lng === 'number') {
-        return {
-          lat,
-          lng,
-          acres: r['area_acres'] != null ? Number(r['area_acres']) : null,
-          source: r['source'] != null ? String(r['source']) : null,
-          sourceUrl: r['source_url'] != null ? String(r['source_url']) : null,
-        }
+    const filePath = path.join(process.cwd(), 'data', 'tetherow', 'tetherow-polygon.json')
+    const raw = await fs.readFile(filePath, 'utf8')
+    const parsed = JSON.parse(raw) as {
+      acres?: number
+      centroid?: { lng: number; lat: number }
+      geometry?: { type: 'Polygon'; coordinates: number[][][] }
+      source?: string
+    }
+    const ring = parsed.geometry?.coordinates?.[0]
+    const polygon: Array<[number, number]> | null =
+      Array.isArray(ring) && ring.length > 2
+        ? ring.map(([lng, lat]) => [lng, lat] as [number, number])
+        : null
+    if (parsed.centroid && Number.isFinite(parsed.centroid.lat) && Number.isFinite(parsed.centroid.lng)) {
+      return {
+        lat: parsed.centroid.lat,
+        lng: parsed.centroid.lng,
+        acres: parsed.acres ?? null,
+        source: 'Deschutes County GIS Subdivisions (union of all Tetherow phases)',
+        sourceUrl: 'https://maps.deschutes.org/arcgis/rest/services/OpenData/BoundaryFD/MapServer/4',
+        polygon,
       }
     }
-    // Fallback — pre-computed centroid verified 2026-05-18 against the
-    // Deschutes County GIS Subdivisions polygon (OBJECTID=2743, CSNUM=17513).
-    return {
-      lat: 44.031627,
-      lng: -121.36059,
-      acres: 599.7,
-      source: 'Deschutes County GIS Subdivisions (OBJECTID=2743, CSNUM=17513, TRS=181101)',
-      sourceUrl: 'https://maps.deschutes.org/arcgis/rest/services/OpenData/BoundaryFD/MapServer/4',
-    }
   } catch (e) {
-    console.warn('[tetherow/data] fetchTetherowBoundary failed:', e)
-    return null
+    console.warn('[tetherow/data] fetchTetherowBoundary read failed, using fallback:', e)
+  }
+  // Fallback — pre-computed centroid verified 2026-05-19 against the
+  // Deschutes County GIS Subdivisions polygon union.
+  return {
+    lat: 44.03376,
+    lng: -121.360915,
+    acres: 714.5,
+    source: 'Deschutes County GIS Subdivisions (OBJECTID=2743, CSNUM=17513, TRS=181101)',
+    sourceUrl: 'https://maps.deschutes.org/arcgis/rest/services/OpenData/BoundaryFD/MapServer/4',
+    polygon: null,
   }
 }
 
@@ -404,16 +411,18 @@ export function formatMethodologyDate(iso: string | null | undefined): string {
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-/** Build the Google Static Maps URL from the centroid. Zoom 13 for the
- *  200-1,000-acre band. Falls back to a navy placeholder if the
- *  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY env var is missing — the static asset at
- *  /lp/tetherow/img/tetherow-location-map.png is the long-lived fallback. */
+/** Build the Google Static Maps URL from the centroid + boundary polygon.
+ *  Zoom 13 for the 200-1,000-acre band. Draws the navy polygon outline +
+ *  light-navy fill so the resort footprint reads at a glance. Falls back
+ *  to a navy placeholder if the NEXT_PUBLIC_GOOGLE_MAPS_API_KEY env var
+ *  is missing — the static asset at /lp/tetherow/img/tetherow-location-map.png
+ *  is the long-lived fallback. */
 export function buildTetherowMapUrl(boundary: TetherowBoundary | null): string {
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   if (!boundary || !key) return tetherowConfig.location_map_image
-  const { lat, lng } = boundary
+  const { lat, lng, polygon } = boundary
   const base = 'https://maps.googleapis.com/maps/api/staticmap'
-  const params = [
+  const params: string[] = [
     `center=${lat},${lng}`,
     'zoom=13',
     'size=720x520',
@@ -423,8 +432,23 @@ export function buildTetherowMapUrl(boundary: TetherowBoundary | null): string {
     'style=feature:landscape|element:geometry|color:0xf2ebdd',
     'style=feature:water|element:geometry|color:0xb8d4dc',
     'style=feature:road|element:geometry|color:0xfaf8f4',
-    `markers=color:0x102742%7Csize:mid%7Clabel:T%7C${lat},${lng}`,
-    `key=${key}`,
-  ].join('&')
-  return `${base}?${params}`
+  ]
+  // Draw the polygon if we have it — navy outline with a light fill so the
+  // resort footprint is unambiguous on the static tile.
+  if (polygon && polygon.length > 2) {
+    // Static-Maps URL length cap is ~8K chars. With ~50 vertices @ ~22 chars
+    // each (`|44.033760,-121.360915`) we're well under the limit. If a future
+    // dataset has > 200 vertices we'd need to thin further before encoding.
+    const points = polygon
+      .map(([plng, plat]) => `${plat.toFixed(6)},${plng.toFixed(6)}`)
+      .join('|')
+    params.push(
+      `path=color:0x102742FF%7Cweight:3%7Cfillcolor:0x10274229%7C${encodeURIComponent(points)}`,
+    )
+  } else {
+    // No polygon — drop a centroid marker so the location is still legible.
+    params.push(`markers=color:0x102742%7Csize:mid%7Clabel:T%7C${lat},${lng}`)
+  }
+  params.push(`key=${key}`)
+  return `${base}?${params.join('&')}`
 }
