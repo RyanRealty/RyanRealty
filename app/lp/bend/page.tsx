@@ -350,8 +350,10 @@ export default async function BendCityPage() {
         .map-list a { color: #102742; text-decoration: none; font-weight: 500; transition: color 0.15s; }
         .map-list a:hover { color: rgba(16,39,66,0.6); text-decoration: underline; text-underline-offset: 3px; }
 
-        /* COMMUNITY TILES */
-        .community-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-top: 24px; }
+        /* COMMUNITY TILES — fixed 3-col / 2-col / 1-col, no orphan rows */
+        .community-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 24px; }
+        @media (max-width: 920px) { .community-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 560px) { .community-grid { grid-template-columns: 1fr; } }
         .community-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; }
         .community-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 14px 32px rgba(16,39,66,0.12); }
         .community-photo { aspect-ratio: 16/10; background: rgba(16,39,66,0.06); background-size: cover; background-position: center; }
@@ -360,29 +362,38 @@ export default async function BendCityPage() {
         .community-stats { display: flex; gap: 14px; font-size: 12.5px; color: rgba(16,39,66,0.62); flex-wrap: wrap; }
         .community-stats strong { color: #102742; font-weight: 600; }
 
-        /* LISTINGS */
-        .listings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-top: 24px; }
+        /* LISTINGS — fixed 4-col / 2-col / 1-col, 8 items render as clean 2 rows */
+        .listings-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 24px; }
+        @media (max-width: 1024px) { .listings-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 760px) { .listings-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .listings-grid { grid-template-columns: 1fr; } }
         .listing-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 16px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; display: flex; flex-direction: column; }
         .listing-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 14px 32px rgba(16,39,66,0.12); }
         .listing-photo { aspect-ratio: 4/3; background-color: rgba(16,39,66,0.06); background-size: cover; background-position: center; }
         .listing-body { padding: 16px 20px 20px; }
-        .listing-price { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; margin: 0; font-variant-numeric: tabular-nums; font-weight: 500; }
-        .listing-address { font-size: 14.5px; color: rgba(16,39,66,0.72); margin: 4px 0 12px; }
-        .listing-meta { font-size: 12.5px; color: rgba(16,39,66,0.6); font-variant-numeric: tabular-nums; display: flex; gap: 12px; }
+        .listing-price { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; margin: 0; font-variant-numeric: tabular-nums; font-weight: 500; }
+        .listing-address { font-size: 13.5px; color: rgba(16,39,66,0.72); margin: 4px 0 10px; }
+        .listing-meta { font-size: 12.5px; color: rgba(16,39,66,0.6); font-variant-numeric: tabular-nums; display: flex; gap: 12px; flex-wrap: wrap; }
         .listing-meta strong { color: #102742; font-weight: 600; }
         .view-all-row { text-align: center; margin-top: 36px; }
         .view-all-btn { display: inline-flex; align-items: center; gap: 8px; background: #102742; color: #faf8f4; padding: 14px 32px; border-radius: 10px; font-size: 14.5px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
-        .view-all-btn:hover { background: rgba(16,39,66,0.88); }
+        .view-all-btn:hover { background: rgba(16,39,66,0.88); color: #faf8f4; }
 
-        /* LIVING-IN CARDS */
-        .living-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 28px; }
-        .living-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 16px; padding: 28px 26px; box-shadow: 0 1px 2px rgba(16,39,66,0.03), 0 6px 16px rgba(16,39,66,0.05); }
-        .living-card-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(16,39,66,0.06); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
-        .living-card h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; margin: 0 0 10px; font-weight: 500; }
-        .living-card p { font-size: 14.5px; line-height: 1.6; color: rgba(16,39,66,0.78); margin: 0; }
+        /* LIVING-IN CARDS — full-bleed photo backgrounds with text overlay, fixed 4-col */
+        .living-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 28px; }
+        @media (max-width: 960px) { .living-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 520px) { .living-grid { grid-template-columns: 1fr; } }
+        .living-card { position: relative; aspect-ratio: 4/5; border-radius: 16px; overflow: hidden; background-color: rgba(16,39,66,0.1); background-size: cover; background-position: center; box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 8px 24px rgba(16,39,66,0.1); text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: flex-end; transition: transform 0.25s, box-shadow 0.25s; }
+        .living-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 16px 36px rgba(16,39,66,0.18); }
+        .living-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(16,39,66,0) 0%, rgba(16,39,66,0) 35%, rgba(16,39,66,0.55) 70%, rgba(16,39,66,0.92) 100%); pointer-events: none; }
+        .living-card-body { position: relative; z-index: 2; padding: 22px 24px 24px; color: #faf8f4; }
+        .living-card h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; line-height: 1.1; margin: 0 0 6px; font-weight: 500; color: #faf8f4; }
+        .living-card .living-sub { font-size: 13.5px; line-height: 1.45; color: rgba(250,248,244,0.88); margin: 0; }
 
-        /* KPI GRID */
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 22px; }
+        /* KPI GRID — fixed 3-col / 2-col / 1-col, 6 items render as clean 2 rows */
+        .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+        @media (max-width: 820px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .kpi-grid { grid-template-columns: 1fr; } }
         .kpi-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px; padding: 22px 24px; box-shadow: 0 1px 2px rgba(16,39,66,0.03); }
         .kpi-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(16,39,66,0.6); margin-bottom: 8px; }
         .kpi-value { font-family: 'Playfair Display', Georgia, serif; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; font-weight: 500; }
@@ -616,8 +627,8 @@ export default async function BendCityPage() {
                 ))}
               </div>
               <div className="view-all-row">
-                <Link href="/listings" className="view-all-btn">
-                  See every active home in Bend →
+                <Link href="/homes-for-sale/bend" className="view-all-btn">
+                  Search Bend homes →
                 </Link>
               </div>
             </>
@@ -632,66 +643,44 @@ export default async function BendCityPage() {
           <h2 className="bend-h2">What the day looks like.</h2>
 
           <div className="living-grid">
-            <div className="living-card">
-              <div className="living-card-icon" aria-hidden>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#102742" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 20h18" />
-                  <path d="M5 20l5-12 4 8 3-5 2 9" />
-                </svg>
+            <div
+              className="living-card"
+              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1551524559-8af4e6624178?w=900&q=80&auto=format')" }}
+            >
+              <div className="living-card-body">
+                <h3>Recreation</h3>
+                <p className="living-sub">Mt. Bachelor · Phil&rsquo;s Trail · Smith Rock · the Deschutes</p>
               </div>
-              <h3>Recreation</h3>
-              <p>
-                Skiing at Mt. Bachelor, climbing at Smith Rock, river floats and paddle boards on
-                the Deschutes, miles of singletrack in the Phil&rsquo;s Trail network, and
-                trailheads to the Three Sisters Wilderness all within a short drive.
-              </p>
             </div>
 
-            <div className="living-card">
-              <div className="living-card-icon" aria-hidden>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#102742" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M8 2v6a4 4 0 008 0V2" />
-                  <path d="M12 8v14" />
-                  <path d="M8 22h8" />
-                </svg>
+            <div
+              className="living-card"
+              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=900&q=80&auto=format')" }}
+            >
+              <div className="living-card-body">
+                <h3>Food &amp; brewing</h3>
+                <p className="living-sub">Deschutes, Crux, 10 Barrel · downtown · Old Mill</p>
               </div>
-              <h3>Food &amp; brewing</h3>
-              <p>
-                The original capital of Oregon craft beer, home to Deschutes Brewery, Crux,
-                10 Barrel, and a deep bench of independents. Add a strong restaurant scene from
-                downtown to the Old Mill District and weekly farmers markets in season.
-              </p>
             </div>
 
-            <div className="living-card">
-              <div className="living-card-icon" aria-hidden>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#102742" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 10l10-6 10 6-10 6-10-6z" />
-                  <path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5" />
-                </svg>
+            <div
+              className="living-card"
+              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=900&q=80&auto=format')" }}
+            >
+              <div className="living-card-body">
+                <h3>Schools</h3>
+                <p className="living-sub">Bend-La Pine · five high schools · charter options</p>
               </div>
-              <h3>Schools</h3>
-              <p>
-                One district city-wide: Bend-La Pine Schools. Five high schools including Summit,
-                Mountain View, Bend, La Pine, and Caldera, plus an early-college academy and
-                charter options like REALMS and Cascades Academy.
-              </p>
             </div>
 
-            <div className="living-card">
-              <div className="living-card-icon" aria-hidden>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#102742" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 21V8l8-5 8 5v13" />
-                  <path d="M9 21V13h6v8" />
-                </svg>
+            <div
+              className="living-card"
+              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=80&auto=format')" }}
+            >
+              <div className="living-card-body">
+                <h3>Local economy</h3>
+                <p className="living-sub">St. Charles Health · software · hospitality · trades</p>
               </div>
-              <h3>Local economy</h3>
-              <p>
-                St. Charles Health System anchors healthcare with 4,000-plus employees. A growing
-                cluster of software and consumer-product firms, hospitality across Tetherow,
-                Pronghorn, and Sunriver, plus the city, county, and school district round out the
-                largest employers.
-              </p>
             </div>
           </div>
         </div>

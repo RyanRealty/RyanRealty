@@ -3,18 +3,21 @@
 /**
  * Interactive map of Bend resort + master-planned communities.
  *
- * Renders the polygons from the boundaries table on a Mapbox GL base map.
- * Each polygon is clickable — clicking takes the visitor to /lp/<slug>/.
- * Hovering shows the community name + a brief teaser.
+ * Uses Google Maps JavaScript API (via @react-google-maps/api) — the same
+ * platform every other map on the site renders against. Polygons come from
+ * the boundaries table; each polygon is clickable and routes to /lp/<slug>/.
  *
- * The polygons are loaded server-side and handed in as props. Mapbox token
- * is read from NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN. If the token is missing the
- * map falls back to a static informational tile.
+ * API key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY (shared site-wide). If the key
+ * is missing the map falls back to a static informational tile.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import mapboxgl, { type Map as MapboxMap } from 'mapbox-gl'
-import 'mapbox-gl/dist/mapbox-gl.css'
+import {
+  useJsApiLoader,
+  GoogleMap,
+  Polygon,
+  OverlayView,
+} from '@react-google-maps/api'
 
 export type CommunityPolygon = {
   slug: string
@@ -35,162 +38,62 @@ export interface BendInteractiveMapProps {
 }
 
 const NAVY = '#102742'
-const NAVY_FILL = 'rgba(16, 39, 66, 0.18)'
-const NAVY_HOVER = 'rgba(16, 39, 66, 0.34)'
+const CREAM = '#faf8f4'
+
+const MAP_STYLES: google.maps.MapTypeStyle[] = [
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
+]
+
+function geojsonToPaths(geo: GeoJSON.Geometry): google.maps.LatLngLiteral[][] {
+  if (geo.type === 'Polygon' && Array.isArray(geo.coordinates)) {
+    return (geo.coordinates as number[][][]).map((ring) =>
+      ring.map(([lng, lat]) => ({ lat, lng })),
+    )
+  }
+  if (geo.type === 'MultiPolygon' && Array.isArray(geo.coordinates)) {
+    return (geo.coordinates as number[][][][]).flatMap((poly) =>
+      poly.map((ring) => ring.map(([lng, lat]) => ({ lat, lng }))),
+    )
+  }
+  return []
+}
 
 export function BendInteractiveMap({
   communities,
   initialCenter = { lng: -121.31, lat: 44.05 },
   initialZoom = 10.6,
 }: BendInteractiveMapProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const mapRef = useRef<MapboxMap | null>(null)
   const router = useRouter()
-  const [hover, setHover] = useState<{ name: string; slug: string } | null>(null)
-  const [missingToken, setMissingToken] = useState(false)
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: apiKey,
+  })
 
-  useEffect(() => {
-    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
-    if (!token) {
-      setMissingToken(true)
-      return
-    }
-    if (!containerRef.current) return
+  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null)
 
-    mapboxgl.accessToken = token
+  const prepared = useMemo(
+    () =>
+      communities.map((c) => ({
+        slug: c.slug,
+        name: c.name,
+        centroid: c.centroid,
+        paths: geojsonToPaths(c.geometry),
+      })),
+    [communities],
+  )
 
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [initialCenter.lng, initialCenter.lat],
-      zoom: initialZoom,
-      attributionControl: false,
-    })
-    // Mapbox GL 3.x requires the compact AttributionControl to be added
-    // separately. Constructor's attributionControl: option is now boolean.
-    map.addControl(new mapboxgl.AttributionControl({ compact: true }))
+  const onPolygonClick = useCallback(
+    (slug: string) => {
+      router.push(`/lp/${slug}/`)
+    },
+    [router],
+  )
 
-    mapRef.current = map
-
-    map.on('load', () => {
-      // Single FeatureCollection across all communities — Mapbox handles
-      // hit-testing per feature for hover + click.
-      const featureCollection: GeoJSON.FeatureCollection = {
-        type: 'FeatureCollection',
-        features: communities.map((c) => ({
-          type: 'Feature',
-          properties: { slug: c.slug, name: c.name },
-          geometry: c.geometry,
-        })),
-      }
-
-      map.addSource('communities', {
-        type: 'geojson',
-        data: featureCollection,
-        promoteId: 'slug',
-      })
-
-      // Fill layer — dark navy at 18% opacity, brightens on hover.
-      map.addLayer({
-        id: 'community-fill',
-        type: 'fill',
-        source: 'communities',
-        paint: {
-          'fill-color': NAVY,
-          'fill-opacity': [
-            'case',
-            ['boolean', ['feature-state', 'hover'], false],
-            0.34,
-            0.18,
-          ],
-        },
-      })
-
-      // Outline — solid navy, slightly thicker on hover.
-      map.addLayer({
-        id: 'community-line',
-        type: 'line',
-        source: 'communities',
-        paint: {
-          'line-color': NAVY,
-          'line-width': [
-            'case',
-            ['boolean', ['feature-state', 'hover'], false],
-            3,
-            1.5,
-          ],
-        },
-      })
-
-      // Centroid label — community name, only visible at zoom >= 10.
-      map.addLayer({
-        id: 'community-label',
-        type: 'symbol',
-        source: 'communities',
-        layout: {
-          'symbol-placement': 'point',
-          'text-field': ['get', 'name'],
-          'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-          'text-size': 13,
-          'text-letter-spacing': 0.02,
-          'text-allow-overlap': false,
-          'text-ignore-placement': false,
-        },
-        paint: {
-          'text-color': NAVY,
-          'text-halo-color': '#faf8f4',
-          'text-halo-width': 2,
-        },
-      })
-
-      // Hover behavior + cursor.
-      let hoveredId: string | null = null
-
-      map.on('mousemove', 'community-fill', (e) => {
-        if (!e.features || e.features.length === 0) return
-        map.getCanvas().style.cursor = 'pointer'
-
-        const feat = e.features[0]
-        const newId = String(feat.id)
-        if (hoveredId !== newId) {
-          if (hoveredId !== null) {
-            map.setFeatureState({ source: 'communities', id: hoveredId }, { hover: false })
-          }
-          hoveredId = newId
-          map.setFeatureState({ source: 'communities', id: newId }, { hover: true })
-          setHover({
-            name: String(feat.properties?.name ?? ''),
-            slug: String(feat.properties?.slug ?? ''),
-          })
-        }
-      })
-
-      map.on('mouseleave', 'community-fill', () => {
-        map.getCanvas().style.cursor = ''
-        if (hoveredId !== null) {
-          map.setFeatureState({ source: 'communities', id: hoveredId }, { hover: false })
-          hoveredId = null
-        }
-        setHover(null)
-      })
-
-      // Click — navigate to community page.
-      map.on('click', 'community-fill', (e) => {
-        if (!e.features || e.features.length === 0) return
-        const slug = e.features[0].properties?.slug
-        if (typeof slug === 'string' && slug) {
-          router.push(`/lp/${slug}/`)
-        }
-      })
-    })
-
-    return () => {
-      map.remove()
-      mapRef.current = null
-    }
-  }, [communities, initialCenter.lat, initialCenter.lng, initialZoom, router])
-
-  if (missingToken) {
+  if (!apiKey) {
     return (
       <div
         style={{
@@ -206,22 +109,131 @@ export function BendInteractiveMap({
           textAlign: 'center',
         }}
       >
-        Interactive map unavailable. Set NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to enable.
+        Interactive map unavailable. Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to enable.
       </div>
+    )
+  }
+  if (loadError) {
+    return (
+      <div
+        style={{
+          aspectRatio: '16 / 10',
+          background: 'rgba(16,39,66,0.06)',
+          borderRadius: 14,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'rgba(16,39,66,0.62)',
+          fontSize: 14,
+        }}
+      >
+        Map failed to load.
+      </div>
+    )
+  }
+  if (!isLoaded) {
+    return (
+      <div
+        style={{
+          aspectRatio: '16 / 10',
+          background: 'rgba(16,39,66,0.06)',
+          borderRadius: 14,
+        }}
+        aria-hidden
+      />
     )
   }
 
   return (
-    <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 2px rgba(16,39,66,0.04), 0 8px 24px rgba(16,39,66,0.1)' }}>
-      <div ref={containerRef} style={{ width: '100%', aspectRatio: '16 / 10', minHeight: 420 }} />
-      {hover && (
+    <div
+      style={{
+        position: 'relative',
+        borderRadius: 14,
+        overflow: 'hidden',
+        boxShadow: '0 1px 2px rgba(16,39,66,0.04), 0 8px 24px rgba(16,39,66,0.1)',
+        aspectRatio: '16 / 10',
+        minHeight: 420,
+      }}
+    >
+      <GoogleMap
+        mapContainerStyle={{ width: '100%', height: '100%' }}
+        center={{ lat: initialCenter.lat, lng: initialCenter.lng }}
+        zoom={initialZoom}
+        options={{
+          styles: MAP_STYLES,
+          streetViewControl: false,
+          fullscreenControl: false,
+          mapTypeControl: false,
+          zoomControl: true,
+          gestureHandling: 'greedy',
+          backgroundColor: CREAM,
+        }}
+      >
+        {prepared.map((c) => {
+          const isHover = hoveredSlug === c.slug
+          return (
+            <Polygon
+              key={c.slug}
+              paths={c.paths}
+              options={{
+                fillColor: NAVY,
+                fillOpacity: isHover ? 0.34 : 0.18,
+                strokeColor: NAVY,
+                strokeOpacity: 1,
+                strokeWeight: isHover ? 3 : 1.5,
+                clickable: true,
+                zIndex: isHover ? 2 : 1,
+              }}
+              onMouseOver={() => setHoveredSlug(c.slug)}
+              onMouseOut={() => setHoveredSlug(null)}
+              onClick={() => onPolygonClick(c.slug)}
+            />
+          )
+        })}
+
+        {prepared.map((c) => (
+          <OverlayView
+            key={`label-${c.slug}`}
+            position={{ lat: c.centroid.lat, lng: c.centroid.lng }}
+            mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+            getPixelPositionOffset={(w, h) => ({ x: -(w / 2), y: -(h / 2) })}
+          >
+            <div
+              onMouseOver={() => setHoveredSlug(c.slug)}
+              onMouseOut={() => setHoveredSlug(null)}
+              onClick={() => onPolygonClick(c.slug)}
+              style={{
+                fontFamily: 'Geist, system-ui, sans-serif',
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: 0.02,
+                color: NAVY,
+                background: 'rgba(250,248,244,0.92)',
+                padding: '3px 8px',
+                borderRadius: 6,
+                whiteSpace: 'nowrap',
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(16,39,66,0.12)',
+                userSelect: 'none',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+                transform: hoveredSlug === c.slug ? 'scale(1.05)' : 'scale(1)',
+              }}
+            >
+              {c.name}
+            </div>
+          </OverlayView>
+        ))}
+      </GoogleMap>
+
+      {hoveredSlug && (
         <div
           style={{
             position: 'absolute',
             top: 16,
             left: 16,
             background: NAVY,
-            color: '#faf8f4',
+            color: CREAM,
             padding: '10px 18px',
             borderRadius: 8,
             fontSize: 14,
@@ -229,14 +241,16 @@ export function BendInteractiveMap({
             letterSpacing: 0.02,
             pointerEvents: 'none',
             boxShadow: '0 4px 12px rgba(16,39,66,0.2)',
+            zIndex: 10,
           }}
         >
-          {hover.name}
+          {prepared.find((c) => c.slug === hoveredSlug)?.name}
           <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.8, marginTop: 2 }}>
             Click to explore
           </div>
         </div>
       )}
+
       <div
         style={{
           position: 'absolute',
@@ -249,6 +263,7 @@ export function BendInteractiveMap({
           color: 'rgba(16,39,66,0.62)',
           fontWeight: 500,
           pointerEvents: 'none',
+          zIndex: 5,
         }}
       >
         Click a community to explore →
