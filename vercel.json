@@ -9,6 +9,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/buyers-guide-regenerate",
+      "schedule": "0 10 * * 0"
+    },
+    {
       "path": "/api/cron/detect-expired-listings",
       "schedule": "0 * * * *"
     },

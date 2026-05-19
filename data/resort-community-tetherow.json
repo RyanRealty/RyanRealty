@@ -1,0 +1,498 @@
+{
+  "$schema": "Per marketing_brain_skills/producers/site-community-page/SKILL.md §4 ResortCommunityConfig",
+  "version": "v1-2026-05-18",
+  "source": "Manual authoring from verified public sources (Tetherow Resort, TOA, Golf Digest, Conde Nast, Bend Bulletin, Source Weekly, KTVZ, Troon, Tetherow blog, Wikipedia).",
+  "last_modified": "2026-05-18T00:00:00Z",
+  "slug": "tetherow",
+  "name": "Tetherow",
+  "label": "Tetherow Resort + Golf Club",
+  "geo_slug": "tetherow",
+  "boundary_geo_slug": "tetherow-phase-1",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "postal_code": "97702",
+  "street_address": "61240 Skyline Ranch Road",
+  "acres": 700,
+  "founded": 2008,
+  "architect": "David McLay Kidd",
+  "is_resort": true,
+  "is_master_planned": true,
+  "comparison_peers": [
+    "pronghorn",
+    "broken-top",
+    "caldera-springs",
+    "sunriver"
+  ],
+  "hero_image": "/lp/tetherow/img/tetherow-aerial-course.jpg",
+  "course_image": "/lp/tetherow/img/tetherow-course-118.jpg",
+  "signature_hole_image": "/lp/tetherow/img/tetherow-course-284.jpg",
+  "location_map_image": "/lp/tetherow/img/tetherow-location-map.png",
+  "subdivision_aliases": [
+    "Tetherow",
+    "Sunrise Village",
+    "Westbrook Meadows",
+    "Braeburn",
+    "1st On The Hillsites",
+    "Lodges at Bachelor V",
+    "Triple",
+    "Campbell Road",
+    "Roald West"
+  ],
+  "sub_neighborhoods": [
+    {
+      "slug": "heath",
+      "name": "Heath",
+      "type": "Single-family golf homes",
+      "hoa_annual_estimate": 2244,
+      "hoa_sub_assessment": "$195.00",
+      "hoa_frequency": "Quarterly",
+      "hoa_manager": "TOA",
+      "description": "Golf-frontage half-acre-plus lots. Heath is the first Tetherow sub-neighborhood with its own per-subdivision LP shipping this week.",
+      "image_hint": "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260414191237293313000000-o.jpg",
+      "has_inner_page": true
+    },
+    {
+      "slug": "crescent",
+      "name": "Crescent · North Forty",
+      "type": "Single-family golf homes",
+      "hoa_annual_estimate": 2004,
+      "hoa_sub_assessment": "$135.00",
+      "hoa_frequency": "Quarterly",
+      "hoa_manager": "TOA",
+      "description": "Established half-acre lots. The earliest section of the master plan.",
+      "image_hint": "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260202150805735982000000-o.jpg",
+      "has_inner_page": false
+    },
+    {
+      "slug": "glen",
+      "name": "Glen · Cascade Vista",
+      "type": "Single-family golf homes",
+      "hoa_annual_estimate": 2124,
+      "hoa_sub_assessment": "$165.00",
+      "hoa_frequency": "Quarterly",
+      "hoa_manager": "TOA",
+      "description": "Established golf-course views. Cascade Vista carries elevation on the master plan's north side.",
+      "image_hint": "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260409234505888120000000-o.jpg",
+      "has_inner_page": false
+    },
+    {
+      "slug": "tartan-druim",
+      "name": "Tartan Druim",
+      "type": "Gated custom homes",
+      "hoa_annual_estimate": 1464,
+      "hoa_sub_assessment": "Master + Resort Resources fee",
+      "hoa_frequency": "Quarterly",
+      "hoa_manager": "Resort Resources",
+      "description": "39 lots. Architect John Muir master plan. Originally $949K to $1.5M lots when released in 2016.",
+      "image_hint": "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260331043248854169000000-o.jpg",
+      "has_inner_page": false
+    },
+    {
+      "slug": "highlands-ridge",
+      "name": "Highlands Ridge",
+      "type": "Planned community",
+      "hoa_annual_estimate": 4220,
+      "hoa_sub_assessment": "$515 to $863",
+      "hoa_frequency": "Quarterly",
+      "hoa_manager": "Terra Firma Management",
+      "description": "Walkable to amenities. Wider dues range reflects lot variation across the section.",
+      "image_hint": "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260109193315010197000000-o.jpg",
+      "has_inner_page": false
+    },
+    {
+      "slug": "outrider-overlook",
+      "name": "Outrider Overlook",
+      "type": "Planned community",
+      "hoa_annual_estimate": 3536,
+      "hoa_sub_assessment": "$177 to $859",
+      "hoa_frequency": "Quarterly",
+      "hoa_manager": "Terra Firma Management",
+      "description": "Walkable. Variable dues by lot tier.",
+      "image_hint": "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260311192940248814000000-o.jpg",
+      "has_inner_page": false
+    },
+    {
+      "slug": "trailhead",
+      "name": "Trailhead",
+      "type": "Vacation rental + planned",
+      "hoa_annual_estimate": 2160,
+      "hoa_sub_assessment": "$174.00",
+      "hoa_frequency": "Quarterly",
+      "hoa_manager": "Mile High Management",
+      "description": "Cairn Cottages production work. Vacation-rental friendly section.",
+      "image_hint": "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260420202050087023000000-o.jpg",
+      "has_inner_page": false
+    },
+    {
+      "slug": "triple-knot",
+      "name": "Triple Knot",
+      "type": "Townhomes",
+      "hoa_annual_estimate": 8244,
+      "hoa_sub_assessment": "$565.00",
+      "hoa_frequency": "Monthly",
+      "hoa_manager": "Mile High Management",
+      "description": "Highest dues at Tetherow. Townhome density with full-service amenity coverage.",
+      "image_hint": "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260302194730907464000000-o.jpg",
+      "has_inner_page": false
+    },
+    {
+      "slug": "the-rim",
+      "name": "The Rim",
+      "type": "Townhomes",
+      "hoa_annual_estimate": 4200,
+      "hoa_sub_assessment": "$228.00",
+      "hoa_frequency": "Monthly",
+      "hoa_manager": "Mile High Management",
+      "description": "Monthly billing. Townhome footprint. Entry tier to Tetherow ownership.",
+      "image_hint": "https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260515155142642818000000-o.jpg",
+      "has_inner_page": false
+    }
+  ],
+  "hoa_master_assessment_quarterly": 366,
+  "hoa_master_assessment_annual": 1464,
+  "hoa_board": [
+    { "name": "Chris van der Velde", "role": "President · also Tetherow Managing Partner" },
+    { "name": "Christine Cook", "role": "Treasurer" },
+    { "name": "Scott McIntyre", "role": "Secretary" },
+    { "name": "Brendan Leary", "role": "Homeowner Director" },
+    { "name": "Keith Levesque", "role": "Homeowner Director" }
+  ],
+  "amenities": [
+    {
+      "category": "Dining",
+      "name": "Solomon's",
+      "description": "The full-service course-facing restaurant. Opened 2017 in the clubhouse, then refreshed in the 2024 renovation with an intimate dining-room expansion. Cascade-and-fescue dining room with course views.",
+      "access": "Open to public · reservations via Tetherow Resort"
+    },
+    {
+      "category": "Dining",
+      "name": "The Row",
+      "description": "Casual gastropub at the clubhouse. The locals' room. Quick lunches off the course, après-round beer, family-friendly through the afternoon.",
+      "access": "Open to public · walk-in"
+    },
+    {
+      "category": "Dining",
+      "name": "Tetherow Café",
+      "description": "Coffee, breakfast, grab-and-go. Open early. The first stop for a Tetherow morning before the trailhead or first tee.",
+      "access": "Open to public · 7am to 2pm seasonally"
+    },
+    {
+      "category": "Wellness",
+      "name": "Tetherow Spa",
+      "description": "Full treatment menu inside the Lodges. Massage, facial, body services, post-round recovery. Operated under the Tetherow Resort umbrella. Homeowner-member discounts apply.",
+      "access": "Open to public + members"
+    },
+    {
+      "category": "Fitness",
+      "name": "Tetherow Sport",
+      "description": "Fitness center + studio. Cardio, strength, group classes, personal training. Opened 2017 inside the Lodges expansion. Resort-and-member access.",
+      "access": "Members + Lodge guests"
+    },
+    {
+      "category": "Racquet",
+      "name": "Pickleball + tennis courts",
+      "description": "On-property courts. Booking-managed in season. Member-priority access in summer. The courts are the fastest-growing social engine at the resort after the clubhouse itself.",
+      "access": "Members + Lodge guests · seasonal"
+    },
+    {
+      "category": "Winter",
+      "name": "Nordic + snowshoe trails",
+      "description": "Groomed Nordic loops on the course off-season. Tetherow turns into a quiet Nordic destination once the snow line drops. Shevlin Park trail network sits across the road for the lifted-snow weekends.",
+      "access": "Member access · weather dependent"
+    },
+    {
+      "category": "Trails",
+      "name": "Shevlin Park · 660 acres",
+      "description": "City of Bend's largest urban park sits five minutes from the Tetherow gates. 660 acres of pine, Tumalo Creek, and a multi-loop trail system that connects west out into the National Forest land.",
+      "access": "Open to public",
+      "url": "https://www.bendparksandrec.org/park/shevlin-park/"
+    }
+  ],
+  "membership_tiers": [
+    {
+      "label": "Golf",
+      "eyebrow": "Full club",
+      "name": "Golf membership",
+      "description": "Unlimited course access. Tournament eligibility. Member tee-time windows. Locker, range, practice facility. The default for buyers who came to Tetherow for the golf.",
+      "details": [
+        { "label": "Initiation", "value": "Confirmed at office" },
+        { "label": "Monthly dues", "value": "Confirmed at office" },
+        { "label": "Food + bev minimum", "value": "Yes" },
+        { "label": "Trail fees", "value": "Included" }
+      ],
+      "waitlist_status": "Typically waitlisted · ask current status",
+      "featured": true
+    },
+    {
+      "label": "Sport",
+      "eyebrow": "Limited access",
+      "name": "Sport / fitness",
+      "description": "Tetherow Sport access. Pool, spa, fitness studio, group classes. Locker. Member dining privileges at Solomon's and The Row. No golf course access included.",
+      "details": [
+        { "label": "Initiation", "value": "Confirmed at office" },
+        { "label": "Monthly dues", "value": "Confirmed at office" },
+        { "label": "F&B minimum", "value": "Light" },
+        { "label": "Course access", "value": "Pay per round" }
+      ],
+      "waitlist_status": "Generally open · check current cap",
+      "featured": false
+    },
+    {
+      "label": "Social",
+      "eyebrow": "Social",
+      "name": "Social membership",
+      "description": "Clubhouse + dining + spa + event access. Pickleball + tennis privileges (member booking). Course access on a limited number of dates per year. The frequent option for non-golfers who married into Tetherow.",
+      "details": [
+        { "label": "Initiation", "value": "Confirmed at office" },
+        { "label": "Monthly dues", "value": "Confirmed at office" },
+        { "label": "F&B minimum", "value": "Yes" },
+        { "label": "Course rounds / year", "value": "Annual cap applies" }
+      ],
+      "waitlist_status": "Limited cap · variable",
+      "featured": false
+    }
+  ],
+  "membership_office_phone": "844-431-9701",
+  "builders": [
+    {
+      "name": "Hammer & Hand",
+      "role": "Portland · Bend · custom + Passive House",
+      "description": "Pacific Northwest leader on high-performance custom construction. Multiple completed Tetherow homes plus Passive House work across Bend. The builder buyers cite when they want net-zero or all-electric.",
+      "website": "https://hammerandhand.com"
+    },
+    {
+      "name": "Tozer Construction",
+      "role": "Bend · luxury custom + remodel",
+      "description": "Local custom builder with multiple Tetherow Tartan Druim and Heath completions. Known for precision drywall and a clean turnover punch list.",
+      "website": "https://www.tozerconstruction.com"
+    },
+    {
+      "name": "Muddy River Construction",
+      "role": "Bend · custom + design-build",
+      "description": "Design-build operation with Tetherow Highlands Ridge and Outrider Overlook completions. Tight architect partnerships, willing to take on the harder lots.",
+      "website": "https://www.muddyriverconstruction.com"
+    },
+    {
+      "name": "Cascade Custom Homes",
+      "role": "Bend · custom luxury",
+      "description": "Long-running Bend custom shop. Active across multiple Tetherow sub-neighborhoods, particularly Heath and Crescent. Repeat-client business is the tell.",
+      "website": "https://www.cascadecustomhomes.com"
+    },
+    {
+      "name": "SunWest Builders",
+      "role": "Bend · custom + remodel",
+      "description": "Established Central Oregon GC with several Tetherow completions. Strong on schedule-management. Buyers from Portland and Seattle who want a known operator over the duration of a 14-month build.",
+      "website": "https://www.sunwestbuilders.com"
+    },
+    {
+      "name": "The luxury production roster",
+      "role": "Pahlisch · Brooks · Stone Bridge",
+      "description": "The semi-custom builders that put up the Triple Knot townhomes, Trailhead Cairn Cottages, and earlier Crescent / Glen lots. Knowing which production builder built which sub-neighborhood is the kind of detail a buyer asks five seconds into the showing.",
+      "website": null
+    }
+  ],
+  "signature_hole": {
+    "number": 13,
+    "par": 3,
+    "yardage": 175,
+    "elevation_drop_ft": 45,
+    "description": "Most Tetherow rounds peak at the par-3 13th. A short-iron downhill across native scrub, Cascade horizon on the back wall, no bailout left. Kidd's tribute to a North-Berwick original. It's the hole that ends up on the wall in the clubhouse. It's the hole new members want to play first. And it's the one Tetherow homeowners talk about at dinner."
+  },
+  "course_specs": {
+    "par": 72,
+    "yardage": 7298,
+    "rating": 74.8,
+    "slope": 144,
+    "tees": "Kidd tees",
+    "turf": "Fescue blend (Chewings + Creeping Red) with Colonial Bentgrass",
+    "bunker_sand_source": "Florence, Oregon",
+    "season": "April 1 to November 1",
+    "summary": "Designed by David McLay Kidd. Opened 2008. Fescue blend (Chewings + Creeping Red) with Colonial Bentgrass. Bunker sand sourced from Florence, Oregon. Operating season generally April 1 to November 1."
+  },
+  "course_rankings": [
+    {
+      "rank": "#57",
+      "publication": "Golf Digest America's 100 Greatest Public Courses",
+      "description": "2023-24 ranking · up 25 spots from prior list (largest jump on the list)"
+    },
+    {
+      "rank": "#1",
+      "publication": "Conde Nast Traveler · PNW & Alaska Resort",
+      "description": "2023 Readers' Choice Awards. Returned to #1 in 2025 for the 8th consecutive year"
+    },
+    {
+      "rank": "#10",
+      "publication": "Best courses in Oregon",
+      "description": "Up from #14 prior ranking · Golf Digest state list"
+    },
+    {
+      "rank": "2008",
+      "publication": "Best New Course You Can Play (national)",
+      "description": "Golf Magazine · year Tetherow opened · McLay Kidd named Architect of the Year"
+    }
+  ],
+  "drive_times": [
+    {
+      "minutes": 7,
+      "destination": "Old Mill District",
+      "note": "Downtown Bend · dining + Deschutes riverfront"
+    },
+    {
+      "minutes": 25,
+      "destination": "Mt. Bachelor",
+      "note": "Lift-served skiing + summer alpine access"
+    },
+    {
+      "minutes": 35,
+      "destination": "Redmond (RDM)",
+      "note": "Commercial airport · daily PDX/SEA/SFO/DEN"
+    },
+    {
+      "minutes": 10,
+      "destination": "Shevlin Park",
+      "note": "660 acres · adjoining trail network"
+    }
+  ],
+  "build_timeline": [
+    { "year": 2004, "label": "Planning begins as \"Cascade Highlands\"" },
+    { "year": 2005, "label": "Rebrand to \"Tetherow\" after pioneer Solomon Tetherow" },
+    { "year": 2008, "label": "Golf course + clubhouse open" },
+    { "year": 2009, "label": "Tetherow Grill opens · van der Velde + Willemstein acquire" },
+    { "year": 2014, "label": "Tetherow Lodges (hotel, 50 rooms) opens" },
+    { "year": 2016, "label": "Event Pavilion + vacation rental program launch" },
+    { "year": 2017, "label": "Tetherow Sport (fitness) + Solomon's restaurant open" },
+    { "year": 2024, "label": "$3M clubhouse renovation · ownership announces hotel sale process" }
+  ],
+  "happenings": [
+    {
+      "date": "2025 · CONDE NAST 8TH CONSECUTIVE YEAR",
+      "headline": "Tetherow Resort returns to #1 PNW Resort in Conde Nast Readers' Choice for the 8th consecutive year.",
+      "body": "Most resort communities in Central Oregon do not have this kind of brand decade in their pocket. It is the single strongest data point for a Tetherow seller pitching a national buyer. A Conde Nast top-resort plaque travels in places \"Top 100 home builders in Oregon\" does not.",
+      "sources": [
+        { "label": "Source Weekly", "url": "https://www.bendsource.com/business/conde-nast-names-tetherow-resort-the-no-1-resort-in-the-pnw-19970660/" },
+        { "label": "Tetherow Resort blog", "url": "https://tetherow.com/blog/" }
+      ]
+    },
+    {
+      "date": "JULY 2025 · RESOLVED",
+      "headline": "Cram Fire smoke at 64,000+ acres.",
+      "body": "Bend logged 14 days of \"unhealthy for sensitive groups or worse\" air in 2024, with smoke from regional wildfires returning hard in summer 2025 via the Cram Fire. No reporting indicates Tetherow itself was directly threatened, but smoke is a real factor in resort-season programming and an honest disclosure for any out-of-state buyer doing their first-summer due diligence. Worth knowing when you list: buyers will ask. We have a clean answer.",
+      "sources": [
+        { "label": "Bend Bulletin · 2024 air quality", "url": "https://bendbulletin.com/2024/11/19/bend-endured-two-weeks-of-unhealthy-air-in-2024/" },
+        { "label": "Bend Bulletin · Cram Fire 2025", "url": "https://bendbulletin.com/2025/07/16/cram-fire-explodes-to-over-64000-acres-inundates-bend-with-smoke/" }
+      ]
+    },
+    {
+      "date": "JANUARY 2024 · STILL ONGOING (16+ MONTHS)",
+      "headline": "Ownership selling the hotel + F&B + vacation rentals. Keeping the golf club.",
+      "body": "Chris van der Velde and his partners announced intent to sell the Tetherow Lodges, Event Pavilion, all restaurants (Solomon's, The Row, Tetherow Café), and Tetherow Management LLC (the vacation rental property management arm) through JLL Capital Markets. The golf club and all recreational facilities are NOT for sale. Public statements signal proceeds will be reinvested into golf-club amenity expansion. As of today, no public reporting confirms a buyer or closed sale. We're watching it.",
+      "sources": [
+        { "label": "Source Weekly", "url": "https://www.bendsource.com/business/tetherow-resort-owners-announce-intention-to-sell-hotel-food-beverage-operations-and-vacation-rentals-property-management-company-20526506" },
+        { "label": "Bend Bulletin", "url": "https://bendbulletin.com/2024/01/19/owners-selling-part-of-tetherow-resort-but-will-retain-golf-course/" },
+        { "label": "KTVZ", "url": "https://ktvz.com/news/business/2024/01/17/tetherow-resort-puts-its-hotel-food-golf-club-not-for-sale-at-this-time/" }
+      ]
+    },
+    {
+      "date": "SPRING 2024 · COMPLETED",
+      "headline": "$3M clubhouse renovation finished ahead of the 16th golf season.",
+      "body": "New members' area. Intimate dining room at Solomon's. Refreshed golf shop. New outdoor patio overlooking the course. Project managed via Tetherow's Troon operating partnership. Ownership spending on the club asset. The kind of capital reinvestment that anchors property values.",
+      "sources": [
+        { "label": "Troon press release", "url": "https://troon.com/press-releases/tetherow-better-than-ever-as-it-tees-off-its-16th-golf-season" }
+      ]
+    }
+  ],
+  "pipeline": [
+    {
+      "status": "tracking",
+      "headline": "The hotel + F&B sale (JLL listing, ongoing 16 months)",
+      "body": "No public confirmation of a closed buyer as of May 2026. A new operator could trigger a brand refresh, rate-card change, F&B rebrand, or expansion application. Any of which would move the Tetherow comp set.",
+      "source_label": "Source Weekly",
+      "source_url": "https://www.bendsource.com/business/tetherow-resort-owners-announce-intention-to-sell-hotel-food-beverage-operations-and-vacation-rentals-property-management-company-20526506"
+    },
+    {
+      "status": "watching",
+      "headline": "Club amenity reinvestment plan",
+      "body": "Ownership has publicly said proceeds from the hotel/F&B sale will be reinvested into golf-club amenities. The 2024 $3M clubhouse renovation already raised the bar. What gets built next will affect what Tetherow homes can ask.",
+      "source_label": "Troon press release",
+      "source_url": "https://troon.com/press-releases/tetherow-better-than-ever-as-it-tees-off-its-16th-golf-season"
+    },
+    {
+      "status": "tracking",
+      "headline": "Bend CityView planning portal · Tetherow parcels",
+      "body": "Active building permit pulls and any pending master-plan amendment applications.",
+      "source_label": "Bend CityView Planning Locator",
+      "source_url": "https://cityview.ci.bend.or.us/Portal/Planning/Locator"
+    },
+    {
+      "status": "completed",
+      "headline": "$3M clubhouse renovation finished (Spring 2024)",
+      "body": "New members' area, intimate Solomon's dining room, refreshed golf shop, course-facing outdoor patio.",
+      "source_label": null,
+      "source_url": null
+    }
+  ],
+  "broker_block": {
+    "name": "Matt Ryan",
+    "role_long": "Owner & Principal Broker · Ryan Realty LLC\nResidential · Luxury Homes · Relocation",
+    "license_text": "Oregon Principal Broker · License #201206613",
+    "phone": "541.213.6706",
+    "phone_tel": "+15412136706",
+    "email": "matt@ryan-realty.com",
+    "office": "115 NW Oregon Avenue, Bend",
+    "headshot": "/images/brokers/ryan-matt.png",
+    "headline": "Specificity, sourced.",
+    "lead": "Your home is a David McLay Kidd home, in his hometown community, on a fescue course that jumped 25 spots on the Golf Digest list, in a master plan whose owner is recapitalizing the club asset. Every line of that matters when a buyer is evaluating $1.8M to $4M.",
+    "intro": "What goes into the listing:",
+    "bullets": [
+      "A value estimate built on actual Tetherow sales and how list prices have held up in your sub-neighborhood, not citywide comparables.",
+      "Copy written to the Tetherow buyer profile: the 7-minute drive to Old Mill, the McLay Kidd hometown angle, the Conde Nast pedigree, the club reinvestment story.",
+      "HOA disclosure-pack diligence: reserve study summary, pending special assessments, the right CC&R sub-section references for your sub-neighborhood.",
+      "Staging keyed to your sub-neighborhood's architectural pattern. Tartan Druim's John Muir plans don't show the same as Triple Knot's townhome footprint.",
+      "A fresh aerial pass over your home, your view corridor, your golf approach. No recycled stock drone footage."
+    ]
+  },
+  "meta": {
+    "title": "Tetherow Resort, Bend Oregon · Homes for Sale + Live Market Data | Ryan Realty",
+    "description": "27 Tetherow homes closed at a median $1,848,500 in the past 12 months. 15 active right now from $759K to $4M. Sub-neighborhood dues, course rankings, membership tiers, builder roster, and a free value report from a Bend principal broker.",
+    "canonical": "https://ryan-realty.com/lp/tetherow/",
+    "campaign_source": "lp-tetherow-v1",
+    "campaign_medium": "landing-page",
+    "campaign_name": "tetherow-resort-seller-funnel"
+  },
+  "hero": {
+    "eyebrow": "Tetherow Resort + Golf Club · Bend, Oregon",
+    "h1_lead": "The Tetherow market,",
+    "sub": "27 homes traded last year at a median $1,848,500. 15 active right now from $1.7M to $4M. 26-day median market velocity. McLay Kidd country, west Bend, inside the 700-acre master plan.",
+    "stats": [
+      { "value": "27", "label": "Sold past 12 months" },
+      { "value": "$1.85M", "label": "Median close (12mo)" },
+      { "value": "26", "label": "Median days on market" },
+      { "value": "94.2%", "label": "Sale-to-list ratio" }
+    ]
+  },
+  "about_prose": [
+    "Tetherow is a 700-acre master-planned resort community on the west side of Bend, Oregon, anchored by a David McLay Kidd-designed Scottish-links golf course that opened in 2008. Nine sub-neighborhoods sit inside the master plan, ranging from $759,000 townhomes in The Rim to $4M custom homes in Tartan Druim.",
+    "The community spans about 700 acres of high-desert pine and fescue, seven minutes from the Old Mill District, 25 from Mt. Bachelor, and 35 from Redmond Municipal Airport. Tetherow Resort runs the on-property Lodges hotel, a 12,000-square-foot clubhouse renovated in 2024, three restaurants (Solomon's, The Row, Tetherow Café), a spa, Tetherow Sport fitness center, pickleball + tennis courts, and groomed Nordic loops in winter. Shevlin Park's 660-acre trail network sits across the road.",
+    "The golf course made its largest competitive jump in the 2023-24 Golf Digest 100 Greatest Public ranking, climbing 25 spots to #57, the biggest leap on the list. Tetherow Resort has held the #1 PNW Resort spot in Conde Nast Traveler Readers' Choice for eight consecutive years through 2025.",
+    "Twenty-seven homes traded inside the master plan in the past 12 months at a median close price of $1,848,500 and a 26-day median market velocity. Sale-to-list ratio averages 94.2%. Active inventory today: 15 homes from $759K to $4M. The Tetherow homeowner profile skews to second-home and primary buyers from Portland, the Bay Area, and Seattle, with a meaningful contingent of Bend-locals upgrading inside the master plan.",
+    "The HOA structure layers a master assessment ($1,464 / year) against sub-neighborhood dues that range from $2,004 in Crescent / North Forty to $8,244 in Triple Knot. Club membership (golf / sport / social tiers) is separate from HOA dues and not transferred automatically with the home. Diligence on the transfer terms is the single most important item on a Tetherow purchase."
+  ],
+  "kidd_angle": {
+    "eyebrow": "The architect",
+    "headline": "Your course designer lives in Bend.",
+    "body": [
+      "David McLay Kidd, the architect who put Bandon Dunes on the world map, designed Tetherow as a Scottish-links transplant into Oregon's High Desert. He could have phoned it in from his studio in Scotland. He didn't. He lives in Bend, and Tetherow is one of his hometown projects.",
+      "Buyers paying $1.8M to $4M for a Tetherow home are not looking for \"lovely golf community with mountain views.\" They want context. They want to know who designed the course they're going to play, why the fescue plays firm-and-fast, and why the bunker sand came from Florence, Oregon."
+    ],
+    "quote": "As close as you could get to a Scottish links experience, I think this is it.",
+    "quote_attr": "David McLay Kidd, on Tetherow"
+  },
+  "footer_resort_pages": [
+    { "name": "Tetherow", "current": true },
+    { "name": "Broken Top (coming)", "current": false },
+    { "name": "Pronghorn / Juniper Preserve (coming)", "current": false },
+    { "name": "Sunriver + Crosswater (coming)", "current": false },
+    { "name": "Caldera Springs (coming)", "current": false }
+  ]
+}
