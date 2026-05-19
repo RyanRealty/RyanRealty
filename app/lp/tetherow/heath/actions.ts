@@ -98,7 +98,6 @@ export async function submitHeathCmaForm(
     emails: [{ value: input.email.trim() }],
     phones: input.phone ? [{ value: input.phone.trim() }] : undefined,
     tags,
-    source: 'ryan-realty.com',
   }
 
   try {
