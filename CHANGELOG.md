@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.241.0 (2026-05-19)
+
+### Features
+- feat(producers): wave 7 — 3 orchestrators + 8 existing-asset wrappers (65/65 green)
+- feat(site-city-page): /lp/bend/ — first city-level exemplar
+
+---
+
+
 ## v1.240.2 (2026-05-19)
 
 ### Maintenance
