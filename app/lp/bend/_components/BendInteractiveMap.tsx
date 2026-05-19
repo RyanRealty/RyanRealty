@@ -13,7 +13,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import mapboxgl, { type Map as MapboxMap, type GeoJSONSource } from 'mapbox-gl'
+import mapboxgl, { type Map as MapboxMap } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
 export type CommunityPolygon = {
@@ -64,8 +64,11 @@ export function BendInteractiveMap({
       style: 'mapbox://styles/mapbox/light-v11',
       center: [initialCenter.lng, initialCenter.lat],
       zoom: initialZoom,
-      attributionControl: { compact: true },
+      attributionControl: false,
     })
+    // Mapbox GL 3.x requires the compact AttributionControl to be added
+    // separately. Constructor's attributionControl: option is now boolean.
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }))
 
     mapRef.current = map
 
