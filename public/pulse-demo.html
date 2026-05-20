@@ -718,15 +718,39 @@
 
 <script>
 /* ---------------------------------------------------------------- *
+ *  All outbound CTAs route to the live ryan-realty.com WordPress site
+ *  for now (the AgentFire-hosted production property). When the
+ *  Next.js app cuts over to the same domain, flip BRAND_BASE_URL to
+ *  an empty string and all paths become relative again.
+ *
+ *  Path conventions on the live site (verified 2026-05-20):
+ *    /listing/odsmls/<MLS#>/<City>/<Street-Address>/  — listing detail
+ *    /featured-listings/                              — listings index
+ *    /free-home-valuation/                            — valuation form
+ *    /contact/                                        — universal showing-request funnel
+ *    /<blog-slug>/                                    — blog posts live at root
+ *    /sellers/                                        — market context for sellers
+ *    /buyers/                                         — market context for buyers
+ * ---------------------------------------------------------------- */
+const BRAND_BASE_URL = 'https://ryan-realty.com';
+
+/* ---------------------------------------------------------------- *
  *  Fixtures — 8 REAL Central Oregon listings with REAL embeddable
  *  property tour URLs (verified against Supabase listings table
  *  2026-05-19, ListingKey shown below). Six tours, two photo-only.
  *  Mix of Cloudflare Stream, YouTube, Vimeo, Aryeo, Riley Visuals.
+ *
+ *  `listNumber` is the short MLS# the live ryan-realty.com WordPress
+ *  site uses for its /listing/odsmls/<ListNumber>/<City>/<Address>/
+ *  URL pattern. `addressUrlSlug` is the human-readable slug segment
+ *  required at the end of that URL.
  * ---------------------------------------------------------------- */
 const FIXTURES = [
   {
     // ListingKey: 20260420223544241921000000
     id: 'rr-mcdaniel',
+    listNumber: '220219732',
+    addressUrlSlug: '1299-NW-McDaniel-Rd',
     eventType: 'new_listing',
     price: 13250000,
     bd: 6, ba: 5, sqft: 9129,
@@ -739,6 +763,8 @@ const FIXTURES = [
   {
     // ListingKey: 20250715233741474954000000
     id: 'rr-swalley',
+    listNumber: '220207865',
+    addressUrlSlug: '65255-Swalley-Rd',
     eventType: 'new_listing',
     price: 11900000,
     bd: 3, ba: 3, sqft: 2268,
@@ -751,6 +777,8 @@ const FIXTURES = [
   {
     // ListingKey: 20260408183243260637000000
     id: 'rr-macalpine',
+    listNumber: '220219311',
+    addressUrlSlug: '19100-Macalpine-Lp',
     eventType: 'new_listing',
     price: 8750000,
     bd: 5, ba: 8, sqft: 9971,
@@ -765,6 +793,8 @@ const FIXTURES = [
     // Real listing: $1.475M Coyner. Demo uses synthetic "previous price"
     // for the price-drop UX — actual MLS data would carry the delta.
     id: 'rr-coyner',
+    listNumber: '220210025',
+    addressUrlSlug: '10135-Coyner-Ave',
     eventType: 'price_drop',
     price: 1475000,
     previousPrice: 1535000,
@@ -778,6 +808,8 @@ const FIXTURES = [
   {
     // ListingKey: 20260506175538146897000000
     id: 'rr-shawnee',
+    listNumber: '220220803',
+    addressUrlSlug: '17045-Shawnee-Ct',
     eventType: 'new_listing',
     price: 1495000,
     bd: 3, ba: 4, sqft: 4038,
@@ -790,6 +822,8 @@ const FIXTURES = [
   {
     // ListingKey: 20260303013003194152000000
     id: 'rr-waymaker',
+    listNumber: '220216548',
+    addressUrlSlug: '2643-NW-Waymaker-Way',
     eventType: 'status_pending',
     price: 1499900,
     bd: 4, ba: 4, sqft: 2739,
@@ -802,6 +836,8 @@ const FIXTURES = [
   {
     // ListingKey: 20260512174935451354000000
     id: 'rr-crossing',
+    listNumber: '220221404',
+    addressUrlSlug: '2563-NW-Crossing-Dr',
     eventType: 'new_listing',
     price: 1475000,
     bd: 3, ba: 4, sqft: 2943,
@@ -815,6 +851,8 @@ const FIXTURES = [
     // ListingKey: 20260429153923969646000000
     // Closed 2026-05-19 — actually sold OVER asking, $38K more than list
     id: 'rr-knoll',
+    listNumber: '220220479',
+    addressUrlSlug: '1961-NW-Knoll-Ave',
     eventType: 'status_closed',
     price: 1097000,
     closePrice: 1135000,
@@ -826,6 +864,13 @@ const FIXTURES = [
     videos: []
   }
 ];
+
+/* Build a real ryan-realty.com listing detail URL from a fixture. */
+function listingDetailUrl(f) {
+  if (!f.listNumber) return BRAND_BASE_URL + '/featured-listings/';
+  const citySlug = (f.city || '').replace(/\s+/g, '-');
+  return BRAND_BASE_URL + '/listing/odsmls/' + f.listNumber + '/' + citySlug + '/' + f.addressUrlSlug + '/';
+}
 
 /* ---------------------------------------------------------------- *
  *  Video resolver — same provider cascade as the production
@@ -1083,14 +1128,16 @@ function renderCard(f) {
     f.sqft ? f.sqft.toLocaleString() + ' sqft' : null
   ].filter(Boolean).join(' · ');
 
-  // CTA — matches components/lp/ListingCard.tsx (locked 2026-05-19).
-  // Sold homes can't be toured, so flip to "see similar homes" which
-  // anchor-jumps into ShowcaseSimilar on the sold listing's detail page
-  // (id="similar" added to the section so #similar lands on the carousel).
-  const slug = f.listNumber || f.id;
+  // CTA — routes to the live ryan-realty.com WordPress site (locked
+  // 2026-05-20). Active/pending/price-drop → the listing detail page
+  // (which has the schedule-a-showing form). Sold → /featured-listings/
+  // since the legacy site doesn't have a "similar homes to this sold
+  // home" route. When the Next.js app cuts over to ryan-realty.com,
+  // flip BRAND_BASE_URL='' and these become relative paths to /pulse,
+  // /listings/, /home-valuation, etc. on the new app.
   const isSold = f.eventType === 'status_closed';
-  const ctaHref  = isSold ? '/listings/' + encodeURIComponent(slug) + '#similar'
-                          : '/lp/listings/' + encodeURIComponent(slug) + '/#schedule';
+  const ctaHref  = isSold ? BRAND_BASE_URL + '/featured-listings/'
+                          : listingDetailUrl(f);
   const ctaLabel = isSold ? 'See similar homes' : 'Schedule a showing';
   const ctaClass = isSold ? 'cta cta-secondary' : 'cta';
   const ctaHtml  = '<a class="' + ctaClass + '" href="' + ctaHref + '">'
@@ -1275,7 +1322,7 @@ const BRAND_FIXTURES = [
     headline: 'What is your home worth today?',
     sub: 'Free instant valuation backed by recent comparable sales in your neighborhood. Add a written one-page breakdown if you want one.',
     ctaLabel: 'Get my valuation',
-    ctaHref: '/home-valuation'
+    ctaHref: BRAND_BASE_URL + '/free-home-valuation/'
   }
 ];
 
@@ -1292,7 +1339,9 @@ const SNAPSHOT_FIXTURE = {
   monthsOfSupply: 4.9,
   verdict: 'Balanced. Buyers and sellers have leverage on different sides of the table.',
   ctaLabel: 'See the full dashboard',
-  ctaHref: '/housing-market'
+  // /sellers/ on the live site has the closest market-context page;
+  // when the Next.js /housing-market page goes live, swap this.
+  ctaHref: BRAND_BASE_URL + '/sellers/'
 };
 
 const REPORT_FIXTURE = {
@@ -1302,7 +1351,7 @@ const REPORT_FIXTURE = {
   deck: '506 active homes. 68 new this week. Median time to pending: 11 days. The 60-second read on what changed.',
   videoUrl: '/v5_library/bend_market_report_ytd2026.mp4',
   ctaLabel: 'Watch the full report',
-  ctaHref: '/housing-market'
+  ctaHref: BRAND_BASE_URL + '/sellers/'
 };
 
 function renderLifestyleCard(item) {
@@ -1329,9 +1378,12 @@ function renderLifestyleCard(item) {
   card.appendChild(actions);
   const block = document.createElement('div');
   block.className = 'lifestyle-block';
+  // Blog posts on the live ryan-realty.com WordPress site live at the
+  // root (e.g. /brasada-ranch-central-oregon/), not under /blog/<slug>/.
+  // The /blog/ path lists posts; individual posts are at root.
   block.innerHTML = '<p class="lifestyle-title">' + item.title + '</p>'
     + '<p class="lifestyle-excerpt">' + item.excerpt + '</p>'
-    + '<a class="cta" href="/blog/' + encodeURIComponent(item.slug) + '"><span>Read the story</span><span class="arrow" aria-hidden="true">→</span></a>';
+    + '<a class="cta" href="' + BRAND_BASE_URL + '/' + encodeURIComponent(item.slug) + '/"><span>Read the story</span><span class="arrow" aria-hidden="true">→</span></a>';
   card.appendChild(block);
   return card;
 }
