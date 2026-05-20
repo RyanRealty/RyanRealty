@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.250.0 (2026-05-20)
+
+### Features
+- feat(skills): make caption + safe-zone + voice + design-recon rules globally enforced; migrate 6 legacy caption components
+
+### Maintenance
+- refactor(voice): migrate 14 Python producers + synth-vo-long.mjs to _voice_lib
+
+---
+
+
 ## v1.249.0 (2026-05-20)
 
 ### Features
