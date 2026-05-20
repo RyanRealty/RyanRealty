@@ -249,6 +249,114 @@ The current market health score for Bend is ${market.market_health_score.toFixed
   const wordCount = blog.split(/\s+/).length
   console.log(`  Word count: ${wordCount} (target 1200-1800)`)
 
+  // ---------------------------------------------------------------------------
+  // preview.html — rendered blog layout for Matt's visual review
+  // ---------------------------------------------------------------------------
+  function mdToHtml(md) {
+    // Strip YAML frontmatter
+    const body = md.replace(/^---[\s\S]*?---\n/, '')
+    const lines = body.split('\n')
+    const out = []
+    for (const line of lines) {
+      if (line.startsWith('### ')) { out.push(`<h3>${line.slice(4)}</h3>`); continue }
+      if (line.startsWith('## ')) { out.push(`<h2>${line.slice(3)}</h2>`); continue }
+      if (line.startsWith('# ')) { out.push(`<h1>${line.slice(2)}</h1>`); continue }
+      if (line.startsWith('| ')) { out.push(`<div class="table-row"><code>${line}</code></div>`); continue }
+      if (line.startsWith('|---')) { continue }
+      if (line.startsWith('---')) { out.push('<hr>'); continue }
+      if (line.startsWith('```')) { continue } // skip code fences
+      if (line.trim() === '') { out.push('<br>'); continue }
+      // Bold + paragraph
+      out.push(`<p>${line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>')}</p>`)
+    }
+    return out.join('\n')
+  }
+
+  // Relative path helper from outDir back to repo root assets
+  function relFromOut(assetPath) {
+    const outParts = outDir.split('/')
+    const rootParts = ROOT.split('/')
+    let i = 0
+    while (i < outParts.length && outParts[i] === rootParts[i]) i++
+    const ups = outParts.slice(i).map(() => '..')
+    const downs = rootParts.slice(i)
+    return [...ups, ...downs, assetPath].join('/').replace(/\\/g, '/')
+  }
+
+  const heroSrc = payload.brand_assets?.hero_photo_path || payload.listing?.primary_photo_path || ''
+  const logoSrc = relFromOut(payload.brand_assets?.logo_blue_path || 'design_system/ryan-realty/assets/brand/logo-blue.png')
+  const amboqiaSrc = relFromOut('design_system/ryan-realty/fonts/Amboqia_Boriango.otf')
+  const readingMinutes = Math.max(1, Math.round(wordCount / 200))
+
+  const previewHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bend Oregon real estate market: ${periodLabel} — Preview</title>
+<style>
+  @font-face {
+    font-family: 'Amboqia';
+    src: url('${amboqiaSrc}') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #faf8f4; font-family: 'Geist','Inter',system-ui,sans-serif; color: #1a1a1a; line-height: 1.65; }
+  .page { max-width: 720px; margin: 48px auto 80px; padding: 0 24px; }
+  .hero-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; margin-bottom: 32px; display: block; }
+  .hero-placeholder { width: 100%; aspect-ratio: 16/9; background: #e8e2d4; border-radius: 8px; margin-bottom: 32px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 14px; }
+  .meta { display: flex; align-items: center; gap: 12px; font-size: 13px; color: #555; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(16,39,66,0.12); flex-wrap: wrap; }
+  .meta .sep { color: #ccc; }
+  .category-pill { background: rgba(16,39,66,0.08); color: #102742; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; }
+  h1 { font-family: 'Amboqia', serif; font-size: 36px; font-weight: 400; color: #102742; line-height: 1.2; letter-spacing: -0.01em; margin-bottom: 20px; }
+  h2 { font-family: 'Amboqia', serif; font-size: 22px; font-weight: 400; color: #102742; margin-top: 40px; margin-bottom: 12px; }
+  h3 { font-size: 16px; font-weight: 600; color: #102742; margin-top: 28px; margin-bottom: 8px; }
+  p { font-size: 16px; margin-bottom: 16px; color: #222; }
+  hr { border: none; border-top: 1px solid rgba(16,39,66,0.15); margin: 32px 0; }
+  strong { font-weight: 600; color: #102742; }
+  br { display: block; height: 4px; }
+  .table-row { background: rgba(16,39,66,0.04); border-left: 3px solid #102742; padding: 4px 10px; margin-bottom: 2px; font-family: monospace; font-size: 13px; overflow-x: auto; white-space: pre; }
+  .data-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 2px solid #102742; display: flex; align-items: center; gap: 16px; }
+  .footer img.logo { height: 36px; }
+  .footer-text { font-size: 13px; color: #555; }
+  .footer-text a { color: #102742; text-decoration: none; font-weight: 600; }
+  .preview-badge { position: fixed; top: 12px; right: 12px; background: #102742; color: #faf8f4; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; opacity: 0.85; z-index: 999; }
+</style>
+</head>
+<body>
+<div class="preview-badge">Preview</div>
+<div class="page">
+  ${heroSrc
+    ? `<img class="hero-img" src="${relFromOut(heroSrc)}" alt="Bend market report hero" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="hero-placeholder" style="display:none">Hero photo not found: ${heroSrc}</div>`
+    : `<div class="hero-placeholder">No hero photo in payload</div>`
+  }
+
+  <div class="meta">
+    <span class="category-pill">Market report</span>
+    <span class="sep">·</span>
+    <span>Published ${market.period_end}</span>
+    <span class="sep">·</span>
+    <span>${broker.name} · ${broker.role}</span>
+    <span class="sep">·</span>
+    <span>${readingMinutes} min read · ${wordCount} words</span>
+  </div>
+
+  ${mdToHtml(blog)}
+
+  <div class="footer">
+    <img class="logo" src="${logoSrc}" alt="Ryan Realty" onerror="this.style.display='none'">
+    <div class="footer-text">
+      <strong>Ryan Realty</strong> · <a href="tel:5412136706">${broker.phone_brand}</a> · <a href="https://ryan-realty.com">ryan-realty.com</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>`
+
+  await write(outDir, 'preview.html', previewHtml)
+
   const citations = {
     figures: [
       { figure: 'median_sale_price', source: 'Supabase market_stats_cache', query: market.trace, value: market.median_sale_price_display, fetched_at: market.period_end },
@@ -289,7 +397,7 @@ The current market health score for Bend is ${market.market_health_score.toFixed
   const card = {
     producer: PRODUCER,
     primary_artifact: join(outDir, 'market-report-blog.md'),
-    notes: `${periodLabel} market report blog post. ${wordCount} words. Score ${scorecard.score_pct}%.`,
+    notes: `market-report-blog.md · preview.html · ${wordCount} words · score ${scorecard.score_pct}% · ${citations.figures.length} verification sidecars`,
     data_traces: [market.trace],
     generated_at: now
   }

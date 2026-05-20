@@ -228,6 +228,115 @@ All data from Supabase market_stats_cache, methodology ${market.methodology_vers
 
   await write(outDir, 'google-ads-copy.md', md)
 
+  // ---------------------------------------------------------------------------
+  // preview.html — Google SERP card mock-up
+  // ---------------------------------------------------------------------------
+  // Display title: H1 | H2 | H3 (first three headlines joined, truncated at ~600px)
+  const adTitle = finalHeadlines.slice(0, 3).join(' | ')
+  const adDesc1 = descriptions[0] || ''
+  const adDesc2 = descriptions[1] || ''
+  const serpHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Ads SERP Preview — ryan-realty.com</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f9f9f9; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; padding: 32px 24px; color: #1a1a1a; }
+  h1.page-title { font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 20px; }
+  .serp-context { max-width: 652px; }
+  /* Fake SERP search bar for context */
+  .fake-search { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #dfe1e5; border-radius: 24px; padding: 8px 16px; margin-bottom: 16px; width: 100%; max-width: 580px; box-shadow: 0 1px 6px rgba(0,0,0,0.1); }
+  .fake-search span { color: #9aa0a6; font-size: 14px; }
+  .fake-search .icon { font-size: 18px; }
+  /* Ad card */
+  .ad-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px 20px 20px;
+    max-width: 600px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06);
+  }
+  /* Top row: Ad label + domain */
+  .ad-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .ad-label { display: inline-block; font-size: 11px; font-weight: 600; color: #3c4043; border: 1px solid #888; border-radius: 3px; padding: 1px 5px; letter-spacing: 0.03em; }
+  .ad-domain { font-size: 14px; color: #3c4043; }
+  .ad-domain .green { color: #188038; font-weight: 500; }
+  /* Ad title */
+  .ad-title {
+    font-size: 20px;
+    font-weight: 400;
+    color: #1a0dab;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 580px;
+  }
+  .ad-title:hover { text-decoration: underline; }
+  /* Ad descriptions */
+  .ad-desc { font-size: 14px; color: #3c4043; line-height: 1.5; margin-bottom: 2px; }
+  /* Sitelinks */
+  .sitelinks { display: flex; flex-wrap: wrap; gap: 0; margin-top: 12px; padding-top: 12px; border-top: 1px solid #ebebeb; }
+  .sitelink { flex: 0 0 48%; padding: 6px 0; }
+  .sitelink a { font-size: 14px; color: #1a0dab; text-decoration: none; display: block; }
+  .sitelink a:hover { text-decoration: underline; }
+  .sitelink .sl-desc { font-size: 12px; color: #3c4043; margin-top: 2px; }
+  /* Label below card */
+  .note { max-width: 600px; margin-top: 12px; font-size: 12px; color: #888; }
+  /* All headlines panel */
+  .all-headlines { margin-top: 32px; max-width: 600px; }
+  .all-headlines h2 { font-size: 13px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .headline-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .headline-chip { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; padding: 6px 10px; font-size: 13px; color: #1a0dab; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .headline-chip .len { font-size: 10px; color: #aaa; margin-left: 4px; }
+  .preview-badge { position: fixed; top: 12px; right: 12px; background: #1a1a1a; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; opacity: 0.7; }
+</style>
+</head>
+<body>
+<div class="preview-badge">SERP Preview</div>
+<p class="page-title">Google Ads · SERP Card Mock-up</p>
+<div class="serp-context">
+  <div class="fake-search">
+    <span class="icon">&#128269;</span>
+    <span>bend oregon homes for sale</span>
+  </div>
+
+  <div class="ad-card">
+    <div class="ad-top">
+      <span class="ad-label">Sponsored</span>
+      <span class="ad-domain"><span class="green">ryan-realty.com</span></span>
+    </div>
+    <div class="ad-title" title="${adTitle}">${adTitle}</div>
+    <div class="ad-desc">${adDesc1}</div>
+    ${adDesc2 ? `<div class="ad-desc">${adDesc2}</div>` : ''}
+    <div class="sitelinks">
+      ${sitelinks.map(sl => `
+      <div class="sitelink">
+        <a href="${sl.url}">${sl.text}</a>
+        <div class="sl-desc">${sl.description}</div>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <p class="note">Title uses H01 | H02 | H03. Google selects from 15 headlines at serve time. Description shown is D1 + D2.</p>
+</div>
+
+<div class="all-headlines">
+  <h2>All 15 headlines</h2>
+  <div class="headline-grid">
+    ${finalHeadlines.map((h, i) => `<div class="headline-chip">H${String(i+1).padStart(2,'0')}: ${h}<span class="len">${h.length}/30</span></div>`).join('\n    ')}
+  </div>
+</div>
+
+</body>
+</html>`
+
+  await write(outDir, 'preview.html', serpHtml)
+
   // Sidecars
   const citations = {
     figures: [
@@ -267,7 +376,7 @@ All data from Supabase market_stats_cache, methodology ${market.methodology_vers
   const card = {
     producer: PRODUCER,
     primary_artifact: join(outDir, 'google-ads-copy.md'),
-    notes: `Google Ads copy suite: 15 headlines, 4 descriptions, 4 sitelinks. Score ${scorecard.score_pct}%.`,
+    notes: `google-ads-copy.md · preview.html (SERP card) · 15 headlines · 4 descriptions · 4 sitelinks · score ${scorecard.score_pct}%`,
     data_traces: [market.trace],
     generated_at: now
   }

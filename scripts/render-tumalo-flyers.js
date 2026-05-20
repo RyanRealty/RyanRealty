@@ -129,6 +129,14 @@ function F1_MuseumWall(assets, photos) {
       padding: 12px 20px; border-radius: 4px;
     }
     .logo-badge img { width: 180px; display: block; }
+    /* Top-left brand attribution — logo-blue on semi-transparent cream pill */
+    .logo-top-left {
+      position: absolute; top: 60px; left: 60px;
+      background: rgba(250,248,244,0.92);
+      padding: 12px 20px; border-radius: 4px;
+      z-index: 10;
+    }
+    .logo-top-left img { width: 200px; display: block; }
     .coord {
       position: absolute; bottom: 220px; left: 56px;
       font-family: 'AzoSans', sans-serif;
@@ -139,6 +147,7 @@ function F1_MuseumWall(assets, photos) {
   <body>
   <div class="frame">
     <div class="hero-photo"></div>
+    <div class="logo-top-left"><img src="${assets.logoBlue}" alt="Ryan Realty"></div>
     <div class="logo-badge"><img src="${assets.logoBlue}" alt="Ryan Realty"></div>
     <div class="coord">44.0891° N · 121.3421° W</div>
     <div class="bottom-strip">

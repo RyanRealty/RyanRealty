@@ -163,8 +163,8 @@ def s1_just_listed():
 
     draw = ImageDraw.Draw(img)
 
-    # Eyebrow — top of frame, tracked
-    eyebrow_font = azo(22)
+    # Eyebrow — top of frame, tracked (bumped from 22 → 29 for legibility)
+    eyebrow_font = azo(29)
     eyebrow_y = 60
     eyebrow_text = "JUST LISTED"
     tw = measure_tracked(draw, eyebrow_text, eyebrow_font, 0.20)
@@ -182,13 +182,18 @@ def s1_just_listed():
     by2 = by + (bbox1[3] - bbox1[1]) + 8
     shadow_text(draw, (bx, by2), line2, h_font)
 
-    # Spec line + price (Azo Sans Medium)
-    sub_font = azo(28)
-    sub_y = by2 + 110
+    # Spec line + price — bumped sub font 28→32, specs 22→28.
+    # Anchor sub_y so both lines stay above IG safe zone bottom (y 1200 of 1350).
+    sub_font = azo(32)
+    bedline = azo(28)
+    # Measure both lines to back-calculate a safe y anchor
     spec_text = "Tumalo, Oregon  ·  $1,225,000"
+    spec_h = sub_font.size + 8
+    bed_h  = bedline.size + 8
+    total_h = spec_h + bed_h
+    sub_y = min(by2 + 110, 1200 - total_h)  # keep both lines above y=1200
     shadow_text(draw, (bx, sub_y), spec_text, sub_font)
-    bedline = azo(22)
-    shadow_text(draw, (bx, sub_y + 42), "3 BD  ·  3 BA  ·  2,325 SQFT  ·  2.28 acres", bedline, fill=(240, 230, 210))
+    shadow_text(draw, (bx, sub_y + spec_h), "3 BD  ·  3 BA  ·  2,325 SQFT  ·  2.28 acres", bedline, fill=(240, 230, 210))
 
     out = img.convert("RGB")
     dst = OUT / "S1-just-listed.jpg"
@@ -221,8 +226,8 @@ def s2_just_sold():
     addr_font = azo(22)
     shadow_text(draw, (sx, sy + 240), "19496 TUMALO RESERVOIR RD  ·  TUMALO, OREGON", addr_font, fill=(220, 210, 180))
 
-    # Tiny eyebrow top
-    eb = azo(20)
+    # Eyebrow top — bumped 20→26 for legibility
+    eb = azo(26)
     tracked_text(draw, (60, 60), "RYAN REALTY  ·  REPRESENTED THE BUYER", eb, fill=CREAM, tracking_em=0.18, shadow=True)
 
     out = img.convert("RGB")
@@ -242,11 +247,11 @@ def s3_open_house():
 
     draw = ImageDraw.Draw(img)
 
-    # Eyebrow
-    eb = azo(22)
+    # Eyebrow — bumped 22→29 for legibility
+    eb = azo(29)
     tracked_text(draw, (60, 60), "OPEN HOUSE", eb, fill=CREAM, tracking_em=0.20, shadow=True)
     tw = measure_tracked(draw, "OPEN HOUSE", eb, 0.20)
-    draw.line([(60, 100), (60 + tw, 100)], fill=CREAM, width=1)
+    draw.line([(60, 107), (60 + tw, 107)], fill=CREAM, width=1)
 
     # Date + time — main headline area
     date_font = amboqia(88)
@@ -255,11 +260,12 @@ def s3_open_house():
     time_font = amboqia(56)
     shadow_text(draw, (60, H - 330), "11 am — 2 pm", time_font, fill=(240, 230, 210))
 
-    # Address line
-    addr = azo(24)
-    shadow_text(draw, (60, H - 230), "19496 Tumalo Reservoir Rd  ·  Tumalo, Oregon", addr)
-    spec = azo(20)
-    shadow_text(draw, (60, H - 195), "3 BD  ·  3 BA  ·  2,325 SQFT  ·  2.28 ACRES  ·  $1,225,000", spec, fill=(225, 215, 190))
+    # Address line — bumped addr 24→30, spec 20→26; capped at y 1200 safe zone
+    addr = azo(30)
+    spec = azo(26)
+    addr_y = min(H - 230, 1200 - (addr.size + 8) - (spec.size + 8))
+    shadow_text(draw, (60, addr_y), "19496 Tumalo Reservoir Rd  ·  Tumalo, Oregon", addr)
+    shadow_text(draw, (60, addr_y + addr.size + 8), "3 BD  ·  3 BA  ·  2,325 SQFT  ·  2.28 ACRES  ·  $1,225,000", spec, fill=(225, 215, 190))
 
     out = img.convert("RGB")
     dst = OUT / "S3-open-house.jpg"
@@ -281,14 +287,14 @@ def s4_coming_soon():
 
     draw = ImageDraw.Draw(img)
 
-    # Eyebrow top
-    eb = azo(22)
+    # Eyebrow top — bumped 22→29 for legibility
+    eb = azo(29)
     tracked_text(draw, (60, 60), "COMING SOON", eb, fill=CREAM, tracking_em=0.22, shadow=True)
     tw = measure_tracked(draw, "COMING SOON", eb, 0.22)
-    draw.line([(60, 100), (60 + tw, 100)], fill=CREAM, width=1)
+    draw.line([(60, 107), (60 + tw, 107)], fill=CREAM, width=1)
 
-    # Subtitle top right corner
-    sub_eb = azo(20)
+    # Subtitle top right corner — bumped 20→26
+    sub_eb = azo(26)
     teaser_text = "TUMALO  ·  SUMMER 2026"
     tw2 = measure_tracked(draw, teaser_text, sub_eb, 0.18)
     tracked_text(draw, (W - tw2 - 60, 62), teaser_text, sub_eb, fill=CREAM, tracking_em=0.18, shadow=True)
@@ -319,11 +325,11 @@ def s5_price_improvement():
 
     draw = ImageDraw.Draw(img)
 
-    # Eyebrow
-    eb = azo(22)
+    # Eyebrow — bumped 22→29 for legibility
+    eb = azo(29)
     tracked_text(draw, (60, 60), "NEW PRICE", eb, fill=CREAM, tracking_em=0.22, shadow=True)
     tw = measure_tracked(draw, "NEW PRICE", eb, 0.22)
-    draw.line([(60, 100), (60 + tw, 100)], fill=CREAM, width=1)
+    draw.line([(60, 107), (60 + tw, 107)], fill=CREAM, width=1)
 
     # Old price strikethrough
     old_font = amboqia(56)
@@ -340,11 +346,12 @@ def s5_price_improvement():
     new_font = amboqia(110)
     shadow_text(draw, (60, H - 320), "$1,225,000", new_font)
 
-    # Address + spec
-    addr = azo(24)
-    shadow_text(draw, (60, H - 180), "19496 Tumalo Reservoir Rd  ·  Tumalo, Oregon", addr)
-    spec = azo(20)
-    shadow_text(draw, (60, H - 145), "3 BD  ·  3 BA  ·  2,325 SQFT  ·  2.28 ACRES", spec, fill=(225, 215, 190))
+    # Address + spec — bumped addr 24→30, spec 20→26; capped at y 1200 safe zone
+    addr = azo(30)
+    spec = azo(26)
+    addr_y = min(H - 180, 1200 - (addr.size + 8) - (spec.size + 8))
+    shadow_text(draw, (60, addr_y), "19496 Tumalo Reservoir Rd  ·  Tumalo, Oregon", addr)
+    shadow_text(draw, (60, addr_y + addr.size + 8), "3 BD  ·  3 BA  ·  2,325 SQFT  ·  2.28 ACRES", spec, fill=(225, 215, 190))
 
     out = img.convert("RGB")
     dst = OUT / "S5-price-improvement.jpg"
@@ -363,13 +370,13 @@ def s6_featured_listing():
 
     draw = ImageDraw.Draw(img)
 
-    # Eyebrow — top, centered
-    eb = azo(20)
+    # Eyebrow — top, centered; bumped 20→26 for legibility
+    eb = azo(26)
     eyebrow_text = "RYAN REALTY  ·  LISTING OF THE WEEK"
     tw = measure_tracked(draw, eyebrow_text, eb, 0.20)
     ex = (W - tw) // 2
     tracked_text(draw, (ex, 70), eyebrow_text, eb, fill=CREAM, tracking_em=0.20, shadow=True)
-    draw.line([(ex, 108), (ex + tw, 108)], fill=CREAM, width=1)
+    draw.line([(ex, 112), (ex + tw, 112)], fill=CREAM, width=1)
 
     # Italic-style editorial headline — top third
     h_font = amboqia(72)
@@ -467,8 +474,8 @@ def s8_brag_stat():
 
     draw = ImageDraw.Draw(img)
 
-    # Eyebrow top
-    eb = azo(20)
+    # Eyebrow top — bumped 20→26 for legibility
+    eb = azo(26)
     tracked_text(draw, (60, 60), "RYAN REALTY  ·  YEAR-TO-DATE  ·  2026", eb, fill=CREAM, tracking_em=0.18, shadow=True)
 
     # Huge stat — centered
@@ -488,12 +495,13 @@ def s8_brag_stat():
     sw = bbox[2] - bbox[0]
     shadow_text(draw, ((W - sw) // 2, big_y + bh + 30), sub_text, sub_font, fill=(240, 230, 210))
 
-    # Footnote bottom
-    foot_font = azo(18)
+    # Footnote — bumped 18→22; capped above y 1200 safe zone
+    foot_font = azo(22)
     foot_text = "January — April 2026  ·  Source: Vault"
     bbox = draw.textbbox((0, 0), foot_text, font=foot_font)
     fw = bbox[2] - bbox[0]
-    shadow_text(draw, ((W - fw) // 2, H - 110), foot_text, foot_font, fill=(220, 210, 190))
+    foot_y = min(H - 110, 1200 - foot_font.size - 8)
+    shadow_text(draw, ((W - fw) // 2, foot_y), foot_text, foot_font, fill=(220, 210, 190))
 
     out = img.convert("RGB")
     dst = OUT / "S8-brag-stat.jpg"

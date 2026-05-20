@@ -82,6 +82,211 @@ const postPath = join(outDir, 'post.md')
 await writeFile(postPath, post)
 console.log(`✓ wrote ${postPath} (${post.length} bytes)`)
 
+// ---------------------------------------------------------------------------
+// Minimal markdown-to-HTML converter (no external deps)
+// ---------------------------------------------------------------------------
+function mdToHtml(md) {
+  return md
+    .split('\n')
+    .reduce((acc, line) => {
+      if (line.startsWith('### ')) return [...acc, `<h3>${line.slice(4)}</h3>`]
+      if (line.startsWith('## ')) return [...acc, `<h2>${line.slice(3)}</h2>`]
+      if (line.startsWith('# ')) return [...acc, `<h1>${line.slice(2)}</h1>`]
+      if (line.startsWith('- ')) return [...acc, `<li>${line.slice(2).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</li>`]
+      if (line.trim() === '') return [...acc, '<br>']
+      return [...acc, `<p>${line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</p>`]
+    }, [])
+    .join('\n')
+}
+
+// Reading time estimate (average 200 words per minute)
+const wordCount = post.split(/\s+/).filter(Boolean).length
+const readingMinutes = Math.max(1, Math.round(wordCount / 200))
+
+// Hero photo: use brand_assets path relative to repo root, falling back to primary_photo_path
+const heroPhotoSrc = payload.brand_assets?.hero_photo_path || payload.listing?.primary_photo_path || ''
+// Font paths relative to outDir → repo root
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const relToRepo = (p) => join(relative(outDir, repoRoot), p).replace(/\\/g, '/')
+function relative(from, to) {
+  // manual relative path without requiring 'path' re-import (it's already imported)
+  const fromParts = from.split('/')
+  const toParts = to.split('/')
+  let i = 0
+  while (i < fromParts.length && fromParts[i] === toParts[i]) i++
+  return [...fromParts.slice(i).map(() => '..'), ...toParts.slice(i)].join('/')
+}
+
+const amboqiaPath = relToRepo('design_system/ryan-realty/fonts/Amboqia_Boriango.otf')
+const logoPath = relToRepo(payload.brand_assets?.logo_blue_path || 'design_system/ryan-realty/assets/brand/logo-blue.png')
+
+const postHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${L.city || 'Bend'} Oregon real estate market read — Preview</title>
+<style>
+  @font-face {
+    font-family: 'Amboqia';
+    src: url('${amboqiaPath}') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #faf8f4;
+    font-family: 'Geist', 'Inter', system-ui, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.65;
+  }
+  .page {
+    max-width: 720px;
+    margin: 48px auto 80px;
+    padding: 0 24px;
+  }
+  /* Hero photo */
+  .hero-img {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 32px;
+    display: block;
+  }
+  .hero-img-placeholder {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #e8e2d4;
+    border-radius: 8px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-size: 14px;
+  }
+  /* Meta bar */
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(16,39,66,0.12);
+  }
+  .meta .sep { color: #ccc; }
+  .category-pill {
+    background: rgba(16,39,66,0.08);
+    color: #102742;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  /* Typography */
+  h1 {
+    font-family: 'Amboqia', serif;
+    font-size: 36px;
+    font-weight: 400;
+    color: #102742;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin-bottom: 20px;
+  }
+  h2 {
+    font-family: 'Amboqia', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: #102742;
+    margin-top: 40px;
+    margin-bottom: 12px;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #102742;
+    margin-top: 28px;
+    margin-bottom: 8px;
+  }
+  p {
+    font-size: 16px;
+    margin-bottom: 16px;
+    color: #222;
+  }
+  li {
+    font-size: 16px;
+    margin: 6px 0 6px 20px;
+    color: #222;
+    list-style: disc;
+  }
+  strong { font-weight: 600; color: #102742; }
+  br { display: block; height: 4px; }
+  /* Footer */
+  .footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 2px solid #102742;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .footer img.logo { height: 36px; }
+  .footer-text { font-size: 13px; color: #555; }
+  .footer-text a { color: #102742; text-decoration: none; font-weight: 600; }
+  /* Preview badge */
+  .preview-badge {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    background: #102742;
+    color: #faf8f4;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    opacity: 0.85;
+    z-index: 999;
+  }
+</style>
+</head>
+<body>
+<div class="preview-badge">Preview</div>
+<div class="page">
+  ${heroPhotoSrc ? `<img class="hero-img" src="${relToRepo(heroPhotoSrc)}" alt="Hero photo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="hero-img-placeholder" style="display:none">Hero photo not found at: ${heroPhotoSrc}</div>` : `<div class="hero-img-placeholder">No hero photo in payload</div>`}
+
+  <div class="meta">
+    <span class="category-pill">Market report</span>
+    <span class="sep">·</span>
+    <span>Published ${M.period_end || ''}</span>
+    <span class="sep">·</span>
+    <span>Matt Ryan · Principal Broker</span>
+    <span class="sep">·</span>
+    <span>${readingMinutes} min read</span>
+  </div>
+
+  ${mdToHtml(post)}
+
+  <div class="footer">
+    <img class="logo" src="${logoPath}" alt="Ryan Realty" onerror="this.style.display='none'">
+    <div class="footer-text">
+      <strong>Ryan Realty</strong> · <a href="tel:5412136706">541.213.6706</a> · <a href="https://ryan-realty.com">ryan-realty.com</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>`
+
+const previewPath = join(outDir, 'preview.html')
+await writeFile(previewPath, postHtml)
+console.log(`✓ wrote ${previewPath} (${postHtml.length} bytes)`)
+
 const fields = [
   { figure: M.median_sale_price_display, source: 'Supabase market_stats_cache', column: 'median_sale_price' },
   { figure: M.median_dom_display, source: 'Supabase market_stats_cache', column: 'median_dom' },
@@ -90,11 +295,11 @@ const fields = [
 ]
 
 await writeFile(join(outDir, 'citations.json'), JSON.stringify({ figures: fields }, null, 2))
-await writeFile(join(outDir, 'provenance.json'), JSON.stringify({ assets: [{ asset: 'post.md', source: 'generated', license: 'internal' }] }, null, 2))
+await writeFile(join(outDir, 'provenance.json'), JSON.stringify({ assets: [{ asset: 'post.md', source: 'generated', license: 'internal' }, { asset: 'preview.html', source: 'generated', license: 'internal' }] }, null, 2))
 await writeFile(join(outDir, 'design_scorecard.json'), JSON.stringify({
   passed: 4, total: 4, score_pct: 100,
   checks: [
-    { name: 'word_count_min', pass: true, notes: `${post.split(/\s+/).length} words` },
+    { name: 'word_count_min', pass: true, notes: `${wordCount} words` },
     { name: 'sources_block_present', pass: true, notes: 'sources section at bottom' },
     { name: 'banned_words_clean', pass: true, notes: 'manual review — uses canonical voice template' },
     { name: 'data_traces_present', pass: true, notes: '4 figures cited' },
@@ -103,7 +308,7 @@ await writeFile(join(outDir, 'design_scorecard.json'), JSON.stringify({
 await writeFile(join(outDir, 'card.json'), JSON.stringify({
   producer: 'blog-post',
   primary_artifact: 'post.md',
-  notes: 'SEO market-report blog post generated from canonical payload (market + listing).',
+  notes: `post.md · preview.html · 4 verification sidecars`,
   data_traces: fields.map(f => `${f.figure} -> ${f.source}.${f.column}`),
   generated_at: new Date().toISOString(),
 }, null, 2))

@@ -13,6 +13,13 @@ from _producer_lib import (
     grep_banned, REPO_ROOT,
 )
 from PIL import Image, ImageDraw
+
+LOGO_BLUE  = REPO_ROOT / "design_system/ryan-realty/assets/brand/logo-blue.png"
+LOGO_WHITE = REPO_ROOT / "design_system/ryan-realty/assets/brand/logo-white.png"
+
+# Portrait safe zone (canonical PORTRAIT_SAFE from safe-zones/canonical/safe-zones.ts)
+SAFE_Y_MIN = 280   # top of safe zone
+SAFE_Y_MAX = 1480  # bottom of safe zone
 import datetime
 
 PRODUCER = "coming_soon_teaser"
@@ -71,12 +78,21 @@ def build(payload: dict, out_dir: Path):
         for txt, fnt, clr, y in frame["content"]:
             draw_centered(d, txt, fnt, clr, y, W)
 
-        # Brand bottom
-        foot_font = font(22, accent=True)
-        draw_centered(d, "RYAN REALTY", foot_font, CREAM, H - 110, W)
-
-        # Top accent bar
-        d.rectangle([90, 90, W - 90, 94], fill=CREAM)
+        # Brand footer — canonical wordmark PNG, inside portrait safe zone (y 280–1480).
+        # Bottom of logo sits at y ≈ 1440, well within the safe zone.
+        # Use logo-white on navy/dark scrim frames.
+        logo_path = LOGO_WHITE
+        if logo_path.exists():
+            logo = Image.open(logo_path).convert("RGBA")
+            logo_target_w = 300
+            ratio = logo_target_w / logo.size[0]
+            logo_h = int(logo.size[1] * ratio)
+            logo = logo.resize((logo_target_w, logo_h), Image.LANCZOS)
+            logo_x = (W - logo_target_w) // 2  # centered
+            logo_y = SAFE_Y_MAX - logo_h - 40   # 40 px pad above safe zone bottom
+            base = img.convert("RGBA")
+            base.paste(logo, (logo_x, logo_y), logo)
+            img = base
 
         fname = f"{frame['slug']}.png"
         fpath = out_dir / fname
@@ -93,13 +109,14 @@ def build(payload: dict, out_dir: Path):
         {"asset": "hero_photo", "path": payload["brand_assets"]["hero_photo_path"], "license": "listing photo"},
         {"asset": "font_amboqia", "path": "design_system/ryan-realty/fonts/Amboqia_Boriango.otf"},
         {"asset": "font_azosans", "path": "design_system/ryan-realty/fonts/AzoSans-Medium.ttf"},
+        {"asset": "logo_wordmark", "path": str(LOGO_WHITE.relative_to(REPO_ROOT))},
     ])
     write_scorecard(out_dir, [
         {"name": "canvas_1080x1920", "pass": True},
         {"name": "three_frames_produced", "pass": len(produced) == 3},
         {"name": "navy_cream_only", "pass": True},
         {"name": "banned_words_clean", "pass": len(hits) == 0},
-        {"name": "brand_footer_each_frame", "pass": True},
+        {"name": "brand_wordmark_png_each_frame", "pass": LOGO_WHITE.exists()},
     ])
     write_card_json(out_dir, PRODUCER, produced[0],
                     f"3-frame coming-soon storyboard for {listing['street_number']} {listing['street_name']}",
