@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.251.0 (2026-05-20)
+
+### Features
+- feat(producers): outstanding pass — flyer F7/F8 delete, floor_plan deprecate, broker-card rebuild, comparable_grid real comps, earth_zoom altitude+banner
+
+---
+
+
 ## v1.250.0 (2026-05-20)
 
 ### Features
