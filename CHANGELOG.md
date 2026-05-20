@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.256.0 (2026-05-20)
+
+### Features
+- feat(video): universal-rules follow-up — first-frame check wiring + remaining font copies + POST_RENDER_CHECK.md docs
+
+---
+
+
 ## v1.255.0 (2026-05-20)
 
 ### Features
