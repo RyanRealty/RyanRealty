@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.246.0 (2026-05-20)
+
+### Features
+- feat(tetherow lp): consume shared ListingCard for cross-page tile consistency
+
+---
+
+
 ## v1.245.1 (2026-05-19)
 
 ### Maintenance
