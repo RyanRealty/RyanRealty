@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.258.0 (2026-05-20)
+
+### Features
+- feat(pulse): switch CTA to outline-only style (white border, no fill)
+
+---
+
+
 ## v1.257.2 (2026-05-20)
 
 ### Bug Fixes
