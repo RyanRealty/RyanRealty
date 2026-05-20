@@ -1,0 +1,1245 @@
+<!--
+  Pulse video-first demo — STATIC HTML version.
+
+  Bypasses React/Next.js layout (which collapses the page inside a hidden
+  Suspense boundary on /pulse-video-demo in dev). This file is served as a
+  static asset by Next from /public/pulse-demo.html so the browser renders
+  it directly with zero framework involvement. Same 8 real fixtures as the
+  TSX page, same provider cascade (mp4/youtube/vimeo/cloudflare/aryeo →
+  Ken Burns photo fallback), same IntersectionObserver autoplay rule.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Pulse · video-first demo</title>
+<link rel="preconnect" href="https://cdn.resize.sparkplatform.com">
+<link rel="preconnect" href="https://www.youtube.com">
+<link rel="preconnect" href="https://player.vimeo.com">
+<link rel="preconnect" href="https://iframe.videodelivery.net">
+<style>
+  :root {
+    --rr-navy: #102742;
+    --rr-cream: #faf8f4;
+    --rr-gold-1: #c9a878;
+    --rr-gold-2: #e6c79e;
+
+    /* SAFE ZONES (as % of card height/width — scales with card size).
+       Sized to clear the worst-case in-app browser chrome across platforms:
+         IG  : top ~88pt, bottom ~80pt
+         TT  : top ~120pt, bottom ~80pt
+         YT  : top ~100pt, bottom ~88pt
+         FB  : top ~90pt, bottom 0
+       Plus a 16pt cushion so text doesn't sit flush against the chrome edge.
+       Width-side zones leave room for the IG/TikTok right-rail icons that
+       sit ON TOP of any embedded webview (Save/Share/etc.) when a producer
+       repurposes the card frame as a 1080×1920 social video. */
+    --pulse-safe-top:    15%;  /* ≈122px on a 9:16 / 460×818 card */
+    --pulse-safe-bottom: 14%;  /* ≈114px — room for IG "Open in Safari" bar */
+    --pulse-safe-side:   5.5%; /* ≈25px lateral margin */
+    --pulse-actions-w:   72px; /* right-rail action column width */
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f5f5f4;
+    color: #1c1917;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body { min-height: 100vh; }
+  .hdr {
+    border-bottom: 1px solid #e7e5e4;
+    background: #fff;
+    padding: 22px 16px 18px;
+  }
+  .hdr-inner { max-width: 460px; margin: 0 auto; }
+  .hdr .eyebrow {
+    margin: 0 0 6px;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #78716c;
+  }
+  .hdr h1 {
+    margin: 0 0 8px;
+    font-family: "DM Serif Display", Georgia, serif;
+    font-weight: 400;
+    font-size: 28px;
+    line-height: 1.15;
+    color: var(--rr-navy);
+  }
+  .hdr p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #57534e;
+  }
+  .toolbar {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tbtn {
+    padding: 7px 11px;
+    border: 1px solid #d6d3d1;
+    border-radius: 999px;
+    background: #fff;
+    color: #44403c;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 140ms, border-color 140ms;
+  }
+  .tbtn:hover { background: #f5f5f4; }
+  .tbtn.active {
+    background: var(--rr-navy);
+    color: #fff;
+    border-color: var(--rr-navy);
+  }
+  .feed {
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 14px 12px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  article.card {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 9 / 16;
+    overflow: hidden;
+    border-radius: 18px;
+    background: #0a0a0a;
+    color: #fff;
+    box-shadow: 0 10px 28px -8px rgba(0,0,0,0.4);
+    isolation: isolate;
+    contain: layout style paint;
+  }
+  /* media layer */
+  .card .media { position: absolute; inset: 0; overflow: hidden; }
+  .card .media img.poster,
+  .card .media video.vid {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .card .media iframe.lvideo {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    border: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .card .media img.lposter {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 2;
+    transition: opacity 600ms ease;
+  }
+  .card.playing .media img.lposter { opacity: 0; }
+  /* ken burns for photo-only cards */
+  .card .media img.kenburns {
+    animation: pulse-ken-burns 22s ease-in-out infinite;
+    will-change: transform;
+  }
+  @keyframes pulse-ken-burns {
+    0%   { transform: scale(1) translate(0, 0); }
+    50%  { transform: scale(1.10) translate(-1.5%, -1%); }
+    100% { transform: scale(1) translate(0, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card .media img.kenburns { animation: none; }
+  }
+  /* gradient scrims */
+  .card .top-scrim, .card .bot-scrim {
+    position: absolute; left: 0; right: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .card .top-scrim {
+    top: 0; height: 28%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0));
+  }
+  .card .bot-scrim {
+    bottom: 0; height: 58%;
+    background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0));
+  }
+  /* TOP HOOK — a single conversational headline. Replaces the stale
+     "JUST LISTED" / "PRICE DROP" / "LUXURY" / "VIDEO TOUR" pills.
+     Sized to be readable but not dominant. The video carries the story;
+     the hook gives the moment a voice. */
+  .card .hook {
+    position: absolute;
+    top: var(--pulse-safe-top);
+    left: var(--pulse-safe-side);
+    right: calc(var(--pulse-safe-side) + 12px);
+    z-index: 20;
+    font-family: "DM Serif Display", Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.15;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.7);
+    letter-spacing: 0.005em;
+    pointer-events: none;
+    /* keep within 80% width so it doesn't run into the right edge */
+    max-width: 80%;
+  }
+  .card .hook .accent {
+    /* Optional inline accent for a key word — subtle gold underline that
+       feels hand-drawn, not corporate */
+    background-image: linear-gradient(transparent 78%, rgba(201, 168, 120, 0.45) 78%);
+    background-repeat: no-repeat;
+    padding-bottom: 1px;
+  }
+  /* slight rotation makes it feel scrawled rather than typed.
+     1.2deg is the sweet spot — readable but visibly off-grid. */
+  .card .hook { transform: rotate(-1.2deg); transform-origin: top left; }
+  /* right rail actions — clear of the IG/TikTok right icon column AND
+     pulled inside the safe zone so even on an iPhone notch they're tappable. */
+  .actions {
+    position: absolute;
+    right: var(--pulse-safe-side);
+    top: 50%; transform: translateY(-50%);
+    z-index: 20;
+    display: flex; flex-direction: column; gap: 8px; align-items: center;
+  }
+  .actions button {
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    border: 0; border-radius: 999px;
+    background: rgba(255,255,255,0.20);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fff;
+    cursor: pointer;
+    transition: transform 120ms ease, background 160ms ease;
+  }
+  .actions button:hover { transform: scale(1.08); background: rgba(255,255,255,0.30); }
+  .actions button:active { transform: scale(0.94); }
+  .actions button.liked { color: #ef4444; background: rgba(255,255,255,0.30); }
+  .actions .lbl {
+    font-size: 10px; font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  }
+  .actions svg { width: 22px; height: 22px; }
+  .actions button.liked svg { fill: currentColor; }
+
+  /* SAFE ZONE OVERLAY — toggleable, shows the exact unsafe regions
+     where IG / TikTok / YouTube Shorts chrome would cover content. */
+  .card.show-safe::before,
+  .card.show-safe::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    z-index: 25;
+    pointer-events: none;
+  }
+  .card.show-safe::before {
+    top: 0; height: var(--pulse-safe-top);
+    background:
+      repeating-linear-gradient(135deg,
+        rgba(220, 38, 38, 0.32) 0px,
+        rgba(220, 38, 38, 0.32) 10px,
+        rgba(220, 38, 38, 0.18) 10px,
+        rgba(220, 38, 38, 0.18) 20px);
+    border-bottom: 2px solid rgba(220, 38, 38, 0.85);
+  }
+  .card.show-safe::after {
+    bottom: 0; height: var(--pulse-safe-bottom);
+    background:
+      repeating-linear-gradient(135deg,
+        rgba(220, 38, 38, 0.32) 0px,
+        rgba(220, 38, 38, 0.32) 10px,
+        rgba(220, 38, 38, 0.18) 10px,
+        rgba(220, 38, 38, 0.18) 20px);
+    border-top: 2px solid rgba(220, 38, 38, 0.85);
+  }
+  .card.show-safe .safe-label {
+    position: absolute;
+    z-index: 26;
+    left: 50%; transform: translateX(-50%);
+    padding: 4px 10px;
+    background: rgba(220, 38, 38, 0.92);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+  .card.show-safe .safe-label-top    { top: calc(var(--pulse-safe-top) - 18px); }
+  .card.show-safe .safe-label-bottom { bottom: calc(var(--pulse-safe-bottom) - 18px); }
+
+  /* CHROME SIMULATOR — overlay that fakes the IG / TikTok in-app browser UI
+     so you can see exactly what's covered when the page is opened from a
+     paid ad in those apps. */
+  .card.chrome-ig::before {
+    content: "instagram.com  ·  Open in Safari";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 14%;
+    background: linear-gradient(to bottom, rgba(15, 15, 15, 0.96), rgba(15, 15, 15, 0.92));
+    color: #f5f5f4;
+    z-index: 27;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+  }
+  .card.chrome-ig::after {
+    content: "← →   ↗    ⓘ";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 13%;
+    background: rgba(15, 15, 15, 0.96);
+    color: #f5f5f4;
+    z-index: 27;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    letter-spacing: 1em;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+  }
+  /* TikTok VIDEO FEED simulator — worst case for repurposed card frames.
+     TT video chrome takes ~12% off top (status + search), ~26% off bottom
+     (caption + sound + share/comment column), and ~14% off right (action
+     icon column). If our card frame clears THIS, it clears everything.
+     In this mode we also shift our own actions LEFT (out of TT's right
+     column) and pull the bottom text UP out of TT's caption zone, so this
+     view doubles as the spec for a producer building an actual TT video. */
+  .card.chrome-tt {
+    --tt-top: 12%;
+    --tt-bottom: 26%;
+    --tt-right: 14%;
+  }
+  .card.chrome-tt .actions { right: calc(var(--tt-right) + 12px); }
+  .card.chrome-tt .bottom  {
+    bottom: calc(var(--tt-bottom) + 14px);
+    right: calc(var(--tt-right) + var(--pulse-actions-w));
+  }
+  .card.chrome-tt .top     { top: calc(var(--tt-top) + 14px); }
+  .card.chrome-tt::before {
+    content: "For You · Following            🔍";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: var(--tt-top);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0));
+    color: #fff;
+    z-index: 27;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+  }
+  .card.chrome-tt::after {
+    content: "@ryanrealty   ♬ Original sound — Ryan Realty";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: var(--tt-bottom);
+    background: linear-gradient(to top, rgba(0,0,0,0.80), rgba(0,0,0,0.20) 65%, rgba(0,0,0,0));
+    color: #fff;
+    z-index: 27;
+    display: flex; align-items: flex-end; justify-content: flex-start;
+    padding: 0 20px 18px;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+  }
+  /* TikTok right action column (rendered as a sibling element so it can
+     coexist with ::before and ::after). */
+  .card.chrome-tt .tt-right {
+    position: absolute;
+    right: 0; top: var(--tt-top); width: var(--tt-right);
+    bottom: var(--tt-bottom);
+    z-index: 28;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 18px;
+    padding-bottom: 12px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+    pointer-events: none;
+  }
+  .card.chrome-tt .tt-right span {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .card.chrome-tt .tt-right .ico { font-size: 22px; }
+  .card.chrome-tt .tt-right .ct { font-size: 10px; opacity: 0.95; }
+  /* bottom copy block — sits ABOVE the in-app browser bottom toolbar
+     (IG: "Open in Safari" bar; TikTok: bottom action sheet). Right edge
+     pulled in to clear the actions column on the right rail. */
+  .bottom {
+    position: absolute;
+    left: var(--pulse-safe-side);
+    right: calc(var(--pulse-safe-side) + var(--pulse-actions-w));
+    bottom: var(--pulse-safe-bottom);
+    z-index: 20;
+  }
+  .eyebrow-sm {
+    margin: 0;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+  .price {
+    margin: 0;
+    font-family: "DM Serif Display", Georgia, serif;
+    font-weight: 400;
+    font-size: 38px;
+    line-height: 1;
+  }
+  .price-luxury { font-size: 48px; }
+  .strike {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-top: 6px;
+  }
+  .strike s { opacity: 0.55; margin-right: 6px; }
+  .addr { margin: 14px 0 0; font-size: 14px; font-weight: 500; }
+  .where { margin: 2px 0 0; font-size: 14px; opacity: 0.9; }
+  .specs { margin: 6px 0 0; font-size: 12px; opacity: 0.75; }
+  .agent { margin: 12px 0 0; font-size: 11px; opacity: 0.6; }
+  /* "Schedule a showing" CTA — mirrors the canonical pattern in
+     components/lp/ListingCard.tsx so a buyer who sees the navy
+     pill on the city LP recognizes the same button on the pulse feed.
+     Navy fill, cream text, 10px radius, 0.06em uppercase tracking. */
+  .cta {
+    margin-top: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--rr-navy);
+    color: var(--rr-cream);
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 1px solid rgba(250, 248, 244, 0.18);
+    box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.6);
+    transition: opacity 160ms ease, transform 140ms ease;
+    pointer-events: auto;
+    width: 100%;
+  }
+  .cta:hover  { opacity: 0.93; transform: translateY(-1px); }
+  .cta:active { transform: translateY(0); }
+  .cta .arrow { transition: transform 180ms ease; }
+  .cta:hover .arrow { transform: translateX(3px); }
+  /* Sold listings get a different CTA — "see similar homes" instead of
+     "schedule a showing," since the home is no longer available to tour. */
+  .cta-secondary {
+    background: transparent;
+    color: var(--rr-cream);
+    border: 1px solid rgba(250, 248, 244, 0.55);
+    box-shadow: none;
+  }
+  .cta-secondary:hover { background: rgba(250, 248, 244, 0.08); }
+
+  /* ====================================================================
+     BRAIN-PRODUCED CONTENT CARDS — lifestyle, brand, market snapshot,
+     market report video. All share the listing-card chassis (9:16,
+     scrims, safe zones) but use type-specific overlay layouts so a
+     scrolling user immediately knows "this isn't a listing."
+     ==================================================================== */
+
+  /* Category eyebrow above the headline (e.g. "Community · Brasada Ranch") */
+  .card .eyebrow {
+    position: absolute;
+    top: var(--pulse-safe-top);
+    left: var(--pulse-safe-side);
+    z-index: 20;
+    font-family: "Geist", system-ui, sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--rr-cream);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+    opacity: 0.92;
+    pointer-events: none;
+  }
+
+  /* Lifestyle / blog card — title in italic serif at middle, excerpt below,
+     CTA at bottom. Photo-only background with Ken Burns. */
+  .card.lifestyle .lifestyle-block {
+    position: absolute;
+    left: var(--pulse-safe-side);
+    right: var(--pulse-safe-side);
+    bottom: var(--pulse-safe-bottom);
+    z-index: 20;
+    color: var(--rr-cream);
+  }
+  .card.lifestyle .lifestyle-title {
+    margin: 0 0 10px;
+    font-family: "DM Serif Display", Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 28px;
+    line-height: 1.12;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  }
+  .card.lifestyle .lifestyle-excerpt {
+    margin: 0 0 16px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    opacity: 0.92;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Brand utility card — solid navy background, no photo. Big ask + CTA.
+     Visually loud so it reads as "an offer," not a listing. */
+  .card.brand {
+    background: var(--rr-navy);
+  }
+  .card.brand .media {
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(250,248,244,0.07), transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(201,168,120,0.10), transparent 55%),
+      var(--rr-navy);
+  }
+  /* Brand cards don't need the dark scrim overlays — kill them so the
+     navy background reads pure. */
+  .card.brand .top-scrim,
+  .card.brand .bot-scrim { display: none; }
+  .card.brand .brand-block {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    padding:
+      calc(var(--pulse-safe-top) + 12px)
+      var(--pulse-safe-side)
+      calc(var(--pulse-safe-bottom) + 12px)
+      var(--pulse-safe-side);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    color: var(--rr-cream);
+  }
+  .card.brand .brand-mark {
+    font-family: "DM Serif Display", Georgia, serif;
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    opacity: 0.7;
+  }
+  .card.brand .brand-headline {
+    margin: 0 0 14px;
+    font-family: "DM Serif Display", Georgia, serif;
+    font-size: 38px;
+    line-height: 1.05;
+    color: var(--rr-cream);
+  }
+  .card.brand .brand-sub {
+    margin: 0 0 24px;
+    font-size: 14px;
+    line-height: 1.5;
+    opacity: 0.78;
+    max-width: 90%;
+  }
+
+  /* Market snapshot card — solid bg with big tabular numbers. The pulse
+     equivalent of a Bloomberg ticker tile. */
+  .card.snapshot {
+    background:
+      linear-gradient(180deg, var(--rr-navy) 0%, #0a1a2e 100%);
+  }
+  .card.snapshot .media {
+    background:
+      radial-gradient(ellipse at 50% 10%, rgba(201,168,120,0.08), transparent 60%),
+      transparent;
+  }
+  .card.snapshot .top-scrim,
+  .card.snapshot .bot-scrim { display: none; }
+  .card.snapshot .snap-block {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    padding:
+      calc(var(--pulse-safe-top) + 8px)
+      var(--pulse-safe-side)
+      calc(var(--pulse-safe-bottom) + 12px)
+      var(--pulse-safe-side);
+    display: flex;
+    flex-direction: column;
+    color: var(--rr-cream);
+  }
+  .card.snapshot .snap-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+  .card.snapshot .snap-headline {
+    margin: 8px 0 22px;
+    font-family: "DM Serif Display", Georgia, serif;
+    font-size: 30px;
+    line-height: 1.08;
+  }
+  .card.snapshot .snap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .card.snapshot .snap-stat {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .card.snapshot .snap-val {
+    font-family: "DM Serif Display", Georgia, serif;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--rr-cream);
+  }
+  .card.snapshot .snap-label {
+    font-size: 11px;
+    color: rgba(250,248,244,0.6);
+    letter-spacing: 0.04em;
+  }
+  .card.snapshot .snap-verdict {
+    margin-top: auto;
+    padding: 12px 14px;
+    background: rgba(250,248,244,0.06);
+    border: 1px solid rgba(250,248,244,0.12);
+    border-radius: 10px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: rgba(250,248,244,0.92);
+  }
+  .card.snapshot .snap-cta {
+    margin-top: 12px;
+  }
+
+  /* Market report video card — same chassis as listing card but with
+     "REPORT" eyebrow and a different bottom block layout. */
+  .card.report .report-block {
+    position: absolute;
+    left: var(--pulse-safe-side);
+    right: var(--pulse-safe-side);
+    bottom: var(--pulse-safe-bottom);
+    z-index: 20;
+    color: var(--rr-cream);
+  }
+  .card.report .report-headline {
+    margin: 0 0 8px;
+    font-family: "DM Serif Display", Georgia, serif;
+    font-size: 30px;
+    line-height: 1.1;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  }
+  .card.report .report-deck {
+    margin: 0 0 16px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    opacity: 0.92;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+  /* heart burst */
+  .burst {
+    position: absolute; inset: 0; pointer-events: none; z-index: 30;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+  }
+  .burst.go { animation: burstPop 800ms ease-out forwards; }
+  @keyframes burstPop {
+    0%   { opacity: 0; transform: scale(0.4); }
+    25%  { opacity: 1; transform: scale(1.3); }
+    60%  { opacity: 1; transform: scale(1.0); }
+    100% { opacity: 0; transform: scale(1.4); }
+  }
+  .burst svg { width: 110px; height: 110px; fill: #ef4444; filter: drop-shadow(0 4px 16px rgba(239,68,68,0.5)); }
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-inner">
+    <p class="eyebrow">Pulse · video-first demo</p>
+    <h1>Every listing card defaults to video</h1>
+    <p>
+      Eight real Central Oregon listings pulled from the live MLS feed.
+      Seven have an embeddable property tour (Cloudflare Stream, Vimeo,
+      YouTube, Aryeo, Riley Visuals). The closed sale animates the
+      hero photo. One video plays at a time. Double-tap any card to like.
+    </p>
+    <div class="toolbar">
+      <button class="tbtn" data-mode="clean">Clean</button>
+      <button class="tbtn" data-mode="safe">Show safe zones</button>
+      <button class="tbtn" data-mode="ig">IG in-app browser</button>
+      <button class="tbtn" data-mode="tt">TikTok video feed</button>
+    </div>
+    <p style="margin-top: 10px; font-size: 12px; color: #78716c;">
+      In-app browser sims show what users see when they tap our ad on
+      Instagram. Video-feed sim shows the worst case if a producer
+      repurposes the card frame as a 1080×1920 social video.
+    </p>
+  </div>
+</header>
+
+<div class="feed" id="feed"></div>
+
+<script>
+/* ---------------------------------------------------------------- *
+ *  Fixtures — 8 REAL Central Oregon listings with REAL embeddable
+ *  property tour URLs (verified against Supabase listings table
+ *  2026-05-19, ListingKey shown below). Six tours, two photo-only.
+ *  Mix of Cloudflare Stream, YouTube, Vimeo, Aryeo, Riley Visuals.
+ * ---------------------------------------------------------------- */
+const FIXTURES = [
+  {
+    // ListingKey: 20260420223544241921000000
+    id: 'rr-mcdaniel',
+    eventType: 'new_listing',
+    price: 13250000,
+    bd: 6, ba: 5, sqft: 9129,
+    address: '1299 NW McDaniel Rd',
+    city: 'Powell Butte', subdivision: null,
+    agent: 'Matt Ryan', office: 'Ryan Realty',
+    photoUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260420223546392778000000-o.jpg',
+    videos: [{ Uri: 'https://iframe.videodelivery.net/3418d3694f41a9ff73fd7ddad11af221' }]
+  },
+  {
+    // ListingKey: 20250715233741474954000000
+    id: 'rr-swalley',
+    eventType: 'new_listing',
+    price: 11900000,
+    bd: 3, ba: 3, sqft: 2268,
+    address: '65255 Swalley Rd',
+    city: 'Bend', subdivision: null,
+    agent: 'Matt Ryan', office: 'Ryan Realty',
+    photoUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250730224050303246000000-o.jpg',
+    videos: [{ Uri: 'https://player.vimeo.com/video/1109492359' }]
+  },
+  {
+    // ListingKey: 20260408183243260637000000
+    id: 'rr-macalpine',
+    eventType: 'new_listing',
+    price: 8750000,
+    bd: 5, ba: 8, sqft: 9971,
+    address: '19100 Macalpine Lp',
+    city: 'Bend', subdivision: 'The Highlands at Broken Top',
+    agent: 'Paul Stevenson', office: 'Ryan Realty',
+    photoUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260414195008257235000000-o.jpg',
+    videos: [{ Uri: 'https://www.youtube.com/embed/2eISkHFRPac' }]
+  },
+  {
+    // ListingKey: 20250902174101621356000000
+    // Real listing: $1.475M Coyner. Demo uses synthetic "previous price"
+    // for the price-drop UX — actual MLS data would carry the delta.
+    id: 'rr-coyner',
+    eventType: 'price_drop',
+    price: 1475000,
+    previousPrice: 1535000,
+    bd: 3, ba: 2, sqft: 2344,
+    address: '10135 Coyner Ave',
+    city: 'Redmond', subdivision: null,
+    agent: 'Rebecca Peterson', office: 'Ryan Realty',
+    photoUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20250930213512326937000000-o.jpg',
+    videos: [{ Uri: 'https://mikealbright.aryeo.com/videos/0191a55c-c768-708d-8ad2-4510e2b20374' }]
+  },
+  {
+    // ListingKey: 20260506175538146897000000
+    id: 'rr-shawnee',
+    eventType: 'new_listing',
+    price: 1495000,
+    bd: 3, ba: 4, sqft: 4038,
+    address: '17045 Shawnee Ct',
+    city: 'Bend', subdivision: 'Pinewood Country Est',
+    agent: 'Matt Ryan', office: 'Ryan Realty',
+    photoUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260506225606956112000000-o.jpg',
+    videos: [{ Uri: 'https://player.vimeo.com/video/1182823336' }]
+  },
+  {
+    // ListingKey: 20260303013003194152000000
+    id: 'rr-waymaker',
+    eventType: 'status_pending',
+    price: 1499900,
+    bd: 4, ba: 4, sqft: 2739,
+    address: '2643 NW Waymaker Way',
+    city: 'Bend', subdivision: 'Talline',
+    agent: 'Paul Stevenson', office: 'Ryan Realty',
+    photoUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260305173702250187000000-o.jpg',
+    videos: [{ ObjectHtml: '<iframe src="https://listings.rileyvisuals.org/videos/019cc02d-22aa-72c4-aa72-d61846a4b3e9" frameborder="0"></iframe>' }]
+  },
+  {
+    // ListingKey: 20260512174935451354000000
+    id: 'rr-crossing',
+    eventType: 'new_listing',
+    price: 1475000,
+    bd: 3, ba: 4, sqft: 2943,
+    address: '2563 NW Crossing Dr',
+    city: 'Bend', subdivision: 'NorthWest Crossing',
+    agent: 'Rebecca Peterson', office: 'Ryan Realty',
+    photoUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260514223025358680000000-o.jpg',
+    videos: [{ Uri: 'https://player.vimeo.com/video/1192470120' }]
+  },
+  {
+    // ListingKey: 20260429153923969646000000
+    // Closed 2026-05-19 — actually sold OVER asking, $38K more than list
+    id: 'rr-knoll',
+    eventType: 'status_closed',
+    price: 1097000,
+    closePrice: 1135000,
+    bd: 4, ba: 3, sqft: 2665,
+    address: '1961 NW Knoll Ave',
+    city: 'Bend', subdivision: 'Overturf Butte',
+    agent: 'Rebecca Peterson', office: 'Ryan Realty',
+    photoUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260501014133090135000000-o.jpg',
+    videos: []
+  }
+];
+
+/* ---------------------------------------------------------------- *
+ *  Video resolver — same provider cascade as the production
+ *  /pulse page. mp4/webm/mov direct → YouTube → Vimeo → Cloudflare
+ *  Stream → Aryeo iframe → generic iframe → null (photo fallback).
+ * ---------------------------------------------------------------- */
+const RE_DIRECT = /\.(mp4|webm|mov|m4v)(\?|#|$)/i;
+const RE_YT     = /(?:youtube\.com\/(?:watch\?[^#]*v=|embed\/|shorts\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+const RE_VIMEO  = /(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/;
+const RE_CF     = /iframe\.videodelivery\.net\/([a-f0-9]+)/i;
+const RE_ARYEO  = /\b[\w.-]+\.aryeo\.com\/(?:videos|sites)\/([^\s"'<>?]+)/i;
+
+function extractIframeSrc(html) {
+  const m = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+  return m ? m[1].trim() : null;
+}
+
+function matchKnownProvider(url) {
+  if (!url) return null;
+  if (RE_DIRECT.test(url)) return { kind: 'mp4', directUrl: url };
+  const ytM = url.match(RE_YT);     if (ytM)  return { kind: 'youtube', id: ytM[1] };
+  const vM  = url.match(RE_VIMEO);  if (vM)   return { kind: 'vimeo', id: vM[1] };
+  const cfM = url.match(RE_CF);     if (cfM)  return { kind: 'cloudflare', id: cfM[1] };
+  const arM = url.match(RE_ARYEO);  if (arM)  return { kind: 'aryeo', slug: arM[1] };
+  return null;
+}
+
+function resolveVideo(videos) {
+  if (!Array.isArray(videos) || videos.length === 0) return { kind: null };
+  for (const v of videos) {
+    const uri = (v && v.Uri) || '';
+    if (uri) {
+      const m = matchKnownProvider(uri);
+      if (m) return m;
+      // Unknown URI but looks like an iframe-able provider — embed as-is.
+      if (/^https?:\/\//.test(uri)) return { kind: 'generic', src: uri };
+    }
+    const html = (v && v.ObjectHtml) || '';
+    if (html) {
+      const src = extractIframeSrc(html);
+      if (src) {
+        const m = matchKnownProvider(src);
+        if (m) return m;
+        // Iframe from an unknown provider (e.g. Riley Visuals, local
+        // photographers) — embed the extracted src directly.
+        if (/^https?:\/\//.test(src)) return { kind: 'generic', src: src };
+      }
+    }
+  }
+  return { kind: null };
+}
+
+function embedUrl(video) {
+  switch (video.kind) {
+    case 'youtube':
+      return 'https://www.youtube.com/embed/' + video.id
+        + '?autoplay=1&mute=1&controls=0&loop=1&playsinline=1&modestbranding=1&rel=0&playlist=' + video.id;
+    case 'vimeo':
+      return 'https://player.vimeo.com/video/' + video.id
+        + '?autoplay=1&muted=1&loop=1&controls=0&background=1';
+    case 'cloudflare':
+      return 'https://iframe.videodelivery.net/' + video.id
+        + '?autoplay=true&muted=true&loop=true&controls=false';
+    case 'aryeo':
+      return 'https://media.aryeo.com/videos/' + video.slug;
+    case 'generic':
+      return video.src;
+    default:
+      return null;
+  }
+}
+
+/* ---------------------------------------------------------------- *
+ *  Formatting
+ * ---------------------------------------------------------------- */
+function formatPrice(n) {
+  return '$' + Math.round(n).toLocaleString();
+}
+function formatPriceShort(n) {
+  if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 2).replace(/\.?0+$/, '') + 'M';
+  if (n >= 1000)      return '$' + Math.round(n / 1000) + 'K';
+  return '$' + n;
+}
+
+/* ---------------------------------------------------------------- *
+ *  Conversational hook system — replaces stale event-type pills.
+ *
+ *  Each event type has a pool of 4-6 lines in Matt's voice. Pick a stable
+ *  index by hashing the listing ID, so the same listing always shows the
+ *  same hook but the feed has variety. Price drops can interpolate the
+ *  real dollar delta via ${delta}.
+ *
+ *  Voice rules (carry CLAUDE.md voice guidelines through to the hook):
+ *  - Direct. Specific. Kind. Honest, even when inconvenient.
+ *  - Lower case feels conversational; upper case feels corporate.
+ *  - No real-estate clichés (stunning, must-see, dream home, gorgeous).
+ *  - No AI filler (delve, leverage, robust, seamless, comprehensive).
+ *  - No exclamation marks. No "act fast." No fake urgency.
+ *  - One emoji MAX across the entire pool — and ONLY where it earns its
+ *    place. The video carries the visual energy; the hook is the voice.
+ * ---------------------------------------------------------------- */
+const HOOKS = {
+  new_listing: [
+    "you saw it first",
+    "fresh on the market",
+    "before the photos hit Zillow",
+    "the early-bird version",
+    "still warm",
+    "just hit the MLS",
+  ],
+  // Price drops favor lines with a dynamic dollar delta — that specificity
+  // is the engagement. Generic fallbacks are kept for the rare case where
+  // the delta math is missing or trivial.
+  price_drop: [
+    "down ${delta}K today",
+    "${delta}K cheaper than yesterday",
+    "same house, ${delta}K less",
+    "the seller just blinked ${delta}K",
+    "now ${delta}K closer to yes",
+    "the price moved, the view didn't",
+  ],
+  status_pending: [
+    "an offer landed",
+    "off the market for now",
+    "a buyer moved faster than you",
+    "spoken for",
+    "someone said yes",
+  ],
+  status_closed: [
+    "and… scene",
+    "keys handed over",
+    "another one in the books",
+    "the new owners moved in",
+    "champagne moment",
+  ],
+};
+
+function hashId(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function pickHook(fixture) {
+  const pool = HOOKS[fixture.eventType] || HOOKS.new_listing;
+  const idx = hashId(fixture.id) % pool.length;
+  let line = pool[idx];
+  // Inject dynamic price delta for price_drop hooks.
+  if (line.includes('${delta}') && fixture.previousPrice && fixture.price) {
+    const deltaK = Math.round((fixture.previousPrice - fixture.price) / 1000);
+    line = line.replace('${delta}', deltaK.toString());
+  }
+  return line;
+}
+
+/* ---------------------------------------------------------------- *
+ *  Card rendering
+ * ---------------------------------------------------------------- */
+function renderCard(f) {
+  const video = resolveVideo(f.videos);
+  const url = embedUrl(video);
+  const isLuxury = f.price >= 5_000_000;
+  const hookLine = pickHook(f);
+
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.dataset.id = f.id;
+  if (video.kind) card.dataset.embed = url || '';
+
+  // media layer
+  const media = document.createElement('div');
+  media.className = 'media';
+
+  if (video.kind === 'mp4') {
+    const v = document.createElement('video');
+    v.className = 'vid';
+    v.src = video.directUrl;
+    v.poster = f.photoUrl;
+    v.muted = true;
+    v.playsInline = true;
+    v.loop = true;
+    v.autoplay = true;
+    v.preload = 'metadata';
+    media.appendChild(v);
+  } else if (video.kind) {
+    const iframe = document.createElement('iframe');
+    iframe.className = 'lvideo';
+    iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+    media.appendChild(iframe);
+    const poster = document.createElement('img');
+    poster.className = 'lposter';
+    poster.src = f.photoUrl;
+    poster.alt = f.address;
+    media.appendChild(poster);
+  } else {
+    const img = document.createElement('img');
+    img.className = 'poster kenburns';
+    img.src = f.photoUrl;
+    img.alt = f.address;
+    media.appendChild(img);
+  }
+  card.appendChild(media);
+
+  // scrims
+  const top = document.createElement('div'); top.className = 'top-scrim'; card.appendChild(top);
+  const bot = document.createElement('div'); bot.className = 'bot-scrim'; card.appendChild(bot);
+
+  // Conversational hook — the SINGLE top-of-card overlay. No more stale
+  // event-type pills, no more redundant "VIDEO TOUR" / "LUXURY" badges.
+  // The price + the playing video carry that story; the hook gives it voice.
+  const hook = document.createElement('div');
+  hook.className = 'hook';
+  hook.textContent = hookLine;
+  card.appendChild(hook);
+
+  // actions
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  actions.innerHTML = `
+    <button class="like" aria-label="Like">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </button>
+    <span class="lbl">Like</span>
+    <button class="share" aria-label="Share">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 2 11 13"/>
+        <path d="m22 2-7 20-4-9-9-4 20-7Z"/>
+      </svg>
+    </button>
+    <span class="lbl">Share</span>
+  `;
+  card.appendChild(actions);
+
+  // bottom block
+  const bottom = document.createElement('div');
+  bottom.className = 'bottom';
+  let priceBlock = '';
+  if (f.eventType === 'status_closed' && f.closePrice != null) {
+    priceBlock = '<p class="eyebrow-sm">Sold for</p>'
+      + '<p class="price">' + formatPrice(f.closePrice) + '</p>';
+  } else if (f.eventType === 'price_drop' && f.previousPrice) {
+    priceBlock = '<p class="eyebrow-sm">Now</p>'
+      + '<p class="price">' + formatPrice(f.price) + '</p>'
+      + '<p class="strike"><s>Was ' + formatPriceShort(f.previousPrice) + '</s></p>';
+  } else {
+    priceBlock = '<p class="price ' + (isLuxury ? 'price-luxury' : '') + '">'
+      + (isLuxury ? formatPriceShort(f.price) : formatPrice(f.price))
+      + '</p>';
+  }
+  const specs = [
+    f.bd ? f.bd + ' bd' : null,
+    f.ba ? f.ba + ' ba' : null,
+    f.sqft ? f.sqft.toLocaleString() + ' sqft' : null
+  ].filter(Boolean).join(' · ');
+
+  // CTA — matches components/lp/ListingCard.tsx (locked 2026-05-19).
+  // Sold homes can't be toured, so flip to "see similar homes" which
+  // anchor-jumps into ShowcaseSimilar on the sold listing's detail page
+  // (id="similar" added to the section so #similar lands on the carousel).
+  const slug = f.listNumber || f.id;
+  const isSold = f.eventType === 'status_closed';
+  const ctaHref  = isSold ? '/listings/' + encodeURIComponent(slug) + '#similar'
+                          : '/lp/listings/' + encodeURIComponent(slug) + '/#schedule';
+  const ctaLabel = isSold ? 'See similar homes' : 'Schedule a showing';
+  const ctaClass = isSold ? 'cta cta-secondary' : 'cta';
+  const ctaHtml  = '<a class="' + ctaClass + '" href="' + ctaHref + '">'
+                 + '<span>' + ctaLabel + '</span>'
+                 + '<span class="arrow" aria-hidden="true">→</span>'
+                 + '</a>';
+
+  bottom.innerHTML = priceBlock
+    + '<p class="addr">' + f.address + '</p>'
+    + '<p class="where">' + [f.subdivision, f.city].filter(Boolean).join(', ') + '</p>'
+    + (specs ? '<p class="specs">' + specs + '</p>' : '')
+    + '<p class="agent">Listed by ' + f.agent + ' · ' + f.office + '</p>'
+    + ctaHtml;
+  card.appendChild(bottom);
+
+  // safe-zone labels (only visible when .show-safe is set)
+  const labelTop = document.createElement('div');
+  labelTop.className = 'safe-label safe-label-top';
+  labelTop.textContent = 'Unsafe · platform chrome';
+  card.appendChild(labelTop);
+  const labelBot = document.createElement('div');
+  labelBot.className = 'safe-label safe-label-bottom';
+  labelBot.textContent = 'Unsafe · platform chrome';
+  card.appendChild(labelBot);
+
+  // TikTok right-action column overlay (visible only in chrome-tt mode)
+  const ttRight = document.createElement('div');
+  ttRight.className = 'tt-right';
+  ttRight.innerHTML = `
+    <span><span class="ico">👤</span></span>
+    <span><span class="ico">♡</span><span class="ct">12.4K</span></span>
+    <span><span class="ico">💬</span><span class="ct">238</span></span>
+    <span><span class="ico">🔖</span><span class="ct">1,802</span></span>
+    <span><span class="ico">↗</span><span class="ct">Share</span></span>
+  `;
+  card.appendChild(ttRight);
+
+  // heart burst
+  const burst = document.createElement('div');
+  burst.className = 'burst';
+  burst.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+  card.appendChild(burst);
+
+  // double-tap to like
+  let lastTap = 0;
+  card.addEventListener('click', (e) => {
+    // ignore action button clicks
+    if (e.target.closest('.actions')) return;
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      triggerLike(card);
+    }
+    lastTap = now;
+  });
+  const likeBtn = actions.querySelector('.like');
+  likeBtn.addEventListener('click', (e) => { e.stopPropagation(); triggerLike(card); });
+
+  return card;
+}
+
+function triggerLike(card) {
+  const btn = card.querySelector('.like');
+  btn.classList.toggle('liked');
+  const burst = card.querySelector('.burst');
+  burst.classList.remove('go');
+  void burst.offsetWidth;
+  burst.classList.add('go');
+}
+
+/* ---------------------------------------------------------------- *
+ *  Lazy video activation (one card plays at a time)
+ * ---------------------------------------------------------------- */
+let _activeCard = null;
+
+function pickAndActivate() {
+  // Find the card with highest visible ratio. Activate it, stop others.
+  let best = null, bestRatio = 0;
+  document.querySelectorAll('article.card[data-embed]').forEach((card) => {
+    const rect = card.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const visible = Math.max(0, Math.min(rect.bottom, vh) - Math.max(rect.top, 0));
+    const ratio = rect.height ? visible / rect.height : 0;
+    if (ratio > bestRatio) {
+      best = card;
+      bestRatio = ratio;
+    }
+  });
+  if (!best || bestRatio < 0.45) return;
+  if (best === _activeCard) return;
+  // stop previous — use removeAttribute so the iframe truly unloads,
+  // rather than resolving '' to the current document URL.
+  if (_activeCard) {
+    const ifr = _activeCard.querySelector('iframe.lvideo');
+    if (ifr) {
+      ifr.removeAttribute('src');
+    }
+    _activeCard.classList.remove('playing');
+  }
+  // start new
+  const ifr = best.querySelector('iframe.lvideo');
+  if (ifr) {
+    const url = best.dataset.embed;
+    if (url && ifr.src !== url) ifr.src = url;
+  }
+  best.classList.add('playing');
+  _activeCard = best;
+}
+
+function setupObserver() {
+  const obs = new IntersectionObserver(() => { pickAndActivate(); },
+    { threshold: [0, 0.15, 0.3, 0.55, 0.8, 1] });
+  document.querySelectorAll('article.card').forEach((c) => obs.observe(c));
+  // Also react to scroll directly — covers cases where IntersectionObserver
+  // doesn't fire on initial layout (e.g. when entries=null after page load).
+  let scrollTick = null;
+  window.addEventListener('scroll', () => {
+    if (scrollTick) return;
+    scrollTick = requestAnimationFrame(() => { scrollTick = null; pickAndActivate(); });
+  }, { passive: true });
+}
+
+/* ---------------------------------------------------------------- *
+ *  Boot
+ * ---------------------------------------------------------------- */
+function setMode(mode) {
+  const cards = document.querySelectorAll('article.card');
+  cards.forEach((c) => {
+    c.classList.remove('show-safe', 'chrome-ig', 'chrome-tt');
+    if (mode === 'safe') c.classList.add('show-safe');
+    else if (mode === 'ig') c.classList.add('chrome-ig');
+    else if (mode === 'tt') c.classList.add('chrome-tt');
+  });
+  document.querySelectorAll('.tbtn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+}
+
+function wireToolbar() {
+  document.querySelectorAll('.tbtn').forEach((b) => {
+    b.addEventListener('click', () => setMode(b.dataset.mode));
+  });
+  setMode('clean');
+}
+
+function boot() {
+  const feed = document.getElementById('feed');
+  FIXTURES.forEach((f) => feed.appendChild(renderCard(f)));
+  setupObserver();
+  wireToolbar();
+  // Activate the first visible card. Stacked attempts because timing of
+  // layout completion varies — by frame 2 cards are always sized, by 200ms
+  // even the slowest browser/extension has settled.
+  requestAnimationFrame(() => requestAnimationFrame(pickAndActivate));
+  setTimeout(pickAndActivate, 200);
+  setTimeout(pickAndActivate, 800);
+  window.addEventListener('load', pickAndActivate);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+</script>
+
+</body>
+</html>
