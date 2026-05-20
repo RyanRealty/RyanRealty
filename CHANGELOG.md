@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.257.1 (2026-05-20)
+
+### Bug Fixes
+- fix(video): trailing subagent tweaks to Remotion comps + build scripts (Outstanding 17 polish)
+
+### Maintenance
+- test(producers): skip Remotion-render producers in unit test (run via --with-renders flag)
+
+---
+
+
 ## v1.257.0 (2026-05-20)
 
 ### Features
