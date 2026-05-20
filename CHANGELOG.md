@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.257.0 (2026-05-20)
+
+### Features
+- feat(video): Outstanding 17 — walkability_overlay Remotion comp + producer-inventory updates + package-lock fixtures
+- feat(video): Outstanding 17 batch — 10 of 12 new Remotion compositions
+
+### Bug Fixes
+- fix(video): subagent tweaks to data_viz_video, listing_reveal, news_video, build scripts
+
+---
+
+
 ## v1.256.1 (2026-05-20)
 
 ### Bug Fixes
