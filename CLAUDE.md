@@ -664,19 +664,53 @@ The frontmatter must include `action_types: [...]` listing every action_type str
 
 ### Producer expertise model
 
-Every producer reads its own references before executing. Mandatory for every producer:
+Every producer reads its own references before executing. **These rules apply GLOBALLY — every piece of content created for any Ryan Realty surface (social, web, email, print, video) inherits them whether the producer "knows about" the rule or not.** Hidden-in-an-optional-skill is not acceptable. Every content producer loads ALL of:
+
+**Tier 1 — mandatory for every producer (every action_type):**
 1. `CLAUDE.md` §0 — Data Accuracy mandate (non-negotiable; outranks all other instructions)
 2. `CLAUDE.md` §0.5 — Draft-First, Commit-Last (non-negotiable)
 3. `design_system/ryan-realty/SKILL.md` — brand visual system
-4. `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice enforcement
+4. `marketing_brain_skills/brand-voice/SKILL.md` + `voice_guidelines.md` — voice enforcement (`grep_banned()` / `has_hard_fail()` from `scripts/_producer_lib.py`)
 
-Content producers additionally load:
+**Tier 2 — every content producer additionally loads:**
 5. `automation_skills/content_engine/SKILL.md` — the routing bus they are called from
 6. `social_media_skills/platform-best-practices/SKILL.md` — 2026 platform rule layer
 7. `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
 8. `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard + format minimums
 
-A producer that executes without loading its mandatory references is non-compliant. Fix the producer, not the content.
+**Tier 3 — every video / animated content producer additionally loads (locked 2026-05-20):**
+9. [`video_production_skills/captions/SKILL.md`](video_production_skills/captions/SKILL.md) — single-word Amboqia caption rule + canonical `SingleWordCaption` component. **Every video with VO uses this — no exceptions, no alternate caption components.**
+10. [`video_production_skills/safe-zones/SKILL.md`](video_production_skills/safe-zones/SKILL.md) — platform-aware safe zones for portrait / landscape / square. **Import from `canonical/safe-zones.ts`; never hardcode coords.**
+11. [`video_production_skills/elevenlabs_voice/SKILL.md`](video_production_skills/elevenlabs_voice/SKILL.md) — Victoria voice, canonical settings, forced-alignment, A/B variants. **Every VO call goes through `scripts/_voice_lib.py` (Python) or `lib/voice/alignment.ts` (Node) — no inline ElevenLabs API calls.**
+12. [`video_production_skills/quality_gate/SKILL.md`](video_production_skills/quality_gate/SKILL.md) §4.3 — first-frame thumbnail gate. **Every video render runs `scripts/check_first_frame.py` before publish.**
+
+**Tier 4 — flat-design / static-image producers (FB lead-gen ad, flyer, IG carousel, LinkedIn doc carousel, map static card, Google Ads SERP card) additionally load:**
+13. [`marketing_brain_skills/competitor-design-recon/SKILL.md`](marketing_brain_skills/competitor-design-recon/SKILL.md) — Apify-driven layout pattern library. **Read `out/design-recon/<format>/recon.md` at build time; adapt a documented pattern instead of inventing layouts.**
+
+**Tier 5 — content type-specific (load only the one matching your action_type):**
+14. The matching format SKILL.md from `video_production_skills/<format>/SKILL.md` (e.g. `listing-tour-video`, `market-data-video`, `news-video`, `neighborhood-overview`).
+
+A producer that executes without loading the applicable tier references is non-compliant. The TEMPLATE.md producer scaffold enumerates these tiers — fix the producer, not the content. **If a rule is hidden in a skill that the producer doesn't load, the rule itself is broken — move it into a tier above.**
+
+### Global enforcement check (recommended pre-render)
+
+Every video producer's build pipeline should run, in order:
+
+```bash
+# 1. Verify the producer's source actually imports the canonical libs
+grep -q 'from scripts._voice_lib' scripts/build_<producer>.py || echo "FAIL: not using shared voice lib"
+grep -q 'SingleWordCaption\|safe-zones' video/<comp>/src/*.tsx || echo "FAIL: not using canonical captions/safe-zones"
+
+# 2. Run the brand-voice check on all on-screen text + VO scripts
+python3 -c "from scripts._producer_lib import has_hard_fail; ..."
+
+# 3. Render, then verify the first frame
+python3 scripts/check_first_frame.py out/<format>/<slug>/<file>.mp4
+
+# 4. Run blackdetect + duration check (existing quality gate)
+```
+
+A producer that ships without these checks is non-compliant. Every per-producer rebuild is responsible for wiring its build pipeline to all four steps.
 
 ### Existing exemplar: list-kit
 

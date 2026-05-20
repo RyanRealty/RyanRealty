@@ -95,11 +95,31 @@ Query `marketing_brain_actions` by `id`. Confirm `status='pending'`.
 Immediately UPDATE `status='in_production'` and `executed_at=now()`.
 
 **Step 2 — Load mandatory references**
-Before touching any deliverable, read:
+Before touching any deliverable, read the tier references that apply to this producer. **These are GLOBAL — every Ryan Realty content surface inherits them. Do NOT skip a tier just because the rule "feels" optional.**
+
+**Tier 1 — every producer (always):**
 - `CLAUDE.md` §0 — Data Accuracy mandate
 - `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `design_system/ryan-realty/SKILL.md` — brand register
-- [any format-specific skill files this producer delegates to]
+- `design_system/ryan-realty/SKILL.md` — brand visual system
+- `marketing_brain_skills/brand-voice/SKILL.md` + `voice_guidelines.md` — voice enforcement (use `scripts/_producer_lib.has_hard_fail()` to validate every piece of text before surfacing)
+
+**Tier 2 — every content producer (every `content:*` action_type):**
+- `automation_skills/content_engine/SKILL.md` — routing bus
+- `social_media_skills/platform-best-practices/SKILL.md` — platform rule layer
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
+- `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard + format minimums
+
+**Tier 3 — every video / animated producer:**
+- [`video_production_skills/captions/SKILL.md`](../../video_production_skills/captions/SKILL.md) — single-word Amboqia caption rule. Import `SingleWordCaption` from `canonical/`. Never roll your own caption component.
+- [`video_production_skills/safe-zones/SKILL.md`](../../video_production_skills/safe-zones/SKILL.md) — platform-aware safe zones. Import constants from `canonical/safe-zones.ts`. Never hardcode coords.
+- [`video_production_skills/elevenlabs_voice/SKILL.md`](../../video_production_skills/elevenlabs_voice/SKILL.md) — Victoria voice. Use `scripts/_voice_lib.py` (Python) or `lib/voice/alignment.ts` (Node). Never inline the ElevenLabs API.
+- [`video_production_skills/quality_gate/SKILL.md`](../../video_production_skills/quality_gate/SKILL.md) — run `scripts/check_first_frame.py` before publish.
+
+**Tier 4 — flat-design / static-image producers (FB lead-gen ad, flyer, IG carousel, LinkedIn doc carousel, map static card, Google Ads SERP card):**
+- [`marketing_brain_skills/competitor-design-recon/SKILL.md`](../competitor-design-recon/SKILL.md) — read `out/design-recon/<format>/recon.md` for the layout patterns to adapt. Never invent a layout from scratch.
+
+**Tier 5 — format-specific (load the one matching this producer's `action_type`):**
+- [any format-specific skill files this producer delegates to, e.g. `video_production_skills/<format>/SKILL.md`]
 
 **Step 3 — Pull and verify source data**
 [Describe the Supabase query or API call. Per CLAUDE.md §0, every
@@ -292,24 +312,37 @@ WHERE id='<id>';
 
 ## 10. Related skills and references
 
-**Required reading before executing:**
+**Tier 1 — required for every producer:**
 - `CLAUDE.md` §0 — Data Accuracy (outranks everything)
 - `CLAUDE.md` §0.5 — Draft-First, Commit-Last (outranks everything)
 - `design_system/ryan-realty/SKILL.md` — brand visual system
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice enforcement
+- `marketing_brain_skills/brand-voice/SKILL.md` + `voice_guidelines.md` — voice enforcement
+- `scripts/_producer_lib.py` — `has_hard_fail()`, `grep_banned_categorized()`, `brand_stamp()`, `font()`, brand colors
 
-**Format skills delegated to (if any):**
+**Tier 2 — every content producer:**
+- `automation_skills/content_engine/SKILL.md` — content routing; all content actions go through here
+- `social_media_skills/platform-best-practices/SKILL.md` — 2026 platform rule layer
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
+- `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard + format minimums
+
+**Tier 3 — every video / animated producer (locked 2026-05-20):**
+- `video_production_skills/captions/SKILL.md` — single-word Amboqia caption rule
+- `video_production_skills/captions/canonical/SingleWordCaption.tsx` — the only sanctioned caption component
+- `video_production_skills/captions/canonical/load-amboqia.ts` — Remotion font loader
+- `video_production_skills/safe-zones/SKILL.md` — platform-aware safe zones
+- `video_production_skills/safe-zones/canonical/safe-zones.ts` — exported constants (`PORTRAIT_SAFE`, `LANDSCAPE_SAFE`, `SQUARE_SAFE`, `CAPTION_PORTRAIT`, etc.)
+- `video_production_skills/elevenlabs_voice/SKILL.md` — Victoria voice + canonical settings + A/B variants
+- `scripts/_voice_lib.py` — Python shared client (`synth_vo`, `synth_vo_chain`, `synth_vo_ab`, `get_forced_alignment`, `wrap_phonemes`, `IPA_PHONEMES`)
+- `lib/voice/alignment.ts` — Node/TS shared client (`VICTORIA_VOICE_ID`, `VICTORIA_SETTINGS`, `VICTORIA_AB_VARIANTS`)
+- `video_production_skills/quality_gate/SKILL.md` §4.3 — first-frame thumbnail gate
+- `scripts/check_first_frame.py` — first-frame ship-blocker checker
+
+**Tier 4 — flat-design / static-image producers (if applicable):**
+- `marketing_brain_skills/competitor-design-recon/SKILL.md` — Apify-driven layout pattern library
+- `scripts/recon-design.mjs` — runner
+
+**Format-specific skill (this producer delegates to):**
 - [`video_production_skills/<format>/SKILL.md`] — [what it provides]
-
-**Capabilities used inside this producer:**
-- [`video_production_skills/elevenlabs_voice/SKILL.md`] — Victoria voice settings
-- [`video_production_skills/quality_gate/SKILL.md`] — QA pass procedure
-
-**Playbooks and pipeline docs:**
-- [`automation_skills/content_engine/SKILL.md`] — content routing; all content actions go through here
-- [`social_media_skills/platform-best-practices/SKILL.md`] — 2026 platform rule layer
-- [`video_production_skills/ANTI_SLOP_MANIFESTO.md`] — banned content gate
-- [`video_production_skills/VIRAL_GUARDRAILS.md`] — scorecard + format minimums
 
 **Registry entry:**
 - `marketing_brain_skills/producers/REGISTRY.md` — Section [A/B/C/D/E/F], row `<producer_name>`
