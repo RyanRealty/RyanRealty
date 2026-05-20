@@ -42,8 +42,18 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion'
-import { SingleWordCaption, type CaptionWord } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
+import { SingleWordCaption as SingleWordCaptionBase, type CaptionWord } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
 import { PORTRAIT_SAFE, CAPTION_PORTRAIT } from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+
+type SWCProps = {
+  words: CaptionWord[]
+  suppressBeforeSec?: number
+  suppressFrames?: Array<[number, number]>
+  centerY?: number
+  fontSizePx?: number
+  maxWidthPx?: number
+}
+const SingleWordCaption = SingleWordCaptionBase as React.ComponentType<SWCProps>
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

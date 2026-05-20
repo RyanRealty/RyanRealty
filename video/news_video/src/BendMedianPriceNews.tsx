@@ -44,8 +44,22 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion'
-import { SingleWordCaption, type CaptionWord } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
+import { SingleWordCaption as SingleWordCaptionBase, type CaptionWord } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
 import { PORTRAIT_SAFE, CAPTION_PORTRAIT } from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+
+// Cast canonical SingleWordCaption to a local JSX-compatible type.
+// The canonical component is React.FC but @types/react 18.3.x can produce
+// a ReactNode | Promise<ReactNode> return-type that tsc rejects in strict mode
+// cross-package. The cast is safe — the runtime behaviour is identical.
+type SWCProps = {
+  words: CaptionWord[]
+  suppressBeforeSec?: number
+  suppressFrames?: Array<[number, number]>
+  centerY?: number
+  fontSizePx?: number
+  maxWidthPx?: number
+}
+const SingleWordCaption = SingleWordCaptionBase as React.ComponentType<SWCProps>
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
