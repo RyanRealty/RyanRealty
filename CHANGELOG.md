@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.253.0 (2026-05-20)
+
+### Features
+- feat(producers): outstanding-pass batch 2 — coming-soon-teaser, ig-single-post, flyer F1 logo, blog/market/google-ads HTML previews
+- feat(bend lp): ship approved 23-polygon map — 13 city + 10 outside-city communities
+
+---
+
+
 ## v1.252.0 (2026-05-20)
 
 ### Features
