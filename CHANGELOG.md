@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.247.0 (2026-05-20)
+
+### Features
+- feat(video skills): foundational pass items 1-3 — single-word Amboqia captions, platform-aware safe zones, first-frame thumbnail gate
+
+---
+
+
 ## v1.246.0 (2026-05-20)
 
 ### Features
