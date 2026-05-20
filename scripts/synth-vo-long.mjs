@@ -39,8 +39,13 @@ const ROOT = resolve(__dirname, '..')
 const OUT = resolve(ROOT, 'out/yt-long')
 const PUB = resolve(ROOT, 'video/market-report-yt-long/public')
 
+// Canonical values from lib/voice/alignment.ts (locked 2026-05-07).
+// Keep in sync — see video_production_skills/elevenlabs_voice/SKILL.md.
+const VICTORIA_VOICE_ID = 'qSeXEcewz7tA0Q0qk9fH'
+const VICTORIA_MODEL_ID = 'eleven_turbo_v2_5'
+const VICTORIA_SETTINGS = { stability: 0.4, similarity_boost: 0.8, style: 0.5, use_speaker_boost: true }
 // Victoria — locked per Matt 2026-04-27. Never change without CLAUDE.md update.
-const VOICE = 'qSeXEcewz7tA0Q0qk9fH'
+const VOICE = VICTORIA_VOICE_ID
 const KEY = process.env.ELEVENLABS_API_KEY
 if (!KEY) { console.error('Missing ELEVENLABS_API_KEY'); process.exit(1) }
 
@@ -83,8 +88,8 @@ const nextIP = () => HOST_IPS[ipIdx++ % HOST_IPS.length]
 async function elSynth(fullText) {
   const body = {
     text: fullText,
-    model_id: 'eleven_turbo_v2_5',
-    voice_settings: { stability: 0.40, similarity_boost: 0.80, style: 0.50, use_speaker_boost: true },
+    model_id: VICTORIA_MODEL_ID,
+    voice_settings: VICTORIA_SETTINGS,
   }
   const url = `https://${HOST}/v1/text-to-speech/${VOICE}/with-timestamps`
   const tmpFile = `/tmp/el_yt_long_${Date.now()}_${Math.random().toString(36).slice(2)}.json`

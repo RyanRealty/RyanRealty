@@ -176,25 +176,15 @@ def main():
     if hits:
         sys.stderr.write(f"WARN banned: {hits}\n")
 
+    # LEGACY inline — delegates to scripts._voice_lib.synth_vo. See
+    # video_production_skills/elevenlabs_voice/SKILL.md (canonical settings).
     api_key = os.environ.get("ELEVENLABS_API_KEY", "")
     vo_path = out_dir / "vo.mp3"
     if api_key:
-        import urllib.request
         text = " ".join(vo_lines)
-        payload_bytes = json.dumps({
-            "text": text,
-            "model_id": "eleven_turbo_v2_5",
-            "voice_settings": {"stability": 0.40, "similarity_boost": 0.80, "style": 0.50, "use_speaker_boost": True},
-        }).encode()
-        req = urllib.request.Request(
-            "https://api.elevenlabs.io/v1/text-to-speech/qSeXEcewz7tA0Q0qk9fH",
-            data=payload_bytes,
-            headers={"xi-api-key": api_key, "Content-Type": "application/json", "Accept": "audio/mpeg"},
-            method="POST",
-        )
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                vo_path.write_bytes(resp.read())
+            from _voice_lib import synth_vo  # shared lib — canonical settings
+            synth_vo(text, vo_path)
             print(f"✓ wrote {vo_path}")
         except Exception as e:
             sys.stderr.write(f"ElevenLabs error: {e}\n")
