@@ -27,6 +27,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import LandingPageTracker from '@/components/LandingPageTracker'
+import { ListingCard as SharedListingCard } from '@/components/lp/ListingCard'
 
 import {
   TETHEROW_CONFIG,
@@ -856,7 +857,24 @@ export default async function TetherowLandingPage() {
         />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {activeListings.map((l) => (
-            <ListingCard key={l.listingKey} listing={l} />
+            <SharedListingCard
+              key={l.listingKey}
+              listing={{
+                listingKey: l.listingKey,
+                listNumber: null,
+                address: l.addressLine,
+                city: 'Bend',
+                listPrice: l.listPrice ?? 0,
+                beds: l.bedrooms,
+                baths: l.bathrooms,
+                sqft: l.livingAreaSqFt,
+                photoUrl: l.photoUrl,
+                statusLabel: l.statusLabel,
+                daysOnMarket: l.cumulativeDaysOnMarket,
+                subdivision: l.subdivisionName ?? 'Tetherow',
+              }}
+              scheduleHref="#buyer"
+            />
           ))}
         </div>
       </Section>
