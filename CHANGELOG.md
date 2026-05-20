@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.254.0 (2026-05-20)
+
+### Features
+- feat(pulse): durable static-HTML demo of video-first feed
+
+---
+
+
 ## v1.253.0 (2026-05-20)
 
 ### Features
