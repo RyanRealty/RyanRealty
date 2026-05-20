@@ -20,7 +20,9 @@ export const PRODUCERS = {
   'postcard_farm_mailer':          { runner: 'python3', script: 'scripts/build_postcard_farm_mailer.py', section: 'B' },
   'under_contract_announcement':   { runner: 'python3', script: 'scripts/build_under_contract_announcement.py', section: 'B' },
   'sold_deal_summary':             { runner: 'python3', script: 'scripts/build_sold_deal_summary.py', section: 'B' },
-  'floor_plan_render':             { runner: 'python3', script: 'scripts/build_floor_plan_render.py', section: 'B' },
+  // 'floor_plan_render' — DEPRECATED 2026-05-20, moved to scripts/_deprecated/.
+  // Per Matt review: real floor plans come from the listing photographer, not
+  // from a generated SVG. See scripts/_deprecated/README.md.
   'meme_lord':                     { runner: 'python3', script: 'scripts/build_meme_lord.py', section: 'B' },
   'comparable_grid':               { runner: 'python3', script: 'scripts/build_comparable_grid.py', section: 'B' },
   'open_house_stories':            { runner: 'python3', script: 'scripts/build_open_house_stories.py', section: 'B' },

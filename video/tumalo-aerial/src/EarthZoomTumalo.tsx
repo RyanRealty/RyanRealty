@@ -18,11 +18,17 @@ const TOTAL_SEC = 10;
 const TOTAL_FRAMES = TOTAL_SEC * FPS;
 
 const ALT_START_M = 80_000;
-const ALT_END_M = 250;
+// Final altitude tightened 2026-05-20 per Matt review: 250m read as
+// "neighborhood" — the final frame should clearly be THE PARCEL, not the
+// area. 100m brings 19496 Tumalo Reservoir Rd's 2.28-acre lot to fill the
+// frame at the end of the zoom.
+const ALT_END_M = 100;
 const AZIMUTH_START_DEG = -20;
 const AZIMUTH_END_DEG = 55;
 const PITCH_START_DEG = 85;
-const PITCH_END_DEG = 35;
+// Tighter pitch at end (was 35°) so the final frame is more top-down on
+// the parcel — pairs with the lower altitude for parcel-level framing.
+const PITCH_END_DEG = 28;
 const FOV_DEG = 38;
 
 const ZoomCameraRig: React.FC = () => {
@@ -76,12 +82,21 @@ const ZoomCameraRig: React.FC = () => {
   );
 };
 
+// Brand overlay — TOP eyebrow only (locked 2026-05-20 per Matt review).
+// The bottom 144px navy bar that used to live here got overlaid by the IG/
+// TikTok/FB platform action UI (caption box + engagement chrome occupies
+// the bottom ~440px of a 1080×1920 frame). Brand attribution now anchors
+// at the top eyebrow only — inside the working safe zone per
+// video_production_skills/safe-zones/SKILL.md.
+//
+// The brand wordmark + tagline + contact line moved to the dedicated
+// EndCard frame at t=9.5–10s (separate Sequence in Root.tsx, not in
+// this overlay).
 const BrandOverlay: React.FC = () => {
   const frame = useCurrentFrame();
   const t = clamp(frame / TOTAL_FRAMES, 0, 1);
   const titleOpacity =
     t < 0.18 ? t / 0.18 : t > 0.85 ? Math.max(0, (1 - t) / 0.15) : 1;
-  const barOpacity = clamp((t - 0.05) / 0.15, 0, 1);
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
       <div
@@ -118,34 +133,7 @@ const BrandOverlay: React.FC = () => {
           Bend  ·  Oregon  ·  2.28 acres
         </div>
       </div>
-
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 144,
-          background: '#102742',
-          opacity: barOpacity,
-          color: '#faf8f4',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 36px',
-        }}
-      >
-        <div style={{ fontFamily: 'Amboqia Boriango, Playfair Display, serif', fontSize: 36, lineHeight: 1 }}>
-          Ryan Realty
-        </div>
-        <div style={{ fontFamily: 'Azo Sans, Geist, system-ui, sans-serif', fontSize: 18, fontStyle: 'italic', opacity: 0.92 }}>
-          It's About Relationships.
-        </div>
-        <div style={{ fontFamily: 'Azo Sans, Geist, system-ui, sans-serif', fontSize: 17, textAlign: 'right' }}>
-          <div>541.213.6706</div>
-          <div style={{ opacity: 0.85, fontSize: 14 }}>ryan-realty.com</div>
-        </div>
-      </div>
+      {/* Bottom navy bar removed 2026-05-20. Use the dedicated EndCard frame at t=9.5–10s for brand attribution. */}
     </AbsoluteFill>
   );
 };

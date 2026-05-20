@@ -1130,6 +1130,9 @@ async function main() {
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
 
+  // F7 (price-drop) + F8 (track-record) removed 2026-05-20 per Matt review.
+  // Function definitions retained as dead code in case we want to bring them
+  // back; they're just not rendered or shipped. The other 8 flyers stay.
   const flyers = [
     { name: 'F1-museum-wall.png',      html: F1_MuseumWall(ASSETS, PHOTOS) },
     { name: 'F2-broadsheet-strip.png', html: F2_BroadsheetStrip(ASSETS, PHOTOS) },
@@ -1137,8 +1140,6 @@ async function main() {
     { name: 'F4-contact-sheet.png',    html: F4_ContactSheet(ASSETS, PHOTOS) },
     { name: 'F5-story-postcard.png',   html: F5_StoryPostcard(ASSETS, PHOTOS) },
     { name: 'F6-farmstead-postcard.png', html: F6_FarmsteadPostcard(ASSETS, PHOTOS) },
-    { name: 'F7-price-drop.png',       html: F7_PriceDrop(ASSETS, PHOTOS) },
-    { name: 'F8-track-record.png',     html: F8_TrackRecord(ASSETS, PHOTOS) },
     { name: 'F9-open-house.png',       html: F9_OpenHouse(ASSETS, PHOTOS) },
     { name: 'F10-buyer-education.png', html: F10_BuyerEducation(ASSETS, PHOTOS) },
   ];
