@@ -22,11 +22,11 @@ describe('Victoria voice constants (LOCKED 2026-04-27)', () => {
     expect(VICTORIA_MODEL_ID).toBe('eleven_turbo_v2_5');
   });
 
-  it('uses the locked settings (stability 0.5, similarity 0.75, style 0.35, speaker_boost true)', () => {
+  it('uses the canonical conversational settings (locked 2026-05-07: stability 0.4, similarity 0.8, style 0.5, speaker_boost true)', () => {
     expect(VICTORIA_SETTINGS).toEqual({
-      stability: 0.5,
-      similarity_boost: 0.75,
-      style: 0.35,
+      stability: 0.4,
+      similarity_boost: 0.8,
+      style: 0.5,
       use_speaker_boost: true,
     });
   });

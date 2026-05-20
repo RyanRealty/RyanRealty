@@ -122,67 +122,121 @@ Do not use commas as separators in spelled-out numbers. Do not use "and" before 
 
 ---
 
-## Python code example.  canonical POST
+## Shared client libraries (locked 2026-05-20 — single source of truth)
+
+**Every producer that generates VO MUST import from one of these two shared modules.** Do NOT hardcode the voice ID, model, or settings inline — a one-line change here propagates to every producer.
+
+| Caller language | Import from | Exports |
+|---|---|---|
+| Python (scripts/build_*.py) | `scripts/_voice_lib.py` | `synth_vo`, `synth_vo_chain`, `synth_vo_ab`, `get_forced_alignment`, `alignment_to_caption_words`, `wrap_phonemes`, `VOICE_ID`, `DEFAULT_SETTINGS`, `AB_VARIANTS`, `IPA_PHONEMES` |
+| Node / TS (scripts/*.mjs, lib/) | `lib/voice/alignment.ts` | `VICTORIA_VOICE_ID`, `VICTORIA_MODEL_ID`, `VICTORIA_SETTINGS`, `VICTORIA_AB_VARIANTS`, plus the `synthVoiceSegment()` + `getForcedAlignment()` helpers |
+
+### Python usage (canonical)
 
 ```python
-import os, requests, json
+from scripts._voice_lib import (
+    synth_vo,
+    synth_vo_chain,
+    get_forced_alignment,
+    alignment_to_caption_words,
+    wrap_phonemes,
+)
 
-ELEVEN_API_KEY = os.environ["ELEVENLABS_API_KEY"]
-VOICE_ID = "qSeXEcewz7tA0Q0qk9fH"  # Victoria.  locked permanent
+# Single segment
+path = synth_vo("Bend home prices climbed four percent.", Path("out/vo/s01.mp3"))
 
-def generate_vo(text: str, previous_text: str = "", output_path: str = "vo.mp3") -> str:
-    """
-    Generate VO audio using Victoria voice with canonical settings.
-    Returns the output file path.
-    """
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-    headers = {
-        "xi-api-key": ELEVEN_API_KEY,
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "text": text,
-        "model_id": "eleven_turbo_v2_5",  # use eleven_v3 only if phoneme tags present
-        "voice_settings": {
-            # Updated 2026-05-07 per Matt directive.  conversational delivery; canonical source: video_production_skills/elevenlabs_voice/SKILL.md
-            "stability": 0.40,
-            "similarity_boost": 0.80,
-            "style": 0.50,
-            "use_speaker_boost": True,
-        },
-        "previous_text": previous_text,  # chain for prosody continuity
-    }
-    response = requests.post(url, headers=headers, json=payload)
-    response.raise_for_status()
-    with open(output_path, "wb") as f:
-        f.write(response.content)
-    print(f"VO written: {output_path} ({len(response.content):,} bytes)")
-    return output_path
-
-
-def generate_clip_vo(sentences: list[str], slug: str) -> list[str]:
-    """
-    Generate VO for a full clip by chaining previous_text across sentences.
-    Returns list of output paths.
-    """
-    paths = []
-    previous = ""
-    for i, sentence in enumerate(sentences):
-        path = f"public/audio/{slug}_s{i+1:02d}.mp3"
-        generate_vo(text=sentence, previous_text=previous, output_path=path)
-        previous = sentence
-        paths.append(path)
-    return paths
-
-
-# Example usage:
+# Multi-segment with previous_text chaining
 sentences = [
     "Bend home prices climbed four percent this quarter.",
     "The median closed at four hundred seventy five thousand dollars.",
     "Inventory sits at two point one months of supply.",
 ]
-generate_clip_vo(sentences, slug="news_bend_market")
+paths = synth_vo_chain(sentences, Path("out/vo/news_bend_market"), slug="news_bend_market")
+
+# Tricky place names — wrap with phoneme tags (auto-picks eleven_v3)
+text_with_phonemes = wrap_phonemes("Deschutes county home prices rose two percent.")
+# → '<phoneme alphabet="ipa" ph="dəˈʃuːts">Deschutes</phoneme> county...'
+synth_vo(text_with_phonemes, Path("out/vo/deschutes.mp3"))
+
+# Forced-alignment for captions
+alignment = get_forced_alignment(paths[0], sentences[0])
+caption_words = alignment_to_caption_words(alignment)  # ready for SingleWordCaption.tsx
 ```
+
+The library writes `<audio>.words.json` alongside every MP3. The captions component reads from that file at render time — see [`video_production_skills/captions/SKILL.md`](../captions/SKILL.md).
+
+---
+
+## A/B testing — locked 2026-05-20 (Matt directive)
+
+**Run an A/B test for any new producer + for any script that may read robotic before locking the production VO.** The default settings (0.40 / 0.80 / 0.50) are tuned for the average Ryan Realty script, but extreme cases (very short sentences, very long run-ons, dense numeric content, dramatic news clips) sometimes benefit from a different setting.
+
+### The three canonical variants
+
+| Variant | stability | similarity_boost | style | When it wins |
+|---|---|---|---|---|
+| **baseline** | 0.40 | 0.80 | 0.50 | Default conversational delivery — the majority of scripts |
+| **expressive** | 0.30 | 0.80 | 0.60 | Hook-heavy openers, market drama, news clips, when baseline reads flat |
+| **controlled** | 0.55 | 0.80 | 0.40 | Dense numeric reads, longer measured sentences, when baseline over-emotes |
+
+### A/B workflow
+
+```python
+from scripts._voice_lib import synth_vo_ab
+
+# Generate all three variants for a single representative line
+paths = synth_vo_ab(
+    "Median home price in Bend hit four hundred seventy five thousand last quarter.",
+    out_dir=Path("out/vo-ab/news_bend_april"),
+)
+# → out/vo-ab/news_bend_april/baseline.mp3
+# → out/vo-ab/news_bend_april/expressive.mp3
+# → out/vo-ab/news_bend_april/controlled.mp3
+```
+
+Listen to all three. Pick the most natural-sounding variant. Lock those settings via the `settings` arg on the production `synth_vo()` calls for that producer:
+
+```python
+from scripts._voice_lib import synth_vo, AB_VARIANTS
+
+# Lock 'expressive' for the news clip producer
+NEWS_CLIP_SETTINGS = AB_VARIANTS['expressive']
+path = synth_vo(text, out_path, settings=NEWS_CLIP_SETTINGS)
+```
+
+### When to re-run A/B
+
+- First time a new producer is built (always).
+- When Matt flags a producer's voice as "stiff" / "robotic" / "over-emotional."
+- After a meaningful ElevenLabs model update (rare).
+- When a new format with different cadence is added (e.g. micro-clip 6-second hooks vs. 45-second market explainers).
+
+Lock the chosen variant in the producer source. Do not A/B test on every render — that's wasteful API spend. The A/B is a one-time calibration per producer.
+
+---
+
+## Legacy inline pattern (deprecated, kept for reference)
+
+```python
+# DEPRECATED — do NOT copy this into new producers.
+# Use scripts/_voice_lib.py instead.
+
+import os, requests, json
+ELEVEN_API_KEY = os.environ["ELEVENLABS_API_KEY"]
+VOICE_ID = "qSeXEcewz7tA0Q0qk9fH"
+url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+payload = {
+    "text": text,
+    "model_id": "eleven_turbo_v2_5",
+    "voice_settings": {
+        "stability": 0.40, "similarity_boost": 0.80,
+        "style": 0.50, "use_speaker_boost": True,
+    },
+}
+# ... etc
+```
+
+This pattern is duplicated across ~15 producer scripts as of 2026-05-20. Each producer should migrate to `scripts/_voice_lib.py` on its next rebuild.
 
 ---
 

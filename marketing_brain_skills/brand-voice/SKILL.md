@@ -137,6 +137,23 @@ When a piece of content arrives for publish:
 4. **Log.** Write the validation result to the `marketing_decisions` table in Supabase (piece, result, rules cited, reviewer, final decision).
 5. **Route.** Pass (publish), Hard fail (return to generator with fix instructions), Soft flag (route to Matt for review).
 
+### Python implementation (for producer scripts)
+
+The canonical Python checker lives at `scripts/_producer_lib.py`. It exposes:
+
+| Function | Purpose |
+|---|---|
+| `has_hard_fail(text) -> bool` | Quick boolean — does the text contain ANY hard-banned word/phrase? |
+| `grep_banned(text, *, include_soft=True) -> list[str]` | Returns sorted list of banned terms found. Set `include_soft=False` to skip vague-qualifier flags. |
+| `grep_banned_categorized(text) -> {"hard": [...], "soft": [...]}` | Split result by tier — hard = ship-blockers, soft = review-needed. |
+
+Two-tier classification (locked 2026-05-20):
+
+- **`HARD_BANNED`** — substring match, always a ship-blocker. All §6.2 clichés + AI filler, all §6.3 hype openings + pandering phrases + talking-down constructions + marketing slop + fake urgency, all §4.7 salesy script language, all §11.0 anti-pattern phrases.
+- **`SOFT_FLAGGED`** — substring match, flag for human review. Vague qualifiers from §6.2 (`about`, `around`, `approximately`, `roughly`, `fairly`, `somewhat`) that have legitimate non-hedge uses.
+
+When this list and `voice_guidelines.md` §6 disagree, **the `.md` is the source of truth.** Update both together — never let them drift.
+
 ---
 
 ## Calibration per channel

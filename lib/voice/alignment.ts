@@ -1,15 +1,18 @@
 /**
- * lib/voice/alignment.ts — ElevenLabs Victoria TTS + forced-alignment helper.
+ * lib/voice/alignment.ts — ElevenLabs Victoria TTS + forced-alignment helper
+ * for Node/TS callers. Companion to `scripts/_voice_lib.py` for Python
+ * producers; both modules MUST stay in sync with the canonical settings
+ * in `video_production_skills/elevenlabs_voice/SKILL.md`.
  *
  * Listed as a BLOCKER in skills/youtube-market-reports/{SKILL.md,pipeline.md,
  * tool-inventory.md}. Builds the AudioBuffer + word-level AlignmentWord[]
  * that the CaptionBand and per-scene timing both consume.
  *
- * Hard rules (per skills/youtube-market-reports/SKILL.md Section 9.12 and
- * brand-system.md Section 13):
+ * Hard rules (per video_production_skills/elevenlabs_voice/SKILL.md §
+ * "Canonical voice settings" — locked 2026-05-07, conversational tuning):
  *   - Voice Victoria — voice ID `qSeXEcewz7tA0Q0qk9fH` (LOCKED 2026-04-27).
- *   - Model `eleven_turbo_v2_5`.
- *   - Settings: stability 0.50, similarity_boost 0.75, style 0.35, speaker_boost true.
+ *   - Model `eleven_turbo_v2_5` (eleven_v3 only when <phoneme> tags present).
+ *   - Settings: stability 0.40, similarity_boost 0.80, style 0.50, speaker_boost true.
  *   - `previous_text` chained across all segments for prosody continuity.
  *   - Output format: `mp3_44100_128`.
  *   - Forced-alignment via /v1/forced-alignment for word-level caption sync.
@@ -36,10 +39,21 @@ export const VICTORIA_MODEL_ID = 'eleven_turbo_v2_5';
 export const VICTORIA_OUTPUT_FORMAT = 'mp3_44100_128';
 
 export const VICTORIA_SETTINGS = {
-  stability: 0.5,
-  similarity_boost: 0.75,
-  style: 0.35,
+  stability: 0.4,
+  similarity_boost: 0.8,
+  style: 0.5,
   use_speaker_boost: true,
+} as const;
+
+/**
+ * A/B test variants. Use when a script may read robotic at the baseline
+ * settings. Generate all three, listen, pick the most natural, lock its
+ * settings via the per-call override.
+ */
+export const VICTORIA_AB_VARIANTS = {
+  baseline: { stability: 0.4, similarity_boost: 0.8, style: 0.5, use_speaker_boost: true },
+  expressive: { stability: 0.3, similarity_boost: 0.8, style: 0.6, use_speaker_boost: true },
+  controlled: { stability: 0.55, similarity_boost: 0.8, style: 0.4, use_speaker_boost: true },
 } as const;
 
 const ELEVENLABS_BASE = 'https://api.elevenlabs.io/v1';

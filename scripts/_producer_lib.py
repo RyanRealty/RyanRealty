@@ -298,34 +298,115 @@ def write_card_json(out_dir: Path, producer: str, primary_artifact: str, notes: 
     return p
 
 
-# ── Banned-word grep per voice_guidelines.md §6.2 ────────────────────────────
+# ── Banned-word grep ─────────────────────────────────────────────────────────
+#
+# Canonical source: marketing_brain_skills/brand-voice/voice_guidelines.md
+# §6.2 (banned words), §6.3 (banned phrases), §4.7 (authentic-not-salesy
+# patterns). When this list and voice_guidelines.md disagree, the .md is
+# the source of truth — update both together.
+#
+# Two-tier classification (revised 2026-05-20 per Matt directive):
+#
+#   HARD_BANNED   — substring match, always a ship-blocker. Real-estate clichés,
+#                   AI filler, marketing slop, hype openings, pandering,
+#                   talking down, fake urgency, salesy script language.
+#   SOFT_FLAGGED  — substring match, flag for human review. Vague qualifiers
+#                   ("about", "around", "approximately") that have legitimate
+#                   non-hedge uses; the producer or reviewer decides per-case.
+#
+# Producers default to checking BOTH tiers (BANNED_WORDS = HARD_BANNED |
+# SOFT_FLAGGED). Call grep_banned_categorized() when you want the split.
 
-BANNED_WORDS = {
-    # Real-estate clichés
+HARD_BANNED = {
+    # §6.2 Real-estate clichés
     "stunning", "breathtaking", "gorgeous", "charming", "pristine", "nestled",
     "boasts", "must-see", "dream home", "meticulously maintained",
     "entertainer's dream", "tucked away", "hidden gem", "truly", "spacious",
     "cozy", "luxurious", "updated throughout", "turnkey", "immaculate",
     "captivating", "exquisite",
-    # AI filler
+    # §6.2 AI filler
     "delve", "leverage", "tapestry", "navigate", "robust", "seamless",
     "comprehensive", "elevate", "unlock", "holistic", "dynamic", "vibrant",
     "bustling", "eclectic", "curated", "bespoke", "foster",
-    # Marketing slop
+    # §6.3 Hype openings
+    "get ready to fall in love", "you won't believe", "introducing",
+    "stunning new listing",
+    # §6.3 Pandering phrases (full phrase, exact substring)
+    "what a beautiful home", "you have great taste",
+    "i can tell you really care about this",
+    # §6.3 Talking down
+    "don't worry, we will handle everything",
+    "don't worry we will handle everything",
+    "let me explain in simple terms",
+    "i know this seems complicated",
+    # §6.3 Marketing slop
     "top producing", "top 1 percent", "white glove", "luxury concierge",
     "premier brokerage", "boutique brokerage", "your real estate journey",
-    "we are passionate about", "we pride ourselves on",
-    # Vague hedges
-    "approximately", "roughly", "fairly", "somewhat",
-    # Fake urgency
-    "act fast", "don't miss out", "won't last long",
+    "we are passionate about", "we pride ourselves on", "exclusive brokerage",
+    # §6.3 Fake urgency
+    "act fast", "don't miss out", "won't last long", "won't last",
+    # §4.7 Salesy / pandering script language
+    "hope this finds you well", "we'd love to learn more",
+    "don't hesitate to reach out", "let's hop on a quick call",
+    "let's schedule a quick call", "just touching base",
+    "we've got some exciting options",
+    "the market is moving fast, time to act",
+    # §11.0 Anti-patterns (May 2025 pseudo-Matt phrases — banned regressions)
+    "a happy yes for these buyers", "stepping into this next chapter",
+    "a good outcome for the sellers", "one we got to help write",
+    "honored to have been in the room for this one",
+    "walking with these buyers",
 }
 
+SOFT_FLAGGED = {
+    # §6.2 Vague qualifiers — substitute for the real number. Flag for human
+    # review since these have legitimate uses ("about the property," "around
+    # the corner") that are not hedge violations.
+    "approximately", "roughly", "fairly", "somewhat",
+    "about", "around",
+}
 
-def grep_banned(text: str) -> list[str]:
-    """Return banned words found in text (lowercased substring match)."""
+# Back-compat: full union. Existing callers continue to work unchanged.
+BANNED_WORDS = HARD_BANNED | SOFT_FLAGGED
+
+
+def grep_banned(text: str, *, include_soft: bool = True) -> list[str]:
+    """Return banned words found in text (lowercased substring match).
+
+    Args:
+        text: The text to scan.
+        include_soft: If False, only HARD_BANNED words are returned. Use
+            include_soft=False when you want a strict ship-blocker check
+            without false positives from "about" / "around" etc.
+
+    Returns:
+        Sorted list of banned words/phrases found.
+    """
     t = text.lower()
-    return sorted(b for b in BANNED_WORDS if b in t)
+    pool = BANNED_WORDS if include_soft else HARD_BANNED
+    return sorted(b for b in pool if b in t)
+
+
+def grep_banned_categorized(text: str) -> dict[str, list[str]]:
+    """Return banned words found in text, split by severity tier.
+
+    Returns:
+        {
+            "hard": [...],  # ship-blockers — must be removed before publish
+            "soft": [...],  # flag for human review — may be legitimate
+        }
+    """
+    t = text.lower()
+    return {
+        "hard": sorted(b for b in HARD_BANNED if b in t),
+        "soft": sorted(b for b in SOFT_FLAGGED if b in t),
+    }
+
+
+def has_hard_fail(text: str) -> bool:
+    """Quick check: does the text contain ANY hard-banned word/phrase?"""
+    t = text.lower()
+    return any(b in t for b in HARD_BANNED)
 
 
 # ── Geometry helpers ────────────────────────────────────────────────────────
