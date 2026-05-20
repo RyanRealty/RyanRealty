@@ -37,7 +37,7 @@ import {
   Img,
   spring,
 } from 'remotion'
-import { SingleWordCaption, CaptionWord } from './SingleWordCaptionLocal'
+import { MapRouteCaptions, CaptionWord } from './SingleWordCaptionLocal'
 import {
   PORTRAIT_SAFE,
   CAPTION_PORTRAIT,
@@ -610,13 +610,7 @@ export const MapRouteVideo: React.FC<MapRouteInput> = (input) => {
       {citationOpacity > 0 && <SourceCitation opacity={citationOpacity} />}
 
       {/* Single-word Amboqia captions */}
-      <SingleWordCaption
-        words={captionWords}
-        suppressBeforeSec={2.0}
-        centerY={CAPTION_PORTRAIT.centerY}
-        fontSizePx={CAPTION_PORTRAIT.fontSizePx}
-        maxWidthPx={CAPTION_PORTRAIT.maxWidthPx}
-      />
+      <MapRouteCaptions words={captionWords} suppressBeforeSec={2.0} />
     </AbsoluteFill>
   )
 }

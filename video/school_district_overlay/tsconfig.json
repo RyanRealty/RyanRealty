@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "lib": ["DOM", "ES2020"]
+    "lib": ["DOM", "DOM.Iterable", "ES2020"]
   },
   "include": ["src/**/*", "remotion.config.ts"]
 }

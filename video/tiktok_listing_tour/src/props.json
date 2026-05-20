@@ -1,0 +1,52 @@
+{
+  "keywordPhrase": "What $895,000 gets you on 2.28 acres in Tumalo, Oregon.",
+  "displayPrice": "$895,000",
+  "cityState": "Tumalo, Oregon",
+  "beats": [
+    {
+      "durationSec": 3,
+      "photoPath": null,
+      "captionOverlay": null,
+      "motion": "push_in"
+    },
+    {
+      "durationSec": 4,
+      "photoPath": null,
+      "captionOverlay": "Open kitchen",
+      "motion": "push_out"
+    },
+    {
+      "durationSec": 4,
+      "photoPath": null,
+      "captionOverlay": "Primary suite",
+      "motion": "pan_left"
+    },
+    {
+      "durationSec": 3,
+      "photoPath": null,
+      "captionOverlay": "2.28 acres",
+      "motion": "pan_right"
+    },
+    {
+      "durationSec": 4,
+      "photoPath": null,
+      "captionOverlay": "Mountain views",
+      "motion": "push_in"
+    },
+    {
+      "durationSec": 4,
+      "photoPath": null,
+      "captionOverlay": "Shop + RV space",
+      "motion": "push_out"
+    },
+    {
+      "durationSec": 4,
+      "photoPath": null,
+      "captionOverlay": null,
+      "motion": "push_in"
+    }
+  ],
+  "captionWords": [],
+  "musicPath": null,
+  "musicVolume": 0.25
+}
