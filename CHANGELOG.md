@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.256.1 (2026-05-20)
+
+### Bug Fixes
+- fix(producers): align banned-word asserts with HARD_BANNED + rebuild producer gallery
+
+---
+
+
 ## v1.256.0 (2026-05-20)
 
 ### Features
