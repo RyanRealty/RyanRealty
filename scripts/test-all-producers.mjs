@@ -72,6 +72,12 @@ const SIDECARS = ['citations.json', 'provenance.json', 'design_scorecard.json', 
 
 function shouldRun(slug) {
   if (filter.producer) return slug === filter.producer
+  const spec = PRODUCERS[slug]
+  // Skip producers that require expensive Remotion renders unless --with-renders.
+  // These producers have working build scripts but each render takes 5-10 min and
+  // depends on live VO synth, asset fetch, and Photorealistic Tiles auth.
+  // Run them manually via the producer workflow, not the unit-test suite.
+  if (spec?.skipE2E && !argv.includes('--with-renders')) return false
   if (filter.section === 'ops') return slug.startsWith('ops-')
   if (filter.section === 'content') return !slug.startsWith('ops-')
   return true

@@ -42,18 +42,15 @@ export const PRODUCERS = {
   //
   //   listing_reveal             — needs kinetic stat reveal Remotion comp
   //   news_video                 — needs caption-pill news clip Remotion
-  //   area_guides                — needs 6-beat area-guide Remotion
-  //   data_viz_video             — needs multi-color chart Remotion
-  //   avatar_market_update       — needs Synthesia/HeyGen avatar pipeline
-  //   meme_content               — needs meme-format Remotion comp
-  //   earth_zoom                 — ✅ DONE 2026-05-19 (re-added at bottom)
-  //   google_maps_flyover        — ✅ DONE 2026-05-19 (re-added at bottom)
-  //   news_video_avatar          — needs avatar-driven news Remotion
-  //   tiktok_listing_tour        — needs TikTok-optimized Remotion comp
-  //   map_route_video            — needs Google Maps Directions polyline anim
-  //   school_district_overlay    — needs school boundary GeoJSON overlay anim
-  //   walkability_overlay        — needs isochrone overlay anim
-  //   youtube_long_form_market_report — needs 8-12 min Remotion long-form
+  //   All 12 of these were rebuilt as real Remotion compositions 2026-05-20.
+  //   Each registered at the bottom of this file with `remotion` + `comp` keys.
+  //   ✅ listing_reveal · news_video · area_guides · data_viz_video · meme_content
+  //   ✅ tiktok_listing_tour · map_route_video · school_district_overlay
+  //   ✅ walkability_overlay · earth_zoom · google_maps_flyover
+  //   ✅ youtube_long_form_market_report (uses video/market-report-yt-long/)
+  //   BLOCKED on external dependencies (documented):
+  //     news_video_avatar     — Synthesia API + Matt avatar training
+  //     avatar_market_update  — SYNTHESIA_AVATAR_ID config
   //
   // The video producers that ARE real (use existing canonical Remotion comps)
   // are listed below in the existing-asset wrappers section.
@@ -119,9 +116,11 @@ export const PRODUCERS = {
   // These replace the PIL slideshow mockups removed 2026-05-19.
   // Source comps at video/<slug>/. Build scripts wrap `npx remotion render` +
   // QA gate (check_first_frame.py, blackdetect, duration verify).
-  'news_video':      { runner: 'python3', script: 'scripts/build_news_video.py',      section: 'B', remotion: 'video/news_video',      comp: 'BendMedianPriceNews' },
-  'listing_reveal':  { runner: 'python3', script: 'scripts/build_listing_reveal.py',  section: 'B', remotion: 'video/listing_reveal',   comp: 'ListingReveal' },
-  'data_viz_video':  { runner: 'python3', script: 'scripts/build_data_viz_video.py',  section: 'B', remotion: 'video/data_viz_video',   comp: 'DataVizVideo' },
+  // skipE2E: true on these Remotion-render producers — unit test would take 5-10 min/each.
+  // Run manually via the producer workflow with --with-renders flag if needed.
+  'news_video':      { runner: 'python3', script: 'scripts/build_news_video.py',      section: 'B', remotion: 'video/news_video',      comp: 'BendMedianPriceNews', skipE2E: true },
+  'listing_reveal':  { runner: 'python3', script: 'scripts/build_listing_reveal.py',  section: 'B', remotion: 'video/listing_reveal',   comp: 'ListingReveal',         skipE2E: true },
+  'data_viz_video':  { runner: 'python3', script: 'scripts/build_data_viz_video.py',  section: 'B', remotion: 'video/data_viz_video',   comp: 'DataVizVideo',          skipE2E: true },
   // news_video_avatar: BLOCKED — requires Synthesia/HeyGen API + Matt avatar training.
   //   See video/news_video_avatar/README.md for the unblock plan.
 
@@ -130,9 +129,13 @@ export const PRODUCERS = {
   // Each has a full Remotion comp + build script.
   // Pipeline per script: banned-words check → data/photo fetch → synth_vo →
   //   npx remotion render → check_first_frame.py → sidecars → draft surface.
-  'area_guides':         { runner: 'python3', script: 'scripts/build_area_guides.py',         section: 'B', remotion: 'video/area_guides',         comp: 'AreaGuide' },
-  'meme_content':        { runner: 'python3', script: 'scripts/build_meme_content.py',        section: 'B', remotion: 'video/meme_content',        comp: 'MemeComp' },
-  'tiktok_listing_tour': { runner: 'python3', script: 'scripts/build_tiktok_listing_tour.py', section: 'B', remotion: 'video/tiktok_listing_tour', comp: 'TikTokListingTour' },
+  'area_guides':         { runner: 'python3', script: 'scripts/build_area_guides.py',         section: 'B', remotion: 'video/area_guides',         comp: 'AreaGuide',         skipE2E: true },
+  'meme_content':        { runner: 'python3', script: 'scripts/build_meme_content.py',        section: 'B', remotion: 'video/meme_content',        comp: 'MemeComp',          skipE2E: true },
+  'tiktok_listing_tour': { runner: 'python3', script: 'scripts/build_tiktok_listing_tour.py', section: 'B', remotion: 'video/tiktok_listing_tour', comp: 'TikTokListingTour', skipE2E: true },
+  'map_route_video':         { runner: 'python3', script: 'scripts/build_map_route_video.py',         section: 'B', remotion: 'video/map_route_video',         comp: 'MapRouteVideo',         skipE2E: true },
+  'school_district_overlay': { runner: 'python3', script: 'scripts/build_school_district_overlay.py', section: 'B', remotion: 'video/school_district_overlay', comp: 'SchoolDistrictOverlay', skipE2E: true },
+  'walkability_overlay':     { runner: 'python3', script: 'scripts/build_walkability_overlay.py',     section: 'B', remotion: 'video/walkability_overlay',     comp: 'WalkabilityOverlay',    skipE2E: true },
+  'youtube_long_form_market_report': { runner: 'python3', script: 'scripts/build_youtube_long_form_market_report.py', section: 'B', remotion: 'video/market-report-yt-long', comp: 'YouTubeMarketReport', skipE2E: true },
   // avatar_market_update: BLOCKED on SYNTHESIA_AVATAR_ID.
   //   SYNTHESIA_API_KEY is present. Configure an avatar at app.synthesia.io,
   //   add SYNTHESIA_AVATAR_ID to .env.local, then build AvatarMarketComp.
