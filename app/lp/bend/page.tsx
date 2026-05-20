@@ -20,6 +20,7 @@ import Link from 'next/link'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import LandingPageTracker from '@/components/LandingPageTracker'
+import { ListingCard, type ListingCardData } from '@/components/lp/ListingCard'
 import { BendInteractiveMap } from './_components/BendInteractiveMap'
 import type { CommunityPolygon } from './_components/BendInteractiveMap'
 
@@ -249,7 +250,7 @@ async function loadPeerCities(): Promise<PeerKpiRow[]> {
   const { data } = await supabase
     .from('market_stats_cache')
     .select('geo_slug, geo_label, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf')
-    .in('geo_slug', ['bend', 'redmond', 'sisters', 'la-pine', 'tumalo', 'terrebonne'])
+    .in('geo_slug', ['bend', 'redmond', 'sisters', 'la-pine', 'terrebonne'])
     .eq('period_type', 'rolling_365d')
     .order('median_sale_price', { ascending: false })
 
@@ -362,33 +363,61 @@ export default async function BendCityPage() {
         .community-stats { display: flex; gap: 14px; font-size: 12.5px; color: rgba(16,39,66,0.62); flex-wrap: wrap; }
         .community-stats strong { color: #102742; font-weight: 600; }
 
-        /* LISTINGS — fixed 4-col / 2-col / 1-col, 8 items render as clean 2 rows */
+        /* LISTINGS — fixed 4-col / 3-col / 2-col / 1-col, 8 items render as clean 2 rows.
+           Card markup lives in components/lp/ListingCard.tsx — one canonical tile shape
+           reused across every Ryan Realty LP. */
         .listings-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 24px; }
         @media (max-width: 1024px) { .listings-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 760px) { .listings-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 500px) { .listings-grid { grid-template-columns: 1fr; } }
-        .listing-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 16px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; display: flex; flex-direction: column; }
-        .listing-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 14px 32px rgba(16,39,66,0.12); }
-        .listing-photo { aspect-ratio: 4/3; background-color: rgba(16,39,66,0.06); background-size: cover; background-position: center; }
-        .listing-body { padding: 16px 20px 20px; }
-        .listing-price { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; margin: 0; font-variant-numeric: tabular-nums; font-weight: 500; }
-        .listing-address { font-size: 13.5px; color: rgba(16,39,66,0.72); margin: 4px 0 10px; }
-        .listing-meta { font-size: 12.5px; color: rgba(16,39,66,0.6); font-variant-numeric: tabular-nums; display: flex; gap: 12px; flex-wrap: wrap; }
-        .listing-meta strong { color: #102742; font-weight: 600; }
-        .view-all-row { text-align: center; margin-top: 36px; }
-        .view-all-btn { display: inline-flex; align-items: center; gap: 8px; background: #102742; color: #faf8f4; padding: 14px 32px; border-radius: 10px; font-size: 14.5px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
-        .view-all-btn:hover { background: rgba(16,39,66,0.88); color: #faf8f4; }
+        .rr-listing-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 14px 32px rgba(16,39,66,0.12) !important; }
+        .featured-cta-row { display: flex; gap: 14px; justify-content: center; align-items: center; margin-top: 36px; flex-wrap: wrap; }
+        .featured-cta-primary { display: inline-flex; align-items: center; gap: 8px; background: #102742; color: #faf8f4; padding: 14px 32px; border-radius: 10px; font-size: 14.5px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
+        .featured-cta-primary:hover { background: rgba(16,39,66,0.88); color: #faf8f4; }
+        .featured-cta-secondary { display: inline-flex; align-items: center; gap: 8px; color: #102742; padding: 14px 22px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; border: 1.5px solid rgba(16,39,66,0.18); transition: border-color 0.15s, background 0.15s; }
+        .featured-cta-secondary:hover { border-color: rgba(16,39,66,0.45); background: rgba(16,39,66,0.04); }
 
-        /* LIVING-IN CARDS — full-bleed photo backgrounds with text overlay, fixed 4-col */
-        .living-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 28px; }
-        @media (max-width: 960px) { .living-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 520px) { .living-grid { grid-template-columns: 1fr; } }
-        .living-card { position: relative; aspect-ratio: 4/5; border-radius: 16px; overflow: hidden; background-color: rgba(16,39,66,0.1); background-size: cover; background-position: center; box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 8px 24px rgba(16,39,66,0.1); text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: flex-end; transition: transform 0.25s, box-shadow 0.25s; }
-        .living-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 16px 36px rgba(16,39,66,0.18); }
-        .living-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(16,39,66,0) 0%, rgba(16,39,66,0) 35%, rgba(16,39,66,0.55) 70%, rgba(16,39,66,0.92) 100%); pointer-events: none; }
-        .living-card-body { position: relative; z-index: 2; padding: 22px 24px 24px; color: #faf8f4; }
-        .living-card h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; line-height: 1.1; margin: 0 0 6px; font-weight: 500; color: #faf8f4; }
-        .living-card .living-sub { font-size: 13.5px; line-height: 1.45; color: rgba(250,248,244,0.88); margin: 0; }
+        /* LIFESTYLE — editorial: 1 wide hero + 3-card row + 3 quick-stat rows */
+        .lifestyle-hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 0; margin-top: 28px; background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: 18px; overflow: hidden; box-shadow: 0 1px 2px rgba(16,39,66,0.03), 0 8px 24px rgba(16,39,66,0.08); }
+        @media (max-width: 880px) { .lifestyle-hero { grid-template-columns: 1fr; } }
+        .lifestyle-hero-img { min-height: 360px; background-size: cover; background-position: center; }
+        @media (max-width: 880px) { .lifestyle-hero-img { aspect-ratio: 16/10; min-height: 0; } }
+        .lifestyle-hero-body { padding: 38px 42px; display: flex; flex-direction: column; justify-content: center; }
+        @media (max-width: 880px) { .lifestyle-hero-body { padding: 28px 26px; } }
+        .lifestyle-hero-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(16,39,66,0.6); margin-bottom: 12px; }
+        .lifestyle-hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 14px; font-weight: 500; color: #102742; letter-spacing: -0.01em; }
+        .lifestyle-hero-text { font-size: 15.5px; line-height: 1.62; color: rgba(16,39,66,0.82); margin: 0; }
+
+        .lifestyle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; }
+        @media (max-width: 920px) { .lifestyle-grid { grid-template-columns: repeat(1, 1fr); } }
+        .lifestyle-card { position: relative; aspect-ratio: 4/5; border-radius: 16px; overflow: hidden; background-color: rgba(16,39,66,0.1); background-size: cover; background-position: center; box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 8px 24px rgba(16,39,66,0.1); display: flex; flex-direction: column; justify-content: flex-end; transition: transform 0.25s, box-shadow 0.25s; }
+        .lifestyle-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 16px 36px rgba(16,39,66,0.18); }
+        .lifestyle-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(16,39,66,0) 0%, rgba(16,39,66,0) 35%, rgba(16,39,66,0.65) 70%, rgba(16,39,66,0.95) 100%); pointer-events: none; }
+        .lifestyle-card-body { position: relative; z-index: 2; padding: 22px 24px 24px; color: #faf8f4; }
+        .lifestyle-card-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(250,248,244,0.78); margin-bottom: 6px; }
+        .lifestyle-card h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; line-height: 1.15; margin: 0 0 8px; font-weight: 500; color: #faf8f4; letter-spacing: -0.005em; }
+        .lifestyle-card p { font-size: 13.5px; line-height: 1.5; color: rgba(250,248,244,0.92); margin: 0; }
+
+        .lifestyle-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 24px; }
+        @media (max-width: 920px) { .lifestyle-stats { grid-template-columns: 1fr; } }
+        .lifestyle-stat { display: flex; align-items: flex-start; gap: 14px; padding: 22px 24px; background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px; box-shadow: 0 1px 2px rgba(16,39,66,0.03); }
+        .lifestyle-stat-icon { flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; background: rgba(16,39,66,0.06); display: flex; align-items: center; justify-content: center; }
+        .lifestyle-stat-title { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; line-height: 1.2; font-weight: 500; color: #102742; margin: 0 0 6px; }
+        .lifestyle-stat-text { font-size: 13px; line-height: 1.55; color: rgba(16,39,66,0.78); margin: 0; }
+
+        /* BROKER BIO — "Meet a local" personal block, builds trust before the final CTA */
+        .broker-bio { display: grid; grid-template-columns: 1fr 1.6fr; gap: 32px; align-items: center; margin-top: 24px; background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 18px; padding: 36px 38px; box-shadow: 0 1px 2px rgba(16,39,66,0.03), 0 8px 24px rgba(16,39,66,0.06); }
+        @media (max-width: 760px) { .broker-bio { grid-template-columns: 1fr; padding: 28px 26px; gap: 22px; } }
+        .broker-photo { aspect-ratio: 3/4; background: rgba(16,39,66,0.06); background-size: cover; background-position: center top; border-radius: 14px; max-width: 280px; }
+        @media (max-width: 760px) { .broker-photo { max-width: 200px; margin: 0 auto; } }
+        .broker-name { font-family: 'Playfair Display', Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 4px; font-weight: 500; color: #102742; }
+        .broker-title { font-size: 12.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(16,39,66,0.6); margin-bottom: 16px; }
+        .broker-text { font-size: 15px; line-height: 1.6; color: rgba(16,39,66,0.82); margin: 0 0 18px; }
+        .broker-cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .broker-cta-primary { display: inline-flex; align-items: center; gap: 8px; background: #102742; color: #faf8f4; padding: 12px 24px; border-radius: 10px; font-size: 13.5px; font-weight: 700; text-decoration: none; letter-spacing: 0.01em; }
+        .broker-cta-primary:hover { background: rgba(16,39,66,0.88); color: #faf8f4; }
+        .broker-cta-secondary { display: inline-flex; align-items: center; gap: 8px; color: #102742; padding: 12px 20px; border-radius: 10px; font-size: 13.5px; font-weight: 600; text-decoration: none; border: 1.5px solid rgba(16,39,66,0.18); }
+        .broker-cta-secondary:hover { border-color: rgba(16,39,66,0.45); background: rgba(16,39,66,0.04); }
 
         /* KPI GRID — fixed 3-col / 2-col / 1-col, 6 items render as clean 2 rows */
         .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
@@ -573,63 +602,49 @@ export default async function BendCityPage() {
         </section>
       )}
 
-      {/* ACTIVE LISTINGS */}
+      {/* FEATURED HOMES — premier inventory + showing CTA per card */}
       <section id="listings" className="bend-section">
         <div className="bend-shell">
-          <div className="bend-eyebrow">Active homes for sale</div>
-          <h2 className="bend-h2">A look at what&rsquo;s on the market right now.</h2>
+          <div className="bend-eyebrow">Bend&rsquo;s premier inventory</div>
+          <h2 className="bend-h2">Featured homes for sale.</h2>
           <p className="bend-prose" style={{ maxWidth: 760 }}>
-            A snapshot of single-family homes for sale in Bend. Click through for photos, full
-            details, and a direct line to a broker.
+            A live look at top-of-market homes in Bend, sorted by price. Click any home for the
+            full package — gallery, history, neighborhood context, and a direct line to a local
+            broker for a private showing.
           </p>
 
           {listings.length === 0 ? (
             <p className="bend-prose" style={{ color: 'rgba(16,39,66,0.6)' }}>
-              Active inventory is refreshing. Check back shortly or call{' '}
+              Inventory is refreshing. Check back shortly or call{' '}
               <a href="tel:+15412136706" style={{ textDecoration: 'underline' }}>541.213.6706</a>{' '}
               for a live search.
             </p>
           ) : (
             <>
               <div className="listings-grid">
-                {listings.map((l) => (
-                  <Link
-                    key={l.listing_key}
-                    href={`/lp/listings/${l.list_number}/`}
-                    className="listing-card"
-                  >
-                    <div
-                      className="listing-photo"
-                      style={l.photo_url ? { backgroundImage: `url('${l.photo_url}')` } : undefined}
-                    />
-                    <div className="listing-body">
-                      <div className="listing-price">{fmtUsd(l.list_price)}</div>
-                      <div className="listing-address">{l.address}, Bend</div>
-                      <div className="listing-meta">
-                        {l.beds != null && (
-                          <span>
-                            <strong>{l.beds}</strong> bd
-                          </span>
-                        )}
-                        {l.baths != null && (
-                          <span>
-                            <strong>{l.baths}</strong> ba
-                          </span>
-                        )}
-                        {l.sqft && (
-                          <span>
-                            <strong>{Number(l.sqft).toLocaleString()}</strong> sqft
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                {listings.map((l) => {
+                  const cardData: ListingCardData = {
+                    listingKey: l.listing_key,
+                    listNumber: l.list_number,
+                    address: l.address,
+                    city: l.city,
+                    listPrice: l.list_price,
+                    beds: l.beds,
+                    baths: l.baths,
+                    sqft: l.sqft,
+                    photoUrl: l.photo_url,
+                    statusLabel: 'Active',
+                  }
+                  return <ListingCard key={l.listing_key} listing={cardData} />
+                })}
               </div>
-              <div className="view-all-row">
-                <Link href="/homes-for-sale/bend" className="view-all-btn">
+              <div className="featured-cta-row">
+                <Link href="/homes-for-sale/bend" className="featured-cta-primary">
                   Search Bend homes →
                 </Link>
+                <a href="tel:+15412136706" className="featured-cta-secondary">
+                  Talk to a broker · 541.213.6706
+                </a>
               </div>
             </>
           )}
@@ -639,47 +654,130 @@ export default async function BendCityPage() {
       {/* LIVING IN BEND — positive frames only */}
       <section className="bend-section">
         <div className="bend-shell">
-          <div className="bend-eyebrow">Living in Bend</div>
-          <h2 className="bend-h2">What the day looks like.</h2>
+          <div className="bend-eyebrow">The Bend lifestyle</div>
+          <h2 className="bend-h2">A small mountain town that lives big.</h2>
+          <p className="bend-prose lg" style={{ maxWidth: 780 }}>
+            People move to Bend for one of three reasons. The Cascades on one side. The
+            Deschutes River through the middle. Or the food and beer scene that grew up around
+            both. Most stay for all three.
+          </p>
 
-          <div className="living-grid">
+          {/* Hero lifestyle card — a single wide editorial moment */}
+          <div className="lifestyle-hero">
             <div
-              className="living-card"
-              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1551524559-8af4e6624178?w=900&q=80&auto=format')" }}
-            >
-              <div className="living-card-body">
-                <h3>Recreation</h3>
-                <p className="living-sub">Mt. Bachelor · Phil&rsquo;s Trail · Smith Rock · the Deschutes</p>
-              </div>
+              className="lifestyle-hero-img"
+              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1551524559-8af4e6624178?w=1600&q=80&auto=format')" }}
+              role="presentation"
+            />
+            <div className="lifestyle-hero-body">
+              <div className="lifestyle-hero-eyebrow">Mountain &amp; trail</div>
+              <h3 className="lifestyle-hero-title">Mt. Bachelor mornings, Phil&rsquo;s Trail afternoons.</h3>
+              <p className="lifestyle-hero-text">
+                Mt. Bachelor opens late November and runs through late spring. By June the snow
+                lifts and the Phil&rsquo;s Trail network turns into one of the densest mountain-bike
+                systems in the Pacific Northwest. Smith Rock State Park, 30 minutes north, is one
+                of the country&rsquo;s most-loved sport-climbing destinations. Three Sisters
+                Wilderness is the western horizon from most of the city.
+              </p>
             </div>
+          </div>
 
-            <div
-              className="living-card"
+          {/* Three-card lifestyle grid below the hero */}
+          <div className="lifestyle-grid">
+            <article
+              className="lifestyle-card"
+              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=900&q=80&auto=format')" }}
+            >
+              <div className="lifestyle-card-body">
+                <div className="lifestyle-card-eyebrow">River &amp; water</div>
+                <h3>The Deschutes is downtown.</h3>
+                <p>
+                  Float the Old Mill stretch in summer. Paddle from Riverbend Park. Fly fish the
+                  high lakes by August. The river is a 5-minute walk from most of the west side.
+                </p>
+              </div>
+            </article>
+
+            <article
+              className="lifestyle-card"
               style={{ backgroundImage: "url('https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=900&q=80&auto=format')" }}
             >
-              <div className="living-card-body">
-                <h3>Food &amp; brewing</h3>
-                <p className="living-sub">Deschutes, Crux, 10 Barrel · downtown · Old Mill</p>
+              <div className="lifestyle-card-body">
+                <div className="lifestyle-card-eyebrow">Beer &amp; food</div>
+                <h3>Where Oregon craft beer started.</h3>
+                <p>
+                  Deschutes Brewery opened in 1988 and the city never looked back. Add Crux,
+                  10 Barrel, Worthy, Sunriver, Bridge 99. And a restaurant scene from Bos Taurus
+                  to Pine Tavern that punches above its weight.
+                </p>
+              </div>
+            </article>
+
+            <article
+              className="lifestyle-card"
+              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=900&q=80&auto=format')" }}
+            >
+              <div className="lifestyle-card-body">
+                <div className="lifestyle-card-eyebrow">Downtown culture</div>
+                <h3>The Old Mill, the Tower, the Box Factory.</h3>
+                <p>
+                  Riverside shops in the old timber district. Tower Theatre concerts in a
+                  restored 1940 art deco hall. First Friday gallery walk. Summer markets at
+                  Drake and Riverbend.
+                </p>
+              </div>
+            </article>
+          </div>
+
+          {/* Schools + Economy stay as quick-stat cards (smaller, supporting role) */}
+          <div className="lifestyle-stats">
+            <div className="lifestyle-stat">
+              <div className="lifestyle-stat-icon" aria-hidden>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#102742" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 10l10-6 10 6-10 6-10-6z" />
+                  <path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5" />
+                </svg>
+              </div>
+              <div>
+                <div className="lifestyle-stat-title">Schools</div>
+                <div className="lifestyle-stat-text">
+                  One district city-wide: Bend-La Pine. Five high schools (Summit, Mountain
+                  View, Bend, Caldera, La Pine), an early-college academy, and charter options
+                  like REALMS and Cascades Academy.
+                </div>
               </div>
             </div>
-
-            <div
-              className="living-card"
-              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=900&q=80&auto=format')" }}
-            >
-              <div className="living-card-body">
-                <h3>Schools</h3>
-                <p className="living-sub">Bend-La Pine · five high schools · charter options</p>
+            <div className="lifestyle-stat">
+              <div className="lifestyle-stat-icon" aria-hidden>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#102742" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 21V8l8-5 8 5v13" />
+                  <path d="M9 21V13h6v8" />
+                </svg>
+              </div>
+              <div>
+                <div className="lifestyle-stat-title">Local economy</div>
+                <div className="lifestyle-stat-text">
+                  St. Charles Health System anchors healthcare with 4,000-plus employees.
+                  Growing software and consumer-product cluster. Hospitality across Tetherow,
+                  Pronghorn, and Sunriver. City, county, and school district round out the
+                  largest employers.
+                </div>
               </div>
             </div>
-
-            <div
-              className="living-card"
-              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=80&auto=format')" }}
-            >
-              <div className="living-card-body">
-                <h3>Local economy</h3>
-                <p className="living-sub">St. Charles Health · software · hospitality · trades</p>
+            <div className="lifestyle-stat">
+              <div className="lifestyle-stat-icon" aria-hidden>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#102742" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                </svg>
+              </div>
+              <div>
+                <div className="lifestyle-stat-title">Climate</div>
+                <div className="lifestyle-stat-text">
+                  High desert. Four real seasons. Dry, sunny summers in the 75-90°F range with
+                  cool nights. Snow at the Mt. Bachelor base November through April. The city
+                  itself sees periodic snow but not the resort total.
+                </div>
               </div>
             </div>
           </div>
@@ -762,6 +860,40 @@ export default async function BendCityPage() {
           </div>
         </section>
       )}
+
+      {/* BROKER BIO — trust block before the final CTAs */}
+      <section className="bend-section">
+        <div className="bend-shell">
+          <div className="bend-eyebrow">Meet a local broker</div>
+          <h2 className="bend-h2">Matt Ryan — Oregon Principal Broker.</h2>
+          <div className="broker-bio">
+            <div
+              className="broker-photo"
+              style={{ backgroundImage: "url('/images/brokers/ryan-matt.jpg')" }}
+              role="presentation"
+            />
+            <div>
+              <div className="broker-name">Matt Ryan</div>
+              <div className="broker-title">Owner · Oregon Principal Broker #201206613</div>
+              <p className="broker-text">
+                I&rsquo;ve been selling homes in Bend since 2012, and I actually live here. My
+                kids go to Bend-La Pine schools, I ski Mt. Bachelor every winter, and I know the
+                builder roster on every west-side neighborhood by first name. If you&rsquo;re
+                buying, selling, or just trying to figure out the right move, I&rsquo;m happy to
+                spend 30 minutes on the phone with no pressure either way.
+              </p>
+              <div className="broker-cta-row">
+                <a href="tel:+15412136706" className="broker-cta-primary">
+                  Call 541.213.6706
+                </a>
+                <Link href="/team/matt-ryan" className="broker-cta-secondary">
+                  See full bio →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* CTAs */}
       <section className="bend-section">
