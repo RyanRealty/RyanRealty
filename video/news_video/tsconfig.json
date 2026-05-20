@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "paths": {
+      "@/safe-zones": ["../../video_production_skills/safe-zones/canonical/safe-zones"],
+      "@/captions": ["../../video_production_skills/captions/canonical/SingleWordCaption"],
+      "@/load-amboqia": ["../../video_production_skills/captions/canonical/load-amboqia"]
+    }
+  },
+  "include": ["src/**/*", "remotion.config.ts"]
+}

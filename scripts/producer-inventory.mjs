@@ -114,6 +114,16 @@ export const PRODUCERS = {
   'earth_zoom':                    { runner: 'python3', script: 'scripts/build_earth_zoom_real.py', section: 'B' },
   'google_maps_flyover':           { runner: 'python3', script: 'scripts/build_google_maps_flyover_real.py', section: 'B' },
   'ig_single_post':                { runner: 'python3', script: 'scripts/build_ig_single_post_wrapper.py', section: 'B' },
+
+  // ─── Real Remotion compositions (added 2026-05-20) ──────────────────────────
+  // These replace the PIL slideshow mockups removed 2026-05-19.
+  // Source comps at video/<slug>/. Build scripts wrap `npx remotion render` +
+  // QA gate (check_first_frame.py, blackdetect, duration verify).
+  'news_video':      { runner: 'python3', script: 'scripts/build_news_video.py',      section: 'B', remotion: 'video/news_video',      comp: 'BendMedianPriceNews' },
+  'listing_reveal':  { runner: 'python3', script: 'scripts/build_listing_reveal.py',  section: 'B', remotion: 'video/listing_reveal',   comp: 'ListingReveal' },
+  'data_viz_video':  { runner: 'python3', script: 'scripts/build_data_viz_video.py',  section: 'B', remotion: 'video/data_viz_video',   comp: 'DataVizVideo' },
+  // news_video_avatar: BLOCKED — requires Synthesia/HeyGen API + Matt avatar training.
+  //   See video/news_video_avatar/README.md for the unblock plan.
 }
 
 export default PRODUCERS
