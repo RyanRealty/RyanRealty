@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.257.2 (2026-05-20)
+
+### Bug Fixes
+- fix(video): V3 polish — React 18/19 types mismatch + YouTubeMarketReportYTLong long-form extension
+
+---
+
+
 ## v1.257.1 (2026-05-20)
 
 ### Bug Fixes
