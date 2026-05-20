@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.255.0 (2026-05-20)
+
+### Features
+- feat(producers): outstanding-pass batch 3 — meme-research skill, fb-ad crop, real Google map card, market-pulse-short, linkedin carousel, orchestrators, universal video rules
+- feat(pulse): brain content layer + producer column-write contract
+
+---
+
+
 ## v1.254.0 (2026-05-20)
 
 ### Features
