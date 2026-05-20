@@ -174,6 +174,24 @@ async function main() {
   })
 
   console.log(`\n✓ render complete: ${outMp4}`)
+
+  // First-frame thumbnail gate (ship-blocker, locked 2026-05-20).
+  const REPO_ROOT = resolve(ROOT, '../..')
+  const checkScript = resolve(REPO_ROOT, 'scripts/check_first_frame.py')
+  console.log(`  → running first-frame check on ${outMp4}`)
+  const { execFile } = await import('node:child_process')
+  const { promisify } = await import('node:util')
+  const execFileAsync = promisify(execFile)
+  try {
+    const { stdout } = await execFileAsync('python3', [checkScript, outMp4], { cwd: REPO_ROOT })
+    if (stdout) console.log(stdout)
+    console.log(`  ✓ first-frame check passed`)
+  } catch (err) {
+    console.error(err.stdout ?? '')
+    console.error(err.stderr ?? err.message)
+    console.error('\nSHIP-BLOCKER: first-frame check failed. Fix the opening frame before publishing.')
+    process.exit(1)
+  }
 }
 
 main().catch((err) => {

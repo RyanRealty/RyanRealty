@@ -6,7 +6,7 @@
  *
  * Usage: node scripts/build-fb-ad-payload.mjs <payload.json> [--out <dir>]
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -34,18 +34,55 @@ const L = payload.listing || {}
 const M = payload.market || {}
 const heroPath = payload.brand_assets?.hero_photo_path || ''
 
-// Render the 1080x1080 ad creative via Python PIL using the shared lib
+// ── Recon layout contract check ────────────────────────────────────────────
+const reconPath = join(REPO_ROOT, 'out', 'design-recon', 'fb-lead-gen-ad', 'recon.md')
+if (existsSync(reconPath)) {
+  console.log(`✓ recon.md found at ${reconPath} — layout contract loaded`)
+} else {
+  console.warn(`WARN: recon.md not found at ${reconPath}. Apify competitor-design-recon has not been run for fb-lead-gen-ad yet. Proceeding with brand-default layout.`)
+}
+
+// Render the 1080x1080 ad creative via Python PIL using the shared lib.
+// Crop is bottom-anchored so architecture dominates, not sky.
 const py = `
 import sys
 sys.path.insert(0, ${JSON.stringify(join(REPO_ROOT, 'scripts'))})
 from PIL import Image, ImageDraw
+from pathlib import Path
 from _producer_lib import (
-  load_hero, add_scrim, font, text_w, NAVY, CREAM, REPO_ROOT,
+  add_scrim, font, text_w, NAVY, CREAM, REPO_ROOT, HERO_FALLBACK,
 )
 
 W, H = 1080, 1080
-payload = {"brand_assets": {"hero_photo_path": ${JSON.stringify(heroPath)}}, "listing": {}}
-img = load_hero(payload, W, H)
+
+def load_hero_bottom(hero_path_str: str, target_w: int, target_h: int):
+    """Load hero photo with BOTTOM-CENTER crop — anchors on architecture, not sky."""
+    p = Path(hero_path_str) if hero_path_str else None
+    if p and not p.is_absolute():
+        p = REPO_ROOT / p
+    if p and p.exists():
+        src = Image.open(p).convert("RGB")
+    elif HERO_FALLBACK.exists():
+        src = Image.open(HERO_FALLBACK).convert("RGB")
+    else:
+        return Image.new("RGB", (target_w, target_h), CREAM)
+    sw, sh = src.size
+    ta = target_w / target_h
+    sa = sw / sh
+    if sa > ta:
+        # Wider than target: center-crop horizontally, take full height
+        new_w = int(sh * ta)
+        left = (sw - new_w) // 2
+        src = src.crop((left, 0, left + new_w, sh))
+    else:
+        # Taller than target: bottom-anchored crop (70% from top) — shows architecture
+        new_h = int(sw / ta)
+        # Anchor at 70% of height so bottom portion (architecture) is always included
+        top = int((sh - new_h) * 0.70)
+        src = src.crop((0, top, sw, top + new_h))
+    return src.resize((target_w, target_h), Image.LANCZOS)
+
+img = load_hero_bottom(${JSON.stringify(heroPath)}, W, H)
 img = add_scrim(img, (0, H - 520, W, H), (16, 39, 66, 230))
 d = ImageDraw.Draw(img)
 hf = font(72, hero=True)

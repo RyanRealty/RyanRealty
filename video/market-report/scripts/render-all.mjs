@@ -36,5 +36,21 @@ for (const slug of targets) {
   if (code !== 0) { console.error(`Render failed for ${slug} (exit ${code})`); process.exit(1) }
   const dt = ((Date.now() - t0) / 1000).toFixed(1)
   console.log(`✓ ${slug} rendered in ${dt}s → ${outPath}`)
+
+  // First-frame thumbnail gate (ship-blocker, locked 2026-05-20).
+  // Runs check_first_frame.py from the repo root. Fails the build if non-zero.
+  const REPO_ROOT = resolve(ROOT, '../..')
+  const checkScript = resolve(REPO_ROOT, 'scripts/check_first_frame.py')
+  console.log(`  → running first-frame check on ${outPath}`)
+  const checkCode = await new Promise((res, rej) => {
+    const p = spawn('python3', [checkScript, outPath], { cwd: REPO_ROOT, stdio: 'inherit' })
+    p.on('exit', res)
+    p.on('error', rej)
+  })
+  if (checkCode !== 0) {
+    console.error(`\nSHIP-BLOCKER: first-frame check failed for ${slug}. Fix the opening frame before publishing.`)
+    process.exit(1)
+  }
+  console.log(`  ✓ first-frame check passed for ${slug}`)
 }
 console.log('\nAll renders complete.')
