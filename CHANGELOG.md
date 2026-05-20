@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.249.0 (2026-05-20)
+
+### Features
+- feat(admin): tracerfy-history probe endpoint to recover past trace names
+
+---
+
+
 ## v1.248.0 (2026-05-20)
 
 ### Features
