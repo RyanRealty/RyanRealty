@@ -124,6 +124,20 @@ export const PRODUCERS = {
   'data_viz_video':  { runner: 'python3', script: 'scripts/build_data_viz_video.py',  section: 'B', remotion: 'video/data_viz_video',   comp: 'DataVizVideo' },
   // news_video_avatar: BLOCKED — requires Synthesia/HeyGen API + Matt avatar training.
   //   See video/news_video_avatar/README.md for the unblock plan.
+
+  // ─── Real Remotion compositions (added 2026-05-20, second batch) ──────────
+  // These complete four producers that previously had slop slideshow mockups.
+  // Each has a full Remotion comp + build script.
+  // Pipeline per script: banned-words check → data/photo fetch → synth_vo →
+  //   npx remotion render → check_first_frame.py → sidecars → draft surface.
+  'area_guides':         { runner: 'python3', script: 'scripts/build_area_guides.py',         section: 'B', remotion: 'video/area_guides',         comp: 'AreaGuide' },
+  'meme_content':        { runner: 'python3', script: 'scripts/build_meme_content.py',        section: 'B', remotion: 'video/meme_content',        comp: 'MemeComp' },
+  'tiktok_listing_tour': { runner: 'python3', script: 'scripts/build_tiktok_listing_tour.py', section: 'B', remotion: 'video/tiktok_listing_tour', comp: 'TikTokListingTour' },
+  // avatar_market_update: BLOCKED on SYNTHESIA_AVATAR_ID.
+  //   SYNTHESIA_API_KEY is present. Configure an avatar at app.synthesia.io,
+  //   add SYNTHESIA_AVATAR_ID to .env.local, then build AvatarMarketComp.
+  //   See video/avatar_market_update/README.md.
+  //   Build script: scripts/build_avatar_market_update.py (self-documenting error when ID missing).
 }
 
 export default PRODUCERS

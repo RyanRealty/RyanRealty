@@ -632,7 +632,7 @@ const IntroCard: React.FC<{ durationSec: number }> = ({ durationSec }) => {
           left: 0,
           right: 0,
           textAlign: 'center',
-          opacity: interpolate(t, [1.2, 2.2], [0, 1], {
+          opacity: interpolate(t, [1.2, 2.2], [0, 0.70], {
             extrapolateLeft: 'clamp',
             extrapolateRight: 'clamp',
           }),
@@ -641,7 +641,6 @@ const IntroCard: React.FC<{ durationSec: number }> = ({ durationSec }) => {
           fontWeight: 500,
           letterSpacing: 8,
           color: CREAM,
-          opacity: 0.70,
           textTransform: 'uppercase',
         }}
       >
