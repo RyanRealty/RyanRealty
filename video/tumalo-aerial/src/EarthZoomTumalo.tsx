@@ -7,6 +7,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { TilesScene } from './TilesScene';
+import { ParcelOverlay } from './ParcelOverlay';
 import { clamp, easeInOutQuart } from './easing';
 
 const TUMALO_LAT = 44.138729;
@@ -148,6 +149,15 @@ export const EarthZoomTumalo: React.FC = () => {
         maxWaitMs={240_000}
       >
         <ZoomCameraRig />
+        {/* Lot polygon overlay — Deschutes County GIS DIAL Taxlot 161136D000601.
+            Fades in during the final 30% of the zoom (t=7s to t=10s) so the
+            viewer sees the actual property boundary at the end of the reveal. */}
+        <ParcelOverlay
+          originLat={TUMALO_LAT}
+          originLon={TUMALO_LON}
+          totalFrames={TOTAL_FRAMES}
+          fadeStart={0.70}
+        />
       </TilesScene>
       <BrandOverlay />
     </AbsoluteFill>

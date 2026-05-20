@@ -1,0 +1,190 @@
+{
+  "version": "1",
+  "source": "Deschutes County GIS (DIAL) Taxlot layer — maps.deschutes.org/arcgis",
+  "layer": "https://maps.deschutes.org/arcgis/rest/services/Dial2_Taxlots/MapServer/0/query",
+  "query": {
+    "mode": "point",
+    "lat": 44.138729,
+    "lng": -121.349064
+  },
+  "fetched_at": "2026-05-20T20:13:27.985Z",
+  "taxlot": "161136D000601",
+  "address": "19496 TUMALO RESERVOIR RD",
+  "properties": {
+    "Taxlot_Assessor_Account.OBJECTID": 89051,
+    "Taxlot_Assessor_Account.TAXLOT": "161136D000601",
+    "Taxlot_Assessor_Account.RELIABILITYCODE": 2,
+    "Taxlot_Assessor_Account.AUTODATE": 1292338514000,
+    "Taxlot_Assessor_Account.AUTOMETHOD": "COG",
+    "Taxlot_Assessor_Account.AUTOWHO": "Gregba",
+    "Taxlot_Assessor_Account.TOWNSHIP": "16",
+    "Taxlot_Assessor_Account.RANGE": "11",
+    "Taxlot_Assessor_Account.SECTION": "36",
+    "Taxlot_Assessor_Account.QUARTER": "D",
+    "Taxlot_Assessor_Account.SIXTEENTH": "0",
+    "Taxlot_Assessor_Account.PARCEL": "00601",
+    "Taxlot_Assessor_Account.MAPSUP": "0",
+    "Taxlot_Assessor_Account.MAPNUMBER": "161136D0000",
+    "Taxlot_Assessor_Account.Shape_Length": 537.1537786460461,
+    "Taxlot_Assessor_Account.Shape_Area": 17991.10193634237,
+    "Taxlot_Assessor_Account.Address": "19496 TUMALO RESERVOIR RD",
+    "Taxlot_Assessor_Account.House_Number": "19496",
+    "Taxlot_Assessor_Account.Direction": "",
+    "Taxlot_Assessor_Account.Street_Name": "TUMALO RESERVOIR",
+    "Taxlot_Assessor_Account.Street_Type": "RD",
+    "Taxlot_Assessor_Account.Unit_Number": "",
+    "Taxlot_Assessor_Account.City": "BEND",
+    "Taxlot_Assessor_Account.State": "",
+    "Taxlot_Assessor_Account.Zip": "97703",
+    "Taxlot_Assessor_Account.Subdiv_Code": "",
+    "Taxlot_Assessor_Account.Subdivision": "",
+    "Taxlot_Assessor_Account.Block": "",
+    "Taxlot_Assessor_Account.Lot": "",
+    "Taxlot_Assessor_Account.MA": "6",
+    "Taxlot_Assessor_Account.SA": "18",
+    "Taxlot_Assessor_Account.Percent_Good": "",
+    "Taxlot_Assessor_Account.LegalLot": "Y",
+    "Taxlot_Assessor_Account.UGB": "",
+    "Taxlot_Assessor_Account.FirePatrol": "",
+    "Taxlot_Assessor_Account.NH": "000",
+    "Taxlot_Assessor_Account.Pre_Direction": "",
+    "dbo_GIS_MAILING.OBJECTID": 31845,
+    "dbo_GIS_MAILING.MAP_TAXLOT": "161136D000601",
+    "dbo_GIS_MAILING.ACCOUNT_ID": "132327",
+    "dbo_GIS_MAILING.OWNER": "HOGAN,PATRICK & TANYA",
+    "dbo_GIS_MAILING.AGENT": "",
+    "dbo_GIS_MAILING.IN_CARE_OF": "",
+    "dbo_GIS_MAILING.M_ADDRESS": "16906 SE 30TH ST",
+    "dbo_GIS_MAILING.M_CITYSTZIP": "VANCOUVER, WA 98683",
+    "dbo_GIS_MAILING.M_CITY": "VANCOUVER",
+    "dbo_GIS_MAILING.M_STATE": "WA",
+    "dbo_GIS_MAILING.M_ZIP": "98683",
+    "dbo_GIS_MAILING.MAP_TAXLOT_SI": "161136D000601"
+  },
+  "acres_computed": 2.27,
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -121.34843268539494,
+          44.13914050114
+        ],
+        [
+          -121.34906508498193,
+          44.13914123155858
+        ],
+        [
+          -121.34969748456888,
+          44.139141957464425
+        ],
+        [
+          -121.34969424075241,
+          44.13831805501581
+        ],
+        [
+          -121.34906201723521,
+          44.13831734650634
+        ],
+        [
+          -121.34842975958209,
+          44.138316635418086
+        ],
+        [
+          -121.34843268539494,
+          44.13914050114
+        ]
+      ]
+    ]
+  },
+  "raw_geojson_feature": {
+    "type": "Feature",
+    "id": 89051,
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            -121.34843268539494,
+            44.13914050114
+          ],
+          [
+            -121.34906508498193,
+            44.13914123155858
+          ],
+          [
+            -121.34969748456888,
+            44.139141957464425
+          ],
+          [
+            -121.34969424075241,
+            44.13831805501581
+          ],
+          [
+            -121.34906201723521,
+            44.13831734650634
+          ],
+          [
+            -121.34842975958209,
+            44.138316635418086
+          ],
+          [
+            -121.34843268539494,
+            44.13914050114
+          ]
+        ]
+      ]
+    },
+    "properties": {
+      "Taxlot_Assessor_Account.OBJECTID": 89051,
+      "Taxlot_Assessor_Account.TAXLOT": "161136D000601",
+      "Taxlot_Assessor_Account.RELIABILITYCODE": 2,
+      "Taxlot_Assessor_Account.AUTODATE": 1292338514000,
+      "Taxlot_Assessor_Account.AUTOMETHOD": "COG",
+      "Taxlot_Assessor_Account.AUTOWHO": "Gregba",
+      "Taxlot_Assessor_Account.TOWNSHIP": "16",
+      "Taxlot_Assessor_Account.RANGE": "11",
+      "Taxlot_Assessor_Account.SECTION": "36",
+      "Taxlot_Assessor_Account.QUARTER": "D",
+      "Taxlot_Assessor_Account.SIXTEENTH": "0",
+      "Taxlot_Assessor_Account.PARCEL": "00601",
+      "Taxlot_Assessor_Account.MAPSUP": "0",
+      "Taxlot_Assessor_Account.MAPNUMBER": "161136D0000",
+      "Taxlot_Assessor_Account.Shape_Length": 537.1537786460461,
+      "Taxlot_Assessor_Account.Shape_Area": 17991.10193634237,
+      "Taxlot_Assessor_Account.Address": "19496 TUMALO RESERVOIR RD",
+      "Taxlot_Assessor_Account.House_Number": "19496",
+      "Taxlot_Assessor_Account.Direction": "",
+      "Taxlot_Assessor_Account.Street_Name": "TUMALO RESERVOIR",
+      "Taxlot_Assessor_Account.Street_Type": "RD",
+      "Taxlot_Assessor_Account.Unit_Number": "",
+      "Taxlot_Assessor_Account.City": "BEND",
+      "Taxlot_Assessor_Account.State": "",
+      "Taxlot_Assessor_Account.Zip": "97703",
+      "Taxlot_Assessor_Account.Subdiv_Code": "",
+      "Taxlot_Assessor_Account.Subdivision": "",
+      "Taxlot_Assessor_Account.Block": "",
+      "Taxlot_Assessor_Account.Lot": "",
+      "Taxlot_Assessor_Account.MA": "6",
+      "Taxlot_Assessor_Account.SA": "18",
+      "Taxlot_Assessor_Account.Percent_Good": "",
+      "Taxlot_Assessor_Account.LegalLot": "Y",
+      "Taxlot_Assessor_Account.UGB": "",
+      "Taxlot_Assessor_Account.FirePatrol": "",
+      "Taxlot_Assessor_Account.NH": "000",
+      "Taxlot_Assessor_Account.Pre_Direction": "",
+      "dbo_GIS_MAILING.OBJECTID": 31845,
+      "dbo_GIS_MAILING.MAP_TAXLOT": "161136D000601",
+      "dbo_GIS_MAILING.ACCOUNT_ID": "132327",
+      "dbo_GIS_MAILING.OWNER": "HOGAN,PATRICK & TANYA",
+      "dbo_GIS_MAILING.AGENT": "",
+      "dbo_GIS_MAILING.IN_CARE_OF": "",
+      "dbo_GIS_MAILING.M_ADDRESS": "16906 SE 30TH ST",
+      "dbo_GIS_MAILING.M_CITYSTZIP": "VANCOUVER, WA 98683",
+      "dbo_GIS_MAILING.M_CITY": "VANCOUVER",
+      "dbo_GIS_MAILING.M_STATE": "WA",
+      "dbo_GIS_MAILING.M_ZIP": "98683",
+      "dbo_GIS_MAILING.MAP_TAXLOT_SI": "161136D000601"
+    }
+  }
+}
