@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.248.0 (2026-05-20)
+
+### Features
+- feat(skills): foundational pass items 4-6 — brand voice tiers, Apify design recon, ElevenLabs shared lib
+
+---
+
+
 ## v1.247.0 (2026-05-20)
 
 ### Features
