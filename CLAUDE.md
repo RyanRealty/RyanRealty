@@ -213,6 +213,25 @@ When Matt issues a new voice directive in chat, the agent's job is twofold:
 - Hook contains specific element: number, place name, contradicting claim, or visual surprise.
 - **Banned openings:** logo, brokerage name, title card on black, "REPRESENTED BY," slow boundary draw, agent intro, generic drone-with-no-overlay.
 
+## First frame as thumbnail (t=0) — HARD RULE (ship-blocker, locked 2026-05-20)
+
+**The first frame of every video must look great as a static thumbnail in a social feed.** Social platforms (IG Reels, TikTok, YT Shorts, FB Reels) auto-generate the preview thumbnail from the first frame unless you supply a custom cover. A black frame, a logo-only card, a blank background, or a low-contrast title slide kills click-through before the algorithm even has a chance.
+
+The first frame must contain:
+- Real photo content (hero photography, listing photo, live tile, drone shot — not a brand card)
+- A title or headline overlay if needed (sized for thumbnail readability — 64–80 px headlines, NOT body copy)
+- Strong contrast (no flat low-luma backgrounds; no flat high-luma backgrounds)
+
+Banned at t=0 specifically:
+- Pure black frame (luminance mean < 30/255)
+- Pure white frame
+- Solid cream / solid navy / solid any-brand-color background with no photo or content
+- The Ryan Realty wordmark alone (logo-only intro)
+- A "Coming Up" / "Brought to you by" / "Sponsored by" title card
+- A blurred or focus-pulling-from-black ramp
+
+Enforced by `scripts/check_first_frame.py` — every video render runs this check before the file moves from `out/` to `public/v5_library/`. Failure surfaces as a ship-blocker. See [`video_production_skills/quality_gate/SKILL.md`](video_production_skills/quality_gate/SKILL.md) §4.3 for the check spec.
+
 ## Beats
 - Standard 2–3s per beat. Luxury drone 3–4s MAX. **No beat over 4s.**
 - Minimum 12 beats in a 45s video.
@@ -224,11 +243,14 @@ When Matt issues a new voice directive in chat, the agent's job is twofold:
 - Final 15%: kinetic stat reveal. **No brokerage attribution, no logo, no contact info in the reveal frame.**
 
 ## Text overlays
-- Safe zone 900×1400 inside 1080×1920 (90 px margin every edge).
-- Body ≥ 48 px, headlines 64–80 px.
-- Min 2s display per block. Max 5–7 words per block.
+- **Working safe zone (1080×1920 portrait): x 90–990, y 280–1480** — anchor every text overlay, caption, headline, stat panel, end-card element inside this rectangle. Canonical constants live at [`video_production_skills/safe-zones/canonical/safe-zones.ts`](video_production_skills/safe-zones/canonical/safe-zones.ts) — import `PORTRAIT_SAFE` / `LANDSCAPE_SAFE` / `SQUARE_SAFE` instead of hardcoding per comp. Full rule at [`video_production_skills/safe-zones/SKILL.md`](video_production_skills/safe-zones/SKILL.md).
+- **Avoid regions (1080×1920 portrait):** top 0–280 (IG / TikTok profile pill + follow), right 960–1080 (action column), bottom 1480–1920 (platform caption box + engagement chrome). No text, no critical content, no logo in any avoid region.
+- **Landscape 1920×1080 (YouTube long-form):** working safe zone x 90–1830, y 80–1000. Avoid: top 0–80 (YT title overlay), bottom 1000–1080 (YT control bar).
+- **Square 1080×1080 (IG feed / FB feed / LinkedIn carousel slide):** working safe zone x 90–990, y 90–1010. No major platform overlay.
+- Body ≥ 48 px, headlines 64–80 px. (Single-word captions ride at 120 px — see captions SKILL.)
+- Min 2s display per block. Max 5–7 words per block (except single-word captions, which time to forced-alignment).
 - Numbers carry units always: "$3,025,000" not "3,025,000," "4 bedrooms" not "4 BR."
-- White text + shadow OR dark pill under text. Never white-on-white, never gold-on-gold.
+- White text + shadow OR dark pill under text. Never white-on-white, never gold-on-gold. Gold is retired per Design System v2 — replace with navy `#102742` or cream `#faf8f4`.
 
 ## VO (ElevenLabs only)
 - **Voice: Victoria, ID `qSeXEcewz7tA0Q0qk9fH`** (locked 2026-04-27 — permanent). No other voice.
@@ -272,7 +294,7 @@ When Matt issues a new voice directive in chat, the agent's job is twofold:
 ```
 [ ] ffprobe Duration in [30s, 60s]
 [ ] ffmpeg blackdetect strict (pix_th=0.05) returns ZERO sequences
-[ ] Frame at 0s has motion + content (not black, not logo)
+[ ] Frame at 0s passes `python3 scripts/check_first_frame.py <render.mp4>` (ship-blocker — luma 30–240, variance ≥ 250, saturation ≥ 8 mid-luma; no black, no logo card, no blank background)
 [ ] Frame at 25% has visual register change
 [ ] Frame at 50% has pattern interrupt
 [ ] Final 15% is kinetic reveal
@@ -844,16 +866,18 @@ These three layer with the master skill: `API_INVENTORY` answers *what tools are
 
 ### Captions — HARD RULES (Ship Blockers)
 
-**Captions are the single most-watched element on muted feeds. Choppy or overlapping captions kill retention. These rules are hard — see `video_production_skills/VIDEO_PRODUCTION_SKILL.md` Section 0.5 for the full spec and `video_production_skills/CAPTION_AUDIT.md` for the violation log.**
+**Captions are the single most-watched element on muted feeds. Choppy or overlapping captions kill retention. These rules are hard — see [`video_production_skills/captions/SKILL.md`](video_production_skills/captions/SKILL.md) for the canonical rule + spec, and `video_production_skills/CAPTION_AUDIT.md` for the violation log.**
 
 1. **Captions NEVER render over other visual components.** No overlap with stats, numbers, charts, logos, end-card elements, animated text overlays (titles, price reveals, SlamLine, WordReveal, BreakingBadge), photos with focal content, or any other rendered overlay. If a competing element needs the caption zone for a beat, the caption is suppressed for that beat.
-2. **Captions occupy a dedicated reserved safe zone that no other component can enter.** Portrait 1080×1920: y 1480–1720, x 90–990. Enforced at the composition level via a `<CaptionSafeZone>` wrapper — physical reservation, not just z-index.
-3. **CAPTION FORMAT IS FULL-SENTENCE WITH ACTIVE-WORD HIGHLIGHT (Matt directive 2026-05-07 — permanent rule).** The whole current sentence stays on screen. The active word is highlighted (gold color + scale 1.0→1.08 spring) synced to ElevenLabs forced-alignment timestamps. NEVER use word-by-word fade-in/out (3-word phrase windows, single-word reveals, etc.). Sentence boundaries are detected by `.`, `!`, `?` in word.text. Reference impl: `video/market-report/src/CaptionBand.tsx`.
-4. **Sentence transitions: smooth 200–300 ms crossfade.** Previous sentence fades out, next sentence fades in, both partially visible during the crossfade window. NEVER hard cut between sentences. NEVER flash. Min 6-frame opacity ramp.
-5. **Caption timing syncs to natural speech cadence via ElevenLabs `/v1/forced-alignment` word-level timestamps — never to clock-time slots or `<Sequence>` boundaries.** Generate the alignment JSON next to every VO MP3 before rendering; the caption component reads from it.
-6. **No choppy or jittery caption changes.** No flicker. No 1-frame blips. No mid-word fade-outs. No font-size oscillation. No re-layout jumps mid-chunk.
+2. **Captions occupy a dedicated reserved safe zone that no other component can enter.** Portrait 1080×1920: y 1280–1460 (center y 1370), x 90–990. Landscape 1920×1080: y 880–1000 (center y 940), x 90–1830. Square 1080×1080: y 850–1010 (center y 930), x 90–990. **Canonical constants:** import from [`video_production_skills/safe-zones/canonical/safe-zones.ts`](video_production_skills/safe-zones/canonical/safe-zones.ts) — `CAPTION_PORTRAIT`, `CAPTION_LANDSCAPE`, `CAPTION_SQUARE`. The older y 1480–1720 portrait coords sat INSIDE the platform action UI and are retired.
+3. **CAPTION FORMAT IS SINGLE-WORD AMBOQIA (Matt directive 2026-05-20 — supersedes the 2026-05-07 sentence-with-highlight rule).** Render ONE word at a time, large, centered in the caption safe zone, in Amboqia Boriango (the brand display font — NEVER AzoSans, NEVER Geist, NEVER Anton, NEVER Inter). The word appears at speech start and fades out at speech end, synced to ElevenLabs `/v1/forced-alignment` word timestamps. No phrase windows. No 3-word chunks. No full sentences staying on screen. No karaoke-style highlight inside a sentence. No colored pill background. No gold accent (gold is retired per Design System v2). White text + soft drop shadow on the photo / video directly. Same look across every video the brand ships. **Canonical component:** [`video_production_skills/captions/canonical/SingleWordCaption.tsx`](video_production_skills/captions/canonical/SingleWordCaption.tsx). **Canonical rule:** [`video_production_skills/captions/SKILL.md`](video_production_skills/captions/SKILL.md).
+4. **Word transitions: smooth crossfade ≤ 100 ms between adjacent words.** Hard cuts produce flicker — banned. Gaps shorter than 100 ms crossfade the outgoing word into the incoming word. Gaps longer than 500 ms render true silence (no caption visible during a real breath / pause). The canonical component uses `CROSSFADE_SEC = 0.08`.
+5. **Caption timing syncs to natural speech cadence via ElevenLabs `/v1/forced-alignment` word-level timestamps — never to clock-time slots or `<Sequence>` boundaries.** Generate the alignment JSON next to every VO MP3 before rendering; the canonical component reads `{ text, startSec, endSec }` per word.
+6. **No choppy or jittery caption changes.** No flicker. No 1-frame blips. No mid-word fade-outs. No font-size oscillation. No re-layout jumps. Amboqia loaded via `loadAmboqia()` from [`video_production_skills/captions/canonical/load-amboqia.ts`](video_production_skills/captions/canonical/load-amboqia.ts) before the first render — caption renders without the brand font are a ship-blocker.
 
 A render that fails any of these is a non-ship until repaired. Captions + data accuracy together gate every render: wrong number OR broken captions = no ship.
+
+**Migration status (2026-05-20):** Six legacy caption components exist (`video/market-report/CaptionBand`, `video/market-report/KineticCaptions`, `video/market-report-yt-long/KineticCaptions`, `video/earnest/brand/CaptionBand`, `video/evergreen-education/components/CaptionBand`, `listing_video_v4/src/news/SentenceCaption`). They keep working until each producer is migrated. Per-producer migration replaces the legacy component body with a re-export of `SingleWordCaption` from the canonical path — see the migration table in [`video_production_skills/captions/SKILL.md`](video_production_skills/captions/SKILL.md). New content uses the canonical component directly from day one.
 
 ### ElevenLabs Voice — MANDATORY
 

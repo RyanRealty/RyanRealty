@@ -179,6 +179,30 @@ Before the clip advances to edit, screen for:
 
 If ANY artifact is present: regenerate or cut around it. Do NOT "hope nobody notices."
 
+### 4.3 First-frame thumbnail gate (locked 2026-05-20 — ship-blocker)
+
+Social platforms auto-generate the preview thumbnail from frame 0 unless you supply a custom cover. A black opener, a logo-only card, a blank background, or a low-contrast title slide kills click-through before the algorithm gets a chance to push the video.
+
+**Every render is gated by `scripts/check_first_frame.py` before it leaves `out/`.** The check extracts frame 0 via ffmpeg and runs three tests:
+
+| Test | Threshold | Catches |
+|---|---|---|
+| Luminance mean | `30 ≤ luma ≤ 240` | Pure black openers, pure white blanks, near-black fade-from-black ramps |
+| Channel variance | `variance ≥ 250` | Solid-color brand cards, logo-on-flat-background, blank cream/navy |
+| Saturation mean | `≥ 8` (when 60 ≤ luma ≤ 200) | Neutral gray title cards, near-grayscale opening slides |
+
+A failed first-frame check is a non-ship until the Remotion comp is re-designed at t=0. The comp must render real hero photography, listing photo, live tile, or other content-rich frame at the very first frame — not a "Coming Up" / "Brought to you by" / "Sponsored by" title slide, not a logo card, not a fade-from-black ramp.
+
+Run during the build pipeline:
+
+```bash
+python3 scripts/check_first_frame.py out/<format>/<slug>/<file>.mp4 --verbose
+```
+
+Exit code 0 = pass. Exit code 1 = fail. Producer scripts call this between the Remotion render step and the publish/move step; a non-zero exit halts the build.
+
+See [`CLAUDE.md`](../../CLAUDE.md) "First frame as thumbnail (t=0) — HARD RULE" for the rule statement.
+
 ---
 
 ## PHASE 5.  Viral architecture gate (before publish)
