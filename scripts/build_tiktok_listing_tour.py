@@ -48,6 +48,7 @@ import datetime
 import shutil
 import urllib.request
 from pathlib import Path
+from typing import Optional
 
 REPO_ROOT = Path("/Users/matthewryan/RyanRealty")
 SKILL = "tiktok_listing_tour"
@@ -73,7 +74,7 @@ def load_env() -> dict:
     return env
 
 
-def pull_listing(mls_id: str | None, listing_key: str | None, address: str | None, env_vars: dict) -> dict | None:
+def pull_listing(mls_id: Optional[str], listing_key: Optional[str], address: Optional[str], env_vars: dict) -> Optional[dict]:
     """Pull listing data from Supabase. Returns dict with display fields, or None."""
     supabase_url = env_vars.get("NEXT_PUBLIC_SUPABASE_URL", "")
     supabase_key = env_vars.get("SUPABASE_SERVICE_ROLE_KEY", "") or env_vars.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")

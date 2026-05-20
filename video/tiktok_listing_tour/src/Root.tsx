@@ -7,6 +7,7 @@
  */
 
 import React from 'react'
+import { ComponentType } from 'react'
 import { Composition } from 'remotion'
 
 import {
@@ -43,14 +44,14 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Composition
         id="TikTokListingTour"
-        component={TikTokListingTour}
+        component={TikTokListingTour as unknown as ComponentType<Record<string, unknown>>}
         durationInFrames={computeTotalFrames(DEFAULT_BEATS)}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
         defaultProps={DEFAULT_PROPS}
         calculateMetadata={({ props }) => ({
-          durationInFrames: computeTotalFrames(props.beats),
+          durationInFrames: computeTotalFrames((props as unknown as TikTokListingTourInput).beats),
         })}
       />
     </>

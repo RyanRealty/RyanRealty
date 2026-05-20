@@ -7,6 +7,7 @@
  */
 
 import React from 'react'
+import { ComponentType } from 'react'
 import { Composition } from 'remotion'
 
 import { AreaGuide, AreaGuideInput } from './AreaGuide'
@@ -32,7 +33,7 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Composition
         id="AreaGuide"
-        component={AreaGuide}
+        component={AreaGuide as unknown as ComponentType<Record<string, unknown>>}
         durationInFrames={TOTAL_FRAMES}
         fps={FPS}
         width={WIDTH}

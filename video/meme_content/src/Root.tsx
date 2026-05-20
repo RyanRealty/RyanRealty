@@ -10,6 +10,7 @@
  */
 
 import React from 'react'
+import { ComponentType } from 'react'
 import { Composition } from 'remotion'
 
 import { MemeComp, MemeInput } from './MemeComp'
@@ -34,14 +35,14 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Composition
         id="MemeComp"
-        component={MemeComp}
+        component={MemeComp as unknown as ComponentType<Record<string, unknown>>}
         durationInFrames={DEFAULT_DURATION_FRAMES}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
         defaultProps={DEFAULT_PROPS}
         calculateMetadata={({ props }) => ({
-          durationInFrames: props.durationFrames,
+          durationInFrames: (props as unknown as MemeInput).durationFrames,
         })}
       />
     </>

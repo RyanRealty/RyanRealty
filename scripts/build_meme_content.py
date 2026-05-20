@@ -43,6 +43,7 @@ import argparse
 import subprocess
 import datetime
 from pathlib import Path
+from typing import Optional
 
 REPO_ROOT = Path("/Users/matthewryan/RyanRealty")
 SKILL = "meme_content"
@@ -69,7 +70,7 @@ def load_env() -> dict:
     return env
 
 
-def pick_meme_entry(trend_id: str | None) -> dict | None:
+def pick_meme_entry(trend_id: Optional[str]) -> Optional[dict]:
     """Pick a PASS-flagged meme entry from the library, or None if empty."""
     if not MEME_LIBRARY.exists():
         return None

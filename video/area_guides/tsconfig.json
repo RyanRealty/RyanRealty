@@ -11,10 +11,7 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "types": ["node"],
-    "paths": {
-      "../../video_production_skills/*": ["../../video_production_skills/*"]
-    }
+    "types": ["node"]
   },
   "include": ["src/**/*", "remotion.config.ts"]
 }

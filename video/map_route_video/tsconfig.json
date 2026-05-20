@@ -9,7 +9,12 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "lib": ["DOM", "ES2020"]
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "baseUrl": ".",
+    "paths": {
+      "react": ["./node_modules/react"],
+      "react/jsx-runtime": ["./node_modules/react/jsx-runtime"]
+    }
   },
   "include": ["src/**/*", "remotion.config.ts"]
 }

@@ -34,11 +34,15 @@ import {
   staticFile,
 } from 'remotion'
 
-import { SingleWordCaption, CaptionWord } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
+import { SingleWordCaption, CaptionWord, SingleWordCaptionProps } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
 import {
   PORTRAIT_SAFE,
   CAPTION_PORTRAIT,
 } from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+
+/** Bridge to avoid React 18.3 + TS 5.7 strict FC return-type error on canonical comp. */
+const CaptionBridge = (props: SingleWordCaptionProps): React.ReactElement | null =>
+  SingleWordCaption(props) as React.ReactElement | null
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -244,7 +248,7 @@ export const MemeComp: React.FC<MemeInput> = ({
 
       {/* Captions (optional — meme format often has no VO) */}
       {captionWords.length > 0 && (
-        <SingleWordCaption
+        <CaptionBridge
           words={captionWords}
           suppressBeforeSec={0}
           centerY={CAPTION_PORTRAIT.centerY}

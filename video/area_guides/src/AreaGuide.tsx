@@ -26,12 +26,16 @@ import {
   staticFile,
 } from 'remotion'
 
-import { SingleWordCaption, CaptionWord } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
+import { SingleWordCaption, CaptionWord, SingleWordCaptionProps } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
 import {
   PORTRAIT_SAFE,
   CAPTION_PORTRAIT,
 } from '../../../video_production_skills/safe-zones/canonical/safe-zones'
 import { BEAT_DURATIONS_SEC, CREAM, FPS, HEIGHT, NAVY, WHITE, WIDTH } from './config'
+
+/** Thin bridge to avoid React 18.3 + TS 5.7 strict FC return-type error. */
+const CaptionBridge = (props: SingleWordCaptionProps): React.ReactElement | null =>
+  SingleWordCaption(props) as React.ReactElement | null
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -470,7 +474,7 @@ export const AreaGuide: React.FC<AreaGuideInput> = ({
       </Sequence>
 
       {/* Captions — single-word Amboqia, suppressed during hook title (first 3s) */}
-      <SingleWordCaption
+      <CaptionBridge
         words={captionWords}
         suppressBeforeSec={3.0}
         centerY={CAPTION_PORTRAIT.centerY}

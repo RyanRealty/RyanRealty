@@ -38,11 +38,15 @@ import {
   Audio,
 } from 'remotion'
 
-import { SingleWordCaption, CaptionWord } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
+import { SingleWordCaption, CaptionWord, SingleWordCaptionProps } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
 import {
   PORTRAIT_SAFE,
   CAPTION_PORTRAIT,
 } from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+
+/** Bridge to avoid React 18.3 + TS 5.7 strict FC return-type error on canonical comp. */
+const CaptionBridge = (props: SingleWordCaptionProps): React.ReactElement | null =>
+  SingleWordCaption(props) as React.ReactElement | null
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -455,7 +459,7 @@ export const TikTokListingTour: React.FC<TikTokListingTourInput> = ({
       </Sequence>
 
       {/* Single-word Amboqia captions — suppressed during price hook (first beat) */}
-      <SingleWordCaption
+      <CaptionBridge
         words={captionWords}
         suppressBeforeSec={beats[0].durationSec}
         centerY={CAPTION_PORTRAIT.centerY}

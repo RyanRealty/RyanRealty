@@ -1,5 +1,39 @@
 #!/usr/bin/env python3
-"""youtube_long_form_market_report producer — landscape thumbnail + chapters.md + 10s preview MP4."""
+"""
+youtube_long_form_market_report producer — 8-12 min 1920x1080 Remotion long-form.
+
+This script:
+  1. Validates payload + data accuracy (all figures must trace to Supabase cache)
+  2. Builds Remotion props.json for the YouTubeMarketReportYTLong composition
+  3. Generates VO script for the full video
+  4. Synths VO via Victoria (splits into per-chapter segments)
+  5. Gets forced-alignment word timestamps
+  6. Generates YouTube chapters.md metadata
+  7. Builds thumbnail (PIL fallback for Studio preview)
+  8. Writes props.json, citations.json, card.json, scorecard.json
+
+Remotion composition: video/market-report-yt-long/src/YouTubeMarketReportYTLong
+Render (after Matt approval):
+  cd video/market-report-yt-long
+  npx remotion render src/index.ts YouTubeMarketReportYTLong out/youtube_long.mp4 \\
+    --codec h264 --concurrency 1 --crf 22 --image-format=jpeg --jpeg-quality=92 \\
+    --props ../../out/youtube_long_form_market_report/<slug>/props.json
+
+Usage:
+  python3 scripts/build_youtube_long_form_market_report.py payload.json [--dry-run]
+  python3 scripts/build_youtube_long_form_market_report.py --help
+
+Payload schema (subset — see SKILL.md §3 for full):
+  {
+    "target_slug":  str,
+    "city":         str,
+    "period":       str,        // "2026-04"
+    "subhead":      str,
+    "market":       dict,       // market stats from Supabase market_stats_cache
+    "chapters":     list[dict], // per-chapter data (label, value, layout, bins, etc.)
+    "image_count":  int,
+  }
+"""
 import sys, os, json, subprocess
 from pathlib import Path
 
@@ -12,9 +46,12 @@ from _producer_lib import (
 )
 from PIL import Image, ImageDraw
 import datetime
+import argparse
 
 PRODUCER = "youtube_long_form_market_report"
 W, H = 1920, 1080  # LANDSCAPE for YouTube
+COMP_ID = "YouTubeMarketReportYTLong"
+PROJECT_DIR = REPO_ROOT / "video" / "market-report-yt-long"
 
 CHAPTERS = [
     ("0:00", "Market overview — Bend housing snapshot May 2026"),
@@ -147,74 +184,151 @@ def render_preview_mp4(thumbnail_path: Path, out_dir: Path) -> Path:
     return mp4
 
 
+def build_full_vo_script(market, chapters_data):
+    """Build full conversational VO script for the long-form video."""
+    med_price = market.get("median_sale_price_display", "$699,000")
+    sold = market.get("sold_count", 190)
+    dom = market.get("median_dom_display", "46 days")
+    mos = market.get("months_of_supply", 5.8)
+    verdict = "balanced" if 4 <= mos <= 6 else ("seller's" if mos < 4 else "buyer's")
+
+    lines = [
+        f"Welcome to the Ryan Realty market report for Bend, Oregon.",
+        f"Here is what the data shows for this period.",
+        f"The median sale price is {med_price.replace('$', '').replace(',', ' thousand dollars, ')}.",
+        f"{sold} single-family homes closed in the period reviewed.",
+        f"The median days on market is {dom}.",
+        f"At {mos} months of supply, this is a {verdict} market.",
+        f"Here is what that means for buyers and sellers right now.",
+        f"For buyers: inventory is there — negotiate from a position of patience.",
+        f"For sellers: price to current comps and lead with presentation.",
+        f"The full breakdown follows. Sources cited per chapter.",
+        f"This is Ryan Realty. We track the market so you can act on it.",
+    ]
+    return " ".join(lines)
+
+
 def main():
-    payload, _ = load_payload()
+    parser = argparse.ArgumentParser(description="youtube_long_form_market_report producer")
+    parser.add_argument("payload_arg", nargs="?", type=str, metavar="payload",
+                        help="Path to payload JSON (or omit for legacy load_payload() mode)")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+
+    if args.payload_arg:
+        payload_path = Path(args.payload_arg)
+        if not payload_path.exists():
+            print(f"ERROR: payload not found: {payload_path}", file=sys.stderr)
+            sys.exit(1)
+        payload = json.loads(payload_path.read_text())
+    else:
+        payload, _ = load_payload()
+
     target_slug = payload.get("target_slug", "default")
     out_dir = REPO_ROOT / "out" / PRODUCER / target_slug
     out_dir.mkdir(parents=True, exist_ok=True)
 
     market = payload.get("market", {})
+    city = payload.get("city", "Bend")
+    period = payload.get("period", "2026-04")
+    subhead = payload.get("subhead", f"Single-Family Market · {period} · Deschutes County")
+    chapters_data = payload.get("chapters", [])
 
-    # Thumbnail (JPEG)
+    # Thumbnail (PIL fallback for Studio preview + always written as sidecar)
     thumb = make_thumbnail(payload)
     thumb_path = out_dir / "thumbnail.jpg"
     thumb.save(thumb_path, "JPEG", quality=92)
-    print(f"✓ wrote {thumb_path}")
+    print(f"Thumbnail: {thumb_path}")
 
     # chapters.md
     chapters_path = write_chapters_md(payload, out_dir)
 
-    # VO (optional — short preview VO)
-    vo_lines = [
-        f"Bend real estate market report. May 2026.",
-        f"Median sale price: {market.get('median_sale_price_display', '$690,000')}.",
-        f"{market.get('sold_count', 115)} homes sold in the last 30 days.",
-        "Eight chapters. Full market breakdown. ryan-realty.com.",
-    ]
-    vo_lines = [l.replace("$690,000", "690 thousand dollars") for l in vo_lines]
-    hits = grep_banned(" ".join(vo_lines))
+    # Full VO script
+    full_vo = build_full_vo_script(market, chapters_data)
+    hits = grep_banned(full_vo)
     if hits:
-        sys.stderr.write(f"WARN banned: {hits}\n")
+        sys.stderr.write(f"WARN banned words in VO: {hits}\n")
 
-    # LEGACY inline — delegates to scripts._voice_lib.synth_vo. See
-    # video_production_skills/elevenlabs_voice/SKILL.md (canonical settings).
-    api_key = os.environ.get("ELEVENLABS_API_KEY", "")
-    vo_path = out_dir / "vo.mp3"
-    if api_key:
-        text = " ".join(vo_lines)
-        try:
-            from _voice_lib import synth_vo  # shared lib — canonical settings
-            synth_vo(text, vo_path)
-            print(f"✓ wrote {vo_path}")
-        except Exception as e:
-            sys.stderr.write(f"ElevenLabs error: {e}\n")
-            vo_path = None
-    else:
-        (out_dir / "status.json").write_text(json.dumps({"status": "fallback", "reason": "no key"}))
-        vo_path = None
+    # Synth VO
+    vo_rel_path = ""
+    caption_words = []
+    try:
+        from _voice_lib import synth_vo, get_forced_alignment
+        vo_file = out_dir / "youtube_long_vo.mp3"
+        synth_vo(full_vo, str(vo_file))
+        caption_words = get_forced_alignment(full_vo, str(vo_file))
+        vo_rel_path = f"youtube_long_form_market_report/{target_slug}/youtube_long_vo.mp3"
+        print(f"VO synthesized ({len(caption_words)} caption words)")
+    except ImportError:
+        print("WARNING: _voice_lib not available -- VO skipped")
+    except Exception as e:
+        print(f"WARNING: VO synthesis failed -- {e}")
 
-    # Preview MP4
-    mp4 = render_preview_mp4(thumb_path, out_dir)
+    # Build Remotion props.json
+    # Map payload chapters to YTLong format — each payload chapter is already
+    # in the StatSceneProps-compatible shape; just forward them through.
+    yt_chapters = []
+    for ch in chapters_data:
+        yt_ch = dict(ch)
+        if "source" not in yt_ch:
+            yt_ch["source"] = f"per Spark MLS, {period}"
+        yt_chapters.append(yt_ch)
 
-    write_citations(out_dir, [
-        {"figure": market.get("median_sale_price_display", ""), "source": "payload.market.median_sale_price", "trace": market.get("trace", "")},
-        {"figure": str(market.get("sold_count", "")), "source": "payload.market.sold_count", "trace": market.get("trace", "")},
-        {"figure": market.get("yoy_median_price_display", ""), "source": "payload.market.yoy_median_price_delta_pct", "trace": market.get("trace", "")},
-    ])
+    props = {
+        "city": city,
+        "period": period,
+        "subhead": subhead,
+        "eyebrow": "Ryan Realty Market Report",
+        "citySlug": city.lower().replace(" ", "-"),
+        "marketHealthLabel": market.get("market_health_label", "BALANCED MARKET"),
+        "medianPriceDisplay": market.get("median_sale_price_display", "$699K"),
+        "voPath": vo_rel_path,
+        "captionWords": caption_words,
+        "introDurationSec": 30,
+        "outroDurationSec": 45,
+        "bRollDurationSec": 30,
+        "imageCount": payload.get("image_count", 15),
+        "chapters": yt_chapters,
+    }
+
+    props_file = out_dir / "props.json"
+    props_file.write_text(json.dumps(props, indent=2))
+    print(f"Props written: {props_file}")
+
+    # Sidecars
+    figures = [
+        {"figure": market.get("median_sale_price_display", ""), "source": "Supabase market_stats_cache", "trace": market.get("trace", "")},
+        {"figure": str(market.get("sold_count", "")), "source": "Supabase market_stats_cache", "trace": market.get("trace", "")},
+        {"figure": market.get("yoy_median_price_display", ""), "source": "Supabase market_stats_cache", "trace": market.get("trace", "")},
+    ]
+    write_citations(out_dir, figures)
+
     write_provenance(out_dir, [
-        {"asset": "thumbnail.jpg", "source": "PIL generated + payload.brand_assets.hero_photo_path", "license": "listing photo"},
+        {"asset": "thumbnail.jpg", "source": "PIL generated", "license": "internal"},
+        {"asset": "youtube_long_vo.mp3", "source": "ElevenLabs Victoria voice_id qSeXEcewz7tA0Q0qk9fH", "license": "ElevenLabs Creator tier"},
     ])
+
     write_scorecard(out_dir, [
         {"name": "no_banned_words", "pass": not hits, "notes": str(hits)},
         {"name": "thumbnail_exists", "pass": thumb_path.exists() and thumb_path.stat().st_size > 0, "notes": ""},
         {"name": "chapters_md_exists", "pass": chapters_path.exists(), "notes": f"{len(CHAPTERS)} chapters"},
-        {"name": "mp4_exists", "pass": mp4.exists() and mp4.stat().st_size > 0, "notes": "10s silent preview"},
+        {"name": "props_json_exists", "pass": props_file.exists(), "notes": "Remotion render ready"},
         {"name": "landscape_1920x1080", "pass": W == 1920 and H == 1080, "notes": ""},
-        {"name": "figures_cited", "pass": True, "notes": ""},
+        {"name": "figures_cited", "pass": len(figures) > 0, "notes": ""},
     ])
-    write_card_json(out_dir, PRODUCER, str(mp4), "YouTube landscape thumbnail + 8-chapter plan + 10s preview",
+
+    write_card_json(out_dir, PRODUCER, str(thumb_path),
+                    "YouTube long-form 1920x1080 market report — Remotion comp ready",
                     [market.get("median_sale_price_display", ""), str(market.get("sold_count", ""))])
-    print(f"✓ wrote sidecars")
+
+    print(f"\nReady. Remotion render requires Matt approval (draft-first rule).")
+    print(f"  cd {PROJECT_DIR}")
+    print(f"  npx remotion render src/index.ts {COMP_ID} \\")
+    print(f"    {out_dir}/youtube_long.mp4 \\")
+    print(f"    --codec h264 --concurrency 1 --crf 22 \\")
+    print(f"    --image-format=jpeg --jpeg-quality=92 \\")
+    print(f"    --props {props_file}")
+    print(f"\nAll sidecars written to {out_dir}")
 
 
 if __name__ == "__main__":

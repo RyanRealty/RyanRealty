@@ -37,7 +37,7 @@ import {
   Img,
   spring,
 } from 'remotion'
-import { SingleWordCaption, CaptionWord } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
+import { SingleWordCaption, CaptionWord } from './SingleWordCaptionLocal'
 import {
   PORTRAIT_SAFE,
   CAPTION_PORTRAIT,

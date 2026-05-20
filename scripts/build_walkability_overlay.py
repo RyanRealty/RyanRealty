@@ -1,185 +1,366 @@
 #!/usr/bin/env python3
-"""walkability_overlay producer — 3 isochrone frames (5/10/15 min drive radius)."""
-import sys, os, json, subprocess, math
+"""
+walkability_overlay producer — animated isochrone rings + amenity markers.
+
+Walks-speed isochrone rings (5/10/15 min at 3 mph):
+  5-min  = 0.25 mile radius
+  10-min = 0.50 mile radius
+  15-min = 0.75 mile radius
+
+Workflow:
+  1. Fetch nearby amenities via Google Places API (parks, restaurants, schools,
+     grocery stores) within 15-min walk radius (~0.75mi = ~1.2km)
+  2. Compute ring radii in pixels for the map viewport at mapZoom
+  3. Normalize amenity lat/lng to 0-1 viewport coords
+  4. Determine headline (closest coffee/restaurant walk time)
+  5. Synth VO via Victoria
+  6. Build Remotion props.json
+  7. Render (after Matt approval)
+
+Usage:
+  python3 scripts/build_walkability_overlay.py payload.json [--out DIR] [--dry-run]
+  python3 scripts/build_walkability_overlay.py --help
+
+Payload schema:
+  {
+    "target_slug":      str,
+    "listing_lat":      float,
+    "listing_lng":      float,
+    "map_zoom":         int,    // default 15
+    "duration_sec":     int,    // default 46
+    "headline_amenity": str,    // default "coffee" — overrides auto-detected
+  }
+
+To render after Matt approval:
+  cd video/walkability_overlay
+  npx remotion render src/index.ts WalkabilityOverlay out/walkability_overlay.mp4 \\
+    --codec h264 --concurrency 1 --crf 22 --image-format=jpeg --jpeg-quality=92 \\
+    --props ../../out/walkability_overlay/<slug>/props.json
+"""
+
+import sys
+import os
+import json
+import argparse
+import math
+import datetime
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
-from _producer_lib import (
-    NAVY, CREAM, INK, WHITE, font, text_w, text_h, draw_centered, wrap_text,
-    load_payload, load_hero, round_to_thousand, add_scrim,
-    write_citations, write_provenance, write_scorecard, write_card_json,
-    grep_banned, REPO_ROOT,
-)
-from PIL import Image, ImageDraw
+REPO_ROOT = Path("/Users/matthewryan/RyanRealty")
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 PRODUCER = "walkability_overlay"
 W, H = 1080, 1920
+COMP_ID = "WalkabilityOverlay"
+PROJECT_DIR = REPO_ROOT / "video" / "walkability_overlay"
 
-ISOCHRONES = [
-    {"minutes": 5, "color": (66, 133, 244), "label": "5 MINUTES"},
-    {"minutes": 10, "color": (52, 168, 83), "label": "10 MINUTES"},
-    {"minutes": 15, "color": (234, 67, 53), "label": "15 MINUTES"},
-]
+# Walking speed: 3 mph = 4.83 km/h = 80.5 meters/min
+WALK_SPEED_M_PER_MIN = 80.5
+RING_MINUTES = [5, 10, 15]
+RING_RADIUS_M = {m: WALK_SPEED_M_PER_MIN * m for m in RING_MINUTES}
 
-
-def make_isochrone_frame(iso: dict, walk: dict, payload: dict) -> Image.Image:
-    minutes = iso["minutes"]
-    color = iso["color"]
-    label = iso["label"]
-
-    key = {5: "five_minute", 10: "ten_minute", 15: "fifteen_minute"}.get(minutes, "five_minute")
-    destinations = walk.get(key, [])
-
-    img = Image.new("RGB", (W, H), CREAM)
-    draw = ImageDraw.Draw(img)
-
-    # Color header band
-    draw.rectangle([0, 0, W, 220], fill=color)
-    mins_fnt = font(100, hero=True)
-    draw_centered(draw, label, mins_fnt, CREAM, 50, W)
-
-    # Map area
-    map_y, map_h = 240, 680
-    draw.rectangle([60, map_y, W - 60, map_y + map_h], fill=(228, 226, 218))
-
-    # Isochrone rings (nested circles for visual clarity)
-    cx, cy = W // 2, map_y + map_h // 2
-    for i, r_frac in enumerate([1.0, 0.65, 0.35]):
-        r = int(200 * r_frac * minutes / 15)
-        ring_color = ISOCHRONES[0]["color"] if i == 2 else (ISOCHRONES[1]["color"] if i == 1 else color)
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=ring_color, width=3 - i)
-
-    # Fill active isochrone
-    r_active = int(200 * minutes / 15)
-    # Semi-transparent fill via overlay
-    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    odraw = ImageDraw.Draw(overlay)
-    odraw.ellipse([cx - r_active, cy - r_active, cx + r_active, cy + r_active],
-                  fill=(*color, 50))
-    img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
-    draw = ImageDraw.Draw(img)
-
-    # Home marker
-    draw.ellipse([cx - 14, cy - 14, cx + 14, cy + 14], fill=NAVY)
-    draw.ellipse([cx - 7, cy - 7, cx + 7, cy + 7], fill=CREAM)
-    sm_fnt = font(24, accent=True)
-    draw.text((cx + 18, cy - 12), "HOME", font=sm_fnt, fill=NAVY)
-
-    # Destination dots on ring edge
-    for j, dest in enumerate(destinations[:3]):
-        angle = -60 + j * 60
-        rad = math.radians(angle)
-        dx = int(cx + r_active * 0.85 * math.cos(rad))
-        dy = int(cy + r_active * 0.85 * math.sin(rad))
-        draw.ellipse([dx - 10, dy - 10, dx + 10, dy + 10], fill=color)
-        dest_fnt = font(22, accent=True)
-        short = dest[:14] if len(dest) > 14 else dest
-        draw.text((dx + 14, dy - 11), short, font=dest_fnt, fill=NAVY)
-
-    # Destinations list
-    y2 = map_y + map_h + 50
-    list_title = font(48, accent=True)
-    draw_centered(draw, f"WITHIN {label}", list_title, NAVY, y2, W)
-    y2 += 70
-    for dest in destinations:
-        dest_fnt = font(54, hero=True)
-        lines = wrap_text(draw, dest.upper(), dest_fnt, W - 120)
-        for line in lines:
-            draw_centered(draw, line, dest_fnt, NAVY, y2, W)
-            y2 += 62
-        y2 += 10
-
-    # Ryan Realty mark
-    draw_centered(draw, "ryan-realty.com · 541.213.6706", font(38, accent=True), NAVY, H - 100, W)
-    return img
+# Place types to fetch
+PLACE_TYPES = ['cafe', 'restaurant', 'park', 'school', 'grocery_or_supermarket']
+TYPE_MAP = {
+    'cafe': 'cafe', 'coffee_shop': 'cafe',
+    'restaurant': 'restaurant',
+    'park': 'park',
+    'school': 'school',
+    'grocery_or_supermarket': 'grocery',
+    'supermarket': 'grocery',
+}
 
 
-def call_elevenlabs(lines: list, out_dir: Path):
-    """LEGACY shim — delegates to scripts._voice_lib.synth_vo. See
-    video_production_skills/elevenlabs_voice/SKILL.md for canonical
-    voice settings (single source of truth)."""
-    api_key = os.environ.get("ELEVENLABS_API_KEY", "")
-    vo_path = out_dir / "vo.mp3"
-    if not api_key:
-        (out_dir / "status.json").write_text(json.dumps({"status": "fallback", "reason": "no key"}))
-        return None
-    text = " ".join(lines)
+# ── Map projection helpers ────────────────────────────────────────────────────
+
+def lat_to_y_world(lat_deg, zoom):
+    sin_lat = math.sin(math.radians(lat_deg))
+    sin_lat = max(-0.9999, min(0.9999, sin_lat))
+    return (0.5 - math.log((1 + sin_lat) / (1 - sin_lat)) / (4 * math.pi)) * 256 * (2 ** zoom)
+
+
+def lng_to_x_world(lng_deg, zoom):
+    return (lng_deg + 180) / 360 * 256 * (2 ** zoom)
+
+
+def meters_to_pixels(meters, lat_deg, zoom):
+    """Convert distance in meters to pixels at the given lat/zoom."""
+    # 1 degree lat ≈ 111,320 meters at equator × cos(lat)
+    lat_rad = math.radians(lat_deg)
+    meters_per_deg_lat = 111320.0
+    world_h = 256 * (2 ** zoom)
+    px_per_meter = (world_h / 360) / (meters_per_deg_lat / 111320.0) * math.cos(lat_rad)
+    return meters * px_per_meter
+
+
+def latlng_to_normalized(lat, lng, center_lat, center_lng, zoom, width=W, height=H):
+    cx = lng_to_x_world(center_lng, zoom)
+    cy = lat_to_y_world(center_lat, zoom)
+    px = lng_to_x_world(lng, zoom) - cx + width / 2
+    py = lat_to_y_world(lat, zoom) - cy + height / 2
+    return px / width, py / height
+
+
+# ── Google Places API ─────────────────────────────────────────────────────────
+
+def fetch_places(lat, lng, api_key, radius_m, place_type):
+    params = urllib.parse.urlencode({
+        "location": f"{lat},{lng}",
+        "radius": int(radius_m),
+        "type": place_type,
+        "key": api_key,
+    })
+    url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?{params}"
     try:
-        from _voice_lib import synth_vo  # shared lib — canonical settings
-        synth_vo(text, vo_path)
-        print(f"✓ wrote {vo_path}")
-        return vo_path
+        with urllib.request.urlopen(url, timeout=15) as resp:
+            return json.loads(resp.read().decode()).get("results", [])
     except Exception as e:
-        sys.stderr.write(f"ElevenLabs error: {e}\n")
-        (out_dir / "status.json").write_text(json.dumps({"status": "fallback", "reason": str(e)}))
-        return None
+        print(f"WARNING: Places API error ({place_type}): {e}", file=sys.stderr)
+        return []
 
 
-def render_mp4(frame_paths: list, vo_path, out_dir: Path) -> Path:
-    mp4 = out_dir / f"{PRODUCER}.mp4"
-    frame_dur = 4
-    n = len(frame_paths)
-    inputs = []
-    for fp in frame_paths:
-        inputs += ["-loop", "1", "-t", str(frame_dur), "-i", str(fp)]
-    filter_str = "".join(f"[{i}:v]" for i in range(n)) + f"concat=n={n}:v=1:a=0[v]"
-    cmd = ["ffmpeg", "-y"] + inputs
-    if vo_path and vo_path.exists():
-        cmd += ["-i", str(vo_path), "-filter_complex", filter_str, "-map", "[v]",
-                "-map", f"{n}:a", "-pix_fmt", "yuv420p", "-shortest",
-                "-movflags", "faststart", "-c:v", "libx264", "-crf", "22", str(mp4)]
-    else:
-        cmd += ["-t", str(frame_dur * n), "-filter_complex", filter_str, "-map", "[v]",
-                "-pix_fmt", "yuv420p", "-movflags", "faststart",
-                "-c:v", "libx264", "-crf", "22", str(mp4)]
-    subprocess.run(cmd, check=True, capture_output=True)
-    print(f"✓ wrote {mp4}")
-    return mp4
+# ── Walk minutes estimator ────────────────────────────────────────────────────
 
+def walk_minutes(amenity_lat, amenity_lng, origin_lat, origin_lng):
+    """Haversine distance → walking minutes at 3 mph."""
+    R = 6371000  # Earth radius in meters
+    dlat = math.radians(amenity_lat - origin_lat)
+    dlng = math.radians(amenity_lng - origin_lng)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(origin_lat)) * math.cos(math.radians(amenity_lat)) * math.sin(dlng/2)**2
+    dist_m = 2 * R * math.asin(math.sqrt(a))
+    return dist_m / WALK_SPEED_M_PER_MIN
+
+
+# ── VO script ─────────────────────────────────────────────────────────────────
+
+def build_vo_script(headline_min, headline_amenity, ring_counts):
+    five_str = f"{ring_counts[5]} place{'s' if ring_counts[5] != 1 else ''}" if ring_counts[5] else "a few spots"
+    ten_str = f"{ring_counts[10]}" if ring_counts[10] else "several"
+    fifteen_str = f"{ring_counts[15]}" if ring_counts[15] else "many"
+    return (
+        f"{headline_amenity.capitalize()} is {headline_min} minutes away on foot. "
+        f"Within a 5-minute walk, there are {five_str}. "
+        f"Extend that to 10 minutes and you reach {ten_str} destinations. "
+        f"At 15 minutes, {fifteen_str} places in total. "
+        f"This is a property where daily errands happen on foot."
+    )
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    payload, _ = load_payload()
-    target_slug = payload.get("target_slug", "default")
-    out_dir = REPO_ROOT / "out" / PRODUCER / target_slug
+    parser = argparse.ArgumentParser(description="walkability_overlay producer")
+    parser.add_argument("payload", nargs="?", type=str)
+    parser.add_argument("--out", type=str, default=None)
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+
+    if not args.payload:
+        parser.print_help()
+        print("\nExample payload:")
+        print(json.dumps({
+            "target_slug": "downtown-bend-example",
+            "listing_lat": 44.0582,
+            "listing_lng": -121.3153,
+            "map_zoom": 15,
+            "duration_sec": 46,
+            "headline_amenity": "coffee",
+        }, indent=2))
+        return
+
+    payload_path = Path(args.payload)
+    if not payload_path.exists():
+        print(f"ERROR: payload not found: {payload_path}", file=sys.stderr)
+        sys.exit(1)
+
+    payload = json.loads(payload_path.read_text())
+    required = ["target_slug", "listing_lat", "listing_lng"]
+    for field in required:
+        if field not in payload:
+            print(f"ERROR: missing required field '{field}'", file=sys.stderr)
+            sys.exit(1)
+
+    target_slug = payload["target_slug"]
+    listing_lat = float(payload["listing_lat"])
+    listing_lng = float(payload["listing_lng"])
+    map_zoom = int(payload.get("map_zoom", 15))
+    duration_sec = int(payload.get("duration_sec", 46))
+    headline_amenity_override = payload.get("headline_amenity", "")
+
+    out_dir = Path(args.out) if args.out else REPO_ROOT / "out" / PRODUCER / target_slug
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    walk = payload.get("extras", {}).get("walkability", {})
+    # Load API key
+    env_local = REPO_ROOT / ".env.local"
+    api_key = ""
+    if env_local.exists():
+        for line in env_local.read_text().split("\n"):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            eq = line.find("=")
+            if eq < 1:
+                continue
+            k, v = line[:eq].strip(), line[eq + 1:].strip()
+            v = v.strip("\"'")
+            if k == "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY":
+                api_key = v
+                break
 
-    frame_paths = []
-    for iso in ISOCHRONES:
-        fp = out_dir / f"frame_{iso['minutes']}min.png"
-        make_isochrone_frame(iso, walk, payload).save(fp)
-        print(f"✓ wrote {fp}")
-        frame_paths.append(fp)
+    # Compute ring radii in pixels
+    ring_radii_px = {
+        m: meters_to_pixels(RING_RADIUS_M[m], listing_lat, map_zoom)
+        for m in RING_MINUTES
+    }
+    print(f"Ring radii at z{map_zoom}: " + ", ".join(f"{m}min={r:.0f}px" for m, r in ring_radii_px.items()))
 
-    five = walk.get("five_minute", ["The Bite (tacos + craft beer)"])
-    ten = walk.get("ten_minute", ["Tumalo Community School", "Tumalo State Park trailhead"])
-    fifteen = walk.get("fifteen_minute", ["Downtown Tumalo amenities"])
-    vo_lines = [
-        f"5 minutes by car reaches {five[0] if five else 'the Bite'}.",
-        f"10 minutes reaches {ten[0] if ten else 'Tumalo Community School'}.",
-        f"15 minutes reaches {fifteen[0] if fifteen else 'downtown Tumalo'}.",
-    ]
-    hits = grep_banned(" ".join(vo_lines))
-    if hits:
-        sys.stderr.write(f"WARN banned: {hits}\n")
-    vo_path = call_elevenlabs(vo_lines, out_dir)
-    mp4 = render_mp4(frame_paths, vo_path, out_dir)
+    # Fetch amenities
+    all_amenities = []
+    if api_key and not args.dry_run:
+        max_radius_m = RING_RADIUS_M[15] * 1.1  # slight buffer
+        seen_names = set()
+        for ptype in PLACE_TYPES:
+            results = fetch_places(listing_lat, listing_lng, api_key, max_radius_m, ptype)
+            for r in results[:4]:
+                name = r.get("name", "")
+                if name in seen_names:
+                    continue
+                seen_names.add(name)
+                place_lat = r["geometry"]["location"]["lat"]
+                place_lng = r["geometry"]["location"]["lng"]
+                wmin = walk_minutes(place_lat, place_lng, listing_lat, listing_lng)
+                if wmin > 15.5:
+                    continue
+                ring_bucket = 5 if wmin <= 5 else 10 if wmin <= 10 else 15
+                nx, ny = latlng_to_normalized(place_lat, place_lng, listing_lat, listing_lng, map_zoom)
+                mapped_type = TYPE_MAP.get(ptype, "other")
+                all_amenities.append({
+                    "name": name,
+                    "type": mapped_type,
+                    "lat": place_lat,
+                    "lng": place_lng,
+                    "walkMinutes": ring_bucket,
+                    "nx": nx,
+                    "ny": ny,
+                })
 
-    write_citations(out_dir, [
-        {"figure": "5/10/15 min isochrones", "source": "payload.extras.walkability",
-         "trace": "producer-payload-tumalo.json extras.walkability"},
-    ])
-    write_provenance(out_dir, [{"asset": "isochrone frames", "source": "PIL generated", "license": "internal"}])
-    write_scorecard(out_dir, [
-        {"name": "no_banned_words", "pass": not hits, "notes": str(hits)},
-        {"name": "mp4_exists", "pass": mp4.exists() and mp4.stat().st_size > 0, "notes": ""},
-        {"name": "three_isochrones", "pass": len(frame_paths) == 3, "notes": "5/10/15 min"},
-        {"name": "nested_rings_rendered", "pass": True, "notes": ""},
-    ])
-    write_card_json(out_dir, PRODUCER, str(mp4), "3-frame 5/10/15-min isochrone walkability",
-                    ["5 min", "10 min", "15 min"])
-    print(f"✓ wrote sidecars")
+    if not all_amenities:
+        # Placeholder for dry-run / no API key
+        all_amenities = [
+            {"name": "Thump Coffee",    "type": "cafe",      "lat": listing_lat+0.003, "lng": listing_lng-0.005, "walkMinutes": 5,  "nx": 0.44, "ny": 0.46},
+            {"name": "Drake Park",      "type": "park",      "lat": listing_lat+0.002, "lng": listing_lng-0.006, "walkMinutes": 5,  "nx": 0.40, "ny": 0.49},
+            {"name": "Newport Ave Mkt", "type": "grocery",   "lat": listing_lat+0.005, "lng": listing_lng+0.003, "walkMinutes": 8,  "nx": 0.58, "ny": 0.43},
+            {"name": "Old Mill Dist.",  "type": "restaurant","lat": listing_lat-0.003, "lng": listing_lng-0.010, "walkMinutes": 12, "nx": 0.33, "ny": 0.56},
+            {"name": "Pine Ridge Elem", "type": "school",    "lat": listing_lat+0.010, "lng": listing_lng+0.005, "walkMinutes": 14, "nx": 0.61, "ny": 0.37},
+        ]
+        print("WARNING: using placeholder amenities (no API key or dry-run)", file=sys.stderr)
+
+    # Ring counts
+    ring_counts = {m: sum(1 for a in all_amenities if a["walkMinutes"] <= m) for m in RING_MINUTES}
+
+    # Headline
+    headline_amenity = headline_amenity_override
+    headline_min = 5
+    if not headline_amenity:
+        cafes = [a for a in all_amenities if a["type"] == "cafe"]
+        if cafes:
+            headline_amenity = "coffee"
+            headline_min = min(a["walkMinutes"] for a in cafes)
+        else:
+            restaurants = [a for a in all_amenities if a["type"] == "restaurant"]
+            if restaurants:
+                headline_amenity = "dining"
+                headline_min = min(a["walkMinutes"] for a in restaurants)
+            else:
+                headline_amenity = "the park"
+                parks = [a for a in all_amenities if a["type"] == "park"]
+                headline_min = min((a["walkMinutes"] for a in parks), default=10)
+
+    # VO
+    vo_script = build_vo_script(headline_min, headline_amenity, ring_counts)
+    vo_path = ""
+    caption_words = []
+    try:
+        from _voice_lib import synth_vo, get_forced_alignment
+        vo_file = out_dir / "walkability_vo.mp3"
+        synth_vo(vo_script, str(vo_file))
+        caption_words = get_forced_alignment(vo_script, str(vo_file))
+        vo_path = f"walkability_overlay/{target_slug}/walkability_vo.mp3"
+        print(f"VO synthesized ({len(caption_words)} words)")
+    except ImportError:
+        print("WARNING: _voice_lib not available -- VO skipped")
+    except Exception as e:
+        print(f"WARNING: VO synthesis failed -- {e}")
+
+    # Props
+    props = {
+        "apiKey": api_key,
+        "centerLat": listing_lat,
+        "centerLng": listing_lng,
+        "mapZoom": map_zoom,
+        "headlineMinutes": headline_min,
+        "headlineAmenity": headline_amenity,
+        "ring5MinRadiusPx": ring_radii_px[5],
+        "ring10MinRadiusPx": ring_radii_px[10],
+        "ring15MinRadiusPx": ring_radii_px[15],
+        "subjectNx": 0.5,
+        "subjectNy": 0.5,
+        "amenities": all_amenities,
+        "captionWords": caption_words,
+        "voPath": vo_path,
+        "durationSec": duration_sec,
+    }
+
+    props_file = out_dir / "props.json"
+    props_file.write_text(json.dumps(props, indent=2))
+    print(f"Props written: {props_file}")
+
+    citations = {
+        "figures": [
+            {
+                "figure": f"{a['walkMinutes']}-min walk to {a['name']}",
+                "source": "Google Places API (nearbysearch)" if api_key else "Placeholder",
+                "note": f"Distance computed via haversine at {WALK_SPEED_M_PER_MIN:.1f} m/min (3 mph)",
+                "fetched_at": datetime.datetime.utcnow().isoformat() + "Z",
+            }
+            for a in all_amenities[:6]
+        ] + [
+            {
+                "figure": f"Walk-time isochrone rings (5/10/15 min)",
+                "source": "Computed: 3 mph walking speed, haversine distance",
+                "methodology": f"0.25mi/0.50mi/0.75mi approximate circles",
+            }
+        ]
+    }
+    (out_dir / "citations.json").write_text(json.dumps(citations, indent=2))
+
+    card = {
+        "producer": PRODUCER,
+        "primary_artifact": "walkability_overlay.mp4",
+        "target_slug": target_slug,
+        "headline": f"{headline_min} min walk to {headline_amenity}",
+        "ring_counts": ring_counts,
+        "amenity_count": len(all_amenities),
+        "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
+        "render": {
+            "source": "video/walkability_overlay/src/WalkabilityOverlay.tsx",
+            "comp_id": COMP_ID,
+            "duration_sec": duration_sec,
+            "resolution": f"{W}x{H}",
+            "fps": 30,
+        }
+    }
+    (out_dir / "card.json").write_text(json.dumps(card, indent=2))
+    print(f"Sidecars written to {out_dir}")
+    print("\nReady. Render requires Matt approval (draft-first rule).")
+    print(f"  cd {PROJECT_DIR}")
+    print(f"  npx remotion render src/index.ts {COMP_ID} \\")
+    print(f"    {out_dir}/walkability_overlay.mp4 \\")
+    print(f"    --codec h264 --concurrency 1 --crf 22 \\")
+    print(f"    --image-format=jpeg --jpeg-quality=92 \\")
+    print(f"    --props {props_file}")
 
 
 if __name__ == "__main__":
