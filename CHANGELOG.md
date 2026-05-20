@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.252.0 (2026-05-20)
+
+### Features
+- feat(earth_zoom): Deschutes parcel polygon overlay (Outstanding 4b)
+- feat(bend lp): polygon fix + shared ListingCard + lifestyle deep dive + broker bio
+- feat(bend lp): swap mapbox → Google Maps + tighter layout + photo-bg living cards
+- feat(site-city-page): Bend rewrite — Welcome framing + interactive map + listings
+
+### Bug Fixes
+- fix(bend lp): mapbox-gl v3 attributionControl is boolean, not object
+
+---
+
+
 ## v1.251.0 (2026-05-20)
 
 ### Features
