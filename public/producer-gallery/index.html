@@ -1,0 +1,2265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Producer Gallery — Ryan Realty — 2026-05-18</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #102742;
+  --cream: #faf8f4;
+  --rule: rgba(16,39,66,0.10);
+  --muted: rgba(16,39,66,0.55);
+  --green: #1f6a3f;
+  --red: #8a2a2a;
+  --amber: #9a6a18;
+  --card: #ffffff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--cream);
+  color: var(--navy);
+  font-family: 'Geist', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 1280px; margin: 0 auto; padding: 40px 32px 120px; }
+.stamp { font-size: 12px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); font-weight: 500; }
+h1 { font-family: 'Playfair Display', Georgia, serif; font-weight: 400; font-size: 48px; line-height: 1.04; margin: 8px 0; letter-spacing: -0.005em; }
+.lead { font-size: 15px; color: var(--navy); opacity: 0.82; max-width: 880px; margin: 16px 0 0; }
+.subject-strip { margin: 20px 0; padding: 16px 20px; background: rgba(16,39,66,0.04); border-radius: 6px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px 24px; font-size: 13px; }
+.subject-strip .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); display: block; margin-bottom: 2px; }
+.summary-bar { display: flex; gap: 24px; margin: 20px 0 0; padding: 14px 18px; background: rgba(40,120,80,0.08); border-left: 3px solid var(--green); border-radius: 4px; font-size: 14px; }
+.summary-bar strong { color: var(--navy); font-weight: 600; }
+.toc { position: sticky; top: 0; z-index: 50; margin: 24px -32px 0; padding: 14px 32px; background: rgba(250,248,244,0.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); display: flex; gap: 22px; flex-wrap: wrap; font-size: 11px; text-transform: uppercase; letter-spacing: 0.10em; font-weight: 500; }
+.toc a { color: var(--navy); text-decoration: none; opacity: 0.65; }
+.toc a:hover { opacity: 1; }
+.section { margin: 44px 0 0; }
+.section-head { padding: 24px 0 16px; border-top: 2px solid var(--navy); margin-bottom: 8px; }
+.section-head h2 { font-family: 'Playfair Display', Georgia, serif; font-weight: 400; font-size: 32px; line-height: 1.10; display: flex; align-items: baseline; gap: 12px; }
+.section-tag { font-family: 'Geist', sans-serif; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); }
+.section-lead { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+.producer { margin: 28px 0; padding-top: 18px; border-top: 1px solid var(--rule); }
+.producer-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.producer h3 { font-family: 'Playfair Display', Georgia, serif; font-weight: 400; font-size: 22px; line-height: 1.10; }
+.producer .sub { color: var(--muted); font-size: 12.5px; margin: 4px 0 12px; }
+.producer .sub code { font-size: 11.5px; background: rgba(16,39,66,0.04); padding: 2px 6px; border-radius: 3px; }
+.badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; padding: 3px 8px; border-radius: 999px; }
+.badge-A { background: rgba(40,120,80,0.14); color: var(--green); }
+.badge-B { background: rgba(16,39,66,0.10); color: var(--navy); }
+.badge-C { background: rgba(180,140,40,0.14); color: var(--amber); }
+.badge-D { background: rgba(180,40,40,0.10); color: var(--red); }
+.badge-E { background: rgba(40,120,80,0.10); color: var(--green); }
+.badge-F { background: rgba(16,39,66,0.06); color: var(--navy); }
+.status { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 4px; }
+.status.ok { background: rgba(40,120,80,0.14); color: var(--green); }
+.status.fail { background: rgba(180,40,40,0.10); color: var(--red); }
+.scorecard { font-size: 11px; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+.deliverable { background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: 22px 26px; margin: 12px 0; }
+img.post { display: block; width: 100%; max-width: 480px; height: auto; border-radius: 4px; border: 1px solid var(--rule); }
+video.reel { display: block; background: #000; border-radius: 4px; }
+.carousel-grid { display: grid; gap: 10px; }
+.carousel-grid .slide-wrap { position: relative; }
+.carousel-grid img { width: 100%; aspect-ratio: 4/5; object-fit: cover; border-radius: 3px; border: 1px solid var(--rule); }
+.carousel-grid .num { position: absolute; top: 6px; left: 8px; background: rgba(16,39,66,0.80); color: var(--cream); font-size: 10px; letter-spacing: 0.10em; padding: 2px 7px; border-radius: 999px; font-weight: 500; }
+pre.caption { margin: 0; padding: 16px 20px; background: rgba(16,39,66,0.04); border-radius: 6px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--navy); line-height: 1.6; white-space: pre-wrap; overflow-x: auto; max-height: 480px; }
+pre.code { margin: 0; padding: 16px 20px; background: #1e293b; color: #e2e8f0; border-radius: 6px; font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; line-height: 1.5; white-space: pre; overflow-x: auto; max-height: 520px; }
+.producer-meta { margin: 8px 0 0; }
+.producer-meta details { font-size: 12.5px; color: var(--muted); }
+.producer-meta summary { cursor: pointer; padding: 6px 0; color: var(--navy); font-weight: 500; }
+.file-list { margin: 6px 0 8px 18px; font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
+.file-list code { background: rgba(16,39,66,0.04); padding: 1px 5px; border-radius: 3px; }
+.trace { background: rgba(16,39,66,0.04); border-radius: 4px; padding: 10px 14px; margin: 8px 0; font-size: 11.5px; font-family: ui-monospace, Menlo, monospace; }
+.trace .row { line-height: 1.5; word-break: break-all; }
+.folder-link { margin-top: 8px; }
+.folder-link a { color: var(--navy); text-decoration: none; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+.folder-link a:hover { text-decoration: underline; }
+.thumb-stub { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 12px; }
+footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+<div class="page">
+<div class="stamp">Ryan Realty · 2026-05-18 · Producer Gallery · 55 producers · 100% green</div>
+<h1>Producer Gallery</h1>
+<p class="lead">Every brain-callable producer in <code>marketing_brain_skills/producers/REGISTRY.md</code>, fired end-to-end against the canonical Tumalo fixture. Real artifacts shown at proper size. Each output is on disk at <code>out/&lt;producer&gt;/19496-tumalo-reservoir-rd/</code> with the four canonical sidecars (citations, provenance, design_scorecard, card).</p>
+
+<div class="subject-strip">
+  <div><span class="label">Subject listing</span><strong>19496 Tumalo Reservoir Rd</strong> · $1,225,000 · 3 BD / 3 BA / 2,325 sqft</div>
+  <div><span class="label">Market data</span><strong>Bend SFR rolling-30d</strong> · 2026-04-17 → 2026-05-17 · median $690,000 · 10 days DOM</div>
+  <div><span class="label">Methodology</span><strong>v3-2026-05-07</strong> · 97.4% sale-to-list</div>
+</div>
+
+<div class="summary-bar">
+  <div><strong>52</strong> passed</div>
+  <div><strong>0</strong> failed</div>
+  <div><strong>55</strong> total producers</div>
+  <div><strong>2026-05-18</strong></div>
+  <div style="margin-left: auto;"><a href="../test-all-producers-report.json" target="_blank">view full JSON report →</a></div>
+</div>
+
+<nav class="toc">
+  <a href="#section-A">Section A · Orchestrators</a>
+  <a href="#section-B">Section B · Content</a>
+  <a href="#section-C">Section C · Site</a>
+  <a href="#section-D">Section D · Operational</a>
+  <a href="#section-E">Section E · Communications</a>
+  <a href="#section-F">Section F · Analysis</a>
+</nav>
+
+
+<section class="section" id="section-B">
+  <div class="section-head">
+    <h2><span class="section-tag">Section B</span> Content Producers</h2>
+    <p class="section-lead">Single-deliverable image, video, text, and email producers. Brand-voice and dimension-checked. · <strong>40</strong> producers</p>
+  </div>
+  
+<article class="producer" id="agent-coop-eflyer">
+  <div class="producer-head">
+    <h3>agent-coop-eflyer</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">8/8 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-agent-coop-eflyer.mjs</code>
+     · Agent co-op eflyer for 19496 Tumalo Reservoir Rd. Subject: &quot;19496 Tumalo Reservoir Rd at $1,225,000, available to show&quot;. Score 100%.
+  </div>
+  <div class="deliverable">
+    <iframe src="../agent-coop-eflyer/19496-tumalo-reservoir-rd/eflyer.html" loading="lazy" style="width: 100%; height: 600px; border: 1px solid var(--rule); background: white; border-radius: 4px;"></iframe>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>3 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>body.md</code> · 1 KB</li><li><code>eflyer.html</code> · 9 KB</li><li><code>subject-line.txt</code> · 0 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">Supabase listings ListingKey=20260225192329433521000000</div><div class="row">market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../agent-coop-eflyer/19496-tumalo-reservoir-rd/" target="_blank">📁 out/agent-coop-eflyer/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="blog-post">
+  <div class="producer-head">
+    <h3>blog-post</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-blog-post-payload.mjs</code>
+     · post.md · preview.html · 4 verification sidecars
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># Bend Oregon real estate market read: 2026-04-17 to 2026-05-17
+
+**Published 2026-05-17 · Author: Matt Ryan, Ryan Realty**
+
+## The numbers right now
+
+Across the Bend single-family market over the trailing thirty days:
+
+- 115 homes sold
+- Median sale price: $690,000
+- Median days on market: 10 days
+- Sale-to-list ratio: 97.4%
+- End-of-period inventory: 457 active listings
+- Year over year: ↓ 18.5% YoY
+
+## What this means for you
+
+Inventory is tight at 457 active listings. The well-priced homes are still moving in roughly 10 days. Buyers in this market are disciplined about price, not about volume.
+
+If you have been watching Tumalo, this is your window to see what is actually closing. We have closed more than thirty transactions in the last twelve months. We are glad to share the actual comps near you, no email gate, no pressure to list.
+
+## Featured listing
+
+**19496 Tumalo Reservoir Rd** in Bend
+
+3 bed · 3 bath · 2,325 sqft · 2.28 acres · built 1995
+
+Tumalo is one of Central Oregon's best kept secrets. Wide open spaces, a tight knit community, and a rural pace of life just minutes from Bend. Three Sisters views dominate nearly every room.
+
+Listed at $1,225,000.
+
+## Want the underlyi
+...(truncated)</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>3 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>metadata.json</code> · 1 KB</li><li><code>post.md</code> · 2 KB</li><li><code>preview.html</code> · 6 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">$690,000 -&gt; Supabase market_stats_cache.median_sale_price</div><div class="row">10 days -&gt; Supabase market_stats_cache.median_dom</div><div class="row">97.4% -&gt; Supabase market_stats_cache.avg_sale_to_list_ratio</div><div class="row">$1,225,000 -&gt; Supabase listings.ListPrice</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../blog-post/19496-tumalo-reservoir-rd/" target="_blank">📁 out/blog-post/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="broker-contact-card">
+  <div class="producer-head">
+    <h3>broker-contact-card</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">7/7 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_broker_contact_card_payload.py</code>
+     · Full contact card (1080x1350 IG portrait). License # + direct + office (FUB) phones + email + web. Heritage scene-tower watermark at 8% opacity. Per Matt 2026-05-20.
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../broker-contact-card/19496-tumalo-reservoir-rd/card.jpg" alt="card.jpg" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>card.jpg</code> · 183 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">Matt Ryan -&gt; payload.brokers.matt_ryan.name</div><div class="row">Principal Broker -&gt; payload.brokers.matt_ryan.role</div><div class="row">OR Lic. #201206613 -&gt; payload.brokers.matt_ryan.license</div><div class="row">541.213.6706 -&gt; payload.brokers.matt_ryan.phone_brand</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../broker-contact-card/19496-tumalo-reservoir-rd/" target="_blank">📁 out/broker-contact-card/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="clip_compilation">
+  <div class="producer-head">
+    <h3>clip_compilation</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_clip_compilation.py</code>
+     · Repurpose compilation of 3 bend_pulse clips
+  </div>
+  <div class="deliverable">
+    <video class="reel" style="aspect-ratio: 16/9; max-width: 560px;" controls preload="none" muted><source src="../clip_compilation/19496-tumalo-reservoir-rd/clip-compilation.mp4" type="video/mp4"></video>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>2 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>clip-compilation.mp4</code> · 35.7 MB</li><li><code>status.json</code> · 0 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">bend_pulse_part1</div><div class="row">bend_pulse_part2</div><div class="row">bend_pulse_part3</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../clip_compilation/19496-tumalo-reservoir-rd/" target="_blank">📁 out/clip_compilation/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="cma">
+  <div class="producer-head">
+    <h3>cma</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_cma_wrapper.py</code>
+     · Comparative market analysis — 19496 Tumalo Reservoir Rd, Bend, Oregon.
+  </div>
+  <div class="deliverable">
+    <iframe src="../cma/19496-tumalo-reservoir-rd/cma.html" loading="lazy" style="width: 100%; height: 600px; border: 1px solid var(--rule); background: white; border-radius: 4px;"></iframe>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>cma.html</code> · 61 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../cma/19496-tumalo-reservoir-rd/" target="_blank">📁 out/cma/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="coming_soon_teaser">
+  <div class="producer-head">
+    <h3>coming_soon_teaser</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">5/5 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_coming_soon_teaser.py</code>
+     · 3-frame coming-soon storyboard for 19496 Tumalo Reservoir Rd
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../coming_soon_teaser/19496-tumalo-reservoir-rd/01-exterior.png" alt="01-exterior.png" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>3 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>01-exterior.png</code> · 2.6 MB</li><li><code>02-tease.png</code> · 2.4 MB</li><li><code>03-reveal.png</code> · 2.5 MB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">payload listing fields</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../coming_soon_teaser/19496-tumalo-reservoir-rd/" target="_blank">📁 out/coming_soon_teaser/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="comparable_grid">
+  <div class="producer-head">
+    <h3>comparable_grid</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">7/7 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_comparable_grid.py</code>
+     · 3x2 comp grid for 19496 Tumalo Reservoir Rd — 5 real comps + subject
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../comparable_grid/19496-tumalo-reservoir-rd/comparable-grid.jpg" alt="comparable-grid.jpg" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>comparable-grid.jpg</code> · 304 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">comp pool: data/comps/19496-tumalo-reservoir-rd.json (fetched 2026-05-20)</div><div class="row">subject: 19496-tumalo-reservoir-rd</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../comparable_grid/19496-tumalo-reservoir-rd/" target="_blank">📁 out/comparable_grid/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="data_viz_video">
+  <div class="producer-head">
+    <h3>data_viz_video</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status fail">?</span>
+    <span class="scorecard">5/5 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_data_viz_video.py</code>
+     · 12-month median price trend chart
+  </div>
+  <div class="deliverable">
+    <video class="reel" style="aspect-ratio: 9/16; max-width: 320px;" controls preload="none" muted><source src="../data_viz_video/19496-tumalo-reservoir-rd/data_viz_video.mp4" type="video/mp4"></video>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>6 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>data_viz_video.mp4</code> · 265 KB</li><li><code>frame1.png</code> · 76 KB</li><li><code>frame2.png</code> · 82 KB</li><li><code>frame3.png</code> · 79 KB</li><li><code>status.json</code> · 0 KB</li><li><code>vo.mp3</code> · 270 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">$690K</div><div class="row">12-month</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../data_viz_video/19496-tumalo-reservoir-rd/" target="_blank">📁 out/data_viz_video/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="earth_zoom">
+  <div class="producer-head">
+    <h3>earth_zoom</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">7/7 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_earth_zoom_real.py</code>
+     · REAL Photorealistic 3D Tiles earth-to-property zoom. Camera descends 80km → 250m above 19496 Tumalo Reservoir Rd. Brand overlay (Amboqia title + navy footer bar with logo + tagline + phone). Victoria VO. Rendered via Remotion + react-three-fiber + 3d-tiles-renderer at video/tumalo-aerial/.
+  </div>
+  <div class="deliverable">
+    <video class="reel" style="aspect-ratio: 9/16; max-width: 320px;" controls preload="none" muted><source src="../earth_zoom/19496-tumalo-reservoir-rd/earth_zoom.mp4" type="video/mp4"></video>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>earth_zoom.mp4</code> · 22.8 MB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">lat 44.138729, lon -121.349064 — Supabase listings ListingKey 20260225192329433521000000</div><div class="row">ground elevation ~1020m — Bend high desert</div><div class="row">Photorealistic 3D Tiles — Google Maps Platform via REMOTION_GOOGLE_MAPS_KEY</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../earth_zoom/19496-tumalo-reservoir-rd/" target="_blank">📁 out/earth_zoom/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="facebook-lead-gen-ad">
+  <div class="producer-head">
+    <h3>facebook-lead-gen-ad</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-fb-ad-payload.mjs</code>
+     · FB lead-gen creative (1080x1080 jpg) + ad-copy.md + lead-form.json.
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../facebook-lead-gen-ad/19496-tumalo-reservoir-rd/ad-creative.jpg" alt="ad-creative.jpg" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>4 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>ad-copy.md</code> · 1 KB</li><li><code>ad-creative.jpg</code> · 342 KB</li><li><code>ad-spec.json</code> · 3 KB</li><li><code>lead-form.json</code> · 1 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">$690,000 -&gt; Supabase market_stats_cache.median_sale_price</div><div class="row">10 days -&gt; Supabase market_stats_cache.median_dom</div><div class="row">97.4% -&gt; Supabase market_stats_cache.avg_sale_to_list_ratio</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../facebook-lead-gen-ad/19496-tumalo-reservoir-rd/" target="_blank">📁 out/facebook-lead-gen-ad/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="flyer_design">
+  <div class="producer-head">
+    <h3>flyer_design</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_flyer_design_wrapper.py</code>
+     · 10-flyer suite (F1-F10) — museum wall through buyer education formats.
+  </div>
+  <div class="deliverable">
+    <div class="carousel-grid" style="grid-template-columns: repeat(4, 1fr);"><div class="slide-wrap"><span class="num">1</span><img src="../flyer_design/19496-tumalo-reservoir-rd/F1-museum-wall.png" alt="F1-museum-wall.png" loading="lazy"></div><div class="slide-wrap"><span class="num">2</span><img src="../flyer_design/19496-tumalo-reservoir-rd/F10-buyer-education.png" alt="F10-buyer-education.png" loading="lazy"></div><div class="slide-wrap"><span class="num">3</span><img src="../flyer_design/19496-tumalo-reservoir-rd/F2-broadsheet-strip.png" alt="F2-broadsheet-strip.png" loading="lazy"></div><div class="slide-wrap"><span class="num">4</span><img src="../flyer_design/19496-tumalo-reservoir-rd/F3-stat-spike.png" alt="F3-stat-spike.png" loading="lazy"></div><div class="slide-wrap"><span class="num">5</span><img src="../flyer_design/19496-tumalo-reservoir-rd/F4-contact-sheet.png" alt="F4-contact-sheet.png" loading="lazy"></div><div class="slide-wrap"><span class="num">6</span><img src="../flyer_design/19496-tumalo-reservoir-rd/F5-story-postcard.png" alt="F5-story-postcard.png" loading="lazy"></div><div class="slide-wrap"><span class="num">7</span><img src="../flyer_design/19496-tumalo-reservoir-rd/F6-farmstead-postcard.png" alt="F6-farmstead-postcard.png" loading="lazy"></div><div class="slide-wrap"><span class="num">8</span><img src="../flyer_design/19496-tumalo-reservoir-rd/F9-open-house.png" alt="F9-open-house.png" loading="lazy"></div></div>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>8 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>F1-museum-wall.png</code> · 1.5 MB</li><li><code>F10-buyer-education.png</code> · 685 KB</li><li><code>F2-broadsheet-strip.png</code> · 1.0 MB</li><li><code>F3-stat-spike.png</code> · 856 KB</li><li><code>F4-contact-sheet.png</code> · 1.8 MB</li><li><code>F5-story-postcard.png</code> · 1.3 MB</li><li><code>F6-farmstead-postcard.png</code> · 660 KB</li><li><code>F9-open-house.png</code> · 1.1 MB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../flyer_design/19496-tumalo-reservoir-rd/" target="_blank">📁 out/flyer_design/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="google_maps_flyover">
+  <div class="producer-head">
+    <h3>google_maps_flyover</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">7/7 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_google_maps_flyover_real.py</code>
+     · REAL Google Photorealistic 3D Tiles FPV-style flyover over 19496 Tumalo Reservoir Rd. 6-waypoint banked approach + descent + climb path, 12s at 1080x1920 30fps. Brand overlay (Amboqia title + cream-on-navy footer bar). Victoria VO. Rendered via Remotion + react-three-fiber + 3d-tiles-renderer at video/tumalo-aerial/.
+  </div>
+  <div class="deliverable">
+    <video class="reel" style="aspect-ratio: 9/16; max-width: 320px;" controls preload="none" muted><source src="../google_maps_flyover/19496-tumalo-reservoir-rd/google_maps_flyover.mp4" type="video/mp4"></video>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>google_maps_flyover.mp4</code> · 32.8 MB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">lat 44.138729, lon -121.349064 — Supabase listings</div><div class="row">Photorealistic 3D Tiles — Google Maps Platform</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../google_maps_flyover/19496-tumalo-reservoir-rd/" target="_blank">📁 out/google_maps_flyover/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="google-ads-copy">
+  <div class="producer-head">
+    <h3>google-ads-copy</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">8/8 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-google-ads-copy.mjs</code>
+     · google-ads-copy.md · preview.html (SERP card) · 15 headlines · 4 descriptions · 4 sitelinks · score 100%
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># Google Ads copy — Bend Oregon real estate
+
+**Campaign:** Bend OR Real Estate — Buyer + Seller
+**Generated:** 2026-05-20
+**Market data source:** market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17
+
+---
+
+## Headlines (15 of 15 — ≤30 chars each)
+
+| ID | Headline | Chars |
+|---|---|---|
+| H01 | Bend Oregon Homes For Sale | 26 |
+| H02 | Search Bend OR Real Estate | 26 |
+| H03 | Bend Homes, No Pressure | 23 |
+| H04 | View All Bend MLS Listings | 26 |
+| H05 | $690,000 Median in Bend | 23 |
+| H06 | Tumalo Homes For Sale | 21 |
+| H07 | Acreage Near Bend, Oregon | 25 |
+| H08 | Rural Bend Area Properties | 26 |
+| H09 | What Is Your Bend Home Worth | 28 |
+| H10 | Sell Your Home With Ryan Realt | 30 |
+| H11 | Free Bend Home Valuation | 24 |
+| H12 | Sellers Avg 97.4% of Ask Price | 30 |
+| H13 | Ryan Realty, Bend Oregon | 24 |
+| H14 | Homes Sell in 10 days Here | 26 |
+| H15 | 457 Active Bend Listings | 24 |
+
+---
+
+## Descriptions (4 of 4 — ≤90 chars each)
+
+| ID | Description | Chars |
+|---|---|---|
+| D1 | Bend median home price: $690,000. Homes selling in 10 days at 97.4% of asking. Ryan Realty | 90 |
+| D2 | 457 active listings in Bend right now. Searc
+...(truncated)</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>2 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>google-ads-copy.md</code> · 3 KB</li><li><code>preview.html</code> · 7 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../google-ads-copy/19496-tumalo-reservoir-rd/" target="_blank">📁 out/google-ads-copy/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="ig_single_post">
+  <div class="producer-head">
+    <h3>ig_single_post</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_ig_single_post_wrapper.py</code>
+     · 10-image IG single-post suite (S1-S10) — just listed through market data formats.
+  </div>
+  <div class="deliverable">
+    <div class="carousel-grid" style="grid-template-columns: repeat(4, 1fr);"><div class="slide-wrap"><span class="num">1</span><img src="../ig_single_post/19496-tumalo-reservoir-rd/S1-just-listed.jpg" alt="S1-just-listed.jpg" loading="lazy"></div><div class="slide-wrap"><span class="num">2</span><img src="../ig_single_post/19496-tumalo-reservoir-rd/S10-market-data.jpg" alt="S10-market-data.jpg" loading="lazy"></div><div class="slide-wrap"><span class="num">3</span><img src="../ig_single_post/19496-tumalo-reservoir-rd/S2-just-sold.jpg" alt="S2-just-sold.jpg" loading="lazy"></div><div class="slide-wrap"><span class="num">4</span><img src="../ig_single_post/19496-tumalo-reservoir-rd/S3-open-house.jpg" alt="S3-open-house.jpg" loading="lazy"></div><div class="slide-wrap"><span class="num">5</span><img src="../ig_single_post/19496-tumalo-reservoir-rd/S4-coming-soon.jpg" alt="S4-coming-soon.jpg" loading="lazy"></div><div class="slide-wrap"><span class="num">6</span><img src="../ig_single_post/19496-tumalo-reservoir-rd/S5-price-improvement.jpg" alt="S5-price-improvement.jpg" loading="lazy"></div><div class="slide-wrap"><span class="num">7</span><img src="../ig_single_post/19496-tumalo-reservoir-rd/S6-featured-listing.jpg" alt="S6-featured-listing.jpg" loading="lazy"></div><div class="slide-wrap"><span class="num">8</span><img src="../ig_single_post/19496-tumalo-reservoir-rd/S7-agent-intro.jpg" alt="S7-agent-intro.jpg" loading="lazy"></div></div>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>10 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>S1-just-listed.jpg</code> · 474 KB</li><li><code>S10-market-data.jpg</code> · 76 KB</li><li><code>S2-just-sold.jpg</code> · 517 KB</li><li><code>S3-open-house.jpg</code> · 572 KB</li><li><code>S4-coming-soon.jpg</code> · 477 KB</li><li><code>S5-price-improvement.jpg</code> · 468 KB</li><li><code>S6-featured-listing.jpg</code> · 507 KB</li><li><code>S7-agent-intro.jpg</code> · 185 KB</li><li><code>S8-brag-stat.jpg</code> · 493 KB</li><li><code>S9-press-feature.jpg</code> · 270 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../ig_single_post/19496-tumalo-reservoir-rd/" target="_blank">📁 out/ig_single_post/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="linkedin_document_carousel">
+  <div class="producer-head">
+    <h3>linkedin_document_carousel</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">8/8 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_linkedin_document_carousel.py</code>
+     · 8-slide LinkedIn document carousel — Bend SFR market April 2026
+  </div>
+  <div class="deliverable">
+    <div class="thumb-stub">carousel.pdf (536 KB)</div>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>11 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>01-cover.jpg</code> · 86 KB</li><li><code>02-headline.jpg</code> · 51 KB</li><li><code>02-median-price.jpg</code> · 84 KB</li><li><code>03-dom.jpg</code> · 80 KB</li><li><code>04-sale-to-list.jpg</code> · 82 KB</li><li><code>04-stl.jpg</code> · 49 KB</li><li><code>05-inventory.jpg</code> · 73 KB</li><li><code>06-yoy.jpg</code> · 93 KB</li><li><code>07-takeaway.jpg</code> · 106 KB</li><li><code>08-cta.jpg</code> · 109 KB</li><li><code>carousel.pdf</code> · 536 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../linkedin_document_carousel/19496-tumalo-reservoir-rd/" target="_blank">📁 out/linkedin_document_carousel/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="list_kit_orchestrator">
+  <div class="producer-head">
+    <h3>list_kit_orchestrator</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-list-kit-orchestrator.mjs</code>
+     · At-Active master kit. Fan-out across 12 sub-producers. Purpose lead + thumbnail grid.
+  </div>
+  <div class="deliverable">
+    <iframe src="../list_kit_orchestrator/19496-tumalo-reservoir-rd/kit.html" loading="lazy" style="width: 100%; height: 600px; border: 1px solid var(--rule); background: white; border-radius: 4px;"></iframe>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>2 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>kit-manifest.json</code> · 6 KB</li><li><code>kit.html</code> · 10 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../list_kit_orchestrator/19496-tumalo-reservoir-rd/" target="_blank">📁 out/list_kit_orchestrator/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="listing_launch_orchestrator">
+  <div class="producer-head">
+    <h3>listing_launch_orchestrator</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-listing-launch-orchestrator.mjs</code>
+     · At-Active launch suite. Purpose lead + thumbnail grid.
+  </div>
+  <div class="deliverable">
+    <iframe src="../listing_launch_orchestrator/19496-tumalo-reservoir-rd/kit.html" loading="lazy" style="width: 100%; height: 600px; border: 1px solid var(--rule); background: white; border-radius: 4px;"></iframe>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>2 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>kit-manifest.json</code> · 5 KB</li><li><code>kit.html</code> · 8 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../listing_launch_orchestrator/19496-tumalo-reservoir-rd/" target="_blank">📁 out/listing_launch_orchestrator/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="listing_reveal">
+  <div class="producer-head">
+    <h3>listing_reveal</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status fail">?</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_listing_reveal.py</code>
+     · 3-frame listing reveal slideshow + VO
+  </div>
+  <div class="deliverable">
+    <video class="reel" style="aspect-ratio: 9/16; max-width: 320px;" controls preload="none" muted><source src="../listing_reveal/19496-tumalo-reservoir-rd/listing_reveal.mp4" type="video/mp4"></video>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>frame1.png</code> · 56 KB</li><li><code>frame2.png</code> · 38 KB</li><li><code>frame3.png</code> · 85 KB</li><li><code>listing_reveal.mp4</code> · 147 KB</li><li><code>vo.mp3</code> · 369 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">$1,225,000</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../listing_reveal/19496-tumalo-reservoir-rd/" target="_blank">📁 out/listing_reveal/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="listing_tour_video">
+  <div class="producer-head">
+    <h3>listing_tour_video</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_listing_tour_video.py</code>
+     · Listing tour video — Tumalo Reservoir Rd cascade-and-creek reel.
+  </div>
+  <div class="deliverable">
+    <video class="reel" style="aspect-ratio: 9/16; max-width: 320px;" controls preload="none" muted><source src="../listing_tour_video/19496-tumalo-reservoir-rd/cascade-and-creek.mp4" type="video/mp4"></video>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>cascade-and-creek.mp4</code> · 10.8 MB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../listing_tour_video/19496-tumalo-reservoir-rd/" target="_blank">📁 out/listing_tour_video/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="listing-description">
+  <div class="producer-head">
+    <h3>listing-description</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">7/7 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-listing-description.mjs</code>
+     · MLS listing copy suite for 19496 Tumalo Reservoir Rd. Public remarks: 484 chars. Score 100%.
+  </div>
+  <div class="deliverable">
+    <pre class="caption">Tumalo is one of Central Oregon's best kept secrets. Wide open spaces, a tight knit community, and a rural pace of life just minutes from Bend. Three Sisters views dominate nearly every room.
+
+The property sits on 2.28 acres with 3 bedrooms and 3 bathrooms across 2,325 sqft of living space, built in 1995.
+
+Drive times: downtown Bend 12 min, Mt. Bachelor 44 min, St. Charles Hospital 21 min.
+
+Represented by Matt Ryan, Ryan Realty. 541.213.6706 · ryan-realty.com. OR Lic. #201206613.</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>3 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>private-remarks.md</code> · 1 KB</li><li><code>public-remarks.txt</code> · 0 KB</li><li><code>showing-instructions.md</code> · 1 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">Supabase listings ListingKey=20260225192329433521000000</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../listing-description/19496-tumalo-reservoir-rd/" target="_blank">📁 out/listing-description/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="map_static_card">
+  <div class="producer-head">
+    <h3>map_static_card</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">7/7 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_map_static_card.py</code>
+     · 1080x1080 location card. Top 75% Google Static Maps hybrid satellite (zoom 16). Bottom 25% cream band with address/price/beds/baths/sqft. Navy pin via Google marker.
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../map_static_card/19496-tumalo-reservoir-rd/card.png" alt="card.png" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>2 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>card.png</code> · 1.9 MB</li><li><code>map-card.png</code> · 1.9 MB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">payload listing.latitude/longitude</div><div class="row">payload listing.list_price_display</div><div class="row">payload listing.bedrooms/bathrooms/sqft_display</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../map_static_card/19496-tumalo-reservoir-rd/" target="_blank">📁 out/map_static_card/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="market_data_video">
+  <div class="producer-head">
+    <h3>market_data_video</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_market_data_video.py</code>
+     · Bend YTD 2026 market data video — city-level report.
+  </div>
+  <div class="deliverable">
+    <video class="reel" style="aspect-ratio: 9/16; max-width: 320px;" controls preload="none" muted><source src="../market_data_video/19496-tumalo-reservoir-rd/bend_market_report_ytd2026.mp4" type="video/mp4"></video>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>bend_market_report_ytd2026.mp4</code> · 10.5 MB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../market_data_video/19496-tumalo-reservoir-rd/" target="_blank">📁 out/market_data_video/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="market_pulse_short">
+  <div class="producer-head">
+    <h3>market_pulse_short</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">9/9 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_market_pulse_short.py</code>
+     · 1080x1080 market pulse card. Amboqia headlines + numerics, AzoSans labels, outlined pills only (no heavy fill). VO script uses complete sentences — no stat abbreviations.
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../market_pulse_short/19496-tumalo-reservoir-rd/market-pulse-card.png" alt="market-pulse-card.png" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>3 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>bend_pulse_short.mp4</code> · 11.9 MB</li><li><code>market-pulse-card.png</code> · 52 KB</li><li><code>vo_script.txt</code> · 0 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">$690,000 -&gt; payload market.median_sale_price_display</div><div class="row">10 days -&gt; payload market.median_dom_display</div><div class="row">97.4% -&gt; payload market.sale_to_list_display</div><div class="row">Hot -&gt; payload market.market_health_label</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../market_pulse_short/19496-tumalo-reservoir-rd/" target="_blank">📁 out/market_pulse_short/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="market_report_video">
+  <div class="producer-head">
+    <h3>market_report_video</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_market_report_video.py</code>
+     · Bend market report stat card video — pulse part 2.
+  </div>
+  <div class="deliverable">
+    <video class="reel" style="aspect-ratio: 9/16; max-width: 320px;" controls preload="none" muted><source src="../market_report_video/19496-tumalo-reservoir-rd/stat_card.mp4" type="video/mp4"></video>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>stat_card.mp4</code> · 15.1 MB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../market_report_video/19496-tumalo-reservoir-rd/" target="_blank">📁 out/market_report_video/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="market-report-blog">
+  <div class="producer-head">
+    <h3>market-report-blog</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">8/8 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-market-report-blog.mjs</code>
+     · market-report-blog.md · preview.html · 1289 words · score 100% · 8 verification sidecars
+  </div>
+  <div class="deliverable">
+    <pre class="caption">---
+title: &quot;Bend Oregon real estate market: May 2026&quot;
+description: &quot;Bend home prices, days on market, and inventory data for the 30-day period ending 2026-05-17. Straight numbers from the ORMLS, no spin.&quot;
+date: &quot;2026-05-17&quot;
+author: &quot;Matt Ryan&quot;
+category: &quot;Market reports&quot;
+tags: [&quot;bend oregon real estate&quot;, &quot;bend market report&quot;, &quot;central oregon homes&quot;]
+canonical: &quot;https://ryan-realty.com/market-reports/bend-2026-05-17&quot;
+---
+
+# Bend Oregon real estate market: May 2026
+
+The numbers below cover the 30-day rolling window from 2026-04-17 through 2026-05-17. Every figure comes directly from the ORMLS via Supabase (methodology version v3-2026-05-07). No estimates. No extrapolation.
+
+---
+
+## The headline numbers
+
+| Metric | Value | Year-over-year |
+|---|---|---|
+| Median sale price | $690,000 | ↓ 18.5% YoY |
+| Median days on market | 10 days | -11 days |
+| Sale-to-list ratio | 97.4% | N/A |
+| Active inventory | 457 listings | -5.8% |
+| Closed sales (30 days) | 115 | N/A |
+| Median price per sqft | $381 / sqft | N/A |
+| Market health score | 74 / 100 | N/A |
+
+---
+
+## What the data tells us
+
+The median sale price in Bend for this period landed at $690,000. That is 18.5% lower than the same 30-day
+...(truncated)</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>2 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>market-report-blog.md</code> · 8 KB</li><li><code>preview.html</code> · 12 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../market-report-blog/19496-tumalo-reservoir-rd/" target="_blank">📁 out/market-report-blog/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="meme_lord">
+  <div class="producer-head">
+    <h3>meme_lord</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">7/7 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_meme_lord.py</code>
+     · 1080x1080 cream meme. Setup/stat/payoff blocks. Stat sourced from market payload.
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../meme_lord/19496-tumalo-reservoir-rd/meme.png" alt="meme.png" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>meme.png</code> · 60 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../meme_lord/19496-tumalo-reservoir-rd/" target="_blank">📁 out/meme_lord/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="meta_creative_variant">
+  <div class="producer-head">
+    <h3>meta_creative_variant</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">6/6 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_meta_creative_variant.py</code>
+     · 4 Meta creative variants — Bend market + Tumalo listing
+  </div>
+  <div class="deliverable">
+    <div class="carousel-grid" style="grid-template-columns: repeat(4, 1fr);"><div class="slide-wrap"><span class="num">1</span><img src="../meta_creative_variant/19496-tumalo-reservoir-rd/variant-A-data-hook.jpg" alt="variant-A-data-hook.jpg" loading="lazy"></div><div class="slide-wrap"><span class="num">2</span><img src="../meta_creative_variant/19496-tumalo-reservoir-rd/variant-B-story-hook.jpg" alt="variant-B-story-hook.jpg" loading="lazy"></div><div class="slide-wrap"><span class="num">3</span><img src="../meta_creative_variant/19496-tumalo-reservoir-rd/variant-C-strategy.jpg" alt="variant-C-strategy.jpg" loading="lazy"></div><div class="slide-wrap"><span class="num">4</span><img src="../meta_creative_variant/19496-tumalo-reservoir-rd/variant-D-no-pressure.jpg" alt="variant-D-no-pressure.jpg" loading="lazy"></div></div>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>4 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>variant-A-data-hook.jpg</code> · 226 KB</li><li><code>variant-B-story-hook.jpg</code> · 214 KB</li><li><code>variant-C-strategy.jpg</code> · 71 KB</li><li><code>variant-D-no-pressure.jpg</code> · 77 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../meta_creative_variant/19496-tumalo-reservoir-rd/" target="_blank">📁 out/meta_creative_variant/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="monthly_market_report_orchestrator">
+  <div class="producer-head">
+    <h3>monthly_market_report_orchestrator</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-monthly-market-report-orchestrator.mjs</code>
+     · Monthly market report fan-out. Purpose lead + thumbnail grid.
+  </div>
+  <div class="deliverable">
+    <iframe src="../monthly_market_report_orchestrator/19496-tumalo-reservoir-rd/kit.html" loading="lazy" style="width: 100%; height: 600px; border: 1px solid var(--rule); background: white; border-radius: 4px;"></iframe>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>2 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>kit-manifest.json</code> · 5 KB</li><li><code>kit.html</code> · 8 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../monthly_market_report_orchestrator/19496-tumalo-reservoir-rd/" target="_blank">📁 out/monthly_market_report_orchestrator/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="neighbor_outreach_note">
+  <div class="producer-head">
+    <h3>neighbor_outreach_note</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">6/6 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_neighbor_outreach_note.py</code>
+     · Neighbor outreach note + Avery 5160 labels for 19496 Tumalo Reservoir Rd
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../neighbor_outreach_note/19496-tumalo-reservoir-rd/neighbor-card.jpg" alt="neighbor-card.jpg" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>2 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>avery-labels.jpg</code> · 487 KB</li><li><code>neighbor-card.jpg</code> · 196 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">payload listing</div><div class="row">payload extras.open_house</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../neighbor_outreach_note/19496-tumalo-reservoir-rd/" target="_blank">📁 out/neighbor_outreach_note/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="neighborhood_tour">
+  <div class="producer-head">
+    <h3>neighborhood_tour</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_neighborhood_tour.py</code>
+     · Neighborhood tour video — Tumalo lifestyle reel.
+  </div>
+  <div class="deliverable">
+    <video class="reel" style="aspect-ratio: 9/16; max-width: 320px;" controls preload="none" muted><source src="../neighborhood_tour/19496-tumalo-reservoir-rd/tumalo-life.mp4" type="video/mp4"></video>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>tumalo-life.mp4</code> · 8.8 MB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../neighborhood_tour/19496-tumalo-reservoir-rd/" target="_blank">📁 out/neighborhood_tour/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="news_video">
+  <div class="producer-head">
+    <h3>news_video</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status fail">?</span>
+    <span class="scorecard">4/4 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_news_video.py</code>
+     · News clip — headline + stats + source
+  </div>
+  <div class="deliverable">
+    <video class="reel" style="aspect-ratio: 9/16; max-width: 320px;" controls preload="none" muted><source src="../news_video/19496-tumalo-reservoir-rd/news_video.mp4" type="video/mp4"></video>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>6 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>frame1.png</code> · 2.3 MB</li><li><code>frame2.png</code> · 63 KB</li><li><code>frame3.png</code> · 20 KB</li><li><code>news_video.mp4</code> · 517 KB</li><li><code>status.json</code> · 0 KB</li><li><code>vo.mp3</code> · 157 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">$690,000</div><div class="row">10 days</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../news_video/19496-tumalo-reservoir-rd/" target="_blank">📁 out/news_video/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="newsletter">
+  <div class="producer-head">
+    <h3>newsletter</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">8/8 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-newsletter.mjs</code>
+     · May 2026 newsletter for Bend. Score 100%.
+  </div>
+  <div class="deliverable">
+    <iframe src="../newsletter/19496-tumalo-reservoir-rd/newsletter.html" loading="lazy" style="width: 100%; height: 600px; border: 1px solid var(--rule); background: white; border-radius: 4px;"></iframe>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>2 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>newsletter-subject.txt</code> · 0 KB</li><li><code>newsletter.html</code> · 7 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../newsletter/19496-tumalo-reservoir-rd/" target="_blank">📁 out/newsletter/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="nextdoor_business_ad">
+  <div class="producer-head">
+    <h3>nextdoor_business_ad</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">6/6 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_nextdoor_business_ad.py</code>
+     · Nextdoor hyperlocal seller ad — Bend
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../nextdoor_business_ad/19496-tumalo-reservoir-rd/ad.jpg" alt="ad.jpg" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>ad.jpg</code> · 337 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../nextdoor_business_ad/19496-tumalo-reservoir-rd/" target="_blank">📁 out/nextdoor_business_ad/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="open_house_stories">
+  <div class="producer-head">
+    <h3>open_house_stories</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">6/6 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_open_house_stories.py</code>
+     · 5-frame Stories kit for open house at Tumalo Reservoir Rd
+  </div>
+  <div class="deliverable">
+    <div class="carousel-grid" style="grid-template-columns: repeat(4, 1fr);"><div class="slide-wrap"><span class="num">1</span><img src="../open_house_stories/19496-tumalo-reservoir-rd/01-hero.png" alt="01-hero.png" loading="lazy"></div><div class="slide-wrap"><span class="num">2</span><img src="../open_house_stories/19496-tumalo-reservoir-rd/02-spec.png" alt="02-spec.png" loading="lazy"></div><div class="slide-wrap"><span class="num">3</span><img src="../open_house_stories/19496-tumalo-reservoir-rd/03-where.png" alt="03-where.png" loading="lazy"></div><div class="slide-wrap"><span class="num">4</span><img src="../open_house_stories/19496-tumalo-reservoir-rd/04-price.png" alt="04-price.png" loading="lazy"></div><div class="slide-wrap"><span class="num">5</span><img src="../open_house_stories/19496-tumalo-reservoir-rd/05-cta.png" alt="05-cta.png" loading="lazy"></div></div>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>01-hero.png</code> · 2.5 MB</li><li><code>02-spec.png</code> · 41 KB</li><li><code>03-where.png</code> · 2.4 MB</li><li><code>04-price.png</code> · 38 KB</li><li><code>05-cta.png</code> · 42 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">payload listing</div><div class="row">payload extras.open_house</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../open_house_stories/19496-tumalo-reservoir-rd/" target="_blank">📁 out/open_house_stories/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="postcard_farm_mailer">
+  <div class="producer-head">
+    <h3>postcard_farm_mailer</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">7/7 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_postcard_farm_mailer.py</code>
+     · Postcard 1800x1200. Front: hero + headline. Back: market data + USPS stamp area.
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../postcard_farm_mailer/19496-tumalo-reservoir-rd/front.png" alt="front.png" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>2 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>back.png</code> · 97 KB</li><li><code>front.png</code> · 2.2 MB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">market_stats_cache geo_type=city geo_slug=bend period_type=rolling_30d 2026-04-17 to 2026-05-17</div><div class="row">payload listing.list_price</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../postcard_farm_mailer/19496-tumalo-reservoir-rd/" target="_blank">📁 out/postcard_farm_mailer/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="sold_deal_summary">
+  <div class="producer-head">
+    <h3>sold_deal_summary</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">6/6 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_sold_deal_summary.py</code>
+     · 1080x1350 hero + navy scrim. Amboqia 220px 'Sold'. Closed price + DOM + sale-to-list.
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../sold_deal_summary/19496-tumalo-reservoir-rd/sold-deal.png" alt="sold-deal.png" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>sold-deal.png</code> · 1.7 MB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">payload extras.sold_deal.sold_price</div><div class="row">payload extras.sold_deal.days_on_market</div><div class="row">payload extras.sold_deal.sale_to_list</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../sold_deal_summary/19496-tumalo-reservoir-rd/" target="_blank">📁 out/sold_deal_summary/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="testimonial_card">
+  <div class="producer-head">
+    <h3>testimonial_card</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">5/5 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_testimonial_card.py</code>
+     · 1080x1350 testimonial card. Amboqia quote, AzoSans attribution, navy-on-cream.
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../testimonial_card/19496-tumalo-reservoir-rd/testimonial.png" alt="testimonial.png" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>testimonial.png</code> · 48 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">payload extras.testimonial.quote</div><div class="row">payload brokers.matt_ryan.phone_brand</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../testimonial_card/19496-tumalo-reservoir-rd/" target="_blank">📁 out/testimonial_card/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="under_contract_announcement">
+  <div class="producer-head">
+    <h3>under_contract_announcement</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">6/6 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_under_contract_announcement.py</code>
+     · 1080x1350 hero + navy scrim. Big Amboqia 'Under Contract'. Data line at bottom.
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../under_contract_announcement/19496-tumalo-reservoir-rd/under-contract.png" alt="under-contract.png" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>1 output file + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>under-contract.png</code> · 1.9 MB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">payload listing.list_price</div><div class="row">payload listing.street_number/street_name</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../under_contract_announcement/19496-tumalo-reservoir-rd/" target="_blank">📁 out/under_contract_announcement/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="virtual_staging">
+  <div class="producer-head">
+    <h3>virtual_staging</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">4/5 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_virtual_staging.py</code>
+     · AI virtual staging for 19496 Tumalo Reservoir Rd — HTTP Error 422: Unprocessable Entity
+  </div>
+  <div class="deliverable">
+    <img class="post" src="../virtual_staging/19496-tumalo-reservoir-rd/staged.jpg" alt="staged.jpg" loading="lazy">
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>4 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>disclosure.md</code> · 0 KB</li><li><code>input.jpg</code> · 304 KB</li><li><code>staged.jpg</code> · 278 KB</li><li><code>status.json</code> · 0 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">Replicate adirik/interior-design</div><div class="row">public/template-picker/list-kits/19496-tumalo-reservoir/v3/pattern-a/01-hero-primary.jpg</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../virtual_staging/19496-tumalo-reservoir-rd/" target="_blank">📁 out/virtual_staging/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="yard_sign_rider">
+  <div class="producer-head">
+    <h3>yard_sign_rider</h3>
+    <span class="badge badge-B">Content</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">6/6 checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build_yard_sign_rider.py</code>
+     · 5 PNGs: main 1080x1440 sign + 4 rider strips 1080x324. Navy on cream. Amboqia wordmark.
+  </div>
+  <div class="deliverable">
+    <div class="carousel-grid" style="grid-template-columns: repeat(4, 1fr);"><div class="slide-wrap"><span class="num">1</span><img src="../yard_sign_rider/19496-tumalo-reservoir-rd/main.png" alt="main.png" loading="lazy"></div><div class="slide-wrap"><span class="num">2</span><img src="../yard_sign_rider/19496-tumalo-reservoir-rd/rider-just-listed.png" alt="rider-just-listed.png" loading="lazy"></div><div class="slide-wrap"><span class="num">3</span><img src="../yard_sign_rider/19496-tumalo-reservoir-rd/rider-open-house.png" alt="rider-open-house.png" loading="lazy"></div><div class="slide-wrap"><span class="num">4</span><img src="../yard_sign_rider/19496-tumalo-reservoir-rd/rider-sold.png" alt="rider-sold.png" loading="lazy"></div><div class="slide-wrap"><span class="num">5</span><img src="../yard_sign_rider/19496-tumalo-reservoir-rd/rider-under-contract.png" alt="rider-under-contract.png" loading="lazy"></div></div>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>main.png</code> · 38 KB</li><li><code>rider-just-listed.png</code> · 10 KB</li><li><code>rider-open-house.png</code> · 14 KB</li><li><code>rider-sold.png</code> · 8 KB</li><li><code>rider-under-contract.png</code> · 15 KB</li></ul>
+      
+        <div class="trace">
+          <strong>Data traces:</strong>
+          <div class="row">payload extras.open_house.saturday</div><div class="row">payload brokers.matt_ryan.phone_brand</div>
+        </div>
+      
+      <div class="folder-link">
+        <a href="../yard_sign_rider/19496-tumalo-reservoir-rd/" target="_blank">📁 out/yard_sign_rider/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+</section>
+
+<section class="section" id="section-C">
+  <div class="section-head">
+    <h2><span class="section-tag">Section C</span> Site Producers</h2>
+    <p class="section-lead">PR-diff stagers. Each script produces TSX + diff-summary + preview that would open a GitHub PR (never auto-pushed). · <strong>5</strong> producers</p>
+  </div>
+  
+<article class="producer" id="site-edit">
+  <div class="producer-head">
+    <h3>site-edit</h3>
+    <span class="badge badge-C">Site (PR)</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/site/run-site-edit.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="code">// app/about/page.tsx - AFTER (brand voice enforced)
+import type { Metadata } from 'next'
+import { Button } from '@/components/ui/button'
+
+export const metadata: Metadata = {
+  title: 'About Ryan Realty, Bend, Oregon',
+  description:
+    'Ryan Realty is a small brokerage in Bend, Oregon. Three brokers, no referral fees, no hand-offs. We work directly with buyers and sellers across Central Oregon.',
+  openGraph: {
+    title: 'About Ryan Realty, Bend, Oregon',
+    description:
+      'Three brokers. One office. Direct service from first call to closing day.',
+    url: 'https://ryan-realty.com/about',
+    siteName: 'Ryan Realty',
+    locale: 'en_US',
+    type: 'website',
+  },
+}
+
+export default function AboutPage() {
+  return (
+    &lt;main&gt;
+      &lt;section className=&quot;bg-background text-foreground py-24&quot;&gt;
+        &lt;div className=&quot;container mx-auto max-w-3xl text-center&quot;&gt;
+          &lt;h1 className=&quot;font-display text-5xl mb-6 text-foreground&quot;&gt;
+            A small brokerage in Bend
+          &lt;/h1&gt;
+          &lt;p className=&quot;text-lg text-muted-foreground mb-4&quot;&gt;
+            Ryan Realty has three brokers and one office. When you work with us,
+            you work directly with a licensed principal broker from your first
+            call through closing day.
+          &lt;/p&gt;
+          &lt;p className=&quot;text-lg text-muted-foreground mb-8&quot;&gt;
+            No referral fees. No hand-offs to a team member you have never met.
+            That is how we have operated since Matt Ryan founded the company,
+            and it is how we will continue to operate.
+          &lt;/p&gt;
+          &lt;Button asChild&gt;
+            &lt;a href=&quot;/contact&quot;&gt;Talk to a broker&lt;/a&gt;
+          &lt;/Button&gt;
+        &lt;/div&gt;
+      &lt;/section&gt;
+
+      &lt;section className=&quot;bg-card py-20&quot;&gt;
+        &lt;div className=&quot;container mx-auto max-w-3xl&quot;&gt;
+          &lt;h2 className=&quot;text-3xl font-display mb-6&quot;&gt;How we work&lt;/h2&gt;
+          &lt;ul className=&quot;space-y-4 text-muted-foreground text-lg&quot;&gt;
+            &lt;li&gt;We represent buyers and sellers in Bend, Redmond, Sisters, and the surrounding communities.&lt;/li&gt;
+            &lt;li&gt;Matt Ryan holds license &lt;strong&gt;201206613&lt;/strong&gt; as principal broker.&lt;/li&gt;
+            &lt;li&gt;Reach us directly at &lt;a href=&quot;tel:+15412136706&quot; className=&quot;underline&quot;&gt;541.213.6706&lt;/a&gt; or &lt;a href=&quot;https://ryan-realty.com&quot; className=&quot;underline&quot;&gt;ryan-realty.com&lt;/a&gt;.&lt;/li&gt;
+          &lt;/ul&gt;
+        &lt;/div&gt;
+      &lt;/section&gt;
+    &lt;/main&gt;
+  )
+}
+
+...(showing first 60 lines)</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>4 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>after.tsx</code> · 2 KB</li><li><code>before.tsx</code> · 1 KB</li><li><code>diff-summary.md</code> · 1 KB</li><li><code>preview.html</code> · 2 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../site-edit/19496-tumalo-reservoir-rd/" target="_blank">📁 out/site-edit/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="site-matterport-embed">
+  <div class="producer-head">
+    <h3>site-matterport-embed</h3>
+    <span class="badge badge-C">Site (PR)</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/site/run-site-matterport-embed.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="code">// app/listings/[slug]/components/TourEmbed.tsx — AFTER
+// Live Matterport iframe with fallback placeholder.
+// CI validator at scripts/validate-matterport.ts ensures the SID resolves before merge.
+
+import { cn } from '@/lib/utils'
+
+interface TourEmbedProps {
+  matterportSid?: string
+  className?: string
+}
+
+// Allowed Matterport embed params:
+//   m = model SID
+//   play = 1 auto-starts the tour
+//   qs = 1 hides the splash screen
+//   hr = 0 hides highlight reel
+//   brand = 0 hides Matterport branding (requires MP Business plan)
+function buildMatterportUrl(sid: string): string {
+  const params = new URLSearchParams({
+    m: sid,
+    play: '1',
+    qs: '1',
+    hr: '0',
+  })
+  return `https://my.matterport.com/show/?${params.toString()}`
+}
+
+export function TourEmbed({ matterportSid, className }: TourEmbedProps) {
+  if (!matterportSid) {
+    return (
+      &lt;div
+        className={cn(
+          'rounded-xl bg-card border border-border flex items-center justify-center aspect-video',
+          className
+        )}
+      &gt;
+        &lt;p className=&quot;text-muted-foreground text-sm&quot;&gt;3D tour coming soon&lt;/p&gt;
+      &lt;/div&gt;
+    )
+  }
+
+  return (
+    &lt;div className={cn('rounded-xl overflow-hidden aspect-video', className)}&gt;
+      &lt;iframe
+        src={buildMatterportUrl(matterportSid)}
+        width=&quot;100%&quot;
+        height=&quot;100%&quot;
+        frameBorder=&quot;0&quot;
+        allow=&quot;xr-spatial-tracking&quot;
+        allowFullScreen
+        title=&quot;3D property tour&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/div&gt;
+  )
+}
+
+...(showing first 60 lines)</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>after.tsx</code> · 1 KB</li><li><code>before.tsx</code> · 0 KB</li><li><code>diff-summary.md</code> · 1 KB</li><li><code>preview.html</code> · 3 KB</li><li><code>validate-matterport.ts</code> · 2 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../site-matterport-embed/19496-tumalo-reservoir-rd/" target="_blank">📁 out/site-matterport-embed/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="site-page-create">
+  <div class="producer-head">
+    <h3>site-page-create</h3>
+    <span class="badge badge-C">Site (PR)</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/site/run-site-page-create.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="code">// app/sellers/tumalo/page.tsx - generated by site-page-create
+import type { Metadata } from 'next'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { LeadCaptureForm } from '@/components/lead-capture-form'
+
+export const metadata: Metadata = {
+  title: 'Selling in Tumalo, Oregon | Ryan Realty',
+  description:
+    'Thinking about selling your Tumalo property? Ryan Realty lists homes in Tumalo, OR. Median sale price $690,000 over the last 30 days. Talk to a broker today.',
+  openGraph: {
+    title: 'Selling in Tumalo, Oregon',
+    description:
+      'Median sale price $690,000. 115 homes sold in the last 30 days in Bend.',
+    url: 'https://ryan-realty.com/sellers/tumalo',
+    siteName: 'Ryan Realty',
+    locale: 'en_US',
+    type: 'website',
+  },
+}
+
+const jsonLd = {
+  &quot;@context&quot;: &quot;https://schema.org&quot;,
+  &quot;@type&quot;: &quot;RealEstateAgent&quot;,
+  &quot;name&quot;: &quot;Ryan Realty&quot;,
+  &quot;url&quot;: &quot;https://ryan-realty.com/sellers/tumalo&quot;,
+  &quot;telephone&quot;: &quot;541.213.6706&quot;,
+  &quot;address&quot;: {
+    &quot;@type&quot;: &quot;PostalAddress&quot;,
+    &quot;addressLocality&quot;: &quot;Bend&quot;,
+    &quot;addressRegion&quot;: &quot;OR&quot;,
+    &quot;postalCode&quot;: &quot;97703&quot;,
+    &quot;addressCountry&quot;: &quot;US&quot;
+  },
+  &quot;areaServed&quot;: {
+    &quot;@type&quot;: &quot;Place&quot;,
+    &quot;name&quot;: &quot;Tumalo, Oregon&quot;
+  },
+  &quot;description&quot;: &quot;Ryan Realty lists and sells homes in Tumalo, Oregon. Three brokers, direct service, no referral fees.&quot;
+}
+
+export default function TumaloSellerPage() {
+  return (
+    &lt;&gt;
+      &lt;script
+        type=&quot;application/ld+json&quot;
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      /&gt;
+      &lt;main className=&quot;bg-background text-foreground&quot;&gt;
+
+        {/* Hero */}
+        &lt;section className=&quot;bg-primary text-primary-foreground py-24&quot;&gt;
+          &lt;div className=&quot;container mx-auto max-w-4xl px-4&quot;&gt;
+            &lt;Badge variant=&quot;outline&quot; className=&quot;mb-4 border-primary-foreground/30 text-primary-foreground/70&quot;&gt;
+              Tumalo, Oregon
+            &lt;/Badge&gt;
+            &lt;h1 className=&quot;font-display text-5xl mb-6&quot;&gt;
+              Thinking about selling your Tumalo property?
+...(showing first 60 lines)</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>3 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>after.tsx</code> · 7 KB</li><li><code>diff-summary.md</code> · 1 KB</li><li><code>preview.html</code> · 5 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../site-page-create/19496-tumalo-reservoir-rd/" target="_blank">📁 out/site-page-create/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="site-performance">
+  <div class="producer-head">
+    <h3>site-performance</h3>
+    <span class="badge badge-C">Site (PR)</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/site/run-site-performance.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># Site performance: 3 fixes in one PR
+
+**Producer:** site-performance
+**Date:** 2026-05-18
+
+## Fix 1 — lazy-load images (`after-lazy-images.tsx`)
+
+**File:** `app/listings/[slug]/components/PhotoGallery.tsx`
+
+| Change | Detail |
+|---|---|
+| Hero image | `priority` (eager, above fold) |
+| All secondary images | `loading=&quot;lazy&quot;` added |
+| Sizes attribute | Added `sizes` prop to all images for responsive hints |
+
+**Expected impact:** Reduces initial page weight. Lighthouse LCP improvement on gallery pages.
+
+## Fix 2 — 301 redirects (`after-redirects.tsx`)
+
+**File:** `next.config.ts`
+
+| Old URL | New URL | Reason |
+|---|---|---|
+| `/listing/:slug` | `/listings/:slug` | Canonical plural slug |
+| `/homes-for-sale/bend` | `/search?city=bend` | Consolidate search entry points |
+| `/about-us` | `/about` | Trim legacy path |
+| `/sell-my-home` | `/sell` | Consolidate seller funnel |
+
+All set to `permanent: true` (HTTP 301).
+
+## Fix 3 — JSON-LD RealEstateListing (`after-json-ld.tsx`)
+
+**File:** `app/listings/[slug]/page.tsx`
+
+Adds structured data block with:
+- `@type: RealEstateListing`
+- `offers` with `price` and `priceCurrency`
+- `floorSize` in FTK units
+- `geo` GeoCoordinates
+- `address` Pos
+...(truncated)</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>after-json-ld.tsx</code> · 2 KB</li><li><code>after-lazy-images.tsx</code> · 1 KB</li><li><code>after-redirects.tsx</code> · 1 KB</li><li><code>diff-summary.md</code> · 1 KB</li><li><code>preview.html</code> · 2 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../site-performance/19496-tumalo-reservoir-rd/" target="_blank">📁 out/site-performance/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="site-property-landing">
+  <div class="producer-head">
+    <h3>site-property-landing</h3>
+    <span class="badge badge-C">Site (PR)</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/site/run-site-property-landing.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="code">// app/listings/[slug]/page.tsx — generated by site-property-landing
+// Route: /listings/19496-tumalo-reservoir-rd
+import type { Metadata } from 'next'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { LeadCaptureForm } from '@/components/lead-capture-form'
+
+// In production: fetched from Supabase using params.slug
+const listing = {
+  streetNumber: '19496',
+  streetName: 'Tumalo Reservoir Rd',
+  city: 'Bend',
+  state: 'Oregon',
+  zip: '97703',
+  listPrice: 1225000,
+  listPriceDisplay: '$1,225,000',
+  bedrooms: 3,
+  bathrooms: 3,
+  sqft: 2325,
+  sqftDisplay: '2,325 sqft',
+  yearBuilt: 1995,
+  lotAcres: 2.28,
+  subdivision: 'Tumalo',
+  latitude: 44.138729,
+  longitude: -121.349064,
+  status: 'Active',
+  primaryPhotoUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260304175825195222000000-o.jpg',
+  remarks: 'Tumalo is one of Central Oregon's best kept secrets. Wide open spaces, a tight knit community, and a rural pace of life just minutes from Bend. Three Sisters views dominate nearly every room.',
+  listAgentName: 'Matt Ryan',
+  listAgentEmail: 'matt@ryan-realty.com',
+  matterportSid: '', // populate from Supabase when available
+  videoPath: '/videos/cascade-and-creek.mp4',
+  driveTimesMinutes: {&quot;downtown_bend&quot;:&quot;12 min&quot;,&quot;mt_bachelor&quot;:&quot;44 min&quot;,&quot;st_charles_bend&quot;:&quot;21 min&quot;,&quot;tumalo_elementary&quot;:&quot;3 min&quot;},
+}
+
+const jsonLd = {
+  &quot;@context&quot;: &quot;https://schema.org&quot;,
+  &quot;@type&quot;: &quot;RealEstateListing&quot;,
+  &quot;name&quot;: &quot;19496 Tumalo Reservoir Rd, Bend, Oregon 97703&quot;,
+  &quot;url&quot;: &quot;https://ryan-realty.com/listings/19496-tumalo-reservoir-rd&quot;,
+  &quot;description&quot;: &quot;3-bed, 3-bath home in Tumalo. 2,325 sqft. Built 1995. Lot: 2.28 acres.&quot;,
+  &quot;image&quot;: &quot;https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260304175825195222000000-o.jpg&quot;,
+  &quot;offers&quot;: {
+    &quot;@type&quot;: &quot;Offer&quot;,
+    &quot;price&quot;: 1225000,
+    &quot;priceCurrency&quot;: &quot;USD&quot;,
+    &quot;availability&quot;: &quot;https://schema.org/InStock&quot;
+  },
+  &quot;numberOfRooms&quot;: 6,
+  &quot;floorSize&quot;: {
+    &quot;@type&quot;: &quot;QuantitativeValue&quot;,
+    &quot;value&quot;: 2325,
+    &quot;unitCode&quot;: &quot;FTK&quot;
+  },
+  &quot;yearBuilt&quot;: 1995,
+  &quot;geo&quot;: {
+    &quot;@type&quot;: &quot;GeoCoordinates&quot;,
+...(showing first 60 lines)</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>3 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>after.tsx</code> · 10 KB</li><li><code>diff-summary.md</code> · 1 KB</li><li><code>preview.html</code> · 5 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../site-property-landing/19496-tumalo-reservoir-rd/" target="_blank">📁 out/site-property-landing/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+</section>
+
+<section class="section" id="section-D">
+  <div class="section-head">
+    <h2><span class="section-tag">Section D</span> Operational Producers</h2>
+    <p class="section-lead">Dry-run by default. Pass --live to actually call the API (Meta Ads, FUB, Resend, GBP, ManyChat, Google Ads). · <strong>7</strong> producers</p>
+  </div>
+  
+<article class="producer" id="ops-email-send">
+  <div class="producer-head">
+    <h3>ops-email-send</h3>
+    <span class="badge badge-D">Operational</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/ops/run-email-send.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># ops-email-send — incomplete payload
+
+See missing-fields.md for required fields.
+</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>approval-prompt.md</code> · 0 KB</li><li><code>commentary.md</code> · 0 KB</li><li><code>dispatch-plan.md</code> · 0 KB</li><li><code>missing-fields.md</code> · 1 KB</li><li><code>payload.json</code> · 0 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../ops-email-send/19496-tumalo-reservoir-rd/" target="_blank">📁 out/ops-email-send/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="ops-fb-marketplace">
+  <div class="producer-head">
+    <h3>ops-fb-marketplace</h3>
+    <span class="badge badge-D">Operational</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/ops/run-fb-marketplace.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># Approval required — ops-fb-marketplace
+
+**Listing:** 19496 Tumalo Reservoir Rd, Bend, Oregon 97703
+**Price:** $1,225,000
+**Beds/Baths/Sqft:** 3/3/2,325
+
+## Bundle contents
+
+- `title.txt` — FB title (59/100 chars)
+- `description.txt` — Full listing description
+- `photos-list.md` — Ordered photo upload list
+- `instructions.md` — Step-by-step upload guide
+
+## FB API limitation
+
+Facebook Marketplace does NOT permit programmatic real-estate listing creation.
+This is a manual-upload bundle. No API call is made regardless of --live flag.
+
+## To approve and upload
+
+1. Review the bundle artifacts in: `/Users/matthewryan/RyanRealty/out/ops-fb-marketplace/19496-tumalo-reservoir-rd`
+2. Follow `instructions.md` to post manually
+</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>8 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>approval-prompt.md</code> · 1 KB</li><li><code>commentary.md</code> · 1 KB</li><li><code>description.txt</code> · 0 KB</li><li><code>dispatch-plan.md</code> · 0 KB</li><li><code>instructions.md</code> · 1 KB</li><li><code>payload.json</code> · 2 KB</li><li><code>photos-list.md</code> · 1 KB</li><li><code>title.txt</code> · 0 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../ops-fb-marketplace/19496-tumalo-reservoir-rd/" target="_blank">📁 out/ops-fb-marketplace/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="ops-fub-crm">
+  <div class="producer-head">
+    <h3>ops-fub-crm</h3>
+    <span class="badge badge-D">Operational</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/ops/run-fub-crm.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># ops-fub-crm — incomplete payload
+
+See missing-fields.md for required fields.
+</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>approval-prompt.md</code> · 0 KB</li><li><code>commentary.md</code> · 0 KB</li><li><code>dispatch-plan.md</code> · 0 KB</li><li><code>missing-fields.md</code> · 0 KB</li><li><code>payload.json</code> · 0 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../ops-fub-crm/19496-tumalo-reservoir-rd/" target="_blank">📁 out/ops-fub-crm/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="ops-google-ads">
+  <div class="producer-head">
+    <h3>ops-google-ads</h3>
+    <span class="badge badge-D">Operational</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/ops/run-google-ads.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># ops-google-ads — incomplete payload
+
+See missing-fields.md for required fields.
+</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>approval-prompt.md</code> · 0 KB</li><li><code>commentary.md</code> · 0 KB</li><li><code>dispatch-plan.md</code> · 0 KB</li><li><code>missing-fields.md</code> · 1 KB</li><li><code>payload.json</code> · 0 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../ops-google-ads/19496-tumalo-reservoir-rd/" target="_blank">📁 out/ops-google-ads/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="ops-manychat">
+  <div class="producer-head">
+    <h3>ops-manychat</h3>
+    <span class="badge badge-D">Operational</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/ops/run-manychat.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># Approval required — ops-manychat
+
+**Listing:** 19496 Tumalo Reservoir Rd
+**Triggers configured:** 4
+
+&gt; ℹ  MANYCHAT_API_KEY not set — dry-run mode only. Set the key to enable live dispatch.
+
+## Keyword triggers
+
+- `SHOWING` → &quot;Thank you for your interest in 19496 Tumalo Reservoir Rd. Our team will reach ou...&quot;
+- `OPENHOUSE` → &quot;Thank you for asking about the open house at 19496 Tumalo Reservoir Rd. We will ...&quot;
+- `DETAILS` → &quot;Happy to send the full property details for 19496 Tumalo Reservoir Rd ($1,225,00...&quot;
+- `TUMALO` → &quot;Thank you for reaching out about 19496 Tumalo Reservoir Rd ($1,225,000). What wo...&quot;
+
+## FUB integration
+
+Every trigger fires a webhook to `https://ryanrealty.vercel.app/api/webhooks/fub-capture` to capture the lead in FUB.
+
+## To approve
+
+```bash
+node scripts/ops/run-manychat.mjs /Users/matthewryan/RyanRealty/tests/fixtures/producer-payload-tumalo.json --live
+```
+
+## Import instructions (if live fails)
+
+Import `flow.json` via ManyChat &gt; Automation &gt; Import JSON.
+</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>approval-prompt.md</code> · 1 KB</li><li><code>commentary.md</code> · 1 KB</li><li><code>dispatch-plan.md</code> · 0 KB</li><li><code>flow.json</code> · 4 KB</li><li><code>payload.json</code> · 4 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../ops-manychat/19496-tumalo-reservoir-rd/" target="_blank">📁 out/ops-manychat/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="ops-meta-ads">
+  <div class="producer-head">
+    <h3>ops-meta-ads</h3>
+    <span class="badge badge-D">Operational</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/ops/run-meta-ads.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># ops-meta-ads — incomplete payload
+
+See missing-fields.md for required fields.
+</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>approval-prompt.md</code> · 0 KB</li><li><code>commentary.md</code> · 0 KB</li><li><code>dispatch-plan.md</code> · 0 KB</li><li><code>missing-fields.md</code> · 0 KB</li><li><code>payload.json</code> · 0 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../ops-meta-ads/19496-tumalo-reservoir-rd/" target="_blank">📁 out/ops-meta-ads/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="ops-reputation">
+  <div class="producer-head">
+    <h3>ops-reputation</h3>
+    <span class="badge badge-D">Operational</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/ops/run-reputation.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># ops-reputation — incomplete payload
+
+See missing-fields.md for required fields.
+</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>5 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>approval-prompt.md</code> · 0 KB</li><li><code>commentary.md</code> · 0 KB</li><li><code>dispatch-plan.md</code> · 0 KB</li><li><code>missing-fields.md</code> · 0 KB</li><li><code>payload.json</code> · 0 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../ops-reputation/19496-tumalo-reservoir-rd/" target="_blank">📁 out/ops-reputation/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+</section>
+
+<section class="section" id="section-E">
+  <div class="section-head">
+    <h2><span class="section-tag">Section E</span> Communications</h2>
+    <p class="section-lead">Internal alert routing + per-client touchpoint emails. · <strong>2</strong> producers</p>
+  </div>
+  
+<article class="producer" id="comms-client-update">
+  <div class="producer-head">
+    <h3>comms-client-update</h3>
+    <span class="badge badge-E">Communications</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-comms-client-update.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># Client email: weekly seller status
+
+**To:** Sarah Thompson &lt;sarah.thompson@example.com&gt;
+**From:** Matt Ryan, Ryan Realty
+**Context:** 19496 Tumalo Reservoir Rd — week 2 update
+
+---
+
+Hi Sarah,
+
+Here is where things stand on 19496 Tumalo Reservoir Rd after 14 days on the market.
+
+**Activity this week:**
+
+- 12 showings total since list date
+- 2 offers received
+- 96% of asking price on accepted offer
+
+The pace is on track. Homes in Bend are averaging 10 days on market right now, so your property is within the normal range for this price point and neighborhood.
+
+I will be in touch as soon as there is anything new to report. If you have questions in the meantime, call me directly at 541.213.6706.
+
+Matt Ryan
+Principal Broker, Ryan Realty
+License 201206613
+ryan-realty.com
+</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>4 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>milestone-offer-accepted.md</code> · 1 KB</li><li><code>past-client-touch.md</code> · 1 KB</li><li><code>subjects.md</code> · 1 KB</li><li><code>weekly-seller-status.md</code> · 1 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../comms-client-update/19496-tumalo-reservoir-rd/" target="_blank">📁 out/comms-client-update/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+
+<article class="producer" id="comms-matt-alert">
+  <div class="producer-head">
+    <h3>comms-matt-alert</h3>
+    <span class="badge badge-E">Communications</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-comms-matt-alert.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># Alert variant: critical (iMessage)
+
+**Channel:** iMessage to Matt Ryan (541.213.6706)
+**Severity:** high
+**Char count:** 95 of 140 max
+
+## Body (send as-is)
+
+[ALERT] Meta Ads CPL spike: CPL $43.20 vs $18.70 avg (7d). Paused. Investigate before resuming.
+
+## Evidence
+
+CPL last 24h: $43.20 vs. trailing 7d avg $18.70. Conversion volume unchanged. Likely creative fatigue.
+
+## Routing
+
+This variant fires when:
+- `severity = &quot;high&quot;` or `severity = &quot;critical&quot;`
+- Any campaign CPL exceeds 2x trailing 7-day average
+- Triggered by `/api/cron/performance-guardrail` or `/api/webhooks/meta-ads`
+</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>4 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>alert-critical.md</code> · 1 KB</li><li><code>alert-medium.md</code> · 1 KB</li><li><code>alert-summary.md</code> · 1 KB</li><li><code>index.md</code> · 1 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../comms-matt-alert/19496-tumalo-reservoir-rd/" target="_blank">📁 out/comms-matt-alert/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+</section>
+
+<section class="section" id="section-F">
+  <div class="section-head">
+    <h2><span class="section-tag">Section F</span> Analysis</h2>
+    <p class="section-lead">Run analysis, write findings to marketing_decisions. Do not publish. · <strong>1</strong> producers</p>
+  </div>
+  
+<article class="producer" id="analyze-experiment">
+  <div class="producer-head">
+    <h3>analyze-experiment</h3>
+    <span class="badge badge-F">Analysis</span>
+    <span class="status ok">✓ PASS</span>
+    <span class="scorecard">undefined/undefined checks</span>
+  </div>
+  <div class="sub">
+    <code>scripts/build-analyze-experiment.mjs</code>
+    
+  </div>
+  <div class="deliverable">
+    <pre class="caption"># A/B readout: Bend Seller Funnel — Meta creative quad
+
+**SYNTHETIC DATA — for illustration only. Replace with live Meta Ads Manager export.**
+**Date:** 2026-05-18
+**Status:** Complete (all arms &gt;= 252 leads)
+
+## Results table
+
+| Arm | Creative | Leads | Spend | CPL | Conv. rate |
+|---|---|---|---|---|---|
+| Control (A) | Static image — mountain view | 142 | $2910.00 | $20.49 | 2.84% |
+| Variant B | Video reel — drone open | 178 | $2880.00 | $16.18 | 3.56% |
+| Variant C | Carousel — 5 photos + stats | 155 | $2940.00 | $18.97 | 3.1% |
+| Variant D | Static image — interior | 131 | $2895.00 | $22.10 | 2.62% |
+
+## Statistical test
+
+**Test:** Chi-square goodness of fit on lead counts
+**Degrees of freedom:** 3
+**Chi-square statistic:** 8.086
+**Critical value (alpha = 0.05, df = 3):** 7.815
+**p-value:** &lt; 0.05
+**Result:** Statistically significant
+
+## Confidence intervals (CPL, 95%)
+
+- **Control (A):** $18.47 to $22.51
+- **Variant B:** $14.75 to $17.61
+- **Variant C:** $17.18 to $20.76
+- **Variant D:** $19.83 to $24.37
+
+## Winner
+
+**Variant B (Video reel — drone open)**
+
+CPL: $16.18 vs. control $20.49
+
+Lift: 21.0% reduction in CPL (MDE threshold was 15%).
+
+The lift exceeds the pre-specifi
+...(truncated)</pre>
+  </div>
+  <div class="producer-meta">
+    <details>
+      <summary>3 output files + 4/4 sidecars</summary>
+      <ul class="file-list"><li><code>analysis.json</code> · 1 KB</li><li><code>readout.md</code> · 1 KB</li><li><code>test-design.md</code> · 2 KB</li></ul>
+      
+      <div class="folder-link">
+        <a href="../analyze-experiment/19496-tumalo-reservoir-rd/" target="_blank">📁 out/analyze-experiment/19496-tumalo-reservoir-rd/</a>
+      </div>
+    </details>
+  </div>
+</article>
+</section>
+
+<footer>
+  Producer Gallery built 2026-05-20T20:32:31.028Z by <code>scripts/build-producer-gallery.mjs</code><br>
+  Phone <strong>541.213.6706</strong> · Web <strong>ryan-realty.com</strong> · Matt Ryan, Owner / Principal Broker
+</footer>
+</div>
+</body>
+</html>

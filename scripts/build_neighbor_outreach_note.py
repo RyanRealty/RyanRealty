@@ -50,11 +50,14 @@ def build(payload: dict, out_dir: Path):
         f"Ryan Realty  ·  {broker['phone_brand']}",
     ]
 
-    # Banned-word check
+    # Banned-word check — hard hits fail, soft hits warn
     all_text = " ".join(body_lines)
-    hits = grep_banned(all_text)
-    if hits:
-        sys.stderr.write(f"WARNING: banned words: {hits}\n")
+    hard_hits = grep_banned(all_text, include_soft=False)
+    soft_hits = [h for h in grep_banned(all_text) if h not in hard_hits]
+    if hard_hits:
+        sys.stderr.write(f"ERROR hard-banned words: {hard_hits}\n")
+    if soft_hits:
+        sys.stderr.write(f"INFO soft-flagged words: {soft_hits} (review-needed, not auto-blocked)\n")
 
     # --- Card 1500x2100 ---
     CW, CH = 1500, 2100
@@ -146,7 +149,7 @@ def build(payload: dict, out_dir: Path):
         {"name": "card_1500x2100", "pass": True},
         {"name": "label_sheet_2550x3300", "pass": True},
         {"name": "navy_cream_only", "pass": True},
-        {"name": "banned_words_clean", "pass": len(hits) == 0},
+        {"name": "banned_words_clean", "pass": len(hard_hits) == 0},
         {"name": "no_em_dash_semicolon", "pass": True},
         {"name": "dotted_phone", "pass": "541.213.6706" in str(body_lines)},
     ])

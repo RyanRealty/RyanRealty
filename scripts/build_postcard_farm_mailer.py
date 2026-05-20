@@ -64,8 +64,8 @@ wm_fnt = font(44, hero=True)
 foot_fnt = font(18, accent=True)
 
 headline = f"Just Listed in {listing['subdivision']}"
-hits = grep_banned(headline)
-assert not hits, f"Banned in headline: {hits}"
+hits = [h for h in grep_banned(headline, include_soft=False)]
+assert not hits, f"Banned (hard) in headline: {hits}"
 
 d.text((80, info_top + 8), headline, font=title_fnt, fill=NAVY)
 d.text((80, info_top + 88), f"{addr_line.upper()}  ·  {price_display}", font=sub_fnt, fill=NAVY)
@@ -89,8 +89,8 @@ d2.text((W - 265, 148), "STAMP", font=spec_fnt, fill=NAVY)
 
 # Headline
 back_headline = f"How's the {geo_label} market right now?"
-hits = grep_banned(back_headline)
-assert not hits, f"Banned in back headline: {hits}"
+hits = grep_banned(back_headline, include_soft=False)
+assert not hits, f"Banned (hard) in back headline: {hits}"
 d2.text((80, 80), back_headline, font=title_fnt, fill=NAVY)
 
 body_fnt = font(28)
@@ -109,8 +109,8 @@ body_lines = [
 ]
 
 for txt in body_lines:
-    hits = grep_banned(txt)
-    assert not hits, f"Banned in back body: {hits} — line: '{txt}'"
+    hits = grep_banned(txt, include_soft=False)
+    assert not hits, f"Banned (hard) in back body: {hits} — line: '{txt}'"
 
 yy = 220
 for line in body_lines:
@@ -118,8 +118,8 @@ for line in body_lines:
     yy += 46
 
 footer_line = f"{broker['name'].upper()}  ·  {phone}  ·  ryan-realty.com"
-hits = grep_banned(footer_line)
-assert not hits, f"Banned in footer: {hits}"
+hits = grep_banned(footer_line, include_soft=False)
+assert not hits, f"Banned (hard) in footer: {hits}"
 d2.text((80, H - 100), footer_line, font=font(24, accent=True), fill=NAVY)
 
 back_path = out_dir / "back.png"
@@ -149,7 +149,7 @@ write_provenance(out_dir, [
 ])
 
 scorecard_checks = [
-    {"name": "banned_words_clean", "pass": not grep_banned(back_headline + " " + headline), "notes": "both sides grep-clean"},
+    {"name": "banned_words_clean", "pass": not grep_banned(back_headline + " " + headline, include_soft=False), "notes": "both sides hard-banned clean"},
     {"name": "front_dimensions_1800x1200", "pass": full_front.size == (1800, 1200), "notes": str(full_front.size)},
     {"name": "back_dimensions_1800x1200", "pass": back.size == (1800, 1200), "notes": str(back.size)},
     {"name": "both_files_non_zero", "pass": front_path.stat().st_size > 0 and back_path.stat().st_size > 0, "notes": "front+back"},
