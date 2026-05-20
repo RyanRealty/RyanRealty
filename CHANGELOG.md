@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.259.0 (2026-05-20)
+
+### Features
+- feat(pulse): route every CTA to live ryan-realty.com (legacy site)
+
+---
+
+
 ## v1.258.0 (2026-05-20)
 
 ### Features
