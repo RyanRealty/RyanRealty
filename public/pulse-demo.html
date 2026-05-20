@@ -1220,9 +1220,214 @@ function wireToolbar() {
   setMode('clean');
 }
 
+/* ================================================================== *
+ *  BRAIN-PRODUCED CONTENT — fixtures + renderers.
+ *
+ *  In production each item comes from a different source:
+ *    LIFESTYLE → public.blog_posts WHERE status='published'
+ *    BRAND     → brand-owned config (static)
+ *    SNAPSHOT  → public.market_pulse_live (10–15 min cache)
+ *    REPORT    → marketing_brain_actions executor_response.draft_path
+ *                for action_type='content:market_data_video', status='executed'
+ *
+ *  See marketing_brain_skills/pulse-feed-integration/SKILL.md for the
+ *  full column-write contract every producer must follow.
+ * ================================================================== */
+
+const LIFESTYLE_FIXTURES = [
+  {
+    id: 'blog-brasada-ranch',
+    category: 'Community spotlights',
+    slug: 'brasada-ranch-central-oregon',
+    title: "Brasada Ranch · Central Oregon's desert resort",
+    excerpt: "Sits in the high desert east of Bend with views, golf, equestrian, and resort infrastructure most communities can't match. The full picture for buyers.",
+    heroImage: 'https://images.unsplash.com/photo-1724533687925-aa205b97e60e?w=1920&q=80'
+  },
+  {
+    id: 'blog-working-remote',
+    category: 'Lifestyle & living',
+    slug: 'working-remote-central-oregon',
+    title: 'Working remote from Central Oregon',
+    excerpt: 'Central Oregon has become a magnet for remote workers. The practical reality of internet speeds, coworking, timezone logistics, and cost savings.',
+    heroImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1920&q=80'
+  }
+];
+
+const BRAND_FIXTURES = [
+  {
+    id: 'brand-valuation',
+    mark: 'Ryan Realty · free',
+    headline: 'What is your home worth today?',
+    sub: 'Free instant valuation backed by recent comparable sales in your neighborhood. Add a written one-page breakdown if you want one.',
+    ctaLabel: 'Get my valuation',
+    ctaHref: '/home-valuation'
+  }
+];
+
+// Bend market_pulse_live, pulled 2026-05-20 20:00 UTC.
+// MoS 4.88 → balanced per CLAUDE.md §0 thresholds (4–6 = balanced).
+const SNAPSHOT_FIXTURE = {
+  id: 'snap-bend',
+  geoLabel: 'Bend',
+  asOf: 'May 20',
+  active: 506,
+  newWeek: 68,
+  daysToPending: 11,
+  medianList: 795000,
+  monthsOfSupply: 4.9,
+  verdict: 'Balanced. Buyers and sellers have leverage on different sides of the table.',
+  ctaLabel: 'See the full dashboard',
+  ctaHref: '/housing-market'
+};
+
+const REPORT_FIXTURE = {
+  id: 'report-bend-may26',
+  eyebrow: 'May 2026 · The Bend market',
+  headline: 'Inventory is up. Pace is still tight.',
+  deck: '506 active homes. 68 new this week. Median time to pending: 11 days. The 60-second read on what changed.',
+  videoUrl: '/v5_library/bend_market_report_ytd2026.mp4',
+  ctaLabel: 'Watch the full report',
+  ctaHref: '/housing-market'
+};
+
+function renderLifestyleCard(item) {
+  const card = document.createElement('article');
+  card.className = 'card lifestyle';
+  card.dataset.id = item.id;
+  const media = document.createElement('div');
+  media.className = 'media';
+  const img = document.createElement('img');
+  img.className = 'poster kenburns';
+  img.src = item.heroImage;
+  img.alt = item.title;
+  media.appendChild(img);
+  card.appendChild(media);
+  card.appendChild(Object.assign(document.createElement('div'), { className: 'top-scrim' }));
+  card.appendChild(Object.assign(document.createElement('div'), { className: 'bot-scrim' }));
+  const eyebrow = document.createElement('div');
+  eyebrow.className = 'eyebrow';
+  eyebrow.textContent = item.category;
+  card.appendChild(eyebrow);
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  actions.innerHTML = '<button class="like" aria-label="Like"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button><span class="lbl">Like</span><button class="share" aria-label="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7Z"/></svg></button><span class="lbl">Share</span>';
+  card.appendChild(actions);
+  const block = document.createElement('div');
+  block.className = 'lifestyle-block';
+  block.innerHTML = '<p class="lifestyle-title">' + item.title + '</p>'
+    + '<p class="lifestyle-excerpt">' + item.excerpt + '</p>'
+    + '<a class="cta" href="/blog/' + encodeURIComponent(item.slug) + '"><span>Read the story</span><span class="arrow" aria-hidden="true">→</span></a>';
+  card.appendChild(block);
+  return card;
+}
+
+function renderBrandCard(item) {
+  const card = document.createElement('article');
+  card.className = 'card brand';
+  card.dataset.id = item.id;
+  const media = document.createElement('div');
+  media.className = 'media';
+  card.appendChild(media);
+  const block = document.createElement('div');
+  block.className = 'brand-block';
+  block.innerHTML = '<p class="brand-mark">' + item.mark + '</p>'
+    + '<p class="brand-headline">' + item.headline + '</p>'
+    + '<p class="brand-sub">' + item.sub + '</p>'
+    + '<a class="cta" href="' + item.ctaHref + '"><span>' + item.ctaLabel + '</span><span class="arrow" aria-hidden="true">→</span></a>';
+  card.appendChild(block);
+  return card;
+}
+
+function renderSnapshotCard(snap) {
+  const card = document.createElement('article');
+  card.className = 'card snapshot';
+  card.dataset.id = snap.id;
+  const media = document.createElement('div');
+  media.className = 'media';
+  card.appendChild(media);
+  const block = document.createElement('div');
+  block.className = 'snap-block';
+  block.innerHTML = '<p class="snap-eyebrow">' + snap.geoLabel + ' · live · ' + snap.asOf + '</p>'
+    + '<p class="snap-headline">The market in numbers, right now.</p>'
+    + '<div class="snap-grid">'
+    + '<div class="snap-stat"><span class="snap-val">' + snap.newWeek + '</span><span class="snap-label">new this week</span></div>'
+    + '<div class="snap-stat"><span class="snap-val">' + snap.daysToPending + '</span><span class="snap-label">median days to pending</span></div>'
+    + '<div class="snap-stat"><span class="snap-val">$' + Math.round(snap.medianList / 1000) + 'K</span><span class="snap-label">median list price</span></div>'
+    + '<div class="snap-stat"><span class="snap-val">' + snap.monthsOfSupply + '</span><span class="snap-label">months of supply</span></div>'
+    + '</div>'
+    + '<p class="snap-verdict">' + snap.verdict + '</p>'
+    + '<a class="cta snap-cta" href="' + snap.ctaHref + '"><span>' + snap.ctaLabel + '</span><span class="arrow" aria-hidden="true">→</span></a>';
+  card.appendChild(block);
+  return card;
+}
+
+function renderReportCard(rep) {
+  const card = document.createElement('article');
+  card.className = 'card report';
+  card.dataset.id = rep.id;
+  const media = document.createElement('div');
+  media.className = 'media';
+  const video = document.createElement('video');
+  video.className = 'vid';
+  video.src = rep.videoUrl;
+  video.muted = true;
+  video.playsInline = true;
+  video.loop = true;
+  video.autoplay = true;
+  video.preload = 'metadata';
+  media.appendChild(video);
+  card.appendChild(media);
+  card.appendChild(Object.assign(document.createElement('div'), { className: 'top-scrim' }));
+  card.appendChild(Object.assign(document.createElement('div'), { className: 'bot-scrim' }));
+  const eyebrow = document.createElement('div');
+  eyebrow.className = 'eyebrow';
+  eyebrow.textContent = rep.eyebrow;
+  card.appendChild(eyebrow);
+  const block = document.createElement('div');
+  block.className = 'report-block';
+  block.innerHTML = '<p class="report-headline">' + rep.headline + '</p>'
+    + '<p class="report-deck">' + rep.deck + '</p>'
+    + '<a class="cta" href="' + rep.ctaHref + '"><span>' + rep.ctaLabel + '</span><span class="arrow" aria-hidden="true">→</span></a>';
+  card.appendChild(block);
+  return card;
+}
+
+function buildFeed() {
+  return [
+    { kind: 'listing', data: FIXTURES[0] },
+    { kind: 'listing', data: FIXTURES[1] },
+    { kind: 'report',   data: REPORT_FIXTURE },
+    { kind: 'listing', data: FIXTURES[2] },
+    { kind: 'listing', data: FIXTURES[3] },
+    { kind: 'lifestyle', data: LIFESTYLE_FIXTURES[0] },
+    { kind: 'listing', data: FIXTURES[4] },
+    { kind: 'listing', data: FIXTURES[5] },
+    { kind: 'snapshot', data: SNAPSHOT_FIXTURE },
+    { kind: 'listing', data: FIXTURES[6] },
+    { kind: 'listing', data: FIXTURES[7] },
+    { kind: 'brand',   data: BRAND_FIXTURES[0] },
+    { kind: 'lifestyle', data: LIFESTYLE_FIXTURES[1] }
+  ];
+}
+
+function renderFeedItem(item) {
+  switch (item.kind) {
+    case 'listing':   return renderCard(item.data);
+    case 'lifestyle': return renderLifestyleCard(item.data);
+    case 'brand':     return renderBrandCard(item.data);
+    case 'snapshot':  return renderSnapshotCard(item.data);
+    case 'report':    return renderReportCard(item.data);
+    default:          return null;
+  }
+}
+
 function boot() {
   const feed = document.getElementById('feed');
-  FIXTURES.forEach((f) => feed.appendChild(renderCard(f)));
+  const order = buildFeed();
+  order.forEach((item) => {
+    const el = renderFeedItem(item);
+    if (el) feed.appendChild(el);
+  });
   setupObserver();
   wireToolbar();
   // Activate the first visible card. Stacked attempts because timing of
