@@ -210,9 +210,11 @@ type PolygonFile = {
   source: string
   imported_at: string
   communities: Array<{
+    tier?: 'city' | 'community' | 'community-overlay'
     slug: string
     route_slug: string
     name: string
+    acres?: number
     centroid: { lng: number; lat: number }
     geometry: GeoJSON.Geometry
   }>
@@ -228,6 +230,7 @@ async function loadCommunityPolygons(): Promise<CommunityPolygon[]> {
       name: c.name,
       geometry: c.geometry,
       centroid: c.centroid,
+      tier: c.tier ?? 'city',
     }))
   } catch (err) {
     console.warn('[bend lp] polygon file load failed:', err)

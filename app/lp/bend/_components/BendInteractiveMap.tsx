@@ -26,6 +26,10 @@ export type CommunityPolygon = {
   geometry: GeoJSON.Geometry
   /** Centroid for label placement. */
   centroid: { lng: number; lat: number }
+  /** Visual tier — 'city' = official City of Bend neighborhood (navy),
+   *  'community' = outside-city master-planned community (blue). Optional;
+   *  defaults to 'city'. */
+  tier?: 'city' | 'community' | 'community-overlay'
 }
 
 export interface BendInteractiveMapProps {
@@ -82,6 +86,7 @@ export function BendInteractiveMap({
         name: c.name,
         centroid: c.centroid,
         paths: geojsonToPaths(c.geometry),
+        tier: c.tier ?? 'city',
       })),
     [communities],
   )
@@ -171,18 +176,23 @@ export function BendInteractiveMap({
       >
         {prepared.map((c) => {
           const isHover = hoveredSlug === c.slug
+          // Two visual tiers: official City of Bend neighborhoods render navy
+          // (the base mesh); resort / master-planned communities outside the
+          // city render in a distinct blue so the hierarchy reads clearly.
+          const isCommunity = c.tier === 'community'
+          const tierColor = isCommunity ? '#1565c0' : NAVY
           return (
             <Polygon
               key={c.slug}
               paths={c.paths}
               options={{
-                fillColor: NAVY,
-                fillOpacity: isHover ? 0.34 : 0.18,
-                strokeColor: NAVY,
+                fillColor: tierColor,
+                fillOpacity: isHover ? 0.36 : 0.20,
+                strokeColor: tierColor,
                 strokeOpacity: 1,
-                strokeWeight: isHover ? 3 : 1.5,
+                strokeWeight: isHover ? 3 : isCommunity ? 2 : 1.5,
                 clickable: true,
-                zIndex: isHover ? 2 : 1,
+                zIndex: isHover ? 3 : isCommunity ? 2 : 1,
               }}
               onMouseOver={() => setHoveredSlug(c.slug)}
               onMouseOut={() => setHoveredSlug(null)}
