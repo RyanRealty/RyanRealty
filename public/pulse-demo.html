@@ -416,15 +416,18 @@
   /* "Schedule a showing" CTA — mirrors the canonical pattern in
      components/lp/ListingCard.tsx so a buyer who sees the navy
      pill on the city LP recognizes the same button on the pulse feed.
-     Navy fill, cream text, 10px radius, 0.06em uppercase tracking. */
+     Outline-only treatment locked 2026-05-20: no fill at rest, white
+     border + text, subtle white wash on hover so it reads "activated"
+     without breaking the photo behind it. Backdrop blur keeps text
+     legible on busy property photos. */
   .cta {
     margin-top: 12px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    background: var(--rr-navy);
-    color: var(--rr-cream);
+    background: transparent;
+    color: #ffffff;
     padding: 11px 16px;
     border-radius: 10px;
     font-size: 12px;
@@ -432,25 +435,37 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     text-decoration: none;
-    border: 1px solid rgba(250, 248, 244, 0.18);
-    box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.6);
-    transition: opacity 160ms ease, transform 140ms ease;
+    border: 1.5px solid rgba(255, 255, 255, 0.92);
+    box-shadow: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: background 180ms ease, transform 140ms ease, border-color 180ms ease;
     pointer-events: auto;
     width: 100%;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.45);
   }
-  .cta:hover  { opacity: 0.93; transform: translateY(-1px); }
-  .cta:active { transform: translateY(0); }
+  .cta:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: #ffffff;
+    transform: translateY(-1px);
+  }
+  .cta:active {
+    background: rgba(255, 255, 255, 0.22);
+    transform: translateY(0);
+  }
   .cta .arrow { transition: transform 180ms ease; }
   .cta:hover .arrow { transform: translateX(3px); }
-  /* Sold listings get a different CTA — "see similar homes" instead of
-     "schedule a showing," since the home is no longer available to tour. */
+  /* Sold listings used to flip to a separate outline style. Now that
+     the default IS the outline style, the sold "see similar homes" CTA
+     gets a slightly softer border so it reads as a different state
+     without breaking the visual language. */
   .cta-secondary {
-    background: transparent;
-    color: var(--rr-cream);
-    border: 1px solid rgba(250, 248, 244, 0.55);
-    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.55);
   }
-  .cta-secondary:hover { background: rgba(250, 248, 244, 0.08); }
+  .cta-secondary:hover {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.85);
+  }
 
   /* ====================================================================
      BRAIN-PRODUCED CONTENT CARDS — lifestyle, brand, market snapshot,
