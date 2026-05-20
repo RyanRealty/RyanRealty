@@ -11,9 +11,13 @@ sleep 2
 
 echo ">>> Rendering NewsGoldenHandcuffs"
 npx remotion render src/index.ts NewsGoldenHandcuffs out/news_golden_handcuffs.mp4 --codec h264 --concurrency 1 --crf 22 --image-format=jpeg --jpeg-quality=92
+echo "  [first-frame] checking NewsGoldenHandcuffs..."
+python3 /Users/matthewryan/RyanRealty/scripts/check_first_frame.py out/news_golden_handcuffs.mp4 || { echo "SHIP-BLOCKER: first-frame check failed for NewsGoldenHandcuffs"; exit 1; }
 
 echo ">>> Rendering NewsSunBeltCorrection"
 npx remotion render src/index.ts NewsSunBeltCorrection out/news_sunbelt_correction.mp4 --codec h264 --concurrency 1 --crf 22 --image-format=jpeg --jpeg-quality=92
+echo "  [first-frame] checking NewsSunBeltCorrection..."
+python3 /Users/matthewryan/RyanRealty/scripts/check_first_frame.py out/news_sunbelt_correction.mp4 || { echo "SHIP-BLOCKER: first-frame check failed for NewsSunBeltCorrection"; exit 1; }
 
 echo ">>> All news renders done"
 ls -la out/news_*.mp4

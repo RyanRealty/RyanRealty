@@ -126,6 +126,18 @@ for (const r of REELS) {
     '--jpeg-quality=92',
   ].join(' ');
   execSync(cmd, { cwd: ROOT, stdio: 'inherit' });
+
+  // First-frame thumbnail gate (ship-blocker, locked 2026-05-20).
+  const REPO_ROOT = resolve(ROOT, '..');
+  const checkScript = resolve(REPO_ROOT, 'scripts/check_first_frame.py');
+  console.log(`  [first-frame] checking ${outPath}`);
+  try {
+    execSync(`python3 ${checkScript} ${outPath}`, { cwd: REPO_ROOT, stdio: 'inherit' });
+    console.log(`  [first-frame] ✓ passed for ${r.id}`);
+  } catch {
+    console.error(`\nSHIP-BLOCKER: first-frame check failed for ${r.id}. Fix the opening frame before publishing.`);
+    process.exit(1);
+  }
 }
 
 console.log('\n[done] 4 reels rendered to', OUT_DIR);
