@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.259.1 (2026-05-21)
+
+### Bug Fixes
+- fix(bend lp): map section more vertical + zoomed in
+
+---
+
+
 ## v1.259.0 (2026-05-20)
 
 ### Features
