@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.261.1 (2026-05-21)
+
+### Other
+- audit: Pass 8+9+10 result — main project clean (0 real TS errors), 50 cron routes UNTESTED, rogue-output framing corrected (test fixtures, not leaks)
+- audit: Pass 3+4 + Pass 5+7 results — OAuth expired across 7 platforms, 4 SKILL.md routing targets missing, cma_deliveries PII gap, marketing-measurement-loop cron CORRECTION
+
+---
+
+
 ## v1.261.0 (2026-05-21)
 
 ### Features
