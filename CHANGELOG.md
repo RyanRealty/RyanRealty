@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.261.3 (2026-05-21)
+
+### Other
+- fub: align with Matt's existing smart-list conventions
+
+---
+
+
 ## v1.261.2 (2026-05-21)
 
 ### Maintenance
