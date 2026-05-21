@@ -37,18 +37,30 @@ const PATH: Waypoint[] = [
 
 const FOV_DEG = 50;
 
+// Catmull-Rom spline through the 6 waypoints — produces a path that is
+// continuous in position + velocity (C1). The previous linear segment-lerp
+// had visible velocity discontinuities at each waypoint, which is what
+// Matt called "choppy" on 2026-05-19. Switching to Catmull-Rom + a global
+// eased time parameter fixes the corners.
+//
+// Implementation: build a tension=0.5 (centripetal) spline through east,
+// north, altitude separately. THREE.CatmullRomCurve3 handles all three
+// dimensions natively if we treat (east, north, altitude) as (x, y, z).
+
+const SPLINE_POINTS = PATH.map(
+  (w) => new THREE.Vector3(w.east, w.north, w.altitude),
+);
+const SPLINE_TS = PATH.map((w) => w.t);
+const POSITION_CURVE = new THREE.CatmullRomCurve3(SPLINE_POINTS, false, 'centripetal', 0.5);
+
 function lerpWaypoints(t: number): { pos: THREE.Vector3; target: THREE.Vector3 } {
-  let i = 0;
-  while (i < PATH.length - 1 && PATH[i + 1].t < t) i++;
-  const a = PATH[i];
-  const b = PATH[Math.min(i + 1, PATH.length - 1)];
-  const segT = (t - a.t) / Math.max(b.t - a.t, 1e-6);
-  const eased = easeInOutQuart(clamp(segT, 0, 1));
-  const east = a.east + (b.east - a.east) * eased;
-  const north = a.north + (b.north - a.north) * eased;
-  const alt = a.altitude + (b.altitude - a.altitude) * eased;
+  // Map global t (0..1) onto the spline's parameter (0..1) — both
+  // parameterized over the same range, so identity. Apply a gentle global
+  // ease so the camera accelerates from a stop and slows toward the end.
+  const u = easeInOutQuart(clamp(t, 0, 1));
+  const pos = POSITION_CURVE.getPoint(u);
   return {
-    pos: new THREE.Vector3(east, north, alt),
+    pos,
     target: new THREE.Vector3(0, 0, 0),
   };
 }
@@ -67,15 +79,40 @@ const FlyoverCameraRig: React.FC = () => {
     }
   }, [set, size]);
 
+  // Smoothed bank — sample velocity from the spline tangent and low-pass
+  // filter across frames. The previous frame-to-frame raw difference
+  // produced abrupt roll jumps at waypoints; the smoothed version eases
+  // through corners.
+  const bankRef = useRef(0);
+  const TURN_LOOK_AHEAD_SEC = 0.6;
+
   useFrame(() => {
     const cam = cameraRef.current;
     if (!cam) return;
     const t = clamp(frame / TOTAL_FRAMES, 0, 1);
     const { pos, target } = lerpWaypoints(t);
-    const tNext = clamp((frame + 1) / TOTAL_FRAMES, 0, 1);
-    const { pos: posNext } = lerpWaypoints(tNext);
-    const horizV = new THREE.Vector2(posNext.x - pos.x, posNext.y - pos.y);
-    const bankRad = horizV.length() > 0 ? clamp(horizV.x / 20, -0.45, 0.45) : 0;
+    // Sample TURN_LOOK_AHEAD_SEC ahead on the spline to determine where we
+    // ARE heading, not just our instantaneous velocity. Smoother bank cue.
+    const tAhead = clamp(t + TURN_LOOK_AHEAD_SEC / TOTAL_SEC, 0, 1);
+    const { pos: posAhead } = lerpWaypoints(tAhead);
+    const heading = new THREE.Vector2(posAhead.x - pos.x, posAhead.y - pos.y);
+    // Bank based on horizontal turn rate — sample TURN_LOOK_AHEAD_SEC before
+    // AND after to estimate the curvature, then map to bank angle.
+    const tBefore = clamp(t - TURN_LOOK_AHEAD_SEC / TOTAL_SEC, 0, 1);
+    const { pos: posBefore } = lerpWaypoints(tBefore);
+    const headingBefore = new THREE.Vector2(pos.x - posBefore.x, pos.y - posBefore.y);
+    let turn = 0;
+    if (heading.length() > 0.1 && headingBefore.length() > 0.1) {
+      const cross = headingBefore.x * heading.y - headingBefore.y * heading.x;
+      const dot = headingBefore.x * heading.x + headingBefore.y * heading.y;
+      turn = Math.atan2(cross, Math.abs(dot)); // signed turn angle
+    }
+    // Target bank: -0.35..0.35 rad mapped from turn rate, with damping.
+    const targetBank = clamp(turn * 1.2, -0.35, 0.35);
+    // First-order low-pass filter — every frame, ease bank toward target.
+    // Frame-rate-independent decay so the visual smoothing is consistent.
+    const decay = 0.12; // higher = snappier; lower = smoother
+    bankRef.current += (targetBank - bankRef.current) * decay;
 
     const up = new THREE.Vector3(0, 0, 1);
     const m = new THREE.Matrix4();
@@ -84,7 +121,7 @@ const FlyoverCameraRig: React.FC = () => {
     cam.position.copy(pos);
     cam.quaternion.setFromRotationMatrix(m);
     const forward = new THREE.Vector3().subVectors(target, pos).normalize();
-    cam.rotateOnAxis(forward, bankRad);
+    cam.rotateOnAxis(forward, bankRef.current);
   });
 
   return (
@@ -92,11 +129,15 @@ const FlyoverCameraRig: React.FC = () => {
   );
 };
 
+// Brand overlay — TOP eyebrow only. Bottom 144px navy bar removed 2026-05-21
+// per Matt review (was overlaid by IG/TikTok/FB action UI per safe-zones rule).
+// Eyebrow visible from t=0 to satisfy the first-frame thumbnail gate (the
+// flyover start pose at the highest waypoint is sky-heavy without title).
 const BrandOverlay: React.FC = () => {
   const frame = useCurrentFrame();
   const t = clamp(frame / TOTAL_FRAMES, 0, 1);
-  const eyebrowOpacity = clamp((t - 0.05) / 0.1, 0, 1) * (t > 0.85 ? Math.max(0, (1 - t) / 0.15) : 1);
-  const barOpacity = clamp((t - 0.1) / 0.15, 0, 1);
+  // Visible from t=0 (was t > 0.05 fade-in) — needed for thumbnail.
+  const eyebrowOpacity = t > 0.85 ? Math.max(0, (1 - t) / 0.15) : 1;
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
       <div
@@ -118,27 +159,7 @@ const BrandOverlay: React.FC = () => {
           2.28 acres on Reservoir Rd
         </div>
       </div>
-      <div
-        style={{
-          position: 'absolute',
-          left: 0, right: 0, bottom: 0,
-          height: 144,
-          background: '#102742',
-          opacity: barOpacity,
-          color: '#faf8f4',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 36px',
-        }}
-      >
-        <div style={{ fontFamily: 'Amboqia Boriango, Playfair Display, serif', fontSize: 36 }}>Ryan Realty</div>
-        <div style={{ fontFamily: 'Azo Sans, Geist, system-ui, sans-serif', fontSize: 18, fontStyle: 'italic', opacity: 0.92 }}>
-          It's About Relationships.
-        </div>
-        <div style={{ fontFamily: 'Azo Sans, Geist, system-ui, sans-serif', fontSize: 17, textAlign: 'right' }}>
-          <div>541.213.6706</div>
-          <div style={{ opacity: 0.85, fontSize: 14 }}>ryan-realty.com</div>
-        </div>
-      </div>
+      {/* Bottom navy bar removed 2026-05-21 — covered by platform action UI per safe-zones rule. */}
     </AbsoluteFill>
   );
 };

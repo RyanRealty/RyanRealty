@@ -96,8 +96,12 @@ const ZoomCameraRig: React.FC = () => {
 const BrandOverlay: React.FC = () => {
   const frame = useCurrentFrame();
   const t = clamp(frame / TOTAL_FRAMES, 0, 1);
-  const titleOpacity =
-    t < 0.18 ? t / 0.18 : t > 0.85 ? Math.max(0, (1 - t) / 0.15) : 1;
+  // Title visible from frame 0 — fixed 2026-05-21 so the first-frame
+  // thumbnail check passes. The 80km-altitude start frame is otherwise
+  // solid sky (variance 103, fails the gate). Title at full opacity
+  // from t=0 provides the text contrast that makes it a viable thumbnail.
+  // Original t < 0.18 fade-in is retained as a fade-OUT at the end.
+  const titleOpacity = t > 0.85 ? Math.max(0, (1 - t) / 0.15) : 1;
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
       <div

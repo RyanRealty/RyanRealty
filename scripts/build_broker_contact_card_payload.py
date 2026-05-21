@@ -52,6 +52,7 @@ broker = {
     "phone_office": broker.get("phone_fub", "541.703.3095"),  # FUB-tracked, used on social/ad surfaces
     "email": broker.get("email", "matt@ryan-realty.com"),
     "web": "ryan-realty.com",
+    "address": broker.get("address", "Bend · Tumalo · Central Oregon"),  # added 2026-05-21 per Matt audit
     "license": _license,
     "portrait_slug": broker.get("portrait_slug", "matt-ryan"),
 }
@@ -189,6 +190,15 @@ _draw_centered(d, email_y, broker["email"], email_font, NAVY, W)
 web_y = email_y + 28
 web_font = _font(18, accent=True)
 _draw_centered(d, web_y, broker["web"], web_font, NAVY, W)
+
+# Address / service area line (added 2026-05-21 per Matt audit)
+addr_y = web_y + 24
+addr_font = _font(15, accent=True)
+# Tracked uppercase for service-area
+_address_upper = broker["address"].upper().replace(" · ", "  ·  ")
+_addr_w = _measure_tracked(d, _address_upper, addr_font, 0.18)
+_tracked_text(d, ((W - _addr_w) // 2, addr_y), _address_upper,
+              addr_font, fill=SLATE, tracking_em=0.18)
 
 # ─── Footer tagline ──────────────────────────────────────────────────────────
 tagline_y = 1305
