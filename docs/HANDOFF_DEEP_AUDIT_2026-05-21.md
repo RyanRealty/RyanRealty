@@ -165,6 +165,37 @@ The skill is at `.claude/skills/deep-audit/SKILL.md`. Edit it if you find a pass
 
 ---
 
+## Appendix E — Pass 8+9+10 subagent result (already complete) · TESTS + CODE + ROGUE OUTPUTS
+
+**Headline:** Main project is healthier than I feared. 0 real TS errors in `app/`/`lib/`/`scripts/` (the 36 reported are in `out/` scratch files). 401/401 unit tests pass. 52/52 producers pass. The real problem is **50 cron routes with ZERO test coverage** — 3 of them mutate live FUB/lead workflows.
+
+**Correction to my prior framing:** the "30+ rogue outputs in `out/`" I called out earlier are mostly expected. `out/` is gitignored. The 63 card.json files there are from test-all-producers.mjs runs (test-fixture mode). The rogue-producer concern is real for the PROTOCOL (any agent CAN bypass), but the existing artifacts are test fixtures, not production leaks.
+
+```json
+{
+  "pass_8_findings": [
+    {"severity": "CRITICAL", "title": "Zero cron route test coverage across 50 routes", "evidence": "find returned 0 .test.ts files under app/api/cron/. 50 cron routes. Highest-risk untested: detect-expired-listings (359 lines, creates FUB persons, sends Matt alerts), fub-outreach-execution (370 lines, real FUB API mutations), seller-workflow-pause (185 lines, mutates active lead workflows).", "fix": "Start with the 3 high-mutation crons. Mock supabase + FUB client. Add happy-path + dedup + error-path tests alongside lib/ tests in the existing vitest setup.", "effort": "high — 3-4 days for the three critical routes"},
+    {"severity": "INFO", "title": "All 34 test files pass — 401 tests green", "evidence": "npm test -- --run: 34 passed / 0 failed, 401 assertions, 710ms.", "fix": "None.", "effort": "n/a"},
+    {"severity": "INFO", "title": "All 52 producers pass — test-all-producers.mjs clean", "evidence": "52 passed / 0 failed per out/test-all-producers-report.json. All 4 sidecars present + non-zero.", "fix": "None.", "effort": "n/a"},
+    {"severity": "LOW", "title": "No test files older than 90 days — staleness risk is low", "evidence": "Oldest test files are 52 days old. No stale coverage against actively-changing code.", "fix": "None.", "effort": "n/a"}
+  ],
+  "pass_9_findings": [
+    {"severity": "LOW", "title": "Main project: 0 real TS errors (36 errors are all in out/ draft files)", "evidence": "npx tsc --noEmit from root produces 36 errors but EVERY one is in out/contact-sheet/.../sitemap-addition.ts or out/site-property-landing/.../after.tsx — scratch files. Zero errors in app/, lib/, components/, scripts/.", "fix": "Add out/**/* to tsconfig.json exclude array (or verify it's already there).", "effort": "trivial"},
+    {"severity": "LOW", "title": "video/market-report: 3 TS errors", "evidence": "remotion.config.ts(1,24): Cannot find module '@remotion/cli/config'. src/fonts.ts(21,20) + ../../video_production_skills/captions/canonical/load-amboqia.ts(41,22): Property 'add' does not exist on type 'FontFaceSet' — TS lib.dom strictening.", "fix": "npm install @remotion/cli. Cast (document.fonts as any).add(...) OR add local type augmentation.", "effort": "trivial (15 min)"},
+    {"severity": "LOW", "title": "listing_video_v4: 4 TS errors", "evidence": "src/BeaumontDrive.tsx(38,30) + src/SunstoneLoop.tsx(43,8): Cannot find module './SchoolhousePending' — deleted/renamed component still imported. src/news/SentenceCaption.tsx(36,6): SingleWordCaption JSX type mismatch — React version drift between canonical caption + listing_video_v4. Same FontFaceSet.add error.", "fix": "Delete/stub SchoolhousePending imports. Align react/react-dom versions OR add local type wrapper for SingleWordCaption.", "effort": "low (30 min)"},
+    {"severity": "INFO", "title": "video/market-report-yt-long and video/tumalo-aerial: 0 TS errors", "evidence": "Both projects clean.", "fix": "None.", "effort": "n/a"},
+    {"severity": "INFO", "title": "Top largest files — refactor candidates", "evidence": "types/database.ts (5502 lines, auto-generated — not a target), lib/marketing-brain/generate-briefs.ts (2455 — God file), app/actions/listings.ts (2302), scripts/blog-content/local-housing-news.ts (1722), app/lp/tetherow/page.tsx (1709), app/actions/sync-spark.ts (1676), scripts/blog-content/buying-guides.ts (1412), listing_video_v4/src/news/viral_primitives.tsx (1384), app/components/admin/AdminBrokerForm.tsx (1338), app/actions/listing-detail.ts (1331).", "fix": "Split generate-briefs.ts into audit/, brief-generation/, dispatch/ modules. Split listings.ts server actions by domain. Decompose viral_primitives.tsx.", "effort": "medium — 1-2 days per file"},
+    {"severity": "LOW", "title": "Banned-word scanner false-positives on skill docs (245 .md hits)", "evidence": "has_hard_fail() triggers on CLAUDE.md (defines 'luxury concierge', 'curated', 'leverage'), CHANGELOG.md ('robust', 'comprehensive', 'about' in technical descriptions), SKILL.md files that quote the banned words. Scanner treats meta-documentation about banned words as banned-word violations.", "fix": "Add path exclusion to the scanner: skip social_media_skills/, video_production_skills/, marketing_brain_skills/, CLAUDE.md, CHANGELOG.md. Scope to consumer-facing prose only (app/, public/, scripts/blog-content/, social content artifacts).", "effort": "trivial — path filter"}
+  ],
+  "pass_10_findings": [
+    {"severity": "INFO", "title": "All 63 card.json in out/*/19496-tumalo-reservoir-rd/ lack action_id — but this is expected test-fixture behavior", "evidence": "Zero card.json files contain action_id. BUT: (a) out/ is gitignored (/out/ in .gitignore). (b) 48 of 63 created by this session's test-all-producers.mjs run at 08:40-08:42 today — test runs by design produce local-only draft outputs without action rows. (c) 14 pre-existing from May 18-20 diagnostic/test runs. (d) PRODUCER_SLUG_REPLACE_ME is a template scaffold.", "fix": "No immediate action. The protocol concern is real (any agent CAN bypass) but existing artifacts are test fixtures. ADD: action_id: 'test-fixture' to card.json template in test harness so wiring audits can distinguish test from production.", "effort": "low — add action_id field to test harness card schema"},
+    {"severity": "LOW", "title": "6 out/ files are tracked in git (force-added through .gitignore)", "evidence": "git ls-files out/ returns 6 tracked: 5 design-recon recon.md + 1 site-subdivision/tetherow-heath/citations.json. Forced past the /out/ gitignore.", "fix": "If design-recon files are intentional input reference data (per competitor-design-recon SKILL), move to data/design-recon/ + update SKILL path refs. If unintentional outputs, git rm --cached.", "effort": "trivial"}
+  ]
+}
+```
+
+---
+
 ## Appendix D — Pass 3+4 subagent result (already complete) · CRON + API HEALTH
 
 **Headline:** Multiple OAuth tokens EXPIRED RIGHT NOW. YouTube (32h ago), X (31h ago), GBP (18h ago). TikTok / Pinterest / Threads / Nextdoor never connected. Several crons run but write no evidence (silent failures).
