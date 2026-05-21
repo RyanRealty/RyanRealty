@@ -67,8 +67,8 @@ function geojsonToPaths(geo: GeoJSON.Geometry): google.maps.LatLngLiteral[][] {
 
 export function BendInteractiveMap({
   communities,
-  initialCenter = { lng: -121.31, lat: 44.05 },
-  initialZoom = 10.6,
+  initialCenter = { lng: -121.32, lat: 44.052 },
+  initialZoom = 11.4,
 }: BendInteractiveMapProps) {
   const router = useRouter()
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
@@ -102,7 +102,7 @@ export function BendInteractiveMap({
     return (
       <div
         style={{
-          aspectRatio: '16 / 10',
+          aspectRatio: '4 / 5',
           background: 'rgba(16,39,66,0.06)',
           borderRadius: 14,
           display: 'flex',
@@ -122,7 +122,7 @@ export function BendInteractiveMap({
     return (
       <div
         style={{
-          aspectRatio: '16 / 10',
+          aspectRatio: '4 / 5',
           background: 'rgba(16,39,66,0.06)',
           borderRadius: 14,
           display: 'flex',
@@ -140,7 +140,7 @@ export function BendInteractiveMap({
     return (
       <div
         style={{
-          aspectRatio: '16 / 10',
+          aspectRatio: '4 / 5',
           background: 'rgba(16,39,66,0.06)',
           borderRadius: 14,
         }}
@@ -156,8 +156,8 @@ export function BendInteractiveMap({
         borderRadius: 14,
         overflow: 'hidden',
         boxShadow: '0 1px 2px rgba(16,39,66,0.04), 0 8px 24px rgba(16,39,66,0.1)',
-        aspectRatio: '16 / 10',
-        minHeight: 420,
+        aspectRatio: '4 / 5',
+        minHeight: 560,
       }}
     >
       <GoogleMap
