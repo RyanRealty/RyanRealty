@@ -100,15 +100,33 @@ async function renderMediaForProducer(slug, outDir) {
   }
   if (!primary) primary = files[0]
 
+  // PROMOTE preview.html — if the producer ships a rendered HTML preview
+  // alongside a markdown primary, prefer the HTML in the gallery so Matt
+  // sees the visual rendering, not the raw markdown text.
+  const previewHtml = files.find(f => f.name === 'preview.html')
+  if (previewHtml && primary.ext === '.md') {
+    primary = previewHtml
+  }
+
   const relTo = (p) => path.relative(GALLERY_DIR, p)
 
   if (VID_EXTS.has(primary.ext)) {
     // Video — 9:16 380px or 16:9 wide
     const isLandscape = primary.name.includes('youtube') || primary.name.includes('long_form') || primary.name.includes('clip-compilation')
     const sizeAttr = isLandscape ? 'style="aspect-ratio: 16/9; max-width: 560px;"' : 'style="aspect-ratio: 9/16; max-width: 320px;"'
+    // Auto-pick a poster image: prefer frame1.png if present (most Remotion
+    // comps ship the first frame as PNG), else any IMG_EXTS file. Without
+    // a poster, browsers show a BLACK tile under preload="none". Matt
+    // explicitly flagged this 2026-05-20: "the video tile is showing a
+    // black first frame — should load with something to see."
+    const posterFile = files.find(f => f.name.toLowerCase() === 'frame1.png')
+      || files.find(f => f.name.toLowerCase().includes('poster'))
+      || files.find(f => IMG_EXTS.has(f.ext) && !f.name.startsWith('frame'))
+      || files.find(f => IMG_EXTS.has(f.ext))
+    const posterAttr = posterFile ? ` poster="${htmlEscape(relTo(posterFile.path))}"` : ''
     return {
       kind: 'video',
-      html: `<video class="reel" ${sizeAttr} controls preload="none" muted><source src="${htmlEscape(relTo(primary.path))}" type="video/mp4"></video>`,
+      html: `<video class="reel" ${sizeAttr} controls preload="metadata" muted${posterAttr}><source src="${htmlEscape(relTo(primary.path))}" type="video/mp4"></video>`,
     }
   }
 
