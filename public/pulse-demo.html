@@ -200,36 +200,53 @@
   /* slight rotation makes it feel scrawled rather than typed.
      1.2deg is the sweet spot — readable but visibly off-grid. */
   .card .hook { transform: rotate(-1.2deg); transform-origin: top left; }
-  /* right rail actions — clear of the IG/TikTok right icon column AND
-     pulled inside the safe zone so even on an iPhone notch they're tappable. */
+  /* Right rail actions — TikTok / IG Reels / YouTube Shorts pattern:
+     anchored bottom-right (not vertically centered), no chip background,
+     icon-only with drop shadow for legibility, ~32px icons. Counts (when
+     real engagement data exists) live as a tiny number BELOW each icon.
+     Locked 2026-05-20. */
   .actions {
     position: absolute;
     right: var(--pulse-safe-side);
-    top: 50%; transform: translateY(-50%);
+    /* Anchor to the bottom safe edge, lifted by the bottom-block height
+       (~200px of price + address + specs + agent + CTA) so the icons
+       sit above the price reveal. */
+    bottom: calc(var(--pulse-safe-bottom) + 200px);
     z-index: 20;
-    display: flex; flex-direction: column; gap: 8px; align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
   }
   .actions button {
-    width: 44px; height: 44px;
+    width: 36px; height: 36px;
     display: flex; align-items: center; justify-content: center;
-    border: 0; border-radius: 999px;
-    background: rgba(255,255,255,0.20);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
     color: #fff;
     cursor: pointer;
-    transition: transform 120ms ease, background 160ms ease;
+    padding: 0;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55));
+    transition: transform 120ms ease;
   }
-  .actions button:hover { transform: scale(1.08); background: rgba(255,255,255,0.30); }
-  .actions button:active { transform: scale(0.94); }
-  .actions button.liked { color: #ef4444; background: rgba(255,255,255,0.30); }
-  .actions .lbl {
-    font-size: 10px; font-weight: 600;
-    color: #fff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
-  }
-  .actions svg { width: 22px; height: 22px; }
+  .actions button:hover  { transform: scale(1.12); }
+  .actions button:active { transform: scale(0.92); }
+  .actions button.liked  { color: #ef4444; }
   .actions button.liked svg { fill: currentColor; }
+  .actions svg { width: 30px; height: 30px; stroke-width: 2; }
+  /* Old word-labels removed (TikTok/IG don't show "Like"/"Share" words,
+     just icon + count). Kept as display:none so the JS markup that still
+     emits a .lbl span doesn't break the layout if we revert. */
+  .actions .lbl { display: none; }
+  /* Tiny count below each icon, when engagement data exists. */
+  .actions .count {
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+    margin-top: -8px;
+  }
 
   /* SAFE ZONE OVERLAY — toggleable, shows the exact unsafe regions
      where IG / TikTok / YouTube Shorts chrome would cover content. */
