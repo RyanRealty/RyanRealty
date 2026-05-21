@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.261.0 (2026-05-21)
+
+### Features
+- feat(audit): /deep-audit skill + handoff + Pass 1+6 results (Matt's deep-audit ask)
+
+### Other
+- audit: Pass 2 subagent result — split-brain execution path discovered
+
+---
+
+
 ## v1.260.3 (2026-05-21)
 
 ### Maintenance
