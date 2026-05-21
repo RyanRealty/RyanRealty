@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.260.3 (2026-05-21)
+
+### Maintenance
+- docs(brain): full pipeline audit + next-session handoff + memory note (rogue-producer guard)
+
+---
+
+
 ## v1.260.2 (2026-05-21)
 
 ### Bug Fixes
