@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.260.2 (2026-05-21)
+
+### Bug Fixes
+- fix(producers): recon-driven fb-ad rebuild + earth_zoom/flyover re-renders + broker-card address line (audit response)
+
+### Other
+- gallery: refresh after earth_zoom + flyover + cascade-and-creek + tumalo-life re-renders
+
+---
+
+
 ## v1.260.1 (2026-05-21)
 
 ### Bug Fixes
