@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.260.0 (2026-05-21)
+
+### Features
+- feat(pulse): shrink + reposition Like/Share to TikTok pattern
+
+---
+
+
 ## v1.259.1 (2026-05-21)
 
 ### Bug Fixes
