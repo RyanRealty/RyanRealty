@@ -252,7 +252,16 @@ export async function GET(request: NextRequest) {
       }
 
       // Step 3: tag + custom fields + note + task
+      // Plain status tag matches Matt's existing smart-list filter convention
+      // ("Expired No Contact", "All Expireds") which look for the bare status
+      // word rather than namespaced tags.
+      const plainStatusTag =
+        l.StandardStatus === 'Expired' ? 'Expired'
+        : l.StandardStatus === 'Canceled' ? 'canceled'
+        : l.StandardStatus === 'Withdrawn' ? 'withdrawn'
+        : 'Expired'
       await addPersonTags(fubPersonId, [
+        plainStatusTag,
         'audience:seller',
         'seller:hot',
         'intent:expired-listing',

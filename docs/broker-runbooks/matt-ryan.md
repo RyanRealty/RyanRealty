@@ -24,9 +24,9 @@ Plans 69 through 75 are wired with your voice. Touch 0 is yours (manual SMS), th
 
 1. Open FUB
 2. Inbox tab. Any reply that came in overnight is here. The pause-on-reply cron ran at midnight Pacific, so the action plan is already paused on those leads. You handle the conversation from here.
-3. Smart list "Expired, No Contact". Any expired listings detected since yesterday are at the top.
-4. Smart list "FSBO, No Contact". Same for FSBOs.
-5. Smart list "Hot Pipeline - Matt". Stage A and B leads assigned to you.
+3. People > Smart Lists > "Expired No Contact". Any expired listings detected since yesterday are at the top.
+4. People > Smart Lists > "FSBO". Same for FSBOs.
+5. People > Collections > "FUB Revamp" with the "Only Me" toggle on. The "Hot/Weekly" and "Warm/Bi-Weekly" lists show your A and B stage assignments.
 
 ### When you open a new expired or FSBO
 
@@ -69,13 +69,15 @@ Both come from notifications@ryan-realty.com via Resend.
 
 ## Smart lists you'll use
 
-| Smart list | What it shows | When to check |
+| Smart list / collection | What it shows | When to check |
 |---|---|---|
-| Expired, No Contact | Expireds you haven't sent T0 to | Morning |
-| FSBO, No Contact | FSBOs you haven't sent T0 to | Morning |
-| Hot Pipeline - Matt | Stage A or B, assigned to you | Throughout the day |
-| Expired - Awaiting Reply | Plan running, no reply yet | When you have time |
-| Replied This Week | Leads who broke silence in last 7 days | Daily |
+| Expired No Contact | Expireds you haven't sent T0 to | Morning |
+| FSBO | FSBO leads | Morning |
+| Absentee Owners | Out-of-area sellers in your service zone | Weekly |
+| Matts Sphere | Your sphere contacts | Weekly |
+| Collection: FUB Revamp + Only Me | Hot/Weekly, Warm/Bi-Weekly, Cold/Bi-Monthly, Past Clients filtered to your assignments | Throughout the day |
+| New Leads: No Call Attempt | New leads in last 14 days you haven't called | Daily |
+| Inbox tab | Threads with unread replies | First thing every morning |
 
 Resort and neighborhood smart lists for Caldera Springs, Crosswater, Vandevert Ranch, Tetherow, Awbrey Glen, and the rest are at smart list ids 67 through 92. Use these for targeted campaigns.
 
