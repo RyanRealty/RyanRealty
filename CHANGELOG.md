@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.261.2 (2026-05-21)
+
+### Maintenance
+- chore: production hardening pass
+
+### Other
+- ordway: SkySlope file gap audit + reconciliation scripts
+- marketing-brain: GA4 instrumentation + admin analytics + audit notes
+- fub: ship the lead-flow optimization layer
+
+---
+
+
 ## v1.261.1 (2026-05-21)
 
 ### Other
