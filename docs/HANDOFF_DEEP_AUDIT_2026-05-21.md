@@ -165,6 +165,55 @@ The skill is at `.claude/skills/deep-audit/SKILL.md`. Edit it if you find a pass
 
 ---
 
+## Appendix B — Pass 2 subagent result (already complete)
+
+**Critical reframe from this pass:** the build scripts (the 72 `scripts/build_*.py` + `build-*.mjs`) are NOT the production execution path. The actual execution runs through `app/api/cron/producer-runtime/route.ts` and `app/api/admin/run-producer/[id]/route.ts`, which load SKILL.md files, call the Anthropic Messages API, and own the `pending → in_production → ready` transitions themselves. The build scripts are a PARALLEL CLI path with no wiring. This means:
+
+- The "0 of 72 producers update marketing_brain_actions" finding from the prior audit is technically correct but the conclusion is WRONG — the wiring lives in `producer-runtime/route.ts`, not in each producer script.
+- The real gap is: anyone (any agent) who runs `python3 scripts/build_X.py` directly bypasses the runtime that owns the status machine. This is the rogue-producer rule.
+- The OTHER real gap: even when going through producer-runtime, no producer populates `executor_response.published_posts` — so the measurement loop is blind regardless of execution path.
+
+```json
+{
+  "total_producers": 72,
+  "writes_to_marketing_brain_actions": 0,
+  "imports_shared_helper": 0,
+  "complete_protocol_followed": 0,
+  "findings": [
+    {
+      "severity": "critical",
+      "title": "Split-brain execution path — scripts bypass producer-runtime which owns status transitions",
+      "evidence": "app/api/cron/producer-runtime/route.ts (line 168) reads SKILL.md, calls Anthropic Messages API, sets status transitions (lines 82, 252, 290). The build_*.py / build-*.mjs scripts are NOT invoked by this pipeline. Any agent running build_*.py directly bypasses the entire status machine.",
+      "fix": "Either (a) wire the build scripts to call Supabase themselves (add SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY reads to _producer_lib), or (b) document that scripts are local/manual draft generation only and production goes through producer-runtime. Currently neither is documented = ambiguous split-brain.",
+      "effort": "S (document) or M (wire scripts)"
+    },
+    {
+      "severity": "critical",
+      "title": "published_posts measurement-loop contract is unimplemented across all 72 producers",
+      "evidence": "measurement-loop/SKILL.md §3: 'Without this contract, the loop has nothing to measure.' lib/marketing-brain/measurement-loop.ts line 211 reads executor_response.published_posts — currently always null. Zero content producers write platform_post_id after publish.",
+      "fix": "For content:* producers that publish to social: after publish step, populate executor_response.published_posts=[{platform, platform_post_id, posted_at, url}] before final status=ready UPDATE. Add to producer-runtime route as write_published_posts(). Non-content (site:*, ops:*, comms:*, analyze:*) exempt.",
+      "effort": "M"
+    },
+    {
+      "severity": "degraded",
+      "title": "22 .mjs scripts have no shared lib equivalent to _producer_lib.py",
+      "evidence": "Only build-fb-ad-payload.mjs imports a producer_lib equivalent. The other 21 .mjs scripts independently handle output, citations, scorecards with no shared primitive.",
+      "fix": "Create lib/producer-wiring.mjs with markInProduction(supabase, actionId), markReady(supabase, actionId, executorResponse), markKilled(supabase, actionId, error).",
+      "effort": "S"
+    },
+    {
+      "severity": "polish",
+      "title": "3 .mjs scripts write status:'ready' to local card.json but never to Supabase",
+      "evidence": "build-comms-matt-alert.mjs:285, build-comms-client-update.mjs:294, build-analyze-experiment.mjs:314 — field appears in a card object written to disk. Creates false signal: local card looks ready but Supabase row stays pending.",
+      "fix": "Remove the status field from local card.json (it has no consumer) and rely solely on Supabase UPDATE for status tracking. Or add markReady() alongside the local card write.",
+      "effort": "S"
+    }
+  ]
+}
+```
+
+---
+
 ## Appendix A — Pass 1+6 subagent result (already complete)
 
 The Pass 1 (brain pipeline state) + Pass 6 (producer registry drift) subagent returned the JSON below. Bake it directly into your final report. You do NOT need to re-run these passes.
