@@ -1,0 +1,55 @@
+{
+  "purpose": "Per-figure data trace for /admin/analytics. Every number rendered on the dashboard maps to exactly one source below. Update this file when adding a new metric.",
+  "lastVerified": "2026-05-21",
+  "verifier": "claude (matt-supervised)",
+  "tabs": {
+    "overview": [
+      { "figure": "sessions", "source": "GA4 Data API runReport", "metric": "sessions", "filter": "dateRanges=[range]" },
+      { "figure": "totalUsers", "source": "GA4 Data API runReport", "metric": "totalUsers", "filter": "dateRanges=[range]" },
+      { "figure": "newUsers", "source": "GA4 Data API runReport", "metric": "newUsers", "filter": "dateRanges=[range]" },
+      { "figure": "generateLeadCount", "source": "GA4 Data API runReport", "metric": "eventCount", "dimensions": ["eventName"], "filter": "eventName=generate_lead AND dateRanges=[range]" },
+      { "figure": "leadConversionRate", "source": "derived", "formula": "generateLeadCount / sessions" },
+      { "figure": "averageSessionDurationSeconds", "source": "GA4 Data API runReport", "metric": "averageSessionDuration", "filter": "dateRanges=[range]" },
+      { "figure": "engagementRate", "source": "GA4 Data API runReport", "metric": "engagementRate", "filter": "dateRanges=[range]" },
+      { "figure": "bounceRate", "source": "GA4 Data API runReport", "metric": "bounceRate", "filter": "dateRanges=[range]" },
+      { "figure": "paidSpendUsd", "source": "public.marketing_channel_daily", "filter": "channel=meta_ads AND metric=spend_usd AND date IN [range]", "aggregator": "SUM(value)" },
+      { "figure": "topSources[]", "source": "GA4 Data API runReport", "dimensions": ["sessionSourceMedium"], "metrics": ["sessions"], "orderBy": "sessions DESC", "limit": 3 },
+      { "figure": "topLandingPages[]", "source": "GA4 Data API runReport", "dimensions": ["pagePath", "pageTitle"], "metrics": ["screenPageViews"], "orderBy": "screenPageViews DESC", "limit": 3 }
+    ],
+    "acquisition": [
+      { "figure": "sources[].sessions", "source": "GA4 Data API runReport", "dimensions": ["sessionSourceMedium"], "metrics": ["sessions"] },
+      { "figure": "sources[].leadEvents", "source": "GA4 Data API runReport", "dimensions": ["sessionSourceMedium"], "metrics": ["eventCount"], "filter": "eventName IN LEAD_EVENT_NAMES" },
+      { "figure": "sources[].conversionRate", "source": "derived", "formula": "leadEvents / sessions" },
+      { "figure": "channels[]", "source": "GA4 Data API runReport", "dimensions": ["sessionDefaultChannelGroup"], "metrics": ["sessions", "totalUsers", "engagementRate"], "filter": "channel matches /social/i" },
+      { "figure": "paidVsOrganic", "source": "derived from topSources", "rules": "paid: cpc OR paid_social OR paidsocial OR paid OR ads; organic: organic OR referral OR seo; other: everything else" }
+    ],
+    "behavior": [
+      { "figure": "pages[]", "source": "GA4 Data API runReport", "dimensions": ["pagePath", "pageTitle"], "metrics": ["screenPageViews", "totalUsers", "userEngagementDuration"], "orderBy": "screenPageViews DESC", "limit": 20 },
+      { "figure": "scrollDepths[]", "source": "GA4 Data API runReport", "dimensions": ["eventName"], "metrics": ["eventCount"], "filter": "eventName=scroll_depth", "estimation": "Per-milestone distribution estimated as 45/28/17/10% of aggregate. Will be replaced with direct percent_scrolled dimension query once the param-level breakdown is added to getGA4Summary." }
+    ],
+    "funnel": [
+      { "figure": "steps[0] Ad click / Organic landing", "source": "GA4 Data API runReport", "metric": "sessions", "filter": "dateRanges=[range]" },
+      { "figure": "steps[1] LP view", "source": "GA4 Data API runReport", "dimensions": ["customEvent:lp_variant", "eventName"], "metrics": ["eventCount"], "filter": "eventName=view_landing_page (AND lp_variant=<filter>)" },
+      { "figure": "steps[2] Scroll 50%+", "source": "GA4 Data API runReport", "dimensions": ["customEvent:lp_variant", "eventName"], "metrics": ["eventCount"], "filter": "eventName=scroll_depth" },
+      { "figure": "steps[3] Form start", "source": "GA4 Data API runReport", "dimensions": ["eventName"], "metrics": ["eventCount"], "filter": "eventName=form_start" },
+      { "figure": "steps[4] Form submit", "source": "GA4 Data API runReport", "dimensions": ["eventName"], "metrics": ["eventCount"], "filter": "eventName=generate_lead" },
+      { "figure": "steps[5] FUB person created", "source": "public.marketing_assignments", "filter": "created_at IN [range]", "aggregator": "COUNT(*)" },
+      { "figure": "steps[6] CMA delivered", "source": "public.cmas", "filter": "status IN (delivered, final, sent) AND created_at IN [range]", "aggregator": "COUNT(*)" },
+      { "figure": "dropOffPct", "source": "derived", "formula": "1 - count[i] / count[i-1]" },
+      { "figure": "availableVariants[]", "source": "GA4 Data API runReport", "dimensions": ["customEvent:lp_variant"], "filter": "lp_variant != '(not set)'", "distinct": true }
+    ],
+    "conversions": [
+      { "figure": "leadsBySource[]", "source": "GA4 Data API runReport", "dimensions": ["sessionSourceMedium"], "metrics": ["eventCount", "totalUsers"], "filter": "eventName IN LEAD_EVENT_NAMES" },
+      { "figure": "brokerSplit[]", "source": "public.marketing_assignments", "groupBy": "broker", "filter": "created_at IN [range]" },
+      { "figure": "classificationMix[]", "source": "public.marketing_assignments", "groupBy": "tier", "filter": "created_at IN [range]" },
+      { "figure": "timeSeries[]", "source": "public.marketing_channel_daily", "filter": "channel=ga4 AND scope=account AND metric IN (sessions, total_lead_events) AND date IN [range]" },
+      { "figure": "costPerLeadUsd", "source": "derived", "formula": "SUM(marketing_channel_daily.value WHERE channel=meta_ads AND metric=spend_usd) / SUM(GA4 generate_lead eventCount)" }
+    ]
+  },
+  "notes": [
+    "GA4 Data API is queried live on every page render — no caching layer. If GA4 is slow, the page is slow. Future iteration: pull from public.marketing_channel_daily as a read-replica with a 'live GA4' toggle.",
+    "LEAD_EVENT_NAMES is defined in app/actions/ga4-report.ts: generate_lead, contact_agent, contact_agent_click, schedule_tour_click, tour_requested, valuation_requested, cma_downloaded, sign_up, newsletter_signup.",
+    "Per-figure double-check: open the GA4 UI for the same date range, run the same dimension+metric combo, compare totals. They should match within rounding.",
+    "Brand voice: numbers are surfaced as integers with thousand separators (formatInt), percentages with one decimal and a percent sign (formatPct), durations as Nm Ns (formatDuration), currency rounded to the nearest dollar (formatUsd)."
+  ]
+}
