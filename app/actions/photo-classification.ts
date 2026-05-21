@@ -41,6 +41,9 @@ export async function runClassificationForListing(listingKey: string): Promise<R
     return { success: false, message: 'Supabase not configured.', error: 'Missing env' }
   }
 
+  if (!/^[a-zA-Z0-9._-]+$/.test(listingKey)) {
+    return { success: false, message: 'Invalid listing key.', listingKey, error: 'Invalid key' }
+  }
   const supabase = createClient(supabaseUrl, serviceKey)
   const { data: row, error: fetchError } = await supabase
     .from('listings')

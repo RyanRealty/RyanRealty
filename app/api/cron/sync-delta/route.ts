@@ -38,11 +38,14 @@ const MAX_FINALIZE_PER_RUN = 30
 const MAX_PHOTO_FIXES = 20
 
 function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (secret?.trim()) {
-    return request.headers.get('authorization') === `Bearer ${secret}`
+  const secret = process.env.CRON_SECRET?.trim()
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+  if (!secret) {
+    if (isProd) return false
+    return true
   }
-  return true // No secret = allow (dev)
+  const auth = request.headers.get('authorization') ?? ''
+  return auth === `Bearer ${secret}`
 }
 
 function getSupabase() {
@@ -122,7 +125,11 @@ async function fetchAndInsertHistory(
     const rows = response.items.map(item => mapHistoryItem(listingKey, item))
 
     // Delete existing history for this listing to avoid duplicates, then insert fresh
-    await supabase.from('listing_history').delete().eq('listing_key', listingKey)
+    const { error: delError } = await supabase.from('listing_history').delete().eq('listing_key', listingKey)
+    if (delError) {
+      console.error(`[sync-delta] listing_history delete error for ${listingKey}:`, delError.message)
+      return { inserted: 0, ok: hadSuccessfulFetch, items: response.items }
+    }
     const { error } = await supabase.from('listing_history').insert(rows)
     if (error) {
       console.error(`[sync-delta] listing_history insert error for ${listingKey}:`, error.message)
@@ -365,7 +372,8 @@ export async function GET(request: Request) {
           ...e,
           event_at: new Date().toISOString(),
         }))
-        await supabase.from('activity_events').insert(eventRows).then(() => {})
+        const { error: evtError } = await supabase.from('activity_events').insert(eventRows)
+        if (evtError) console.error('[sync-delta] activity_events insert error:', evtError.message)
       }
 
       // 5. Finalize terminal listings — fetch full history, then mark finalized

@@ -4,11 +4,14 @@ import { getDashboardMarketingData } from '@/app/actions/dashboard'
 import { sendEmail } from '@/lib/resend'
 
 function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (secret?.trim()) {
-    return request.headers.get('authorization') === `Bearer ${secret}`
+  const secret = process.env.CRON_SECRET?.trim()
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+  if (!secret) {
+    if (isProd) return false
+    return true
   }
-  return true
+  const auth = request.headers.get('authorization') ?? ''
+  return auth === `Bearer ${secret}`
 }
 
 function getServiceSupabase() {

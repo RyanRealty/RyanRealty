@@ -35,6 +35,8 @@ export async function POST(request: Request) {
     supabase.from('listings').select(select).in('ListNumber', ids),
     supabase.from('listings').select(select).in('ListingKey', ids),
   ])
+  if (byNumber.error) console.error('[pdf/comparison] byNumber query failed:', byNumber.error.message)
+  if (byKey.error) console.error('[pdf/comparison] byKey query failed:', byKey.error.message)
 
   const allRows = [...(byNumber.data ?? []), ...(byKey.data ?? [])]
   const seen = new Set<string>()

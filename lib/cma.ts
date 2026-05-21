@@ -781,6 +781,7 @@ export async function computeCMA(propertyId: string): Promise<CMAResult | null> 
 export async function computeCMAByListingKey(listingKeyOrMls: string): Promise<CMAResult | null> {
   const key = String(listingKeyOrMls ?? '').trim()
   if (!key) return null
+  if (!/^[a-zA-Z0-9._-]+$/.test(key)) return null
 
   const supabase = getServiceSupabase()
   const { data: listing, error } = await supabase

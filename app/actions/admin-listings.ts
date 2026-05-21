@@ -28,7 +28,7 @@ export async function getAdminListingsPage(
     else query = query.ilike('StandardStatus', `%${status}%`)
   }
   if (search && search.trim()) {
-    const term = `%${search.trim()}%`
+    const term = `%${search.trim().replace(/[,()]/g, '')}%`
     query = query.or(`ListingKey.ilike.${term},ListNumber.ilike.${term},StreetNumber.ilike.${term},StreetName.ilike.${term},City.ilike.${term},SubdivisionName.ilike.${term}`)
   }
   const from = page * pageSize

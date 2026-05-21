@@ -17,7 +17,8 @@ import { geocodeAndTagLead } from '@/lib/lead-geocode'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { sendSellerLeadAlertEmail } from '@/lib/seller-lead-alert'
-import { headers } from 'next/headers'
+import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
+import { cookies, headers } from 'next/headers'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -425,6 +426,53 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     }).catch((err) => {
       console.warn('[seller-lp] CAPI call failed:', err)
     })
+
+    // ─── GA4 Measurement Protocol mirror — server-side generate_lead ──────
+    // Mirrors the client-side generate_lead event so ad blockers don't drop
+    // attribution. Same payload taxonomy as the client tracker. Uses the
+    // GA4 client_id from the `_ga` cookie when present so attribution stays
+    // tied to the same session — fresh uuid otherwise.
+    try {
+      const cookieStore = await cookies()
+      const headersList = await headers()
+      const referer = headersList.get('referer') ?? ''
+      let utmSource: string | undefined
+      let utmMedium: string | undefined
+      let utmCampaign: string | undefined
+      let utmContent: string | undefined
+      try {
+        const refUrl = new URL(referer)
+        utmSource = refUrl.searchParams.get('utm_source') ?? undefined
+        utmMedium = refUrl.searchParams.get('utm_medium') ?? undefined
+        utmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
+        utmContent = refUrl.searchParams.get('utm_content') ?? undefined
+      } catch {
+        // Referer not parseable — no UTMs.
+      }
+      const ga4ClientId = readGa4ClientIdFromCookies(cookieStore) ?? undefined
+      void fireGa4Event({
+        eventName: 'generate_lead',
+        clientId: ga4ClientId,
+        eventParams: {
+          lp_variant: 'seller-home-value',
+          lp_source: utmSource,
+          lp_medium: utmMedium,
+          lp_campaign: utmCampaign,
+          lp_content: utmContent,
+          broker_slug: assignment.broker,
+          lead_classification: classification,
+          lead_type: 'seller',
+          value: 500,
+          currency: 'USD',
+          event_id: eventId,
+        },
+        userProperties: {
+          assigned_broker: assignment.broker,
+        },
+      })
+    } catch (e) {
+      console.warn('[seller-lp] GA4 MP fire prep failed:', e)
+    }
 
     return {
       success: true,

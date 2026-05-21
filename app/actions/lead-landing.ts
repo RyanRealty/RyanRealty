@@ -104,7 +104,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       phone,
       inquiryType: input.audience === 'seller' ? 'Seller Lead Landing' : 'Buyer Lead Landing',
       message: `${input.pageTitle} | ${details || `intent=${input.leadIntent}`}`,
-    }).catch(() => {})
+    }).catch((err) => console.error('[lead-landing] sendContactNotification failed:', err))
 
     return { error: null }
   } catch (err) {

@@ -112,11 +112,12 @@ export async function searchListingsSemantic(params: {
 
   const supabase = createServiceClient()
 
+  const safeQuery = query.replace(/[,()]/g, '')
   if (!hasOpenAiKey()) {
     const { data, error } = await supabase
       .from('listings')
       .select('ListingKey, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, PropertyType, StandardStatus')
-      .or(`City.ilike.%${query}%,SubdivisionName.ilike.%${query}%,StreetName.ilike.%${query}%`)
+      .or(`City.ilike.%${safeQuery}%,SubdivisionName.ilike.%${safeQuery}%,StreetName.ilike.%${safeQuery}%`)
       .limit(limit)
 
     if (error) return { results: [], usedSemantic: false, error: error.message }

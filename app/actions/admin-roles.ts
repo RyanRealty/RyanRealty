@@ -110,7 +110,7 @@ export async function listPlatformUsersForAdmin(): Promise<AdminPlatformUserRow[
   if (role?.role !== 'superuser') return []
 
   const supabase = getServiceSupabase()
-  const [{ data: profiles }, { data: savedListings }, { data: savedSearches }, { data: activities }] = await Promise.all([
+  const [profilesRes, savedListingsRes, savedSearchesRes, activitiesRes] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, email, display_name, first_name, last_name, phone, created_at, updated_at')
@@ -119,6 +119,14 @@ export async function listPlatformUsersForAdmin(): Promise<AdminPlatformUserRow[
     supabase.from('saved_searches').select('user_id'),
     supabase.from('user_activities').select('user_id'),
   ])
+  if (profilesRes.error) console.error('[admin-roles] profiles query failed:', profilesRes.error.message)
+  if (savedListingsRes.error) console.error('[admin-roles] saved_listings query failed:', savedListingsRes.error.message)
+  if (savedSearchesRes.error) console.error('[admin-roles] saved_searches query failed:', savedSearchesRes.error.message)
+  if (activitiesRes.error) console.error('[admin-roles] user_activities query failed:', activitiesRes.error.message)
+  const { data: profiles } = profilesRes
+  const { data: savedListings } = savedListingsRes
+  const { data: savedSearches } = savedSearchesRes
+  const { data: activities } = activitiesRes
 
   const countByUser = (rows: Array<{ user_id: string | null }> | null | undefined) => {
     const map = new Map<string, number>()

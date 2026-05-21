@@ -33,7 +33,14 @@ export const dynamic = 'force-dynamic'
  */
 function authorized(req: Request): boolean {
   const expected = process.env.CMA_WORKER_AUTH_SECRET?.trim()
-  if (!expected) return true
+  if (!expected) {
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+    if (isProd) {
+      console.error('[cma-delivery] CMA_WORKER_AUTH_SECRET not set in production — blocking')
+      return false
+    }
+    return true
+  }
   const provided = req.headers.get('x-cma-worker-secret')?.trim()
   return !!provided && provided === expected
 }

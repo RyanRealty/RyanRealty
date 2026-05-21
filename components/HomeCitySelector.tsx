@@ -41,7 +41,7 @@ export default function HomeCitySelector({ currentCity, cities, signedIn }: Prop
     setOpen(false)
     const result = await setDefaultHomeCity(city)
     if (result.setCookie) {
-      document.cookie = `${HOME_CITY_COOKIE}=${encodeURIComponent(result.setCookie)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`
+      document.cookie = `${HOME_CITY_COOKIE}=${encodeURIComponent(result.setCookie)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax; Secure`
     }
     setUpdating(false)
     router.refresh()

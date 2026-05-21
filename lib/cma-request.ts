@@ -18,6 +18,7 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
+import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')
 
@@ -191,6 +192,28 @@ export async function createCmaRequest(
         error: `marketing_brain_actions insert failed: ${actionErr?.message ?? 'no row'}`,
       }
     }
+
+    // GA4 Measurement Protocol mirror — fire valuation_requested server-side
+    // so ad-blocked clients still register a conversion. No cookies access
+    // here (this lib is also called from cron paths); the client_id falls
+    // back to a fresh uuid which still counts as a session-less conversion
+    // tied to the right event taxonomy.
+    void fireGa4Event({
+      eventName: 'valuation_requested',
+      eventParams: {
+        cma_slug: slug,
+        lp_variant: 'seller-home-value',
+        broker_slug: broker.slug,
+        lead_classification: input.leadClassification ?? undefined,
+        lead_type: 'seller',
+        subject_city: input.parsedCity ?? undefined,
+        subject_state: input.parsedState ?? undefined,
+      },
+      userProperties: {
+        assigned_broker: broker.slug,
+        lead_status: 'cma-draft',
+      },
+    })
 
     // Step 3 + 4: fire-and-forget the notification emails. We don't await —
     // the visitor sees a fast "we got it" response on the LP.

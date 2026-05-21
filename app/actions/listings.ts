@@ -352,7 +352,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
 
   const supabase = getAnonSupabase()
   if (!supabase) return empty
-  const safeQ = q.replace(/%/g, '').replace(/\\/g, '')
+  const safeQ = q.replace(/%/g, '').replace(/\\/g, '').replace(/[,()]/g, '')
   const like = `%${safeQ}%`
 
   const qLower = q.toLowerCase()
@@ -1414,6 +1414,10 @@ async function getListingSyncStatusBreakdownDirect(): Promise<Omit<ListingSyncSt
       .not('StandardStatus', 'ilike', '%undercontract%'),
     supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%closed%').eq('history_finalized', true),
   ])
+  if (totalRes.error) console.error('[listings] total query failed:', totalRes.error.message)
+  if (activeRes.error) console.error('[listings] active query failed:', activeRes.error.message)
+  if (pendingRes.error) console.error('[listings] pending query failed:', pendingRes.error.message)
+  if (closedRes.error) console.error('[listings] closed query failed:', closedRes.error.message)
   const total = totalRes.count ?? 0
   const closed = closedRes.count ?? 0
   const expired = expiredRes.count ?? 0
@@ -1575,6 +1579,10 @@ export async function getCityStatusCounts(options: {
     applyGeo(supabase.from('listings').select('ListingKey', { count: 'exact', head: true })).or('StandardStatus.ilike.%Closed%,StandardStatus.ilike.%Sold%'),
     applyGeo(supabase.from('listings').select('ListingKey', { count: 'exact', head: true })),
   ])
+  if (activeRes.error) console.error('[listings] active query failed:', activeRes.error.message)
+  if (pendingRes.error) console.error('[listings] pending query failed:', pendingRes.error.message)
+  if (closedRes.error) console.error('[listings] closed query failed:', closedRes.error.message)
+  if (totalRes.error) console.error('[listings] total query failed:', totalRes.error.message)
   const active = activeRes.count ?? 0
   const pending = pendingRes.count ?? 0
   const closed = closedRes.count ?? 0

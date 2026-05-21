@@ -388,6 +388,7 @@ export async function resolveListingKeyFromCanonicalPath(input: {
   const citySlug = slugify(decodeURIComponent(input.citySlug || ''))
   const keyOrMls = String(input.keyOrMls ?? '').trim()
   if (!citySlug || !keyOrMls) return null
+  if (!/^[a-zA-Z0-9._-]+$/.test(keyOrMls)) return null
 
   const areaSlugs = (input.areaSlugs ?? []).map((s) => slugify(decodeURIComponent(s || ''))).filter(Boolean)
   const postalCode = String(input.postalCode ?? '').trim().replace(/\D/g, '').slice(0, 5)

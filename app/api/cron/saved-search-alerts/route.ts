@@ -5,10 +5,19 @@ import { runSavedSearchAlerts } from '@/app/actions/saved-search-alerts'
  * Cron endpoint to send saved-search alert emails.
  * Protect with Authorization: Bearer CRON_SECRET (same pattern as other cron routes).
  */
+function isAuthorized(request: Request): boolean {
+  const secret = process.env.CRON_SECRET?.trim()
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+  if (!secret) {
+    if (isProd) return false
+    return true
+  }
+  const auth = request.headers.get('authorization') ?? ''
+  return auth === `Bearer ${secret}`
+}
+
 export async function GET(request: Request) {
-  const auth = request.headers.get('authorization')
-  const secret = process.env.CRON_SECRET
-  if (secret?.trim() && auth !== `Bearer ${secret}`) {
+  if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

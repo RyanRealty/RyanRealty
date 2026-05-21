@@ -6,12 +6,14 @@ import { fetchSparkListingHistory, fetchSparkPriceHistory, type SparkListingHist
 export const maxDuration = 300
 
 function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (secret?.trim()) {
-    const auth = request.headers.get('authorization')
-    return auth === `Bearer ${secret}`
+  const secret = process.env.CRON_SECRET?.trim()
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+  if (!secret) {
+    if (isProd) return false
+    return true
   }
-  return true
+  const auth = request.headers.get('authorization') ?? ''
+  return auth === `Bearer ${secret}`
 }
 
 function isTerminalStatus(status: string | null | undefined): boolean {

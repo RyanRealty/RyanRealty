@@ -349,7 +349,8 @@ export async function uploadAreaGuideFolder(
   if (entityType !== 'neighborhood' && heroVideoUrl) updates.hero_video_url = heroVideoUrl
   if (Object.keys(updates).length > 0) {
     updates.updated_at = new Date().toISOString()
-    await supabase.from(table).update(updates).eq('id', entityId)
+    const { error: updateErr } = await supabase.from(table).update(updates).eq('id', entityId)
+    if (updateErr) console.error('[area-guide-upload] entity update failed:', updateErr.message)
   }
 
   const { data: existingPageImages } = await supabase
@@ -360,12 +361,13 @@ export async function uploadAreaGuideFolder(
   const existingUrls = new Set((existingPageImages ?? []).map((r) => r.image_url))
   for (const url of additionalPhotoUrls) {
     if (existingUrls.has(url)) continue
-    await supabase.from('page_images').insert({
+    const { error: pageImgErr } = await supabase.from('page_images').insert({
       page_type: entityType,
       page_id: entitySlug,
       image_url: url,
       source: 'upload',
     })
+    if (pageImgErr) console.error('[area-guide-upload] page_images insert failed:', pageImgErr.message)
   }
 
   return { ok: true, photos: photos.length, videos: videos.length }

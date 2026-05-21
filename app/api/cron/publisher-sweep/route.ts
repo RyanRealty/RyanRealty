@@ -94,9 +94,7 @@ export async function GET(request: NextRequest) {
   const errors: SweepError[] = []
 
   const cronSecret = process.env.CRON_SECRET
-  const appUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'http://localhost:3000'
+  const appUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
   for (const row of rows) {
     const executorResponse = (row.executor_response ?? {}) as Record<string, unknown>

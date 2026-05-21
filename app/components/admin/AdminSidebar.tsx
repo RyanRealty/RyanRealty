@@ -25,6 +25,7 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
     navItem('/admin/sync', 'Sync status', '🔄'),
   ]
   if (isSuperuser) {
+    main.push(navItem('/admin/analytics', 'Analytics', '📊'))
     main.push(navItem('/admin/users', 'Users', '👤'))
     main.push(navItem('/admin/expired-listings', 'Expired listings', '🏚'))
     main.push(navItem('/admin/audit-log', 'Audit log', '📋'))

@@ -70,13 +70,14 @@ async function logCost(
   costUsd: number,
   meta: Record<string, unknown>,
 ) {
-  await supabase.from('marketing_cost_ledger').insert({
+  const { error } = await supabase.from('marketing_cost_ledger').insert({
     action_id: actionId,
     cost_type: 'anthropic_tokens',
     amount_usd: costUsd,
     metadata: meta,
     recorded_at: new Date().toISOString(),
   })
+  if (error) console.error('[producer-runtime] cost ledger insert failed:', error.message)
 }
 
 async function logFailure(
@@ -88,7 +89,7 @@ async function logFailure(
   requiresBillingAction: boolean,
   retryCount: number,
 ) {
-  await supabase.from('producer_execution_failures').insert({
+  const { error } = await supabase.from('producer_execution_failures').insert({
     action_id: actionId,
     producer_slug: producerSlug,
     phase,
@@ -97,6 +98,7 @@ async function logFailure(
     retry_count: retryCount,
     requires_billing_action: requiresBillingAction,
   })
+  if (error) console.error('[producer-runtime] failure log insert failed:', error.message)
 }
 
 export async function GET(request: NextRequest) {

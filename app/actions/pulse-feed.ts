@@ -138,7 +138,7 @@ export async function getPulseFeed(options: PulseFeedQuery): Promise<PulseFeedRe
 
   // Single round-trip: match by ListingKey OR ListNumber. Activity events store
   // either form depending on the source. PostgREST `.or()` accepts CSV with quoted values.
-  const keyList = keys.map((k) => `"${k}"`).join(',')
+  const keyList = keys.filter((k) => /^[a-zA-Z0-9._-]+$/.test(k)).map((k) => `"${k}"`).join(',')
   const listingsResult = await withTimeout(
     supabase
       .from('listings')

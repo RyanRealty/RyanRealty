@@ -257,7 +257,8 @@ export async function searchReportLocations(
     return { locations: [] }
   }
   const supabase = createClient(url, key)
-  const pattern = `%${q}%`
+  const safeQ = q.replace(/[,()\\%]/g, '')
+  const pattern = `%${safeQ}%`
   const { data, error } = await supabase
     .from('listings')
     .select('City, SubdivisionName, StreetNumber, StreetName')

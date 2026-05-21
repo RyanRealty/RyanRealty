@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { createRealtimeTask } from '@/lib/followupboss'
+import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
 export const runtime = 'nodejs'
 
@@ -79,8 +80,13 @@ function getFubConfig(): { apiKey: string; pipelineId: string | null } {
 function verifySignature(body: string, signatureHeader: string | null): boolean {
   const appSecret = (process.env.META_APP_SECRET || '').trim()
   if (!appSecret) {
-    console.warn('[lead-webhook] META_APP_SECRET not set — skipping signature verification (INSECURE)')
-    return true // warn and proceed in dev; in production set META_APP_SECRET
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+    if (isProd) {
+      console.error('[lead-webhook] META_APP_SECRET not set in production — rejecting')
+      return false
+    }
+    console.warn('[lead-webhook] META_APP_SECRET not set — allowing in dev')
+    return true
   }
 
   if (!signatureHeader) {
@@ -494,6 +500,26 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
     })
     console.log(`[lead-webhook] Hot-lead 5-min task ${taskOk ? 'created' : 'NOT created'} for person ${personId}`)
   }
+
+  // GA4 Measurement Protocol mirror — fire generate_lead server-side.
+  // Webhook context has no browser cookies (Meta calls us directly), so the
+  // client_id is a fresh uuid. The event still counts toward the
+  // generate_lead conversion and carries the campaign attribution.
+  void fireGa4Event({
+    eventName: 'generate_lead',
+    eventParams: {
+      lp_variant: 'meta-leadgen-form',
+      lp_source: 'facebook',
+      lp_medium: 'paid_social',
+      lp_campaign: parsed.campaignName ?? undefined,
+      lp_content: parsed.adSetName ?? undefined,
+      lead_classification: parsed.intent ?? undefined,
+      lead_type: parsed.audience === 'buyer' ? 'buyer' : parsed.audience === 'seller' ? 'seller' : undefined,
+      fub_person_id: personId,
+      meta_lead_id: parsed.leadId,
+      possible_realtor: parsed.possibleRealtor,
+    },
+  }).catch((e) => console.warn('[lead-webhook] GA4 event failed:', e))
 
   console.log(`[lead-webhook] Lead ${leadId} → FUB person ${personId} (${parsed.email || 'no email'}) intent=${parsed.intent ?? 'n/a'} audience=${parsed.audience} realtor=${parsed.possibleRealtor}`)
 }

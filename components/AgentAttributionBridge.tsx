@@ -13,7 +13,7 @@ export default function AgentAttributionBridge() {
     const agentSlug = searchParams.get('agent')?.trim().toLowerCase()
     if (!agentSlug) return
     const payload = encodeURIComponent(JSON.stringify({ slug: agentSlug, capturedAt: new Date().toISOString() }))
-    document.cookie = `${COOKIE_NAME}=${payload}; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`
+    document.cookie = `${COOKIE_NAME}=${payload}; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax; Secure`
   }, [searchParams])
 
   return null

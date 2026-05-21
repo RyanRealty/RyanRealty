@@ -28,8 +28,13 @@ type FubSourceQueryResult = {
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim()
-  if (!secret) return true
-  return request.headers.get('authorization') === `Bearer ${secret}`
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+  if (!secret) {
+    if (isProd) return false
+    return true
+  }
+  const auth = request.headers.get('authorization') ?? ''
+  return auth === `Bearer ${secret}`
 }
 
 function getServiceSupabase() {

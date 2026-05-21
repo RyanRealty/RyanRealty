@@ -6,10 +6,19 @@ import { refreshPlaceContent } from '../../../actions/refresh-place-content'
  * Schedule (e.g. Vercel Cron): e.g. weekly. Secure with Authorization: Bearer CRON_SECRET.
  * Processes up to 20 subdivisions per run; increase via ?limit=50.
  */
+function isAuthorized(request: Request): boolean {
+  const secret = process.env.CRON_SECRET?.trim()
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+  if (!secret) {
+    if (isProd) return false
+    return true
+  }
+  const auth = request.headers.get('authorization') ?? ''
+  return auth === `Bearer ${secret}`
+}
+
 export async function GET(request: Request) {
-  const auth = request.headers.get('authorization')
-  const secret = process.env.CRON_SECRET
-  if (secret?.trim() && auth !== `Bearer ${secret}`) {
+  if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

@@ -28,7 +28,7 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <h1 className="text-2xl font-bold tracking-tight text-primary">Privacy & cookies</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Last updated: May 2026</p>
+      <p className="mt-2 text-sm text-muted-foreground">Last updated: May 21, 2026</p>
       <p className="mt-4 text-primary">
         How we collect, use, and protect your information when you use our website.
       </p>
@@ -52,11 +52,21 @@ export default function PrivacyPage() {
         <ul className={UL_CLASS}>
           <li><strong>Follow Up Boss (FUB)</strong> — CRM for lead and activity tracking</li>
           <li><strong>Resend</strong> — transactional and marketing email</li>
-          <li><strong>Google Analytics (GA4)</strong> — site analytics</li>
+          <li><strong>Google Analytics (GA4)</strong> — site analytics, including <strong>Google Signals</strong> (see below)</li>
           <li><strong>Meta</strong> — advertising and analytics when you interact with our ads or use Meta products</li>
         </ul>
         <p className={P_CLASS}>
           Each has its own privacy policy. We do not sell your personal information.
+        </p>
+      </section>
+
+      <section className={SECTION_CLASS}>
+        <h2 className={H2_CLASS}>Google Signals (demographics and cross-device measurement)</h2>
+        <p className={P_CLASS}>
+          We use Google Signals as part of Google Analytics 4. When you are signed in to your Google account and have turned on Ads Personalization in your Google settings, Google may associate aggregate demographic data (age range, gender, general interest categories) and cross-device activity with the visit data we collect. We never see your individual Google account information. We only see aggregate reports such as the age and interest breakdown of our site visitors.
+        </p>
+        <p className={P_CLASS}>
+          You can control whether Google Signals applies to your visit at <a href="https://adssettings.google.com" className="text-accent-foreground underline hover:no-underline" target="_blank" rel="noopener noreferrer">adssettings.google.com</a> by turning off Ads Personalization. You can also opt out of Google Analytics entirely by installing the <a href="https://tools.google.com/dlpage/gaoptout" className="text-accent-foreground underline hover:no-underline" target="_blank" rel="noopener noreferrer">Google Analytics Opt-out Browser Add-on</a>.
         </p>
       </section>
 

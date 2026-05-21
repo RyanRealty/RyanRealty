@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { sendEvent } from '@/lib/followupboss'
+import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
 
 const FUB_CID_COOKIE = 'fub_cid'
 const COOKIE_MAX_AGE = 90 * 24 * 60 * 60 // 90 days
@@ -38,6 +39,20 @@ export async function identifyFubFromEmailClick(fubPersonId: string): Promise<{ 
     maxAge: COOKIE_MAX_AGE,
     path: '/',
   })
+
+  // GA4 Measurement Protocol — record that this browser was just bridged
+  // to a FUB person id. Helps us count email-click identifications in the
+  // analytics funnel and ties future events on this browser to a known FUB id.
+  const ga4ClientId = readGa4ClientIdFromCookies(cookieStore) ?? undefined
+  void fireGa4Event({
+    eventName: 'fub_person_created',
+    clientId: ga4ClientId,
+    eventParams: {
+      fub_person_id: id,
+      source: 'email-click',
+    },
+  }).catch((e) => console.warn('[fub-bridge] GA4 event failed:', e))
+
   return { ok: true }
 }
 

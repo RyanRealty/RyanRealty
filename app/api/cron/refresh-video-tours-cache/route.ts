@@ -2,9 +2,14 @@ import { NextResponse } from 'next/server'
 import { executeRefreshVideoToursCache } from '@/lib/refresh-video-tours-cache'
 
 function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret?.trim()) return true
-  return request.headers.get('authorization') === `Bearer ${secret}`
+  const secret = process.env.CRON_SECRET?.trim()
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+  if (!secret) {
+    if (isProd) return false
+    return true
+  }
+  const auth = request.headers.get('authorization') ?? ''
+  return auth === `Bearer ${secret}`
 }
 
 /**

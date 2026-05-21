@@ -216,10 +216,14 @@ async function getUsageMap(scope: AdminMediaScope) {
   }
 
   if (scope === 'brokers') {
-    const [{ data: brokersRows }, { data: mediaRows }] = await Promise.all([
+    const [brokersRes, mediaRes] = await Promise.all([
       supabase.from('brokers').select('id, slug, display_name, photo_url, intro_video_url, saved_headshot_urls'),
       supabase.from('broker_generated_media').select('id, broker_id, url'),
     ])
+    if (brokersRes.error) console.error('[admin-media] brokers query failed:', brokersRes.error.message)
+    if (mediaRes.error) console.error('[admin-media] broker_generated_media query failed:', mediaRes.error.message)
+    const { data: brokersRows } = brokersRes
+    const { data: mediaRows } = mediaRes
 
     for (const row of (brokersRows ?? []) as BrokerLite[]) {
       const brokerLabel = row.display_name || row.slug || row.id
@@ -252,11 +256,17 @@ async function getUsageMap(scope: AdminMediaScope) {
   }
 
   if (scope === 'banners') {
-    const [{ data: bannerRows }, { data: heroRows }, { data: reportRows }] = await Promise.all([
+    const [bannerRes, heroRes, reportRes] = await Promise.all([
       supabase.from('banner_images').select('entity_type, entity_key, storage_path'),
       supabase.from('hero_videos').select('entity_type, entity_key, storage_path'),
       supabase.from('market_reports').select('slug, image_storage_path'),
     ])
+    if (bannerRes.error) console.error('[admin-media] banner_images query failed:', bannerRes.error.message)
+    if (heroRes.error) console.error('[admin-media] hero_videos query failed:', heroRes.error.message)
+    if (reportRes.error) console.error('[admin-media] market_reports query failed:', reportRes.error.message)
+    const { data: bannerRows } = bannerRes
+    const { data: heroRows } = heroRes
+    const { data: reportRows } = reportRes
 
     for (const row of (bannerRows ?? []) as BannerImageLite[]) {
       addUsage(row.storage_path, {

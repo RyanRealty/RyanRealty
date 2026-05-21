@@ -5,13 +5,14 @@ import { syncListingHistory } from '@/app/actions/sync-spark'
 const RUN_STALE_MS = 2 * 60 * 1000
 
 function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (secret?.trim()) {
-    const auth = request.headers.get('authorization')
-    if (auth === `Bearer ${secret}`) return true
+  const secret = process.env.CRON_SECRET?.trim()
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+  if (!secret) {
+    if (isProd) return false
+    return true
   }
-  if (!secret?.trim()) return true
-  return false
+  const auth = request.headers.get('authorization') ?? ''
+  return auth === `Bearer ${secret}`
 }
 
 /**

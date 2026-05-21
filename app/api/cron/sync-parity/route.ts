@@ -3,12 +3,14 @@ import { runOneFullSyncChunk } from '@/app/actions/sync-full-cron'
 import { syncListingHistory, syncSparkListingsDelta } from '@/app/actions/sync-spark'
 
 function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (secret?.trim()) {
-    const auth = request.headers.get('authorization')
-    return auth === `Bearer ${secret}`
+  const secret = process.env.CRON_SECRET?.trim()
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+  if (!secret) {
+    if (isProd) return false
+    return true
   }
-  return true
+  const auth = request.headers.get('authorization') ?? ''
+  return auth === `Bearer ${secret}`
 }
 
 function parseIntParam(value: string | null, fallback: number, min: number, max: number): number {
