@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.260.1 (2026-05-21)
+
+### Bug Fixes
+- fix(gallery): use frame1.png as video poster + iframe-embed preview.html for blog/market/google-ads producers
+
+---
+
+
 ## v1.260.0 (2026-05-21)
 
 ### Features
