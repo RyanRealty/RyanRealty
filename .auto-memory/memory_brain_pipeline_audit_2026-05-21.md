@@ -65,13 +65,15 @@ The five-stage loop:
 - A cron route `/api/cron/dispatch-pending-actions` that polls every 5 min and fires the matching producer (write to status='in_production' atomically with `UPDATE ... WHERE status='pending' RETURNING ...`), OR
 - The weekly cycle dispatches inline before returning (the `run/SKILL.md` claims this but I haven't traced if it actually happens)
 
-### 🔴 Gap 3 — Measurement loop has no cron
+### 🟡 Gap 3 — Measurement loop cron exists but no `executed` rows to measure (CORRECTED 2026-05-21)
 
-**Evidence:** `app/api/cron/` has no `measurement-loop` route. `lib/marketing-brain/measurement-loop.ts` exists but nothing fires it.
+**CORRECTION** (per Pass 3+4 audit): `app/api/cron/marketing-measurement-loop/route.ts` EXISTS and is registered in `vercel.json` at `0 15 * * *` (daily 15:00 UTC). My earlier statement saying "no cron route" was WRONG.
 
-**Consequence:** even if a producer DID populate `executor_response.published_posts`, no scheduler picks up `executed` rows and queries the platform APIs at 24h / 7d / 30d windows.
+**Actual evidence:** the cron fires daily but has nothing to measure because (a) only 2 rows ever reached `status='executed'` in all of marketing_brain_actions history, and (b) neither of those 2 rows has `executor_response.published_posts` populated.
 
-**Fix:** add a cron route + entry in `vercel.json`. Suggest `0 */6 * * *` so every 6h it sweeps `executed` rows with age windows of 24h/7d/30d and updates `content_performance`.
+**Consequence:** the measurement loop is structurally sound but blocked by the upstream gap — producers need to populate `published_posts` AND reach `executed` status before the measurement loop has any work.
+
+**Fix:** unblock by closing Gap 1 (producer→action-row wiring) AND Gap 2 (dispatcher). The measurement loop itself doesn't need additional wiring beyond the existing cron.
 
 ### 🟡 Gap 4 — Producers other than Meta Graph aren't measurable
 

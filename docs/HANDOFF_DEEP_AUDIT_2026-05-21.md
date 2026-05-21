@@ -165,6 +165,68 @@ The skill is at `.claude/skills/deep-audit/SKILL.md`. Edit it if you find a pass
 
 ---
 
+## Appendix D — Pass 3+4 subagent result (already complete) · CRON + API HEALTH
+
+**Headline:** Multiple OAuth tokens EXPIRED RIGHT NOW. YouTube (32h ago), X (31h ago), GBP (18h ago). TikTok / Pinterest / Threads / Nextdoor never connected. Several crons run but write no evidence (silent failures).
+
+**Correction to prior audit:** `app/api/cron/marketing-measurement-loop/route.ts` EXISTS and is registered in `vercel.json` at `0 15 * * *` (daily 15:00 UTC). My earlier statement in `.auto-memory/memory_brain_pipeline_audit_2026-05-21.md` saying "No cron route fires the measurement loop" was WRONG. Updating the memory file.
+
+```json
+{
+  "pass_3_findings": [
+    {"severity": "CRITICAL", "title": "sync_logs table has zero rows — sync crons write no evidence", "evidence": "sync_logs total=0. Four crons (sync-delta every 10min, sync-history-terminal every 5min, sync-full weekly, sync-parity unregistered) never logged. sync_state DOES show active syncs (last_delta=2026-05-21 15:40), so syncs run but logging is silently broken.", "fix": "Audit each sync cron's route.ts for the sync_logs insert path. Likely schema mismatch swallowed as non-fatal. Fix the insert or surface the error.", "effort": "S"},
+    {"severity": "CRITICAL", "title": "detect-expired-listings — table name mismatch (expected expired_listing_intake, actual expired_listings)", "evidence": "CLAUDE.md says public.expired_listing_intake. That table doesn't exist. Actual table public.expired_listings has 0 rows. Cron registered hourly, never wrote a row.", "fix": "Check route for actual table used. Update CLAUDE.md to reflect 'expired_listings' name. Verify Spark API key valid in prod Vercel env.", "effort": "M"},
+    {"severity": "CRITICAL", "title": "marketing-weekly-cycle last wrote evidence 8 days ago — missed Monday 2026-05-19 run", "evidence": "marketing_decisions last weekly_cycle = 2026-05-13 21:18 UTC. Schedule is 0 2 * * 1. Today is 2026-05-21 Thursday; Monday 2026-05-19 produced no row. All-time count = only 4 rows.", "fix": "Check Vercel cron logs for 2026-05-19 02:00 UTC. Likely downstream call (Supabase, OpenAI, FUB) failed with 500 and no committed row.", "effort": "S"},
+    {"severity": "DEGRADED", "title": "marketing-snapshot-tiktok + marketing-snapshot-gbp stale ~8 days", "evidence": "tiktok last_fetched=2026-05-13 16:56, gbp last_fetched=2026-05-13 16:22. Crons scheduled daily 06:30 UTC. Other 8 channels ran fine on 2026-05-20.", "fix": "TikTok: tiktok_auth has 0 rows — never connected. GBP: token expired 2026-05-20 21:59 UTC (Pass 4). Reconnect TikTok OAuth + refresh GBP token.", "effort": "M"},
+    {"severity": "DEGRADED", "title": "market_stats_cache: 5,581 of 6,022 rows (92.7%) stale beyond 13h window", "evidence": "Only 441 of 6,022 rows updated in last 13h. Stale rows range back to 2026-04-25.", "fix": "Audit refresh-market-stats route to confirm intended coverage. Partial refresh may be by-design (lazy refresh of inactive geos) or a regression. Data accuracy risk for market report pages.", "effort": "M"},
+    {"severity": "DEGRADED", "title": "seller-workflow-pause: marketing_inbox_events only 8 rows total, last event 6 days ago", "evidence": "8 rows across 6 days from a cron firing every 15min (96×/day). Either lead volume is low OR detection logic never triggered on a real reply.", "fix": "Manual FUB reply test to validate detection path.", "effort": "S"},
+    {"severity": "INFO", "title": "6 cron route directories exist with no vercel.json registration (dead code candidates)", "evidence": "gbp-media-refresh, marketing-audit-run, prewarm-search-cache, start-sync, sync-parity, sync-verify-full-history. None in vercel.json crons array.", "fix": "Either register in vercel.json or delete the route files.", "effort": "S"},
+    {"severity": "INFO", "title": "CORRECTION: marketing-measurement-loop EXISTS as cron route and IS registered in vercel.json", "evidence": "app/api/cron/marketing-measurement-loop/route.ts exists. vercel.json: schedule 0 15 * * * (daily 15:00 UTC). Prior audit memory said 'no cron' — that's stale and WRONG.", "fix": "Update .auto-memory/memory_brain_pipeline_audit_2026-05-21.md to reflect the cron exists.", "effort": "XS"}
+  ],
+  "pass_4_findings": [
+    {"severity": "CRITICAL", "title": "YouTube OAuth token EXPIRED — publishing + snapshot blocked", "evidence": "youtube_auth.expires_at=2026-05-20 07:30:25 UTC (~32h ago). Token-heartbeat (daily 12pm UTC) + marketing-snapshot-youtube (daily 06:30 UTC) blocked. No youtube rows after 2026-05-20 06:30 in marketing_channel_daily.", "fix": "Trigger refresh at /api/youtube/authorize or refresh endpoint. refresh_token populated → non-interactive refresh should work.", "effort": "S"},
+    {"severity": "CRITICAL", "title": "X (Twitter) OAuth token EXPIRED — publishing + snapshot blocked", "evidence": "x_auth.expires_at=2026-05-20 08:30:23 UTC (~31h ago).", "fix": "Trigger X token refresh. If refresh_token itself expired, full re-OAuth required.", "effort": "S to M"},
+    {"severity": "CRITICAL", "title": "GBP OAuth token EXPIRED — snapshot + posting blocked (8 days of failures)", "evidence": "google_business_profile_auth.expires_at=2026-05-20 21:59 UTC (~18h ago). marketing_channel_daily shows gbp last_fetched=2026-05-13 — failure started 8 days ago, today's expiry is just the latest indicator.", "fix": "Refresh GBP OAuth token. Audit gbp snapshot route for auto-refresh logic on 401.", "effort": "M"},
+    {"severity": "CRITICAL", "title": "TikTok OAuth — never connected (0 rows)", "evidence": "tiktok_auth = 0 rows. Listed as publish target + has marketing-snapshot-tiktok cron registered. Cron runs but produces no data.", "fix": "Complete OAuth at /api/tiktok/authorize. Account @ryanrealtybend per CLAUDE.md.", "effort": "M (first-time OAuth)"},
+    {"severity": "CRITICAL", "title": "Pinterest OAuth — never connected (0 rows)", "evidence": "pinterest_auth = 0 rows. No snapshot cron. Schema built out though.", "fix": "Complete Pinterest OAuth if/when activated.", "effort": "M"},
+    {"severity": "CRITICAL", "title": "Threads OAuth — never connected (0 rows)", "evidence": "threads_auth = 0 rows. @ryanrealtybend handle per CLAUDE.md.", "fix": "Complete Threads OAuth when ready.", "effort": "M"},
+    {"severity": "CRITICAL", "title": "Nextdoor OAuth — never connected (0 rows)", "evidence": "nextdoor_auth = 0 rows. Schema scaffolded.", "fix": "Activate when ready.", "effort": "M"},
+    {"severity": "OK", "title": "LinkedIn OAuth — connected and valid", "evidence": "expires_at=2026-07-09 02:26 UTC (49 days remaining).", "fix": "Monitor before 2026-07-09.", "effort": "N/A"}
+  ]
+}
+```
+
+---
+
+## Appendix C — Pass 5+7 subagent result (already complete) · SKILL DRIFT + DB HYGIENE
+
+**Headline:** SKILL.md routing in CLAUDE.md references 4 files that don't exist; `cma_deliveries` PII has RLS disabled; `news-video` vs `news_video` name collision; `pg_stat` statistics are stale (don't trust the row counts).
+
+```json
+{
+  "pass_5_findings": [
+    {"severity": "HIGH", "title": "Duplicate skill name: facebook-seller-growth across two agent environments", "evidence": "Same name: in /Users/matthewryan/RyanRealty/.claude/skills/facebook-seller-growth/ (mod 2026-05-12) AND /Users/matthewryan/RyanRealty/.cursor/skills/facebook-seller-growth/ (mod 2026-05-10). Claude Code + Cursor each load potentially diverged copy.", "fix": "Consolidate to .cursor/skills/ (both read it) and delete other. Diff and merge first.", "effort": "small"},
+    {"severity": "HIGH", "title": "CLAUDE.md routes to 4 SKILL.md files that DO NOT EXIST", "evidence": "Format routing table lists: video_production_skills/neighborhood-overview/SKILL.md, weekend-events-video/SKILL.md, lifestyle-community/SKILL.md, development-showcase/SKILL.md. None exist. Only neighborhood_tour/ exists.", "fix": "Create stub SKILL.md files OR update CLAUDE.md routing table to point at existing paths.", "effort": "small"},
+    {"severity": "HIGH", "title": "Skill name collision: news-video (ElevenLabs) vs news_video (Synthesia avatar)", "evidence": "Two distinct skills at video_production_skills/news-video/SKILL.md and video_production_skills/news_video/SKILL.md. news_video's own SKILL.md acknowledges ambiguity. Routing by 'news video' phrase loads wrong skill.", "fix": "Rename news_video → avatar_news_video (dir + name: field). Update CLAUDE.md routing + REGISTRY.md.", "effort": "small"},
+    {"severity": "MEDIUM", "title": "video_production_skills/CAPTION_AUDIT.md referenced in CLAUDE.md but missing", "evidence": "CLAUDE.md §Captions cites it as 'violation log'. File missing. Other paths in same block all exist.", "fix": "Create stub OR remove reference from CLAUDE.md.", "effort": "small"},
+    {"severity": "MEDIUM", "title": "quality_gate/SKILL.md has 6 broken relative links (spaces in paths)", "evidence": "Links like (. /. /design_system/...) with literal spaces. Won't resolve.", "fix": "Fix to ../../design_system/... etc. across 6 instances.", "effort": "small"},
+    {"severity": "MEDIUM", "title": "4 SKILL.md files missing frontmatter name: field", "evidence": "pulse-feed-safe-zone/SKILL.md, pulse-feed-integration/SKILL.md, platforms/youtube/SKILL.md, platforms/gbp/SKILL.md. Routers that match on name: skip silently.", "fix": "Add name: to each.", "effort": "trivial"},
+    {"severity": "LOW", "title": "pulse-feed-safe-zone/SKILL.md is an orphan (zero external references)", "evidence": "grep across .md/.ts/.tsx/.py/.mjs/.js (no node_modules, worktrees, .next) finds zero references.", "fix": "Add reference from Pulse component OR delete if superseded by safe-zones/SKILL.md.", "effort": "trivial"},
+    {"severity": "LOW", "title": "Three .cursor/skills stale since 2026-04-10 (41 days)", "evidence": "oregon-orea-principal-broker, professional-word-docx, skyslope-api — predate v2 design system + brand voice updates.", "fix": "Review at next natural edit. Flag for refresh.", "effort": "small"},
+    {"severity": "LOW", "title": "skills/youtube-market-reports/SKILL.md is in top-level skills/ dir not in any registry search path", "evidence": "/Users/matthewryan/RyanRealty/skills/youtube-market-reports/. CLAUDE.md + GLOBAL_SKILLS_REGISTRY.md don't list skills/.", "fix": "Move to video_production_skills/youtube-market-reports/ + update 14 refs.", "effort": "small"}
+  ],
+  "pass_7_findings": [
+    {"severity": "HIGH", "title": "cma_deliveries has RLS disabled and stores lead PII (email, name, phone, address)", "evidence": "Confirmed: cma_deliveries.rls_enabled=false. Stores lead_email, lead_name, lead_phone, raw_address, assigned_broker_email, email_body_html/_text. Active in 5 code files (lib/cma-delivery.ts, app/api/cma-delivery/, etc.). KNOWN ISSUE per DATABASE_FOR_AI_AGENTS.md.", "fix": "Enable RLS. Add (1) service-role full access policy + (2) authenticated broker read on assigned_broker_email = auth.jwt()->>'email'.", "effort": "small"},
+    {"severity": "MEDIUM", "title": "pg_stat_user_tables row counts unreliable — listings shows 14 rows vs 589K+ documented", "evidence": "Query 7.A shows listings row_count=14, but DB doc says 589K+. Stats stale. All other 0-row reports are suspect.", "fix": "Run ANALYZE; on public schema. Re-run audit to get accurate counts before treating 0-row tables as DROP candidates. Schedule autovacuum/autoanalyze.", "effort": "trivial"},
+    {"severity": "MEDIUM", "title": "Large cohort of actively-referenced tables with 0 rows — producers never ran", "evidence": "brokers (83 code refs, 0 rows), communities (74, 0), neighborhoods (58, 0), cities (100, 0), boundaries (20, 0), content_performance (14, 0), profiles (17, 0). Load-bearing for search/market/site but empty.", "fix": "Seed brokers (3 rows — Matt/Paul/Rebecca), communities + neighborhoods + cities from data/resort-communities.json + DB doc Bend neighborhoods. boundaries needs authoritative GIS source.", "effort": "medium"},
+    {"severity": "LOW", "title": "spatial_ref_sys has RLS disabled — expected PostGIS behavior", "evidence": "PostGIS coord reference system catalog; no user data.", "fix": "No action.", "effort": "none"},
+    {"severity": "LOW", "title": "expired_listing_intake referenced in CLAUDE.md but absent from DB", "evidence": "CLAUDE.md cites it; doesn't exist. Pass 3+4 found the actual table is expired_listings (also empty).", "fix": "Update CLAUDE.md to use expired_listings, OR migrate expired_listing_intake into DB if that's the intended schema.", "effort": "small"}
+  ]
+}
+```
+
+---
+
 ## Appendix B — Pass 2 subagent result (already complete)
 
 **Critical reframe from this pass:** the build scripts (the 72 `scripts/build_*.py` + `build-*.mjs`) are NOT the production execution path. The actual execution runs through `app/api/cron/producer-runtime/route.ts` and `app/api/admin/run-producer/[id]/route.ts`, which load SKILL.md files, call the Anthropic Messages API, and own the `pending → in_production → ready` transitions themselves. The build scripts are a PARALLEL CLI path with no wiring. This means:
