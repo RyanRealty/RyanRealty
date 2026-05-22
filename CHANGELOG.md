@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.14 (2026-05-22)
+
+### Maintenance
+- perf(listing-detail): migrate breadcrumb + key resolvers to DAL — 369→367
+
+---
+
+
 ## v1.279.13 (2026-05-22)
 
 ### Maintenance
