@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.262.1 (2026-05-22)
+
+### Bug Fixes
+- fix(d1): refresh-market-stats — non-fatal per-geo errors
+
+---
+
+
 ## v1.262.0 (2026-05-22)
 
 ### Features
