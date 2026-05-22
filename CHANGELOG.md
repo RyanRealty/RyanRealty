@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.261.12 (2026-05-22)
+
+### Maintenance
+- docs(c12,c13,c14): execution path + REGISTRY reconciliation
+
+---
+
+
 ## v1.261.11 (2026-05-22)
 
 ### Bug Fixes
