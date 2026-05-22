@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.264.0 (2026-05-22)
+
+### Features
+- feat(db): DAL indexes + listing_tile_mv + geo_snapshot_mv migrations
+
+### Maintenance
+- perf(sentry): cap production traces sample rate at 10%
+- perf(actions): ILIKE→EQ across 12 action files for index hits
+
+---
+
+
 ## v1.263.7 (2026-05-22)
 
 ### Bug Fixes
