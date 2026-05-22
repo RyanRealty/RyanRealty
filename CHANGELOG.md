@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.5 (2026-05-22)
+
+### Maintenance
+- perf(listing-detail): migrate getSubdivisionListings to DAL — 371→370
+
+---
+
+
 ## v1.279.4 (2026-05-22)
 
 ### Maintenance
