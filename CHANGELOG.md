@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.1 (2026-05-22)
+
+### Other
+- polish(lp/golf): per-architect course-count badge
+
+---
+
+
 ## v1.279.0 (2026-05-22)
 
 ### Features
