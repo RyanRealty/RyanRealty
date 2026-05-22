@@ -21,7 +21,7 @@ module.exports = {
         "http://127.0.0.1:3000/",
         "http://127.0.0.1:3000/cities/bend",
         "http://127.0.0.1:3000/cities/bend/awbrey-butte",
-        "http://127.0.0.1:3000/communities/tetherow",
+        "http://127.0.0.1:3000/communities/bend-tetherow",
         "http://127.0.0.1:3000/zip/97703",
         // Canonical SEO path. /listing/<key> issues a 308 redirect to this
         // URL which Lighthouse cannot follow (FAILED_DOCUMENT_REQUEST), so
