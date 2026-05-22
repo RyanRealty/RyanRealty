@@ -1279,58 +1279,24 @@ export async function getSubdivisionListings(
   city: string | null,
   limit = 8,
 ): Promise<SimilarListingForDetail[]> {
-  const supabase = getSupabase()
   if (!subdivisionName?.trim() || !city?.trim()) return []
 
-  const { data } = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
-    .neq('ListingKey', excludeListingKey)
-    .eq('"SubdivisionName"', subdivisionName.trim())
-    .eq('"City"', city.trim())
-    .not('PhotoURL', 'is', null)
-    .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
-    .order('ListPrice', { ascending: false })
-    .limit(limit)
-
-  const rows = (data ?? []) as Array<{
-    ListingKey: string
-    ListNumber?: string | null
-    mls_source?: string | null
-    ListPrice: number | null
-    BedroomsTotal: number | null
-    BathroomsTotal: number | null
-    TotalLivingAreaSqFt: number | null
-    SubdivisionName: string | null
-    StreetNumber?: string | null
-    StreetName?: string | null
-    City?: string | null
-    State?: string | null
-    PostalCode?: string | null
-    PhotoURL?: string | null
-  }>
-
-  return rows.map((r) => {
-    const address = [
-      [r.StreetNumber, r.StreetName].filter(Boolean).join(' '),
-      r.City,
-      r.State,
-      r.PostalCode,
-    ].filter(Boolean).join(', ')
-    return {
-      listing_key: r.ListingKey,
-      list_number: r.ListNumber ?? null,
-      mls_source: r.mls_source ?? (r as { MlsSource?: string | null }).MlsSource ?? null,
-      list_price: r.ListPrice,
-      beds_total: r.BedroomsTotal,
-      baths_full: r.BathroomsTotal,
-      living_area: r.TotalLivingAreaSqFt,
-      subdivision_name: r.SubdivisionName,
-      address,
-      photo_url: r.PhotoURL ?? null,
-      city: r.City ?? null,
-      state: r.State ?? null,
-      postal_code: r.PostalCode ?? null,
-    }
+  // DAL: read from listing_tile_mv via getCommunityListings. Sort by
+  // price-desc (legacy behavior was ORDER BY ListPrice DESC).
+  const tiles = await getCommunityListingsDAL(subdivisionName.trim(), {
+    status: 'active',
+    sort: 'price-desc',
+    limit: Math.max(limit + 4, 12),
   })
+
+  return tiles
+    .filter(
+      (t) =>
+        t.listingKey !== excludeListingKey &&
+        t.photoUrl &&
+        t.city?.toLowerCase().trim() === city.toLowerCase().trim(),
+    )
+    .slice(0, limit)
+    .map(tileToSimilarDetail)
 }
+
