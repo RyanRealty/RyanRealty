@@ -17,6 +17,7 @@ import { listSubdivisionsWithFlags } from '@/app/actions/subdivision-flags'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
 import { getResortCommunityImage } from '@/lib/resort-community-images'
 import { CITY_LISTING_TILE_SELECT } from '@/lib/listing-tile-projections'
+import { getAllCitySnapshots } from '@/lib/data'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -71,39 +72,33 @@ export type CityListingRow = {
   lot_size_sqft?: number | null
 }
 
-/** All cities for index with counts and median — uses RPC for single-scan aggregation instead of 60k row fetches. */
+/**
+ * All cities for the cities index page.
+ *
+ * Reads pre-aggregated counts + medians from geo_snapshot_mv via the DAL
+ * (`getAllCitySnapshots`) — replaces the prior fetchAllRows path that
+ * scanned 60K active rows on every cold cache hit. The MV refreshes every
+ * 15 min via /api/cron/refresh-mvs, so the data is at most 15 min stale.
+ */
 async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
   const sb = supabase()
 
-  // Legacy fallback: fetch from listings table directly
-  const [browse, listingRows] = await Promise.all([
+  // DAL: pre-aggregated city snapshots from geo_snapshot_mv
+  const [browse, snapshots] = await Promise.all([
     getBrowseCities(),
-    import('@/lib/supabase/paginate').then((m) =>
-      m.fetchAllRows<{
-        City?: string
-        SubdivisionName?: string
-        ListPrice?: number | null
-        StandardStatus?: string | null
-        PropertyType?: string | null
-      }>(
-        sb, 'listings', 'City, SubdivisionName, ListPrice, StandardStatus, PropertyType',
-        (q: any) => q.or(ACTIVE_OR),
-      )
-    ),
+    getAllCitySnapshots(),
   ])
-  const byCity = new Map<string, { prices: number[]; subdivisions: Set<string>; count: number }>()
-  for (const row of listingRows) {
-    if (!isResidentialInventoryType(row.PropertyType ?? null)) continue
-    const city = (row.City ?? '').toString().trim()
-    if (!city) continue
-    const rec = byCity.get(city) ?? { prices: [], subdivisions: new Set<string>(), count: 0 }
-    rec.count += 1
-    const p = Number(row.ListPrice)
-    if (Number.isFinite(p) && p > 0) rec.prices.push(p)
-    const sub = (row.SubdivisionName ?? '').toString().trim()
-    if (sub && sub.toLowerCase() !== 'n/a') rec.subdivisions.add(sub)
-    byCity.set(city, rec)
+
+  // Index snapshots by lower-cased city name for the lookup below.
+  const byCity = new Map<string, { count: number; medianPrice: number | null; communityCount: number }>()
+  for (const snap of snapshots) {
+    byCity.set(snap.geoKey, {
+      count: snap.activeSfrCount,
+      medianPrice: snap.medianListPrice != null ? Math.round(snap.medianListPrice) : null,
+      communityCount: snap.communityCount,
+    })
   }
+
   const allSlugs = browse.map(({ City }) => slugify(City))
   const allCityNames = browse.map(({ City }) => City)
 
@@ -119,17 +114,10 @@ async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
 
   const result: CityForIndex[] = []
   for (const { City: name, count } of browse) {
-    const rec = byCity.get(name)
+    const rec = byCity.get(name.toLowerCase())
     const activeCount = rec?.count ?? count
-    let medianPrice: number | null = null
-    if (rec && rec.prices.length > 0) {
-      rec.prices.sort((a, b) => a - b)
-      const mid = Math.floor(rec.prices.length / 2)
-      medianPrice = rec.prices.length % 2
-        ? rec.prices[mid]!
-        : Math.round((rec.prices[mid - 1]! + rec.prices[mid]!) / 2)
-    }
-    const communityCount = rec?.subdivisions.size ?? 0
+    const medianPrice = rec?.medianPrice ?? null
+    const communityCount = rec?.communityCount ?? 0
     const slug = slugify(name)
     const banner = bannerMap.get(slug)
     const db = cityMetaByName.get(name.toLowerCase()) ?? null

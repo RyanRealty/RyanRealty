@@ -26,7 +26,7 @@
 - [x] `git grep -rn '#[0-9a-fA-F]\{3,8\}' app/ components/ --include='*.tsx' --include='*.ts'` returns 0 matches (raw hex banned; linter enforces this but CI double-checks) *(verified 2026-05-22 — 0 matches)*
 - [x] `git grep -rn 'stunning\|nestled\|breathtaking\|charming\|gorgeous\|pristine\|boasts\|must-see\|dream home\|meticulously maintained\|entertainer'\''s dream\|tucked away\|hidden gem\|delve\|leverage\|tapestry\|navigate\|robust\|seamless\|comprehensive\|elevate\|unlock\|holistic\|vibrant\|bustling\|eclectic\|curated\|bespoke\|foster' app/` returns 0 matches in any user-visible string literal (scripts/preflight.ts enforces this; CI double-checks) *(verified 2026-05-22 — 0 matches across app/**/*.{ts,tsx})*
 - [ ] Every checked item in the Pages to Ship section below is checked
-- [ ] MV refresh crons (`/api/cron/refresh-market-stats`, `/api/cron/sync-delta`) green for 7 consecutive days post-deploy (Vercel cron logs)
+- [ ] MV refresh crons (`/api/cron/refresh-market-stats`, `/api/cron/sync-delta`, `/api/cron/refresh-mvs`) green for 7 consecutive days post-deploy (Vercel cron logs) *(refresh-mvs cron wired 2026-05-22, runs every 15min, calls `refresh_listing_tile_mv()` + `refresh_geo_snapshot_mv()` RPCs. 7-day clock started 2026-05-22.)*
 - [ ] `design_system/ryan-realty/ui_kits/website/index.html` pixel-checked against each corresponding page section in production (screenshot comparison, human sign-off per section)
 
 ---
