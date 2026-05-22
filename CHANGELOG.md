@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.275.1 (2026-05-22)
+
+### Other
+- a11y + perf: drain homepage Lighthouse failures + 2 more DAL violations
+
+---
+
+
 ## v1.275.0 (2026-05-22)
 
 ### Features
