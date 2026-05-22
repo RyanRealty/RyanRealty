@@ -139,7 +139,13 @@ export async function runWeeklyCycle(asOfDate: string, opts: { dryRun?: boolean;
 
   try {
     const supabase = getSupabase()
-    await supabase.from('marketing_decisions').insert({
+    // marketing_decisions has NOT NULL constraints on predicted_outcome and
+    // actual_outcome (both jsonb). Older versions of this insert omitted
+    // both, which silently failed inside this try/catch — that's why no
+    // weekly_cycle decision rows appeared from 2026-05-13 onward despite
+    // the cron firing weekly. Fixed 2026-05-21 alongside the deep-audit
+    // C11 follow-up.
+    const { error: insertError } = await supabase.from('marketing_decisions').insert({
       decision_type: dryRun ? 'weekly_cycle_dryrun' : 'weekly_cycle',
       decision_summary: `Weekly cycle ${cycleId}: ${briefsPersisted} briefs persisted, ${voiceFails} voice failures, ${errors.length} errors`,
       data_observed: {
@@ -154,9 +160,18 @@ export async function runWeeklyCycle(asOfDate: string, opts: { dryRun?: boolean;
         ),
       },
       rules_cited: ['weekly_cycle'],
+      // predicted_outcome + actual_outcome are NOT NULL jsonb. Weekly cycle
+      // is upstream of any individual brief outcome, so we record empty
+      // objects. The measurement-loop digest is where real outcome data
+      // accumulates per action.
+      predicted_outcome: {},
+      actual_outcome: {},
       reviewer: 'brain',
       final_decision: dryRun ? 'auto_applied' : 'awaiting_review',
     })
+    if (insertError) {
+      errors.push(`marketing_decisions log: ${insertError.message}`)
+    }
   } catch (e) {
     errors.push(`marketing_decisions log: ${e instanceof Error ? e.message : String(e)}`)
   }

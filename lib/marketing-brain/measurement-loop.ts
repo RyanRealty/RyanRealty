@@ -30,6 +30,11 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { refreshAccessToken as refreshTikTokAccessToken } from '@/lib/tiktok'
+import { getYouTubeAccessToken } from '@/lib/youtube'
+import { getLinkedInAccessToken } from '@/lib/linkedin'
+import { getXAccessToken } from '@/lib/x'
+import { getOrRefreshGoogleBusinessProfileAccessToken } from '@/lib/google-business-profile'
 
 let _supabase: SupabaseClient | null = null
 
@@ -268,8 +273,8 @@ async function isAlreadyMeasured(platformPostId: string, targetWindowHours: numb
 
 /**
  * Pull metrics for a single platform post. Returns null when the platform
- * integration is not yet implemented; the loop logs and skips. Returns
- * EMPTY_METRICS-shaped object on success.
+ * integration is not authenticated; the loop logs and skips. Returns a
+ * MeasurementMetrics-shaped object on success.
  */
 async function measurePlatformPost(platform: Platform, platformPostId: string): Promise<MeasurementMetrics | null> {
   switch (platform) {
@@ -277,12 +282,17 @@ async function measurePlatformPost(platform: Platform, platformPostId: string): 
     case 'facebook':
       return measureMetaPost(platform, platformPostId)
     case 'tiktok':
+      return measureTikTokPost(platformPostId)
     case 'youtube':
+      return measureYouTubePost(platformPostId)
     case 'linkedin':
+      return measureLinkedInPost(platformPostId)
     case 'x':
+      return measureXPost(platformPostId)
     case 'gbp':
+      return measureGBPPost(platformPostId)
     case 'blog':
-      // Stubs — return null to signal "skip; integration not yet wired"
+      // Blog posts go through GA4 attribution — not a platform push; skip.
       return null
     default:
       return null
@@ -339,6 +349,416 @@ async function measureMetaPost(platform: 'instagram' | 'facebook', postId: strin
     clicks: map.get('post_clicks') ?? null,
     engagements: (map.get('post_reactions_by_type_total') ?? 0) + (map.get('post_clicks') ?? 0),
     metadata: { raw: Object.fromEntries(map) },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TikTok: per-video metrics via video/query/ endpoint
+// ---------------------------------------------------------------------------
+
+/**
+ * TikTok does not expose a named getAccessToken helper in lib/tiktok.ts.
+ * The token is stored in public.tiktok_auth, exactly as the snapshot cron
+ * manages it.  We read + optionally refresh inline.
+ */
+async function getTikTokToken(): Promise<string> {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('tiktok_auth')
+    .select('access_token, refresh_token, expires_at')
+    .eq('id', 'default')
+    .maybeSingle()
+
+  if (error || !data) {
+    throw new Error('TikTok not connected — visit /api/tiktok/authorize to connect')
+  }
+
+  interface TikTokAuthRow {
+    access_token: string
+    refresh_token: string | null
+    expires_at: string | null
+  }
+  const row = data as TikTokAuthRow
+  const expiresAt = row.expires_at ? new Date(row.expires_at) : null
+  const needsRefresh = !expiresAt || expiresAt.getTime() - Date.now() < 5 * 60 * 1000
+
+  if (!needsRefresh) return row.access_token
+
+  if (!row.refresh_token) {
+    throw new Error('TikTok access token expired and no refresh token — reconnect via /api/tiktok/authorize')
+  }
+
+  const refreshed = await refreshTikTokAccessToken(row.refresh_token)
+  const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+  await supabase
+    .from('tiktok_auth')
+    .update({
+      access_token: refreshed.access_token,
+      refresh_token: refreshed.refresh_token,
+      expires_at: newExpiresAt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', 'default')
+
+  return refreshed.access_token
+}
+
+interface TikTokVideoQueryResponse {
+  data?: {
+    videos?: Array<{
+      id?: string
+      view_count?: number
+      like_count?: number
+      comment_count?: number
+      share_count?: number
+    }>
+  }
+  error?: { code: string; message: string }
+}
+
+async function measureTikTokPost(videoId: string): Promise<MeasurementMetrics | null> {
+  let accessToken: string
+  try {
+    accessToken = await getTikTokToken()
+  } catch (err) {
+    console.warn('measureTikTokPost: auth unavailable —', err instanceof Error ? err.message : String(err))
+    return null
+  }
+
+  const fields = 'id,view_count,like_count,comment_count,share_count'
+  // video/query/ accepts a JSON body with `filters.video_ids` and query params for fields.
+  const url = `https://open.tiktokapis.com/v2/video/query/?fields=${encodeURIComponent(fields)}`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ filters: { video_ids: [videoId] } }),
+    signal: AbortSignal.timeout(15000),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`TikTok video/query/ ${res.status}: ${text.slice(0, 200)}`)
+  }
+
+  let raw: TikTokVideoQueryResponse
+  try {
+    raw = (await res.json()) as TikTokVideoQueryResponse
+  } catch {
+    throw new Error('TikTok video/query/ returned non-JSON response')
+  }
+
+  if (raw.error && raw.error.code !== 'ok') {
+    throw new Error(`TikTok video/query/ API error: ${raw.error.message}`)
+  }
+
+  const video = raw.data?.videos?.[0]
+  if (!video) {
+    // Video may be private, deleted, or not associated with the authed user.
+    return { ...EMPTY_METRICS, metadata: { raw, note: 'video not returned by api' } }
+  }
+
+  const likesCount = video.like_count ?? 0
+  const commentsCount = video.comment_count ?? 0
+  const sharesCount = video.share_count ?? 0
+
+  return {
+    ...EMPTY_METRICS,
+    views: video.view_count ?? null,
+    impressions: video.view_count ?? null, // TikTok equates views to impressions at this scope
+    comments: commentsCount,
+    shares: sharesCount,
+    engagements: likesCount + commentsCount + sharesCount,
+    metadata: { raw: video },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// YouTube: per-video statistics via YouTube Data API v3
+// ---------------------------------------------------------------------------
+
+interface YouTubeVideoStatisticsResponse {
+  items?: Array<{
+    id?: string
+    statistics?: {
+      viewCount?: string
+      likeCount?: string
+      commentCount?: string
+      favoriteCount?: string
+    }
+  }>
+  error?: { message?: string; code?: number }
+}
+
+async function measureYouTubePost(videoId: string): Promise<MeasurementMetrics | null> {
+  let accessToken: string
+  try {
+    accessToken = await getYouTubeAccessToken()
+  } catch (err) {
+    console.warn('measureYouTubePost: auth unavailable —', err instanceof Error ? err.message : String(err))
+    return null
+  }
+
+  const params = new URLSearchParams({
+    part: 'statistics',
+    id: videoId,
+    fields: 'items(id,statistics)',
+  })
+  const url = `https://www.googleapis.com/youtube/v3/videos?${params.toString()}`
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(15000),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`YouTube Data API videos ${res.status}: ${text.slice(0, 200)}`)
+  }
+
+  let raw: YouTubeVideoStatisticsResponse
+  try {
+    raw = (await res.json()) as YouTubeVideoStatisticsResponse
+  } catch {
+    throw new Error('YouTube Data API returned non-JSON response')
+  }
+
+  if (raw.error) {
+    throw new Error(`YouTube Data API error ${raw.error.code ?? ''}: ${raw.error.message ?? 'unknown'}`)
+  }
+
+  const item = raw.items?.[0]
+  if (!item?.statistics) {
+    // Video may be private, deleted, or outside the authed channel.
+    return { ...EMPTY_METRICS, metadata: { raw, note: 'video statistics not returned' } }
+  }
+
+  const stats = item.statistics
+  const views = stats.viewCount !== undefined ? parseInt(stats.viewCount, 10) : null
+  const likesCount = stats.likeCount !== undefined ? parseInt(stats.likeCount, 10) : 0
+  const commentsCount = stats.commentCount !== undefined ? parseInt(stats.commentCount, 10) : 0
+  const saves = stats.favoriteCount !== undefined ? parseInt(stats.favoriteCount, 10) : null
+
+  return {
+    ...EMPTY_METRICS,
+    impressions: views, // YouTube Data API v3 viewCount is the closest to impressions at video scope
+    views: views,
+    comments: commentsCount,
+    saves: saves,
+    engagements: likesCount + commentsCount,
+    // watch_time_seconds requires YouTube Analytics API v2 (yt-analytics.readonly scope,
+    // separate endpoint). Left null here; document the gap for future work.
+    watch_time_seconds: null,
+    metadata: {
+      raw: stats,
+      note: 'watch_time_seconds unavailable — requires YouTube Analytics API; viewCount used as impressions proxy',
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// LinkedIn: per-post share statistics via organizationalEntityShareStatistics
+// ---------------------------------------------------------------------------
+
+interface LinkedInShareStatData {
+  impressionCount?: number
+  uniqueImpressionsCount?: number
+  clickCount?: number
+  likeCount?: number
+  commentCount?: number
+  shareCount?: number
+  engagement?: number
+}
+
+interface LinkedInShareStatElement {
+  totalShareStatistics?: LinkedInShareStatData
+  ugcPost?: string
+  share?: string
+}
+
+interface LinkedInShareStatResponse {
+  elements?: LinkedInShareStatElement[]
+}
+
+async function measureLinkedInPost(postUrn: string): Promise<MeasurementMetrics | null> {
+  let accessToken: string
+  try {
+    accessToken = await getLinkedInAccessToken()
+  } catch (err) {
+    console.warn('measureLinkedInPost: auth unavailable —', err instanceof Error ? err.message : String(err))
+    return null
+  }
+
+  const orgId = process.env.LINKEDIN_ORGANIZATION_ID?.trim()
+  if (!orgId) {
+    console.warn('measureLinkedInPost: LINKEDIN_ORGANIZATION_ID not configured — cannot query per-post stats')
+    return null
+  }
+
+  // The organizationalEntityShareStatistics endpoint requires both the
+  // organizationalEntity URN and the ugcPost/share URN.
+  // postUrn is expected to be urn:li:ugcPost:<id> or urn:li:share:<id>.
+  const orgUrn = orgId.startsWith('urn:') ? orgId : `urn:li:organization:${orgId}`
+  const params = new URLSearchParams({
+    q: 'organizationalEntity',
+    organizationalEntity: orgUrn,
+    'ugcPosts[0]': postUrn,
+  })
+
+  const url = `https://api.linkedin.com/rest/organizationalEntityShareStatistics?${params.toString()}`
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'LinkedIn-Version': '202602',
+      'X-Restli-Protocol-Version': '2.0.0',
+      'Content-Type': 'application/json',
+    },
+    signal: AbortSignal.timeout(15000),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`LinkedIn organizationalEntityShareStatistics ${res.status}: ${text.slice(0, 200)}`)
+  }
+
+  let raw: LinkedInShareStatResponse
+  try {
+    raw = (await res.json()) as LinkedInShareStatResponse
+  } catch {
+    throw new Error('LinkedIn organizationalEntityShareStatistics returned non-JSON response')
+  }
+
+  const el = raw.elements?.[0]
+  if (!el?.totalShareStatistics) {
+    return { ...EMPTY_METRICS, metadata: { raw, note: 'no share statistics returned for this post urn' } }
+  }
+
+  const stats = el.totalShareStatistics
+  const likesCount = stats.likeCount ?? 0
+  const commentsCount = stats.commentCount ?? 0
+  const sharesCount = stats.shareCount ?? 0
+  const clicks = stats.clickCount ?? null
+
+  return {
+    ...EMPTY_METRICS,
+    impressions: stats.impressionCount ?? null,
+    reach: stats.uniqueImpressionsCount ?? null,
+    comments: commentsCount,
+    shares: sharesCount,
+    clicks: clicks,
+    engagements: likesCount + commentsCount + sharesCount + (clicks ?? 0),
+    metadata: { raw: stats },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// X (Twitter): per-tweet public metrics via API v2
+// ---------------------------------------------------------------------------
+
+interface XTweetPublicMetrics {
+  impression_count: number
+  like_count: number
+  retweet_count: number
+  reply_count: number
+  quote_count: number
+  bookmark_count: number
+}
+
+interface XTweetResponse {
+  data?: {
+    id: string
+    public_metrics?: XTweetPublicMetrics
+  }
+  errors?: Array<{ message: string }>
+}
+
+async function measureXPost(tweetId: string): Promise<MeasurementMetrics | null> {
+  let accessToken: string
+  try {
+    accessToken = await getXAccessToken()
+  } catch (err) {
+    console.warn('measureXPost: auth unavailable —', err instanceof Error ? err.message : String(err))
+    return null
+  }
+
+  const params = new URLSearchParams({ 'tweet.fields': 'public_metrics' })
+  const url = `https://api.twitter.com/2/tweets/${tweetId}?${params.toString()}`
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(15000),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`X API GET /2/tweets/${tweetId} ${res.status}: ${text.slice(0, 200)}`)
+  }
+
+  let raw: XTweetResponse
+  try {
+    raw = (await res.json()) as XTweetResponse
+  } catch {
+    throw new Error('X API returned non-JSON response')
+  }
+
+  if (!raw.data?.public_metrics) {
+    // Tweet deleted, private, or Basic-tier plan returning no metrics.
+    return {
+      ...EMPTY_METRICS,
+      metadata: {
+        raw,
+        note: 'public_metrics missing — tweet may be deleted, or plan tier restricts access',
+      },
+    }
+  }
+
+  const pm = raw.data.public_metrics
+  const likesCount = pm.like_count
+  const commentsCount = pm.reply_count
+  const sharesCount = pm.retweet_count + pm.quote_count
+  const savesCount = pm.bookmark_count
+
+  return {
+    ...EMPTY_METRICS,
+    // impression_count is returned on Basic+ but may be 0 on Free tier.
+    impressions: pm.impression_count > 0 ? pm.impression_count : null,
+    comments: commentsCount,
+    shares: sharesCount,
+    saves: savesCount,
+    engagements: likesCount + commentsCount + sharesCount + savesCount,
+    metadata: {
+      raw: pm,
+      tier_note: pm.impression_count === 0
+        ? 'impression_count=0: Basic tier may not populate this field in real time'
+        : undefined,
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GBP: no per-post analytics API — return EMPTY_METRICS with a metadata note
+// ---------------------------------------------------------------------------
+
+async function measureGBPPost(postId: string): Promise<MeasurementMetrics | null> {
+  // Validate the token is available so we surface auth failures early.
+  try {
+    await getOrRefreshGoogleBusinessProfileAccessToken()
+  } catch (err) {
+    console.warn('measureGBPPost: auth unavailable —', err instanceof Error ? err.message : String(err))
+    return null
+  }
+
+  // The Google Business Profile Performance API exposes only account-level
+  // daily metric time-series (impressions, call clicks, direction requests,
+  // website clicks, etc.).  There is no per-post performance endpoint.
+  // Return EMPTY_METRICS with a metadata note; the loop writes a row so
+  // future callers know the measurement was attempted.
+  return {
+    ...EMPTY_METRICS,
+    metadata: {
+      platform_post_id: postId,
+      note: 'gbp_post-level metrics unavailable — Google Business Profile Performance API exposes account-level daily metrics only; refer to getGBPDailyMetrics for aggregate data',
+    },
   }
 }
 
