@@ -239,7 +239,10 @@ export const getCityListings = unstable_cache(
   { revalidate: 120, tags: ['city-listings'] }
 )
 
-/** Recently sold in city, limit 6. */
+/** Recently sold in city, limit 6.
+ * NOT migrated to DAL yet — needs CloseDate as a sort key, which the
+ * DAL's getCityListings doesn't expose. Lower priority because closed-
+ * listings traffic is much smaller than active. */
 async function _getCitySoldListingsUncached(
   cityName: string,
   limit: number
