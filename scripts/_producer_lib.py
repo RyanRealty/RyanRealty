@@ -26,12 +26,42 @@ Payload schema (canonical):
 
 from __future__ import annotations
 import json
+import os
 import sys
 import argparse
 import hashlib
 import datetime
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+
+
+# ── Rogue-producer guard (deep-audit 2026-05-21 D19) ─────────────────────────
+# Every producer invocation MUST flow through marketing_brain_actions: the
+# brain creates a pending row, producer-dispatcher transitions it to
+# in_production, producer-runtime invokes the SKILL.md and transitions it to
+# ready with executor_response populated. Direct `python3 scripts/build_X.py`
+# calls bypass the entire audit trail — the brain has no record of the
+# output, the measurement-loop has no platform_post_id to query later, and
+# Matt has no canonical artifact in the approval queue.
+#
+# Producer scripts opt-in by calling require_action_row(payload) at the top
+# of main(). Existing scripts keep working until each is migrated. Once a
+# script calls this guard, any rogue invocation refuses unless explicitly
+# authorised via PRODUCER_ALLOW_ROGUE=1 (intended for explicit-test only).
+def require_action_row(payload: dict) -> None:
+    """Raise if the producer was invoked outside the marketing_brain_actions
+    protocol. Caller opts in by invoking this at the top of main()."""
+    action_id = payload.get('action_id') if isinstance(payload, dict) else None
+    if action_id:
+        return
+    if os.environ.get('PRODUCER_ALLOW_ROGUE') == '1':
+        return
+    raise RuntimeError(
+        "Producers must be dispatched via marketing_brain_actions. "
+        "No action_id in payload. Set PRODUCER_ALLOW_ROGUE=1 for explicit-test only. "
+        "See CLAUDE.md > Marketing Brain Architecture for the canonical dispatch path."
+    )
+
 
 # ── Brand constants ──────────────────────────────────────────────────────────
 NAVY = (16, 39, 66)
