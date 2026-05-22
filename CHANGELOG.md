@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.0 (2026-05-22)
+
+### Features
+- feat(lp/golf): featured active listing per community card
+
+---
+
+
 ## v1.278.0 (2026-05-22)
 
 ### Features
