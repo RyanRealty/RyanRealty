@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.265.0 (2026-05-22)
+
+### Features
+- feat(visitor-tracking): aggressive visitor identification + behavioral scoring + compliance layer
+
+---
+
+
 ## v1.264.1 (2026-05-22)
 
 ### Maintenance
