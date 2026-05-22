@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.264.1 (2026-05-22)
+
+### Maintenance
+- chore(db): fix migration source to match what landed in production
+
+---
+
+
 ## v1.264.0 (2026-05-22)
 
 ### Features
