@@ -47,7 +47,7 @@ async function _getFeaturedListingsUncached(city?: string): Promise<HomeTileRow[
     let rows: HomeTileRow[]
     if (keys.length === 0) {
       let query = sb.from('listings').select('ListingKey').or(ACTIVE_OR).order('ModificationTimestamp', { ascending: false, nullsFirst: false }).limit(12)
-      if (city?.trim()) query = query.ilike('City', city.trim())
+      if (city?.trim()) query = query.eq('"City"', city.trim())
       const { data: fallback } = await query
       const fallbackKeys = (fallback ?? []).map((r: { ListingKey?: string }) => (r?.ListingKey ?? '').trim()).filter(Boolean)
       rows = await getHomeTileRowsByKeys(fallbackKeys)
@@ -120,7 +120,7 @@ async function _getRecentlySoldUncached(city?: string): Promise<(HomeTileRow & {
       .not('CloseDate', 'is', null)
       .order('CloseDate', { ascending: false, nullsFirst: false })
       .limit(4)
-    if (city?.trim()) query = query.ilike('City', city.trim())
+    if (city?.trim()) query = query.eq('"City"', city.trim())
     const { data } = await query
     return (data ?? []) as (HomeTileRow & { ClosePrice?: number | null; CloseDate?: string | null })[]
   } catch {
@@ -133,7 +133,7 @@ async function _getRecentlySoldUncached(city?: string): Promise<(HomeTileRow & {
         .not('close_date', 'is', null)
         .order('close_date', { ascending: false, nullsFirst: false })
         .limit(4)
-      if (city?.trim()) query = query.ilike('City', city.trim())
+      if (city?.trim()) query = query.eq('"City"', city.trim())
       const { data } = await query
       const rows = (data ?? []) as (HomeTileRow & { close_price?: number | null; close_date?: string | null })[]
       return rows.map((r) => ({
@@ -165,7 +165,7 @@ export async function getPriceDrops(city?: string): Promise<(HomeTileRow & { ori
       .gt('price_drop_count', 0)
       .order('total_price_change_pct', { ascending: true })
       .limit(6)
-    if (city?.trim()) query = query.ilike('City', city.trim())
+    if (city?.trim()) query = query.eq('"City"', city.trim())
     const { data } = await query
     const rows = (data ?? []) as (HomeTileRow & { OriginalListPrice?: number | null })[]
     return rows.map((r) => ({
@@ -184,7 +184,7 @@ export async function getPriceDrops(city?: string): Promise<(HomeTileRow & { ori
         .gt('price_drop_count', 0)
         .order('total_price_change_pct', { ascending: true })
         .limit(6)
-      if (city?.trim()) query = query.ilike('City', city.trim())
+      if (city?.trim()) query = query.eq('"City"', city.trim())
       const { data } = await query
       const rows = (data ?? []) as (HomeTileRow & { original_list_price?: number | null })[]
       return rows.map((r) => ({

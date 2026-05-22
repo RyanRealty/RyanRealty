@@ -167,7 +167,7 @@ async function _getCityBySlugUncached(slug: string): Promise<CityDetail | null> 
     import('@/lib/supabase/paginate').then((m) =>
       m.fetchAllRows<{ SubdivisionName?: string | null; ListPrice?: number | null; PropertyType?: string | null }>(
         supabase(), 'listings', 'SubdivisionName, ListPrice, PropertyType',
-        (q: any) => q.ilike('City', cityName).or(ACTIVE_OR),
+        (q: any) => q.eq('"City"', cityName).or(ACTIVE_OR),
       )
     ),
   ])
@@ -219,7 +219,7 @@ async function _getCityListingsUncached(
   const { data } = await supabase()
     .from('listings')
     .select(CITY_LISTING_TILE_SELECT)
-    .ilike('City', cityName)
+    .eq('"City"', cityName)
     .or(ACTIVE_OR)
     .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
     .limit(limit)
@@ -240,7 +240,7 @@ async function _getCitySoldListingsUncached(
   const { data } = await supabase()
     .from('listings')
     .select(`${CITY_LISTING_TILE_SELECT}, ClosePrice`)
-    .ilike('City', cityName)
+    .eq('"City"', cityName)
     .or('StandardStatus.ilike.%Closed%')
     .not('CloseDate', 'is', null)
     .order('CloseDate', { ascending: false, nullsFirst: false })
@@ -262,7 +262,7 @@ async function _getCityPendingListingsUncached(
   const { data } = await supabase()
     .from('listings')
     .select(CITY_LISTING_TILE_SELECT)
-    .ilike('City', cityName)
+    .eq('"City"', cityName)
     .or(PENDING_OR)
     .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
     .limit(limit)
@@ -283,7 +283,7 @@ async function getCommunitiesInCityUncached(cityName: string): Promise<Community
     supabase()
       .from('listings')
       .select('SubdivisionName, ListPrice, PropertyType')
-      .ilike('City', cityName)
+      .eq('"City"', cityName)
       .or(ACTIVE_OR)
       .limit(4000)
       .then((res) => (res.data ?? []) as { SubdivisionName?: string | null; ListPrice?: number | null; PropertyType?: string | null }[]),
@@ -307,7 +307,7 @@ async function getCommunitiesInCityUncached(cityName: string): Promise<Community
   const { data: pendingRows } = await supabase()
     .from('listings')
     .select('SubdivisionName')
-    .ilike('City', cityName)
+    .eq('"City"', cityName)
     .or(PENDING_OR)
     .limit(4000)
   for (const row of pendingRows ?? []) {
@@ -452,7 +452,7 @@ export async function getCityPriceHistory(cityName: string): Promise<{ month: st
   const { data: closed } = await sb
     .from('listings')
     .select('ListPrice, CloseDate')
-    .ilike('City', cityName)
+    .eq('"City"', cityName)
     .ilike('StandardStatus', '%Closed%')
     .not('CloseDate', 'is', null)
     .gte('CloseDate', twelveMonthsAgo.toISOString().slice(0, 7))

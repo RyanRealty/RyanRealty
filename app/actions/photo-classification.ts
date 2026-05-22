@@ -116,10 +116,10 @@ export async function getBestListingHeroForGeography(
   const listingKeysQuery = supabase
     .from('listings')
     .select('ListingKey, ListNumber')
-    .ilike('City', city.trim())
+    .eq('"City"', city.trim())
   const withSub = subdivision?.trim()
   if (withSub) {
-    listingKeysQuery.ilike('SubdivisionName', withSub)
+    listingKeysQuery.eq('"SubdivisionName"', withSub)
   }
   listingKeysQuery.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
   const { data: listingRows } = await listingKeysQuery.limit(500)

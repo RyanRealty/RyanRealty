@@ -148,10 +148,10 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
       let query = sb
         .from('listings')
         .select('ListPrice, PropertyType')
-        .ilike('City', city)
+        .eq('"City"', city)
         .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
         .limit(3000)
-      if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+      if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
       else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
       const { data } = await query
       return (data ?? []) as { ListPrice?: number | null; PropertyType?: string | null }[]
@@ -296,11 +296,11 @@ async function _getCommunityListingsUncached(
   let query = sb
     .from('listings')
     .select(COMMUNITY_LISTING_TILE_SELECT)
-    .ilike('City', city)
+    .eq('"City"', city)
     .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
     .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
     .limit(limit)
-  if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+  if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
   else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
   const { data } = await query
   return (data ?? []) as ListingRow[]
@@ -323,12 +323,12 @@ async function _getCommunitySoldListingsUncached(
   let query = sb
     .from('listings')
     .select(`${COMMUNITY_LISTING_TILE_SELECT}, ClosePrice`)
-    .ilike('City', city)
+    .eq('"City"', city)
     .or('StandardStatus.ilike.%Closed%')
     .not('CloseDate', 'is', null)
     .order('CloseDate', { ascending: false, nullsFirst: false })
     .limit(limit)
-  if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+  if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
   else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
   const { data } = await query
   return (data ?? []) as (ListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]
@@ -351,11 +351,11 @@ async function _getCommunityPendingListingsUncached(
   let query = sb
     .from('listings')
     .select(COMMUNITY_LISTING_TILE_SELECT)
-    .ilike('City', city)
+    .eq('"City"', city)
     .or(PENDING_OR)
     .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
     .limit(limit)
-  if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+  if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
   else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
   const { data } = await query
   return (data ?? []) as ListingRow[]
@@ -396,12 +396,12 @@ export async function getCommunityPriceHistory(
   let closedQuery = sb
     .from('listings')
     .select('ListPrice, CloseDate')
-    .ilike('City', city)
+    .eq('"City"', city)
     .ilike('StandardStatus', '%Closed%')
     .not('CloseDate', 'is', null)
     .gte('CloseDate', twelveMonthsAgo.toISOString().slice(0, 7))
     .limit(2000)
-  if (names.length === 1) closedQuery = closedQuery.ilike('SubdivisionName', names[0]!)
+  if (names.length === 1) closedQuery = closedQuery.eq('"SubdivisionName"', names[0]!)
   else if (names.length > 1) closedQuery = closedQuery.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
   const { data: closed } = await closedQuery
   const byMonth = new Map<string, number[]>()

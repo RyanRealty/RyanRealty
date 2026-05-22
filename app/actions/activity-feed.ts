@@ -214,7 +214,7 @@ export async function getActivityFeedWithFallback(options: {
     .select(
       'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, StandardStatus, OnMarketDate, CloseDate'
     )
-    .ilike('City', options.city.trim())
+    .eq('"City"', options.city.trim())
     .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%')
     .order('ModificationTimestamp', { ascending: false })
     .limit(limit * 2)

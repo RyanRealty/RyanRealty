@@ -157,7 +157,7 @@ export async function populateMarketPulseForCity(cityName: string): Promise<{ ok
     const { fetchAllRows } = await import('@/lib/supabase/paginate')
     const activeData = await fetchAllRows<{ ListPrice?: number | null }>(
       supabase, 'listings', 'ListPrice',
-      (q: any) => q.ilike('City', cityName)
+      (q: any) => q.eq('"City"', cityName)
         .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
         .not('ListPrice', 'is', null),
     )
@@ -170,14 +170,14 @@ export async function populateMarketPulseForCity(cityName: string): Promise<{ ok
     const { count: pendingCount } = await supabase
       .from('listings')
       .select('ListingKey', { count: 'exact', head: true })
-      .ilike('City', cityName)
+      .eq('"City"', cityName)
       .or('StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%Contingent%')
 
     // New in last 7 days
     const { count: new7d } = await supabase
       .from('listings')
       .select('ListingKey', { count: 'exact', head: true })
-      .ilike('City', cityName)
+      .eq('"City"', cityName)
       .or('StandardStatus.is.null,StandardStatus.ilike.%Active%')
       .gte('OnMarketDate', sevenDaysAgo.toISOString().slice(0, 10))
 
@@ -185,7 +185,7 @@ export async function populateMarketPulseForCity(cityName: string): Promise<{ ok
     const { count: new30d } = await supabase
       .from('listings')
       .select('ListingKey', { count: 'exact', head: true })
-      .ilike('City', cityName)
+      .eq('"City"', cityName)
       .or('StandardStatus.is.null,StandardStatus.ilike.%Active%')
       .gte('OnMarketDate', thirtyDaysAgo.toISOString().slice(0, 10))
 
@@ -246,7 +246,7 @@ async function getQuickCityCount(cityName: string): Promise<CityMarketStats> {
     const { count } = await supabase
       .from('listings')
       .select('ListingKey', { count: 'exact', head: true })
-      .ilike('City', cityName)
+      .eq('"City"', cityName)
       .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
     return {
       count: count ?? 0,

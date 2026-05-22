@@ -81,7 +81,7 @@ export async function getCityInventoryBreakdown(cityName: string): Promise<Inven
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return breakdownFromListingsTableScan((q: any) =>
     q
-      .ilike('City', cityName)
+      .eq('"City"', cityName)
       .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
   )
 }
@@ -101,8 +101,8 @@ export async function getCommunityInventoryBreakdown(cityName: string, subdivisi
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return breakdownFromListingsTableScan((q: any) =>
     q
-      .ilike('City', cityName)
-      .ilike('SubdivisionName', subdivisionName)
+      .eq('"City"', cityName)
+      .eq('"SubdivisionName"', subdivisionName)
       .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
   )
 }

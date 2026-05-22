@@ -149,7 +149,7 @@ export async function getOtherListingsInSubdivision(
   const { data } = await supabase
     .from('listings')
     .select(SIMILAR_SELECT)
-    .ilike('SubdivisionName', subdivisionName)
+    .eq('"SubdivisionName"', subdivisionName)
     .neq('ListingKey', excludeListingKey)
     .neq('ListNumber', excludeListingKey)
     .limit(6)
@@ -191,7 +191,7 @@ export async function getSimilarListingsWithFallback(
     .neq('ListingKey', excludeKey)
     .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
     .limit((maxCount - similar.length) + 20)
-  if (city?.trim()) query = query.ilike('City', city.trim())
+  if (city?.trim()) query = query.eq('"City"', city.trim())
   const { data: extra } = await query
   const extraRows = (extra ?? []) as SimilarListingRow[]
   const merged = similar.slice()
@@ -319,7 +319,7 @@ export async function getCityFromSlug(slug: string | undefined): Promise<string 
   const { data: d2 } = await supabase
     .from('listings')
     .select('City')
-    .ilike('City', cityGuess)
+    .eq('"City"', cityGuess)
     .limit(1)
   return (d2 as Array<{ City?: string }>)?.[0]?.City?.trim() || null
 }
@@ -576,10 +576,10 @@ export async function getListings(options: {
     'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, TotalLivingAreaSqFt, OnMarketDate, CloseDate'
   let query = supabase.from('listings').select(select)
 
-  if (options.city) query = query.ilike('City', options.city)
+  if (options.city) query = query.eq('"City"', options.city)
   if (options.subdivision?.trim()) {
     const names = getSubdivisionMatchNames(options.subdivision.trim())
-    if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+    if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
     else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
   }
   if (options.includeClosed === true) {
@@ -770,7 +770,7 @@ export async function getListingsForHomeTiles(options: {
   let query = supabase
     .from('listings')
     .select(HOME_TILE_SELECT)
-    .ilike('City', options.city.trim())
+    .eq('"City"', options.city.trim())
     .or(ACTIVE_OR_PENDING_OR)
     .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
 
@@ -839,10 +839,10 @@ export async function getListingsForMap(options: GetListingsForMapOptions = {}):
   const mapLimit = Math.min(options.mapLimit ?? 1000, 3000)
   const select = 'ListingKey, ListNumber, ListPrice, Latitude, Longitude, StandardStatus, StreetNumber, StreetName, City, State, PostalCode, BedroomsTotal, BathroomsTotal, PhotoURL'
   let query = supabase.from('listings').select(select)
-  if (options.city) query = query.ilike('City', options.city)
+  if (options.city) query = query.eq('"City"', options.city)
   if (options.subdivision?.trim()) {
     const names = getSubdivisionMatchNames(options.subdivision.trim())
-    if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+    if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
     else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
   }
   const statusFilter = options.statusFilter ?? (options.includeClosed === true ? 'all' : 'active')
@@ -937,10 +937,10 @@ export async function getListingsInBounds(
     .gte('Longitude', effectiveBounds.west)
     .lte('Longitude', effectiveBounds.east)
 
-  if (options.city?.trim()) query = query.ilike('City', options.city.trim())
+  if (options.city?.trim()) query = query.eq('"City"', options.city.trim())
   if (options.subdivision?.trim()) {
     const names = getSubdivisionMatchNames(options.subdivision.trim())
-    if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+    if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
     else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
   }
   const statusFilter = options.statusFilter ?? (options.includeClosed === true ? 'all' : 'active')
@@ -1022,10 +1022,10 @@ export async function getActiveListingsCount(options: {
   const supabase = getAnonSupabase()
   if (!supabase) return 0
   let query = supabase.from('listings').select('ListingKey', { count: 'exact', head: true })
-  if (options.city) query = query.ilike('City', options.city)
+  if (options.city) query = query.eq('"City"', options.city)
   if (options.subdivision?.trim()) {
     const names = getSubdivisionMatchNames(options.subdivision.trim())
-    if (names.length === 1) query = query.ilike('SubdivisionName', names[0]!)
+    if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
     else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
   }
   if (options.includeClosed === true) {
@@ -1569,8 +1569,8 @@ export async function getCityStatusCounts(options: {
   const cityFilter = options.city.trim()
   const subFilter = options.subdivision?.trim()
   const applyGeo = (q: any) => {
-    let r = q.ilike('City', cityFilter)
-    if (subFilter) r = r.ilike('SubdivisionName', subFilter)
+    let r = q.eq('"City"', cityFilter)
+    if (subFilter) r = r.eq('"SubdivisionName"', subFilter)
     return r
   }
   const [activeRes, pendingRes, closedRes, totalRes] = await Promise.all([
@@ -1652,7 +1652,7 @@ async function getHotCommunitiesInCityUncached(city: string): Promise<HotCommuni
     ModificationTimestamp?: string | null
   }>(
     supabase, 'listings', 'SubdivisionName, ListPrice, StandardStatus, ModificationTimestamp',
-    (q: any) => q.ilike('City', city),
+    (q: any) => q.eq('"City"', city),
   )
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const bySub = new Map<
@@ -1714,7 +1714,7 @@ export async function getCityCentroid(city: string): Promise<{ lat: number; lng:
   const { data } = await supabase
     .from('listings')
     .select('Latitude, Longitude')
-    .ilike('City', city)
+    .eq('"City"', city)
     .not('Latitude', 'is', null)
     .not('Longitude', 'is', null)
     .limit(500)
@@ -1741,8 +1741,8 @@ export async function getCommunityCentroid(
   const { data } = await supabase
     .from('listings')
     .select('Latitude, Longitude')
-    .ilike('City', city)
-    .ilike('SubdivisionName', subdivisionName)
+    .eq('"City"', city)
+    .eq('"SubdivisionName"', subdivisionName)
     .limit(100)
   const rows = (data ?? []) as { Latitude?: number | null; Longitude?: number | null }[]
   const valid = rows.filter(
@@ -1808,7 +1808,7 @@ export async function getSubdivisionsInCity(city: string): Promise<SubdivisionIn
   const { fetchAllRows: fetchAll } = await import('@/lib/supabase/paginate')
   const rows = await fetchAll<{ SubdivisionName?: string | null; StandardStatus?: string | null }>(
     supabase, 'listings', 'SubdivisionName, StandardStatus',
-    (q: any) => q.ilike('City', city),
+    (q: any) => q.eq('"City"', city),
   )
   const bySub = new Map<string, number>()
   for (const row of rows) {
@@ -1944,7 +1944,7 @@ export async function getListingsAtAddress(options: ListingsAtAddressOptions): P
   let query = supabase
     .from('listings')
     .select(LISTING_TILE_SELECT)
-    .ilike('City', city)
+    .eq('"City"', city)
     .neq('ListNumber', excludeKey)
     .neq('ListingKey', excludeKey)
 
@@ -2138,7 +2138,7 @@ export async function getListingsSliceInSubdivision(
     supabase
       .from('listings')
       .select(select)
-      .ilike('City', cityTrim)
+      .eq('"City"', cityTrim)
       .or(subFilter)
       .lt(orderCol, modificationTimestamp)
       .order(orderCol, { ascending: false })
@@ -2146,7 +2146,7 @@ export async function getListingsSliceInSubdivision(
     supabase
       .from('listings')
       .select(select)
-      .ilike('City', cityTrim)
+      .eq('"City"', cityTrim)
       .or(subFilter)
       .gt(orderCol, modificationTimestamp)
       .order(orderCol, { ascending: true })

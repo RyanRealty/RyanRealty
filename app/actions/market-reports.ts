@@ -275,8 +275,8 @@ async function getClosedSalesForLocation(
     .gte('CloseDate', `${startStr}T00:00:00.000Z`)
     .lte('CloseDate', `${endStr}T23:59:59.999Z`)
   const cityTrim = city.trim()
-  if (cityTrim) q = q.ilike('City', cityTrim)
-  if (subdivision?.trim()) q = q.ilike('SubdivisionName', subdivision.trim())
+  if (cityTrim) q = q.eq('"City"', cityTrim)
+  if (subdivision?.trim()) q = q.eq('"SubdivisionName"', subdivision.trim())
   const { data: rows } = await q
   const list = (rows ?? []) as ListingRow[]
   return list

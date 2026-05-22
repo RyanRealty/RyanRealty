@@ -199,7 +199,7 @@ export async function getReportSubdivisionsForCity(city: string): Promise<{ subd
   const { data, error } = await supabase
     .from('listings')
     .select('SubdivisionName')
-    .ilike('City', city.trim())
+    .eq('"City"', city.trim())
     .not('SubdivisionName', 'is', null)
     .limit(2000)
   if (error) return { subdivisions: [], error: error.message }

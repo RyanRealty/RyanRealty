@@ -310,7 +310,14 @@ export async function resolveListingKeyFromBreadcrumbPath(input: {
   const addressSlug = slugify(decodeURIComponent(input.addressSlug || ''))
   if (!citySlug || !addressSlug) return null
   const areaSlugs = (input.areaSlugs ?? []).map((s) => slugify(decodeURIComponent(s || ''))).filter(Boolean)
-  const cityLike = decodeURIComponent(input.citySlug || '').replace(/-/g, ' ').trim()
+  // Title-case the slug-derived city name so it matches the canonical DB value
+  // (e.g. "la pine" → "La Pine", "black butte ranch" → "Black Butte Ranch").
+  // This enables .eq('"City"', cityLike) instead of .ilike, which uses the
+  // expression index idx_listings_city_lower via Postgres's case-folded match.
+  const cityLike = decodeURIComponent(input.citySlug || '')
+    .replace(/-/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
   if (!cityLike) return null
 
   // Try to narrow search by extracting street number from address slug
@@ -318,7 +325,7 @@ export async function resolveListingKeyFromBreadcrumbPath(input: {
   let query = supabase
     .from('listings')
     .select('ListingKey, ListNumber, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, ModificationTimestamp')
-    .ilike('City', cityLike)
+    .eq('"City"', cityLike)
   if (streetNumMatch) {
     query = query.eq('StreetNumber', streetNumMatch[1]!)
   }
@@ -392,7 +399,14 @@ export async function resolveListingKeyFromCanonicalPath(input: {
 
   const areaSlugs = (input.areaSlugs ?? []).map((s) => slugify(decodeURIComponent(s || ''))).filter(Boolean)
   const postalCode = String(input.postalCode ?? '').trim().replace(/\D/g, '').slice(0, 5)
-  const cityLike = decodeURIComponent(input.citySlug || '').replace(/-/g, ' ').trim()
+  // Title-case the slug-derived city name so it matches the canonical DB value
+  // (e.g. "la pine" → "La Pine", "black butte ranch" → "Black Butte Ranch").
+  // This enables .eq('"City"', cityLike) instead of .ilike, which uses the
+  // expression index idx_listings_city_lower via Postgres's case-folded match.
+  const cityLike = decodeURIComponent(input.citySlug || '')
+    .replace(/-/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
   if (!cityLike) return null
 
   // Try direct lookup by key/MLS number first (avoids fetching all city listings)
@@ -413,7 +427,7 @@ export async function resolveListingKeyFromCanonicalPath(input: {
   const { data } = await supabase
     .from('listings')
     .select('ListingKey, ListNumber, City, PostalCode, SubdivisionName, ModificationTimestamp')
-    .ilike('City', cityLike)
+    .eq('"City"', cityLike)
     .limit(1000)
 
   const rows = (data ?? []) as Array<{
@@ -1196,10 +1210,10 @@ export async function getSimilarListingsForDetailPage(
     .limit(12)
 
   if (communityName?.trim()) {
-    query = query.ilike('SubdivisionName', communityName.trim())
+    query = query.eq('"SubdivisionName"', communityName.trim())
   }
   if (city?.trim()) {
-    query = query.ilike('City', city.trim())
+    query = query.eq('"City"', city.trim())
   }
   if (priceMin != null) query = query.gte('ListPrice', priceMin)
   if (priceMax != null) query = query.lte('ListPrice', priceMax)
@@ -1216,7 +1230,7 @@ export async function getSimilarListingsForDetailPage(
       .neq('ListingKey', key)
       .not('PhotoURL', 'is', null)
       .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
-      .ilike('City', city.trim())
+      .eq('"City"', city.trim())
       .limit(12)
     if (priceMin != null) fallbackQuery = fallbackQuery.gte('ListPrice', priceMin)
     if (priceMax != null) fallbackQuery = fallbackQuery.lte('ListPrice', priceMax)
@@ -1282,8 +1296,8 @@ export async function getSubdivisionListings(
     .from('listings')
     .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
     .neq('ListingKey', excludeListingKey)
-    .ilike('SubdivisionName', subdivisionName.trim())
-    .ilike('City', city.trim())
+    .eq('"SubdivisionName"', subdivisionName.trim())
+    .eq('"City"', city.trim())
     .not('PhotoURL', 'is', null)
     .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
     .order('ListPrice', { ascending: false })

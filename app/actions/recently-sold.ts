@@ -43,7 +43,7 @@ export async function getRecentlySold(options: {
     .limit(limit)
 
   if (city) query = query.eq('City', city)
-  if (subdivision) query = query.ilike('SubdivisionName', subdivision)
+  if (subdivision) query = query.eq('"SubdivisionName"', subdivision)
 
   const { data } = await query
   const rows = (data ?? []) as Array<Record<string, unknown>>
