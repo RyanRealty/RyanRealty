@@ -21,7 +21,7 @@ When a lead lands on you, the workflow below is what you do.
 
 1. Open FUB
 2. Inbox tab. Overnight replies are here. The pause-on-reply cron already paused the action plan on these, so you respond personally from this point.
-3. People > Collections > "FUB Revamp" with the "Only Me" toggle on. Hot/Weekly and Warm/Bi-Weekly show your Stage A and B assignments.
+3. People > Collections > "Pipeline" with the "Only Me" toggle on. Hot/Weekly and Warm/Bi-Weekly show your Stage A and B assignments.
 4. People > Smart Lists > "New Leads: No Call Attempt" with the top-right "Only Me" filter on. Anything assigned to you in last 14 days.
 
 ### When a new lead lands on you
@@ -82,7 +82,7 @@ The site sets a 90-day cookie. Any LP form submission while the cookie is set ro
 
 | Smart list / collection | What it shows |
 |---|---|
-| Collection: FUB Revamp + Only Me | Hot/Weekly, Warm/Bi-Weekly, Cold/Bi-Monthly filtered to your assignments |
+| Collection: Pipeline + Only Me | Hot/Weekly, Warm/Bi-Weekly, Cold/Bi-Monthly filtered to your assignments |
 | New Leads: No Call Attempt | New leads in last 14 days, use Only Me to scope to you |
 | Inbox tab | Replies on threads you own |
 

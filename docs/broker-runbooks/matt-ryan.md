@@ -26,7 +26,7 @@ Plans 69 through 75 are wired with your voice. Touch 0 is yours (manual SMS), th
 2. Inbox tab. Any reply that came in overnight is here. The pause-on-reply cron ran at midnight Pacific, so the action plan is already paused on those leads. You handle the conversation from here.
 3. People > Smart Lists > "Expired No Contact". Any expired listings detected since yesterday are at the top.
 4. People > Smart Lists > "FSBO". Same for FSBOs.
-5. People > Collections > "FUB Revamp" with the "Only Me" toggle on. The "Hot/Weekly" and "Warm/Bi-Weekly" lists show your A and B stage assignments.
+5. People > Collections > "Pipeline" with the "Only Me" toggle on. The "Hot/Weekly" and "Warm/Bi-Weekly" lists show your A and B stage assignments.
 
 ### When you open a new expired or FSBO
 
@@ -69,9 +69,9 @@ Both come from notifications@ryan-realty.com via Resend.
 
 ## Smart lists you'll use
 
-Your **FUB Revamp** collection was streamlined to 4 daily-focus lists. Everything else moved out to the standalone Smart Lists section (still accessible, just not in your daily view).
+Your **Pipeline** collection was streamlined to 4 daily-focus lists. Everything else moved out to the standalone Smart Lists section (still accessible, just not in your daily view).
 
-### FUB Revamp collection (your daily focus, 4 lists)
+### Pipeline collection (your daily focus, 4 lists)
 
 | List | What it shows | Daily rhythm |
 |---|---|---|
