@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.12 (2026-05-22)
+
+### Maintenance
+- docs(spec): tick off 4 more listing detail components — 38/119 checked
+
+---
+
+
 ## v1.279.11 (2026-05-22)
 
 ### Maintenance
