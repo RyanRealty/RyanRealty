@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.278.0 (2026-05-22)
+
+### Features
+- feat(lp/golf): architect Wikipedia outbound links + stay-vs-buy visual comparison
+
+---
+
+
 ## v1.277.0 (2026-05-22)
 
 ### Features
