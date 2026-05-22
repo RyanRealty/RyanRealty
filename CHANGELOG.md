@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.0 (2026-05-22)
+
+### Features
+- feat(dal): close-newest sort + getRecentlySold migration — 365→364
+
+---
+
+
 ## v1.279.16 (2026-05-22)
 
 ### Maintenance
