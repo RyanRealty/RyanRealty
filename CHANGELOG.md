@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.270.1 (2026-05-22)
+
+### Bug Fixes
+- fix(maps): migrate remaining 5 map components to useGoogleMapsReady
+
+---
+
+
 ## v1.270.0 (2026-05-22)
 
 ### Features
