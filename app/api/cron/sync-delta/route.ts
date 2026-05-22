@@ -7,6 +7,7 @@ import {
 } from '@/lib/spark'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
 import { sparkToListingRow, sparkHistoryItemToRow as mapHistoryItem } from '@/lib/listing-mapper'
+import { processNewExpiredListings } from '@/lib/expired-listing-processor'
 
 /**
  * Delta Sync Cron — runs every 15 minutes.
@@ -454,6 +455,38 @@ export async function GET(request: Request) {
       // Non-critical
     }
 
+    // After Spark deltas land in `listings`, run the expired-listing pipeline
+    // against anything that just transitioned to Expired / Canceled / Withdrawn
+    // within our service area. This wires in the work that detect-expired-
+    // listings used to do as a standalone hourly cron (removed 2026-05-22 per
+    // Matt's directive — sync-delta is the natural trigger because it owns
+    // the Spark hop). Smaller per-run cap than the legacy cron because
+    // sync-delta fires every 10 min and the table dedupes on listing_key.
+    // Soft-fail: a downstream error here must never break the MLS sync.
+    let expiredStats: {
+      scanned: number
+      new_processed: number
+      alert_emails_sent: number
+      errors: number
+    } | null = null
+    try {
+      const result = await processNewExpiredListings(supabase, {
+        maxPerRun: 10,
+        lookbackHours: 2,
+      })
+      expiredStats = {
+        scanned: result.scanned,
+        new_processed: result.new_processed,
+        alert_emails_sent: result.alert_emails_sent,
+        errors: result.errors,
+      }
+    } catch (err) {
+      console.error(
+        '[sync-delta] processNewExpiredListings failed (non-fatal):',
+        err instanceof Error ? err.message : err,
+      )
+    }
+
     const summary = [
       `${totalUpserted} listings synced`,
       `${newListings} new`,
@@ -463,6 +496,9 @@ export async function GET(request: Request) {
       `${historyRowsInserted} history rows`,
       `${photosFixed} photos fixed`,
       skippedFinalized > 0 ? `${skippedFinalized} skipped (already finalized)` : null,
+      expiredStats && expiredStats.new_processed > 0
+        ? `${expiredStats.new_processed} expired listings processed (${expiredStats.alert_emails_sent} alerts)`
+        : null,
     ].filter(Boolean).join(', ')
 
     return NextResponse.json({
@@ -479,6 +515,7 @@ export async function GET(request: Request) {
       skippedFinalized,
       pages: page - 1,
       sinceIso,
+      expired: expiredStats,
     })
   } catch (err) {
     console.error('[sync-delta] Fatal error:', err)
