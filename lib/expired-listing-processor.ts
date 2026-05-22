@@ -37,9 +37,20 @@ import {
   addPersonNote,
   createRealtimeTask,
   setPersonCustomFields,
+  applyActionPlan,
   sendEvent,
   type FubEventPerson,
 } from '@/lib/followupboss'
+
+/**
+ * FUB Action Plan id for the Expired Recovery (auto) plan. The 7-touch
+ * cadence wired in the prior session (Touch 0 SMS, then day-2 / day-8 /
+ * day-14 / day-30 / day-60 / day-90 emails). When this cron creates a
+ * fresh expired-listing FUB person, it auto-enrolls them in this plan
+ * so Matt does not have to click "Apply Action Plan" by hand on every
+ * new lead.
+ */
+const EXPIRED_RECOVERY_PLAN_ID = 71
 import { lookupOwnerForExpiredListing } from '@/lib/expired-owner-lookup'
 import { sendExpiredAlertEmail } from '@/lib/expired-alert'
 
@@ -90,6 +101,7 @@ export interface ProcessExpiredStats {
   fub_created_placeholder: number
   notes_added: number
   tasks_created: number
+  plans_enrolled: number
   alert_emails_sent: number
   errors: number
   sample: Array<{
@@ -111,6 +123,7 @@ function emptyStats(): ProcessExpiredStats {
     fub_created_placeholder: 0,
     notes_added: 0,
     tasks_created: 0,
+    plans_enrolled: 0,
     alert_emails_sent: 0,
     errors: 0,
     sample: [],
@@ -302,6 +315,13 @@ export async function processNewExpiredListings(
         customLeadTier: 'hot',
         customMoveTimeline: 'ready-now',
       })
+
+      // Auto-enroll in the Expired Recovery plan so the 7-touch cadence
+      // starts on day 0 without Matt clicking "Apply Action Plan" by hand.
+      // applyActionPlan treats "already enrolled" (HTTP 409 / 422) as a
+      // success so re-runs of the cron don't double-count.
+      const enrolled = await applyActionPlan(fubPersonId, EXPIRED_RECOVERY_PLAN_ID)
+      if (enrolled) stats.plans_enrolled++
 
       const noteOk = await addPersonNote(fubPersonId, buildListingNote(l, owner.notes ?? null))
       if (noteOk) stats.notes_added++

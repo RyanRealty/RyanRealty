@@ -445,6 +445,56 @@ export async function addPersonTags(personId: number, tags: Array<string | undef
  * person id, etc.) the failure is logged and swallowed — the parent event
  * was already posted.
  */
+/**
+ * Apply (enroll) a FUB person in an Action Plan. The plan immediately begins
+ * running its step sequence on this person — first step on day 0, second on
+ * the plan's configured delay, etc.
+ *
+ * Used by the lead-detection crons (expired listings, FSBO listings, buyer
+ * LP submissions) to auto-enroll the matched FUB person in the right plan
+ * after person creation + tagging + custom field hydration. Removes the need
+ * for the broker to manually "Apply Action Plan" via the FUB UI.
+ *
+ * FUB endpoint: POST /v1/actionPlansPeople with { personId, actionPlanId }.
+ * Returns the created enrollment row on success ({ id, personId, actionPlanId,
+ * status: 'Active', ... }).
+ *
+ * Idempotency: FUB may reject (HTTP 409 / 422) if the person is already
+ * enrolled in the same plan. We treat that as a non-error; the function
+ * returns true so the cron continues.
+ */
+export async function applyActionPlan(personId: number, actionPlanId: number): Promise<boolean> {
+  const auth = getAuth()
+  if (!auth) return false
+  if (!Number.isFinite(personId) || personId <= 0) return false
+  if (!Number.isFinite(actionPlanId) || actionPlanId <= 0) return false
+  try {
+    const res = await fetch(`${FUB_BASE}/actionPlansPeople`, {
+      method: 'POST',
+      headers: fubHeaders(auth),
+      body: JSON.stringify({ personId, actionPlanId }),
+      next: { revalidate: 0 },
+    })
+    if (res.ok) return true
+    // Treat "already enrolled" as success-equivalent.
+    if (res.status === 409 || res.status === 422) {
+      console.warn(
+        `[applyActionPlan] person ${personId} likely already enrolled in plan ${actionPlanId} (HTTP ${res.status})`,
+      )
+      return true
+    }
+    const text = await res.text().catch(() => '')
+    console.error(
+      `[applyActionPlan] HTTP ${res.status} enrolling person ${personId} in plan ${actionPlanId}:`,
+      text.slice(0, 200),
+    )
+    return false
+  } catch (err) {
+    console.error('[applyActionPlan] Network error:', err)
+    return false
+  }
+}
+
 export async function addPersonNote(personId: number, body: string): Promise<boolean> {
   const auth = getAuth()
   if (!auth) return false

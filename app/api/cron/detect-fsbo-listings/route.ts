@@ -37,9 +37,17 @@ import {
   addPersonNote,
   createRealtimeTask,
   setPersonCustomFields,
+  applyActionPlan,
   sendEvent,
   type FubEventPerson,
 } from '@/lib/followupboss'
+
+/**
+ * FUB Action Plan id for the FSBO Recovery (auto) plan. Auto-enrolled
+ * after person creation so the 7-touch cadence starts immediately and
+ * Matt does not have to click "Apply Action Plan" by hand.
+ */
+const FSBO_RECOVERY_PLAN_ID = 72
 import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
 import { lookupOwnerForExpiredListing } from '@/lib/expired-owner-lookup'
 import { sendFsboAlertEmail } from '@/lib/fsbo-alert'
@@ -113,6 +121,7 @@ export async function GET(request: NextRequest) {
     fub_created_placeholder: 0,
     notes_added: 0,
     tasks_created: 0,
+    plans_enrolled: 0,
     alert_emails_sent: 0,
     errors: 0,
     by_city: {} as Record<string, number>,
@@ -267,6 +276,12 @@ export async function GET(request: NextRequest) {
         customLeadTier: 'hot',
         customMoveTimeline: 'ready-now',
       })
+
+      // Step 7b: auto-enroll in FSBO Recovery plan (cron-applies-plan
+      // pattern, removes the "broker manually clicks Apply Action Plan"
+      // friction). Idempotent on re-runs.
+      const enrolled = await applyActionPlan(fubPersonId, FSBO_RECOVERY_PLAN_ID)
+      if (enrolled) stats.plans_enrolled++
 
       // Step 8: note
       const noteOk = await addPersonNote(fubPersonId, buildFsboNote(l, ownerNotes))
