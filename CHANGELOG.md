@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.268.0 (2026-05-22)
+
+### Features
+- feat(dal): real getListingDetail + 3-tier getListingVideos
+
+---
+
+
 ## v1.267.0 (2026-05-22)
 
 ### Features
