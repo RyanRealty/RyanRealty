@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.272.1 (2026-05-22)
+
+### Other
+- fub: cron auto-enrolls leads in the matching Action Plan
+
+---
+
+
 ## v1.272.0 (2026-05-22)
 
 ### Features
