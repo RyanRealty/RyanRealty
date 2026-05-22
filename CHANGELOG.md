@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.261.7 (2026-05-22)
+
+### Bug Fixes
+- fix(c2): heartbeat writes sync_logs per platform (audit C2 step 2)
+
+---
+
+
 ## v1.261.6 (2026-05-22)
 
 ### Other
