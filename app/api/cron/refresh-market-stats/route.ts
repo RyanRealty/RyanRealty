@@ -139,6 +139,15 @@ export async function GET(request: Request) {
     .toISOString()
     .slice(0, 10)
 
+  // Per-geo errors in Steps 2, 3a, 3b are non-fatal: log and continue so a
+  // single bad geo or RPC blip doesn't block the rest of the refresh. The
+  // route still returns 200 with per-step counts; the failed_geos array
+  // surfaces which geos missed so a follow-up cron can re-attempt them.
+  // Fixed 2026-05-22 alongside the deep-audit D1 follow-up — the old
+  // early-return pattern caused quarterly + ytd to stop refreshing entirely
+  // once any geo in monthly errored, leaving them 6+ days stale.
+  const failedGeos: Array<{ period_type: string; geo_slug: string; error: string }> = []
+
   for (const { geo_type, geo_slug } of geoEntries) {
     const { error } = await supabase.rpc('compute_and_cache_period_stats', {
       p_geo_type: geo_type,
@@ -152,12 +161,10 @@ export async function GET(request: Request) {
         `[refresh-market-stats] compute_and_cache_period_stats monthly ${geo_slug} error:`,
         error.message
       )
-      return NextResponse.json(
-        { ok: false, error: `compute_and_cache_period_stats(monthly,${geo_slug}): ${error.message}` },
-        { status: 500 }
-      )
+      failedGeos.push({ period_type: 'monthly', geo_slug, error: error.message })
+    } else {
+      monthlyCount++
     }
-    monthlyCount++
   }
 
   // ── Step 3a: Current quarter ─────────────────────────────────────────────
@@ -179,12 +186,10 @@ export async function GET(request: Request) {
         `[refresh-market-stats] compute_and_cache_period_stats quarterly ${geo_slug} error:`,
         error.message
       )
-      return NextResponse.json(
-        { ok: false, error: `compute_and_cache_period_stats(quarterly,${geo_slug}): ${error.message}` },
-        { status: 500 }
-      )
+      failedGeos.push({ period_type: 'quarterly', geo_slug, error: error.message })
+    } else {
+      quarterlyCount++
     }
-    quarterlyCount++
   }
 
   // ── Step 3b: YTD ─────────────────────────────────────────────────────────
@@ -203,12 +208,10 @@ export async function GET(request: Request) {
         `[refresh-market-stats] compute_and_cache_period_stats ytd ${geo_slug} error:`,
         error.message
       )
-      return NextResponse.json(
-        { ok: false, error: `compute_and_cache_period_stats(ytd,${geo_slug}): ${error.message}` },
-        { status: 500 }
-      )
+      failedGeos.push({ period_type: 'ytd', geo_slug, error: error.message })
+    } else {
+      ytdCount++
     }
-    ytdCount++
   }
 
   return NextResponse.json({
@@ -220,6 +223,8 @@ export async function GET(request: Request) {
       quarterly: quarterlyCount,
       ytd: ytdCount,
     },
+    failed_geos: failedGeos,
+    failed_count: failedGeos.length,
     duration_ms: Date.now() - startMs,
   })
 }
