@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.11 (2026-05-22)
+
+### Maintenance
+- docs(spec): tick off 9 more demonstrably-done acceptance items
+
+---
+
+
 ## v1.279.10 (2026-05-22)
 
 ### Maintenance
