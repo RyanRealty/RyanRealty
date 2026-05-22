@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { createSavedSearch } from '@/app/actions/saved-searches'
+import { trackEvent } from '@/lib/tracking'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -58,12 +59,31 @@ export default function SaveSearchButton({ user }: Props) {
     e.preventDefault()
     setStatus('saving')
     const trimmedName = name.trim() || 'My search'
-    const result = await createSavedSearch(trimmedName, buildFilters(), {
+    const filters = buildFilters()
+    const result = await createSavedSearch(trimmedName, filters, {
       isPublic,
       publicTitle: isPublic ? trimmedName : undefined,
     })
     setStatus(result.error ? 'error' : 'done')
     if (!result.error) {
+      // High-intent event: visitor saved a search, expects alerts on new matches.
+      // Carries the filter dimensions so we can answer "which buyer criteria
+      // are most common" from the GA4 event taxonomy.
+      try {
+        trackEvent('save_search', {
+          name: trimmedName.slice(0, 64),
+          city: typeof filters.city === 'string' ? filters.city.slice(0, 64) : undefined,
+          subdivision: typeof filters.subdivision === 'string' ? filters.subdivision.slice(0, 64) : undefined,
+          min_price: typeof filters.minPrice === 'number' ? filters.minPrice : undefined,
+          max_price: typeof filters.maxPrice === 'number' ? filters.maxPrice : undefined,
+          beds: typeof filters.beds === 'number' ? filters.beds : undefined,
+          baths: typeof filters.baths === 'number' ? filters.baths : undefined,
+          property_type: typeof filters.propertyType === 'string' ? filters.propertyType : undefined,
+          is_public: isPublic,
+        })
+      } catch {
+        // never block UX on tracking
+      }
       setName('')
       setIsPublic(false)
       setOpen(false)
