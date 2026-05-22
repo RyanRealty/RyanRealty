@@ -69,15 +69,29 @@ Both come from notifications@ryan-realty.com via Resend.
 
 ## Smart lists you'll use
 
-| Smart list / collection | What it shows | When to check |
+Your **FUB Revamp** collection was streamlined to 4 daily-focus lists. Everything else moved out to the standalone Smart Lists section (still accessible, just not in your daily view).
+
+### FUB Revamp collection (your daily focus, 4 lists)
+
+| List | What it shows | Daily rhythm |
 |---|---|---|
-| Expired No Contact | Expireds you haven't sent T0 to | Morning |
-| FSBO | FSBO leads | Morning |
-| Absentee Owners | Out-of-area sellers in your service zone | Weekly |
-| Matts Sphere | Your sphere contacts | Weekly |
-| Collection: FUB Revamp + Only Me | Hot/Weekly, Warm/Bi-Weekly, Cold/Bi-Monthly, Past Clients filtered to your assignments | Throughout the day |
-| New Leads: No Call Attempt | New leads in last 14 days you haven't called | Daily |
-| Inbox tab | Threads with unread replies | First thing every morning |
+| Active & Pending Clients | Clients actively transacting | First thing every morning |
+| Hot/Weekly | Stage A (hot leads, actively working) | Multiple times per day |
+| Warm/Bi-Weekly | Stage B (medium engagement) | Twice a week |
+| Past Clients & Sphere | Quarterly touch list | Once a week |
+
+### Standalone Smart Lists (work flow specific)
+
+| List | When to check |
+|---|---|
+| Expired No Contact | Morning, after the cron alert email |
+| FSBO | Morning, after the cron alert email |
+| Absentee Owners | Weekly farming |
+| Matts Sphere | Weekly |
+| New Leads: No Call Attempt | When you want a broader new-lead sweep |
+| Cold/Bi-Monthly | Bi-monthly touch campaign |
+| Old Leads (No Call Attempt / Not Reached Monthly) | Quarterly re-engagement campaign |
+| Inbox tab | First thing every morning, replies live here |
 
 Resort and neighborhood smart lists for Caldera Springs, Crosswater, Vandevert Ranch, Tetherow, Awbrey Glen, and the rest are at smart list ids 67 through 92. Use these for targeted campaigns.
 
