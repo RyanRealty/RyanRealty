@@ -425,6 +425,80 @@ interface GoogleBusinessProfilePublishOptions {
   callToActionUrl?: string
 }
 
+/**
+ * Sanitize a Google Business Profile post summary before publishing.
+ *
+ * Repairs the class of regressions that produced the 4 broken LIVE posts
+ * shipped on 2026-05-15 (leaked AI prompt scaffolding visible on the live
+ * profile + banned-word "beautiful" in headlines). Every publish path must
+ * run text through this function or future producer regressions ship again.
+ *
+ * Failure modes are loud — throws on banned words / banned punctuation so the
+ * caller cannot accidentally suppress the check.
+ *
+ * @throws Error if the summary contains a brand-voice hard fail after cleaning
+ */
+export function sanitizeGbpSummary(raw: string): string {
+  let s = String(raw || '')
+
+  // Strip leaked AI scaffolding from common producer outputs
+  const scaffoldingPatterns = [
+    /^POST TYPE:.*$/gim,
+    /^EVENT TYPE:.*$/gim,
+    /^TITLE\s*\/\s*SUMMARY.*$/gim,
+    /^CTA BUTTON:.*$/gim,
+    /^CTA URL:.*$/gim,
+    /^TITLE:.*$/gim,
+    /^SUMMARY:.*$/gim,
+    /^BODY:.*$/gim,
+  ]
+  for (const pat of scaffoldingPatterns) {
+    s = s.replace(pat, '')
+  }
+
+  // Collapse multiple blank lines
+  s = s.replace(/\n{3,}/g, '\n\n').trim()
+
+  // Brand-voice hard fails — these must be fixed by the producer, not silently
+  // stripped here. We throw so the failure is loud.
+  const bannedWords = [
+    'stunning', 'breathtaking', 'gorgeous', 'charming', 'pristine', 'nestled',
+    'boasts', 'meticulously maintained', 'entertainer', 'tucked away',
+    'hidden gem', 'turnkey', 'must-see', 'must see', 'dream home',
+    'beautiful', 'spacious', 'cozy', 'luxurious', 'immaculate', 'captivating',
+    'exquisite', 'delve', 'leverage', 'tapestry', 'robust', 'seamless',
+    'elevate', 'unlock', 'bustling', 'eclectic', 'curated', 'bespoke',
+    'approximately', 'roughly',
+  ]
+  for (const word of bannedWords) {
+    const re = new RegExp(`\\b${word.replace(/\s+/g, '\\s+')}\\b`, 'gi')
+    if (re.test(s)) {
+      throw new Error(
+        `GBP post brand-voice hard fail: banned word "${word}". ` +
+          `Producer must fix before publish. See CLAUDE.md §brand-voice.`,
+      )
+    }
+  }
+
+  // Banned punctuation in body copy
+  if (/[—–]/.test(s)) {
+    throw new Error('GBP post brand-voice hard fail: em-dash or en-dash detected.')
+  }
+  if (/;/.test(s)) {
+    throw new Error('GBP post brand-voice hard fail: semicolon detected.')
+  }
+
+  // GBP local-post summary limit is 1500 characters
+  if (s.length > 1500) {
+    throw new Error(`GBP post summary too long: ${s.length} chars (limit: 1500)`)
+  }
+  if (s.length < 10) {
+    throw new Error(`GBP post summary too short after sanitization: "${s}"`)
+  }
+
+  return s
+}
+
 interface GoogleBusinessProfilePostResponse {
   name?: string
   error?: {
@@ -443,7 +517,7 @@ export async function publishGoogleBusinessLocalPost(
   }
 
   const postBody: Record<string, unknown> = {
-    summary: options.summary,
+    summary: sanitizeGbpSummary(options.summary),
     languageCode: 'en-US',
     topicType: 'STANDARD',
   }
