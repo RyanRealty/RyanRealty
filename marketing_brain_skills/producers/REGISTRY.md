@@ -14,10 +14,10 @@ Compound producers that delegate to multiple sub-producers in parallel. The brai
 
 | producer_name | path | action_types | approval | est. run_time | notes |
 |---|---|---|---|---|---|
-| list-kit | `social_media_skills/list-kit/` | `content:list_kit` | matt-review-draft | 15–30 min | v3 — at-Active orchestrator. Delegates to listing-tour-video, flyer-design, instagram-carousel (Pattern A/B/C/D), ig-single-post. Locked 2026-05-14. |
-| monthly-market-report-orchestrator | `video_production_skills/monthly-market-report-orchestrator/` | `content:monthly_market_report` | matt-review-draft | 20–45 min |
-| listing_launch | `video_production_skills/listing_launch/` | `content:listing_launch` | matt-review-draft | 15–30 min |
-| content_engine | `automation_skills/content_engine/` | internal router — all `content:*` actions execute through here; not emitted as an action_type itself | matt-review-draft | varies |
+| list-kit | `social_media_skills/list-kit/` | `content:list_kit` | matt-review-draft | 15–30 min | v3 — at-Active orchestrator. Delegates to listing-tour-video, flyer-design, instagram-carousel (Pattern A/B/C/D), ig-single-post. Locked 2026-05-14. Script: `scripts/build-list-kit-orchestrator.mjs` |
+| monthly-market-report-orchestrator | `video_production_skills/monthly-market-report-orchestrator/` | `content:monthly_market_report` | matt-review-draft | 20–45 min | Script: `scripts/build-monthly-market-report-orchestrator.mjs` |
+| listing_launch | `video_production_skills/listing_launch/` | `content:listing_launch` | matt-review-draft | 15–30 min | Script: `scripts/build-listing-launch-orchestrator.mjs` |
+| content_engine | `automation_skills/content_engine/` | internal router — all `content:*` actions execute through here; not emitted as an action_type itself | matt-review-draft | varies | No build script — internal routing bus, not a stand-alone producer |
 
 ---
 
@@ -40,18 +40,18 @@ Single-deliverable specialists. Each handles one or more `content:*` action_type
 | earth_zoom | `video_production_skills/earth_zoom/` | `content:earth_zoom` | matt-review-draft | 10–20 min |
 | google_maps_flyover | `video_production_skills/google_maps_flyover/` | `content:aerial_flyover` | matt-review-draft | 15–25 min |
 | blog-post | `social_media_skills/blog-post/` | `content:blog_post`, `content:seo_blog` | matt-review-draft | 5–10 min |
-| facebook-lead-gen-ad | `social_media_skills/facebook-lead-gen-ad/` | `content:fb_lead_gen_ad`, `content:fb_ad` | matt-review-draft | 5–10 min |
-| flyer-design | `social_media_skills/flyer-design/` | `content:flyer`, `content:just_listed_flyer`, `content:open_house_flyer`, `content:feature_sheet` | matt-review-draft | 3–8 min |
-| cma | `marketing_brain_skills/producers/cma/` | `content:cma` | matt-review-draft | 10–20 min (CMA build: subject + 6–10 comp flyers + branded map + 2-method pricing; signed by broker resolved from `public.brokers`) |
-| instagram-carousel | `social_media_skills/instagram-carousel/` | `content:ig_carousel` | matt-review-draft | 5–10 min |
+| facebook-lead-gen-ad | `social_media_skills/facebook-lead-gen-ad/` | `content:fb_lead_gen_ad`, `content:fb_ad` | matt-review-draft | 5–10 min | `scripts/build-fb-ad.mjs` builds ad-spec from market cache (partial — does not handle lead-form wiring). ⚠️ NO_SCRIPT — full lead-gen form producer script not yet built |
+| flyer-design | `social_media_skills/flyer-design/` | `content:flyer`, `content:just_listed_flyer`, `content:open_house_flyer`, `content:feature_sheet` | matt-review-draft | 3–8 min | Script: `scripts/build_flyer_design_wrapper.py` |
+| cma | `marketing_brain_skills/producers/cma/` | `content:cma` | matt-review-draft | 10–20 min (CMA build: subject + 6–10 comp flyers + branded map + 2-method pricing; signed by broker resolved from `public.brokers`) | Script: `scripts/build_cma_wrapper.py` |
+| instagram-carousel | `social_media_skills/instagram-carousel/` | `content:ig_carousel` | matt-review-draft | 5–10 min | ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce |
 | meme_lord | `social_media_skills/meme_lord/` | `content:image_meme` | matt-explicit (Matt writes punchline) | 3–8 min |
 | market_report_video (ffmpeg) | `video_production_skills/market_report_video/` | `content:market_stat_card_video` | matt-review-draft | 3–8 min |
 | news_video (avatar) | `video_production_skills/news_video/` | `content:avatar_video` | matt-review-draft | 10–20 min |
-| social_calendar | `video_production_skills/social_calendar/` | `content:social_calendar` | matt-review-draft | 3–5 min |
-| ig-single-post | `social_media_skills/ig-single-post/` | `content:ig_single_post` | matt-review-draft | 3–8 min | S1–S10 templates: Just Listed, Just Sold, Open House, Coming Soon, Price Improvement, Featured Listing, Agent Intro, Brag Stat, Press Feature, Market Data Card |
+| social_calendar | `video_production_skills/social_calendar/` | `content:social_calendar` | matt-review-draft | 3–5 min | ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce |
+| ig-single-post | `social_media_skills/ig-single-post/` | `content:ig_single_post` | matt-review-draft | 3–8 min | S1–S10 templates: Just Listed, Just Sold, Open House, Coming Soon, Price Improvement, Featured Listing, Agent Intro, Brag Stat, Press Feature, Market Data Card. Script: `scripts/build_ig_single_post_wrapper.py` |
 | coming-soon-teaser | `social_media_skills/coming-soon-teaser/` | `content:coming_soon_teaser` | matt-review-draft | 8–15 min | Pre-Active Reel + IG/FB Stories. Exterior-only, 10–15s |
 | tiktok-listing-tour | `video_production_skills/tiktok-listing-tour/` | `content:tiktok_listing_tour` | matt-review-draft | 10–20 min | TikTok-optimized with SEO-baked VO embedding long-tail geo query |
-| youtube-long-form-walkthrough | `video_production_skills/youtube-long-form-walkthrough/` | `content:yt_longform_walkthrough` | matt-review-draft | 20–40 min | 4–12 min, 1920×1080, $750K+ floor. Faceless, drone hook + price reveal first 10s |
+| youtube-long-form-walkthrough | `video_production_skills/youtube-long-form-walkthrough/` | `content:yt_longform_walkthrough` | matt-review-draft | 20–40 min | 4–12 min, 1920×1080, $750K+ floor. Faceless, drone hook + price reveal first 10s. ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce (note: `build-youtube-long.mjs` is for market-report, NOT walkthrough) |
 | open-house-stories | `social_media_skills/open-house-stories/` | `content:open_house_stories` | matt-review-draft | 5–10 min | 5–7 frame Stories sequence with ManyChat keyword CTA |
 | under-contract-announcement | `social_media_skills/under-contract-announcement/` | `content:under_contract_announcement` | matt-review-draft | 3–8 min | 4:5 static, data-only caption, NO celebration language |
 | sold-deal-summary | `social_media_skills/sold-deal-summary/` | `content:sold_deal_summary` | matt-review-draft | 5–10 min | Dual deliverable: IG/FB static + LinkedIn native text (market-insight framing) |
@@ -67,13 +67,13 @@ Single-deliverable specialists. Each handles one or more `content:*` action_type
 | market_pulse_short | `video_production_skills/market_pulse_short/` | `content:market_pulse_short` | matt-review-draft | 5–10 min | NEW 2026-05-16. 9-15s recurring weekly market data short. Pulls from `market_pulse_live` + `market_stats_cache`. Victoria VO. |
 | clip_compilation | `video_production_skills/clip_compilation/` | `content:clip_compilation` | matt-review-draft | 10–20 min | NEW 2026-05-16. Stitches multiple existing short clips from asset library into compilation. Pure repurpose. |
 | virtual_staging | `social_media_skills/virtual_staging/` | `content:virtual_staging` | matt-review-draft | 5–10 min (~$0.50–$2/img) | NEW 2026-05-16. AI virtual staging of empty rooms. Replicate model. Always discloses "virtually staged" per NAR ethics. |
-| floor_plan_render | `social_media_skills/floor_plan_render/` | `content:floor_plan_render` | matt-review-draft | 5–10 min | NEW 2026-05-16. Cleans/brands MLS floor plan or generates 2D plan from Matterport scan. PDF + PNG output. |
+| floor_plan_render | `social_media_skills/floor_plan_render/` | `content:floor_plan_render` | matt-review-draft | 5–10 min | NEW 2026-05-16. Cleans/brands MLS floor plan or generates 2D plan from Matterport scan. PDF + PNG output. ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce |
 | comparable_grid | `social_media_skills/comparable_grid/` | `content:comparable_grid` | matt-review-draft | 5–10 min | NEW 2026-05-16. 3×2 or 3×3 image grid of comp sales for a listing or CMA. Delegated by `cma`. |
 | testimonial_card | `social_media_skills/testimonial_card/` | `content:testimonial_card` | matt-review-draft | 3–8 min | NEW 2026-05-16. Single-image client quote card. Voice-validated against pandering. 4:5 + 9:16 variants. |
 | map_static_card | `social_media_skills/map_static_card/` | `content:map_static_card` | matt-review-draft | 3–8 min | NEW 2026-05-16. Static branded Google Maps snippet for a listing or neighborhood. Location beat for carousels + email. |
 | newsletter | `social_media_skills/newsletter/` | `content:newsletter` | matt-review-draft | 10–20 min | NEW 2026-05-16. Monthly email newsletter to past clients + leads via Resend. Phase 10 smoke-test producer. |
 | listing-description | `social_media_skills/listing-description/` | `content:listing_description` | matt-review-draft | 5–10 min | NEW 2026-05-16. MLS Public Remarks + private remarks + showing instructions per listing. Fair-housing gated. |
-| cma-narrative | `marketing_brain_skills/producers/cma-narrative/` | `content:cma_narrative` | matt-review-draft | 8–15 min | NEW 2026-05-16. Long-form narrative cover letter + per-section commentary inside a CMA. Delegated by `cma`. |
+| cma-narrative | `marketing_brain_skills/producers/cma-narrative/` | `content:cma_narrative` | matt-review-draft | 8–15 min | NEW 2026-05-16. Long-form narrative cover letter + per-section commentary inside a CMA. Delegated by `cma`. ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce |
 | market-report-blog | `social_media_skills/market-report-blog/` | `content:market_report_blog` | matt-review-draft | 10–20 min | NEW 2026-05-16. SEO-optimized monthly market report blog post for ryan-realty.com (AgentFire WordPress REST). |
 | meta-creative-variant | `social_media_skills/meta-creative-variant/` | `content:meta_creative_variant` | matt-review-draft | 5–10 min | NEW 2026-05-16. 3-5 creative variants (headline + primary text + image) for active FB seller-funnel ad sets. |
 | google-ads-copy | `social_media_skills/google-ads-copy/` | `content:google_ads_copy` | matt-review-draft | 5–10 min | NEW 2026-05-16. Search + Performance Max headlines + descriptions + sitelinks for Google Ads. Tied to SEO keywords. |
@@ -83,7 +83,7 @@ Single-deliverable specialists. Each handles one or more `content:*` action_type
 
 ## Section C — Site Producers
 
-These producers make changes to ryan-realty.com. All site changes land in a git branch and open a GitHub PR — never directly on `main`.
+These producers make changes to ryan-realty.com. All site changes land in a git branch and open a GitHub PR — never directly on `main`. **No `scripts/build_*.py` / `build-*.mjs` expected for site producers** — they execute via code-writing + PR creation, not a standalone render script.
 
 | producer_name | path | action_types | approval | notes |
 |---|---|---|---|---|
@@ -104,7 +104,7 @@ These producers make changes to ryan-realty.com. All site changes land in a git 
 
 ## Section D — Operational Producers
 
-These producers make changes to ad accounts, CRM, and email platform.
+These producers make changes to ad accounts, CRM, and email platform. **No `scripts/build_*.py` / `build-*.mjs` expected for ops producers** — they execute via direct API calls from within the skill, not a standalone render script.
 
 | producer_name | path | action_types | approval | notes |
 |---|---|---|---|---|
@@ -122,8 +122,8 @@ These producers make changes to ad accounts, CRM, and email platform.
 
 | producer_name | path | action_types | approval | notes |
 |---|---|---|---|---|
-| comms-matt-alert | `marketing_brain_skills/producers/comms-matt-alert/` | `comms:matt_alert`, `comms:matt_summary`, `comms:team_update`, `comms:stakeholder_summary` | none (critical/high send immediately; medium/low/summary land in dashboard) | Routes alerts to iMessage (critical/high) or email + dashboard card (medium/low/summary). Voice-validates every message before send. |
-| comms-client-update | `marketing_brain_skills/producers/comms-client-update/` | `comms:client_weekly`, `comms:client_milestone`, `comms:past_client_touch` | matt-review-draft | NEW 2026-05-16. Per-client touchpoint communications: weekly seller status, milestone notes (offer accepted/inspection passed/closing), quarterly past-client touch (home-value + market snapshot). Sends via Resend with personalized fields. |
+| comms-matt-alert | `marketing_brain_skills/producers/comms-matt-alert/` | `comms:matt_alert`, `comms:matt_summary`, `comms:team_update`, `comms:stakeholder_summary` | none (critical/high send immediately; medium/low/summary land in dashboard) | Routes alerts to iMessage (critical/high) or email + dashboard card (medium/low/summary). Voice-validates every message before send. Script: `scripts/build-comms-matt-alert.mjs` |
+| comms-client-update | `marketing_brain_skills/producers/comms-client-update/` | `comms:client_weekly`, `comms:client_milestone`, `comms:past_client_touch` | matt-review-draft | NEW 2026-05-16. Per-client touchpoint communications: weekly seller status, milestone notes (offer accepted/inspection passed/closing), quarterly past-client touch (home-value + market snapshot). Sends via Resend with personalized fields. Script: `scripts/build-comms-client-update.mjs` |
 
 ---
 
@@ -133,9 +133,9 @@ These producers run analysis and surface findings; they do not publish.
 
 | producer_name | path | action_types | approval | notes |
 |---|---|---|---|---|
-| analyze-anomaly | `marketing_brain_skills/analyze-anomaly/` | `analyze:drop_investigation`, `analyze:spike_investigation`, `analyze:metric_decomposition` | none (findings written to marketing_decisions; generate-briefs reads them) | Drills into flagged channel anomaly: inflection date, dimension decomposition, correlated events, hypothesis, recommended actions. |
-| analyze-experiment | `marketing_brain_skills/analyze-experiment/` | `analyze:ab_test_design`, `analyze:ab_test_readout` | none (rollout actions it enqueues go to site-edit which has matt-review-PR) | Designs A/B tests with power calculation; reads out completed tests with chi-square / t-test significance; declares winner or extends. |
-| analyze-competitor | `marketing_brain_skills/analyze-competitor/` | `analyze:competitor_scan`, `analyze:competitor_report` | none (findings written to marketing_decisions) | NEW 2026-05-16. Pulls and analyzes a named Bend competitor's marketing surface (Cascade Sotheby's, Hasson, Compass Bend, etc.). Post cadence, content mix, ad creative, listing count, agent growth. Sister to `competitor-recon` (which runs the weekly scrape). |
+| analyze-anomaly | `marketing_brain_skills/analyze-anomaly/` | `analyze:drop_investigation`, `analyze:spike_investigation`, `analyze:metric_decomposition` | none (findings written to marketing_decisions; generate-briefs reads them) | Drills into flagged channel anomaly: inflection date, dimension decomposition, correlated events, hypothesis, recommended actions. ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce |
+| analyze-experiment | `marketing_brain_skills/analyze-experiment/` | `analyze:ab_test_design`, `analyze:ab_test_readout` | none (rollout actions it enqueues go to site-edit which has matt-review-PR) | Designs A/B tests with power calculation; reads out completed tests with chi-square / t-test significance; declares winner or extends. Script: `scripts/build-analyze-experiment.mjs` |
+| analyze-competitor | `marketing_brain_skills/analyze-competitor/` | `analyze:competitor_scan`, `analyze:competitor_report` | none (findings written to marketing_decisions) | NEW 2026-05-16. Pulls and analyzes a named Bend competitor's marketing surface (Cascade Sotheby's, Hasson, Compass Bend, etc.). Post cadence, content mix, ad creative, listing count, agent growth. Sister to `competitor-recon` (which runs the weekly scrape). ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce |
 
 ---
 

@@ -556,6 +556,25 @@ Any agent producing content, writing site copy, mutating ad campaigns, or sendin
 
 **Rule:** Never invoke a producer directly without going through one of these two entry-point skills. The entry-point skills enforce the approval gate and the action-row audit trail.
 
+### Execution path (canonical vs legacy)
+
+There are THREE ways a producer can actually run. The first is canonical and replaces the others.
+
+| Path | Trigger | When it fires | Audit trail |
+|---|---|---|---|
+| **Producer-runtime cron** (canonical) | `/api/cron/producer-runtime` | Every 30 min when `PRODUCER_RUNTIME_ENABLED=true` on Vercel. Polls `status='in_production'` rows, loads the producer's SKILL.md, calls Claude Sonnet 4.5 via the Messages API, transitions to `ready` with full `executor_response`. | Full. Every row touches `marketing_brain_actions` + writes to `marketing_cost_ledger`. Cost capped at $5/row, $15/run, max 3 rows/run. |
+| **One-shot admin trigger** | POST `/api/admin/run-producer/[id]` | Matt clicks "Run producer now" in `/admin/approval-queue`, OR an admin curls the route with a session cookie. Same logic as the cron, runs exactly one row. | Full. Same `marketing_brain_actions` flow, `triggered_by='admin_manual'` in executor_response. |
+| **Direct CLI** (legacy, discouraged) | `python3 scripts/build_X.py <payload.json>` | Manual dev / one-off test. **Guarded by `require_action_row(payload)` in `scripts/_producer_lib.py`** — opt-in per producer. Once a producer calls the guard, rogue invocations refuse unless `PRODUCER_ALLOW_ROGUE=1`. | None unless the payload carries `action_id`. The guard's job is to refuse silent rogue runs. |
+
+**The canonical path is the cron.** The brain creates a `pending` row → `producer-dispatcher` cron (every 15 min) transitions to `in_production` → `producer-runtime` cron (every 30 min) executes → row hits `ready` → Matt reviews in `/admin/approval-queue` → approve → `publisher-sweep` cron (every 10 min) hits `/api/social/publish` → row hits `executed` → `marketing-measurement-loop` cron (daily 15:00 UTC) populates `content_performance` → row hits `measured`.
+
+**Skill-only producers** (REGISTRY rows annotated `⚠️ NO_SCRIPT`) cannot run via the legacy Python CLI because no `scripts/build_X.py` exists. They run ONLY via the producer-runtime cron, which reads the SKILL.md directly. Cron-callable does not require a build script — the SKILL.md IS the recipe.
+
+**Migration status (2026-05-21):**
+- `PRODUCER_RUNTIME_ENABLED=true` set in Vercel production env.
+- `require_action_row()` shipped in `_producer_lib.py` (commit 749377f). No producer scripts call it yet — opt-in as scripts are touched.
+- REGISTRY reconciled against on-disk inventory (out/audits/registry-reconciliation-2026-05-22.md). 43 producers wired, 8 skill-only.
+
 ### The protocol: `marketing_brain_actions` table
 
 Every marketing action — brain-generated or manually triggered — gets one row in `public.marketing_brain_actions` (Supabase project `dwvlophlbvvygjfxcrhm`).
