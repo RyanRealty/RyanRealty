@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.3 (2026-05-22)
+
+### Other
+- a11y(home): close the last 2 lighthouse a11y gaps on homepage
+
+---
+
+
 ## v1.279.2 (2026-05-22)
 
 ### Other
