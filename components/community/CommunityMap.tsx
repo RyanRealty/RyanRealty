@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo, useState, useCallback } from 'react'
-import { useJsApiLoader, GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api'
+import { GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api'
+import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { useRouter } from 'next/navigation'
 import type { ListingRow } from '@/app/actions/communities'
 import {
@@ -83,9 +84,7 @@ export default function CommunityMap({
   const [placePosition, setPlacePosition] = useState<{ lat: number; lng: number } | null>(null)
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: apiKey,
+  const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
     libraries: ['places'],
   })
 

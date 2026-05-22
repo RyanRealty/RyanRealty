@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import React, { useMemo, useCallback, useState } from 'react'
-import { useJsApiLoader, GoogleMap, Marker, InfoWindow } from '@react-google-maps/api'
+import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api'
+import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { useRouter } from 'next/navigation'
 import { MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM_CITY, getListingMarkerIcon, MAP_LABEL_LISTING, MAP_COLOR_ACCENT, MAP_STROKE_WHITE, MAP_STROKE_WEIGHT } from '@/lib/map-constants'
 import { listingDetailPath } from '@/lib/slug'
@@ -50,9 +51,7 @@ export default function ListingDetailMapGoogle({ subjectListing, otherListings }
   const [infoOtherKey, setInfoOtherKey] = useState<string | null>(null)
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: apiKey,
+  const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
     libraries: ['places'],
   })
 

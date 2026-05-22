@@ -2,7 +2,8 @@
 
 import React, { useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { useJsApiLoader, GoogleMap, Marker, InfoWindow } from '@react-google-maps/api'
+import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api'
+import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { useRouter } from 'next/navigation'
 import { MAP_DEFAULT_CENTER, getListingMarkerIcon } from '@/lib/map-constants'
 import { Button } from "@/components/ui/button"
@@ -36,9 +37,10 @@ export default function MapListingsPage({ listings }: { listings: ListingForMap[
   const [openMarkerKey, setOpenMarkerKey] = useState<string | null>(null)
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: apiKey,
+  // useGoogleMapsReady reads from the GoogleMapsBootstrap loader
+  // injected by app/layout.tsx. apiKey is kept here only so the
+  // "missing key" branch still shows a useful placeholder.
+  const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
     libraries: ['places'],
   })
 

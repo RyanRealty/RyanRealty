@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
-import { useJsApiLoader, GoogleMap, InfoWindow, Polygon } from '@react-google-maps/api'
+import { GoogleMap, InfoWindow, Polygon } from '@react-google-maps/api'
+import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { useRouter } from 'next/navigation'
 import { MarkerClusterer } from '@googlemaps/markerclusterer'
 
@@ -134,9 +135,7 @@ export default function SearchMapClustered({
   } | null>(null)
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: apiKey,
+  const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
     libraries: ['places'],
   })
 
