@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.269.6 (2026-05-22)
+
+### Maintenance
+- docs(cities): note why _getCitySoldListingsUncached not yet migrated
+- perf(cities): migrate city listings + pending to DAL — baseline 380→378
+
+---
+
+
 ## v1.269.5 (2026-05-22)
 
 ### Maintenance
