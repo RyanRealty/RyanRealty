@@ -6,6 +6,8 @@ import { listingDetailPath, listingKeyFromSlug, neighborhoodPagePath, reportsExp
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getSubdivisionMatchNames } from '../../lib/subdivision-aliases'
 import { getPolygonBounds, isPointInPolygon, type MapPolygonPoint } from '@/lib/map-polygon'
+import { getCommunityListings as getCommunityListingsDAL, getCityListings as getCityListingsDAL } from '@/lib/data'
+import type { ListingTile } from '@/lib/data'
 
 function getAnonSupabase(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -140,21 +142,55 @@ export type SimilarListingRow = {
  * Fetch other active listings in the same subdivision (from Supabase), excluding the current one.
  * Returns at most 6. Only call when subdivision name is present.
  */
+/** Map a DAL ListingTile to SimilarListingRow (legacy shape callers expect). */
+function tileToSimilarListingRow(tile: ListingTile): SimilarListingRow {
+  return {
+    ListingKey: tile.listingKey,
+    ListNumber: tile.listNumber,
+    ListPrice: tile.listPrice,
+    BedroomsTotal: tile.beds,
+    BathroomsTotal: tile.baths,
+    StreetNumber: tile.streetNumber,
+    StreetName: tile.streetName,
+    City: tile.city,
+    State: null,
+    PostalCode: tile.postalCode,
+    SubdivisionName: tile.subdivisionName,
+    PhotoURL: tile.photoUrl,
+    Latitude: tile.lat,
+    Longitude: tile.lng,
+    StandardStatus: tile.status,
+    OnMarketDate: tile.onMarketDate,
+    OpenHouses: null,
+    TotalLivingAreaSqFt: tile.sqft,
+    ListOfficeName: null,
+    ListAgentName: null,
+    has_virtual_tour: tile.hasVirtualTour,
+    year_built: tile.yearBuilt,
+    price_per_sqft: tile.pricePerSqft,
+    lot_size_acres: tile.lotSizeAcres,
+  }
+}
+
 export async function getOtherListingsInSubdivision(
   subdivisionName: string,
   excludeListingKey: string
 ): Promise<SimilarListingRow[]> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return []
-  const { data } = await supabase
-    .from('listings')
-    .select(SIMILAR_SELECT)
-    .eq('"SubdivisionName"', subdivisionName)
-    .neq('ListingKey', excludeListingKey)
-    .neq('ListNumber', excludeListingKey)
-    .limit(6)
-
-  return (data ?? []) as SimilarListingRow[]
+  // DAL: read from listing_tile_mv via getCommunityListings. Fetches 8 to
+  // make room for excluding the current listing; trims to 6 at the end.
+  const tiles = await getCommunityListingsDAL(subdivisionName, {
+    status: 'active-and-pending',
+    sort: 'newest',
+    limit: 8,
+  })
+  return tiles
+    .filter(
+      (t) =>
+        t.listingKey !== excludeListingKey &&
+        t.listNumber !== excludeListingKey,
+    )
+    .slice(0, 6)
+    .map(tileToSimilarListingRow)
 }
 
 const SIMILAR_SELECT =
@@ -172,8 +208,7 @@ export async function getSimilarListingsWithFallback(
   maxCount = 8
 ): Promise<SimilarListingRow[]> {
   const excludeKey = String(excludeListingKey ?? '').trim()
-  const supabase = getAnonSupabase()
-  if (!supabase || !excludeKey) return []
+  if (!excludeKey) return []
   let similar: SimilarListingRow[] = []
   if (subdivisionName?.trim()) {
     similar = await getOtherListingsInSubdivision(subdivisionName.trim(), excludeKey)
@@ -183,17 +218,19 @@ export async function getSimilarListingsWithFallback(
   const need = Math.max(minCount - similar.length, 0)
   if (need === 0 && similar.length >= minCount) return similar.slice(0, maxCount)
   const excludeSet = new Set([excludeKey, ...similar.map((r) => (r.ListNumber ?? r.ListingKey ?? '').toString().trim()).filter(Boolean)])
-  let query = supabase
-    .from('listings')
-    .select(SIMILAR_SELECT)
-    .or(ACTIVE_OR_PENDING_OR)
-    .neq('ListNumber', excludeKey)
-    .neq('ListingKey', excludeKey)
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit((maxCount - similar.length) + 20)
-  if (city?.trim()) query = query.eq('"City"', city.trim())
-  const { data: extra } = await query
-  const extraRows = (extra ?? []) as SimilarListingRow[]
+  // DAL: read fallback tiles from listing_tile_mv via getCityListings
+  const cityName = city?.trim()
+  const fillLimit = (maxCount - similar.length) + 20
+  const tiles = cityName
+    ? await getCityListingsDAL(cityName, { status: 'active-and-pending', sort: 'newest', limit: fillLimit })
+    : []
+  const extraRows: SimilarListingRow[] = tiles
+    .filter(
+      (t) =>
+        t.listingKey !== excludeKey &&
+        t.listNumber !== excludeKey,
+    )
+    .map(tileToSimilarListingRow)
   const merged = similar.slice()
   for (const row of extraRows) {
     const k = (row.ListNumber ?? row.ListingKey ?? '').toString().trim()
