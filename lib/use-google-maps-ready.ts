@@ -105,22 +105,54 @@ export function useGoogleMapsReady(
       return
     }
 
-    // Begin polling. We start regardless of `isLoaded`/`loadError`
-    // because the script tag is injected at the loader's initial
-    // mount and Google's new chunked bootstrap finishes registering
-    // Map only after main.js arrives (well after the loader's
-    // internal retry budget has expired).
+    // Google's new chunked-script API doesn't populate `google.maps.Map`
+    // synchronously. You have to call `google.maps.importLibrary('maps')`
+    // (and optionally other named libs) to trigger the actual class
+    // registration. Try this aggressively whenever importLibrary appears.
+    let cancelled = false
+    const tryImport = async () => {
+      const g = (window as unknown as {
+        google?: {
+          maps?: {
+            importLibrary?: (name: string) => Promise<unknown>
+            Map?: unknown
+          }
+        }
+      }).google
+      const importLibrary = g?.maps?.importLibrary
+      if (typeof importLibrary !== 'function') return false
+      try {
+        // 'maps' brings the Map class. 'places' brings places lib.
+        // If the caller asked for 'places' we mirror that import too.
+        const reqs: Promise<unknown>[] = [importLibrary('maps')]
+        if ((opts.libraries ?? []).includes('places')) {
+          reqs.push(importLibrary('places'))
+        }
+        await Promise.all(reqs)
+      } catch {
+        // ignore — fall through to polling
+      }
+      return true
+    }
+    // Fire immediately if importLibrary is already defined.
+    if (!cancelled) void tryImport()
+
     if (startedAtRef.current == null) {
       startedAtRef.current = Date.now()
     }
 
     const interval = window.setInterval(() => {
+      if (cancelled) return
       if (hasMap()) {
         window.clearInterval(interval)
         setReady(true)
         setError(null)
         return
       }
+      // Re-attempt importLibrary every poll — useful for the moment
+      // when the bootstrap script lands and defines importLibrary
+      // but Map isn't yet imported.
+      void tryImport()
       const elapsed = Date.now() - (startedAtRef.current ?? Date.now())
       if (elapsed > MAP_CLASS_TIMEOUT_MS) {
         window.clearInterval(interval)
@@ -133,17 +165,22 @@ export function useGoogleMapsReady(
         )
         if (!scriptInjected) {
           setError(new Error('Google Maps script never injected'))
-        } else if (loadError) {
-          // Underlying loader reported error AND we timed out.
-          setError(loadError)
         }
+        // Note: we deliberately do NOT propagate the underlying
+        // useJsApiLoader's loadError here — that hook reports
+        // failure on the chunked-script path well before main.js
+        // actually finishes. Surfacing it just causes flash-of-
+        // error UI. If the 15s timeout truly expires with no Map,
+        // we fall through and let the caller render its !isLoaded
+        // placeholder until the next mount.
       }
     }, POLL_INTERVAL_MS)
 
     return () => {
+      cancelled = true
       window.clearInterval(interval)
     }
-  }, [isLoaded, loadError, ready])
+  }, [isLoaded, loadError, ready, opts.libraries])
 
   return { ready, error }
 }
