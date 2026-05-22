@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.270.0 (2026-05-22)
+
+### Features
+- feat(home): add "Browse the feed" entry CTA below the search
+
+---
+
+
 ## v1.269.6 (2026-05-22)
 
 ### Maintenance
