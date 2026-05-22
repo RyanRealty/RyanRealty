@@ -81,7 +81,9 @@
   --sidebar-border: oklch(0.923 0.003 48.717);
   --sidebar-ring: oklch(0.709 0.01 56.259);
   /* App-level semantic tokens (not part of nova defaults) */
-  --success: oklch(0.627 0.194 149.214);
+  /* --success: darker green so white-on-success text clears WCAG AA 4.5:1
+     The prior lightness 0.627 was too light to support white foreground. */
+  --success: oklch(0.45 0.15 149.214);
   --success-foreground: oklch(1 0 0);
   --warning: oklch(0.769 0.188 70.08);
   --warning-foreground: oklch(0.147 0.004 49.25);
@@ -119,7 +121,9 @@
   --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.553 0.013 58.071);
-  --success: oklch(0.627 0.194 149.214);
+  /* Match the light-mode darker-success change so dark theme also passes
+     contrast on bg-success text-success-foreground. */
+  --success: oklch(0.45 0.15 149.214);
   --success-foreground: oklch(1 0 0);
   --warning: oklch(0.769 0.188 70.08);
   --warning-foreground: oklch(0.147 0.004 49.25);

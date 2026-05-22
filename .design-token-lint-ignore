@@ -61,3 +61,8 @@ app/admin/(protected)/analytics/action-required/page.tsx
 # The <hr> reference is inside a runtime markdown replacer
 # (`.replace(/^---$/gm, '<hr>')`), not JSX. Internal-only page.
 app/admin/(protected)/producers/[slug]/page.tsx
+
+# Seller home-value LP — uses Google brand hex (#4285F4, #34A853,
+# #FBBC05, #EA4335) for the official Google sign-in button. Google's
+# brand guidelines require these exact colors; cannot be CSS-var'd.
+app/lp/seller-home-value/page.tsx

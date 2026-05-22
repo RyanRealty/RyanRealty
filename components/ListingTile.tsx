@@ -69,11 +69,12 @@ function statusLabel(s: string | null | undefined): string {
 
 function statusColor(s: string | null | undefined): string {
   const t = (s ?? '').toLowerCase()
-  // Use solid backgrounds + foreground tokens so the pill meets WCAG 2 AA
-  // contrast (4.5:1). The prior bg-success/15 + text-success combo measured
-  // 2.1:1 on lighthouse and tanked the homepage a11y score.
+  // Design system semantic tokens, darkened in app/globals.css so
+  // bg-success text-success-foreground (and warning) meet WCAG 2 AA
+  // (4.5:1) with the white foreground. Closed = neutral border bg
+  // with dark text.
   if (t.includes('pending')) return 'bg-warning text-warning-foreground'
-  if (t.includes('closed')) return 'bg-border text-muted-foreground'
+  if (t.includes('closed')) return 'bg-border text-foreground'
   return 'bg-success text-success-foreground'
 }
 

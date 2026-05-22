@@ -26,7 +26,8 @@ export const metadata: Metadata = {
 }
 
 // Ryan Realty brand line — paid-traffic / cold-contact surfaces.
-const BROKER_PHONE = '(541) 703-3095'
+// Dotted format per brand voice spec (CLAUDE.md §3): 541.703.3095
+const BROKER_PHONE = '541.703.3095'
 const BROKER_PHONE_TEL = '+15417033095'
 
 export default async function SellerHomeValuePage() {

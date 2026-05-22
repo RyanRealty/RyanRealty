@@ -139,17 +139,17 @@
 - [ ] `notFound()` for unknown `listingKey`; `permanentRedirect()` for legacy address-based routes
 
 ### `/lp/seller-home-value` — Seller LP
-- [ ] File: `app/lp/seller-home-value/page.tsx` (exists)
+- [x] File: `app/lp/seller-home-value/page.tsx` (exists)
 - [ ] Market snapshot from `getBendMarketSnapshot()` — verified against `market_stats_cache` at render time, not hard-coded
 - [ ] `SellerLPForm` submits to FUB seller workflow per `docs/FUB_SELLER_WORKFLOW_2026-05-17.md`
 - [ ] Agent attribution cookie read via `readAttributedAgentServer()` — routes to correct broker when `?agent=` param set
-- [ ] `robots: { index: false, follow: false }`
+- [x] `robots: { index: false, follow: false }` *(verified line 19)*
 
 ### `/lp/buyer-listing-alerts` — Buyer LP
-- [ ] File: `app/lp/buyer-listing-alerts/page.tsx` (exists)
-- [ ] `BuyerLPForm` submits to FUB; contact phone displayed as `541.703.3095` (FUB-tracked)
+- [x] File: `app/lp/buyer-listing-alerts/page.tsx` (exists)
+- [x] `BuyerLPForm` submits to FUB; contact phone displayed as `541.703.3095` (FUB-tracked) *(verified — BROKER_PHONE constant now dotted)*
 - [ ] Agent attribution cookie respected
-- [ ] `robots: { index: false, follow: false }`
+- [x] `robots: { index: false, follow: false }` *(verified line 9)*
 
 ### `/lp/expired-listing` — Expired listing LP
 - [ ] File: `app/lp/expired-listing/page.tsx` (exists)

@@ -13,11 +13,12 @@ type Props = {
 
 function statusBadge(status: string | null | undefined): string {
   const s = (status ?? '').toLowerCase()
-  // Solid bg + foreground tokens for WCAG 2 AA contrast (4.5:1)
+  // Design system semantic tokens — bg-success was darkened in globals.css
+  // so white-foreground text now clears WCAG 2 AA (4.5:1).
   if (!s || s.includes('active') || s.includes('for sale') || s.includes('coming soon')) return 'bg-success text-success-foreground'
   if (s.includes('pending')) return 'bg-warning text-warning-foreground'
-  if (s.includes('closed')) return 'bg-border text-muted-foreground'
-  return 'bg-muted text-muted-foreground'
+  if (s.includes('closed')) return 'bg-border text-foreground'
+  return 'bg-muted text-foreground'
 }
 
 export default function ListingOtherListingsAtAddress({
