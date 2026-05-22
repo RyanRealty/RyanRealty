@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.263.2 (2026-05-22)
+
+### Bug Fixes
+- fix(lp/bend): pass libraries:['places'] so map loader singleton matches
+
+---
+
+
 ## v1.263.1 (2026-05-22)
 
 ### Maintenance
