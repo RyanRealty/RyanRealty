@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.263.0 (2026-05-22)
+
+### Features
+- feat(lp/bend): add Neighborhoods/Communities view toggle to interactive map
+
+---
+
+
 ## v1.262.1 (2026-05-22)
 
 ### Bug Fixes
