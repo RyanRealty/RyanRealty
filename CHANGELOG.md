@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.263.6 (2026-05-22)
+
+### Maintenance
+- docs(goal): land SITE_SPEC, EXECUTION_PLAN, DAL contract, ADR-001
+
+---
+
+
 ## v1.263.5 (2026-05-22)
 
 ### Maintenance
