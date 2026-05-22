@@ -17,7 +17,7 @@ import { listSubdivisionsWithFlags } from '@/app/actions/subdivision-flags'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
 import { getResortCommunityImage } from '@/lib/resort-community-images'
 import { CITY_LISTING_TILE_SELECT } from '@/lib/listing-tile-projections'
-import { getAllCitySnapshots } from '@/lib/data'
+import { getAllCitySnapshots, getGeoSnapshot } from '@/lib/data'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -145,35 +145,25 @@ export const getCitiesForIndex = unstable_cache(
 async function _getCityBySlugUncached(slug: string): Promise<CityDetail | null> {
   const cityName = await getCityFromSlug(slug)
   if (!cityName) return null
-  const [stats, cityRow, activeRows] = await Promise.all([
+  // DAL: pre-aggregated city snapshot from geo_snapshot_mv (~2ms)
+  // replaces the prior fetchAllRows path that scanned every active listing
+  // in the city (~3000 rows for Bend) and aggregated in JS. The slow path
+  // was making generateMetadata exceed pa11y's 500ms wait, which caused
+  // the <title> to land in a streamed-after-HTML chunk that pa11y missed.
+  const [stats, cityRow, snapshot] = await Promise.all([
     getMarketStatsForCity(cityName),
     supabase()
       .from('cities')
       .select('name, slug, description, hero_image_url')
       .ilike('name', cityName)
       .maybeSingle(),
-    import('@/lib/supabase/paginate').then((m) =>
-      m.fetchAllRows<{ SubdivisionName?: string | null; ListPrice?: number | null; PropertyType?: string | null }>(
-        supabase(), 'listings', 'SubdivisionName, ListPrice, PropertyType',
-        (q: any) => q.eq('"City"', cityName).or(ACTIVE_OR),
-      )
-    ),
+    getGeoSnapshot({ geoType: 'city', geoKey: cityName.toLowerCase().trim() }),
   ])
-  const filteredRows = activeRows.filter((row) => isResidentialInventoryType(row.PropertyType ?? null))
-  let activeCount = filteredRows.length
+  let activeCount = snapshot?.activeSfrCount ?? 0
   if (activeCount === 0 && stats.count > 0) activeCount = stats.count
-  const subs = filteredRows as { SubdivisionName?: string; ListPrice?: number | null }[]
-  const prices = subs
-    .map((row) => Number(row.ListPrice))
-    .filter((price) => Number.isFinite(price) && price > 0)
-    .sort((a, b) => a - b)
   const medianFromRows =
-    prices.length === 0
-      ? null
-      : prices.length % 2
-        ? prices[Math.floor(prices.length / 2)]!
-        : Math.round((prices[prices.length / 2 - 1]! + prices[prices.length / 2]!) / 2)
-  const communityCount = new Set(subs.map((r) => (r.SubdivisionName ?? '').trim()).filter((s) => s && s.toLowerCase() !== 'n/a')).size
+    snapshot?.medianListPrice != null ? Math.round(snapshot.medianListPrice) : null
+  const communityCount = snapshot?.communityCount ?? 0
   const db = cityRow.data as { name?: string; description?: string | null; hero_image_url?: string | null } | null
   const bannerUrl = await getBannerUrl('city', slug)
   return {
