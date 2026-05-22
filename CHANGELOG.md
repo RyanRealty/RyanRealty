@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.263.3 (2026-05-22)
+
+### Maintenance
+- docs(skills): expand feed-skill triggers to fire on 'feed' alone
+
+---
+
+
 ## v1.263.2 (2026-05-22)
 
 ### Bug Fixes
