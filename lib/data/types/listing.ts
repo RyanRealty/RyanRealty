@@ -24,6 +24,7 @@ export type ListingTile = {
   status: ListingStatus
   listPrice: Currency | null
   closePrice: Currency | null
+  closeDate: IsoTimestamp | null
   beds: number | null
   baths: number | null
   sqft: number | null
@@ -58,7 +59,6 @@ export type ListingTile = {
 export type ListingDetail = ListingTile & {
   // Wider listing detail fields beyond the tile projection.
   originalListPrice: Currency | null
-  closeDate: IsoTimestamp | null
   totalLivingAreaSqFt: number | null
   fireplaceYn: boolean | null
   waterfrontYn: boolean | null

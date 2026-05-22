@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { getCityListings, getCommunityListings, getListingTiles } from '@/lib/data'
 
 export type RecentlySoldListing = {
   listingKey: string
@@ -25,46 +25,39 @@ export async function getRecentlySold(options: {
   subdivision?: string | null
   limit?: number
 }): Promise<RecentlySoldListing[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return []
-
-  const supabase = createClient(url, anonKey)
   const limit = Math.min(24, Math.max(1, options.limit ?? 9))
   const city = options.city?.trim() ?? ''
   const subdivision = options.subdivision?.trim() ?? ''
 
-  let query = supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, ListPrice, ClosePrice, CloseDate, BedroomsTotal, BathroomsTotal, LivingArea, StreetNumber, StreetName, City, State, PostalCode, PhotoURL, SubdivisionName, StandardStatus')
-    .or('StandardStatus.ilike.%Closed%,StandardStatus.ilike.%Sold%')
-    .order('CloseDate', { ascending: false, nullsFirst: false })
-    .order('ModificationTimestamp', { ascending: false })
-    .limit(limit)
+  // DAL: read closed tiles from listing_tile_mv via the canonical
+  // getCommunityListings / getCityListings, sorted by close_date DESC.
+  // The new 'close-newest' sort key was added to the DAL filter schema
+  // so recently-sold paths can drain from the legacy direct-listings path.
+  const filter = { status: 'closed' as const, sort: 'close-newest' as const, limit }
+  const tiles =
+    subdivision
+      ? await getCommunityListings(subdivision, filter)
+      : city
+        ? await getCityListings(city, filter)
+        : await getListingTiles(filter)
 
-  if (city) query = query.eq('City', city)
-  if (subdivision) query = query.eq('"SubdivisionName"', subdivision)
-
-  const { data } = await query
-  const rows = (data ?? []) as Array<Record<string, unknown>>
-
-  return rows
-    .map((row) => ({
-      listingKey: String(row.ListingKey ?? row.ListNumber ?? '').trim(),
-      listNumber: row.ListNumber == null ? null : String(row.ListNumber),
-      mlsSource: row.mls_source == null ? (row.MlsSource == null ? null : String(row.MlsSource)) : String(row.mls_source),
-      listPrice: row.ListPrice == null ? null : Number(row.ListPrice),
-      closePrice: row.ClosePrice == null ? null : Number(row.ClosePrice),
-      closeDate: row.CloseDate == null ? null : String(row.CloseDate),
-      beds: row.BedroomsTotal == null ? null : Number(row.BedroomsTotal),
-      baths: row.BathroomsTotal == null ? null : Number(row.BathroomsTotal),
-      sqft: row.LivingArea == null ? null : Number(row.LivingArea),
-      streetNumber: row.StreetNumber == null ? null : String(row.StreetNumber),
-      streetName: row.StreetName == null ? null : String(row.StreetName),
-      city: row.City == null ? null : String(row.City),
-      state: row.State == null ? null : String(row.State),
-      postalCode: row.PostalCode == null ? null : String(row.PostalCode),
-      photoUrl: row.PhotoURL == null ? null : String(row.PhotoURL),
+  return tiles
+    .map((t) => ({
+      listingKey: t.listingKey,
+      listNumber: t.listNumber,
+      mlsSource: null,
+      listPrice: t.listPrice,
+      closePrice: t.closePrice,
+      closeDate: t.closeDate,
+      beds: t.beds,
+      baths: t.baths,
+      sqft: t.sqft,
+      streetNumber: t.streetNumber,
+      streetName: t.streetName,
+      city: t.city,
+      state: null,
+      postalCode: t.postalCode,
+      photoUrl: t.photoUrl,
     }))
     .filter((row) => row.listingKey.length > 0)
 }

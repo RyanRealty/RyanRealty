@@ -31,8 +31,10 @@ const FilterSchema = z.object({
   minBeds: z.number().int().nonnegative().optional(),
   minBaths: z.number().nonnegative().optional(),
   minSqft: z.number().int().nonnegative().optional(),
+  hasVirtualTour: z.boolean().optional(),
   status: z.enum(['active', 'active-and-pending', 'pending-only', 'closed', 'all']).default('active'),
-  sort: z.enum(['newest', 'oldest', 'price-asc', 'price-desc']).default('newest'),
+  // 'close-newest' sorts by close_date DESC NULLS LAST — for recently-sold rows.
+  sort: z.enum(['newest', 'oldest', 'price-asc', 'price-desc', 'close-newest']).default('newest'),
   limit: z.number().int().min(1).max(500).default(60),
   offset: z.number().int().nonnegative().default(0),
 })
@@ -89,6 +91,7 @@ function mvRowToTile(row: ListingTileMvRow): ListingTile {
     status: row.standard_status,
     listPrice: row.list_price,
     closePrice: row.close_price,
+    closeDate: row.close_date,
     beds: row.beds,
     baths: row.baths,
     sqft: row.sqft,
@@ -155,6 +158,7 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   if (parsed.minBeds) query = query.gte('beds', parsed.minBeds)
   if (parsed.minBaths) query = query.gte('baths', parsed.minBaths)
   if (parsed.minSqft) query = query.gte('sqft', parsed.minSqft)
+  if (parsed.hasVirtualTour === true) query = query.eq('has_virtual_tour', true)
 
   // Sort
   if (parsed.sort === 'newest') {
@@ -165,6 +169,8 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
     query = query.order('list_price', { ascending: true, nullsFirst: true })
   } else if (parsed.sort === 'price-desc') {
     query = query.order('list_price', { ascending: false, nullsFirst: false })
+  } else if (parsed.sort === 'close-newest') {
+    query = query.order('close_date', { ascending: false, nullsFirst: false })
   }
 
   query = query.range(parsed.offset, parsed.offset + parsed.limit - 1)

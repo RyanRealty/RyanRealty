@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-22T23:53:46.584Z",
-  "total": 365,
+  "generatedAt": "2026-05-22T23:57:32.728Z",
+  "total": 364,
   "byFile": {
     "app/actions/listings.ts": 69,
     "app/actions/sync-spark.ts": 28,
@@ -55,7 +55,6 @@
     "app/actions/guides.ts": 1,
     "app/actions/inventory-breakdown.ts": 1,
     "app/actions/personalization.ts": 1,
-    "app/actions/recently-sold.ts": 1,
     "app/admin/(protected)/analytics/_lib/queries.ts": 1,
     "app/admin/(protected)/cmas/page.tsx": 1,
     "app/admin/(protected)/search/page.tsx": 1,
