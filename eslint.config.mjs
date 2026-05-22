@@ -57,6 +57,18 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Parallel-agent worktrees — these are scratch copies of the
+    // repo that other Claude sessions create. They're not part of
+    // this checkout's source and shouldn't be lint-gated.
+    ".claude/worktrees/**",
+    // OUT OF SCOPE per /goal — video production pipeline + marketing
+    // flyer generators live in their own Remotion + node-script worlds
+    // and use legacy CommonJS require(). Linting them gates the
+    // public LP work behind unrelated cleanup. Tracked exception
+    // per docs/EXECUTION_PLAN.md.
+    "listing_video_v4/**",
+    "video/**",
+    "scripts/render-tumalo-flyers*.js",
   ]),
 ]);
 

@@ -13,6 +13,7 @@
  * Per-figure citation lives in ./citations.json.
  */
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -66,14 +67,14 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
       <div className="rounded-lg border border-border bg-card p-3">
         <p className="text-xs font-medium text-muted-foreground mb-2">Specialised views</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-          <a className="text-primary hover:underline" href="/admin/analytics/action-required">🚨 Action required (start here)</a>
-          <a className="text-primary hover:underline" href="/admin/visitors/live">🟢 Live visitors</a>
-          <a className="text-primary hover:underline" href="/admin/analytics/social">📣 Social channels</a>
-          <a className="text-primary hover:underline" href="/admin/analytics/demographics">👥 Demographics (age, geo)</a>
-          <a className="text-primary hover:underline" href="/admin/analytics/funnel-breakdown">🔻 Funnel breakdown + insights</a>
-          <a className="text-primary hover:underline" href="/admin/analytics/lp-leaderboard">🏁 LP leaderboard</a>
-          <a className="text-primary hover:underline" href="/admin/analytics/cost-per-lead">💸 Cost per lead</a>
-          <a className="text-primary hover:underline" href="/admin/analytics/listing-performance">🏠 Listing performance</a>
+          <Link className="text-primary hover:underline" href="/admin/analytics/action-required">🚨 Action required (start here)</Link>
+          <Link className="text-primary hover:underline" href="/admin/visitors/live">🟢 Live visitors</Link>
+          <Link className="text-primary hover:underline" href="/admin/analytics/social">📣 Social channels</Link>
+          <Link className="text-primary hover:underline" href="/admin/analytics/demographics">👥 Demographics (age, geo)</Link>
+          <Link className="text-primary hover:underline" href="/admin/analytics/funnel-breakdown">🔻 Funnel breakdown + insights</Link>
+          <Link className="text-primary hover:underline" href="/admin/analytics/lp-leaderboard">🏁 LP leaderboard</Link>
+          <Link className="text-primary hover:underline" href="/admin/analytics/cost-per-lead">💸 Cost per lead</Link>
+          <Link className="text-primary hover:underline" href="/admin/analytics/listing-performance">🏠 Listing performance</Link>
         </div>
       </div>
 

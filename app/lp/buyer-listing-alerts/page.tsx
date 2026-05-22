@@ -27,7 +27,7 @@ export default function BuyerLPPage() {
             Find your Bend home — first matches in 30 minutes.
           </h1>
           <p className="mt-4 text-lg text-muted-foreground">
-            Tell us what you're looking for. A real Ryan Realty broker pulls listings
+            Tell us what you&apos;re looking for. A real Ryan Realty broker pulls listings
             that match — within 30 minutes, not the next business day.
           </p>
         </div>
@@ -43,7 +43,7 @@ export default function BuyerLPPage() {
             </a>
           </p>
           <p className="mt-2">
-            No spam. No pressure. Unsubscribe anytime — that's a tag in our system that
+            No spam. No pressure. Unsubscribe anytime — that&apos;s a tag in our system that
             stops every email immediately.
           </p>
         </div>

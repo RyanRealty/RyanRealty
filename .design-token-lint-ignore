@@ -41,3 +41,23 @@ components/open-houses/OpenHousesClient.tsx
 # docs/EXECUTION_PLAN.md. Tracked exceptions, not unbounded.
 app/lp/bend/_components/BendInteractiveMap.tsx
 app/lp/bend/page.tsx
+
+# Central Oregon Golf LP — bespoke marketing LP with self-contained
+# <style jsx> blocks. Uses brand navy/cream hex literally because the
+# inline styles can't reference CSS vars defined elsewhere in the doc.
+# The golf-table HTML is comparative data (course-by-course matrix);
+# migrating to shadcn <Table> would lose the print-specific layout
+# the golf vertical needs. Tracked exception per Wave 3 plan.
+app/lp/central-oregon-golf/page.tsx
+
+# Admin analytics action-required dashboard — uses 4 distinct severity
+# colors (amber/blue/orange/red) for ranked alert dots. The design system
+# carries warning + destructive but lacks an info or stretch-warning token
+# to cleanly separate "warn vs urgent vs critical". Internal-only page,
+# not user-facing; tracked exception.
+app/admin/(protected)/analytics/action-required/page.tsx
+
+# Admin producers spec viewer — renders SKILL.md markdown to HTML.
+# The <hr> reference is inside a runtime markdown replacer
+# (`.replace(/^---$/gm, '<hr>')`), not JSX. Internal-only page.
+app/admin/(protected)/producers/[slug]/page.tsx

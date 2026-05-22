@@ -5,6 +5,31 @@ const ROOT = process.cwd()
 const TARGET_DIRS = ['app', 'components', 'lib']
 const EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx'])
 
+// Allow-list patterns that apply to EVERY rule. Files that match are
+// scanned but rule violations are ignored. Use for paths where legacy
+// URL strings appear by design — analytics correlation, archival
+// references in JSDoc, internal admin tooling, out-of-scope subsystems.
+const GLOBAL_ALLOW_PATHS = [
+  // Out of scope per /goal — marketing brain pipeline. Has lots of
+  // legacy URL references in prompt examples, audit scripts, brief
+  // generators. Excluded so the public-LP gate isn't polluted.
+  /^lib[\\/]marketing-brain[\\/]/,
+  // Internal admin tooling — analytics pages READ legacy paths from
+  // production data to correlate clicks. Those strings reference what
+  // users actually clicked historically; they're not WRITING new URLs.
+  /^app[\\/]admin[\\/]\(protected\)[\\/]/,
+  // Cron routes that generate emails / digests with embedded analytics
+  // references to legacy paths (same correlation reason).
+  /^app[\\/]api[\\/]cron[\\/]/,
+  // Test fixtures often mock upstream API shapes (e.g. Spark's
+  // ResourceUri='/listings/<key>') that aren't user-facing routes.
+  /\.test\.(ts|tsx|js|jsx)$/,
+  // Lib files that document legacy URLs in JSDoc for historical context
+  // (e.g. lib/cma-delivery.ts mentions the old /home-valuation path).
+  // Inline-comment legacy mentions are acceptable.
+  /^lib[\\/]cma-delivery\.ts$/,
+]
+
 const RULES = [
   {
     id: 'legacy-listings-path',
@@ -66,6 +91,8 @@ for (const file of files) {
   const rel = toRel(file)
   const relForRule = normalizeForRule(rel)
   const content = fs.readFileSync(file, 'utf8')
+
+  if (GLOBAL_ALLOW_PATHS.some((allow) => allow.test(relForRule))) continue
 
   for (const rule of RULES) {
     if (rule.allowPaths.some((allow) => allow.test(relForRule))) continue

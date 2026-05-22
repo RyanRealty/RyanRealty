@@ -93,7 +93,7 @@ export const BRAND_CARDS: BrandCardDefinition[] = [
     tone: 'navy',
     cta: {
       label: 'Get my valuation',
-      href: '/home-valuation',
+      href: '/sell/valuation',
       event: 'valuation_requested',
     },
   },

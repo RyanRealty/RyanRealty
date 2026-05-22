@@ -164,7 +164,7 @@ TARGET formats:
   - Listings: 'mls:<MlsId>' (e.g. 'mls:220189422')
   - City/market: 'city:<CityName>' (e.g. 'city:Bend')
   - Neighborhood: 'neighborhood:<name>' (e.g. 'neighborhood:Awbrey Butte')
-  - Website page: page path (e.g. '/listings', '/')
+  - Website page: page path (e.g. '/homes-for-sale', '/')
   - News topic: 'topic:<slug>' (e.g. 'topic:wildfire-risk-2026')
   - Email segment: 'segment:<name>' or 'contact:<email>'
   - Ad campaign: 'campaign:<id>'
