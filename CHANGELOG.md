@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.272.0 (2026-05-22)
+
+### Features
+- feat(analytics): global tel/mailto/form_start intent tracking
+
+### Other
+- ci(a11y): pa11y 4/8 → 7/8 — fix url slugs + tune for streaming SSR
+
+---
+
+
 ## v1.271.0 (2026-05-22)
 
 ### Features
