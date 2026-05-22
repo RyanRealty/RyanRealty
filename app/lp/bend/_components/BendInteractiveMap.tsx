@@ -78,6 +78,7 @@ export function BendInteractiveMap({
   })
 
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'all' | 'neighborhoods' | 'communities'>('all')
 
   const prepared = useMemo(
     () =>
@@ -89,6 +90,25 @@ export function BendInteractiveMap({
         tier: c.tier ?? 'city',
       })),
     [communities],
+  )
+
+  // Filter polygons based on the active view toggle. 'city' tier = official
+  // Bend neighborhoods; 'community' / 'community-overlay' = resort + master-
+  // planned communities outside city limits.
+  const visiblePolygons = useMemo(() => {
+    if (viewMode === 'all') return prepared
+    if (viewMode === 'neighborhoods') return prepared.filter((c) => c.tier === 'city')
+    return prepared.filter((c) => c.tier === 'community' || c.tier === 'community-overlay')
+  }, [prepared, viewMode])
+
+  const neighborhoodCount = useMemo(
+    () => prepared.filter((c) => c.tier === 'city').length,
+    [prepared],
+  )
+  const communityCount = useMemo(
+    () =>
+      prepared.filter((c) => c.tier === 'community' || c.tier === 'community-overlay').length,
+    [prepared],
   )
 
   const onPolygonClick = useCallback(
@@ -174,7 +194,7 @@ export function BendInteractiveMap({
           backgroundColor: CREAM,
         }}
       >
-        {prepared.map((c) => {
+        {visiblePolygons.map((c) => {
           const isHover = hoveredSlug === c.slug
           // Two visual tiers: official City of Bend neighborhoods render navy
           // (the base mesh); resort / master-planned communities outside the
@@ -201,7 +221,7 @@ export function BendInteractiveMap({
           )
         })}
 
-        {prepared.map((c) => (
+        {visiblePolygons.map((c) => (
           <OverlayView
             key={`label-${c.slug}`}
             position={{ lat: c.centroid.lat, lng: c.centroid.lng }}
@@ -236,11 +256,74 @@ export function BendInteractiveMap({
         ))}
       </GoogleMap>
 
+      <div
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          display: 'flex',
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: 999,
+          padding: 4,
+          boxShadow: '0 1px 2px rgba(16,39,66,0.06), 0 6px 18px rgba(16,39,66,0.14)',
+          zIndex: 6,
+          fontFamily: 'Geist, system-ui, sans-serif',
+        }}
+        role="tablist"
+        aria-label="Map view"
+      >
+        {(
+          [
+            { id: 'all' as const, label: 'All', count: prepared.length },
+            { id: 'neighborhoods' as const, label: 'Neighborhoods', count: neighborhoodCount },
+            { id: 'communities' as const, label: 'Communities', count: communityCount },
+          ]
+        ).map((opt) => {
+          const active = viewMode === opt.id
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setViewMode(opt.id)}
+              style={{
+                appearance: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '7px 14px',
+                borderRadius: 999,
+                fontSize: 12.5,
+                fontWeight: 600,
+                letterSpacing: 0.02,
+                color: active ? CREAM : NAVY,
+                background: active ? NAVY : 'transparent',
+                transition: 'background 0.15s, color 0.15s',
+                whiteSpace: 'nowrap',
+                lineHeight: 1.2,
+              }}
+            >
+              {opt.label}
+              <span
+                style={{
+                  marginLeft: 6,
+                  fontVariantNumeric: 'tabular-nums',
+                  opacity: active ? 0.78 : 0.55,
+                  fontWeight: 500,
+                }}
+              >
+                {opt.count}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
       {hoveredSlug && (
         <div
           style={{
             position: 'absolute',
-            top: 16,
+            top: 72,
             left: 16,
             background: NAVY,
             color: CREAM,
