@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.261.10 (2026-05-22)
+
+### Bug Fixes
+- fix(brain): D3 multi-platform measurement + C11 marketing_decisions insert
+
+---
+
+
 ## v1.261.9 (2026-05-22)
 
 ### Other
