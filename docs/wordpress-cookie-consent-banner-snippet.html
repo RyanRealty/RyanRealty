@@ -1,0 +1,295 @@
+<!--
+  ============================================================================
+  Ryan Realty — WordPress Cookie Consent Banner Snippet
+  Target: AgentFire admin → Site Settings → Header/Footer Scripts & Metas
+          → "Body before closing tag" slot (placed BEFORE the FUB identify
+          snippet so the consent cookie is set first)
+  Generated: 2026-05-22
+
+  WHY THIS EXISTS
+  ----------------------------------------------------------------------------
+  ryan-realty.com has no cookie consent banner today. The site fires Matomo
+  analytics, sets first-party cookies, runs Google identity (via our other
+  snippet), and would post visitor events to ryanrealty.vercel.app — all
+  without explicit consent. That is a GDPR/CCPA/OCPA exposure.
+
+  This banner closes that exposure. Granular consent (analytics + marketing).
+  Cookie shape MATCHES the Vercel-side CookieConsentBanner so users see the
+  same consent state across both domains and any later snippet on either
+  side can read the same cookie.
+
+  WHAT IT DOES
+  ----------------------------------------------------------------------------
+  1. Shows a fixed bottom banner the first time a visitor lands without a
+     consent decision. Three buttons: Accept all / Essential only / Customize.
+  2. Customize opens a small dialog with two toggles: Analytics + Marketing.
+  3. Writes the decision to cookie `ryan_realty_cookie_consent` (JSON shape
+     {analytics:bool, marketing:bool}) with 1-year expiry, SameSite=Lax.
+  4. Dispatches a window 'cookie-consent' event so the existing FUB identify
+     snippet (and any other tracker) can re-evaluate and start firing.
+  5. Exposes window.rrConsent helpers: .has('analytics'), .has('marketing'),
+     .reopen() for "Manage cookie preferences" footer links.
+
+  WHAT IT DOES NOT DO
+  ----------------------------------------------------------------------------
+  - Does not block AgentFire / Matomo / any other tracking script. Those
+    scripts need their own consent gates — see the runbook for how to wire
+    them (AgentFire has a setting for it, Matomo gates via JS check).
+  - Does not write any cookies before the user makes a decision (the banner
+    itself sets nothing until a button click).
+  - Does not display in dashboard / admin pages (window.location.pathname
+    check below).
+
+  COMPLIANCE NOTES
+  ----------------------------------------------------------------------------
+  - "Accept all" and "Reject all" have equal prominence per GDPR Article 7.
+  - Customize is offered without forcing the user through it.
+  - Refusal does not penalize the user (essential site features still work).
+  - Decision is revocable via the .reopen() helper (link from footer).
+
+  COOKIE SHAPE
+  ----------------------------------------------------------------------------
+  Cookie name: ryan_realty_cookie_consent
+  Value:       URL-encoded JSON, e.g. {"analytics":true,"marketing":true}
+  Expiry:      365 days
+  SameSite:    Lax (not Strict, so links from email/FB/Google work normally)
+  Path:        /
+  ============================================================================
+-->
+
+<script>
+(function() {
+  var COOKIE_NAME = 'ryan_realty_cookie_consent';
+  var COOKIE_DAYS = 365;
+  var CONSENT_EVENT = 'cookie-consent';
+
+  function getCookie(name) {
+    try {
+      var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]+)'));
+      return m ? decodeURIComponent(m[1]) : null;
+    } catch (e) { return null; }
+  }
+
+  function setCookie(name, value, days) {
+    var exp = new Date();
+    exp.setTime(exp.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + exp.toUTCString() + '; path=/; SameSite=Lax';
+  }
+
+  function getConsent() {
+    var raw = getCookie(COOKIE_NAME);
+    if (!raw) return null;
+    try {
+      var parsed = JSON.parse(raw);
+      return { analytics: !!parsed.analytics, marketing: !!parsed.marketing };
+    } catch (e) {
+      if (raw === 'all') return { analytics: true, marketing: true };
+      return { analytics: false, marketing: false };
+    }
+  }
+
+  function setConsent(state) {
+    setCookie(COOKIE_NAME, JSON.stringify(state), COOKIE_DAYS);
+    try {
+      window.dispatchEvent(new CustomEvent(CONSENT_EVENT, {
+        detail: state.analytics && state.marketing ? 'all' : (state.analytics || state.marketing ? 'partial' : 'essential'),
+      }));
+    } catch (e) {}
+  }
+
+  // Expose a small global API so any other script (existing FUB identify
+  // snippet, future trackers, footer "Manage cookies" link) can check or
+  // reopen the prompt.
+  window.rrConsent = {
+    has: function(category) {
+      var c = getConsent();
+      if (!c) return false;
+      if (category === 'analytics') return c.analytics;
+      if (category === 'marketing') return c.marketing;
+      if (category === 'all')       return c.analytics && c.marketing;
+      return false;
+    },
+    state: function() { return getConsent(); },
+    reopen: function() { showBanner({ forceShow: true }); },
+  };
+
+  // Skip the banner entirely on dashboard / admin / WP-admin pages so it
+  // doesn't pop in the broker's face every time they log in.
+  function isAdminPath() {
+    var p = (window.location.pathname || '').toLowerCase();
+    return /^\/wp-admin|\/dashboard|\/properties\/dashboard|\/admin/.test(p);
+  }
+
+  function showBanner(opts) {
+    if (document.getElementById('rr-cookie-banner')) return;
+    if (isAdminPath() && !(opts && opts.forceShow)) return;
+
+    var FONT = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+
+    // Banner shell — fixed to bottom of viewport
+    var banner = document.createElement('div');
+    banner.id = 'rr-cookie-banner';
+    banner.setAttribute('role', 'dialog');
+    banner.setAttribute('aria-modal', 'false');
+    banner.setAttribute('aria-labelledby', 'rr-cookie-banner-title');
+    banner.style.cssText = [
+      'position:fixed', 'left:0', 'right:0', 'bottom:0', 'z-index:2147483646',
+      'background:#102742', 'color:#F2EBDD', 'padding:16px 20px',
+      'box-shadow:0 -8px 24px rgba(0,0,0,0.2)',
+      'font-family:' + FONT, 'font-size:14px', 'line-height:1.5',
+      'animation:rrConsentSlide 220ms ease-out',
+      'box-sizing:border-box',
+    ].join(';');
+
+    if (!document.getElementById('rr-cookie-keyframes')) {
+      var kf = document.createElement('style');
+      kf.id = 'rr-cookie-keyframes';
+      kf.textContent =
+        '@keyframes rrConsentSlide{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}' +
+        '#rr-cookie-banner, #rr-cookie-banner * { box-sizing:border-box; }' +
+        '#rr-cookie-banner button { font-family:' + FONT + ' !important; cursor:pointer; }' +
+        '#rr-cookie-banner a { color:#F2EBDD !important; text-decoration:underline; }';
+      document.head.appendChild(kf);
+    }
+
+    var inner = document.createElement('div');
+    inner.style.cssText = 'max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:16px;justify-content:space-between;';
+
+    var copyWrap = document.createElement('div');
+    copyWrap.style.cssText = 'flex:1 1 360px;min-width:280px;';
+    var title = document.createElement('p');
+    title.id = 'rr-cookie-banner-title';
+    title.textContent = 'We use cookies to improve your experience.';
+    title.style.cssText = 'margin:0 0 4px;font-weight:600;font-size:15px;';
+    var body = document.createElement('p');
+    body.style.cssText = 'margin:0;font-size:13px;line-height:1.45;color:#E8E0CC;';
+    body.innerHTML = 'We use cookies and similar tools to remember you, measure how the site is used, and personalize what we show. Read our <a href="/privacy-policy/">privacy policy</a> for details. You can accept all, accept only essential, or customize what we use.';
+    copyWrap.appendChild(title);
+    copyWrap.appendChild(body);
+
+    var btnWrap = document.createElement('div');
+    btnWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0;';
+
+    function makeBtn(label, kind) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      var common = 'padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600;border:0;line-height:1;min-height:40px;';
+      if (kind === 'primary') {
+        b.style.cssText = common + 'background:#F2EBDD;color:#102742;';
+      } else if (kind === 'secondary') {
+        b.style.cssText = common + 'background:transparent;color:#F2EBDD;border:1px solid #F2EBDD;';
+      } else {
+        b.style.cssText = common + 'background:transparent;color:#F2EBDD;border:0;text-decoration:underline;padding:10px 8px;';
+      }
+      return b;
+    }
+
+    var btnCustomize = makeBtn('Customize', 'link');
+    var btnEssential = makeBtn('Essential only', 'secondary');
+    var btnAcceptAll = makeBtn('Accept all', 'primary');
+
+    btnAcceptAll.addEventListener('click', function() {
+      setConsent({ analytics: true, marketing: true });
+      banner.remove();
+    });
+    btnEssential.addEventListener('click', function() {
+      setConsent({ analytics: false, marketing: false });
+      banner.remove();
+    });
+    btnCustomize.addEventListener('click', function() {
+      banner.remove();
+      showCustomizeDialog();
+    });
+
+    btnWrap.appendChild(btnCustomize);
+    btnWrap.appendChild(btnEssential);
+    btnWrap.appendChild(btnAcceptAll);
+
+    inner.appendChild(copyWrap);
+    inner.appendChild(btnWrap);
+    banner.appendChild(inner);
+    document.body.appendChild(banner);
+  }
+
+  function showCustomizeDialog() {
+    if (document.getElementById('rr-cookie-customize')) return;
+    var FONT = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+
+    var current = getConsent() || { analytics: true, marketing: true };
+
+    var backdrop = document.createElement('div');
+    backdrop.id = 'rr-cookie-customize';
+    backdrop.setAttribute('role', 'dialog');
+    backdrop.setAttribute('aria-modal', 'true');
+    backdrop.style.cssText = [
+      'position:fixed', 'inset:0', 'z-index:2147483647',
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'background:rgba(15,23,42,0.55)',
+      '-webkit-backdrop-filter:blur(6px)', 'backdrop-filter:blur(6px)',
+      'padding:16px', 'font-family:' + FONT,
+    ].join(';');
+
+    var card = document.createElement('div');
+    card.style.cssText = [
+      'background:#ffffff', 'color:#102742', 'border-radius:14px',
+      'padding:24px', 'max-width:480px', 'width:100%',
+      'box-shadow:0 25px 50px -12px rgba(0,0,0,0.45)', 'font-size:14px',
+    ].join(';');
+
+    card.innerHTML =
+      '<h2 style="margin:0 0 4px;font-size:20px;font-weight:600;color:#102742;font-family:' + FONT + ';">Cookie preferences</h2>' +
+      '<p style="margin:0 0 16px;color:#52606D;font-size:13px;line-height:1.45;">Pick which categories we may use. Essential cookies keep the site working and cannot be turned off.</p>' +
+      '<div style="display:flex;flex-direction:column;gap:12px;">' +
+        '<label style="display:flex;align-items:start;gap:12px;padding:12px;border:1px solid #DADCE0;border-radius:10px;cursor:default;">' +
+          '<input type="checkbox" disabled checked style="margin-top:4px;width:18px;height:18px;accent-color:#9AA0A6;" />' +
+          '<span><strong style="display:block;font-size:14px;">Essential</strong><span style="display:block;color:#52606D;font-size:12px;margin-top:2px;">Session state, sign-in, security. Always on.</span></span>' +
+        '</label>' +
+        '<label style="display:flex;align-items:start;gap:12px;padding:12px;border:1px solid #DADCE0;border-radius:10px;cursor:pointer;">' +
+          '<input id="rr-c-analytics" type="checkbox" ' + (current.analytics ? 'checked' : '') + ' style="margin-top:4px;width:18px;height:18px;accent-color:#102742;" />' +
+          '<span><strong style="display:block;font-size:14px;">Analytics</strong><span style="display:block;color:#52606D;font-size:12px;margin-top:2px;">Google Analytics, page-view and engagement tracking. Helps us understand what works.</span></span>' +
+        '</label>' +
+        '<label style="display:flex;align-items:start;gap:12px;padding:12px;border:1px solid #DADCE0;border-radius:10px;cursor:pointer;">' +
+          '<input id="rr-c-marketing" type="checkbox" ' + (current.marketing ? 'checked' : '') + ' style="margin-top:4px;width:18px;height:18px;accent-color:#102742;" />' +
+          '<span><strong style="display:block;font-size:14px;">Marketing</strong><span style="display:block;color:#52606D;font-size:12px;margin-top:2px;">Meta Pixel, Google One-Tap, retargeting audiences. Lets us show relevant homes after you leave.</span></span>' +
+        '</label>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">' +
+        '<button id="rr-c-cancel" type="button" style="padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600;border:1px solid #DADCE0;background:#fff;color:#102742;cursor:pointer;font-family:' + FONT + ';">Cancel</button>' +
+        '<button id="rr-c-save" type="button" style="padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600;border:0;background:#102742;color:#F2EBDD;cursor:pointer;font-family:' + FONT + ';">Save preferences</button>' +
+      '</div>';
+
+    backdrop.appendChild(card);
+    document.body.appendChild(backdrop);
+
+    document.getElementById('rr-c-save').addEventListener('click', function() {
+      var analytics = document.getElementById('rr-c-analytics').checked;
+      var marketing = document.getElementById('rr-c-marketing').checked;
+      setConsent({ analytics: analytics, marketing: marketing });
+      backdrop.remove();
+    });
+    document.getElementById('rr-c-cancel').addEventListener('click', function() {
+      backdrop.remove();
+      // Re-show the bottom banner so the user can still decide
+      showBanner({ forceShow: true });
+    });
+    backdrop.addEventListener('click', function(e) {
+      if (e.target === backdrop) {
+        backdrop.remove();
+        showBanner({ forceShow: true });
+      }
+    });
+  }
+
+  function maybeShow() {
+    var existing = getConsent();
+    if (existing === null) showBanner({});
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeShow);
+  } else {
+    maybeShow();
+  }
+})();
+</script>

@@ -71,7 +71,19 @@ export default function GoogleAnalytics() {
                   }
                 }
 
-                var gaConfig = {};
+                var gaConfig = {
+                  // Cross-domain linker: when a visitor clicks from one
+                  // Ryan Realty domain to another, GA4 auto-appends a _gl
+                  // parameter so the client_id carries across and the
+                  // visitor is counted as one continuous session instead
+                  // of two. Keeps paid-ad attribution intact when a
+                  // visitor hops from ryan-realty.com to a Vercel LP or
+                  // vice versa.
+                  linker: {
+                    domains: ['ryan-realty.com', 'www.ryan-realty.com', 'ryanrealty.vercel.app'],
+                    accept_incoming: true
+                  }
+                };
                 if (inferredSource && inferredMedium) {
                   gaConfig.campaign_source = inferredSource;
                   gaConfig.campaign_medium = inferredMedium;
