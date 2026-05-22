@@ -78,9 +78,29 @@ export type {
 } from '@/lib/data/types/lead'
 
 // Functions ---------------------------------------------------------
-// Listings (stubs — real impls land Wave 1 Step 1.5+)
+// Listings — read from listing_tile_mv (Migration 20260522144509, applied 2026-05-22)
+export {
+  getListingTiles,
+  getCityListings,
+  getCommunityListings,
+  getZipListings,
+  getNeighborhoodListings,
+} from '@/lib/data/listings/getListingTiles'
+export type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
+
+// Listings — detail page (stub today; real impl with listing_detail_mv in Wave 1.5)
 export { getListingDetail } from '@/lib/data/listings/getListingDetail'
+
+// Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'
+
+// Geo — read from geo_snapshot_mv (Migration 20260522144510, applied 2026-05-22)
+export {
+  getGeoSnapshot,
+  getAllCitySnapshots,
+  getCityCommunitySnapshots,
+} from '@/lib/data/geo/getGeoSnapshot'
+export type { GeoSnapshot, GeoSnapshotInput } from '@/lib/data/geo/getGeoSnapshot'
 
 // Market (real impls — no MV dependency, usable today)
 export { getMarketStats } from '@/lib/data/market/getMarketStats'
