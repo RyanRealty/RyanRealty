@@ -1,10 +1,16 @@
 # Ryan Realty — Site Spec
 
-**Production domain:** ryan-realty.com  
-**Supabase project:** `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`)  
-**Stack:** Next.js 15 App Router, TypeScript, Supabase (Postgres + PostGIS), shadcn/ui radix-nova, Tailwind CSS v4, Vercel  
-**Design system:** `design_system/ryan-realty/` — v2, locked 2026-05-13  
+**Target production domain:** `ryan-realty.com` *(currently still serves the AgentFire WordPress site — DNS cutover from WordPress → Vercel is a separate hand-off that requires Matt's coordination and timing for SEO reasons)*
+**Current production URL:** `https://ryanrealty.vercel.app` *(Next.js app, all commits in this repo auto-deploy here)*
+**Supabase project:** `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`)
+**Stack:** Next.js 15 App Router, TypeScript, Supabase (Postgres + PostGIS), shadcn/ui radix-nova, Tailwind CSS v4, Vercel
+**Design system:** `design_system/ryan-realty/` — v2, locked 2026-05-13
 **Visual reference:** `design_system/ryan-realty/ui_kits/website/index.html` — every page section is compared against this mockup before ship
+
+**HTTP probe results (2026-05-22, `curl -sI`):**
+- `https://ryan-realty.com/` → `HTTP/2 200`, `server: cloudflare` — serves AgentFire WordPress (verified by `/wp-includes/js/jquery/...` preload in HTML)
+- `https://ryanrealty.vercel.app/cities/bend` → `HTTP/2 200` — Next.js app live, CSP + Meta Pixel + GA4 headers all present
+- DNS cutover plan: see `docs/DOMAIN_SETUP.md` for the WordPress → Vercel transition
 
 ---
 

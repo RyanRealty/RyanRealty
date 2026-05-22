@@ -115,10 +115,11 @@ export function SoldStoryCard({ story }: { story: SoldStory }) {
         compactPrice={compactPrice}
       />
 
-      {/* Card body — review attribution OR a single horizontal property row.
-          No-review cards collapse to one row (headshot + specs + role/name)
-          so they don't carry vertical whitespace under the photo. */}
-      <div className={featured ? 'p-6 sm:p-7' : 'p-5'}>
+      {/* Card body. Padding unified to p-6 on every card so the
+          featured / compact rhythm reads the same (was p-6 sm:p-7 on
+          featured / p-5 on compact — visible inconsistency 2026-05-20).
+          No-review cards still collapse to one horizontal row internally. */}
+      <div className="p-6">
         {testimonial ? (
           <ReviewBody
             featured={featured}
@@ -167,7 +168,12 @@ function PhotoBlock({
   const [hovered, setHovered] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const hasVideo = !!listing.videoUrl
-  const aspect = featured ? 'aspect-[16/10]' : 'aspect-[4/3]'
+  // Unified aspect ratio across featured + compact. Was 16/10 vs 4/3 — the
+  // different aspect ratios were the root cause of the "pills look different
+  // alignments" feedback 2026-05-20. Tetherow LP uses one ratio for every
+  // listing card; this matches. 3/2 reads as luxury-print proportion and
+  // works at both featured (2-up) and compact (3-up) widths.
+  const aspect = 'aspect-[3/2]'
 
   const photo = (
     <Image
@@ -181,21 +187,16 @@ function PhotoBlock({
     />
   )
 
-  // Two-line pill, always left-aligned, always present on every card:
-  //   Line 1 — address (prominent)
-  //   Line 2 — status · price · neighborhood (smaller, muted-on-photo)
+  // Two-line pill — EXPLICITLY left-aligned via `text-left` and SAME font
+  // sizing across featured + compact (was bigger on featured). Same px/pb
+  // padding everywhere so the pill anchors identically on every card.
+  // Per visual-consistency feedback 2026-05-20.
   const pill = (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-4 pb-3 pt-12 sm:px-5 sm:pb-4">
-      <p
-        className={`font-semibold leading-tight tracking-tight text-card ${
-          featured ? 'text-lg sm:text-xl' : 'text-base'
-        }`}
-      >
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-5 pb-4 pt-12 text-left">
+      <p className="text-left text-base font-semibold leading-tight tracking-tight text-card sm:text-lg">
         {addressLine}
       </p>
-      <p
-        className={`mt-1 text-card/85 ${featured ? 'text-sm' : 'text-xs'}`}
-      >
+      <p className="mt-1 text-left text-xs text-card/85 sm:text-sm">
         {statusForPill} · {compactPrice}
         {listing.neighborhood && (
           <span className="text-card/75"> · {listing.neighborhood}</span>
