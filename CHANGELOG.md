@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.15 (2026-05-22)
+
+### Maintenance
+- perf(listings): migrate getListingsForHomeTiles to DAL — 367→366
+
+---
+
+
 ## v1.279.14 (2026-05-22)
 
 ### Maintenance
