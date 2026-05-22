@@ -34,6 +34,14 @@ import {
 } from '@/data/golf/courses'
 import { coursesByArchitect } from '@/data/golf/architects'
 import { GOLF_SEASON } from '@/data/golf/seasons'
+import { INSIDER_NOTES } from '@/data/golf/insider-notes'
+import { GOLF_FAQS } from '@/data/golf/faqs'
+import {
+  loadGolfCommunityKpis,
+  formatCurrencyToThousands,
+  type GolfCommunitySlug,
+  type GolfCommunityKpi,
+} from '@/data/golf/community-kpis'
 import { GolfCourseMap } from './_components/GolfCourseMap'
 
 export const dynamic = 'force-static'
@@ -52,6 +60,20 @@ export const metadata: Metadata = {
       "30 courses, 14 architects, 300 days of sunshine. The full Central Oregon golf brief, plus where to live if you'd play here every week.",
     type: 'website',
     url: `${siteUrl}/lp/central-oregon-golf/`,
+    images: [
+      {
+        url: `${siteUrl}/lp/central-oregon-golf/img/tetherow-hero.jpg`,
+        width: 1600,
+        height: 1066,
+        alt: 'Tetherow Golf Club fairway with the Cascade Range in the background',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Central Oregon golf — every course, by architect',
+    description: '30 courses, 14 architects, 300 days of sunshine.',
+    images: [`${siteUrl}/lp/central-oregon-golf/img/tetherow-hero.jpg`],
   },
 }
 
@@ -66,35 +88,108 @@ const ACCESS_LABEL: Record<CourseAccess, string> = {
   'semi-private': 'Semi-private',
 }
 
-// JSON-LD: TouristAttraction collection + per-course Place entries.
+// JSON-LD: a @graph with CollectionPage + FAQPage + BreadcrumbList +
+// RealEstateAgent (Matt Ryan / Ryan Realty). The CollectionPage's
+// mainEntity is an ItemList of every GolfCourse with full design
+// credits + access type so Google's structured-data understanding is
+// dense rather than sparse.
 function buildJsonLd() {
   return {
     '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: 'Central Oregon Golf — Every Course, By Architect',
-    url: `${siteUrl}/lp/central-oregon-golf/`,
-    description:
-      "Central Oregon golf course directory grouped by architect. Verified design credits, holes, par, yardage, and the community each course sits inside.",
-    isPartOf: { '@type': 'WebSite', url: siteUrl, name: 'Ryan Realty' },
-    mainEntity: {
-      '@type': 'ItemList',
-      numberOfItems: GOLF_COURSES.length,
-      itemListElement: GOLF_COURSES.map((c, i) => ({
-        '@type': 'ListItem',
-        position: i + 1,
-        item: {
-          '@type': 'GolfCourse',
-          name: c.name,
-          numberOfHoles: c.holes,
-          address: { '@type': 'PostalAddress', addressLocality: c.city, addressRegion: 'OR', addressCountry: 'US' },
-          geo: { '@type': 'GeoCoordinates', latitude: c.lat, longitude: c.lng },
+    '@graph': [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Central Oregon Golf',
+            item: `${siteUrl}/lp/central-oregon-golf/`,
+          },
+        ],
+      },
+      {
+        '@type': 'CollectionPage',
+        name: 'Central Oregon Golf — Every Course, By Architect',
+        url: `${siteUrl}/lp/central-oregon-golf/`,
+        description:
+          "Central Oregon golf course directory grouped by architect. Verified design credits, holes, par, yardage, and the community each course sits inside.",
+        isPartOf: { '@type': 'WebSite', url: siteUrl, name: 'Ryan Realty' },
+        primaryImageOfPage: {
+          '@type': 'ImageObject',
+          url: `${siteUrl}/lp/central-oregon-golf/img/tetherow-hero.jpg`,
+          width: 1600,
+          height: 1066,
         },
-      })),
-    },
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: GOLF_COURSES.length,
+          itemListElement: GOLF_COURSES.map((c, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            item: {
+              '@type': 'GolfCourse',
+              name: c.name,
+              alternateName: c.shortName,
+              numberOfHoles: c.holes,
+              description: c.signature,
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: c.city,
+                addressRegion: 'OR',
+                addressCountry: 'US',
+              },
+              geo: {
+                '@type': 'GeoCoordinates',
+                latitude: c.lat,
+                longitude: c.lng,
+              },
+              ...(c.designer
+                ? {
+                    architect: {
+                      '@type': 'Person',
+                      name: c.designer,
+                    },
+                  }
+                : {}),
+              ...(c.yearOpened
+                ? { foundingDate: String(c.yearOpened) }
+                : {}),
+            },
+          })),
+        },
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: GOLF_FAQS.map((f) => ({
+          '@type': 'Question',
+          name: f.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: f.answer,
+          },
+        })),
+      },
+      {
+        '@type': 'RealEstateAgent',
+        name: 'Ryan Realty',
+        url: siteUrl,
+        telephone: '+1-541-213-6706',
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: 'Bend',
+          addressRegion: 'OR',
+          addressCountry: 'US',
+        },
+        areaServed: ['Bend', 'Redmond', 'Sunriver', 'Sisters', 'Madras', 'Prineville', 'Powell Butte', 'Terrebonne'],
+      },
+    ],
   }
 }
 
-export default function CentralOregonGolfPage() {
+export default async function CentralOregonGolfPage() {
+  const communityKpis = await loadGolfCommunityKpis()
   return (
     <main
       style={{
@@ -110,14 +205,18 @@ export default function CentralOregonGolfPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(buildJsonLd()) }}
       />
 
+      <StickyNav />
       <HeroSection />
       <IntroSection />
       <DestinationCoursesSection />
       <MapSection />
       <ByArchitectSection />
       <SeasonCalendarSection />
-      <WhereToLiveSection />
+      <WhereToLiveSection communityKpis={communityKpis} />
+      <InsiderNotesSection />
+      <StayVsBuySection />
       <DataTableSection />
+      <FaqSection />
       <CtaSection />
 
       <PageStyles />
@@ -128,6 +227,29 @@ export default function CentralOregonGolfPage() {
 /* ─────────────────────────────────────────────────────────────────────────
  *  HERO
  * ──────────────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+ *  STICKY NAV — anchor links pinned at the top once the hero scrolls past
+ * ──────────────────────────────────────────────────────────────────────── */
+function StickyNav() {
+  return (
+    <nav className="golf-sticky-nav" aria-label="Page sections">
+      <div className="golf-sticky-nav__inner">
+        <span className="golf-sticky-nav__brand">Central Oregon Golf</span>
+        <a href="#destination-courses">The 8</a>
+        <a href="#map">Map</a>
+        <a href="#by-architect">By architect</a>
+        <a href="#season">When to play</a>
+        <a href="#where-to-live">Where to live</a>
+        <a href="#insider">Insider notes</a>
+        <a href="#faq">FAQ</a>
+        <Link href="#contact" className="golf-sticky-nav__cta">
+          Talk to a broker
+        </Link>
+      </div>
+    </nav>
+  )
+}
+
 function HeroSection() {
   return (
     <section className="golf-hero">
@@ -368,7 +490,11 @@ function statusLabel(s: 'mostly-closed' | 'shoulder' | 'prime' | 'high-season' |
 /* ─────────────────────────────────────────────────────────────────────────
  *  WHERE TO LIVE — the conversion engine
  * ──────────────────────────────────────────────────────────────────────── */
-function WhereToLiveSection() {
+function WhereToLiveSection({
+  communityKpis,
+}: {
+  communityKpis: Record<GolfCommunitySlug, GolfCommunityKpi | null>
+}) {
   // Pull every unique community across all courses
   const seen = new Set<string>()
   const items: Array<{ community: string; courses: GolfCourse[] }> = []
@@ -468,6 +594,8 @@ function WhereToLiveSection() {
           {items.map(({ community, courses }) => {
             const meta = communityMeta[community]
             if (!meta) return null
+            const kpi = communityKpis[community as GolfCommunitySlug]
+            const medianFmt = kpi ? formatCurrencyToThousands(kpi.medianSalePrice) : null
             return (
               <div key={community} className="golf-live-card">
                 {meta.image && (
@@ -481,6 +609,28 @@ function WhereToLiveSection() {
                 )}
                 <h3 className="golf-live-name">{meta.name}</h3>
                 <p className="golf-live-pitch">{meta.pitch}</p>
+                {kpi && (medianFmt || kpi.activeInventory != null || kpi.soldCount12mo != null) && (
+                  <div className="golf-live-kpis">
+                    {medianFmt && (
+                      <div className="golf-live-kpi">
+                        <span className="golf-live-kpi-label">Median 12mo</span>
+                        <span className="golf-live-kpi-value">{medianFmt}</span>
+                      </div>
+                    )}
+                    {kpi.activeInventory != null && (
+                      <div className="golf-live-kpi">
+                        <span className="golf-live-kpi-label">Active</span>
+                        <span className="golf-live-kpi-value">{kpi.activeInventory}</span>
+                      </div>
+                    )}
+                    {kpi.soldCount12mo != null && (
+                      <div className="golf-live-kpi">
+                        <span className="golf-live-kpi-label">Sold 12mo</span>
+                        <span className="golf-live-kpi-value">{kpi.soldCount12mo}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="golf-live-courses">
                   <span className="golf-live-courses-label">Courses on property:</span>
                   <ul>
@@ -564,6 +714,100 @@ function DataTableSection() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+ *  INSIDER NOTES — editorial depth no directory carries
+ * ──────────────────────────────────────────────────────────────────────── */
+function InsiderNotesSection() {
+  return (
+    <section className="golf-section golf-section--alt" id="insider">
+      <div className="golf-section__inner">
+        <div className="golf-eyebrow">Insider notes</div>
+        <h2 className="golf-h2">The seven things the directories don’t tell you.</h2>
+        <p className="golf-lede">
+          Verifiable facts that only locals carry. Each note traces to a primary source — a course
+          history page, a city public-works archive, or a published architectural profile.
+        </p>
+
+        <ol className="golf-insider-list">
+          {INSIDER_NOTES.map((n) => (
+            <li key={n.slug} className="golf-insider-item">
+              <div className="golf-insider-hook">{n.hook}</div>
+              <p className="golf-insider-body">{n.body}</p>
+              <div className="golf-insider-source">
+                {n.course && <span className="golf-insider-course">{n.course}</span>}
+                <span className="golf-insider-cite">Source: {n.source}</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ *  STAY VS BUY — the honest conversion essay
+ * ──────────────────────────────────────────────────────────────────────── */
+function StayVsBuySection() {
+  return (
+    <section className="golf-section" id="stay-vs-buy">
+      <div className="golf-section__inner golf-section__inner--narrow">
+        <div className="golf-eyebrow">The honest math</div>
+        <h2 className="golf-h2">Stay-and-play, or buy-and-play?</h2>
+
+        <div className="golf-prose">
+          <p>
+            Here is the line we draw. If you golf Central Oregon one to three times a year, the
+            stay-and-play package is the right tool — the resorts have priced their bundles to
+            beat anything a homeowner could put together on a per-trip basis.
+          </p>
+          <p>
+            If you golf Central Oregon eight or more times a year, the math flips. A Pronghorn or
+            Brasada Ranch pied-a-terre starts in the $300K-$500K range, monthly carrying cost
+            (HOA + property tax + utilities + the share of mortgage interest you would not have
+            paid on the rental nights) lands around $2,500-$3,500. Five three-night resort trips
+            at peak rates closes the gap fast.
+          </p>
+          <p>
+            The frame to settle on: how many rounds, what comp set, and how much of the
+            non-golf time matters. Brokers (us included) make money on the transaction. So
+            this part is direct: if the rental math wins for you, the rental math wins. The
+            cards above carry real 12-month median data — that is where the comparison starts.
+            Reach out when you want a per-community spreadsheet.
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ *  FAQ — long-tail intent + FAQPage schema
+ * ──────────────────────────────────────────────────────────────────────── */
+function FaqSection() {
+  return (
+    <section className="golf-section golf-section--alt" id="faq">
+      <div className="golf-section__inner">
+        <div className="golf-eyebrow">FAQ</div>
+        <h2 className="golf-h2">Things people actually ask.</h2>
+        <p className="golf-lede">
+          Answers built from the course inventory, the architect grouping, and the season
+          calendar above. Every answer is specific. Every figure traces.
+        </p>
+
+        <div className="golf-faq-list">
+          {GOLF_FAQS.map((f, i) => (
+            <details key={i} className="golf-faq-item">
+              <summary className="golf-faq-q">{f.question}</summary>
+              <p className="golf-faq-a">{f.answer}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
  *  CTA + FOOTER
  * ──────────────────────────────────────────────────────────────────────── */
 function CtaSection() {
@@ -613,6 +857,45 @@ function CtaSection() {
 function PageStyles() {
   return (
     <style>{`
+      /* Sticky nav */
+      .golf-sticky-nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(250,248,244,0.92);
+        backdrop-filter: saturate(180%) blur(14px);
+        -webkit-backdrop-filter: saturate(180%) blur(14px);
+        border-bottom: 1px solid rgba(16,39,66,0.06);
+      }
+      .golf-sticky-nav__inner {
+        max-width: 1200px; margin: 0 auto;
+        padding: 12px 24px;
+        display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+      }
+      .golf-sticky-nav__brand {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 17px; font-weight: 500; color: #102742;
+        letter-spacing: -0.005em;
+        margin-right: 6px;
+      }
+      .golf-sticky-nav a {
+        font-size: 13px; color: rgba(16,39,66,0.78); text-decoration: none; font-weight: 500;
+        padding: 4px 2px;
+      }
+      .golf-sticky-nav a:hover { color: #102742; }
+      .golf-sticky-nav__cta {
+        margin-left: auto;
+        background: #102742; color: #faf8f4 !important;
+        padding: 8px 16px !important; border-radius: 999px;
+        font-weight: 600 !important;
+      }
+      .golf-sticky-nav__cta:hover { background: rgba(16,39,66,0.92); }
+      @media (max-width: 820px) {
+        .golf-sticky-nav__brand { display: none; }
+        .golf-sticky-nav__inner { gap: 14px; padding: 10px 16px; }
+        .golf-sticky-nav a:not(.golf-sticky-nav__cta) { font-size: 12px; }
+      }
+
       .golf-hero {
         position: relative;
         background: #102742;
@@ -766,6 +1049,48 @@ function PageStyles() {
       .golf-live-card > h3.golf-live-name { padding-top: 20px; }
       .golf-live-card > .golf-live-cta { margin-bottom: 24px; margin-left: 24px; }
       .golf-live-photo { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
+      .golf-live-kpis {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+        padding: 12px 14px; background: rgba(16,39,66,0.05);
+        border-radius: 10px; margin: 4px 24px 0;
+      }
+      .golf-live-kpi { display: flex; flex-direction: column; gap: 2px; }
+      .golf-live-kpi-label { font-size: 10.5px; letter-spacing: 0.06em; color: rgba(16,39,66,0.6); text-transform: uppercase; font-weight: 600; }
+      .golf-live-kpi-value { font-size: 15px; font-weight: 600; color: #102742; font-variant-numeric: tabular-nums; }
+
+      /* Insider notes */
+      .golf-insider-list { list-style: none; counter-reset: insider; padding: 0; margin: 32px 0 0; display: grid; gap: 18px; }
+      .golf-insider-item {
+        background: white; border-left: 3px solid #102742; padding: 22px 26px;
+        border-radius: 10px;
+        box-shadow: 0 1px 2px rgba(16,39,66,0.04);
+      }
+      .golf-insider-hook { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; font-weight: 500; color: #102742; margin-bottom: 8px; line-height: 1.3; }
+      .golf-insider-body { font-size: 15px; line-height: 1.55; color: rgba(16,39,66,0.82); margin: 0 0 10px; }
+      .golf-insider-source { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: rgba(16,39,66,0.55); letter-spacing: 0.03em; }
+      .golf-insider-course { font-weight: 600; color: rgba(16,39,66,0.74); }
+
+      /* FAQ */
+      .golf-faq-list { display: grid; gap: 8px; margin-top: 32px; }
+      .golf-faq-item {
+        background: white; border-radius: 12px; padding: 18px 24px;
+        border: 1px solid rgba(16,39,66,0.08);
+      }
+      .golf-faq-item[open] { box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 4px 16px rgba(16,39,66,0.06); }
+      .golf-faq-q {
+        cursor: pointer; font-size: 16px; font-weight: 600; color: #102742;
+        list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      }
+      .golf-faq-q::-webkit-details-marker { display: none; }
+      .golf-faq-q::after {
+        content: '+'; font-size: 22px; font-weight: 400; color: rgba(16,39,66,0.55);
+        transition: transform 0.18s;
+      }
+      .golf-faq-item[open] .golf-faq-q::after { content: '−'; }
+      .golf-faq-a {
+        font-size: 15px; line-height: 1.6; color: rgba(16,39,66,0.78);
+        margin: 12px 0 0; padding-top: 12px; border-top: 1px solid rgba(16,39,66,0.06);
+      }
       .golf-live-name { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 500; margin: 0; color: #102742; }
       .golf-live-pitch { font-size: 14.5px; line-height: 1.55; color: rgba(16,39,66,0.78); margin: 0; }
       .golf-live-courses { font-size: 13px; color: rgba(16,39,66,0.74); }
