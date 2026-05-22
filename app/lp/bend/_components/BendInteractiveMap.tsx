@@ -13,11 +13,11 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  useJsApiLoader,
   GoogleMap,
   Polygon,
   OverlayView,
 } from '@react-google-maps/api'
+import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 
 export type CommunityPolygon = {
   slug: string
@@ -72,14 +72,13 @@ export function BendInteractiveMap({
 }: BendInteractiveMapProps) {
   const router = useRouter()
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
-  const { isLoaded, loadError } = useJsApiLoader({
+  // useGoogleMapsReady wraps useJsApiLoader and survives Google's new
+  // chunked async script format (see lib/use-google-maps-ready.ts).
+  // The `libraries: ['places']` must match every other map-using
+  // component so the shared loader singleton stays consistent.
+  const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
     id: 'google-map-script',
     googleMapsApiKey: apiKey,
-    // Must match the libraries used by every other useJsApiLoader in the
-    // app (see app/listings/*, components/SearchMapClustered, etc.) so the
-    // shared loader singleton doesn't fail on config mismatch. Without
-    // this, the loader emits "Failed to load Google Maps script" on every
-    // mount because the cached URL params don't match.
     libraries: ['places'],
   })
 
