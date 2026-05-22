@@ -25,6 +25,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { createServiceClient } from '@/lib/supabase/service'
 import tetherowConfig from '@/data/resort-community-tetherow.json'
+import { getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
 
 export const TETHEROW_CONFIG = tetherowConfig
 
@@ -155,44 +156,37 @@ function toUiStatusLabel(status: string): string {
  *  by list price. SFR-only per the SKILL.md convention. */
 export async function fetchTetherowActiveListings(): Promise<TetherowActiveListing[]> {
   try {
-    const supabase = createServiceClient()
-    const { data, error } = await supabase
-      .from('listings')
-      .select(
-        'ListingKey, ListPrice, StreetNumber, StreetName, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, CumulativeDaysOnMarket, StandardStatus, PhotoURL, SubdivisionName'
-      )
-      .in('StandardStatus', ['Active', 'ActiveUnderContract', 'Pending'])
-      .eq('PropertyType', 'A')
-      .eq('SubdivisionName', 'Tetherow')
-      .order('ListPrice', { ascending: false })
-      .limit(12)
-    if (error || !data) return []
-    return (data as Array<Record<string, unknown>>).map((r) => {
-      const streetNumber = r['StreetNumber'] != null ? String(r['StreetNumber']).trim() : null
-      const streetName = r['StreetName'] != null ? String(r['StreetName']).trim() : null
-      const listPrice = r['ListPrice'] != null ? Number(r['ListPrice']) : null
-      const addressLine = [streetNumber, streetName].filter(Boolean).join(' ').trim() || 'Tetherow'
-      const status = String(r['StandardStatus'] ?? 'Active')
-      const statusLabel = toUiStatusLabel(status)
+    // DAL: read Tetherow active/pending tiles from listing_tile_mv.
+    // Sort by list price desc, limit 12. The MV's status_filter is
+    // active-and-pending; SFR-only filter is enforced because
+    // listing_tile_mv was built from listings WHERE property_sub_type
+    // includes 'Single Family Residence'.
+    const tiles = await getCommunityListingsDAL('Tetherow', {
+      status: 'active-and-pending',
+      sort: 'price-desc',
+      limit: 12,
+    })
+    return tiles.map((t) => {
+      const addressLine = [t.streetNumber, t.streetName].filter(Boolean).join(' ').trim() || 'Tetherow'
+      const statusLabel = toUiStatusLabel(t.status)
       const isContingent = statusLabel.toLowerCase().includes('pending') || statusLabel.toLowerCase().includes('contract')
-      const priceSuffix = listPrice != null ? formatPriceFull(listPrice) : ''
+      const priceSuffix = t.listPrice != null ? formatPriceFull(t.listPrice) : ''
       const labelTail = isContingent ? ` · ${priceSuffix} (${statusLabel.toLowerCase()})` : ` · ${priceSuffix}`
       const showingFormLabel = `${addressLine}${labelTail}`
       return {
-        listingKey: String(r['ListingKey'] ?? ''),
-        listPrice,
-        streetNumber,
-        streetName,
+        listingKey: t.listingKey,
+        listPrice: t.listPrice,
+        streetNumber: t.streetNumber,
+        streetName: t.streetName,
         addressLine,
-        bedrooms: r['BedroomsTotal'] != null ? Number(r['BedroomsTotal']) : null,
-        bathrooms: r['BathroomsTotal'] != null ? Number(r['BathroomsTotal']) : null,
-        livingAreaSqFt: r['TotalLivingAreaSqFt'] != null ? Number(r['TotalLivingAreaSqFt']) : null,
-        cumulativeDaysOnMarket:
-          r['CumulativeDaysOnMarket'] != null ? Number(r['CumulativeDaysOnMarket']) : null,
-        standardStatus: status,
+        bedrooms: t.beds,
+        bathrooms: t.baths,
+        livingAreaSqFt: t.sqft,
+        cumulativeDaysOnMarket: t.dom,
+        standardStatus: t.status,
         statusLabel,
-        photoUrl: r['PhotoURL'] != null ? String(r['PhotoURL']) : null,
-        subdivisionName: r['SubdivisionName'] != null ? String(r['SubdivisionName']) : null,
+        photoUrl: t.photoUrl,
+        subdivisionName: t.subdivisionName,
         showingFormLabel,
       }
     })

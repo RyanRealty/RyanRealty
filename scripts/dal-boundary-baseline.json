@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-22T23:52:27.886Z",
-  "total": 366,
+  "generatedAt": "2026-05-22T23:53:46.584Z",
+  "total": 365,
   "byFile": {
     "app/actions/listings.ts": 69,
     "app/actions/sync-spark.ts": 28,
@@ -31,7 +31,6 @@
     "app/api/og/route.tsx": 4,
     "app/api/pdf/listing/route.ts": 4,
     "app/lp/bend/page.tsx": 4,
-    "app/lp/tetherow/data.ts": 4,
     "lib/cma.ts": 4,
     "app/actions/semantic-search.ts": 3,
     "app/api/admin/expired-listing-lookup/route.ts": 3,
@@ -39,6 +38,7 @@
     "app/api/pdf/comparison/route.ts": 3,
     "app/compare/page.tsx": 3,
     "app/home-valuation/actions.ts": 3,
+    "app/lp/tetherow/data.ts": 3,
     "app/lp/tetherow/heath/page.tsx": 3,
     "lib/cma-delivery.ts": 3,
     "lib/expired-listing-processor.ts": 3,
