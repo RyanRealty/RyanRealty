@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.267.0 (2026-05-22)
+
+### Features
+- feat(crons): refresh-mvs cron — listing_tile_mv + geo_snapshot_mv every 15m
+
+---
+
+
 ## v1.266.0 (2026-05-22)
 
 ### Features
