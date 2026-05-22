@@ -17,7 +17,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS public.geo_snapshot_mv AS
 SELECT
   'city'::text                                                          AS geo_type,
   lower(trim("City"))                                                   AS geo_key,
-  "City"                                                                AS geo_label,
+  min("City")                                                           AS geo_label,
   count(*) FILTER (
     WHERE "StandardStatus" IN ('Active', 'Coming Soon', 'Active Under Contract')
       AND "PropertyType" = 'A'
@@ -46,7 +46,7 @@ SELECT
   now()                                                                 AS refreshed_at
 FROM public.listings
 WHERE "City" IS NOT NULL
-GROUP BY lower(trim("City")), "City"
+GROUP BY lower(trim("City"))
 
 UNION ALL
 
@@ -54,7 +54,7 @@ UNION ALL
 SELECT
   'community'::text                                                     AS geo_type,
   lower(trim("City")) || ':' || lower(trim("SubdivisionName"))          AS geo_key,
-  "SubdivisionName"                                                     AS geo_label,
+  min("SubdivisionName")                                                AS geo_label,
   count(*) FILTER (
     WHERE "StandardStatus" IN ('Active', 'Coming Soon', 'Active Under Contract')
       AND "PropertyType" = 'A'
@@ -79,9 +79,7 @@ FROM public.listings
 WHERE "City" IS NOT NULL
   AND "SubdivisionName" IS NOT NULL
   AND "SubdivisionName" <> 'N/A'
-GROUP BY
-  lower(trim("City")) || ':' || lower(trim("SubdivisionName")),
-  "SubdivisionName"
+GROUP BY lower(trim("City")) || ':' || lower(trim("SubdivisionName"))
 
 UNION ALL
 
@@ -89,7 +87,7 @@ UNION ALL
 SELECT
   'neighborhood'::text                                                  AS geo_type,
   lower(trim(boundary_neighborhood))                                    AS geo_key,
-  boundary_neighborhood                                                 AS geo_label,
+  min(boundary_neighborhood)                                            AS geo_label,
   count(*) FILTER (
     WHERE "StandardStatus" IN ('Active', 'Coming Soon', 'Active Under Contract')
       AND "PropertyType" = 'A'
@@ -112,7 +110,7 @@ SELECT
   now()                                                                 AS refreshed_at
 FROM public.listings
 WHERE boundary_neighborhood IS NOT NULL
-GROUP BY lower(trim(boundary_neighborhood)), boundary_neighborhood
+GROUP BY lower(trim(boundary_neighborhood))
 
 WITH DATA;
 

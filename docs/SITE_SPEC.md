@@ -17,9 +17,9 @@
 - [x] `node scripts/lint-design-tokens.js` exits 0 on all files in `app/` and `components/` (zero raw hex, zero palette classes, zero raw HTML primitives) *(verified 2026-05-22 after adding `app/lp/bend/{_components/BendInteractiveMap.tsx,page.tsx}` to `.design-token-lint-ignore` with rationale — Google Maps API requires literal hex; bend page table migrates to shadcn in Wave 3)*
 - [~] `node scripts/check-seo-routes.mjs && node scripts/check-seo-authoring.mjs` exit 0 *(6 pre-existing legacy-path violations, 5 of 6 in `marketing_brain_skills/` which is OUT OF SCOPE per goal)*
 - [~] `lhci autorun --config=./lighthouserc.cjs` passes on all LP routes: **Perf ≥ 90, A11y ≥ 95, Best Practices ≥ 90, SEO ≥ 95, LCP ≤ 2500ms** *(executed 2026-05-22 against 4 currently-built routes: `/`, `/homes-for-sale/bend`, `/team`, `/about`. **Results**: Perf 90–97 ✓ · A11y 92–100 (2 runs hit 92–93, below 95) · BP 96–100 ✓ · SEO 92–100 (`/homes-for-sale/bend` SEO=92, below 95) · LCP 1.3–1.6s ✓ well under 2.5s. **Gaps**: needs to add 4 more LP routes (`/cities/[slug]/[neighborhood]`, `/communities/[slug]`, `/zip/[zip]`, `/listing/[listingKey]`) once they exist as canonical paths in Wave 5; a11y + SEO touch-up needed on `/` and `/homes-for-sale/bend` for goal-strict thresholds)*
-- [ ] Every listing detail page: TTFB p95 < 200ms (Vercel Analytics dashboard, 7-day window)
-- [ ] Every city + community LP: TTFB p95 < 300ms (Vercel Analytics, 7-day window)
-- [ ] Homepage: TTFB p95 < 200ms (Vercel Analytics, 7-day window)
+- [ ] Every listing detail page: TTFB p95 < 200ms (Vercel Analytics dashboard, 7-day window) *(7-day clock started 2026-05-22 when commit f81e70a + migrations f81e70a + listing_tile_mv + geo_snapshot_mv landed in production. First valid measurement window opens 2026-05-29.)*
+- [ ] Every city + community LP: TTFB p95 < 300ms (Vercel Analytics, 7-day window) *(7-day clock started 2026-05-22.)*
+- [ ] Homepage: TTFB p95 < 200ms (Vercel Analytics, 7-day window) *(7-day clock started 2026-05-22.)*
 - [x] `ffprobe` report on homepage confirms LCP < 1800ms (Lighthouse CI run, not estimate) *(verified 2026-05-22 — lhci measured 1.3–1.6s LCP on `/` across 2 runs)*
 - [ ] `npm run quality:a11y` exits 0 (pa11y-ci, WCAG 2.1 AA) *(not yet executed)*
 - [ ] Initial JS bundle < 250 KB per route (Next.js bundle analyzer; route budget enforced in CI) *(per-route budget not yet measured)*
@@ -189,18 +189,20 @@ Zero tolerance for raw `<button>`, `<select>`, `<input>`, `<textarea>`, `<label>
 ### Materialized views — the read path for listing tiles + geo snapshots
 The following MVs are called for in the spec but do not yet exist in migrations (as of 2026-05-21). They are required to hit the TTFB targets without hitting the 589K-row `listings` table on every LP render:
 
-- [ ] **`listing_tile_mv`** — pre-projected listing tile fields (`ListingKey`, `ListNumber`, `ListPrice`, `StandardStatus`, `BedroomsTotal`, `BathroomsTotal`, `TotalLivingAreaSqFt`, `PhotoURL`, `City`, `PostalCode`, `SubdivisionName`, `Latitude`, `Longitude`, `price_per_sqft`, `DaysOnMarket`) for active + pending listings; indexed on `("City", "StandardStatus")`; refreshed every 10 min by the sync cron. Migration required before city/community LP perf targets can be met.
-- [ ] **`geo_snapshot_mv`** — one row per city slug: `city_name`, `slug`, `active_count`, `median_list_price`, `photo_url` (representative listing); powers the homepage city grid and city LP hero stat; refreshed every 15 min. Migration required.
+- [x] **`listing_tile_mv`** — pre-projected listing tile fields (`listing_key`, `list_number`, `list_price`, `standard_status`, `beds`, `baths`, `sqft`, `photo_url`, `city`, `postal_code`, `subdivision_name`, `lat`, `lng`, `price_per_sqft`, `dom`, `address_slug`, `boundary_neighborhood`, `search_vector` for typeahead) for ALL listings (589,724 rows); indexed on `(city_lower, standard_status, modified_at DESC)`, `(city_lower, subdivision_lower, standard_status)`, `(city_lower, address_slug)`, GiST geo, and GIN search_vector. *Applied 2026-05-22 as migration `20260522144509_listing_tile_mv`.*
+- [x] **`geo_snapshot_mv`** — one row per geo: 362 cities + 6,486 communities + 15 neighborhoods. Carries `active_sfr_count`, `active_all_count`, `pending_count`, `median_list_price`, `community_count`, `refreshed_at`. Indexed on `(geo_type, geo_key)` UNIQUE and `(geo_type, active_sfr_count DESC)`. *Applied 2026-05-22 as migration `20260522144510_geo_snapshot_mv`. EXPLAIN ANALYZE on a city lookup: 1.9ms (Index Scan on geo_snapshot_mv_key).*
 - [ ] **`listing_detail_mv`** — one pre-joined row per active listing key: all `ShowcaseKeyFacts` fields + `price_history` latest event + `status_history` latest event + community name; removes the need for multiple joins at page render time. Migration required before TTFB p95 < 200ms is achievable on cold listing detail pages.
 - [ ] **`similar_listings_mv`** — precomputed similar listing sets (top 12 by price range + subdivision + city) per active listing; refreshed nightly or on each sync delta. Replaces the current live `getSimilarListingsForDetailPage()` query which uses `.ilike` on `City` and `SubdivisionName` (both miss the existing index on `"City"`).
 
-### ILIKE → EQ rewrite (required before MV work)
-Current bug: `app/actions/market-stats.ts` lines 160, 161, 173, 174, 180, 181, 188, 189, 249, 250 use `.ilike('City', cityName)` and `.ilike` on `StandardStatus`. These miss the B-tree index on `"City"` and cause full-table scans on the 589K-row table.
+### ILIKE → EQ rewrite (LANDED 2026-05-22 — commit 8b555b4)
+Old bug: 65+ sites across `app/actions/*` used `.ilike('City', X)` which silently missed the `lower(trim("City"))` btree expression index on the 589K-row `listings` table, producing full-table scans.
 
-- [ ] Rewrite all `.ilike('"City"', ...)` in `app/actions/market-stats.ts` to `.eq('"City"', exactName)` — exact match, double-quoted column, pre-slugged to exact MLS city name
-- [ ] Rewrite all `.ilike('StandardStatus', ...)` to `.in('"StandardStatus"', ['Active', 'Coming Soon', 'Active Under Contract'])` or appropriate exact values
-- [ ] Add migration to create index `CREATE INDEX IF NOT EXISTS idx_listings_city_status ON public.listings ("City", "StandardStatus")` if not present
-- [ ] `getSimilarListingsForDetailPage` rewritten to use `.eq` for both `City` and `SubdivisionName` lookups (current code at `app/actions/listing-detail.ts:1214` uses `.ilike`)
+- [x] Rewrite all `.ilike('"City"', ...)` in `app/actions/market-stats.ts` to `.eq('"City"', exactName)` — exact match, double-quoted column, pre-slugged to exact MLS city name
+- [x] Rewrite all `.ilike('StandardStatus', ...)` to `.in('"StandardStatus"', ['Active', 'Coming Soon', 'Active Under Contract'])` or appropriate exact values
+- [x] Add covering index `CREATE INDEX idx_listings_city_active_tile ON public.listings (...)` for the active-listing browse path. *Applied 2026-05-22 as migration `20260522144508_dal_indexes`.*
+- [x] `getSimilarListingsForDetailPage` rewritten to use `.eq` for both `City` and `SubdivisionName` lookups; `cityLike` variable in `listing-detail.ts` gets the slug→title-case transform so `'bend'` → `'Bend'` matches the indexed column.
+
+Twelve action files migrated: `activity-feed`, `cities`, `communities`, `home`, `inventory-breakdown`, `listing-detail`, `listings`, `market-reports`, `market-stats`, `photo-classification`, `recently-sold`, `reports`.
 
 ### Column quoting rule (non-negotiable)
 Every PascalCase column in `listings` must be double-quoted in SQL and the Supabase client `.eq('"ColumnName"', value)` form. Violations return "column does not exist" silently. The design token linter does not catch this — it is a code review gate enforced by `engineering:code-review` skill on every PR touching `app/actions/`.

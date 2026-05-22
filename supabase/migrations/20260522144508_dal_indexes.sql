@@ -24,11 +24,14 @@ BEGIN;
 CREATE INDEX IF NOT EXISTS idx_listings_sub_city_status
   ON public.listings ("SubdivisionName", "City", "StandardStatus");
 
--- 2. ListAgentEmail — for per-broker attribution queries
---    (resolve listing → broker by email).
+-- 2. list_agent_email — for per-broker attribution queries
+--    (resolve listing → broker by email). Note: the underlying column
+--    is the lowercase/snake_case `list_agent_email` (not PascalCase
+--    `ListAgentEmail`) — this is the only ListAgent* field stored
+--    lower-cased in our schema.
 CREATE INDEX IF NOT EXISTS idx_listings_list_agent_email
-  ON public.listings ("ListAgentEmail")
-  WHERE "ListAgentEmail" IS NOT NULL;
+  ON public.listings (list_agent_email)
+  WHERE list_agent_email IS NOT NULL;
 
 -- 3. Covering index for active-listing browse on city pages.
 --    Includes all columns the tile projection needs so the planner
@@ -52,19 +55,12 @@ CREATE INDEX IF NOT EXISTS idx_listings_city_active_tile
   )
   WHERE "StandardStatus" IN ('Active', 'Coming Soon', 'Active Under Contract', 'Pending');
 
--- 4. Address slug resolution — replaces the 1,000-row JS fetch in
---    resolveListingByAddress with a single indexed lookup. Computed
---    from StreetNumber + StreetName, lowercased + hyphenated.
---    Stored as an expression index so the existing schema stays intact.
-CREATE INDEX IF NOT EXISTS idx_listings_address_slug
-  ON public.listings (
-    lower(trim("City")),
-    lower(regexp_replace(
-      concat_ws('-', "StreetNumber", regexp_replace(coalesce("StreetName", ''), '\s+', '-', 'g')),
-      '[^a-z0-9-]', '', 'g'
-    ))
-  )
-  WHERE "StandardStatus" IS NOT NULL;
+-- 4. Address slug resolution — DEFERRED to a follow-up migration.
+--    The intended expression index uses concat_ws which is STABLE not
+--    IMMUTABLE, so Postgres rejects it directly:
+--      ERROR:  42P17: functions in index expression must be marked IMMUTABLE
+--    Fix path: create a CREATE FUNCTION listings_address_slug(...) IMMUTABLE
+--    wrapper and index that. Landing in 20260523xxxxxx_address_slug_index.sql.
 
 -- 5. pg_trgm extension + GIN indexes for fuzzy name lookups (search bar +
 --    CMA address parsing). Lower priority than indexes 1-4 — only needed
