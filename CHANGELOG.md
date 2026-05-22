@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.261.4 (2026-05-22)
+
+### Other
+- fub: streamline Matt's runbook to match the trimmed FUB Revamp collection
+
+---
+
+
 ## v1.261.3 (2026-05-21)
 
 ### Other
