@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.2 (2026-05-22)
+
+### Other
+- ci: every required CI gate now exits 0
+
+---
+
+
 ## v1.279.1 (2026-05-22)
 
 ### Other
