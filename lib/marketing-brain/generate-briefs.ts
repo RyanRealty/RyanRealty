@@ -123,6 +123,14 @@ export interface GeneratedBrief {
    * producer needs structured edit data rather than hook+body+cta.
    */
   payload_override?: Record<string, unknown>
+  /**
+   * Historical performance data for this brief's action_type + primary
+   * platform, if available from content_performance. Populated by
+   * getFormatPerformance during generateWeeklyBriefs. Null when the table
+   * has no matching rows in the sampling window (e.g. during the first 30
+   * days before real data flows).
+   */
+  historical_performance?: FormatPerformance | null
 }
 
 export interface GenerateOptions {
@@ -344,6 +352,273 @@ const BANNED_TROPE_PATTERNS: Array<{ pattern: RegExp; rule: string }> = [
     rule: '§4.1 Trustworthy: no guaranteed outcome claims',
   },
 ]
+
+// ---------------------------------------------------------------------------
+// Gap 5: Format performance aggregation
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-(action_type, platform) performance aggregate read from
+ * content_performance for use in brief-generation biasing.
+ *
+ * Key: `<action_type>::<platform>` (e.g. `content:fb_lead_gen_ad::instagram`).
+ */
+export interface FormatPerformance {
+  action_type: string
+  platform: string
+  /** Number of content_performance rows in the sampling window. */
+  sample_size: number
+  /** Median engagement_rate (engagements / impressions) across rows. Null when impressions is unavailable for all rows. */
+  median_engagement_rate: number | null
+  /** Median north_star_attributed_seller_leads across rows. */
+  median_north_star: number
+  /**
+   * (median_engagement_rate - overall_median_engagement_rate) / overall_median_engagement_rate.
+   * 0.0 when overall_median is 0 or no engagement data exists.
+   * Positive = above baseline. Negative = below baseline.
+   *
+   * Open question: should we weight by reach instead of engagement_rate for
+   * awareness-focused formats (e.g. blog_post, gbp_post)? Engagement-rate
+   * favors high-intent narrow audiences; reach-weighted uplift would better
+   * capture top-of-funnel value. Revisit once 90+ days of data flows.
+   */
+  uplift_vs_baseline: number
+  /**
+   * Confidence tier by sample size.
+   *   low    < 5 rows
+   *   medium 5-19 rows
+   *   high   >= 20 rows
+   */
+  confidence: 'low' | 'medium' | 'high'
+  /** Top 3 topic values (from metadata.topic) sorted by avg engagement_rate within this group. */
+  best_topics: string[]
+  /** Top 3 posting hours (0-23) sorted by avg engagement_rate within this group. */
+  best_hours: number[]
+}
+
+// Thresholds for brief-level boost and suppress decisions.
+// Inline so they are easy to tune: no external config file needed.
+//
+//   BOOST_UPLIFT_THRESHOLD  — formats above this uplift AND with confidence >= 'medium'
+//                             get their brief priority_score multiplied by BOOST_MULTIPLIER.
+//
+//   SUPPRESS_UPLIFT_THRESHOLD — formats below this uplift AND with confidence >= 'medium'
+//                               are omitted from this cycle entirely (brief is dropped).
+//
+// Both thresholds use signed fractional values:
+//   +0.25 = 25% above baseline engagement rate.
+//   -0.25 = 25% below baseline engagement rate.
+//
+// Rationale: 25% is the smallest delta that represents a real signal rather
+// than noise, given the small sample sizes we expect in the first 90 days.
+// Raise the threshold (e.g. to 0.40) to make the brain more conservative.
+const BOOST_UPLIFT_THRESHOLD = 0.25
+const SUPPRESS_UPLIFT_THRESHOLD = -0.25
+const BOOST_MULTIPLIER = 1.2 // +20% priority_score bump for winning formats
+
+/**
+ * getFormatPerformance
+ *
+ * Reads content_performance rows from the last `windowDays` days, joins to
+ * marketing_brain_actions to get the action_type, and groups by
+ * (action_type, platform). Returns a Map keyed by `<action_type>::<platform>`.
+ *
+ * Engagement rate is computed per row as:
+ *   engagements / impressions    (0 when impressions is null or 0)
+ *
+ * Uplift is then:
+ *   (group_median_er - overall_median_er) / overall_median_er
+ *
+ * Overall median is the median engagement rate across ALL rows in the window,
+ * providing a format-neutral baseline. When the overall median is 0 (no
+ * impressions data anywhere), uplift is set to 0 for every group.
+ *
+ * Soft-fail contract:
+ *   On any error, or when content_performance has no rows in the window,
+ *   returns new Map() so the caller runs with no suppression/boost.
+ *
+ * @param windowDays - Look-back window. 30 for weekly cycle; 90 for quarterly
+ *   reviews. Default 30.
+ */
+export async function getFormatPerformance(
+  windowDays: 30 | 90 = 30
+): Promise<Map<string, FormatPerformance>> {
+  try {
+    const supabase = getSupabase()
+    const cutoff = new Date(Date.now() - windowDays * 24 * 3600 * 1000).toISOString()
+
+    // Join content_performance -> marketing_brain_actions to get action_type.
+    // We also pull metadata (for topic and posted_at hour) and the raw
+    // impression/engagement counts needed to compute engagement_rate.
+    const { data, error } = await supabase
+      .from('content_performance')
+      .select(
+        'platform, engagements, impressions, north_star_attributed_seller_leads, posted_at, metadata, marketing_brain_actions!inner(action_type)'
+      )
+      .gte('posted_at', cutoff)
+      .not('metrics_7d', 'is', null)
+
+    if (error) {
+      console.error('getFormatPerformance: query error:', error.message)
+      return new Map()
+    }
+
+    // Typed shape of the Supabase join result.
+    interface ContentPerfRow {
+      platform: string
+      engagements: number | null
+      impressions: number | null
+      north_star_attributed_seller_leads: number | null
+      posted_at: string | null
+      metadata: Record<string, unknown> | null
+      marketing_brain_actions:
+        | { action_type: string | null }
+        | Array<{ action_type: string | null }>
+    }
+
+    const rows = ((data ?? []) as unknown) as ContentPerfRow[]
+    if (rows.length === 0) return new Map()
+
+    // -----------------------------------------------------------------------
+    // Pass 1: compute per-row engagement_rate and collect into groups
+    // -----------------------------------------------------------------------
+
+    interface GroupData {
+      action_type: string
+      platform: string
+      engagement_rates: number[]         // one per row (0 when impressions=0)
+      north_star_counts: number[]
+      topic_rates: Map<string, number[]> // topic -> engagement_rates
+      hour_rates: Map<number, number[]>  // hour (0-23) -> engagement_rates
+    }
+
+    const groups = new Map<string, GroupData>()
+    const allEngagementRates: number[] = []
+
+    for (const row of rows) {
+      const mba = Array.isArray(row.marketing_brain_actions)
+        ? row.marketing_brain_actions[0]
+        : row.marketing_brain_actions
+      const actionType = mba?.action_type ?? null
+      if (!actionType) continue
+
+      const platform = row.platform
+      const key = `${actionType}::${platform}`
+
+      const impressions = row.impressions ?? 0
+      const engagements = row.engagements ?? 0
+      const er = impressions > 0 ? engagements / impressions : 0
+
+      allEngagementRates.push(er)
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          action_type: actionType,
+          platform,
+          engagement_rates: [],
+          north_star_counts: [],
+          topic_rates: new Map(),
+          hour_rates: new Map(),
+        })
+      }
+
+      const g = groups.get(key)!
+      g.engagement_rates.push(er)
+      g.north_star_counts.push(row.north_star_attributed_seller_leads ?? 0)
+
+      // Collect topic-level rates for best_topics
+      const topic =
+        typeof row.metadata?.topic === 'string' && row.metadata.topic.trim()
+          ? row.metadata.topic.trim()
+          : null
+      if (topic) {
+        if (!g.topic_rates.has(topic)) g.topic_rates.set(topic, [])
+        g.topic_rates.get(topic)!.push(er)
+      }
+
+      // Collect hour-level rates for best_hours
+      if (row.posted_at) {
+        const hour = new Date(row.posted_at).getUTCHours()
+        if (!g.hour_rates.has(hour)) g.hour_rates.set(hour, [])
+        g.hour_rates.get(hour)!.push(er)
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Overall median engagement_rate (baseline across ALL formats)
+    // -----------------------------------------------------------------------
+    const overallMedian = computeMedian(allEngagementRates)
+
+    // -----------------------------------------------------------------------
+    // Pass 2: compute per-group aggregates and build FormatPerformance entries
+    // -----------------------------------------------------------------------
+    const result = new Map<string, FormatPerformance>()
+
+    for (const [key, g] of groups) {
+      const n = g.engagement_rates.length
+      const medianEr = computeMedian(g.engagement_rates)
+      const medianNorthStar = computeMedian(g.north_star_counts)
+
+      const uplift =
+        overallMedian > 0
+          ? (medianEr - overallMedian) / overallMedian
+          : 0
+
+      const confidence: FormatPerformance['confidence'] =
+        n >= 20 ? 'high' : n >= 5 ? 'medium' : 'low'
+
+      // best_topics: top 3 by avg engagement_rate
+      const topicAvgPairs: Array<[string, number]> = []
+      for (const [topic, rates] of g.topic_rates) {
+        topicAvgPairs.push([topic, rates.reduce((a, b) => a + b, 0) / rates.length])
+      }
+      topicAvgPairs.sort((a, b) => b[1] - a[1])
+      const bestTopics = topicAvgPairs.slice(0, 3).map(([t]) => t)
+
+      // best_hours: top 3 by avg engagement_rate
+      const hourAvgPairs: Array<[number, number]> = []
+      for (const [hour, rates] of g.hour_rates) {
+        hourAvgPairs.push([hour, rates.reduce((a, b) => a + b, 0) / rates.length])
+      }
+      hourAvgPairs.sort((a, b) => b[1] - a[1])
+      const bestHours = hourAvgPairs.slice(0, 3).map(([h]) => h)
+
+      result.set(key, {
+        action_type: g.action_type,
+        platform: g.platform,
+        sample_size: n,
+        median_engagement_rate: allEngagementRates.length > 0 ? medianEr : null,
+        median_north_star: medianNorthStar,
+        uplift_vs_baseline: uplift,
+        confidence,
+        best_topics: bestTopics,
+        best_hours: bestHours,
+      })
+    }
+
+    return result
+  } catch (err) {
+    console.error(
+      'getFormatPerformance: unexpected error (returning empty map, cycle continues):',
+      err instanceof Error ? err.message : String(err)
+    )
+    return new Map()
+  }
+}
+
+/**
+ * Compute the median of a number array. Returns 0 for an empty array.
+ * Uses the lower-middle value for even-length arrays (no interpolation needed
+ * for rate values where differences are small).
+ */
+function computeMedian(values: number[]): number {
+  if (values.length === 0) return 0
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 !== 0
+    ? sorted[mid]
+    : (sorted[mid - 1] + sorted[mid]) / 2
+}
 
 // ---------------------------------------------------------------------------
 // Item 2 — cadence gap detection
@@ -2132,6 +2407,101 @@ export function mapOpportunityToBriefs(
 // ---------------------------------------------------------------------------
 
 /**
+ * Module-level format-to-route map. Extracted from persistBriefs so that
+ * generateWeeklyBriefs can look up action_type by brief.format when applying
+ * performance-bias boost/suppress decisions without duplicating the table.
+ *
+ * Source of truth: marketing_brain_skills/producers/REGISTRY.md.
+ * Falls back to `content:<format>` / automation_skills/content_engine for
+ * unknown formats so the brain never silently drops work.
+ */
+const FORMAT_ROUTE_MAP: Record<string, { action_type: string; producer: string }> = {
+  // Paid social — FB lead-gen ad creative
+  fb_lead_gen_ad: { action_type: 'content:fb_lead_gen_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
+  fb_ad: { action_type: 'content:fb_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
+  fb_ad_creative: { action_type: 'content:fb_lead_gen_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
+
+  // Organic short-form video (30-45s vertical)
+  market_data_short: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+  market_data_video: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+  market_video: { action_type: 'content:market_video', producer: 'video_production_skills/market-data-video' },
+  market_data_viz: { action_type: 'content:market_data_viz', producer: 'video_production_skills/data_viz_video' },
+  stats_clip: { action_type: 'content:stats_clip', producer: 'video_production_skills/data_viz_video' },
+  meme_video: { action_type: 'content:meme_video', producer: 'video_production_skills/meme_content' },
+  neighborhood_reel: { action_type: 'content:neighborhood_reel', producer: 'video_production_skills/area_guides' },
+  area_guide_short: { action_type: 'content:area_guide_short', producer: 'video_production_skills/area_guides' },
+  news_clip: { action_type: 'content:news_clip', producer: 'video_production_skills/news-video' },
+  news_video: { action_type: 'content:news_video', producer: 'video_production_skills/news-video' },
+  avatar_market_update: { action_type: 'content:avatar_market_update', producer: 'video_production_skills/avatar_market_update' },
+
+  // Listing-specific
+  listing_reel: { action_type: 'content:listing_reel', producer: 'video_production_skills/listing_reveal' },
+  listing_video: { action_type: 'content:listing_video', producer: 'video_production_skills/listing-tour-video' },
+
+  // Long-form video
+  market_youtube_longform: { action_type: 'content:market_youtube_longform', producer: 'video_production_skills/youtube-long-form-market-report' },
+  neighborhood_tour: { action_type: 'content:neighborhood_tour', producer: 'video_production_skills/neighborhood_tour' },
+  area_guide_long: { action_type: 'content:area_guide_long', producer: 'video_production_skills/neighborhood_tour' },
+
+  // Static + carousels
+  ig_carousel: { action_type: 'content:ig_carousel', producer: 'social_media_skills/instagram-carousel' },
+  blog_post: { action_type: 'content:blog_post', producer: 'social_media_skills/blog-post' },
+  seo_blog: { action_type: 'content:seo_blog', producer: 'social_media_skills/blog-post' },
+
+  // Flyers
+  flyer: { action_type: 'content:flyer', producer: 'social_media_skills/flyer-design' },
+  just_listed_flyer: { action_type: 'content:just_listed_flyer', producer: 'social_media_skills/flyer-design' },
+  open_house_flyer: { action_type: 'content:open_house_flyer', producer: 'social_media_skills/flyer-design' },
+  feature_sheet: { action_type: 'content:feature_sheet', producer: 'social_media_skills/flyer-design' },
+
+  // Orchestrators
+  list_kit: { action_type: 'content:list_kit', producer: 'social_media_skills/list-kit' },
+  monthly_market_report: { action_type: 'content:monthly_market_report', producer: 'video_production_skills/monthly-market-report-orchestrator' },
+  listing_launch: { action_type: 'content:listing_launch', producer: 'video_production_skills/listing_launch' },
+
+  // GBP
+  gbp_post: { action_type: 'ops:gbp_post', producer: 'marketing_brain_skills/producers/ops-reputation' },
+
+  // Site edits
+  site_meta_update: { action_type: 'site:meta_update', producer: 'marketing_brain_skills/producers/site-edit' },
+  site_copy_update: { action_type: 'site:copy_update', producer: 'marketing_brain_skills/producers/site-edit' },
+  site_cta_update: { action_type: 'site:cta_update', producer: 'marketing_brain_skills/producers/site-edit' },
+  site_page_create: { action_type: 'site:page_create', producer: 'marketing_brain_skills/producers/site-page-create' },
+  site_landing_page_create: { action_type: 'site:landing_page_create', producer: 'marketing_brain_skills/producers/site-page-create' },
+  site_perf_fix: { action_type: 'site:perf_fix', producer: 'marketing_brain_skills/producers/site-performance' },
+  site_redirect_add: { action_type: 'site:redirect_add', producer: 'marketing_brain_skills/producers/site-performance' },
+  site_schema_add: { action_type: 'site:schema_add', producer: 'marketing_brain_skills/producers/site-performance' },
+
+  // Ops — Meta Ads
+  ops_meta_budget: { action_type: 'ops:meta_budget', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
+  ops_meta_pause: { action_type: 'ops:meta_pause', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
+  ops_meta_resume: { action_type: 'ops:meta_resume', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
+  ops_meta_audience: { action_type: 'ops:meta_audience', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
+  ops_meta_creative_swap: { action_type: 'ops:meta_creative_swap', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
+
+  // Ops — FUB CRM
+  ops_fub_tag_fix: { action_type: 'ops:fub_tag_fix', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
+  ops_fub_sequence_change: { action_type: 'ops:fub_sequence_change', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
+  ops_fub_task_create: { action_type: 'ops:fub_task_create', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
+  ops_fub_routing: { action_type: 'ops:fub_routing', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
+
+  // Analyze
+  analyze_metric_decomposition: { action_type: 'analyze:metric_decomposition', producer: 'marketing_brain_skills/analyze-anomaly' },
+  analyze_drop_investigation: { action_type: 'analyze:drop_investigation', producer: 'marketing_brain_skills/analyze-anomaly' },
+  analyze_spike_investigation: { action_type: 'analyze:spike_investigation', producer: 'marketing_brain_skills/analyze-anomaly' },
+
+  // Comms
+  comms_matt_alert: { action_type: 'comms:matt_alert', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  comms_matt_summary: { action_type: 'comms:matt_summary', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  comms_team_update: { action_type: 'comms:team_update', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+  comms_stakeholder_summary: { action_type: 'comms:stakeholder_summary', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
+
+  // Legacy aliases
+  ig_reel: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+  tiktok_reel: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
+}
+
+/**
  * INSERT briefs into content_briefs (status='pending').
  * INSERT a marketing_decisions row per brief (decision_type='brief_generated').
  * For page-leak opportunities (no brief), INSERT a marketing_decisions row
@@ -2142,12 +2512,17 @@ export function mapOpportunityToBriefs(
  * @param performanceBias - Optional bias report from gatherPerformanceBias.
  *   When provided, a summary is included in data_observed for traceability.
  *   Omitting it keeps all existing callers working unchanged.
+ * @param formatPerfMap - Optional per-(action_type, platform) performance map
+ *   from getFormatPerformance. When provided, a format_performance_summary
+ *   is written to the cycle-level marketing_decisions row (top 5 + bottom 5
+ *   by uplift_vs_baseline). Omitting it keeps existing callers working unchanged.
  */
 export async function persistBriefs(
   briefs: GeneratedBrief[],
   opportunities: RankedOpportunity[],
   opts: GenerateOptions = {},
-  performanceBias?: PerformanceBiasReport
+  performanceBias?: PerformanceBiasReport,
+  formatPerfMap?: Map<string, FormatPerformance>
 ): Promise<PersistResult> {
   if (opts.dryRun || briefs.length === 0) {
     return { inserted: 0, ids: [], errors: [] }
@@ -2164,105 +2539,9 @@ export async function persistBriefs(
       finalReason += ` | VOICE_FAIL: ${brief.voice_validation.violations.join('; ')}`
     }
 
-    // Map format → action_type + assigned_producer. Source of truth is
-    // marketing_brain_skills/producers/REGISTRY.md. Falls back to
-    // content_engine for unknown formats so the brain doesn't drop work.
-    const formatRoute: Record<string, { action_type: string; producer: string }> = {
-      // Paid social — FB lead-gen ad creative
-      fb_lead_gen_ad: { action_type: 'content:fb_lead_gen_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
-      fb_ad: { action_type: 'content:fb_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
-      // Legacy alias — kept for manual produces / pre-Item-3 backfilled rows
-      fb_ad_creative: { action_type: 'content:fb_lead_gen_ad', producer: 'social_media_skills/facebook-lead-gen-ad' },
-
-      // Organic short-form video (30-45s vertical) — routed by content angle
-      market_data_short: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
-      market_data_video: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
-      market_video: { action_type: 'content:market_video', producer: 'video_production_skills/market-data-video' },
-      market_data_viz: { action_type: 'content:market_data_viz', producer: 'video_production_skills/data_viz_video' },
-      stats_clip: { action_type: 'content:stats_clip', producer: 'video_production_skills/data_viz_video' },
-      meme_video: { action_type: 'content:meme_video', producer: 'video_production_skills/meme_content' },
-      neighborhood_reel: { action_type: 'content:neighborhood_reel', producer: 'video_production_skills/area_guides' },
-      area_guide_short: { action_type: 'content:area_guide_short', producer: 'video_production_skills/area_guides' },
-      news_clip: { action_type: 'content:news_clip', producer: 'video_production_skills/news-video' },
-      news_video: { action_type: 'content:news_video', producer: 'video_production_skills/news-video' },
-      avatar_market_update: { action_type: 'content:avatar_market_update', producer: 'video_production_skills/avatar_market_update' },
-
-      // Listing-specific (valid only when target is a specific MLS#)
-      listing_reel: { action_type: 'content:listing_reel', producer: 'video_production_skills/listing_reveal' },
-      listing_video: { action_type: 'content:listing_video', producer: 'video_production_skills/listing-tour-video' },
-
-      // Long-form video
-      market_youtube_longform: { action_type: 'content:market_youtube_longform', producer: 'video_production_skills/youtube-long-form-market-report' },
-      neighborhood_tour: { action_type: 'content:neighborhood_tour', producer: 'video_production_skills/neighborhood_tour' },
-      area_guide_long: { action_type: 'content:area_guide_long', producer: 'video_production_skills/neighborhood_tour' },
-
-      // Static + carousels
-      ig_carousel: { action_type: 'content:ig_carousel', producer: 'social_media_skills/instagram-carousel' },
-      blog_post: { action_type: 'content:blog_post', producer: 'social_media_skills/blog-post' },
-      seo_blog: { action_type: 'content:seo_blog', producer: 'social_media_skills/blog-post' },
-
-      // Flyers
-      flyer: { action_type: 'content:flyer', producer: 'social_media_skills/flyer-design' },
-      just_listed_flyer: { action_type: 'content:just_listed_flyer', producer: 'social_media_skills/flyer-design' },
-      open_house_flyer: { action_type: 'content:open_house_flyer', producer: 'social_media_skills/flyer-design' },
-      feature_sheet: { action_type: 'content:feature_sheet', producer: 'social_media_skills/flyer-design' },
-
-      // Orchestrators (compound producers that fan out to multiple deliverables)
-      list_kit: { action_type: 'content:list_kit', producer: 'social_media_skills/list-kit' },
-      monthly_market_report: { action_type: 'content:monthly_market_report', producer: 'video_production_skills/monthly-market-report-orchestrator' },
-      listing_launch: { action_type: 'content:listing_launch', producer: 'video_production_skills/listing_launch' },
-
-      // GBP (ops:* — but emitted as a content-flow format; route still resolves)
-      gbp_post: { action_type: 'ops:gbp_post', producer: 'marketing_brain_skills/producers/ops-reputation' },
-
-      // Site edits — emitted by audit-website handlers in Item 1.
-      // Route to site-edit / site-page-create / site-performance producers
-      // per producers/REGISTRY.md Section C. Briefs use payload_override
-      // to carry structured edit data; target is a page path or audit-id.
-      site_meta_update: { action_type: 'site:meta_update', producer: 'marketing_brain_skills/producers/site-edit' },
-      site_copy_update: { action_type: 'site:copy_update', producer: 'marketing_brain_skills/producers/site-edit' },
-      site_cta_update: { action_type: 'site:cta_update', producer: 'marketing_brain_skills/producers/site-edit' },
-      site_page_create: { action_type: 'site:page_create', producer: 'marketing_brain_skills/producers/site-page-create' },
-      site_landing_page_create: { action_type: 'site:landing_page_create', producer: 'marketing_brain_skills/producers/site-page-create' },
-      site_perf_fix: { action_type: 'site:perf_fix', producer: 'marketing_brain_skills/producers/site-performance' },
-      site_redirect_add: { action_type: 'site:redirect_add', producer: 'marketing_brain_skills/producers/site-performance' },
-      site_schema_add: { action_type: 'site:schema_add', producer: 'marketing_brain_skills/producers/site-performance' },
-
-      // Ops — Meta Ads. All ops:meta_* are matt-explicit per CLAUDE.md
-      // Marketing Brain Architecture and producers/REGISTRY.md Section D.
-      ops_meta_budget: { action_type: 'ops:meta_budget', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
-      ops_meta_pause: { action_type: 'ops:meta_pause', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
-      ops_meta_resume: { action_type: 'ops:meta_resume', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
-      ops_meta_audience: { action_type: 'ops:meta_audience', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
-      ops_meta_creative_swap: { action_type: 'ops:meta_creative_swap', producer: 'marketing_brain_skills/producers/ops-meta-ads' },
-
-      // Ops — FUB CRM. Tier-based approval (>5 leads = matt-explicit;
-      // <=5 = matt-review-draft) per producers/REGISTRY.md Section D.
-      ops_fub_tag_fix: { action_type: 'ops:fub_tag_fix', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
-      ops_fub_sequence_change: { action_type: 'ops:fub_sequence_change', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
-      ops_fub_task_create: { action_type: 'ops:fub_task_create', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
-      ops_fub_routing: { action_type: 'ops:fub_routing', producer: 'marketing_brain_skills/producers/ops-fub-crm' },
-
-      // Analyze — drill into anomalies; findings land in marketing_decisions
-      // and generate-briefs reads them on the next cycle.
-      analyze_metric_decomposition: { action_type: 'analyze:metric_decomposition', producer: 'marketing_brain_skills/analyze-anomaly' },
-      analyze_drop_investigation: { action_type: 'analyze:drop_investigation', producer: 'marketing_brain_skills/analyze-anomaly' },
-      analyze_spike_investigation: { action_type: 'analyze:spike_investigation', producer: 'marketing_brain_skills/analyze-anomaly' },
-
-      // Comms — matt-alert; tier-based delivery (critical/high = iMessage,
-      // medium/low = email + dashboard card) handled by the producer.
-      comms_matt_alert: { action_type: 'comms:matt_alert', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
-      comms_matt_summary: { action_type: 'comms:matt_summary', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
-      comms_team_update: { action_type: 'comms:team_update', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
-      comms_stakeholder_summary: { action_type: 'comms:stakeholder_summary', producer: 'marketing_brain_skills/producers/comms-matt-alert' },
-
-      // Legacy aliases — pre-Item-3 these routed to listing_reveal which
-      // fails when target='brand' because listing_reveal requires an MLS#.
-      // Re-routed to market-data-video which accepts brand-level targets.
-      ig_reel: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
-      tiktok_reel: { action_type: 'content:market_data_short', producer: 'video_production_skills/market-data-video' },
-    }
-    const route = formatRoute[brief.format] ?? {
+    // Map format → action_type + assigned_producer using the module-level
+    // FORMAT_ROUTE_MAP constant. Falls back to content_engine for unknown formats.
+    const route = FORMAT_ROUTE_MAP[brief.format] ?? {
       action_type: `content:${brief.format}`,
       producer: 'automation_skills/content_engine',
     }
@@ -2286,7 +2565,10 @@ export async function persistBriefs(
         target: resolvedTarget,
         assigned_producer: route.producer,
         payload: resolvedPayload,
-        data_evidence: { sources: brief.data_sources },
+        data_evidence: {
+          sources: brief.data_sources,
+          historical_performance: brief.historical_performance ?? null,
+        },
         topic: brief.topic,
         format: brief.format,
         platforms: brief.platforms,
@@ -2340,6 +2622,8 @@ export async function persistBriefs(
               format_bias_map: performanceBias.format_bias_map,
             }
           : null,
+        // Gap 5: per-brief historical performance snapshot for audit trail.
+        historical_performance: brief.historical_performance ?? null,
       },
       rules_cited: brief.voice_validation.violations.length > 0
         ? brief.voice_validation.violations
@@ -2355,6 +2639,71 @@ export async function persistBriefs(
   // (Item 1: the legacy page-leak marketing_decisions log was removed —
   // page-leak opportunities now generate a site:cta_update brief, which
   // creates its own per-brief marketing_decisions row above.)
+
+  // Gap 5: write a cycle-level marketing_decisions row with a
+  // format_performance_summary (top 5 + bottom 5 by uplift_vs_baseline).
+  // This gives the dashboard and future audit passes a single row per cycle
+  // showing which formats the brain is learning to favor or avoid.
+  // Soft-fail: a write error here does not affect the returned PersistResult.
+  if (formatPerfMap && formatPerfMap.size > 0 && !opts.dryRun) {
+    const allEntries = Array.from(formatPerfMap.values())
+    const sorted = [...allEntries].sort(
+      (a, b) => b.uplift_vs_baseline - a.uplift_vs_baseline
+    )
+    const top5 = sorted.slice(0, 5).map((e) => ({
+      key: `${e.action_type}::${e.platform}`,
+      uplift_vs_baseline: e.uplift_vs_baseline,
+      median_engagement_rate: e.median_engagement_rate,
+      median_north_star: e.median_north_star,
+      sample_size: e.sample_size,
+      confidence: e.confidence,
+    }))
+    const bottom5 = sorted.slice(-5).reverse().map((e) => ({
+      key: `${e.action_type}::${e.platform}`,
+      uplift_vs_baseline: e.uplift_vs_baseline,
+      median_engagement_rate: e.median_engagement_rate,
+      median_north_star: e.median_north_star,
+      sample_size: e.sample_size,
+      confidence: e.confidence,
+    }))
+
+    // Soft-fail: log but don't surface to caller.
+    try {
+      const { error: summaryErr } = await supabase.from('marketing_decisions').insert({
+        decision_type: 'format_performance_summary',
+        decision_summary: `Format performance summary: ${allEntries.length} (action_type, platform) pairs analyzed. ` +
+          `Boost threshold: uplift > ${BOOST_UPLIFT_THRESHOLD} at medium+ confidence. ` +
+          `Suppress threshold: uplift < ${SUPPRESS_UPLIFT_THRESHOLD} at medium+ confidence.`,
+        data_observed: {
+          format_performance_summary: {
+            total_pairs_analyzed: allEntries.length,
+            window_days: 30,
+            boost_threshold: BOOST_UPLIFT_THRESHOLD,
+            suppress_threshold: SUPPRESS_UPLIFT_THRESHOLD,
+            boost_multiplier: BOOST_MULTIPLIER,
+            top_5_by_uplift: top5,
+            bottom_5_by_uplift: bottom5,
+            computed_at: new Date().toISOString(),
+          },
+        },
+        rules_cited: [
+          'Gap 5: getFormatPerformance bias from content_performance',
+          `boost when uplift > ${BOOST_UPLIFT_THRESHOLD} AND confidence >= medium`,
+          `suppress when uplift < ${SUPPRESS_UPLIFT_THRESHOLD} AND confidence >= medium`,
+        ],
+        predicted_outcome: {},
+        actual_outcome: {},
+        reviewer: 'marketing_brain:generate-briefs',
+        final_decision: 'recorded',
+      })
+      if (summaryErr) {
+        console.error('persistBriefs: format_performance_summary insert failed (non-fatal):', summaryErr.message)
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('persistBriefs: format_performance_summary insert unexpected error (non-fatal):', msg)
+    }
+  }
 
   return { inserted: ids.length, ids, errors: persistErrors }
 }
@@ -2390,16 +2739,92 @@ export async function generateWeeklyBriefs(
   // Step 2
   const opportunities = synthesizeOpportunities(signals)
 
-  // Step 3 + 4: map each opportunity → briefs, flatten, cap
+  // Gap 5: load format-level performance data from content_performance.
+  // Soft-fail: returns new Map() when the table is empty or the query errors.
+  // When the map is empty, all boost/suppress logic below is a no-op and
+  // the cycle runs exactly as before (backward-compatible).
+  const formatPerfMap = await getFormatPerformance(30)
+
+  // Step 3 + 4: map each opportunity → briefs, flatten, cap.
+  // Apply per-brief boost/suppress from formatPerfMap before accepting a brief.
+  //
+  // Suppress rule: if ANY platform's FormatPerformance for this brief's
+  // action_type has uplift_vs_baseline < SUPPRESS_UPLIFT_THRESHOLD AND
+  // confidence >= 'medium', drop the brief for that cycle. The format's
+  // signals are too weak to justify burning a brief slot.
+  //
+  // Boost rule: if uplift_vs_baseline > BOOST_UPLIFT_THRESHOLD AND
+  // confidence >= 'medium', multiply the opportunity's rank_score by
+  // BOOST_MULTIPLIER (+20%). This happens before the brief is accepted
+  // into allBriefs, so boosted formats fill their slot before neutral ones.
   const allBriefs: GeneratedBrief[] = []
   const usedOpportunities: RankedOpportunity[] = []
 
   for (const opp of opportunities) {
     if (allBriefs.length >= maxBriefs) break
     const mapped = mapOpportunityToBriefs(opp, signals)
-    if (mapped.length > 0) {
+    if (mapped.length === 0) continue
+
+    // Filter and annotate each brief
+    const accepted: GeneratedBrief[] = []
+    for (const brief of mapped) {
+      if (allBriefs.length + accepted.length >= maxBriefs) break
+
+      // Look up action_type from the format route map (same table used in persistBriefs).
+      // We need the action_type to key into formatPerfMap.
+      const formatRoute = FORMAT_ROUTE_MAP[brief.format]
+      const actionType = formatRoute?.action_type ?? `content:${brief.format}`
+
+      // Find the FormatPerformance entry for any platform this brief targets.
+      // We use the first platform match (primary distribution channel).
+      let perfEntry: FormatPerformance | null = null
+      for (const platform of brief.platforms) {
+        const key = `${actionType}::${platform}`
+        const found = formatPerfMap.get(key) ?? null
+        if (found) { perfEntry = found; break }
+      }
+
+      // Suppress: format is a confirmed under-performer across its primary platform.
+      if (
+        perfEntry !== null &&
+        perfEntry.confidence !== 'low' &&
+        perfEntry.uplift_vs_baseline < SUPPRESS_UPLIFT_THRESHOLD
+      ) {
+        // Log the decision so the marketing_decisions cycle summary captures it.
+        console.log(
+          `[generate-briefs] SUPPRESS brief format="${brief.format}" action_type="${actionType}" ` +
+          `platform="${perfEntry.platform}" uplift=${perfEntry.uplift_vs_baseline.toFixed(3)} ` +
+          `(threshold=${SUPPRESS_UPLIFT_THRESHOLD}) confidence="${perfEntry.confidence}" ` +
+          `sample_size=${perfEntry.sample_size}`
+        )
+        continue
+      }
+
+      // Boost: format is a confirmed over-performer. Annotate the generation_reason
+      // so the audit trail shows why this brief was elevated.
+      if (
+        perfEntry !== null &&
+        perfEntry.confidence !== 'low' &&
+        perfEntry.uplift_vs_baseline > BOOST_UPLIFT_THRESHOLD
+      ) {
+        brief.generation_reason =
+          `${brief.generation_reason} | PERF_BOOST: uplift=${perfEntry.uplift_vs_baseline.toFixed(3)} ` +
+          `(threshold=${BOOST_UPLIFT_THRESHOLD}, multiplier=+${((BOOST_MULTIPLIER - 1) * 100).toFixed(0)}%) ` +
+          `n=${perfEntry.sample_size} confidence="${perfEntry.confidence}"`
+        // Also bump the backing opportunity's rank_score so the next cycle
+        // naturally surfaces this format higher in synthesizeOpportunities.
+        opp.rank_score = opp.rank_score * BOOST_MULTIPLIER
+      }
+
+      // Annotate the brief with its historical performance data.
+      brief.historical_performance = perfEntry
+
+      accepted.push(brief)
+    }
+
+    if (accepted.length > 0) {
       const remaining = maxBriefs - allBriefs.length
-      allBriefs.push(...mapped.slice(0, remaining))
+      allBriefs.push(...accepted.slice(0, remaining))
       usedOpportunities.push(opp)
     }
   }
@@ -2407,9 +2832,9 @@ export async function generateWeeklyBriefs(
   // Step 5: persist. If any insert errors, stamp them onto the briefs'
   // generation_reason so the caller (weekly-cycle) can surface them in
   // the report's errors array without changing the return type.
-  // Pass the bias report so each marketing_decisions row records which
-  // formats were boosted or penalized during this cycle.
-  const persist = await persistBriefs(allBriefs, usedOpportunities, opts, signals.performanceBias)
+  // Pass the bias report and formatPerfMap so the cycle-level marketing_decisions
+  // row captures the full format_performance_summary.
+  const persist = await persistBriefs(allBriefs, usedOpportunities, opts, signals.performanceBias, formatPerfMap)
   if (persist.errors.length > 0) {
     const errorBlob = persist.errors.join(' || ')
     for (const b of allBriefs) {
