@@ -16,7 +16,24 @@
 - [~] `npm run lint` exits 0 (eslint-config-next/core-web-vitals + typescript) *(pre-existing 6 errors in `video/tumalo-aerial/`, scoped out per goal)*
 - [x] `node scripts/lint-design-tokens.js` exits 0 on all files in `app/` and `components/` (zero raw hex, zero palette classes, zero raw HTML primitives) *(verified 2026-05-22 after adding `app/lp/bend/{_components/BendInteractiveMap.tsx,page.tsx}` to `.design-token-lint-ignore` with rationale — Google Maps API requires literal hex; bend page table migrates to shadcn in Wave 3)*
 - [~] `node scripts/check-seo-routes.mjs && node scripts/check-seo-authoring.mjs` exit 0 *(6 pre-existing legacy-path violations, 5 of 6 in `marketing_brain_skills/` which is OUT OF SCOPE per goal)*
-- [~] `lhci autorun --config=./lighthouserc.cjs` passes on all LP routes: **Perf ≥ 90, A11y ≥ 95, Best Practices ≥ 90, SEO ≥ 95, LCP ≤ 2500ms** *(executed 2026-05-22 against 4 currently-built routes: `/`, `/homes-for-sale/bend`, `/team`, `/about`. **Results**: Perf 90–97 ✓ · A11y 92–100 (2 runs hit 92–93, below 95) · BP 96–100 ✓ · SEO 92–100 (`/homes-for-sale/bend` SEO=92, below 95) · LCP 1.3–1.6s ✓ well under 2.5s. **Gaps**: needs to add 4 more LP routes (`/cities/[slug]/[neighborhood]`, `/communities/[slug]`, `/zip/[zip]`, `/listing/[listingKey]`) once they exist as canonical paths in Wave 5; a11y + SEO touch-up needed on `/` and `/homes-for-sale/bend` for goal-strict thresholds)*
+- [~] `lhci autorun --config=./lighthouserc.cjs` passes on all LP routes: **Perf ≥ 90, A11y ≥ 95, Best Practices ≥ 90, SEO ≥ 95, LCP ≤ 2500ms, CLS ≤ 0.10** *(re-executed 2026-05-22 after updating lighthouserc.cjs to the 5 canonical LP routes + strict thresholds; 5 of 8 URLs returned scores. **LCP is excellent everywhere (1.0–2.1s, well under 2500ms cap) and CLS is essentially zero.** Score table by URL (2 runs each):*
+
+| Route | Perf | A11y | BP | SEO | LCP | CLS |
+|---|---|---|---|---|---|---|
+| `/` | 94–95 ✓ | 93 ✗ | 100 ✓ | 100 ✓ | 1559–1682ms ✓ | 0.000 ✓ |
+| `/cities/bend` | 86–89 ✗ | 89 ✗ | 93–100 ✓ | 92–100 ✗ | 1305–1380ms ✓ | 0.002 ✓ |
+| `/cities/bend/awbrey-butte` | 85–95 ✗ | 88 ✗ | 93 ✓ | 92–100 ✗ | 1490–1731ms ✓ | 0.000 ✓ |
+| `/communities/tetherow` | 96–97 ✓ | 98 ✓ | 100 ✓ | 58–100 ✗ | 1014–1247ms ✓ | 0.000 ✓ |
+| `/zip/97703` | 86–90 ✗ | 96 ✓ | 100 ✓ | 100 ✓ | 1902–2088ms ✓ | 0.000 ✓ |
+| `/listing/<key>` | — | — | — | — | — | — |
+| `/team` | — | — | — | — | — | — |
+| `/about` | — | — | — | — | — | — |
+
+*Remaining gaps to close the strict threshold:*
+- *A11y on `/`, `/cities/bend`, `/cities/bend/awbrey-butte` (88–93 vs 95 target) — color contrast + aria-label work*
+- *Perf on `/cities/bend`, `/cities/bend/awbrey-butte`, `/zip/97703` (85–90 vs 90 target) — JS bundle trimming + image preload work*
+- *SEO inconsistency on first run of `/cities/bend`, `/cities/bend/awbrey-butte`, `/communities/tetherow` (one run measures 58–92) — likely structured-data load timing; second runs hit 100*
+- *3 routes (`/listing/<key>`, `/team`, `/about`) didn't return reports — lhci may have errored. Re-investigate when these get rebuilt in Wave 4–5*
 - [ ] Every listing detail page: TTFB p95 < 200ms (Vercel Analytics dashboard, 7-day window) *(7-day clock started 2026-05-22 when commit f81e70a + migrations f81e70a + listing_tile_mv + geo_snapshot_mv landed in production. First valid measurement window opens 2026-05-29.)*
 - [ ] Every city + community LP: TTFB p95 < 300ms (Vercel Analytics, 7-day window) *(7-day clock started 2026-05-22.)*
 - [ ] Homepage: TTFB p95 < 200ms (Vercel Analytics, 7-day window) *(7-day clock started 2026-05-22.)*
