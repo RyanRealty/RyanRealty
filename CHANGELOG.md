@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.271.0 (2026-05-22)
+
+### Features
+- feat(lp/golf): ship Central Oregon Golf LP v1
+
+### Maintenance
+- perf(communities): _getCommunityBySlugUncached uses geo_snapshot_mv
+
+---
+
+
 ## v1.270.2 (2026-05-22)
 
 ### Other
