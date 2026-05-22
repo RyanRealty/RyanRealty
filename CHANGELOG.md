@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.269.1 (2026-05-22)
+
+### Maintenance
+- chore(crons): drop 12 more — inbox poll, 10 channel snapshots, weekly pipeline digest
+
+### Other
+- ci(lighthouse): switch to canonical LP routes + strict thresholds
+
+---
+
+
 ## v1.269.0 (2026-05-22)
 
 ### Features
