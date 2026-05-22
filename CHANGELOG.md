@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.262.0 (2026-05-22)
+
+### Features
+- feat(brain): close Gap 5 — generate-briefs weights by content_performance
+
+---
+
+
 ## v1.261.12 (2026-05-22)
 
 ### Maintenance
