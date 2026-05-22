@@ -31,14 +31,22 @@ export default function BrokerCardCompact({ broker }: Props) {
             <h3 className="font-semibold text-primary">{name}</h3>
             {broker.title && <p className="text-xs text-muted-foreground">{broker.title}</p>}
             {tagline && <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{tagline}</p>}
-            <div className="mt-2 space-y-0.5 text-sm">
+            <div className="mt-2 space-y-1 text-sm">
               {broker.email && (
-                <a href={`mailto:${broker.email}`} className="block truncate text-accent-foreground hover:underline">
+                <a
+                  href={`mailto:${broker.email}`}
+                  className="block min-h-[24px] truncate py-1 text-accent-foreground hover:underline"
+                  aria-label={`Email ${name} at ${broker.email}`}
+                >
                   {broker.email}
                 </a>
               )}
               {broker.phone && (
-                <a href={`tel:${broker.phone}`} className="block text-muted-foreground hover:underline">
+                <a
+                  href={`tel:${broker.phone}`}
+                  className="block min-h-[24px] py-1 text-muted-foreground hover:underline"
+                  aria-label={`Call ${name} at ${broker.phone}`}
+                >
                   {broker.phone}
                 </a>
               )}

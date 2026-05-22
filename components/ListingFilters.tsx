@@ -114,7 +114,7 @@ export default function ListingFilters({
       <Label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-muted-foreground">Beds (min)</span>
         <Select name="beds" defaultValue={initBeds || '__all__'}>
-          <SelectTrigger className="w-20 rounded-lg px-3 py-2 text-sm">
+          <SelectTrigger className="w-20 rounded-lg px-3 py-2 text-sm" aria-label="Minimum bedrooms">
             <SelectValue placeholder="Any" />
           </SelectTrigger>
           <SelectContent>
@@ -128,7 +128,7 @@ export default function ListingFilters({
       <Label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-muted-foreground">Baths (min)</span>
         <Select name="baths" defaultValue={initBaths || '__all__'}>
-          <SelectTrigger className="w-20 rounded-lg px-3 py-2 text-sm">
+          <SelectTrigger className="w-20 rounded-lg px-3 py-2 text-sm" aria-label="Minimum bathrooms">
             <SelectValue placeholder="Any" />
           </SelectTrigger>
           <SelectContent>
@@ -154,7 +154,7 @@ export default function ListingFilters({
       <Label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-muted-foreground">Property type</span>
         <Select name="propertyType" defaultValue={initPropertyType || 'Residential'}>
-          <SelectTrigger className="min-w-[120px] rounded-lg px-3 py-2 text-sm">
+          <SelectTrigger className="min-w-[120px] rounded-lg px-3 py-2 text-sm" aria-label="Property type">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
@@ -167,7 +167,7 @@ export default function ListingFilters({
       <Label className="flex flex-col gap-1">
         <span className="text-xs font-medium text-muted-foreground">Sort by</span>
         <Select name="sort" defaultValue={initSort || 'newest'}>
-          <SelectTrigger className="min-w-[140px] rounded-lg px-3 py-2 text-sm">
+          <SelectTrigger className="min-w-[140px] rounded-lg px-3 py-2 text-sm" aria-label="Sort listings by">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

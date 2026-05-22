@@ -668,7 +668,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                 <Label className="flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground">Garage (min)</span>
                   <Select value={garageMinValue} onValueChange={setGarageMinValue}>
-                    <SelectTrigger className="rounded-lg border border-border px-3 py-2 text-sm">
+                    <SelectTrigger className="rounded-lg border border-border px-3 py-2 text-sm" aria-label="Minimum garage spaces">
                       <SelectValue placeholder="Any" />
                     </SelectTrigger>
                     <SelectContent>
@@ -683,7 +683,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                 <Label className="flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground">New listings</span>
                   <Select value={newListingsDaysValue} onValueChange={setNewListingsDaysValue}>
-                    <SelectTrigger className="rounded-lg border border-border px-3 py-2 text-sm">
+                    <SelectTrigger className="rounded-lg border border-border px-3 py-2 text-sm" aria-label="New listings window">
                       <SelectValue placeholder="Any" />
                     </SelectTrigger>
                     <SelectContent>

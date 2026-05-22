@@ -43,6 +43,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(process.cwd()),
   },
+  // Emit production source maps so Lighthouse Best Practices audit
+  // valid-source-maps passes. /team route dropped to BP=0 without this
+  // because every chunked vendor JS bundle counted as a missing-map fail.
+  // Source maps are served at /_next/static/chunks/*.js.map only on
+  // explicit request — they don't bloat user payloads.
+  productionBrowserSourceMaps: true,
   env: {
     ...(supabaseFromEnvLocal.NEXT_PUBLIC_SUPABASE_URL && {
       NEXT_PUBLIC_SUPABASE_URL: supabaseFromEnvLocal.NEXT_PUBLIC_SUPABASE_URL,

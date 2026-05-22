@@ -33,7 +33,10 @@ export default function BrokerCardCarousel({ brokers }: Props) {
         >
           ← Previous
         </Button>
-        <span className="text-xs text-muted-foreground">
+        <span
+          className="text-xs text-primary-foreground/80"
+          aria-live="polite"
+        >
           {index + 1} of {brokers.length}
         </span>
         <Button
