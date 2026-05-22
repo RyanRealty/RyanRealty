@@ -23,7 +23,10 @@ module.exports = {
         "http://127.0.0.1:3000/cities/bend/awbrey-butte",
         "http://127.0.0.1:3000/communities/tetherow",
         "http://127.0.0.1:3000/zip/97703",
-        "http://127.0.0.1:3000/listing/20260520204943363865000000",
+        // Canonical SEO path. /listing/<key> issues a 308 redirect to this
+        // URL which Lighthouse cannot follow (FAILED_DOCUMENT_REQUEST), so
+        // we test the post-redirect canonical directly.
+        "http://127.0.0.1:3000/homes-for-sale/bend/southeast-bend/stonegate/60320-sage-stone-220221963",
         "http://127.0.0.1:3000/team",
         "http://127.0.0.1:3000/about",
       ],
