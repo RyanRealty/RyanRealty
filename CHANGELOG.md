@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.13 (2026-05-22)
+
+### Maintenance
+- perf(cities): cut city LP inventory-breakdown timeout 20s → 3s
+
+---
+
+
 ## v1.279.12 (2026-05-22)
 
 ### Maintenance
