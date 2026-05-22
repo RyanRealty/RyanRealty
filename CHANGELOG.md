@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.263.7 (2026-05-22)
+
+### Bug Fixes
+- fix(maps): call google.maps.importLibrary() to populate Map class
+
+### Maintenance
+- docs(goal): land SITE_SPEC, EXECUTION_PLAN, DAL contract, ADR-001
+
+### Other
+- ci(goal): add DAL boundary + brand-voice ratchet + Lighthouse PR gate
+
+---
+
+
 ## v1.263.6 (2026-05-22)
 
 ### Maintenance
