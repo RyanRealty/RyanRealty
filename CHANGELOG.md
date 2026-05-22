@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.275.0 (2026-05-22)
+
+### Features
+- feat(analytics): cost-per-lead + LP leaderboard + daily digest + GA4 cache
+- feat(lp/golf): v2 — sticky nav, insider notes, FAQ + schema, stay-vs-buy, Supabase KPIs
+
+---
+
+
 ## v1.274.1 (2026-05-22)
 
 ### Maintenance
