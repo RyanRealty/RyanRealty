@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.269.0 (2026-05-22)
+
+### Features
+- feat(gbp): publisher sanitizer + audit/apply scripts + hero photo
+
+---
+
+
 ## v1.268.2 (2026-05-22)
 
 ### Bug Fixes
