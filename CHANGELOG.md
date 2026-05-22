@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.6 (2026-05-22)
+
+### Bug Fixes
+- fix(footer): dotted phone format + principal broker license #
+
+---
+
+
 ## v1.279.5 (2026-05-22)
 
 ### Maintenance
