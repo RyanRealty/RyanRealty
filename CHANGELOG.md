@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.263.5 (2026-05-22)
+
+### Maintenance
+- chore(crons): merge expired-listing detection into sync-delta + reschedule
+
+---
+
+
 ## v1.263.4 (2026-05-22)
 
 ### Bug Fixes
