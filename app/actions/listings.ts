@@ -791,6 +791,37 @@ export async function getListingsWithAdvanced(options: {
   return { listings, totalCount }
 }
 
+/** Map a DAL ListingTile to HomeTileRow shape (legacy callers expect). */
+function tileToHomeTileRow(tile: ListingTile): HomeTileRow {
+  return {
+    ListingKey: tile.listingKey,
+    ListNumber: tile.listNumber,
+    ListPrice: tile.listPrice,
+    BedroomsTotal: tile.beds,
+    BathroomsTotal: tile.baths,
+    StreetNumber: tile.streetNumber,
+    StreetName: tile.streetName,
+    City: tile.city,
+    State: null,
+    PostalCode: tile.postalCode,
+    SubdivisionName: tile.subdivisionName,
+    PhotoURL: tile.photoUrl,
+    Latitude: tile.lat,
+    Longitude: tile.lng,
+    StandardStatus: tile.status,
+    TotalLivingAreaSqFt: tile.sqft,
+    OnMarketDate: tile.onMarketDate,
+    has_virtual_tour: tile.hasVirtualTour,
+    year_built: tile.yearBuilt,
+    price_per_sqft: tile.pricePerSqft,
+    lot_size_acres: tile.lotSizeAcres,
+    garage_spaces: tile.garageSpaces,
+    pool_yn: tile.poolYn,
+    price_drop_count: tile.priceDropCount,
+    DaysOnMarket: tile.dom,
+  }
+}
+
 /**
  * Listings for home page "Homes for You" slider. Newest in city; optional filters (maxPrice, minBeds, minBaths) for curated feed.
  */
@@ -801,27 +832,19 @@ export async function getListingsForHomeTiles(options: {
   minBeds?: number | null
   minBaths?: number | null
 }): Promise<HomeTileRow[]> {
-  const supabase = getAnonSupabase()
-  if (!supabase || !options.city?.trim()) return []
+  if (!options.city?.trim()) return []
   const limit = Math.min(options.limit ?? 16, 24)
-  let query = supabase
-    .from('listings')
-    .select(HOME_TILE_SELECT)
-    .eq('"City"', options.city.trim())
-    .or(ACTIVE_OR_PENDING_OR)
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-
-  if (options.maxPrice != null && options.maxPrice > 0) query = query.lte('ListPrice', options.maxPrice)
-  if (options.minBeds != null && options.minBeds > 0) query = query.gte('BedroomsTotal', options.minBeds)
-  if (options.minBaths != null && options.minBaths > 0) query = query.gte('BathroomsTotal', options.minBaths)
-
-  const fetchLimit = limit * 3
-  const { data } = await query.limit(fetchLimit)
-
-  const rows = (data ?? []) as HomeTileRow[]
-  return rows
-    .filter((r) => isActiveStatus(r.StandardStatus) || isPendingStatus(r.StandardStatus))
-    .slice(0, limit)
+  // DAL: read active + pending tiles from listing_tile_mv via the
+  // canonical getCityListings. Filters map 1:1 to the DAL schema.
+  const tiles = await getCityListingsDAL(options.city.trim(), {
+    status: 'active-and-pending',
+    sort: 'newest',
+    limit: limit * 3, // overfetch to allow post-filter slicing
+    maxPrice: options.maxPrice ?? undefined,
+    minBeds: options.minBeds ?? undefined,
+    minBaths: options.minBaths ?? undefined,
+  })
+  return tiles.slice(0, limit).map(tileToHomeTileRow)
 }
 
 export type MapListingRow = {
