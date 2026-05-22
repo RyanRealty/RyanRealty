@@ -422,7 +422,12 @@ function ByArchitectSection() {
           {groups.map(({ architect, courses }) => (
             <div key={architect.slug} className="golf-architect-card">
               <div className="golf-architect-header">
-                <h3 className="golf-architect-name">{architect.name}</h3>
+                <h3 className="golf-architect-name">
+                  {architect.name}
+                  <span className="golf-architect-count">
+                    {courses.length} {courses.length === 1 ? 'course' : 'courses'}
+                  </span>
+                </h3>
                 {architect.wikipediaUrl && (
                   <a
                     href={architect.wikipediaUrl}
@@ -1135,6 +1140,14 @@ function PageStyles() {
         transition: background 0.15s, color 0.15s;
       }
       .golf-architect-link:hover { background: #102742; color: #faf8f4; }
+      .golf-architect-count {
+        display: inline-block; margin-left: 10px;
+        font-family: 'Geist', system-ui, sans-serif;
+        font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+        color: rgba(16,39,66,0.62); background: rgba(16,39,66,0.06);
+        padding: 3px 9px; border-radius: 999px;
+        vertical-align: middle;
+      }
       .golf-architect-bio { font-size: 14.5px; line-height: 1.55; color: rgba(16,39,66,0.78); margin: 0; }
       .golf-architect-courses { display: flex; flex-wrap: wrap; gap: 6px; }
       .golf-architect-course {
