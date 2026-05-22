@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.274.1 (2026-05-22)
+
+### Maintenance
+- perf(listings): migrate similar-listings paths to DAL — baseline 377→375
+
+---
+
+
 ## v1.274.0 (2026-05-22)
 
 ### Features
