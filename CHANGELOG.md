@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.269.3 (2026-05-22)
+
+### Maintenance
+- docs(spec): clarify ryan-realty.com vs ryanrealty.vercel.app
+
+### Other
+- fub: runbook to finalize the 19 new neighborhood smart lists
+
+---
+
+
 ## v1.269.2 (2026-05-22)
 
 ### Bug Fixes
