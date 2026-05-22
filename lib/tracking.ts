@@ -74,6 +74,7 @@ export type EventName =
   | 'broker_view'
   | 'contact_agent'
   | 'view_landing_page'
+  | 'form_start'
   // Pulse feed events — locked 2026-05-22.
   // See marketing_brain_skills/pulse-feed/SKILL.md for the surface spec.
   | 'pulse_feed_entry'      // user clicked "Browse the feed" entry CTA

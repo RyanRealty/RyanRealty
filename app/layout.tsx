@@ -11,6 +11,7 @@ import JsonLd from "../components/JsonLd";
 import CookieConsentBanner from "../components/CookieConsentBanner";
 import SignInPrompt from "../components/SignInPrompt";
 import VisitTracker from "../components/VisitTracker";
+import GlobalIntentTracker from "../components/GlobalIntentTracker";
 import AuthCodeRedirect from "../components/AuthCodeRedirect";
 import AuthErrorRedirect from "../components/AuthErrorRedirect";
 import FubIdentityBridge from "../components/FubIdentityBridge";
@@ -223,6 +224,10 @@ export default async function RootLayout({
               <VisitTrackerAsync sessionPromise={sessionPromise} />
             </Suspense>
           )}
+          {/* High-intent micro-event capture (tel:, mailto:, form_start).
+              Runs on every page including LPs because form_start on a seller
+              LP is one of the strongest pre-submit intent signals we have. */}
+          <GlobalIntentTracker />
           <Suspense fallback={null}>
             {/* Identity + attribution bridges DO run on LPs — visitors arriving
                 from FUB email clicks (?_fuid=) or ad attribution links need them.
