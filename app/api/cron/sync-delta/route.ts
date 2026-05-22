@@ -487,6 +487,11 @@ export async function GET(request: Request) {
       )
     }
 
+    // Note: DAL materialized view refresh (listing_tile_mv + geo_snapshot_mv)
+    // runs on its own /api/cron/refresh-mvs schedule (every 15 min). The
+    // refresh is ~35s per MV CONCURRENTLY, too long to inline here without
+    // pushing sync-delta past its serverless timeout.
+
     const summary = [
       `${totalUpserted} listings synced`,
       `${newListings} new`,
