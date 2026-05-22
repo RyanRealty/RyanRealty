@@ -118,13 +118,18 @@ function ReviewCardContent({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className={cn(
-                    'h-2.5 w-2.5 rounded-full p-0',
-                    i === activeIndex ? 'bg-primary text-primary-foreground' : 'bg-border'
-                  )}
+                  className="h-6 w-6 p-0"
                   onClick={() => onGoToIndex(i)}
                   aria-label={`Go to review ${i + 1} of ${testimonials.length}`}
-                />
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'h-2.5 w-2.5 rounded-full',
+                      i === activeIndex ? 'bg-primary' : 'bg-border'
+                    )}
+                  />
+                </Button>
               ))}
             </div>
             <Button
@@ -140,7 +145,7 @@ function ReviewCardContent({
               </svg>
             </Button>
           </div>
-          <p className="text-center text-xs text-muted-foreground">
+          <p className="text-center text-sm text-foreground/80">
             Not all Google or Zillow reviews shown.{' '}
             <a href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
               See all on Google
