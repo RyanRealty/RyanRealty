@@ -258,6 +258,7 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
               ref={inputRef}
               type="search"
               autoComplete="off"
+              aria-label="Search homes for sale in Central Oregon by city, community, neighborhood, address, or broker"
               placeholder="City, community, neighborhood, address, or broker…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}

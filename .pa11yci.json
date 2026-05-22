@@ -6,7 +6,17 @@
     "chromeLaunchConfig": {
       "args": ["--no-sandbox", "--disable-dev-shm-usage"]
     },
-    "includeWarnings": true
+    "includeWarnings": false,
+    "ignore": []
   },
-  "urls": ["http://127.0.0.1:3000/", "http://127.0.0.1:3000/listings"]
+  "urls": [
+    "http://127.0.0.1:3000/",
+    "http://127.0.0.1:3000/cities/bend",
+    "http://127.0.0.1:3000/cities/bend/awbrey-butte",
+    "http://127.0.0.1:3000/communities/tetherow",
+    "http://127.0.0.1:3000/zip/97703",
+    "http://127.0.0.1:3000/homes-for-sale/bend/southeast-bend/stonegate/60320-sage-stone-220221963",
+    "http://127.0.0.1:3000/team",
+    "http://127.0.0.1:3000/about"
+  ]
 }
