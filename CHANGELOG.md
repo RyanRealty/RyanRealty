@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.261.11 (2026-05-22)
+
+### Bug Fixes
+- fix(d14,d15): clear 7 TS errors across video projects
+- fix(d19): add require_action_row() rogue-producer guard to _producer_lib
+
+---
+
+
 ## v1.261.10 (2026-05-22)
 
 ### Bug Fixes
