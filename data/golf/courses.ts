@@ -210,6 +210,8 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.6239,
     communitySlug: 'black-butte-ranch',
     destinationRank: 6,
+    heroImage: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
+    heroImageAlt: 'Three Sisters peaks looming over Sisters, Oregon — the Black Butte Ranch terrain',
   },
   {
     slug: 'black-butte-glaze-meadow',
@@ -229,6 +231,8 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.6336,
     communitySlug: 'black-butte-ranch',
     destinationRank: 5,
+    heroImage: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
+    heroImageAlt: 'Three Sisters peaks above Black Butte Ranch — the Glaze Meadow setting',
   },
   {
     slug: 'brasada-canyons',
@@ -319,6 +323,8 @@ export const GOLF_COURSES: GolfCourse[] = [
     lat: 44.2862,
     lng: -121.5182,
     destinationRank: 8,
+    heroImage: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
+    heroImageAlt: 'Sisters area beneath the Three Sisters peaks — Aspen Lakes setting',
   },
   {
     slug: 'widgi-creek',

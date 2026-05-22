@@ -550,6 +550,8 @@ function WhereToLiveSection({
       name: 'Black Butte Ranch',
       pitch: '36 championship holes plus a putting course, all under the Three Sisters and Black Butte itself.',
       hasLP: false,
+      image: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
+      imageAlt: 'Three Sisters peaks above Black Butte Ranch',
     },
     'brasada-ranch': {
       name: 'Brasada Ranch',
@@ -562,16 +564,22 @@ function WhereToLiveSection({
       name: 'Eagle Crest',
       pitch: "Three courses including the Ridge — Central Oregon's longest playing season.",
       hasLP: false,
+      image: '/lp/central-oregon-golf/img/eagle-crest-01.jpg',
+      imageAlt: 'Eagle Crest Resort terrain in Redmond, Oregon',
     },
     'awbrey-glen': {
       name: 'Awbrey Glen',
       pitch: 'Private Bunny Mason 18 on the north side of Bend. Sparkling lakes, lava outcroppings, walkable to Pine Nursery.',
       hasLP: false,
+      image: '/lp/central-oregon-golf/img/awbrey-glen-01.jpg',
+      imageAlt: 'Awbrey Glen Golf Club on the north side of Bend',
     },
     'widgi-creek': {
       name: 'Widgi Creek',
       pitch: "Locals' favorite public 18 on the way to Mt Bachelor. Pacific NW's top pickleball facility on the same property.",
       hasLP: false,
+      image: '/lp/central-oregon-golf/img/widgi-creek-01.jpg',
+      imageAlt: 'Widgi Creek Golf Club along the Deschutes corridor in west Bend',
     },
     'three-rivers': {
       name: 'Three Rivers',
