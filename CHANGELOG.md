@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.261.9 (2026-05-22)
+
+### Other
+- fub: runbook for grouping 27 neighborhood smart lists into a single Neighborhoods collection
+
+---
+
+
 ## v1.261.8 (2026-05-22)
 
 ### Other
