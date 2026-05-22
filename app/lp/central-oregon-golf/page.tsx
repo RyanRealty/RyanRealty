@@ -131,6 +131,8 @@ export default function CentralOregonGolfPage() {
 function HeroSection() {
   return (
     <section className="golf-hero">
+      <div className="golf-hero__bg" aria-hidden />
+      <div className="golf-hero__overlay" aria-hidden />
       <div className="golf-hero__inner">
         <div className="golf-hero__eyebrow">CENTRAL OREGON · GOLF</div>
         <h1 className="golf-hero__h1">Central Oregon golf, by the architects who built it.</h1>
@@ -211,6 +213,15 @@ function DestinationCoursesSection() {
             <li key={c.slug} className="golf-rank-card">
               <div className="golf-rank-num">{(i + 1).toString().padStart(2, '0')}</div>
               <div className="golf-rank-body">
+                {c.heroImage && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={c.heroImage}
+                    alt={c.heroImageAlt ?? c.name}
+                    loading="lazy"
+                    className="golf-rank-photo"
+                  />
+                )}
                 <h3 className="golf-rank-name">{c.name}</h3>
                 <div className="golf-rank-meta">
                   <span>{c.designer}</span>
@@ -370,11 +381,13 @@ function WhereToLiveSection() {
     })
   }
 
-  const communityMeta: Record<string, { name: string; pitch: string; hasLP: boolean }> = {
+  const communityMeta: Record<string, { name: string; pitch: string; hasLP: boolean; image?: string; imageAlt?: string }> = {
     tetherow: {
       name: 'Tetherow',
       pitch: "McLay Kidd's #57-in-the-country 18 outside your back door. Mt Bachelor lifts 20 minutes up the road.",
       hasLP: true,
+      image: '/lp/central-oregon-golf/img/tetherow-03.jpg',
+      imageAlt: 'Tetherow residential community along the McLay Kidd fairway',
     },
     'broken-top': {
       name: 'Broken Top',
@@ -385,11 +398,15 @@ function WhereToLiveSection() {
       name: 'Pronghorn / Juniper Preserve',
       pitch: "Oregon's only Jack Nicklaus signature course on the public side. Fazio next door if you want private.",
       hasLP: false,
+      image: '/lp/central-oregon-golf/img/pronghorn-01.jpg',
+      imageAlt: 'Pronghorn Resort with Jack Nicklaus signature course routing',
     },
     sunriver: {
       name: 'Sunriver',
       pitch: '63 holes across four resort courses. 33 miles of bike paths. One of the largest residential resort communities in the West.',
       hasLP: false,
+      image: '/lp/central-oregon-golf/img/sunriver-river.jpg',
+      imageAlt: 'Sunriver Resort along the Deschutes River',
     },
     'caldera-springs': {
       name: 'Caldera Springs',
@@ -400,6 +417,8 @@ function WhereToLiveSection() {
       name: 'Crosswater',
       pitch: 'Cupp + Fought Top-100 course inside a gated Sunriver enclave. Member access stays in the family.',
       hasLP: false,
+      image: '/lp/central-oregon-golf/img/crosswater-02.jpg',
+      imageAlt: 'Crosswater Club fairway with wetlands and Cascade backdrop',
     },
     'black-butte-ranch': {
       name: 'Black Butte Ranch',
@@ -410,6 +429,8 @@ function WhereToLiveSection() {
       name: 'Brasada Ranch',
       pitch: 'Hardy + Jacobsen 18, "best 18 views in the state," 300 days of sunshine east of Bend.',
       hasLP: false,
+      image: '/lp/central-oregon-golf/img/brasada-02.jpg',
+      imageAlt: 'Brasada Ranch residences along the Brasada Canyons golf course',
     },
     'eagle-crest': {
       name: 'Eagle Crest',
@@ -449,6 +470,15 @@ function WhereToLiveSection() {
             if (!meta) return null
             return (
               <div key={community} className="golf-live-card">
+                {meta.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={meta.image}
+                    alt={meta.imageAlt ?? meta.name}
+                    loading="lazy"
+                    className="golf-live-photo"
+                  />
+                )}
                 <h3 className="golf-live-name">{meta.name}</h3>
                 <p className="golf-live-pitch">{meta.pitch}</p>
                 <div className="golf-live-courses">
@@ -584,11 +614,28 @@ function PageStyles() {
   return (
     <style>{`
       .golf-hero {
+        position: relative;
         background: #102742;
         color: #faf8f4;
-        padding: 88px 24px 96px;
+        padding: 120px 24px 128px;
+        overflow: hidden;
+        isolation: isolate;
       }
-      .golf-hero__inner { max-width: 1100px; margin: 0 auto; }
+      .golf-hero__bg {
+        position: absolute;
+        inset: 0;
+        background-image: url('/lp/central-oregon-golf/img/tetherow-hero.jpg');
+        background-size: cover;
+        background-position: center;
+        z-index: 0;
+      }
+      .golf-hero__overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(16,39,66,0.55) 0%, rgba(16,39,66,0.85) 100%);
+        z-index: 1;
+      }
+      .golf-hero__inner { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; }
       .golf-hero__eyebrow { font-size: 11px; letter-spacing: 0.16em; opacity: 0.7; font-weight: 600; margin-bottom: 14px; }
       .golf-hero__h1 {
         font-family: 'Playfair Display', Georgia, serif;
@@ -657,6 +704,10 @@ function PageStyles() {
         font-variant-numeric: tabular-nums;
       }
       .golf-rank-body { display: flex; flex-direction: column; gap: 8px; }
+      .golf-rank-photo {
+        width: 100%; max-width: 720px; aspect-ratio: 16 / 10; object-fit: cover;
+        border-radius: 10px; margin-bottom: 6px; display: block;
+      }
       .golf-rank-name { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; font-weight: 500; margin: 0; color: #faf8f4; }
       .golf-rank-meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; opacity: 0.82; color: #faf8f4; align-items: center; }
       .golf-access-pill {
@@ -710,7 +761,11 @@ function PageStyles() {
 
       /* Where to live */
       .golf-live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 32px; }
-      .golf-live-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px; padding: 24px 26px; display: flex; flex-direction: column; gap: 12px; }
+      .golf-live-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
+      .golf-live-card > :not(.golf-live-photo) { padding-left: 24px; padding-right: 24px; }
+      .golf-live-card > h3.golf-live-name { padding-top: 20px; }
+      .golf-live-card > .golf-live-cta { margin-bottom: 24px; margin-left: 24px; }
+      .golf-live-photo { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
       .golf-live-name { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 500; margin: 0; color: #102742; }
       .golf-live-pitch { font-size: 14.5px; line-height: 1.55; color: rgba(16,39,66,0.78); margin: 0; }
       .golf-live-courses { font-size: 13px; color: rgba(16,39,66,0.74); }

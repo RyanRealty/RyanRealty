@@ -50,6 +50,11 @@ export interface GolfCourse {
     | 'three-rivers'
   /** Ranked in the v1 destination-8 callout. */
   destinationRank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+  /** Path under `/public/lp/central-oregon-golf/img/`. Broker-shot
+   * Snowdrift Visuals photography downloaded from Drive 2026-05-22. */
+  heroImage?: string
+  /** Alt for the heroImage — accessibility + SEO. */
+  heroImageAlt?: string
 }
 
 export const GOLF_COURSES: GolfCourse[] = [
@@ -72,6 +77,8 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.3508,
     communitySlug: 'tetherow',
     destinationRank: 1,
+    heroImage: '/lp/central-oregon-golf/img/tetherow-02.jpg',
+    heroImageAlt: 'Tetherow Golf Club fairway with Cascade Range in the background',
   },
   {
     slug: 'pronghorn-nicklaus',
@@ -91,6 +98,8 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.1573,
     communitySlug: 'pronghorn',
     destinationRank: 2,
+    heroImage: '/lp/central-oregon-golf/img/pronghorn-01.jpg',
+    heroImageAlt: 'Pronghorn Resort fairway with juniper and high-desert terrain',
   },
   {
     slug: 'pronghorn-fazio',
@@ -129,6 +138,8 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.4475,
     communitySlug: 'crosswater',
     destinationRank: 4,
+    heroImage: '/lp/central-oregon-golf/img/crosswater-01.jpg',
+    heroImageAlt: 'Crosswater Club at Sunriver — wetlands, pine forest, Cascade peaks',
   },
   {
     slug: 'sunriver-meadows',
@@ -237,6 +248,8 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.0118,
     communitySlug: 'brasada-ranch',
     destinationRank: 7,
+    heroImage: '/lp/central-oregon-golf/img/brasada-01.jpg',
+    heroImageAlt: 'Brasada Canyons at Brasada Ranch — open high-desert terrain east of Bend',
   },
   {
     slug: 'eagle-crest-resort',
