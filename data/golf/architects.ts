@@ -14,6 +14,8 @@ export interface GolfArchitect {
   bio: string
   /** Other famous courses they designed, for the SEO/E-A-T halo. */
   alsoKnownFor?: string[]
+  /** Wikipedia or official-bio URL for outbound E-E-A-T signal. */
+  wikipediaUrl?: string
 }
 
 export const GOLF_ARCHITECTS: GolfArchitect[] = [
@@ -22,36 +24,42 @@ export const GOLF_ARCHITECTS: GolfArchitect[] = [
     name: 'David McLay Kidd',
     bio: 'Scottish-born links specialist. Returned American golf design to firm-and-fast, ground-game-friendly playing surfaces.',
     alsoKnownFor: ['Bandon Dunes', 'St Andrews Castle Course', 'Mammoth Dunes (Sand Valley)'],
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/David_McLay_Kidd',
   },
   {
     slug: 'jack-nicklaus',
     name: 'Jack Nicklaus',
     bio: '18 major championships. His signature design work spans over 300 courses worldwide. Pronghorn Nicklaus is the only signature Nicklaus in Oregon.',
     alsoKnownFor: ['Muirfield Village', 'PGA West Stadium', 'Cabo del Sol Ocean Course'],
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Jack_Nicklaus',
   },
   {
     slug: 'tom-fazio',
     name: 'Tom Fazio',
     bio: "America's most prolific Top-100 architect. Known for using dramatic native terrain — at Pronghorn that means lava tubes and ancient juniper.",
     alsoKnownFor: ['Shadow Creek', 'Sand Ridge', 'Wade Hampton'],
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Tom_Fazio',
   },
   {
     slug: 'cupp-fought',
     name: 'Robert E. Cupp & John Fought',
     bio: 'A working partnership that delivered Crosswater, then split. Cupp continued with Jim Ramey on Caldera Links and Quail Run. Fought went on to renovate Glaze Meadow and Sunriver Meadows.',
     alsoKnownFor: ['Pumpkin Ridge (Witch Hollow + Ghost Creek)'],
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Robert_E._Cupp',
   },
   {
     slug: 'john-fought',
     name: 'John Fought',
     bio: '1977 US Amateur champion. As an architect, the rare designer who renovates as carefully as he builds new — his 2012 rework of Glaze Meadow is the reason it sits in the destination eight.',
     alsoKnownFor: ['Pumpkin Ridge', 'The Reserve Vineyards South Course', 'Langdon Farms'],
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/John_Fought',
   },
   {
     slug: 'robert-trent-jones-jr',
     name: 'Robert Trent Jones Jr.',
     bio: 'Second-generation course architect; over 270 courses across 40+ countries. The Woodlands at Sunriver opened in 1981 and still plays as Jones designed it.',
     alsoKnownFor: ['Chambers Bay (2015 US Open)', 'Poppy Hills', 'The Prince Course at Princeville'],
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Robert_Trent_Jones_Jr.',
   },
   {
     slug: 'robert-muir-graves',
@@ -64,6 +72,7 @@ export const GOLF_ARCHITECTS: GolfArchitect[] = [
     name: 'Tom Weiskopf & Jay Morrish',
     bio: '1973 Open champion turned course architect; partnered with Morrish through the mid-1990s. Broken Top was one of their late collaborations.',
     alsoKnownFor: ['Loch Lomond', 'TPC Scottsdale Stadium', 'Forest Highlands'],
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/Tom_Weiskopf',
   },
   {
     slug: 'bunny-mason',
@@ -99,6 +108,7 @@ export const GOLF_ARCHITECTS: GolfArchitect[] = [
     name: 'H. Chandler Egan & Bob Baldock',
     bio: 'Egan was a Pebble Beach renovator and Oregon\'s first national golf figure. He routed the back nine at Bend Golf Club in 1925. Bob Baldock added the front nine in 1973.',
     alsoKnownFor: ['Pebble Beach (Egan, 1929 renovation)'],
+    wikipediaUrl: 'https://en.wikipedia.org/wiki/H._Chandler_Egan',
   },
   {
     slug: 'bill-robinson',

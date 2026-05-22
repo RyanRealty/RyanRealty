@@ -416,7 +416,20 @@ function ByArchitectSection() {
         <div className="golf-architect-grid">
           {groups.map(({ architect, courses }) => (
             <div key={architect.slug} className="golf-architect-card">
-              <h3 className="golf-architect-name">{architect.name}</h3>
+              <div className="golf-architect-header">
+                <h3 className="golf-architect-name">{architect.name}</h3>
+                {architect.wikipediaUrl && (
+                  <a
+                    href={architect.wikipediaUrl}
+                    target="_blank"
+                    rel="noopener nofollow"
+                    className="golf-architect-link"
+                    aria-label={`Wikipedia: ${architect.name}`}
+                  >
+                    ↗
+                  </a>
+                )}
+              </div>
               <p className="golf-architect-bio">{architect.bio}</p>
               <div className="golf-architect-courses">
                 {courses.map((c) => (
@@ -758,29 +771,81 @@ function InsiderNotesSection() {
 function StayVsBuySection() {
   return (
     <section className="golf-section" id="stay-vs-buy">
-      <div className="golf-section__inner golf-section__inner--narrow">
-        <div className="golf-eyebrow">The honest math</div>
-        <h2 className="golf-h2">Stay-and-play, or buy-and-play?</h2>
-
-        <div className="golf-prose">
-          <p>
+      <div className="golf-section__inner">
+        <div className="golf-section__center">
+          <div className="golf-eyebrow">The honest math</div>
+          <h2 className="golf-h2">Stay-and-play, or buy-and-play?</h2>
+          <p className="golf-lede">
             Here is the line we draw. If you golf Central Oregon one to three times a year, the
-            stay-and-play package is the right tool — the resorts have priced their bundles to
-            beat anything a homeowner could put together on a per-trip basis.
+            stay-and-play package wins. If you golf eight or more, the math flips.
           </p>
+        </div>
+
+        <div className="golf-sb-compare">
+          <div className="golf-sb-card golf-sb-card--rent">
+            <div className="golf-sb-tag">Rent</div>
+            <h3 className="golf-sb-title">5 resort trips a year</h3>
+            <div className="golf-sb-math">
+              <div className="golf-sb-line">
+                <span>Peak nightly</span>
+                <span>$400</span>
+              </div>
+              <div className="golf-sb-line">
+                <span>Nights / trip</span>
+                <span>3</span>
+              </div>
+              <div className="golf-sb-line">
+                <span>Trips / year</span>
+                <span>5</span>
+              </div>
+              <div className="golf-sb-divider" />
+              <div className="golf-sb-line golf-sb-line--total">
+                <span>Annual cost</span>
+                <span>$6,000</span>
+              </div>
+            </div>
+            <p className="golf-sb-note">
+              Plus green fees, dining, and per-round resort surcharges. Real annual landed cost is
+              closer to $9,000–$12,000 once you add up the round trips, the meals, and the cart fees.
+            </p>
+          </div>
+
+          <div className="golf-sb-card golf-sb-card--buy">
+            <div className="golf-sb-tag golf-sb-tag--accent">Buy</div>
+            <h3 className="golf-sb-title">Pronghorn pied-a-terre</h3>
+            <div className="golf-sb-math">
+              <div className="golf-sb-line">
+                <span>Entry price</span>
+                <span>$300K-$500K</span>
+              </div>
+              <div className="golf-sb-line">
+                <span>Monthly carrying</span>
+                <span>$2,500-$3,500</span>
+              </div>
+              <div className="golf-sb-line">
+                <span>Rounds you can play</span>
+                <span>Unlimited</span>
+              </div>
+              <div className="golf-sb-divider" />
+              <div className="golf-sb-line golf-sb-line--total">
+                <span>Annual cost</span>
+                <span>$30K-$42K</span>
+              </div>
+            </div>
+            <p className="golf-sb-note">
+              Net of mortgage interest you would have paid on rental nights, plus appreciation
+              (Pronghorn 12-month avg $1.77M, +14% YoY). The cost can be net-positive depending
+              on appreciation and rental income offsets.
+            </p>
+          </div>
+        </div>
+
+        <div className="golf-sb-bottom">
           <p>
-            If you golf Central Oregon eight or more times a year, the math flips. A Pronghorn or
-            Brasada Ranch pied-a-terre starts in the $300K-$500K range, monthly carrying cost
-            (HOA + property tax + utilities + the share of mortgage interest you would not have
-            paid on the rental nights) lands around $2,500-$3,500. Five three-night resort trips
-            at peak rates closes the gap fast.
-          </p>
-          <p>
-            The frame to settle on: how many rounds, what comp set, and how much of the
-            non-golf time matters. Brokers (us included) make money on the transaction. So
-            this part is direct: if the rental math wins for you, the rental math wins. The
-            cards above carry real 12-month median data — that is where the comparison starts.
-            Reach out when you want a per-community spreadsheet.
+            Brokers (us included) make money on the transaction. So this part is direct: if the
+            rental math wins for you, the rental math wins. The cards above carry real 12-month
+            median data — that is where the comparison starts. Reach out when you want a
+            per-community spreadsheet.
           </p>
         </div>
       </div>
@@ -1018,7 +1083,16 @@ function PageStyles() {
         background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px; padding: 22px 24px;
         display: flex; flex-direction: column; gap: 12px;
       }
+      .golf-architect-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
       .golf-architect-name { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 500; margin: 0; color: #102742; }
+      .golf-architect-link {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border-radius: 50%;
+        background: rgba(16,39,66,0.07); color: rgba(16,39,66,0.74);
+        text-decoration: none; font-size: 13px; font-weight: 700;
+        transition: background 0.15s, color 0.15s;
+      }
+      .golf-architect-link:hover { background: #102742; color: #faf8f4; }
       .golf-architect-bio { font-size: 14.5px; line-height: 1.55; color: rgba(16,39,66,0.78); margin: 0; }
       .golf-architect-courses { display: flex; flex-wrap: wrap; gap: 6px; }
       .golf-architect-course {
@@ -1077,6 +1151,48 @@ function PageStyles() {
       .golf-insider-body { font-size: 15px; line-height: 1.55; color: rgba(16,39,66,0.82); margin: 0 0 10px; }
       .golf-insider-source { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: rgba(16,39,66,0.55); letter-spacing: 0.03em; }
       .golf-insider-course { font-weight: 600; color: rgba(16,39,66,0.74); }
+
+      /* Stay vs Buy */
+      .golf-section__center { text-align: center; max-width: 760px; margin: 0 auto 40px; }
+      .golf-section__center .golf-eyebrow,
+      .golf-section__center .golf-h2,
+      .golf-section__center .golf-lede { text-align: center; }
+      .golf-section__center .golf-lede { margin-left: auto; margin-right: auto; }
+      .golf-sb-compare {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 22px;
+        max-width: 980px; margin: 0 auto;
+      }
+      @media (max-width: 720px) { .golf-sb-compare { grid-template-columns: 1fr; } }
+      .golf-sb-card {
+        background: white; border-radius: 16px; padding: 28px 30px;
+        border: 1px solid rgba(16,39,66,0.08);
+        display: flex; flex-direction: column; gap: 16px;
+      }
+      .golf-sb-card--buy { background: #102742; color: #faf8f4; border-color: #102742; }
+      .golf-sb-tag {
+        display: inline-block; padding: 4px 12px; border-radius: 999px;
+        background: rgba(16,39,66,0.07); color: #102742;
+        font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+        align-self: flex-start;
+      }
+      .golf-sb-tag--accent { background: rgba(250,248,244,0.18); color: #faf8f4; }
+      .golf-sb-title { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 500; margin: 0; line-height: 1.15; }
+      .golf-sb-math { display: flex; flex-direction: column; gap: 8px; font-size: 14.5px; }
+      .golf-sb-line { display: flex; justify-content: space-between; gap: 12px; }
+      .golf-sb-line span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; }
+      .golf-sb-divider {
+        height: 1px; background: rgba(16,39,66,0.12); margin: 6px 0 4px;
+      }
+      .golf-sb-card--buy .golf-sb-divider { background: rgba(250,248,244,0.22); }
+      .golf-sb-line--total { font-size: 16px; font-weight: 700; }
+      .golf-sb-line--total span:last-child { font-size: 18px; }
+      .golf-sb-note { font-size: 13.5px; line-height: 1.5; opacity: 0.78; margin: 4px 0 0; }
+      .golf-sb-bottom {
+        max-width: 760px; margin: 32px auto 0; padding-top: 28px;
+        border-top: 1px solid rgba(16,39,66,0.1);
+        font-size: 15px; line-height: 1.6; color: rgba(16,39,66,0.78); text-align: center;
+      }
+      .golf-sb-bottom p { margin: 0; }
 
       /* FAQ */
       .golf-faq-list { display: grid; gap: 8px; margin-top: 32px; }
