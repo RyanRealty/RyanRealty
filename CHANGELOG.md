@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.261.8 (2026-05-22)
+
+### Other
+- fub: pass-2 runbook for the exclusion tag work matt is doing in the FUB UI
+
+---
+
+
 ## v1.261.7 (2026-05-22)
 
 ### Bug Fixes
