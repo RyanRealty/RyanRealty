@@ -1,36 +1,69 @@
 ---
 name: pulse-feed
 description: >
-  Canonical product spec for /pulse — the social-feed-style discovery
-  surface (a Browse-the-feed button on the new ryan-realty.com homepage
-  that opens a vertical 9:16 card feed of listings, blog content,
-  market data, and brand utilities, optimized for paid-ad landings).
-  Defines the 5 card types, the safe-rect overlay rules, the
-  outline-only CTA pattern that routes to ryan-realty.com via
-  BRAND_BASE_URL, the conversational hooks per event type, the
-  TikTok-tight Like/Share placement, the video provider cascade, the
-  interleave pattern, the brain integration model, and the cutover
-  plan. Trigger any time the user mentions /pulse, the pulse feed,
-  pulse-demo.html, adds a new card type, changes a CTA, asks how the
-  feed is wired, or wants the feed to pick up new brain-produced
-  content. MANDATORY READ before touching anything under
-  app/pulse/, public/pulse-demo.html, components/pulse/, or any
-  producer that publishes pulse-eligible output.
+  Canonical product spec for THE FEED — the social-feed-style
+  discovery surface on ryan-realty.com (also known internally as
+  /pulse). The "Browse the feed" button on the new homepage opens a
+  vertical 9:16 card feed of listings, blog content, market data, and
+  brand utilities, optimized for paid-ad landings from Instagram,
+  TikTok, Facebook, and YouTube Shorts. Defines the 5 card types
+  (listing, lifestyle, market report, market snapshot, brand), the
+  safe-rect overlay rules, the outline-only CTA pattern that routes
+  to ryan-realty.com via BRAND_BASE_URL, the conversational hooks per
+  event type, the TikTok-tight Like/Share placement, the video
+  provider cascade, the interleave pattern, the brain integration
+  model, and the cutover plan.
+
+  TRIGGER WORDS (any of these in the user's message loads this skill):
+  "the feed", "feed card", "feed page", "browse the feed", "homepage
+  feed", "homepage feed button", "feed CTA", "feed cards", "feed
+  layout", "feed design", "feed integration", "feed cutover", "the
+  new feed", "the social feed", "Ryan Realty feed", "/pulse", "pulse",
+  "pulse feed", "pulse-demo", "pulse-demo.html", "pulse cards",
+  "pulse CTA". The word "feed" alone, when used in the context of the
+  Ryan Realty website (not the RSS feed, not a real-time data feed,
+  not the Supabase MLS feed), triggers this skill.
+
+  Also load proactively when the user adds a new card type, changes
+  a CTA, asks how the feed is wired, mentions paid-ad landing pages
+  on ryan-realty.com, talks about Like/Share placement on a card,
+  asks about safe zones for a real-estate-vertical feed, or wants
+  the feed to pick up new brain-produced content.
+
+  MANDATORY READ before touching anything under app/pulse/,
+  public/pulse-demo.html, components/pulse/, lib/pulse-*.ts,
+  app/actions/pulse-feed.ts, or any producer that publishes
+  pulse-eligible output.
 status: Canonical
 locked: 2026-05-22
+last_updated: 2026-05-22
+aliases:
+  - feed
+  - the-feed
+  - pulse
+  - homepage-feed
+  - ryan-realty-feed
 ---
 
-# Pulse Feed — Canonical Product Spec
+# The Feed — Canonical Product Spec
+
+> **Terminology note:** the user-facing name is "**the feed**" (as in
+> the "Browse the feed" button on the homepage). The internal route,
+> directory, and component names still say `/pulse` and `pulse-*`
+> for historical reasons (and to avoid disrupting the file inventory
+> in §14 — renaming would be invasive). When talking to Matt, use
+> "feed." When editing code, expect to see "pulse" in paths.
 
 ## 1. Scope
 
-### What pulse IS
+### What the feed IS
 
-A vertical scrollable feed of 9:16 cards at `/pulse`. The destination
-for a "Browse the feed" button on the new ryan-realty.com homepage,
-and the landing page for paid ads on Instagram, TikTok, Facebook, and
-YouTube Shorts. Designed to feel like a social feed (TikTok / IG
-Reels register), not a real estate search results page.
+A vertical scrollable feed of 9:16 cards at `/pulse` (route name).
+The destination for a "Browse the feed" button on the new
+ryan-realty.com homepage, and the landing page for paid ads on
+Instagram, TikTok, Facebook, and YouTube Shorts. Designed to feel
+like a social feed (TikTok / IG Reels register), not a real estate
+search results page.
 
 Five card types interleaved into one feed:
 
@@ -41,15 +74,15 @@ Five card types interleaved into one feed:
 4. **Market snapshot tile** — live stats from `market_pulse_live`
 5. **Brand utility tile** — home valuation, newsletter signup, etc.
 
-### What pulse is NOT
+### What the feed is NOT
 
 - Not a search results page (the city LP grid at
   `components/lp/ListingCard.tsx` handles that, with a different
   navy-fill CTA pattern)
 - Not a property detail page (those live at
   `/listing/odsmls/<MLS#>/<City>/<Address>/` on ryan-realty.com)
-- Not the marketing brain (the brain produces content; pulse is one
-  of several destinations the brain feeds into)
+- Not the marketing brain (the brain produces content; the feed is
+  one of several destinations the brain feeds into)
 - Not a chat interface — likes and shares are the only direct
   interactions; deeper engagement goes through the CTAs
 
