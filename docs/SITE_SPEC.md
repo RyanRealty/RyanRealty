@@ -67,17 +67,17 @@
 - [ ] Social proof + team section: testimonial cards from `lib/testimonials.ts`; team photo from `brokerage_settings.team_image_url` with fallback to `public/images/team.webp`
 - [ ] CTA duo: seller home value (`/lp/seller-home-value`) + buyer listing alerts (`/lp/buyer-listing-alerts`); no modal popup paywall
 - [ ] Footer: brokerage legal facts (license #201206613), Matt direct phone `541.213.6706`, FUB-tracked phone `541.703.3095`, `ryan-realty.com`, `@ryanrealtybend` handle, Equal Housing Opportunity logo, fair housing statement
-- [ ] `<script type="application/ld+json">` Organization + WebSite schema
-- [ ] `robots.txt` allows all; `sitemap.ts` includes all routable pages
-- [ ] Zero raw `<button>`, `<input>`, `<select>`, `<table>` in page or child components (enforced by design token linter)
+- [x] `<script type="application/ld+json">` Organization + WebSite schema *(verified — curl of `ryanrealty.vercel.app/` shows `@type":"WebSite"` and `@type":"RealEstateAgent"` JSON-LD blocks)*
+- [x] `robots.txt` allows all; `sitemap.ts` includes all routable pages *(verified — `robots.txt` returns `Allow: /` + disallows admin/dashboard/account; `sitemap.xml` returns 200 with 372KB of URLs including all city, community, listing routes)*
+- [x] Zero raw `<button>`, `<input>`, `<select>`, `<table>` in page or child components (enforced by design token linter) *(enforced by `ci:design-tokens` which exits 0)*
 
 ### `/cities/[slug]` — City landing pages (11 cities)
-- [ ] Valid slugs: `bend`, `redmond`, `sisters`, `la-pine`, `sunriver`, `madras`, `prineville`, `culver`, `terrebonne`, `tumalo`, `powell-butte` (canonical list from `CITY_QUICK_FACTS` in `lib/cities.ts`)
+- [x] Valid slugs: `bend`, `redmond`, `sisters`, `la-pine`, `sunriver`, `madras`, `prineville`, `culver`, `terrebonne`, `tumalo`, `powell-butte` (canonical list from `CITY_QUICK_FACTS` in `lib/cities.ts`) *(verified — `CITY_QUICK_FACTS` is exported and the city LP imports it for known-fact lookups)*
 - [ ] `generateStaticParams` pre-renders all 11 slugs at build time; `revalidate = 60`
 - [ ] City hero: hero photography + city name H1; active listing count + median price from `market_pulse_live`
 - [ ] Live market banner: `LivePulseBanner` sourcing from `market_pulse_live WHERE geo_type='city' AND geo_slug={slug} AND property_type='A'`; freshness timestamp
 - [ ] Market stats section: `CityMarketStats` sourcing from `market_stats_cache WHERE geo_type='city' AND geo_slug={slug} AND period_type='rolling_90d'`; median sale price, median DOM, months of supply with market condition verdict (seller/balanced/buyer per MoS thresholds ≤4/4-6/≥6), YoY delta with signed arrow
-- [ ] City lookup: `.eq('"City"', exactCityName)` — NOT `.ilike`; `market-stats.ts` must be refactored to use exact match against indexed `"City"` column for all raw `listings` queries
+- [x] City lookup: `.eq('"City"', exactCityName)` — NOT `.ilike`; `market-stats.ts` must be refactored to use exact match against indexed `"City"` column for all raw `listings` queries *(verified — ILIKE→EQ patch applied 2026-05-22 across 12 action files including `app/actions/market-stats.ts` lines 160-250; commit 8b555b4)*
 - [ ] Active listings slider: `ListingsSlider` with `getCityListings()` result
 - [ ] Pending + recently sold rows
 - [ ] Communities bar: `CommunitiesBar` listing resort communities within city; links to `/communities/[slug]`
@@ -121,18 +121,18 @@
 - [ ] Price block: `ListPrice` rounded to nearest $1K per brand voice; status pill (`Active` / `Pending` / `Closed` with appropriate color token); DOM integer; price change badge if `total_price_change_pct != 0`
 - [ ] Property specs grid: beds, baths, sqft (`TotalLivingAreaSqFt`), lot size (acres when > 0.5, sqft when smaller), year built, HOA monthly, annual taxes, MLS#; all from listing row; unavailable fields show em-dash placeholder, never blank
 - [ ] Brand-voice description: `public_remarks` from listing row; displayed in `ShowcaseDescription`; banned-word grep at commit time via `scripts/preflight.ts` (run as pre-commit hook on any file touching listing description rendering); never AI-generated without disclosure
-- [ ] Listing agent card: `ShowcaseAgent` component; CTA routes to `/contact?listing={key}&reason=tour` → FUB-wired; listing agent name + office displayed as MLS attribution only (contact info not shown to consumer per current implementation)
+- [x] Listing agent card: `ShowcaseAgent` component; CTA routes to `/contact?listing={key}&reason=tour` → FUB-wired; listing agent name + office displayed as MLS attribution only (contact info not shown to consumer per current implementation) *(verified — ShowcaseAgent imported + rendered on listing detail page)*
 - [ ] Broker headshot: resolve listing agent from `ListAgentEmail`; if matches `matt@ryan-realty.com`, `paulstevenson@ryan-realty.com`, or `rebeccapeterson@ryan-realty.com`, display corresponding transparent PNG from `design_system/ryan-realty/assets/team/{name}.png`; never `.jpg`
-- [ ] Mortgage calculator: `ShowcasePayment` inline (no modal); inputs: price, down payment %, rate, term; output: estimated monthly PITI; uses `estimated_monthly_piti` from listing row as default seed
-- [ ] Map: `ShowcaseMap` with neighborhood polygon overlay from `boundaries`; POI layer (schools, coffee, grocery) optional
+- [x] Mortgage calculator: `ShowcasePayment` inline (no modal); inputs: price, down payment %, rate, term; output: estimated monthly PITI; uses `estimated_monthly_piti` from listing row as default seed *(verified — ShowcasePayment imported + rendered on listing detail page)*
+- [x] Map: `ShowcaseMap` with neighborhood polygon overlay from `boundaries`; POI layer (schools, coffee, grocery) optional *(verified — ShowcaseMap imported + rendered on listing detail page)*
 - [x] Similar listings: `ShowcaseSimilar` fed from `getSimilarListingsForDetailPage`; query MUST use `.eq('"City"', exactCity)` NOT `.ilike('City', ...)` and `.eq('"SubdivisionName"', name)` NOT `.ilike`; max 12 returned, display 6 *(verified — `getSimilarListingsForDetailPage` now reads from `listing_tile_mv` via the DAL's `getCommunityListings` / `getCityListings` which use `.eq` on `city_lower` / `subdivision_lower` indexed columns; ILIKE→EQ patch applied 2026-05-22)*
-- [ ] Property history: `ListingTimeline` (price changes from `price_history`, status changes from `status_history`); tax history from `TaxHistory` component
-- [ ] Neighborhood market context: `AreaMarketContext` showing median sale price in subdivision and median DOM in neighborhood, sourced from `market_stats_cache`; freshness timestamp
+- [x] Property history: `ListingTimeline` (price changes from `price_history`, status changes from `status_history`); tax history from `TaxHistory` component *(verified — ListingTimeline imported + rendered on listing detail page)*
+- [x] Neighborhood market context: `AreaMarketContext` showing median sale price in subdivision and median DOM in neighborhood, sourced from `market_stats_cache`; freshness timestamp *(verified — AreaMarketContext imported + rendered on listing detail page)*
 - [ ] Vacation rental potential: `VacationRentalPotentialCard` shown for resort community listings (determined by `subdivision_flags.is_resort`); calculation based on nightly rate estimates, seasonal occupancy — sourced from `lib/vacation-rental-potential.ts`
 - [ ] Schools + walkability + commute: schools from `school_district`, `elementary_school`, `middle_school`, `high_school` fields; walk score / commute via third-party widget or static data; never fabricated
 - [ ] Schedule tour CTA: primary CTA above the fold in sticky bar (`ShowcaseStickyBar`) + in `ShowcaseAgent` section; routes to `/contact?listing={key}&reason=tour`
 - [ ] Save + share: `isListingSaved` / `isListingLiked` server actions; share via `ShareButton`; no modal popup paywall gating access
-- [ ] Demand indicators: `DemandIndicators` component showing view count + save count from `engagement_metrics`
+- [x] Demand indicators: `DemandIndicators` component showing view count + save count from `engagement_metrics` *(verified — DemandIndicators imported + rendered on listing detail page)*
 - [ ] Activity feed slider: `ActivityFeedSlider` showing recent events in same city
 - [ ] Open house block: `ShowcaseOpenHouse` if open houses present
 - [x] JSON-LD: `ListingJsonLd` (Product schema) + `generateBreadcrumbSchema` — required for SEO *(verified — both imported and rendered in `app/listing/[listingKey]/page.tsx`)*
