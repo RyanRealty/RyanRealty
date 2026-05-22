@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.7 (2026-05-22)
+
+### Maintenance
+- perf(home): migrate featured + just-listed fallbacks to DAL — 370→369
+
+---
+
+
 ## v1.279.6 (2026-05-22)
 
 ### Bug Fixes
