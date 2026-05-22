@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.269.5 (2026-05-22)
+
+### Maintenance
+- perf(cities): _getCityBySlugUncached uses geo_snapshot_mv
+
+---
+
+
 ## v1.269.4 (2026-05-22)
 
 ### Other
