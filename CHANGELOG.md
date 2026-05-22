@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.4 (2026-05-22)
+
+### Maintenance
+- perf(communities): migrate active + pending list paths to DAL — 373→371
+
+---
+
+
 ## v1.279.3 (2026-05-22)
 
 ### Other
