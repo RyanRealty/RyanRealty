@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.269.4 (2026-05-22)
+
+### Other
+- a11y(home): add aria-label to hero search input
+
+---
+
+
 ## v1.269.3 (2026-05-22)
 
 ### Maintenance
