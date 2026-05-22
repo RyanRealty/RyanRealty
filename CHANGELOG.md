@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.268.2 (2026-05-22)
+
+### Bug Fixes
+- fix(maps): replace @react-google-maps/api loader with Google's official bootstrap
+
+---
+
+
 ## v1.268.1 (2026-05-22)
 
 ### Maintenance
