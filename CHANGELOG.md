@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.1 (2026-05-22)
+
+### Maintenance
+- perf(sold-listings): migrate city + community + home paths to DAL — 364→361
+
+---
+
+
 ## v1.280.0 (2026-05-22)
 
 ### Features
