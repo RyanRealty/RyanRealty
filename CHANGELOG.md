@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.273.0 (2026-05-22)
+
+### Features
+- feat(analytics): /admin/analytics/social — dedicated social-channel view
+- feat(admin): /admin/visitors/[sessionId] per-session timeline
+
+---
+
+
 ## v1.272.1 (2026-05-22)
 
 ### Other
