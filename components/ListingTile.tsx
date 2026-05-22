@@ -69,9 +69,12 @@ function statusLabel(s: string | null | undefined): string {
 
 function statusColor(s: string | null | undefined): string {
   const t = (s ?? '').toLowerCase()
-  if (t.includes('pending')) return 'bg-warning/15 text-warning'
+  // Use solid backgrounds + foreground tokens so the pill meets WCAG 2 AA
+  // contrast (4.5:1). The prior bg-success/15 + text-success combo measured
+  // 2.1:1 on lighthouse and tanked the homepage a11y score.
+  if (t.includes('pending')) return 'bg-warning text-warning-foreground'
   if (t.includes('closed')) return 'bg-border text-muted-foreground'
-  return 'bg-success/15 text-success'
+  return 'bg-success text-success-foreground'
 }
 
 /** Listing tile accepts full HomeTileRow or ListingTileRow (missing fields shown as empty). */

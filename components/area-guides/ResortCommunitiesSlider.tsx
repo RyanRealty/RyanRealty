@@ -56,7 +56,6 @@ export default function ResortCommunitiesSlider({
         <Link
           href="/communities"
           className="flex h-full min-h-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border bg-card/80 p-6 text-center transition hover:border-accent hover:bg-card hover:shadow-sm"
-          aria-label="See all communities"
         >
           <span className="text-4xl text-accent-foreground" aria-hidden>
             →

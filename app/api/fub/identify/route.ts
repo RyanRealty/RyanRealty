@@ -18,6 +18,7 @@
 
 import { NextResponse } from 'next/server'
 import { findPersonByEmail, trackSignedInUser, addPersonTags, addPersonNote } from '@/lib/followupboss'
+import { backfillSessionToFub } from '@/lib/visitor-backfill'
 
 // Domains allowed to call this endpoint. Add staging/preview here if needed.
 const ALLOWED_ORIGINS = new Set<string>([
@@ -52,6 +53,10 @@ type IdentifyBody = {
   referrer?: string
   /** Tags to merge onto the person record (e.g. "src:facebook", "Buyer Intent"). */
   tags?: string[]
+  /** UUID v4 from localStorage `rr_session_id`. When present, the endpoint
+   *  backfills all prior anonymous visitor_events for this session into
+   *  FUB as Viewed Property / Viewed Page events tied to the new person. */
+  sessionId?: string
 }
 
 function corsHeaders(origin: string | null): HeadersInit {
@@ -86,7 +91,7 @@ export async function POST(request: Request) {
     return jsonError(400, 'Invalid JSON', origin)
   }
 
-  const { provider, idToken, accessToken, sourceUrl, campaign, landingPage, referrer, tags } = body
+  const { provider, idToken, accessToken, sourceUrl, campaign, landingPage, referrer, tags, sessionId } = body
   if (provider !== 'google' && provider !== 'facebook') {
     return jsonError(400, 'Invalid provider', origin)
   }
@@ -167,12 +172,44 @@ export async function POST(request: Request) {
     try { await addPersonNote(taggedPersonId, noteParts.join(' ')) } catch {}
   }
 
+  // ─── Anonymous-to-known backfill ─────────────────────────────────────────
+  // If the snippet sent a sessionId (uuid v4 from localStorage), replay all
+  // unpushed visitor_events for that session into FUB as Viewed Property /
+  // Viewed Page events attributed to the now-known person. Fire-and-don't-
+  // await would race the response back to the client; we await so the
+  // response carries the backfill summary.
+  //
+  // Validates sessionId against uuid v4 shape before calling — never trust
+  // arbitrary strings from the client.
+  const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  let backfillSummary: { events: number; alreadyIdentified: boolean } | undefined
+  if (taggedPersonId && sessionId && UUID_V4_RE.test(sessionId)) {
+    try {
+      const result = await backfillSessionToFub({
+        sessionId,
+        fubPersonId: taggedPersonId,
+        email,
+        identifiedVia: provider === 'google' ? 'google' : 'facebook',
+      })
+      backfillSummary = {
+        events: result.eventsBackfilled,
+        alreadyIdentified: result.alreadyIdentified,
+      }
+      if (result.errors.length > 0) {
+        console.warn('[fub/identify] backfill non-fatal errors:', result.errors.join('; '))
+      }
+    } catch (e) {
+      console.warn('[fub/identify] backfill threw (continuing):', e instanceof Error ? e.message : String(e))
+    }
+  }
+
   return NextResponse.json(
     {
       ok: true,
       matched: !!existing,
       fubPersonId: taggedPersonId,
       firstName: existing?.firstName ?? fullName?.split(' ')[0] ?? null,
+      backfill: backfillSummary,
     },
     { headers: corsHeaders(origin) },
   )

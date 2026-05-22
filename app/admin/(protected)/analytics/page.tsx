@@ -63,6 +63,19 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
         <DateRangePicker current={rangeChoice} currentStart={sp.startDate} currentEnd={sp.endDate} />
       </header>
 
+      <div className="rounded-lg border border-border bg-card p-3">
+        <p className="text-xs font-medium text-muted-foreground mb-2">Specialised views</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <a className="text-primary hover:underline" href="/admin/visitors/live">🟢 Live visitors</a>
+          <a className="text-primary hover:underline" href="/admin/analytics/social">📣 Social channels</a>
+          <a className="text-primary hover:underline" href="/admin/analytics/demographics">👥 Demographics (age, geo)</a>
+          <a className="text-primary hover:underline" href="/admin/analytics/funnel-breakdown">🔻 Funnel breakdown + insights</a>
+          <a className="text-primary hover:underline" href="/admin/analytics/lp-leaderboard">🏁 LP leaderboard</a>
+          <a className="text-primary hover:underline" href="/admin/analytics/cost-per-lead">💸 Cost per lead</a>
+          <a className="text-primary hover:underline" href="/admin/analytics/listing-performance">🏠 Listing performance</a>
+        </div>
+      </div>
+
       <Tabs defaultValue={String(tab)}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>

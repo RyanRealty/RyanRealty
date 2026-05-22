@@ -3,6 +3,11 @@
 import { createClient } from '@supabase/supabase-js'
 import type { SparkVideo, SparkVirtualTour } from '@/lib/spark'
 import { listingAddressSlug, slugify } from '@/lib/slug'
+import {
+  getCommunityListings as getCommunityListingsDAL,
+  getCityListings as getCityListingsDAL,
+} from '@/lib/data'
+import type { ListingTile } from '@/lib/data'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -1184,6 +1189,31 @@ const SIMILAR_TILE_SELECT =
   'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL, Latitude, Longitude, ModificationTimestamp, PropertyType, StandardStatus, OnMarketDate, ClosePrice, CloseDate'
 
 /** Similar listings: same community or city, ±20% price, ±1 beds, Active, exclude current, limit 6. */
+/** Map a DAL ListingTile → SimilarListingForDetail shape callers expect. */
+function tileToSimilarDetail(tile: ListingTile): SimilarListingForDetail {
+  const address = [
+    [tile.streetNumber, tile.streetName].filter(Boolean).join(' '),
+    tile.city,
+    null, // state — listing_tile_mv doesn't carry it; legacy code put 'OR' here optionally
+    tile.postalCode,
+  ].filter(Boolean).join(', ')
+  return {
+    listing_key: tile.listingKey,
+    list_number: tile.listNumber,
+    mls_source: null,
+    list_price: tile.listPrice,
+    beds_total: tile.beds,
+    baths_full: tile.baths,
+    living_area: tile.sqft,
+    subdivision_name: tile.subdivisionName,
+    address,
+    photo_url: tile.photoUrl,
+    city: tile.city,
+    state: null,
+    postal_code: tile.postalCode,
+  }
+}
+
 export async function getSimilarListingsForDetailPage(
   excludeListingKey: string,
   communityName: string | null,
@@ -1191,95 +1221,55 @@ export async function getSimilarListingsForDetailPage(
   price: number | null,
   beds: number | null
 ): Promise<SimilarListingForDetail[]> {
-  const supabase = getSupabase()
   const key = String(excludeListingKey ?? '').trim()
   if (!key) return []
 
-  const priceMin = price != null ? price * 0.8 : null
-  const priceMax = price != null ? price * 1.2 : null
-  const bedsMin = beds != null ? Math.max(1, beds - 1) : null
-  const bedsMax = beds != null ? beds + 1 : null
+  const priceMin = price != null ? Math.round(price * 0.8) : undefined
+  const priceMax = price != null ? Math.round(price * 1.2) : undefined
+  const bedsMin = beds != null ? Math.max(1, beds - 1) : undefined
 
-  // Query using actual PascalCase columns — only listings with photos
-  let query = supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
-    .neq('ListingKey', key)
-    .not('PhotoURL', 'is', null)
-    .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
-    .limit(12)
-
+  // DAL: read from listing_tile_mv. Prefer community-scoped, fall back to
+  // city-scoped if too few results, mirroring legacy behavior. Photo filter
+  // applied client-side (the MV carries photo_url + the DAL doesn't filter
+  // on photo presence today — small post-fetch filter is cheap).
+  const trySize = 12
+  let tiles: ListingTile[] = []
   if (communityName?.trim()) {
-    query = query.eq('"SubdivisionName"', communityName.trim())
-  }
-  if (city?.trim()) {
-    query = query.eq('"City"', city.trim())
-  }
-  if (priceMin != null) query = query.gte('ListPrice', priceMin)
-  if (priceMax != null) query = query.lte('ListPrice', priceMax)
-  if (bedsMin != null) query = query.gte('BedroomsTotal', bedsMin)
-  if (bedsMax != null) query = query.lte('BedroomsTotal', bedsMax)
-
-  let { data } = await query
-
-  // Fallback: if community-specific query returns too few, try city-wide without community filter
-  if ((!data || data.length < 4) && communityName?.trim() && city?.trim()) {
-    let fallbackQuery = supabase
-      .from('listings')
-      .select('ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, StreetNumber, StreetName, City, State, PostalCode, PhotoURL')
-      .neq('ListingKey', key)
-      .not('PhotoURL', 'is', null)
-      .or('StandardStatus.ilike.%Active%,StandardStatus.is.null')
-      .eq('"City"', city.trim())
-      .limit(12)
-    if (priceMin != null) fallbackQuery = fallbackQuery.gte('ListPrice', priceMin)
-    if (priceMax != null) fallbackQuery = fallbackQuery.lte('ListPrice', priceMax)
-    const { data: fallbackData } = await fallbackQuery
-    if (fallbackData && fallbackData.length > (data?.length ?? 0)) {
-      data = fallbackData
-    }
+    tiles = await getCommunityListingsDAL(communityName.trim(), {
+      status: 'active',
+      sort: 'newest',
+      limit: trySize,
+      minPrice: priceMin,
+      maxPrice: priceMax,
+      minBeds: bedsMin,
+    })
+  } else if (city?.trim()) {
+    tiles = await getCityListingsDAL(city.trim(), {
+      status: 'active',
+      sort: 'newest',
+      limit: trySize,
+      minPrice: priceMin,
+      maxPrice: priceMax,
+      minBeds: bedsMin,
+    })
   }
 
-  const rows = (data ?? []) as Array<{
-    ListingKey: string
-    ListNumber?: string | null
-    mls_source?: string | null
-    ListPrice: number | null
-    BedroomsTotal: number | null
-    BathroomsTotal: number | null
-    TotalLivingAreaSqFt: number | null
-    SubdivisionName: string | null
-    StreetNumber?: string | null
-    StreetName?: string | null
-    City?: string | null
-    State?: string | null
-    PostalCode?: string | null
-    PhotoURL?: string | null
-  }>
+  // Fallback: community-scoped returned too few, broaden to city.
+  if (tiles.length < 4 && communityName?.trim() && city?.trim()) {
+    const fallbackTiles = await getCityListingsDAL(city.trim(), {
+      status: 'active',
+      sort: 'newest',
+      limit: trySize,
+      minPrice: priceMin,
+      maxPrice: priceMax,
+    })
+    if (fallbackTiles.length > tiles.length) tiles = fallbackTiles
+  }
 
-  return rows.slice(0, 6).map((r) => {
-    const address = [
-      [r.StreetNumber, r.StreetName].filter(Boolean).join(' '),
-      r.City,
-      r.State,
-      r.PostalCode,
-    ].filter(Boolean).join(', ')
-    return {
-      listing_key: r.ListingKey,
-      list_number: r.ListNumber ?? null,
-      mls_source: r.mls_source ?? (r as { MlsSource?: string | null }).MlsSource ?? null,
-      list_price: r.ListPrice,
-      beds_total: r.BedroomsTotal,
-      baths_full: r.BathroomsTotal,
-      living_area: r.TotalLivingAreaSqFt,
-      subdivision_name: r.SubdivisionName,
-      address,
-      photo_url: r.PhotoURL ?? null,
-      city: r.City ?? null,
-      state: r.State ?? null,
-      postal_code: r.PostalCode ?? null,
-    }
-  })
+  return tiles
+    .filter((t) => t.listingKey !== key && t.photoUrl)
+    .slice(0, 6)
+    .map(tileToSimilarDetail)
 }
 
 /** Get other active listings in the same subdivision (for "Other homes in [Subdivision]" section). */

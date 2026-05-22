@@ -39,7 +39,6 @@ export default function ExploreByCitySlider({ cities, savedSlugs, signedIn }: Pr
         <Link
           href="/cities"
           className="flex h-full min-h-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border bg-muted p-6 text-center transition hover:border-accent hover:bg-card hover:shadow-sm"
-          aria-label="See all cities"
         >
           <span className="text-4xl text-accent-foreground" aria-hidden>
             →
