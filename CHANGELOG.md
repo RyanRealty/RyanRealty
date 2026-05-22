@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.270.2 (2026-05-22)
+
+### Other
+- a11y(geo + filters): fix every lighthouse a11y violation on city LPs
+
+---
+
+
 ## v1.270.1 (2026-05-22)
 
 ### Bug Fixes
