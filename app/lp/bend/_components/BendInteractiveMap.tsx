@@ -75,6 +75,12 @@ export function BendInteractiveMap({
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: apiKey,
+    // Must match the libraries used by every other useJsApiLoader in the
+    // app (see app/listings/*, components/SearchMapClustered, etc.) so the
+    // shared loader singleton doesn't fail on config mismatch. Without
+    // this, the loader emits "Failed to load Google Maps script" on every
+    // mount because the cached URL params don't match.
+    libraries: ['places'],
   })
 
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null)
