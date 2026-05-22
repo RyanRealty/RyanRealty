@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.277.0 (2026-05-22)
+
+### Features
+- feat(analytics): action-required dashboard + listing performance + save_search tracking
+
+---
+
+
 ## v1.276.0 (2026-05-22)
 
 ### Features
