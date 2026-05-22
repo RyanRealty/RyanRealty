@@ -72,13 +72,12 @@ export function BendInteractiveMap({
 }: BendInteractiveMapProps) {
   const router = useRouter()
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
-  // useGoogleMapsReady wraps useJsApiLoader and survives Google's new
-  // chunked async script format (see lib/use-google-maps-ready.ts).
-  // The `libraries: ['places']` must match every other map-using
-  // component so the shared loader singleton stays consistent.
+  // useGoogleMapsReady uses Google's official bootstrap loader
+  // (injected once at the root layout by <GoogleMapsBootstrap />).
+  // The bootstrap exposes `google.maps.importLibrary(name)`; the
+  // hook awaits 'maps' + any extras and flips ready when ready.
+  // See lib/use-google-maps-ready.ts.
   const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
-    id: 'google-map-script',
-    googleMapsApiKey: apiKey,
     libraries: ['places'],
   })
 

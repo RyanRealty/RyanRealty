@@ -16,6 +16,7 @@ import AuthErrorRedirect from "../components/AuthErrorRedirect";
 import FubIdentityBridge from "../components/FubIdentityBridge";
 import AgentAttributionBridge from "../components/AgentAttributionBridge";
 import GoogleAnalytics from "../components/GoogleAnalytics";
+import { GoogleMapsBootstrap } from "../components/GoogleMapsBootstrap";
 import FollowUpBossPixel from "../components/FollowUpBossPixel";
 import MetaPixel from "../components/MetaPixel";
 import PageViewTracker from "../components/PageViewTracker";
@@ -185,6 +186,12 @@ export default async function RootLayout({
           <GoogleAnalytics />
           <FollowUpBossPixel />
           <MetaPixel />
+          {/* Injects Google's official Maps JS API bootstrap so every
+              map component on the site can call
+              `await google.maps.importLibrary('maps')`. Has to live
+              above any map-using route — root layout is the safe
+              place. Idempotent: noop if already injected. */}
+          <GoogleMapsBootstrap />
           {/* PageViewTracker uses useSearchParams — must be in a Suspense boundary so static generation doesn't bail. */}
           <Suspense fallback={null}>
             <PageViewTracker />
