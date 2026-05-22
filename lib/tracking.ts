@@ -74,6 +74,14 @@ export type EventName =
   | 'broker_view'
   | 'contact_agent'
   | 'view_landing_page'
+  // Pulse feed events — locked 2026-05-22.
+  // See marketing_brain_skills/pulse-feed/SKILL.md for the surface spec.
+  | 'pulse_feed_entry'      // user clicked "Browse the feed" entry CTA
+  | 'pulse_card_view'       // card became >55% visible in viewport
+  | 'pulse_card_like'       // tap on heart or double-tap on card
+  | 'pulse_card_share'      // tap on share icon
+  | 'pulse_cta_click'       // tap on a card's primary CTA (schedule/read/etc.)
+  | 'pulse_filter_change'   // user changed a feed filter (city, event type)
 
 function pushDataLayer(obj: Record<string, unknown>) {
   if (typeof window === 'undefined') return

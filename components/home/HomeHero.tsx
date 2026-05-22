@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { SearchSuggestionsResult } from '@/app/actions/listings'
 import { trackEvent } from '@/lib/tracking'
@@ -431,6 +432,25 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
             </div>
           )}
         </form>
+
+        {/* Browse-the-feed entry — secondary path for discovery-first
+            visitors (paid-ad landings, IG / TikTok referrals) who don't
+            have a specific search in mind. The feed at /pulse is a
+            social-style 9:16 card stream of listings, market data,
+            lifestyle content, and brand utilities. Outline-only style
+            so it reads as an alternate path, not a competing primary CTA.
+            See marketing_brain_skills/pulse-feed/SKILL.md for full spec. */}
+        <div className="mt-6 flex items-center justify-center gap-3 text-sm text-primary-foreground/85">
+          <span className="hidden sm:inline opacity-75">or</span>
+          <Link
+            href="/pulse"
+            onClick={() => trackEvent('pulse_feed_entry', { source: 'home_hero' })}
+            className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/75 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-primary-foreground backdrop-blur-sm transition hover:border-primary-foreground hover:bg-primary-foreground/15"
+          >
+            <span>Browse the feed</span>
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
       </div>
     </section>
   )
