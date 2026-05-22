@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.261.5 (2026-05-22)
+
+### Other
+- fub: rename collection FUB Revamp -> Pipeline in broker runbooks
+
+---
+
+
 ## v1.261.4 (2026-05-22)
 
 ### Other
