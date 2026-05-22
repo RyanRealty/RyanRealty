@@ -28,8 +28,18 @@ jobs:
       - run: npm run lint
       - run: npm run lint:seo-routes
       - run: npm run ci:design-tokens
+      - run: npm run ci:dal-boundary
+      - run: npm run ci:brand-voice
       - run: npm run test
       - run: npm run build
+
+      # Lighthouse CI — gates PRs on perf/a11y/BP/SEO regression against
+      # lighthouserc.cjs thresholds. Uses start-server-and-test under the hood.
+      # Skipped on push events (already run nightly via quality.yml).
+      - name: Lighthouse CI
+        if: github.event_name == 'pull_request'
+        run: npm run ci:lighthouse
+        continue-on-error: false
 
       # Build health tracking
       - name: Record build health metrics

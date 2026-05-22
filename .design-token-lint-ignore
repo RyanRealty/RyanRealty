@@ -34,3 +34,10 @@ components/listing/showcase/ShowcaseHero.tsx
 components/listing/ListingHero.tsx
 components/listing/ListingNav.tsx
 components/open-houses/OpenHousesClient.tsx
+
+# Bend LP — Google Maps API requires literal hex strings for polygon
+# strokeColor/fillColor (not CSS variables). Also includes data-table HTML
+# that's being migrated to shadcn <Table> in Wave 3 page rebuild per
+# docs/EXECUTION_PLAN.md. Tracked exceptions, not unbounded.
+app/lp/bend/_components/BendInteractiveMap.tsx
+app/lp/bend/page.tsx
