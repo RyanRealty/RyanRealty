@@ -18,6 +18,7 @@ import {
 import { slugify } from '@/lib/slug'
 import { getTrendingListingKeys } from '@/app/actions/listing-views'
 import { sendEvent } from '@/lib/followupboss'
+import { getCityListings as getCityListingsDAL } from '@/lib/data'
 import type { HomeTileRow } from '@/app/actions/listings'
 import type { HotCommunity } from '@/app/actions/listings'
 import type { CityMarketStats } from '@/app/actions/listings'
@@ -46,10 +47,16 @@ async function _getFeaturedListingsUncached(city?: string): Promise<HomeTileRow[
     const keys = (em ?? []).map((r: { listing_key?: string }) => (r?.listing_key ?? '').trim()).filter(Boolean)
     let rows: HomeTileRow[]
     if (keys.length === 0) {
-      let query = sb.from('listings').select('ListingKey').or(ACTIVE_OR).order('ModificationTimestamp', { ascending: false, nullsFirst: false }).limit(12)
-      if (city?.trim()) query = query.eq('"City"', city.trim())
-      const { data: fallback } = await query
-      const fallbackKeys = (fallback ?? []).map((r: { ListingKey?: string }) => (r?.ListingKey ?? '').trim()).filter(Boolean)
+      // DAL: read newest active listings from listing_tile_mv, extract keys,
+      // then call the existing getHomeTileRowsByKeys to keep the rest of
+      // the pipeline identical. Drains a .from('listings') without changing
+      // the consumer shape.
+      const fallbackTiles = await getCityListingsDAL(city?.trim() || 'Bend', {
+        status: 'active',
+        sort: 'newest',
+        limit: 12,
+      })
+      const fallbackKeys = fallbackTiles.map((t) => t.listingKey).filter(Boolean)
       rows = await getHomeTileRowsByKeys(fallbackKeys)
     } else {
       rows = await getHomeTileRowsByKeys(keys)
@@ -72,22 +79,28 @@ export const getFeaturedListings = unstable_cache(
   { revalidate: 300, tags: ['featured-listings'] }
 )
 
-/** Just listed: 8 newest Active by OnMarketDate (or ModificationTimestamp fallback) for the given city. */
+/** Just listed: 8 newest Active by ModificationTimestamp for the given city. */
 async function _getJustListedUncached(city: string = 'Bend'): Promise<HomeTileRow[]> {
   const cityName = city.trim() || 'Bend'
   try {
-    const sb = supabase()
-    const query = sb
-      .from('listings')
-      .select(HOME_TILE_SELECT)
-      .or(ACTIVE_OR)
-      .eq('City', cityName)
-      .order('OnMarketDate', { ascending: false, nullsFirst: false })
-      .limit(32)
-    const { data } = await query
-    const rows = (data ?? []) as HomeTileRow[]
-    const active = rows.filter((r) => /active|for sale|coming soon|pending/i.test(String(r.StandardStatus ?? '')))
-    // If OnMarketDate is missing or unreliable, fall back to existing helper.
+    // DAL: read newest-active tiles from listing_tile_mv, fetch the
+    // detail-shaped HomeTileRow via getHomeTileRowsByKeys. Sort by
+    // modified_at (DAL semantic) is close enough to OnMarketDate for
+    // "Just Listed" — fresh listings have modified_at == on_market_date.
+    const tiles = await getCityListingsDAL(cityName, {
+      status: 'active-and-pending',
+      sort: 'newest',
+      limit: 32,
+    })
+    if (tiles.length === 0) {
+      const fallback = await getListingsForHomeTiles({ city: cityName, limit: 8 })
+      return fallback.slice(0, 8)
+    }
+    const keys = tiles.map((t) => t.listingKey).filter(Boolean).slice(0, 32)
+    const rows = await getHomeTileRowsByKeys(keys)
+    const active = rows.filter((r) =>
+      /active|for sale|coming soon|pending/i.test(String(r.StandardStatus ?? '')),
+    )
     if (active.length === 0) {
       const fallback = await getListingsForHomeTiles({ city: cityName, limit: 8 })
       return fallback.slice(0, 8)
