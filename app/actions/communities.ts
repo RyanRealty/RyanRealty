@@ -356,26 +356,40 @@ export const getCommunityListings = unstable_cache(
   { revalidate: 120, tags: ['community-listings'] }
 )
 
-/** Recently sold in community (last 12 months), limit 6. */
+/** Recently sold in community (last 12 months), limit 6. DAL-backed. */
 async function _getCommunitySoldListingsUncached(
   city: string,
   subdivision: string,
   limit: number
 ): Promise<(ListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]> {
-  const sb = supabase()
   const names = getSubdivisionMatchNames(subdivision)
-  let query = sb
-    .from('listings')
-    .select(`${COMMUNITY_LISTING_TILE_SELECT}, ClosePrice`)
-    .eq('"City"', city)
-    .or('StandardStatus.ilike.%Closed%')
-    .not('CloseDate', 'is', null)
-    .order('CloseDate', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
-  else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
-  const { data } = await query
-  return (data ?? []) as (ListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]
+  if (names.length === 0) return []
+  const fetchAll = async (subName: string) =>
+    getCommunityListingsDAL(subName, { status: 'closed', sort: 'close-newest', limit })
+  const tiles =
+    names.length === 1
+      ? await fetchAll(names[0]!)
+      : (await Promise.all(names.map(fetchAll))).flat()
+  // City filter (some subdivisions share names across cities)
+  const filtered = tiles.filter(
+    (t) => t.city?.toLowerCase().trim() === city.toLowerCase().trim(),
+  )
+  // Dedupe + sort by closeDate desc (already sorted within each call)
+  const seen = new Set<string>()
+  const deduped: typeof filtered = []
+  for (const t of filtered) {
+    if (seen.has(t.listingKey)) continue
+    seen.add(t.listingKey)
+    deduped.push(t)
+  }
+  return deduped
+    .sort((a, b) => (b.closeDate ?? '').localeCompare(a.closeDate ?? ''))
+    .slice(0, limit)
+    .map((t) => ({
+      ...tileToCommunityRow(t),
+      ClosePrice: t.closePrice,
+      CloseDate: t.closeDate,
+    }))
 }
 
 export const getCommunitySoldListings = unstable_cache(

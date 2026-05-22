@@ -239,23 +239,21 @@ export const getCityListings = unstable_cache(
   { revalidate: 120, tags: ['city-listings'] }
 )
 
-/** Recently sold in city, limit 6.
- * NOT migrated to DAL yet — needs CloseDate as a sort key, which the
- * DAL's getCityListings doesn't expose. Lower priority because closed-
- * listings traffic is much smaller than active. */
+/** Recently sold in city, limit 6. Reads from listing_tile_mv via DAL. */
 async function _getCitySoldListingsUncached(
   cityName: string,
   limit: number
 ): Promise<(CityListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]> {
-  const { data } = await supabase()
-    .from('listings')
-    .select(`${CITY_LISTING_TILE_SELECT}, ClosePrice`)
-    .eq('"City"', cityName)
-    .or('StandardStatus.ilike.%Closed%')
-    .not('CloseDate', 'is', null)
-    .order('CloseDate', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  return (data ?? []) as (CityListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]
+  const tiles = await getCityListingsDAL(cityName, {
+    status: 'closed',
+    sort: 'close-newest',
+    limit,
+  })
+  return tiles.map((t) => ({
+    ...tileToCityListingRow(t),
+    ClosePrice: t.closePrice,
+    CloseDate: t.closeDate,
+  }))
 }
 
 export const getCitySoldListings = unstable_cache(

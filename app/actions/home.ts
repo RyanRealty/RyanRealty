@@ -125,17 +125,43 @@ export const getJustListed = unstable_cache(
 /** Recently sold: 4 newest Closed with close price/date, optional city filter. */
 async function _getRecentlySoldUncached(city?: string): Promise<(HomeTileRow & { ClosePrice?: number | null; CloseDate?: string | null })[]> {
   try {
-    const sb = supabase()
-    let query = sb
-      .from('listings')
-      .select(`${HOME_TILE_SELECT}, ClosePrice`)
-      .or(CLOSED_OR)
-      .not('CloseDate', 'is', null)
-      .order('CloseDate', { ascending: false, nullsFirst: false })
-      .limit(4)
-    if (city?.trim()) query = query.eq('"City"', city.trim())
-    const { data } = await query
-    return (data ?? []) as (HomeTileRow & { ClosePrice?: number | null; CloseDate?: string | null })[]
+    // DAL: read closed tiles sorted by close-newest from listing_tile_mv.
+    const cityName = city?.trim() || ''
+    const filter = { status: 'closed' as const, sort: 'close-newest' as const, limit: 4 }
+    const tiles = cityName
+      ? await getCityListingsDAL(cityName, filter)
+      : await import('@/lib/data').then((m) => m.getListingTiles(filter))
+    return tiles.map((t) => ({
+      ...({
+        ListingKey: t.listingKey,
+        ListNumber: t.listNumber,
+        ListPrice: t.listPrice,
+        BedroomsTotal: t.beds,
+        BathroomsTotal: t.baths,
+        StreetNumber: t.streetNumber,
+        StreetName: t.streetName,
+        City: t.city,
+        State: null,
+        PostalCode: t.postalCode,
+        SubdivisionName: t.subdivisionName,
+        PhotoURL: t.photoUrl,
+        Latitude: t.lat,
+        Longitude: t.lng,
+        StandardStatus: t.status,
+        TotalLivingAreaSqFt: t.sqft,
+        OnMarketDate: t.onMarketDate,
+        has_virtual_tour: t.hasVirtualTour,
+        year_built: t.yearBuilt,
+        price_per_sqft: t.pricePerSqft,
+        lot_size_acres: t.lotSizeAcres,
+        garage_spaces: t.garageSpaces,
+        pool_yn: t.poolYn,
+        price_drop_count: t.priceDropCount,
+        DaysOnMarket: t.dom,
+      } as HomeTileRow),
+      ClosePrice: t.closePrice,
+      CloseDate: t.closeDate,
+    }))
   } catch {
     try {
       const sb = supabase()
