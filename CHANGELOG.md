@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.263.1 (2026-05-22)
+
+### Maintenance
+- docs(skills): canonical pulse-feed product spec
+
+---
+
+
 ## v1.263.0 (2026-05-22)
 
 ### Features
