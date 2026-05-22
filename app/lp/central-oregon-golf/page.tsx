@@ -42,6 +42,8 @@ import {
   type GolfCommunitySlug,
   type GolfCommunityKpi,
 } from '@/data/golf/community-kpis'
+import { loadGolfFeaturedListings } from '@/data/golf/featured-listings'
+import type { ListingCardData } from '@/components/lp/ListingCard'
 import { GolfCourseMap } from './_components/GolfCourseMap'
 
 export const dynamic = 'force-static'
@@ -189,7 +191,10 @@ function buildJsonLd() {
 }
 
 export default async function CentralOregonGolfPage() {
-  const communityKpis = await loadGolfCommunityKpis()
+  const [communityKpis, featuredListings] = await Promise.all([
+    loadGolfCommunityKpis(),
+    loadGolfFeaturedListings(),
+  ])
   return (
     <main
       style={{
@@ -212,7 +217,7 @@ export default async function CentralOregonGolfPage() {
       <MapSection />
       <ByArchitectSection />
       <SeasonCalendarSection />
-      <WhereToLiveSection communityKpis={communityKpis} />
+      <WhereToLiveSection communityKpis={communityKpis} featuredListings={featuredListings} />
       <InsiderNotesSection />
       <StayVsBuySection />
       <DataTableSection />
@@ -492,6 +497,13 @@ function SeasonCalendarSection() {
   )
 }
 
+function featuredPrice(n: number): string {
+  if (!Number.isFinite(n)) return '—'
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2)}M`
+  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`
+  return `$${Math.round(n).toLocaleString()}`
+}
+
 function statusLabel(s: 'mostly-closed' | 'shoulder' | 'prime' | 'high-season' | 'late-season'): string {
   if (s === 'mostly-closed') return 'Mostly closed'
   if (s === 'shoulder') return 'Shoulder rates'
@@ -505,8 +517,10 @@ function statusLabel(s: 'mostly-closed' | 'shoulder' | 'prime' | 'high-season' |
  * ──────────────────────────────────────────────────────────────────────── */
 function WhereToLiveSection({
   communityKpis,
+  featuredListings,
 }: {
   communityKpis: Record<GolfCommunitySlug, GolfCommunityKpi | null>
+  featuredListings: Record<GolfCommunitySlug, ListingCardData | null>
 }) {
   // Pull every unique community across all courses
   const seen = new Set<string>()
@@ -662,6 +676,34 @@ function WhereToLiveSection({
                     ))}
                   </ul>
                 </div>
+                {(() => {
+                  const featured = featuredListings[community as GolfCommunitySlug]
+                  if (!featured) return null
+                  const detail = `/lp/listings/${encodeURIComponent(featured.listNumber ?? featured.listingKey)}/`
+                  return (
+                    <Link href={detail} className="golf-live-featured" aria-label={`Featured home: ${featured.address}`}>
+                      <div className="golf-live-featured-label">Top active</div>
+                      {featured.photoUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={featured.photoUrl}
+                          alt={featured.address}
+                          loading="lazy"
+                          className="golf-live-featured-thumb"
+                        />
+                      )}
+                      <div className="golf-live-featured-body">
+                        <div className="golf-live-featured-price">{featuredPrice(featured.listPrice)}</div>
+                        <div className="golf-live-featured-addr">{featured.address}{featured.city ? `, ${featured.city}` : ''}</div>
+                        <div className="golf-live-featured-meta">
+                          {featured.beds != null && <span>{featured.beds} bed</span>}
+                          {featured.baths != null && <span>{featured.baths} bath</span>}
+                          {featured.sqft != null && <span>{Number(featured.sqft).toLocaleString()} sqft</span>}
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })()}
                 {meta.hasLP ? (
                   <Link href={`/lp/${community}/`} className="golf-live-cta">
                     Search homes in {meta.name} →
@@ -1229,6 +1271,33 @@ function PageStyles() {
       }
       .golf-live-cta--secondary { background: transparent; color: #102742; border: 1px solid rgba(16,39,66,0.32); }
       .golf-live-cta:hover { opacity: 0.92; }
+
+      /* Featured listing inside Where-to-Live card */
+      .golf-live-featured {
+        display: grid; grid-template-columns: 80px 1fr; gap: 12px; align-items: center;
+        text-decoration: none; color: inherit;
+        background: rgba(16,39,66,0.04); border-radius: 10px;
+        padding: 10px 12px; margin: 4px 24px 0;
+        position: relative;
+      }
+      .golf-live-featured:hover { background: rgba(16,39,66,0.08); }
+      .golf-live-featured-label {
+        position: absolute; top: -6px; left: 14px;
+        background: #102742; color: #faf8f4;
+        font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+        padding: 2px 8px; border-radius: 999px;
+      }
+      .golf-live-featured-thumb {
+        width: 80px; height: 60px; object-fit: cover; border-radius: 6px;
+      }
+      .golf-live-featured-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .golf-live-featured-price { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 500; color: #102742; }
+      .golf-live-featured-addr { font-size: 12.5px; color: rgba(16,39,66,0.78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .golf-live-featured-meta {
+        display: flex; gap: 4px; font-size: 11px; color: rgba(16,39,66,0.55);
+        font-variant-numeric: tabular-nums;
+      }
+      .golf-live-featured-meta span + span::before { content: '·'; margin: 0 4px; }
 
       /* Data table */
       .golf-table-wrap { overflow-x: auto; margin-top: 24px; border: 1px solid rgba(16,39,66,0.1); border-radius: 12px; background: white; }
