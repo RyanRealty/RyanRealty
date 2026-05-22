@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
+import { createClient } from '@supabase/supabase-js'
 import { requireSecret } from '@/lib/require-secret'
 
 /**
@@ -23,12 +25,25 @@ import { requireSecret } from '@/lib/require-secret'
  * Daily cadence is well under every window. Anything connected stays alive.
  *
  * Security: protected by CRON_SECRET header, identical to other cron routes.
+ *
+ * Observability: every run writes 9 rows to `public.sync_logs` (one per
+ * platform) with a shared `sync_cycle_id`. Query the latest run with
+ *   SELECT endpoint, response_status, duration_ms, error_message
+ *   FROM sync_logs
+ *   WHERE sync_cycle_id = <id>
+ *   ORDER BY endpoint;
+ * The cycleId is returned in the response body so the caller can persist
+ * it to the audit trail. Added 2026-05-21 per deep-audit C2 step 2 (audit
+ * step "Add per-token success log to sync_logs so future failures are
+ * visible"). Before this, a failing heartbeat was invisible until the next
+ * audit caught expired tokens.
  */
 
 interface PlatformResult {
   platform: string
   status: 'ok' | 'skipped' | 'failed'
   message?: string
+  duration_ms?: number
 }
 
 // Auth handled via requireSecret() — see GET handler below.
@@ -187,6 +202,67 @@ async function pingNextdoor(): Promise<PlatformResult> {
   }
 }
 
+/**
+ * Wraps a per-platform ping with a stopwatch so the result carries the
+ * elapsed time. Lets sync_logs answer "is the GBP refresh slowing down?"
+ * without a separate timing harness.
+ */
+async function timedPing(
+  fn: () => Promise<PlatformResult>
+): Promise<PlatformResult> {
+  const t0 = Date.now()
+  const r = await fn()
+  return { ...r, duration_ms: Date.now() - t0 }
+}
+
+/**
+ * Writes one sync_logs row per platform result. Fire-and-forget: if the
+ * Supabase write fails for any reason, the heartbeat still returns its
+ * normal payload. The audit trail is best-effort visibility — losing one
+ * row is annoying but a failed log row must never break the cron itself.
+ *
+ * Status code mapping:
+ *   ok        → 200 (refresh succeeded or token already fresh)
+ *   skipped   → 204 (platform not connected / OAuth never completed)
+ *   failed    → 500 (refresh attempted but errored)
+ */
+async function writeHeartbeatSyncLogs(
+  results: PlatformResult[],
+  cycleId: string
+): Promise<void> {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) {
+      console.warn('[token-heartbeat] sync_logs skip — Supabase env vars missing')
+      return
+    }
+    const supabase = createClient(url, key)
+    const environment =
+      process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'development'
+    const rows = results.map((r) => ({
+      endpoint: `token_heartbeat:${r.platform}`,
+      method: 'REFRESH',
+      response_status:
+        r.status === 'ok' ? 200 : r.status === 'skipped' ? 204 : 500,
+      duration_ms: r.duration_ms ?? null,
+      sync_cycle_id: cycleId,
+      environment,
+      error_message: r.status === 'failed' ? r.message ?? 'unknown' : null,
+      alert_sent: false,
+    }))
+    const { error } = await supabase.from('sync_logs').insert(rows)
+    if (error) {
+      console.warn(`[token-heartbeat] sync_logs insert error: ${error.message}`)
+    }
+  } catch (err) {
+    console.warn(
+      '[token-heartbeat] sync_logs write threw:',
+      err instanceof Error ? err.message : err
+    )
+  }
+}
+
 export async function GET(request: NextRequest) {
   const auth = requireSecret(request, 'CRON_SECRET')
   if (!auth.ok) {
@@ -194,18 +270,24 @@ export async function GET(request: NextRequest) {
   }
 
   const startedAt = new Date().toISOString()
+  const cycleId = randomUUID()
 
   const results = await Promise.all([
-    pingMeta(),
-    pingYoutube(),
-    pingLinkedIn(),
-    pingX(),
-    pingGoogleBusinessProfile(),
-    pingTikTok(),
-    pingThreads(),
-    pingPinterest(),
-    pingNextdoor(),
+    timedPing(pingMeta),
+    timedPing(pingYoutube),
+    timedPing(pingLinkedIn),
+    timedPing(pingX),
+    timedPing(pingGoogleBusinessProfile),
+    timedPing(pingTikTok),
+    timedPing(pingThreads),
+    timedPing(pingPinterest),
+    timedPing(pingNextdoor),
   ])
+
+  // Write sync_logs rows BEFORE returning so the audit trail lands even if
+  // the response stream gets cancelled. The function swallows its own
+  // errors so a logging failure can't 500 the cron itself.
+  await writeHeartbeatSyncLogs(results, cycleId)
 
   const summary = {
     ok: results.filter((r) => r.status === 'ok').length,
@@ -219,6 +301,7 @@ export async function GET(request: NextRequest) {
     {
       startedAt,
       finishedAt: new Date().toISOString(),
+      cycleId,
       summary,
       results,
       anyFailed: failed.length > 0,
