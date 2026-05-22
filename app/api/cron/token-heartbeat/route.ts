@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireSecret } from '@/lib/require-secret'
 
 /**
  * Token Heartbeat Cron
@@ -30,12 +31,10 @@ interface PlatformResult {
   message?: string
 }
 
-const cronSecret = process.env.CRON_SECRET
-
-function validateApiKey(key: string | null): boolean {
-  if (!cronSecret) return false
-  return key === cronSecret
-}
+// Auth handled via requireSecret() — see GET handler below.
+// (Old validateApiKey() removed 2026-05-21: it read `x-cron-secret` while Vercel
+// sends `Authorization: Bearer <CRON_SECRET>`. Every scheduled invocation returned
+// 401, refresh never ran, all 3 OAuth tokens drifted to expiry on 2026-05-20.)
 
 async function pingMeta(): Promise<PlatformResult> {
   const token = process.env.META_PAGE_ACCESS_TOKEN
@@ -189,9 +188,9 @@ async function pingNextdoor(): Promise<PlatformResult> {
 }
 
 export async function GET(request: NextRequest) {
-  const apiKey = request.headers.get('x-cron-secret')
-  if (!validateApiKey(apiKey)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = requireSecret(request, 'CRON_SECRET')
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.message }, { status: auth.status })
   }
 
   const startedAt = new Date().toISOString()

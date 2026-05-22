@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createClient } from '@supabase/supabase-js'
 import { createRealtimeTask } from '@/lib/followupboss'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
@@ -60,6 +61,19 @@ function getMetaToken(): string {
   ).trim()
   if (!token) throw new Error('META_USER_ACCESS_TOKEN or META_PAGE_ACCESS_TOKEN not configured')
   return token
+}
+
+// Service-role Supabase client for processed_meta_leads dedup writes.
+// Created at module load — the credentials are stable env vars.
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+    if (isProd) throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured')
+    return null
+  }
+  return createClient(url, key)
 }
 
 function getFubConfig(): { apiKey: string; pipelineId: string | null } {
@@ -464,6 +478,26 @@ async function addFubNote(personId: number, lead: ParsedLead): Promise<void> {
 async function processLead(leadId: string, adName?: string): Promise<void> {
   console.log(`[lead-webhook] Processing lead: ${leadId} (ad: ${adName || 'unknown'})`)
 
+  // Dedup check — Meta retries on 5xx and network errors. Insert into
+  // processed_meta_leads (PRIMARY KEY on leadgen_id) to no-op duplicates.
+  // Without this, duplicate webhook fires create duplicate FUB persons + notes + tasks.
+  const supabase = getSupabase()
+  if (supabase) {
+    const { error: dedupError } = await supabase
+      .from('processed_meta_leads')
+      .insert({ leadgen_id: leadId, status: 'processing', ad_name: adName ?? null })
+
+    if (dedupError) {
+      // PostgreSQL unique_violation = already processed — short-circuit safely.
+      if (dedupError.code === '23505') {
+        console.log(`[lead-webhook] Lead ${leadId} already processed — skipping duplicate webhook delivery`)
+        return
+      }
+      // Other DB errors: log but continue — don't block lead processing on DB issues.
+      console.error(`[lead-webhook] dedup insert failed (continuing):`, dedupError)
+    }
+  }
+
   // Fetch full lead details from Meta
   const leadDetail = await fetchLeadDetails(leadId)
   if (!leadDetail) {
@@ -522,6 +556,21 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   }).catch((e) => console.warn('[lead-webhook] GA4 event failed:', e))
 
   console.log(`[lead-webhook] Lead ${leadId} → FUB person ${personId} (${parsed.email || 'no email'}) intent=${parsed.intent ?? 'n/a'} audience=${parsed.audience} realtor=${parsed.possibleRealtor}`)
+
+  // Mark dedup row complete with FUB person ID + classification context.
+  if (supabase) {
+    await supabase
+      .from('processed_meta_leads')
+      .update({
+        status: 'completed',
+        fub_person_id: personId,
+        campaign_name: parsed.campaignName,
+        audience: parsed.audience,
+        intent: parsed.intent ?? null,
+        completed_at: new Date().toISOString(),
+      })
+      .eq('leadgen_id', leadId)
+  }
 }
 
 // ---------------------------------------------------------------------------

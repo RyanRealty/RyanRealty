@@ -438,7 +438,11 @@ export async function getYouTubeAccessToken(): Promise<string> {
 
   const token = data as StoredYouTubeToken
   const expiresAtMs = new Date(token.expires_at).getTime()
-  const refreshWindowMs = 60 * 1000
+  // 30-min refresh window: heartbeat runs daily, Google access tokens last 1h.
+  // The old 60-sec window meant proactive refresh almost never triggered, so the
+  // token aged to expiry between cron runs. Fixed 2026-05-21 alongside the
+  // token-heartbeat auth-header bug.
+  const refreshWindowMs = 30 * 60 * 1000
 
   if (Date.now() < expiresAtMs - refreshWindowMs) {
     return token.access_token

@@ -203,7 +203,10 @@ export async function getXAccessToken(): Promise<string> {
 
   const token = data as StoredXToken
   const expiresAtMs = new Date(token.expires_at).getTime()
-  const refreshWindowMs = 60 * 1000
+  // 30-min refresh window: heartbeat runs daily, X access tokens last 2h. The old
+  // 60-sec window meant proactive refresh almost never triggered. Fixed 2026-05-21
+  // alongside the token-heartbeat auth-header bug.
+  const refreshWindowMs = 30 * 60 * 1000
 
   if (Date.now() < expiresAtMs - refreshWindowMs) {
     return token.access_token
