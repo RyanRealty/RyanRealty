@@ -12,7 +12,12 @@
  */
 
 import React from 'react'
-import { SingleWordCaption } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
+import type { SingleWordCaptionProps } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
+// Import the component value separately from its type so we can cast away the
+// React-version JSX namespace mismatch (listing_video_v4 resolves React from
+// its own node_modules; the canonical file resolves from the repo root).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const { SingleWordCaption } = require('../../../video_production_skills/captions/canonical/SingleWordCaption') as { SingleWordCaption: React.FC<SingleWordCaptionProps> }
 
 export type CaptionWord = { text: string; startSec: number; endSec: number }
 

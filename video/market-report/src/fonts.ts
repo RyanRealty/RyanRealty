@@ -18,7 +18,8 @@ async function tryLoad(family: string, urlPath: string, format: string): Promise
   try {
     const face = new FontFace(family, `url(${staticFile(urlPath)}) format('${format}')`)
     await face.load()
-    document.fonts.add(face)
+    // TS lib.dom narrowed FontFaceSet to exclude add() in newer @types/node; cast restores the standard API method.
+    ;(document.fonts as unknown as { add(face: FontFace): void }).add(face)
   } catch {
     // Asset missing — components rely on the FONT_HEAD / FONT_BODY fallback
     // chain (Playfair Display / Inter / system-ui). Stills + previews still

@@ -38,7 +38,8 @@ export function loadAmboqia(): void {
   font
     .load()
     .then((loadedFont) => {
-      document.fonts.add(loadedFont)
+      // TS lib.dom narrowed FontFaceSet to exclude add() in newer @types/node; cast restores the standard API method.
+      ;(document.fonts as unknown as { add(face: FontFace): void }).add(loadedFont)
       continueRender(handle)
     })
     .catch((err) => {
