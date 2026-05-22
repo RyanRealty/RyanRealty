@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.268.1 (2026-05-22)
+
+### Maintenance
+- perf(cities): replace 60K-row fetchAllRows with geo_snapshot_mv lookup
+
+---
+
+
 ## v1.268.0 (2026-05-22)
 
 ### Features
