@@ -13,7 +13,8 @@ import type { CommunityForIndex, CommunityDetail } from '@/lib/communities'
 import { entityKeyToSlug } from '@/lib/community-slug'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
 import { COMMUNITY_LISTING_TILE_SELECT } from '@/lib/listing-tile-projections'
-import { getGeoSnapshot } from '@/lib/data'
+import { getGeoSnapshot, getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
+import type { ListingTile } from '@/lib/data'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -271,25 +272,82 @@ export type ListingRow = {
   DaysOnMarket?: number | null
 }
 
+/** Map a DAL ListingTile to ListingRow shape callers expect. */
+function tileToCommunityRow(tile: ListingTile): ListingRow {
+  return {
+    ListingKey: tile.listingKey,
+    ListNumber: tile.listNumber,
+    ListPrice: tile.listPrice,
+    BedroomsTotal: tile.beds,
+    BathroomsTotal: tile.baths,
+    StreetNumber: tile.streetNumber,
+    StreetName: tile.streetName,
+    City: tile.city,
+    State: null,
+    PostalCode: tile.postalCode,
+    SubdivisionName: tile.subdivisionName,
+    PhotoURL: tile.photoUrl,
+    Latitude: tile.lat,
+    Longitude: tile.lng,
+    StandardStatus: tile.status,
+    TotalLivingAreaSqFt: tile.sqft,
+    OnMarketDate: tile.onMarketDate,
+    has_virtual_tour: tile.hasVirtualTour,
+    year_built: tile.yearBuilt,
+    price_per_sqft: tile.pricePerSqft,
+    lot_size_acres: tile.lotSizeAcres,
+    garage_spaces: tile.garageSpaces,
+    pool_yn: tile.poolYn,
+    price_drop_count: tile.priceDropCount,
+    DaysOnMarket: tile.dom,
+  }
+}
+
 /** Active listings in a community (city + subdivision), newest first, limit 24. */
 async function _getCommunityListingsUncached(
   city: string,
   subdivision: string,
   limit: number
 ): Promise<ListingRow[]> {
-  const sb = supabase()
   const names = getSubdivisionMatchNames(subdivision)
-  let query = sb
-    .from('listings')
-    .select(COMMUNITY_LISTING_TILE_SELECT)
-    .eq('"City"', city)
-    .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
-  else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
-  const { data } = await query
-  return (data ?? []) as ListingRow[]
+  if (names.length === 0) return []
+  // DAL: read from listing_tile_mv via getCommunityListings, dedupe by
+  // listingKey across aliases. Single-alias case is the common path.
+  if (names.length === 1) {
+    const tiles = await getCommunityListingsDAL(names[0]!, {
+      status: 'active',
+      sort: 'newest',
+      limit,
+    })
+    // Belt-and-suspenders: filter by city since some subdivisions
+    // share names across cities (e.g. "Country Club Estates" exists
+    // in both Bend and Redmond — same subdivision name, different city).
+    return tiles
+      .filter((t) => t.city?.toLowerCase().trim() === city.toLowerCase().trim())
+      .slice(0, limit)
+      .map(tileToCommunityRow)
+  }
+  // Multi-alias resort communities (e.g. Tetherow has multiple variants):
+  // fan out to N parallel DAL calls, merge + dedupe by listing key.
+  const results = await Promise.all(
+    names.map((n) =>
+      getCommunityListingsDAL(n, { status: 'active', sort: 'newest', limit }),
+    ),
+  )
+  const seen = new Set<string>()
+  const merged: ListingTile[] = []
+  for (const tiles of results) {
+    for (const t of tiles) {
+      if (seen.has(t.listingKey)) continue
+      if (t.city?.toLowerCase().trim() !== city.toLowerCase().trim()) continue
+      seen.add(t.listingKey)
+      merged.push(t)
+    }
+  }
+  return merged
+    .sort((a, b) => (b.modifiedAt ?? '').localeCompare(a.modifiedAt ?? ''))
+    .slice(0, limit)
+    .map(tileToCommunityRow)
 }
 
 export const getCommunityListings = unstable_cache(
@@ -332,19 +390,39 @@ async function _getCommunityPendingListingsUncached(
   subdivision: string,
   limit: number
 ): Promise<ListingRow[]> {
-  const sb = supabase()
   const names = getSubdivisionMatchNames(subdivision)
-  let query = sb
-    .from('listings')
-    .select(COMMUNITY_LISTING_TILE_SELECT)
-    .eq('"City"', city)
-    .or(PENDING_OR)
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
-  else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
-  const { data } = await query
-  return (data ?? []) as ListingRow[]
+  if (names.length === 0) return []
+  // DAL: same pattern as _getCommunityListingsUncached but status=pending-only.
+  if (names.length === 1) {
+    const tiles = await getCommunityListingsDAL(names[0]!, {
+      status: 'pending-only',
+      sort: 'newest',
+      limit,
+    })
+    return tiles
+      .filter((t) => t.city?.toLowerCase().trim() === city.toLowerCase().trim())
+      .slice(0, limit)
+      .map(tileToCommunityRow)
+  }
+  const results = await Promise.all(
+    names.map((n) =>
+      getCommunityListingsDAL(n, { status: 'pending-only', sort: 'newest', limit }),
+    ),
+  )
+  const seen = new Set<string>()
+  const merged: ListingTile[] = []
+  for (const tiles of results) {
+    for (const t of tiles) {
+      if (seen.has(t.listingKey)) continue
+      if (t.city?.toLowerCase().trim() !== city.toLowerCase().trim()) continue
+      seen.add(t.listingKey)
+      merged.push(t)
+    }
+  }
+  return merged
+    .sort((a, b) => (b.modifiedAt ?? '').localeCompare(a.modifiedAt ?? ''))
+    .slice(0, limit)
+    .map(tileToCommunityRow)
 }
 
 export const getCommunityPendingListings = unstable_cache(
