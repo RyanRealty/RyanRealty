@@ -41,10 +41,6 @@
       "schedule": "*/15 * * * *"
     },
     {
-      "path": "/api/cron/weekly-pipeline-digest",
-      "schedule": "0 15 * * 1"
-    },
-    {
       "path": "/api/cron/market-report",
       "schedule": "0 14 * * 6"
     },
@@ -69,10 +65,6 @@
       "schedule": "0 15 * * *"
     },
     {
-      "path": "/api/cron/marketing-inbox-poll",
-      "schedule": "*/2 * * * *"
-    },
-    {
       "path": "/api/cron/marketing-competitor-recon",
       "schedule": "0 7 * * 1-5"
     },
@@ -91,46 +83,6 @@
     {
       "path": "/api/cron/publisher-sweep",
       "schedule": "*/10 * * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-ga4",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-gsc",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-meta-ads",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-meta-page",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-gbp",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-tiktok",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-youtube",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-linkedin",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-x",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-fub",
-      "schedule": "30 6 * * *"
     }
   ]
 }
