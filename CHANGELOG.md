@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.274.0 (2026-05-22)
+
+### Features
+- feat(lp/golf): wire broker-shot Snowdrift photography from Drive
+
+---
+
+
 ## v1.273.0 (2026-05-22)
 
 ### Features
