@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.261.6 (2026-05-22)
+
+### Other
+- deep-audit fixes: close C2 token-heartbeat + C6 RLS + UR-H17 meta dedup + C10 doc
+
+---
+
+
 ## v1.261.5 (2026-05-22)
 
 ### Other
