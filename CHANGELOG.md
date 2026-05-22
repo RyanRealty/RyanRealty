@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.263.4 (2026-05-22)
+
+### Bug Fixes
+- fix(maps): poll for google.maps.Map after loader fires
+
+---
+
+
 ## v1.263.3 (2026-05-22)
 
 ### Maintenance
