@@ -124,7 +124,7 @@
 - [ ] Broker headshot: resolve listing agent from `ListAgentEmail`; if matches `matt@ryan-realty.com`, `paulstevenson@ryan-realty.com`, or `rebeccapeterson@ryan-realty.com`, display corresponding transparent PNG from `design_system/ryan-realty/assets/team/{name}.png`; never `.jpg`
 - [ ] Mortgage calculator: `ShowcasePayment` inline (no modal); inputs: price, down payment %, rate, term; output: estimated monthly PITI; uses `estimated_monthly_piti` from listing row as default seed
 - [ ] Map: `ShowcaseMap` with neighborhood polygon overlay from `boundaries`; POI layer (schools, coffee, grocery) optional
-- [ ] Similar listings: `ShowcaseSimilar` fed from `getSimilarListingsForDetailPage`; query MUST use `.eq('"City"', exactCity)` NOT `.ilike('City', ...)` and `.eq('"SubdivisionName"', name)` NOT `.ilike`; max 12 returned, display 6
+- [x] Similar listings: `ShowcaseSimilar` fed from `getSimilarListingsForDetailPage`; query MUST use `.eq('"City"', exactCity)` NOT `.ilike('City', ...)` and `.eq('"SubdivisionName"', name)` NOT `.ilike`; max 12 returned, display 6 *(verified — `getSimilarListingsForDetailPage` now reads from `listing_tile_mv` via the DAL's `getCommunityListings` / `getCityListings` which use `.eq` on `city_lower` / `subdivision_lower` indexed columns; ILIKE→EQ patch applied 2026-05-22)*
 - [ ] Property history: `ListingTimeline` (price changes from `price_history`, status changes from `status_history`); tax history from `TaxHistory` component
 - [ ] Neighborhood market context: `AreaMarketContext` showing median sale price in subdivision and median DOM in neighborhood, sourced from `market_stats_cache`; freshness timestamp
 - [ ] Vacation rental potential: `VacationRentalPotentialCard` shown for resort community listings (determined by `subdivision_flags.is_resort`); calculation based on nightly rate estimates, seasonal occupancy — sourced from `lib/vacation-rental-potential.ts`
@@ -134,9 +134,9 @@
 - [ ] Demand indicators: `DemandIndicators` component showing view count + save count from `engagement_metrics`
 - [ ] Activity feed slider: `ActivityFeedSlider` showing recent events in same city
 - [ ] Open house block: `ShowcaseOpenHouse` if open houses present
-- [ ] JSON-LD: `ListingJsonLd` (Product schema) + `generateBreadcrumbSchema` — required for SEO
+- [x] JSON-LD: `ListingJsonLd` (Product schema) + `generateBreadcrumbSchema` — required for SEO *(verified — both imported and rendered in `app/listing/[listingKey]/page.tsx`)*
 - [ ] `<title>{address} — {city}, OR {zip} | Ryan Realty</title>`; canonical URL; OpenGraph with listing photo
-- [ ] `notFound()` for unknown `listingKey`; `permanentRedirect()` for legacy address-based routes
+- [x] `notFound()` for unknown `listingKey`; `permanentRedirect()` for legacy address-based routes *(verified — `app/listing/[listingKey]/page.tsx` line 181 calls notFound(), line 208 calls permanentRedirect() to canonical SEO path)*
 
 ### `/lp/seller-home-value` — Seller LP
 - [x] File: `app/lp/seller-home-value/page.tsx` (exists)
@@ -152,10 +152,10 @@
 - [x] `robots: { index: false, follow: false }` *(verified line 9)*
 
 ### `/lp/expired-listing` — Expired listing LP
-- [ ] File: `app/lp/expired-listing/page.tsx` (exists)
+- [x] File: `app/lp/expired-listing/page.tsx` (exists)
 - [ ] Content follows `marketing_brain_skills/producers/expired-listing-lp/SKILL.md` voice spec (5-cause audit framework, never pander)
 - [ ] `ExpiredLPForm` submits to FUB expired workflow; writes to `public.expired_listings`
-- [ ] `robots: { index: false, follow: false }`
+- [x] `robots: { index: false, follow: false }` *(verified line 24)*
 
 ### `/housing-market/reports/[slug]` — Monthly market reports
 - [ ] File: `app/housing-market/reports/[slug]/page.tsx` (existing route)
