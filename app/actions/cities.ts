@@ -17,7 +17,12 @@ import { listSubdivisionsWithFlags } from '@/app/actions/subdivision-flags'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
 import { getResortCommunityImage } from '@/lib/resort-community-images'
 import { CITY_LISTING_TILE_SELECT } from '@/lib/listing-tile-projections'
-import { getAllCitySnapshots, getGeoSnapshot } from '@/lib/data'
+import {
+  getAllCitySnapshots,
+  getGeoSnapshot,
+  getCityListings as getCityListingsDAL,
+} from '@/lib/data'
+import type { ListingTile } from '@/lib/data'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -189,24 +194,48 @@ export const getCityBySlug = unstable_cache(
   { revalidate: 300, tags: ['city-detail'] }
 )
 
-/** Active listings in a city, newest first, limit 24. */
+/**
+ * Map a DAL ListingTile (clean camelCase shape from listing_tile_mv) back to
+ * the legacy CityListingRow shape that existing components consume. Both
+ * carry the same data — different naming convention.
+ */
+function tileToCityListingRow(tile: ListingTile): CityListingRow {
+  return {
+    ListingKey: tile.listingKey,
+    ListNumber: tile.listNumber,
+    ListPrice: tile.listPrice,
+    BedroomsTotal: tile.beds,
+    BathroomsTotal: tile.baths,
+    StreetNumber: tile.streetNumber,
+    StreetName: tile.streetName,
+    City: tile.city,
+    State: null,
+    PostalCode: tile.postalCode,
+    SubdivisionName: tile.subdivisionName,
+    PhotoURL: tile.photoUrl,
+    Latitude: tile.lat,
+    Longitude: tile.lng,
+    StandardStatus: tile.status,
+    TotalLivingAreaSqFt: tile.sqft,
+    OnMarketDate: tile.onMarketDate,
+    has_virtual_tour: tile.hasVirtualTour,
+    lot_size_acres: tile.lotSizeAcres,
+    lot_size_sqft: null,
+  }
+}
+
+/** Active listings in a city, newest first. Reads from listing_tile_mv via DAL. */
 async function _getCityListingsUncached(
   cityName: string,
   limit: number
 ): Promise<CityListingRow[]> {
-  const { data } = await supabase()
-    .from('listings')
-    .select(CITY_LISTING_TILE_SELECT)
-    .eq('"City"', cityName)
-    .or(ACTIVE_OR)
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  return (data ?? []) as CityListingRow[]
+  const tiles = await getCityListingsDAL(cityName, { status: 'active', sort: 'newest', limit })
+  return tiles.map(tileToCityListingRow)
 }
 
 export const getCityListings = unstable_cache(
   _getCityListingsUncached,
-  ['city-listings-v1'],
+  ['city-listings-v2'],
   { revalidate: 120, tags: ['city-listings'] }
 )
 
@@ -232,19 +261,13 @@ export const getCitySoldListings = unstable_cache(
   { revalidate: 300, tags: ['city-sold-listings'] }
 )
 
-/** Pending/under contract listings in a city, newest first, limit 12. */
+/** Pending/under contract listings in a city, newest first. Reads from DAL. */
 async function _getCityPendingListingsUncached(
   cityName: string,
   limit: number
 ): Promise<CityListingRow[]> {
-  const { data } = await supabase()
-    .from('listings')
-    .select(CITY_LISTING_TILE_SELECT)
-    .eq('"City"', cityName)
-    .or(PENDING_OR)
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  return (data ?? []) as CityListingRow[]
+  const tiles = await getCityListingsDAL(cityName, { status: 'pending-only', sort: 'newest', limit })
+  return tiles.map(tileToCityListingRow)
 }
 
 export const getCityPendingListings = unstable_cache(
