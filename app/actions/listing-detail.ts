@@ -327,26 +327,28 @@ export async function resolveListingKeyFromBreadcrumbPath(input: {
 
   // Try to narrow search by extracting street number from address slug
   const streetNumMatch = addressSlug.match(/^(\d+)/)
-  let query = supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, ModificationTimestamp')
-    .eq('"City"', cityLike)
+  // DAL: read tiles from listing_tile_mv. The address-slug match filter
+  // happens client-side below (the MV has `address_slug` but the DAL
+  // filter schema doesn't expose it today). Same 1000-row cap as before.
+  let tiles = await getCityListingsDAL(cityLike, {
+    status: 'active-and-pending',
+    sort: 'newest',
+    limit: 500,
+  })
   if (streetNumMatch) {
-    query = query.eq('StreetNumber', streetNumMatch[1]!)
+    tiles = tiles.filter((t) => t.streetNumber === streetNumMatch[1])
   }
-  const { data } = await query.limit(1000)
-
-  const rows = (data ?? []) as Array<{
-    ListingKey?: string | null
-    ListNumber?: string | null
-    StreetNumber?: string | null
-    StreetName?: string | null
-    City?: string | null
-    State?: string | null
-    PostalCode?: string | null
-    SubdivisionName?: string | null
-    ModificationTimestamp?: string | null
-  }>
+  const rows = tiles.map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: null as string | null,
+    PostalCode: t.postalCode,
+    SubdivisionName: t.subdivisionName,
+    ModificationTimestamp: t.modifiedAt,
+  }))
 
   const matches = rows.filter((row) => {
     if (slugify(row.City ?? '') !== citySlug) return false
@@ -428,21 +430,22 @@ export async function resolveListingKeyFromCanonicalPath(input: {
     if (preferred) return preferred
   }
 
-  // Fallback: search within city
-  const { data } = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, City, PostalCode, SubdivisionName, ModificationTimestamp')
-    .eq('"City"', cityLike)
-    .limit(1000)
-
-  const rows = (data ?? []) as Array<{
-    ListingKey?: string | null
-    ListNumber?: string | null
-    City?: string | null
-    PostalCode?: string | null
-    SubdivisionName?: string | null
-    ModificationTimestamp?: string | null
-  }>
+  // Fallback: search within city via DAL (listing_tile_mv). Returns
+  // active + pending tiles up to 500; 'all' status would broaden but
+  // resolver is for active listings only.
+  const tiles = await getCityListingsDAL(cityLike, {
+    status: 'active-and-pending',
+    sort: 'newest',
+    limit: 500,
+  })
+  const rows = tiles.map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    City: t.city,
+    PostalCode: t.postalCode,
+    SubdivisionName: t.subdivisionName,
+    ModificationTimestamp: t.modifiedAt,
+  }))
 
   const matches = rows.filter((row) => {
     if (slugify(row.City ?? '') !== citySlug) return false
