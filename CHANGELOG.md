@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.10 (2026-05-22)
+
+### Maintenance
+- docs(spec): update lhci scoreboard with post-fix scores
+
+---
+
+
 ## v1.279.9 (2026-05-22)
 
 ### Maintenance
