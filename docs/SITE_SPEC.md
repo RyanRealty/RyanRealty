@@ -130,11 +130,11 @@
 - [x] Neighborhood market context: `AreaMarketContext` showing median sale price in subdivision and median DOM in neighborhood, sourced from `market_stats_cache`; freshness timestamp *(verified — AreaMarketContext imported + rendered on listing detail page)*
 - [ ] Vacation rental potential: `VacationRentalPotentialCard` shown for resort community listings (determined by `subdivision_flags.is_resort`); calculation based on nightly rate estimates, seasonal occupancy — sourced from `lib/vacation-rental-potential.ts`
 - [ ] Schools + walkability + commute: schools from `school_district`, `elementary_school`, `middle_school`, `high_school` fields; walk score / commute via third-party widget or static data; never fabricated
-- [ ] Schedule tour CTA: primary CTA above the fold in sticky bar (`ShowcaseStickyBar`) + in `ShowcaseAgent` section; routes to `/contact?listing={key}&reason=tour`
-- [ ] Save + share: `isListingSaved` / `isListingLiked` server actions; share via `ShareButton`; no modal popup paywall gating access
+- [x] Schedule tour CTA: primary CTA above the fold in sticky bar (`ShowcaseStickyBar`) + in `ShowcaseAgent` section; routes to `/contact?listing={key}&reason=tour` *(verified — ShowcaseStickyBar imported, ShowcaseAgent imported, both rendered on listing detail page)*
+- [x] Save + share: `isListingSaved` / `isListingLiked` server actions; share via `ShareButton`; no modal popup paywall gating access *(verified — isListingSaved called server-side with 1200ms timeout; ShareButton + listing save state available throughout)*
 - [x] Demand indicators: `DemandIndicators` component showing view count + save count from `engagement_metrics` *(verified — DemandIndicators imported + rendered on listing detail page)*
-- [ ] Activity feed slider: `ActivityFeedSlider` showing recent events in same city
-- [ ] Open house block: `ShowcaseOpenHouse` if open houses present
+- [x] Activity feed slider: `ActivityFeedSlider` showing recent events in same city *(verified — ActivityFeedSlider imported + rendered on listing detail page)*
+- [x] Open house block: `ShowcaseOpenHouse` if open houses present *(verified — ShowcaseOpenHouse rendered when openHouses array populated)*
 - [x] JSON-LD: `ListingJsonLd` (Product schema) + `generateBreadcrumbSchema` — required for SEO *(verified — both imported and rendered in `app/listing/[listingKey]/page.tsx`)*
 - [ ] `<title>{address} — {city}, OR {zip} | Ryan Realty</title>`; canonical URL; OpenGraph with listing photo
 - [x] `notFound()` for unknown `listingKey`; `permanentRedirect()` for legacy address-based routes *(verified — `app/listing/[listingKey]/page.tsx` line 181 calls notFound(), line 208 calls permanentRedirect() to canonical SEO path)*
