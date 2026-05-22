@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.8 (2026-05-22)
+
+### Other
+- a11y + brand: dotted phone format on LPs + darker success token
+
+---
+
+
 ## v1.279.7 (2026-05-22)
 
 ### Maintenance
