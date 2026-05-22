@@ -17,6 +17,29 @@ const SOCIAL_LINKEDIN = process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN_URL
 const OREGON_REA_LOOKUP_URL =
   'https://www.oregon.gov/rea/licensing/pages/current-licensees.aspx'
 
+/**
+ * Ryan Realty LLC principal-broker license number. OREA records:
+ *   Matt Ryan (PB)     201206613
+ *   Ryan Realty LLC    201253677 (business name)
+ * The PB number is the consumer-facing license per brand-voice spec
+ * (every public page must display it in the legal footer).
+ */
+const PRINCIPAL_BROKER_LICENSE = '201206613'
+
+/**
+ * Format a US phone number into the brand-voice dotted style: 541.213.6706.
+ * Accepts any input shape (5412136706, 541-213-6706, (541) 213-6706, +1...)
+ * and reformats to dotted. Returns the input unchanged if it doesn't have
+ * exactly 10 digits (e.g. international or partial).
+ */
+function formatPhoneAsDotted(raw: string): string {
+  const digits = raw.replace(/\D/g, '')
+  // Strip leading 1 if present (US country code)
+  const local = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
+  if (local.length !== 10) return raw
+  return `${local.slice(0, 3)}.${local.slice(3, 6)}.${local.slice(6)}`
+}
+
 const BUY_LINKS = [
   { href: '/buy', label: 'Buy With Us' },
   { href: listingsBrowsePath(), label: 'Home Search' },
@@ -160,7 +183,8 @@ export default function Footer({
                         href={`tel:${phone.replace(/\D/g, '')}`}
                         className="hover:text-primary-foreground transition-colors"
                       >
-                        {phone}
+                        {/* Dotted format per brand voice spec: 541.213.6706 */}
+                        {formatPhoneAsDotted(phone)}
                       </a>
                     </p>
                   ) : null}
@@ -238,6 +262,9 @@ export default function Footer({
           <div className="flex flex-col items-center gap-4 sm:items-end">
             <p className="text-sm text-primary-foreground/90" suppressHydrationWarning>
               © {currentYear} {name}. All rights reserved.
+            </p>
+            <p className="text-xs text-primary-foreground/70">
+              Oregon principal-broker license #{PRINCIPAL_BROKER_LICENSE} · Equal Housing Opportunity
             </p>
             <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 sm:justify-end" aria-label="Legal and policies">
               {LEGAL_LINKS.map(({ href, label }) => (
