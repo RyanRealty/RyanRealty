@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.279.16 (2026-05-22)
+
+### Maintenance
+- perf(lp/tetherow): migrate active-listings fetch to DAL — 366→365
+
+---
+
+
 ## v1.279.15 (2026-05-22)
 
 ### Maintenance
