@@ -13,6 +13,7 @@ import type { CommunityForIndex, CommunityDetail } from '@/lib/communities'
 import { entityKeyToSlug } from '@/lib/community-slug'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
 import { COMMUNITY_LISTING_TILE_SELECT } from '@/lib/listing-tile-projections'
+import { getGeoSnapshot } from '@/lib/data'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -140,35 +141,20 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
   const { city, subdivision } = parsed
   const entityKey = subdivisionEntityKey(city, subdivision)
   const sb = supabase()
-  const [stats, communityRow, activeRows] = await Promise.all([
+  // DAL: pre-aggregated community snapshot (~2ms) replaces the 3000-row
+  // listings scan + JS median that was making generateMetadata slow enough
+  // for the <title> + ld+json to land in a streamed chunk after pa11y/lhci
+  // measured the page. The /communities/tetherow SEO=58 first-run was
+  // this race; same root cause as the city LP fix earlier in this session.
+  const geoKey = `${city.toLowerCase().trim()}:${subdivision.toLowerCase().trim()}`
+  const [stats, communityRow, snapshot] = await Promise.all([
     getMarketStatsForSubdivision(city, subdivision),
     sb.from('communities').select('id, name, slug, description, hero_image_url, boundary_geojson, is_resort, resort_content, neighborhood_id, neighborhoods(name, slug)').ilike('name', subdivision).maybeSingle(),
-    (async () => {
-      const names = getSubdivisionMatchNames(subdivision)
-      let query = sb
-        .from('listings')
-        .select('ListPrice, PropertyType')
-        .eq('"City"', city)
-        .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
-        .limit(3000)
-      if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
-      else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
-      const { data } = await query
-      return (data ?? []) as { ListPrice?: number | null; PropertyType?: string | null }[]
-    })(),
+    getGeoSnapshot({ geoType: 'community', geoKey }),
   ])
-  const residentialRows = activeRows.filter((row) => isResidentialInventoryType(row.PropertyType ?? null))
-  const activeCount = residentialRows.length > 0 ? residentialRows.length : stats.count
-  const prices = residentialRows
-    .map((row) => Number(row.ListPrice))
-    .filter((price) => Number.isFinite(price) && price > 0)
-    .sort((a, b) => a - b)
+  const activeCount = snapshot?.activeSfrCount ?? stats.count
   const medianFromRows =
-    prices.length === 0
-      ? null
-      : prices.length % 2
-        ? prices[Math.floor(prices.length / 2)]!
-        : Math.round((prices[prices.length / 2 - 1]! + prices[prices.length / 2]!) / 2)
+    snapshot?.medianListPrice != null ? Math.round(snapshot.medianListPrice) : null
   const comm = communityRow.data as {
     name?: string
     description?: string | null
