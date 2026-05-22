@@ -1,21 +1,29 @@
 /**
  * marketing-brain: daily-digest
  *
- * Composes a daily summary of brain activity and inserts a single
- * `comms:matt_summary` action row into `marketing_brain_actions`. The
- * comms-matt-alert producer (already authored) picks it up and routes
- * to email + dashboard_card by default. The brain may override `channel`
- * in the payload to force iMessage for urgent days.
+ * Composes a daily summary of brain activity, sends Matt the email
+ * immediately via Resend, and inserts a `comms:matt_summary` audit row
+ * into `marketing_brain_actions` with status='executed' + delivery
+ * confirmation in executor_response.
  *
- * Scope (Brain Architecture session): this module ONLY composes the
- * summary and writes the action row. Actual delivery (email send,
- * iMessage MCP call, dashboard render) is the comms-matt-alert
- * producer's job — see marketing_brain_skills/producers/comms-matt-alert/SKILL.md.
+ * Architecture note (2026-05-22 refactor):
+ *   Before today this module only WROTE the action row and let the
+ *   producer-runtime cron pick it up. But producer-runtime marks rows
+ *   `ready` (draft state) and doesn't fire Resend — so digests piled up
+ *   in the approval queue without ever being delivered. The SKILL.md for
+ *   comms-matt-alert always specified email delivery; the runtime just
+ *   wasn't honoring it for `comms:*` action_types.
+ *
+ *   Fix: send the email here, BEFORE writing the row. The row becomes
+ *   pure audit trail (status='executed' with delivery confirmation).
+ *   This skips the producer-runtime hop entirely for daily digests and
+ *   matches Matt's mental model of "the brain emails me every morning."
  *
  * Triggered by /api/cron/marketing-daily-digest at 14:00 UTC daily.
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { sendEmail } from '@/lib/resend'
 
 let _supabase: SupabaseClient | null = null
 
@@ -93,8 +101,9 @@ export interface RunDailyDigestOptions {
 
 /**
  * Run the daily digest. Reads recent action-row activity, composes
- * markdown + short-form summaries, inserts one comms:matt_summary row.
- * Returns the full report.
+ * markdown + short-form summaries, sends the email to Matt, then inserts
+ * one comms:matt_summary audit row marked `executed`. Returns the full
+ * report including delivery confirmation.
  */
 export async function runDailyDigest(opts: RunDailyDigestOptions = {}): Promise<DailyDigestReport> {
   const asOfDate = opts.asOfDate ?? new Date().toISOString().slice(0, 10)
@@ -103,10 +112,33 @@ export async function runDailyDigest(opts: RunDailyDigestOptions = {}): Promise<
 
   const summary_markdown = composeMarkdownDigest(asOfDate, stats)
   const summary_short = composeShortDigest(asOfDate, stats)
+  const subject = composeSubject(asOfDate, stats)
+  const htmlBody = composeHtmlDigest(asOfDate, stats, summary_markdown)
+
+  // Deliver to Matt's inbox immediately. The Resend lib swallows its own
+  // errors and returns {error?: string}; we mirror that into the action
+  // row so failures surface in the audit trail.
+  let delivery: { id?: string; error?: string } = { id: 'dryrun-skipped' }
+  if (!opts.dryRun) {
+    delivery = await sendEmail({
+      to: process.env.MATT_ALERT_EMAIL ?? 'matt@ryan-realty.com',
+      subject,
+      html: htmlBody,
+      text: summary_markdown,
+      replyTo: 'matt@ryan-realty.com',
+    })
+  }
 
   let actionRowId: string | null = null
   if (!opts.dryRun) {
-    actionRowId = await insertDigestActionRow(asOfDate, summary_markdown, summary_short, stats, opts.forceImessage ?? false)
+    actionRowId = await insertDigestActionRow(
+      asOfDate,
+      summary_markdown,
+      summary_short,
+      stats,
+      opts.forceImessage ?? false,
+      delivery,
+    )
   }
 
   return {
@@ -117,6 +149,68 @@ export async function runDailyDigest(opts: RunDailyDigestOptions = {}): Promise<
     summary_short,
     action_row_id: actionRowId,
   }
+}
+
+/**
+ * Subject line is the single thing Matt sees on his phone lock screen
+ * before deciding whether to open. Lead with the actionable counts.
+ */
+function composeSubject(asOfDate: string, stats: DigestStats): string {
+  const parts: string[] = []
+  if (stats.ready_total > 0) parts.push(`${stats.ready_total} ready`)
+  if (stats.pending_total > 0) parts.push(`${stats.pending_total} pending`)
+  if (stats.inbox.pending_total > 0) parts.push(`${stats.inbox.pending_total} broker req`)
+  const tail = parts.length > 0 ? ` — ${parts.join(' · ')}` : ' — clean queue'
+  return `Brain ${asOfDate}${tail}`
+}
+
+/**
+ * HTML version of the digest. Plain markdown renders fine in most clients
+ * but a minimal HTML wrap with a single "Review queue" CTA at the top is
+ * what gets Matt clicking on mobile. No marketing-template chrome —
+ * this is a tool, not a campaign.
+ */
+function composeHtmlDigest(asOfDate: string, stats: DigestStats, markdown: string): string {
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')
+  const queueUrl = `${siteUrl}/admin/approval-queue`
+  const inboxUrl = `${siteUrl}/dashboard/marketing/inbox`
+
+  // Markdown → minimal HTML (paragraphs, headings, lists). Avoids pulling
+  // a markdown library since the digest format is stable and small.
+  const bodyHtml = markdown
+    .split('\n')
+    .map((line) => {
+      if (line.startsWith('# ')) return `<h2 style="margin:24px 0 8px;font-size:20px;">${line.slice(2)}</h2>`
+      if (line.startsWith('## ')) return `<h3 style="margin:20px 0 6px;font-size:16px;">${line.slice(3)}</h3>`
+      if (line.startsWith('- ')) return `<li style="margin:2px 0;">${line.slice(2)}</li>`
+      if (line.startsWith('  - ')) return `<li style="margin:2px 0 2px 16px;">${line.slice(4)}</li>`
+      if (line.trim() === '---') return '<hr style="border:0;border-top:1px solid #e5e7eb;margin:16px 0;" />'
+      if (line.trim() === '') return ''
+      return `<p style="margin:6px 0;">${line}</p>`
+    })
+    .join('')
+    // Wrap consecutive <li> blocks in a <ul>. Cheap-and-cheerful but works
+    // because the digest only uses single-level lists per section.
+    .replace(/(<li[^>]*>.*?<\/li>)+/g, (m) => `<ul style="padding-left:20px;margin:4px 0;">${m}</ul>`)
+
+  const ctaBar = stats.ready_total > 0
+    ? `<div style="background:#102742;color:#faf8f4;padding:14px 18px;border-radius:8px;margin:16px 0;">
+         <p style="margin:0 0 8px;font-size:15px;"><strong>${stats.ready_total} draft${stats.ready_total === 1 ? '' : 's'} waiting for review</strong></p>
+         <a href="${queueUrl}" style="display:inline-block;background:#faf8f4;color:#102742;padding:8px 14px;border-radius:6px;text-decoration:none;font-weight:600;">Open approval queue</a>
+       </div>`
+    : ''
+
+  const inboxBar = stats.inbox.pending_total > 0
+    ? `<p style="margin:8px 0;"><a href="${inboxUrl}" style="color:#102742;">View broker inbox (${stats.inbox.pending_total} pending)</a></p>`
+    : ''
+
+  return `<!doctype html>
+<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;max-width:640px;margin:24px auto;padding:0 16px;line-height:1.5;">
+${ctaBar}
+${bodyHtml}
+${inboxBar}
+<p style="margin-top:24px;font-size:12px;color:#6b7280;">Daily digest, generated ${asOfDate} by /api/cron/marketing-daily-digest. Reply directly to flag issues.</p>
+</body></html>`
 }
 
 // ---------------------------------------------------------------------------
@@ -391,12 +485,19 @@ async function insertDigestActionRow(
   summaryShort: string,
   stats: DigestStats,
   forceImessage: boolean,
+  delivery: { id?: string; error?: string },
 ): Promise<string | null> {
   const supabase = getSupabase()
   // Per comms-matt-alert SKILL.md: subject <60 chars, body holds full text.
   // Default channel for summary urgency is email + dashboard_card; brain
   // forces iMessage only when forceImessage is set (e.g. major signal day).
   const channel = forceImessage ? 'imessage' : 'email'
+
+  // Delivery already happened in runDailyDigest above. The row is the
+  // audit trail: status='executed' on success, 'killed' on Resend
+  // failure so the failure surfaces in the next morning's digest.
+  const deliverySucceeded = !!delivery.id && !delivery.error
+  const nowIso = new Date().toISOString()
 
   const { data, error } = await supabase
     .from('marketing_brain_actions')
@@ -417,6 +518,24 @@ async function insertDigestActionRow(
         trigger_metric: 'pending_action_rows',
         trigger_value: stats.pending_total,
       },
+      executor_response: deliverySucceeded
+        ? {
+            delivery_channel: 'email',
+            delivered_at: nowIso,
+            resend_message_id: delivery.id ?? null,
+            recipient: process.env.MATT_ALERT_EMAIL ?? 'matt@ryan-realty.com',
+            subject: `Brain digest ${asOfDate}`,
+            body_length: summaryMarkdown.length,
+            triggered_by: 'daily-digest-cron-direct-send',
+          }
+        : {
+            delivery_channel: 'email',
+            attempted_at: nowIso,
+            error: delivery.error ?? 'unknown send failure',
+            triggered_by: 'daily-digest-cron-direct-send',
+          },
+      executed_at: nowIso,
+      published_at: deliverySucceeded ? nowIso : null,
       topic: `Daily digest ${asOfDate}`,
       format: 'comms_matt_summary',
       platforms: [channel],
@@ -432,9 +551,9 @@ async function insertDigestActionRow(
         expected_value: 'Matt sees current queue state every morning',
         rationale: 'Daily summary keeps queue review on-cadence; without it the queue grows silently.',
       },
-      status: 'pending',
+      status: deliverySucceeded ? 'executed' : 'killed',
       generated_by: 'marketing_brain:daily-digest',
-      generation_reason: `Daily digest for ${asOfDate}. ${stats.pending_total} pending rows summarized.`,
+      generation_reason: `Daily digest for ${asOfDate}. ${stats.pending_total} pending rows summarized.${deliverySucceeded ? ' Email delivered.' : ` Email failed: ${delivery.error ?? 'unknown'}.`}`,
     })
     .select('id')
     .single()
