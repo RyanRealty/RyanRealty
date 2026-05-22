@@ -26,6 +26,12 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
   ]
   if (isSuperuser) {
     main.push(navItem('/admin/analytics', 'Analytics', '📊'))
+    main.push(navItem('/admin/analytics/social', 'Social channels', '📣'))
+    main.push(navItem('/admin/analytics/demographics', 'Demographics', '👥'))
+    main.push(navItem('/admin/analytics/funnel-breakdown', 'Funnel breakdown', '🔻'))
+    main.push(navItem('/admin/analytics/lp-leaderboard', 'LP leaderboard', '🏁'))
+    main.push(navItem('/admin/analytics/cost-per-lead', 'Cost per lead', '💸'))
+    main.push(navItem('/admin/visitors/live', 'Live visitors', '🟢'))
     main.push(navItem('/admin/users', 'Users', '👤'))
     main.push(navItem('/admin/expired-listings', 'Expired listings', '🏚'))
     main.push(navItem('/admin/audit-log', 'Audit log', '📋'))

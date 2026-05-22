@@ -3,7 +3,7 @@
  *
  * Each function returns a typed, predictable shape. The page composes them in
  * parallel via Promise.all. All numbers trace to either:
- *   - the GA4 Data API (via getGA4Summary)
+ *   - the GA4 Data API (via getGA4SummaryCached)
  *   - public.marketing_channel_daily (Supabase service-role query)
  *   - public.valuation_requests / cmas / marketing_assignments (Supabase)
  *
@@ -12,7 +12,7 @@
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getGA4Summary } from '@/app/actions/ga4-report'
+import { getGA4SummaryCached } from '@/lib/ga4-cache'
 
 export type DateRange = { startDate: string; endDate: string }
 
@@ -66,7 +66,7 @@ export type OverviewData = {
 }
 
 export async function fetchOverview(range: DateRange): Promise<OverviewData> {
-  const summaryRes = await getGA4Summary(range.startDate, range.endDate)
+  const summaryRes = await getGA4SummaryCached(range.startDate, range.endDate)
   const supabase = createServiceClient()
 
   const { data: spendRows } = await supabase
@@ -131,7 +131,7 @@ export type AcquisitionData = {
 }
 
 export async function fetchAcquisition(range: DateRange): Promise<AcquisitionData> {
-  const summaryRes = await getGA4Summary(range.startDate, range.endDate)
+  const summaryRes = await getGA4SummaryCached(range.startDate, range.endDate)
   if (!summaryRes.ok) {
     return { sources: [], channels: [], paidVsOrganic: { paidSessions: 0, organicSessions: 0, otherSessions: 0 } }
   }
@@ -189,7 +189,7 @@ export type BehaviorData = {
 }
 
 export async function fetchBehavior(range: DateRange): Promise<BehaviorData> {
-  const summaryRes = await getGA4Summary(range.startDate, range.endDate)
+  const summaryRes = await getGA4SummaryCached(range.startDate, range.endDate)
   if (!summaryRes.ok) return { pages: [], scrollDepths: [] }
   const d = summaryRes.data
 
@@ -229,7 +229,7 @@ const FUNNEL_LABELS = [
 
 export async function fetchFunnel(range: DateRange, lpVariant?: string): Promise<FunnelData> {
   const supabase = createServiceClient()
-  const summaryRes = await getGA4Summary(range.startDate, range.endDate)
+  const summaryRes = await getGA4SummaryCached(range.startDate, range.endDate)
 
   // Variants list — derived from the lpFunnels rows.
   let availableVariants: string[] = []
@@ -320,7 +320,7 @@ export type ConversionsData = {
 }
 
 export async function fetchConversions(range: DateRange): Promise<ConversionsData> {
-  const summaryRes = await getGA4Summary(range.startDate, range.endDate)
+  const summaryRes = await getGA4SummaryCached(range.startDate, range.endDate)
   const supabase = createServiceClient()
 
   // Broker split (from marketing_assignments)

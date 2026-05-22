@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getGA4Demographics } from '@/app/actions/ga4-demographics'
+import { getGA4DemographicsCached as getGA4Demographics } from '@/lib/ga4-cache'
 import { resolveDateRange } from '../_lib/queries'
 import { DateRangePicker } from '../_components/DateRangePicker'
 
