@@ -192,7 +192,11 @@ export default async function CityDetailPage({ params }: Props) {
     withTimeout(getGuidesByCity(city.name), []),
     withTimeout(getLiveMarketPulse({ geoType: 'city', geoSlug: slugify(city.name) }), null),
     withTimeout(getOpenHousesWithListings({ city: city.name }), []),
-    withTimeout(getCityInventoryBreakdown(city.name), EMPTY_INVENTORY, 20_000),
+    // 3s timeout — previous 20s was a leftover from the listings-scan
+    // fallback path. The inventory_breakdown_for_city RPC normally returns
+    // in <500ms; the rare fallback path that scans listings shouldn't gate
+    // the page render past LCP.
+    withTimeout(getCityInventoryBreakdown(city.name), EMPTY_INVENTORY, 3_000),
     withTimeout(getListingsWithVideosCached({ city: city.name, sort: 'price_desc', status: 'active', limit: 12 }), []),
     withTimeout(getReportMetricsTimeSeries(city.name, 60), { data: [], error: undefined }),
   ])
