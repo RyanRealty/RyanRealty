@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.269.2 (2026-05-22)
+
+### Bug Fixes
+- fix(brain): daily digest actually sends the email now
+
+### Other
+- ci(lighthouse): swap /listing/<key> for canonical SEO URL
+
+---
+
+
 ## v1.269.1 (2026-05-22)
 
 ### Maintenance
