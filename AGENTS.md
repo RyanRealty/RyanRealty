@@ -2,6 +2,30 @@
 
 This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to autonomously pick up, execute, validate, and complete development tasks on this project.
 
+---
+
+## Active goal (locked 2026-05-22 via Claude Code `/goal`)
+
+**Deliver Ryan Realty website to acceptance-criteria-passing state.** The site must be the best real estate website in Central Oregon, with listing detail pages that beat Zillow Showcase, sub-second LCP on every route, and a canonical Data Access Layer that prevents regression.
+
+Every session — Claude Code or Cursor — starts by reading these four files in order:
+
+1. **`docs/EXECUTION_PLAN.md`** — the wave-by-wave build plan (~6,000 words, every step listed)
+2. **`docs/SITE_SPEC.md`** — the per-route checklist with machine-checkable acceptance criteria
+3. **`docs/DATA_ACCESS_LAYER.md`** — the canonical DAL contract (every page calls `@/lib/data/*` functions; raw `.from('listings')` etc. outside `lib/data/` is banned by ESLint + CI)
+4. **`docs/architecture/ADR_001_DATA_LAYER.md`** — 4 materialized views + 5 indexes + ILIKE→EQ rewrite plan
+
+Then run the bootstrap checks (per the goal):
+- `npm run build && npm run lint && npm run test && npm run ci:design-tokens && npm run ci:dal-boundary && npm run ci:brand-voice && npm run ci:seo-routes` — note every failure
+- `lhci autorun --config=./lighthouserc.cjs` on LP routes — note every assertion below threshold
+- Work the lowest-numbered unchecked item in `docs/SITE_SPEC.md`
+
+**Done = every acceptance criterion in `docs/SITE_SPEC.md` passes. No phases. No audits between. Continuous push until production at ryan-realty.com is live and meeting all gates.**
+
+Out of scope: `marketing_brain_skills/`, `video_production_skills/`, social posting automation, transaction coordination. Only the public LP website and the CI guardrails that protect it.
+
+---
+
 ## Execution (non-negotiable)
 
 Run every needed command yourself (`npm run …`, scripts, git, deploy checks, SkySlope generators). **Never** tell the owner to run something in a terminal. The only exception is when something cannot run without secrets or access you do not have, in which case state exactly what is missing.
