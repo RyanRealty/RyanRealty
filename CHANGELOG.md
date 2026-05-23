@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.26 (2026-05-23)
+
+### Other
+- DAL: migrate fetch-listings-with-videos to lib/data pipeline
+
+---
+
+
 ## v1.282.25 (2026-05-23)
 
 ### Other
