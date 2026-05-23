@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.4 (2026-05-23)
+
+### Maintenance
+- perf(photo-classification): city/community listing keys via DAL — 331→330
+
+---
+
+
 ## v1.282.3 (2026-05-23)
 
 ### Maintenance
