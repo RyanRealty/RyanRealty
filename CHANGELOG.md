@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.7 (2026-05-23)
+
+### Maintenance
+- perf(cities): price-history fallback uses DAL — 327→326
+
+---
+
+
 ## v1.282.6 (2026-05-23)
 
 ### Maintenance
