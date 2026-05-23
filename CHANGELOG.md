@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.23 (2026-05-23)
+
+### Other
+- DAL: move city + neighborhood metadata into lib/data/cities
+
+---
+
+
 ## v1.282.22 (2026-05-23)
 
 ### Other
