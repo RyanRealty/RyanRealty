@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.45 (2026-05-23)
+
+### Other
+- DAL: clear OG route + RSVP + video-tours-join + terminal-scope
+
+---
+
+
 ## v1.282.44 (2026-05-23)
 
 ### Other
