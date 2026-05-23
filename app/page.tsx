@@ -145,7 +145,25 @@ async function OpenHouseAsync() {
   )
 }
 
+/** Format an ISO timestamp into "Updated Jan 22, 4:38 PM PT" for the freshness pill. */
+function formatFreshness(iso: string): string {
+  try {
+    const d = new Date(iso)
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'America/Los_Angeles',
+      timeZoneName: 'short',
+    })
+  } catch {
+    return iso
+  }
+}
+
 async function MarketSnapshotSection() {
+  const renderedAt = new Date().toISOString()
   const snapshot = await withTimeout(
     getMarketSnapshot(),
     {
@@ -165,12 +183,19 @@ async function MarketSnapshotSection() {
   return (
     <section className="px-4 py-12 sm:px-6 sm:py-14" aria-labelledby="central-oregon-snapshot-heading">
       <div className="mx-auto max-w-7xl">
-        <h2
-          id="central-oregon-snapshot-heading"
-          className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
-        >
-          Central Oregon Market Snapshot
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2
+            id="central-oregon-snapshot-heading"
+            className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
+          >
+            Central Oregon Market Snapshot
+          </h2>
+          {/* Freshness pill — page revalidates every 60s; this stamp reflects
+              when the server rendered. Tabular numerals for digit alignment. */}
+          <p className="text-xs font-medium tabular-nums text-muted-foreground">
+            Updated {formatFreshness(renderedAt)}
+          </p>
+        </div>
         <p className="mt-2 max-w-3xl text-muted-foreground">
           Active residential inventory across Bend, Redmond, Sunriver, La Pine, Sisters, Tumalo, Madras, Prineville,
           Powell Butte, Terrebonne, and Crooked River Ranch. Condos and townhomes are included. Land, manufactured
@@ -411,10 +436,10 @@ export default async function Home() {
           <p className="mt-2 text-muted-foreground">Quickly find homes within your budget.</p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { href: '/search/bend/under-500k', label: 'Under $500K', sub: 'Starter homes and condos' },
-              { href: '/search/bend/under-750k', label: 'Under $750K', sub: 'Move-up homes' },
-              { href: '/search/bend/under-1m', label: 'Under $1M', sub: 'Premium properties' },
-              { href: '/search/bend/luxury', label: '$1M and up', sub: 'Luxury and estate homes' },
+              { href: '/search?maxPrice=400000', label: 'Under $400K', sub: 'Entry-level + condos' },
+              { href: '/search?minPrice=400000&maxPrice=700000', label: '$400K – $700K', sub: 'Move-up homes' },
+              { href: '/search?minPrice=700000&maxPrice=1200000', label: '$700K – $1.2M', sub: 'Premium properties' },
+              { href: '/search?minPrice=1200000', label: '$1.2M and up', sub: 'Luxury and estate homes' },
             ].map((item) => (
               <Link
                 key={item.href}
