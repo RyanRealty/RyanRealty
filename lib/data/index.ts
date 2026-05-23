@@ -137,6 +137,11 @@ export type { GeoSnapshot, GeoSnapshotInput } from '@/lib/data/geo/getGeoSnapsho
 
 // Market (real impls — no MV dependency, usable today)
 export { getMarketStats } from '@/lib/data/market/getMarketStats'
+export {
+  getMarketStatsCacheRowForGeo,
+  getMarketStatsCacheRowsForGeos,
+} from '@/lib/data/market/getMarketStatsCacheRows'
+export type { MarketStatsCacheRow } from '@/lib/data/market/getMarketStatsCacheRows'
 export { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 export {
   getMarketPulseRegionSnapshot,

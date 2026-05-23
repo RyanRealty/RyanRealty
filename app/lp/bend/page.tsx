@@ -56,21 +56,12 @@ type Kpis = {
 }
 
 async function loadBendKpis(): Promise<Kpis | null> {
-  const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('market_stats_cache')
-    .select(
-      'sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory, computed_at, methodology_version',
-    )
-    .eq('geo_slug', 'bend')
-    .eq('period_type', 'rolling_365d')
-    .order('period_end', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (error) {
-    console.warn('[bend lp] kpi query failed:', error.message)
-    return null
-  }
+  void createServiceClient
+  const { getMarketStatsCacheRowForGeo } = await import('@/lib/data')
+  const data = await getMarketStatsCacheRowForGeo({
+    geoSlug: 'bend',
+    periodType: 'rolling_365d',
+  })
   return (data ?? null) as Kpis | null
 }
 
@@ -117,19 +108,15 @@ async function loadBendCommunitiesIndex(): Promise<CommunityKpiCard[]> {
 
     if (slugs.length === 0) return []
 
-    const supabase = createServiceClient()
-    const { data: kpiRows } = await supabase
-      .from('market_stats_cache')
-      .select('geo_slug, sold_count, median_sale_price, end_of_period_inventory')
-      .in(
-        'geo_slug',
-        slugs.map((s) => s.geo_slug ?? s.slug),
-      )
-      .eq('period_type', 'rolling_365d')
-      .order('period_end', { ascending: false })
+    void createServiceClient
+    const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
+    const kpiRows = await getMarketStatsCacheRowsForGeos({
+      geoSlugs: slugs.map((s) => s.geo_slug ?? s.slug),
+      periodType: 'rolling_365d',
+    })
 
     const byGeo = new Map<string, { sold_count: number | null; median_sale_price: number | null; end_of_period_inventory: number | null }>()
-    for (const r of (kpiRows ?? []) as Array<{ geo_slug: string; sold_count: number | null; median_sale_price: number | null; end_of_period_inventory: number | null }>) {
+    for (const r of kpiRows as Array<{ geo_slug: string; sold_count: number | null; median_sale_price: number | null; end_of_period_inventory: number | null }>) {
       if (!byGeo.has(r.geo_slug)) byGeo.set(r.geo_slug, r)
     }
 
@@ -164,44 +151,25 @@ type ActiveListing = {
 }
 
 async function loadActiveListings(): Promise<ActiveListing[]> {
-  const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('listings')
-    .select(
-      '"ListingKey","ListNumber","StreetNumber","StreetName","City","ListPrice","BedroomsTotal","BathroomsTotal","TotalLivingAreaSqFt","PhotoURL"',
-    )
-    .eq('StandardStatus', 'Active')
-    .eq('PropertyType', 'A')
-    .eq('City', 'Bend')
-    .gte('ListPrice', 750_000)
-    .order('ListPrice', { ascending: false })
-    .limit(8)
-  if (error) {
-    console.warn('[bend lp] active listings query failed:', error.message)
-    return []
-  }
-  type Row = {
-    ListingKey: string
-    ListNumber: string
-    StreetNumber: string | null
-    StreetName: string | null
-    City: string
-    ListPrice: number | string
-    BedroomsTotal: number | null
-    BathroomsTotal: string | null
-    TotalLivingAreaSqFt: string | null
-    PhotoURL: string | null
-  }
-  return ((data ?? []) as Row[]).map((r) => ({
-    list_number: r.ListNumber,
-    listing_key: r.ListingKey,
-    address: [r.StreetNumber, r.StreetName].filter(Boolean).join(' '),
-    city: r.City,
-    list_price: Number(r.ListPrice ?? 0),
-    beds: r.BedroomsTotal,
-    baths: r.BathroomsTotal,
-    sqft: r.TotalLivingAreaSqFt,
-    photo_url: r.PhotoURL,
+  void createServiceClient
+  const { getCityListings: getCityListingsDAL } = await import('@/lib/data')
+  const tiles = await getCityListingsDAL('Bend', {
+    status: 'active',
+    propertyType: 'A',
+    minPrice: 750_000,
+    sort: 'price-desc',
+    limit: 8,
+  })
+  return tiles.map((t) => ({
+    list_number: t.listNumber ?? '',
+    listing_key: t.listingKey,
+    address: [t.streetNumber, t.streetName].filter(Boolean).join(' '),
+    city: t.city ?? 'Bend',
+    list_price: Number(t.listPrice ?? 0),
+    beds: t.beds,
+    baths: t.baths != null ? String(t.baths) : null,
+    sqft: t.sqft != null ? String(t.sqft) : null,
+    photo_url: t.photoUrl,
   }))
 }
 
@@ -249,13 +217,15 @@ type PeerKpiRow = {
 }
 
 async function loadPeerCities(): Promise<PeerKpiRow[]> {
-  const supabase = createServiceClient()
-  const { data } = await supabase
-    .from('market_stats_cache')
-    .select('geo_slug, geo_label, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf')
-    .in('geo_slug', ['bend', 'redmond', 'sisters', 'la-pine', 'terrebonne'])
-    .eq('period_type', 'rolling_365d')
-    .order('median_sale_price', { ascending: false })
+  void createServiceClient
+  const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
+  const data = await getMarketStatsCacheRowsForGeos({
+    geoSlugs: ['bend', 'redmond', 'sisters', 'la-pine', 'terrebonne'],
+    periodType: 'rolling_365d',
+    columns:
+      'geo_slug, geo_label, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf',
+    orderBy: { column: 'median_sale_price', ascending: false },
+  })
 
   const seen = new Set<string>()
   const out: PeerKpiRow[] = []

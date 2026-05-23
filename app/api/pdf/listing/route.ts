@@ -31,20 +31,27 @@ export async function POST(request: Request) {
   }
 
   const supabase = getServiceSupabase()
-  const { data: listing, error: listErr } = await supabase
-    .from('listings')
-    .select('listing_key, listing_id, list_price, beds_total, baths_full, living_area, lot_size_acres, year_built, garage_spaces, standard_status, days_on_market, public_remarks')
-    .eq('listing_key', listingKey)
-    .maybeSingle()
-  if (listErr || !listing) {
+  void supabase
+  const { getListingRawRowByKey, getListingDetailPhotos, getListingDetailAgents } = await import('@/lib/data')
+  const listing = await getListingRawRowByKey(listingKey)
+  if (!listing) {
     return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
   }
-  const { data: prop } = await supabase.from('properties').select('unparsed_address, city, state, postal_code').eq('id', (listing as { property_id?: string }).property_id).maybeSingle()
-  const { data: photo } = await supabase.from('listing_photos').select('photo_url').eq('listing_key', listingKey).eq('is_hero', true).limit(1).maybeSingle()
-  const { data: agent } = await supabase.from('listing_agents').select('agent_name, agent_email, agent_phone').eq('listing_key', listingKey).in('agent_role', ['list', 'listing']).limit(1).maybeSingle()
+  const [photos, agents] = await Promise.all([
+    getListingDetailPhotos(listingKey),
+    getListingDetailAgents(listingKey),
+  ])
+  const photo = photos.find((p) => p.is_hero === true) ?? photos[0] ?? null
+  const agent = agents[0] ?? null
 
   const l = listing as Record<string, unknown>
-  const p = (prop as Record<string, unknown>) ?? {}
+  // The wide raw row carries unparsed_address + city/state/postal directly.
+  const p: Record<string, unknown> = {
+    unparsed_address: l.unparsed_address ?? null,
+    city: l.City ?? l.city ?? null,
+    state: l.State ?? l.state ?? null,
+    postal_code: l.PostalCode ?? l.postal_code ?? null,
+  }
   const pdfData = {
     address: String(p.unparsed_address ?? l.unparsed_address ?? ''),
     city: p.city != null ? String(p.city) : null,
