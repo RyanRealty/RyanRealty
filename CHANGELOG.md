@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.288.0 (2026-05-23)
+
+### Features
+- feat(lp/golf): architect portraits (4 photos + 11 monogram fallbacks) + license attribution
+
+### Other
+- zip: 10 canonical ZIPs + median + strict notFound (SITE_SPEC §111-115)
+
+---
+
+
 ## v1.287.3 (2026-05-23)
 
 ### Bug Fixes
