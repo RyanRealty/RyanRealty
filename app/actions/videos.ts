@@ -25,14 +25,11 @@ const MIN_HUB_VIDEO_CACHE_ROWS = 24
 
 export async function getCentralOregonHomeVideoTours(): Promise<VideoListingRowShape[]> {
   try {
-    const supabase = getSupabase()
-    const { data, error } = await supabase
-      .from('video_tours_cache')
-      .select('listings')
-      .eq('scope', 'central_oregon_home')
-      .maybeSingle()
-    if (!error && data?.listings != null) {
-      const parsed = parseVideoListingRowsFromCacheJson(data.listings)
+    void getSupabase
+    const { getVideoToursCacheListings } = await import('@/lib/data')
+    const listings = await getVideoToursCacheListings('central_oregon_home')
+    if (listings != null) {
+      const parsed = parseVideoListingRowsFromCacheJson(listings)
       if (parsed.length >= MIN_HOME_VIDEO_CACHE_ROWS) {
         return parsed.slice(0, 12)
       }
@@ -57,14 +54,11 @@ export async function getCentralOregonHomeVideoTours(): Promise<VideoListingRowS
 
 export async function getCentralOregonVideosHubListings(): Promise<VideoListingRowShape[]> {
   try {
-    const supabase = getSupabase()
-    const { data, error } = await supabase
-      .from('video_tours_cache')
-      .select('listings')
-      .eq('scope', 'central_oregon_hub')
-      .maybeSingle()
-    if (!error && data?.listings != null) {
-      const parsed = parseVideoListingRowsFromCacheJson(data.listings)
+    void getSupabase
+    const { getVideoToursCacheListings } = await import('@/lib/data')
+    const listings = await getVideoToursCacheListings('central_oregon_hub')
+    if (listings != null) {
+      const parsed = parseVideoListingRowsFromCacheJson(listings)
       if (parsed.length >= MIN_HUB_VIDEO_CACHE_ROWS) {
         return parsed.slice(0, 48)
       }

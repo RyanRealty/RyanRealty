@@ -40,6 +40,21 @@ export async function getNeighborhoodBySlugInCity(
   return (data ?? null) as NeighborhoodFull | null
 }
 
+/** Search neighborhoods by name ilike (with embedded cities join). */
+export async function searchNeighborhoodsByName(
+  pattern: string,
+  limit = 15
+): Promise<Array<{ name?: string | null; slug?: string | null; cities?: { slug?: string | null; name?: string | null } | null }>> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb
+    .from('neighborhoods')
+    .select('name, slug, cities(slug, name)')
+    .ilike('name', `%${pattern}%`)
+    .limit(Math.min(Math.max(limit, 1), 50))
+  return (data ?? []) as Array<{ name?: string | null; slug?: string | null; cities?: { slug?: string | null; name?: string | null } | null }>
+}
+
 /** All neighborhoods with embedded city (name + slug) join — used by content refresh. */
 export async function getAllNeighborhoodsWithCity(): Promise<
   Array<{

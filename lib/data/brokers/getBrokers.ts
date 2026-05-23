@@ -13,7 +13,7 @@
  */
 
 import { unstable_cache } from 'next/cache'
-import { supabaseServer } from '@/lib/data/client'
+import { supabaseAnon, supabaseServer } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import type { Broker, BrokerSlug } from '@/lib/data/types/broker'
 
@@ -62,6 +62,22 @@ const FALLBACK_BROKERS: Broker[] = [
     isPrincipal: false,
   },
 ]
+
+/** Search brokers by display_name ilike (active only). Used by search-suggestions. */
+export async function searchBrokersByDisplayName(
+  pattern: string,
+  limit = 10
+): Promise<Array<{ slug?: string | null; display_name?: string | null }>> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb
+    .from('brokers')
+    .select('slug, display_name')
+    .eq('is_active', true)
+    .ilike('display_name', `%${pattern}%`)
+    .limit(Math.min(Math.max(limit, 1), 50))
+  return (data ?? []) as Array<{ slug?: string | null; display_name?: string | null }>
+}
 
 export const getBrokers = unstable_cache(
   async (): Promise<Broker[]> => {

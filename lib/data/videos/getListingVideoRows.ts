@@ -32,6 +32,19 @@ export async function getRecentListingVideoRows(limit = 180): Promise<ListingVid
   )
 }
 
+/** Read the cached video tour listings JSON for a given scope (e.g. 'central_oregon_home'). */
+export async function getVideoToursCacheListings(scope: string): Promise<unknown | null> {
+  const sb = supabaseAnon()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('video_tours_cache')
+    .select('listings')
+    .eq('scope', scope)
+    .maybeSingle()
+  if (error || !data) return null
+  return (data as { listings?: unknown } | null)?.listings ?? null
+}
+
 /** Generic "any N rows" read (no sort) used by the legacy fallback path. */
 export async function getAnyListingVideoRows(limit = 200): Promise<ListingVideoRow[]> {
   const sb = supabaseAnon()

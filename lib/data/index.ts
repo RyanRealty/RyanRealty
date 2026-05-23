@@ -128,6 +128,7 @@ export { getListingVideos } from '@/lib/data/videos/getListingVideos'
 export {
   getRecentListingVideoRows,
   getAnyListingVideoRows,
+  getVideoToursCacheListings,
 } from '@/lib/data/videos/getListingVideoRows'
 export type { ListingVideoRow } from '@/lib/data/videos/getListingVideoRows'
 
@@ -148,6 +149,7 @@ export {
   getMarketStatsCacheRowForPeriod,
   getMarketPulseRowForGeo,
   upsertMarketPulseLiveRow,
+  getMarketPulseRowsByGeoType,
 } from '@/lib/data/market/getMarketStatsCacheRows'
 export type { MarketStatsCacheRow } from '@/lib/data/market/getMarketStatsCacheRows'
 export { getMarketPulse } from '@/lib/data/market/getMarketPulse'
@@ -158,7 +160,7 @@ export {
 export type { MarketPulseSnapshot } from '@/lib/data/market/getMarketPulseSnapshot'
 
 // Brokers (real impls with hardcoded fallback)
-export { getBrokers } from '@/lib/data/brokers/getBrokers'
+export { getBrokers, searchBrokersByDisplayName } from '@/lib/data/brokers/getBrokers'
 export { resolveListingAgent } from '@/lib/data/brokers/resolveListingAgent'
 export type { ListingAgentInput } from '@/lib/data/brokers/resolveListingAgent'
 
@@ -198,6 +200,7 @@ export {
   getNeighborhoodNameById,
   getAllNeighborhoodsWithCity,
   updateNeighborhoodById,
+  searchNeighborhoodsByName,
 } from '@/lib/data/cities/getNeighborhoodMetadata'
 export type { NeighborhoodLite, NeighborhoodFull } from '@/lib/data/cities/getNeighborhoodMetadata'
 

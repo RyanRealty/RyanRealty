@@ -67,6 +67,24 @@ export async function getMarketStatsCacheRowForPeriod(options: {
   return (data ?? null) as MarketStatsCacheRow | null
 }
 
+/** All non-empty market_pulse_live rows for a geo_type, ordered by active count desc. */
+export async function getMarketPulseRowsByGeoType(options: {
+  geoType: string
+  minActiveCount?: number
+  columns?: string
+}): Promise<Array<Record<string, unknown>>> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const columns = options.columns ?? 'geo_label, active_count'
+  const { data } = await sb
+    .from('market_pulse_live')
+    .select(columns)
+    .eq('geo_type', options.geoType)
+    .gt('active_count', options.minActiveCount ?? 0)
+    .order('active_count', { ascending: false })
+  return (data ?? []) as Array<Record<string, unknown>>
+}
+
 /** Upsert one market_pulse_live row (admin populate path). */
 export async function upsertMarketPulseLiveRow(
   row: Record<string, unknown>

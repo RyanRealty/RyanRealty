@@ -270,13 +270,10 @@ async function _getBrowseCitiesUncached(): Promise<BrowseCity[]> {
   const supabase = getAnonSupabase()
   if (!supabase) return DEFAULT_BROWSE_CITIES
 
-  // 0) Fast path: use market_pulse_live cache (populated by populateMarketPulseForCity)
-  const { data: pulseData } = await supabase
-    .from('market_pulse_live')
-    .select('geo_label, active_count')
-    .eq('geo_type', 'city')
-    .gt('active_count', 0)
-    .order('active_count', { ascending: false })
+  // 0) Fast path: use market_pulse_live cache via DAL.
+  void supabase
+  const { getMarketPulseRowsByGeoType } = await import('@/lib/data')
+  const pulseData = await getMarketPulseRowsByGeoType({ geoType: 'city' })
   if (pulseData && pulseData.length > 3) {
     return (pulseData as Array<{ geo_label: string; active_count: number }>).map((r) => ({
       City: r.geo_label,
@@ -391,12 +388,15 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   const qLower = q.toLowerCase()
   // DAL: free-text search across address/locality fields on listing_tile_mv.
   void like
-  const { getListingTiles } = await import('@/lib/data')
-  const [searchTiles, brokersRes, neighborhoodsRes] = await Promise.all([
+  void supabase
+  const { getListingTiles, searchBrokersByDisplayName, searchNeighborhoodsByName } = await import('@/lib/data')
+  const [searchTiles, brokerRows, neighborhoodRowsData] = await Promise.all([
     getListingTiles({ searchQuery: q, status: 'all', sort: 'newest', limit: 250 }),
-    supabase.from('brokers').select('slug, display_name').eq('is_active', true).ilike('display_name', `%${q}%`).limit(10),
-    supabase.from('neighborhoods').select('name, slug, cities(slug, name)').ilike('name', `%${q}%`).limit(15),
+    searchBrokersByDisplayName(q, 10),
+    searchNeighborhoodsByName(q, 15),
   ])
+  const brokersRes = { data: brokerRows }
+  const neighborhoodsRes = { data: neighborhoodRowsData }
 
   const listingRows = searchTiles.map((t) => ({
     ListNumber: t.listNumber,
@@ -480,8 +480,8 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     .slice(0, 8)
     .map((z) => ({ ...z, href: `/search?postalCode=${encodeURIComponent(z.postalCode)}` }))
 
-  const brokerRows = (brokersRes.data ?? []) as { slug?: string | null; display_name?: string | null }[]
-  const brokers: SearchSuggestionBroker[] = brokerRows
+  const brokerSearchRows = (brokersRes.data ?? []) as { slug?: string | null; display_name?: string | null }[]
+  const brokers: SearchSuggestionBroker[] = brokerSearchRows
     .filter((r) => r.slug?.trim() && r.display_name?.trim())
     .map((r) => ({
       label: (r.display_name ?? '').trim(),
