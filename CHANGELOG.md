@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.21 (2026-05-23)
+
+### Other
+- DAL: move admin listing edit + listing_photos CRUD into lib/data/admin
+
+---
+
+
 ## v1.282.20 (2026-05-23)
 
 ### Other
