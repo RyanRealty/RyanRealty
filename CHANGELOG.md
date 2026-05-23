@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.285.0 (2026-05-23)
+
+### Features
+- feat(analytics): /admin/analytics/google-business-profile — GBP dashboard
+
+---
+
+
 ## v1.284.3 (2026-05-23)
 
 ### Other
