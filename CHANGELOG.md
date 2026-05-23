@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.47 (2026-05-23)
+
+### Other
+- DAL: clear broker-self + agents + dashboard
+
+---
+
+
 ## v1.282.46 (2026-05-23)
 
 ### Other
