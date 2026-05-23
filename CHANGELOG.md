@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.41 (2026-05-23)
+
+### Other
+- DAL: clear /compare page + Tetherow LP routes
+
+---
+
+
 ## v1.282.40 (2026-05-23)
 
 ### Other
