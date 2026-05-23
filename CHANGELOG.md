@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.283.1 (2026-05-23)
+
+### Other
+- homepage hero: Ken Burns + 7 city chips + trust copy
+
+---
+
+
 ## v1.283.0 (2026-05-23)
 
 ### Features
