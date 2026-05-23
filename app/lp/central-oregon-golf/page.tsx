@@ -33,6 +33,7 @@ import {
   type CourseAccess,
 } from '@/data/golf/courses'
 import { coursesByArchitect } from '@/data/golf/architects'
+import { architectPhotoFor } from '@/data/golf/architect-photos'
 import { GOLF_SEASON } from '@/data/golf/seasons'
 import { INSIDER_NOTES } from '@/data/golf/insider-notes'
 import { GOLF_FAQS } from '@/data/golf/faqs'
@@ -414,43 +415,73 @@ function ByArchitectSection() {
         </p>
 
         <div className="golf-architect-grid">
-          {groups.map(({ architect, courses }) => (
-            <div key={architect.slug} className="golf-architect-card">
-              <div className="golf-architect-header">
-                <h3 className="golf-architect-name">
-                  {architect.name}
-                  <span className="golf-architect-count">
-                    {courses.length} {courses.length === 1 ? 'course' : 'courses'}
-                  </span>
-                </h3>
-                {architect.wikipediaUrl && (
-                  <a
-                    href={architect.wikipediaUrl}
-                    target="_blank"
-                    rel="noopener nofollow"
-                    className="golf-architect-link"
-                    aria-label={`Wikipedia: ${architect.name}`}
-                  >
-                    ↗
-                  </a>
+          {groups.map(({ architect, courses }) => {
+            const photo = architectPhotoFor(architect.slug)
+            return (
+              <div key={architect.slug} className="golf-architect-card">
+                <div className="golf-architect-top">
+                  {photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={photo.path}
+                      alt={photo.caption ?? architect.name}
+                      loading="lazy"
+                      className="golf-architect-portrait"
+                    />
+                  ) : (
+                    <div className="golf-architect-monogram" aria-hidden>
+                      {architect.monogram}
+                    </div>
+                  )}
+                  <div className="golf-architect-header">
+                    <h3 className="golf-architect-name">
+                      {architect.name}
+                      <span className="golf-architect-count">
+                        {courses.length} {courses.length === 1 ? 'course' : 'courses'}
+                      </span>
+                    </h3>
+                    {architect.wikipediaUrl && (
+                      <a
+                        href={architect.wikipediaUrl}
+                        target="_blank"
+                        rel="noopener nofollow"
+                        className="golf-architect-link"
+                        aria-label={`Wikipedia: ${architect.name}`}
+                      >
+                        ↗
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <p className="golf-architect-bio">{architect.bio}</p>
+                <div className="golf-architect-courses">
+                  {courses.map((c) => (
+                    <span key={c.slug} className="golf-architect-course">
+                      {c.shortName}
+                    </span>
+                  ))}
+                </div>
+                {architect.alsoKnownFor && architect.alsoKnownFor.length > 0 && (
+                  <div className="golf-architect-aka">
+                    <span className="golf-architect-aka-label">Also known for: </span>
+                    {architect.alsoKnownFor.join(', ')}
+                  </div>
+                )}
+                {photo && (
+                  <div className="golf-architect-credit">
+                    Photo:{' '}
+                    <a href={photo.source} target="_blank" rel="noopener nofollow">
+                      {photo.author}
+                    </a>
+                    {' · '}
+                    <a href={photo.licenseUrl} target="_blank" rel="noopener nofollow">
+                      {photo.license}
+                    </a>
+                  </div>
                 )}
               </div>
-              <p className="golf-architect-bio">{architect.bio}</p>
-              <div className="golf-architect-courses">
-                {courses.map((c) => (
-                  <span key={c.slug} className="golf-architect-course">
-                    {c.shortName}
-                  </span>
-                ))}
-              </div>
-              {architect.alsoKnownFor && architect.alsoKnownFor.length > 0 && (
-                <div className="golf-architect-aka">
-                  <span className="golf-architect-aka-label">Also known for: </span>
-                  {architect.alsoKnownFor.join(', ')}
-                </div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>
@@ -1138,8 +1169,22 @@ function PageStyles() {
         background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px; padding: 22px 24px;
         display: flex; flex-direction: column; gap: 12px;
       }
-      .golf-architect-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-      .golf-architect-name { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 500; margin: 0; color: #102742; }
+      .golf-architect-top { display: flex; gap: 14px; align-items: center; }
+      .golf-architect-portrait,
+      .golf-architect-monogram {
+        flex-shrink: 0; width: 64px; height: 64px; border-radius: 50%;
+        background: #102742; color: #faf8f4;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 22px; font-weight: 500; letter-spacing: 0.02em;
+        overflow: hidden; object-fit: cover;
+      }
+      .golf-architect-portrait { object-position: top; }
+      .golf-architect-header {
+        flex: 1; min-width: 0;
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      }
+      .golf-architect-name { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 500; margin: 0; color: #102742; line-height: 1.2; }
       .golf-architect-link {
         display: inline-flex; align-items: center; justify-content: center;
         width: 28px; height: 28px; border-radius: 50%;
@@ -1164,6 +1209,14 @@ function PageStyles() {
       }
       .golf-architect-aka { font-size: 12px; color: rgba(16,39,66,0.6); line-height: 1.45; margin-top: auto; padding-top: 6px; border-top: 1px solid rgba(16,39,66,0.06); }
       .golf-architect-aka-label { font-weight: 600; color: rgba(16,39,66,0.78); }
+      .golf-architect-credit {
+        font-size: 10.5px; line-height: 1.5; color: rgba(16,39,66,0.45);
+        margin-top: 4px; letter-spacing: 0.01em;
+      }
+      .golf-architect-credit a {
+        color: inherit; text-decoration: underline; text-decoration-color: rgba(16,39,66,0.2);
+      }
+      .golf-architect-credit a:hover { color: rgba(16,39,66,0.78); }
 
       /* Season calendar */
       .golf-season-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 28px; }
