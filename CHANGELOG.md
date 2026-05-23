@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.2 (2026-05-23)
+
+### Other
+- listing: broker headshot in ShowcaseAgent (SITE_SPEC line 126)
+
+---
+
+
 ## v1.288.1 (2026-05-23)
 
 ### Other
