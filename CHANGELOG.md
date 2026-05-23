@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.37 (2026-05-23)
+
+### Other
+- DAL: drain 8 more listings.ts hot paths (under 100)
+
+---
+
+
 ## v1.282.36 (2026-05-23)
 
 ### Other
