@@ -86,6 +86,22 @@ const nextConfig: NextConfig = {
           { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://api.elevenlabs.io; frame-src 'self' https://www.youtube.com https://player.vimeo.com;" },
         ],
       },
+      // SITE_SPEC §45-47 — aggressive edge caching on the public LP families.
+      // The cookie-aware Header / Footer live inside <Suspense> islands; the
+      // page shell + content (sourced from cached MVs) is safe to cache at
+      // the Vercel CDN. s-maxage=60 + stale-while-revalidate=600 means the
+      // CDN serves cached HTML for 60s then serves-stale-while-revalidating
+      // for 10min, which absorbs cold-render spikes that were driving cold
+      // p95 over budget.
+      { source: '/', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
+      { source: '/cities/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
+      { source: '/communities/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
+      { source: '/zip/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
+      { source: '/listing/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
+      { source: '/homes-for-sale/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
+      { source: '/about', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },
+      { source: '/team', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },
+      { source: '/team/:slug', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },
     ];
   },
   // SEO: canonical URLs use /homes-for-sale (keyword-rich). Old /search links redirect.
@@ -125,6 +141,12 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '4mb',
     },
+    // PPR was renamed to cacheComponents in Next 16 with a different API
+    // (mark cached I/O with 'use cache'). Adopting that is a multi-file
+    // refactor — out of scope for the §45-47 fix. The current play is
+    // edge-cache headers + a refactored layout (no top-level headers()
+    // / cookies() reads in the shell) so the function response is at
+    // least cacheable at the CDN even though the route is still dynamic.
   },
   // Include CMA drafts + finalized assets so /api/cma/[slug]/pdf can read
   // them from disk inside the serverless function (avoids the SSO wall on

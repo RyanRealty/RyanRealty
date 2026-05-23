@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
-import { validateEnv, logOptionalEnv } from "@/lib/env";
+import { validateEnv } from "@/lib/env";
 import { Suspense } from "react";
 import "./globals.css";
 import { getSession } from "./actions/auth";
 import { getBrokerageSettings } from "./actions/brokerage";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import HideOnLP from "../components/layout/HideOnLP";
 import JsonLd from "../components/JsonLd";
 import CookieConsentBanner from "../components/CookieConsentBanner";
 import SignInPrompt from "../components/SignInPrompt";
@@ -92,26 +92,26 @@ function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 1200): Pro
   ])
 }
 
-/* Async components that fetch their own data — layout doesn't block on them */
-async function HeaderAsync({
-  sessionPromise,
-  brokeragePromise,
-}: {
-  sessionPromise: Promise<Awaited<ReturnType<typeof getSession>>>
-  brokeragePromise: Promise<Awaited<ReturnType<typeof getBrokerageSettings>>>
-}) {
-  const [session, brokerage] = await Promise.all([sessionPromise, brokeragePromise])
+/* Async islands — each fetches its own data inside Suspense so the layout
+ * shell stays free of top-level dynamic API calls. Reading cookies / headers
+ * at the layout top forces the entire route tree to render dynamically,
+ * which kills the static prerender for /cities/[slug], /communities/[slug],
+ * /zip/[zip], and /listing/[listingKey] (root cause of the SITE_SPEC §45-47
+ * cold-cache p95 spikes). Confining the auth read to a Suspense'd child
+ * lets the shell + page content prerender; the auth-aware Header just
+ * streams in as a dynamic island. */
+async function HeaderIsland() {
+  const [session, brokerage] = await Promise.all([
+    withTimeout(getSession(), null, 700),
+    withTimeout(getBrokerageSettings(), null, 1200),
+  ])
   const brokerageName = brokerage?.name ?? 'Ryan Realty'
   const headerLogoUrl = brokerage?.logo_url?.trim() || '/logo-header-white.png'
   return <Header user={session?.user} brokerageName={brokerageName} headerLogoUrl={headerLogoUrl} />
 }
 
-async function FooterAsync({
-  brokeragePromise,
-}: {
-  brokeragePromise: Promise<Awaited<ReturnType<typeof getBrokerageSettings>>>
-}) {
-  const brokerage = await brokeragePromise
+async function FooterIsland() {
+  const brokerage = await withTimeout(getBrokerageSettings(), null, 1200)
   const brokerageName = brokerage?.name ?? 'Ryan Realty'
   const brokerageLogoUrl = brokerage?.logo_url?.trim() || null
   const brokerageAddress =
@@ -123,25 +123,17 @@ async function FooterAsync({
   return <Footer brokerageName={brokerageName} brokerageLogoUrl={brokerageLogoUrl} brokerageEmail={brokerage?.primary_email ?? null} brokeragePhone={brokerage?.primary_phone ?? null} brokerageAddress={brokerageAddress} />
 }
 
-async function SignInPromptAsync({
-  sessionPromise,
-}: {
-  sessionPromise: Promise<Awaited<ReturnType<typeof getSession>>>
-}) {
-  const session = await sessionPromise
+async function SignInPromptIsland() {
+  const session = await withTimeout(getSession(), null, 700)
   return <SignInPrompt user={session?.user ?? null} />
 }
 
-async function VisitTrackerAsync({
-  sessionPromise,
-}: {
-  sessionPromise: Promise<Awaited<ReturnType<typeof getSession>>>
-}) {
-  const session = await sessionPromise
+async function VisitTrackerIsland() {
+  const session = await withTimeout(getSession(), null, 700)
   return <VisitTracker userId={session?.user?.id ?? null} userEmail={session?.user?.email ?? null} />
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -151,39 +143,32 @@ export default async function RootLayout({
     console.error('[env] Missing required build vars:', envCheck.missing.join(', '));
   }
 
-  // Middleware forwards the request path as `x-pathname` so we can branch on
-  // it from server components. /lp/* routes are dedicated landing pages —
-  // they render without site nav/footer/chat/exit-intent/etc. so the only
-  // visitor action is "convert or bounce."
-  const headersList = await headers()
-  const pathname = headersList.get('x-pathname') ?? ''
-  const isLP = pathname.startsWith('/lp/')
-
-  // Skip the session + brokerage data fetches on LPs — nothing in the
-  // dedicated layout consumes them, and saving the roundtrip shaves time
-  // off TTFB on paid-traffic pages where speed matters most.
-  const sessionPromise = isLP ? Promise.resolve(null) : withTimeout(getSession(), null, 700)
-  const brokeragePromise = isLP ? Promise.resolve(null) : withTimeout(getBrokerageSettings(), null, 1200)
+  // No top-level dynamic API calls in this Server Component — every
+  // auth-aware island lives inside a <Suspense> + <HideOnLP> below, so
+  // the static shell prerenders for every route (the LP-strip flips to
+  // a client-side decision via usePathname() inside HideOnLP). This is
+  // what unblocks the static prerender for /cities/[slug],
+  // /communities/[slug], /zip/[zip], /listing/[listingKey] — the
+  // routes whose cold-cache p95 was failing SITE_SPEC §45-47.
 
   return (
     <html lang="en" className={cn("font-sans", GeistSans.variable, GeistMono.variable, amboqia.variable)}>
       <head>
         <GTMHead />
         <link rel="manifest" href="/manifest.json" />
-        {/* Preload hero poster for instant LCP — browser starts fetching before HTML stream delivers the <img>.
-            Skip on LPs: they don't use the global hero. */}
-        {!isLP && (
-          <link rel="preload" as="image" href="/images/hero-poster.webp" fetchPriority="high" />
-        )}
+        {/* Preload hero poster for instant LCP. LP routes don't use it but
+            the extra preload is cheap (browser drops on no-match). Keeping
+            this in the static shell preserves the prerender. */}
+        <link rel="preload" as="image" href="/images/hero-poster.webp" fetchPriority="high" />
       </head>
       <body className="min-h-screen overflow-x-hidden antialiased">
         <ComparisonProvider>
-        <GTMBody />
-          {!isLP && (
+          <GTMBody />
+          <HideOnLP>
             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[100] focus:p-4 focus:bg-card focus:text-primary">
               Skip to main content
             </a>
-          )}
+          </HideOnLP>
           <GoogleAnalytics />
           <FollowUpBossPixel />
           <MetaPixel />
@@ -197,33 +182,38 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <PageViewTracker />
           </Suspense>
-          {!isLP && <JsonLd />}
-          {/* Header streams in independently — doesn't block page content */}
-          {!isLP && (
+          <HideOnLP>
+            <JsonLd />
+          </HideOnLP>
+          {/* Header streams in independently — doesn't block page content.
+              HideOnLP unmounts the chrome on /lp/* after hydration. */}
+          <HideOnLP>
             <Suspense fallback={<div className="h-16 bg-primary" />}>
-              <HeaderAsync sessionPromise={sessionPromise} brokeragePromise={brokeragePromise} />
+              <HeaderIsland />
             </Suspense>
-          )}
-          <Suspense fallback={<div className="min-h-[calc(100vh-64px)]" aria-hidden />}>
-            <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
-          </Suspense>
-          {!isLP && (
+          </HideOnLP>
+          <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
+          <HideOnLP>
             <Suspense fallback={<div className="min-h-[200px] bg-primary" />}>
-              <FooterAsync brokeragePromise={brokeragePromise} />
+              <FooterIsland />
             </Suspense>
-          )}
-          {!isLP && <CookieConsentBanner />}
-          {!isLP && (
+          </HideOnLP>
+          <HideOnLP>
+            <CookieConsentBanner />
+          </HideOnLP>
+          <HideOnLP>
             <Suspense fallback={null}>
-              <SignInPromptAsync sessionPromise={sessionPromise} />
+              <SignInPromptIsland />
             </Suspense>
-          )}
-          {!isLP && <InstallPrompt />}
-          {!isLP && (
+          </HideOnLP>
+          <HideOnLP>
+            <InstallPrompt />
+          </HideOnLP>
+          <HideOnLP>
             <Suspense fallback={null}>
-              <VisitTrackerAsync sessionPromise={sessionPromise} />
+              <VisitTrackerIsland />
             </Suspense>
-          )}
+          </HideOnLP>
           {/* High-intent micro-event capture (tel:, mailto:, form_start).
               Runs on every page including LPs because form_start on a seller
               LP is one of the strongest pre-submit intent signals we have. */}
@@ -234,16 +224,20 @@ export default async function RootLayout({
                 Auth/sign-up redirects do NOT — LP visitors aren't authenticating. */}
             <FubIdentityBridge />
             <AgentAttributionBridge />
-            {!isLP && <AuthCodeRedirect />}
-            {!isLP && <AuthErrorRedirect />}
-            {!isLP && <SignUpTracker />}
-            {!isLP && <AdminHashRedirect />}
+            <HideOnLP>
+              <AuthCodeRedirect />
+              <AuthErrorRedirect />
+              <SignUpTracker />
+              <AdminHashRedirect />
+            </HideOnLP>
           </Suspense>
-          {!isLP && <ComparisonTray />}
-          {!isLP && <LazyChatWidget />}
-          {!isLP && <ExitIntentPopup />}
+          <HideOnLP>
+            <ComparisonTray />
+            <LazyChatWidget />
+            <ExitIntentPopup />
+          </HideOnLP>
         </ComparisonProvider>
-        </body>
+      </body>
     </html>
   );
 }
