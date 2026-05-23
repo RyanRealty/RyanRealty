@@ -62,7 +62,8 @@ async function syncListingVideosForRows(
   supabase: any,
   rows: Array<Record<string, unknown>>
 ): Promise<void> {
-  const sb = supabase
+  void supabase
+  const { replaceListingVideosForKey } = await import('@/lib/data')
   for (const row of rows) {
     const listingKey = String(row.ListingKey ?? '').trim()
     if (!listingKey) continue
@@ -72,8 +73,6 @@ async function syncListingVideosForRows(
       : Array.isArray(details?.videos)
         ? details.videos
         : []
-    await sb.from('listing_videos').delete().eq('listing_key', listingKey)
-    if (videos.length === 0) continue
     const videoRows = videos
       .map((item, index) => {
         const record = item as { Uri?: string; uri?: string; URL?: string; Url?: string; Order?: number } | null
@@ -88,9 +87,7 @@ async function syncListingVideosForRows(
         }
       })
       .filter((video): video is { listing_key: string; video_url: string; sort_order: number; source: string } => video != null)
-    if (videoRows.length > 0) {
-      await sb.from('listing_videos').insert(videoRows)
-    }
+    await replaceListingVideosForKey(listingKey, videoRows)
   }
 }
 
@@ -187,30 +184,26 @@ export async function syncSparkListings(options?: {
       const rows = D.Results.map(unifiedSparkToRow)
       totalFetched += rows.length
 
+      const { upsertListingRows, upsertSyncState } = await import('@/lib/data')
+      const ignoreDuplicates = options?.insertOnly === true
       for (let i = 0; i < rows.length; i += UPSERT_CHUNK_SIZE) {
         const chunk = rows.slice(i, i + UPSERT_CHUNK_SIZE)
-        const { error } = await supabase.from('listings').upsert(chunk, {
-          onConflict: 'ListNumber',
-          ignoreDuplicates: options?.insertOnly === true,
-        })
-        if (error && /statement timeout|timeout/i.test(error.message) && chunk.length > UPSERT_CHUNK_SIZE_RETRY) {
+        const result = await upsertListingRows(chunk, { ignoreDuplicates })
+        if (!result.ok && /statement timeout|timeout/i.test(result.error ?? '') && chunk.length > UPSERT_CHUNK_SIZE_RETRY) {
           for (let j = 0; j < chunk.length; j += UPSERT_CHUNK_SIZE_RETRY) {
             const sub = chunk.slice(j, j + UPSERT_CHUNK_SIZE_RETRY)
-            const r = await supabase.from('listings').upsert(sub, {
-              onConflict: 'ListNumber',
-              ignoreDuplicates: options?.insertOnly === true,
-            })
-            if (!r.error) {
+            const r = await upsertListingRows(sub, { ignoreDuplicates })
+            if (r.ok) {
               totalUpserted += sub.length
               await syncListingVideosForRows(supabase, sub as Array<Record<string, unknown>>)
             }
-            else console.error('Supabase upsert error (sub-chunk):', r.error.message)
+            else console.error('Supabase upsert error (sub-chunk):', r.error)
           }
-        } else if (!error) {
+        } else if (result.ok) {
           totalUpserted += chunk.length
           await syncListingVideosForRows(supabase, chunk as Array<Record<string, unknown>>)
         } else {
-          console.error('Supabase upsert error:', error.message)
+          console.error('Supabase upsert error:', result.error)
         }
       }
 
@@ -220,10 +213,11 @@ export async function syncSparkListings(options?: {
 
     const done = currentPage > totalPages || pagesProcessed >= maxPages
     if (done && totalUpserted > 0) {
-      await supabase.from('sync_state').upsert(
-        { id: 'default', last_full_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        { onConflict: 'id' }
-      )
+      const { upsertSyncState } = await import('@/lib/data')
+      await upsertSyncState({
+        last_full_sync_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
     }
     return {
       success: true,
@@ -631,8 +625,9 @@ export async function syncSparkListingsDelta(options?: {
   if (options?.sinceOverride) {
     sinceIso = options.sinceOverride
   } else {
-    const { data: stateRow } = await supabase.from('sync_state').select('last_delta_sync_at').eq('id', 'default').maybeSingle()
-    const lastAt = (stateRow as { last_delta_sync_at?: string | null } | null)?.last_delta_sync_at
+    const { getSyncState } = await import('@/lib/data')
+    const stateRow = await getSyncState()
+    const lastAt = stateRow?.last_delta_sync_at
     if (lastAt) {
       sinceIso = lastAt
     } else {
@@ -665,10 +660,11 @@ export async function syncSparkListingsDelta(options?: {
       const D = response.D
       if (!D?.Success || !D.Results?.length) {
         if (pagesProcessed === 0) {
-          await supabase.from('sync_state').upsert(
-            { id: 'default', last_delta_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-            { onConflict: 'id' }
-          )
+          const { upsertSyncState } = await import('@/lib/data')
+          await upsertSyncState({
+            last_delta_sync_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
           return {
             success: true,
             message: 'Delta sync: no changes since last run.',
@@ -689,20 +685,17 @@ export async function syncSparkListingsDelta(options?: {
         [k: string]: unknown
       }>
       const listNumbers = rows.map((r) => r.ListNumber).filter(Boolean) as string[]
-      const { data: existingRows } = await supabase
-        .from('listings')
-        .select('ListNumber, StandardStatus, ListPrice')
-        .in('ListNumber', listNumbers)
+      const { getExistingListingsByListNumbers, upsertListingRows } = await import('@/lib/data')
+      const existingRows = await getExistingListingsByListNumbers(listNumbers)
       const existingByNum = new Map<string, { StandardStatus?: string | null; ListPrice?: number | null }>()
-      for (const r of existingRows ?? []) {
-        const row = r as { ListNumber?: string; StandardStatus?: string | null; ListPrice?: number | null }
+      for (const row of existingRows) {
         if (row.ListNumber) existingByNum.set(row.ListNumber, { StandardStatus: row.StandardStatus, ListPrice: row.ListPrice })
       }
 
       for (let i = 0; i < rows.length; i += UPSERT_CHUNK_SIZE) {
         const chunk = rows.slice(i, i + UPSERT_CHUNK_SIZE)
-        const { error } = await supabase.from('listings').upsert(chunk, { onConflict: 'ListNumber' })
-        if (!error) totalUpserted += chunk.length
+        const result = await upsertListingRows(chunk)
+        if (result.ok) totalUpserted += chunk.length
       }
 
       // Collect listing keys + status for history refresh after all pages
@@ -724,14 +717,15 @@ export async function syncSparkListingsDelta(options?: {
         const isTerminalNow = isTerminalStatus(status)
         const newPrice = typeof row.ListPrice === 'number' && !Number.isNaN(row.ListPrice) ? row.ListPrice : null
 
+        const { insertActivityEventRow, updateListingByListNumber } = await import('@/lib/data')
         if (!existing) {
-          const { error: evErr } = await supabase.from('activity_events').insert({
+          const evRes = await insertActivityEventRow({
             listing_key: listingKey,
             event_type: ACTIVITY_NEW_LISTING,
             event_at: nowIso,
             payload: { ListNumber: listNumber, City: row.City, SubdivisionName: row.SubdivisionName },
           })
-          if (!evErr) eventsEmitted++
+          if (evRes.ok) eventsEmitted++
           if (isTerminalNow && listingKey) terminalTransitionKeys.add(listingKey)
         } else {
           const oldStatus = (existing.StandardStatus ?? '').toString().toLowerCase()
@@ -741,41 +735,41 @@ export async function syncSparkListingsDelta(options?: {
           const oldTerminal = isTerminalStatus(oldStatus)
           const oldPrice = existing.ListPrice != null && !Number.isNaN(Number(existing.ListPrice)) ? Number(existing.ListPrice) : null
           if (!oldPending && isPending) {
-            const { error: evErr } = await supabase.from('activity_events').insert({
+            const r = await insertActivityEventRow({
               listing_key: listingKey,
               event_type: ACTIVITY_STATUS_PENDING,
               event_at: nowIso,
               payload: { ListNumber: listNumber },
             })
-            if (!evErr) eventsEmitted++
+            if (r.ok) eventsEmitted++
           }
           if (!oldClosed && isClosed) {
-            const { error: evErr } = await supabase.from('activity_events').insert({
+            const r = await insertActivityEventRow({
               listing_key: listingKey,
               event_type: ACTIVITY_STATUS_CLOSED,
               event_at: nowIso,
               payload: { ListNumber: listNumber, ListPrice: newPrice },
             })
-            if (!evErr) eventsEmitted++
-            await supabase.from('listings').update({ media_finalized: true }).eq('ListNumber', listNumber)
+            if (r.ok) eventsEmitted++
+            await updateListingByListNumber(listNumber, { media_finalized: true })
           }
           if (!oldActive && isActive) {
-            const { error: evErr } = await supabase.from('activity_events').insert({
+            const r = await insertActivityEventRow({
               listing_key: listingKey,
               event_type: ACTIVITY_STATUS_ACTIVE,
               event_at: nowIso,
               payload: { ListNumber: listNumber, previous_status: oldStatus || null },
             })
-            if (!evErr) eventsEmitted++
+            if (r.ok) eventsEmitted++
           }
           if (newPrice != null && oldPrice != null && newPrice < oldPrice) {
-            const { error: evErr } = await supabase.from('activity_events').insert({
+            const r = await insertActivityEventRow({
               listing_key: listingKey,
               event_type: ACTIVITY_PRICE_DROP,
               event_at: nowIso,
               payload: { ListNumber: listNumber, previous_price: oldPrice, new_price: newPrice },
             })
-            if (!evErr) eventsEmitted++
+            if (r.ok) eventsEmitted++
           }
           if (!oldTerminal && isTerminalNow && listingKey) {
             terminalTransitionKeys.add(listingKey)

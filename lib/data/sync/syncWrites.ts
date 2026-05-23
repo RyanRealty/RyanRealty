@@ -88,12 +88,15 @@ export async function replaceListingHistoryForKey(
 
 /** Bulk upsert listings rows (chunk by ListNumber). */
 export async function upsertListingRows(
-  rows: Array<Record<string, unknown>>
+  rows: Array<Record<string, unknown>>,
+  options: { ignoreDuplicates?: boolean } = {}
 ): Promise<{ ok: boolean; error?: string }> {
   const sb = client()
   if (!sb) return { ok: false, error: 'Supabase not configured' }
   if (rows.length === 0) return { ok: true }
-  const { error } = await sb.from('listings').upsert(rows, { onConflict: 'ListNumber' })
+  const { error } = await sb
+    .from('listings')
+    .upsert(rows, { onConflict: 'ListNumber', ignoreDuplicates: options.ignoreDuplicates === true })
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
@@ -319,4 +322,118 @@ export async function insertListingAgentRow(row: Record<string, unknown>): Promi
   if (!sb) return { ok: false, error: 'Supabase not configured' }
   const { error } = await sb.from('listing_agents').insert(row)
   return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+// === sync-spark.ts helpers ===
+
+/** Replace listing_videos rows for a key (delete then bulk insert). */
+export async function replaceListingVideosForKey(
+  listingKey: string,
+  rows: Array<Record<string, unknown>>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error: delErr } = await sb.from('listing_videos').delete().eq('listing_key', listingKey)
+  if (delErr) return { ok: false, error: delErr.message }
+  if (rows.length === 0) return { ok: true }
+  const { error } = await sb.from('listing_videos').insert(rows)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Upsert sync_state with arbitrary fields (last_delta_sync_at, last_full_sync_at, updated_at, etc.). */
+export async function upsertSyncState(
+  patch: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb
+    .from('sync_state')
+    .upsert({ id: 'default', ...patch }, { onConflict: 'id' })
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Insert one activity_events row. */
+export async function insertActivityEventRow(
+  row: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('activity_events').insert(row)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Patch listings row by ListNumber. */
+export async function updateListingByListNumber(
+  listNumber: string,
+  updates: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('listings').update(updates).eq('ListNumber', listNumber)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Patch listings row by ListingKey. */
+export async function updateListingByListingKey(
+  listingKey: string,
+  updates: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('listings').update(updates).eq('ListingKey', listingKey)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Insert listing_history rows for a key (no delete first). */
+export async function insertListingHistoryRows(
+  rows: Array<Record<string, unknown>>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  if (rows.length === 0) return { ok: true }
+  const { error } = await sb.from('listing_history').insert(rows)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Delete all listing_history rows for a key. */
+export async function deleteListingHistoryForKey(
+  listingKey: string
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb
+    .from('listing_history')
+    .delete()
+    .eq('listing_key', listingKey)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Generic select on listings by ListingKey, returns one row with the requested columns. */
+export async function getListingFieldsByListingKey<T extends Record<string, unknown>>(
+  listingKey: string,
+  columns: string
+): Promise<T | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb
+    .from('listings')
+    .select(columns)
+    .eq('ListingKey', listingKey)
+    .maybeSingle()
+  return (data ?? null) as T | null
+}
+
+/** Generic select on listings by ListNumber. */
+export async function getListingFieldsByListNumber<T extends Record<string, unknown>>(
+  listNumber: string,
+  columns: string
+): Promise<T | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb
+    .from('listings')
+    .select(columns)
+    .eq('ListNumber', listNumber)
+    .maybeSingle()
+  return (data ?? null) as T | null
 }

@@ -211,6 +211,15 @@ export {
   replaceListingPhotosForKey,
   deleteListingAgentsForKey,
   insertListingAgentRow,
+  replaceListingVideosForKey,
+  upsertSyncState,
+  insertActivityEventRow,
+  updateListingByListNumber,
+  updateListingByListingKey,
+  insertListingHistoryRows,
+  deleteListingHistoryForKey,
+  getListingFieldsByListingKey,
+  getListingFieldsByListNumber,
 } from '@/lib/data/sync/syncWrites'
 export type { ExistingListingRow, SyncState } from '@/lib/data/sync/syncWrites'
 
