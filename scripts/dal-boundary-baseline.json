@@ -1,11 +1,10 @@
 {
-  "generatedAt": "2026-05-23T01:45:39.899Z",
-  "total": 119,
+  "generatedAt": "2026-05-23T01:48:01.123Z",
+  "total": 115,
   "byFile": {
     "app/actions/listings.ts": 10,
     "app/actions/market-stats.ts": 4,
     "app/actions/place-content-pipeline.ts": 4,
-    "app/api/cron/optimization-loop/route.ts": 4,
     "app/api/pdf/listing/route.ts": 4,
     "app/lp/bend/page.tsx": 4,
     "lib/cma.ts": 4,

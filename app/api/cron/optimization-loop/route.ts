@@ -31,12 +31,10 @@ type ServiceSupabase = ReturnType<typeof createClient<any>>
 async function checkSyncFreshness(supabase: ServiceSupabase): Promise<HealthCheck[]> {
   const checks: HealthCheck[] = []
 
-  // Check last sync timestamp
-  const { data: cursor } = await supabase
-    .from('sync_cursor')
-    .select('last_completed_at, cron_enabled')
-    .limit(1)
-    .maybeSingle()
+  // Check last sync timestamp via DAL.
+  void supabase
+  const { getSyncCursor } = await import('@/lib/data')
+  const cursor = await getSyncCursor()
 
   if (cursor?.last_completed_at) {
     const lastSync = new Date(cursor.last_completed_at)
@@ -87,16 +85,11 @@ async function checkSyncFreshness(supabase: ServiceSupabase): Promise<HealthChec
 async function checkListingHealth(supabase: ServiceSupabase): Promise<HealthCheck[]> {
   const checks: HealthCheck[] = []
 
-  // Count active listings
-  const { count: activeCount } = await supabase
-    .from('listings')
-    .select('listing_key', { count: 'exact', head: true })
-    .or('StandardStatus.is.null,StandardStatus.ilike.%Active%')
-
-  // Count total listings
-  const { count: totalCount } = await supabase
-    .from('listings')
-    .select('listing_key', { count: 'exact', head: true })
+  // Count active listings + total via DAL.
+  void supabase
+  const { countListingsByOr, countAllListingsByListingKey } = await import('@/lib/data')
+  const activeCount = await countListingsByOr('StandardStatus.is.null,StandardStatus.ilike.%Active%')
+  const totalCount = await countAllListingsByListingKey()
 
   if (activeCount !== null && totalCount !== null) {
     const activeRatio = totalCount > 0 ? (activeCount / totalCount) * 100 : 0
@@ -117,12 +110,11 @@ async function checkListingHealth(supabase: ServiceSupabase): Promise<HealthChec
     }
   }
 
-  // Check for listings with no photos
-  const { count: noPhotos } = await supabase
-    .from('listings')
-    .select('listing_key', { count: 'exact', head: true })
-    .or('StandardStatus.is.null,StandardStatus.ilike.%Active%')
-    .is('photos', null)
+  // Check for listings with no photos via DAL.
+  const noPhotos = await countListingsByOr(
+    'StandardStatus.is.null,StandardStatus.ilike.%Active%',
+    'photos'
+  )
 
   if (noPhotos !== null && noPhotos > 0 && activeCount !== null && activeCount > 0) {
     const pct = ((noPhotos / activeCount) * 100).toFixed(1)
@@ -142,16 +134,13 @@ async function checkListingHealth(supabase: ServiceSupabase): Promise<HealthChec
 async function checkMarketDataFreshness(supabase: ServiceSupabase): Promise<HealthCheck[]> {
   const checks: HealthCheck[] = []
 
-  // Check market_pulse_live freshness
-  const { data: pulse } = await supabase
-    .from('market_pulse_live')
-    .select('updated_at')
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  // Check market_pulse_live freshness via DAL.
+  void supabase
+  const { getLatestMarketPulseUpdatedAt } = await import('@/lib/data')
+  const pulseUpdatedAt = await getLatestMarketPulseUpdatedAt()
 
-  if (pulse?.updated_at) {
-    const hoursAgo = (Date.now() - new Date(pulse.updated_at).getTime()) / (1000 * 60 * 60)
+  if (pulseUpdatedAt) {
+    const hoursAgo = (Date.now() - new Date(pulseUpdatedAt).getTime()) / (1000 * 60 * 60)
     if (hoursAgo > 48) {
       checks.push({
         category: 'data-quality',
@@ -217,13 +206,11 @@ function checkConfiguration(): HealthCheck[] {
 async function checkLeadPipelineHealth(supabase: ServiceSupabase): Promise<HealthCheck[]> {
   const checks: HealthCheck[] = []
 
-  // Check recent inquiries
+  // Check recent inquiries via DAL.
+  void supabase
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-
-  const { count: recentInquiries } = await supabase
-    .from('listing_inquiries')
-    .select('id', { count: 'exact', head: true })
-    .gte('created_at', weekAgo)
+  const { countListingInquiriesSince, countSavedSearchesSince } = await import('@/lib/data')
+  const recentInquiries = await countListingInquiriesSince(weekAgo)
 
   if (recentInquiries !== null) {
     checks.push({
@@ -233,10 +220,8 @@ async function checkLeadPipelineHealth(supabase: ServiceSupabase): Promise<Healt
     })
   }
 
-  // Check saved searches
-  const { count: savedSearches } = await supabase
-    .from('saved_searches')
-    .select('id', { count: 'exact', head: true })
+  // Check saved searches (count all-time via "since epoch")
+  const savedSearches = await countSavedSearchesSince('1970-01-01T00:00:00.000Z')
 
   if (savedSearches !== null) {
     checks.push({
@@ -310,8 +295,10 @@ export async function GET(request: Request) {
     criticalCount > 0 ? 'ACTION REQUIRED: Critical issues detected.' : 'No critical issues.',
   ].join(' ')
 
-  // Store results
-  const { error } = await supabase.from('optimization_runs').insert({
+  // Store results via DAL.
+  void supabase
+  const { insertOptimizationRun } = await import('@/lib/data')
+  const result = await insertOptimizationRun({
     findings: findings.length ? findings : null,
     suggested_changes: suggestedChanges.length ? suggestedChanges : null,
     summary,
@@ -321,8 +308,8 @@ export async function GET(request: Request) {
     },
   })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 500 })
   }
 
   return NextResponse.json({

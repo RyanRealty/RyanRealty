@@ -517,6 +517,92 @@ export async function selectStrictVerifyCandidates<T extends Record<string, unkn
   return { rows: (data ?? []) as unknown as T[], error: error?.message ?? null }
 }
 
+/** Read sync_cursor singleton (admin health checks). */
+export async function getSyncCursor(): Promise<{
+  last_completed_at?: string | null
+  cron_enabled?: boolean | null
+} | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb
+    .from('sync_cursor')
+    .select('last_completed_at, cron_enabled')
+    .limit(1)
+    .maybeSingle()
+  return (data ?? null) as {
+    last_completed_at?: string | null
+    cron_enabled?: boolean | null
+  } | null
+}
+
+/** Count rows in `listings` matching a flexible OR + null-check (admin health). */
+export async function countListingsByOr(
+  statusOr: string,
+  photoColumnIsNull?: string
+): Promise<number> {
+  const sb = client()
+  if (!sb) return 0
+  let q = sb.from('listings').select('listing_key', { count: 'exact', head: true }).or(statusOr)
+  if (photoColumnIsNull) q = q.is(photoColumnIsNull, null)
+  const { count } = await q
+  return count ?? 0
+}
+
+/** Count all listings (admin health). */
+export async function countAllListingsByListingKey(): Promise<number> {
+  const sb = client()
+  if (!sb) return 0
+  const { count } = await sb
+    .from('listings')
+    .select('listing_key', { count: 'exact', head: true })
+  return count ?? 0
+}
+
+/** Most-recent market_pulse_live updated_at. */
+export async function getLatestMarketPulseUpdatedAt(): Promise<string | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb
+    .from('market_pulse_live')
+    .select('updated_at')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return (data as { updated_at?: string | null } | null)?.updated_at ?? null
+}
+
+/** Count listing_inquiries rows since an ISO timestamp. */
+export async function countListingInquiriesSince(sinceIso: string): Promise<number> {
+  const sb = client()
+  if (!sb) return 0
+  const { count } = await sb
+    .from('listing_inquiries')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', sinceIso)
+  return count ?? 0
+}
+
+/** Count saved_searches rows since an ISO timestamp. */
+export async function countSavedSearchesSince(sinceIso: string): Promise<number> {
+  const sb = client()
+  if (!sb) return 0
+  const { count } = await sb
+    .from('saved_searches')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', sinceIso)
+  return count ?? 0
+}
+
+/** Insert an optimization_runs telemetry row. */
+export async function insertOptimizationRun(
+  row: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('optimization_runs').insert(row)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
 /** Get any one ListingKey/ListNumber from the listings table — used by sync test harnesses. */
 export async function getAnyListingKey(): Promise<{ ListingKey: string | null; ListNumber: string | null } | null> {
   const sb = client()

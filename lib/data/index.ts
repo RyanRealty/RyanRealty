@@ -228,6 +228,13 @@ export {
   getAnyListingKey,
   insertStrictVerifyRun,
   selectStrictVerifyCandidates,
+  getSyncCursor,
+  countListingsByOr,
+  countAllListingsByListingKey,
+  getLatestMarketPulseUpdatedAt,
+  countListingInquiriesSince,
+  countSavedSearchesSince,
+  insertOptimizationRun,
 } from '@/lib/data/sync/syncWrites'
 export type { ExistingListingRow, SyncState } from '@/lib/data/sync/syncWrites'
 
