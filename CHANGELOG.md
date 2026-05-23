@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.29 (2026-05-23)
+
+### Other
+- DAL: migrate listing-detail.ts bundle reads behind lib/data
+
+---
+
+
 ## v1.282.28 (2026-05-23)
 
 ### Other
