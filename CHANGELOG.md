@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.13 (2026-05-23)
+
+### Other
+- DAL: migrate cities.ts neighborhood queries to listing_tile_mv
+
+---
+
+
 ## v1.282.12 (2026-05-23)
 
 ### Other
