@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.24 (2026-05-23)
+
+### Other
+- DAL: migrate market-reports closed-sales fetches
+
+---
+
+
 ## v1.282.23 (2026-05-23)
 
 ### Other
