@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.287.2 (2026-05-23)
+
+### Other
+- fub: simplify broker runbooks for the cron-applies-plan flow
+
+---
+
+
 ## v1.287.1 (2026-05-23)
 
 ### Other
