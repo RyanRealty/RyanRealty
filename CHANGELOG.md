@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.287.3 (2026-05-23)
+
+### Bug Fixes
+- fix(lp/golf): drop "Section N" eyebrows + remove Homes-near inline link + clean destination 8
+
+### Other
+- communities: generateStaticParams from registry + boundary polygon map (SITE_SPEC §102-109)
+
+---
+
+
 ## v1.287.2 (2026-05-23)
 
 ### Other
