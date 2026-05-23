@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.42 (2026-05-23)
+
+### Other
+- DAL: clear home-valuation + expired-listing-processor
+
+---
+
+
 ## v1.282.41 (2026-05-23)
 
 ### Other
