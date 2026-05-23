@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.15 (2026-05-23)
+
+### Bug Fixes
+- fix(types): import EngagementCounts from engagement-types not engagement
+
+---
+
+
 ## v1.288.14 (2026-05-23)
 
 ### Other
