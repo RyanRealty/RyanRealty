@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.3 (2026-05-23)
+
+### Maintenance
+- perf(listing-detail): key/list_number resolver migrated to DAL — 333→331
+
+---
+
+
 ## v1.282.2 (2026-05-23)
 
 ### Maintenance
