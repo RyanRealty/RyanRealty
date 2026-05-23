@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.50 (2026-05-23)
+
+### Other
+- DAL: clear cma-delivery + 7 single-violation files
+
+---
+
+
 ## v1.282.49 (2026-05-23)
 
 ### Other
