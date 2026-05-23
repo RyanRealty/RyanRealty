@@ -217,11 +217,11 @@ export default async function CentralOregonGolfPage() {
       <MapSection />
       <ByArchitectSection />
       <SeasonCalendarSection />
-      <WhereToLiveSection communityKpis={communityKpis} featuredListings={featuredListings} />
       <InsiderNotesSection />
-      <StayVsBuySection />
-      <DataTableSection />
       <FaqSection />
+      <DataTableSection />
+      <StayVsBuySection />
+      <WhereToLiveSection communityKpis={communityKpis} featuredListings={featuredListings} />
       <CtaSection />
 
       <PageStyles />
@@ -264,9 +264,9 @@ function HeroSection() {
         <div className="golf-hero__eyebrow">CENTRAL OREGON · GOLF</div>
         <h1 className="golf-hero__h1">Central Oregon golf, by the architects who built it.</h1>
         <p className="golf-hero__sub">
-          30 courses across Bend, Sunriver, Sisters, Redmond, and Powell Butte. Six designers with
-          national reputations. 300 days of sunshine a year. Here is how to play it, and what it
-          costs to live near each one.
+          27 named courses. McLay Kidd, Nicklaus, Fazio, RTJ Jr, Weiskopf, Fought. 3,600 feet of
+          elevation. 300 days of sunshine. The eight worth flying in for, the season window that
+          beats Bandon, and the back-nine views you don&apos;t get anywhere else.
         </p>
         <div className="golf-hero__cta-row">
           <a href="#destination-courses" className="golf-cta golf-cta--primary">
@@ -275,8 +275,8 @@ function HeroSection() {
           <a href="#by-architect" className="golf-cta">
             By architect
           </a>
-          <a href="#where-to-live" className="golf-cta">
-            Where to live
+          <a href="#season" className="golf-cta">
+            When to play
           </a>
         </div>
       </div>
@@ -327,12 +327,12 @@ function DestinationCoursesSection() {
   return (
     <section className="golf-section golf-section--dark" id="destination-courses">
       <div className="golf-section__inner">
-        <div className="golf-eyebrow golf-eyebrow--cream">Section 3</div>
-        <h2 className="golf-h2 golf-h2--cream">The destination 8.</h2>
+        <div className="golf-eyebrow golf-eyebrow--cream">The eight worth the trip</div>
+        <h2 className="golf-h2 golf-h2--cream">If you only play eight, play these.</h2>
         <p className="golf-lede golf-lede--cream">
-          If you are flying into Central Oregon for a long weekend, these are the eight worth the
-          trip. Ranked by a combination of design pedigree, course conditioning, and the
-          panoramic-tee-box test.
+          Ranked by name-architect pedigree, course conditioning, and the views from the tee. Three
+          are at Sunriver and Black Butte Ranch. Two are at Pronghorn. One is a private Fazio
+          you&apos;ll need a member to walk you on. The Cascade backdrop runs through all eight.
         </p>
 
         <ol className="golf-rank-grid">
@@ -539,95 +539,106 @@ function WhereToLiveSection({
     })
   }
 
-  const communityMeta: Record<string, { name: string; pitch: string; hasLP: boolean; image?: string; imageAlt?: string }> = {
+  // Pitches written for the golfer scrolling. One line. What course you play
+  // when you live there + the one detail that makes the community make sense.
+  // Real-estate price + inventory comes from the KPI strip; this is the
+  // golf-relevant context, not the broker pitch.
+  const FALLBACK = '/lp/central-oregon-golf/img/bend-cascades-01.jpg'
+  const communityMeta: Record<string, { name: string; pitch: string; hasLP: boolean; image: string; imageAlt: string }> = {
     tetherow: {
       name: 'Tetherow',
-      pitch: "McLay Kidd's #57-in-the-country 18 outside your back door. Mt Bachelor lifts 20 minutes up the road.",
+      pitch: 'You play McLay Kidd. Mt Bachelor is 20 minutes up the road for the ski-day chasers.',
       hasLP: true,
       image: '/lp/central-oregon-golf/img/tetherow-03.jpg',
-      imageAlt: 'Tetherow residential community along the McLay Kidd fairway',
+      imageAlt: 'Tetherow homes along the McLay Kidd fairway',
     },
     'broken-top': {
       name: 'Broken Top',
-      pitch: 'Weiskopf 18, saltwater pool, and a six-acre trout lake inside a gated 27,000 sqft clubhouse.',
+      pitch: 'You play Weiskopf. Gated, capped at 395 golf members, with a six-acre trout lake on property.',
       hasLP: false,
+      image: FALLBACK,
+      imageAlt: 'Broken Top neighborhood near Mt Bachelor',
     },
     pronghorn: {
       name: 'Pronghorn / Juniper Preserve',
-      pitch: "Oregon's only Jack Nicklaus signature course on the public side. Fazio next door if you want private.",
+      pitch: 'You play Nicklaus. The Fazio is next door if you can get a member to walk you on.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/pronghorn-01.jpg',
-      imageAlt: 'Pronghorn Resort with Jack Nicklaus signature course routing',
+      imageAlt: 'Pronghorn Resort with the Nicklaus signature course',
     },
     sunriver: {
       name: 'Sunriver',
-      pitch: '63 holes across four resort courses. 33 miles of bike paths. One of the largest residential resort communities in the West.',
+      pitch: 'You get four courses — Meadows, Woodlands, Crosswater, Caldera Links — plus 33 miles of paved bike paths.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/sunriver-river.jpg',
       imageAlt: 'Sunriver Resort along the Deschutes River',
     },
     'caldera-springs': {
       name: 'Caldera Springs',
-      pitch: 'Bob Cupp 9-hole short course, lakeside cabin lifestyle, walk to the lodge.',
+      pitch: 'Cabin lifestyle inside Sunriver. Caldera Links 9-hole short course at the door, the lodge a walk away.',
       hasLP: false,
+      image: FALLBACK,
+      imageAlt: 'Caldera Springs cabin community at Sunriver',
     },
     crosswater: {
       name: 'Crosswater',
-      pitch: 'Cupp + Fought Top-100 course inside a gated Sunriver enclave. Member access stays in the family.',
+      pitch: 'Gated Sunriver enclave wrapped around the Cupp/Fought top-100. Member-only access stays that way.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/crosswater-02.jpg',
       imageAlt: 'Crosswater Club fairway with wetlands and Cascade backdrop',
     },
     'black-butte-ranch': {
       name: 'Black Butte Ranch',
-      pitch: '36 championship holes plus a putting course, all under the Three Sisters and Black Butte itself.',
+      pitch: 'Two championship courses (Big Meadow + Glaze Meadow) plus a putting course, all under the Three Sisters.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
       imageAlt: 'Three Sisters peaks above Black Butte Ranch',
     },
     'brasada-ranch': {
       name: 'Brasada Ranch',
-      pitch: 'Hardy + Jacobsen 18, "best 18 views in the state," 300 days of sunshine east of Bend.',
+      pitch: 'Hardy & Jacobsen 18 with no two holes parallel. 25 minutes east of Bend, 300 days of sunshine.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/brasada-02.jpg',
-      imageAlt: 'Brasada Ranch residences along the Brasada Canyons golf course',
+      imageAlt: 'Brasada Ranch residences along Brasada Canyons',
     },
     'eagle-crest': {
       name: 'Eagle Crest',
-      pitch: "Three courses including the Ridge — Central Oregon's longest playing season.",
+      pitch: 'Three courses including the Ridge — the longest playing season in Central Oregon. Public access for residents.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/eagle-crest-01.jpg',
       imageAlt: 'Eagle Crest Resort terrain in Redmond, Oregon',
     },
     'awbrey-glen': {
       name: 'Awbrey Glen',
-      pitch: 'Private Bunny Mason 18 on the north side of Bend. Sparkling lakes, lava outcroppings, walkable to Pine Nursery.',
+      pitch: 'Private Bunny Mason 18 with a 5-hole par-3 practice course. Walkable from the north side of Bend.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/awbrey-glen-01.jpg',
       imageAlt: 'Awbrey Glen Golf Club on the north side of Bend',
     },
     'widgi-creek': {
       name: 'Widgi Creek',
-      pitch: "Locals' favorite public 18 on the way to Mt Bachelor. Pacific NW's top pickleball facility on the same property.",
+      pitch: "Locals' favorite public 18 on the way to Mt Bachelor. PNW's top pickleball complex shares the property.",
       hasLP: false,
       image: '/lp/central-oregon-golf/img/widgi-creek-01.jpg',
       imageAlt: 'Widgi Creek Golf Club along the Deschutes corridor in west Bend',
     },
     'three-rivers': {
       name: 'Three Rivers',
-      pitch: 'Adjacent to the four Sunriver courses. Mid-range cabin pricing without the resort fees.',
+      pitch: 'Next to the four Sunriver courses without the resort overhead. Cabin pricing, no HOA-mandated club dues.',
       hasLP: false,
+      image: FALLBACK,
+      imageAlt: 'Three Rivers area south of Bend',
     },
   }
 
   return (
     <section className="golf-section golf-section--alt" id="where-to-live">
       <div className="golf-section__inner">
-        <div className="golf-eyebrow">Section 7</div>
-        <h2 className="golf-h2">Where to live near each course.</h2>
+        <div className="golf-eyebrow">If you fell in love with one of them</div>
+        <h2 className="golf-h2">Where to live next to each course.</h2>
         <p className="golf-lede">
-          12 of the 14 master-planned communities in the Ryan Realty registry are golf-adjacent.
-          Here is the match-up.
+          Twelve of the courses above sit inside a residential community. Each card carries the
+          course you play, the priciest active listing today, and the 12-month inventory pulse.
         </p>
 
         <div className="golf-live-grid">
@@ -635,71 +646,57 @@ function WhereToLiveSection({
             const meta = communityMeta[community]
             if (!meta) return null
             const kpi = communityKpis[community as GolfCommunitySlug]
+            const featured = featuredListings[community as GolfCommunitySlug]
             const medianFmt = kpi ? formatCurrencyToThousands(kpi.medianSalePrice) : null
+            const searchHref = meta.hasLP
+              ? `/lp/${community}/`
+              : `/homes-for-sale?subdivision=${encodeURIComponent(meta.name)}`
             return (
               <div key={community} className="golf-live-card">
-                {meta.image && (
-                  // eslint-disable-next-line @next/next/no-img-element
+                <div className="golf-live-photo-wrap">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={meta.image}
-                    alt={meta.imageAlt ?? meta.name}
+                    alt={meta.imageAlt}
                     loading="lazy"
                     className="golf-live-photo"
                   />
-                )}
-                <h3 className="golf-live-name">{meta.name}</h3>
-                <p className="golf-live-pitch">{meta.pitch}</p>
-                {kpi && (medianFmt || kpi.activeInventory != null || kpi.soldCount12mo != null) && (
-                  <div className="golf-live-kpis">
-                    {medianFmt && (
-                      <div className="golf-live-kpi">
-                        <span className="golf-live-kpi-label">Median 12mo</span>
-                        <span className="golf-live-kpi-value">{medianFmt}</span>
-                      </div>
-                    )}
-                    {kpi.activeInventory != null && (
-                      <div className="golf-live-kpi">
-                        <span className="golf-live-kpi-label">Active</span>
-                        <span className="golf-live-kpi-value">{kpi.activeInventory}</span>
-                      </div>
-                    )}
-                    {kpi.soldCount12mo != null && (
-                      <div className="golf-live-kpi">
-                        <span className="golf-live-kpi-label">Sold 12mo</span>
-                        <span className="golf-live-kpi-value">{kpi.soldCount12mo}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="golf-live-courses">
-                  <span className="golf-live-courses-label">Courses on property:</span>
-                  <ul>
+                  <div className="golf-live-photo-overlay" aria-hidden />
+                  <h3 className="golf-live-name">{meta.name}</h3>
+                </div>
+
+                <div className="golf-live-body">
+                  <p className="golf-live-pitch">{meta.pitch}</p>
+
+                  <ul className="golf-live-courses">
                     {courses.map((c) => (
                       <li key={c.slug}>
-                        {c.shortName} <span className="golf-live-courses-meta">· {c.designer}</span>
+                        <span className="golf-live-course-name">{c.shortName}</span>
+                        <span className="golf-live-course-by">{c.designer}</span>
                       </li>
                     ))}
                   </ul>
-                </div>
-                {(() => {
-                  const featured = featuredListings[community as GolfCommunitySlug]
-                  if (!featured) return null
-                  const detail = `/lp/listings/${encodeURIComponent(featured.listNumber ?? featured.listingKey)}/`
-                  return (
-                    <Link href={detail} className="golf-live-featured" aria-label={`Featured home: ${featured.address}`}>
-                      <div className="golf-live-featured-label">Top active</div>
+
+                  <div className="golf-live-spacer" />
+
+                  {featured && (
+                    <Link
+                      href={`/lp/listings/${encodeURIComponent(featured.listNumber ?? featured.listingKey)}/`}
+                      className="golf-live-featured"
+                      aria-label={`Featured home: ${featured.address}`}
+                    >
                       {featured.photoUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={featured.photoUrl}
-                          alt={featured.address}
+                          alt=""
                           loading="lazy"
                           className="golf-live-featured-thumb"
                         />
                       )}
                       <div className="golf-live-featured-body">
+                        <div className="golf-live-featured-label">Top active listing</div>
                         <div className="golf-live-featured-price">{featuredPrice(featured.listPrice)}</div>
-                        <div className="golf-live-featured-addr">{featured.address}{featured.city ? `, ${featured.city}` : ''}</div>
                         <div className="golf-live-featured-meta">
                           {featured.beds != null && <span>{featured.beds} bed</span>}
                           {featured.baths != null && <span>{featured.baths} bath</span>}
@@ -707,20 +704,35 @@ function WhereToLiveSection({
                         </div>
                       </div>
                     </Link>
-                  )
-                })()}
-                {meta.hasLP ? (
-                  <Link href={`/lp/${community}/`} className="golf-live-cta">
-                    Search homes in {meta.name} →
+                  )}
+
+                  {kpi && (medianFmt || kpi.activeInventory != null || kpi.soldCount12mo != null) && (
+                    <div className="golf-live-kpis">
+                      {medianFmt && (
+                        <div className="golf-live-kpi">
+                          <span className="golf-live-kpi-value">{medianFmt}</span>
+                          <span className="golf-live-kpi-label">Median 12mo</span>
+                        </div>
+                      )}
+                      {kpi.activeInventory != null && (
+                        <div className="golf-live-kpi">
+                          <span className="golf-live-kpi-value">{kpi.activeInventory}</span>
+                          <span className="golf-live-kpi-label">Active</span>
+                        </div>
+                      )}
+                      {kpi.soldCount12mo != null && (
+                        <div className="golf-live-kpi">
+                          <span className="golf-live-kpi-value">{kpi.soldCount12mo}</span>
+                          <span className="golf-live-kpi-label">Sold 12mo</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <Link href={searchHref} className="golf-live-cta">
+                    See homes in {meta.name} →
                   </Link>
-                ) : (
-                  <Link
-                    href={`/homes-for-sale?subdivision=${encodeURIComponent(meta.name)}`}
-                    className="golf-live-cta golf-live-cta--secondary"
-                  >
-                    Search homes in {meta.name} →
-                  </Link>
-                )}
+                </div>
               </div>
             )
           })}
@@ -820,18 +832,18 @@ function StayVsBuySection() {
     <section className="golf-section" id="stay-vs-buy">
       <div className="golf-section__inner">
         <div className="golf-section__center">
-          <div className="golf-eyebrow">The honest math</div>
-          <h2 className="golf-h2">Stay-and-play, or buy-and-play?</h2>
+          <div className="golf-eyebrow">How often will you actually play?</div>
+          <h2 className="golf-h2">Stay-and-play, or own-and-play?</h2>
           <p className="golf-lede">
-            Here is the line we draw. If you golf Central Oregon one to three times a year, the
-            stay-and-play package wins. If you golf eight or more, the math flips.
+            One to three weekends a year, the resort package is the right call. Eight rounds or
+            more, the math leans the other way. Run your number against the side-by-side.
           </p>
         </div>
 
         <div className="golf-sb-compare">
           <div className="golf-sb-card golf-sb-card--rent">
-            <div className="golf-sb-tag">Rent</div>
-            <h3 className="golf-sb-title">5 resort trips a year</h3>
+            <div className="golf-sb-tag">Stay-and-play</div>
+            <h3 className="golf-sb-title">5 resort weekends a year</h3>
             <div className="golf-sb-math">
               <div className="golf-sb-line">
                 <span>Peak nightly</span>
@@ -847,19 +859,20 @@ function StayVsBuySection() {
               </div>
               <div className="golf-sb-divider" />
               <div className="golf-sb-line golf-sb-line--total">
-                <span>Annual cost</span>
+                <span>Lodging only</span>
                 <span>$6,000</span>
               </div>
             </div>
             <p className="golf-sb-note">
-              Plus green fees, dining, and per-round resort surcharges. Real annual landed cost is
-              closer to $9,000–$12,000 once you add up the round trips, the meals, and the cart fees.
+              Add green fees, cart, range balls, and dinner — real landed cost lands around
+              $9,000–$12,000 a year. Cleanest math if your home course is somewhere else and
+              you fly in to play 12–18 rounds total.
             </p>
           </div>
 
           <div className="golf-sb-card golf-sb-card--buy">
-            <div className="golf-sb-tag golf-sb-tag--accent">Buy</div>
-            <h3 className="golf-sb-title">Pronghorn pied-a-terre</h3>
+            <div className="golf-sb-tag golf-sb-tag--accent">Own-and-play</div>
+            <h3 className="golf-sb-title">Cabin near a course you love</h3>
             <div className="golf-sb-math">
               <div className="golf-sb-line">
                 <span>Entry price</span>
@@ -875,24 +888,24 @@ function StayVsBuySection() {
               </div>
               <div className="golf-sb-divider" />
               <div className="golf-sb-line golf-sb-line--total">
-                <span>Annual cost</span>
+                <span>Annual carrying</span>
                 <span>$30K-$42K</span>
               </div>
             </div>
             <p className="golf-sb-note">
-              Net of mortgage interest you would have paid on rental nights, plus appreciation
-              (Pronghorn 12-month avg $1.77M, +14% YoY). The cost can be net-positive depending
-              on appreciation and rental income offsets.
+              Pronghorn condos run $1.77M average and ticked +14% YoY. The carrying cost above
+              is net of mortgage interest you would have paid on resort nights — and the
+              appreciation offset is real once you hold three or four years.
             </p>
           </div>
         </div>
 
         <div className="golf-sb-bottom">
           <p>
-            Brokers (us included) make money on the transaction. So this part is direct: if the
-            rental math wins for you, the rental math wins. The cards above carry real 12-month
-            median data — that is where the comparison starts. Reach out when you want a
-            per-community spreadsheet.
+            Where you fall on this depends on rounds per year, what you want the non-golf time to
+            look like, and whether the rest of the family comes. If the rental math wins for you,
+            the rental math wins. If you want a per-community spreadsheet against your usage,
+            <Link href="#contact"> ask</Link>.
           </p>
         </div>
       </div>
@@ -1179,21 +1192,55 @@ function PageStyles() {
       .golf-season-note { font-size: 13.5px; line-height: 1.5; color: rgba(16,39,66,0.74); margin: 4px 0 0; }
       .golf-season-source { font-size: 12px; color: rgba(16,39,66,0.55); margin-top: 20px; }
 
-      /* Where to live */
-      .golf-live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 32px; }
-      .golf-live-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
-      .golf-live-card > :not(.golf-live-photo) { padding-left: 24px; padding-right: 24px; }
-      .golf-live-card > h3.golf-live-name { padding-top: 20px; }
-      .golf-live-card > .golf-live-cta { margin-bottom: 24px; margin-left: 24px; }
-      .golf-live-photo { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
-      .golf-live-kpis {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-        padding: 12px 14px; background: rgba(16,39,66,0.05);
-        border-radius: 10px; margin: 4px 24px 0;
+      /* Where to live — fixed layout, photo with overlay + name overlaid */
+      .golf-live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 22px; margin-top: 36px; }
+      .golf-live-card {
+        background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px;
+        overflow: hidden; display: flex; flex-direction: column;
+        box-shadow: 0 1px 2px rgba(16,39,66,0.04);
       }
-      .golf-live-kpi { display: flex; flex-direction: column; gap: 2px; }
-      .golf-live-kpi-label { font-size: 10.5px; letter-spacing: 0.06em; color: rgba(16,39,66,0.6); text-transform: uppercase; font-weight: 600; }
-      .golf-live-kpi-value { font-size: 15px; font-weight: 600; color: #102742; font-variant-numeric: tabular-nums; }
+      .golf-live-photo-wrap {
+        position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: #102742;
+      }
+      .golf-live-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .golf-live-photo-overlay {
+        position: absolute; inset: 0;
+        background: linear-gradient(180deg, rgba(16,39,66,0) 35%, rgba(16,39,66,0.72) 100%);
+      }
+      .golf-live-name {
+        position: absolute; left: 18px; right: 18px; bottom: 14px; margin: 0;
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 24px; font-weight: 500; color: #faf8f4;
+        text-shadow: 0 1px 12px rgba(0,0,0,0.45);
+        line-height: 1.15;
+      }
+      .golf-live-body {
+        display: flex; flex-direction: column; gap: 14px;
+        padding: 20px 22px 22px; flex: 1;
+      }
+      .golf-live-pitch {
+        font-size: 14.5px; line-height: 1.5; color: rgba(16,39,66,0.82); margin: 0;
+      }
+      .golf-live-courses { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+      .golf-live-courses li {
+        display: flex; align-items: baseline; gap: 8px; font-size: 13px;
+        padding-bottom: 4px; border-bottom: 1px solid rgba(16,39,66,0.06);
+      }
+      .golf-live-courses li:last-child { border-bottom: none; padding-bottom: 0; }
+      .golf-live-course-name { font-weight: 600; color: #102742; }
+      .golf-live-course-by { color: rgba(16,39,66,0.55); }
+      .golf-live-spacer { flex: 1; min-height: 0; }
+      .golf-live-kpis {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+        padding: 10px 12px; background: rgba(16,39,66,0.05);
+        border-radius: 8px;
+      }
+      .golf-live-kpi { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .golf-live-kpi-value {
+        font-size: 14px; font-weight: 700; color: #102742; font-variant-numeric: tabular-nums;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .golf-live-kpi-label { font-size: 10px; letter-spacing: 0.06em; color: rgba(16,39,66,0.55); text-transform: uppercase; font-weight: 600; }
 
       /* Insider notes */
       .golf-insider-list { list-style: none; counter-reset: insider; padding: 0; margin: 32px 0 0; display: grid; gap: 18px; }
@@ -1270,47 +1317,42 @@ function PageStyles() {
         font-size: 15px; line-height: 1.6; color: rgba(16,39,66,0.78);
         margin: 12px 0 0; padding-top: 12px; border-top: 1px solid rgba(16,39,66,0.06);
       }
-      .golf-live-name { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 500; margin: 0; color: #102742; }
-      .golf-live-pitch { font-size: 14.5px; line-height: 1.55; color: rgba(16,39,66,0.78); margin: 0; }
-      .golf-live-courses { font-size: 13px; color: rgba(16,39,66,0.74); }
-      .golf-live-courses-label { font-weight: 600; color: rgba(16,39,66,0.86); }
-      .golf-live-courses ul { list-style: none; padding: 0; margin: 6px 0 0; }
-      .golf-live-courses li { padding: 2px 0; }
-      .golf-live-courses-meta { color: rgba(16,39,66,0.55); }
-      .golf-live-cta {
-        margin-top: auto; align-self: flex-start; text-decoration: none;
-        background: #102742; color: #faf8f4; padding: 9px 16px; border-radius: 999px;
-        font-size: 13px; font-weight: 600;
-      }
-      .golf-live-cta--secondary { background: transparent; color: #102742; border: 1px solid rgba(16,39,66,0.32); }
-      .golf-live-cta:hover { opacity: 0.92; }
-
       /* Featured listing inside Where-to-Live card */
       .golf-live-featured {
-        display: grid; grid-template-columns: 80px 1fr; gap: 12px; align-items: center;
+        display: grid; grid-template-columns: 92px 1fr; gap: 12px; align-items: center;
         text-decoration: none; color: inherit;
-        background: rgba(16,39,66,0.04); border-radius: 10px;
-        padding: 10px 12px; margin: 4px 24px 0;
-        position: relative;
-      }
-      .golf-live-featured:hover { background: rgba(16,39,66,0.08); }
-      .golf-live-featured-label {
-        position: absolute; top: -6px; left: 14px;
         background: #102742; color: #faf8f4;
-        font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
-        padding: 2px 8px; border-radius: 999px;
+        border-radius: 10px; padding: 10px 14px 10px 10px;
+        transition: transform 0.15s;
       }
+      .golf-live-featured:hover { transform: translateY(-1px); }
       .golf-live-featured-thumb {
-        width: 80px; height: 60px; object-fit: cover; border-radius: 6px;
+        width: 92px; height: 70px; object-fit: cover; border-radius: 6px; display: block;
       }
-      .golf-live-featured-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-      .golf-live-featured-price { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 500; color: #102742; }
-      .golf-live-featured-addr { font-size: 12.5px; color: rgba(16,39,66,0.78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .golf-live-featured-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+      .golf-live-featured-label {
+        font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+        opacity: 0.72;
+      }
+      .golf-live-featured-price {
+        font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 500;
+        color: #faf8f4; line-height: 1.05;
+      }
       .golf-live-featured-meta {
-        display: flex; gap: 4px; font-size: 11px; color: rgba(16,39,66,0.55);
+        display: flex; gap: 4px; font-size: 11.5px; opacity: 0.78;
         font-variant-numeric: tabular-nums;
       }
-      .golf-live-featured-meta span + span::before { content: '·'; margin: 0 4px; }
+      .golf-live-featured-meta span + span::before { content: '·'; margin: 0 4px; opacity: 0.6; }
+
+      .golf-live-cta {
+        align-self: flex-start; text-decoration: none;
+        background: transparent; color: #102742;
+        border: 1px solid rgba(16,39,66,0.32);
+        padding: 9px 16px; border-radius: 999px;
+        font-size: 13px; font-weight: 600;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+      }
+      .golf-live-cta:hover { background: #102742; color: #faf8f4; border-color: #102742; }
 
       /* Data table */
       .golf-table-wrap { overflow-x: auto; margin-top: 24px; border: 1px solid rgba(16,39,66,0.1); border-radius: 12px; background: white; }
