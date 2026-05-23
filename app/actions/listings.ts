@@ -1119,10 +1119,9 @@ export async function getTotalListingsRows(): Promise<number> {
  * Total rows in listing_history table. For admin/sync stats.
  */
 export async function getListingHistoryCount(): Promise<number> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return 0
-  const { count } = await supabase.from('listing_history').select('listing_key', { count: 'exact', head: true })
-  return count ?? 0
+  const { getListingHistoryRowCount } = await import('@/lib/data')
+  const res = await getListingHistoryRowCount()
+  return res.count
 }
 
 export type AdminSyncCounts = {
@@ -1382,41 +1381,16 @@ export type ClosedFinalizedListingRow = {
 
 /** Closed listings with full listing data and history finalized (for admin sync page). */
 export async function getClosedFinalizedListings(limit = 50): Promise<ClosedFinalizedListingRow[]> {
-  const supabase = getServiceSupabase()
-  if (!supabase) return []
-  const { data } = await supabase
-    .from('listings')
-    .select('ListingKey, City, ListPrice, StandardStatus')
-    .ilike('StandardStatus', '%Closed%')
-    .eq('history_finalized', true)
-    .order('ListPrice', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  const rows = (data ?? []) as { ListingKey?: string; City?: string; ListPrice?: number; StandardStatus?: string }[]
-  return rows.map((r) => ({
-    listing_key: r.ListingKey ?? '',
-    city: r.City ?? null,
-    list_price: r.ListPrice ?? null,
-    standard_status: r.StandardStatus ?? null,
-  }))
+  const { getClosedFinalizedListingRows } = await import('@/lib/data')
+  return getClosedFinalizedListingRows(limit)
 }
 
 /**
  * Confirm whether the listing_history table exists (admin diagnostic, no Supabase SQL needed).
  */
 export async function getListingHistoryTableStatus(): Promise<{ exists: boolean; error?: string }> {
-  const supabase = getServiceSupabase()
-  if (!supabase) return { exists: false, error: 'Supabase not configured' }
-  const { error } = await supabase.from('listing_history').select('id').limit(1)
-  if (error) {
-    const msg = error.message ?? String(error)
-    return {
-      exists: false,
-      error: /relation.*does not exist|relation "listing_history"/i.test(msg)
-        ? 'Table missing. Run migration: supabase/migrations/20250303120000_listing_history.sql'
-        : msg,
-    }
-  }
-  return { exists: true }
+  const { getListingHistoryTableStatusDAL } = await import('@/lib/data')
+  return getListingHistoryTableStatusDAL()
 }
 
 /** Sync dashboard: one row per status bucket (active, pending, contingent, closed+finalized, etc.) and by city A–Z. */
@@ -1616,30 +1590,21 @@ export async function getCityStatusCounts(options: {
       }
     }
   }
-  const supabase = getAnonSupabase()
-  if (!supabase) return { active: 0, pending: 0, closed: 0, other: 0 }
-  // Use count queries instead of fetching rows — avoids 1,000-row truncation
+  // DAL: city + optional subdivision counts via listing_tile_mv across 4 status buckets.
+  void ACTIVE_STATUS_OR
   const cityFilter = options.city.trim()
-  const subFilter = options.subdivision?.trim()
-  const applyGeo = (q: any) => {
-    let r = q.eq('"City"', cityFilter)
-    if (subFilter) r = r.eq('"SubdivisionName"', subFilter)
-    return r
-  }
-  const [activeRes, pendingRes, closedRes, totalRes] = await Promise.all([
-    applyGeo(supabase.from('listings').select('ListingKey', { count: 'exact', head: true })).or(ACTIVE_STATUS_OR),
-    applyGeo(supabase.from('listings').select('ListingKey', { count: 'exact', head: true })).or('StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%Contingent%'),
-    applyGeo(supabase.from('listings').select('ListingKey', { count: 'exact', head: true })).or('StandardStatus.ilike.%Closed%,StandardStatus.ilike.%Sold%'),
-    applyGeo(supabase.from('listings').select('ListingKey', { count: 'exact', head: true })),
+  const subFilter = options.subdivision?.trim() || undefined
+  const { getListingTiles } = await import('@/lib/data')
+  const [activeTiles, pendingTiles, closedTiles, totalTiles] = await Promise.all([
+    getListingTiles({ city: cityFilter, subdivision: subFilter, status: 'active', limit: 5000 }),
+    getListingTiles({ city: cityFilter, subdivision: subFilter, status: 'pending-only', limit: 5000 }),
+    getListingTiles({ city: cityFilter, subdivision: subFilter, status: 'closed', limit: 5000 }),
+    getListingTiles({ city: cityFilter, subdivision: subFilter, status: 'all', limit: 5000 }),
   ])
-  if (activeRes.error) console.error('[listings] active query failed:', activeRes.error.message)
-  if (pendingRes.error) console.error('[listings] pending query failed:', pendingRes.error.message)
-  if (closedRes.error) console.error('[listings] closed query failed:', closedRes.error.message)
-  if (totalRes.error) console.error('[listings] total query failed:', totalRes.error.message)
-  const active = activeRes.count ?? 0
-  const pending = pendingRes.count ?? 0
-  const closed = closedRes.count ?? 0
-  const other = Math.max(0, (totalRes.count ?? 0) - active - pending - closed)
+  const active = activeTiles.length
+  const pending = pendingTiles.length
+  const closed = closedTiles.length
+  const other = Math.max(0, totalTiles.length - active - pending - closed)
   return { active, pending, closed, other }
 }
 

@@ -141,8 +141,10 @@ export {
   getStatusIlikeCount,
   getPendingNonContingentCount,
   getActiveBucketCount,
+  getClosedFinalizedListingRows,
+  getListingHistoryTableStatus as getListingHistoryTableStatusDAL,
 } from '@/lib/data/admin/syncCounts'
-export type { CountResult, TerminalBucket } from '@/lib/data/admin/syncCounts'
+export type { CountResult, TerminalBucket, ClosedFinalizedRow } from '@/lib/data/admin/syncCounts'
 
 // More functions get exported here as Wave 1-3 lands them.
 

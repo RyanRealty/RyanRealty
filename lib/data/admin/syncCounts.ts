@@ -135,6 +135,50 @@ export async function getTerminalBucketFinalized(bucket: TerminalBucket): Promis
   )
 }
 
+export type ClosedFinalizedRow = {
+  listing_key: string
+  city: string | null
+  list_price: number | null
+  standard_status: string | null
+}
+
+/** Closed-status listings that have been finalized in listing_history, sorted by price. */
+export async function getClosedFinalizedListingRows(limit = 50): Promise<ClosedFinalizedRow[]> {
+  const sb = client()
+  if (!sb) return []
+  const { data } = await sb
+    .from('listings')
+    .select('ListingKey, City, ListPrice, StandardStatus')
+    .ilike('StandardStatus', '%Closed%')
+    .eq('history_finalized', true)
+    .order('ListPrice', { ascending: false, nullsFirst: false })
+    .limit(Math.min(Math.max(limit, 1), 500))
+  const rows = (data ?? []) as { ListingKey?: string; City?: string; ListPrice?: number; StandardStatus?: string }[]
+  return rows.map((r) => ({
+    listing_key: r.ListingKey ?? '',
+    city: r.City ?? null,
+    list_price: r.ListPrice ?? null,
+    standard_status: r.StandardStatus ?? null,
+  }))
+}
+
+/** Does listing_history table exist? (Admin diagnostic, no SQL needed.) */
+export async function getListingHistoryTableStatus(): Promise<{ exists: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { exists: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('listing_history').select('id').limit(1)
+  if (error) {
+    const msg = error.message ?? String(error)
+    return {
+      exists: false,
+      error: /relation.*does not exist|relation "listing_history"/i.test(msg)
+        ? 'Table missing. Run migration: supabase/migrations/20250303120000_listing_history.sql'
+        : msg,
+    }
+  }
+  return { exists: true }
+}
+
 /** Total listings count (all statuses). Used by admin status breakdown. */
 export async function getAllListingsCount(): Promise<CountResult> {
   const sb = client()
