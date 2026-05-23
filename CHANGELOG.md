@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.286.0 (2026-05-23)
+
+### Features
+- feat(analytics): Google Ads spend ingest + cost-per-lead now multi-channel
+
+---
+
+
 ## v1.285.1 (2026-05-23)
 
 ### Other
