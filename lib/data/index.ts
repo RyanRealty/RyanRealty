@@ -187,6 +187,7 @@ export type { NeighborhoodLite, NeighborhoodFull } from '@/lib/data/cities/getNe
 // Sync pipeline writes (Spark delta + history backfill)
 export {
   getSyncState,
+  getSyncStateFields,
   updateSyncStateLastDelta,
   getExistingListingsByListNumbers,
   replaceListingHistoryForKey,

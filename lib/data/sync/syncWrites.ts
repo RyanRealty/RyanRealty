@@ -43,6 +43,20 @@ export async function getSyncState(): Promise<SyncState | null> {
   return (data ?? null) as SyncState | null
 }
 
+/** Read arbitrary fields from the sync_state singleton. */
+export async function getSyncStateFields<T extends Record<string, unknown>>(
+  columns: string
+): Promise<T | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb
+    .from('sync_state')
+    .select(columns)
+    .eq('id', 'default')
+    .maybeSingle()
+  return (data ?? null) as T | null
+}
+
 /** Upsert sync_state with the new last_delta_sync_at. */
 export async function updateSyncStateLastDelta(
   ts: string

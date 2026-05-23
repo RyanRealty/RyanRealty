@@ -817,38 +817,42 @@ export async function syncSparkListingsDelta(options?: {
               }))
               // Delete existing history for this listing and re-insert fresh
               // (no unique constraint on listing_history, so upsert won't work)
-              await supabase.from('listing_history').delete().eq('listing_key', key)
-              const { error: insertErr } = await supabase
-                .from('listing_history')
-                .insert(historyRows)
-              if (!insertErr) historyRowsUpserted += historyRows.length
+              const {
+                deleteListingHistoryForKey,
+                insertListingHistoryRows,
+              } = await import('@/lib/data')
+              await deleteListingHistoryForKey(key)
+              const ins = await insertListingHistoryRows(historyRows)
+              if (ins.ok) historyRowsUpserted += historyRows.length
             }
-            const { data: listingContext } = await supabase
-              .from('listings')
-              .select('ListingKey, PhotoURL, details, ListAgentName, ListOfficeName')
-              .eq('ListingKey', key)
-              .maybeSingle()
+            const { getListingFieldsByListingKey, updateListingByListingKey } = await import('@/lib/data')
+            const listingContext = await getListingFieldsByListingKey<{
+              ListingKey?: string
+              PhotoURL?: string | null
+              details?: unknown
+              ListAgentName?: string | null
+              ListOfficeName?: string | null
+            }>(key, 'ListingKey, PhotoURL, details, ListAgentName, ListOfficeName')
             const auxSync = await syncAuxiliaryTablesForFinalization(
               supabase,
               {
                 listingKey: key,
-                photoUrl: (listingContext as { PhotoURL?: string | null } | null)?.PhotoURL ?? null,
-                details: (listingContext as { details?: unknown } | null)?.details ?? null,
-                listAgentName: (listingContext as { ListAgentName?: string | null } | null)?.ListAgentName ?? null,
-                listOfficeName: (listingContext as { ListOfficeName?: string | null } | null)?.ListOfficeName ?? null,
+                photoUrl: listingContext?.PhotoURL ?? null,
+                details: listingContext?.details ?? null,
+                listAgentName: listingContext?.ListAgentName ?? null,
+                listOfficeName: listingContext?.ListOfficeName ?? null,
               },
               historyItems.items,
               { accessToken }
             )
             // Only finalize terminal listings (Closed/Expired/Withdrawn/Canceled)
-            // Active/Pending listings should NEVER be finalized — they need ongoing history refresh.
-            // Terminal listings finalize only when history fetch succeeded and all auxiliary tables synced.
             const listingStatus = byKey.get(key)
             if (listingStatus && isTerminalStatus(listingStatus) && historyItems.ok && historyItems.partial !== true && auxSync.ok) {
-              await supabase
-                .from('listings')
-                .update({ history_finalized: true, history_verified_full: true, is_finalized: true })
-                .eq('ListingKey', key)
+              await updateListingByListingKey(key, {
+                history_finalized: true,
+                history_verified_full: true,
+                is_finalized: true,
+              })
             }
           } catch {
             // Don't fail the delta sync if history fetch fails for one listing
@@ -861,10 +865,11 @@ export async function syncSparkListingsDelta(options?: {
       )
     }
 
-    await supabase.from('sync_state').upsert(
-      { id: 'default', last_delta_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { onConflict: 'id' }
-    )
+    const { upsertSyncState } = await import('@/lib/data')
+    await upsertSyncState({
+      last_delta_sync_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
     return {
       success: true,
       message: `Delta sync done. ${totalUpserted} updated, ${eventsEmitted} events, ${historyRowsUpserted} history rows.`,
@@ -965,19 +970,17 @@ export async function syncPhotosOnly(options?: {
       const results = D.Results as { StandardFields?: Record<string, unknown>; Id?: string }[]
       totalFetched += results.length
 
+      const { updateListingByListNumber } = await import('@/lib/data')
       const updateResults = await Promise.all(
         results.map(async (result) => {
           const row = unifiedSparkToRow(result)
           const listNumber = row.ListNumber
           if (listNumber == null || listNumber === '') return false
-          const { error } = await supabase
-            .from('listings')
-            .update({
-              PhotoURL: row.PhotoURL ?? null,
-              details: row.details ?? null,
-            })
-            .eq('ListNumber', listNumber)
-          return !error
+          const r = await updateListingByListNumber(String(listNumber), {
+            PhotoURL: row.PhotoURL ?? null,
+            details: row.details ?? null,
+          })
+          return r.ok
         })
       )
       totalUpdated += updateResults.filter(Boolean).length
@@ -1196,12 +1199,11 @@ export async function syncListingHistory(options?: {
   let configuredToYear = Number(options?.terminalToYear ?? process.env.SYNC_TERMINAL_TO_YEAR ?? 0)
   const hasExplicitOptionRange = options?.terminalFromYear != null || options?.terminalToYear != null
   if (!activeAndPendingOnly && !hasExplicitOptionRange) {
-    const { data: syncStateScope } = await supabase
-      .from('sync_state')
-      .select('terminal_from_year, terminal_to_year')
-      .eq('id', 'default')
-      .maybeSingle()
-    const scoped = syncStateScope as { terminal_from_year?: number | null; terminal_to_year?: number | null } | null
+    const { getSyncStateFields } = await import('@/lib/data')
+    const scoped = await getSyncStateFields<{
+      terminal_from_year?: number | null
+      terminal_to_year?: number | null
+    }>('terminal_from_year, terminal_to_year')
     if (scoped?.terminal_from_year != null) configuredFromYear = Number(scoped.terminal_from_year)
     if (scoped?.terminal_to_year != null) configuredToYear = Number(scoped.terminal_to_year)
   }
