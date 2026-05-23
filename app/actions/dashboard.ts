@@ -872,11 +872,13 @@ export async function getDashboardContentStatus(): Promise<{
     }
 
     const supabase = createServiceClient()
-    const [guidesRes, blogRes, commRes] = await Promise.all([
+    const { countCommunitiesNotNull } = await import('@/lib/data')
+    const [guidesRes, blogRes, commCount] = await Promise.all([
       supabase.from('guides').select('id', { count: 'exact', head: true }).eq('status', 'published'),
       supabase.from('blog_posts').select('id', { count: 'exact', head: true }).eq('status', 'published'),
-      supabase.from('communities').select('id', { count: 'exact', head: true }).not('description', 'is', null),
+      countCommunitiesNotNull('description'),
     ])
+    const commRes = { count: commCount, error: null as { message: string } | null }
 
     if (guidesRes.error) {
       console.error('[getDashboardContentStatus] guides', guidesRes.error)
@@ -884,10 +886,6 @@ export async function getDashboardContentStatus(): Promise<{
     }
     if (blogRes.error) {
       console.error('[getDashboardContentStatus] blog_posts', blogRes.error)
-      return { data: null, error: 'Failed to load content status' }
-    }
-    if (commRes.error) {
-      console.error('[getDashboardContentStatus] communities', commRes.error)
       return { data: null, error: 'Failed to load content status' }
     }
 

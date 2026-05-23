@@ -87,15 +87,14 @@ async function hydrateContextFromSpark(
     const fields = response?.D?.Results?.[0]?.StandardFields as Record<string, unknown> | undefined
     if (!fields) return { context, hydratedFromSpark: false }
     const hydratedContext = contextFromSparkFields(context.listingKey, fields)
-    await supabase
-      .from('listings')
-      .update({
-        details: hydratedContext.details ?? null,
-        PhotoURL: hydratedContext.photoUrl ?? null,
-        ListAgentName: hydratedContext.listAgentName ?? null,
-        ListOfficeName: hydratedContext.listOfficeName ?? null,
-      })
-      .eq('ListingKey', context.listingKey)
+    void supabase
+    const { updateListingByListingKey } = await import('@/lib/data')
+    await updateListingByListingKey(context.listingKey, {
+      details: hydratedContext.details ?? null,
+      PhotoURL: hydratedContext.photoUrl ?? null,
+      ListAgentName: hydratedContext.listAgentName ?? null,
+      ListOfficeName: hydratedContext.listOfficeName ?? null,
+    })
     return {
       context: hydratedContext,
       hydratedFromSpark: true,
@@ -105,7 +104,7 @@ async function hydrateContextFromSpark(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export async function syncAuxiliaryTablesForFinalization(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,

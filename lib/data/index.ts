@@ -153,6 +153,7 @@ export {
   upsertMarketPulseLiveRow,
   getMarketPulseRowsByGeoType,
   getReportingCacheMonthlyRows,
+  getMarketStatsCacheRowsByGeoType,
 } from '@/lib/data/market/getMarketStatsCacheRows'
 export type { MarketStatsCacheRow } from '@/lib/data/market/getMarketStatsCacheRows'
 export { getMarketPulse } from '@/lib/data/market/getMarketPulse'
@@ -279,6 +280,15 @@ export {
   getExistingExpiredListingKeys,
   listExpiredListingsForAdmin,
   updateExpiredListingById,
+  getCmaBySlug,
+  insertCmaRow,
+  upsertCmaRowBySlug,
+  listCmasForAdmin,
+  countCmasInRange,
+  getBoundariesByGeoType,
+  upsertVideoToursCacheRow,
+  getExpiredListingsForDigest,
+  selectListingsAdmin,
   getSyncCursor,
   countListingsByOr,
   countAllListingsByListingKey,
@@ -302,6 +312,9 @@ export {
   getCommunityNameBySlugIlike,
   getCommunitiesWithCityNeighborhoodByNames,
   getCommunitiesInNeighborhoodLite,
+  countCommunitiesNotNull,
+  getCommunitiesForSitemap,
+  getCommunitiesForSitemapJoin,
   getCommunityDetailByName,
   getCommunityNeighborhoodCityBySlug,
 } from '@/lib/data/communities/subdivisionFlags'

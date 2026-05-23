@@ -233,14 +233,11 @@ async function persistSmartListSnapshot(
 async function buildKeyInsight(supabase: ReturnType<typeof getServiceSupabase>, sinceIso: string): Promise<string> {
   if (!supabase) return 'No insight available this week.'
   try {
-    const { data, count } = await supabase
-      .from('expired_listings')
-      .select('listing_key, detected_at, alert_sent_at', { count: 'exact' })
-      .gte('detected_at', sinceIso)
-      .order('detected_at', { ascending: false })
-      .limit(100)
+    void supabase
+    const { getExpiredListingsForDigest } = await import('@/lib/data')
+    const data = await getExpiredListingsForDigest({ sinceIso, limit: 100 })
     const rows = Array.isArray(data) ? data : []
-    if (rows.length === 0 || (typeof count === 'number' && count === 0)) {
+    if (rows.length === 0) {
       return 'No expired listings detected this week.'
     }
     // Compute average hours from detected_at to alert_sent_at when present.
@@ -253,7 +250,7 @@ async function buildKeyInsight(supabase: ReturnType<typeof getServiceSupabase>, 
         deltas.push((b - a) / 3600000)
       }
     }
-    const total = count ?? rows.length
+    const total = rows.length
     if (deltas.length === 0) {
       return `Expired-listing detection caught ${total} new this week.`
     }

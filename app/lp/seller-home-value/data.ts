@@ -263,12 +263,30 @@ export async function getOurListings(): Promise<OurListing[]> {
   const out: OurListing[] = [SCHOOLHOUSE_FEATURED]
   try {
     const supabase = createServiceClient()
-    const { data, error } = await supabase
-      .from('listings')
-      .select(
-        'ListingKey, StreetNumber, StreetName, City, StandardStatus, ListPrice, ClosePrice, PhotoURL, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, ListAgentName, details'
-      )
-      .in('ListingKey', NAMED_LISTING_KEYS as unknown as string[])
+    void supabase
+    const { getListingTiles } = await import('@/lib/data')
+    const tiles = await getListingTiles({
+      listingKeys: NAMED_LISTING_KEYS as unknown as string[],
+      status: 'all',
+      limit: 50,
+    })
+    const data = tiles.map((t) => ({
+      ListingKey: t.listingKey,
+      StreetNumber: t.streetNumber,
+      StreetName: t.streetName,
+      City: t.city,
+      StandardStatus: t.status,
+      ListPrice: t.listPrice,
+      ClosePrice: t.closePrice,
+      PhotoURL: t.photoUrl,
+      BedroomsTotal: t.beds,
+      BathroomsTotal: t.baths,
+      TotalLivingAreaSqFt: t.sqft,
+      SubdivisionName: t.subdivisionName,
+      ListAgentName: null as string | null,
+      details: null as unknown,
+    }))
+    const error: { message?: string } | null = null
     if (error || !data) return out
 
     const order = new Map<string, number>(

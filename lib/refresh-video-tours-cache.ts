@@ -47,13 +47,13 @@ export async function executeRefreshVideoToursCache(): Promise<RefreshVideoTours
     ])
 
     const now = new Date().toISOString()
-    const { error } = await supabase.from('video_tours_cache').upsert(
-      [
-        { scope: 'central_oregon_home', listings: homeRows, updated_at: now },
-        { scope: 'central_oregon_hub', listings: hubRows, updated_at: now },
-      ],
-      { onConflict: 'scope' }
-    )
+    void supabase
+    const { upsertVideoToursCacheRow } = await import('@/lib/data')
+    const [homeRes, hubRes] = await Promise.all([
+      upsertVideoToursCacheRow({ scope: 'central_oregon_home', listings: homeRows, updated_at: now }),
+      upsertVideoToursCacheRow({ scope: 'central_oregon_hub', listings: hubRows, updated_at: now }),
+    ])
+    const error: { message: string } | null = homeRes.ok && hubRes.ok ? null : { message: homeRes.error ?? hubRes.error ?? 'upsert failed' }
 
     if (error) {
       console.error('[executeRefreshVideoToursCache] upsert', error)

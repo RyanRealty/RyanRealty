@@ -44,11 +44,8 @@ async function handleEmail(
   let brokerName: string | null = null
   try {
     const supabase = createServiceClient()
-    const { data } = await supabase
-      .from('cmas')
-      .select('subject_address, client_name, client_email, broker_slug, recommended_list, value_low, value_high')
-      .eq('slug', safeSlug)
-      .maybeSingle()
+    const { getCmaBySlug } = await import('@/lib/data')
+    const data = await getCmaBySlug(safeSlug)
     cma = (data as CmaRow | null) ?? null
     if (cma?.broker_slug) {
       const { data: broker } = await supabase

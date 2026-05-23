@@ -62,6 +62,27 @@ export async function getReportingCacheMonthlyRows(options: {
   return (data ?? []) as Array<{ period_start?: string; metrics?: { median_price?: number; sold_count?: number } }>
 }
 
+/** Multi-row market_stats_cache read by geo_type + period_type, ordered by period_end DESC. */
+export async function getMarketStatsCacheRowsByGeoType(options: {
+  geoType: string
+  periodType?: string
+  limit: number
+  columns?: string
+}): Promise<Array<Record<string, unknown>>> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const columns =
+    options.columns ?? 'geo_slug, median_sale_price, median_dom, sold_count, period_end'
+  const { data } = await sb
+    .from('market_stats_cache')
+    .select(columns)
+    .eq('geo_type', options.geoType)
+    .eq('period_type', options.periodType ?? 'monthly')
+    .order('period_end', { ascending: false })
+    .limit(options.limit)
+  return (data ?? []) as Array<Record<string, unknown>>
+}
+
 /** Period-pinned cache row by (geo_type, geo_slug, period_type, period_start?). */
 export async function getMarketStatsCacheRowForPeriod(options: {
   geoType: string

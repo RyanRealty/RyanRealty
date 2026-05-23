@@ -56,13 +56,11 @@ export default async function AdminCmasPage() {
   if (!adminRole) redirect('/admin/access-denied')
   if (adminRole.role === 'report_viewer') redirect('/admin/access-denied')
 
-  const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('cmas')
-    .select('id, slug, subject_address, subject_subdivision, client_name, broker_slug, value_low, value_high, recommended_list, comps_count, status, created_at, finalized_at, html_path')
-    .order('created_at', { ascending: false })
-
-  const rows = (data ?? []) as CmaRow[]
+  void createServiceClient
+  const { listCmasForAdmin } = await import('@/lib/data')
+  const { rows: rawRows } = await listCmasForAdmin({ limit: 5000, offset: 0 })
+  const rows = rawRows as unknown as CmaRow[]
+  const error: { message: string } | null = null
 
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">
@@ -76,7 +74,7 @@ export default async function AdminCmasPage() {
 
       {error ? (
         <div className="mt-6 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-          Failed to load: {error.message}
+          Failed to load CMAs
         </div>
       ) : null}
 

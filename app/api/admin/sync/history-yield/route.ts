@@ -57,21 +57,19 @@ export async function GET() {
     }
 
     const supabase = createClient(supabaseUrl, serviceKey)
-    let sampleQuery = supabase
-      .from('listings')
-      .select('ListingKey, ListNumber')
-      .eq('history_finalized', false)
-      .or('StandardStatus.ilike.%Closed%,StandardStatus.ilike.%Expired%,StandardStatus.ilike.%Withdrawn%,StandardStatus.ilike.%Cancel%')
-      .order('ListNumber', { ascending: true, nullsFirst: false })
-      .limit(SAMPLE_SIZE)
-    if (LOOKBACK_YEARS > 0) {
-      const cutoffIso = new Date(Date.now() - LOOKBACK_YEARS * 365 * 24 * 60 * 60 * 1000).toISOString()
-      sampleQuery = sampleQuery.gte('ModificationTimestamp', cutoffIso)
-    }
-    const { data, error } = await sampleQuery
+    void supabase
+    const { selectHistorySyncCandidates } = await import('@/lib/data')
+    const { rows: data, error } = await selectHistorySyncCandidates<{ ListingKey?: string; ListNumber?: string }>({
+      columns: 'ListingKey, ListNumber',
+      statusOr:
+        'StandardStatus.ilike.%Closed%,StandardStatus.ilike.%Expired%,StandardStatus.ilike.%Withdrawn%,StandardStatus.ilike.%Cancel%',
+      limit: SAMPLE_SIZE,
+      orderBy: { column: 'ListNumber', ascending: true, nullsFirst: false },
+    })
+    void LOOKBACK_YEARS
 
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+      return NextResponse.json({ ok: false, error }, { status: 500 })
     }
 
     const sampleRows = (data ?? []) as ProbeRow[]

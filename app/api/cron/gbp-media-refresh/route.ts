@@ -24,16 +24,24 @@ async function fetchActiveMattListings(limit: number) {
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey)
+  void supabase
   const officeName = process.env.GBP_BROKER_OFFICE_NAME || 'Ryan Realty LLC'
-  const { data, error } = await supabase
-    .from('listings')
-    .select(
-      'ListNumber,StreetNumber,StreetName,City,State,StandardStatus,ListAgentName,ListOfficeName,PhotoURL,ModificationTimestamp'
-    )
-    .eq('ListOfficeName', officeName)
-    .limit(200)
-
-  if (error) throw new Error(error.message)
+  const { getBrokerageListingTiles } = await import('@/lib/data')
+  const tiles = await getBrokerageListingTiles({ officeName, limit: 200 })
+  const data = tiles.map((t) => ({
+    ListNumber: t.ListNumber,
+    StreetNumber: t.StreetNumber,
+    StreetName: t.StreetName,
+    City: t.City,
+    State: t.State,
+    StandardStatus: t.StandardStatus,
+    ListAgentName: t.ListAgentName,
+    ListOfficeName: officeName,
+    PhotoURL: t.PhotoURL,
+    ModificationTimestamp: null as string | null,
+  }))
+  const error: { message: string } | null = null
+  if (error) throw new Error((error as { message: string }).message)
   return (data ?? [])
     .filter((r) => isActiveStatus(r.StandardStatus))
     .filter((r) => String(r.ListAgentName || '').toLowerCase().includes('matt'))

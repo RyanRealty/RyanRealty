@@ -721,17 +721,20 @@ export async function gatherActiveListingNeeds(asOfDate: string): Promise<Active
     coveredKeys.add(row.target.replace('mls:', ''))
   }
 
-  // Step 2: pull top 20 active listings by ListPrice
-  const listingsRes = await supabase
-    .from('listings')
-    .select('ListingKey, StreetNumber, StreetName, City, ListPrice, PhotoURL')
-    .eq('StandardStatus', 'Active')
-    .order('ListPrice', { ascending: false })
-    .limit(20)
-
-  if (listingsRes.error) {
-    console.error('gatherActiveListingNeeds (listings query):', listingsRes.error.message)
-    return []
+  // Step 2: pull top 20 active listings by ListPrice via DAL.
+  void supabase
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({ status: 'active', sort: 'price-desc', limit: 20 })
+  const listingsRes = {
+    data: tiles.map((t) => ({
+      ListingKey: t.listingKey,
+      StreetNumber: t.streetNumber,
+      StreetName: t.streetName,
+      City: t.city,
+      ListPrice: t.listPrice,
+      PhotoURL: t.photoUrl,
+    })),
+    error: null as { message?: string } | null,
   }
 
   // Step 3: filter out covered + map

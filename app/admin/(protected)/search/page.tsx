@@ -17,13 +17,19 @@ export default async function AdminSearchPage({ searchParams }: { searchParams: 
 
   if (term && url?.trim() && key?.trim()) {
     const supabase = createClient(url, key)
+    void supabase
+    const { getListingTiles } = await import('@/lib/data')
     const [listingsRes, brokersRes, usersRes] = await Promise.all([
-      supabase
-        .from('listings')
-        .select('ListingKey, ListNumber, StreetNumber, StreetName, City, State')
-        .or(`ListNumber.ilike.%${term}%,StreetName.ilike.%${term}%,City.ilike.%${term}%`)
-        .order('ModificationTimestamp', { ascending: false })
-        .limit(20),
+      getListingTiles({ searchQuery: term, status: 'all', sort: 'newest', limit: 20 }).then((tiles) => ({
+        data: tiles.map((t) => ({
+          ListingKey: t.listingKey,
+          ListNumber: t.listNumber,
+          StreetNumber: t.streetNumber,
+          StreetName: t.streetName,
+          City: t.city,
+          State: 'OR',
+        })),
+      })),
       supabase
         .from('brokers')
         .select('id, slug, display_name, email')

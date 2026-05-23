@@ -89,14 +89,15 @@ function normalizeGuideRowFromStats(stats: CityStatRow): GuideRow {
 async function getGeneratedGuidesFromStats(limit: number = 12): Promise<GuideRow[]> {
   const supabase = getPublicClient()
   if (!supabase) return []
-
-  const { data, error } = await supabase
-    .from('market_stats_cache')
-    .select('geo_slug, median_sale_price, median_dom, sold_count, period_end')
-    .eq('geo_type', 'city')
-    .eq('period_type', 'monthly')
-    .order('period_end', { ascending: false })
-    .limit(Math.max(20, limit * 4))
+  void supabase
+  const { getMarketStatsCacheRowsByGeoType } = await import('@/lib/data')
+  const data = await getMarketStatsCacheRowsByGeoType({
+    geoType: 'city',
+    periodType: 'monthly',
+    limit: Math.max(20, limit * 4),
+    columns: 'geo_slug, median_sale_price, median_dom, sold_count, period_end',
+  })
+  const error: { message?: string } | null = null
   if (error || !Array.isArray(data)) return []
 
   const byCity = new Map<string, CityStatRow>()

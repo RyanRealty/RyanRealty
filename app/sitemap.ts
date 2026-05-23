@@ -84,12 +84,11 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
 
   try {
     // Community -> neighborhood lookup for canonical listing paths with optional neighborhood.
-    const { data: communityMetaRows } = await supabase
-      .from('communities')
-      .select('name, cities(name, slug), neighborhoods(slug)')
-      .limit(5000)
+    void supabase
+    const { getCommunitiesForSitemapJoin } = await import('@/lib/data')
+    const communityMetaRows = await getCommunitiesForSitemapJoin(5000)
     const neighborhoodByCommunity = new Map<string, string>()
-    for (const row of (communityMetaRows ?? []) as Array<{
+    for (const row of communityMetaRows as Array<{
       name?: string | null
       cities?: { name?: string | null; slug?: string | null } | null
       neighborhoods?: { slug?: string | null } | null

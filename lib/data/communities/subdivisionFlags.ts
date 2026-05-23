@@ -132,6 +132,50 @@ export async function getCommunitiesWithCityNeighborhoodByNames(
   }>
 }
 
+/** Count communities matching a HEAD count + arbitrary not-null filter. */
+export async function countCommunitiesNotNull(
+  notNullColumn: string
+): Promise<number> {
+  const sb = adminClient() ?? supabaseAnon()
+  if (!sb) return 0
+  const { count } = await sb
+    .from('communities')
+    .select('id', { count: 'exact', head: true })
+    .not(notNullColumn, 'is', null)
+  return count ?? 0
+}
+
+/** Community → city.name + neighborhoods.slug embedded for sitemap lookup. */
+export async function getCommunitiesForSitemapJoin(
+  limit = 5000
+): Promise<Array<{
+  name?: string | null
+  cities?: { name?: string | null; slug?: string | null } | null
+  neighborhoods?: { slug?: string | null } | null
+}>> {
+  const sb = adminClient() ?? supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb
+    .from('communities')
+    .select('name, cities(name, slug), neighborhoods(slug)')
+    .limit(limit)
+  return (data ?? []) as Array<{
+    name?: string | null
+    cities?: { name?: string | null; slug?: string | null } | null
+    neighborhoods?: { slug?: string | null } | null
+  }>
+}
+
+/** Lite community list for sitemap (slug only). */
+export async function getCommunitiesForSitemap(
+  limit = 5000
+): Promise<Array<{ slug: string }>> {
+  const sb = adminClient() ?? supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb.from('communities').select('slug').limit(limit)
+  return ((data ?? []) as Array<{ slug?: string | null }>).filter((r): r is { slug: string } => typeof r.slug === 'string' && r.slug.trim().length > 0)
+}
+
 /** All communities in a neighborhood (lite projection for community-index aggregation). */
 export async function getCommunitiesInNeighborhoodLite(
   neighborhoodId: string

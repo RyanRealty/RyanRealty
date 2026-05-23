@@ -58,18 +58,23 @@ export async function GET(request: Request) {
   // communities (Tetherow, Sunriver, Eagle Crest, Three Rivers, etc.) and Bend
   // neighborhood districts (Awbrey Butte, Larkspur, etc.) get refreshed each cycle.
   // Source: data/resort-communities.json + Bend neighborhood districts in boundaries.
-  const { data: neighborhoodRows, error: nbhdErr } = await supabase
-    .from('boundaries')
-    .select('geo_slug')
-    .eq('geo_type', 'neighborhood')
+  void supabase
+  const { getBoundariesByGeoType } = await import('@/lib/data')
+  const neighborhoodRows = await getBoundariesByGeoType({
+    geoType: 'neighborhood',
+    columns: 'geo_slug',
+  })
+  const nbhdErr: { message?: string } | null = null
   if (nbhdErr) {
-    console.error('[refresh-market-stats] failed to load neighborhood slugs:', nbhdErr.message)
+    console.error('[refresh-market-stats] failed to load neighborhood slugs:', (nbhdErr as { message?: string }).message)
     return NextResponse.json(
-      { ok: false, error: `load neighborhoods: ${nbhdErr.message}` },
+      { ok: false, error: `load neighborhoods: ${(nbhdErr as { message?: string }).message}` },
       { status: 500 }
     )
   }
-  const neighborhoodSlugs: string[] = (neighborhoodRows ?? []).map((r) => r.geo_slug)
+  const neighborhoodSlugs: string[] = (neighborhoodRows ?? [])
+    .map((r) => String((r as { geo_slug?: string }).geo_slug ?? ''))
+    .filter((s) => s.length > 0)
 
   // All geos: cities + region + neighborhoods (resort communities + Bend districts)
   const geoEntries: Array<{ geo_type: string; geo_slug: string }> = [

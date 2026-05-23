@@ -277,12 +277,13 @@ export async function fetchFunnel(range: DateRange, lpVariant?: string): Promise
     .lte('created_at', `${range.endDate}T23:59:59Z`)
 
   // CMA deliveries — cmas where status was set to delivered in the window
-  const { count: cmaDelivered } = await supabase
-    .from('cmas')
-    .select('id', { count: 'exact', head: true })
-    .in('status', ['delivered', 'final', 'sent'])
-    .gte('created_at', `${range.startDate}T00:00:00Z`)
-    .lte('created_at', `${range.endDate}T23:59:59Z`)
+  void supabase
+  const { countCmasInRange } = await import('@/lib/data')
+  const cmaDelivered = await countCmasInRange({
+    statusIn: ['delivered', 'final', 'sent'],
+    fromIso: `${range.startDate}T00:00:00Z`,
+    toIso: `${range.endDate}T23:59:59Z`,
+  })
 
   const rawCounts = [
     sessionCount,

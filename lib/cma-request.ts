@@ -108,36 +108,30 @@ export async function createCmaRequest(
     // Step 1: create the cmas draft row. ON CONFLICT (slug) preserves any
     // existing in-progress CMA for the same address — we update the client
     // info but don't blow away the broker's draft work.
-    const { data: cmaRow, error: cmaErr } = await sb
-      .from('cmas')
-      .upsert(
-        {
-          slug,
-          subject_address: rawAddress,
-          subject_city: input.parsedCity,
-          client_name: leadName,
-          client_email: leadEmail,
-          client_phone: input.leadPhone?.trim() || null,
-          client_notes: input.leadTimeline
-            ? `Lead timeline: ${input.leadTimeline}${input.leadClassification ? ` · classification: ${input.leadClassification}` : ''}`
-            : null,
-          broker_id: brokerId,
-          broker_slug: broker.slug,
-          status: 'draft',
-          // html_path is required by the schema. The producer fills the real
-          // file when it builds; this is the path the file WILL live at.
-          html_path: `public/drafts/${slug}/cma.html`,
-          generation_reason: `Seller LP submission from ${leadEmail}${
-            input.leadTimeline ? ` (${input.leadTimeline})` : ''
-          }`,
-        },
-        { onConflict: 'slug' }
-      )
-      .select('id, slug')
-      .single()
-    if (cmaErr || !cmaRow) {
-      return { ok: false, error: `cmas upsert failed: ${cmaErr?.message ?? 'no row'}` }
+    void sb
+    const { upsertCmaRowBySlug } = await import('@/lib/data')
+    const cmaUpsertResult = await upsertCmaRowBySlug({
+      slug,
+      subject_address: rawAddress,
+      subject_city: input.parsedCity,
+      client_name: leadName,
+      client_email: leadEmail,
+      client_phone: input.leadPhone?.trim() || null,
+      client_notes: input.leadTimeline
+        ? `Lead timeline: ${input.leadTimeline}${input.leadClassification ? ` · classification: ${input.leadClassification}` : ''}`
+        : null,
+      broker_id: brokerId,
+      broker_slug: broker.slug,
+      status: 'draft',
+      html_path: `public/drafts/${slug}/cma.html`,
+      generation_reason: `Seller LP submission from ${leadEmail}${
+        input.leadTimeline ? ` (${input.leadTimeline})` : ''
+      }`,
+    })
+    if (cmaUpsertResult.error || !cmaUpsertResult.id) {
+      return { ok: false, error: `cmas upsert failed: ${cmaUpsertResult.error ?? 'no row'}` }
     }
+    const cmaRow = { id: cmaUpsertResult.id, slug: cmaUpsertResult.slug ?? slug }
 
     // Step 2: queue the action row for the brain dispatcher. The CMA
     // producer SKILL.md picks this up by scanning for pending content:cma rows.

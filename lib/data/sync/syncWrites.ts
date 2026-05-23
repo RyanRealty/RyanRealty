@@ -813,6 +813,131 @@ export async function updateExpiredListingByKey(
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
+/** Read one cmas row by slug (CMA email + admin detail). */
+export async function getCmaBySlug(slug: string): Promise<Record<string, unknown> | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb.from('cmas').select('*').eq('slug', slug).maybeSingle()
+  return (data ?? null) as Record<string, unknown> | null
+}
+
+/** Insert a cmas row (CMA producer / lib/cma-request). */
+export async function insertCmaRow(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('cmas').insert(row)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Upsert a cmas row by slug, return the new/updated id+slug. */
+export async function upsertCmaRowBySlug(
+  row: Record<string, unknown>
+): Promise<{ id: string | null; slug: string | null; error?: string }> {
+  const sb = client()
+  if (!sb) return { id: null, slug: null, error: 'Supabase not configured' }
+  const { data, error } = await sb
+    .from('cmas')
+    .upsert(row, { onConflict: 'slug' })
+    .select('id, slug')
+    .single()
+  if (error) return { id: null, slug: null, error: error.message }
+  return {
+    id: (data as { id?: string } | null)?.id ?? null,
+    slug: (data as { slug?: string } | null)?.slug ?? null,
+  }
+}
+
+/** Paginated cmas list for admin detail. */
+export async function listCmasForAdmin(options: {
+  limit: number
+  offset: number
+}): Promise<{ rows: Array<Record<string, unknown>>; total: number }> {
+  const sb = client()
+  if (!sb) return { rows: [], total: 0 }
+  const { data, count } = await sb
+    .from('cmas')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(options.offset, options.offset + options.limit - 1)
+  return { rows: (data ?? []) as Array<Record<string, unknown>>, total: count ?? data?.length ?? 0 }
+}
+
+/** Aggregate CMA count for analytics (delivered/final/sent in range). */
+export async function countCmasInRange(options: {
+  fromIso?: string
+  toIso?: string
+  statusIn?: string[]
+}): Promise<number> {
+  const sb = client()
+  if (!sb) return 0
+  let q = sb.from('cmas').select('id', { count: 'exact', head: true })
+  if (options.statusIn && options.statusIn.length > 0) q = q.in('status', options.statusIn)
+  if (options.fromIso) q = q.gte('created_at', options.fromIso)
+  if (options.toIso) q = q.lte('created_at', options.toIso)
+  const { count } = await q
+  return count ?? 0
+}
+
+/** Boundaries row reader (cron/refresh-market-stats). */
+export async function getBoundariesByGeoType(options: {
+  geoType: string
+  limit?: number
+  columns?: string
+}): Promise<Array<Record<string, unknown>>> {
+  const sb = client()
+  if (!sb) return []
+  const columns = options.columns ?? 'slug, geo_type, geo_label, geo_name'
+  const { data } = await sb
+    .from('boundaries')
+    .select(columns)
+    .eq('geo_type', options.geoType)
+    .limit(Math.min(Math.max(options.limit ?? 5000, 1), 50000))
+  return (data ?? []) as Array<Record<string, unknown>>
+}
+
+/** Upsert one video_tours_cache row. */
+export async function upsertVideoToursCacheRow(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('video_tours_cache').upsert(row, { onConflict: 'scope' })
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Read expired_listings rows for pipeline-digest (gte expired_at). */
+export async function getExpiredListingsForDigest(options: {
+  sinceIso: string
+  limit?: number
+}): Promise<Array<Record<string, unknown>>> {
+  const sb = client()
+  if (!sb) return []
+  const { data } = await sb
+    .from('expired_listings')
+    .select('*')
+    .gte('expired_at', options.sinceIso)
+    .order('expired_at', { ascending: false })
+    .limit(Math.min(Math.max(options.limit ?? 200, 1), 5000))
+  return (data ?? []) as Array<Record<string, unknown>>
+}
+
+/** Generic listings select with flexible columns + filter — used by remaining admin/cron files. */
+export async function selectListingsAdmin<T extends Record<string, unknown>>(options: {
+  columns: string
+  filter?: (q: unknown) => unknown
+  limit?: number
+}): Promise<T[]> {
+  const sb = client()
+  if (!sb) return []
+  let q: unknown = sb.from('listings').select(options.columns)
+  if (options.filter) q = options.filter(q)
+  if (typeof options.limit === 'number') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    q = (q as any).limit(options.limit)
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (q as any)
+  return (data ?? []) as T[]
+}
+
 /** Read sync_cursor singleton (admin health checks). */
 export async function getSyncCursor(): Promise<{
   last_completed_at?: string | null
