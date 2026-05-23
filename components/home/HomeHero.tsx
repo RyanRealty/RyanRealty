@@ -12,8 +12,23 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getHomeHeroImage, resolveUnsplashHeroImage } from '@/lib/hero-media'
 
-const DEFAULT_HERO_IMAGE = getHomeHeroImage()
+// Canonical brand hero — locked 2026-05-13 per CLAUDE.md / SITE_SPEC.md.
+// Old Mill District drone photo: three smokestacks, American flag at top,
+// Deschutes River with floaters + kayakers, Cascade mountain horizon.
+const DEFAULT_HERO_IMAGE = '/brand/hero/hero-old-mill-master-4k.jpg'
+void getHomeHeroImage
 const SEARCH_DEBOUNCE_MS = 90
+
+/** Seven Central Oregon city chips per SITE_SPEC homepage hero. */
+const HERO_CITY_CHIPS = [
+  'Bend',
+  'Redmond',
+  'Sisters',
+  'Sunriver',
+  'La Pine',
+  'Madras',
+  'Prineville',
+] as const
 
 type MarketSnapshot = {
   count: number
@@ -198,16 +213,16 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
 
   return (
     <section ref={sectionRef} className="relative min-h-[60vh] flex items-center justify-center overflow-hidden w-full" aria-label="Hero">
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 hero-kenburns-bg motion-reduce:[animation:none]">
         {useVideo ? (
           <>
             {/* Image loads instantly (priority) for fast LCP, video fades in on top after loading */}
             {backgroundImage && (
               <Image
                 src={backgroundImage}
-                alt="Central Oregon landscape"
+                alt="Old Mill District drone view — American flag, Deschutes River, Cascade mountain horizon"
                 fill
-                className="object-cover"
+                className="object-cover hero-kenburns motion-reduce:[animation:none]"
                 sizes="100vw"
                 priority
               />
@@ -235,9 +250,9 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
         ) : backgroundImage ? (
           <Image
             src={backgroundImage}
-            alt="Central Oregon landscape"
+            alt="Old Mill District drone view — American flag, Deschutes River, Cascade mountain horizon"
             fill
-            className="object-cover"
+            className="object-cover hero-kenburns motion-reduce:[animation:none]"
             sizes="100vw"
             priority
           />
@@ -432,6 +447,31 @@ export default function HomeHero({ marketSnapshot, heroVideoUrl, heroImageUrl }:
             </div>
           )}
         </form>
+
+        {/* Seven city chips — fast routing into the city LPs. Per SITE_SPEC
+            homepage hero contract: Bend, Redmond, Sisters, Sunriver,
+            La Pine, Madras, Prineville. */}
+        <nav aria-label="Browse cities" className="hero-fadeup mt-6 motion-reduce:[animation:none] motion-reduce:opacity-100">
+          <ul className="flex flex-wrap justify-center gap-2">
+            {HERO_CITY_CHIPS.map((city) => (
+              <li key={city}>
+                <Link
+                  href={cityPagePath(city)}
+                  onClick={() => trackEvent('hero_city_chip', { city })}
+                  className="inline-block rounded-full border border-primary-foreground/65 bg-primary-foreground/10 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-primary-foreground backdrop-blur-sm transition hover:border-primary-foreground hover:bg-primary-foreground/20"
+                >
+                  {city}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Trust copy — fades up under the chips. Matt's voice: small business,
+            direct, honest. Per CLAUDE.md brand voice §0.5. */}
+        <p className="hero-fadeup hero-fadeup-delay mt-6 text-sm sm:text-base text-primary-foreground/90 motion-reduce:[animation:none] motion-reduce:opacity-100">
+          A small business serving Central Oregon since 2023. Honored to help you find the right home.
+        </p>
 
         {/* Browse-the-feed entry — secondary path for discovery-first
             visitors (paid-ad landings, IG / TikTok referrals) who don't

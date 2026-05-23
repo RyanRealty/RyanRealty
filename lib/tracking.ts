@@ -62,6 +62,7 @@ export type EventName =
   | 'homepage_view'
   | 'hero_search'
   | 'hero_impression'
+  | 'hero_city_chip'
   | 'featured_impression'
   | 'view_featured_listings'
   | 'community_impression'

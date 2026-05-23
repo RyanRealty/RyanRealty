@@ -385,3 +385,51 @@
     overflow: hidden;
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────────
+ * Homepage hero animations — Ken Burns + fade-up
+ * Per CLAUDE.md Design System v2 (motion ladder: 20s Ken Burns, 400ms
+ * fade-up entrances). Respects prefers-reduced-motion: motion-reduce
+ * Tailwind variant on the consuming element sets animation: none.
+ * ─────────────────────────────────────────────────────────────────── */
+@keyframes hero-kenburns {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: scale(1.08) translate3d(-1%, -1%, 0);
+  }
+}
+
+.hero-kenburns {
+  animation: hero-kenburns 20s ease-out forwards;
+  will-change: transform;
+}
+
+@keyframes hero-fadeup {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.hero-fadeup {
+  animation: hero-fadeup 600ms ease-out 200ms both;
+}
+
+.hero-fadeup-delay {
+  animation-delay: 500ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-kenburns,
+  .hero-fadeup {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
