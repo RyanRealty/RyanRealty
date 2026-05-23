@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.8 (2026-05-23)
+
+### Bug Fixes
+- fix: raise MV refresh statement_timeout to 300s (production cron green)
+
+---
+
+
 ## v1.288.7 (2026-05-23)
 
 ### Maintenance
