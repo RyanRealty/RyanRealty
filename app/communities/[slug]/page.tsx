@@ -90,9 +90,11 @@ import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { 
 
 export const dynamicParams = true
 
+// Empty during build to dodge Supabase statement-timeout flakes — see equivalent
+// comment in app/cities/[slug]/page.tsx. Revalidate=60 + dynamicParams=true
+// keeps the user experience identical (first request renders + caches for 60s).
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
-  const registry = resortCommunitiesRegistry as { communities: Array<{ slug: string }> }
-  return registry.communities.map((c) => ({ slug: c.slug }))
+  return []
 }
 
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {

@@ -105,8 +105,15 @@ const CITY_SLUGS = [
 
 export const dynamicParams = true
 
+// Empty during build, populated on demand. Build-time prerender was hitting
+// Supabase statement timeouts on cold cache (e.g. tumalo), failing notFound()
+// after 3 retries and exiting the build. With dynamicParams=true + revalidate=60
+// the slugs still render on first request and cache for 60s — same user
+// experience without the build-time DB dependency.
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
-  return CITY_SLUGS.map((slug) => ({ slug }))
+  // Return empty to skip build prerender. The CITY_SLUGS list is preserved
+  // as documentation of the canonical 11 slugs and for future reference.
+  return []
 }
 
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {

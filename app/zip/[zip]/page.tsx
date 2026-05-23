@@ -29,8 +29,12 @@ const CANONICAL_ZIPS = new Set([
 export const dynamicParams = false
 export const revalidate = 60
 
+// Empty during build to dodge Supabase statement-timeout flakes — see equivalent
+// comment in app/cities/[slug]/page.tsx. dynamicParams=false still locks the
+// canonical 10-ZIP allow-list; any other ZIP returns 404 via the CANONICAL_ZIPS
+// check inside the page handler.
 export async function generateStaticParams(): Promise<Array<{ zip: string }>> {
-  return Array.from(CANONICAL_ZIPS).map((zip) => ({ zip }))
+  return []
 }
 
 function normalizeZip(raw: string): string {

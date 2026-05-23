@@ -101,11 +101,12 @@ const BEND_NEIGHBORHOOD_SLUGS = [
 
 export const dynamicParams = true
 
+// Empty during build, populated on demand — see equivalent comment in
+// app/cities/[slug]/page.tsx. Build-time prerender hit Supabase statement
+// timeouts on cold-cache neighborhoods (e.g. awbrey-butte) causing the
+// build to fail after 3 retries.
 export async function generateStaticParams(): Promise<Array<{ slug: string; neighborhoodSlug: string }>> {
-  return BEND_NEIGHBORHOOD_SLUGS.map((neighborhoodSlug) => ({
-    slug: 'bend',
-    neighborhoodSlug,
-  }))
+  return []
 }
 
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {

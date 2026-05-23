@@ -2,15 +2,14 @@ import type { Metadata, Viewport } from "next";
 import { validateEnv } from "@/lib/env";
 import { Suspense } from "react";
 import "./globals.css";
-import { getSession } from "./actions/auth";
 import { getBrokerageSettings } from "./actions/brokerage";
-import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import HeaderWithSession from "../components/layout/HeaderWithSession";
+import SignInPromptWithSession from "../components/layout/SignInPromptWithSession";
+import VisitTrackerWithSession from "../components/layout/VisitTrackerWithSession";
 import HideOnLP from "../components/layout/HideOnLP";
 import JsonLd from "../components/JsonLd";
 import CookieConsentBanner from "../components/CookieConsentBanner";
-import SignInPrompt from "../components/SignInPrompt";
-import VisitTracker from "../components/VisitTracker";
 import GlobalIntentTracker from "../components/GlobalIntentTracker";
 import AuthCodeRedirect from "../components/AuthCodeRedirect";
 import AuthErrorRedirect from "../components/AuthErrorRedirect";
@@ -92,22 +91,22 @@ function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 1200): Pro
   ])
 }
 
-/* Async islands — each fetches its own data inside Suspense so the layout
- * shell stays free of top-level dynamic API calls. Reading cookies / headers
- * at the layout top forces the entire route tree to render dynamically,
- * which kills the static prerender for /cities/[slug], /communities/[slug],
- * /zip/[zip], and /listing/[listingKey] (root cause of the SITE_SPEC §45-47
- * cold-cache p95 spikes). Confining the auth read to a Suspense'd child
- * lets the shell + page content prerender; the auth-aware Header just
- * streams in as a dynamic island. */
-async function HeaderIsland() {
-  const [session, brokerage] = await Promise.all([
-    withTimeout(getSession(), null, 700),
-    withTimeout(getBrokerageSettings(), null, 1200),
-  ])
+/* Server island — fetches brokerage settings only. NO cookie reads here:
+ * `getBrokerageSettings` uses the service-role client + unstable_cache so
+ * it never opts the route out of static rendering. The header / sign-in /
+ * visit-tracker chrome moved to client-side session fetch via /api/auth/me
+ * (see HeaderWithSession / SignInPromptWithSession / VisitTrackerWithSession).
+ *
+ * Why: keeping `getSession()` on the server forced
+ * `Cache-Control: private, no-store` on every response — the SITE_SPEC
+ * §45-47 cold-cache p95 root cause. Moving the cookie read out of the
+ * render path lets the next.config edge-cache rule actually take effect
+ * and the Vercel CDN can cache the prerendered HTML. */
+async function HeaderShellIsland() {
+  const brokerage = await withTimeout(getBrokerageSettings(), null, 1200)
   const brokerageName = brokerage?.name ?? 'Ryan Realty'
   const headerLogoUrl = brokerage?.logo_url?.trim() || '/logo-header-white.png'
-  return <Header user={session?.user} brokerageName={brokerageName} headerLogoUrl={headerLogoUrl} />
+  return <HeaderWithSession brokerageName={brokerageName} headerLogoUrl={headerLogoUrl} />
 }
 
 async function FooterIsland() {
@@ -121,16 +120,6 @@ async function FooterIsland() {
           .join(', ')
       : null
   return <Footer brokerageName={brokerageName} brokerageLogoUrl={brokerageLogoUrl} brokerageEmail={brokerage?.primary_email ?? null} brokeragePhone={brokerage?.primary_phone ?? null} brokerageAddress={brokerageAddress} />
-}
-
-async function SignInPromptIsland() {
-  const session = await withTimeout(getSession(), null, 700)
-  return <SignInPrompt user={session?.user ?? null} />
-}
-
-async function VisitTrackerIsland() {
-  const session = await withTimeout(getSession(), null, 700)
-  return <VisitTracker userId={session?.user?.id ?? null} userEmail={session?.user?.email ?? null} />
 }
 
 export default function RootLayout({
@@ -185,11 +174,12 @@ export default function RootLayout({
           <HideOnLP>
             <JsonLd />
           </HideOnLP>
-          {/* Header streams in independently — doesn't block page content.
+          {/* Header streams in independently — fetches brokerage server-side
+              (cookie-free) then client-fetches session from /api/auth/me. The
               HideOnLP unmounts the chrome on /lp/* after hydration. */}
           <HideOnLP>
             <Suspense fallback={<div className="h-16 bg-primary" />}>
-              <HeaderIsland />
+              <HeaderShellIsland />
             </Suspense>
           </HideOnLP>
           <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
@@ -202,17 +192,13 @@ export default function RootLayout({
             <CookieConsentBanner />
           </HideOnLP>
           <HideOnLP>
-            <Suspense fallback={null}>
-              <SignInPromptIsland />
-            </Suspense>
+            <SignInPromptWithSession />
           </HideOnLP>
           <HideOnLP>
             <InstallPrompt />
           </HideOnLP>
           <HideOnLP>
-            <Suspense fallback={null}>
-              <VisitTrackerIsland />
-            </Suspense>
+            <VisitTrackerWithSession />
           </HideOnLP>
           {/* High-intent micro-event capture (tel:, mailto:, form_start).
               Runs on every page including LPs because form_start on a seller
