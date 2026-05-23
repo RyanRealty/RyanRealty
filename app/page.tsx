@@ -130,6 +130,50 @@ async function ActivityFeedAsync({ session }: { session: PublicSession }) {
   )
 }
 
+async function FeaturedListingsAsync({ session }: { session: PublicSession }) {
+  const { getFeaturedListings } = await import('./actions/home')
+  const { getEngagementCountsBatch } = await import('./actions/engagement')
+  const [featured, savedKeys, likedKeys] = await Promise.all([
+    withTimeout(getFeaturedListings(), [] as ListingTileRow[], HOME_FETCH_MS, 'home-featured'),
+    session?.user ? withTimeout(getSavedListingKeys(), [] as string[], HOME_FETCH_MS, 'home-featured-saved') : Promise.resolve([] as string[]),
+    session?.user ? withTimeout(getLikedListingKeys(), [] as string[], HOME_FETCH_MS, 'home-featured-liked') : Promise.resolve([] as string[]),
+  ])
+  if (!featured.length) return null
+  const keys = featured.map((l) => (l.ListingKey ?? l.ListNumber ?? '').toString()).filter(Boolean)
+  const engagementCounts = keys.length > 0
+    ? await withTimeout(getEngagementCountsBatch(keys), {}, HOME_FETCH_MS, 'home-featured-eng')
+    : {}
+  const { default: FeaturedListings } = await import('@/components/home/FeaturedListings')
+  return (
+    <section className="px-4 py-12 sm:px-6 sm:py-14" aria-labelledby="featured-listings-heading">
+      <div className="mx-auto max-w-7xl">
+        <h2
+          id="featured-listings-heading"
+          className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
+        >
+          Featured listings
+        </h2>
+        <p className="mt-2 text-muted-foreground">
+          Top-viewed Central Oregon homes this week.
+        </p>
+        <div className="mt-6">
+          <FeaturedListings
+            listings={featured.slice(0, 4)}
+            savedKeys={savedKeys}
+            likedKeys={likedKeys}
+            signedIn={!!session?.user}
+            userEmail={session?.user?.email ?? null}
+            downPaymentPercent={20}
+            interestRate={7.5}
+            loanTermYears={30}
+            engagementCounts={engagementCounts}
+          />
+        </div>
+      </div>
+    </section>
+  )
+}
+
 async function OpenHouseAsync() {
   const weekendOpenHouses = await withTimeout(getOpenHousesWithListings(), [], HOME_FETCH_MS, 'home-open-houses')
   return (
@@ -418,6 +462,10 @@ export default async function Home() {
 
       <Suspense fallback={<SectionSkeleton />}>
         <MarketSnapshotSection />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <FeaturedListingsAsync session={session} />
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
