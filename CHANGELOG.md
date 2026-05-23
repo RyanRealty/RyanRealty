@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.12 (2026-05-23)
+
+### Maintenance
+- perf(listings): getTotalListingsCount uses geo_snapshot_mv — 340→339
+
+---
+
+
 ## v1.280.11 (2026-05-23)
 
 ### Maintenance
