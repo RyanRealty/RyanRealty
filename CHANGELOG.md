@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.284.3 (2026-05-23)
+
+### Other
+- activity feed: Supabase Realtime subscription (SITE_SPEC line 67)
+
+---
+
+
 ## v1.284.2 (2026-05-23)
 
 ### Other
