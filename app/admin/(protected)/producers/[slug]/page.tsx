@@ -135,7 +135,7 @@ export default async function ProducerDetailPage({ params }: PageProps) {
 function markdownToHtml(md: string): string {
   if (!md.trim()) return '<p class="text-muted-foreground italic">No SKILL.md body content.</p>'
 
-  let html = md
+  const html = md
     // Fenced code blocks
     .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
       const escaped = code.replace(/</g, '&lt;').replace(/>/g, '&gt;')

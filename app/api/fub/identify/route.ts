@@ -144,7 +144,7 @@ export async function POST(request: Request) {
   // the response. We re-resolve the person id because trackSignedInUser may
   // have just created the record.
   const personForTagging = existing || (await findPersonByEmail(email))
-  let taggedPersonId: number | null = personForTagging?.id ?? null
+  const taggedPersonId: number | null = personForTagging?.id ?? null
   if (taggedPersonId) {
     const tagSet: Array<string | undefined> = []
     if (campaignClean?.source) tagSet.push(`src:${campaignClean.source.toLowerCase().slice(0, 40)}`)
