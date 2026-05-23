@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.12 (2026-05-23)
+
+### Maintenance
+- perf(layout): move chrome session-fetch client-side, lazy-prerender LP routes (SITE_SPEC §45-47)
+
+---
+
+
 ## v1.288.11 (2026-05-23)
 
 ### Maintenance
