@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,23 @@ type Props = {
 }
 
 /**
+ * Ryan Realty broker headshot map (SITE_SPEC line 126).
+ * Resolves a listing agent's email to a transparent-background PNG headshot.
+ * `.png` is canonical — the alpha-matted variants drop cleanly onto any
+ * background. Locked to the 3 brokers per design_system/MANIFEST.md §team.
+ */
+const BROKER_HEADSHOT_BY_EMAIL: Record<string, { src: string; alt: string }> = {
+  'matt@ryan-realty.com': { src: '/images/brokers/ryan-matt.png', alt: 'Matt Ryan' },
+  'paulstevenson@ryan-realty.com': { src: '/images/brokers/stevenson-paul.png', alt: 'Paul Stevenson' },
+  'rebeccapeterson@ryan-realty.com': { src: '/images/brokers/peterson-rebecca.png', alt: 'Rebecca Ryser Peterson' },
+}
+
+function resolveBrokerHeadshot(email: string | null | undefined): { src: string; alt: string } | null {
+  if (!email) return null
+  return BROKER_HEADSHOT_BY_EMAIL[email.trim().toLowerCase()] ?? null
+}
+
+/**
  * Listing sidebar CTA card.
  * Ryan Realty CTAs are PRIMARY and prominent — the whole point is to capture the lead.
  * Listing agent attribution is a small, secondary line at the bottom for MLS compliance.
@@ -32,6 +50,7 @@ type Props = {
 export default function ShowcaseAgent({ listingKey, agent, shareUrl }: Props) {
   const contactUrl = `/contact?listing=${encodeURIComponent(listingKey)}&reason=inquiry`
   const tourUrl = `/contact?listing=${encodeURIComponent(listingKey)}&reason=tour`
+  const brokerHeadshot = resolveBrokerHeadshot(agent?.agent_email)
 
   const trackSchedule = () => {
     trackEvent('schedule_showing_click', { listing_key: listingKey, listing_url: shareUrl })
@@ -54,6 +73,29 @@ export default function ShowcaseAgent({ listingKey, agent, shareUrl }: Props) {
   return (
     <Card className="border-border bg-card">
       <CardContent className="p-6">
+        {/* Ryan Realty broker headshot — only when the listing agent is one
+            of the three Ryan Realty brokers. Email match against
+            BROKER_HEADSHOT_BY_EMAIL. Transparent PNG drops cleanly onto
+            the card background per design_system/MANIFEST.md §team. */}
+        {brokerHeadshot && (
+          <div className="mb-4 flex items-center gap-3">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-muted">
+              <Image
+                src={brokerHeadshot.src}
+                alt={brokerHeadshot.alt}
+                fill
+                sizes="64px"
+                className="object-cover object-top"
+                priority={false}
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">{brokerHeadshot.alt}</p>
+              <p className="text-xs text-muted-foreground">Listing broker</p>
+            </div>
+          </div>
+        )}
+
         {/* Ryan Realty CTAs — primary and prominent */}
         <p className="text-lg font-semibold text-foreground">Interested in this home?</p>
         <p className="mt-1 text-sm text-muted-foreground">
