@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.12 (2026-05-23)
+
+### Other
+- DAL: move engagement_metrics into lib/data/engagement
+
+---
+
+
 ## v1.282.11 (2026-05-23)
 
 ### Other
