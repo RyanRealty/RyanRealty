@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T01:09:01.364Z",
-  "total": 231,
+  "generatedAt": "2026-05-23T01:10:15.532Z",
+  "total": 227,
   "byFile": {
     "app/actions/sync-spark.ts": 28,
     "lib/listing-processor.ts": 16,
@@ -8,11 +8,11 @@
     "app/actions/admin-listing-detail.ts": 10,
     "app/actions/listings.ts": 10,
     "app/actions/cities.ts": 9,
-    "app/actions/market-stats.ts": 8,
     "app/actions/area-guide-upload.ts": 7,
     "app/api/cron/sync-delta/route.ts": 7,
     "lib/fetch-listings-with-videos.ts": 6,
     "app/actions/market-reports.ts": 4,
+    "app/actions/market-stats.ts": 4,
     "app/actions/place-content-pipeline.ts": 4,
     "app/actions/pulse-feed.ts": 4,
     "app/api/calendar/route.ts": 4,

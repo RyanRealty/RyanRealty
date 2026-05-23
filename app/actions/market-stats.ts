@@ -152,44 +152,35 @@ export async function populateMarketPulseForCity(cityName: string): Promise<{ ok
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const cutoff30 = thirtyDaysAgo.toISOString().slice(0, 10)
+    const cutoff7 = sevenDaysAgo.toISOString().slice(0, 10)
 
-    // Active count + avg/median price — paginate to get ALL rows (Supabase caps at 1,000)
-    const { fetchAllRows } = await import('@/lib/supabase/paginate')
-    const activeData = await fetchAllRows<{ ListPrice?: number | null }>(
-      supabase, 'listings', 'ListPrice',
-      (q: any) => q.eq('"City"', cityName)
-        .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
-        .not('ListPrice', 'is', null),
-    )
-    const prices = activeData.map((r) => Number(r.ListPrice)).filter((p) => Number.isFinite(p) && p > 0).sort((a, b) => a - b)
+    // DAL: city aggregations via listing_tile_mv.
+    const { getCityListings: getCityListingsDAL } = await import('@/lib/data')
+    const [activeTiles, pendingTiles] = await Promise.all([
+      getCityListingsDAL(cityName, { status: 'active', limit: 5000 }),
+      getCityListingsDAL(cityName, { status: 'pending-only', limit: 5000 }),
+    ])
+    const prices = activeTiles
+      .map((t) => Number(t.listPrice))
+      .filter((p) => Number.isFinite(p) && p > 0)
+      .sort((a, b) => a - b)
     const activeCount = prices.length
-    const avgListPrice = prices.length > 0 ? Math.round(prices.reduce((s, p) => s + p, 0) / prices.length) : null
+    const avgListPrice =
+      prices.length > 0 ? Math.round(prices.reduce((s, p) => s + p, 0) / prices.length) : null
     const medianListPrice = prices.length > 0 ? prices[Math.floor(prices.length / 2)]! : null
+    const pendingCount = pendingTiles.length
+    const new7d = activeTiles.filter(
+      (t) => t.onMarketDate != null && t.onMarketDate.slice(0, 10) >= cutoff7
+    ).length
+    const new30d = activeTiles.filter(
+      (t) => t.onMarketDate != null && t.onMarketDate.slice(0, 10) >= cutoff30
+    ).length
 
-    // Pending count
-    const { count: pendingCount } = await supabase
-      .from('listings')
-      .select('ListingKey', { count: 'exact', head: true })
-      .eq('"City"', cityName)
-      .or('StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%,StandardStatus.ilike.%Contingent%')
-
-    // New in last 7 days
-    const { count: new7d } = await supabase
-      .from('listings')
-      .select('ListingKey', { count: 'exact', head: true })
-      .eq('"City"', cityName)
-      .or('StandardStatus.is.null,StandardStatus.ilike.%Active%')
-      .gte('OnMarketDate', sevenDaysAgo.toISOString().slice(0, 10))
-
-    // New in last 30 days
-    const { count: new30d } = await supabase
-      .from('listings')
-      .select('ListingKey', { count: 'exact', head: true })
-      .eq('"City"', cityName)
-      .or('StandardStatus.is.null,StandardStatus.ilike.%Active%')
-      .gte('OnMarketDate', thirtyDaysAgo.toISOString().slice(0, 10))
-
-    // Upsert into market_pulse_live
+    // Upsert into market_pulse_live (write path stays on the table; reads
+    // are DAL-protected. The write is allow-listed below the boundary check
+    // because the destination IS the canonical cache table.)
+    // eslint-disable-next-line no-restricted-syntax -- destination cache write
     const { error } = await supabase
       .from('market_pulse_live')
       .upsert({
@@ -197,9 +188,9 @@ export async function populateMarketPulseForCity(cityName: string): Promise<{ ok
         geo_slug: geoSlug,
         geo_label: cityName,
         active_count: activeCount,
-        pending_count: pendingCount ?? 0,
-        new_count_7d: new7d ?? 0,
-        new_count_30d: new30d ?? 0,
+        pending_count: pendingCount,
+        new_count_7d: new7d,
+        new_count_30d: new30d,
         median_list_price: medianListPrice,
         avg_list_price: avgListPrice,
         market_health_score: null,
@@ -241,15 +232,12 @@ export async function populateAllMarketPulse(): Promise<{ results: Array<{ city:
 
 /** Lightweight fallback — just count active listings, no complex aggregations */
 async function getQuickCityCount(cityName: string): Promise<CityMarketStats> {
+  void createServiceClient
   try {
-    const supabase = createServiceClient()
-    const { count } = await supabase
-      .from('listings')
-      .select('ListingKey', { count: 'exact', head: true })
-      .eq('"City"', cityName)
-      .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
+    const { getCityListings: getCityListingsDAL } = await import('@/lib/data')
+    const tiles = await getCityListingsDAL(cityName, { status: 'active', limit: 5000 })
     return {
-      count: count ?? 0,
+      count: tiles.length,
       avgPrice: null,
       medianPrice: null,
       avgDom: null,
