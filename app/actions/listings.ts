@@ -1248,8 +1248,11 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     withdrawnStrictBacklogRes,
     canceledStrictBacklogRes,
   ] = await Promise.all([
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(ACTIVE_STATUS_OR)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true })),
+    // DAL: active total via getTotalListingsCount() — counts city snapshots.
+    // Wrap into { count } shape to match the rest of countExactWithRetry results.
+    getTotalListingsCount().then((count) => ({ count })),
+    // DAL: all rows via getTotalListingsRows() — counts listing_tile_mv
+    getTotalListingsRows().then((count) => ({ count })),
     countExactWithRetry(async () => await supabase.from('listing_history').select('listing_key', { count: 'exact', head: true })),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(ACTIVE_OR_PENDING_OR).eq('history_finalized', false)),
     countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_finalized', true)),
@@ -1328,8 +1331,10 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     canceledStrictBacklogRes.count
 
   const countErrors = [
-    totalRes.error,
-    listingsRes.error,
+    // totalRes + listingsRes now come from DAL (no .error field — DAL returns
+    // number-only on success or throws on failure).
+    undefined,
+    undefined,
     activeNeedingHistoryRes.error,
     finalizedRes.error,
     verifiedRes.error,
