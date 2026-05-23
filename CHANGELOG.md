@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.31 (2026-05-23)
+
+### Other
+- DAL: extend sync DAL + migrate sync-spark.ts hot paths
+
+---
+
+
 ## v1.282.30 (2026-05-23)
 
 ### Other
