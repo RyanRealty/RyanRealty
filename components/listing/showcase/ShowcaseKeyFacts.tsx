@@ -12,7 +12,10 @@ function formatNum(n: number | null | undefined): string {
 
 function formatPrice(n: number | null | undefined): string {
   if (n == null) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
+  // Brand-voice rule (CLAUDE.md §0.6 + SITE_SPEC line 122): currency rounded
+  // to the nearest thousand. $895,250 → $895,000. $895,750 → $896,000.
+  const rounded = Math.round(Number(n) / 1000) * 1000
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rounded)
 }
 
 type Fact = { label: string; value: string }
