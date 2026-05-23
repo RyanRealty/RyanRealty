@@ -230,6 +230,26 @@ export const getListingTiles = (filter: GetListingTilesFilter): Promise<ListingT
 }
 
 /**
+ * Total rows in listing_tile_mv. The MV is 1:1 with the source listings
+ * table (no WHERE clause at MV creation), so this is the true total
+ * count of listings rows including all statuses (active + pending + closed
+ * + expired + canceled + withdrawn). Cached 5 min.
+ */
+export const getTotalListingCount = (): Promise<number> =>
+  unstable_cache(
+    async () => {
+      const supabase = supabaseAnon()
+      if (!supabase) return 0
+      const { count } = await supabase
+        .from('listing_tile_mv')
+        .select('listing_key', { count: 'exact', head: true })
+      return count ?? 0
+    },
+    ['listing-tile-count', 'all'],
+    { revalidate: 300, tags: [cacheTag.listings] }
+  )()
+
+/**
  * Get the active listing tiles for a city. Wrapper that applies the right
  * default scope.
  */

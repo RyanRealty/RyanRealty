@@ -1136,10 +1136,8 @@ export async function getTotalListingsCount(): Promise<number> {
  * Total rows in listings table (all statuses). For admin/sync stats.
  */
 export async function getTotalListingsRows(): Promise<number> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return 0
-  const { count } = await supabase.from('listings').select('ListingKey', { count: 'exact', head: true })
-  return count ?? 0
+  const { getTotalListingCount } = await import('@/lib/data')
+  return getTotalListingCount()
 }
 
 /**
