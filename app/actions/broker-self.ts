@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { revalidatePath } from 'next/cache'
+import { getListingTiles } from '@/lib/data'
 
 type BrokerSelfRow = {
   id: string
@@ -102,23 +103,31 @@ export async function getCurrentBrokerDashboard() {
     return { broker, activeListings: 0, sold24m: 0, soldVolume24m: 0, viewCount: 0, saveCount: 0, likeCount: 0 }
   }
 
-  const { data: activeRows } = await supabase
-    .from('listings')
-    .select('ListingKey')
-    .in('ListingKey', listingKeys.slice(0, 1000))
-    .or('StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
-  const activeListings = (activeRows ?? []).length
+  // DAL: count broker's active listings + last-24mo sold/volume.
+  const activeTiles = await getListingTiles({
+    listingKeys: listingKeys.slice(0, 1000),
+    status: 'active',
+    limit: 500,
+  })
+  const activeListings = activeTiles.length
 
   const since = new Date()
   since.setMonth(since.getMonth() - 24)
-  const { data: soldRows } = await supabase
-    .from('listings')
-    .select('ClosePrice, CloseDate')
-    .in('ListingKey', listingKeys.slice(0, 1000))
-    .gte('CloseDate', since.toISOString().slice(0, 10))
-    .or('StandardStatus.ilike.%Closed%,StandardStatus.ilike.%Sold%')
-  const sold24m = (soldRows ?? []).length
-  const soldVolume24m = (soldRows ?? []).reduce((sum: number, row: { ClosePrice?: number | null }) => sum + Number(row.ClosePrice ?? 0), 0)
+  const sinceIso = since.toISOString().slice(0, 10)
+  const soldTiles = await getListingTiles({
+    listingKeys: listingKeys.slice(0, 1000),
+    status: 'closed',
+    sort: 'close-newest',
+    limit: 500,
+  })
+  const soldFiltered = soldTiles.filter(
+    (t) => t.closeDate != null && t.closeDate >= sinceIso,
+  )
+  const sold24m = soldFiltered.length
+  const soldVolume24m = soldFiltered.reduce(
+    (sum, t) => sum + Number(t.closePrice ?? 0),
+    0,
+  )
 
   const { data: engagementRows } = await supabase
     .from('engagement_metrics')

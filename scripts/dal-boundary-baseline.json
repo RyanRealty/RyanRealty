@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T00:11:05.095Z",
-  "total": 352,
+  "generatedAt": "2026-05-23T00:12:37.571Z",
+  "total": 350,
   "byFile": {
     "app/actions/listings.ts": 66,
     "app/actions/sync-spark.ts": 28,
@@ -17,7 +17,6 @@
     "app/actions/activity-feed.ts": 6,
     "lib/fetch-listings-with-videos.ts": 6,
     "app/actions/agents.ts": 5,
-    "app/actions/broker-self.ts": 4,
     "app/actions/communities.ts": 4,
     "app/actions/dashboard.ts": 4,
     "app/actions/open-houses.ts": 4,
@@ -42,6 +41,7 @@
     "app/lp/tetherow/heath/page.tsx": 3,
     "lib/cma-delivery.ts": 3,
     "lib/expired-listing-processor.ts": 3,
+    "app/actions/broker-self.ts": 2,
     "app/actions/expired-listings.ts": 2,
     "app/actions/photo-classification.ts": 2,
     "app/actions/videos.ts": 2,
