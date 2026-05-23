@@ -79,7 +79,7 @@ async function MetricBreakdown() {
     <Card>
       <CardHeader>
         <CardTitle>Full metric breakdown (last 30 days)</CardTitle>
-        <p className="text-xs text-muted-foreground">Every GBP signal we collect. Mobile Search impressions usually dominates for local real estate (most "realtor near me" searches happen on phone).</p>
+        <p className="text-xs text-muted-foreground">Every GBP signal we collect. Mobile Search impressions usually dominates for local real estate (most &ldquo;realtor near me&rdquo; searches happen on phone).</p>
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">

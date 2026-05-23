@@ -1177,6 +1177,36 @@ export async function getSimilarListingsForDetailPage(
     .map(tileToSimilarDetail)
 }
 
+/**
+ * Key-only wrapper around getSimilarListingsForDetailPage that does its own
+ * minimal listing-tile lookup before computing similar listings. Lets the
+ * detail page fire BOTH the heavy detail data read AND the similar listings
+ * read in parallel via Promise.all without a waterfall on the detail-row
+ * lookup (SITE_SPEC line 119).
+ *
+ * Reads from listing_tile_mv for the subject listing's city + subdivision +
+ * price + beds. The MV is keyed by listing key and returns in ~2ms, so the
+ * incremental cost vs the cached detail fetch is negligible. Returns []
+ * gracefully if the listing is not in the tile MV (e.g. expired, withdrawn).
+ */
+export async function getSimilarListingsByKeyOnly(
+  listingKey: string,
+): Promise<SimilarListingForDetail[]> {
+  const key = String(listingKey ?? '').trim()
+  if (!key) return []
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({ listingKeys: [key], status: 'all', limit: 1 })
+  const subject = tiles[0]
+  if (!subject) return []
+  return getSimilarListingsForDetailPage(
+    key,
+    subject.subdivisionName ?? null,
+    subject.city ?? null,
+    subject.listPrice ?? null,
+    subject.beds ?? null,
+  )
+}
+
 /** Get other active listings in the same subdivision (for "Other homes in [Subdivision]" section). */
 export async function getSubdivisionListings(
   excludeListingKey: string,
