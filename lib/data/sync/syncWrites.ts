@@ -136,6 +136,26 @@ export async function insertStatusHistoryRows(
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
+/** Read activity_events rows, optionally filtered by event_type, paginated newest-first. */
+export async function getActivityEvents(options: {
+  eventTypes?: string[]
+  offset: number
+  limit: number
+}): Promise<Array<{ id: string; listing_key: string; event_type: string; event_at: string; payload?: Record<string, unknown> }>> {
+  const sb = client()
+  if (!sb) return []
+  let q = sb
+    .from('activity_events')
+    .select('id, listing_key, event_type, event_at, payload')
+    .order('event_at', { ascending: false })
+    .range(options.offset, options.offset + options.limit - 1)
+  if (options.eventTypes && options.eventTypes.length > 0) {
+    q = q.in('event_type', options.eventTypes)
+  }
+  const { data } = await q
+  return (data ?? []) as Array<{ id: string; listing_key: string; event_type: string; event_at: string; payload?: Record<string, unknown> }>
+}
+
 /** Insert activity_events rows. */
 export async function insertActivityEventRows(
   rows: Array<Record<string, unknown>>

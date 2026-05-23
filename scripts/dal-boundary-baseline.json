@@ -1,16 +1,12 @@
 {
-  "generatedAt": "2026-05-23T02:16:26.482Z",
-  "total": 43,
+  "generatedAt": "2026-05-23T02:20:13.253Z",
+  "total": 35,
   "byFile": {
     "lib/cma.ts": 4,
     "lib/cma-delivery.ts": 3,
-    "app/actions/activity-feed.ts": 2,
     "app/actions/agents.ts": 2,
     "app/actions/broker-self.ts": 2,
-    "app/actions/communities.ts": 2,
     "app/actions/dashboard.ts": 2,
-    "app/api/pdf/cma/route.ts": 2,
-    "components/listing/ListingValuationSection.tsx": 2,
     "app/actions/admin-listings.ts": 1,
     "app/actions/cities.ts": 1,
     "app/actions/geocode.ts": 1,

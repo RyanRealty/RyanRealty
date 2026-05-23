@@ -145,15 +145,17 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
   // measured the page. The /communities/tetherow SEO=58 first-run was
   // this race; same root cause as the city LP fix earlier in this session.
   const geoKey = `${city.toLowerCase().trim()}:${subdivision.toLowerCase().trim()}`
+  void sb
+  const { getCommunityDetailByName } = await import('@/lib/data')
   const [stats, communityRow, snapshot] = await Promise.all([
     getMarketStatsForSubdivision(city, subdivision),
-    sb.from('communities').select('id, name, slug, description, hero_image_url, boundary_geojson, is_resort, resort_content, neighborhood_id, neighborhoods(name, slug)').ilike('name', subdivision).maybeSingle(),
+    getCommunityDetailByName(subdivision),
     getGeoSnapshot({ geoType: 'community', geoKey }),
   ])
   const activeCount = snapshot?.activeSfrCount ?? stats.count
   const medianFromRows =
     snapshot?.medianListPrice != null ? Math.round(snapshot.medianListPrice) : null
-  const comm = communityRow.data as {
+  const comm = communityRow as {
     name?: string
     description?: string | null
     hero_image_url?: string | null
@@ -209,18 +211,9 @@ export async function getSubdivisionNeighborhood(subdivisionName: string): Promi
   neighborhoodSlug: string
   citySlug: string
 } | null> {
-  const sb = supabase()
-  const { data } = await sb
-    .from('communities')
-    .select('neighborhoods(name, slug), cities(slug)')
-    .ilike('name', subdivisionName)
-    .not('neighborhood_id', 'is', null)
-    .limit(1)
-    .maybeSingle()
-  const row = data as {
-    neighborhoods?: { name: string; slug: string } | null
-    cities?: { slug: string } | null
-  } | null
+  void supabase
+  const { getCommunityNeighborhoodCityBySlug } = await import('@/lib/data')
+  const row = await getCommunityNeighborhoodCityBySlug(subdivisionName)
   if (!row?.neighborhoods?.name || !row?.neighborhoods?.slug) return null
   return {
     neighborhoodName: row.neighborhoods.name,
@@ -447,16 +440,13 @@ export async function getCommunityPriceHistory(
   city: string,
   subdivision: string
 ): Promise<{ month: string; medianPrice: number; soldCount?: number }[]> {
-  const sb = supabase()
-  const { data } = await sb
-    .from('reporting_cache')
-    .select('period_start, metrics')
-    .eq('geo_type', 'community')
-    .ilike('geo_name', subdivision)
-    .eq('period_type', 'monthly')
-    .order('period_start', { ascending: true })
-    .limit(12)
-  const rows = (data ?? []) as { period_start?: string; metrics?: { median_price?: number; sold_count?: number } }[]
+  void supabase
+  const { getReportingCacheMonthlyRows } = await import('@/lib/data')
+  const rows = await getReportingCacheMonthlyRows({
+    geoType: 'community',
+    geoNameIlike: subdivision,
+    limit: 12,
+  })
   const fromCache = rows
     .filter((r) => r.metrics?.median_price != null)
     .map((r) => ({
@@ -472,7 +462,7 @@ export async function getCommunityPriceHistory(
   // DAL: pull closed tiles for the city via listing_tile_mv, then filter by
   // subdivision-match-names + close-date cutoff client-side. Limit 5000 covers
   // any community's annual closed volume.
-  void sb
+  void supabase
   const { getListingTiles } = await import('@/lib/data')
   const closedAll = await getListingTiles({
     city,

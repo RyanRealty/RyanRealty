@@ -43,26 +43,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No valuation available' }, { status: 404 })
   }
 
-  const supabase = getServiceSupabase()
-  const { data: prop } = await supabase
-    .from('properties')
-    .select('unparsed_address, street_number, city, postal_code')
-    .eq('id', propertyId)
-    .single()
-  const p = prop as { unparsed_address?: string; street_number?: string; city?: string; postal_code?: string } | null
+  void getServiceSupabase
+  const { getPropertyById, getCityListings: getCityListingsDAL } = await import('@/lib/data')
+  const p = await getPropertyById(propertyId)
 
-  // Find listing by matching address (RESO columns, no property_id FK)
+  // Find listing via listing_tile_mv (city + optional postal + street match).
   type CmaPdfListingRow = { ListingKey?: string; BedroomsTotal?: number; BathroomsTotal?: number; TotalLivingAreaSqFt?: number; PhotoURL?: string; ListAgentName?: string }
   let listingRow: CmaPdfListingRow | null = null
   if (p?.city) {
-    let q = supabase
-      .from('listings')
-      .select('ListingKey, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PhotoURL, ListAgentName')
-      .ilike('City', p.city)
-    if (p.street_number) q = q.eq('StreetNumber', p.street_number)
-    if (p.postal_code) q = q.eq('PostalCode', p.postal_code)
-    const { data: matches } = await q.order('ModificationTimestamp', { ascending: false }).limit(1)
-    listingRow = (matches as CmaPdfListingRow[] | null)?.[0] ?? null
+    const tiles = await getCityListingsDAL(p.city, {
+      status: 'all',
+      sort: 'newest',
+      limit: 500,
+      postalCode: p.postal_code && /^\d{5}$/.test(p.postal_code) ? p.postal_code : undefined,
+    })
+    const match = p.street_number
+      ? tiles.find((t) => String(t.streetNumber ?? '') === String(p.street_number))
+      : tiles[0]
+    if (match) {
+      listingRow = {
+        ListingKey: match.listingKey,
+        BedroomsTotal: match.beds ?? undefined,
+        BathroomsTotal: match.baths ?? undefined,
+        TotalLivingAreaSqFt: match.sqft ?? undefined,
+        PhotoURL: match.photoUrl ?? undefined,
+      }
+    }
   }
 
   const resolvedListingKey = listingRow?.ListingKey ?? ''

@@ -43,6 +43,25 @@ export async function getMarketStatsCacheRowForGeo(options: {
   return (data ?? null) as MarketStatsCacheRow | null
 }
 
+/** Read monthly reporting_cache rows for a geo (community price history fallback). */
+export async function getReportingCacheMonthlyRows(options: {
+  geoType: string
+  geoNameIlike: string
+  limit?: number
+}): Promise<Array<{ period_start?: string; metrics?: { median_price?: number; sold_count?: number } }>> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb
+    .from('reporting_cache')
+    .select('period_start, metrics')
+    .eq('geo_type', options.geoType)
+    .ilike('geo_name', options.geoNameIlike)
+    .eq('period_type', 'monthly')
+    .order('period_start', { ascending: true })
+    .limit(Math.min(Math.max(options.limit ?? 12, 1), 100))
+  return (data ?? []) as Array<{ period_start?: string; metrics?: { median_price?: number; sold_count?: number } }>
+}
+
 /** Period-pinned cache row by (geo_type, geo_slug, period_type, period_start?). */
 export async function getMarketStatsCacheRowForPeriod(options: {
   geoType: string

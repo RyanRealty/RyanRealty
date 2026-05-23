@@ -150,6 +150,7 @@ export {
   getMarketPulseRowForGeo,
   upsertMarketPulseLiveRow,
   getMarketPulseRowsByGeoType,
+  getReportingCacheMonthlyRows,
 } from '@/lib/data/market/getMarketStatsCacheRows'
 export type { MarketStatsCacheRow } from '@/lib/data/market/getMarketStatsCacheRows'
 export { getMarketPulse } from '@/lib/data/market/getMarketPulse'
@@ -240,6 +241,7 @@ export {
   replaceListingVideosForKey,
   upsertSyncState,
   insertActivityEventRow,
+  getActivityEvents,
   updateListingByListNumber,
   updateListingByListingKey,
   insertListingHistoryRows,
@@ -288,6 +290,9 @@ export {
   getAllSubdivisionFlags,
   isSubdivisionFlagged,
   getCommunityNameBySlugIlike,
+  getCommunitiesWithCityNeighborhoodByNames,
+  getCommunityDetailByName,
+  getCommunityNeighborhoodCityBySlug,
 } from '@/lib/data/communities/subdivisionFlags'
 export type { CommunityRowForBackfill } from '@/lib/data/communities/subdivisionFlags'
 

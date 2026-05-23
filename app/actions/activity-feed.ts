@@ -29,18 +29,13 @@ export async function getActivityFeed(options?: {
   const offset = Math.max(0, options?.offset ?? 0)
   const supabase = createClient(url, anonKey)
 
-  let eventsQuery = supabase
-    .from('activity_events')
-    .select('id, listing_key, event_type, event_at, payload')
-    .order('event_at', { ascending: false })
-    .range(offset, offset + limit - 1)
-
-  const eventTypes = (options?.eventTypes ?? []).filter(Boolean)
-  if (eventTypes.length > 0) {
-    eventsQuery = eventsQuery.in('event_type', eventTypes)
-  }
-
-  const { data: events } = await eventsQuery
+  void supabase
+  const { getActivityEvents } = await import('@/lib/data')
+  const events = await getActivityEvents({
+    eventTypes: (options?.eventTypes ?? []).filter(Boolean),
+    offset,
+    limit,
+  })
 
   if (!events?.length) return []
 
@@ -92,13 +87,9 @@ export async function getActivityFeed(options?: {
   )]
   const neighborhoodByCitySubdivision = new Map<string, { name: string; slug: string }>()
   if (subdivisionNames.length > 0) {
-    const { data: communityRows } = await supabase
-      .from('communities')
-      .select('name, cities(name), neighborhoods(name, slug)')
-      .in('name', subdivisionNames)
-      .not('neighborhood_id', 'is', null)
-      .limit(5000)
-    for (const row of (communityRows ?? []) as Array<{
+    const { getCommunitiesWithCityNeighborhoodByNames } = await import('@/lib/data')
+    const communityRows = await getCommunitiesWithCityNeighborhoodByNames(subdivisionNames)
+    for (const row of communityRows as Array<{
       name?: string | null
       cities?: { name?: string | null } | { name?: string | null }[] | null
       neighborhoods?: { name?: string | null; slug?: string | null } | { name?: string | null; slug?: string | null }[] | null

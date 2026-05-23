@@ -24,31 +24,23 @@ export default async function ListingValuationSection({
   signedIn,
   propertyId: propIdFromParent,
 }: Props) {
-  const supabase = getServiceSupabase()
-  if (!supabase) return null
-
+  void getServiceSupabase
   let propertyId = propIdFromParent ?? null
 
   if (!propertyId) {
-    const { data: listing } = await supabase
-      .from('listings')
-      .select('StreetNumber, StreetName, City, PostalCode')
-      .eq('ListingKey', listingKey)
-      .limit(1)
-      .maybeSingle()
-
-    if (!listing) return null
-    const row = listing as { StreetNumber?: string; StreetName?: string; City?: string; PostalCode?: string }
-    if (!row.City) return null
-
-    let query = supabase
-      .from('properties')
-      .select('id')
-      .ilike('city', row.City)
-    if (row.StreetNumber) query = query.eq('street_number', row.StreetNumber)
-    if (row.PostalCode) query = query.eq('postal_code', row.PostalCode)
-    const { data: props } = await query.limit(1)
-    propertyId = (props as { id: string }[] | null)?.[0]?.id ?? null
+    const { getListingTiles, findPropertiesByAddressFilter } = await import('@/lib/data')
+    const tiles = await getListingTiles({ listingKeys: [listingKey], status: 'all', limit: 1 })
+    const tile = tiles[0]
+    if (!tile?.city) return null
+    const props = await findPropertiesByAddressFilter({
+      city: tile.city,
+      postalCode: tile.postalCode ?? null,
+      limit: 5,
+    })
+    const exact = tile.streetNumber
+      ? props.find((p) => String(p as Record<string, unknown>['street_number'] ?? '') === String(tile.streetNumber))
+      : props[0]
+    propertyId = (exact?.id) ?? props[0]?.id ?? null
   }
 
   if (!propertyId) return null

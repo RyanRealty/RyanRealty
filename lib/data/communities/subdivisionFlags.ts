@@ -109,6 +109,29 @@ export async function bulkUpsertResortFlags(
   return { ok: true, count: rows.length }
 }
 
+/** Find communities by name set with embedded city + neighborhood joins. */
+export async function getCommunitiesWithCityNeighborhoodByNames(
+  names: string[]
+): Promise<Array<{
+  name?: string | null
+  cities?: { name?: string | null } | { name?: string | null }[] | null
+  neighborhoods?: { name?: string | null; slug?: string | null } | { name?: string | null; slug?: string | null }[] | null
+}>> {
+  const sb = adminClient() ?? supabaseAnon()
+  if (!sb || names.length === 0) return []
+  const { data } = await sb
+    .from('communities')
+    .select('name, cities(name), neighborhoods(name, slug)')
+    .in('name', names)
+    .not('neighborhood_id', 'is', null)
+    .limit(5000)
+  return (data ?? []) as Array<{
+    name?: string | null
+    cities?: { name?: string | null } | { name?: string | null }[] | null
+    neighborhoods?: { name?: string | null; slug?: string | null } | { name?: string | null; slug?: string | null }[] | null
+  }>
+}
+
 /** Find one community row by slug ilike (for OG image / SEO surfaces). */
 export async function getCommunityNameBySlugIlike(slug: string): Promise<{ name: string; slug: string } | null> {
   const sb = adminClient() ?? supabaseAnon()
@@ -119,6 +142,60 @@ export async function getCommunityNameBySlugIlike(slug: string): Promise<{ name:
     .ilike('slug', slug)
     .maybeSingle()
   return (data ?? null) as { name: string; slug: string } | null
+}
+
+/** Wide community-detail row with embedded neighborhoods join (by name ilike). */
+export async function getCommunityDetailByName(name: string): Promise<{
+  id: string
+  name: string
+  slug: string
+  description?: string | null
+  hero_image_url?: string | null
+  boundary_geojson?: unknown
+  is_resort?: boolean
+  resort_content?: Record<string, unknown> | null
+  neighborhood_id?: string | null
+  neighborhoods?: { name: string; slug: string } | null
+} | null> {
+  const sb = adminClient() ?? supabaseAnon()
+  if (!sb) return null
+  const { data } = await sb
+    .from('communities')
+    .select('id, name, slug, description, hero_image_url, boundary_geojson, is_resort, resort_content, neighborhood_id, neighborhoods(name, slug)')
+    .ilike('name', name)
+    .maybeSingle()
+  return (data ?? null) as {
+    id: string
+    name: string
+    slug: string
+    description?: string | null
+    hero_image_url?: string | null
+    boundary_geojson?: unknown
+    is_resort?: boolean
+    resort_content?: Record<string, unknown> | null
+    neighborhood_id?: string | null
+    neighborhoods?: { name: string; slug: string } | null
+  } | null
+}
+
+/** Subdivision → neighborhood + city slug lookup (single row). */
+export async function getCommunityNeighborhoodCityBySlug(subdivisionName: string): Promise<{
+  neighborhoods?: { name: string; slug: string } | null
+  cities?: { slug: string } | null
+} | null> {
+  const sb = adminClient() ?? supabaseAnon()
+  if (!sb) return null
+  const { data } = await sb
+    .from('communities')
+    .select('neighborhoods(name, slug), cities(slug)')
+    .ilike('name', subdivisionName)
+    .not('neighborhood_id', 'is', null)
+    .limit(1)
+    .maybeSingle()
+  return (data ?? null) as {
+    neighborhoods?: { name: string; slug: string } | null
+    cities?: { slug: string } | null
+  } | null
 }
 
 /** Check whether a single entity_key is flagged. Returns true if a row exists. */
