@@ -28,51 +28,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing listingIds' }, { status: 400 })
   }
 
-  const supabase = getServiceSupabase()
-  const select = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, StreetNumber, StreetName, City, State, PostalCode, PhotoURL'
-
-  const [byNumber, byKey] = await Promise.all([
-    supabase.from('listings').select(select).in('ListNumber', ids),
-    supabase.from('listings').select(select).in('ListingKey', ids),
+  void getServiceSupabase
+  const { getListingTiles, getListingDetailPhotos } = await import('@/lib/data')
+  // DAL: pull tiles by both keying paths (ListingKey OR ListNumber).
+  const [byNumberTiles, byKeyTiles] = await Promise.all([
+    getListingTiles({ listNumbers: ids, status: 'all', limit: 50 }),
+    getListingTiles({ listingKeys: ids, status: 'all', limit: 50 }),
   ])
-  if (byNumber.error) console.error('[pdf/comparison] byNumber query failed:', byNumber.error.message)
-  if (byKey.error) console.error('[pdf/comparison] byKey query failed:', byKey.error.message)
-
-  const allRows = [...(byNumber.data ?? []), ...(byKey.data ?? [])]
+  const allTiles = [...byNumberTiles, ...byKeyTiles]
   const seen = new Set<string>()
-  const deduped = allRows.filter((r) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const k = String((r as any).ListingKey ?? (r as any).ListNumber ?? '')
-    if (seen.has(k)) return false
+  const deduped = allTiles.filter((t) => {
+    const k = t.listingKey || t.listNumber || ''
+    if (!k || seen.has(k)) return false
     seen.add(k)
     return true
   })
 
-  // Fetch hero photos
-  const listingKeys = deduped.map((r) => String((r as Record<string, unknown>).ListingKey ?? ''))
-  const { data: photos } = await supabase
-    .from('listing_photos')
-    .select('listing_key, photo_url')
-    .in('listing_key', listingKeys)
-    .eq('is_hero', true)
-
+  // Hero photos: 4-way parallel detail-photo fetch for the (capped) listing set.
+  const photoArrays = await Promise.all(
+    deduped.map((t) => getListingDetailPhotos(t.listingKey).catch(() => []))
+  )
   const photoMap = new Map<string, string>()
-  for (const p of (photos ?? []) as { listing_key: string; photo_url: string }[]) {
-    if (p.photo_url) photoMap.set(p.listing_key, p.photo_url)
-  }
+  deduped.forEach((t, idx) => {
+    const photos = photoArrays[idx] ?? []
+    const hero = photos.find((p) => p.is_hero === true) ?? photos[0]
+    if (hero?.photo_url) photoMap.set(t.listingKey, hero.photo_url)
+  })
 
-  const listings: ComparisonListing[] = deduped.map((r) => {
-    const row = r as Record<string, unknown>
-    const lk = String(row.ListingKey ?? '')
-    const streetParts = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()
-    const addressParts = [streetParts, row.City, row.State, row.PostalCode].filter(Boolean)
+  const listings: ComparisonListing[] = deduped.map((t) => {
+    const streetParts = [t.streetNumber, t.streetName].filter(Boolean).join(' ').trim()
+    const addressParts = [streetParts, t.city, 'OR', t.postalCode].filter(Boolean)
     return {
       address: addressParts.join(', '),
-      price: (row.ListPrice as number) ?? 0,
-      beds: (row.BedroomsTotal as number) ?? null,
-      baths: (row.BathroomsTotal as number) ?? null,
-      sqft: (row.TotalLivingAreaSqFt as number) ?? null,
-      photoUrl: photoMap.get(lk) ?? (row.PhotoURL as string) ?? null,
+      price: t.listPrice ?? 0,
+      beds: t.beds,
+      baths: t.baths,
+      sqft: t.sqft,
+      photoUrl: photoMap.get(t.listingKey) ?? t.photoUrl ?? null,
     }
   })
 

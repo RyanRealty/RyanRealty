@@ -1,13 +1,10 @@
 {
-  "generatedAt": "2026-05-23T01:57:20.618Z",
-  "total": 91,
+  "generatedAt": "2026-05-23T01:59:25.026Z",
+  "total": 82,
   "byFile": {
     "lib/cma.ts": 4,
     "app/actions/reports.ts": 3,
     "app/actions/semantic-search.ts": 3,
-    "app/api/admin/expired-listing-lookup/route.ts": 3,
-    "app/api/listings/[listingKey]/track/route.ts": 3,
-    "app/api/pdf/comparison/route.ts": 3,
     "app/compare/page.tsx": 3,
     "app/home-valuation/actions.ts": 3,
     "app/lp/tetherow/data.ts": 3,

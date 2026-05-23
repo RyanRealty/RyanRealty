@@ -240,6 +240,8 @@ export {
   getAnyListingKey,
   insertStrictVerifyRun,
   selectStrictVerifyCandidates,
+  getExpiredListingLookupAttempts,
+  updateExpiredListingByKey,
   getSyncCursor,
   countListingsByOr,
   countAllListingsByListingKey,

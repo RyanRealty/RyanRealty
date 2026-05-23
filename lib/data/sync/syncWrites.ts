@@ -517,6 +517,31 @@ export async function selectStrictVerifyCandidates<T extends Record<string, unkn
   return { rows: (data ?? []) as unknown as T[], error: error?.message ?? null }
 }
 
+/** Read owner_lookup_attempts counter from expired_listings (admin). */
+export async function getExpiredListingLookupAttempts(
+  listingKey: string
+): Promise<number> {
+  const sb = client()
+  if (!sb) return 0
+  const { data } = await sb
+    .from('expired_listings')
+    .select('owner_lookup_attempts')
+    .eq('listing_key', listingKey)
+    .maybeSingle()
+  return Number((data as { owner_lookup_attempts?: number } | null)?.owner_lookup_attempts ?? 0)
+}
+
+/** Update an expired_listings row by listing_key (admin enrichment). */
+export async function updateExpiredListingByKey(
+  listingKey: string,
+  update: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('expired_listings').update(update).eq('listing_key', listingKey)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
 /** Read sync_cursor singleton (admin health checks). */
 export async function getSyncCursor(): Promise<{
   last_completed_at?: string | null

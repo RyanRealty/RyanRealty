@@ -39,22 +39,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const supabase = getSupabase()
+  void getSupabase
+  const { getListingTiles } = await import('@/lib/data')
 
   // If listing_key provided, look up the listing first
   let streetAddress = body.street_address
   let city = body.city
-  let listingKey = body.listing_key
+  const listingKey = body.listing_key
 
   if (listingKey && (!streetAddress || !city)) {
-    const { data } = await supabase
-      .from('listings')
-      .select('StreetNumber,StreetName,City')
-      .eq('ListingKey', listingKey)
-      .maybeSingle()
-    if (data) {
-      streetAddress = `${data.StreetNumber ?? ''} ${data.StreetName ?? ''}`.trim()
-      city = data.City
+    const tiles = await getListingTiles({ listingKeys: [listingKey], status: 'all', limit: 1 })
+    const t = tiles[0]
+    if (t) {
+      streetAddress = `${t.streetNumber ?? ''} ${t.streetName ?? ''}`.trim()
+      city = t.city ?? undefined
     }
   }
 
@@ -86,13 +84,8 @@ export async function POST(request: NextRequest) {
 
   // If we have a listing_key, persist the enrichment back to expired_listings
   if (listingKey) {
-    // Fetch current attempt counter so we increment instead of clobbering
-    const { data: existing } = await supabase
-      .from('expired_listings')
-      .select('owner_lookup_attempts')
-      .eq('listing_key', listingKey)
-      .maybeSingle()
-    const priorAttempts = (existing?.owner_lookup_attempts as number | undefined) ?? 0
+    const { getExpiredListingLookupAttempts, updateExpiredListingByKey } = await import('@/lib/data')
+    const priorAttempts = await getExpiredListingLookupAttempts(listingKey)
     const update: Record<string, unknown> = {
       owner_lookup_attempts: priorAttempts + 1,
       last_owner_lookup_at: new Date().toISOString(),
@@ -110,7 +103,7 @@ export async function POST(request: NextRequest) {
       emailToWrite || phoneToWrite ? 'resolved' : ownerLookup.status === 'pending' ? 'pending' : 'partial'
     update.owner_lookup_status = newStatus
 
-    await supabase.from('expired_listings').update(update).eq('listing_key', listingKey)
+    await updateExpiredListingByKey(listingKey, update)
   }
 
   return NextResponse.json({

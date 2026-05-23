@@ -26,27 +26,10 @@ export async function POST(
     }
   }
 
-  const supabase = createClient(url, serviceKey)
-  const { data: row } = await supabase
-    .from('engagement_metrics')
-    .select('view_count')
-    .eq('listing_key', key)
-    .maybeSingle()
-
-  if (row) {
-    await supabase
-      .from('engagement_metrics')
-      .update({ view_count: (row as { view_count: number }).view_count + 1, updated_at: new Date().toISOString() })
-      .eq('listing_key', key)
-  } else {
-    await supabase.from('engagement_metrics').insert({
-      listing_key: key,
-      view_count: 1,
-      like_count: 0,
-      save_count: 0,
-      share_count: 0,
-    })
-  }
+  void createClient
+  // DAL: incrementListingViewCount handles ensure-row + atomic bump.
+  const { incrementListingViewCount } = await import('@/lib/data')
+  await incrementListingViewCount(key)
 
   const res = NextResponse.json({ ok: true })
   res.cookies.set(cookieKey, String(Date.now()), {
