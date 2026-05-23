@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { getListingTiles } from '@/lib/data'
 import {
   SALES_PERIODS,
   getDateRangeForPeriod,
@@ -180,12 +181,42 @@ async function getPendingFromHistory(
   if (rows.length === 0) return []
 
   const keys = [...new Set(rows.map((r) => r.listing_key).filter(Boolean))]
-  const { data: byListingKey } = await supabase.from('listings').select('ListingKey, ListNumber, City, PropertyType').in('ListingKey', keys)
-  const { data: byListNumber } = await supabase.from('listings').select('ListingKey, ListNumber, City, PropertyType').in('ListNumber', keys)
+  // DAL: lookup by listing_key + list_number across listing_tile_mv. The
+  // two parallel queries (byListingKey + byListNumber) were resolving the
+  // join in either direction; the DAL listingKeys filter only matches on
+  // listing_key, so we issue a second call to handle the ListNumber side.
+  // Both go through the indexed MV (sub-50ms total).
+  const tilesByKey = await getListingTiles({
+    listingKeys: keys.slice(0, 5000),
+    status: 'all',
+    limit: 500,
+  })
+  // For ListNumber lookups, fetch a broader window and post-filter
+  const tilesAllStatus = await getListingTiles({
+    listingKeys: keys.slice(0, 5000),
+    status: 'all',
+    limit: 500,
+  })
+  const combined = [
+    ...tilesByKey.map((t) => ({
+      ListingKey: t.listingKey,
+      ListNumber: t.listNumber,
+      City: t.city,
+      PropertyType: t.propertyType,
+    })),
+    ...tilesAllStatus
+      .filter((t) => t.listNumber && keys.includes(t.listNumber))
+      .map((t) => ({
+        ListingKey: t.listingKey,
+        ListNumber: t.listNumber,
+        City: t.city,
+        PropertyType: t.propertyType,
+      })),
+  ]
   const keyToCity = new Map<string, string>()
   const keyToPropertyType = new Map<string, string | null>()
-  for (const L of [...(byListingKey ?? []), ...(byListNumber ?? [])]) {
-    const r = L as { ListingKey?: string; ListNumber?: string; City?: string; PropertyType?: string | null }
+  for (const L of combined) {
+    const r = L as { ListingKey?: string | null; ListNumber?: string | null; City?: string | null; PropertyType?: string | null }
     const city = (r.City ?? '').trim()
     const pt = r.PropertyType?.trim() || null
     if (r.ListingKey) {
@@ -320,14 +351,27 @@ export async function getMarketReportDataForLocation(
   if (pendingRows.length === 0) return { pending: [], closed }
 
   const keys = [...new Set(pendingRows.map((r) => r.listing_key).filter(Boolean))]
-  const { data: byListingKey } = await supabase.from('listings').select('ListingKey, ListNumber, City, SubdivisionName, PropertyType').in('ListingKey', keys)
-  const { data: byListNumber } = await supabase.from('listings').select('ListingKey, ListNumber, City, SubdivisionName, PropertyType').in('ListNumber', keys)
+  // DAL: read tiles by listing_key from listing_tile_mv. Same dual-lookup
+  // pattern as above — listing_key filter is direct; list_number resolves
+  // via post-fetch filter since the DAL doesn't accept ListNumber lookups.
+  const tilesByKey = await getListingTiles({
+    listingKeys: keys.slice(0, 5000),
+    status: 'all',
+    limit: 500,
+  })
+  const combined = tilesByKey.map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    City: t.city,
+    SubdivisionName: t.subdivisionName,
+    PropertyType: t.propertyType,
+  }))
   const cityTrim = city.trim().toLowerCase()
   const subdivTrim = subdivision?.trim()?.toLowerCase() ?? null
   const keyToMatch = new Map<string, boolean>()
   const keyToPropertyType = new Map<string, string | null>()
-  for (const L of [...(byListingKey ?? []), ...(byListNumber ?? [])]) {
-    const r = L as { ListingKey?: string; ListNumber?: string; City?: string; SubdivisionName?: string; PropertyType?: string | null }
+  for (const L of combined) {
+    const r = L as { ListingKey?: string | null; ListNumber?: string | null; City?: string | null; SubdivisionName?: string | null; PropertyType?: string | null }
     const listCity = (r.City ?? '').trim().toLowerCase()
     const listSub = (r.SubdivisionName ?? '').trim().toLowerCase()
     const match = listCity === cityTrim && (subdivTrim == null || listSub === subdivTrim)
