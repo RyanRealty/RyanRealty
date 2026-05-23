@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.9 (2026-05-23)
+
+### Maintenance
+- perf(open-houses): migrate listings + properties join to DAL — 346→344
+
+---
+
+
 ## v1.280.8 (2026-05-23)
 
 ### Maintenance
