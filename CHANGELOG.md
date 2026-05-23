@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.5 (2026-05-23)
+
+### Maintenance
+- perf(dashboard): active+pending count via DAL — 330→329
+
+---
+
+
 ## v1.282.4 (2026-05-23)
 
 ### Maintenance
