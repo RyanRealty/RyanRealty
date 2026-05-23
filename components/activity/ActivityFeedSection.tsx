@@ -12,9 +12,16 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { getEngagementCountsBatch } from '@/app/actions/engagement'
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'
 
 const SCROLL_THRESHOLD = 4
+/**
+ * Debounce window for coalescing bursts of activity_events INSERTs into a single
+ * refetch. Sync crons can land 5–50 events in a few seconds; without coalescing
+ * we'd issue one server action call per row.
+ */
+const REALTIME_REFETCH_DEBOUNCE_MS = 1500
 
 export type ActivityFeedCity = { city: string; count?: number }
 
@@ -107,9 +114,14 @@ export default function ActivityFeedSection({
   const [engagementMap, setEngagementMap] = useState<Awaited<ReturnType<typeof getEngagementCountsBatch>>>({})
   const [loading, setLoading] = useState(false)
   const [popoverOpen, setPopoverOpen] = useState(false)
+  const [liveConnected, setLiveConnected] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
+  // selectedCities mirror in a ref so the realtime callback can read the
+  // current value without re-subscribing on every city toggle.
+  const selectedCitiesRef = useRef(selectedCities)
+  selectedCitiesRef.current = selectedCities
 
   const options = useMemo(() => cityOptions(defaultCities, allCities), [defaultCities, allCities])
 
@@ -152,6 +164,67 @@ export default function ActivityFeedSection({
     getEngagementCountsBatch(keys).then(setEngagementMap)
   }, [items])
 
+  /**
+   * Supabase Realtime subscription on `activity_events` (SITE_SPEC line 67).
+   * INSERT events trigger a debounced refetch of the feed for whatever cities
+   * the user currently has selected. Refetch path coalesces bursts via
+   * REALTIME_REFETCH_DEBOUNCE_MS so a sync-delta cron pushing 50 rows lands
+   * as one network round-trip. Graceful: any failure leaves the feed in its
+   * last-fetched state and the "Live" indicator stays off.
+   */
+  useEffect(() => {
+    let cancelled = false
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    let channel: ReturnType<ReturnType<typeof createSupabaseBrowserClient>['channel']> | null = null
+
+    try {
+      const supabase = createSupabaseBrowserClient()
+      channel = supabase
+        .channel('activity-feed-home')
+        .on(
+          // postgres_changes is the canonical Supabase Realtime event for table
+          // INSERT/UPDATE/DELETE. activity_events is INSERT-only from sync crons.
+          'postgres_changes' as 'system',
+          { event: 'INSERT', schema: 'public', table: 'activity_events' },
+          () => {
+            if (cancelled) return
+            if (debounceTimer) clearTimeout(debounceTimer)
+            debounceTimer = setTimeout(() => {
+              const cities = selectedCitiesRef.current
+              if (cities.length === 0) return
+              getActivityFeedWithFallbackMulti({ cities, limit })
+                .then((next) => {
+                  if (!cancelled) setItems(next)
+                })
+                .catch(() => {
+                  // Realtime is a nice-to-have; never let it crash the page.
+                })
+            }, REALTIME_REFETCH_DEBOUNCE_MS)
+          }
+        )
+        .subscribe((status: string) => {
+          if (cancelled) return
+          setLiveConnected(status === 'SUBSCRIBED')
+        })
+    } catch {
+      // env missing or browser API not available — fall back to no-realtime
+      // behavior. The seeded items + city-toggle refetch still work.
+      setLiveConnected(false)
+    }
+
+    return () => {
+      cancelled = true
+      if (debounceTimer) clearTimeout(debounceTimer)
+      if (channel) {
+        try {
+          channel.unsubscribe()
+        } catch {
+          // ignore — channel may already be torn down
+        }
+      }
+    }
+  }, [limit])
+
   const toggleCity = useCallback(
     (city: string) => {
       const next = selectedCities.includes(city)
@@ -182,9 +255,24 @@ export default function ActivityFeedSection({
     >
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 id="activity-feed-heading" className="text-2xl text-primary sm:text-3xl">
-            {heading}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 id="activity-feed-heading" className="text-2xl text-primary sm:text-3xl">
+              {heading}
+            </h2>
+            {liveConnected && (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success"
+                aria-live="polite"
+                aria-label="Live activity feed connected"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success/70 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+                </span>
+                Live
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
