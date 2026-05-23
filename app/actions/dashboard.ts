@@ -209,16 +209,9 @@ async function getFubPipelineSnapshot(
   supabase: SupabaseClient,
   startIso: string
 ): Promise<DashboardMarketingData['fubPipeline']> {
-  const { data: mattBrokerRow } = await supabase
-    .from('brokers')
-    .select('id, slug, display_name, email')
-    .or('slug.eq.matt-ryan,display_name.ilike.%matt%ryan%,email.ilike.%matt%')
-    .limit(1)
-    .maybeSingle()
-
-  const mattBroker = (mattBrokerRow ?? null) as
-    | { id: string; slug?: string | null; email?: string | null }
-    | null
+  void supabase
+  const { getMattBrokerRecord } = await import('@/lib/data')
+  const mattBroker = await getMattBrokerRecord()
   const mattBrokerId = mattBroker?.id ?? null
   const cacheQuery = await supabase
     .from('fub_contacts_cache')
@@ -368,20 +361,18 @@ async function getMetaAdsSummary30d(): Promise<{
 type BendMarketContext = DashboardMarketingData['bendMarketContext']
 
 async function getBendMarketContext(supabase: SupabaseClient): Promise<BendMarketContext> {
+  void supabase
   try {
-    const { data, error } = await supabase
-      .from('market_pulse_live')
-      .select(
-        'active_count, median_list_price, months_of_supply, sold_count_30d, median_close_price_90d, market_health_label'
-      )
-      .eq('geo_type', 'city')
-      .eq('geo_slug', 'bend')
-      .eq('property_type', 'A')
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    const { getMarketPulseRowForGeo } = await import('@/lib/data')
+    const data = await getMarketPulseRowForGeo({
+      geoType: 'city',
+      geoSlug: 'bend',
+      propertyType: 'A',
+      columns:
+        'active_count, median_list_price, months_of_supply, sold_count_30d, median_close_price_90d, market_health_label',
+    })
 
-    if (error || !data) {
+    if (!data) {
       return {
         available: false,
         activeListings: null,
@@ -390,7 +381,7 @@ async function getBendMarketContext(supabase: SupabaseClient): Promise<BendMarke
         soldCount30d: null,
         medianClosePrice90d: null,
         marketHealthLabel: null,
-        error: error?.message ?? 'No Bend pulse row',
+        error: 'No Bend pulse row',
       }
     }
 

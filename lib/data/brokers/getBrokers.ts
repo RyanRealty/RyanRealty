@@ -63,6 +63,44 @@ const FALLBACK_BROKERS: Broker[] = [
   },
 ]
 
+/** Look up "Matt Ryan" broker (used by FUB pipeline snapshots). */
+export async function getMattBrokerRecord(): Promise<{ id: string; slug?: string | null; email?: string | null } | null> {
+  const sb = supabaseAnon()
+  if (!sb) return null
+  const { data } = await sb
+    .from('brokers')
+    .select('id, slug, display_name, email')
+    .or('slug.eq.matt-ryan,display_name.ilike.%matt%ryan%,email.ilike.%matt%')
+    .limit(1)
+    .maybeSingle()
+  return (data ?? null) as { id: string; slug?: string | null; email?: string | null } | null
+}
+
+/** Read full broker row for self-service editor (license, social, tagline, etc.). */
+export async function getBrokerSelfRecord(brokerId: string): Promise<Record<string, unknown> | null> {
+  const sb = supabaseAnon()
+  if (!sb) return null
+  const { data } = await sb
+    .from('brokers')
+    .select(
+      'id, slug, display_name, title, bio, phone, email, tagline, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, license_number'
+    )
+    .eq('id', brokerId)
+    .maybeSingle()
+  return (data ?? null) as Record<string, unknown> | null
+}
+
+/** Patch a broker row by id (self-service editor). */
+export async function updateBrokerById(
+  id: string,
+  payload: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = supabaseAnon()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('brokers').update(payload).eq('id', id)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
 /** Read one active broker by slug — used by OG image generator + profile pages. */
 export async function getBrokerForOgBySlug(
   slug: string

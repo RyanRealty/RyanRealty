@@ -1,14 +1,12 @@
 {
-  "generatedAt": "2026-05-23T02:20:13.253Z",
-  "total": 35,
+  "generatedAt": "2026-05-23T02:24:07.578Z",
+  "total": 30,
   "byFile": {
     "lib/cma.ts": 4,
     "lib/cma-delivery.ts": 3,
-    "app/actions/agents.ts": 2,
-    "app/actions/broker-self.ts": 2,
-    "app/actions/dashboard.ts": 2,
     "app/actions/admin-listings.ts": 1,
     "app/actions/cities.ts": 1,
+    "app/actions/dashboard.ts": 1,
     "app/actions/geocode.ts": 1,
     "app/actions/guides.ts": 1,
     "app/actions/home.ts": 1,

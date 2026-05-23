@@ -31,14 +31,9 @@ async function getCurrentBrokerRecord(): Promise<BrokerSelfRow | null> {
   if (!email) return null
   const role = await getAdminRoleForEmail(email)
   if (!role?.brokerId) return null
-  const supabase = createServiceClient()
-  const { data } = await supabase
-    .from('brokers')
-    .select(
-      'id, slug, display_name, title, bio, phone, email, tagline, social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x, license_number'
-    )
-    .eq('id', role.brokerId)
-    .maybeSingle()
+  void createServiceClient
+  const { getBrokerSelfRecord } = await import('@/lib/data')
+  const data = await getBrokerSelfRecord(role.brokerId)
   return (data as BrokerSelfRow | null) ?? null
 }
 
@@ -59,7 +54,7 @@ export async function updateCurrentBrokerProfile(input: {
 }): Promise<{ ok: boolean; error?: string }> {
   const broker = await getCurrentBrokerRecord()
   if (!broker) return { ok: false, error: 'Broker account not found for this login.' }
-  const supabase = createServiceClient()
+  void createServiceClient
   const payload = {
     bio: input.bio?.trim() || null,
     phone: input.phone?.trim() || null,
@@ -72,8 +67,9 @@ export async function updateCurrentBrokerProfile(input: {
     social_x: input.social_x?.trim() || null,
     updated_at: new Date().toISOString(),
   }
-  const { error } = await supabase.from('brokers').update(payload).eq('id', broker.id)
-  if (error) return { ok: false, error: error.message }
+  const { updateBrokerById } = await import('@/lib/data')
+  const res = await updateBrokerById(broker.id, payload)
+  if (!res.ok) return { ok: false, error: res.error ?? 'update failed' }
   revalidatePath(`/team/${broker.slug}`)
   revalidatePath(`/team/${broker.slug}/edit`)
   return { ok: true }
@@ -82,23 +78,16 @@ export async function updateCurrentBrokerProfile(input: {
 export async function getCurrentBrokerDashboard() {
   const broker = await getCurrentBrokerRecord()
   if (!broker) return null
-  const supabase = createServiceClient()
-
-  let listingAgentQuery = supabase
-    .from('listing_agents')
-    .select('listing_key')
-    .in('agent_role', ['list', 'listing'])
-    .limit(5000)
+  void createServiceClient
+  const { getListingKeysForBrokerByLicense, getListingKeysForBrokerByEmail } = await import('@/lib/data')
+  let listingKeys: string[] = []
   if (broker.license_number?.trim()) {
-    const digits = broker.license_number.replace(/\D/g, '')
-    listingAgentQuery = listingAgentQuery.ilike('agent_license', `%${digits}%`)
+    listingKeys = await getListingKeysForBrokerByLicense(broker.license_number)
   } else if (broker.email?.trim()) {
-    listingAgentQuery = listingAgentQuery.ilike('agent_email', broker.email.trim())
+    listingKeys = await getListingKeysForBrokerByEmail(broker.email)
   } else {
     return { broker, activeListings: 0, sold24m: 0, soldVolume24m: 0, viewCount: 0, saveCount: 0, likeCount: 0 }
   }
-  const { data: agentRows } = await listingAgentQuery
-  const listingKeys = [...new Set((agentRows ?? []).map((row: { listing_key?: string | null }) => (row.listing_key ?? '').trim()).filter(Boolean))]
   if (listingKeys.length === 0) {
     return { broker, activeListings: 0, sold24m: 0, soldVolume24m: 0, viewCount: 0, saveCount: 0, likeCount: 0 }
   }
@@ -129,13 +118,8 @@ export async function getCurrentBrokerDashboard() {
     0,
   )
 
-  const { data: engagementRows } = await supabase
-    .from('engagement_metrics')
-    .select('view_count, save_count, like_count')
-    .in('listing_key', listingKeys.slice(0, 1000))
-  const viewCount = (engagementRows ?? []).reduce((sum: number, row: { view_count?: number | null }) => sum + Number(row.view_count ?? 0), 0)
-  const saveCount = (engagementRows ?? []).reduce((sum: number, row: { save_count?: number | null }) => sum + Number(row.save_count ?? 0), 0)
-  const likeCount = (engagementRows ?? []).reduce((sum: number, row: { like_count?: number | null }) => sum + Number(row.like_count ?? 0), 0)
+  const { sumEngagementForListingKeys } = await import('@/lib/data')
+  const { viewCount, saveCount, likeCount } = await sumEngagementForListingKeys(listingKeys.slice(0, 1000))
 
   return { broker, activeListings, sold24m, soldVolume24m, viewCount, saveCount, likeCount }
 }

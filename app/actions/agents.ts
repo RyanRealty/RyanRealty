@@ -36,30 +36,17 @@ async function getListingKeysForBroker(
   brokerEmail?: string | null
 ): Promise<string[]> {
   const keys = new Set<string>()
-  const roleFilter = 'agent_role.eq.list,agent_role.eq.listing'
+  void supabase
+  const { getListingKeysForBrokerByLicense, getListingKeysForBrokerByEmail } = await import('@/lib/data')
 
   if (licenseNumber?.trim()) {
-    const licenseTrim = licenseNumber.trim()
-    const { data: byLicense } = await supabase()
-      .from('listing_agents')
-      .select('listing_key')
-      .or(roleFilter)
-      .ilike('agent_license', `%${licenseTrim}%`)
-    ;(byLicense ?? []).forEach((r: { listing_key: string }) => {
-      if (r.listing_key) keys.add(r.listing_key)
-    })
+    const byLicense = await getListingKeysForBrokerByLicense(licenseNumber)
+    byLicense.forEach((k) => keys.add(k))
   }
 
   if (brokerEmail?.trim()) {
-    const emailTrim = brokerEmail.trim()
-    const { data: byEmail } = await supabase()
-      .from('listing_agents')
-      .select('listing_key')
-      .or(roleFilter)
-      .ilike('agent_email', emailTrim)
-    ;(byEmail ?? []).forEach((r: { listing_key: string }) => {
-      if (r.listing_key) keys.add(r.listing_key)
-    })
+    const byEmail = await getListingKeysForBrokerByEmail(brokerEmail)
+    byEmail.forEach((k) => keys.add(k))
   }
 
   return [...keys]

@@ -153,6 +153,28 @@ export const incrementListingViewCount = (k: string) => bumpCounter(k, 'view_cou
  * Top N listing_keys by view_count (descending). Used by the homepage
  * "featured" tile picker. Returns empty array if engagement_metrics is empty.
  */
+/** Sum view/save/like counts across a set of listing_keys (broker dashboard). */
+export async function sumEngagementForListingKeys(listingKeys: string[]): Promise<{
+  viewCount: number
+  saveCount: number
+  likeCount: number
+}> {
+  const supabase = supabaseAnon()
+  if (!supabase || listingKeys.length === 0) {
+    return { viewCount: 0, saveCount: 0, likeCount: 0 }
+  }
+  const { data } = await supabase
+    .from('engagement_metrics')
+    .select('view_count, save_count, like_count')
+    .in('listing_key', listingKeys.slice(0, 5000))
+  const rows = (data ?? []) as Array<{ view_count?: number | null; save_count?: number | null; like_count?: number | null }>
+  return {
+    viewCount: rows.reduce((sum, r) => sum + Number(r.view_count ?? 0), 0),
+    saveCount: rows.reduce((sum, r) => sum + Number(r.save_count ?? 0), 0),
+    likeCount: rows.reduce((sum, r) => sum + Number(r.like_count ?? 0), 0),
+  }
+}
+
 export async function getTopViewedListingKeys(limit = 20): Promise<string[]> {
   const supabase = supabaseAnon()
   if (!supabase) return []

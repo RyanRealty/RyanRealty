@@ -130,6 +130,33 @@ export async function getListingDetailPhotos(listingKey: string): Promise<Listin
   return (data ?? []) as ListingDetailPhotoRow[]
 }
 
+/** Get listing_keys for which a broker is the list/listing agent. */
+export async function getListingKeysForBrokerByLicense(license: string): Promise<string[]> {
+  const sb = supabaseAnon()
+  if (!sb || !license?.trim()) return []
+  const digits = license.replace(/\D/g, '')
+  if (!digits) return []
+  const { data } = await sb
+    .from('listing_agents')
+    .select('listing_key')
+    .in('agent_role', ['list', 'listing'])
+    .ilike('agent_license', `%${digits}%`)
+    .limit(5000)
+  return [...new Set((data ?? []).map((r: { listing_key?: string | null }) => (r.listing_key ?? '').trim()).filter(Boolean))]
+}
+
+export async function getListingKeysForBrokerByEmail(email: string): Promise<string[]> {
+  const sb = supabaseAnon()
+  if (!sb || !email?.trim()) return []
+  const { data } = await sb
+    .from('listing_agents')
+    .select('listing_key')
+    .in('agent_role', ['list', 'listing'])
+    .ilike('agent_email', email.trim())
+    .limit(5000)
+  return [...new Set((data ?? []).map((r: { listing_key?: string | null }) => (r.listing_key ?? '').trim()).filter(Boolean))]
+}
+
 /** Listing agent rows (role in 'list' | 'listing'). */
 export async function getListingDetailAgents(listingKey: string): Promise<ListingDetailAgentRow[]> {
   const sb = supabaseAnon()

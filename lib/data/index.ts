@@ -99,6 +99,8 @@ export { getListingVideoCandidates } from '@/lib/data/listings/getListingVideoCa
 export {
   getListingDetailPhotos,
   getListingDetailAgents,
+  getListingKeysForBrokerByLicense,
+  getListingKeysForBrokerByEmail,
   getListingDetailOpenHouses,
   getOpenHouseById,
   getListingDetailVideos,
@@ -166,6 +168,9 @@ export {
   searchBrokersByDisplayName,
   getBrokerForOgBySlug,
   getBlogPostForOgBySlug,
+  getBrokerSelfRecord,
+  updateBrokerById,
+  getMattBrokerRecord,
 } from '@/lib/data/brokers/getBrokers'
 export { resolveListingAgent } from '@/lib/data/brokers/resolveListingAgent'
 export type { ListingAgentInput } from '@/lib/data/brokers/resolveListingAgent'
@@ -181,6 +186,7 @@ export {
   decrementListingLikeCount,
   incrementListingViewCount,
   getTopViewedListingKeys,
+  sumEngagementForListingKeys,
 } from '@/lib/data/engagement'
 export type { EngagementCounts } from '@/lib/data/engagement'
 
