@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.9 (2026-05-23)
+
+### Other
+- SITE_SPEC: honest verification traces for the 6 remaining items
+
+---
+
+
 ## v1.288.8 (2026-05-23)
 
 ### Bug Fixes
