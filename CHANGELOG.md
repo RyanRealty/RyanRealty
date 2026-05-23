@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.7 (2026-05-23)
+
+### Maintenance
+- perf(broker-self): migrate active + sold count queries to DAL — 352→350
+
+---
+
+
 ## v1.280.6 (2026-05-23)
 
 ### Maintenance
