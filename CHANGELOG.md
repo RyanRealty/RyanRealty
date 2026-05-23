@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.14 (2026-05-23)
+
+### Other
+- DAL: migrate listings.ts search + map paths to listing_tile_mv
+
+---
+
+
 ## v1.282.13 (2026-05-23)
 
 ### Other
