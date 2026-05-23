@@ -136,20 +136,46 @@ export async function getPulseFeed(options: PulseFeedQuery): Promise<PulseFeedRe
     ),
   ]
 
-  // Single round-trip: match by ListingKey OR ListNumber. Activity events store
-  // either form depending on the source. PostgREST `.or()` accepts CSV with quoted values.
-  const keyList = keys.filter((k) => /^[a-zA-Z0-9._-]+$/.test(k)).map((k) => `"${k}"`).join(',')
-  const listingsResult = await withTimeout(
-    supabase
-      .from('listings')
-      .select(LISTING_SELECT)
-      .or(`ListingKey.in.(${keyList}),ListNumber.in.(${keyList})`)
-      .then((r) => r),
-    QUERY_TIMEOUT_MS,
-    { data: null, error: null } as unknown as { data: unknown[] | null; error: { message: string } | null },
-    'listings join'
-  )
-  const listingRows = listingsResult?.data ?? null
+  // DAL: match by ListingKey OR ListNumber via listing_tile_mv. Two parallel
+  // DAL calls cover both keying paths (activity events store either form).
+  void LISTING_SELECT
+  const safeKeys = keys.filter((k) => /^[a-zA-Z0-9._-]+$/.test(k)).slice(0, 5000)
+  const { getListingTiles } = await import('@/lib/data')
+  const [byListingKey, byListNumber] = await Promise.all([
+    withTimeout(
+      getListingTiles({ listingKeys: safeKeys, status: 'all', sort: 'newest', limit: 500 }),
+      QUERY_TIMEOUT_MS,
+      [] as Awaited<ReturnType<typeof getListingTiles>>,
+      'listings join (byListingKey)'
+    ),
+    withTimeout(
+      getListingTiles({ listNumbers: safeKeys, status: 'all', sort: 'newest', limit: 500 }),
+      QUERY_TIMEOUT_MS,
+      [] as Awaited<ReturnType<typeof getListingTiles>>,
+      'listings join (byListNumber)'
+    ),
+  ])
+  // Project the DAL tiles back to the legacy {PascalCase, ...} shape pulse-feed consumes.
+  const listingRows = [...byListingKey, ...byListNumber].map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    ListPrice: t.listPrice,
+    BedroomsTotal: t.beds,
+    BathroomsTotal: t.baths,
+    TotalLivingAreaSqFt: t.sqft,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: 'OR',
+    PostalCode: t.postalCode,
+    SubdivisionName: t.subdivisionName,
+    PhotoURL: t.photoUrl,
+    StandardStatus: t.status,
+    OnMarketDate: t.onMarketDate,
+    CloseDate: t.closeDate,
+    ClosePrice: t.closePrice,
+    has_virtual_tour: t.hasVirtualTour,
+  }))
 
   const listingByKey = new Map<string, Record<string, unknown>>()
   for (const r of listingRows ?? []) {
@@ -252,37 +278,14 @@ function diversifyByEventType(items: PulseFeedItem[]): PulseFeedItem[] {
 const REGION_SLUG = 'central-oregon'
 
 async function _getRegionSnapshotUncached(): Promise<PulseRegionSnapshot | null> {
-  const supabase = supabaseClient()
-  if (!supabase) return null
-  const result = await withTimeout(
-    supabase
-      .from('market_pulse_live')
-      .select(
-        'geo_slug, geo_label, active_count, median_list_price, months_of_supply, market_health_label, sold_count_30d, new_count_7d, median_active_dom, updated_at'
-      )
-      .eq('geo_type', 'region')
-      .eq('property_type', 'A')
-      .eq('geo_slug', REGION_SLUG)
-      .maybeSingle()
-      .then((r) => r),
+  const { getMarketPulseRegionSnapshot } = await import('@/lib/data')
+  const data = await withTimeout(
+    getMarketPulseRegionSnapshot(REGION_SLUG),
     QUERY_TIMEOUT_MS,
-    { data: null, error: null } as unknown as { data: unknown | null; error: { message: string } | null },
+    null,
     'region snapshot'
   )
-  const data = result?.data as Record<string, unknown> | null
-  if (!data) return null
-  return {
-    geo_slug: String(data.geo_slug ?? ''),
-    geo_label: String(data.geo_label ?? ''),
-    active_count: Number(data.active_count ?? 0),
-    median_list_price: data.median_list_price != null ? Number(data.median_list_price) : null,
-    months_of_supply: data.months_of_supply != null ? Number(data.months_of_supply) : null,
-    market_health_label: (data.market_health_label as string | null) ?? null,
-    sold_count_30d: Number(data.sold_count_30d ?? 0),
-    new_count_7d: Number(data.new_count_7d ?? 0),
-    median_active_dom: data.median_active_dom != null ? Number(data.median_active_dom) : null,
-    updated_at: (data.updated_at as string | null) ?? null,
-  }
+  return data
 }
 
 export const getPulseRegionSnapshot = unstable_cache(_getRegionSnapshotUncached, ['pulse-region-snapshot-v1'], {
@@ -295,23 +298,15 @@ export const getPulseRegionSnapshot = unstable_cache(_getRegionSnapshotUncached,
  * (e.g. "Bend") and resolve against geo_label rather than geo_slug.
  */
 async function _getCitySnapshotsUncached(cityLabels: string[]): Promise<PulseCitySnapshot[]> {
-  const supabase = supabaseClient()
-  if (!supabase || cityLabels.length === 0) return []
+  if (cityLabels.length === 0) return []
+  const { getMarketPulseCitySnapshots } = await import('@/lib/data')
   const result = await withTimeout(
-    supabase
-      .from('market_pulse_live')
-      .select(
-        'geo_slug, geo_label, active_count, median_list_price, months_of_supply, market_health_label, sold_count_30d, new_count_7d, median_active_dom, updated_at'
-      )
-      .eq('geo_type', 'city')
-      .eq('property_type', 'A')
-      .in('geo_label', cityLabels)
-      .then((r) => r),
+    getMarketPulseCitySnapshots(cityLabels),
     QUERY_TIMEOUT_MS,
-    { data: null, error: null } as unknown as { data: unknown[] | null; error: { message: string } | null },
+    [] as Awaited<ReturnType<typeof getMarketPulseCitySnapshots>>,
     'city snapshots'
   )
-  const rows = (result?.data ?? []) as Array<Record<string, unknown>>
+  const rows = result.map((r) => r as unknown as Record<string, unknown>)
   return rows
     .map((d) => ({
       geo_slug: d.geo_slug as string,

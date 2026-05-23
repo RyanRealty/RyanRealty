@@ -109,6 +109,11 @@ export type { GeoSnapshot, GeoSnapshotInput } from '@/lib/data/geo/getGeoSnapsho
 // Market (real impls — no MV dependency, usable today)
 export { getMarketStats } from '@/lib/data/market/getMarketStats'
 export { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+export {
+  getMarketPulseRegionSnapshot,
+  getMarketPulseCitySnapshots,
+} from '@/lib/data/market/getMarketPulseSnapshot'
+export type { MarketPulseSnapshot } from '@/lib/data/market/getMarketPulseSnapshot'
 
 // Brokers (real impls with hardcoded fallback)
 export { getBrokers } from '@/lib/data/brokers/getBrokers'

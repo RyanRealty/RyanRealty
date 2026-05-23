@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T01:12:22.637Z",
-  "total": 217,
+  "generatedAt": "2026-05-23T01:14:38.335Z",
+  "total": 214,
   "byFile": {
     "app/actions/sync-spark.ts": 28,
     "lib/listing-processor.ts": 16,
@@ -13,7 +13,6 @@
     "app/actions/market-reports.ts": 4,
     "app/actions/market-stats.ts": 4,
     "app/actions/place-content-pipeline.ts": 4,
-    "app/actions/pulse-feed.ts": 4,
     "app/api/calendar/route.ts": 4,
     "app/api/cron/optimization-loop/route.ts": 4,
     "app/api/cron/sync-verify-full-history/route.ts": 4,
@@ -51,6 +50,7 @@
     "app/actions/guides.ts": 1,
     "app/actions/inventory-breakdown.ts": 1,
     "app/actions/photo-classification.ts": 1,
+    "app/actions/pulse-feed.ts": 1,
     "app/admin/(protected)/analytics/_lib/queries.ts": 1,
     "app/admin/(protected)/cmas/page.tsx": 1,
     "app/admin/(protected)/search/page.tsx": 1,
