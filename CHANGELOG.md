@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.13 (2026-05-23)
+
+### Maintenance
+- perf(listings): getActiveListingsCount routes through DAL — 339→338
+
+---
+
+
 ## v1.280.12 (2026-05-23)
 
 ### Maintenance
