@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.5 (2026-05-23)
+
+### Other
+- communities: vacation rental potential block for resort communities (SITE_SPEC line 107)
+
+---
+
+
 ## v1.288.4 (2026-05-23)
 
 ### Other
