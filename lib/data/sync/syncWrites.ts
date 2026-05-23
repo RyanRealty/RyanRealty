@@ -531,6 +531,84 @@ export async function getExpiredListingLookupAttempts(
   return Number((data as { owner_lookup_attempts?: number } | null)?.owner_lookup_attempts ?? 0)
 }
 
+/** Find properties matching a city + optional state + optional postal_code filter. */
+export async function findPropertiesByAddressFilter(params: {
+  city: string
+  state?: string | null
+  postalCode?: string | null
+  limit?: number
+}): Promise<Array<{ id: string; unparsed_address?: string | null; city?: string | null; state?: string | null; postal_code?: string | null }>> {
+  const sb = client()
+  if (!sb) return []
+  let q = sb
+    .from('properties')
+    .select('id, unparsed_address, city, state, postal_code')
+    .ilike('city', params.city)
+  if (params.state?.trim()) q = q.ilike('state', params.state.trim())
+  if (params.postalCode?.trim()) q = q.eq('postal_code', params.postalCode.trim().slice(0, 20))
+  const { data } = await q.limit(Math.min(Math.max(params.limit ?? 20, 1), 100))
+  return (data ?? []) as Array<{ id: string; unparsed_address?: string | null; city?: string | null; state?: string | null; postal_code?: string | null }>
+}
+
+/** Look up a property row by id (admin/CMA flows). */
+export async function getPropertyById(id: string): Promise<{ unparsed_address?: string | null; street_number?: string | null; city?: string | null; postal_code?: string | null } | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb
+    .from('properties')
+    .select('unparsed_address, street_number, city, postal_code')
+    .eq('id', id)
+    .single()
+  return (data ?? null) as { unparsed_address?: string | null; street_number?: string | null; city?: string | null; postal_code?: string | null } | null
+}
+
+/** Fetch newly expired/canceled/withdrawn listings in our service area for the expired-listing pipeline. */
+export async function selectNewExpiredListings(options: {
+  sinceIso: string
+  serviceAreaCities: readonly string[]
+  minListPrice: number
+  limit: number
+}): Promise<Array<Record<string, unknown>>> {
+  const sb = client()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('listings')
+    .select(
+      'ListingKey,ListNumber,StandardStatus,status_change_timestamp,StreetNumber,StreetName,City,PostalCode,ListPrice,OriginalListPrice,CumulativeDaysOnMarket,ListAgentName,list_agent_email,PropertyType,BedroomsTotal,BathroomsTotalDecimal,TotalLivingAreaSqFt,SubdivisionName',
+    )
+    .in('StandardStatus', ['Expired', 'Canceled', 'Withdrawn'])
+    .gt('status_change_timestamp', options.sinceIso)
+    .in('City', options.serviceAreaCities as readonly string[])
+    .eq('PropertyType', 'A')
+    .gt('ListPrice', options.minListPrice)
+    .order('status_change_timestamp', { ascending: false })
+    .limit(options.limit)
+  if (error) {
+    console.error('[selectNewExpiredListings] error:', error.message)
+    return []
+  }
+  return (data ?? []) as Array<Record<string, unknown>>
+}
+
+/** Get the set of listing_keys already present in expired_listings (dedup check). */
+export async function getExistingExpiredListingKeys(keys: string[]): Promise<Set<string>> {
+  const sb = client()
+  if (!sb || keys.length === 0) return new Set()
+  const { data } = await sb
+    .from('expired_listings')
+    .select('listing_key')
+    .in('listing_key', keys.slice(0, 5000))
+  return new Set(((data ?? []) as Array<{ listing_key: string }>).map((r) => r.listing_key))
+}
+
+/** Insert a valuation_requests row (home-valuation form). */
+export async function insertValuationRequest(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('valuation_requests').insert(row)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
 /** Update an expired_listings row by listing_key (admin enrichment). */
 export async function updateExpiredListingByKey(
   listingKey: string,

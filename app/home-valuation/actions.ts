@@ -30,19 +30,17 @@ async function findPropertyByAddress(params: {
   state?: string | null
   postalCode?: string | null
 }): Promise<string | null> {
-  const supabase = getServiceSupabase()
+  void getServiceSupabase
   const city = params.city?.trim()
   if (!city) return null
 
-  let query = supabase
-    .from('properties')
-    .select('id, unparsed_address, city, state, postal_code')
-    .ilike('city', city)
-
-  if (params.state?.trim()) query = query.ilike('state', params.state.trim())
-  if (params.postalCode?.trim()) query = query.eq('postal_code', params.postalCode.trim().slice(0, 20))
-
-  const { data: rows } = await query.limit(20)
+  const { findPropertiesByAddressFilter } = await import('@/lib/data')
+  const rows = await findPropertiesByAddressFilter({
+    city,
+    state: params.state ?? null,
+    postalCode: params.postalCode ?? null,
+    limit: 20,
+  })
   if (!rows?.length) return null
 
   const streetParts = (params.street ?? '')
@@ -80,8 +78,9 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
   const state = stateZipMatch?.[1] ?? stateZip.replace(/\d/g, '').trim()
   const postalCode = stateZipMatch?.[2] ?? parts[3]?.trim() ?? ''
 
-  const supabase = getServiceSupabase()
-  const { error: insertError } = await supabase.from('valuation_requests').insert({
+  void getServiceSupabase
+  const { insertValuationRequest } = await import('@/lib/data')
+  const insertRes = await insertValuationRequest({
     address_street: street || null,
     address_city: city,
     address_state: state || null,
@@ -91,7 +90,7 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
     phone: phone || null,
     source_url: `${siteUrl}/home-valuation`,
   })
-  if (insertError) return { error: insertError.message }
+  if (!insertRes.ok) return { error: insertRes.error ?? 'insert failed' }
 
   const fullAddress = [street, city, state, postalCode].filter(Boolean).join(', ')
   const fubRes = await sendEvent({
@@ -139,26 +138,32 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
       let cma = await getCachedCMA(propertyId)
       if (!cma) cma = await computeCMA(propertyId)
       if (cma) {
-        const sb = createServiceClient()
-        const { data: prop } = await sb
-          .from('properties')
-          .select('unparsed_address, street_number, city, postal_code')
-          .eq('id', propertyId)
-          .single()
-        const pAddr = prop as { unparsed_address?: string; street_number?: string; city?: string; postal_code?: string } | null
+        void createServiceClient
+        const { getPropertyById, getCityListings: getCityListingsDAL } = await import('@/lib/data')
+        const pAddr = await getPropertyById(propertyId)
 
-        // Find listing by matching address (RESO columns, no property_id FK)
+        // Find listing by matching address via listing_tile_mv.
         type ValListingRow = { ListingKey?: string; BedroomsTotal?: number; BathroomsTotal?: number; TotalLivingAreaSqFt?: number; PhotoURL?: string; ListAgentName?: string }
         let listingRow: ValListingRow | null = null
         if (pAddr?.city) {
-          let q = sb
-            .from('listings')
-            .select('ListingKey, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PhotoURL, ListAgentName')
-            .ilike('City', pAddr.city)
-          if (pAddr.street_number) q = q.eq('StreetNumber', pAddr.street_number)
-          if (pAddr.postal_code) q = q.eq('PostalCode', pAddr.postal_code)
-          const { data: matches } = await q.order('ModificationTimestamp', { ascending: false }).limit(1)
-          listingRow = (matches as ValListingRow[] | null)?.[0] ?? null
+          const tiles = await getCityListingsDAL(pAddr.city, {
+            status: 'all',
+            sort: 'newest',
+            limit: 500,
+            postalCode: pAddr.postal_code && /^\d{5}$/.test(pAddr.postal_code) ? pAddr.postal_code : undefined,
+          })
+          const match = pAddr.street_number
+            ? tiles.find((t) => String(t.streetNumber ?? '') === String(pAddr.street_number))
+            : tiles[0]
+          if (match) {
+            listingRow = {
+              ListingKey: match.listingKey,
+              BedroomsTotal: match.beds ?? undefined,
+              BathroomsTotal: match.baths ?? undefined,
+              TotalLivingAreaSqFt: match.sqft ?? undefined,
+              PhotoURL: match.photoUrl ?? undefined,
+            }
+          }
         }
 
         const pdfData = {

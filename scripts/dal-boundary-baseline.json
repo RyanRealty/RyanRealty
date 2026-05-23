@@ -1,11 +1,9 @@
 {
-  "generatedAt": "2026-05-23T02:03:42.744Z",
-  "total": 67,
+  "generatedAt": "2026-05-23T02:06:54.292Z",
+  "total": 61,
   "byFile": {
     "lib/cma.ts": 4,
-    "app/home-valuation/actions.ts": 3,
     "lib/cma-delivery.ts": 3,
-    "lib/expired-listing-processor.ts": 3,
     "app/actions/activity-feed.ts": 2,
     "app/actions/agents.ts": 2,
     "app/actions/broker-self.ts": 2,

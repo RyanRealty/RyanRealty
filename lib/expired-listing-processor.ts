@@ -177,39 +177,21 @@ async function fetchNewExpiredListings(
   maxPerRun: number,
   lookbackHours: number,
 ): Promise<ExpiredListingRow[]> {
+  void supabase
   const since = new Date(Date.now() - lookbackHours * 3600_000).toISOString()
-  const { data, error } = await supabase
-    .from('listings')
-    .select(
-      'ListingKey,ListNumber,StandardStatus,status_change_timestamp,StreetNumber,StreetName,City,PostalCode,ListPrice,OriginalListPrice,CumulativeDaysOnMarket,ListAgentName,list_agent_email,PropertyType,BedroomsTotal,BathroomsTotalDecimal,TotalLivingAreaSqFt,SubdivisionName',
-    )
-    .in('StandardStatus', ['Expired', 'Canceled', 'Withdrawn'])
-    .gt('status_change_timestamp', since)
-    .in('City', SERVICE_AREA_CITIES as readonly string[])
-    .eq('PropertyType', 'A')
-    .gt('ListPrice', MIN_LIST_PRICE)
-    .order('status_change_timestamp', { ascending: false })
-    .limit(maxPerRun * 2)
-
-  if (error) {
-    console.error('[expired-listing-processor] listings query failed:', error.message)
-    return []
-  }
-
-  const keys = (data ?? []).map((d) => (d as { ListingKey: string }).ListingKey)
+  const { selectNewExpiredListings, getExistingExpiredListingKeys } = await import('@/lib/data')
+  const data = await selectNewExpiredListings({
+    sinceIso: since,
+    serviceAreaCities: SERVICE_AREA_CITIES,
+    minListPrice: MIN_LIST_PRICE,
+    limit: maxPerRun * 2,
+  })
+  const keys = data.map((d) => (d as { ListingKey: string }).ListingKey)
   if (keys.length === 0) return []
-
-  const { data: existing } = await supabase
-    .from('expired_listings')
-    .select('listing_key')
-    .in('listing_key', keys)
-  const seenKeys = new Set(
-    ((existing ?? []) as Array<{ listing_key: string }>).map((r) => r.listing_key),
-  )
-
-  return (data ?? [])
+  const seenKeys = await getExistingExpiredListingKeys(keys)
+  return data
     .filter((d) => !seenKeys.has((d as { ListingKey: string }).ListingKey))
-    .slice(0, maxPerRun) as ExpiredListingRow[]
+    .slice(0, maxPerRun) as unknown as ExpiredListingRow[]
 }
 
 /**
@@ -360,7 +342,9 @@ export async function processNewExpiredListings(
       })
       if (alertRes.ok) stats.alert_emails_sent++
 
-      await supabase.from('expired_listings').upsert(
+      void supabase
+      const { upsertExpiredListingRow } = await import('@/lib/data')
+      await upsertExpiredListingRow(
         {
           listing_key: l.ListingKey,
           list_number: l.ListNumber,
@@ -398,7 +382,6 @@ export async function processNewExpiredListings(
           owner_lookup_attempts: 1,
           last_owner_lookup_at: new Date().toISOString(),
         },
-        { onConflict: 'listing_key' },
       )
 
       stats.sample.push({
