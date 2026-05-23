@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.8 (2026-05-23)
+
+### Maintenance
+- perf(market-reports): migrate key/list_number lookups to DAL — 350→346
+
+---
+
+
 ## v1.280.7 (2026-05-23)
 
 ### Maintenance
