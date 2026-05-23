@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.1 (2026-05-23)
+
+### Maintenance
+- perf(personalization): viewed-listings lookup uses DAL — 336→335
+
+---
+
+
 ## v1.282.0 (2026-05-23)
 
 ### Features
