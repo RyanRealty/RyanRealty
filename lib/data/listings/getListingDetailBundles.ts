@@ -131,6 +131,22 @@ export async function getListingDetailVideos(listingKey: string): Promise<Listin
   return (data ?? []) as ListingDetailVideoRow[]
 }
 
+/** Upsert one listing_embeddings row (semantic-search refresh). */
+export async function upsertListingEmbedding(row: {
+  listing_key: string
+  city: string | null
+  search_content: string
+  embedding: number[]
+  updated_at: string
+}): Promise<{ ok: boolean; error?: string }> {
+  const sb = supabaseAnon()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb
+    .from('listing_embeddings')
+    .upsert(row, { onConflict: 'listing_key' })
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
 /** Return the set of listing_keys that have a price-change event since the given ISO timestamp. */
 export async function getListingKeysWithPriceChangeSince(sinceIso: string): Promise<Set<string>> {
   const sb = supabaseAnon()

@@ -104,6 +104,7 @@ export {
   getListingDetailVideos,
   getListingDetailHistory,
   getListingKeysWithPriceChangeSince,
+  upsertListingEmbedding,
   resolveCommunityChainBySlug,
 } from '@/lib/data/listings/getListingDetailBundles'
 export type {

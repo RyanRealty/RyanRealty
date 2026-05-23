@@ -140,16 +140,18 @@ export async function getReportMetricsTimeSeries(
     const geoSlug = subdivision?.trim()
       ? subdivisionEntityKey(city.trim(), subdivision.trim())
       : slugify(city.trim())
-    const { data: cacheRows, error: cacheError } = await supabase
-      .from('market_stats_cache')
-      .select('period_start, period_end, sold_count, median_sale_price')
-      .eq('geo_type', geoType)
-      .eq('geo_slug', geoSlug)
-      .eq('period_type', 'monthly')
-      .order('period_start', { ascending: false })
-      .limit(Math.min(60, Math.max(1, numMonths)))
-    if (!cacheError && Array.isArray(cacheRows) && cacheRows.length > 0) {
-      const rows = cacheRows
+    void supabase
+    const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
+    const cacheRows = await getMarketStatsCacheRowsForGeos({
+      geoSlugs: [geoSlug],
+      periodType: 'monthly',
+      columns: 'geo_slug, period_start, period_end, sold_count, median_sale_price',
+      orderBy: { column: 'period_start', ascending: false },
+    })
+    void geoType
+    if (Array.isArray(cacheRows) && cacheRows.length > 0) {
+      const sliced = cacheRows.slice(0, Math.min(60, Math.max(1, numMonths)))
+      const rows = sliced
         .map((row) => {
           const periodStart = String((row as { period_start?: string }).period_start ?? '')
           const monthDate = new Date(periodStart)
@@ -196,17 +198,12 @@ export async function getReportSubdivisionsForCity(city: string): Promise<{ subd
   if (!url?.trim() || !key?.trim() || !city?.trim()) {
     return { subdivisions: [] }
   }
-  const supabase = createClient(url, key)
-  const { data, error } = await supabase
-    .from('listings')
-    .select('SubdivisionName')
-    .eq('"City"', city.trim())
-    .not('SubdivisionName', 'is', null)
-    .limit(2000)
-  if (error) return { subdivisions: [], error: error.message }
+  void createClient
+  const { getCityListings: getCityListingsDAL } = await import('@/lib/data')
+  const tiles = await getCityListingsDAL(city.trim(), { status: 'all', limit: 5000 })
   const set = new Set<string>()
-  for (const row of data ?? []) {
-    const name = (row as { SubdivisionName?: string | null }).SubdivisionName?.trim()
+  for (const t of tiles) {
+    const name = (t.subdivisionName ?? '').trim()
     if (name && name.toLowerCase() !== 'n/a') set.add(name)
   }
   const subdivisions = Array.from(set).sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }))
@@ -254,23 +251,16 @@ export async function searchReportLocations(
   if (q.length < 2) {
     return { locations: [] }
   }
-  const supabase = createClient(url, key)
+  void createClient
   const safeQ = q.replace(/[,()\\%]/g, '')
-  const pattern = `%${safeQ}%`
-  const { data, error } = await supabase
-    .from('listings')
-    .select('City, SubdivisionName, StreetNumber, StreetName')
-    .or(`City.ilike.${pattern},SubdivisionName.ilike.${pattern},StreetName.ilike.${pattern},StreetNumber.ilike.${pattern}`)
-    .limit(80)
-  if (error) {
-    return { locations: [], error: error.message }
-  }
-  const rows = (data ?? []) as {
-    City?: string | null
-    SubdivisionName?: string | null
-    StreetNumber?: string | null
-    StreetName?: string | null
-  }[]
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({ searchQuery: safeQ, status: 'all', sort: 'newest', limit: 80 })
+  const rows = tiles.map((t) => ({
+    City: t.city,
+    SubdivisionName: t.subdivisionName,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+  }))
   const citySet = new Set<string>()
   const subdivisionSet = new Set<string>()
   const addressList: { city: string; subdivision?: string; street: string }[] = []

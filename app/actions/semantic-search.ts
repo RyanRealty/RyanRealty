@@ -114,24 +114,25 @@ export async function searchListingsSemantic(params: {
 
   const safeQuery = query.replace(/[,()]/g, '')
   if (!hasOpenAiKey()) {
-    const { data, error } = await supabase
-      .from('listings')
-      .select('ListingKey, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, PropertyType, StandardStatus')
-      .or(`City.ilike.%${safeQuery}%,SubdivisionName.ilike.%${safeQuery}%,StreetName.ilike.%${safeQuery}%`)
-      .limit(limit)
-
-    if (error) return { results: [], usedSemantic: false, error: error.message }
-    const fallback = ((data ?? []) as ListingRow[]).map((row) => ({
-      listingKey: row.ListingKey,
+    void supabase
+    const { getListingTiles } = await import('@/lib/data')
+    const tiles = await getListingTiles({
+      searchQuery: safeQuery,
+      status: 'all',
+      sort: 'newest',
+      limit,
+    })
+    const fallback = tiles.map((t) => ({
+      listingKey: t.listingKey,
       score: 0,
-      city: row.City ?? null,
-      streetAddress: [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim() || null,
-      price: row.ListPrice ?? null,
-      beds: row.BedroomsTotal ?? null,
-      baths: row.BathroomsTotal ?? null,
-      propertyType: row.PropertyType ?? null,
-      status: row.StandardStatus ?? null,
-      photoUrl: row.PhotoURL ?? null,
+      city: t.city,
+      streetAddress: [t.streetNumber, t.streetName].filter(Boolean).join(' ').trim() || null,
+      price: t.listPrice,
+      beds: t.beds,
+      baths: t.baths,
+      propertyType: t.propertyType,
+      status: t.status,
+      photoUrl: t.photoUrl,
     }))
     return { results: fallback, usedSemantic: false }
   }
@@ -151,26 +152,28 @@ export async function searchListingsSemantic(params: {
 
   const rank = new Map(scored.map((row, idx) => [row.listing_key, { idx, similarity: Number(row.similarity ?? 0) }]))
   const keys = scored.map((row) => row.listing_key)
-  const { data: listings, error: listingsError } = await supabase
-    .from('listings')
-    .select('ListingKey, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, PropertyType, StandardStatus')
-    .in('ListingKey', keys)
-    .limit(limit)
+  void supabase
+  const { getListingTiles } = await import('@/lib/data')
+  const listings = await getListingTiles({
+    listingKeys: keys,
+    status: 'all',
+    sort: 'newest',
+    limit,
+  })
 
-  if (listingsError) return { results: [], usedSemantic: true, error: listingsError.message }
-  const mapped = ((listings ?? []) as ListingRow[])
-    .sort((a, b) => (rank.get(a.ListingKey)?.idx ?? 9_999) - (rank.get(b.ListingKey)?.idx ?? 9_999))
-    .map((row) => ({
-      listingKey: row.ListingKey,
-      score: rank.get(row.ListingKey)?.similarity ?? 0,
-      city: row.City ?? null,
-      streetAddress: [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim() || null,
-      price: row.ListPrice ?? null,
-      beds: row.BedroomsTotal ?? null,
-      baths: row.BathroomsTotal ?? null,
-      propertyType: row.PropertyType ?? null,
-      status: row.StandardStatus ?? null,
-      photoUrl: row.PhotoURL ?? null,
+  const mapped = listings
+    .sort((a, b) => (rank.get(a.listingKey)?.idx ?? 9_999) - (rank.get(b.listingKey)?.idx ?? 9_999))
+    .map((t) => ({
+      listingKey: t.listingKey,
+      score: rank.get(t.listingKey)?.similarity ?? 0,
+      city: t.city,
+      streetAddress: [t.streetNumber, t.streetName].filter(Boolean).join(' ').trim() || null,
+      price: t.listPrice,
+      beds: t.beds,
+      baths: t.baths,
+      propertyType: t.propertyType,
+      status: t.status,
+      photoUrl: t.photoUrl,
     }))
 
   return { results: mapped, usedSemantic: true }
@@ -183,29 +186,24 @@ export async function refreshListingEmbeddings(params?: { limit?: number }) {
 
   const requestedLimit = Number.isFinite(params?.limit) ? Number(params?.limit) : 200
   const limit = Math.max(1, Math.min(requestedLimit, 1000))
-  const supabase = createServiceClient()
-  const { data: listings, error } = await supabase
-    .from('listings')
-    .select('ListingKey, City, SubdivisionName, PropertyType, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, ListPrice, PublicRemarks, StandardStatus')
-    .ilike('StandardStatus', '%active%')
-    .limit(limit)
-
-  if (error) return { ok: false, processed: 0, error: error.message }
+  void createServiceClient
+  const { getListingTiles, upsertListingEmbedding } = await import('@/lib/data')
+  const tiles = await getListingTiles({ status: 'active', limit })
 
   let processed = 0
-  for (const row of listings ?? []) {
-    const listing = row as {
-      ListingKey?: string | null
-      City?: string | null
-      SubdivisionName?: string | null
-      PropertyType?: string | null
-      BedroomsTotal?: number | null
-      BathroomsTotal?: number | null
-      TotalLivingAreaSqFt?: number | null
-      ListPrice?: number | null
-      PublicRemarks?: string | null
+  for (const t of tiles) {
+    const listing = {
+      ListingKey: t.listingKey,
+      City: t.city,
+      SubdivisionName: t.subdivisionName,
+      PropertyType: t.propertyType,
+      BedroomsTotal: t.beds,
+      BathroomsTotal: t.baths,
+      TotalLivingAreaSqFt: t.sqft,
+      ListPrice: t.listPrice,
+      PublicRemarks: null as string | null,
     }
-    const listingKey = listing.ListingKey?.trim()
+    const listingKey = (listing.ListingKey ?? '').trim()
     if (!listingKey) continue
     const content = buildSearchContent(listing)
     if (!content) continue
@@ -213,16 +211,13 @@ export async function refreshListingEmbeddings(params?: { limit?: number }) {
     const embedding = await createEmbedding(content)
     if (!embedding) continue
 
-    await supabase.from('listing_embeddings').upsert(
-      {
-        listing_key: listingKey,
-        city: listing.City?.trim() || null,
-        search_content: content,
-        embedding,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'listing_key' }
-    )
+    await upsertListingEmbedding({
+      listing_key: listingKey,
+      city: listing.City?.trim() || null,
+      search_content: content,
+      embedding,
+      updated_at: new Date().toISOString(),
+    })
     processed += 1
   }
 
