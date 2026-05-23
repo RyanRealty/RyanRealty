@@ -160,6 +160,22 @@ export {
 } from '@/lib/data/admin/syncCounts'
 export type { CountResult, TerminalBucket, ClosedFinalizedRow } from '@/lib/data/admin/syncCounts'
 
+// Admin listing edit + photo CRUD
+export {
+  getAdminEditableListingRow,
+  updateAdminEditableListingRow,
+  getListingPhotosForKey,
+  appendListingPhoto,
+  deleteListingPhoto,
+  setListingHeroPhoto,
+  reorderListingPhotos,
+} from '@/lib/data/admin/listingEdit'
+export type {
+  AdminEditableListingRow,
+  ListingPhotoRow as AdminListingPhotoRow,
+  ListingDetailsJson as AdminListingDetailsJson,
+} from '@/lib/data/admin/listingEdit'
+
 // More functions get exported here as Wave 1-3 lands them.
 
 // Cache helpers ----------------------------------------------------

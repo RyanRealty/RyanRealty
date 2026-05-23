@@ -1,11 +1,10 @@
 {
-  "generatedAt": "2026-05-23T01:10:15.532Z",
-  "total": 227,
+  "generatedAt": "2026-05-23T01:12:22.637Z",
+  "total": 217,
   "byFile": {
     "app/actions/sync-spark.ts": 28,
     "lib/listing-processor.ts": 16,
     "app/actions/listing-detail.ts": 11,
-    "app/actions/admin-listing-detail.ts": 10,
     "app/actions/listings.ts": 10,
     "app/actions/cities.ts": 9,
     "app/actions/area-guide-upload.ts": 7,

@@ -1,19 +1,21 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { logAdminAction } from '@/app/actions/log-admin-action'
+import {
+  getAdminEditableListingRow,
+  updateAdminEditableListingRow,
+  getListingPhotosForKey,
+  appendListingPhoto,
+  deleteListingPhoto as deletePhotoDAL,
+  setListingHeroPhoto as setHeroDAL,
+  reorderListingPhotos as reorderPhotosDAL,
+  type AdminListingPhotoRow,
+  type AdminListingDetailsJson,
+} from '@/lib/data'
 
-type ListingPhotoRow = {
-  id: string
-  listing_key: string
-  photo_url: string
-  cdn_url: string | null
-  sort_order: number
-  caption: string | null
-  is_hero: boolean
-}
+type ListingPhotoRow = AdminListingPhotoRow
 
 export type AdminListingEditable = {
   listingKey: string
@@ -26,23 +28,7 @@ export type AdminListingEditable = {
   photos: ListingPhotoRow[]
 }
 
-type ListingDetailsJson = Record<string, unknown> & {
-  PublicRemarks?: string
-  admin_overrides?: {
-    admin_notes?: string | null
-    marketing_headline?: string | null
-    featured?: boolean
-  }
-}
-
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !serviceKey?.trim()) {
-    throw new Error('Supabase service role is not configured.')
-  }
-  return createClient(url, serviceKey)
-}
+type ListingDetailsJson = AdminListingDetailsJson
 
 async function requireSuperuser() {
   const session = await getSession()
@@ -57,56 +43,17 @@ function normalizeListingKey(key: string) {
   return String(key ?? '').trim()
 }
 
-async function fetchListingRowForEdit(listingKey: string) {
-  const supabase = getServiceSupabase()
-  const key = normalizeListingKey(listingKey)
-  if (!key) return null
-
-  const byListingKey = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, ListPrice, StandardStatus, details')
-    .eq('ListingKey', key)
-    .maybeSingle()
-  if (byListingKey.data) return byListingKey.data as {
-    ListingKey: string | null
-    ListNumber: string | null
-    ListPrice: number | null
-    StandardStatus: string | null
-    details: ListingDetailsJson | null
-  }
-
-  const byListNumber = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, ListPrice, StandardStatus, details')
-    .eq('ListNumber', key)
-    .maybeSingle()
-  if (byListNumber.data) return byListNumber.data as {
-    ListingKey: string | null
-    ListNumber: string | null
-    ListPrice: number | null
-    StandardStatus: string | null
-    details: ListingDetailsJson | null
-  }
-
-  return null
-}
-
 export async function getAdminListingEditableData(listingKey: string): Promise<AdminListingEditable | null> {
   const key = normalizeListingKey(listingKey)
   if (!key) return null
 
-  const supabase = getServiceSupabase()
-  const listing = await fetchListingRowForEdit(key)
+  const listing = await getAdminEditableListingRow(key)
   if (!listing) return null
 
   const resolvedKey = listing.ListingKey || listing.ListNumber || key
   const details = (listing.details ?? {}) as ListingDetailsJson
   const overrides = details.admin_overrides ?? {}
-  const { data: photos } = await supabase
-    .from('listing_photos')
-    .select('id, listing_key, photo_url, cdn_url, sort_order, caption, is_hero')
-    .eq('listing_key', resolvedKey)
-    .order('sort_order', { ascending: true })
+  const photos = await getListingPhotosForKey(resolvedKey)
 
   return {
     listingKey: resolvedKey,
@@ -116,7 +63,7 @@ export async function getAdminListingEditableData(listingKey: string): Promise<A
     adminNotes: typeof overrides.admin_notes === 'string' ? overrides.admin_notes : null,
     marketingHeadline: typeof overrides.marketing_headline === 'string' ? overrides.marketing_headline : null,
     featured: overrides.featured === true,
-    photos: (photos ?? []) as ListingPhotoRow[],
+    photos,
   }
 }
 
@@ -132,8 +79,7 @@ export async function updateAdminListingEditableData(input: {
   const access = await requireSuperuser()
   if (!access.ok) return { ok: false, error: access.error }
 
-  const supabase = getServiceSupabase()
-  const listing = await fetchListingRowForEdit(input.listingKey)
+  const listing = await getAdminEditableListingRow(input.listingKey)
   if (!listing) return { ok: false, error: 'Listing not found.' }
 
   const details = (listing.details ?? {}) as ListingDetailsJson
@@ -149,17 +95,12 @@ export async function updateAdminListingEditableData(input: {
   }
 
   const key = listing.ListingKey || listing.ListNumber || normalizeListingKey(input.listingKey)
-  const { error } = await supabase
-    .from('listings')
-    .update({
-      ListPrice: input.listPrice,
-      StandardStatus: input.standardStatus?.trim() || null,
-      details: nextDetails,
-      ModificationTimestamp: new Date().toISOString(),
-    })
-    .eq('ListingKey', key)
-
-  if (error) return { ok: false, error: error.message }
+  const res = await updateAdminEditableListingRow(key, {
+    ListPrice: input.listPrice,
+    StandardStatus: input.standardStatus,
+    details: nextDetails,
+  })
+  if (!res.ok) return { ok: false, error: res.error ?? 'update failed' }
 
   await logAdminAction({
     adminEmail: access.adminEmail,
@@ -188,25 +129,8 @@ export async function addAdminListingPhoto(input: {
   const url = input.photoUrl.trim()
   if (!key || !url) return { ok: false, error: 'Listing key and photo URL are required.' }
 
-  const supabase = getServiceSupabase()
-  const { data: existing } = await supabase
-    .from('listing_photos')
-    .select('sort_order')
-    .eq('listing_key', key)
-    .order('sort_order', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  const nextSort = (existing?.sort_order ?? -1) + 1
-  const { error } = await supabase.from('listing_photos').insert({
-    listing_key: key,
-    photo_url: url,
-    sort_order: nextSort,
-    caption: input.caption?.trim() || null,
-    is_hero: false,
-    source: 'admin',
-  })
-  if (error) return { ok: false, error: error.message }
+  const res = await appendListingPhoto({ listingKey: key, photoUrl: url, caption: input.caption })
+  if (!res.ok) return { ok: false, error: res.error ?? 'insert failed' }
 
   await logAdminAction({
     adminEmail: access.adminEmail,
@@ -226,14 +150,11 @@ export async function deleteAdminListingPhoto(input: {
   const access = await requireSuperuser()
   if (!access.ok) return { ok: false, error: access.error }
 
-  const supabase = getServiceSupabase()
-  const { error } = await supabase
-    .from('listing_photos')
-    .delete()
-    .eq('listing_key', normalizeListingKey(input.listingKey))
-    .eq('id', input.photoId)
-
-  if (error) return { ok: false, error: error.message }
+  const res = await deletePhotoDAL({
+    listingKey: normalizeListingKey(input.listingKey),
+    photoId: input.photoId,
+  })
+  if (!res.ok) return { ok: false, error: res.error ?? 'delete failed' }
 
   await logAdminAction({
     adminEmail: access.adminEmail,
@@ -254,20 +175,8 @@ export async function setAdminListingHeroPhoto(input: {
   if (!access.ok) return { ok: false, error: access.error }
 
   const key = normalizeListingKey(input.listingKey)
-  const supabase = getServiceSupabase()
-
-  const reset = await supabase
-    .from('listing_photos')
-    .update({ is_hero: false })
-    .eq('listing_key', key)
-  if (reset.error) return { ok: false, error: reset.error.message }
-
-  const set = await supabase
-    .from('listing_photos')
-    .update({ is_hero: true })
-    .eq('listing_key', key)
-    .eq('id', input.photoId)
-  if (set.error) return { ok: false, error: set.error.message }
+  const res = await setHeroDAL({ listingKey: key, photoId: input.photoId })
+  if (!res.ok) return { ok: false, error: res.error ?? 'set-hero failed' }
 
   await logAdminAction({
     adminEmail: access.adminEmail,
@@ -289,16 +198,8 @@ export async function reorderAdminListingPhotos(input: {
   if (input.orderedPhotoIds.length === 0) return { ok: true }
 
   const key = normalizeListingKey(input.listingKey)
-  const supabase = getServiceSupabase()
-  for (let i = 0; i < input.orderedPhotoIds.length; i += 1) {
-    const id = input.orderedPhotoIds[i]
-    const { error } = await supabase
-      .from('listing_photos')
-      .update({ sort_order: i })
-      .eq('listing_key', key)
-      .eq('id', id)
-    if (error) return { ok: false, error: error.message }
-  }
+  const res = await reorderPhotosDAL({ listingKey: key, orderedPhotoIds: input.orderedPhotoIds })
+  if (!res.ok) return { ok: false, error: res.error ?? 'reorder failed' }
 
   await logAdminAction({
     adminEmail: access.adminEmail,
