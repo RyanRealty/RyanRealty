@@ -87,6 +87,18 @@
     {
       "path": "/api/cron/publisher-sweep",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/gbp-monthly-digest",
+      "schedule": "0 13 1 * *"
+    },
+    {
+      "path": "/api/cron/gbp-health-check",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/marketing-snapshot-google-ads",
+      "schedule": "30 6 * * *"
     }
   ]
 }

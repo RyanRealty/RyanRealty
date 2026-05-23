@@ -45,11 +45,18 @@ async function CostPerLead() {
   const supabase = getServiceSupabase()
   const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
-  // Pull all the relevant rows in parallel
-  const [spendRes, fubQualRes, fubNewRes, identifiedRes] = await Promise.all([
+  // Pull all the relevant rows in parallel.
+  // Spend pulls BOTH Meta + Google Ads so cost-per-lead is computed against
+  // total paid spend, not Meta-only. Channel column is preserved per row so
+  // we can break out by platform in the table.
+  const [spendRes, gadsSpendRes, fubQualRes, fubNewRes, identifiedRes] = await Promise.all([
     supabase.from('marketing_channel_daily')
       .select('date, scope_id, value, metadata')
       .eq('channel', 'meta_ads').eq('scope', 'campaign').eq('metric', 'spend')
+      .gte('date', cutoff),
+    supabase.from('marketing_channel_daily')
+      .select('date, scope_id, value, metadata')
+      .eq('channel', 'google_ads').eq('scope', 'campaign').eq('metric', 'spend')
       .gte('date', cutoff),
     supabase.from('marketing_channel_daily')
       .select('date, value')
@@ -68,20 +75,33 @@ async function CostPerLead() {
 
   if (spendRes.error) return <Card><CardContent className="p-6 text-sm text-destructive">spend read failed: {spendRes.error.message}</CardContent></Card>
 
-  // ─── Per-week roll-up: spend, qualified_seller_leads, FB-identified ────
-  const byWeek = new Map<string, { spend: number; qualifiedLeads: number; newLeads: number; fbIdentified: number; fbHot: number; fbSessions: number; campaigns: Map<string, number> }>()
+  // ─── Per-week roll-up: spend (Meta + Google), qualified leads, identified ────
+  // metaSpend + googleSpend tracked separately so the table shows per-platform.
+  // spend = sum of both = total paid spend driving cost-per-lead math.
+  const byWeek = new Map<string, { spend: number; metaSpend: number; googleSpend: number; qualifiedLeads: number; newLeads: number; fbIdentified: number; fbHot: number; fbSessions: number; campaigns: Map<string, number> }>()
   function bucket(weekStart: string) {
     let b = byWeek.get(weekStart)
-    if (!b) { b = { spend: 0, qualifiedLeads: 0, newLeads: 0, fbIdentified: 0, fbHot: 0, fbSessions: 0, campaigns: new Map() }; byWeek.set(weekStart, b) }
+    if (!b) { b = { spend: 0, metaSpend: 0, googleSpend: 0, qualifiedLeads: 0, newLeads: 0, fbIdentified: 0, fbHot: 0, fbSessions: 0, campaigns: new Map() }; byWeek.set(weekStart, b) }
     return b
   }
 
   for (const r of (spendRes.data ?? []) as DailyRow[]) {
     const wk = isoWeekStart(r.date)
     const b = bucket(wk)
-    b.spend += Number(r.value) || 0
+    const v = Number(r.value) || 0
+    b.spend += v
+    b.metaSpend += v
     const campName = (r.metadata as { campaign_name?: string } | null)?.campaign_name || r.scope_id || 'unknown'
-    b.campaigns.set(campName, (b.campaigns.get(campName) ?? 0) + (Number(r.value) || 0))
+    b.campaigns.set(`[Meta] ${campName}`, (b.campaigns.get(`[Meta] ${campName}`) ?? 0) + v)
+  }
+  for (const r of (gadsSpendRes.data ?? []) as DailyRow[]) {
+    const wk = isoWeekStart(r.date)
+    const b = bucket(wk)
+    const v = Number(r.value) || 0
+    b.spend += v
+    b.googleSpend += v
+    const campName = (r.metadata as { campaign_name?: string } | null)?.campaign_name || r.scope_id || 'unknown'
+    b.campaigns.set(`[Google] ${campName}`, (b.campaigns.get(`[Google] ${campName}`) ?? 0) + v)
   }
   for (const r of (fubQualRes.data ?? []) as DailyRow[]) {
     bucket(isoWeekStart(r.date)).qualifiedLeads += Number(r.value) || 0
@@ -122,8 +142,9 @@ async function CostPerLead() {
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Card><CardContent className="p-4">
-          <p className="text-xs text-muted-foreground">FB spend this week</p>
+          <p className="text-xs text-muted-foreground">Paid spend this week</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{formatUsd(last7Spend)}</p>
+          <p className="text-xs text-muted-foreground tabular-nums">Meta {formatUsd(weeks[0]?.[1].metaSpend ?? 0)} · Google {formatUsd(weeks[0]?.[1].googleSpend ?? 0)}</p>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <p className="text-xs text-muted-foreground">Qualified leads this week</p>
@@ -145,7 +166,7 @@ async function CostPerLead() {
         <CardHeader>
           <CardTitle>Weekly trend (last 12 weeks)</CardTitle>
           <p className="text-xs text-muted-foreground">
-            FB+IG spend joined with FUB qualified seller leads. Cost-per-qualified-lead is the headline column. If you spent $400 last week and got 4 qualified seller leads, you paid $100 per. Compare week-over-week and against the 4-week average above.
+            Combined paid spend (Meta + Google Ads, broken out per column) joined with FUB qualified seller leads. Cost-per-qualified-lead is the headline column. If you spent $400 last week and got 4 qualified seller leads, you paid $100 per. Compare week-over-week and against the 4-week average above.
           </p>
         </CardHeader>
         <CardContent className="p-0">
