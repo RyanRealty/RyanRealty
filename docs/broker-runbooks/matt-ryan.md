@@ -32,16 +32,13 @@ Plans 69 through 75 are wired with your voice. Touch 0 is yours (manual SMS), th
 
 1. Read the card. Name, address, list price, days on market, original list, last status change.
 2. Click the address link to view listing photos and history.
-3. Open the SMS box. Pick the template:
-   - Expired: template id 77 ("Expired - T0 - Manual SMS")
-   - FSBO: template "FSBO - T0 - Manual SMS"
-4. The address auto-fills from `%customSellerPropertyAddress%`. Edit if anything reads off.
-5. Send the SMS.
-6. **Change the lead's stage from "Lead" to "A - Hot 1-3 Months".** This is the trigger.
-7. Automation 2.0 fires on that stage change, checks the intent tag, and enrolls the lead in the right plan.
-8. Move to the next lead.
+3. The cron has already enrolled this lead in the right Action Plan (Plan 71 for expireds, Plan 72 for FSBOs). The Touch 0 task ("Send manual SMS, template id 77") is already in your task queue.
+4. Open the task, click the template, edit if anything reads off, send the SMS.
+5. Mark the task complete. The plan automatically advances to the day-2 email step.
+6. Optional. Update the stage to "A - Hot 1-3 Months" for your own pipeline visibility. The plan does not need this to keep running.
+7. Move to the next lead.
 
-That is the entire manual surface. One template send, one stage change.
+That is the entire manual surface. One template send.
 
 ### What runs after you enroll
 
@@ -109,32 +106,13 @@ The site sets a 90-day cookie. Any LP submission while the cookie is set routes 
 
 Without a cookie, leads route to you by default per the 2026-05-17 directive.
 
-## Open architecture decisions
+## How the cron auto-enrolls leads in plans
 
-Two items still need your call.
+Locked 2026-05-22. FUB Automations 2.0 has no "Enroll in Action Plan" step type, so the trigger pattern I originally drafted ("you change stage to A, automation enrolls in plan 71") could not be built natively.
 
-### 1. Trigger pattern
+The cron does it instead. After the expired-listing or FSBO cron creates the FUB person and applies tags, it calls the FUB API to enroll the person in the matching plan (Plan 71 for expireds, Plan 72 for FSBOs). The plan's Touch 0 task lands in your queue immediately. No manual stage change needed for enrollment.
 
-FUB Automations 2.0 has no "Tag Removed" trigger. Three options:
-
-- **Option A (in use): Stage Change.** You move stage from Lead to A - Hot 1-3 Months. Automation fires. Clean.
-- **Option B: Tag Added.** You add a per-plan enroll tag. Works but adds tag clutter.
-- **Option C: Audience tag with NOT-In filter.** Reuse audience tags, exclude holding state. Pending verification that 2.0 supports NOT-In.
-
-The docs assume A. If you want B or C, one line changes per broker doc.
-
-### 2. Conflicting existing 2.0 automations
-
-Your account has 37 user-created 2.0 automations. Some overlap with the new plans.
-
-| Existing automation | Status | Conflict |
-|---|---|---|
-| Ryan Realty - Expired Spring Strategy | ON, 10 steps | Conflicts with Plan 71 |
-| Ryan Realty - Remote Home Owner | OFF, 19 steps | Superseded by Plan 73 |
-| Ryan Realty - New Seller | ON, 59 steps | Overlaps Plan 69 |
-| Multiple *KTS AP Nurture * singletons | ON | May dual-fire |
-
-I can archive these once you confirm.
+See `lib/followupboss.ts` (the `applyActionPlan` helper) and `lib/expired-listing-processor.ts` plus `app/api/cron/detect-fsbo-listings/route.ts`.
 
 ## Quick reference
 

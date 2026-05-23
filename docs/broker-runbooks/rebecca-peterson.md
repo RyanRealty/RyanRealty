@@ -27,14 +27,15 @@ When a lead lands on you, the workflow below is what you do.
 ### When a new lead lands on you
 
 1. Read the card. Name, source, address if seller, list price, days on market.
-2. Send the first SMS using the matching template:
+2. The cron has already enrolled this lead in the right plan and queued a Touch 0 task in your task list. Open the task.
+3. Pick the matching template, edit if needed, send.
    - Expired seller: template id 77 ("Expired - T0 - Manual SMS")
    - FSBO seller: template "FSBO - T0 - Manual SMS"
    - Buyer from LP: template "Buyer - T0 - Manual SMS"
-3. **Change the stage from "Lead" to "A - Hot 1-3 Months".** That stage change triggers the action plan to enroll the lead.
-4. Move on.
+4. Mark the task complete. The plan auto-advances to day 2.
+5. Optional. Update the stage to "A - Hot 1-3 Months" for your own pipeline visibility.
 
-That is the whole manual step. One SMS, one stage change.
+That is the whole manual step. Open the task, send the SMS, done.
 
 ### What runs after you enroll
 
