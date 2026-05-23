@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.287.1 (2026-05-23)
+
+### Other
+- neighborhood: generateStaticParams for 14 Bend neighborhoods (SITE_SPEC line 95)
+
+---
+
+
 ## v1.287.0 (2026-05-23)
 
 ### Features
