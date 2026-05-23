@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.286.3 (2026-05-23)
+
+### Other
+- cities: generateStaticParams pre-renders all 11 canonical slugs (SITE_SPEC line 77)
+
+---
+
+
 ## v1.286.2 (2026-05-23)
 
 ### Bug Fixes
