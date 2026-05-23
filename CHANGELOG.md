@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.283.0 (2026-05-23)
+
+### Features
+- feat(gbp): Phase 6/7 — NAP audit + monthly digest + health check crons
+
+---
+
+
 ## v1.282.53 (2026-05-23)
 
 ### Other
