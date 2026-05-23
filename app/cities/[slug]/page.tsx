@@ -82,6 +82,33 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export const revalidate = 60
 
+/**
+ * Canonical city slugs (SITE_SPEC line 76). Pre-rendered at build via
+ * `generateStaticParams` so cold visits land on a cached HTML doc.
+ * `dynamicParams = true` keeps the route open for late-add cities (any
+ * slug present in `geo_snapshot_mv` still resolves at request time via
+ * the existing `getCityBySlug` path).
+ */
+const CITY_SLUGS = [
+  'bend',
+  'redmond',
+  'sisters',
+  'la-pine',
+  'sunriver',
+  'madras',
+  'prineville',
+  'culver',
+  'terrebonne',
+  'tumalo',
+  'powell-butte',
+] as const
+
+export const dynamicParams = true
+
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  return CITY_SLUGS.map((slug) => ({ slug }))
+}
+
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
   return Promise.race([
     promise,
