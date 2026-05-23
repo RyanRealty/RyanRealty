@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.25 (2026-05-23)
+
+### Other
+- DAL: home.ts top-viewed + price-drop tiles
+
+---
+
+
 ## v1.282.24 (2026-05-23)
 
 ### Other
