@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.286.1 (2026-05-23)
+
+### Other
+- home: spec-aligned CTA duo (SITE_SPEC line 69)
+
+---
+
+
 ## v1.286.0 (2026-05-23)
 
 ### Features
