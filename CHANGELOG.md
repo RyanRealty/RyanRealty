@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.284.0 (2026-05-23)
+
+### Features
+- feat(analytics): /admin/analytics/google-search — GSC dashboard
+
+---
+
+
 ## v1.283.2 (2026-05-23)
 
 ### Other
