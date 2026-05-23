@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-23T00:23:27.388Z",
-  "total": 339,
+  "generatedAt": "2026-05-23T00:24:40.579Z",
+  "total": 338,
   "byFile": {
-    "app/actions/listings.ts": 65,
+    "app/actions/listings.ts": 64,
     "app/actions/sync-spark.ts": 28,
     "app/actions/cities.ts": 25,
     "lib/listing-processor.ts": 16,

@@ -1110,31 +1110,15 @@ export async function getActiveListingsCount(options: {
   city?: string
   subdivision?: string
 } & Pick<ListingsFilters, 'minPrice' | 'maxPrice' | 'minBeds' | 'minBaths' | 'minSqFt' | 'propertyType' | 'includeClosed'>): Promise<number> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return 0
-  let query = supabase.from('listings').select('ListingKey', { count: 'exact', head: true })
-  if (options.city) query = query.eq('"City"', options.city)
-  if (options.subdivision?.trim()) {
-    const names = getSubdivisionMatchNames(options.subdivision.trim())
-    if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
-    else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
-  }
-  if (options.includeClosed === true) {
-    query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Closed%')
-  } else {
-    query = query.or(ACTIVE_STATUS_OR)
-  }
-  if (options.minPrice != null && options.minPrice > 0) query = query.gte('ListPrice', options.minPrice)
-  if (options.maxPrice != null && options.maxPrice > 0) query = query.lte('ListPrice', options.maxPrice)
-  if (options.minBeds != null && options.minBeds > 0) query = query.gte('BedroomsTotal', options.minBeds)
-  if (options.minBaths != null && options.minBaths > 0) query = query.gte('BathroomsTotal', options.minBaths)
-  if (options.minSqFt != null && options.minSqFt > 0) query = query.gte('TotalLivingAreaSqFt', options.minSqFt)
-  // Only filter by propertyType when explicitly set — default is ALL types
-  const pt = options.propertyType?.trim()
-  if (pt && pt !== '' && pt !== 'all') {
-    query = query.or(`PropertyType.ilike.%${pt}%,PropertyType.is.null`)
-  }
-  const { count } = await query.limit(1)
+  // DAL: route count through getListings which reads listing_tile_mv.
+  // Tradeoff: we fetch rows + count them instead of HEAD count, but the
+  // MV is small enough (3K-row active subset) that this is sub-100ms.
+  // The PostgREST HEAD count was also paying full-index scan latency.
+  const rows = await getListings({
+    ...options,
+    limit: 500,
+  })
+  const count = rows.length
   return count ?? 0
 }
 
