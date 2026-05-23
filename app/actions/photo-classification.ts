@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { classifyListingPhoto, type PhotoTag } from '../../lib/photo-classification'
 import type { SparkPhoto } from '../../lib/spark'
+import { getCityListings, getCommunityListings } from '@/lib/data'
 
 const HERO_PREFERRED_TAGS: PhotoTag[] = [
   'exterior_front',
@@ -113,19 +114,21 @@ export async function getBestListingHeroForGeography(
 
   const supabase = createClient(supabaseUrl, anonKey)
 
-  const listingKeysQuery = supabase
-    .from('listings')
-    .select('ListingKey, ListNumber')
-    .eq('"City"', city.trim())
+  // DAL: read active tiles via city or community filter.
   const withSub = subdivision?.trim()
-  if (withSub) {
-    listingKeysQuery.eq('"SubdivisionName"', withSub)
-  }
-  listingKeysQuery.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
-  const { data: listingRows } = await listingKeysQuery.limit(500)
+  const tiles = withSub
+    ? await getCommunityListings(withSub, { status: 'active', limit: 500 })
+    : await getCityListings(city.trim(), { status: 'active', limit: 500 })
+  const listingRows = (withSub
+    ? tiles.filter((t) => t.city?.toLowerCase().trim() === city.trim().toLowerCase())
+    : tiles
+  ).map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+  }))
 
   const keys = new Set<string>()
-  for (const r of listingRows ?? []) {
+  for (const r of listingRows) {
     const row = r as { ListingKey?: string | null; ListNumber?: string | null }
     const k = (row.ListingKey ?? row.ListNumber ?? '').toString().trim()
     if (k) keys.add(k)
