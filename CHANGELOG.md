@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.284.2 (2026-05-23)
+
+### Other
+- footer: brokerage legal facts block (SITE_SPEC line 70)
+
+---
+
+
 ## v1.284.1 (2026-05-23)
 
 ### Other
