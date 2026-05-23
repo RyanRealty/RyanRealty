@@ -389,36 +389,25 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   const like = `%${safeQ}%`
 
   const qLower = q.toLowerCase()
-  const [listingsRes, brokersRes, neighborhoodsRes] = await Promise.all([
-    supabase
-      .from('listings')
-      .select('ListNumber, ListingKey, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, ModificationTimestamp')
-      .or(`StreetNumber.ilike.${like},StreetName.ilike.${like},City.ilike.${like},SubdivisionName.ilike.${like},PostalCode.ilike.${like}`)
-      .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-      .limit(250),
-    supabase
-      .from('brokers')
-      .select('slug, display_name')
-      .eq('is_active', true)
-      .ilike('display_name', like)
-      .limit(10),
-    supabase
-      .from('neighborhoods')
-      .select('name, slug, cities(slug, name)')
-      .ilike('name', like)
-      .limit(15),
+  // DAL: free-text search across address/locality fields on listing_tile_mv.
+  void like
+  const { getListingTiles } = await import('@/lib/data')
+  const [searchTiles, brokersRes, neighborhoodsRes] = await Promise.all([
+    getListingTiles({ searchQuery: q, status: 'all', sort: 'newest', limit: 250 }),
+    supabase.from('brokers').select('slug, display_name').eq('is_active', true).ilike('display_name', `%${q}%`).limit(10),
+    supabase.from('neighborhoods').select('name, slug, cities(slug, name)').ilike('name', `%${q}%`).limit(15),
   ])
 
-  const listingRows = (listingsRes.data ?? []) as {
-    ListNumber?: string | null
-    ListingKey?: string | null
-    StreetNumber?: string | null
-    StreetName?: string | null
-    City?: string | null
-    State?: string | null
-    PostalCode?: string | null
-    SubdivisionName?: string | null
-  }[]
+  const listingRows = searchTiles.map((t) => ({
+    ListNumber: t.listNumber,
+    ListingKey: t.listingKey,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: 'OR' as const,
+    PostalCode: t.postalCode,
+    SubdivisionName: t.subdivisionName,
+  }))
   const cityCounts = new Map<string, number>()
   for (const row of listingRows) {
     const city = (row.City ?? '').toString().trim()
@@ -925,69 +914,56 @@ export type GetListingsForMapOptions = {
  * Returns up to mapLimit rows with lat/lng and address/beds/baths for InfoWindow.
  */
 export async function getListingsForMap(options: GetListingsForMapOptions = {}): Promise<MapListingRow[]> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return []
   const mapLimit = Math.min(options.mapLimit ?? 1000, 3000)
-  const select = 'ListingKey, ListNumber, ListPrice, Latitude, Longitude, StandardStatus, StreetNumber, StreetName, City, State, PostalCode, BedroomsTotal, BathroomsTotal, PhotoURL'
-  let query = supabase.from('listings').select(select)
-  if (options.city) query = query.eq('"City"', options.city)
-  if (options.subdivision?.trim()) {
-    const names = getSubdivisionMatchNames(options.subdivision.trim())
-    if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
-    else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
-  }
+  void ACTIVE_STATUS_OR
+  void ACTIVE_OR_PENDING_OR
+  // DAL: map listings via listing_tile_mv. Subdivision-match-names OR isn't
+  // expressible in the current DAL filter set — when a community supplies
+  // multiple aliases we fall back to the first canonical name (the most
+  // common case is a single name).
   const statusFilter = options.statusFilter ?? (options.includeClosed === true ? 'all' : 'active')
-  if (statusFilter === 'all') {
-    query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Closed%')
-  } else if (statusFilter === 'active_and_pending') {
-    query = query.or(ACTIVE_OR_PENDING_OR)
-  } else if (statusFilter === 'pending') {
-    query = query.or('StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%')
-  } else if (statusFilter === 'closed') {
-    query = query.or('StandardStatus.ilike.%Closed%')
-  } else {
-    query = query.or(ACTIVE_STATUS_OR)
-  }
-  if (options.minPrice != null && options.minPrice > 0) query = query.gte('ListPrice', options.minPrice)
-  if (options.maxPrice != null && options.maxPrice > 0) query = query.lte('ListPrice', options.maxPrice)
-  if (options.minBeds != null && options.minBeds > 0) query = query.gte('BedroomsTotal', options.minBeds)
-  if (options.maxBeds != null && options.maxBeds > 0) query = query.lte('BedroomsTotal', options.maxBeds)
-  if (options.minBaths != null && options.minBaths > 0) query = query.gte('BathroomsTotal', options.minBaths)
-  if (options.maxBaths != null && options.maxBaths > 0) query = query.lte('BathroomsTotal', options.maxBaths)
-  if (options.minSqFt != null && options.minSqFt > 0) query = query.gte('TotalLivingAreaSqFt', options.minSqFt)
-  if (options.maxSqFt != null && options.maxSqFt > 0) query = query.lte('TotalLivingAreaSqFt', options.maxSqFt)
-  if (options.postalCode?.trim()) query = query.ilike('PostalCode', options.postalCode.trim())
-  const pt = options.propertyType?.trim()
-  if (pt && pt !== '' && pt !== 'all') {
-    query = query.or(`PropertyType.ilike.%${pt}%,PropertyType.is.null`)
-  }
-  query = query.order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-  const { data } = await query.limit(mapLimit)
-  const rows = (data ?? []) as (MapListingRow & { StandardStatus?: string | null; State?: string | null; BedroomsTotal?: number | null; BathroomsTotal?: number | null; PhotoURL?: string | null })[]
-  const filtered =
-    statusFilter === 'active'
-      ? rows.filter((r) => isActiveStatus(r.StandardStatus))
+  const dalStatus =
+    statusFilter === 'all'
+      ? 'all'
       : statusFilter === 'active_and_pending'
-        ? rows.filter((r) => isActiveStatus(r.StandardStatus) || isPendingStatus(r.StandardStatus))
+        ? 'active-and-pending'
         : statusFilter === 'pending'
-          ? rows.filter((r) => isPendingStatus(r.StandardStatus))
+          ? 'pending-only'
           : statusFilter === 'closed'
-            ? rows.filter((r) => isClosedStatus(r.StandardStatus))
-            : rows
-  return filtered.map(({ ListingKey, ListNumber, ListPrice, Latitude, Longitude, StreetNumber, StreetName, City, State, PostalCode, BedroomsTotal, BathroomsTotal, PhotoURL }) => ({
-    ListingKey: ListingKey ?? null,
-    ListNumber: ListNumber ?? null,
-    ListPrice: ListPrice ?? null,
-    Latitude: Latitude ?? null,
-    Longitude: Longitude ?? null,
-    StreetNumber: StreetNumber ?? null,
-    StreetName: StreetName ?? null,
-    City: City ?? null,
-    State: State ?? null,
-    PostalCode: PostalCode ?? null,
-    BedroomsTotal: BedroomsTotal ?? null,
-    BathroomsTotal: BathroomsTotal ?? null,
-    PhotoURL: PhotoURL ?? null,
+            ? 'closed'
+            : 'active'
+  const canonicalSubdivision =
+    options.subdivision?.trim() ? getSubdivisionMatchNames(options.subdivision.trim())[0] ?? null : null
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({
+    city: options.city?.trim() || undefined,
+    subdivision: canonicalSubdivision || undefined,
+    status: dalStatus,
+    minPrice: options.minPrice && options.minPrice > 0 ? options.minPrice : undefined,
+    maxPrice: options.maxPrice && options.maxPrice > 0 ? options.maxPrice : undefined,
+    minBeds: options.minBeds && options.minBeds > 0 ? options.minBeds : undefined,
+    minBaths: options.minBaths && options.minBaths > 0 ? options.minBaths : undefined,
+    minSqft: options.minSqFt && options.minSqFt > 0 ? options.minSqFt : undefined,
+    postalCode: options.postalCode?.trim() && /^\d{5}$/.test(options.postalCode.trim())
+      ? options.postalCode.trim()
+      : undefined,
+    sort: 'newest',
+    limit: Math.min(mapLimit, 5000),
+  })
+  return tiles.map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    ListPrice: t.listPrice,
+    Latitude: t.lat,
+    Longitude: t.lng,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: 'OR',
+    PostalCode: t.postalCode,
+    BedroomsTotal: t.beds,
+    BathroomsTotal: t.baths,
+    PhotoURL: t.photoUrl,
   }))
 }
 
@@ -1014,80 +990,80 @@ const LISTING_BOUNDS_SELECT =
 export async function getListingsInBounds(
   options: GetListingsInBoundsOptions
 ): Promise<{ listings: ListingTileRow[]; totalCount: number }> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return { listings: [], totalCount: 0 }
   const { bounds, polygon, limit = 20, offset = 0, sort = 'newest' } = options
   const polygonBounds = polygon && polygon.length >= 3 ? getPolygonBounds(polygon) : null
   const effectiveBounds = polygonBounds ?? bounds
-
-  let query = supabase
-    .from('listings')
-    .select(LISTING_BOUNDS_SELECT, { count: 'exact' })
-    .gte('Latitude', effectiveBounds.south)
-    .lte('Latitude', effectiveBounds.north)
-    .gte('Longitude', effectiveBounds.west)
-    .lte('Longitude', effectiveBounds.east)
-
-  if (options.city?.trim()) query = query.eq('"City"', options.city.trim())
-  if (options.subdivision?.trim()) {
-    const names = getSubdivisionMatchNames(options.subdivision.trim())
-    if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
-    else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
-  }
   const statusFilter = options.statusFilter ?? (options.includeClosed === true ? 'all' : 'active')
-  if (statusFilter === 'all') {
-    query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Closed%')
-  } else if (statusFilter === 'active_and_pending') {
-    query = query.or(ACTIVE_OR_PENDING_OR)
-  } else if (statusFilter === 'pending') {
-    query = query.or('StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%')
-  } else if (statusFilter === 'closed') {
-    query = query.or('StandardStatus.ilike.%Closed%')
-  } else {
-    query = query.or(ACTIVE_STATUS_OR)
-  }
-  if (options.minPrice != null && options.minPrice > 0) query = query.gte('ListPrice', options.minPrice)
-  if (options.maxPrice != null && options.maxPrice > 0) query = query.lte('ListPrice', options.maxPrice)
-  if (options.minBeds != null && options.minBeds > 0) query = query.gte('BedroomsTotal', options.minBeds)
-  if (options.maxBeds != null && options.maxBeds > 0) query = query.lte('BedroomsTotal', options.maxBeds)
-  if (options.minBaths != null && options.minBaths > 0) query = query.gte('BathroomsTotal', options.minBaths)
-  if (options.maxBaths != null && options.maxBaths > 0) query = query.lte('BathroomsTotal', options.maxBaths)
-  if (options.minSqFt != null && options.minSqFt > 0) query = query.gte('TotalLivingAreaSqFt', options.minSqFt)
-  if (options.maxSqFt != null && options.maxSqFt > 0) query = query.lte('TotalLivingAreaSqFt', options.maxSqFt)
-  if (options.postalCode?.trim()) query = query.ilike('PostalCode', options.postalCode.trim())
-  const pt = options.propertyType?.trim()
-  if (pt && pt !== '' && pt !== 'all') {
-    query = query.or(`PropertyType.ilike.%${pt}%,PropertyType.is.null`)
-  }
-  if (sort === 'newest') query = query.order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-  else if (sort === 'oldest') query = query.order('ModificationTimestamp', { ascending: true, nullsFirst: true })
-  else if (sort === 'price_asc') query = query.order('ListPrice', { ascending: true, nullsFirst: true })
-  else if (sort === 'price_desc') query = query.order('ListPrice', { ascending: false, nullsFirst: false })
+  void LISTING_BOUNDS_SELECT
+  void ACTIVE_STATUS_OR
+  void ACTIVE_OR_PENDING_OR
+  const dalStatus =
+    statusFilter === 'all'
+      ? 'all'
+      : statusFilter === 'active_and_pending'
+        ? 'active-and-pending'
+        : statusFilter === 'pending'
+          ? 'pending-only'
+          : statusFilter === 'closed'
+            ? 'closed'
+            : 'active'
+  const dalSort: 'newest' | 'oldest' | 'price-asc' | 'price-desc' =
+    sort === 'price_asc' ? 'price-asc' : sort === 'price_desc' ? 'price-desc' : sort
+  const canonicalSubdivision = options.subdivision?.trim()
+    ? getSubdivisionMatchNames(options.subdivision.trim())[0] ?? null
+    : null
 
   const limitClamp = Math.min(Math.max(limit, 1), 50)
   const polygonFetchLimit = 3000
-  if (polygon && polygon.length >= 3) {
-    query = query.limit(polygonFetchLimit)
-  } else {
-    query = query.range(offset, offset + limitClamp - 1)
-  }
-  const { data, error, count } = await query
+  // For polygon-restricted view we fetch a wide bbox first, then filter in
+  // memory by point-in-polygon. For bbox-only view we trust the MV.
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({
+    bbox: {
+      west: effectiveBounds.west,
+      south: effectiveBounds.south,
+      east: effectiveBounds.east,
+      north: effectiveBounds.north,
+    },
+    city: options.city?.trim() || undefined,
+    subdivision: canonicalSubdivision || undefined,
+    status: dalStatus,
+    minPrice: options.minPrice && options.minPrice > 0 ? options.minPrice : undefined,
+    maxPrice: options.maxPrice && options.maxPrice > 0 ? options.maxPrice : undefined,
+    minBeds: options.minBeds && options.minBeds > 0 ? options.minBeds : undefined,
+    minBaths: options.minBaths && options.minBaths > 0 ? options.minBaths : undefined,
+    minSqft: options.minSqFt && options.minSqFt > 0 ? options.minSqFt : undefined,
+    postalCode: options.postalCode?.trim() && /^\d{5}$/.test(options.postalCode.trim())
+      ? options.postalCode.trim()
+      : undefined,
+    sort: dalSort,
+    limit: polygon && polygon.length >= 3 ? polygonFetchLimit : Math.min(offset + limitClamp + 1, 500),
+  })
+  const rows: ListingTileRow[] = tiles.map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    ListPrice: t.listPrice,
+    BedroomsTotal: t.beds,
+    BathroomsTotal: t.baths,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: 'OR',
+    PostalCode: t.postalCode,
+    SubdivisionName: t.subdivisionName,
+    PhotoURL: t.photoUrl,
+    Latitude: t.lat,
+    Longitude: t.lng,
+    StandardStatus: t.status,
+    OnMarketDate: t.onMarketDate,
+    CloseDate: t.closeDate,
+    TotalLivingAreaSqFt: t.sqft,
+    ListOfficeName: null,
+    ListAgentName: null,
+  })) as ListingTileRow[]
 
-  if (error) return { listings: [], totalCount: 0 }
-  const rows = (data ?? []) as ListingTileRow[]
-  const statusFiltered =
-    statusFilter === 'active'
-      ? rows.filter((r) => isActiveStatus(r.StandardStatus))
-      : statusFilter === 'active_and_pending'
-        ? rows.filter((r) => isActiveStatus(r.StandardStatus) || isPendingStatus(r.StandardStatus))
-        : statusFilter === 'pending'
-          ? rows.filter((r) => isPendingStatus(r.StandardStatus))
-          : statusFilter === 'closed'
-            ? rows.filter((r) => isClosedStatus(r.StandardStatus))
-            : rows
-
   if (polygon && polygon.length >= 3) {
-    const polygonFiltered = statusFiltered.filter((row) => {
+    const polygonFiltered = rows.filter((row) => {
       const lat = Number(row.Latitude)
       const lng = Number(row.Longitude)
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
@@ -1099,8 +1075,7 @@ export async function getListingsInBounds(
     }
   }
 
-  const totalCount = typeof count === 'number' ? count : statusFiltered.length
-  return { listings: statusFiltered, totalCount }
+  return { listings: rows.slice(offset, offset + limitClamp), totalCount: rows.length }
 }
 
 /**

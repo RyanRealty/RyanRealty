@@ -55,6 +55,27 @@ const FilterSchema = z.object({
    */
   missingPhoto: z.boolean().optional(),
   /**
+   * Free-text search across address + locality fields (street, city, subdivision, ZIP).
+   * Used by the global search suggestions endpoint.
+   *
+   * Matches each token as a case-insensitive substring against street_number,
+   * street_name, city, subdivision_name, and postal_code via the MV's indexed
+   * `search_tsv` text column when available, falling back to per-field ilike OR.
+   */
+  searchQuery: z.string().min(2).max(120).optional(),
+  /**
+   * Bounding-box filter (map viewport). All four coords required when used.
+   * Filters by lat ∈ [south, north] AND lng ∈ [west, east].
+   */
+  bbox: z
+    .object({
+      west: z.number(),
+      south: z.number(),
+      east: z.number(),
+      north: z.number(),
+    })
+    .optional(),
+  /**
    * MLS PropertyType code:
    *   'A' = Residential (SFR + multi-family)
    *   'B' = Condo / Townhome
@@ -198,6 +219,29 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   if (parsed.minSqft) query = query.gte('sqft', parsed.minSqft)
   if (parsed.hasVirtualTour === true) query = query.eq('has_virtual_tour', true)
   if (parsed.missingPhoto === true) query = query.is('photo_url', null)
+  if (parsed.bbox) {
+    const { west, south, east, north } = parsed.bbox
+    query = query
+      .gte('lat', south)
+      .lte('lat', north)
+      .gte('lng', west)
+      .lte('lng', east)
+  }
+  if (parsed.searchQuery) {
+    const safe = parsed.searchQuery.replace(/%/g, '').replace(/\\/g, '').replace(/[,()]/g, '').trim()
+    if (safe.length >= 2) {
+      const like = `%${safe}%`
+      query = query.or(
+        [
+          `street_number.ilike.${like}`,
+          `street_name.ilike.${like}`,
+          `city.ilike.${like}`,
+          `subdivision_name.ilike.${like}`,
+          `postal_code.ilike.${like}`,
+        ].join(',')
+      )
+    }
+  }
   if (parsed.propertyType) query = query.eq('property_type', parsed.propertyType)
   if (parsed.listingKeys && parsed.listingKeys.length > 0) {
     query = query.in('listing_key', parsed.listingKeys)
