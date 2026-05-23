@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
 import type { ActivityFeedItem } from './activity-feed-shared'
 import { slugify } from '@/lib/slug'
+import { getListingTiles } from '@/lib/data'
 
 /**
  * Fetch activity feed: events joined to listing data, ordered by event_at desc.
@@ -44,21 +45,31 @@ export async function getActivityFeed(options?: {
   if (!events?.length) return []
 
   const keys = [...new Set((events as { listing_key: string }[]).map((e) => e.listing_key).filter(Boolean))]
-  const [byNum, byKeyRes] = await Promise.all([
-    supabase
-      .from('listings')
-      .select(
-        'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, StandardStatus, OnMarketDate, CloseDate'
-      )
-      .in('ListNumber', keys),
-    supabase
-      .from('listings')
-      .select(
-        'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, StandardStatus, OnMarketDate, CloseDate'
-      )
-      .in('ListingKey', keys),
+  // DAL: parallel listingKey + listNumber lookups against listing_tile_mv.
+  // Activity event records can store either a ListingKey or a ListNumber
+  // in the listing_key field, so we issue both filters and merge.
+  const [byKeyTiles, byNumTiles] = await Promise.all([
+    getListingTiles({ listingKeys: keys.slice(0, 5000), status: 'all', limit: 500 }),
+    getListingTiles({ listNumbers: keys.slice(0, 5000), status: 'all', limit: 500 }),
   ])
-  const listingRows = [...(byNum.data ?? []), ...(byKeyRes.data ?? [])]
+  const tilesCombined = [...byKeyTiles, ...byNumTiles]
+  const listingRows = tilesCombined.map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    ListPrice: t.listPrice,
+    BedroomsTotal: t.beds,
+    BathroomsTotal: t.baths,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: null as string | null,
+    PostalCode: t.postalCode,
+    SubdivisionName: t.subdivisionName,
+    PhotoURL: t.photoUrl,
+    StandardStatus: t.status,
+    OnMarketDate: t.onMarketDate,
+    CloseDate: t.closeDate,
+  }))
   const seen = new Set<string>()
   const deduped = listingRows.filter((r) => {
     const k = (r as { ListNumber?: string }).ListNumber ?? (r as { ListingKey?: string }).ListingKey ?? ''

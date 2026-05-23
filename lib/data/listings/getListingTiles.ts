@@ -32,6 +32,12 @@ const FilterSchema = z.object({
    * set of relevant listings. Hard-capped at 5000 keys (Supabase IN-clause limit).
    */
   listingKeys: z.array(z.string().min(1).max(100)).max(5000).optional(),
+  /**
+   * Restrict to a specific set of list_numbers (MLS public IDs). Activity
+   * events sometimes carry list_number while other surfaces carry listing_key
+   * — this filter lets callers resolve either shape against the MV.
+   */
+  listNumbers: z.array(z.string().min(1).max(100)).max(5000).optional(),
   minPrice: z.number().positive().optional(),
   maxPrice: z.number().positive().optional(),
   minBeds: z.number().int().nonnegative().optional(),
@@ -178,6 +184,9 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   if (parsed.propertyType) query = query.eq('property_type', parsed.propertyType)
   if (parsed.listingKeys && parsed.listingKeys.length > 0) {
     query = query.in('listing_key', parsed.listingKeys)
+  }
+  if (parsed.listNumbers && parsed.listNumbers.length > 0) {
+    query = query.in('list_number', parsed.listNumbers)
   }
 
   // Sort
