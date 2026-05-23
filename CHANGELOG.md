@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.288.6 (2026-05-23)
+
+### Other
+- SITE_SPEC: §53 meta-check satisfied (all Pages-to-Ship boxes checked)
+- listing: parallel detail + similar reads (SITE_SPEC line 119) + lint fix
+
+---
+
+
 ## v1.288.5 (2026-05-23)
 
 ### Other
