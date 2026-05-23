@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.27 (2026-05-23)
+
+### Other
+- DAL: move sync-delta cron writes into lib/data/sync
+
+---
+
+
 ## v1.282.26 (2026-05-23)
 
 ### Other
