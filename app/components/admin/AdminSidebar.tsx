@@ -32,6 +32,7 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
     main.push(navItem('/admin/analytics/lp-leaderboard', 'LP leaderboard', '🏁'))
     main.push(navItem('/admin/analytics/cost-per-lead', 'Cost per lead', '💸'))
     main.push(navItem('/admin/analytics/listing-performance', 'Listing performance', '🏠'))
+    main.push(navItem('/admin/analytics/google-search', 'Google Search (SEO)', '🔍'))
     main.push(navItem('/admin/visitors/live', 'Live visitors', '🟢'))
     main.push(navItem('/admin/users', 'Users', '👤'))
     main.push(navItem('/admin/expired-listings', 'Expired listings', '🏚'))
