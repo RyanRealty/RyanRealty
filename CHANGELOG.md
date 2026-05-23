@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.16 (2026-05-23)
+
+### Other
+- SITE_SPEC §45-47: record warm-cache probe evidence post f863bb8 deploy
+
+---
+
+
 ## v1.288.15 (2026-05-23)
 
 ### Bug Fixes
