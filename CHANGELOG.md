@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.8 (2026-05-23)
+
+### Maintenance
+- perf(listing-detail): MLS-number key resolver uses DAL — 326→325
+
+---
+
+
 ## v1.282.7 (2026-05-23)
 
 ### Maintenance
