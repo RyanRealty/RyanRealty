@@ -196,6 +196,21 @@ export {
   insertActivityEventRows,
   getListingPhotoUrl,
   updateListingPhotoUrl,
+  upsertExpiredListingRow,
+  findCommunityIdByName,
+  findCommunityIdBySlug,
+  insertCommunityRowReturnId,
+  findPropertyIdByAddress,
+  insertPropertyAddressOnly,
+  insertPropertyFullRow,
+  updatePropertyById,
+  findListingBySnakeKey,
+  upsertListingSnakeRow,
+  insertStatusHistoryRow,
+  insertPriceHistoryRow,
+  replaceListingPhotosForKey,
+  deleteListingAgentsForKey,
+  insertListingAgentRow,
 } from '@/lib/data/sync/syncWrites'
 export type { ExistingListingRow, SyncState } from '@/lib/data/sync/syncWrites'
 

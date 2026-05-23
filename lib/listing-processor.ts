@@ -56,31 +56,30 @@ function buildFullAddress(raw: SparkListing): string {
 
 /** Insert or ignore one expired/withdrawn listing for superuser prospecting. Exported for backfill action. */
 export async function upsertExpiredListingFromSpark(supabase: SupabaseClient, raw: SparkListing): Promise<void> {
+  void supabase
   const listingKey = raw.ListingKey ?? ''
   if (!listingKey) return
   const fullAddress = buildFullAddress(raw)
   const listAgentName = (raw.ListAgentName ?? [raw.ListAgentFirstName, raw.ListAgentLastName].filter(Boolean).join(' ')) || null
   const expiredAt = parseTs(raw.StatusChangeTimestamp) ?? parseTs(raw.ModificationTimestamp) ?? new Date().toISOString()
-  const { error } = await supabase.from('expired_listings').upsert(
-    {
-      listing_key: listingKey,
-      full_address: fullAddress,
-      city: raw.City ?? null,
-      state: raw.StateOrProvince ?? null,
-      postal_code: raw.PostalCode ?? null,
-      owner_name: null,
-      list_agent_name: listAgentName,
-      list_office_name: raw.ListOfficeName ?? null,
-      list_price: parseNum(raw.ListPrice) ?? null,
-      original_list_price: parseNum(raw.OriginalListPrice) ?? null,
-      days_on_market: parseNum(raw.DaysOnMarket) ?? null,
-      expired_at: expiredAt,
-      standard_status: raw.StandardStatus ?? null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'listing_key', ignoreDuplicates: false }
-  )
-  if (error) Sentry.captureException(error, { extra: { listingKey } })
+  const { upsertExpiredListingRow } = await import('@/lib/data')
+  const res = await upsertExpiredListingRow({
+    listing_key: listingKey,
+    full_address: fullAddress,
+    city: raw.City ?? null,
+    state: raw.StateOrProvince ?? null,
+    postal_code: raw.PostalCode ?? null,
+    owner_name: null,
+    list_agent_name: listAgentName,
+    list_office_name: raw.ListOfficeName ?? null,
+    list_price: parseNum(raw.ListPrice) ?? null,
+    original_list_price: parseNum(raw.OriginalListPrice) ?? null,
+    days_on_market: parseNum(raw.DaysOnMarket) ?? null,
+    expired_at: expiredAt,
+    standard_status: raw.StandardStatus ?? null,
+    updated_at: new Date().toISOString(),
+  })
+  if (!res.ok) Sentry.captureException(new Error(res.error ?? 'upsert failed'), { extra: { listingKey } })
 }
 
 export interface ProcessSparkListingResult {
@@ -94,71 +93,73 @@ export interface ProcessSparkListingResult {
  * Find or create community by SubdivisionName (exact then normalized name match).
  */
 async function ensureCommunity(supabase: SupabaseClient, subdivisionName: string | null | undefined): Promise<string | null> {
+  void supabase
   const name = subdivisionName?.trim()
   if (!name) return null
   const slug = toSlug(name)
-  const { data: existing } = await supabase.from('communities').select('id').eq('name', name).maybeSingle()
-  if (existing?.id) return existing.id
-  const { data: bySlug } = await supabase.from('communities').select('id').eq('slug', slug).maybeSingle()
-  if (bySlug?.id) return bySlug.id
-  const { data: inserted, error } = await supabase.from('communities').insert({ name, slug }).select('id').single()
-  if (error) {
-    Sentry.captureException(error, { extra: { subdivisionName: name } })
-    return null
-  }
-  return inserted?.id ?? null
+  const { findCommunityIdByName, findCommunityIdBySlug, insertCommunityRowReturnId } = await import('@/lib/data')
+  const existing = await findCommunityIdByName(name)
+  if (existing) return existing
+  const bySlug = await findCommunityIdBySlug(slug)
+  if (bySlug) return bySlug
+  const inserted = await insertCommunityRowReturnId(name, slug)
+  if (!inserted) Sentry.captureException(new Error('community insert failed'), { extra: { subdivisionName: name } })
+  return inserted
 }
 
 /**
  * Find or create property by UnparsedAddress; set geography from Lat/Long if present.
  */
 async function ensureProperty(supabase: SupabaseClient, raw: SparkListing): Promise<string> {
+  void supabase
+  const {
+    findPropertyIdByAddress,
+    insertPropertyAddressOnly,
+    insertPropertyFullRow,
+    updatePropertyById,
+  } = await import('@/lib/data')
   const unparsed = (raw.UnparsedAddress ?? '').trim() || [raw.StreetNumber, raw.StreetName, raw.StreetSuffix, raw.City, raw.StateOrProvince, raw.PostalCode].filter(Boolean).join(', ')
   if (!unparsed) {
     const fallback = `unknown-${raw.ListingKey ?? 'no-key'}`
-    const { data: ins } = await supabase.from('properties').insert({ unparsed_address: fallback }).select('id').single()
-    if (ins?.id) return ins.id
-    const { data: existing } = await supabase.from('properties').select('id').eq('unparsed_address', fallback).maybeSingle()
-    if (existing?.id) return existing.id
+    const inserted = await insertPropertyAddressOnly(fallback)
+    if (inserted) return inserted
+    const existing = await findPropertyIdByAddress(fallback)
+    if (existing) return existing
     throw new Error('Could not create or find property for listing without address')
   }
   const communityId = await ensureCommunity(supabase, raw.SubdivisionName)
   const lat = parseNum(raw.Latitude)
   const lng = parseNum(raw.Longitude)
-  const { data: existing } = await supabase.from('properties').select('id').eq('unparsed_address', unparsed).maybeSingle()
-  if (existing?.id) {
+  const existing = await findPropertyIdByAddress(unparsed)
+  if (existing) {
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (communityId != null) updates.community_id = communityId
     if (lat != null) updates.latitude = lat
     if (lng != null) updates.longitude = lng
-    await supabase.from('properties').update(updates).eq('id', existing.id)
-    return existing.id
+    await updatePropertyById(existing, updates)
+    return existing
   }
-  const { data: inserted, error } = await supabase
-    .from('properties')
-    .insert({
-      unparsed_address: unparsed,
-      street_number: raw.StreetNumber ?? null,
-      street_name: raw.StreetName ?? null,
-      street_suffix: raw.StreetSuffix ?? null,
-      unit_number: raw.UnitNumber ?? null,
-      city: raw.City ?? null,
-      state: raw.StateOrProvince ?? null,
-      postal_code: raw.PostalCode ?? null,
-      county: raw.CountyOrParish ?? null,
-      community_id: communityId,
-      parcel_number: raw.ParcelNumber ?? null,
-      latitude: lat,
-      longitude: lng,
-    })
-    .select('id')
-    .single()
-  if (error) {
-    Sentry.captureException(error, { extra: { unparsed } })
-    throw error
+  const inserted = await insertPropertyFullRow({
+    unparsed_address: unparsed,
+    street_number: raw.StreetNumber ?? null,
+    street_name: raw.StreetName ?? null,
+    street_suffix: raw.StreetSuffix ?? null,
+    unit_number: raw.UnitNumber ?? null,
+    city: raw.City ?? null,
+    state: raw.StateOrProvince ?? null,
+    postal_code: raw.PostalCode ?? null,
+    county: raw.CountyOrParish ?? null,
+    community_id: communityId,
+    parcel_number: raw.ParcelNumber ?? null,
+    latitude: lat,
+    longitude: lng,
+  })
+  if (!inserted) {
+    const err = new Error('Property insert returned no id')
+    Sentry.captureException(err, { extra: { unparsed } })
+    throw err
   }
-  if (!inserted?.id) throw new Error('Property insert returned no id')
-  return inserted.id
+  return inserted
 }
 
 /**
@@ -175,10 +176,11 @@ export async function processSparkListing(raw: SparkListing): Promise<ProcessSpa
   }
 
   const propertyId = await ensureProperty(supabase, raw)
-  const existing = await supabase.from('listings').select('id, standard_status, list_price').eq('listing_key', listingKey).maybeSingle()
-  const isNew = !existing.data?.id
-  const oldStatus = existing.data?.standard_status ?? null
-  const oldPrice = existing.data?.list_price ?? null
+  const { findListingBySnakeKey } = await import('@/lib/data')
+  const existingRow = await findListingBySnakeKey(listingKey)
+  const isNew = !existingRow?.id
+  const oldStatus = existingRow?.standard_status ?? null
+  const oldPrice = existingRow?.list_price ?? null
   const newStatus = raw.StandardStatus ?? null
   const newPrice = parseNum(raw.ListPrice) ?? null
   const hasStatusChange = !isNew && oldStatus !== newStatus
@@ -248,20 +250,24 @@ export async function processSparkListing(raw: SparkListing): Promise<ProcessSpa
     updated_at: new Date().toISOString(),
   }
 
-  const { data: upserted, error: listingError } = await supabase
-    .from('listings')
-    .upsert(listingRow, { onConflict: 'listing_key', ignoreDuplicates: false })
-    .select('id')
-    .single()
-  if (listingError) {
-    Sentry.captureException(listingError, { extra: { listingKey } })
-    throw listingError
+  const {
+    upsertListingSnakeRow,
+    insertStatusHistoryRow,
+    insertPriceHistoryRow,
+    replaceListingPhotosForKey,
+    deleteListingAgentsForKey,
+    insertListingAgentRow,
+  } = await import('@/lib/data')
+  const upsertResult = await upsertListingSnakeRow(listingRow)
+  if (upsertResult.error) {
+    Sentry.captureException(new Error(upsertResult.error), { extra: { listingKey } })
+    throw new Error(upsertResult.error)
   }
-  const listingId = upserted?.id ?? existing.data?.id
+  const listingId = upsertResult.id ?? existingRow?.id
   if (!listingId) throw new Error('No listing id after upsert')
 
   if (hasStatusChange && newStatus && oldStatus !== newStatus) {
-    await supabase.from('status_history').insert({
+    await insertStatusHistoryRow({
       listing_key: listingKey,
       old_status: oldStatus,
       new_status: newStatus,
@@ -273,7 +279,7 @@ export async function processSparkListing(raw: SparkListing): Promise<ProcessSpa
   }
   if (hasPriceChange && oldPrice != null && newPrice != null) {
     const changePct = oldPrice !== 0 ? ((newPrice - oldPrice) / oldPrice) * 100 : null
-    await supabase.from('price_history').insert({
+    await insertPriceHistoryRow({
       listing_key: listingKey,
       old_price: oldPrice,
       new_price: newPrice,
@@ -284,7 +290,6 @@ export async function processSparkListing(raw: SparkListing): Promise<ProcessSpa
 
   const media = raw.Media as SparkMediaItem[] | undefined
   if (Array.isArray(media) && media.length > 0) {
-    await supabase.from('listing_photos').delete().eq('listing_key', listingKey)
     const photos = media
       .filter((m) => m.MediaURL)
       .sort((a, b) => (a.Order ?? 0) - (b.Order ?? 0))
@@ -295,15 +300,13 @@ export async function processSparkListing(raw: SparkListing): Promise<ProcessSpa
         is_hero: i === 0,
         source: 'spark',
       }))
-    if (photos.length) {
-      await supabase.from('listing_photos').insert(photos)
-    }
+    await replaceListingPhotosForKey(listingKey, photos)
   }
 
-  await supabase.from('listing_agents').delete().eq('listing_key', listingKey)
+  await deleteListingAgentsForKey(listingKey)
   const listAgentName = (raw.ListAgentName ?? [raw.ListAgentFirstName, raw.ListAgentLastName].filter(Boolean).join(' ')) || null
   if (listAgentName || raw.ListAgentMlsId || raw.ListOfficeName) {
-    await supabase.from('listing_agents').insert({
+    await insertListingAgentRow({
       listing_key: listingKey,
       agent_role: 'list',
       agent_name: listAgentName,
@@ -319,7 +322,7 @@ export async function processSparkListing(raw: SparkListing): Promise<ProcessSpa
   }
   const buyerAgentName = (raw.BuyerAgentName ?? [raw.BuyerAgentFirstName, raw.BuyerAgentLastName].filter(Boolean).join(' ')) || null
   if (buyerAgentName || raw.BuyerAgentMlsId || raw.BuyerOfficeName) {
-    await supabase.from('listing_agents').insert({
+    await insertListingAgentRow({
       listing_key: listingKey,
       agent_role: 'buyer',
       agent_name: buyerAgentName,

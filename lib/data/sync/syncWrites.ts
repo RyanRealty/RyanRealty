@@ -155,3 +155,168 @@ export async function updateListingPhotoUrl(
     .eq('ListingKey', listingKey)
   return error ? { ok: false, error: error.message } : { ok: true }
 }
+
+// === listing-processor (Spark → relational write pipeline) helpers ===
+
+/** Upsert one expired/withdrawn listing row from a Spark feed. */
+export async function upsertExpiredListingRow(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb
+    .from('expired_listings')
+    .upsert(row, { onConflict: 'listing_key', ignoreDuplicates: false })
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Find a community by name (exact); returns null when missing. */
+export async function findCommunityIdByName(name: string): Promise<string | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb.from('communities').select('id').eq('name', name).maybeSingle()
+  return (data as { id?: string } | null)?.id ?? null
+}
+
+/** Find a community by slug; returns null when missing. */
+export async function findCommunityIdBySlug(slug: string): Promise<string | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb.from('communities').select('id').eq('slug', slug).maybeSingle()
+  return (data as { id?: string } | null)?.id ?? null
+}
+
+/** Insert a community row, return the new id. */
+export async function insertCommunityRowReturnId(name: string, slug: string): Promise<string | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('communities')
+    .insert({ name, slug })
+    .select('id')
+    .single()
+  if (error || !data) return null
+  return (data as { id?: string } | null)?.id ?? null
+}
+
+/** Property: find by unparsed_address. */
+export async function findPropertyIdByAddress(unparsed: string): Promise<string | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb
+    .from('properties')
+    .select('id')
+    .eq('unparsed_address', unparsed)
+    .maybeSingle()
+  return (data as { id?: string } | null)?.id ?? null
+}
+
+/** Property: insert a minimal-fields row, return id. */
+export async function insertPropertyAddressOnly(unparsed: string): Promise<string | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('properties')
+    .insert({ unparsed_address: unparsed })
+    .select('id')
+    .single()
+  if (error || !data) return null
+  return (data as { id?: string } | null)?.id ?? null
+}
+
+/** Property: insert a wide row, return id. */
+export async function insertPropertyFullRow(row: Record<string, unknown>): Promise<string | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb.from('properties').insert(row).select('id').single()
+  if (error || !data) return null
+  return (data as { id?: string } | null)?.id ?? null
+}
+
+/** Property: patch by id. */
+export async function updatePropertyById(
+  id: string,
+  updates: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('properties').update(updates).eq('id', id)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Find listing by snake_case listing_key (sync pipeline shape — different from RETS PascalCase). */
+export async function findListingBySnakeKey(
+  listingKey: string
+): Promise<{ id: string; standard_status: string | null; list_price: number | null } | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb
+    .from('listings')
+    .select('id, standard_status, list_price')
+    .eq('listing_key', listingKey)
+    .maybeSingle()
+  return (data ?? null) as {
+    id: string
+    standard_status: string | null
+    list_price: number | null
+  } | null
+}
+
+/** Upsert a snake_case listings row (sync pipeline shape). */
+export async function upsertListingSnakeRow(row: Record<string, unknown>): Promise<{ id: string | null; error?: string }> {
+  const sb = client()
+  if (!sb) return { id: null, error: 'Supabase not configured' }
+  const { data, error } = await sb
+    .from('listings')
+    .upsert(row, { onConflict: 'listing_key', ignoreDuplicates: false })
+    .select('id')
+    .single()
+  if (error) return { id: null, error: error.message }
+  return { id: (data as { id?: string } | null)?.id ?? null }
+}
+
+/** Insert one status_history event. */
+export async function insertStatusHistoryRow(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('status_history').insert(row)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Insert one price_history event. */
+export async function insertPriceHistoryRow(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('price_history').insert(row)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Replace listing_photos for a key (delete-all then insert). */
+export async function replaceListingPhotosForKey(
+  listingKey: string,
+  photos: Array<Record<string, unknown>>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error: delErr } = await sb.from('listing_photos').delete().eq('listing_key', listingKey)
+  if (delErr) return { ok: false, error: delErr.message }
+  if (photos.length === 0) return { ok: true }
+  const { error } = await sb.from('listing_photos').insert(photos)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Delete all listing_agents rows for a key (precursor to fresh insert). */
+export async function deleteListingAgentsForKey(
+  listingKey: string
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('listing_agents').delete().eq('listing_key', listingKey)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Insert a single listing_agents row. */
+export async function insertListingAgentRow(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('listing_agents').insert(row)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}

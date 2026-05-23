@@ -1,9 +1,8 @@
 {
-  "generatedAt": "2026-05-23T01:30:37.349Z",
-  "total": 171,
+  "generatedAt": "2026-05-23T01:33:43.289Z",
+  "total": 155,
   "byFile": {
     "app/actions/sync-spark.ts": 28,
-    "lib/listing-processor.ts": 16,
     "app/actions/listings.ts": 10,
     "app/actions/market-stats.ts": 4,
     "app/actions/place-content-pipeline.ts": 4,
