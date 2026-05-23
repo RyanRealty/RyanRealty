@@ -21,6 +21,7 @@ import {
   getAllCitySnapshots,
   getGeoSnapshot,
   getCityListings as getCityListingsDAL,
+  getCityCommunitySnapshots,
 } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
 
@@ -279,43 +280,26 @@ export const getCityPendingListings = unstable_cache(
 
 /** Communities (subdivisions) in this city for CityCommunities section. */
 async function getCommunitiesInCityUncached(cityName: string): Promise<CommunityForIndex[]> {
-  const [hot, flags, listingRows] = await Promise.all([
+  // DAL: pre-aggregated community snapshots from geo_snapshot_mv —
+  // returns activeSfrCount, pendingCount, medianListPrice per community
+  // already computed. Replaces the prior 2 full city scans (4000-row
+  // active + 4000-row pending) with one MV read.
+  const cityLower = cityName.toLowerCase().trim()
+  const [hot, flags, communitySnapshots] = await Promise.all([
     getHotCommunitiesInCity(cityName),
     listSubdivisionsWithFlags(),
-    supabase()
-      .from('listings')
-      .select('SubdivisionName, ListPrice, PropertyType')
-      .eq('"City"', cityName)
-      .or(ACTIVE_OR)
-      .limit(4000)
-      .then((res) => (res.data ?? []) as { SubdivisionName?: string | null; ListPrice?: number | null; PropertyType?: string | null }[]),
+    getCityCommunitySnapshots(cityLower),
   ])
-  const bySubdivision = new Map<string, number[]>()
   const countBySubdivision = new Map<string, number>()
   const pendingBySubdivision = new Map<string, number>()
+  const medianBySubdivision = new Map<string, number | null>()
   const hotBySubdivision = new Map(hot.map((entry) => [entry.subdivisionName, entry]))
-  for (const row of listingRows) {
-    if (!isResidentialInventoryType(row.PropertyType ?? null)) continue
-    const sub = (row.SubdivisionName ?? '').trim()
+  for (const snap of communitySnapshots) {
+    const sub = snap.geoLabel.trim()
     if (!sub) continue
-    countBySubdivision.set(sub, (countBySubdivision.get(sub) ?? 0) + 1)
-    const price = Number(row.ListPrice)
-    if (Number.isFinite(price) && price > 0) {
-      const prices = bySubdivision.get(sub) ?? []
-      prices.push(price)
-      bySubdivision.set(sub, prices)
-    }
-  }
-  const { data: pendingRows } = await supabase()
-    .from('listings')
-    .select('SubdivisionName')
-    .eq('"City"', cityName)
-    .or(PENDING_OR)
-    .limit(4000)
-  for (const row of pendingRows ?? []) {
-    const sub = String((row as { SubdivisionName?: string | null }).SubdivisionName ?? '').trim()
-    if (!sub) continue
-    pendingBySubdivision.set(sub, (pendingBySubdivision.get(sub) ?? 0) + 1)
+    countBySubdivision.set(sub, snap.activeSfrCount)
+    pendingBySubdivision.set(sub, snap.pendingCount)
+    medianBySubdivision.set(sub, snap.medianListPrice != null ? Math.round(snap.medianListPrice) : null)
   }
   const resortSet = new Set(
     (await import('@/app/actions/subdivision-flags').then((m) => m.getResortEntityKeys()))
@@ -337,13 +321,7 @@ async function getCommunitiesInCityUncached(cityName: string): Promise<Community
       city: cityName,
       subdivision: subdivisionName,
       activeCount: countBySubdivision.get(subdivisionName) ?? h?.forSale ?? 0,
-      medianPrice: (() => {
-        const prices = bySubdivision.get(subdivisionName) ?? []
-        if (prices.length === 0) return h?.medianListPrice ?? null
-        prices.sort((a, b) => a - b)
-        const mid = Math.floor(prices.length / 2)
-        return prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
-      })(),
+      medianPrice: medianBySubdivision.get(subdivisionName) ?? h?.medianListPrice ?? null,
       heroImageUrl: heroUrl ?? resortHeroUrl ?? null,
       isResort,
     })
