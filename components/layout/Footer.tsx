@@ -263,9 +263,75 @@ export default function Footer({
             <p className="text-sm text-primary-foreground/90" suppressHydrationWarning>
               © {currentYear} {name}. All rights reserved.
             </p>
-            <p className="text-xs text-primary-foreground/70">
-              Oregon principal-broker license #{PRINCIPAL_BROKER_LICENSE} · Equal Housing Opportunity
-            </p>
+
+            {/* Brokerage legal facts block — SITE_SPEC line 70. License # +
+                phones + canonical URL + social handle + Equal Housing
+                Opportunity logo + Fair Housing Act statement. */}
+            <div className="flex flex-col items-center gap-2 text-xs text-primary-foreground/70 sm:items-end">
+              <p className="tabular-nums">
+                Oregon principal-broker license #{PRINCIPAL_BROKER_LICENSE}
+              </p>
+              <p className="tabular-nums">
+                Direct{' '}
+                <a href="tel:+15412136706" className="hover:text-primary-foreground transition-colors">
+                  541.213.6706
+                </a>{' '}
+                · Office{' '}
+                <a href="tel:+15417033095" className="hover:text-primary-foreground transition-colors">
+                  541.703.3095
+                </a>
+              </p>
+              <p>
+                <a href="https://ryan-realty.com" className="hover:text-primary-foreground transition-colors">
+                  ryan-realty.com
+                </a>{' '}
+                ·{' '}
+                <a
+                  href="https://www.instagram.com/ryanrealtybend/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary-foreground transition-colors"
+                >
+                  @ryanrealtybend
+                </a>
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                {/* Inline EHO mark — Equal Housing Opportunity logo per Fair Housing Act. */}
+                <svg
+                  className="h-7 w-7 text-primary-foreground/80"
+                  viewBox="0 0 100 100"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden
+                >
+                  <rect x="2" y="2" width="96" height="96" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <path
+                    d="M50 22 L78 48 L78 78 L22 78 L22 48 Z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinejoin="round"
+                  />
+                  <text
+                    x="50"
+                    y="68"
+                    fontSize="14"
+                    fontWeight="700"
+                    fill="currentColor"
+                    textAnchor="middle"
+                    fontFamily="system-ui, sans-serif"
+                  >
+                    =
+                  </text>
+                </svg>
+                <span>Equal Housing Opportunity</span>
+              </div>
+              <p className="max-w-sm text-[11px] leading-snug text-primary-foreground/60 sm:text-right">
+                Ryan Realty is committed to compliance with all federal, state, and local fair housing laws.
+                We do not discriminate based on race, color, religion, sex, national origin, familial
+                status, disability, source of income, sexual orientation, gender identity, or marital
+                status. Per the Fair Housing Act.
+              </p>
+            </div>
             <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 sm:justify-end" aria-label="Legal and policies">
               {LEGAL_LINKS.map(({ href, label }) => (
                 <Link
