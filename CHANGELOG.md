@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.28 (2026-05-23)
+
+### Other
+- DAL: migrate area-guide-upload entity + page_images
+
+---
+
+
 ## v1.282.27 (2026-05-23)
 
 ### Other
