@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.283.2 (2026-05-23)
+
+### Other
+- homepage: market snapshot freshness stamp + spec-aligned price tiles
+
+---
+
+
 ## v1.283.1 (2026-05-23)
 
 ### Other
