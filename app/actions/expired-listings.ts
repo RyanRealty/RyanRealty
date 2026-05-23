@@ -50,23 +50,12 @@ export async function listExpiredListings(options?: {
   city?: string
 }): Promise<{ rows: ExpiredListingRow[]; total: number }> {
   await requireSuperuser()
-  const supabase = getServiceSupabase()
+  void getServiceSupabase
   const limit = Math.min(Math.max(options?.limit ?? 100, 1), 500)
   const offset = Math.max(options?.offset ?? 0, 0)
-
-  let query = supabase
-    .from('expired_listings')
-    .select('id, listing_key, full_address, city, state, postal_code, owner_name, list_agent_name, list_office_name, list_price, original_list_price, days_on_market, expired_at, standard_status, contact_phone, contact_email, contact_source, enrichment_notes, created_at, updated_at', { count: 'exact' })
-    .order('expired_at', { ascending: false })
-
-  if (options?.city?.trim()) {
-    query = query.ilike('city', options.city.trim())
-  }
-
-  const { data: rows, count, error } = await query.range(offset, offset + limit - 1)
-  if (error) throw error
-  const total = count ?? (rows?.length ?? 0)
-  return { rows: (rows ?? []) as ExpiredListingRow[], total }
+  const { listExpiredListingsForAdmin } = await import('@/lib/data')
+  const { rows, total } = await listExpiredListingsForAdmin({ limit, offset, city: options?.city ?? null })
+  return { rows: rows as unknown as ExpiredListingRow[], total }
 }
 
 /** Update contact/enrichment fields (superuser only). */
@@ -81,15 +70,13 @@ export async function updateExpiredListingContact(
   }
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   await requireSuperuser()
-  const supabase = getServiceSupabase()
-  const { error } = await supabase
-    .from('expired_listings')
-    .update({
-      ...updates,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-  if (error) return { ok: false, error: error.message }
+  void getServiceSupabase
+  const { updateExpiredListingById } = await import('@/lib/data')
+  const res = await updateExpiredListingById(id, {
+    ...updates,
+    updated_at: new Date().toISOString(),
+  })
+  if (!res.ok) return { ok: false, error: res.error ?? 'update failed' }
   return { ok: true }
 }
 

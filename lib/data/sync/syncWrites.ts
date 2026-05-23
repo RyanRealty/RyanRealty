@@ -609,6 +609,37 @@ export async function insertValuationRequest(row: Record<string, unknown>): Prom
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
+/** List expired_listings rows for admin UI (paginated, optionally city-filtered). */
+export async function listExpiredListingsForAdmin(options: {
+  limit: number
+  offset: number
+  city?: string | null
+}): Promise<{ rows: Array<Record<string, unknown>>; total: number }> {
+  const sb = client()
+  if (!sb) return { rows: [], total: 0 }
+  let q = sb
+    .from('expired_listings')
+    .select(
+      'id, listing_key, full_address, city, state, postal_code, owner_name, list_agent_name, list_office_name, list_price, original_list_price, days_on_market, expired_at, standard_status, contact_phone, contact_email, contact_source, enrichment_notes, created_at, updated_at',
+      { count: 'exact' },
+    )
+    .order('expired_at', { ascending: false })
+  if (options.city?.trim()) q = q.ilike('city', options.city.trim())
+  const { data, count } = await q.range(options.offset, options.offset + options.limit - 1)
+  return { rows: (data ?? []) as Array<Record<string, unknown>>, total: count ?? data?.length ?? 0 }
+}
+
+/** Update an expired_listings row by primary id (admin enrichment). */
+export async function updateExpiredListingById(
+  id: string,
+  updates: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('expired_listings').update(updates).eq('id', id)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
 /** Update an expired_listings row by listing_key (admin enrichment). */
 export async function updateExpiredListingByKey(
   listingKey: string,

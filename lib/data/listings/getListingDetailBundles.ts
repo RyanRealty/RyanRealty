@@ -59,6 +59,65 @@ export type ListingHistoryEventRow = {
   raw?: unknown
 }
 
+/** Hero photo URLs for many listings at once (bulk DAL helper). */
+export async function getHeroPhotosByListingKeys(
+  listingKeys: string[]
+): Promise<Map<string, string>> {
+  const sb = supabaseAnon()
+  if (!sb || listingKeys.length === 0) return new Map()
+  const { data } = await sb
+    .from('listing_photos')
+    .select('listing_key, photo_url')
+    .in('listing_key', listingKeys.slice(0, 5000))
+    .eq('is_hero', true)
+    .limit(listingKeys.length * 2)
+  const map = new Map<string, string>()
+  for (const p of (data ?? []) as Array<{ listing_key: string; photo_url: string }>) {
+    if (p.photo_url && !map.has(p.listing_key)) map.set(p.listing_key, p.photo_url)
+  }
+  return map
+}
+
+/** Open-houses in a date window. */
+export async function getOpenHousesInRange(options: {
+  dateFromIso: string
+  dateToIso: string
+  todayIso: string
+}): Promise<Array<{
+  id: string
+  open_house_key?: string
+  listing_key: string
+  event_date: string
+  start_time?: string | null
+  end_time?: string | null
+  host_agent_name?: string | null
+  remarks?: string | null
+  rsvp_count?: number
+}>> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('open_houses')
+    .select('id, open_house_key, listing_key, event_date, start_time, end_time, host_agent_name, remarks, rsvp_count')
+    .gte('event_date', options.dateFromIso)
+    .lte('event_date', options.dateToIso)
+    .gte('event_date', options.todayIso)
+    .order('event_date', { ascending: true })
+    .order('start_time', { ascending: true })
+  if (error) return []
+  return (data ?? []) as Array<{
+    id: string
+    open_house_key?: string
+    listing_key: string
+    event_date: string
+    start_time?: string | null
+    end_time?: string | null
+    host_agent_name?: string | null
+    remarks?: string | null
+    rsvp_count?: number
+  }>
+}
+
 /** All photos for a listing, sorted ASC by sort_order. */
 export async function getListingDetailPhotos(listingKey: string): Promise<ListingDetailPhotoRow[]> {
   const sb = supabaseAnon()
@@ -145,6 +204,34 @@ export async function upsertListingEmbedding(row: {
     .from('listing_embeddings')
     .upsert(row, { onConflict: 'listing_key' })
   return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Pending events from listing_history in a date window. */
+export async function getPendingListingHistoryEvents(options: {
+  fromIso: string
+  toIso: string
+}): Promise<Array<{
+  listing_key: string
+  event: string
+  event_date: string | null
+  price: number | null
+  description: string | null
+}>> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb
+    .from('listing_history')
+    .select('listing_key, event, event_date, price, description')
+    .gte('event_date', options.fromIso)
+    .lte('event_date', options.toIso)
+    .ilike('event', '%Pending%')
+  return (data ?? []) as Array<{
+    listing_key: string
+    event: string
+    event_date: string | null
+    price: number | null
+    description: string | null
+  }>
 }
 
 /** Return the set of listing_keys that have a price-change event since the given ISO timestamp. */

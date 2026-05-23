@@ -186,14 +186,12 @@ async function getPendingFromHistory(
 ): Promise<MarketReportByCity[]> {
   const startStr = periodStart.toISOString().slice(0, 10)
   const endStr = periodEnd.toISOString().slice(0, 10)
-  const { data: historyRows } = await supabase
-    .from('listing_history')
-    .select('listing_key, event, event_date, price, description')
-    .gte('event_date', `${startStr}T00:00:00.000Z`)
-    .lte('event_date', `${endStr}T23:59:59.999Z`)
-    .ilike('event', '%Pending%')
-
-  const rows = (historyRows ?? []) as Array<{ listing_key: string; event: string; event_date: string | null; price: number | null; description: string | null }>
+  void supabase
+  const { getPendingListingHistoryEvents } = await import('@/lib/data')
+  const rows = await getPendingListingHistoryEvents({
+    fromIso: `${startStr}T00:00:00.000Z`,
+    toIso: `${endStr}T23:59:59.999Z`,
+  })
   if (rows.length === 0) return []
 
   const keys = [...new Set(rows.map((r) => r.listing_key).filter(Boolean))]
@@ -366,13 +364,12 @@ export async function getMarketReportDataForLocation(
   const [closed, pendingRows] = await Promise.all([
     getClosedSalesForLocation(supabase, city, periodStart, periodEnd, subdivision),
     (async () => {
-      const { data } = await supabase
-        .from('listing_history')
-        .select('listing_key, event, event_date, price, description')
-        .gte('event_date', `${startStr}T00:00:00.000Z`)
-        .lte('event_date', `${endStr}T23:59:59.999Z`)
-        .ilike('event', '%Pending%')
-      return (data ?? []) as Array<{ listing_key: string; event: string; event_date: string | null; price: number | null; description: string | null }>
+      void supabase
+      const { getPendingListingHistoryEvents } = await import('@/lib/data')
+      return getPendingListingHistoryEvents({
+        fromIso: `${startStr}T00:00:00.000Z`,
+        toIso: `${endStr}T23:59:59.999Z`,
+      })
     })(),
   ])
 

@@ -79,23 +79,18 @@ function getThisWeekend(): { dateFrom: string; dateTo: string } {
 }
 
 async function _getOpenHousesWithListingsUncached(filters: OpenHousesFilters = {}): Promise<OpenHouseWithListing[]> {
-  const supabase = getSupabase()
+  void getSupabase
   const today = new Date().toISOString().slice(0, 10)
   const defaultRange = getThisWeekend()
   const dateFrom = filters.dateFrom ?? defaultRange.dateFrom
   const dateTo = filters.dateTo ?? defaultRange.dateTo
 
-  // dateFrom/dateTo define the "weekend" range; .gte('event_date', today) ensures we never show past events
-  const { data: rows, error } = await supabase
-    .from('open_houses')
-    .select('id, open_house_key, listing_key, event_date, start_time, end_time, host_agent_name, remarks, rsvp_count')
-    .gte('event_date', dateFrom)
-    .lte('event_date', dateTo)
-    .gte('event_date', today)
-    .order('event_date', { ascending: true })
-    .order('start_time', { ascending: true })
-
-  if (error) return []
+  const { getOpenHousesInRange } = await import('@/lib/data')
+  const rows = await getOpenHousesInRange({
+    dateFromIso: dateFrom,
+    dateToIso: dateTo,
+    todayIso: today,
+  })
 
   const listingKeys = [...new Set((rows ?? []).map((r: { listing_key: string }) => r.listing_key))]
   if (listingKeys.length === 0) return []
@@ -127,18 +122,10 @@ async function _getOpenHousesWithListingsUncached(filters: OpenHousesFilters = {
     photo_url: t.photoUrl,
   }))
 
-  const { data: photoRows } = await supabase
-    .from('listing_photos')
-    .select('listing_key, photo_url')
-    .in('listing_key', listingKeys)
-    .eq('is_hero', true)
-    .limit(listingKeys.length * 2)
-
+  const { getHeroPhotosByListingKeys } = await import('@/lib/data')
+  const heroByKey = await getHeroPhotosByListingKeys(listingKeys)
   const listingsByKey = new Map(
     listingRows.map((l) => [l.listing_key, l as Record<string, unknown>]),
-  )
-  const heroByKey = new Map(
-    (photoRows ?? []).map((p: { listing_key: string; photo_url: string }) => [p.listing_key, p.photo_url])
   )
 
   const result: OpenHouseWithListing[] = []

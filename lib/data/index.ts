@@ -105,6 +105,9 @@ export {
   getListingDetailHistory,
   getListingKeysWithPriceChangeSince,
   upsertListingEmbedding,
+  getHeroPhotosByListingKeys,
+  getOpenHousesInRange,
+  getPendingListingHistoryEvents,
   resolveCommunityChainBySlug,
 } from '@/lib/data/listings/getListingDetailBundles'
 export type {
@@ -248,6 +251,8 @@ export {
   insertValuationRequest,
   selectNewExpiredListings,
   getExistingExpiredListingKeys,
+  listExpiredListingsForAdmin,
+  updateExpiredListingById,
   getSyncCursor,
   countListingsByOr,
   countAllListingsByListingKey,

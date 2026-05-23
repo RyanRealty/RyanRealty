@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T02:06:54.292Z",
-  "total": 61,
+  "generatedAt": "2026-05-23T02:09:49.705Z",
+  "total": 55,
   "byFile": {
     "lib/cma.ts": 4,
     "lib/cma-delivery.ts": 3,
@@ -9,10 +9,7 @@
     "app/actions/broker-self.ts": 2,
     "app/actions/communities.ts": 2,
     "app/actions/dashboard.ts": 2,
-    "app/actions/expired-listings.ts": 2,
     "app/actions/listings.ts": 2,
-    "app/actions/market-reports.ts": 2,
-    "app/actions/open-houses.ts": 2,
     "app/actions/videos.ts": 2,
     "app/api/og/route.tsx": 2,
     "app/api/open-houses/rsvp/route.ts": 2,
