@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.285.1 (2026-05-23)
+
+### Other
+- home: SocialProofSection honors brokerage_settings.team_image_url (SITE_SPEC line 68)
+
+---
+
+
 ## v1.285.0 (2026-05-23)
 
 ### Features
