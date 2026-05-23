@@ -1,8 +1,7 @@
 {
-  "generatedAt": "2026-05-23T02:26:51.329Z",
-  "total": 26,
+  "generatedAt": "2026-05-23T02:28:38.819Z",
+  "total": 23,
   "byFile": {
-    "lib/cma-delivery.ts": 3,
     "app/actions/admin-listings.ts": 1,
     "app/actions/cities.ts": 1,
     "app/actions/dashboard.ts": 1,

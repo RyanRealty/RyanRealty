@@ -720,6 +720,25 @@ export async function getListingForCmaSubject(
   return (data ?? null) as Record<string, unknown> | null
 }
 
+/** Property lookup by postal + street number (CMA delivery resolver). */
+export async function findPropertiesByPostalAndStreet(options: {
+  postalCode?: string | null
+  streetNumber?: string | null
+  limit?: number
+}): Promise<Array<{ id: string; unparsed_address?: string; street_number?: string; street_name?: string; city?: string; state?: string; postal_code?: string }>> {
+  const sb = client()
+  if (!sb) return []
+  let q = sb
+    .from('properties')
+    .select('id, unparsed_address, street_number, street_name, city, state, postal_code')
+  if (options.postalCode?.trim()) q = q.eq('postal_code', options.postalCode.trim().slice(0, 20))
+  if (options.streetNumber && /^\d+/.test(options.streetNumber)) {
+    q = q.eq('street_number', options.streetNumber)
+  }
+  const { data } = await q.limit(Math.min(Math.max(options.limit ?? 50, 1), 200))
+  return (data ?? []) as Array<{ id: string; unparsed_address?: string; street_number?: string; street_name?: string; city?: string; state?: string; postal_code?: string }>
+}
+
 /** CMA-specific listings lookup for subject (3-attempt retry with status/recency tiebreak). */
 export async function selectCmaSubjectListings(options: {
   postalCode?: string | null

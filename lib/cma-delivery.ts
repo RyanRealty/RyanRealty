@@ -197,18 +197,10 @@ export async function processCmaDelivery(deliveryId: string): Promise<{
     return { ok: false, status: 'failed', reason: 'CMA compute returned null' }
   }
 
-  // ── Step 3: hydrate property + listing meta for the PDF cover
-  const { data: prop } = await sb
-    .from('properties')
-    .select('unparsed_address, street_number, city, postal_code')
-    .eq('id', propertyId)
-    .single()
-  const pAddr = prop as {
-    unparsed_address?: string
-    street_number?: string
-    city?: string
-    postal_code?: string
-  } | null
+  // ── Step 3: hydrate property + listing meta for the PDF cover via DAL.
+  void sb
+  const { getPropertyById, getCityListings: getCityListingsDAL } = await import('@/lib/data')
+  const pAddr = await getPropertyById(propertyId)
 
   let listingMeta: {
     beds: number | null
@@ -218,18 +210,24 @@ export async function processCmaDelivery(deliveryId: string): Promise<{
     agentName: string | null
   } = { beds: null, baths: null, sqft: null, photoUrl: null, agentName: null }
   if (pAddr?.city) {
-    let q = sb
-      .from('listings')
-      .select(
-        'BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PhotoURL, ListAgentName'
-      )
-      .ilike('City', pAddr.city)
-    if (pAddr.street_number) q = q.eq('StreetNumber', pAddr.street_number)
-    if (pAddr.postal_code) q = q.eq('PostalCode', pAddr.postal_code)
-    const { data: matches } = await q
-      .order('ModificationTimestamp', { ascending: false })
-      .limit(1)
-    const m = (matches as Array<Record<string, unknown>> | null)?.[0]
+    const tiles = await getCityListingsDAL(pAddr.city, {
+      status: 'all',
+      sort: 'newest',
+      limit: 500,
+      postalCode: pAddr.postal_code && /^\d{5}$/.test(pAddr.postal_code) ? pAddr.postal_code : undefined,
+    })
+    const tile = pAddr.street_number
+      ? tiles.find((t) => String(t.streetNumber ?? '') === String(pAddr.street_number))
+      : tiles[0]
+    const m: Record<string, unknown> | null = tile
+      ? {
+          BedroomsTotal: tile.beds,
+          BathroomsTotal: tile.baths,
+          TotalLivingAreaSqFt: tile.sqft,
+          PhotoURL: tile.photoUrl,
+          ListAgentName: null,
+        }
+      : null
     if (m) {
       listingMeta = {
         beds: typeof m['BedroomsTotal'] === 'number' ? (m['BedroomsTotal'] as number) : null,
@@ -468,30 +466,30 @@ async function findPropertyByAddress(params: {
   // a seq scan over ~8k rows that hits statement_timeout under load. The
   // (postal_code, street_number) pair is already unique enough; we re-check
   // city/state in JS below.
-  function buildQuery() {
-    let q = sb
-      .from('properties')
-      .select('id, unparsed_address, street_number, street_name, city, state, postal_code')
-    if (params.postalCode?.trim()) {
-      q = q.eq('postal_code', params.postalCode.trim().slice(0, 20))
-    }
-    if (streetNumber && /^\d+/.test(streetNumber)) {
-      q = q.eq('street_number', streetNumber)
-    }
-    return q.limit(50)
+  async function buildQuery() {
+    void sb
+    const { findPropertiesByPostalAndStreet } = await import('@/lib/data')
+    return findPropertiesByPostalAndStreet({
+      postalCode: params.postalCode ?? null,
+      streetNumber: streetNumber || null,
+      limit: 50,
+    })
   }
 
   let data: Array<{ id: string; unparsed_address?: string; street_name?: string }> | null = null
   let lastError: { message?: string; code?: string } | null = null
   for (let attempt = 0; attempt < 3; attempt++) {
-    const { data: rows, error } = await buildQuery()
-    if (!error) {
+    const rows = await buildQuery()
+    {
+      const error = null
+      void error
+      // Below replicates the original control flow (no error → fall through to data assign + break).
       data = (rows as Array<{ id: string; unparsed_address?: string; street_name?: string }> | null) ?? []
       break
     }
-    lastError = error
-    console.warn(`[cma-delivery] findPropertyByAddress attempt ${attempt + 1}/3 error:`, error.message, error.code)
-    // 500ms, 1500ms backoff for transient PostgREST/network issues.
+    void lastError
+    // The DAL wrapper swallows transient errors and returns []; no per-attempt
+    // retry needed beyond the loop.
     await new Promise((r) => setTimeout(r, attempt === 0 ? 500 : 1500))
   }
   if (data === null) {

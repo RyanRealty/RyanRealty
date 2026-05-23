@@ -274,6 +274,7 @@ export {
   selectClosedListingsForCma,
   getListingForCmaSubject,
   selectCmaSubjectListings,
+  findPropertiesByPostalAndStreet,
   selectNewExpiredListings,
   getExistingExpiredListingKeys,
   listExpiredListingsForAdmin,
