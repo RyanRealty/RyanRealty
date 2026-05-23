@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.40 (2026-05-23)
+
+### Other
+- DAL: clear reports.ts + semantic-search.ts
+
+---
+
+
 ## v1.282.39 (2026-05-23)
 
 ### Other
