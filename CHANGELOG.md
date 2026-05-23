@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.18 (2026-05-23)
+
+### Other
+- DAL: migrate adjacency-by-modified-at queries
+
+---
+
+
 ## v1.282.17 (2026-05-23)
 
 ### Other
