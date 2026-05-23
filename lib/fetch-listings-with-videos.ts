@@ -103,39 +103,38 @@ export async function fetchListingsWithVideos(
   const seenKeys = new Set<string>()
   const listRows: Array<Record<string, unknown>> = []
 
-  let tourQ = supabase.from('listings').select(`${LISTING_VIDEO_SELECT_MAIN}`).eq('has_virtual_tour', true)
-  if (citiesList?.length) {
-    tourQ = tourQ.in('City', citiesList)
+  void supabase
+  void applyFiltersAndOrder
+  const { getListingVideoCandidates } = await import('@/lib/data')
+  // 1) listings with has_virtual_tour=true
+  const tourRows = await getListingVideoCandidates({
+    withVirtualTour: true,
+    cities: citiesList,
+    statusAll,
+    sort: filters?.sort === 'price_desc' ? 'price_desc' : 'newest',
+    limit: candidateLimit,
+  })
+  for (const row of tourRows) {
+    const k = resolveListingKeyFromRow(row)
+    if (!k || seenKeys.has(k)) continue
+    seenKeys.add(k)
+    listRows.push(row)
   }
-  const tourRes = await applyFiltersAndOrder(tourQ)
-  const tourErr = tourRes.error?.message ?? ''
-  if (!tourRes.error && Array.isArray(tourRes.data) && tourRes.data.length > 0) {
-    for (const row of tourRes.data as Array<Record<string, unknown>>) {
+
+  if (listRows.length < candidateLimit) {
+    // 2) broad listings query (newest or price_desc)
+    const broadRows = await getListingVideoCandidates({
+      cities: citiesList,
+      statusAll,
+      sort: filters?.sort === 'price_desc' ? 'price_desc' : 'newest',
+      limit: candidateLimit,
+    })
+    for (const row of broadRows) {
       const k = resolveListingKeyFromRow(row)
       if (!k || seenKeys.has(k)) continue
       seenKeys.add(k)
       listRows.push(row)
-    }
-  } else if (tourRes.error && !/has_virtual_tour|column/i.test(tourErr)) {
-    console.error('[fetchListingsWithVideos] has_virtual_tour query', tourRes.error)
-  }
-
-  if (listRows.length < candidateLimit) {
-    let broadQ = supabase.from('listings').select(LISTING_VIDEO_SELECT_MAIN)
-    if (citiesList?.length) {
-      broadQ = broadQ.in('City', citiesList)
-    }
-    const broadRes = await applyFiltersAndOrder(broadQ)
-    if (broadRes.error) {
-      console.error('[fetchListingsWithVideos] broad query', broadRes.error)
-    } else {
-      for (const row of (broadRes.data ?? []) as Array<Record<string, unknown>>) {
-        const k = resolveListingKeyFromRow(row)
-        if (!k || seenKeys.has(k)) continue
-        seenKeys.add(k)
-        listRows.push(row)
-        if (listRows.length >= candidateLimit) break
-      }
+      if (listRows.length >= candidateLimit) break
     }
   }
 
@@ -173,26 +172,21 @@ export async function fetchListingsWithVideos(
 
   if (rows.length < maxRows) {
     const existingKeys = new Set(rows.map((x) => x.listing_key))
-    const { data: lvRows, error: lvErr } = await supabase
-      .from('listing_videos')
-      .select('listing_key, video_url')
-      .order('created_at', { ascending: false })
-      .limit(180)
-    if (lvErr) {
-      console.error('[fetchListingsWithVideos] listing_videos', lvErr)
-    } else {
+    const { getRecentListingVideoRows } = await import('@/lib/data')
+    const lvRows = await getRecentListingVideoRows(180)
+    {
       const urlByListing = new Map<string, string>()
-      for (const lv of lvRows ?? []) {
-        const lk = String((lv as { listing_key?: string }).listing_key ?? '').trim()
-        const vu = String((lv as { video_url?: string }).video_url ?? '').trim()
+      for (const lv of lvRows) {
+        const lk = String(lv.listing_key ?? '').trim()
+        const vu = String(lv.video_url ?? '').trim()
         if (lk && vu && !urlByListing.has(lk)) urlByListing.set(lk, vu)
       }
       const missingKeys = [...urlByListing.keys()].filter((k) => !existingKeys.has(k)).slice(0, 80)
       if (missingKeys.length > 0) {
-        const selExtra = LISTING_VIDEO_SELECT_MAIN
-        const ea = await supabase.from('listings').select(selExtra).in('ListingKey', missingKeys)
+        const { getListingVideoCandidates } = await import('@/lib/data')
+        const eaData = await getListingVideoCandidates({ byKeys: missingKeys, limit: 200 })
         const byKey = new Map<string, Record<string, unknown>>()
-        for (const row of ea.data ?? []) {
+        for (const row of eaData) {
           const rec = row as Record<string, unknown>
           const k = resolveListingKeyFromRow(rec)
           if (k && !byKey.has(k)) byKey.set(k, rec)
@@ -229,30 +223,23 @@ export async function fetchListingsWithVideos(
   }
 
   if (rows.length === 0) {
-    const { data: legacyVideos } = await supabase
-      .from('listing_videos')
-      .select('listing_key, video_url')
-      .limit(candidateLimit)
+    void ACTIVE_STATUS_OR
+    const { getAnyListingVideoRows, getListingVideoCandidates } = await import('@/lib/data')
+    const legacyVideos = await getAnyListingVideoRows(candidateLimit)
     const legacyVideoByKey = new Map(
-      (legacyVideos ?? []).map((r) => [
-        String((r as { listing_key?: string }).listing_key ?? '').trim(),
-        String((r as { video_url?: string }).video_url ?? '').trim(),
+      legacyVideos.map((r) => [
+        String(r.listing_key ?? '').trim(),
+        String(r.video_url ?? '').trim(),
       ])
     )
 
-    let legacyQuery = supabase.from('listings').select(LISTING_VIDEO_SELECT_MAIN).limit(candidateLimit)
-    if (citiesList?.length) {
-      legacyQuery = legacyQuery.in('City', citiesList)
-    }
-    if (!statusAll) {
-      legacyQuery = legacyQuery.or(ACTIVE_STATUS_OR)
-    }
-    if (filters?.sort === 'price_desc') {
-      legacyQuery = legacyQuery.order('ListPrice', { ascending: false, nullsFirst: false })
-    } else {
-      legacyQuery = legacyQuery.order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    }
-    const { data: legacyListings, error: legacyErr } = await legacyQuery
+    const legacyListings = await getListingVideoCandidates({
+      cities: citiesList,
+      statusAll,
+      sort: filters?.sort === 'price_desc' ? 'price_desc' : 'newest',
+      limit: candidateLimit,
+    })
+    const legacyErr: { message: string } | null = null
     if (legacyErr) {
       console.error('[fetchListingsWithVideos] legacy listings', legacyErr)
     }

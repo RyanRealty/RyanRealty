@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T01:21:14.315Z",
-  "total": 202,
+  "generatedAt": "2026-05-23T01:23:26.879Z",
+  "total": 196,
   "byFile": {
     "app/actions/sync-spark.ts": 28,
     "lib/listing-processor.ts": 16,
@@ -8,7 +8,6 @@
     "app/actions/listings.ts": 10,
     "app/actions/area-guide-upload.ts": 7,
     "app/api/cron/sync-delta/route.ts": 7,
-    "lib/fetch-listings-with-videos.ts": 6,
     "app/actions/market-stats.ts": 4,
     "app/actions/place-content-pipeline.ts": 4,
     "app/api/calendar/route.ts": 4,

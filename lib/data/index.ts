@@ -95,9 +95,19 @@ export { getListingRawRowByKey } from '@/lib/data/listings/getListingRawRow'
 export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
 export { getPriceDropTiles } from '@/lib/data/listings/getPriceDropTiles'
 export type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
+export { getListingVideoCandidates } from '@/lib/data/listings/getListingVideoCandidates'
+export type {
+  ListingVideoCandidateRow,
+  GetListingVideoCandidatesOptions,
+} from '@/lib/data/listings/getListingVideoCandidates'
 
 // Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'
+export {
+  getRecentListingVideoRows,
+  getAnyListingVideoRows,
+} from '@/lib/data/videos/getListingVideoRows'
+export type { ListingVideoRow } from '@/lib/data/videos/getListingVideoRows'
 
 // Geo — read from geo_snapshot_mv (Migration 20260522144510, applied 2026-05-22)
 export {
