@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.3 (2026-05-23)
+
+### Maintenance
+- perf(listings): central getListings function migrated to DAL — 359→358
+
+---
+
+
 ## v1.280.2 (2026-05-23)
 
 ### Maintenance
