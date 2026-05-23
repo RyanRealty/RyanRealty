@@ -221,6 +221,10 @@ export {
   deleteListingHistoryForKey,
   getListingFieldsByListingKey,
   getListingFieldsByListNumber,
+  selectHistorySyncCandidates,
+  countHistorySyncCandidates,
+  listingHistoryExistsForAnyKey,
+  getAnyListingKey,
 } from '@/lib/data/sync/syncWrites'
 export type { ExistingListingRow, SyncState } from '@/lib/data/sync/syncWrites'
 

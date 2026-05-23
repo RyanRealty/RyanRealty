@@ -1253,39 +1253,27 @@ export async function syncListingHistory(options?: {
     const rangeLimit = useWorkerShard
       ? Math.min(2000, limit * workerCount * shardCandidateMultiplier)
       : limit
-    let dataQuery = supabase
-      .from('listings')
-      .select('ListingKey, ListNumber, StandardStatus, CloseDate, ListDate, OnMarketDate, ModificationTimestamp, PhotoURL, details, ListAgentName, ListOfficeName')
-      .eq('history_finalized', false)
-      .range(effectiveOffset, effectiveOffset + rangeLimit - 1)
-    if (activeAndPendingOnly) {
-      dataQuery = dataQuery.order('ListNumber', { ascending: true, nullsFirst: false })
-      dataQuery = dataQuery.or(ACTIVE_OR_PENDING_STATUS_OR)
-    } else {
-      const terminalScopedOr = buildTerminalScopedStatusOr({
-        fromIso: terminalExplicitFromIso,
-        toIsoExclusive: terminalExplicitToExclusiveIso,
-        cutoffIso: terminalLookbackCutoffIso,
-      })
-      dataQuery = dataQuery.or(terminalScopedOr)
-    }
+    const COLS_SYNC =
+      'ListingKey, ListNumber, StandardStatus, CloseDate, ListDate, OnMarketDate, ModificationTimestamp, PhotoURL, details, ListAgentName, ListOfficeName'
+    const { selectHistorySyncCandidates, countHistorySyncCandidates } = await import('@/lib/data')
+    const statusOr = activeAndPendingOnly
+      ? ACTIVE_OR_PENDING_STATUS_OR
+      : buildTerminalScopedStatusOr({
+          fromIso: terminalExplicitFromIso,
+          toIsoExclusive: terminalExplicitToExclusiveIso,
+          cutoffIso: terminalLookbackCutoffIso,
+        })
     let totalListings = 0
     if (activeAndPendingOnly) {
-      const countQuery = supabase
-        .from('listings')
-        .select('*', { count: 'exact', head: true })
-        .eq('history_finalized', false)
-        .or(ACTIVE_OR_PENDING_STATUS_OR)
-      const { count: needSyncCount, error: countError } = await countQuery
+      const { count: needSyncCount, error: countError } = await countHistorySyncCandidates(ACTIVE_OR_PENDING_STATUS_OR)
       if (countError) {
-        const errText = formatDbError(countError)
         return {
           success: false,
-          message: `History sync failed while counting candidates: ${errText}`,
-          error: errText,
+          message: `History sync failed while counting candidates: ${countError}`,
+          error: countError,
         }
       }
-      totalListings = needSyncCount ?? 0
+      totalListings = needSyncCount
     }
     let rows: {
       ListingKey?: string | null
@@ -1297,35 +1285,38 @@ export async function syncListingHistory(options?: {
       ModificationTimestamp?: string | null
     }[] = []
     let usedTerminalFallback = false
-    const { data: primaryRows, error: rowsError } = await dataQuery
-    if (rowsError) {
-      const errText = formatDbError(rowsError)
-      const timeoutLike = /statement timeout|canceling statement|timeout|57014/i.test(errText)
+    const primary = await selectHistorySyncCandidates<typeof rows[number]>({
+      columns: COLS_SYNC,
+      statusOr,
+      offset: effectiveOffset,
+      limit: rangeLimit,
+      orderBy: activeAndPendingOnly ? { column: 'ListNumber', ascending: true, nullsFirst: false } : undefined,
+    })
+    if (primary.error) {
+      const timeoutLike = /statement timeout|canceling statement|timeout|57014/i.test(primary.error)
       if (activeAndPendingOnly || !timeoutLike) {
         return {
           success: false,
-          message: `History sync failed while loading candidate rows: ${errText}`,
-          error: errText,
+          message: `History sync failed while loading candidate rows: ${primary.error}`,
+          error: primary.error,
         }
       }
 
       usedTerminalFallback = true
       const fallbackLimit = Math.max(rangeLimit * 5, 300)
-      const { data: fallbackRows, error: fallbackError } = await supabase
-        .from('listings')
-      .select('ListingKey, ListNumber, StandardStatus, CloseDate, ListDate, OnMarketDate, ModificationTimestamp, PhotoURL, details, ListAgentName, ListOfficeName')
-        .eq('history_finalized', false)
-        .or(TERMINAL_STATUS_OR)
-        .limit(fallbackLimit)
-      if (fallbackError) {
-        const fallbackErrText = formatDbError(fallbackError)
+      const fallback = await selectHistorySyncCandidates<typeof rows[number]>({
+        columns: COLS_SYNC,
+        statusOr: TERMINAL_STATUS_OR,
+        limit: fallbackLimit,
+      })
+      if (fallback.error) {
         return {
           success: false,
-          message: `History sync failed while loading candidate rows: ${fallbackErrText}`,
-          error: fallbackErrText,
+          message: `History sync failed while loading candidate rows: ${fallback.error}`,
+          error: fallback.error,
         }
       }
-      rows = ((fallbackRows ?? []) as typeof rows).filter((row) =>
+      rows = (fallback.rows ?? []).filter((row) =>
         isTerminalRowInScope(row, {
           fromIso: terminalExplicitFromIso,
           toIsoExclusive: terminalExplicitToExclusiveIso,
@@ -1333,7 +1324,7 @@ export async function syncListingHistory(options?: {
         })
       )
     } else {
-      rows = (primaryRows ?? []) as typeof rows
+      rows = primary.rows ?? []
     }
     const rawListingRows = (rows ?? []) as {
       ListingKey?: string | null
@@ -1393,16 +1384,13 @@ export async function syncListingHistory(options?: {
 
       // Fast path: if terminal listing already has history rows in DB, finalize without hitting Spark again.
       if (terminalStatus && row.ListNumber) {
-        const { data: existingHistory } = await supabase
-          .from('listing_history')
-          .select('listing_key')
-          .in('listing_key', keysToTry)
-          .limit(1)
-        if ((existingHistory ?? []).length > 0) {
-          await supabase
-            .from('listings')
-            .update({ history_finalized: true, is_finalized: true })
-            .eq('ListNumber', row.ListNumber)
+        const { listingHistoryExistsForAnyKey, updateListingByListNumber } = await import('@/lib/data')
+        const existed = await listingHistoryExistsForAnyKey(keysToTry)
+        if (existed) {
+          await updateListingByListNumber(row.ListNumber, {
+            history_finalized: true,
+            is_finalized: true,
+          })
           return { historyRowsUpserted: 0, listingsWithHistory: 1 }
         }
       }
@@ -1433,15 +1421,16 @@ export async function syncListingHistory(options?: {
       let localListingsWithHistory = 0
       let localInsertError: string | undefined
       if (items.length > 0) {
-        await supabase.from('listing_history').delete().eq('listing_key', listingKey)
+        const { deleteListingHistoryForKey, insertListingHistoryRows } = await import('@/lib/data')
+        await deleteListingHistoryForKey(listingKey)
         localListingsWithHistory += 1
         const historyRows = items.map((item) => sparkHistoryItemToRow(listingKey, item))
-        const { error } = await supabase.from('listing_history').insert(historyRows)
-        if (!error) {
+        const ins = await insertListingHistoryRows(historyRows)
+        if (ins.ok) {
           localRowsUpserted += historyRows.length
           shouldFinalizeTerminal = true
         } else {
-          localInsertError = error.message
+          localInsertError = ins.error
         }
       }
       if (items.length === 0 && hadSuccessfulHistoryFetch) {
@@ -1460,10 +1449,12 @@ export async function syncListingHistory(options?: {
         { accessToken }
       )
       if (shouldFinalizeTerminal && auxSync.ok && isTerminalStatus(row.StandardStatus) && row.ListNumber) {
-        await supabase
-          .from('listings')
-          .update({ history_finalized: true, history_verified_full: true, is_finalized: true })
-          .eq('ListNumber', row.ListNumber)
+        const { updateListingByListNumber } = await import('@/lib/data')
+        await updateListingByListNumber(row.ListNumber, {
+          history_finalized: true,
+          history_verified_full: true,
+          is_finalized: true,
+        })
       }
       return {
         historyRowsUpserted: localRowsUpserted,
@@ -1490,35 +1481,37 @@ export async function syncListingHistory(options?: {
       if (done) nextOffset = undefined
     } else {
       // Terminal mode: keep consuming from offset 0 until no rows remain.
-      const remainingQuery = supabase
-        .from('listings')
-        .select('ListingKey, ListNumber, StandardStatus, CloseDate, ListDate, OnMarketDate, ModificationTimestamp')
-        .eq('history_finalized', false)
-        .limit(1)
+      const REMAINING_COLS =
+        'ListingKey, ListNumber, StandardStatus, CloseDate, ListDate, OnMarketDate, ModificationTimestamp'
       const terminalScopedOr = buildTerminalScopedStatusOr({
         fromIso: terminalExplicitFromIso,
         toIsoExclusive: terminalExplicitToExclusiveIso,
         cutoffIso: terminalLookbackCutoffIso,
       })
-      const { data: remainingRowsScoped, error: remainingErrorScoped } = await remainingQuery.or(terminalScopedOr)
-      if (remainingErrorScoped) {
-        const errText = formatDbError(remainingErrorScoped)
-        const timeoutLike = /statement timeout|canceling statement|timeout|57014/i.test(errText)
+      const remainingScoped = await selectHistorySyncCandidates<typeof rows[number]>({
+        columns: REMAINING_COLS,
+        statusOr: terminalScopedOr,
+        limit: 1,
+      })
+      let remainingRowsScoped: typeof rows | null = remainingScoped.rows
+      if (remainingScoped.error) {
+        const timeoutLike = /statement timeout|canceling statement|timeout|57014/i.test(remainingScoped.error)
         if (!timeoutLike) {
           return {
             success: false,
-            message: `History sync failed while checking remaining listings: ${errText}`,
-            error: errText,
+            message: `History sync failed while checking remaining listings: ${remainingScoped.error}`,
+            error: remainingScoped.error,
           }
         }
-        const { data: remainingRowsFallback, error: remainingErrorFallback } = await supabase
-          .from('listings')
-          .select('ListingKey, ListNumber, StandardStatus, CloseDate, ListDate, OnMarketDate, ModificationTimestamp')
-          .eq('history_finalized', false)
-          .or(TERMINAL_STATUS_OR)
-          .limit(300)
+        const fallback = await selectHistorySyncCandidates<typeof rows[number]>({
+          columns: REMAINING_COLS,
+          statusOr: TERMINAL_STATUS_OR,
+          limit: 300,
+        })
+        const remainingRowsFallback = fallback.rows
+        const remainingErrorFallback = fallback.error ? { message: fallback.error } : null
         if (remainingErrorFallback) {
-          const fallbackErrText = formatDbError(remainingErrorFallback)
+          const fallbackErrText = remainingErrorFallback.message
           return {
             success: false,
             message: `History sync failed while checking remaining listings: ${fallbackErrText}`,
@@ -1599,14 +1592,9 @@ export async function testListingHistory(listingKey?: string | null): Promise<Te
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   let keyToUse = (listingKey ?? '').trim()
   if (!keyToUse && supabaseUrl?.trim() && serviceKey?.trim()) {
-    const supabase = createClient(supabaseUrl, serviceKey)
-    const { data } = await supabase
-      .from('listings')
-      .select('ListingKey, ListNumber')
-      .order('ListNumber', { ascending: true, nullsFirst: false })
-      .limit(1)
-      .maybeSingle()
-    const row = data as { ListingKey?: string; ListNumber?: string } | null
+    void createClient
+    const { getAnyListingKey } = await import('@/lib/data')
+    const row = await getAnyListingKey()
     keyToUse = (row?.ListingKey ?? row?.ListNumber ?? '').toString().trim()
   }
   if (!keyToUse) {

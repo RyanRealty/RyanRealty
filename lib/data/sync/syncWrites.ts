@@ -451,3 +451,70 @@ export async function getListingFieldsByListNumber<T extends Record<string, unkn
     .maybeSingle()
   return (data ?? null) as T | null
 }
+
+/**
+ * Sync-pipeline candidate query: listings rows where `history_finalized = false`,
+ * with a free-form `or` clause for status scoping, sorted/ranged as the caller
+ * needs. Returns rows + error. Used by history-sync admin tooling.
+ */
+export async function selectHistorySyncCandidates<T extends Record<string, unknown>>(options: {
+  columns: string
+  statusOr: string
+  offset?: number
+  limit?: number
+  orderBy?: { column: string; ascending: boolean; nullsFirst?: boolean }
+}): Promise<{ rows: T[] | null; error: string | null }> {
+  const sb = client()
+  if (!sb) return { rows: null, error: 'Supabase not configured' }
+  let q = sb.from('listings').select(options.columns).eq('history_finalized', false).or(options.statusOr)
+  if (options.orderBy) {
+    q = q.order(options.orderBy.column, {
+      ascending: options.orderBy.ascending,
+      nullsFirst: options.orderBy.nullsFirst ?? !options.orderBy.ascending ? false : true,
+    })
+  }
+  if (typeof options.offset === 'number' && typeof options.limit === 'number') {
+    q = q.range(options.offset, options.offset + options.limit - 1)
+  } else if (typeof options.limit === 'number') {
+    q = q.limit(options.limit)
+  }
+  const { data, error } = await q
+  return { rows: (data ?? []) as unknown as T[], error: error?.message ?? null }
+}
+
+/** Get any one ListingKey/ListNumber from the listings table — used by sync test harnesses. */
+export async function getAnyListingKey(): Promise<{ ListingKey: string | null; ListNumber: string | null } | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb
+    .from('listings')
+    .select('ListingKey, ListNumber')
+    .order('ListNumber', { ascending: true, nullsFirst: false })
+    .limit(1)
+    .maybeSingle()
+  return (data ?? null) as { ListingKey: string | null; ListNumber: string | null } | null
+}
+
+/** Does at least one listing_history row exist for any of these keys? */
+export async function listingHistoryExistsForAnyKey(keys: string[]): Promise<boolean> {
+  const sb = client()
+  if (!sb || keys.length === 0) return false
+  const { data } = await sb
+    .from('listing_history')
+    .select('listing_key')
+    .in('listing_key', keys.slice(0, 5000))
+    .limit(1)
+  return Array.isArray(data) && data.length > 0
+}
+
+/** Count of history-needing candidates (history_finalized = false + status OR). */
+export async function countHistorySyncCandidates(statusOr: string): Promise<{ count: number; error: string | null }> {
+  const sb = client()
+  if (!sb) return { count: 0, error: 'Supabase not configured' }
+  const { count, error } = await sb
+    .from('listings')
+    .select('*', { count: 'exact', head: true })
+    .eq('history_finalized', false)
+    .or(statusOr)
+  return { count: count ?? 0, error: error?.message ?? null }
+}
