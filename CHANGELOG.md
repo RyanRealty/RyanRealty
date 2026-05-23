@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.33 (2026-05-23)
+
+### Other
+- DAL: finish sync-spark.ts migration (history candidates + audit)
+
+---
+
+
 ## v1.282.32 (2026-05-23)
 
 ### Other
