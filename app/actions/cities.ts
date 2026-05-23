@@ -429,17 +429,21 @@ export async function getCityPriceHistory(cityName: string): Promise<{ month: st
   if (fromCache.length >= 2) return fromCache
   const twelveMonthsAgo = new Date()
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
-  const { data: closed } = await sb
-    .from('listings')
-    .select('ListPrice, CloseDate')
-    .eq('"City"', cityName)
-    .ilike('StandardStatus', '%Closed%')
-    .not('CloseDate', 'is', null)
-    .gte('CloseDate', twelveMonthsAgo.toISOString().slice(0, 7))
-    .limit(2000)
+  const cutoff = twelveMonthsAgo.toISOString().slice(0, 7)
+  // DAL: read closed tiles via listing_tile_mv. Last-12mo filter is
+  // post-fetch because the DAL doesn't have a close_date range filter
+  // today. Sort by close-newest + limit 2000 matches the prior shape.
+  const closedTiles = await getCityListingsDAL(cityName, {
+    status: 'closed',
+    sort: 'close-newest',
+    limit: 500,
+  })
+  const closed = closedTiles
+    .filter((t) => t.closeDate != null && t.closeDate.slice(0, 7) >= cutoff)
+    .map((t) => ({ ListPrice: t.listPrice, CloseDate: t.closeDate }))
   const byMonth = new Map<string, number[]>()
   const byMonthCount = new Map<string, number>()
-  for (const r of (closed ?? []) as { ListPrice?: number | null; CloseDate?: string }[]) {
+  for (const r of closed as { ListPrice?: number | null; CloseDate?: string | null }[]) {
     const p = Number(r.ListPrice)
     const d = r.CloseDate?.slice(0, 7)
     if (!d || !Number.isFinite(p) || p <= 0) continue
