@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.30 (2026-05-23)
+
+### Other
+- DAL: move listing-processor Spark→relational writes to lib/data/sync
+
+---
+
+
 ## v1.282.29 (2026-05-23)
 
 ### Other
