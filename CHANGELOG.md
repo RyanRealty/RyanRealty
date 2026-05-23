@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.1 (2026-05-23)
+
+### Other
+- SITE_SPEC: verify homepage items 62-65 (hero, market snapshot, price tiles, featured)
+
+---
+
+
 ## v1.288.0 (2026-05-23)
 
 ### Features
