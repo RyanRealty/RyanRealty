@@ -55,6 +55,9 @@ export interface GolfCourse {
   heroImage?: string
   /** Alt for the heroImage — accessibility + SEO. */
   heroImageAlt?: string
+  /** Official tee-time / course-info URL. Outbound link — golfers
+   * scrolling want to book, not be sold a home. We send them off. */
+  teeTimeUrl?: string
 }
 
 export const GOLF_COURSES: GolfCourse[] = [
@@ -77,8 +80,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.3508,
     communitySlug: 'tetherow',
     destinationRank: 1,
-    heroImage: '/lp/central-oregon-golf/img/tetherow-02.jpg',
-    heroImageAlt: 'Tetherow Golf Club fairway with Cascade Range in the background',
+    teeTimeUrl: 'https://tetherow.com/golf/',
   },
   {
     slug: 'pronghorn-nicklaus',
@@ -98,8 +100,6 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.1573,
     communitySlug: 'pronghorn',
     destinationRank: 2,
-    heroImage: '/lp/central-oregon-golf/img/pronghorn-01.jpg',
-    heroImageAlt: 'Pronghorn Resort fairway with juniper and high-desert terrain',
   },
   {
     slug: 'pronghorn-fazio',
@@ -119,6 +119,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.1601,
     communitySlug: 'pronghorn',
     destinationRank: 3,
+    teeTimeUrl: 'https://www.juniperpreserve.com/golf/',
   },
   {
     slug: 'crosswater',
@@ -138,8 +139,6 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.4475,
     communitySlug: 'crosswater',
     destinationRank: 4,
-    heroImage: '/lp/central-oregon-golf/img/crosswater-01.jpg',
-    heroImageAlt: 'Crosswater Club at Sunriver — wetlands, pine forest, Cascade peaks',
   },
   {
     slug: 'sunriver-meadows',
@@ -210,8 +209,6 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.6239,
     communitySlug: 'black-butte-ranch',
     destinationRank: 6,
-    heroImage: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
-    heroImageAlt: 'Three Sisters peaks looming over Sisters, Oregon — the Black Butte Ranch terrain',
   },
   {
     slug: 'black-butte-glaze-meadow',
@@ -231,8 +228,6 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.6336,
     communitySlug: 'black-butte-ranch',
     destinationRank: 5,
-    heroImage: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
-    heroImageAlt: 'Three Sisters peaks above Black Butte Ranch — the Glaze Meadow setting',
   },
   {
     slug: 'brasada-canyons',
@@ -252,8 +247,6 @@ export const GOLF_COURSES: GolfCourse[] = [
     lng: -121.0118,
     communitySlug: 'brasada-ranch',
     destinationRank: 7,
-    heroImage: '/lp/central-oregon-golf/img/brasada-01.jpg',
-    heroImageAlt: 'Brasada Canyons at Brasada Ranch — open high-desert terrain east of Bend',
   },
   {
     slug: 'eagle-crest-resort',
@@ -323,8 +316,6 @@ export const GOLF_COURSES: GolfCourse[] = [
     lat: 44.2862,
     lng: -121.5182,
     destinationRank: 8,
-    heroImage: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
-    heroImageAlt: 'Sisters area beneath the Three Sisters peaks — Aspen Lakes setting',
   },
   {
     slug: 'widgi-creek',

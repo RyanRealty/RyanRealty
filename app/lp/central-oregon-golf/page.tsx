@@ -368,11 +368,6 @@ function DestinationCoursesSection() {
                   <span className="golf-access-pill">{ACCESS_LABEL[c.access]}</span>
                 </div>
                 <p className="golf-rank-sig">{c.signature}</p>
-                {c.communitySlug && (
-                  <Link href={`/lp/${c.communitySlug}/`} className="golf-rank-link">
-                    Homes near {c.shortName} →
-                  </Link>
-                )}
               </div>
             </li>
           ))}
@@ -389,8 +384,8 @@ function MapSection() {
   return (
     <section className="golf-section" id="map">
       <div className="golf-section__inner">
-        <div className="golf-eyebrow">Section 4</div>
-        <h2 className="golf-h2">Every course in Central Oregon, on one map.</h2>
+        <div className="golf-eyebrow">Every course on one map</div>
+        <h2 className="golf-h2">Public, resort, private, municipal.</h2>
         <p className="golf-lede">
           Public courses, resort courses, private clubs, and municipals — color-coded by access.
           Click a pin for designer, year, holes, and the community it sits in.
@@ -411,7 +406,7 @@ function ByArchitectSection() {
   return (
     <section className="golf-section golf-section--alt" id="by-architect">
       <div className="golf-section__inner">
-        <div className="golf-eyebrow">Section 5</div>
+        <div className="golf-eyebrow">Who designed what</div>
         <h2 className="golf-h2">By architect.</h2>
         <p className="golf-lede">
           Same 30 courses, grouped by the designer who routed them. The Pacific NW does not have
@@ -469,8 +464,8 @@ function SeasonCalendarSection() {
   return (
     <section className="golf-section" id="season">
       <div className="golf-section__inner">
-        <div className="golf-eyebrow">Section 8</div>
-        <h2 className="golf-h2">When to play.</h2>
+        <div className="golf-eyebrow">When to play</div>
+        <h2 className="golf-h2">Short, intense, and dry.</h2>
         <p className="golf-lede">
           The Central Oregon golf year is short and intense. The destination courses open in late
           March. June is the value play. September is the locals&apos; favorite. Two courses run
@@ -750,7 +745,7 @@ function DataTableSection() {
   return (
     <section className="golf-section" id="full-table">
       <div className="golf-section__inner">
-        <div className="golf-eyebrow">Section 6</div>
+        <div className="golf-eyebrow">The full lookup</div>
         <h2 className="golf-h2">Every course, side by side.</h2>
         <p className="golf-lede">
           Designer, year, holes, par, yardage, city, access. The full lookup table for green-fee
