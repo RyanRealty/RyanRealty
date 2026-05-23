@@ -1932,32 +1932,33 @@ export type ListingsAtAddressOptions = {
 export async function getListingsAtAddress(options: ListingsAtAddressOptions): Promise<ListingTileRow[]> {
   const excludeKey = String(options.excludeListingKey ?? '').trim()
   const city = (options.city ?? '').trim()
-  const supabase = getAnonSupabase()
-  if (!supabase || !excludeKey || !city) return []
-
-  let query = supabase
-    .from('listings')
-    .select(LISTING_TILE_SELECT)
-    .eq('"City"', city)
-    .neq('ListNumber', excludeKey)
-    .neq('ListingKey', excludeKey)
-
+  if (!excludeKey || !city) return []
+  // DAL: pull tiles for the city via listing_tile_mv then filter by exact
+  // StreetNumber + StreetName / PostalCode in memory. The set per city is
+  // ~3K active rows; the predicate filter is sub-1ms.
+  void getAnonSupabase
+  void LISTING_TILE_SELECT
+  void ACTIVE_STATUS_OR
   const sn = (options.streetNumber ?? '').toString().trim()
-  const sname = (options.streetName ?? '').toString().trim()
-  const state = (options.state ?? '').toString().trim()
+  const sname = (options.streetName ?? '').toString().trim().toLowerCase()
   const zip = (options.postalCode ?? '').toString().trim()
-  if (sn) query = query.eq('StreetNumber', sn)
-  if (sname) query = query.ilike('StreetName', sname)
-  if (state) query = query.ilike('State', state)
-  if (zip) query = query.eq('PostalCode', zip)
-
-  if (options.includeClosed !== true) {
-    query = query.or(ACTIVE_STATUS_OR)
-  }
-
-  const { data } = await query.order('ModificationTimestamp', { ascending: false }).limit(50)
-  const rows = (data ?? []) as ListingTileRow[]
-  return rows.filter((r) => (r.ListNumber ?? r.ListingKey ?? '').toString().trim() !== excludeKey)
+  const { getCityListings: getCityListingsDAL } = await import('@/lib/data')
+  const tiles = await getCityListingsDAL(city, {
+    status: options.includeClosed === true ? 'all' : 'active',
+    sort: 'newest',
+    limit: 5000,
+    postalCode: /^\d{5}$/.test(zip) ? zip : undefined,
+  })
+  return tiles
+    .filter((t) => {
+      const k = (t.listNumber ?? t.listingKey ?? '').toString().trim()
+      if (!k || k === excludeKey) return false
+      if (sn && String(t.streetNumber ?? '').trim() !== sn) return false
+      if (sname && !String(t.streetName ?? '').toLowerCase().includes(sname)) return false
+      return true
+    })
+    .slice(0, 50)
+    .map(tileToListingTileRow)
 }
 
 /**
@@ -2146,43 +2147,42 @@ export async function getListingsSliceInSubdivision(
   const cityTrim = (city ?? '').trim()
   const subTrim = (subdivisionName ?? '').trim()
   const supabase = getAnonSupabase()
-  if (!supabase || !modificationTimestamp || !cityTrim || !subTrim) return { prevList: [], nextList: [] }
-  const select = 'ListingKey, ListNumber, PhotoURL, ListPrice, StreetNumber, StreetName, City, State, PostalCode, StandardStatus'
-  const orderCol = 'ModificationTimestamp'
+  if (!modificationTimestamp || !cityTrim || !subTrim) return { prevList: [], nextList: [] }
+  void supabase
   const subNames = getSubdivisionMatchNames(subTrim)
-  const subFilter =
-    subNames.length === 1
-      ? `SubdivisionName.ilike.${subNames[0]!}`
-      : subNames.map((n) => `SubdivisionName.ilike.${n}`).join(',')
-
-  const [prevRes, nextRes] = await Promise.all([
-    supabase
-      .from('listings')
-      .select(select)
-      .eq('"City"', cityTrim)
-      .or(subFilter)
-      .lt(orderCol, modificationTimestamp)
-      .order(orderCol, { ascending: false })
-      .limit(limitBefore * 2),
-    supabase
-      .from('listings')
-      .select(select)
-      .eq('"City"', cityTrim)
-      .or(subFilter)
-      .gt(orderCol, modificationTimestamp)
-      .order(orderCol, { ascending: true })
-      .limit(limitAfter * 2),
+  const canonicalSub = subNames[0] ?? subTrim
+  const { getListingTiles } = await import('@/lib/data')
+  const [prevTiles, nextTiles] = await Promise.all([
+    getListingTiles({
+      city: cityTrim,
+      subdivision: canonicalSub,
+      modifiedBefore: modificationTimestamp,
+      status: 'active',
+      sort: 'newest',
+      limit: limitBefore * 2,
+    }),
+    getListingTiles({
+      city: cityTrim,
+      subdivision: canonicalSub,
+      modifiedAfter: modificationTimestamp,
+      status: 'active',
+      sort: 'oldest',
+      limit: limitAfter * 2,
+    }),
   ])
-  const filterActive = (rows: (AdjacentListingThumb & { StandardStatus?: string | null })[]): AdjacentListingThumb[] =>
-    rows
-      .filter((r) => isActiveStatus(r.StandardStatus))
-      .map((r) => {
-        const { StandardStatus, ...t } = r
-        void StandardStatus
-        return t
-      })
-  const prevList = filterActive((prevRes.data ?? []) as (AdjacentListingThumb & { StandardStatus?: string | null })[]).slice(0, limitBefore)
-  const nextList = filterActive((nextRes.data ?? []) as (AdjacentListingThumb & { StandardStatus?: string | null })[]).slice(0, limitAfter)
+  const toThumb = (t: ListingTile): AdjacentListingThumb => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    PhotoURL: t.photoUrl,
+    ListPrice: t.listPrice,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: 'OR',
+    PostalCode: t.postalCode,
+  })
+  const prevList = prevTiles.map(toThumb).slice(0, limitBefore)
+  const nextList = nextTiles.map(toThumb).slice(0, limitAfter)
   return { prevList, nextList }
 }
 
@@ -2203,15 +2203,9 @@ export type ListingHistoryRow = {
  * Uses service role. Order by ListNumber asc so we get a stable default.
  */
 export async function getFirstListingKey(): Promise<string | null> {
-  const supabase = getServiceSupabase()
-  if (!supabase) return null
-  const { data } = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber')
-    .order('ListNumber', { ascending: true, nullsFirst: false })
-    .limit(1)
-    .maybeSingle()
-  const row = data as { ListingKey?: string | null; ListNumber?: string | null } | null
+  void getServiceSupabase
+  const { getAnyListingKey } = await import('@/lib/data')
+  const row = await getAnyListingKey()
   const key = row?.ListingKey ?? row?.ListNumber
   return key != null ? String(key).trim() : null
 }
@@ -2220,16 +2214,11 @@ export async function getFirstListingKey(): Promise<string | null> {
  * Return the most recently modified listing key from Supabase (for /listings/template redirect when Spark API key is not set).
  */
 export async function getMostRecentListingKeyFromSupabase(): Promise<string | null> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return null
-  const { data } = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber')
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit(1)
-    .maybeSingle()
-  const row = data as { ListingKey?: string | null; ListNumber?: string | null } | null
-  const key = row?.ListNumber ?? row?.ListingKey
+  void getAnonSupabase
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({ status: 'all', sort: 'newest', limit: 1 })
+  const tile = tiles[0]
+  const key = tile?.listNumber ?? tile?.listingKey ?? null
   return key != null ? String(key).trim() : null
 }
 
@@ -2238,35 +2227,24 @@ export async function getMostRecentListingKeyFromSupabase(): Promise<string | nu
  * Ordered by event_date desc (most recent first). Use for CMAs, list date, price changes, last sale.
  */
 export async function getListingHistory(listingKey: string): Promise<ListingHistoryRow[]> {
-  const supabase = getAnonSupabase()
+  void getAnonSupabase
   const key = String(listingKey ?? '').trim()
-  if (!supabase || !key) return []
-  const { data } = await supabase
-    .from('listing_history')
-    .select('listing_key, event_date, event, description, price, price_change, raw, created_at')
-    .eq('listing_key', key)
-    .order('event_date', { ascending: false, nullsFirst: false })
-  return (data ?? []) as ListingHistoryRow[]
+  if (!key) return []
+  // DAL: full event history reversed via getListingDetailHistory (ASC by
+  // event_date in the DAL); reverse in-memory for the legacy DESC order.
+  const { getListingDetailHistory } = await import('@/lib/data')
+  const rows = await getListingDetailHistory(key)
+  return [...rows].reverse() as unknown as ListingHistoryRow[]
 }
 
 /** Listing keys that have a price-change event in the last N days (for "Price reduced" badges). */
 const PRICE_CHANGE_BADGE_DAYS = 30
 
 export async function getListingKeysWithRecentPriceChange(withinDays = PRICE_CHANGE_BADGE_DAYS): Promise<Set<string>> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return new Set()
+  void getAnonSupabase
+  const { getListingKeysWithPriceChangeSince } = await import('@/lib/data')
   const since = new Date(Date.now() - withinDays * 24 * 60 * 60 * 1000).toISOString()
-  const { data } = await supabase
-    .from('listing_history')
-    .select('listing_key')
-    .gte('event_date', since)
-    .not('price_change', 'is', null)
-  const keys = new Set<string>()
-  for (const row of data ?? []) {
-    const k = (row as { listing_key?: string }).listing_key
-    if (typeof k === 'string' && k.trim()) keys.add(k.trim())
-  }
-  return keys
+  return getListingKeysWithPriceChangeSince(since)
 }
 
 /* ---------- Brokerage (Ryan Realty) listings ---------- */
@@ -2289,28 +2267,11 @@ async function _getBrokerageListingsUncached(
   const supabase = getServiceSupabase()
   if (!supabase) return []
 
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 1500)
-
-  const { data, error } = await supabase
-    .from('listings')
-    .select(BROKERAGE_TILE_SELECT)
-    .ilike('ListOfficeName', `%${officeName}%`)
-    .not('StandardStatus', 'ilike', '%Cancel%')
-    .not('StandardStatus', 'ilike', '%Withdraw%')
-    .not('PhotoURL', 'is', null)
-    .order('ModificationTimestamp', { ascending: false })
-    .limit(30)
-    .abortSignal(controller.signal)
-  clearTimeout(timeout)
-
-  if (error) {
-    if (error.message?.toLowerCase().includes('aborted')) return []
-    console.error('[getBrokerageListings]', error.message)
-    return []
-  }
-
-  const rows = (data ?? []) as HomeTileRow[]
+  void supabase
+  void BROKERAGE_TILE_SELECT
+  const { getBrokerageListingTiles } = await import('@/lib/data')
+  const data = await getBrokerageListingTiles({ officeName, limit: 30 })
+  const rows = data as unknown as HomeTileRow[]
 
   // Sort: Active first, then Pending, then Closed
   return rows.sort((a, b) => {

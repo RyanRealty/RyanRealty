@@ -131,6 +131,23 @@ export async function getListingDetailVideos(listingKey: string): Promise<Listin
   return (data ?? []) as ListingDetailVideoRow[]
 }
 
+/** Return the set of listing_keys that have a price-change event since the given ISO timestamp. */
+export async function getListingKeysWithPriceChangeSince(sinceIso: string): Promise<Set<string>> {
+  const sb = supabaseAnon()
+  if (!sb) return new Set()
+  const { data } = await sb
+    .from('listing_history')
+    .select('listing_key')
+    .gte('event_date', sinceIso)
+    .not('price_change', 'is', null)
+  const keys = new Set<string>()
+  for (const row of data ?? []) {
+    const k = (row as { listing_key?: string }).listing_key
+    if (typeof k === 'string' && k.trim()) keys.add(k.trim())
+  }
+  return keys
+}
+
 /** Full listing_history events for the timeline view (capped at 100). */
 export async function getListingDetailHistory(
   listingKey: string

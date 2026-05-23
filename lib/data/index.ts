@@ -93,7 +93,7 @@ export type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
 export { getListingDetail } from '@/lib/data/listings/getListingDetail'
 export { getListingRawRowByKey } from '@/lib/data/listings/getListingRawRow'
 export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
-export { getPriceDropTiles } from '@/lib/data/listings/getPriceDropTiles'
+export { getPriceDropTiles, getBrokerageListingTiles } from '@/lib/data/listings/getPriceDropTiles'
 export type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 export { getListingVideoCandidates } from '@/lib/data/listings/getListingVideoCandidates'
 export {
@@ -103,6 +103,7 @@ export {
   getOpenHouseById,
   getListingDetailVideos,
   getListingDetailHistory,
+  getListingKeysWithPriceChangeSince,
   resolveCommunityChainBySlug,
 } from '@/lib/data/listings/getListingDetailBundles'
 export type {

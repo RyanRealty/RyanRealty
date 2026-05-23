@@ -1,8 +1,7 @@
 {
-  "generatedAt": "2026-05-23T01:50:22.824Z",
-  "total": 107,
+  "generatedAt": "2026-05-23T01:53:10.785Z",
+  "total": 99,
   "byFile": {
-    "app/actions/listings.ts": 10,
     "app/actions/market-stats.ts": 4,
     "app/actions/place-content-pipeline.ts": 4,
     "lib/cma.ts": 4,
@@ -23,6 +22,7 @@
     "app/actions/communities.ts": 2,
     "app/actions/dashboard.ts": 2,
     "app/actions/expired-listings.ts": 2,
+    "app/actions/listings.ts": 2,
     "app/actions/market-reports.ts": 2,
     "app/actions/open-houses.ts": 2,
     "app/actions/videos.ts": 2,

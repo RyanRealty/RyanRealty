@@ -63,6 +63,32 @@ export type PriceDropTile = {
  * Active listings with `price_drop_count > 0`, ordered by biggest-percent-drop
  * first. Optional city filter (case-sensitive equality on PascalCase `City`).
  */
+/**
+ * Active+Pending+Closed listings for a brokerage by ListOfficeName ILIKE.
+ * Excludes Cancelled/Withdrawn rows and rows missing a primary photo.
+ * Reads from `listings` directly inside the DAL boundary because the
+ * tile materialized view doesn't project ListOfficeName.
+ */
+export async function getBrokerageListingTiles(options: {
+  officeName: string
+  limit?: number
+}): Promise<PriceDropTile[]> {
+  const sb = supabaseAnon()
+  if (!sb || !options.officeName?.trim()) return []
+  const limit = Math.min(Math.max(options.limit ?? 30, 1), 100)
+  const { data, error } = await sb
+    .from('listings')
+    .select(PROJECTION)
+    .ilike('ListOfficeName', `%${options.officeName.trim()}%`)
+    .not('StandardStatus', 'ilike', '%Cancel%')
+    .not('StandardStatus', 'ilike', '%Withdraw%')
+    .not('PhotoURL', 'is', null)
+    .order('ModificationTimestamp', { ascending: false })
+    .limit(limit)
+  if (error) return []
+  return (data ?? []) as unknown as PriceDropTile[]
+}
+
 export async function getPriceDropTiles(options?: {
   city?: string | null
   limit?: number
