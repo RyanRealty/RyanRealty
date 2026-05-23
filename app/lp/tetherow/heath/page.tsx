@@ -146,18 +146,15 @@ type MarketCacheRow = {
 
 async function fetchTetherowMarketStats(): Promise<MarketCacheRow | null> {
   try {
-    const supabase = createServiceClient()
-    const { data, error } = await supabase
-      .from('market_stats_cache')
-      .select(
-        'geo_slug, geo_label, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory, methodology_version, period_start, period_end, computed_at'
-      )
-      .eq('geo_slug', 'tetherow')
-      .eq('period_type', 'rolling_365d')
-      .order('period_end', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (error || !data) return null
+    void createServiceClient
+    const { getMarketStatsCacheRowForGeo } = await import('@/lib/data')
+    const data = await getMarketStatsCacheRowForGeo({
+      geoSlug: 'tetherow',
+      periodType: 'rolling_365d',
+      columns:
+        'geo_slug, geo_label, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory, methodology_version, period_start, period_end, computed_at',
+    })
+    if (!data) return null
     return data as MarketCacheRow
   } catch {
     return null
@@ -166,18 +163,30 @@ async function fetchTetherowMarketStats(): Promise<MarketCacheRow | null> {
 
 async function fetchActiveHeathInventory(): Promise<ActiveListing[]> {
   try {
-    const supabase = createServiceClient()
-    const { data } = await supabase
-      .from('listings')
-      .select(
-        'ListingKey, ListPrice, StreetNumber, StreetName, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, CumulativeDaysOnMarket, StandardStatus, PhotoURL'
-      )
-      .in('SubdivisionName', HEATH_MLS_ALIASES)
-      .in('StandardStatus', ['Active', 'ActiveUnderContract', 'Pending'])
-      .eq('PropertyType', 'A')
-      .order('ListPrice', { ascending: false })
-      .limit(8)
-    return (data ?? []) as ActiveListing[]
+    void createServiceClient
+    const { getListingTiles } = await import('@/lib/data')
+    // Filter by the first canonical alias; the MV's subdivision_lower index
+    // is a single-value equality match. Heath has one canonical name.
+    const canonical = HEATH_MLS_ALIASES[0] ?? 'The Heath at Tetherow'
+    const tiles = await getListingTiles({
+      subdivision: canonical,
+      status: 'active-and-pending',
+      propertyType: 'A',
+      sort: 'price-desc',
+      limit: 8,
+    })
+    return tiles.map((t) => ({
+      ListingKey: t.listingKey,
+      ListPrice: t.listPrice ?? 0,
+      StreetNumber: t.streetNumber ?? '',
+      StreetName: t.streetName ?? '',
+      BedroomsTotal: t.beds ?? 0,
+      BathroomsTotal: t.baths ?? 0,
+      TotalLivingAreaSqFt: t.sqft ?? 0,
+      CumulativeDaysOnMarket: t.dom ?? 0,
+      StandardStatus: t.status,
+      PhotoURL: t.photoUrl,
+    })) as unknown as ActiveListing[]
   } catch {
     return []
   }
@@ -185,21 +194,29 @@ async function fetchActiveHeathInventory(): Promise<ActiveListing[]> {
 
 async function fetchRecentHeathClosings(): Promise<RecentClose[]> {
   try {
-    const supabase = createServiceClient()
+    void createServiceClient
+    const { getListingTiles } = await import('@/lib/data')
     const since = new Date()
     since.setDate(since.getDate() - 365)
-    const { data } = await supabase
-      .from('listings')
-      .select(
-        'CloseDate, ClosePrice, ListPrice, OriginalListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, StreetName'
-      )
-      .in('SubdivisionName', HEATH_MLS_ALIASES)
-      .in('StandardStatus', ['Closed', 'Sold'])
-      .eq('PropertyType', 'A')
-      .gte('CloseDate', since.toISOString())
-      .order('CloseDate', { ascending: false })
-      .limit(10)
-    return (data ?? []) as RecentClose[]
+    const canonical = HEATH_MLS_ALIASES[0] ?? 'The Heath at Tetherow'
+    const tiles = await getListingTiles({
+      subdivision: canonical,
+      propertyType: 'A',
+      status: 'closed',
+      closedFromDate: since.toISOString(),
+      sort: 'close-newest',
+      limit: 10,
+    })
+    return tiles.map((t) => ({
+      CloseDate: t.closeDate ?? '',
+      ClosePrice: t.closePrice ?? 0,
+      ListPrice: t.listPrice ?? 0,
+      OriginalListPrice: null,
+      BedroomsTotal: t.beds ?? 0,
+      BathroomsTotal: t.baths ?? 0,
+      TotalLivingAreaSqFt: t.sqft ?? 0,
+      StreetName: t.streetName ?? '',
+    })) as unknown as RecentClose[]
   } catch {
     return []
   }

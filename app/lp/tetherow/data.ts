@@ -109,18 +109,15 @@ export type TetherowBoundary = {
 /** Pull the rolling-365d Tetherow KPI row. */
 export async function fetchTetherowKpi(): Promise<TetherowKpi | null> {
   try {
-    const supabase = createServiceClient()
-    const { data, error } = await supabase
-      .from('market_stats_cache')
-      .select(
-        'geo_slug, geo_label, period_start, period_end, computed_at, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory, methodology_version'
-      )
-      .eq('geo_slug', tetherowConfig.geo_slug)
-      .eq('period_type', 'rolling_365d')
-      .order('period_end', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (error || !data) return null
+    void createServiceClient
+    const { getMarketStatsCacheRowForGeo } = await import('@/lib/data')
+    const data = await getMarketStatsCacheRowForGeo({
+      geoSlug: tetherowConfig.geo_slug,
+      periodType: 'rolling_365d',
+      columns:
+        'geo_slug, geo_label, period_start, period_end, computed_at, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory, methodology_version',
+    })
+    if (!data) return null
     const r = data as Record<string, unknown>
     return {
       geoSlug: String(r['geo_slug']),
@@ -199,20 +196,27 @@ export async function fetchTetherowActiveListings(): Promise<TetherowActiveListi
 /** Pull the last 90 days of Tetherow closings. Up to 8 rows. */
 export async function fetchTetherowRecentClosings(): Promise<TetherowRecentClosing[]> {
   try {
-    const supabase = createServiceClient()
+    void createServiceClient
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
-    const { data, error } = await supabase
-      .from('listings')
-      .select(
-        'CloseDate, ClosePrice, ListPrice, OriginalListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName'
-      )
-      .eq('SubdivisionName', 'Tetherow')
-      .in('StandardStatus', ['Closed', 'Sold'])
-      .gte('CloseDate', ninetyDaysAgo)
-      .order('CloseDate', { ascending: false })
-      .limit(8)
-    if (error || !data) return []
-    return (data as Array<Record<string, unknown>>).map((r) => {
+    const { getListingTiles } = await import('@/lib/data')
+    const tiles = await getListingTiles({
+      subdivision: 'Tetherow',
+      status: 'closed',
+      closedFromDate: ninetyDaysAgo,
+      sort: 'close-newest',
+      limit: 8,
+    })
+    return tiles.map((t) => {
+      const r: Record<string, unknown> = {
+        CloseDate: t.closeDate,
+        ClosePrice: t.closePrice,
+        ListPrice: t.listPrice,
+        OriginalListPrice: null,
+        BedroomsTotal: t.beds,
+        BathroomsTotal: t.baths,
+        TotalLivingAreaSqFt: t.sqft,
+        SubdivisionName: t.subdivisionName,
+      }
       const closePrice = r['ClosePrice'] != null ? Number(r['ClosePrice']) : null
       const listPrice = r['ListPrice'] != null ? Number(r['ListPrice']) : null
       const livingArea =
@@ -249,18 +253,18 @@ export async function fetchTetherowRecentClosings(): Promise<TetherowRecentClosi
  *  Tetherow-first array sorted to match the static-HTML comparison column order. */
 export async function fetchTetherowPeerComparison(): Promise<TetherowPeerRow[]> {
   try {
-    const supabase = createServiceClient()
+    void createServiceClient
     const peers = tetherowConfig.comparison_peers as string[]
     const allSlugs = [tetherowConfig.geo_slug, ...peers]
-    const { data, error } = await supabase
-      .from('market_stats_cache')
-      .select(
-        'geo_slug, geo_label, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory, period_end'
-      )
-      .in('geo_slug', allSlugs)
-      .eq('period_type', 'rolling_365d')
-      .order('period_end', { ascending: false })
-    if (error || !data) return []
+    const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
+    const data = await getMarketStatsCacheRowsForGeos({
+      geoSlugs: allSlugs,
+      periodType: 'rolling_365d',
+      columns:
+        'geo_slug, geo_label, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory, period_end',
+      orderBy: { column: 'period_end', ascending: false },
+    })
+    if (!data) return []
     // Multiple Sunriver rows may exist (per-day snapshots). Take the newest
     // per geo_slug.
     const seen = new Set<string>()

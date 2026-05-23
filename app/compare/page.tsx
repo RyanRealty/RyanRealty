@@ -63,66 +63,57 @@ export default async function ComparePage({
   let listings: CompareListingData[] = []
 
   if (url?.trim() && key?.trim()) {
-    const supabase = createClient(url, key)
-    const select = 'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, PropertyType, OnMarketDate, CloseDate'
+    void createClient
+    const { getListingTiles, getListingDetailPhotos } = await import('@/lib/data')
 
-    // Fetch listings by both ListNumber and ListingKey (match whichever column hits)
-    const [byNumber, byKey] = await Promise.all([
-      supabase.from('listings').select(select).in('ListNumber', ids),
-      supabase.from('listings').select(select).in('ListingKey', ids),
+    const [byNumberTiles, byKeyTiles] = await Promise.all([
+      getListingTiles({ listNumbers: ids, status: 'all', limit: 50 }),
+      getListingTiles({ listingKeys: ids, status: 'all', limit: 50 }),
     ])
-
-    const allRows = [...(byNumber.data ?? []), ...(byKey.data ?? [])]
-    // Dedupe by ListingKey
+    const allTiles = [...byNumberTiles, ...byKeyTiles]
     const seen = new Set<string>()
-    const deduped = allRows.filter((r) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const k = String((r as any).ListingKey ?? (r as any).ListNumber ?? '')
-      if (seen.has(k)) return false
+    const deduped = allTiles.filter((t) => {
+      const k = t.listingKey || t.listNumber || ''
+      if (!k || seen.has(k)) return false
       seen.add(k)
       return true
     })
 
-    // Also fetch hero photos
-    const listingKeys = deduped.map((r) => String((r as Record<string, unknown>).ListingKey ?? ''))
-    const { data: photos } = await supabase
-      .from('listing_photos')
-      .select('listing_key, photo_url')
-      .in('listing_key', listingKeys)
-      .eq('is_hero', true)
-
+    const photoArrays = await Promise.all(
+      deduped.map((t) => getListingDetailPhotos(t.listingKey).catch(() => []))
+    )
     const photoMap = new Map<string, string>()
-    for (const p of (photos ?? []) as { listing_key: string; photo_url: string }[]) {
-      if (p.photo_url) photoMap.set(p.listing_key, p.photo_url)
-    }
+    deduped.forEach((t, idx) => {
+      const photos = photoArrays[idx] ?? []
+      const hero = photos.find((p) => p.is_hero === true) ?? photos[0]
+      if (hero?.photo_url) photoMap.set(t.listingKey, hero.photo_url)
+    })
 
-    listings = deduped.map((r) => {
-      const row = r as Record<string, unknown>
-      const listingKey = String(row.ListingKey ?? row.ListNumber ?? '')
-      const streetParts = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()
-      const addressParts = [streetParts, row.City, row.State, row.PostalCode].filter(Boolean)
+    listings = deduped.map((t) => {
+      const streetParts = [t.streetNumber, t.streetName].filter(Boolean).join(' ').trim()
+      const addressParts = [streetParts, t.city, 'OR', t.postalCode].filter(Boolean)
       return {
-        listingKey,
+        listingKey: t.listingKey,
         address: addressParts.join(', '),
-        city: (row.City as string) ?? null,
-        state: (row.State as string) ?? null,
-        postalCode: (row.PostalCode as string) ?? null,
-        subdivision: (row.SubdivisionName as string) ?? null,
-        price: (row.ListPrice as number) ?? null,
-        beds: (row.BedroomsTotal as number) ?? null,
-        baths: (row.BathroomsTotal as number) ?? null,
-        sqft: (row.TotalLivingAreaSqFt as number) ?? null,
-        lotSizeAcres: (row.lot_size_acres as number) ?? null,
-        yearBuilt: (row.YearBuilt as number) ?? null,
-        garageSpaces: (row.GarageSpaces as number) ?? null,
-        hoa: (row.AssociationFee as number) ?? null,
-        taxes: (row.TaxAnnualAmount as number) ?? null,
-        dom: daysOnMarket(row.OnMarketDate as string),
-        status: (row.StandardStatus as string) ?? null,
-        propertyType: (row.PropertyType as string) ?? null,
-        photoUrl: photoMap.get(listingKey) ?? (row.PhotoURL as string) ?? null,
-        latitude: (row.Latitude as number) ?? null,
-        longitude: (row.Longitude as number) ?? null,
+        city: t.city,
+        state: 'OR',
+        postalCode: t.postalCode,
+        subdivision: t.subdivisionName,
+        price: t.listPrice,
+        beds: t.beds,
+        baths: t.baths,
+        sqft: t.sqft,
+        lotSizeAcres: t.lotSizeAcres,
+        yearBuilt: t.yearBuilt,
+        garageSpaces: t.garageSpaces,
+        hoa: null,
+        taxes: null,
+        dom: t.dom,
+        status: t.status,
+        propertyType: t.propertyType,
+        photoUrl: photoMap.get(t.listingKey) ?? t.photoUrl ?? null,
+        latitude: t.lat,
+        longitude: t.lng,
       }
     })
   }

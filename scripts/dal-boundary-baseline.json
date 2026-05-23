@@ -1,12 +1,9 @@
 {
-  "generatedAt": "2026-05-23T02:01:17.967Z",
-  "total": 76,
+  "generatedAt": "2026-05-23T02:03:42.744Z",
+  "total": 67,
   "byFile": {
     "lib/cma.ts": 4,
-    "app/compare/page.tsx": 3,
     "app/home-valuation/actions.ts": 3,
-    "app/lp/tetherow/data.ts": 3,
-    "app/lp/tetherow/heath/page.tsx": 3,
     "lib/cma-delivery.ts": 3,
     "lib/expired-listing-processor.ts": 3,
     "app/actions/activity-feed.ts": 2,
