@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.284.1 (2026-05-23)
+
+### Other
+- homepage: add Featured listings section (SITE_SPEC line 65)
+
+---
+
+
 ## v1.284.0 (2026-05-23)
 
 ### Features
