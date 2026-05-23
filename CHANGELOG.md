@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.7 (2026-05-23)
+
+### Maintenance
+- perf: lazy-load 3 heavy client modules to ratchet initial bundle (SITE_SPEC line 50)
+
+---
+
+
 ## v1.288.6 (2026-05-23)
 
 ### Other
