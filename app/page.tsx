@@ -24,7 +24,7 @@ import { listingsBrowsePath } from '@/lib/slug'
 import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import VideoToursRow from '@/components/videos/VideoToursRow'
 import AdUnit from '@/components/AdUnit'
-import HomeValuationCta from '@/components/HomeValuationCta'
+import HomeCtaDuo from '@/components/home/HomeCtaDuo'
 import BrokerageListingsSlider from '@/components/home/BrokerageListingsSlider'
 import PopularSearchesSection from '@/components/home/PopularSearchesSection'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -533,61 +533,12 @@ export default async function Home() {
       </Suspense>
 
 
-      {/* Static CTA sections — render immediately */}
-      <section className="border-b border-border bg-card px-4 py-14 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-xl border border-border bg-background p-6 shadow-sm sm:p-8">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-              </div>
-              <h2 className="mt-4 text-xl font-bold tracking-tight text-foreground sm:text-2xl">Never miss a new listing</h2>
-              <p className="mt-2 text-muted-foreground">
-                Save a search and get instant alerts when matching homes hit the market. Set your criteria once and we handle the rest.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link href="/account/saved-searches" className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-                  Set Up Alerts
-                </Link>
-                <Link href={listingsBrowsePath()} className="rounded-lg border border-border px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted">
-                  Browse Listings
-                </Link>
-              </div>
-            </div>
-            <div className="rounded-xl border border-border bg-background p-6 shadow-sm sm:p-8">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </div>
-              <h2 className="mt-4 text-xl font-bold tracking-tight text-foreground sm:text-2xl">Your local team</h2>
-              <p className="mt-2 text-muted-foreground">
-                Brokers who live and work across Central Oregon neighborhoods. Local knowledge, honest guidance, and a team approach to every transaction.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link href="/team" className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-                  Meet the Team
-                </Link>
-                <Link href="/contact" className="rounded-lg border border-border px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted">
-                  Contact Us
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 pb-12 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <HomeValuationCta />
-        </div>
-      </section>
+      {/* CTA duo — SITE_SPEC line 69. Seller home value LP + buyer listing
+          alerts LP. No modal popup paywall; tracking fires via trackCtaClick
+          on click. The standalone HomeValuationCta was retired since its
+          /sell/valuation target is superseded by the spec-aligned
+          /lp/seller-home-value LP that lives inside HomeCtaDuo. */}
+      <HomeCtaDuo />
 
       <EmailSignup />
     </main>
