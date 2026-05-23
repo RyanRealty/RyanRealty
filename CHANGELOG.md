@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.10 (2026-05-23)
+
+### Maintenance
+- perf(activity-feed): migrate parallel listings lookups + add listNumbers DAL filter — 344→342
+
+---
+
+
 ## v1.280.9 (2026-05-23)
 
 ### Maintenance
