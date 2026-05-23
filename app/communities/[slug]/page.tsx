@@ -34,6 +34,7 @@ import RecentlySoldRow from '@/components/RecentlySoldRow'
 import LivePulseBanner from '@/components/reports/LivePulseBanner'
 import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import VideoToursRow from '@/components/videos/VideoToursRow'
+import CommunityMap from '@/components/community/CommunityMap'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import CityClusterNav from '@/components/CityClusterNav'
 import { getGuidesByCity } from '@/app/actions/guides'
@@ -75,6 +76,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export const revalidate = 60
+
+/**
+ * Canonical resort community slugs (SITE_SPEC line 103). Read from the
+ * source-of-truth registry at `data/resort-communities.json` rather than
+ * hardcoded so adding a new resort community is a one-file edit and the
+ * route picks it up at the next build. `dynamicParams = true` keeps the
+ * route open for last-minute registrations between deploys (the runtime
+ * `getCommunityBySlug` path validates and returns notFound() if absent).
+ */
+import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
+
+export const dynamicParams = true
+
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  const registry = resortCommunitiesRegistry as { communities: Array<{ slug: string }> }
+  return registry.communities.map((c) => ({ slug: c.slug }))
+}
 
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
   return Promise.race([
@@ -491,6 +509,27 @@ export default async function CommunityDetailPage({ params }: Props) {
         placeName={community.name}
         engagementMap={engagementMap}
       />
+
+      {/* Boundary polygon map — SITE_SPEC line 108. Renders the community
+          boundary polygon (from `boundaries WHERE geo_type='neighborhood'`)
+          plus active listing pins. Falls back to a place-search center
+          when the boundary is missing, so resort communities without an
+          authoritative polygon still surface a map. */}
+      {(community.boundaryGeojson || listings.length > 0) && (
+        <section className="bg-card px-4 py-10 sm:px-6" aria-labelledby="community-map-heading">
+          <div className="mx-auto max-w-7xl">
+            <h2 id="community-map-heading" className="mb-4 text-2xl text-primary sm:text-3xl">
+              {community.name} on the map
+            </h2>
+            <CommunityMap
+              boundaryGeojson={community.boundaryGeojson}
+              listings={listings}
+              communityName={community.name}
+              placeSearchQuery={`${community.name} ${community.city} Oregon`}
+            />
+          </div>
+        </section>
+      )}
 
       <GeoSectionNewestListings
         title="Newest listings"

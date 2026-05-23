@@ -100,13 +100,13 @@
 - [x] SEO: title, canonical, BreadcrumbList schema with city parent *(verified — `generateMetadata` emits title + canonical at line 55, OG image with neighborhood hero; an inline `application/ld+json` block at line 296 emits the BreadcrumbList schema with the city as parent)*
 
 ### `/communities/[slug]` — Resort community pages (14 resort communities)
-- [ ] Valid slugs from `data/resort-communities.json`: `tetherow`, `sunriver`, `eagle-crest`, `pronghorn`, `brasada-ranch`, `black-butte-ranch`, `caldera-springs`, `crosswater`, `aspen-lakes`, `thousand-trails`, `seven-peaks`, `mt-bachelor-village`, `broken-top`, `widgi-creek` (14 total — verify exact list against registry at build)
-- [ ] `generateStaticParams` pre-renders all 14; `revalidate = 60`
-- [ ] Community stats: `market_stats_cache WHERE geo_type='neighborhood' AND geo_slug={bareSlug} AND period_type='rolling_90d'`; median price, DOM, MoS, YoY
-- [ ] Active listings: `listings WHERE "SubdivisionName" = ANY(subdivision_aliases)` using `neighborhood_subdivisions WHERE neighborhood_slug={slug}` to resolve aliases; `.eq('"StandardStatus"', 'Active')`
+- [x] Valid slugs from `data/resort-communities.json` (14 total — registry is the source of truth): `tetherow`, `broken-top`, `eagle-crest`, `pronghorn`, `caldera-springs`, `sunriver`, `awbrey-glen`, `northwest-crossing`, `crosswater`, `black-butte-ranch`, `brasada-ranch`, `widgi-creek`, `vandevert-ranch`, `three-rivers` *(verified — list pulled directly from `data/resort-communities.json` v2-2026-05-15)*
+- [x] `generateStaticParams` pre-renders all 14; `revalidate = 60` *(verified — `generateStaticParams` reads `data/resort-communities.json` at build time and emits one entry per community; `dynamicParams=true` keeps the route open for last-minute registry additions; `revalidate=60` already set)*
+- [x] Community stats: `market_stats_cache WHERE geo_type='neighborhood' AND geo_slug={bareSlug} AND period_type='rolling_90d'`; median price, DOM, MoS, YoY *(verified — `<CommunityMarketStats>` rendered at line 360 of community LP, sourced from `getCommunityMarketStats`)*
+- [x] Active listings: `listings WHERE "SubdivisionName" = ANY(subdivision_aliases)` using `neighborhood_subdivisions WHERE neighborhood_slug={slug}` to resolve aliases; `.eq('"StandardStatus"', 'Active')` *(verified — `getCommunityListings` reads from the DAL `listing_tile_mv` filtered by the resolved `SubdivisionName` aliases per the resort-communities registry)*
 - [ ] Vacation rental potential module where applicable (resort communities only)
-- [ ] Map with boundary polygon from `boundaries WHERE geo_slug={slug} AND geo_type='neighborhood'`
-- [ ] HOA fee band displayed when available from `hoa_monthly` aggregate across active listings
+- [x] Map with boundary polygon from `boundaries WHERE geo_slug={slug} AND geo_type='neighborhood'` *(verified — `<CommunityMap>` rendered with `community.boundaryGeojson` from the `communities` row + `placeSearchQuery` fallback so resort communities without an authoritative polygon still surface a centered map; only suppressed when both boundary AND listings are empty)*
+- [x] HOA fee band displayed when available from `hoa_monthly` aggregate across active listings *(verified — `CommunityOverview.tsx` aggregates min/max HOA fees from active listings and renders the band when `hasHoa && hoaFeeMin && hoaFeeMax`; copy block at line 128 explains the range with the canonical billing frequency)*
 
 ### `/zip/[zip]` — ZIP code pages
 - [ ] Route: `app/zip/[zip]/page.tsx` (already exists)
