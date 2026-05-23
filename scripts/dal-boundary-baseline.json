@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T00:19:35.881Z",
-  "total": 342,
+  "generatedAt": "2026-05-23T00:22:06.285Z",
+  "total": 340,
   "byFile": {
     "app/actions/listings.ts": 66,
     "app/actions/sync-spark.ts": 28,
@@ -24,7 +24,6 @@
     "app/api/calendar/route.ts": 4,
     "app/api/cron/optimization-loop/route.ts": 4,
     "app/api/cron/sync-verify-full-history/route.ts": 4,
-    "app/api/og/route.tsx": 4,
     "app/api/pdf/listing/route.ts": 4,
     "app/lp/bend/page.tsx": 4,
     "lib/cma.ts": 4,
@@ -45,6 +44,7 @@
     "app/actions/open-houses.ts": 2,
     "app/actions/photo-classification.ts": 2,
     "app/actions/videos.ts": 2,
+    "app/api/og/route.tsx": 2,
     "app/api/open-houses/rsvp/route.ts": 2,
     "app/api/pdf/cma/route.ts": 2,
     "components/listing/ListingValuationSection.tsx": 2,

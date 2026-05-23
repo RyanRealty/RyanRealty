@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@supabase/supabase-js'
+import { getListingTiles } from '@/lib/data'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -20,29 +21,32 @@ export async function GET(request: Request) {
   if (type === 'listing' && id) {
     const supabase = getSupabase()
     if (supabase) {
-      const { data: listing } = await supabase
-        .from('listings')
-        .select('listing_key, list_price, beds_total, baths_full, living_area, property_id')
-        .eq('listing_key', id)
-        .maybeSingle()
-      if (listing) {
-        const r = listing as { listing_key: string; list_price?: number; beds_total?: number; baths_full?: number; living_area?: number; property_id?: string }
-        const { data: prop } = r.property_id
-          ? await supabase.from('properties').select('unparsed_address, street_number, street_name, city').eq('id', r.property_id).maybeSingle()
-          : { data: null }
-        const p = prop as { unparsed_address?: string; street_number?: string; street_name?: string; city?: string } | null
-        const address = p?.unparsed_address ?? [p?.street_number, p?.street_name].filter(Boolean).join(' ') ?? ''
-        const { data: photo } = await supabase
-          .from('listing_photos')
-          .select('photo_url')
-          .eq('listing_key', r.listing_key)
-          .eq('is_hero', true)
-          .limit(1)
-          .maybeSingle()
-        const photoUrl = (photo as { photo_url?: string } | null)?.photo_url
-        const price = r.list_price != null && r.list_price > 0 ? `$${r.list_price.toLocaleString()}` : ''
-        const stats = [r.beds_total, r.baths_full, r.living_area].filter(Boolean)
-        const statsStr = stats.length ? `${r.beds_total ?? '—'} bed · ${r.baths_full ?? '—'} bath${r.living_area ? ` · ${Number(r.living_area).toLocaleString()} sq ft` : ''}` : ''
+      // DAL: read tile via listingKeys filter (returns one row with full
+      // address + photo URL inlined). Replaces the prior 3-query chain
+      // (listings + properties + listing_photos) with a single MV lookup.
+      const tiles = await getListingTiles({
+        listingKeys: [id],
+        status: 'all',
+        limit: 1,
+      })
+      const tile = tiles[0]
+      if (tile) {
+        const address = [tile.streetNumber, tile.streetName].filter(Boolean).join(' ')
+        let photoUrl: string | undefined = tile.photoUrl ?? undefined
+        if (!photoUrl) {
+          // Fall back to listing_photos for hero photo if the MV's PhotoURL is empty
+          const { data: photo } = await supabase
+            .from('listing_photos')
+            .select('photo_url')
+            .eq('listing_key', tile.listingKey)
+            .eq('is_hero', true)
+            .limit(1)
+            .maybeSingle()
+          photoUrl = (photo as { photo_url?: string } | null)?.photo_url
+        }
+        const price = tile.listPrice != null && tile.listPrice > 0 ? `$${tile.listPrice.toLocaleString()}` : ''
+        const stats = [tile.beds, tile.baths, tile.sqft].filter(Boolean)
+        const statsStr = stats.length ? `${tile.beds ?? '—'} bed · ${tile.baths ?? '—'} bath${tile.sqft ? ` · ${tile.sqft.toLocaleString()} sq ft` : ''}` : ''
         return new ImageResponse(
           (
             <div
