@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.19 (2026-05-23)
+
+### Other
+- DAL: move subdivision_flags + communities CRUD + agent listing stats
+
+---
+
+
 ## v1.282.18 (2026-05-23)
 
 ### Other
