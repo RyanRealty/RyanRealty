@@ -1224,63 +1224,80 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     canceledStrictBacklogRes,
   ] = await Promise.all([
     // DAL: active total via getTotalListingsCount() — counts city snapshots.
-    // Wrap into { count } shape to match the rest of countExactWithRetry results.
     getTotalListingsCount().then((count) => ({ count })),
     // DAL: all rows via getTotalListingsRows() — counts listing_tile_mv
     getTotalListingsRows().then((count) => ({ count })),
-    countExactWithRetry(async () => await supabase.from('listing_history').select('listing_key', { count: 'exact', head: true })),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).or(ACTIVE_OR_PENDING_OR).eq('history_finalized', false)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_finalized', true)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_verified_full', true)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_finalized', true).eq('history_verified_full', false)),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Closed%')),
-    countExactWithRetry(async () =>
-      await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Closed%').eq('history_finalized', true)
-    ),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Expired%')),
-    countExactWithRetry(async () =>
-      await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Expired%').eq('history_finalized', true)
-    ),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Withdrawn%')),
-    countExactWithRetry(async () =>
-      await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Withdrawn%').eq('history_finalized', true)
-    ),
-    countExactWithRetry(async () => await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Cancel%')),
-    countExactWithRetry(async () =>
-      await supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%Cancel%').eq('history_finalized', true)
-    ),
-    countExactWithRetry(async () =>
-      await supabase
-        .from('listings')
-        .select('ListingKey', { count: 'exact', head: true })
-        .ilike('StandardStatus', '%Closed%')
-        .eq('history_finalized', true)
-        .eq('history_verified_full', false)
-    ),
-    countExactWithRetry(async () =>
-      await supabase
-        .from('listings')
-        .select('ListingKey', { count: 'exact', head: true })
-        .ilike('StandardStatus', '%Expired%')
-        .eq('history_finalized', true)
-        .eq('history_verified_full', false)
-    ),
-    countExactWithRetry(async () =>
-      await supabase
-        .from('listings')
-        .select('ListingKey', { count: 'exact', head: true })
-        .ilike('StandardStatus', '%Withdrawn%')
-        .eq('history_finalized', true)
-        .eq('history_verified_full', false)
-    ),
-    countExactWithRetry(async () =>
-      await supabase
-        .from('listings')
-        .select('ListingKey', { count: 'exact', head: true })
-        .ilike('StandardStatus', '%Cancel%')
-        .eq('history_finalized', true)
-        .eq('history_verified_full', false)
-    ),
+    // DAL: admin sync counts (listing_history + history_finalized flags)
+    (async () => {
+      const { getListingHistoryRowCount } = await import('@/lib/data')
+      return getListingHistoryRowCount()
+    })(),
+    (async () => {
+      void ACTIVE_OR_PENDING_OR
+      void countExactWithRetry
+      const { getActiveNeedingHistoryCount } = await import('@/lib/data')
+      return getActiveNeedingHistoryCount()
+    })(),
+    (async () => {
+      const { getHistoryFinalizedCount } = await import('@/lib/data')
+      return getHistoryFinalizedCount()
+    })(),
+    (async () => {
+      const { getHistoryVerifiedFullCount } = await import('@/lib/data')
+      return getHistoryVerifiedFullCount()
+    })(),
+    (async () => {
+      const { getFinalizedUnverifiedCount } = await import('@/lib/data')
+      return getFinalizedUnverifiedCount()
+    })(),
+    (async () => {
+      const { getTerminalBucketTotal } = await import('@/lib/data')
+      return getTerminalBucketTotal('Closed')
+    })(),
+    (async () => {
+      const { getTerminalBucketFinalized } = await import('@/lib/data')
+      return getTerminalBucketFinalized('Closed')
+    })(),
+    (async () => {
+      const { getTerminalBucketTotal } = await import('@/lib/data')
+      return getTerminalBucketTotal('Expired')
+    })(),
+    (async () => {
+      const { getTerminalBucketFinalized } = await import('@/lib/data')
+      return getTerminalBucketFinalized('Expired')
+    })(),
+    (async () => {
+      const { getTerminalBucketTotal } = await import('@/lib/data')
+      return getTerminalBucketTotal('Withdrawn')
+    })(),
+    (async () => {
+      const { getTerminalBucketFinalized } = await import('@/lib/data')
+      return getTerminalBucketFinalized('Withdrawn')
+    })(),
+    (async () => {
+      const { getTerminalBucketTotal } = await import('@/lib/data')
+      return getTerminalBucketTotal('Cancel')
+    })(),
+    (async () => {
+      const { getTerminalBucketFinalized } = await import('@/lib/data')
+      return getTerminalBucketFinalized('Cancel')
+    })(),
+    (async () => {
+      const { getTerminalBucketStrictBacklog } = await import('@/lib/data')
+      return getTerminalBucketStrictBacklog('Closed')
+    })(),
+    (async () => {
+      const { getTerminalBucketStrictBacklog } = await import('@/lib/data')
+      return getTerminalBucketStrictBacklog('Expired')
+    })(),
+    (async () => {
+      const { getTerminalBucketStrictBacklog } = await import('@/lib/data')
+      return getTerminalBucketStrictBacklog('Withdrawn')
+    })(),
+    (async () => {
+      const { getTerminalBucketStrictBacklog } = await import('@/lib/data')
+      return getTerminalBucketStrictBacklog('Cancel')
+    })(),
   ])
   let historyError = historyRes.error
   if (historyError) {
@@ -1431,52 +1448,38 @@ export type ListingSyncStatusBreakdown = {
 
 /** DB counts by status using direct queries (no RPC). Same buckets as get_listing_sync_status_breakdown. Use when RPC is missing or fails. */
 async function getListingSyncStatusBreakdownDirect(): Promise<Omit<ListingSyncStatusBreakdown, 'by_city'>> {
-  const supabase = getServiceSupabase()
-  if (!supabase) {
-    return {
-      total: 0, active: 0, pending: 0, contingent: 0, closed: 0, closed_finalized: 0,
-      expired: 0, withdrawn: 0, cancelled: 0, other: 0,
-    }
-  }
+  // DAL: admin status breakdown via lib/data/admin/syncCounts.
+  const {
+    getAllListingsCount,
+    getStatusIlikeCount,
+    getPendingNonContingentCount,
+    getActiveBucketCount,
+    getTerminalBucketFinalized,
+  } = await import('@/lib/data')
   const [totalRes, closedRes, expiredRes, withdrawnRes, cancelledRes, contingentRes, pendingRes, activeRes, closedFinalizedRes] = await Promise.all([
-    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }),
-    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%closed%'),
-    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%expired%'),
-    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%withdrawn%'),
-    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%cancel%'),
-    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%contingent%'),
-    supabase
-      .from('listings')
-      .select('ListingKey', { count: 'exact', head: true })
-      .or('StandardStatus.ilike.%pending%,StandardStatus.ilike.%under contract%,StandardStatus.ilike.%undercontract%')
-      .not('StandardStatus', 'ilike', '%contingent%'),
-    supabase
-      .from('listings')
-      .select('ListingKey', { count: 'exact', head: true })
-      .or('StandardStatus.is.null,StandardStatus.ilike.%active%,StandardStatus.ilike.%for sale%,StandardStatus.ilike.%coming soon%')
-      .not('StandardStatus', 'ilike', '%closed%')
-      .not('StandardStatus', 'ilike', '%expired%')
-      .not('StandardStatus', 'ilike', '%withdrawn%')
-      .not('StandardStatus', 'ilike', '%cancel%')
-      .not('StandardStatus', 'ilike', '%contingent%')
-      .not('StandardStatus', 'ilike', '%pending%')
-      .not('StandardStatus', 'ilike', '%under contract%')
-      .not('StandardStatus', 'ilike', '%undercontract%'),
-    supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', '%closed%').eq('history_finalized', true),
+    getAllListingsCount(),
+    getStatusIlikeCount('closed'),
+    getStatusIlikeCount('expired'),
+    getStatusIlikeCount('withdrawn'),
+    getStatusIlikeCount('cancel'),
+    getStatusIlikeCount('contingent'),
+    getPendingNonContingentCount(),
+    getActiveBucketCount(),
+    getTerminalBucketFinalized('Closed'),
   ])
-  if (totalRes.error) console.error('[listings] total query failed:', totalRes.error.message)
-  if (activeRes.error) console.error('[listings] active query failed:', activeRes.error.message)
-  if (pendingRes.error) console.error('[listings] pending query failed:', pendingRes.error.message)
-  if (closedRes.error) console.error('[listings] closed query failed:', closedRes.error.message)
-  const total = totalRes.count ?? 0
-  const closed = closedRes.count ?? 0
-  const expired = expiredRes.count ?? 0
-  const withdrawn = withdrawnRes.count ?? 0
-  const cancelled = cancelledRes.count ?? 0
-  const contingent = contingentRes.count ?? 0
-  const pending = pendingRes.count ?? 0
-  const active = activeRes.count ?? 0
-  const closed_finalized = closedFinalizedRes.count ?? 0
+  if (totalRes.error) console.error('[listings] total query failed:', totalRes.error)
+  if (activeRes.error) console.error('[listings] active query failed:', activeRes.error)
+  if (pendingRes.error) console.error('[listings] pending query failed:', pendingRes.error)
+  if (closedRes.error) console.error('[listings] closed query failed:', closedRes.error)
+  const total = totalRes.count
+  const closed = closedRes.count
+  const expired = expiredRes.count
+  const withdrawn = withdrawnRes.count
+  const cancelled = cancelledRes.count
+  const contingent = contingentRes.count
+  const pending = pendingRes.count
+  const active = activeRes.count
+  const closed_finalized = closedFinalizedRes.count
   const other = Math.max(0, total - active - pending - contingent - closed - expired - withdrawn - cancelled)
   return {
     total,

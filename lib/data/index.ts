@@ -126,6 +126,24 @@ export {
 } from '@/lib/data/engagement'
 export type { EngagementCounts } from '@/lib/data/engagement'
 
+// Admin sync verification counts (lives behind DAL boundary because the
+// sync-internal flags aren't on the public materialized view)
+export {
+  getListingHistoryRowCount,
+  getActiveNeedingHistoryCount,
+  getHistoryFinalizedCount,
+  getHistoryVerifiedFullCount,
+  getFinalizedUnverifiedCount,
+  getTerminalBucketTotal,
+  getTerminalBucketFinalized,
+  getTerminalBucketStrictBacklog,
+  getAllListingsCount,
+  getStatusIlikeCount,
+  getPendingNonContingentCount,
+  getActiveBucketCount,
+} from '@/lib/data/admin/syncCounts'
+export type { CountResult, TerminalBucket } from '@/lib/data/admin/syncCounts'
+
 // More functions get exported here as Wave 1-3 lands them.
 
 // Cache helpers ----------------------------------------------------
