@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.53 (2026-05-23)
+
+### Other
+- SITE_SPEC: record DAL boundary = 0 acceptance line
+
+---
+
+
 ## v1.282.52 (2026-05-23)
 
 ### Other
