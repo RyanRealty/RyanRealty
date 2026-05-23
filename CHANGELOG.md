@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.51 (2026-05-23)
+
+### Other
+- DAL: ZERO VIOLATIONS — final 16 files migrated
+
+---
+
+
 ## v1.282.50 (2026-05-23)
 
 ### Other
