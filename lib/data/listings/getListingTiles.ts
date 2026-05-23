@@ -79,6 +79,10 @@ const FilterSchema = z.object({
   modifiedAfter: z.string().min(1).max(40).optional(),
   /** modified_at < X — used for "prev" adjacency queries. */
   modifiedBefore: z.string().min(1).max(40).optional(),
+  /** close_date >= X — used for closed-sales report windows. */
+  closedFromDate: z.string().min(8).max(40).optional(),
+  /** close_date <= X — used for closed-sales report windows. */
+  closedToDate: z.string().min(8).max(40).optional(),
   /**
    * MLS PropertyType code:
    *   'A' = Residential (SFR + multi-family)
@@ -233,6 +237,8 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   }
   if (parsed.modifiedAfter) query = query.gt('modified_at', parsed.modifiedAfter)
   if (parsed.modifiedBefore) query = query.lt('modified_at', parsed.modifiedBefore)
+  if (parsed.closedFromDate) query = query.gte('close_date', parsed.closedFromDate)
+  if (parsed.closedToDate) query = query.lte('close_date', parsed.closedToDate)
   if (parsed.searchQuery) {
     const safe = parsed.searchQuery.replace(/%/g, '').replace(/\\/g, '').replace(/[,()]/g, '').trim()
     if (safe.length >= 2) {

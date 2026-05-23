@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T01:17:15.032Z",
-  "total": 206,
+  "generatedAt": "2026-05-23T01:18:47.476Z",
+  "total": 204,
   "byFile": {
     "app/actions/sync-spark.ts": 28,
     "lib/listing-processor.ts": 16,
@@ -9,7 +9,6 @@
     "app/actions/area-guide-upload.ts": 7,
     "app/api/cron/sync-delta/route.ts": 7,
     "lib/fetch-listings-with-videos.ts": 6,
-    "app/actions/market-reports.ts": 4,
     "app/actions/market-stats.ts": 4,
     "app/actions/place-content-pipeline.ts": 4,
     "app/api/calendar/route.ts": 4,
@@ -36,6 +35,7 @@
     "app/actions/communities.ts": 2,
     "app/actions/dashboard.ts": 2,
     "app/actions/expired-listings.ts": 2,
+    "app/actions/market-reports.ts": 2,
     "app/actions/open-houses.ts": 2,
     "app/actions/videos.ts": 2,
     "app/api/og/route.tsx": 2,

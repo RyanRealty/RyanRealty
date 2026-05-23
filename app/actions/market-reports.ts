@@ -128,17 +128,33 @@ async function getClosedSalesFromListings(
   periodStart: Date,
   periodEnd: Date
 ): Promise<MarketReportByCity[]> {
+  void supabase
   const startStr = periodStart.toISOString().slice(0, 10)
   const endStr = periodEnd.toISOString().slice(0, 10)
-  const { data: rows } = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, City, CloseDate, ListDate, ListPrice, ClosePrice, details, PropertyType, StreetNumber, StreetName, SubdivisionName, PhotoURL')
-    .ilike('StandardStatus', '%closed%')
-    .not('CloseDate', 'is', null)
-    .gte('CloseDate', `${startStr}T00:00:00.000Z`)
-    .lte('CloseDate', `${endStr}T23:59:59.999Z`)
-
-  const list = (rows ?? []) as ListingRow[]
+  // DAL: closed-sales window via listing_tile_mv close_date range. DOM
+  // comes from the MV's `dom` column instead of computing CloseDate − ListDate.
+  const tiles = await getListingTiles({
+    status: 'closed',
+    closedFromDate: `${startStr}T00:00:00.000Z`,
+    closedToDate: `${endStr}T23:59:59.999Z`,
+    sort: 'close-newest',
+    limit: 5000,
+  })
+  const list: ListingRow[] = tiles.map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber ?? undefined,
+    City: t.city ?? undefined,
+    CloseDate: t.closeDate ?? undefined,
+    ListDate: t.onMarketDate ?? undefined,
+    ListPrice: t.listPrice ?? undefined,
+    ClosePrice: t.closePrice ?? undefined,
+    PropertyType: t.propertyType ?? undefined,
+    StreetNumber: t.streetNumber ?? undefined,
+    StreetName: t.streetName ?? undefined,
+    SubdivisionName: t.subdivisionName ?? undefined,
+    PhotoURL: t.photoUrl ?? undefined,
+    _domFromMv: t.dom ?? undefined,
+  })) as ListingRow[]
   if (list.length === 0) return []
 
   const byCity = new Map<string, ReportListing[]>()
@@ -296,20 +312,32 @@ async function getClosedSalesForLocation(
   periodEnd: Date,
   subdivision?: string | null
 ): Promise<ReportListing[]> {
+  void supabase
   const startStr = periodStart.toISOString().slice(0, 10)
   const endStr = periodEnd.toISOString().slice(0, 10)
-  let q = supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, City, CloseDate, ListDate, ListPrice, ClosePrice, details, PropertyType, StreetNumber, StreetName, SubdivisionName')
-    .ilike('StandardStatus', '%closed%')
-    .not('CloseDate', 'is', null)
-    .gte('CloseDate', `${startStr}T00:00:00.000Z`)
-    .lte('CloseDate', `${endStr}T23:59:59.999Z`)
-  const cityTrim = city.trim()
-  if (cityTrim) q = q.eq('"City"', cityTrim)
-  if (subdivision?.trim()) q = q.eq('"SubdivisionName"', subdivision.trim())
-  const { data: rows } = await q
-  const list = (rows ?? []) as ListingRow[]
+  // DAL: closed-sales for a city (and optional subdivision) via listing_tile_mv.
+  const tiles = await getListingTiles({
+    city: city.trim() || undefined,
+    subdivision: subdivision?.trim() || undefined,
+    status: 'closed',
+    closedFromDate: `${startStr}T00:00:00.000Z`,
+    closedToDate: `${endStr}T23:59:59.999Z`,
+    sort: 'close-newest',
+    limit: 5000,
+  })
+  const list: ListingRow[] = tiles.map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber ?? undefined,
+    City: t.city ?? undefined,
+    CloseDate: t.closeDate ?? undefined,
+    ListDate: t.onMarketDate ?? undefined,
+    ListPrice: t.listPrice ?? undefined,
+    ClosePrice: t.closePrice ?? undefined,
+    PropertyType: t.propertyType ?? undefined,
+    StreetNumber: t.streetNumber ?? undefined,
+    StreetName: t.streetName ?? undefined,
+    SubdivisionName: t.subdivisionName ?? undefined,
+  })) as ListingRow[]
   return list
     .filter((row) => isIndustryStandardReportPropertyType(row.PropertyType))
     .filter((row) => isValidEventDate(row.CloseDate))
