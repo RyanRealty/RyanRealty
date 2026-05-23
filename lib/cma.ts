@@ -182,14 +182,14 @@ async function getSubject(
   supabase: SupabaseClient,
   propertyId: string
 ): Promise<CMASubject | null> {
-  const { data: prop, error: propErr } = await supabase
-    .from('properties')
-    .select('id, unparsed_address, community_id, street_number, street_name, city, postal_code, latitude, longitude')
-    .eq('id', propertyId)
-    .single()
-  if (propErr || !prop) return null
-
-  const p = prop as { id: string; unparsed_address: string; community_id?: string; street_number?: string; city?: string; postal_code?: string; latitude?: string | number | null; longitude?: string | number | null }
+  void supabase
+  const { getPropertyById } = await import('@/lib/data')
+  const propLite = await getPropertyById(propertyId)
+  if (!propLite) return null
+  const p = propLite as { id?: string; unparsed_address?: string | null; community_id?: string; street_number?: string | null; street_name?: string | null; city?: string | null; postal_code?: string | null; latitude?: string | number | null; longitude?: string | number | null }
+  // Backfill the id since getPropertyById was a narrower projection — wider
+  // form not actually needed downstream beyond the address fields.
+  p.id = p.id ?? propertyId
 
   // Find the matching listing by address. Take the most recently modified
   // record across ALL statuses — Active first if one exists, otherwise the
@@ -204,25 +204,12 @@ async function getSubject(
   // flaps don't leave the subject blind.
   let listing: Record<string, unknown> | null = null
   if (p.city) {
-    let matches: Record<string, unknown>[] | null = null
-    for (let attempt = 0; attempt < 3; attempt++) {
-      let query = supabase
-        .from('listings')
-        .select('ListingKey, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, StandardStatus, lot_size_acres, year_built, ModificationTimestamp')
-      if (p.postal_code) query = query.eq('PostalCode', p.postal_code)
-      if (p.street_number) query = query.eq('StreetNumber', p.street_number)
-      query = query.ilike('City', p.city)
-      const { data, error } = await query.limit(20)
-      if (!error) {
-        matches = (data as Record<string, unknown>[] | null) ?? []
-        break
-      }
-      console.warn(`[cma] getSubject listings lookup attempt ${attempt + 1}/3 error:`, error.message)
-      await new Promise((r) => setTimeout(r, attempt === 0 ? 500 : 1500))
-    }
-    if (matches == null) {
-      console.warn(`[cma] getSubject: listings lookup gave up for ${p.unparsed_address}`)
-    }
+    const { selectCmaSubjectListings } = await import('@/lib/data')
+    const matches = await selectCmaSubjectListings({
+      postalCode: p.postal_code,
+      streetNumber: p.street_number,
+      cityIlike: p.city,
+    })
     // Sort in JS: most-recently-modified first.
     const rows = (matches ?? []).slice().sort((a, b) => {
       const at = String(a.ModificationTimestamp ?? '')
@@ -297,40 +284,16 @@ async function getCompsDirectQuery(
   maxCount: number,
   lotAcresRange?: { min: number; max: number } | null
 ): Promise<CMACompRow[]> {
-  const cutoff = new Date()
-  cutoff.setMonth(cutoff.getMonth() - monthsBack)
-  const cutoffStr = cutoff.toISOString().slice(0, 10)
-
-  // Query closed listings — pull lot/year/property-type so filterComps
-  // can actually reject vacant land and grossly mismatched lot sizes.
-  // PropertyType='A' is the RESO code for residential single-family.
-  let query = supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, StreetNumber, StreetName, City, ClosePrice, CloseDate, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, property_sub_type, SubdivisionName, ListPrice, details, lot_size_acres, year_built')
-    .ilike('StandardStatus', '%Closed%')
-    .not('CloseDate', 'is', null)
-    .gte('CloseDate', cutoffStr)
-    .ilike('City', city)
-    // Residential only — exclude Land, Lots, Commercial, etc.
-    // PropertyType='A' is the RESO single-family-residential code in this
-    // MLS; 'Residential' is the descriptive form. Accept either.
-    .or('PropertyType.eq.A,PropertyType.ilike.%Residential%')
-
-  if (subdivision) {
-    query = query.ilike('SubdivisionName', subdivision)
-  }
-
-  // SQL-layer lot range filter for rural subjects — saves the candidate
-  // budget so we don't return 50 in-town SFRs only to reject them all.
-  if (lotAcresRange) {
-    query = query
-      .gte('lot_size_acres', lotAcresRange.min)
-      .lte('lot_size_acres', lotAcresRange.max)
-  }
-
-  const { data } = await query
-    .order('CloseDate', { ascending: false })
-    .limit(maxCount * 4) // Fetch extra; the filter below trims many.
+  void supabase
+  const { selectClosedListingsForCma } = await import('@/lib/data')
+  const data = await selectClosedListingsForCma({
+    cityIlike: city,
+    subdivisionIlike: subdivision ?? null,
+    monthsBack,
+    maxCount: maxCount * 4,
+    lotAcresMin: lotAcresRange?.min ?? null,
+    lotAcresMax: lotAcresRange?.max ?? null,
+  })
 
   if (!data?.length) return []
 
@@ -784,14 +747,9 @@ export async function computeCMAByListingKey(listingKeyOrMls: string): Promise<C
   if (!/^[a-zA-Z0-9._-]+$/.test(key)) return null
 
   const supabase = getServiceSupabase()
-  const { data: listing, error } = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, StreetNumber, StreetName, City, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType')
-    .or(`ListingKey.eq.${key},ListNumber.eq.${key}`)
-    .order('ModificationTimestamp', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (error || !listing) return null
+  const { getListingForCmaSubject } = await import('@/lib/data')
+  const listing = await getListingForCmaSubject(key)
+  if (!listing) return null
 
   const row = listing as Record<string, unknown>
   const subject: CMASubject = {

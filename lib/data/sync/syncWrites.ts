@@ -673,6 +673,77 @@ export async function getExistingExpiredListingKeys(keys: string[]): Promise<Set
   return new Set(((data ?? []) as Array<{ listing_key: string }>).map((r) => r.listing_key))
 }
 
+/** Closed listings for CMA comp pool (city + optional subdivision + lot range). */
+export async function selectClosedListingsForCma(options: {
+  cityIlike: string
+  subdivisionIlike?: string | null
+  monthsBack: number
+  maxCount: number
+  lotAcresMin?: number | null
+  lotAcresMax?: number | null
+}): Promise<Array<Record<string, unknown>>> {
+  const sb = client()
+  if (!sb) return []
+  const cutoff = new Date()
+  cutoff.setMonth(cutoff.getMonth() - options.monthsBack)
+  const cutoffStr = cutoff.toISOString().slice(0, 10)
+  let query = sb
+    .from('listings')
+    .select(
+      'ListingKey, ListNumber, StreetNumber, StreetName, City, ClosePrice, CloseDate, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, property_sub_type, SubdivisionName, ListPrice, details, lot_size_acres, year_built'
+    )
+    .ilike('StandardStatus', '%Closed%')
+    .not('CloseDate', 'is', null)
+    .gte('CloseDate', cutoffStr)
+    .ilike('City', options.cityIlike)
+    .or('PropertyType.eq.A,PropertyType.ilike.%Residential%')
+  if (options.subdivisionIlike) {
+    query = query.ilike('SubdivisionName', options.subdivisionIlike)
+  }
+  if (options.lotAcresMin != null) query = query.gte('lot_size_acres', options.lotAcresMin)
+  if (options.lotAcresMax != null) query = query.lte('lot_size_acres', options.lotAcresMax)
+  const { data } = await query.order('CloseDate', { ascending: false }).limit(options.maxCount)
+  return (data ?? []) as Array<Record<string, unknown>>
+}
+
+/** Read a wide listings row by key for CMA subject resolution. */
+export async function getListingForCmaSubject(
+  key: string
+): Promise<Record<string, unknown> | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data } = await sb
+    .from('listings')
+    .select('ListingKey, ListNumber, StreetNumber, StreetName, City, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType')
+    .or(`ListingKey.eq.${key},ListNumber.eq.${key}`)
+    .maybeSingle()
+  return (data ?? null) as Record<string, unknown> | null
+}
+
+/** CMA-specific listings lookup for subject (3-attempt retry with status/recency tiebreak). */
+export async function selectCmaSubjectListings(options: {
+  postalCode?: string | null
+  streetNumber?: string | null
+  cityIlike: string
+}): Promise<Array<Record<string, unknown>>> {
+  const sb = client()
+  if (!sb) return []
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let q = sb
+      .from('listings')
+      .select(
+        'ListingKey, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, PropertyType, StandardStatus, lot_size_acres, year_built, ModificationTimestamp'
+      )
+    if (options.postalCode) q = q.eq('PostalCode', options.postalCode)
+    if (options.streetNumber) q = q.eq('StreetNumber', options.streetNumber)
+    q = q.ilike('City', options.cityIlike)
+    const { data, error } = await q.limit(20)
+    if (!error) return (data ?? []) as Array<Record<string, unknown>>
+    await new Promise((r) => setTimeout(r, attempt === 0 ? 500 : 1500))
+  }
+  return []
+}
+
 /** Insert a valuation_requests row (home-valuation form). */
 export async function insertValuationRequest(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
   const sb = client()
