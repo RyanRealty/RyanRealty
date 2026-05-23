@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.52 (2026-05-23)
+
+### Other
+- DAL: build verification — all CI gates green
+
+---
+
+
 ## v1.282.51 (2026-05-23)
 
 ### Other
