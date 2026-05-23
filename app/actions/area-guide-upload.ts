@@ -90,19 +90,25 @@ type CityRow = { id: string; name: string; slug: string; hero_image_url: string 
 type NeighborhoodRow = { id: string; name: string; slug: string; hero_image_url: string | null; city_id: string | null }
 
 async function fetchAllEntities(supabase: SupabaseClient): Promise<EntityRow[]> {
+  void supabase
   const entities: EntityRow[] = []
-  const [communities, cities, neighborhoods] = await Promise.all([
-    supabase.from('communities').select('id, name, slug, hero_image_url, hero_video_url'),
-    supabase.from('cities').select('id, name, slug, hero_image_url, hero_video_url'),
-    supabase.from('neighborhoods').select('id, name, slug, hero_image_url, city_id'),
+  const {
+    getAllCommunitiesForAdminUpload,
+    getAllCitiesForAdminUpload,
+    getAllNeighborhoodsForAdminUpload,
+  } = await import('@/lib/data')
+  const [communitiesData, citiesData, neighborhoodsData] = await Promise.all([
+    getAllCommunitiesForAdminUpload(),
+    getAllCitiesForAdminUpload(),
+    getAllNeighborhoodsForAdminUpload(),
   ])
-  for (const c of (communities.data ?? []) as CommunityRow[]) {
+  for (const c of communitiesData as CommunityRow[]) {
     entities.push({ ...c, type: 'community' })
   }
-  for (const c of (cities.data ?? []) as CityRow[]) {
+  for (const c of citiesData as CityRow[]) {
     entities.push({ ...c, type: 'city' })
   }
-  for (const n of (neighborhoods.data ?? []) as NeighborhoodRow[]) {
+  for (const n of neighborhoodsData as NeighborhoodRow[]) {
     entities.push({ ...n, type: 'neighborhood', hero_video_url: null })
   }
   return entities
@@ -200,39 +206,29 @@ async function getOrCreateEntity(
   entityType: AreaGuideEntityType,
   bendCityId: string | null
 ): Promise<{ id: string; name: string; slug: string; type: AreaGuideEntityType } | null> {
+  void supabase
   const canonicalName = FOLDER_ALIASES[folderName] ?? folderName
   const slug = slugify(canonicalName)
-  type InsertRow = { id: string; name: string; slug: string }
+  const { insertHeroEntityRow } = await import('@/lib/data')
   if (entityType === 'city') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from('cities')
-      .insert({ name: canonicalName, slug, state: 'OR' })
-      .select('id, name, slug')
-      .single()
-    if (error) return null
-    return { ...(data as InsertRow), type: 'city' }
+    const inserted = await insertHeroEntityRow('cities', {
+      name: canonicalName,
+      slug,
+      state: 'OR',
+    })
+    if (!inserted) return null
+    return { ...inserted, type: 'city' }
   }
   if (entityType === 'neighborhood') {
-    const insertData: { name: string; slug: string; city_id?: string } = { name: canonicalName, slug }
-    if (bendCityId) insertData.city_id = bendCityId
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from('neighborhoods')
-      .insert(insertData)
-      .select('id, name, slug')
-      .single()
-    if (error) return null
-    return { ...(data as InsertRow), type: 'neighborhood' }
+    const row: Record<string, unknown> = { name: canonicalName, slug }
+    if (bendCityId) row.city_id = bendCityId
+    const inserted = await insertHeroEntityRow('neighborhoods', row)
+    if (!inserted) return null
+    return { ...inserted, type: 'neighborhood' }
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('communities')
-    .insert({ name: canonicalName, slug })
-    .select('id, name, slug')
-    .single()
-  if (error) return null
-  return { ...(data as InsertRow), type: 'community' }
+  const inserted = await insertHeroEntityRow('communities', { name: canonicalName, slug })
+  if (!inserted) return null
+  return { ...inserted, type: 'community' }
 }
 
 /**
@@ -272,8 +268,8 @@ export async function uploadAreaGuideFolder(
   }
 
   if (!entityId) {
-    const bendCity = (await supabase.from('cities').select('id').ilike('name', 'bend').limit(1).single()).data
-    const bendCityId = bendCity?.id ?? null
+    const { getCityIdByName } = await import('@/lib/data')
+    const bendCityId = await getCityIdByName('bend')
     const created = await getOrCreateEntity(supabase, folderName, entityType, bendCityId)
     if (!created) return { ok: false, error: `Could not create ${entityType} "${entityName}".` }
     entityId = created.id
@@ -343,30 +339,28 @@ export async function uploadAreaGuideFolder(
     if (i === 0 && entityType !== 'neighborhood') heroVideoUrl = url
   }
 
-  const table = entityType === 'city' ? 'cities' : entityType === 'neighborhood' ? 'neighborhoods' : 'communities'
+  const table: 'cities' | 'neighborhoods' | 'communities' =
+    entityType === 'city' ? 'cities' : entityType === 'neighborhood' ? 'neighborhoods' : 'communities'
   const updates: Record<string, string> = {}
   if (heroImageUrl) updates.hero_image_url = heroImageUrl
   if (entityType !== 'neighborhood' && heroVideoUrl) updates.hero_video_url = heroVideoUrl
+  const { updateHeroEntityById, getPageImageUrlsForPage, insertPageImageRow } = await import('@/lib/data')
   if (Object.keys(updates).length > 0) {
     updates.updated_at = new Date().toISOString()
-    const { error: updateErr } = await supabase.from(table).update(updates).eq('id', entityId)
-    if (updateErr) console.error('[area-guide-upload] entity update failed:', updateErr.message)
+    const updateRes = await updateHeroEntityById(table, entityId, updates)
+    if (!updateRes.ok) console.error('[area-guide-upload] entity update failed:', updateRes.error)
   }
 
-  const { data: existingPageImages } = await supabase
-    .from('page_images')
-    .select('image_url')
-    .eq('page_type', entityType)
-    .eq('page_id', entitySlug)
-  const existingUrls = new Set((existingPageImages ?? []).map((r) => r.image_url))
+  const existingUrls = new Set(await getPageImageUrlsForPage(entityType, entitySlug))
   for (const url of additionalPhotoUrls) {
     if (existingUrls.has(url)) continue
-    const { error: pageImgErr } = await supabase.from('page_images').insert({
+    const pageImgRes = await insertPageImageRow({
       page_type: entityType,
       page_id: entitySlug,
       image_url: url,
       source: 'upload',
     })
+    const pageImgErr = pageImgRes.ok ? null : { message: pageImgRes.error ?? '' }
     if (pageImgErr) console.error('[area-guide-upload] page_images insert failed:', pageImgErr.message)
   }
 

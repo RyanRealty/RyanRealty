@@ -152,6 +152,13 @@ export {
   getCityMetadataByName,
   getCityBoundaryGeoJSON,
   getCityIdByName,
+  getAllCitiesForAdminUpload,
+  getAllNeighborhoodsForAdminUpload,
+  getAllCommunitiesForAdminUpload,
+  updateHeroEntityById,
+  insertHeroEntityRow,
+  getPageImageUrlsForPage,
+  insertPageImageRow,
 } from '@/lib/data/cities/getCityMetadata'
 export type { CityMetadata } from '@/lib/data/cities/getCityMetadata'
 export {

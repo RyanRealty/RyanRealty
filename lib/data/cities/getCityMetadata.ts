@@ -53,6 +53,123 @@ export async function getCityBoundaryGeoJSON(name: string): Promise<unknown | nu
   return (data as { boundary_geojson?: unknown } | null)?.boundary_geojson ?? null
 }
 
+/** All cities with hero media for admin-upload UI. */
+export async function getAllCitiesForAdminUpload(): Promise<Array<{
+  id: string
+  name: string
+  slug: string
+  hero_image_url: string | null
+  hero_video_url: string | null
+}>> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb.from('cities').select('id, name, slug, hero_image_url, hero_video_url')
+  return (data ?? []) as Array<{
+    id: string
+    name: string
+    slug: string
+    hero_image_url: string | null
+    hero_video_url: string | null
+  }>
+}
+
+/** All neighborhoods with hero media for admin-upload UI. */
+export async function getAllNeighborhoodsForAdminUpload(): Promise<Array<{
+  id: string
+  name: string
+  slug: string
+  hero_image_url: string | null
+  city_id: string | null
+}>> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb.from('neighborhoods').select('id, name, slug, hero_image_url, city_id')
+  return (data ?? []) as Array<{
+    id: string
+    name: string
+    slug: string
+    hero_image_url: string | null
+    city_id: string | null
+  }>
+}
+
+/** All communities with hero media for admin-upload UI. */
+export async function getAllCommunitiesForAdminUpload(): Promise<Array<{
+  id: string
+  name: string
+  slug: string
+  hero_image_url: string | null
+  hero_video_url: string | null
+}>> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb.from('communities').select('id, name, slug, hero_image_url, hero_video_url')
+  return (data ?? []) as Array<{
+    id: string
+    name: string
+    slug: string
+    hero_image_url: string | null
+    hero_video_url: string | null
+  }>
+}
+
+/** Generic update of a hero-bearing entity row by id (cities | neighborhoods | communities). */
+export async function updateHeroEntityById(
+  table: 'cities' | 'neighborhoods' | 'communities',
+  id: string,
+  updates: Record<string, string>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = supabaseAnon()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from(table).update(updates).eq('id', id)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Insert a new city / neighborhood / community row from area-guide upload. */
+export async function insertHeroEntityRow(
+  table: 'cities' | 'neighborhoods' | 'communities',
+  row: Record<string, unknown>
+): Promise<{ id: string; name: string; slug: string } | null> {
+  const sb = supabaseAnon()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from(table)
+    .insert(row)
+    .select('id, name, slug')
+    .single()
+  if (error || !data) return null
+  return data as { id: string; name: string; slug: string }
+}
+
+/** page_images CRUD helpers used by area-guide upload. */
+export async function getPageImageUrlsForPage(
+  pageType: string,
+  pageId: string
+): Promise<string[]> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb
+    .from('page_images')
+    .select('image_url')
+    .eq('page_type', pageType)
+    .eq('page_id', pageId)
+  return ((data ?? []) as Array<{ image_url?: string }>)
+    .map((r) => r.image_url ?? '')
+    .filter(Boolean)
+}
+
+export async function insertPageImageRow(row: {
+  page_type: string
+  page_id: string
+  image_url: string
+  source: string
+}): Promise<{ ok: boolean; error?: string }> {
+  const sb = supabaseAnon()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('page_images').insert(row)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
 /** Lookup the city id by display name (case-insensitive). Used for legacy neighborhood joins. */
 export async function getCityIdByName(name: string): Promise<string | null> {
   const sb = supabaseAnon()
