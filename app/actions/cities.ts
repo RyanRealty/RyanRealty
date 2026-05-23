@@ -394,15 +394,13 @@ export async function getNeighborhoodsInCity(cityName: string): Promise<
 
 /** Price history for city (reporting_cache; fallback from closed listings by month when cache has fewer than 2 points). */
 export async function getCityPriceHistory(cityName: string): Promise<{ month: string; medianPrice: number; soldCount?: number }[]> {
-  const sb = supabase()
-  const { data } = await sb
-    .from('reporting_cache')
-    .select('period_start, metrics')
-    .eq('geo_type', 'city')
-    .ilike('geo_name', cityName)
-    .eq('period_type', 'monthly')
-    .order('period_start', { ascending: true })
-    .limit(12)
+  void supabase
+  const { getReportingCacheMonthlyRows } = await import('@/lib/data')
+  const data = await getReportingCacheMonthlyRows({
+    geoType: 'city',
+    geoNameIlike: cityName,
+    limit: 12,
+  })
   const rows = (data ?? []) as { period_start?: string; metrics?: { median_price?: number; sold_count?: number } }[]
   const fromCache = rows
     .filter((r) => r.metrics?.median_price != null)
@@ -694,14 +692,11 @@ export const getNeighborhoodPendingListings = unstable_cache(
 /** Communities (subdivisions) within a specific neighborhood. */
 export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityName: string): Promise<CommunityForIndex[]> {
   const sb = supabase()
+  void sb
+  const { getCommunitiesInNeighborhoodLite } = await import('@/lib/data')
   const [flags, communityRows] = await Promise.all([
     listSubdivisionsWithFlags(),
-    // Get all communities in this neighborhood
-    sb
-      .from('communities')
-      .select('name, slug, hero_image_url, is_resort')
-      .eq('neighborhood_id', neighborhoodId)
-      .then((r) => (r.data ?? []) as { name: string; slug: string; hero_image_url?: string | null; is_resort?: boolean }[]),
+    getCommunitiesInNeighborhoodLite(neighborhoodId),
   ])
 
   if (communityRows.length === 0) return []

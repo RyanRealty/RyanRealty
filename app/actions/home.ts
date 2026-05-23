@@ -45,8 +45,8 @@ async function _getFeaturedListingsUncached(city?: string): Promise<HomeTileRow[
     if (keys.length === 0) {
       // DAL: read newest active listings from listing_tile_mv, extract keys,
       // then call the existing getHomeTileRowsByKeys to keep the rest of
-      // the pipeline identical. Drains a .from('listings') without changing
-      // the consumer shape.
+      // the pipeline identical. Drains a direct listings-table read without
+      // changing the consumer shape.
       const fallbackTiles = await getCityListingsDAL(city?.trim() || 'Bend', {
         status: 'active',
         sort: 'newest',

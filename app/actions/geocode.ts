@@ -46,11 +46,10 @@ export async function getGeocodedListings<T extends GeocodeListingInput>(listing
         if (data.status === 'OK' && data.results?.length > 0) {
           const { lat, lng } = data.results[0].geometry?.location ?? {}
           if (typeof lat === 'number' && typeof lng === 'number' && Number.isFinite(lat) && Number.isFinite(lng)) {
-            if (supabase) {
-              await supabase
-                .from('listings')
-                .update({ Latitude: lat, Longitude: lng })
-                .eq('ListNumber', item.ListNumber)
+            if (supabase && item.ListNumber) {
+              void supabase
+              const { updateListingByListNumber } = await import('@/lib/data')
+              await updateListingByListNumber(String(item.ListNumber), { Latitude: lat, Longitude: lng })
             }
             return { ...item, Latitude: lat, Longitude: lng } as T
           }

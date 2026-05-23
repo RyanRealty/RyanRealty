@@ -301,6 +301,7 @@ export {
   isSubdivisionFlagged,
   getCommunityNameBySlugIlike,
   getCommunitiesWithCityNeighborhoodByNames,
+  getCommunitiesInNeighborhoodLite,
   getCommunityDetailByName,
   getCommunityNeighborhoodCityBySlug,
 } from '@/lib/data/communities/subdivisionFlags'

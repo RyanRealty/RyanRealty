@@ -46,18 +46,15 @@ export async function runClassificationForListing(listingKey: string): Promise<R
     return { success: false, message: 'Invalid listing key.', listingKey, error: 'Invalid key' }
   }
   const supabase = createClient(supabaseUrl, serviceKey)
-  const { data: row, error: fetchError } = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, details')
-    .or(`ListingKey.eq.${listingKey},ListNumber.eq.${listingKey}`)
-    .maybeSingle()
-
-  if (fetchError || !row) {
+  void supabase
+  const { getListingRawRowByKey } = await import('@/lib/data')
+  const row = await getListingRawRowByKey(listingKey)
+  if (!row) {
     return {
       success: false,
-      message: fetchError?.message ?? 'Listing not found.',
+      message: 'Listing not found.',
       listingKey,
-      error: fetchError?.message ?? 'Not found',
+      error: 'Not found',
     }
   }
 

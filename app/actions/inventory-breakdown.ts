@@ -118,16 +118,19 @@ export async function getNeighborhoodInventoryBreakdown(neighborhoodId: string):
   } else {
     console.error('[getNeighborhoodInventoryBreakdown] rpc', error.message)
   }
-  const { data: propIds } = await sb.from('properties').select('id').eq('neighborhood_id', neighborhoodId).limit(5000)
-  const ids = (propIds ?? []).map((row: { id: string }) => row.id)
-  if (ids.length === 0) return { ...EMPTY_BREAKDOWN }
-  const rows = await fetchAllRows<{ PropertyType?: string | null; StandardStatus?: string | null }>(
-    sb,
-    'listings',
-    'PropertyType, StandardStatus',
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (q: any) =>
-      q.in('property_id', ids).or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
-  )
+  void sb
+  void fetchAllRows
+  const { getNeighborhoodNameById, getListingTiles } = await import('@/lib/data')
+  const neighborhoodName = await getNeighborhoodNameById(neighborhoodId)
+  if (!neighborhoodName) return { ...EMPTY_BREAKDOWN }
+  const tiles = await getListingTiles({
+    neighborhood: neighborhoodName,
+    status: 'active',
+    limit: 5000,
+  })
+  const rows = tiles.map((t) => ({
+    PropertyType: t.propertyType,
+    StandardStatus: t.status,
+  }))
   return summarizeBuckets(rows)
 }

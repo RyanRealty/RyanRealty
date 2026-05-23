@@ -114,14 +114,10 @@ export async function getPulseFeed(options: PulseFeedQuery): Promise<PulseFeedRe
 
   // Buffer 4x the requested page so city + photo filters still yield a full page.
   const eventBuffer = Math.min(120, limit * 4)
+  void supabase
+  const { getActivityEvents } = await import('@/lib/data')
   const eventsResult = await withTimeout(
-    supabase
-      .from('activity_events')
-      .select('id, listing_key, event_type, event_at, payload')
-      .in('event_type', eventTypes)
-      .order('event_at', { ascending: false })
-      .range(offset, offset + eventBuffer - 1)
-      .then((r) => r),
+    getActivityEvents({ eventTypes, offset, limit: eventBuffer }).then((data) => ({ data, error: null })),
     QUERY_TIMEOUT_MS,
     { data: null, error: null } as unknown as { data: unknown[] | null; error: { message: string } | null },
     'activity_events query'

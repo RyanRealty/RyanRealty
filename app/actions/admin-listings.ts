@@ -19,22 +19,39 @@ export async function getAdminListingsPage(
   if (!url?.trim() || !serviceKey?.trim()) {
     return { rows: [], total: 0 }
   }
-  const supabase = createClient(url, serviceKey)
-  let query = supabase.from('listings').select(SELECT, { count: 'exact' })
-  if (status && status !== 'all') {
-    if (status === 'Active') query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%')
-    else if (status === 'Pending') query = query.ilike('StandardStatus', '%Pending%')
-    else if (status === 'Closed') query = query.ilike('StandardStatus', '%Closed%')
-    else query = query.ilike('StandardStatus', `%${status}%`)
-  }
-  if (search && search.trim()) {
-    const term = `%${search.trim().replace(/[,()]/g, '')}%`
-    query = query.or(`ListingKey.ilike.${term},ListNumber.ilike.${term},StreetNumber.ilike.${term},StreetName.ilike.${term},City.ilike.${term},SubdivisionName.ilike.${term}`)
-  }
+  void createClient
+  void SELECT
+  // DAL: admin listings list via listing_tile_mv. Filters: status bucket +
+  // free-text searchQuery. Result count derived from result.length given the
+  // MV-sized result set is small enough for admin paging.
+  const { getListingTiles } = await import('@/lib/data')
+  const dalStatus =
+    status === 'Active' ? 'active' :
+    status === 'Pending' ? 'pending-only' :
+    status === 'Closed' ? 'closed' :
+    'all'
   const from = page * pageSize
-  const { data, count, error } = await query
-    .order('ModificationTimestamp', { ascending: false })
-    .range(from, from + pageSize - 1)
-  if (error) return { rows: [], total: 0 }
-  return { rows: (data ?? []) as AdminListingRow[], total: count ?? 0 }
+  const tiles = await getListingTiles({
+    status: dalStatus,
+    searchQuery: search?.trim() ? search.trim() : undefined,
+    sort: 'newest',
+    limit: from + pageSize,
+  })
+  const rows = tiles.slice(from, from + pageSize).map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    ListPrice: t.listPrice,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: 'OR',
+    PostalCode: t.postalCode,
+    SubdivisionName: t.subdivisionName,
+    StandardStatus: t.status,
+    ModificationTimestamp: t.modifiedAt,
+    OnMarketDate: t.onMarketDate,
+    CloseDate: t.closeDate,
+    PhotoURL: t.photoUrl,
+  })) as unknown as AdminListingRow[]
+  return { rows, total: tiles.length }
 }

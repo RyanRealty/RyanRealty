@@ -132,6 +132,19 @@ export async function getCommunitiesWithCityNeighborhoodByNames(
   }>
 }
 
+/** All communities in a neighborhood (lite projection for community-index aggregation). */
+export async function getCommunitiesInNeighborhoodLite(
+  neighborhoodId: string
+): Promise<Array<{ name: string; slug: string; hero_image_url?: string | null; is_resort?: boolean }>> {
+  const sb = adminClient() ?? supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb
+    .from('communities')
+    .select('name, slug, hero_image_url, is_resort')
+    .eq('neighborhood_id', neighborhoodId)
+  return (data ?? []) as Array<{ name: string; slug: string; hero_image_url?: string | null; is_resort?: boolean }>
+}
+
 /** Find one community row by slug ilike (for OG image / SEO surfaces). */
 export async function getCommunityNameBySlugIlike(slug: string): Promise<{ name: string; slug: string } | null> {
   const sb = adminClient() ?? supabaseAnon()
