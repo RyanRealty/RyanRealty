@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.281.0 (2026-05-23)
+
+### Features
+- feat(dal): getAllCommunitySnapshots + subdivision-flags migration — 338→337
+
+---
+
+
 ## v1.280.13 (2026-05-23)
 
 ### Maintenance
