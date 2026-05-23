@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.2 (2026-05-23)
+
+### Maintenance
+- perf(listings): getCityFromSlug uses geo_snapshot_mv — 361→359
+
+---
+
+
 ## v1.280.1 (2026-05-22)
 
 ### Maintenance
