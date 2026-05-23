@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.3 (2026-05-23)
+
+### Other
+- listing: $1K price rounding + verify §117-141 listing-detail items
+
+---
+
+
 ## v1.288.2 (2026-05-23)
 
 ### Other
