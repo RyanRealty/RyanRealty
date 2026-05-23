@@ -54,23 +54,20 @@ export async function getCitySlugs(): Promise<Set<string>> {
 
 /** All communities for index: from listings + subdivision_flags, with counts and hero. */
 async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
-  // Active inventory for community stats (same filter as city index / browse).
-  const sb = supabase()
-  const allListingRows: { City?: string; SubdivisionName?: string; ListPrice?: number | null; PropertyType?: string | null }[] = []
-  let offset = 0
-  let hasMore = true
-  while (hasMore) {
-    const { data } = await sb
-      .from('listings')
-      .select('City, SubdivisionName, ListPrice, PropertyType')
-      .or(INDEX_ACTIVE_OR)
-      .not('SubdivisionName', 'is', null)
-      .range(offset, offset + 999)
-    const rows = (data ?? []) as { City?: string; SubdivisionName?: string; ListPrice?: number | null; PropertyType?: string | null }[]
-    allListingRows.push(...rows)
-    hasMore = rows.length === 1000
-    offset += 1000
-  }
+  // DAL: pull all active tiles via listing_tile_mv (limit 5000 covers full
+  // active inventory across all geographies — current count ~2-3K rows).
+  void supabase
+  void INDEX_ACTIVE_OR
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({ status: 'active', sort: 'newest', limit: 5000 })
+  const allListingRows = tiles
+    .filter((t) => t.subdivisionName && t.city)
+    .map((t) => ({
+      City: t.city ?? undefined,
+      SubdivisionName: t.subdivisionName ?? undefined,
+      ListPrice: t.listPrice,
+      PropertyType: t.propertyType,
+    }))
 
   const [rows, resortSet] = await Promise.all([
     listSubdivisionsWithFlags(),
@@ -470,23 +467,32 @@ export async function getCommunityPriceHistory(
   if (fromCache.length >= 2) return fromCache
   const twelveMonthsAgo = new Date()
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
+  const cutoffMonth = twelveMonthsAgo.toISOString().slice(0, 7)
   const names = getSubdivisionMatchNames(subdivision)
-  let closedQuery = sb
-    .from('listings')
-    .select('ListPrice, CloseDate')
-    .eq('"City"', city)
-    .ilike('StandardStatus', '%Closed%')
-    .not('CloseDate', 'is', null)
-    .gte('CloseDate', twelveMonthsAgo.toISOString().slice(0, 7))
-    .limit(2000)
-  if (names.length === 1) closedQuery = closedQuery.eq('"SubdivisionName"', names[0]!)
-  else if (names.length > 1) closedQuery = closedQuery.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
-  const { data: closed } = await closedQuery
+  // DAL: pull closed tiles for the city via listing_tile_mv, then filter by
+  // subdivision-match-names + close-date cutoff client-side. Limit 5000 covers
+  // any community's annual closed volume.
+  void sb
+  const { getListingTiles } = await import('@/lib/data')
+  const closedAll = await getListingTiles({
+    city,
+    status: 'closed',
+    sort: 'close-newest',
+    limit: 5000,
+  })
+  const matchLowered = names.map((n) => n.toLowerCase())
+  const closed = closedAll.filter((t) => {
+    if (!t.closeDate) return false
+    if (t.closeDate.slice(0, 7) < cutoffMonth) return false
+    const sub = (t.subdivisionName ?? '').toLowerCase()
+    if (matchLowered.length === 0) return true
+    return matchLowered.some((m) => sub.includes(m))
+  })
   const byMonth = new Map<string, number[]>()
   const byMonthCount = new Map<string, number>()
-  for (const r of (closed ?? []) as { ListPrice?: number | null; CloseDate?: string }[]) {
-    const p = Number(r.ListPrice)
-    const d = r.CloseDate?.slice(0, 7)
+  for (const t of closed) {
+    const p = Number(t.listPrice)
+    const d = t.closeDate?.slice(0, 7)
     if (!d || !Number.isFinite(p) || p <= 0) continue
     const arr = byMonth.get(d) ?? []
     arr.push(p)

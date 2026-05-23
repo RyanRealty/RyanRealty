@@ -67,7 +67,7 @@ const FilterSchema = z.object({
   status: z.enum(['active', 'active-and-pending', 'pending-only', 'closed', 'all']).default('active'),
   // 'close-newest' sorts by close_date DESC NULLS LAST — for recently-sold rows.
   sort: z.enum(['newest', 'oldest', 'price-asc', 'price-desc', 'close-newest']).default('newest'),
-  limit: z.number().int().min(1).max(500).default(60),
+  limit: z.number().int().min(1).max(5000).default(60),
   offset: z.number().int().nonnegative().default(0),
 })
 
