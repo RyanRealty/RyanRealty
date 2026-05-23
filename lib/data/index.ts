@@ -133,6 +133,21 @@ export {
 } from '@/lib/data/engagement'
 export type { EngagementCounts } from '@/lib/data/engagement'
 
+// City + neighborhood metadata (description, hero, boundary, SEO fields)
+export {
+  getCityMetadataByNames,
+  getCityMetadataByName,
+  getCityBoundaryGeoJSON,
+  getCityIdByName,
+} from '@/lib/data/cities/getCityMetadata'
+export type { CityMetadata } from '@/lib/data/cities/getCityMetadata'
+export {
+  getNeighborhoodsByCityId,
+  getNeighborhoodBySlugInCity,
+  getNeighborhoodNameById,
+} from '@/lib/data/cities/getNeighborhoodMetadata'
+export type { NeighborhoodLite, NeighborhoodFull } from '@/lib/data/cities/getNeighborhoodMetadata'
+
 // Subdivision flags + communities row management (admin resort-communities flow)
 export {
   getResortEntityKeysFromFlags,

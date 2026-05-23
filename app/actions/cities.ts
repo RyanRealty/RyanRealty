@@ -109,15 +109,12 @@ async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
   const allSlugs = browse.map(({ City }) => slugify(City))
   const allCityNames = browse.map(({ City }) => City)
 
-  const [bannerMap, cityMetaRes] = await Promise.all([
+  const { getCityMetadataByNames } = await import('@/lib/data')
+  const [bannerMap, cityMetaByName] = await Promise.all([
     getBannersBatch('city', allSlugs),
-    sb.from('cities').select('name, description, hero_image_url').in('name', allCityNames),
+    getCityMetadataByNames(allCityNames),
   ])
-
-  const cityMetaByName = new Map<string, { description?: string | null; hero_image_url?: string | null }>()
-  for (const row of (cityMetaRes.data ?? []) as { name: string; description?: string | null; hero_image_url?: string | null }[]) {
-    cityMetaByName.set(row.name.toLowerCase(), row)
-  }
+  void sb
 
   const result: CityForIndex[] = []
   for (const { City: name, count } of browse) {
@@ -157,15 +154,13 @@ async function _getCityBySlugUncached(slug: string): Promise<CityDetail | null> 
   // in the city (~3000 rows for Bend) and aggregated in JS. The slow path
   // was making generateMetadata exceed pa11y's 500ms wait, which caused
   // the <title> to land in a streamed-after-HTML chunk that pa11y missed.
-  const [stats, cityRow, snapshot] = await Promise.all([
+  const { getCityMetadataByName } = await import('@/lib/data')
+  const [stats, cityMeta, snapshot] = await Promise.all([
     getMarketStatsForCity(cityName),
-    supabase()
-      .from('cities')
-      .select('name, slug, description, hero_image_url')
-      .ilike('name', cityName)
-      .maybeSingle(),
+    getCityMetadataByName(cityName),
     getGeoSnapshot({ geoType: 'city', geoKey: cityName.toLowerCase().trim() }),
   ])
+  const cityRow = { data: cityMeta }
   let activeCount = snapshot?.activeSfrCount ?? 0
   if (activeCount === 0 && stats.count > 0) activeCount = stats.count
   const medianFromRows =
@@ -349,12 +344,8 @@ export async function getNeighborhoodsInCity(cityName: string): Promise<
   { slug: string; name: string; listingCount: number; medianPrice: number | null }[]
 > {
   const sb = supabase()
-  const { data: cityRow } = await sb
-    .from('cities')
-    .select('id')
-    .ilike('name', cityName)
-    .maybeSingle()
-  const cityId = (cityRow as { id?: string } | null)?.id
+  const { getCityIdByName, getNeighborhoodsByCityId } = await import('@/lib/data')
+  const cityId = await getCityIdByName(cityName)
   if (!cityId) return []
   try {
     const { data: stats, error } = await sb.rpc('get_neighborhoods_in_city_stats', { p_city_id: cityId })
@@ -369,11 +360,7 @@ export async function getNeighborhoodsInCity(cityName: string): Promise<
   } catch {
     // Fall through to legacy path
   }
-  const { data: neighborhoods } = await sb
-    .from('neighborhoods')
-    .select('id, name, slug')
-    .eq('city_id', cityId)
-  const list = (neighborhoods ?? []) as { id: string; name: string; slug: string }[]
+  const list = await getNeighborhoodsByCityId(cityId)
   if (list.length === 0) return []
   // DAL: pull active tiles for the city once via listing_tile_mv, then bin by
   // boundary_neighborhood for each neighborhood. Avoids the N×2 query pattern
@@ -484,30 +471,10 @@ async function _getNeighborhoodBySlugUncached(
 ): Promise<NeighborhoodDetail | null> {
   const cityName = await getCityFromSlug(citySlug)
   if (!cityName) return null
-  const sb = supabase()
-  const { data: cityRow } = await sb
-    .from('cities')
-    .select('id')
-    .ilike('name', cityName)
-    .maybeSingle()
-  const cityId = (cityRow as { id?: string } | null)?.id
+  const { getCityIdByName, getNeighborhoodBySlugInCity } = await import('@/lib/data')
+  const cityId = await getCityIdByName(cityName)
   if (!cityId) return null
-  const { data: neighborhoodRow } = await sb
-    .from('neighborhoods')
-    .select('id, name, slug, description, hero_image_url, boundary_geojson, seo_title, seo_description')
-    .eq('city_id', cityId)
-    .ilike('slug', neighborhoodSlug)
-    .maybeSingle()
-  const n = neighborhoodRow as {
-    id: string
-    name: string
-    slug: string
-    description?: string | null
-    hero_image_url?: string | null
-    boundary_geojson?: unknown
-    seo_title?: string | null
-    seo_description?: string | null
-  } | null
+  const n = await getNeighborhoodBySlugInCity(cityId, neighborhoodSlug)
   if (!n) return null
   // DAL: count + median active tiles for the neighborhood via listing_tile_mv.
   const tiles = await getListingTilesDAL({
@@ -552,25 +519,14 @@ export const getNeighborhoodBySlug = unstable_cache(
 /** Boundary GeoJSON for a city (for map overlay on city/community search). Returns null if not found. */
 export async function getCityBoundary(cityName: string): Promise<unknown | null> {
   if (!cityName?.trim()) return null
-  const sb = supabase()
-  const { data } = await sb
-    .from('cities')
-    .select('boundary_geojson')
-    .ilike('name', cityName.trim())
-    .maybeSingle()
-  const row = data as { boundary_geojson?: unknown } | null
-  return row?.boundary_geojson ?? null
+  const { getCityBoundaryGeoJSON } = await import('@/lib/data')
+  return getCityBoundaryGeoJSON(cityName)
 }
 
 /** Look up neighborhood name by id (small lookup; called by neighborhood-detail handlers). */
 async function _resolveNeighborhoodName(neighborhoodId: string): Promise<string | null> {
-  const sb = supabase()
-  const { data } = await sb
-    .from('neighborhoods')
-    .select('name')
-    .eq('id', neighborhoodId)
-    .maybeSingle()
-  return (data as { name?: string } | null)?.name ?? null
+  const { getNeighborhoodNameById } = await import('@/lib/data')
+  return getNeighborhoodNameById(neighborhoodId)
 }
 
 /** Map a ListingTile (DAL shape) to the legacy CityListingRow shape consumed by neighborhood UIs. */
