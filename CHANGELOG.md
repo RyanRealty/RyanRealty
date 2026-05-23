@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.6 (2026-05-23)
+
+### Maintenance
+- perf(agents): migrate broker-listings paths to DAL — 355→352
+
+---
+
+
 ## v1.280.5 (2026-05-23)
 
 ### Maintenance
