@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.49 (2026-05-23)
+
+### Other
+- DAL: clear lib/cma-delivery.ts (properties + listings via DAL)
+
+---
+
+
 ## v1.282.48 (2026-05-23)
 
 ### Other
