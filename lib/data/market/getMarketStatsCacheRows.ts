@@ -43,6 +43,64 @@ export async function getMarketStatsCacheRowForGeo(options: {
   return (data ?? null) as MarketStatsCacheRow | null
 }
 
+/** Period-pinned cache row by (geo_type, geo_slug, period_type, period_start?). */
+export async function getMarketStatsCacheRowForPeriod(options: {
+  geoType: string
+  geoSlug: string
+  periodType?: string
+  periodStart?: string
+  columns?: string
+}): Promise<MarketStatsCacheRow | null> {
+  const sb = supabaseAnon()
+  if (!sb) return null
+  const columns =
+    options.columns ??
+    'id, geo_type, geo_slug, geo_label, period_type, period_start, period_end, sold_count, median_sale_price, avg_sale_price, total_volume, median_dom, speed_p25, speed_p50, speed_p75, median_ppsf, avg_sale_to_list_ratio, market_health_score, market_health_label, end_of_period_inventory, computed_at'
+  let q = sb
+    .from('market_stats_cache')
+    .select(columns)
+    .eq('geo_type', options.geoType)
+    .eq('geo_slug', options.geoSlug)
+    .eq('period_type', options.periodType ?? 'monthly')
+  if (options.periodStart) q = q.eq('period_start', options.periodStart)
+  const { data } = await q.order('period_start', { ascending: false }).limit(1).maybeSingle()
+  return (data ?? null) as MarketStatsCacheRow | null
+}
+
+/** Upsert one market_pulse_live row (admin populate path). */
+export async function upsertMarketPulseLiveRow(
+  row: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = supabaseAnon()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb
+    .from('market_pulse_live')
+    .upsert(row, { onConflict: 'geo_type,geo_slug' })
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** market_pulse_live row by (geo_type, geo_slug, property_type) — typed wide projection. */
+export async function getMarketPulseRowForGeo(options: {
+  geoType: string
+  geoSlug: string
+  propertyType?: string
+  columns?: string
+}): Promise<Record<string, unknown> | null> {
+  const sb = supabaseAnon()
+  if (!sb) return null
+  const columns =
+    options.columns ??
+    'geo_type, geo_slug, geo_label, active_count, pending_count, new_count_7d, new_count_30d, median_list_price, avg_list_price, market_health_score, market_health_label, updated_at'
+  const { data } = await sb
+    .from('market_pulse_live')
+    .select(columns)
+    .eq('geo_type', options.geoType)
+    .eq('geo_slug', options.geoSlug)
+    .eq('property_type', options.propertyType ?? 'A')
+    .maybeSingle()
+  return (data ?? null) as Record<string, unknown> | null
+}
+
 /** Many geos at once: returns one row (latest period_end) per geo_slug. */
 export async function getMarketStatsCacheRowsForGeos(options: {
   geoSlugs: string[]

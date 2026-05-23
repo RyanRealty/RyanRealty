@@ -109,6 +109,18 @@ export async function bulkUpsertResortFlags(
   return { ok: true, count: rows.length }
 }
 
+/** Check whether a single entity_key is flagged. Returns true if a row exists. */
+export async function isSubdivisionFlagged(entityKey: string): Promise<boolean> {
+  const sb = adminClient() ?? supabaseAnon()
+  if (!sb) return false
+  const { data } = await sb
+    .from('subdivision_flags')
+    .select('entity_key')
+    .eq('entity_key', entityKey)
+    .maybeSingle()
+  return data != null
+}
+
 /** Read all (entity_key, is_resort) rows. */
 export async function getAllSubdivisionFlags(): Promise<Array<{ entity_key: string; is_resort: boolean }>> {
   const sb = adminClient() ?? supabaseAnon()

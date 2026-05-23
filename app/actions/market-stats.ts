@@ -52,17 +52,14 @@ export async function getCachedStats(input: {
   periodType?: MarketPeriodType
   periodStart?: string
 }): Promise<CachedStatRow | null> {
-  const supabase = createServiceClient()
-  let query = supabase
-    .from('market_stats_cache')
-    .select('id, geo_type, geo_slug, geo_label, period_type, period_start, period_end, sold_count, median_sale_price, avg_sale_price, total_volume, median_dom, speed_p25, speed_p50, speed_p75, median_ppsf, avg_sale_to_list_ratio, market_health_score, market_health_label, end_of_period_inventory, computed_at')
-    .eq('geo_type', input.geoType)
-    .eq('geo_slug', input.geoSlug)
-    .eq('period_type', input.periodType ?? 'monthly')
-  if (input.periodStart) {
-    query = query.eq('period_start', input.periodStart)
-  }
-  const { data } = await query.order('period_start', { ascending: false }).limit(1).maybeSingle()
+  void createServiceClient
+  const { getMarketStatsCacheRowForPeriod } = await import('@/lib/data')
+  const data = await getMarketStatsCacheRowForPeriod({
+    geoType: input.geoType,
+    geoSlug: input.geoSlug,
+    periodType: input.periodType ?? 'monthly',
+    periodStart: input.periodStart,
+  })
   return (data as CachedStatRow | null) ?? null
 }
 
@@ -79,14 +76,13 @@ export async function getLiveMarketPulse(input: {
    */
   propertyType?: string
 }): Promise<MarketPulseRow | null> {
-  const supabase = createServiceClient()
-  const { data } = await supabase
-    .from('market_pulse_live')
-    .select('geo_type, geo_slug, geo_label, active_count, pending_count, new_count_7d, new_count_30d, median_list_price, avg_list_price, market_health_score, market_health_label, updated_at')
-    .eq('geo_type', input.geoType)
-    .eq('geo_slug', input.geoSlug)
-    .eq('property_type', input.propertyType ?? 'A')
-    .maybeSingle()
+  void createServiceClient
+  const { getMarketPulseRowForGeo } = await import('@/lib/data')
+  const data = await getMarketPulseRowForGeo({
+    geoType: input.geoType,
+    geoSlug: input.geoSlug,
+    propertyType: input.propertyType ?? 'A',
+  })
   return (data as MarketPulseRow | null) ?? null
 }
 
@@ -177,28 +173,25 @@ export async function populateMarketPulseForCity(cityName: string): Promise<{ ok
       (t) => t.onMarketDate != null && t.onMarketDate.slice(0, 10) >= cutoff30
     ).length
 
-    // Upsert into market_pulse_live (write path stays on the table; reads
-    // are DAL-protected. The write is allow-listed below the boundary check
-    // because the destination IS the canonical cache table.)
-    // eslint-disable-next-line no-restricted-syntax -- destination cache write
-    const { error } = await supabase
-      .from('market_pulse_live')
-      .upsert({
-        geo_type: 'city',
-        geo_slug: geoSlug,
-        geo_label: cityName,
-        active_count: activeCount,
-        pending_count: pendingCount,
-        new_count_7d: new7d,
-        new_count_30d: new30d,
-        median_list_price: medianListPrice,
-        avg_list_price: avgListPrice,
-        market_health_score: null,
-        market_health_label: null,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'geo_type,geo_slug' })
+    // Upsert into market_pulse_live via DAL.
+    void supabase
+    const { upsertMarketPulseLiveRow } = await import('@/lib/data')
+    const res = await upsertMarketPulseLiveRow({
+      geo_type: 'city',
+      geo_slug: geoSlug,
+      geo_label: cityName,
+      active_count: activeCount,
+      pending_count: pendingCount,
+      new_count_7d: new7d,
+      new_count_30d: new30d,
+      median_list_price: medianListPrice,
+      avg_list_price: avgListPrice,
+      market_health_score: null,
+      market_health_label: null,
+      updated_at: new Date().toISOString(),
+    })
 
-    if (error) return { ok: false, error: error.message }
+    if (!res.ok) return { ok: false, error: res.error }
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
@@ -272,15 +265,11 @@ export async function getMarketStatsForSubdivision(
   subdivision: string
 ): Promise<CityMarketStats> {
   const entityKey = subdivisionEntityKey(city, subdivision) // e.g. 'bend:tetherow'
-  const supabase = createServiceClient()
-
+  void createServiceClient
+  const { isSubdivisionFlagged } = await import('@/lib/data')
   // Is this a registered resort/area community? (subdivision_flags is populated
   // by the resort-communities migration; only those rows route to 'neighborhood'.)
-  const { data: flag } = await supabase
-    .from('subdivision_flags')
-    .select('entity_key')
-    .eq('entity_key', entityKey)
-    .maybeSingle()
+  const flag = await isSubdivisionFlagged(entityKey)
 
   if (flag) {
     // 'tetherow' (not 'bend:tetherow') — bare community slug for neighborhood-level cache

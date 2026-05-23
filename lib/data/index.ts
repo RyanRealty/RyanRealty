@@ -141,6 +141,9 @@ export { getMarketStats } from '@/lib/data/market/getMarketStats'
 export {
   getMarketStatsCacheRowForGeo,
   getMarketStatsCacheRowsForGeos,
+  getMarketStatsCacheRowForPeriod,
+  getMarketPulseRowForGeo,
+  upsertMarketPulseLiveRow,
 } from '@/lib/data/market/getMarketStatsCacheRows'
 export type { MarketStatsCacheRow } from '@/lib/data/market/getMarketStatsCacheRows'
 export { getMarketPulse } from '@/lib/data/market/getMarketPulse'
@@ -182,12 +185,15 @@ export {
   insertHeroEntityRow,
   getPageImageUrlsForPage,
   insertPageImageRow,
+  updateCityById,
 } from '@/lib/data/cities/getCityMetadata'
 export type { CityMetadata } from '@/lib/data/cities/getCityMetadata'
 export {
   getNeighborhoodsByCityId,
   getNeighborhoodBySlugInCity,
   getNeighborhoodNameById,
+  getAllNeighborhoodsWithCity,
+  updateNeighborhoodById,
 } from '@/lib/data/cities/getNeighborhoodMetadata'
 export type { NeighborhoodLite, NeighborhoodFull } from '@/lib/data/cities/getNeighborhoodMetadata'
 
@@ -253,6 +259,7 @@ export {
   upsertSubdivisionResortFlag,
   bulkUpsertResortFlags,
   getAllSubdivisionFlags,
+  isSubdivisionFlagged,
 } from '@/lib/data/communities/subdivisionFlags'
 export type { CommunityRowForBackfill } from '@/lib/data/communities/subdivisionFlags'
 

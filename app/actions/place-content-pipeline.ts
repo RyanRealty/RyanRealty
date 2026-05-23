@@ -43,29 +43,21 @@ export type PlaceContentChunkResult = {
 export async function listCitiesForContentRefresh(): Promise<
   { id: string; name: string; slug: string }[]
 > {
-  const sb = serviceSupabase()
-  if (!sb) return []
-  const { data } = await sb.from('cities').select('id, name, slug').order('name')
-  return (data ?? []) as { id: string; name: string; slug: string }[]
+  void serviceSupabase
+  const { getAllCitiesForAdminUpload } = await import('@/lib/data')
+  const cities = await getAllCitiesForAdminUpload()
+  return cities
+    .map((c) => ({ id: c.id, name: c.name, slug: c.slug }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /** List all neighborhoods from DB with city slug for content refresh. */
 export async function listNeighborhoodsForContentRefresh(): Promise<
   { id: string; name: string; slug: string; cityName: string; citySlug: string }[]
 > {
-  const sb = serviceSupabase()
-  if (!sb) return []
-  const { data: rows } = await sb
-    .from('neighborhoods')
-    .select('id, name, slug, city_id, cities(name, slug)')
-    .order('name')
-  const list = (rows ?? []) as {
-    id: string
-    name: string
-    slug: string
-    city_id: string
-    cities?: { name: string; slug: string } | { name: string; slug: string }[] | null
-  }[]
+  void serviceSupabase
+  const { getAllNeighborhoodsWithCity } = await import('@/lib/data')
+  const list = await getAllNeighborhoodsWithCity()
   return list
     .map((r) => {
       const city = Array.isArray(r.cities) ? r.cities[0] : r.cities
@@ -126,8 +118,8 @@ async function generateAndWriteCityContent(
     const description = await generateGrokText({ prompt, max_tokens: 550 })
     if (!description?.trim()) return { ok: false, error: 'Generated description was empty.' }
 
-    const sb = serviceSupabase()
-    if (!sb) return { ok: false, error: 'Supabase not configured.' }
+    void serviceSupabase
+    const { updateCityById } = await import('@/lib/data')
 
     const seoTitle = `Homes for Sale in ${cityName}, Oregon | Ryan Realty`
     const seoDesc =
@@ -135,15 +127,12 @@ async function generateAndWriteCityContent(
         ? `${stats.count} homes for sale in ${cityName}. Median price ${priceStr}. Explore communities and market stats.`
         : `Explore ${cityName}, Oregon. Communities, neighborhoods, and real estate overview.`
 
-    await sb
-      .from('cities')
-      .update({
-        description: description.trim(),
-        seo_title: seoTitle,
-        seo_description: seoDesc,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', cityId)
+    await updateCityById(cityId, {
+      description: description.trim(),
+      seo_title: seoTitle,
+      seo_description: seoDesc,
+      updated_at: new Date().toISOString(),
+    })
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' }
@@ -179,8 +168,8 @@ async function generateAndWriteNeighborhoodContent(
     const description = await generateGrokText({ prompt, max_tokens: 450 })
     if (!description?.trim()) return { ok: false, error: 'Generated description was empty.' }
 
-    const sb = serviceSupabase()
-    if (!sb) return { ok: false, error: 'Supabase not configured.' }
+    void serviceSupabase
+    const { updateNeighborhoodById } = await import('@/lib/data')
 
     const seoTitle = `${neighborhoodName} Homes for Sale | ${cityName}, Oregon | Ryan Realty`
     const seoDesc =
@@ -188,15 +177,12 @@ async function generateAndWriteNeighborhoodContent(
         ? `${neighborhoodName} in ${cityName}: ${dataBlurb}. Browse listings and market info.`
         : `Explore ${neighborhoodName}, ${cityName}, Oregon. Neighborhood info and homes for sale.`
 
-    await sb
-      .from('neighborhoods')
-      .update({
-        description: description.trim(),
-        seo_title: seoTitle,
-        seo_description: seoDesc,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', neighborhoodId)
+    await updateNeighborhoodById(neighborhoodId, {
+      description: description.trim(),
+      seo_title: seoTitle,
+      seo_description: seoDesc,
+      updated_at: new Date().toISOString(),
+    })
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Unknown error' }

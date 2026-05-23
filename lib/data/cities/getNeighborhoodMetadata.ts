@@ -40,6 +40,42 @@ export async function getNeighborhoodBySlugInCity(
   return (data ?? null) as NeighborhoodFull | null
 }
 
+/** All neighborhoods with embedded city (name + slug) join — used by content refresh. */
+export async function getAllNeighborhoodsWithCity(): Promise<
+  Array<{
+    id: string
+    name: string
+    slug: string
+    city_id: string
+    cities?: { name: string; slug: string } | { name: string; slug: string }[] | null
+  }>
+> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data } = await sb
+    .from('neighborhoods')
+    .select('id, name, slug, city_id, cities(name, slug)')
+    .order('name')
+  return (data ?? []) as Array<{
+    id: string
+    name: string
+    slug: string
+    city_id: string
+    cities?: { name: string; slug: string } | { name: string; slug: string }[] | null
+  }>
+}
+
+/** Patch a neighborhood row by id (admin content refresh). */
+export async function updateNeighborhoodById(
+  id: string,
+  updates: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = supabaseAnon()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('neighborhoods').update(updates).eq('id', id)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
 /** A single neighborhood's name by id (used by adjacency mappers). */
 export async function getNeighborhoodNameById(id: string): Promise<string | null> {
   const sb = supabaseAnon()

@@ -170,6 +170,17 @@ export async function insertPageImageRow(row: {
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
+/** Patch a city row by id (admin content refresh). */
+export async function updateCityById(
+  id: string,
+  updates: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = supabaseAnon()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('cities').update(updates).eq('id', id)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
 /** Lookup the city id by display name (case-insensitive). Used for legacy neighborhood joins. */
 export async function getCityIdByName(name: string): Promise<string | null> {
   const sb = supabaseAnon()

@@ -1,9 +1,7 @@
 {
-  "generatedAt": "2026-05-23T01:53:10.785Z",
-  "total": 99,
+  "generatedAt": "2026-05-23T01:57:20.618Z",
+  "total": 91,
   "byFile": {
-    "app/actions/market-stats.ts": 4,
-    "app/actions/place-content-pipeline.ts": 4,
     "lib/cma.ts": 4,
     "app/actions/reports.ts": 3,
     "app/actions/semantic-search.ts": 3,
