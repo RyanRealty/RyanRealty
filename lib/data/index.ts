@@ -91,6 +91,8 @@ export type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
 
 // Listings — detail page (stub today; real impl with listing_detail_mv in Wave 1.5)
 export { getListingDetail } from '@/lib/data/listings/getListingDetail'
+export { getListingRawRowByKey } from '@/lib/data/listings/getListingRawRow'
+export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
 
 // Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'

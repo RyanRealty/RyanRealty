@@ -1727,22 +1727,15 @@ export const getHotCommunitiesInCity = unstable_cache(
  * Returns null if no listings with coordinates in that city.
  */
 export async function getCityCentroid(city: string): Promise<{ lat: number; lng: number } | null> {
-  const supabase = getAnonSupabase()
-  if (!supabase || !city?.trim()) return null
-  const { data } = await supabase
-    .from('listings')
-    .select('Latitude, Longitude')
-    .eq('"City"', city)
-    .not('Latitude', 'is', null)
-    .not('Longitude', 'is', null)
-    .limit(500)
-  const rows = (data ?? []) as { Latitude?: number | null; Longitude?: number | null }[]
-  const valid = rows.filter(
-    (r) => Number.isFinite(Number(r.Latitude)) && Number.isFinite(Number(r.Longitude))
+  if (!city?.trim()) return null
+  const { getCityListings: getCityListingsDAL } = await import('@/lib/data')
+  const tiles = await getCityListingsDAL(city, { status: 'all', sort: 'newest', limit: 500 })
+  const valid = tiles.filter(
+    (t) => Number.isFinite(Number(t.lat)) && Number.isFinite(Number(t.lng))
   )
   if (valid.length === 0) return null
-  const lat = valid.reduce((a, r) => a + Number(r.Latitude), 0) / valid.length
-  const lng = valid.reduce((a, r) => a + Number(r.Longitude), 0) / valid.length
+  const lat = valid.reduce((a, t) => a + Number(t.lat), 0) / valid.length
+  const lng = valid.reduce((a, t) => a + Number(t.lng), 0) / valid.length
   return { lat, lng }
 }
 
@@ -1754,23 +1747,21 @@ export async function getCommunityCentroid(
   city: string,
   subdivisionName: string
 ): Promise<{ lat: number; lng: number } | null> {
-  const supabase = getAnonSupabase()
-  if (!supabase || !city?.trim() || !subdivisionName?.trim()) return null
-  const { data } = await supabase
-    .from('listings')
-    .select('Latitude, Longitude')
-    .eq('"City"', city)
-    .eq('"SubdivisionName"', subdivisionName)
-    .limit(100)
-  const rows = (data ?? []) as { Latitude?: number | null; Longitude?: number | null }[]
-  const valid = rows.filter(
-    (r) =>
-      Number.isFinite(Number(r.Latitude)) &&
-      Number.isFinite(Number(r.Longitude))
+  if (!city?.trim() || !subdivisionName?.trim()) return null
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({
+    city,
+    subdivision: subdivisionName,
+    status: 'all',
+    sort: 'newest',
+    limit: 100,
+  })
+  const valid = tiles.filter(
+    (t) => Number.isFinite(Number(t.lat)) && Number.isFinite(Number(t.lng))
   )
   if (valid.length === 0) return null
-  const lat = valid.reduce((a, r) => a + Number(r.Latitude), 0) / valid.length
-  const lng = valid.reduce((a, r) => a + Number(r.Longitude), 0) / valid.length
+  const lat = valid.reduce((a, t) => a + Number(t.lat), 0) / valid.length
+  const lng = valid.reduce((a, t) => a + Number(t.lng), 0) / valid.length
   return { lat, lng }
 }
 
@@ -1879,33 +1870,18 @@ export type ListingDetailRow = {
  * (first segment, all numeric segments, hyphen stripping) and both PascalCase and snake_case columns.
  */
 export async function getListingByKey(listingKeyOrSlug: string): Promise<ListingDetailRow | null> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return null
   const raw = String(listingKeyOrSlug ?? '')
   const decoded = decodeURIComponent(raw).trim()
   if (!decoded) return null
 
-  const normalize = (row: ListingDetailRow): ListingDetailRow => {
-    if (row.details && typeof row.details === 'string') row.details = JSON.parse(row.details) as Record<string, unknown>
-    return row
-  }
+  const { getListingRawRowByKey } = await import('@/lib/data')
 
-  /** Try to find a row by key (ListNumber or ListingKey). Tries PascalCase then snake_case columns. */
+  /** Resolve by first segment, numeric segments, raw slug, then truncated slug. */
   const tryKey = async (key: string): Promise<ListingDetailRow | null> => {
-    const k = String(key ?? '').trim()
-    if (!k) return null
-    const { data: byNumber } = await supabase.from('listings').select('*').eq('ListNumber', k).maybeSingle()
-    if (byNumber) return normalize(byNumber as ListingDetailRow)
-    const { data: byKey } = await supabase.from('listings').select('*').eq('ListingKey', k).maybeSingle()
-    if (byKey) return normalize(byKey as ListingDetailRow)
-    const { data: bySnakeNum } = await supabase.from('listings').select('*').eq('list_number', k).maybeSingle()
-    if (bySnakeNum) return normalize(bySnakeNum as ListingDetailRow)
-    const { data: bySnakeKey } = await supabase.from('listings').select('*').eq('listing_key', k).maybeSingle()
-    if (bySnakeKey) return normalize(bySnakeKey as ListingDetailRow)
-    return null
+    const row = await getListingRawRowByKey(key)
+    return row ? (row as ListingDetailRow) : null
   }
 
-  /** Resolve by first segment, numeric segments, raw slug, then truncated slug (see slug.ts / listingKeyFromSlug). */
   const firstKey = listingKeyFromSlug(decoded).trim()
   if (firstKey) {
     const row = await tryKey(firstKey)
@@ -1988,11 +1964,18 @@ export async function getListingsAtAddress(options: ListingsAtAddressOptions): P
  * Fetch listing tile rows by listing keys (e.g. for saved homes). Preserves order of keys where possible.
  */
 export async function getListingsByKeys(keys: string[]): Promise<ListingTileRow[]> {
-  const supabase = getAnonSupabase()
-  if (!supabase || keys.length === 0) return []
-  const { data } = await supabase.from('listings').select(LISTING_TILE_SELECT).in('ListingKey', keys)
-  const rows = (data ?? []) as ListingTileRow[]
-  const byKey = new Map(rows.map((r) => [r.ListingKey ?? r.ListNumber ?? '', r]))
+  if (keys.length === 0) return []
+  void LISTING_TILE_SELECT
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({
+    listingKeys: keys.map((k) => k.trim()).filter(Boolean).slice(0, 5000),
+    status: 'all',
+    sort: 'newest',
+    limit: 500,
+  })
+  const byKey = new Map(
+    tiles.map((t) => [t.listingKey || t.listNumber || '', tileToListingTileRow(t)])
+  )
   return keys.map((k) => byKey.get(k)).filter(Boolean) as ListingTileRow[]
 }
 
@@ -2001,26 +1984,51 @@ export async function getListingsByKeys(keys: string[]): Promise<ListingTileRow[
  * Keys may be ListingKey or ListNumber (e.g. from URL or cookie); we query both and merge.
  */
 export async function getHomeTileRowsByKeys(keys: string[]): Promise<HomeTileRow[]> {
-  const supabase = getAnonSupabase()
-  if (!supabase || keys.length === 0) return []
   const trimmedKeys = keys.map((k) => k.trim()).filter(Boolean)
   if (trimmedKeys.length === 0) return []
-  const [byListingKey, byListNumber] = await Promise.all([
-    supabase.from('listings').select(HOME_TILE_SELECT).in('ListingKey', trimmedKeys),
-    supabase.from('listings').select(HOME_TILE_SELECT).in('ListNumber', trimmedKeys),
+  void HOME_TILE_SELECT
+  const { getListingTiles } = await import('@/lib/data')
+  const [byListingKeyTiles, byListNumberTiles] = await Promise.all([
+    getListingTiles({ listingKeys: trimmedKeys.slice(0, 5000), status: 'all', sort: 'newest', limit: 500 }),
+    getListingTiles({ listNumbers: trimmedKeys.slice(0, 5000), status: 'all', sort: 'newest', limit: 500 }),
   ])
-  const rowsA = (byListingKey.data ?? []) as HomeTileRow[]
-  const rowsB = (byListNumber.data ?? []) as HomeTileRow[]
   const byKey = new Map<string, HomeTileRow>()
-  for (const r of rowsA) {
-    const k = (r.ListingKey ?? r.ListNumber ?? '').toString().trim()
-    if (k) byKey.set(k, r)
+  for (const t of byListingKeyTiles) {
+    const k = (t.listingKey ?? t.listNumber ?? '').toString().trim()
+    if (k) byKey.set(k, tileToHomeTileRow(t))
   }
-  for (const r of rowsB) {
-    const k = (r.ListNumber ?? r.ListingKey ?? '').toString().trim()
-    if (k && !byKey.has(k)) byKey.set(k, r)
+  for (const t of byListNumberTiles) {
+    const k = (t.listNumber ?? t.listingKey ?? '').toString().trim()
+    if (k && !byKey.has(k)) byKey.set(k, tileToHomeTileRow(t))
   }
   return trimmedKeys.map((k) => byKey.get(k)).filter(Boolean) as HomeTileRow[]
+}
+
+/** Map a DAL ListingTile to the legacy ListingTileRow shape. */
+function tileToListingTileRow(t: ListingTile): ListingTileRow {
+  return {
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    mls_source: null,
+    ListPrice: t.listPrice,
+    BedroomsTotal: t.beds,
+    BathroomsTotal: t.baths,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: 'OR',
+    PostalCode: t.postalCode,
+    SubdivisionName: t.subdivisionName,
+    PhotoURL: t.photoUrl,
+    Latitude: t.lat,
+    Longitude: t.lng,
+    ModificationTimestamp: t.modifiedAt,
+    PropertyType: t.propertyType,
+    StandardStatus: t.status,
+    OnMarketDate: t.onMarketDate,
+    ClosePrice: t.closePrice,
+    CloseDate: t.closeDate,
+  }
 }
 
 /**
