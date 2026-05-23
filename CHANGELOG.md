@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.32 (2026-05-23)
+
+### Other
+- DAL: continue sync-spark.ts migrations (history + photos + scope)
+
+---
+
+
 ## v1.282.31 (2026-05-23)
 
 ### Other
