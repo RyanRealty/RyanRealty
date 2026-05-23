@@ -265,23 +265,24 @@ async function resolveListingKeyFromSlug(supabase: ReturnType<typeof getSupabase
     const c = String(candidate ?? '').trim()
     if (!c) return null
 
-    // Try ListNumber first (canonical URL id), then ListingKey
+    // Try ListNumber first (canonical URL id), then ListingKey — both via DAL.
     try {
-      const { data } = await supabase
-        .from('listings')
-        .select('ListingKey, ModificationTimestamp')
-        .eq('ListNumber', c)
-        .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-        .limit(5)
-      const match = (data ?? []).find((row) => String((row as { ListingKey?: string | null }).ListingKey ?? '').trim().length > 0) as
-        | { ListingKey?: string | null }
-        | undefined
-      if (match?.ListingKey) return String(match.ListingKey).trim()
-    } catch { /* ignore */ }
+      const { getListingTiles } = await import('@/lib/data')
+      const byNum = await getListingTiles({
+        listNumbers: [c],
+        status: 'all',
+        sort: 'newest',
+        limit: 5,
+      })
+      const matchByNum = byNum.find((t) => t.listingKey.trim().length > 0)
+      if (matchByNum?.listingKey) return matchByNum.listingKey.trim()
 
-    try {
-      const { data } = await supabase.from('listings').select('ListingKey').eq('ListingKey', c).limit(1)
-      if (data?.[0]?.ListingKey) return String(data[0].ListingKey).trim()
+      const byKey = await getListingTiles({
+        listingKeys: [c],
+        status: 'all',
+        limit: 1,
+      })
+      if (byKey[0]?.listingKey) return byKey[0].listingKey.trim()
     } catch { /* ignore */ }
 
     return null
