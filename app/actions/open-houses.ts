@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
+import { getListingTiles } from '@/lib/data'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -99,18 +100,32 @@ async function _getOpenHousesWithListingsUncached(filters: OpenHousesFilters = {
   const listingKeys = [...new Set((rows ?? []).map((r: { listing_key: string }) => r.listing_key))]
   if (listingKeys.length === 0) return []
 
-  const { data: listingRows } = await supabase
-    .from('listings')
-    .select('listing_key, list_number, list_price, beds_total, baths_full, living_area, subdivision_name, property_id')
-    .in('listing_key', listingKeys)
-
-  const propIds = (listingRows ?? [])
-    .map((l: { property_id?: string }) => l.property_id)
-    .filter((id): id is string => Boolean(id))
-  const { data: propRows } = await supabase
-    .from('properties')
-    .select('id, city, state, postal_code, street_number, street_name, unparsed_address, latitude, longitude')
-    .in('id', propIds)
+  // DAL: read tiles from listing_tile_mv (city/postal/street are in the tile,
+  // so we no longer need to join through the legacy properties table). Photos
+  // join stays — listing_photos isn't in the MV.
+  const tiles = await getListingTiles({
+    listingKeys: listingKeys.slice(0, 5000),
+    status: 'all',
+    limit: 500,
+  })
+  const listingRows = tiles.map((t) => ({
+    listing_key: t.listingKey,
+    list_number: t.listNumber,
+    list_price: t.listPrice,
+    beds_total: t.beds,
+    baths_full: t.baths,
+    living_area: t.sqft,
+    subdivision_name: t.subdivisionName,
+    // Inline what was previously joined from properties:
+    city: t.city,
+    state: null as string | null,
+    postal_code: t.postalCode,
+    street_number: t.streetNumber,
+    street_name: t.streetName,
+    latitude: t.lat,
+    longitude: t.lng,
+    photo_url: t.photoUrl,
+  }))
 
   const { data: photoRows } = await supabase
     .from('listing_photos')
@@ -120,9 +135,8 @@ async function _getOpenHousesWithListingsUncached(filters: OpenHousesFilters = {
     .limit(listingKeys.length * 2)
 
   const listingsByKey = new Map(
-    (listingRows ?? []).map((l: Record<string, unknown>) => [l.listing_key as string, l])
+    listingRows.map((l) => [l.listing_key, l as Record<string, unknown>]),
   )
-  const propsById = new Map((propRows ?? []).map((p: { id: string }) => [p.id, p]))
   const heroByKey = new Map(
     (photoRows ?? []).map((p: { listing_key: string; photo_url: string }) => [p.listing_key, p.photo_url])
   )
@@ -140,11 +154,26 @@ async function _getOpenHousesWithListingsUncached(filters: OpenHousesFilters = {
       remarks: string | null
       rsvp_count: number
     }
-    const listRec = listingsByKey.get(row.listing_key) as { property_id?: string; list_number?: string | null; list_price?: number; beds_total?: number; baths_full?: number; living_area?: number; subdivision_name?: string } | undefined
-    const propData = listRec?.property_id ? propsById.get(listRec.property_id) : null
-    const prop = propData as { city?: string; state?: string; postal_code?: string; street_number?: string; street_name?: string; unparsed_address?: string; latitude?: number; longitude?: number } | null
-    const address = prop?.unparsed_address ?? [prop?.street_number, prop?.street_name].filter(Boolean).join(' ')
-    const city = prop?.city ?? null
+    const listRec = listingsByKey.get(row.listing_key) as {
+      property_id?: string
+      list_number?: string | null
+      list_price?: number
+      beds_total?: number
+      baths_full?: number
+      living_area?: number
+      subdivision_name?: string
+      city?: string | null
+      state?: string | null
+      postal_code?: string | null
+      street_number?: string | null
+      street_name?: string | null
+      latitude?: number | null
+      longitude?: number | null
+    } | undefined
+    // DAL listing_tile_mv inlines the address/geo fields the legacy
+    // properties join used to provide. No properties table join needed.
+    const address = [listRec?.street_number, listRec?.street_name].filter(Boolean).join(' ')
+    const city = listRec?.city ?? null
     const subdivision = listRec?.subdivision_name ?? null
 
     if (filters.community?.length && subdivision && !filters.community.includes(subdivision)) continue
@@ -174,14 +203,14 @@ async function _getOpenHousesWithListingsUncached(filters: OpenHousesFilters = {
       living_area: listRec?.living_area ?? null,
       subdivision_name: subdivision ?? null,
       city: city ?? null,
-      state: prop?.state ?? null,
-      postal_code: prop?.postal_code ?? null,
-      street_number: prop?.street_number ?? null,
-      street_name: prop?.street_name ?? null,
+      state: listRec?.state ?? null,
+      postal_code: listRec?.postal_code ?? null,
+      street_number: listRec?.street_number ?? null,
+      street_name: listRec?.street_name ?? null,
       unparsed_address: address || null,
       photo_url: heroByKey.get(row.listing_key) ?? null,
-      latitude: prop?.latitude ?? null,
-      longitude: prop?.longitude ?? null,
+      latitude: listRec?.latitude ?? null,
+      longitude: listRec?.longitude ?? null,
     })
   }
   return result

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T00:14:39.921Z",
-  "total": 346,
+  "generatedAt": "2026-05-23T00:17:24.720Z",
+  "total": 344,
   "byFile": {
     "app/actions/listings.ts": 66,
     "app/actions/sync-spark.ts": 28,
@@ -19,7 +19,6 @@
     "app/actions/communities.ts": 4,
     "app/actions/dashboard.ts": 4,
     "app/actions/market-reports.ts": 4,
-    "app/actions/open-houses.ts": 4,
     "app/actions/place-content-pipeline.ts": 4,
     "app/actions/pulse-feed.ts": 4,
     "app/api/calendar/route.ts": 4,
@@ -43,6 +42,7 @@
     "lib/expired-listing-processor.ts": 3,
     "app/actions/broker-self.ts": 2,
     "app/actions/expired-listings.ts": 2,
+    "app/actions/open-houses.ts": 2,
     "app/actions/photo-classification.ts": 2,
     "app/actions/videos.ts": 2,
     "app/api/open-houses/rsvp/route.ts": 2,
