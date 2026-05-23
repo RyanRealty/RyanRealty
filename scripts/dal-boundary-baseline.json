@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T00:04:24.136Z",
-  "total": 358,
+  "generatedAt": "2026-05-23T00:06:15.195Z",
+  "total": 356,
   "byFile": {
     "app/actions/listings.ts": 66,
     "app/actions/sync-spark.ts": 28,
@@ -17,7 +17,6 @@
     "app/api/cron/sync-delta/route.ts": 7,
     "app/actions/activity-feed.ts": 6,
     "lib/fetch-listings-with-videos.ts": 6,
-    "app/actions/home.ts": 5,
     "app/actions/broker-self.ts": 4,
     "app/actions/communities.ts": 4,
     "app/actions/dashboard.ts": 4,
@@ -32,6 +31,7 @@
     "app/api/pdf/listing/route.ts": 4,
     "app/lp/bend/page.tsx": 4,
     "lib/cma.ts": 4,
+    "app/actions/home.ts": 3,
     "app/actions/semantic-search.ts": 3,
     "app/api/admin/expired-listing-lookup/route.ts": 3,
     "app/api/listings/[listingKey]/track/route.ts": 3,

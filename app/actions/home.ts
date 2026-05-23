@@ -163,26 +163,7 @@ async function _getRecentlySoldUncached(city?: string): Promise<(HomeTileRow & {
       CloseDate: t.closeDate,
     }))
   } catch {
-    try {
-      const sb = supabase()
-      let query = sb
-        .from('listings')
-        .select(`${HOME_TILE_SELECT}, close_price`)
-        .or(CLOSED_OR)
-        .not('close_date', 'is', null)
-        .order('close_date', { ascending: false, nullsFirst: false })
-        .limit(4)
-      if (city?.trim()) query = query.eq('"City"', city.trim())
-      const { data } = await query
-      const rows = (data ?? []) as (HomeTileRow & { close_price?: number | null; close_date?: string | null })[]
-      return rows.map((r) => ({
-        ...r,
-        ClosePrice: (r as { close_price?: number }).close_price,
-        CloseDate: (r as { close_date?: string }).close_date,
-      }))
-    } catch {
-      return []
-    }
+    return []
   }
 }
 
@@ -213,30 +194,7 @@ export async function getPriceDrops(city?: string): Promise<(HomeTileRow & { ori
       savings: r.OriginalListPrice != null && r.ListPrice != null ? r.OriginalListPrice - r.ListPrice : undefined,
     }))
   } catch {
-    try {
-      const sb = supabase()
-      let query = sb
-        .from('listings')
-        .select(`${HOME_TILE_SELECT}, original_list_price`)
-        .or(ACTIVE_OR)
-        .not('list_price', 'is', null)
-        .gt('price_drop_count', 0)
-        .order('total_price_change_pct', { ascending: true })
-        .limit(6)
-      if (city?.trim()) query = query.eq('"City"', city.trim())
-      const { data } = await query
-      const rows = (data ?? []) as (HomeTileRow & { original_list_price?: number | null })[]
-      return rows.map((r) => ({
-        ...r,
-        originalPrice: (r as { original_list_price?: number }).original_list_price ?? undefined,
-        savings:
-          (r as { original_list_price?: number }).original_list_price != null && r.ListPrice != null
-            ? (r as { original_list_price: number }).original_list_price - r.ListPrice
-            : undefined,
-      }))
-    } catch {
-      return []
-    }
+    return []
   }
 }
 
