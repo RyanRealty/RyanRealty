@@ -659,7 +659,7 @@ export async function selectNewExpiredListings(options: {
     console.error('[selectNewExpiredListings] error:', error.message)
     return []
   }
-  return (data ?? []) as Array<Record<string, unknown>>
+  return (data ?? []) as unknown as Array<Record<string, unknown>>
 }
 
 /** Get the set of listing_keys already present in expired_listings (dedup check). */
@@ -703,7 +703,7 @@ export async function selectClosedListingsForCma(options: {
   if (options.lotAcresMin != null) query = query.gte('lot_size_acres', options.lotAcresMin)
   if (options.lotAcresMax != null) query = query.lte('lot_size_acres', options.lotAcresMax)
   const { data } = await query.order('CloseDate', { ascending: false }).limit(options.maxCount)
-  return (data ?? []) as Array<Record<string, unknown>>
+  return (data ?? []) as unknown as Array<Record<string, unknown>>
 }
 
 /** Read a wide listings row by key for CMA subject resolution. */
@@ -757,7 +757,7 @@ export async function selectCmaSubjectListings(options: {
     if (options.streetNumber) q = q.eq('StreetNumber', options.streetNumber)
     q = q.ilike('City', options.cityIlike)
     const { data, error } = await q.limit(20)
-    if (!error) return (data ?? []) as Array<Record<string, unknown>>
+    if (!error) return (data ?? []) as unknown as Array<Record<string, unknown>>
     await new Promise((r) => setTimeout(r, attempt === 0 ? 500 : 1500))
   }
   return []
@@ -892,7 +892,7 @@ export async function getBoundariesByGeoType(options: {
     .select(columns)
     .eq('geo_type', options.geoType)
     .limit(Math.min(Math.max(options.limit ?? 5000, 1), 50000))
-  return (data ?? []) as Array<Record<string, unknown>>
+  return (data ?? []) as unknown as Array<Record<string, unknown>>
 }
 
 /** Upsert one video_tours_cache row. */
@@ -916,7 +916,7 @@ export async function getExpiredListingsForDigest(options: {
     .gte('expired_at', options.sinceIso)
     .order('expired_at', { ascending: false })
     .limit(Math.min(Math.max(options.limit ?? 200, 1), 5000))
-  return (data ?? []) as Array<Record<string, unknown>>
+  return (data ?? []) as unknown as Array<Record<string, unknown>>
 }
 
 /** Generic listings select with flexible columns + filter — used by remaining admin/cron files. */

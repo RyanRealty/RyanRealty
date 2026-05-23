@@ -1493,7 +1493,7 @@ export async function syncListingHistory(options?: {
         statusOr: terminalScopedOr,
         limit: 1,
       })
-      let remainingRowsScoped: typeof rows | null = remainingScoped.rows
+      const remainingRowsScoped: typeof rows | null = remainingScoped.rows
       if (remainingScoped.error) {
         const timeoutLike = /statement timeout|canceling statement|timeout|57014/i.test(remainingScoped.error)
         if (!timeoutLike) {

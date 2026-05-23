@@ -66,3 +66,9 @@ app/admin/(protected)/producers/[slug]/page.tsx
 # #FBBC05, #EA4335) for the official Google sign-in button. Google's
 # brand guidelines require these exact colors; cannot be CSS-var'd.
 app/lp/seller-home-value/page.tsx
+
+# CMA email route — renders the HTML email body + preview-page wrapper
+# as inline-style HTML. Email clients don't support CSS variables so
+# brand-color hex literals (#102742, #5f6c7c, #f5f3ed, #faf8f4) are
+# unavoidable. Tracked exception.
+app/api/cma/[slug]/email/route.ts

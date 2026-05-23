@@ -80,7 +80,7 @@ export async function getMarketStatsCacheRowsByGeoType(options: {
     .eq('period_type', options.periodType ?? 'monthly')
     .order('period_end', { ascending: false })
     .limit(options.limit)
-  return (data ?? []) as Array<Record<string, unknown>>
+  return (data ?? []) as unknown as Array<Record<string, unknown>>
 }
 
 /** Period-pinned cache row by (geo_type, geo_slug, period_type, period_start?). */
@@ -122,7 +122,7 @@ export async function getMarketPulseRowsByGeoType(options: {
     .eq('geo_type', options.geoType)
     .gt('active_count', options.minActiveCount ?? 0)
     .order('active_count', { ascending: false })
-  return (data ?? []) as Array<Record<string, unknown>>
+  return (data ?? []) as unknown as Array<Record<string, unknown>>
 }
 
 /** Upsert one market_pulse_live row (admin populate path). */

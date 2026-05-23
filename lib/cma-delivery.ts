@@ -477,7 +477,7 @@ async function findPropertyByAddress(params: {
   }
 
   let data: Array<{ id: string; unparsed_address?: string; street_name?: string }> | null = null
-  let lastError: { message?: string; code?: string } | null = null
+  const lastError: { message?: string; code?: string } | null = null
   for (let attempt = 0; attempt < 3; attempt++) {
     const rows = await buildQuery()
     {

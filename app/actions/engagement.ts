@@ -9,11 +9,8 @@ import {
   decrementListingSaveCount as _decrementListingSaveCount,
   incrementListingLikeCount as _incrementListingLikeCount,
   decrementListingLikeCount as _decrementListingLikeCount,
-  type EngagementCounts,
 } from '@/lib/data'
-
-export type { EngagementCounts }
-export type ListingDetailEngagement = EngagementCounts
+import type { EngagementCounts, ListingDetailEngagement } from '@/app/actions/engagement-types'
 
 /**
  * Batch-fetch engagement counts for a set of listing keys.
