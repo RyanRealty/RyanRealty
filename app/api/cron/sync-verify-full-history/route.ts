@@ -102,21 +102,27 @@ async function verifyOneListing(
     }
 
     let historyRowsInserted = 0
+    const {
+      deleteListingHistoryForKey,
+      insertListingHistoryRows,
+      updateListingByListNumber,
+    } = await import('@/lib/data')
+    void supabase
     if (items.length > 0) {
-      await supabase.from('listing_history').delete().eq('listing_key', listingKey)
+      await deleteListingHistoryForKey(listingKey)
       const historyRows = items.map((item) => sparkHistoryItemToRow(listingKey, item))
-      const { error: insertError } = await supabase.from('listing_history').insert(historyRows as never[])
-      if (!insertError) historyRowsInserted = historyRows.length
+      const ins = await insertListingHistoryRows(historyRows)
+      if (ins.ok) historyRowsInserted = historyRows.length
     }
 
-    const { error: updateError } = await supabase
-      .from('listings')
-      .update({ history_verified_full: true, is_finalized: true } as never)
-      .eq('ListNumber', row.ListNumber)
+    const updateRes = await updateListingByListNumber(row.ListNumber, {
+      history_verified_full: true,
+      is_finalized: true,
+    })
 
     return {
       processed: 1,
-      markedVerified: updateError ? 0 : 1,
+      markedVerified: updateRes.ok ? 1 : 0,
       historyRowsInserted,
       fetchFailures: 0,
     }
@@ -176,8 +182,10 @@ type TelemetryPayload = {
 }
 
 async function recordStrictVerifyRun(supabase: SupabaseClient, startedAtMs: number, row: TelemetryPayload) {
+  void supabase
+  const { insertStrictVerifyRun } = await import('@/lib/data')
   const durationMs = Date.now() - startedAtMs
-  const { error } = await supabase.from('strict_verify_runs').insert({
+  const res = await insertStrictVerifyRun({
     started_at: row.startedAtIso,
     completed_at: new Date().toISOString(),
     ok: row.ok,
@@ -191,9 +199,9 @@ async function recordStrictVerifyRun(supabase: SupabaseClient, startedAtMs: numb
     year_filter: row.yearFilter,
     duration_ms: durationMs,
     error_message: row.errorMessage,
-  } as never)
-  if (error) {
-    console.error('[sync-verify-full-history] strict_verify_runs insert failed', error.message)
+  })
+  if (!res.ok) {
+    console.error('[sync-verify-full-history] strict_verify_runs insert failed', res.error)
   }
 }
 
@@ -228,20 +236,17 @@ export async function GET(request: Request) {
   const fromIso = hasYear ? new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0)).toISOString() : null
   const toIso = hasYear ? new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0)).toISOString() : null
 
-  let query = supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, StandardStatus, OnMarketDate')
-    .eq('history_finalized', true)
-    .eq('history_verified_full', false)
-    .or(TERMINAL_STATUS_OR_FILTER)
-    .order('OnMarketDate', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  if (hasYear && fromIso && toIso) {
-    query = query.gte('OnMarketDate', fromIso).lt('OnMarketDate', toIso)
-  }
-
+  const { selectStrictVerifyCandidates } = await import('@/lib/data')
+  void supabase
+  type CandidateRow = { ListingKey?: string; ListNumber?: string; StandardStatus?: string; OnMarketDate?: string }
   try {
-    const { data, error } = await query
+    const { rows: data, error } = await selectStrictVerifyCandidates<CandidateRow>({
+      columns: 'ListingKey, ListNumber, StandardStatus, OnMarketDate',
+      terminalStatusOr: TERMINAL_STATUS_OR_FILTER,
+      limit,
+      onMarketFromIso: hasYear ? fromIso : null,
+      onMarketToIsoExclusive: hasYear ? toIso : null,
+    })
     if (error) {
       await recordStrictVerifyRun(supabase, startedAtMs, {
         startedAtIso,
@@ -254,9 +259,9 @@ export async function GET(request: Request) {
         limitParam: limit,
         concurrencyParam: concurrency,
         yearFilter,
-        errorMessage: error.message,
+        errorMessage: error,
       })
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+      return NextResponse.json({ ok: false, error: error }, { status: 500 })
     }
 
     const terminalRows = (data ?? []).filter((r) =>

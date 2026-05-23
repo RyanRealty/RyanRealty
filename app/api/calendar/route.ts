@@ -26,28 +26,26 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = getSupabase()
-  const { data: oh, error: ohError } = await supabase
-    .from('open_houses')
-    .select('id, listing_key, event_date, start_time, end_time, host_agent_name')
-    .eq('id', openHouseId)
-    .eq('listing_key', listingKey)
-    .gte('event_date', new Date().toISOString().slice(0, 10))
-    .maybeSingle()
-
-  if (ohError || !oh) {
+  const { getOpenHouseById, getListingTiles } = await import('@/lib/data')
+  const oh = await getOpenHouseById(openHouseId, listingKey)
+  if (!oh) {
     return new Response('Open house not found', { status: 404 })
   }
 
-  const { data: listing } = await supabase
-    .from('listings')
-    .select('listing_key')
-    .or(`listing_key.eq.${listingKey},ListingKey.eq.${listingKey}`)
-    .maybeSingle()
-
-  const listingRow = listing as { listing_key?: string; ListingKey?: string } | null
-  const key = listingRow?.listing_key ?? listingRow?.ListingKey ?? listingKey
+  // DAL: resolve canonical listing key + address from listing_tile_mv.
+  const [byKey, byNum] = await Promise.all([
+    getListingTiles({ listingKeys: [listingKey], status: 'all', limit: 1 }),
+    getListingTiles({ listNumbers: [listingKey], status: 'all', limit: 1 }),
+  ])
+  const tile = byKey[0] ?? byNum[0] ?? null
+  const key = tile?.listingKey ?? listingKey
   const listingUrl = `${siteUrl.replace(/\/$/, '')}${listingDetailPath(key)}`
-  const address = await getAddress(supabase, listingKey)
+  void supabase
+  const address = tile
+    ? [tile.streetNumber, tile.streetName].filter(Boolean).join(' ') +
+      (tile.city ? `, ${tile.city}` : '') +
+      (tile.postalCode ? ` ${tile.postalCode}` : '')
+    : ''
 
   const startTime = (oh.start_time ?? '09:00:00').toString().slice(0, 8)
   const endTime = (oh.end_time ?? '12:00:00').toString().slice(0, 8)
@@ -78,22 +76,5 @@ export async function GET(request: NextRequest) {
   })
 }
 
-async function getAddress(supabase: SupabaseClient, listingKey: string): Promise<string> {
-  const { data: row } = await supabase
-    .from('listings')
-    .select('property_id')
-    .or(`listing_key.eq.${listingKey},ListingKey.eq.${listingKey}`)
-    .maybeSingle()
-  const listing = row as { property_id?: string } | null
-  if (!listing?.property_id) return ''
-  const { data: prop } = await supabase
-    .from('properties')
-    .select('unparsed_address, street_number, street_name, city, state, postal_code')
-    .eq('id', listing.property_id)
-    .maybeSingle()
-  const p = prop as { unparsed_address?: string; street_number?: string; street_name?: string; city?: string; state?: string; postal_code?: string } | null
-  if (!p) return ''
-  if (p.unparsed_address) return p.unparsed_address
-  const parts = [p.street_number, p.street_name].filter(Boolean).join(' ')
-  return [parts, p.city, p.state, p.postal_code].filter(Boolean).join(', ')
-}
+// getAddress was the legacy listings→properties join. Address now reads
+// from listing_tile_mv via the DAL in the GET handler above.

@@ -482,6 +482,41 @@ export async function selectHistorySyncCandidates<T extends Record<string, unkno
   return { rows: (data ?? []) as unknown as T[], error: error?.message ?? null }
 }
 
+/** Insert one strict_verify_runs telemetry row. */
+export async function insertStrictVerifyRun(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('strict_verify_runs').insert(row)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/**
+ * Candidates for strict verify: history_finalized = true + history_verified_full = false
+ * + terminal status OR + optional OnMarketDate window. Sorted by OnMarketDate DESC.
+ */
+export async function selectStrictVerifyCandidates<T extends Record<string, unknown>>(options: {
+  columns: string
+  terminalStatusOr: string
+  limit: number
+  onMarketFromIso?: string | null
+  onMarketToIsoExclusive?: string | null
+}): Promise<{ rows: T[]; error: string | null }> {
+  const sb = client()
+  if (!sb) return { rows: [], error: 'Supabase not configured' }
+  let q = sb
+    .from('listings')
+    .select(options.columns)
+    .eq('history_finalized', true)
+    .eq('history_verified_full', false)
+    .or(options.terminalStatusOr)
+    .order('OnMarketDate', { ascending: false, nullsFirst: false })
+    .limit(options.limit)
+  if (options.onMarketFromIso) q = q.gte('OnMarketDate', options.onMarketFromIso)
+  if (options.onMarketToIsoExclusive) q = q.lt('OnMarketDate', options.onMarketToIsoExclusive)
+  const { data, error } = await q
+  return { rows: (data ?? []) as unknown as T[], error: error?.message ?? null }
+}
+
 /** Get any one ListingKey/ListNumber from the listings table — used by sync test harnesses. */
 export async function getAnyListingKey(): Promise<{ ListingKey: string | null; ListNumber: string | null } | null> {
   const sb = client()

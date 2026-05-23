@@ -100,6 +100,7 @@ export {
   getListingDetailPhotos,
   getListingDetailAgents,
   getListingDetailOpenHouses,
+  getOpenHouseById,
   getListingDetailVideos,
   getListingDetailHistory,
   resolveCommunityChainBySlug,
@@ -225,6 +226,8 @@ export {
   countHistorySyncCandidates,
   listingHistoryExistsForAnyKey,
   getAnyListingKey,
+  insertStrictVerifyRun,
+  selectStrictVerifyCandidates,
 } from '@/lib/data/sync/syncWrites'
 export type { ExistingListingRow, SyncState } from '@/lib/data/sync/syncWrites'
 

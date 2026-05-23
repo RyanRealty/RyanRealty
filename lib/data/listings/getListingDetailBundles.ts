@@ -85,6 +85,24 @@ export async function getListingDetailAgents(listingKey: string): Promise<Listin
   return (data ?? []) as ListingDetailAgentRow[]
 }
 
+/** A single open_houses row by id + listing_key (must be in the future). */
+export async function getOpenHouseById(
+  openHouseId: string,
+  listingKey: string
+): Promise<ListingDetailOpenHouseRow | null> {
+  const sb = supabaseAnon()
+  if (!sb) return null
+  const today = new Date().toISOString().slice(0, 10)
+  const { data } = await sb
+    .from('open_houses')
+    .select('id, listing_key, event_date, start_time, end_time, host_agent_name, remarks')
+    .eq('id', openHouseId)
+    .eq('listing_key', listingKey)
+    .gte('event_date', today)
+    .maybeSingle()
+  return (data ?? null) as ListingDetailOpenHouseRow | null
+}
+
 /** Upcoming open houses for a listing (event_date >= today, ASC). */
 export async function getListingDetailOpenHouses(
   listingKey: string
