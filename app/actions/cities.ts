@@ -21,6 +21,7 @@ import {
   getAllCitySnapshots,
   getGeoSnapshot,
   getCityListings as getCityListingsDAL,
+  getListingTiles as getListingTilesDAL,
   getCityCommunitySnapshots,
 } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
@@ -374,35 +375,32 @@ export async function getNeighborhoodsInCity(cityName: string): Promise<
     .eq('city_id', cityId)
   const list = (neighborhoods ?? []) as { id: string; name: string; slug: string }[]
   if (list.length === 0) return []
+  // DAL: pull active tiles for the city once via listing_tile_mv, then bin by
+  // boundary_neighborhood for each neighborhood. Avoids the N×2 query pattern
+  // through neighborhoods→properties→listings.
+  void ACTIVE_OR
+  const cityTiles = await getCityListingsDAL(cityName, {
+    status: 'active',
+    sort: 'newest',
+    limit: 5000,
+  })
   const out: { slug: string; name: string; listingCount: number; medianPrice: number | null }[] = []
   for (const n of list) {
-    const { data: propIds } = await sb.from('properties').select('id').eq('neighborhood_id', n.id).limit(5000)
-    const ids = (propIds ?? []).map((p: { id: string }) => p.id)
-    let listingCount = 0
+    const tiles = cityTiles.filter(
+      (t) =>
+        isResidentialInventoryType(t.propertyType ?? null) &&
+        (t.boundaryNeighborhood ?? '').toLowerCase() === n.name.toLowerCase()
+    )
+    const prices = tiles
+      .map((t) => Number(t.listPrice))
+      .filter((p) => Number.isFinite(p) && p > 0)
+      .sort((a, b) => a - b)
     let medianPrice: number | null = null
-    if (ids.length > 0) {
-      const { count } = await sb
-        .from('listings')
-        .select('ListPrice', { count: 'exact', head: true })
-        .or(ACTIVE_OR)
-        .in('property_id', ids)
-      listingCount = count ?? 0
-      const { data: priceRows } = await sb
-        .from('listings')
-        .select('ListPrice, PropertyType')
-        .in('property_id', ids)
-        .or(ACTIVE_OR)
-        .limit(1000)
-      const filteredRows = (priceRows ?? []).filter((row: { PropertyType?: string | null }) => isResidentialInventoryType(row.PropertyType ?? null))
-      listingCount = filteredRows.length
-      const prices = filteredRows.map((r: { ListPrice?: number }) => Number(r.ListPrice)).filter((p) => Number.isFinite(p) && p > 0)
-      prices.sort((a, b) => a - b)
-      if (prices.length > 0) {
-        const mid = Math.floor(prices.length / 2)
-        medianPrice = prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
-      }
+    if (prices.length > 0) {
+      const mid = Math.floor(prices.length / 2)
+      medianPrice = prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
     }
-    out.push({ slug: n.slug, name: n.name, listingCount, medianPrice })
+    out.push({ slug: n.slug, name: n.name, listingCount: tiles.length, medianPrice })
   }
   return out
 }
@@ -511,25 +509,22 @@ async function _getNeighborhoodBySlugUncached(
     seo_description?: string | null
   } | null
   if (!n) return null
-  const { data: propIds } = await sb.from('properties').select('id').eq('neighborhood_id', n.id).limit(5000)
-  const ids = (propIds ?? []).map((p: { id: string }) => p.id)
-  let activeCount = 0
+  // DAL: count + median active tiles for the neighborhood via listing_tile_mv.
+  const tiles = await getListingTilesDAL({
+    neighborhood: n.name,
+    status: 'active',
+    limit: 5000,
+  })
+  const filteredTiles = tiles.filter((t) => isResidentialInventoryType(t.propertyType ?? null))
+  const activeCount = filteredTiles.length
+  const prices = filteredTiles
+    .map((t) => Number(t.listPrice))
+    .filter((p) => Number.isFinite(p) && p > 0)
+    .sort((a, b) => a - b)
   let medianPrice: number | null = null
-  if (ids.length > 0) {
-    const { data: priceRows } = await sb
-      .from('listings')
-      .select('ListPrice, PropertyType')
-      .in('property_id', ids)
-      .or(ACTIVE_OR)
-      .limit(1000)
-    const filteredRows = (priceRows ?? []).filter((row: { PropertyType?: string | null }) => isResidentialInventoryType(row.PropertyType ?? null))
-    activeCount = filteredRows.length
-    const prices = filteredRows.map((r: { ListPrice?: number }) => Number(r.ListPrice)).filter((p) => Number.isFinite(p) && p > 0)
-    prices.sort((a, b) => a - b)
-    if (prices.length > 0) {
-      const mid = Math.floor(prices.length / 2)
-      medianPrice = prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
-    }
+  if (prices.length > 0) {
+    const mid = Math.floor(prices.length / 2)
+    medianPrice = prices.length % 2 ? prices[mid]! : Math.round((prices[mid - 1]! + prices[mid]!) / 2)
   }
   return {
     id: n.id,
@@ -567,7 +562,44 @@ export async function getCityBoundary(cityName: string): Promise<unknown | null>
   return row?.boundary_geojson ?? null
 }
 
-/** Active listings in a neighborhood (property_id in properties with neighborhood_id), limit 24. Uses RPC when available for one-query performance. */
+/** Look up neighborhood name by id (small lookup; called by neighborhood-detail handlers). */
+async function _resolveNeighborhoodName(neighborhoodId: string): Promise<string | null> {
+  const sb = supabase()
+  const { data } = await sb
+    .from('neighborhoods')
+    .select('name')
+    .eq('id', neighborhoodId)
+    .maybeSingle()
+  return (data as { name?: string } | null)?.name ?? null
+}
+
+/** Map a ListingTile (DAL shape) to the legacy CityListingRow shape consumed by neighborhood UIs. */
+function tileToCityRow(t: ListingTile): CityListingRow & { ClosePrice?: number | null; CloseDate?: string | null } {
+  return {
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber ?? undefined,
+    ListPrice: t.listPrice ?? undefined,
+    StreetNumber: t.streetNumber ?? undefined,
+    StreetName: t.streetName ?? undefined,
+    City: t.city ?? undefined,
+    State: 'OR',
+    PostalCode: t.postalCode ?? undefined,
+    BedroomsTotal: t.beds ?? undefined,
+    BathroomsTotal: t.baths ?? undefined,
+    TotalLivingAreaSqFt: t.sqft ?? undefined,
+    SubdivisionName: t.subdivisionName ?? undefined,
+    PhotoURL: t.photoUrl ?? undefined,
+    StandardStatus: t.status,
+    PropertyType: t.propertyType ?? undefined,
+    Latitude: t.lat ?? undefined,
+    Longitude: t.lng ?? undefined,
+    OnMarketDate: t.onMarketDate ?? undefined,
+    ClosePrice: t.closePrice ?? undefined,
+    CloseDate: t.closeDate ?? undefined,
+  } as CityListingRow & { ClosePrice?: number | null; CloseDate?: string | null }
+}
+
+/** Active listings in a neighborhood. Uses RPC when available for one-query performance. */
 async function _getNeighborhoodListingsUncached(
   neighborhoodId: string,
   limit: number
@@ -584,17 +616,18 @@ async function _getNeighborhoodListingsUncached(
   } catch {
     // Fall through to legacy path
   }
-  const { data: propIds } = await sb.from('properties').select('id').eq('neighborhood_id', neighborhoodId).limit(5000)
-  const ids = (propIds ?? []).map((p: { id: string }) => p.id)
-  if (ids.length === 0) return []
-  const { data } = await sb
-    .from('listings')
-    .select(CITY_LISTING_TILE_SELECT)
-    .in('property_id', ids)
-    .or(ACTIVE_OR)
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  return (data ?? []) as CityListingRow[]
+  // DAL: active tiles for the neighborhood via listing_tile_mv.
+  void CITY_LISTING_TILE_SELECT
+  void ACTIVE_OR
+  const name = await _resolveNeighborhoodName(neighborhoodId)
+  if (!name) return []
+  const tiles = await getListingTilesDAL({
+    neighborhood: name,
+    status: 'active',
+    sort: 'newest',
+    limit: Math.min(Math.max(limit, 1), 500),
+  })
+  return tiles.map(tileToCityRow)
 }
 
 export const getNeighborhoodListings = unstable_cache(
@@ -608,19 +641,16 @@ async function _getNeighborhoodSoldListingsUncached(
   neighborhoodId: string,
   limit: number
 ): Promise<(CityListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]> {
-  const sb = supabase()
-  const { data: propIds } = await sb.from('properties').select('id').eq('neighborhood_id', neighborhoodId).limit(5000)
-  const ids = (propIds ?? []).map((p: { id: string }) => p.id)
-  if (ids.length === 0) return []
-  const { data } = await sb
-    .from('listings')
-    .select(`${CITY_LISTING_TILE_SELECT}, ClosePrice`)
-    .in('property_id', ids)
-    .or('StandardStatus.ilike.%Closed%')
-    .not('CloseDate', 'is', null)
-    .order('CloseDate', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  return (data ?? []) as (CityListingRow & { ClosePrice?: number | null; CloseDate?: string | null })[]
+  // DAL: recently closed tiles for the neighborhood via listing_tile_mv.
+  const name = await _resolveNeighborhoodName(neighborhoodId)
+  if (!name) return []
+  const tiles = await getListingTilesDAL({
+    neighborhood: name,
+    status: 'closed',
+    sort: 'close-newest',
+    limit: Math.min(Math.max(limit, 1), 500),
+  })
+  return tiles.map(tileToCityRow)
 }
 
 export const getNeighborhoodSoldListings = unstable_cache(
@@ -633,27 +663,27 @@ export const getNeighborhoodSoldListings = unstable_cache(
 async function _getNeighborhoodPriceHistoryUncached(
   neighborhoodId: string
 ): Promise<{ month: string; medianPrice: number; soldCount?: number }[]> {
-  const sb = supabase()
-  const { data: propIds } = await sb.from('properties').select('id').eq('neighborhood_id', neighborhoodId).limit(5000)
-  const ids = (propIds ?? []).map((p: { id: string }) => p.id)
-  if (ids.length === 0) return []
+  const name = await _resolveNeighborhoodName(neighborhoodId)
+  if (!name) return []
 
   const twelveMonthsAgo = new Date()
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
   const minMonth = twelveMonthsAgo.toISOString().slice(0, 7)
 
-  const { data: closedRows } = await sb
-    .from('listings')
-    .select('ListPrice, CloseDate')
-    .in('property_id', ids)
-    .or('StandardStatus.ilike.%Closed%')
-    .not('CloseDate', 'is', null)
-    .gte('CloseDate', minMonth)
-    .limit(4000)
+  // DAL: pull last-12-month closed tiles for the neighborhood, bin by month.
+  const closedTiles = await getListingTilesDAL({
+    neighborhood: name,
+    status: 'closed',
+    sort: 'close-newest',
+    limit: 5000,
+  })
+  const closedRows = closedTiles
+    .filter((t) => t.closeDate != null && (t.closeDate ?? '').slice(0, 7) >= minMonth)
+    .map((t) => ({ ListPrice: t.listPrice, CloseDate: t.closeDate }))
 
   const byMonth = new Map<string, number[]>()
   const byMonthCount = new Map<string, number>()
-  for (const row of (closedRows ?? []) as { ListPrice?: number | null; CloseDate?: string | null }[]) {
+  for (const row of closedRows as { ListPrice?: number | null; CloseDate?: string | null }[]) {
     const month = String(row.CloseDate ?? '').slice(0, 7)
     const price = Number(row.ListPrice)
     if (!month || !Number.isFinite(price) || price <= 0) continue
@@ -686,18 +716,17 @@ async function _getNeighborhoodPendingListingsUncached(
   neighborhoodId: string,
   limit: number
 ): Promise<CityListingRow[]> {
-  const sb = supabase()
-  const { data: propIds } = await sb.from('properties').select('id').eq('neighborhood_id', neighborhoodId).limit(5000)
-  const ids = (propIds ?? []).map((p: { id: string }) => p.id)
-  if (ids.length === 0) return []
-  const { data } = await sb
-    .from('listings')
-    .select(CITY_LISTING_TILE_SELECT)
-    .in('property_id', ids)
-    .or(PENDING_OR)
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  return (data ?? []) as CityListingRow[]
+  // DAL: pending tiles for the neighborhood via listing_tile_mv.
+  void PENDING_OR
+  const name = await _resolveNeighborhoodName(neighborhoodId)
+  if (!name) return []
+  const tiles = await getListingTilesDAL({
+    neighborhood: name,
+    status: 'pending-only',
+    sort: 'newest',
+    limit: Math.min(Math.max(limit, 1), 500),
+  })
+  return tiles.map(tileToCityRow)
 }
 
 export const getNeighborhoodPendingListings = unstable_cache(
@@ -721,23 +750,25 @@ export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityN
 
   if (communityRows.length === 0) return []
 
-  // Get listing data for the specific subdivisions in this neighborhood
+  // DAL: pull active tiles for the city once, bin by subdivision in-memory for
+  // the named communities. Avoids the SubdivisionName IN-clause directly
+  // against listings.
   const communityNames = communityRows.map((c) => c.name)
-  const { data: listingRowsData } = await sb
-    .from('listings')
-    .select('SubdivisionName, ListPrice, PropertyType')
-    .in('SubdivisionName', communityNames)
-    .eq('StandardStatus', 'Active')
-    .limit(2000)
-  const listingRows = (listingRowsData ?? []) as { SubdivisionName?: string; ListPrice?: number | null; PropertyType?: string | null }[]
+  const communityNamesLower = new Set(communityNames.map((n) => n.toLowerCase()))
+  const cityTilesForBin = await getCityListingsDAL(cityName, {
+    status: 'active',
+    sort: 'newest',
+    limit: 5000,
+  })
 
   const bySub = new Map<string, number[]>()
-  for (const row of listingRows) {
-    if (!isResidentialInventoryType(row.PropertyType ?? null)) continue
-    const sub = (row.SubdivisionName ?? '').trim()
+  for (const t of cityTilesForBin) {
+    if (!isResidentialInventoryType(t.propertyType ?? null)) continue
+    const sub = (t.subdivisionName ?? '').trim()
     if (!sub || sub.toLowerCase() === 'n/a') continue
+    if (!communityNamesLower.has(sub.toLowerCase())) continue
     const arr = bySub.get(sub) ?? []
-    const p = Number(row.ListPrice)
+    const p = Number(t.listPrice)
     if (Number.isFinite(p) && p > 0) arr.push(p)
     bySub.set(sub, arr)
   }
