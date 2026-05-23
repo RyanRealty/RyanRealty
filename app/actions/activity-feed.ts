@@ -219,45 +219,42 @@ export async function getActivityFeedWithFallback(options: {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim()) return events
 
-  const supabase = createClient(url, anonKey)
-  const { data: rows } = await supabase
-    .from('listings')
-    .select(
-      'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, StandardStatus, OnMarketDate, CloseDate'
-    )
-    .eq('"City"', options.city.trim())
-    .or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Under Contract%')
-    .order('ModificationTimestamp', { ascending: false })
-    .limit(limit * 2)
-  const list = (rows ?? []) as Array<Record<string, unknown>>
+  // DAL: pull newest active+pending tiles for the city, then map to feed item shape.
+  void createClient // legacy import kept for getActivityFeed below
+  const tiles = await getListingTiles({
+    city: options.city.trim(),
+    status: 'active-and-pending',
+    sort: 'newest',
+    limit: limit * 2,
+  })
   const fallback: ActivityFeedItem[] = []
-  for (const r of list) {
+  for (const t of tiles) {
     if (fallback.length + events.length >= limit) break
-    const key = (r.ListingKey ?? r.ListNumber ?? '').toString()
+    const key = t.listingKey || t.listNumber || ''
     if (!key || seen.has(key)) continue
     seen.add(key)
     fallback.push({
       id: `fallback-${key}`,
       listing_key: key,
-      ListNumber: (r.ListNumber as string) ?? null,
-      mls_source: (r.mls_source as string | null | undefined) ?? null,
+      ListNumber: t.listNumber,
+      mls_source: null,
       event_type: 'new_listing',
-      event_at: (r.OnMarketDate ?? new Date().toISOString()) as string,
-      ListPrice: r.ListPrice as number | null,
-      BedroomsTotal: r.BedroomsTotal as number | null,
-      BathroomsTotal: r.BathroomsTotal as number | null,
-      StreetNumber: r.StreetNumber as string | null,
-      StreetName: r.StreetName as string | null,
-      City: r.City as string | null,
-      State: r.State as string | null,
-      PostalCode: r.PostalCode as string | null,
-      SubdivisionName: r.SubdivisionName as string | null,
-      NeighborhoodName: null,
-      NeighborhoodSlug: null,
-      PhotoURL: r.PhotoURL as string | null,
-      StandardStatus: r.StandardStatus as string | null,
-      OnMarketDate: (r.OnMarketDate as string) ?? null,
-      CloseDate: (r.CloseDate as string) ?? null,
+      event_at: t.onMarketDate ?? new Date().toISOString(),
+      ListPrice: t.listPrice,
+      BedroomsTotal: t.beds,
+      BathroomsTotal: t.baths,
+      StreetNumber: t.streetNumber,
+      StreetName: t.streetName,
+      City: t.city,
+      State: 'OR',
+      PostalCode: t.postalCode,
+      SubdivisionName: t.subdivisionName,
+      NeighborhoodName: t.boundaryNeighborhood,
+      NeighborhoodSlug: t.boundaryNeighborhood ? slugify(t.boundaryNeighborhood) : null,
+      PhotoURL: t.photoUrl,
+      StandardStatus: t.status,
+      OnMarketDate: t.onMarketDate,
+      CloseDate: t.closeDate,
     })
   }
   return [...events, ...fallback]
@@ -286,45 +283,43 @@ async function _getActivityFeedWithFallbackMultiUncached(options: {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim()) return events
 
-  const supabase = createClient(url, anonKey)
-  const { data: rows } = await supabase
-    .from('listings')
-    .select(
-      'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, StandardStatus, OnMarketDate, CloseDate'
-    )
-    .in('City', cities)
-    .or(ACTIVE_OR_PENDING_OR)
-    .order('ModificationTimestamp', { ascending: false })
-    .limit(limit * 2)
-  const list = (rows ?? []) as Array<Record<string, unknown>>
+  // DAL: pull newest active+pending tiles across all named cities.
+  void createClient
+  void ACTIVE_OR_PENDING_OR
+  const tiles = await getListingTiles({
+    cities,
+    status: 'active-and-pending',
+    sort: 'newest',
+    limit: limit * 2,
+  })
   const fallback: ActivityFeedItem[] = []
-  for (const r of list) {
+  for (const t of tiles) {
     if (fallback.length + events.length >= limit) break
-    const key = (r.ListingKey ?? r.ListNumber ?? '').toString()
+    const key = t.listingKey || t.listNumber || ''
     if (!key || seen.has(key)) continue
     seen.add(key)
     fallback.push({
       id: `fallback-${key}`,
       listing_key: key,
-      ListNumber: (r.ListNumber as string) ?? null,
-      mls_source: (r.mls_source as string | null | undefined) ?? null,
+      ListNumber: t.listNumber,
+      mls_source: null,
       event_type: 'new_listing',
-      event_at: (r.OnMarketDate ?? new Date().toISOString()) as string,
-      ListPrice: r.ListPrice as number | null,
-      BedroomsTotal: r.BedroomsTotal as number | null,
-      BathroomsTotal: r.BathroomsTotal as number | null,
-      StreetNumber: r.StreetNumber as string | null,
-      StreetName: r.StreetName as string | null,
-      City: r.City as string | null,
-      State: r.State as string | null,
-      PostalCode: r.PostalCode as string | null,
-      SubdivisionName: r.SubdivisionName as string | null,
-      NeighborhoodName: null,
-      NeighborhoodSlug: null,
-      PhotoURL: r.PhotoURL as string | null,
-      StandardStatus: r.StandardStatus as string | null,
-      OnMarketDate: (r.OnMarketDate as string) ?? null,
-      CloseDate: (r.CloseDate as string) ?? null,
+      event_at: t.onMarketDate ?? new Date().toISOString(),
+      ListPrice: t.listPrice,
+      BedroomsTotal: t.beds,
+      BathroomsTotal: t.baths,
+      StreetNumber: t.streetNumber,
+      StreetName: t.streetName,
+      City: t.city,
+      State: 'OR',
+      PostalCode: t.postalCode,
+      SubdivisionName: t.subdivisionName,
+      NeighborhoodName: t.boundaryNeighborhood,
+      NeighborhoodSlug: t.boundaryNeighborhood ? slugify(t.boundaryNeighborhood) : null,
+      PhotoURL: t.photoUrl,
+      StandardStatus: t.status,
+      OnMarketDate: t.onMarketDate,
+      CloseDate: t.closeDate,
     })
   }
   return [...events, ...fallback]

@@ -23,6 +23,11 @@ const PENDING_STATUSES: ListingStatus[] = ['Pending']
 
 const FilterSchema = z.object({
   city: z.string().min(1).max(80).optional(),
+  /**
+   * Restrict to multiple cities (case-insensitive). Used by the homepage activity
+   * feed which spans Bend + adjacent towns. Hard-capped at 50 cities.
+   */
+  cities: z.array(z.string().min(1).max(80)).max(50).optional(),
   subdivision: z.string().min(1).max(120).optional(),
   postalCode: z.string().regex(/^\d{5}$/).optional(),
   neighborhood: z.string().min(1).max(120).optional(),
@@ -154,6 +159,12 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   let query = supabase.from('listing_tile_mv').select('*')
 
   if (parsed.city) query = query.eq('city_lower', parsed.city.toLowerCase().trim())
+  if (parsed.cities && parsed.cities.length > 0) {
+    query = query.in(
+      'city_lower',
+      parsed.cities.map((c) => c.toLowerCase().trim()).filter(Boolean)
+    )
+  }
   if (parsed.subdivision) {
     query = query.eq('subdivision_lower', parsed.subdivision.toLowerCase().trim())
   }
