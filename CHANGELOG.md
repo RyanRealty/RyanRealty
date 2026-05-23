@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.0 (2026-05-23)
+
+### Features
+- feat(dal): getTotalListingCount + getTotalListingsRows migration — 337→336
+
+---
+
+
 ## v1.281.0 (2026-05-23)
 
 ### Features
