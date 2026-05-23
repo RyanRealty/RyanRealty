@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.36 (2026-05-23)
+
+### Other
+- DAL: migrate pdf/listing route + lp/bend page
+
+---
+
+
 ## v1.282.35 (2026-05-23)
 
 ### Other
