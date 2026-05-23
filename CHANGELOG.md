@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.287.0 (2026-05-23)
+
+### Features
+- feat(analytics): Google Ads API provisioning script + runbook
+
+### Other
+- SITE_SPEC: mark verified items across homepage + cities/[slug] family
+
+---
+
+
 ## v1.286.3 (2026-05-23)
 
 ### Other
