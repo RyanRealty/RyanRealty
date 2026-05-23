@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.13 (2026-05-23)
+
+### Bug Fixes
+- fix(lint): prefer-const violations blocking CI lint-and-build
+
+---
+
+
 ## v1.288.12 (2026-05-23)
 
 ### Maintenance
