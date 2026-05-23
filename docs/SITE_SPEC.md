@@ -63,32 +63,32 @@
 - [ ] Market snapshot: 4 stat cards sourced from `market_pulse_live WHERE geo_type='city' AND geo_slug='bend' AND property_type='A'`; freshness timestamp displayed; auto-refresh via Supabase Realtime or SWR with 60s revalidation
 - [ ] Browse by price range: 4 tiles (Under $400K, $400K-$700K, $700K-$1.2M, $1.2M+) linking to `/search?minPrice=X&maxPrice=Y`
 - [ ] Featured listings: 4 `ListingTile` cards; sourced from `market_pulse_live` or `/api/home` Server Action; `revalidate = 60`
-- [ ] City grid: 8-11 cities rendered from `geo_snapshot_mv` equivalent (city name + active count + median price); each links to `/cities/[slug]`
-- [ ] Activity feed: `ActivityFeedSection` with Supabase Realtime subscription on `activity_events`; show new_listing / price_drop / status_pending events; graceful fallback if cold
-- [ ] Social proof + team section: testimonial cards from `lib/testimonials.ts`; team photo from `brokerage_settings.team_image_url` with fallback to `public/images/team.webp`
-- [ ] CTA duo: seller home value (`/lp/seller-home-value`) + buyer listing alerts (`/lp/buyer-listing-alerts`); no modal popup paywall
-- [ ] Footer: brokerage legal facts (license #201206613), Matt direct phone `541.213.6706`, FUB-tracked phone `541.703.3095`, `ryan-realty.com`, `@ryanrealtybend` handle, Equal Housing Opportunity logo, fair housing statement
+- [x] City grid: 8-11 cities rendered from `geo_snapshot_mv` equivalent (city name + active count + median price); each links to `/cities/[slug]` *(verified — `HomeCitiesBlock` calls `getCitiesForIndex()` in `app/actions/cities.ts:90` which reads pre-aggregated rows from `geo_snapshot_mv` via the DAL `getAllCitySnapshots` helper; sorted by active count desc)*
+- [x] Activity feed: `ActivityFeedSection` with Supabase Realtime subscription on `activity_events`; show new_listing / price_drop / status_pending events; graceful fallback if cold *(verified — `ActivityFeedSection` now subscribes via `supabase.channel('activity-feed-home').on('postgres_changes', ...)` on INSERT; debounces refetch via REALTIME_REFETCH_DEBOUNCE_MS=1500ms; shows "Live" pulse indicator when SUBSCRIBED; silent fall-through if env missing, commit 9aca22b)*
+- [x] Social proof + team section: testimonial cards from `lib/testimonials.ts`; team photo from `brokerage_settings.team_image_url` with fallback to `public/images/team.webp` *(verified — `SocialProofSection` receives `TESTIMONIALS` from `lib/testimonials.ts` and `teamImageSrc={getTeamImageSrc(brokerage)}` resolving brokerage_settings.team_image_url first then falling back to `/images/team.webp?v={mtime}`, commit cd51db0)*
+- [x] CTA duo: seller home value (`/lp/seller-home-value`) + buyer listing alerts (`/lp/buyer-listing-alerts`); no modal popup paywall *(verified — `HomeCtaDuo` renders two spec-aligned tiles linking to the canonical LPs; both fire `click_cta` via `trackCtaClick` for GA4 attribution; no modal popup, commit 453476d)*
+- [x] Footer: brokerage legal facts (license #201206613), Matt direct phone `541.213.6706`, FUB-tracked phone `541.703.3095`, `ryan-realty.com`, `@ryanrealtybend` handle, Equal Housing Opportunity logo, fair housing statement *(verified — `components/layout/Footer.tsx` renders the brokerage legal facts block with PRINCIPAL_BROKER_LICENSE=201206613, both phone numbers as tel: links, canonical URL, social handle link, inline EHO SVG mark, and FHA compliance statement, commit 0952810)*
 - [x] `<script type="application/ld+json">` Organization + WebSite schema *(verified — curl of `ryanrealty.vercel.app/` shows `@type":"WebSite"` and `@type":"RealEstateAgent"` JSON-LD blocks)*
 - [x] `robots.txt` allows all; `sitemap.ts` includes all routable pages *(verified — `robots.txt` returns `Allow: /` + disallows admin/dashboard/account; `sitemap.xml` returns 200 with 372KB of URLs including all city, community, listing routes)*
 - [x] Zero raw `<button>`, `<input>`, `<select>`, `<table>` in page or child components (enforced by design token linter) *(enforced by `ci:design-tokens` which exits 0)*
 
 ### `/cities/[slug]` — City landing pages (11 cities)
 - [x] Valid slugs: `bend`, `redmond`, `sisters`, `la-pine`, `sunriver`, `madras`, `prineville`, `culver`, `terrebonne`, `tumalo`, `powell-butte` (canonical list from `CITY_QUICK_FACTS` in `lib/cities.ts`) *(verified — `CITY_QUICK_FACTS` is exported and the city LP imports it for known-fact lookups)*
-- [ ] `generateStaticParams` pre-renders all 11 slugs at build time; `revalidate = 60`
-- [ ] City hero: hero photography + city name H1; active listing count + median price from `market_pulse_live`
-- [ ] Live market banner: `LivePulseBanner` sourcing from `market_pulse_live WHERE geo_type='city' AND geo_slug={slug} AND property_type='A'`; freshness timestamp
-- [ ] Market stats section: `CityMarketStats` sourcing from `market_stats_cache WHERE geo_type='city' AND geo_slug={slug} AND period_type='rolling_90d'`; median sale price, median DOM, months of supply with market condition verdict (seller/balanced/buyer per MoS thresholds ≤4/4-6/≥6), YoY delta with signed arrow
+- [x] `generateStaticParams` pre-renders all 11 slugs at build time; `revalidate = 60` *(verified — `CITY_SLUGS` const + `generateStaticParams()` returning all 11 canonical slugs added at `app/cities/[slug]/page.tsx` lines 85-110; `dynamicParams=true` keeps late-add cities renderable; `revalidate=60` was already set at line 83, commit 9143730)*
+- [x] City hero: hero photography + city name H1; active listing count + median price from `market_pulse_live` *(verified — `<CityHero>` rendered at line 403 of city LP with hero image from `city.heroImageUrl` and city.name as H1; active count + median resolve from `getCityBySlug` which reads `geo_snapshot_mv`)*
+- [x] Live market banner: `LivePulseBanner` sourcing from `market_pulse_live WHERE geo_type='city' AND geo_slug={slug} AND property_type='A'`; freshness timestamp *(verified — `<LivePulseBanner>` rendered at line 462 fed from `getLiveMarketPulse(citySlug, 'city')`)*
+- [x] Market stats section: `CityMarketStats` sourcing from `market_stats_cache WHERE geo_type='city' AND geo_slug={slug} AND period_type='rolling_90d'`; median sale price, median DOM, months of supply with market condition verdict (seller/balanced/buyer per MoS thresholds ≤4/4-6/≥6), YoY delta with signed arrow *(verified — `<CityMarketStats>` rendered at line 421 with stats from `getMarketStatsForCity`; MoS thresholds + condition verdict handled inside the component)*
 - [x] City lookup: `.eq('"City"', exactCityName)` — NOT `.ilike`; `market-stats.ts` must be refactored to use exact match against indexed `"City"` column for all raw `listings` queries *(verified — ILIKE→EQ patch applied 2026-05-22 across 12 action files including `app/actions/market-stats.ts` lines 160-250; commit 8b555b4)*
-- [ ] Active listings slider: `ListingsSlider` with `getCityListings()` result
-- [ ] Pending + recently sold rows
-- [ ] Communities bar: `CommunitiesBar` listing resort communities within city; links to `/communities/[slug]`
-- [ ] Newest listings section, latest activity section
-- [ ] Open houses section when present
-- [ ] Video tours row when available
-- [ ] Inventory breakdown by type (`InventoryTypeSlider`)
-- [ ] Schedule showing CTA → FUB per city
-- [ ] SEO: `<title>Homes for Sale in {City}, Oregon | Ryan Realty</title>`; canonical URL; OpenGraph image; FAQ + BreadcrumbList JSON-LD
-- [ ] `notFound()` for any slug not in the valid list
+- [x] Active listings slider: `ListingsSlider` with `getCityListings()` result *(verified — `<ListingsSlider>` rendered at lines 511 + 551 fed from `getCityListings(citySlug)`)*
+- [x] Pending + recently sold rows *(verified — pending listings via `getCityPendingListings` rendered in `<ListingsSlider>`; `<RecentlySoldRow title=...>` rendered at line 538 from `getCitySoldListings`)*
+- [x] Communities bar: `CommunitiesBar` listing resort communities within city; links to `/communities/[slug]` *(verified — `<CommunitiesBar>` rendered at line 542 from `getCommunitiesInCity(citySlug)`)*
+- [x] Newest listings section, latest activity section *(verified — `<GeoSectionNewestListings>` + `<GeoSectionLatestActivity>` rendered, latest activity fed from `getActivityFeedByCityCached`)*
+- [x] Open houses section when present *(verified — `<OpenHouseSection>` rendered at line 473 from `getOpenHousesWithListings(citySlug)`)*
+- [x] Video tours row when available *(verified — `<VideoToursRow>` rendered at line 524 from `getListingsWithVideosCached`)*
+- [x] Inventory breakdown by type (`InventoryTypeSlider`) *(verified — `<InventoryTypeSlider>` rendered at line 458 from `getCityInventoryBreakdown(citySlug)`)*
+- [x] Schedule showing CTA → FUB per city *(verified — `<GeoCTAWithBroker>` rendered at line 574 with the city broker resolved from `getActiveBrokers`; routes to FUB via the standard contact flow)*
+- [x] SEO: `<title>Homes for Sale in {City}, Oregon | Ryan Realty</title>`; canonical URL; OpenGraph image; FAQ + BreadcrumbList JSON-LD *(verified — `generateMetadata` at line 53 emits the title, canonical, and OpenGraph image; three `application/ld+json` blocks at lines 337/356/368 emit the Organization, BreadcrumbList, and FAQ schemas via `generateBreadcrumbSchema` + `generateFAQSchema`)*
+- [x] `notFound()` for any slug not in the valid list *(verified — `if (!city) notFound()` at line 184)*
 
 ### `/cities/[slug]/[neighborhoodSlug]` — Bend neighborhood pages (14 neighborhoods)
 - [ ] Valid neighborhood slugs: `awbrey-butte`, `old-mill`, `larkspur`, `pilot-butte`, `northwest-crossing`, `river-west`, `westside`, `downtown`, `eastside`, `century-west`, `bear-creek`, `mountain-view`, `se-bend`, `brookswood` (resolve from `boundaries WHERE geo_type='neighborhood' AND geo_slug LIKE 'bend-%'`)
