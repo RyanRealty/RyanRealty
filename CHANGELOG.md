@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.5 (2026-05-23)
+
+### Maintenance
+- perf(reports): getReportCities reads geo_snapshot_mv — 356→355
+
+---
+
+
 ## v1.280.4 (2026-05-23)
 
 ### Maintenance
