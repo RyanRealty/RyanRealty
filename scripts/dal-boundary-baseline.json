@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T00:08:10.389Z",
-  "total": 355,
+  "generatedAt": "2026-05-23T00:11:05.095Z",
+  "total": 352,
   "byFile": {
     "app/actions/listings.ts": 66,
     "app/actions/sync-spark.ts": 28,
@@ -10,13 +10,13 @@
     "app/actions/listing-detail.ts": 14,
     "app/actions/admin-listing-detail.ts": 10,
     "app/actions/subdivision-flags.ts": 9,
-    "app/actions/agents.ts": 8,
     "app/actions/market-reports.ts": 8,
     "app/actions/market-stats.ts": 8,
     "app/actions/area-guide-upload.ts": 7,
     "app/api/cron/sync-delta/route.ts": 7,
     "app/actions/activity-feed.ts": 6,
     "lib/fetch-listings-with-videos.ts": 6,
+    "app/actions/agents.ts": 5,
     "app/actions/broker-self.ts": 4,
     "app/actions/communities.ts": 4,
     "app/actions/dashboard.ts": 4,

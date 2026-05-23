@@ -26,6 +26,12 @@ const FilterSchema = z.object({
   subdivision: z.string().min(1).max(120).optional(),
   postalCode: z.string().regex(/^\d{5}$/).optional(),
   neighborhood: z.string().min(1).max(120).optional(),
+  /**
+   * Restrict to a specific set of listing keys — used for broker-portfolio
+   * views, watchlist rendering, and any path where a caller has a pre-computed
+   * set of relevant listings. Hard-capped at 5000 keys (Supabase IN-clause limit).
+   */
+  listingKeys: z.array(z.string().min(1).max(100)).max(5000).optional(),
   minPrice: z.number().positive().optional(),
   maxPrice: z.number().positive().optional(),
   minBeds: z.number().int().nonnegative().optional(),
@@ -170,6 +176,9 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   if (parsed.minSqft) query = query.gte('sqft', parsed.minSqft)
   if (parsed.hasVirtualTour === true) query = query.eq('has_virtual_tour', true)
   if (parsed.propertyType) query = query.eq('property_type', parsed.propertyType)
+  if (parsed.listingKeys && parsed.listingKeys.length > 0) {
+    query = query.in('listing_key', parsed.listingKeys)
+  }
 
   // Sort
   if (parsed.sort === 'newest') {

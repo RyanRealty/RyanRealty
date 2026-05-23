@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import { getActiveBrokers, getBrokerBySlug, type BrokerRow } from '@/app/actions/brokers'
 import type { HomeTileRow } from '@/app/actions/listings'
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
+import { getListingTiles } from '@/lib/data'
+import type { ListingTile } from '@/lib/data'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -169,7 +171,38 @@ export type ReviewRow = {
   review_date: string | null
 }
 
-/** Broker's active listings (limit). */
+/** Map DAL ListingTile → HomeTileRow shape (legacy callers expect). */
+function tileToHomeTileRow(tile: ListingTile): HomeTileRow {
+  return {
+    ListingKey: tile.listingKey,
+    ListNumber: tile.listNumber,
+    ListPrice: tile.listPrice,
+    BedroomsTotal: tile.beds,
+    BathroomsTotal: tile.baths,
+    StreetNumber: tile.streetNumber,
+    StreetName: tile.streetName,
+    City: tile.city,
+    State: null,
+    PostalCode: tile.postalCode,
+    SubdivisionName: tile.subdivisionName,
+    PhotoURL: tile.photoUrl,
+    Latitude: tile.lat,
+    Longitude: tile.lng,
+    StandardStatus: tile.status,
+    TotalLivingAreaSqFt: tile.sqft,
+    OnMarketDate: tile.onMarketDate,
+    has_virtual_tour: tile.hasVirtualTour,
+    year_built: tile.yearBuilt,
+    price_per_sqft: tile.pricePerSqft,
+    lot_size_acres: tile.lotSizeAcres,
+    garage_spaces: tile.garageSpaces,
+    pool_yn: tile.poolYn,
+    price_drop_count: tile.priceDropCount,
+    DaysOnMarket: tile.dom,
+  }
+}
+
+/** Broker's active listings (limit). Reads from listing_tile_mv via DAL. */
 export async function getAgentActiveListings(
   licenseNumber: string | null,
   limit: number,
@@ -177,17 +210,16 @@ export async function getAgentActiveListings(
 ): Promise<HomeTileRow[]> {
   const keys = await getListingKeysForBroker(licenseNumber, brokerEmail)
   if (keys.length === 0) return []
-  const { data } = await supabase()
-    .from('listings')
-    .select(HOME_TILE_SELECT)
-    .in('ListingKey', keys.slice(0, 5000))
-    .or(ACTIVE_OR)
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  return (data ?? []) as HomeTileRow[]
+  const tiles = await getListingTiles({
+    listingKeys: keys.slice(0, 5000),
+    status: 'active',
+    sort: 'newest',
+    limit,
+  })
+  return tiles.map(tileToHomeTileRow)
 }
 
-/** Broker's sold listings (last 24 months, limit). */
+/** Broker's sold listings (last 24 months, limit). Reads from DAL. */
 export async function getAgentSoldListings(
   licenseNumber: string | null,
   limit: number,
@@ -198,19 +230,26 @@ export async function getAgentSoldListings(
   const twentyFourMoAgo = new Date()
   twentyFourMoAgo.setMonth(twentyFourMoAgo.getMonth() - 24)
   const since = twentyFourMoAgo.toISOString().slice(0, 10)
-  const { data } = await supabase()
-    .from('listings')
-    .select(`${HOME_TILE_SELECT}, ClosePrice`)
-    .in('ListingKey', keys.slice(0, 5000))
-    .or('StandardStatus.ilike.%Closed%')
-    .not('CloseDate', 'is', null)
-    .gte('CloseDate', since)
-    .order('CloseDate', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  return (data ?? []) as (HomeTileRow & { ClosePrice?: number | null; CloseDate?: string | null })[]
+  // DAL: fetch closed tiles by key, then filter to last-24mo close window
+  // post-fetch (DAL doesn't expose a close_date range filter today).
+  const tiles = await getListingTiles({
+    listingKeys: keys.slice(0, 5000),
+    status: 'closed',
+    sort: 'close-newest',
+    limit: limit * 3,
+  })
+  const sinceTs = since
+  return tiles
+    .filter((t) => t.closeDate != null && t.closeDate >= sinceTs)
+    .slice(0, limit)
+    .map((t) => ({
+      ...tileToHomeTileRow(t),
+      ClosePrice: t.closePrice,
+      CloseDate: t.closeDate,
+    }))
 }
 
-/** Broker's pending/under-contract listings (limit). */
+/** Broker's pending/under-contract listings (limit). Reads from DAL. */
 export async function getAgentPendingListings(
   licenseNumber: string | null,
   limit: number,
@@ -218,14 +257,13 @@ export async function getAgentPendingListings(
 ): Promise<HomeTileRow[]> {
   const keys = await getListingKeysForBroker(licenseNumber, brokerEmail)
   if (keys.length === 0) return []
-  const { data } = await supabase()
-    .from('listings')
-    .select(HOME_TILE_SELECT)
-    .in('ListingKey', keys.slice(0, 5000))
-    .or(PENDING_OR)
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit(limit)
-  return (data ?? []) as HomeTileRow[]
+  const tiles = await getListingTiles({
+    listingKeys: keys.slice(0, 5000),
+    status: 'pending-only',
+    sort: 'newest',
+    limit,
+  })
+  return tiles.map(tileToHomeTileRow)
 }
 
 /** Performance stats from sold listings: avg sale price, avg DOM (typed DaysOnMarket when present, else CloseDate minus on-market). */
