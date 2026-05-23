@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T01:06:01.003Z",
-  "total": 242,
+  "generatedAt": "2026-05-23T01:09:01.364Z",
+  "total": 231,
   "byFile": {
     "app/actions/sync-spark.ts": 28,
     "lib/listing-processor.ts": 16,
@@ -9,11 +9,9 @@
     "app/actions/listings.ts": 10,
     "app/actions/cities.ts": 9,
     "app/actions/market-stats.ts": 8,
-    "app/actions/subdivision-flags.ts": 8,
     "app/actions/area-guide-upload.ts": 7,
     "app/api/cron/sync-delta/route.ts": 7,
     "lib/fetch-listings-with-videos.ts": 6,
-    "app/actions/agents.ts": 5,
     "app/actions/market-reports.ts": 4,
     "app/actions/place-content-pipeline.ts": 4,
     "app/actions/pulse-feed.ts": 4,
@@ -36,6 +34,7 @@
     "lib/cma-delivery.ts": 3,
     "lib/expired-listing-processor.ts": 3,
     "app/actions/activity-feed.ts": 2,
+    "app/actions/agents.ts": 2,
     "app/actions/broker-self.ts": 2,
     "app/actions/communities.ts": 2,
     "app/actions/dashboard.ts": 2,

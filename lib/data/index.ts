@@ -128,6 +128,18 @@ export {
 } from '@/lib/data/engagement'
 export type { EngagementCounts } from '@/lib/data/engagement'
 
+// Subdivision flags + communities row management (admin resort-communities flow)
+export {
+  getResortEntityKeysFromFlags,
+  findCommunityBySlug,
+  updateCommunityRowById,
+  insertCommunityRow,
+  upsertSubdivisionResortFlag,
+  bulkUpsertResortFlags,
+  getAllSubdivisionFlags,
+} from '@/lib/data/communities/subdivisionFlags'
+export type { CommunityRowForBackfill } from '@/lib/data/communities/subdivisionFlags'
+
 // Admin sync verification counts (lives behind DAL boundary because the
 // sync-internal flags aren't on the public materialized view)
 export {

@@ -72,12 +72,14 @@ async function getActiveCountForBroker(
 ): Promise<number> {
   const keys = await getListingKeysForBroker(licenseNumber, brokerEmail)
   if (keys.length === 0) return 0
-  const { count } = await supabase()
-    .from('listings')
-    .select('ListingKey', { count: 'exact', head: true })
-    .or(ACTIVE_OR)
-    .in('ListingKey', keys.slice(0, 5000))
-  return count ?? 0
+  void ACTIVE_OR
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({
+    listingKeys: keys.slice(0, 5000),
+    status: 'active',
+    limit: 5000,
+  })
+  return tiles.length
 }
 
 /** Sold count and volume in last 24 months for broker. */
@@ -90,20 +92,21 @@ async function getSoldStatsForBroker(
   const twentyFourMoAgo = new Date()
   twentyFourMoAgo.setMonth(twentyFourMoAgo.getMonth() - 24)
   const since = twentyFourMoAgo.toISOString().slice(0, 10)
-  const { data } = await supabase()
-    .from('listings')
-    .select('ClosePrice, CloseDate')
-    .in('ListingKey', keys.slice(0, 5000))
-    .or('StandardStatus.ilike.%Closed%')
-    .not('CloseDate', 'is', null)
-    .gte('CloseDate', since)
-  const rows = (data ?? []) as { ClosePrice?: number | null; CloseDate?: string | null }[]
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({
+    listingKeys: keys.slice(0, 5000),
+    status: 'closed',
+    sort: 'close-newest',
+    limit: 5000,
+  })
+  // 24-month window filter post-fetch (DAL doesn't have a close_date range yet).
+  const inWindow = tiles.filter((t) => t.closeDate != null && t.closeDate.slice(0, 10) >= since)
   let volume = 0
-  for (const r of rows) {
-    const p = Number(r.ClosePrice)
+  for (const t of inWindow) {
+    const p = Number(t.closePrice)
     if (Number.isFinite(p) && p > 0) volume += p
   }
-  return { count: rows.length, volume }
+  return { count: inWindow.length, volume }
 }
 
 /** Average rating and review count for broker. */
@@ -276,35 +279,28 @@ async function getAgentPerformanceStats(
   const twentyFourMoAgo = new Date()
   twentyFourMoAgo.setMonth(twentyFourMoAgo.getMonth() - 24)
   const since = twentyFourMoAgo.toISOString().slice(0, 10)
-  const { data } = await supabase()
-    .from('listings')
-    .select('ClosePrice, CloseDate, ListDate, "DaysOnMarket", "OnMarketDate"')
-    .in('ListingKey', keys.slice(0, 5000))
-    .or('StandardStatus.ilike.%Closed%')
-    .not('CloseDate', 'is', null)
-    .gte('CloseDate', since)
-  const rows = (data ?? []) as {
-    ClosePrice?: number | null
-    CloseDate?: string | null
-    ListDate?: string | null
-    DaysOnMarket?: number | null
-    OnMarketDate?: string | null
-  }[]
-  const prices = rows.map((r) => Number(r.ClosePrice)).filter((p) => Number.isFinite(p) && p > 0)
-  const avgSalePrice = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles({
+    listingKeys: keys.slice(0, 5000),
+    status: 'closed',
+    sort: 'close-newest',
+    limit: 5000,
+  })
+  const rows = tiles.filter((t) => t.closeDate != null && t.closeDate.slice(0, 10) >= since)
+  const prices = rows.map((t) => Number(t.closePrice)).filter((p) => Number.isFinite(p) && p > 0)
+  const avgSalePrice =
+    prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null
   const domFromColumn = rows
-    .map((r) =>
-      r.DaysOnMarket != null && Number.isFinite(Number(r.DaysOnMarket)) ? Number(r.DaysOnMarket) : null
-    )
+    .map((t) => (t.dom != null && Number.isFinite(Number(t.dom)) ? Number(t.dom) : null))
     .filter((d): d is number => d != null && d >= 0 && d < 10000)
   const domFromDates =
     domFromColumn.length > 0
       ? []
       : rows
-          .filter((r) => r.CloseDate && (r.OnMarketDate || r.ListDate))
-          .map((r) => {
-            const close = new Date(r.CloseDate!).getTime()
-            const start = new Date((r.OnMarketDate || r.ListDate)!).getTime()
+          .filter((t) => t.closeDate && t.onMarketDate)
+          .map((t) => {
+            const close = new Date(t.closeDate!).getTime()
+            const start = new Date(t.onMarketDate!).getTime()
             const days = Math.round((close - start) / (24 * 60 * 60 * 1000))
             return days >= 0 && days < 10000 ? days : null
           })
