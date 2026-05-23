@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.38 (2026-05-23)
+
+### Other
+- DAL: clear market-stats + place-content-pipeline modules
+
+---
+
+
 ## v1.282.37 (2026-05-23)
 
 ### Other
