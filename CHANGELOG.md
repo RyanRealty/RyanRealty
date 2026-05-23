@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.288.4 (2026-05-23)
+
+### Other
+- SITE_SPEC: schools verified on listing detail (line 133)
+- sell: primary CTA routes to /lp/seller-home-value (SITE_SPEC line 178)
+
+---
+
+
 ## v1.288.3 (2026-05-23)
 
 ### Other
