@@ -75,6 +75,10 @@ const FilterSchema = z.object({
       north: z.number(),
     })
     .optional(),
+  /** modified_at > X — used for "next" adjacency queries. */
+  modifiedAfter: z.string().min(1).max(40).optional(),
+  /** modified_at < X — used for "prev" adjacency queries. */
+  modifiedBefore: z.string().min(1).max(40).optional(),
   /**
    * MLS PropertyType code:
    *   'A' = Residential (SFR + multi-family)
@@ -227,6 +231,8 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
       .gte('lng', west)
       .lte('lng', east)
   }
+  if (parsed.modifiedAfter) query = query.gt('modified_at', parsed.modifiedAfter)
+  if (parsed.modifiedBefore) query = query.lt('modified_at', parsed.modifiedBefore)
   if (parsed.searchQuery) {
     const safe = parsed.searchQuery.replace(/%/g, '').replace(/\\/g, '').replace(/[,()]/g, '').trim()
     if (safe.length >= 2) {

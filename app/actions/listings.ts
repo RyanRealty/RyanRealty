@@ -2038,26 +2038,16 @@ export async function getAdjacentListingKeyFromSupabase(
   modificationTimestamp: string,
   direction: 'next' | 'prev'
 ): Promise<string | null> {
-  const supabase = getAnonSupabase()
-  if (!supabase || !modificationTimestamp) return null
-  const orderCol = 'ModificationTimestamp'
-  const { data } =
+  if (!modificationTimestamp) return null
+  // DAL: adjacency via listing_tile_mv modified_at ordering.
+  // 'next' = older row (lt + DESC) per legacy semantics; 'prev' = newer row (gt + ASC).
+  const { getListingTiles } = await import('@/lib/data')
+  const tiles = await getListingTiles(
     direction === 'next'
-      ? await supabase
-          .from('listings')
-          .select('ListingKey')
-          .lt(orderCol, modificationTimestamp)
-          .order(orderCol, { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      : await supabase
-          .from('listings')
-          .select('ListingKey')
-          .gt(orderCol, modificationTimestamp)
-          .order(orderCol, { ascending: true })
-          .limit(1)
-          .maybeSingle()
-  return (data as { ListingKey?: string } | null)?.ListingKey ?? null
+      ? { modifiedBefore: modificationTimestamp, sort: 'newest', status: 'all', limit: 1 }
+      : { modifiedAfter: modificationTimestamp, sort: 'oldest', status: 'all', limit: 1 }
+  )
+  return tiles[0]?.listingKey ?? null
 }
 
 export type AdjacentListingThumb = {
@@ -2079,29 +2069,27 @@ export async function getAdjacentListingsFromSupabase(modificationTimestamp: str
   prev: AdjacentListingThumb | null
   next: AdjacentListingThumb | null
 }> {
-  const supabase = getAnonSupabase()
-  if (!supabase || !modificationTimestamp) return { prev: null, next: null }
-  const orderCol = 'ModificationTimestamp'
-  const select = 'ListingKey, ListNumber, PhotoURL, ListPrice, StreetNumber, StreetName, City, State, PostalCode'
-  const [prevRes, nextRes] = await Promise.all([
-    supabase
-      .from('listings')
-      .select(select)
-      .lt(orderCol, modificationTimestamp)
-      .order(orderCol, { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from('listings')
-      .select(select)
-      .gt(orderCol, modificationTimestamp)
-      .order(orderCol, { ascending: true })
-      .limit(1)
-      .maybeSingle(),
+  if (!modificationTimestamp) return { prev: null, next: null }
+  const { getListingTiles } = await import('@/lib/data')
+  const [prevTiles, nextTiles] = await Promise.all([
+    getListingTiles({ modifiedBefore: modificationTimestamp, sort: 'newest', status: 'all', limit: 1 }),
+    getListingTiles({ modifiedAfter: modificationTimestamp, sort: 'oldest', status: 'all', limit: 1 }),
   ])
-  const prev = (prevRes.data as AdjacentListingThumb | null) ?? null
-  const next = (nextRes.data as AdjacentListingThumb | null) ?? null
-  return { prev, next }
+  const toThumb = (t: ListingTile | undefined): AdjacentListingThumb | null =>
+    t
+      ? {
+          ListingKey: t.listingKey,
+          ListNumber: t.listNumber,
+          PhotoURL: t.photoUrl,
+          ListPrice: t.listPrice,
+          StreetNumber: t.streetNumber,
+          StreetName: t.streetName,
+          City: t.city,
+          State: 'OR',
+          PostalCode: t.postalCode,
+        }
+      : null
+  return { prev: toThumb(prevTiles[0]), next: toThumb(nextTiles[0]) }
 }
 
 /**
@@ -2113,27 +2101,34 @@ export async function getAdjacentListingsSliceFromSupabase(
   limitBefore = 4,
   limitAfter = 4
 ): Promise<{ prevList: AdjacentListingThumb[]; nextList: AdjacentListingThumb[] }> {
-  const supabase = getAnonSupabase()
-  if (!supabase || !modificationTimestamp) return { prevList: [], nextList: [] }
-  const select = 'ListingKey, ListNumber, PhotoURL, ListPrice, StreetNumber, StreetName, City, State, PostalCode'
-  const orderCol = 'ModificationTimestamp'
-  const [prevRes, nextRes] = await Promise.all([
-    supabase
-      .from('listings')
-      .select(select)
-      .lt(orderCol, modificationTimestamp)
-      .order(orderCol, { ascending: false })
-      .limit(limitBefore),
-    supabase
-      .from('listings')
-      .select(select)
-      .gt(orderCol, modificationTimestamp)
-      .order(orderCol, { ascending: true })
-      .limit(limitAfter),
+  if (!modificationTimestamp) return { prevList: [], nextList: [] }
+  const { getListingTiles } = await import('@/lib/data')
+  const [prevTiles, nextTiles] = await Promise.all([
+    getListingTiles({
+      modifiedBefore: modificationTimestamp,
+      sort: 'newest',
+      status: 'all',
+      limit: Math.min(Math.max(limitBefore, 1), 50),
+    }),
+    getListingTiles({
+      modifiedAfter: modificationTimestamp,
+      sort: 'oldest',
+      status: 'all',
+      limit: Math.min(Math.max(limitAfter, 1), 50),
+    }),
   ])
-  const prevList = (prevRes.data ?? []) as AdjacentListingThumb[]
-  const nextList = (nextRes.data ?? []) as AdjacentListingThumb[]
-  return { prevList, nextList }
+  const toThumb = (t: ListingTile): AdjacentListingThumb => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    PhotoURL: t.photoUrl,
+    ListPrice: t.listPrice,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: 'OR',
+    PostalCode: t.postalCode,
+  })
+  return { prevList: prevTiles.map(toThumb), nextList: nextTiles.map(toThumb) }
 }
 
 /**
