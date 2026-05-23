@@ -123,20 +123,15 @@ async function fetchAndInsertHistory(
   const hadSuccessfulFetch = response.ok && response.partial !== true
 
   if (response.items.length > 0) {
+    void supabase
     const rows = response.items.map(item => mapHistoryItem(listingKey, item))
-
-    // Delete existing history for this listing to avoid duplicates, then insert fresh
-    const { error: delError } = await supabase.from('listing_history').delete().eq('listing_key', listingKey)
-    if (delError) {
-      console.error(`[sync-delta] listing_history delete error for ${listingKey}:`, delError.message)
+    const { replaceListingHistoryForKey } = await import('@/lib/data')
+    const result = await replaceListingHistoryForKey(listingKey, rows)
+    if (!result.ok) {
+      console.error(`[sync-delta] listing_history replace error for ${listingKey}:`, result.error)
       return { inserted: 0, ok: hadSuccessfulFetch, items: response.items }
     }
-    const { error } = await supabase.from('listing_history').insert(rows)
-    if (error) {
-      console.error(`[sync-delta] listing_history insert error for ${listingKey}:`, error.message)
-      return { inserted: 0, ok: hadSuccessfulFetch, items: response.items }
-    }
-    return { inserted: rows.length, ok: hadSuccessfulFetch, items: response.items }
+    return { inserted: result.inserted, ok: hadSuccessfulFetch, items: response.items }
   }
 
   return { inserted: 0, ok: hadSuccessfulFetch, items: response.items }
@@ -158,13 +153,9 @@ export async function GET(request: Request) {
   }
 
   // Get last delta sync timestamp
-  const { data: stateRow } = await supabase
-    .from('sync_state')
-    .select('last_delta_sync_at')
-    .eq('id', 'default')
-    .maybeSingle()
-
-  const lastAt = (stateRow as { last_delta_sync_at?: string } | null)?.last_delta_sync_at
+  const { getSyncState } = await import('@/lib/data')
+  const stateRow = await getSyncState()
+  const lastAt = stateRow?.last_delta_sync_at
   // Default: 30 minutes ago if no previous run
   const sinceIso = lastAt ?? new Date(Date.now() - 30 * 60 * 1000).toISOString()
 
@@ -194,10 +185,8 @@ export async function GET(request: Request) {
         .map(r => r.StandardFields?.ListNumber ?? r.StandardFields?.ListingId)
         .filter((n): n is string => !!n)
 
-      const { data: existingRows } = await supabase
-        .from('listings')
-        .select('ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized')
-        .in('ListNumber', listNumbers)
+      const { getExistingListingsByListNumbers } = await import('@/lib/data')
+      const existingRows = await getExistingListingsByListNumbers(listNumbers)
 
       const existingByNum = new Map<string, {
         ListNumber: string
@@ -348,23 +337,29 @@ export async function GET(request: Request) {
       // === Persist everything ===
 
       // 1. Upsert listings in chunks
+      const {
+        upsertListingRows,
+        insertPriceHistoryRows,
+        insertStatusHistoryRows,
+        insertActivityEventRows,
+      } = await import('@/lib/data')
       for (let i = 0; i < rowsToUpsert.length; i += UPSERT_CHUNK) {
         const chunk = rowsToUpsert.slice(i, i + UPSERT_CHUNK)
-        const { error } = await supabase.from('listings').upsert(chunk, { onConflict: 'ListNumber' })
-        if (!error) totalUpserted += chunk.length
-        else console.error('[sync-delta] upsert error:', error.message)
+        const result = await upsertListingRows(chunk)
+        if (result.ok) totalUpserted += chunk.length
+        else console.error('[sync-delta] upsert error:', result.error)
       }
 
       // 2. Insert price_history records
       if (priceHistoryRows.length > 0) {
-        const { error } = await supabase.from('price_history').insert(priceHistoryRows)
-        if (error) console.error('[sync-delta] price_history insert error:', error.message)
+        const result = await insertPriceHistoryRows(priceHistoryRows)
+        if (!result.ok) console.error('[sync-delta] price_history insert error:', result.error)
       }
 
       // 3. Insert status_history records
       if (statusHistoryRows.length > 0) {
-        const { error } = await supabase.from('status_history').insert(statusHistoryRows)
-        if (error) console.error('[sync-delta] status_history insert error:', error.message)
+        const result = await insertStatusHistoryRows(statusHistoryRows)
+        if (!result.ok) console.error('[sync-delta] status_history insert error:', result.error)
       }
 
       // 4. Insert activity events
@@ -373,8 +368,8 @@ export async function GET(request: Request) {
           ...e,
           event_at: new Date().toISOString(),
         }))
-        const { error: evtError } = await supabase.from('activity_events').insert(eventRows)
-        if (evtError) console.error('[sync-delta] activity_events insert error:', evtError.message)
+        const result = await insertActivityEventRows(eventRows)
+        if (!result.ok) console.error('[sync-delta] activity_events insert error:', result.error)
       }
 
       // 5. Finalize terminal listings — fetch full history, then mark finalized
@@ -412,20 +407,24 @@ export async function GET(request: Request) {
 
         // Strict finalization: only finalize when history fetch succeeded and auxiliary tables are synced.
         if (hadSuccessfulFetch && auxSync.ok) {
-          const { error } = await supabase
-            .from('listings')
-            .update({ history_finalized: true, history_verified_full: true, is_finalized: true })
-            .eq('ListNumber', listNumber)
-
-          if (!error) {
+          const result = await upsertListingRows([
+            {
+              ListNumber: listNumber,
+              history_finalized: true,
+              history_verified_full: true,
+              is_finalized: true,
+            },
+          ])
+          if (result.ok) {
             listingsFinalized++
           } else {
-            console.error(`[sync-delta] finalization error for ${listNumber}:`, error.message)
+            console.error(`[sync-delta] finalization error for ${listNumber}:`, result.error)
           }
         }
       }
 
       // 6. Fix photos for listings that got upserted without PhotoURL
+      const { updateListingPhotoUrl } = await import('@/lib/data')
       const upsertedKeys = rowsToUpsert
         .filter(r => !r.PhotoURL && r.ListingKey)
         .map(r => r.ListingKey as string)
@@ -434,8 +433,8 @@ export async function GET(request: Request) {
       for (const key of upsertedKeys) {
         const photoUrl = await fetchPhotoForListing(accessToken, key)
         if (photoUrl) {
-          await supabase.from('listings').update({ PhotoURL: photoUrl }).eq('ListingKey', key)
-          photosFixed++
+          const result = await updateListingPhotoUrl(key, photoUrl)
+          if (result.ok) photosFixed++
         }
       }
 
@@ -443,10 +442,8 @@ export async function GET(request: Request) {
     }
 
     // Update last sync timestamp
-    await supabase.from('sync_state').upsert(
-      { id: 'default', last_delta_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { onConflict: 'id' }
-    )
+    const { updateSyncStateLastDelta } = await import('@/lib/data')
+    await updateSyncStateLastDelta(new Date().toISOString())
 
     // Refresh market pulse after sync
     try {

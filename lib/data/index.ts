@@ -161,6 +161,21 @@ export {
 } from '@/lib/data/cities/getNeighborhoodMetadata'
 export type { NeighborhoodLite, NeighborhoodFull } from '@/lib/data/cities/getNeighborhoodMetadata'
 
+// Sync pipeline writes (Spark delta + history backfill)
+export {
+  getSyncState,
+  updateSyncStateLastDelta,
+  getExistingListingsByListNumbers,
+  replaceListingHistoryForKey,
+  upsertListingRows,
+  insertPriceHistoryRows,
+  insertStatusHistoryRows,
+  insertActivityEventRows,
+  getListingPhotoUrl,
+  updateListingPhotoUrl,
+} from '@/lib/data/sync/syncWrites'
+export type { ExistingListingRow, SyncState } from '@/lib/data/sync/syncWrites'
+
 // Subdivision flags + communities row management (admin resort-communities flow)
 export {
   getResortEntityKeysFromFlags,
