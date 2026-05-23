@@ -1,7 +1,7 @@
 'use client'
 
 import type { ListingTileRow } from '@/app/actions/listings'
-import type { EngagementCounts } from '@/app/actions/engagement'
+import type { EngagementCounts } from '@/app/actions/engagement-types'
 import GeoSlider from '@/components/geo-page/GeoSlider'
 import ListingBarCard from '@/components/geo-page/ListingBarCard'
 

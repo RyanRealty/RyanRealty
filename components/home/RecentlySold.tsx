@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import HomeTileCard from './HomeTileCard'
 import type { HomeTileRow } from '@/app/actions/listings'
-import type { EngagementCounts } from '@/app/actions/engagement'
+import type { EngagementCounts } from '@/app/actions/engagement-types'
 import { TILE_MIN_HEIGHT_PX } from '@/lib/tile-constants'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
 

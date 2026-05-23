@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { ListingTileRow } from '@/app/actions/listings'
-import type { EngagementCounts } from '@/app/actions/engagement'
+import type { EngagementCounts } from '@/app/actions/engagement-types'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
 import ListingTile from '@/components/ListingTile'
 import { Card, CardContent } from '@/components/ui/card'

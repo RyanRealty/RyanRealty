@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import type { ListingTileRow } from '@/app/actions/listings'
 import type { ListingTileListing } from '@/components/ListingTile'
-import type { EngagementCounts } from '@/app/actions/engagement'
+import type { EngagementCounts } from '@/app/actions/engagement-types'
 import ListingTile from '@/components/ListingTile'
 import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
 import { TILE_MIN_HEIGHT_PX } from '@/lib/tile-constants'
