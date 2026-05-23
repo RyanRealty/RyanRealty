@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T00:34:59.946Z",
-  "total": 330,
+  "generatedAt": "2026-05-23T00:36:13.722Z",
+  "total": 329,
   "byFile": {
     "app/actions/listings.ts": 61,
     "app/actions/sync-spark.ts": 28,
@@ -17,7 +17,6 @@
     "app/actions/agents.ts": 5,
     "app/actions/activity-feed.ts": 4,
     "app/actions/communities.ts": 4,
-    "app/actions/dashboard.ts": 4,
     "app/actions/market-reports.ts": 4,
     "app/actions/place-content-pipeline.ts": 4,
     "app/actions/pulse-feed.ts": 4,
@@ -27,6 +26,7 @@
     "app/api/pdf/listing/route.ts": 4,
     "app/lp/bend/page.tsx": 4,
     "lib/cma.ts": 4,
+    "app/actions/dashboard.ts": 3,
     "app/actions/home.ts": 3,
     "app/actions/reports.ts": 3,
     "app/actions/semantic-search.ts": 3,
