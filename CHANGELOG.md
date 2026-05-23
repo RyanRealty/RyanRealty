@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.17 (2026-05-23)
+
+### Other
+- DAL: migrate centroid + key-lookup + tile-batch paths
+
+---
+
+
 ## v1.282.16 (2026-05-23)
 
 ### Other
