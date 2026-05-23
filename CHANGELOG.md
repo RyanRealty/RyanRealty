@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.286.2 (2026-05-23)
+
+### Bug Fixes
+- fix(lp/golf): rewrite for the golfer, fix Where-to-Live card layout
+
+---
+
+
 ## v1.286.1 (2026-05-23)
 
 ### Other
