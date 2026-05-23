@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T00:24:40.579Z",
-  "total": 338,
+  "generatedAt": "2026-05-23T00:27:45.964Z",
+  "total": 337,
   "byFile": {
     "app/actions/listings.ts": 64,
     "app/actions/sync-spark.ts": 28,
@@ -9,8 +9,8 @@
     "app/actions/engagement.ts": 14,
     "app/actions/listing-detail.ts": 14,
     "app/actions/admin-listing-detail.ts": 10,
-    "app/actions/subdivision-flags.ts": 9,
     "app/actions/market-stats.ts": 8,
+    "app/actions/subdivision-flags.ts": 8,
     "app/actions/area-guide-upload.ts": 7,
     "app/api/cron/sync-delta/route.ts": 7,
     "lib/fetch-listings-with-videos.ts": 6,

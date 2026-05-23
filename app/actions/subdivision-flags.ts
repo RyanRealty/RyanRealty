@@ -3,6 +3,7 @@
 import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { subdivisionEntityKey, parseEntityKey } from '@/lib/slug'
+import { getAllCommunitySnapshots } from '@/lib/data'
 import { RESORT_ENTITY_KEYS, RESORT_LIST } from '@/lib/resort-communities'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
@@ -127,20 +128,27 @@ export async function listSubdivisionsWithFlags(): Promise<SubdivisionRow[]> {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !key?.trim()) return []
   const supabase = createClient(url, key)
-  const { data: listingRows } = await supabase
-    .from('listings')
-    .select('City, SubdivisionName')
-    .not('SubdivisionName', 'is', null)
+  // DAL: read pre-aggregated (city, subdivision) pairs from geo_snapshot_mv.
+  // Replaces a full-table listings scan + JS dedup. geo_key carries
+  // 'cityLower:subdivisionLower' which we parse out, and geo_label is
+  // the canonical subdivision name.
+  const snapshots = await getAllCommunitySnapshots()
   const seen = new Set<string>()
   const rows: { city: string; subdivision: string }[] = []
-  for (const r of listingRows ?? []) {
-    const city = (r.City ?? '').toString().trim()
-    const sub = (r.SubdivisionName ?? '').toString().trim()
-    if (!city || !sub) continue
-    const ek = subdivisionEntityKey(city, sub)
+  for (const snap of snapshots) {
+    const subdivision = snap.geoLabel?.trim()
+    if (!subdivision) continue
+    const cityLowerFromKey = snap.geoKey.split(':')[0]
+    if (!cityLowerFromKey) continue
+    // Title-case the city for display
+    const city = cityLowerFromKey
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ')
+    const ek = subdivisionEntityKey(city, subdivision)
     if (seen.has(ek)) continue
     seen.add(ek)
-    rows.push({ city, subdivision: sub })
+    rows.push({ city, subdivision })
   }
   rows.sort((a, b) => a.city.localeCompare(b.city) || a.subdivision.localeCompare(b.subdivision))
   const { data: flags } = await supabase.from('subdivision_flags').select('entity_key, is_resort')

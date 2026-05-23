@@ -98,6 +98,7 @@ export { getListingVideos } from '@/lib/data/videos/getListingVideos'
 export {
   getGeoSnapshot,
   getAllCitySnapshots,
+  getAllCommunitySnapshots,
   getCityCommunitySnapshots,
 } from '@/lib/data/geo/getGeoSnapshot'
 export type { GeoSnapshot, GeoSnapshotInput } from '@/lib/data/geo/getGeoSnapshot'

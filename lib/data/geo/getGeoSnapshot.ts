@@ -121,6 +121,32 @@ export const getAllCitySnapshots = (): Promise<GeoSnapshot[]> =>
   )()
 
 /**
+ * Fetch every community snapshot across all cities. Used by admin tooling
+ * that needs the full list of (city, subdivision) pairs.
+ */
+export const getAllCommunitySnapshots = (): Promise<GeoSnapshot[]> =>
+  unstable_cache(
+    async () => {
+      const supabase = supabaseAnon()
+      if (!supabase) return []
+      const { data, error } = await supabase
+        .from('geo_snapshot_mv')
+        .select('*')
+        .eq('geo_type', 'community')
+        .gt('active_sfr_count', 0)
+        .order('geo_key', { ascending: true })
+        .limit(5000)
+      if (error || !data) return []
+      return (data as GeoSnapshotMvRow[]).map(rowToSnapshot)
+    },
+    ['geo-snapshot', 'all-communities'],
+    {
+      revalidate: CACHE_WINDOWS.geoCommunity,
+      tags: ['communities-index'],
+    }
+  )()
+
+/**
  * Fetch every community snapshot in a city. Powers the city LP communities bar.
  */
 export const getCityCommunitySnapshots = (citySlug: string): Promise<GeoSnapshot[]> => {
