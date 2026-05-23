@@ -11,7 +11,6 @@ import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { sanitizeHtml } from '@/lib/sanitize'
 import { Button } from '@/components/ui/button'
 import BrokerSocialProofCta from '@/components/broker/BrokerSocialProofCta'
-import { valuationPath } from '@/lib/slug'
 import ShareButton from '@/components/ShareButton'
 
 // Render on demand to avoid the 180s static-generation timeout. This page
@@ -112,8 +111,12 @@ export default async function SellPage() {
         subtitle="Data-driven pricing, professional marketing, and a team that knows Central Oregon. Get a free valuation and a clear plan to sell."
         imageUrl={CONTENT_HERO_IMAGES.sell}
         ctas={[
-          { label: 'Get a Home Valuation', href: valuationPath(), primary: true },
-          { label: 'Contact Us to Sell', href: '/contact?inquiry=Selling', primary: false },
+          // Primary CTA routes to the canonical seller LP per SITE_SPEC line 178.
+          // The /sell/valuation surface remains a second-tier intent page; the
+          // top-of-funnel ask is the LP that captures the lead and triggers
+          // the FUB seller workflow (docs/FUB_SELLER_WORKFLOW_2026-05-17.md).
+          { label: 'Get a home valuation', href: '/lp/seller-home-value', primary: true },
+          { label: 'Contact us to sell', href: '/contact?inquiry=Selling', primary: false },
         ]}
       />
       <div className="mx-auto mt-4 flex w-full max-w-4xl justify-end px-4 sm:px-6">
