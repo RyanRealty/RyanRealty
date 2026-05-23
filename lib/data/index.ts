@@ -113,6 +113,19 @@ export { getBrokers } from '@/lib/data/brokers/getBrokers'
 export { resolveListingAgent } from '@/lib/data/brokers/resolveListingAgent'
 export type { ListingAgentInput } from '@/lib/data/brokers/resolveListingAgent'
 
+// Engagement counts (per-listing view/like/save/share)
+export {
+  getEngagementCountsBatch,
+  getEngagementForListing,
+  incrementListingShareCount,
+  incrementListingSaveCount,
+  decrementListingSaveCount,
+  incrementListingLikeCount,
+  decrementListingLikeCount,
+  incrementListingViewCount,
+} from '@/lib/data/engagement'
+export type { EngagementCounts } from '@/lib/data/engagement'
+
 // More functions get exported here as Wave 1-3 lands them.
 
 // Cache helpers ----------------------------------------------------
