@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.9 (2026-05-23)
+
+### Other
+- DAL: migrate activity-feed.ts fallback paths to listing_tile_mv
+
+---
+
+
 ## v1.282.8 (2026-05-23)
 
 ### Maintenance
