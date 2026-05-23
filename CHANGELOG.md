@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.39 (2026-05-23)
+
+### Other
+- DAL: clear 3 API route modules in parallel
+
+---
+
+
 ## v1.282.38 (2026-05-23)
 
 ### Other
