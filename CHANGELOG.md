@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.20 (2026-05-23)
+
+### Other
+- DAL: migrate populateMarketPulseForCity + getQuickCityCount
+
+---
+
+
 ## v1.282.19 (2026-05-23)
 
 ### Other
