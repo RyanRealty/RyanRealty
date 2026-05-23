@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.10 (2026-05-23)
+
+### Maintenance
+- perf: remove force-dynamic from homepage (lets ISR cache the shell)
+
+---
+
+
 ## v1.288.9 (2026-05-23)
 
 ### Other
