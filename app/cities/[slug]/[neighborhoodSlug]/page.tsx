@@ -72,6 +72,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export const revalidate = 60
 
+/**
+ * Canonical Bend neighborhood slugs (SITE_SPEC line 94). Pre-rendered at
+ * build via `generateStaticParams` so cold visits land on a cached HTML doc.
+ * `dynamicParams = true` keeps the route open for additional neighborhoods
+ * that get added to the `boundaries` table later. Slug format is the bare
+ * neighborhood slug (e.g. `awbrey-butte`) because the parent `slug` is
+ * `bend`. The 14 neighborhoods enumerated here match the boundaries seed
+ * (`geo_type='neighborhood' AND geo_slug LIKE 'bend-%'`) and the
+ * Bend neighborhood data in `lib/bend-neighborhoods.ts`.
+ */
+const BEND_NEIGHBORHOOD_SLUGS = [
+  'awbrey-butte',
+  'old-mill',
+  'larkspur',
+  'pilot-butte',
+  'northwest-crossing',
+  'river-west',
+  'westside',
+  'downtown',
+  'eastside',
+  'century-west',
+  'bear-creek',
+  'mountain-view',
+  'se-bend',
+  'brookswood',
+] as const
+
+export const dynamicParams = true
+
+export async function generateStaticParams(): Promise<Array<{ slug: string; neighborhoodSlug: string }>> {
+  return BEND_NEIGHBORHOOD_SLUGS.map((neighborhoodSlug) => ({
+    slug: 'bend',
+    neighborhoodSlug,
+  }))
+}
+
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
   return Promise.race([
     promise,

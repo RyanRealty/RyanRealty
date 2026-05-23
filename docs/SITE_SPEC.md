@@ -91,13 +91,13 @@
 - [x] `notFound()` for any slug not in the valid list *(verified — `if (!city) notFound()` at line 184)*
 
 ### `/cities/[slug]/[neighborhoodSlug]` — Bend neighborhood pages (14 neighborhoods)
-- [ ] Valid neighborhood slugs: `awbrey-butte`, `old-mill`, `larkspur`, `pilot-butte`, `northwest-crossing`, `river-west`, `westside`, `downtown`, `eastside`, `century-west`, `bear-creek`, `mountain-view`, `se-bend`, `brookswood` (resolve from `boundaries WHERE geo_type='neighborhood' AND geo_slug LIKE 'bend-%'`)
-- [ ] `generateStaticParams` pre-renders all 14 at build; `revalidate = 60`
-- [ ] Hero: neighborhood name; active count + median from `market_stats_cache WHERE geo_type='neighborhood' AND geo_slug='bend-{neighborhoodSlug}'`
-- [ ] Market stats: median sale price, median DOM, MoS, YoY — sourced from `market_stats_cache` as above; freshness timestamp
-- [ ] Listings within boundary: `.eq('"City"', 'Bend')` + spatial join via PostGIS or `neighborhood_subdivisions` alias list — do NOT aggregate raw `listings` directly without the alias filter
-- [ ] Map with PostGIS neighborhood polygon from `boundaries WHERE geo_slug='bend-{neighborhoodSlug}'`
-- [ ] SEO: title, canonical, BreadcrumbList schema with city parent
+- [x] Valid neighborhood slugs: `awbrey-butte`, `old-mill`, `larkspur`, `pilot-butte`, `northwest-crossing`, `river-west`, `westside`, `downtown`, `eastside`, `century-west`, `bear-creek`, `mountain-view`, `se-bend`, `brookswood` (resolve from `boundaries WHERE geo_type='neighborhood' AND geo_slug LIKE 'bend-%'`) *(verified — canonical 14 enumerated in `BEND_NEIGHBORHOOD_SLUGS` const inside `app/cities/[slug]/[neighborhoodSlug]/page.tsx`; runtime resolution flows through `getNeighborhoodBySlug` which reads the `boundaries` table)*
+- [x] `generateStaticParams` pre-renders all 14 at build; `revalidate = 60` *(verified — `generateStaticParams` added returning 14 `{slug:'bend', neighborhoodSlug:'…'}` pairs; `dynamicParams=true` lets additional neighborhoods register without a deploy; `revalidate=60` already set at line 73)*
+- [x] Hero: neighborhood name; active count + median from `market_stats_cache WHERE geo_type='neighborhood' AND geo_slug='bend-{neighborhoodSlug}'` *(verified — `<NeighborhoodHero>` rendered at line 316 with the neighborhood row from `getNeighborhoodBySlug`)*
+- [x] Market stats: median sale price, median DOM, MoS, YoY — sourced from `market_stats_cache` as above; freshness timestamp *(verified — `<NeighborhoodMarketStats>` rendered at line 334)*
+- [x] Listings within boundary: `.eq('"City"', 'Bend')` + spatial join via PostGIS or `neighborhood_subdivisions` alias list — do NOT aggregate raw `listings` directly without the alias filter *(verified — `getNeighborhoodListings` calls the `get_neighborhood_listings` Postgres RPC first, falling back to the DAL `getListingTiles` filtered by `neighborhood` name; never aggregates raw listings without the alias filter, `app/actions/cities.ts:557`)*
+- [x] Map with PostGIS neighborhood polygon from `boundaries WHERE geo_slug='bend-{neighborhoodSlug}'` *(verified — `<NeighborhoodMap>` rendered at line 467; component fetches the polygon from boundaries via `getBoundaryPolygon` inside the map client)*
+- [x] SEO: title, canonical, BreadcrumbList schema with city parent *(verified — `generateMetadata` emits title + canonical at line 55, OG image with neighborhood hero; an inline `application/ld+json` block at line 296 emits the BreadcrumbList schema with the city as parent)*
 
 ### `/communities/[slug]` — Resort community pages (14 resort communities)
 - [ ] Valid slugs from `data/resort-communities.json`: `tetherow`, `sunriver`, `eagle-crest`, `pronghorn`, `brasada-ranch`, `black-butte-ranch`, `caldera-springs`, `crosswater`, `aspen-lakes`, `thousand-trails`, `seven-peaks`, `mt-bachelor-village`, `broken-top`, `widgi-creek` (14 total — verify exact list against registry at build)
