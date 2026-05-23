@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.11 (2026-05-23)
+
+### Other
+- DAL: migrate communities.ts to listing_tile_mv
+
+---
+
+
 ## v1.282.10 (2026-05-23)
 
 ### Other
