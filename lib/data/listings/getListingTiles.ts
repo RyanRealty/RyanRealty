@@ -32,6 +32,16 @@ const FilterSchema = z.object({
   minBaths: z.number().nonnegative().optional(),
   minSqft: z.number().int().nonnegative().optional(),
   hasVirtualTour: z.boolean().optional(),
+  /**
+   * MLS PropertyType code:
+   *   'A' = Residential (SFR + multi-family)
+   *   'B' = Condo / Townhome
+   *   'C' = Manufactured / Mobile
+   *   'D' = Land / Lot
+   * When omitted, all property types are returned. The default in the
+   * listings table is 'A' so most LP routes get SFR + multi-family.
+   */
+  propertyType: z.string().min(1).max(4).optional(),
   status: z.enum(['active', 'active-and-pending', 'pending-only', 'closed', 'all']).default('active'),
   // 'close-newest' sorts by close_date DESC NULLS LAST — for recently-sold rows.
   sort: z.enum(['newest', 'oldest', 'price-asc', 'price-desc', 'close-newest']).default('newest'),
@@ -159,6 +169,7 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   if (parsed.minBaths) query = query.gte('baths', parsed.minBaths)
   if (parsed.minSqft) query = query.gte('sqft', parsed.minSqft)
   if (parsed.hasVirtualTour === true) query = query.eq('has_virtual_tour', true)
+  if (parsed.propertyType) query = query.eq('property_type', parsed.propertyType)
 
   // Sort
   if (parsed.sort === 'newest') {

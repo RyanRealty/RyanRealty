@@ -602,60 +602,95 @@ export async function getListings(options: {
   limit?: number
   offset?: number
 } & ListingsFilters = {}): Promise<ListingTileRow[]> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return []
-  // Exclude heavy `details` JSONB from basic listing queries — only needed for advanced RPC path
-  const select =
-    'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, TotalLivingAreaSqFt, OnMarketDate, CloseDate'
-  let query = supabase.from('listings').select(select)
-
-  if (options.city) query = query.eq('"City"', options.city)
-  if (options.subdivision?.trim()) {
-    const names = getSubdivisionMatchNames(options.subdivision.trim())
-    if (names.length === 1) query = query.eq('"SubdivisionName"', names[0]!)
-    else if (names.length > 1) query = query.or(names.map((n) => `SubdivisionName.ilike.${n}`).join(','))
-  }
-  if (options.includeClosed === true) {
-    query = query.or('StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%Pending%,StandardStatus.ilike.%Closed%')
-  } else if (options.includePending === true) {
-    query = query.or(ACTIVE_OR_PENDING_OR)
-  } else {
-    query = query.or(ACTIVE_STATUS_OR)
-  }
-  if (options.minPrice != null && options.minPrice > 0) query = query.gte('ListPrice', options.minPrice)
-  if (options.maxPrice != null && options.maxPrice > 0) query = query.lte('ListPrice', options.maxPrice)
-  if (options.minBeds != null && options.minBeds > 0) query = query.gte('BedroomsTotal', options.minBeds)
-  if (options.minBaths != null && options.minBaths > 0) query = query.gte('BathroomsTotal', options.minBaths)
-  if (options.minSqFt != null && options.minSqFt > 0) query = query.gte('TotalLivingAreaSqFt', options.minSqFt)
-
-  // Only filter by propertyType when explicitly set — default is ALL types
-  const pt = options.propertyType?.trim()
-  if (pt && pt !== '' && pt !== 'all') {
-    query = query.or(`PropertyType.ilike.%${pt}%,PropertyType.is.null`)
-  }
-
-  const sort = options.sort ?? 'newest'
-  if (sort === 'newest') query = query.order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-  else if (sort === 'oldest') query = query.order('ModificationTimestamp', { ascending: true, nullsFirst: true })
-  else if (sort === 'price_asc') query = query.order('ListPrice', { ascending: true, nullsFirst: true })
-  else if (sort === 'price_desc') query = query.order('ListPrice', { ascending: false, nullsFirst: false })
-
+  // DAL: read from listing_tile_mv via getCityListings/getCommunityListings/
+  // getListingTiles. Status filter, price/beds/baths/sqft + propertyType
+  // all flow through the DAL filter schema. Multi-alias subdivision support
+  // uses parallel calls and dedupe-by-listingKey.
   const limit = Math.min(options.limit ?? 100, 200)
   const offset = options.offset ?? 0
-  if (options.includeClosed) {
-    query = query.range(offset, offset + limit - 1)
-  } else {
-    query = query.limit(Math.min((offset + limit) * 3, 500))
+
+  const statusKey = options.includeClosed
+    ? ('all' as const)
+    : options.includePending
+      ? ('active-and-pending' as const)
+      : ('active' as const)
+  const sortMap: Record<string, 'newest' | 'oldest' | 'price-asc' | 'price-desc'> = {
+    newest: 'newest',
+    oldest: 'oldest',
+    price_asc: 'price-asc',
+    price_desc: 'price-desc',
   }
-  const { data } = await query
-  let rows = (data ?? []) as ListingTileRow[]
-  if (options.includeClosed) {
-  } else if (options.includePending) {
-    rows = rows.filter((r) => isActiveStatus(r.StandardStatus) || isPendingStatus(r.StandardStatus)).slice(offset, offset + limit)
-  } else {
-    rows = rows.filter((r) => isActiveStatus(r.StandardStatus)).slice(offset, offset + limit)
+  const sortKey = sortMap[options.sort ?? 'newest'] ?? 'newest'
+
+  const pt = options.propertyType?.trim()
+  const propertyType = pt && pt !== '' && pt !== 'all' ? pt : undefined
+
+  const baseFilter = {
+    status: statusKey,
+    sort: sortKey,
+    limit: Math.min((offset + limit) * 3, 500),
+    minPrice: options.minPrice ?? undefined,
+    maxPrice: options.maxPrice ?? undefined,
+    minBeds: options.minBeds ?? undefined,
+    minBaths: options.minBaths ?? undefined,
+    minSqft: options.minSqFt ?? undefined,
+    propertyType,
   }
-  return rows
+
+  let tiles: ListingTile[] = []
+  const subName = options.subdivision?.trim()
+  if (subName) {
+    const names = getSubdivisionMatchNames(subName)
+    if (names.length === 1) {
+      tiles = await getCommunityListingsDAL(names[0]!, baseFilter)
+    } else if (names.length > 1) {
+      const results = await Promise.all(
+        names.map((n) => getCommunityListingsDAL(n, baseFilter)),
+      )
+      const seen = new Set<string>()
+      for (const r of results) for (const t of r) {
+        if (seen.has(t.listingKey)) continue
+        seen.add(t.listingKey)
+        tiles.push(t)
+      }
+    } else {
+      tiles = []
+    }
+    if (options.city) {
+      tiles = tiles.filter(
+        (t) => t.city?.toLowerCase().trim() === options.city!.toLowerCase().trim(),
+      )
+    }
+  } else if (options.city) {
+    tiles = await getCityListingsDAL(options.city, baseFilter)
+  } else {
+    // No city or subdivision — broad listing fetch
+    const { getListingTiles } = await import('@/lib/data')
+    tiles = await getListingTiles(baseFilter)
+  }
+
+  return tiles
+    .slice(offset, offset + limit)
+    .map((t) => ({
+      ListingKey: t.listingKey,
+      ListNumber: t.listNumber,
+      ListPrice: t.listPrice,
+      BedroomsTotal: t.beds,
+      BathroomsTotal: t.baths,
+      StreetNumber: t.streetNumber,
+      StreetName: t.streetName,
+      City: t.city,
+      State: null,
+      PostalCode: t.postalCode,
+      SubdivisionName: t.subdivisionName,
+      PhotoURL: t.photoUrl,
+      Latitude: t.lat,
+      Longitude: t.lng,
+      StandardStatus: t.status,
+      TotalLivingAreaSqFt: t.sqft,
+      OnMarketDate: t.onMarketDate,
+      CloseDate: t.closeDate,
+    } as ListingTileRow))
 }
 
 /** Returns true if any advanced-only filter is set (so we should use RPC). */
