@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.15 (2026-05-23)
+
+### Other
+- DAL: move admin sync verification counts into lib/data/admin/syncCounts
+
+---
+
+
 ## v1.282.14 (2026-05-23)
 
 ### Other
