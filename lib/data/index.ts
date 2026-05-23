@@ -96,6 +96,22 @@ export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
 export { getPriceDropTiles } from '@/lib/data/listings/getPriceDropTiles'
 export type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 export { getListingVideoCandidates } from '@/lib/data/listings/getListingVideoCandidates'
+export {
+  getListingDetailPhotos,
+  getListingDetailAgents,
+  getListingDetailOpenHouses,
+  getListingDetailVideos,
+  getListingDetailHistory,
+  resolveCommunityChainBySlug,
+} from '@/lib/data/listings/getListingDetailBundles'
+export type {
+  ListingDetailPhotoRow,
+  ListingDetailAgentRow,
+  ListingDetailOpenHouseRow,
+  ListingDetailVideoRow,
+  ListingHistoryEventRow,
+  CommunityResolution,
+} from '@/lib/data/listings/getListingDetailBundles'
 export type {
   ListingVideoCandidateRow,
   GetListingVideoCandidatesOptions,

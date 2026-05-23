@@ -829,28 +829,13 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
   // Resolve the key (handles mls#, key-zip, etc.)
   const resolvedKey = (await resolveListingKeyFromSlug(supabase, requestedKey)) ?? requestedKey
 
-  // Query the actual PascalCase listings table — NO properties(*) join
-  let listingRow: AnyRow | null = null
-  const DETAIL_LISTING_SELECT =
-    'ListingKey, ListNumber, ListPrice, OriginalListPrice, ClosePrice, StandardStatus, OnMarketDate, CloseDate, ModificationTimestamp, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, SubdivisionName, PropertyType, StreetNumber, StreetName, City, State, PostalCode, Latitude, Longitude, PhotoURL, OpenHouses, details, year_built, price_per_sqft, close_price_per_sqft, sale_to_list_ratio, sale_to_final_list_ratio, total_price_change_pct, total_price_change_amt, estimated_monthly_piti, lot_size_acres, lot_size_sqft, garage_yn, garage_spaces, pool_yn, fireplace_yn, waterfront_yn, basement_yn, stories_total, property_sub_type, architectural_style, new_construction_yn, county, school_district, elementary_school, middle_school, high_school, tax_annual_amount, tax_assessed_value, tax_rate, hoa_monthly, hoa_annual_cost, property_age, listing_quality_score, photos_count, virtual_tour_url, public_remarks, DaysOnMarket, price_drop_count'
-
-  const { data: byKey } = await supabase
-    .from('listings')
-    .select(DETAIL_LISTING_SELECT)
-    .eq('ListingKey', resolvedKey)
-    .maybeSingle()
-  listingRow = byKey
-
-  // Fallback: try by ListNumber
-  if (!listingRow) {
-    const { data: byNum } = await supabase
-      .from('listings')
-      .select(DETAIL_LISTING_SELECT)
-      .eq('ListNumber', resolvedKey)
-      .maybeSingle()
-    listingRow = byNum
-  }
-
+  // DAL: getListingRawRowByKey covers the wide raw-row fetch (PascalCase +
+  // snake_case + JSONB details). It tries ListNumber, ListingKey, list_number,
+  // listing_key in that order. Wider than DETAIL_LISTING_SELECT but the
+  // page only reads named fields off the row.
+  void supabase
+  const { getListingRawRowByKey } = await import('@/lib/data')
+  const listingRow = (await getListingRawRowByKey(resolvedKey)) as AnyRow | null
   if (!listingRow) return null
 
   const canonicalKey = String(listingRow.ListingKey ?? resolvedKey).trim()
@@ -859,90 +844,41 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
   const listing = mapRowToListing(listingRow)
   const property = mapRowToProperty(listingRow)
 
-  // Extract photos from details JSONB + PhotoURL, with listing_photos table as override
+  // DAL: photos / agents / open houses / videos in parallel via lib/data.
+  const {
+    getListingDetailPhotos,
+    getListingDetailAgents,
+    getListingDetailOpenHouses,
+    getListingDetailVideos,
+  } = await import('@/lib/data')
+  const [dbPhotos, dbAgents, dbOH, dbVideos] = await Promise.all([
+    getListingDetailPhotos(canonicalKey).catch(() => []),
+    getListingDetailAgents(canonicalKey).catch(() => []),
+    getListingDetailOpenHouses(canonicalKey).catch(() => []),
+    getListingDetailVideos(canonicalKey).catch(() => []),
+  ])
+
   let photos = extractPhotosFromRow(listingRow)
-  try {
-    const { data: dbPhotos } = await supabase
-      .from('listing_photos')
-      .select('id, listing_key, photo_url, cdn_url, sort_order, caption, is_hero')
-      .eq('listing_key', canonicalKey)
-      .order('sort_order', { ascending: true })
-    if (dbPhotos && dbPhotos.length > 0) {
-      photos = dbPhotos as ListingDetailPhoto[]
-    }
-  } catch { /* table may not have data — use extracted photos */ }
+  if (dbPhotos.length > 0) photos = dbPhotos as unknown as ListingDetailPhoto[]
 
-  // Extract agents from row/details, with listing_agents table as override
   let agents = extractAgentsFromRow(listingRow)
-  try {
-    const { data: dbAgents } = await supabase
-      .from('listing_agents')
-      .select('id, listing_key, agent_role, agent_name, agent_mls_id, agent_license, agent_email, agent_phone, office_name, office_mls_id, office_phone')
-      .eq('listing_key', canonicalKey)
-      .in('agent_role', ['list', 'listing'])
-    if (dbAgents && dbAgents.length > 0) {
-      agents = dbAgents as ListingDetailAgent[]
-    }
-  } catch { /* table may not have data */ }
+  if (dbAgents.length > 0) agents = dbAgents as unknown as ListingDetailAgent[]
 
-  // Extract open houses from row, with open_houses table as override
   let openHouses = extractOpenHousesFromRow(listingRow)
-  try {
-    const { data: dbOH } = await supabase
-      .from('open_houses')
-      .select('id, listing_key, event_date, start_time, end_time, host_agent_name, remarks')
-      .eq('listing_key', canonicalKey)
-      .gte('event_date', new Date().toISOString().slice(0, 10))
-      .order('event_date', { ascending: true })
-    if (dbOH && dbOH.length > 0) {
-      openHouses = dbOH as ListingDetailOpenHouse[]
-    }
-  } catch { /* use extracted open houses */ }
+  if (dbOH.length > 0) openHouses = dbOH as unknown as ListingDetailOpenHouse[]
 
-  // Extract videos from details, with listing_videos table as override
   let videos = extractVideosFromRow(listingRow)
-  try {
-    const { data: dbVideos } = await supabase
-      .from('listing_videos')
-      .select('id, video_url, sort_order')
-      .eq('listing_key', canonicalKey)
-      .order('sort_order', { ascending: true })
-    if (dbVideos && dbVideos.length > 0) {
-      videos = dbVideos.map((r: AnyRow) => ({
-        Id: r.id,
-        Uri: r.video_url,
-      }))
-    }
-  } catch { /* use extracted videos */ }
+  if (dbVideos.length > 0) {
+    videos = dbVideos.map((r) => ({ Id: r.id, Uri: r.video_url }))
+  }
 
   const virtualTours = extractVirtualToursFromRow(listingRow)
 
-  // Fetch listing_history (2M+ rows available — this is the real data source)
-  // Also fetch engagement metrics
+  // DAL: listing_history + engagement_metrics in parallel via lib/data.
+  const { getListingDetailHistory, getEngagementForListing } = await import('@/lib/data')
   const [histRowsRaw, engagementRaw] = await Promise.all([
-    withTimeout(
-      Promise.resolve(
-        supabase
-          .from('listing_history')
-          .select('id, listing_key, event, event_date, price, price_change, description, raw')
-          .eq('listing_key', canonicalKey)
-          .order('event_date', { ascending: true })
-          .limit(100)
-      ).then((res) => res.data ?? []),
-      [],
-      2500
-    ),
-    withTimeout(
-      Promise.resolve(
-        supabase
-          .from('engagement_metrics')
-          .select('listing_key, view_count, like_count, save_count, share_count')
-          .eq('listing_key', canonicalKey)
-          .maybeSingle()
-      ).then((res) => res.data ?? null),
-      null,
-      1200
-    ),
+    withTimeout(getListingDetailHistory(canonicalKey), [], 2500),
+    withTimeout(getEngagementForListing(canonicalKey), null, 1200),
   ])
 
   const histRows = (histRowsRaw ?? []) as Array<{
@@ -1101,53 +1037,17 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
   if (subdivisionName) {
     const communitySlug = slugify(subdivisionName)
     try {
-      // First try with neighborhood join via neighborhood_id FK
-      const { data: comm } = await supabase
-        .from('communities')
-        .select('id, name, slug, neighborhood_id, city_id')
-        .eq('slug', communitySlug)
-        .maybeSingle()
-      if (comm) {
-        let neighborhoodName: string | null = null
-        let neighborhoodSlug: string | null = null
-        let citySlugResolved: string | null = null
-
-        // Resolve neighborhood if community has one
-        if (comm.neighborhood_id) {
-          const { data: nh } = await supabase
-            .from('neighborhoods')
-            .select('name, slug')
-            .eq('id', comm.neighborhood_id)
-            .maybeSingle()
-          if (nh) {
-            neighborhoodName = nh.name ?? null
-            neighborhoodSlug = nh.slug ?? null
-          }
-        }
-
-        // Resolve city slug if community has city_id
-        if (comm.city_id) {
-          const { data: cityRow } = await supabase
-            .from('cities')
-            .select('slug')
-            .eq('id', comm.city_id)
-            .maybeSingle()
-          if (cityRow) {
-            citySlugResolved = cityRow.slug ?? null
-          }
-        }
-
-        // Fall back to city slug from listing data
-        if (!citySlugResolved && listingRow.City) {
-          citySlugResolved = slugify(listingRow.City)
-        }
-
+      const { resolveCommunityChainBySlug } = await import('@/lib/data')
+      const resolved = await resolveCommunityChainBySlug(communitySlug)
+      if (resolved) {
+        const citySlugResolved =
+          resolved.citySlug ?? (listingRow.City ? slugify(String(listingRow.City)) : null)
         community = {
-          id: comm.id,
-          name: comm.name,
-          slug: comm.slug,
-          neighborhood_name: neighborhoodName,
-          neighborhood_slug: neighborhoodSlug,
+          id: resolved.id,
+          name: resolved.name,
+          slug: resolved.slug,
+          neighborhood_name: resolved.neighborhoodName,
+          neighborhood_slug: resolved.neighborhoodSlug,
           city_slug: citySlugResolved,
         }
       }
