@@ -61,8 +61,16 @@ function getTeamImageSrc(brokerage: BrokerageSettingsRow | null): string {
   }
 }
 
+// Homepage is fully ISR-cacheable. The earlier `dynamic='force-dynamic'`
+// directive was forcing a per-request render which made p95 TTFB spike to
+// 1300ms+ on warm-cache probes. With ISR (revalidate=60) the cached HTML
+// is served from the Vercel edge in <100ms and re-rendered every 60s in
+// the background. No cookies / headers / dynamic-only APIs are read in
+// this Server Component (auth-aware streamed sections happen inside their
+// own <Suspense> children which can still be dynamic without forcing the
+// shell). Restoring force-dynamic would re-introduce the SITE_SPEC §47
+// regression.
 export const revalidate = 60
-export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Ryan Realty — Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
