@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.22 (2026-05-23)
+
+### Other
+- DAL: migrate pulse-feed listings + market_pulse_live reads
+
+---
+
+
 ## v1.282.21 (2026-05-23)
 
 ### Other
