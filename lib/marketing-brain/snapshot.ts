@@ -29,6 +29,7 @@ export type Channel =
   | 'nextdoor'
   | 'pinterest'
   | 'email'
+  | 'google_ads'
 
 export type Scope =
   | 'account'

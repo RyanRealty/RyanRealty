@@ -457,8 +457,11 @@ export default async function Home() {
         />
       </div>
 
-      {/* Static — renders immediately, no data fetch */}
-      <SocialProofSection testimonials={TESTIMONIALS} teamImageSrc={getTeamImageSrc(null)} />
+      {/* Static — renders immediately, no data fetch.
+          teamImageSrc honors admin-configured brokerage_settings.team_image_url
+          first (SITE_SPEC line 68), then falls back to /images/team.webp with
+          a mtime cache-buster so updates reflect without a deploy. */}
+      <SocialProofSection testimonials={TESTIMONIALS} teamImageSrc={getTeamImageSrc(brokerage)} />
 
       <Suspense fallback={<SectionSkeleton />}>
         <MarketSnapshotSection />
