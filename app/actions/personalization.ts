@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getListingTiles } from '@/lib/data'
 
 export type PersonalizedContent = {
   /** Cities the user has browsed */
@@ -52,20 +53,22 @@ export async function getPersonalizedContent(): Promise<PersonalizedContent | nu
     let priceRange: { min: number; max: number } | null = null
 
     if (recentlyViewedKeys.length > 0) {
-      const { data: listings } = await supabase
-        .from('listings')
-        .select('City, SubdivisionName, ListPrice')
-        .in('listing_key', recentlyViewedKeys.slice(0, 30))
+      // DAL: read from listing_tile_mv via listingKeys filter.
+      const tiles = await getListingTiles({
+        listingKeys: recentlyViewedKeys.slice(0, 30),
+        status: 'all',
+        limit: 30,
+      })
 
-      if (listings && listings.length > 0) {
+      if (tiles.length > 0) {
         const cities = new Set<string>()
         const communities = new Set<string>()
         const prices: number[] = []
 
-        for (const l of listings as Array<{ City?: string; SubdivisionName?: string; ListPrice?: number }>) {
-          if (l.City) cities.add(l.City)
-          if (l.SubdivisionName) communities.add(l.SubdivisionName)
-          if (l.ListPrice && l.ListPrice > 0) prices.push(l.ListPrice)
+        for (const t of tiles) {
+          if (t.city) cities.add(t.city)
+          if (t.subdivisionName) communities.add(t.subdivisionName)
+          if (t.listPrice && t.listPrice > 0) prices.push(t.listPrice)
         }
 
         browsedCities = Array.from(cities).slice(0, 5)

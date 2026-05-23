@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T00:29:15.979Z",
-  "total": 336,
+  "generatedAt": "2026-05-23T00:30:29.079Z",
+  "total": 335,
   "byFile": {
     "app/actions/listings.ts": 63,
     "app/actions/sync-spark.ts": 28,
@@ -54,7 +54,6 @@
     "app/actions/geocode.ts": 1,
     "app/actions/guides.ts": 1,
     "app/actions/inventory-breakdown.ts": 1,
-    "app/actions/personalization.ts": 1,
     "app/admin/(protected)/analytics/_lib/queries.ts": 1,
     "app/admin/(protected)/cmas/page.tsx": 1,
     "app/admin/(protected)/search/page.tsx": 1,
