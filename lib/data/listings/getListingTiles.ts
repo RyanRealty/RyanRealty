@@ -50,6 +50,11 @@ const FilterSchema = z.object({
   minSqft: z.number().int().nonnegative().optional(),
   hasVirtualTour: z.boolean().optional(),
   /**
+   * When true, restrict to listings missing a primary photo (photo_url IS NULL).
+   * Used by dashboard data-quality counts.
+   */
+  missingPhoto: z.boolean().optional(),
+  /**
    * MLS PropertyType code:
    *   'A' = Residential (SFR + multi-family)
    *   'B' = Condo / Townhome
@@ -192,6 +197,7 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   if (parsed.minBaths) query = query.gte('baths', parsed.minBaths)
   if (parsed.minSqft) query = query.gte('sqft', parsed.minSqft)
   if (parsed.hasVirtualTour === true) query = query.eq('has_virtual_tour', true)
+  if (parsed.missingPhoto === true) query = query.is('photo_url', null)
   if (parsed.propertyType) query = query.eq('property_type', parsed.propertyType)
   if (parsed.listingKeys && parsed.listingKeys.length > 0) {
     query = query.in('listing_key', parsed.listingKeys)

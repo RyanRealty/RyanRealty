@@ -835,17 +835,22 @@ export async function getDashboardDataQuality(): Promise<DashboardDataQuality> {
   }
   const supabase = createClient(url, serviceKey)
 
-  const activeOrPending = 'StandardStatus.eq.Active,StandardStatus.eq.Pending'
+  void supabase // legacy client retained for sibling queries elsewhere
   const { getListingTiles } = await import('@/lib/data')
-  const [totalActivePending, missingPhotoRes, classifiedRes] = await Promise.all([
+  const [totalActivePending, missingPhotoTiles, classifiedRes] = await Promise.all([
     // DAL: count active+pending tiles via listing_tile_mv.
     getListingTiles({ status: 'active-and-pending', limit: 500 }).then((tiles) => tiles.length),
-    supabase.from('listings').select('*', { count: 'exact', head: true }).or(activeOrPending).is('PhotoURL', null),
-    supabase.from('listing_photo_classifications').select('*', { count: 'exact', head: true }),
+    // DAL: active+pending tiles missing a hero photo.
+    getListingTiles({ status: 'active-and-pending', missingPhoto: true, limit: 500 }).then(
+      (tiles) => tiles.length
+    ),
+    createClient(url, serviceKey)
+      .from('listing_photo_classifications')
+      .select('*', { count: 'exact', head: true }),
   ])
 
   const totalListings = totalActivePending
-  const missingPrimaryPhoto = missingPhotoRes.count ?? 0
+  const missingPrimaryPhoto = missingPhotoTiles
   const classifiedPhotos = classifiedRes.count ?? 0
 
   return { totalListings, missingPrimaryPhoto, classifiedPhotos }
