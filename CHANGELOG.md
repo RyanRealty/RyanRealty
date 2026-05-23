@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.4 (2026-05-23)
+
+### Maintenance
+- chore(home): remove dead snake_case fallbacks — 358→356
+
+---
+
+
 ## v1.280.3 (2026-05-23)
 
 ### Maintenance
