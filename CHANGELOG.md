@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.43 (2026-05-23)
+
+### Other
+- DAL: clear open-houses + expired-listings + market-reports
+
+---
+
+
 ## v1.282.42 (2026-05-23)
 
 ### Other
