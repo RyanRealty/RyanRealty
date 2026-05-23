@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.46 (2026-05-23)
+
+### Other
+- DAL: clear activity-feed + communities + pdf/cma + ListingValuationSection
+
+---
+
+
 ## v1.282.45 (2026-05-23)
 
 ### Other
