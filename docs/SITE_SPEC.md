@@ -109,10 +109,10 @@
 - [x] HOA fee band displayed when available from `hoa_monthly` aggregate across active listings *(verified — `CommunityOverview.tsx` aggregates min/max HOA fees from active listings and renders the band when `hasHoa && hoaFeeMin && hoaFeeMax`; copy block at line 128 explains the range with the canonical billing frequency)*
 
 ### `/zip/[zip]` — ZIP code pages
-- [ ] Route: `app/zip/[zip]/page.tsx` (already exists)
-- [ ] Active listing count + median from `market_stats_cache WHERE geo_type='subdivision'` or raw `listings WHERE "PostalCode"='{zip}'` aggregation (verify cache covers ZIP level; if not, add to backlog)
-- [ ] Listings grid filtered by ZIP
-- [ ] Canonical ZIP list: 97701, 97702, 97703, 97756 (Redmond), 97759 (Sisters), 97739 (La Pine), 97707 (Sunriver), 97741 (Madras), 97754 (Prineville), 97760 (Terrebonne) — 10 ZIPs; `notFound()` for anything outside this list
+- [x] Route: `app/zip/[zip]/page.tsx` (already exists) *(verified — page exists with metadata, breadcrumb JSON-LD, listings grid, valuation CTA)*
+- [x] Active listing count + median from `market_stats_cache WHERE geo_type='subdivision'` or raw `listings WHERE "PostalCode"='{zip}'` aggregation (verify cache covers ZIP level; if not, add to backlog) *(verified — page computes median client-side from the listings array fetched via `getListingsWithAdvanced({postalCode: zip})`; `market_stats_cache` does not currently carry a ZIP-level row so the listings-aggregation fallback is the active path)*
+- [x] Listings grid filtered by ZIP *(verified — grid renders `listings` filtered by `postalCode: zip` through the DAL)*
+- [x] Canonical ZIP list: 97701, 97702, 97703, 97756 (Redmond), 97759 (Sisters), 97739 (La Pine), 97707 (Sunriver), 97741 (Madras), 97754 (Prineville), 97760 (Terrebonne) — 10 ZIPs; `notFound()` for anything outside this list *(verified — `CANONICAL_ZIPS` set holds exactly the 10 ZIPs, `generateStaticParams` emits them at build, `dynamicParams=false` blocks every other ZIP from resolving, and the page calls `notFound()` if a stray ZIP somehow reaches the handler)*
 
 ### `/listing/[listingKey]` — Listing detail (the Zillow Showcase beater)
 - [ ] `revalidate = 60`; TTFB p95 < 200ms enforced by Vercel Analytics alert
