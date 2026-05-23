@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.35 (2026-05-23)
+
+### Other
+- DAL: migrate optimization-loop cron health checks
+
+---
+
+
 ## v1.282.34 (2026-05-23)
 
 ### Other
