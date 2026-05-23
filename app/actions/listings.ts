@@ -6,7 +6,11 @@ import { listingDetailPath, listingKeyFromSlug, neighborhoodPagePath, reportsExp
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getSubdivisionMatchNames } from '../../lib/subdivision-aliases'
 import { getPolygonBounds, isPointInPolygon, type MapPolygonPoint } from '@/lib/map-polygon'
-import { getCommunityListings as getCommunityListingsDAL, getCityListings as getCityListingsDAL } from '@/lib/data'
+import {
+  getCommunityListings as getCommunityListingsDAL,
+  getCityListings as getCityListingsDAL,
+  getGeoSnapshot,
+} from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
 
 function getAnonSupabase(): SupabaseClient | null {
@@ -341,24 +345,16 @@ export async function getCityFromSlug(slug: string | undefined): Promise<string 
   const match = cities.find((c) => slugify(c.City) === key || c.City === decoded)
   if (match) return match.City
 
-  // Fallback: direct DB lookup when getBrowseCities cache doesn't have this city
-  const supabase = getAnonSupabase()
-  if (!supabase) return null
-  // Try case-insensitive exact match (no wildcards — fast with index)
-  const cityGuess = decoded.replace(/-/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-  const { data } = await supabase
-    .from('listings')
-    .select('City')
-    .eq('City', cityGuess)
-    .limit(1)
-  if (data && data.length > 0) return (data as Array<{ City?: string }>)[0]?.City?.trim() || null
-  // Try ilike without wildcards (case-insensitive exact)
-  const { data: d2 } = await supabase
-    .from('listings')
-    .select('City')
-    .eq('"City"', cityGuess)
-    .limit(1)
-  return (d2 as Array<{ City?: string }>)?.[0]?.City?.trim() || null
+  // Fallback: lookup via geo_snapshot_mv. geo_snapshot has 362 cities
+  // pre-aggregated with city_lower key + canonical City label, indexed
+  // for sub-2ms response. Replaces two direct listings-table city-validate
+  // probes that were paying full-table latency on cache misses.
+  const cityGuessKey = decoded
+    .replace(/-/g, ' ')
+    .toLowerCase()
+    .trim()
+  const snap = await getGeoSnapshot({ geoType: 'city', geoKey: cityGuessKey })
+  return snap?.geoLabel ?? null
 }
 
 export type SearchSuggestionAddress = { label: string; href: string }
