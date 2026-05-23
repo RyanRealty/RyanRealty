@@ -1,6 +1,6 @@
 'use client'
 
-import GeoMarketOverview from '@/components/geo-page/GeoMarketOverview'
+import GeoMarketOverview from '@/components/geo-page/LazyGeoMarketOverview'
 import { reportsExploreYtdPath } from '@/lib/slug'
 import type { YearSeriesPoint } from '@/lib/report-year-compare'
 

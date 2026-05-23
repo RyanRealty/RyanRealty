@@ -33,7 +33,7 @@ import { getCentralOregonHomeVideoTours } from './actions/videos'
 import type { ListingTileRow } from './actions/listings'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import CentralOregonSalesChart from '@/components/home/CentralOregonSalesChart'
+import CentralOregonSalesChart from '@/components/home/LazyCentralOregonSalesChart'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')

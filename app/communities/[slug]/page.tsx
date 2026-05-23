@@ -34,7 +34,7 @@ import RecentlySoldRow from '@/components/RecentlySoldRow'
 import LivePulseBanner from '@/components/reports/LivePulseBanner'
 import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import VideoToursRow from '@/components/videos/VideoToursRow'
-import CommunityMap from '@/components/community/CommunityMap'
+import LazyCommunityMap from '@/components/community/LazyCommunityMap'
 import CommunityVacationRentalBlock from '@/components/community/CommunityVacationRentalBlock'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import CityClusterNav from '@/components/CityClusterNav'
@@ -532,7 +532,7 @@ export default async function CommunityDetailPage({ params }: Props) {
             <h2 id="community-map-heading" className="mb-4 text-2xl text-primary sm:text-3xl">
               {community.name} on the map
             </h2>
-            <CommunityMap
+            <LazyCommunityMap
               boundaryGeojson={community.boundaryGeojson}
               listings={listings}
               communityName={community.name}
