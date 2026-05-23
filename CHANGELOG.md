@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.280.11 (2026-05-23)
+
+### Maintenance
+- perf(og): listing OG image migrated to DAL — 342→340
+
+---
+
+
 ## v1.280.10 (2026-05-23)
 
 ### Maintenance
