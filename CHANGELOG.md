@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.2 (2026-05-23)
+
+### Maintenance
+- perf(admin-sync-counts): route active + total counts through DAL — 335→333
+
+---
+
+
 ## v1.282.1 (2026-05-23)
 
 ### Maintenance
