@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.16 (2026-05-23)
+
+### Other
+- DAL: extend admin sync DAL + migrate city status counts
+
+---
+
+
 ## v1.282.15 (2026-05-23)
 
 ### Other
