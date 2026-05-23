@@ -1139,16 +1139,13 @@ export async function getActiveListingsCount(options: {
 }
 
 /**
- * Total active listing count (for nav or homepage). Active only.
+ * Total active listing count (for nav or homepage). Active SFR only.
+ * Reads from geo_snapshot_mv via the DAL — sub-2ms.
  */
 export async function getTotalListingsCount(): Promise<number> {
-  const supabase = getAnonSupabase()
-  if (!supabase) return 0
-  const { count } = await supabase
-    .from('listings')
-    .select('ListingKey', { count: 'exact', head: true })
-    .or(ACTIVE_STATUS_OR)
-  return count ?? 0
+  const { getAllCitySnapshots } = await import('@/lib/data')
+  const snapshots = await getAllCitySnapshots()
+  return snapshots.reduce((sum, s) => sum + (s.activeSfrCount ?? 0), 0)
 }
 
 /**
