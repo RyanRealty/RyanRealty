@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.288.11 (2026-05-23)
+
+### Maintenance
+- perf(layout): remove headers() from root layout, add edge cache headers (SITE_SPEC §45-47)
+
+---
+
+
 ## v1.288.10 (2026-05-23)
 
 ### Maintenance
