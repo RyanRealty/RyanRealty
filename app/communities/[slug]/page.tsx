@@ -35,6 +35,7 @@ import LivePulseBanner from '@/components/reports/LivePulseBanner'
 import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import VideoToursRow from '@/components/videos/VideoToursRow'
 import CommunityMap from '@/components/community/CommunityMap'
+import CommunityVacationRentalBlock from '@/components/community/CommunityVacationRentalBlock'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import CityClusterNav from '@/components/CityClusterNav'
 import { getGuidesByCity } from '@/app/actions/guides'
@@ -508,6 +509,16 @@ export default async function CommunityDetailPage({ params }: Props) {
         userEmail={null}
         placeName={community.name}
         engagementMap={engagementMap}
+      />
+
+      {/* Vacation rental potential block — SITE_SPEC line 107. Renders only
+          for resort communities (community.isResort=true) with active
+          listings. Uses median list price + median beds/baths of the active
+          set to estimate a typical monthly rental band. */}
+      <CommunityVacationRentalBlock
+        communityName={community.name}
+        isResort={community.isResort}
+        listings={listings}
       />
 
       {/* Boundary polygon map — SITE_SPEC line 108. Renders the community
