@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-23T00:39:30.366Z",
-  "total": 326,
+  "generatedAt": "2026-05-23T00:41:10.065Z",
+  "total": 325,
   "byFile": {
     "app/actions/listings.ts": 61,
     "app/actions/sync-spark.ts": 28,
     "app/actions/cities.ts": 22,
     "lib/listing-processor.ts": 16,
     "app/actions/engagement.ts": 14,
-    "app/actions/listing-detail.ts": 12,
+    "app/actions/listing-detail.ts": 11,
     "app/actions/admin-listing-detail.ts": 10,
     "app/actions/market-stats.ts": 8,
     "app/actions/subdivision-flags.ts": 8,

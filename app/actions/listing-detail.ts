@@ -418,15 +418,16 @@ export async function resolveListingKeyFromCanonicalPath(input: {
   if (!cityLike) return null
 
   // Try direct lookup by key/MLS number first (avoids fetching all city listings)
-  const { data: directByKey } = await supabase
-    .from('listings')
-    .select('ListingKey, ListNumber, City, PostalCode, SubdivisionName, ModificationTimestamp')
-    .or(`ListingKey.eq.${keyOrMls},ListNumber.eq.${keyOrMls}`)
-    .order('ModificationTimestamp', { ascending: false, nullsFirst: false })
-    .limit(5)
-  if (directByKey && directByKey.length > 0) {
-    const preferred = (directByKey as Array<{ ListingKey?: string | null }>)
-      .map((row) => String(row.ListingKey ?? '').trim())
+  // DAL: parallel listingKeys + listNumbers filters against listing_tile_mv.
+  const { getListingTiles } = await import('@/lib/data')
+  const [byKey, byNum] = await Promise.all([
+    getListingTiles({ listingKeys: [keyOrMls], status: 'all', limit: 5 }),
+    getListingTiles({ listNumbers: [keyOrMls], status: 'all', sort: 'newest', limit: 5 }),
+  ])
+  const directByKey = [...byKey, ...byNum]
+  if (directByKey.length > 0) {
+    const preferred = directByKey
+      .map((t) => t.listingKey.trim())
       .find((value) => value.length > 0)
     if (preferred) return preferred
   }
