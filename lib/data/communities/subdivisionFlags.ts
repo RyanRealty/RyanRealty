@@ -109,6 +109,18 @@ export async function bulkUpsertResortFlags(
   return { ok: true, count: rows.length }
 }
 
+/** Find one community row by slug ilike (for OG image / SEO surfaces). */
+export async function getCommunityNameBySlugIlike(slug: string): Promise<{ name: string; slug: string } | null> {
+  const sb = adminClient() ?? supabaseAnon()
+  if (!sb) return null
+  const { data } = await sb
+    .from('communities')
+    .select('name, slug')
+    .ilike('slug', slug)
+    .maybeSingle()
+  return (data ?? null) as { name: string; slug: string } | null
+}
+
 /** Check whether a single entity_key is flagged. Returns true if a row exists. */
 export async function isSubdivisionFlagged(entityKey: string): Promise<boolean> {
   const sb = adminClient() ?? supabaseAnon()

@@ -59,21 +59,16 @@ async function countYear(
   const statusOr = buildTerminalScopedStatusOr({ fromIso, toIsoExclusive })
 
   try {
+    void supabase
+    const { countListingsByStatusOr, countListingsByStatusOrAndFinalized } = await import('@/lib/data')
     const [totalRes, finalizedRes] = await Promise.all([
-      supabase
-        .from('listings')
-        .select('ListingKey', { count: 'exact', head: true })
-        .or(statusOr),
-      supabase
-        .from('listings')
-        .select('ListingKey', { count: 'exact', head: true })
-        .or(statusOr)
-        .eq('history_finalized', true),
+      countListingsByStatusOr(statusOr),
+      countListingsByStatusOrAndFinalized(statusOr),
     ])
 
-    const total = totalRes.count ?? 0
-    const finalized = finalizedRes.count ?? 0
-    const error = totalRes.error?.message ?? finalizedRes.error?.message
+    const total = totalRes.count
+    const finalized = finalizedRes.count
+    const error = totalRes.error ?? finalizedRes.error ?? undefined
     return { total, finalized, error }
   } catch (err) {
     return {

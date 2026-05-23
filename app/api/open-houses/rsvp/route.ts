@@ -38,34 +38,24 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'openHouseId and listingId required' }, { status: 400 })
   }
 
-  const service = getServiceSupabase()
+  void getServiceSupabase
+  const {
+    getOpenHouseByIdAndListing,
+    insertOpenHouseRsvp,
+    bumpOpenHouseRsvpCount,
+  } = await import('@/lib/data')
 
-  const { data: oh, error: ohError } = await service
-    .from('open_houses')
-    .select('id, listing_key, event_date, start_time, end_time, rsvp_count')
-    .eq('id', openHouseId)
-    .eq('listing_key', listingId)
-    .gte('event_date', new Date().toISOString().slice(0, 10))
-    .maybeSingle()
-
-  if (ohError || !oh) {
+  const oh = await getOpenHouseByIdAndListing(openHouseId, listingId)
+  if (!oh) {
     return Response.json({ error: 'Open house not found' }, { status: 404 })
   }
 
-  const { error: insertError } = await service.from('open_house_rsvps').insert({
-    open_house_id: oh.id,
-    user_id: user.id,
-  })
+  const insertRes = await insertOpenHouseRsvp({ open_house_id: oh.id, user_id: user.id })
+  if (!insertRes.ok) return Response.json({ error: insertRes.error }, { status: 500 })
+  if (insertRes.alreadyRsvped) return Response.json({ ok: true, alreadyRsvped: true })
 
-  if (insertError) {
-    if (insertError.code === '23505') {
-      return Response.json({ ok: true, alreadyRsvped: true })
-    }
-    return Response.json({ error: insertError.message }, { status: 500 })
-  }
-
-  const currentCount = (oh as { rsvp_count?: number }).rsvp_count ?? 0
-  await service.from('open_houses').update({ rsvp_count: currentCount + 1, updated_at: new Date().toISOString() }).eq('id', oh.id)
+  const currentCount = oh.rsvp_count ?? 0
+  await bumpOpenHouseRsvpCount(oh.id, currentCount)
 
   const eventDate = oh.event_date as string
   const eventDateTime = new Date(`${eventDate}T${(oh.start_time ?? '09:00') as string}`)
@@ -74,7 +64,9 @@ export async function POST(request: NextRequest) {
   const now = new Date()
   const listingUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}${listingDetailPath(listingId)}`
   if (in24h > now) {
-    await service.from('notification_queue').insert({
+    void getServiceSupabase
+    const { insertNotificationQueueRow } = await import('@/lib/data')
+    await insertNotificationQueueRow({
       user_id: user.id,
       notification_type: 'open_house_reminder_24h',
       payload: { open_house_id: oh.id, listing_key: listingId, event_date: eventDate, listing_url: listingUrl, send_at: in24h.toISOString() },
@@ -83,7 +75,9 @@ export async function POST(request: NextRequest) {
     })
   }
   if (in1h > now) {
-    await service.from('notification_queue').insert({
+    void getServiceSupabase
+    const { insertNotificationQueueRow } = await import('@/lib/data')
+    await insertNotificationQueueRow({
       user_id: user.id,
       notification_type: 'open_house_reminder_1h',
       payload: { open_house_id: oh.id, listing_key: listingId, event_date: eventDate, listing_url: listingUrl, send_at: in1h.toISOString() },

@@ -85,22 +85,15 @@ export async function fetchVideoRowsViaListingVideosJoin(
     opts.listingVideosLimit ??
     (citiesLower != null && citiesLower.size > 0 ? 400 : 150)
 
-  const { data: lvRows, error: lvErr } = await supabase
-    .from('listing_videos')
-    .select('listing_key, video_url')
-    .order('created_at', { ascending: false })
-    .limit(lvLimit)
-
-  if (lvErr) {
-    console.error('[fetchVideoRowsViaListingVideosJoin] listing_videos', lvErr)
-    return []
-  }
-  if (!lvRows?.length) return []
+  void supabase
+  const { getRecentListingVideoRows, getListingVideoCandidates } = await import('@/lib/data')
+  const lvRows = await getRecentListingVideoRows(lvLimit)
+  if (!lvRows.length) return []
 
   const urlByKey = new Map<string, string>()
   for (const lv of lvRows) {
-    const lk = String((lv as { listing_key?: string }).listing_key ?? '').trim()
-    const vu = String((lv as { video_url?: string }).video_url ?? '').trim()
+    const lk = String(lv.listing_key ?? '').trim()
+    const vu = String(lv.video_url ?? '').trim()
     if (lk && vu && !urlByKey.has(lk)) urlByKey.set(lk, vu)
   }
   const keys = [...urlByKey.keys()]
@@ -113,15 +106,10 @@ export async function fetchVideoRowsViaListingVideosJoin(
     slices.push(keys.slice(i, i + chunkSize))
   }
   const chunkResults = await Promise.all(
-    slices.map((slice) =>
-      supabase.from('listings').select(LISTING_VIDEO_SELECT_MAIN).in('ListingKey', slice)
-    )
+    slices.map((slice) => getListingVideoCandidates({ byKeys: slice, limit: slice.length }))
   )
-  for (const ea of chunkResults) {
-    if (ea.error && !/column|ListingKey/i.test(ea.error.message ?? '')) {
-      console.error('[fetchVideoRowsViaListingVideosJoin] listings by key', ea.error)
-    }
-    for (const row of ea.data ?? []) {
+  for (const eaData of chunkResults) {
+    for (const row of eaData) {
       const rec = row as Record<string, unknown>
       const k = resolveListingKeyFromRow(rec)
       if (k && !byKey.has(k)) byKey.set(k, rec)

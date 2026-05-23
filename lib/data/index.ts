@@ -160,7 +160,12 @@ export {
 export type { MarketPulseSnapshot } from '@/lib/data/market/getMarketPulseSnapshot'
 
 // Brokers (real impls with hardcoded fallback)
-export { getBrokers, searchBrokersByDisplayName } from '@/lib/data/brokers/getBrokers'
+export {
+  getBrokers,
+  searchBrokersByDisplayName,
+  getBrokerForOgBySlug,
+  getBlogPostForOgBySlug,
+} from '@/lib/data/brokers/getBrokers'
 export { resolveListingAgent } from '@/lib/data/brokers/resolveListingAgent'
 export type { ListingAgentInput } from '@/lib/data/brokers/resolveListingAgent'
 
@@ -243,9 +248,15 @@ export {
   getListingFieldsByListNumber,
   selectHistorySyncCandidates,
   countHistorySyncCandidates,
+  countListingsByStatusOr,
+  countListingsByStatusOrAndFinalized,
   listingHistoryExistsForAnyKey,
   getAnyListingKey,
   insertStrictVerifyRun,
+  getOpenHouseByIdAndListing,
+  insertOpenHouseRsvp,
+  bumpOpenHouseRsvpCount,
+  insertNotificationQueueRow,
   selectStrictVerifyCandidates,
   getExpiredListingLookupAttempts,
   updateExpiredListingByKey,
@@ -276,6 +287,7 @@ export {
   bulkUpsertResortFlags,
   getAllSubdivisionFlags,
   isSubdivisionFlagged,
+  getCommunityNameBySlugIlike,
 } from '@/lib/data/communities/subdivisionFlags'
 export type { CommunityRowForBackfill } from '@/lib/data/communities/subdivisionFlags'
 

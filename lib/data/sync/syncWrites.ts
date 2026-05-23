@@ -482,6 +482,58 @@ export async function selectHistorySyncCandidates<T extends Record<string, unkno
   return { rows: (data ?? []) as unknown as T[], error: error?.message ?? null }
 }
 
+/** Read one open_house row by id + listing_key (RSVP path; must be future). */
+export async function getOpenHouseByIdAndListing(
+  openHouseId: string,
+  listingId: string
+): Promise<{ id: string; listing_key: string; event_date: string; start_time?: string | null; end_time?: string | null; rsvp_count?: number } | null> {
+  const sb = client()
+  if (!sb) return null
+  const today = new Date().toISOString().slice(0, 10)
+  const { data } = await sb
+    .from('open_houses')
+    .select('id, listing_key, event_date, start_time, end_time, rsvp_count')
+    .eq('id', openHouseId)
+    .eq('listing_key', listingId)
+    .gte('event_date', today)
+    .maybeSingle()
+  return (data ?? null) as { id: string; listing_key: string; event_date: string; start_time?: string | null; end_time?: string | null; rsvp_count?: number } | null
+}
+
+/** Insert one open_house_rsvps row. Returns dedup status when 23505 hit. */
+export async function insertOpenHouseRsvp(row: { open_house_id: string; user_id: string }): Promise<{ ok: boolean; alreadyRsvped?: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('open_house_rsvps').insert(row)
+  if (error) {
+    if (error.code === '23505') return { ok: true, alreadyRsvped: true }
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
+/** Bump an open_house's rsvp_count by 1. */
+export async function bumpOpenHouseRsvpCount(
+  openHouseId: string,
+  currentCount: number
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb
+    .from('open_houses')
+    .update({ rsvp_count: currentCount + 1, updated_at: new Date().toISOString() })
+    .eq('id', openHouseId)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/** Insert a notification_queue row. */
+export async function insertNotificationQueueRow(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { error } = await sb.from('notification_queue').insert(row)
+  return error ? { ok: false, error: error.message } : { ok: true }
+}
+
 /** Insert one strict_verify_runs telemetry row. */
 export async function insertStrictVerifyRun(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
   const sb = client()
@@ -760,6 +812,29 @@ export async function listingHistoryExistsForAnyKey(keys: string[]): Promise<boo
     .in('listing_key', keys.slice(0, 5000))
     .limit(1)
   return Array.isArray(data) && data.length > 0
+}
+
+/** Count listings matching a status OR (no history_finalized filter). */
+export async function countListingsByStatusOr(statusOr: string): Promise<{ count: number; error: string | null }> {
+  const sb = client()
+  if (!sb) return { count: 0, error: 'Supabase not configured' }
+  const { count, error } = await sb
+    .from('listings')
+    .select('ListingKey', { count: 'exact', head: true })
+    .or(statusOr)
+  return { count: count ?? 0, error: error?.message ?? null }
+}
+
+/** Count listings with status OR + history_finalized = true. */
+export async function countListingsByStatusOrAndFinalized(statusOr: string): Promise<{ count: number; error: string | null }> {
+  const sb = client()
+  if (!sb) return { count: 0, error: 'Supabase not configured' }
+  const { count, error } = await sb
+    .from('listings')
+    .select('ListingKey', { count: 'exact', head: true })
+    .or(statusOr)
+    .eq('history_finalized', true)
+  return { count: count ?? 0, error: error?.message ?? null }
 }
 
 /** Count of history-needing candidates (history_finalized = false + status OR). */

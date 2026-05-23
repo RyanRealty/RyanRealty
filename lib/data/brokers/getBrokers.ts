@@ -63,6 +63,35 @@ const FALLBACK_BROKERS: Broker[] = [
   },
 ]
 
+/** Read one active broker by slug — used by OG image generator + profile pages. */
+export async function getBrokerForOgBySlug(
+  slug: string
+): Promise<{ display_name?: string; title?: string; photo_url?: string } | null> {
+  const sb = supabaseAnon()
+  if (!sb) return null
+  const { data } = await sb
+    .from('brokers')
+    .select('display_name, title, photo_url')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .maybeSingle()
+  return (data ?? null) as { display_name?: string; title?: string; photo_url?: string } | null
+}
+
+/** Read one blog_posts row by slug — used by OG image generator. */
+export async function getBlogPostForOgBySlug(
+  slug: string
+): Promise<{ title?: string; hero_image_url?: string; category?: string } | null> {
+  const sb = supabaseAnon()
+  if (!sb) return null
+  const { data } = await sb
+    .from('blog_posts')
+    .select('title, hero_image_url, category')
+    .eq('slug', slug)
+    .maybeSingle()
+  return (data ?? null) as { title?: string; hero_image_url?: string; category?: string } | null
+}
+
 /** Search brokers by display_name ilike (active only). Used by search-suggestions. */
 export async function searchBrokersByDisplayName(
   pattern: string,

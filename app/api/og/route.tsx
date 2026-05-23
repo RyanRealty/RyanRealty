@@ -34,15 +34,10 @@ export async function GET(request: Request) {
         const address = [tile.streetNumber, tile.streetName].filter(Boolean).join(' ')
         let photoUrl: string | undefined = tile.photoUrl ?? undefined
         if (!photoUrl) {
-          // Fall back to listing_photos for hero photo if the MV's PhotoURL is empty
-          const { data: photo } = await supabase
-            .from('listing_photos')
-            .select('photo_url')
-            .eq('listing_key', tile.listingKey)
-            .eq('is_hero', true)
-            .limit(1)
-            .maybeSingle()
-          photoUrl = (photo as { photo_url?: string } | null)?.photo_url
+          void supabase
+          const { getHeroPhotosByListingKeys } = await import('@/lib/data')
+          const heroMap = await getHeroPhotosByListingKeys([tile.listingKey])
+          photoUrl = heroMap.get(tile.listingKey)
         }
         const price = tile.listPrice != null && tile.listPrice > 0 ? `$${tile.listPrice.toLocaleString()}` : ''
         const stats = [tile.beds, tile.baths, tile.sqft].filter(Boolean)
@@ -90,8 +85,9 @@ export async function GET(request: Request) {
   if (type === 'community' && id) {
     const supabase = getSupabase()
     if (supabase) {
-      const { data: comm } = await supabase.from('communities').select('name, slug').ilike('slug', id).maybeSingle()
-      const c = comm as { name?: string; slug?: string } | null
+      void supabase
+      const { getCommunityNameBySlugIlike } = await import('@/lib/data')
+      const c = await getCommunityNameBySlugIlike(id)
       if (c?.name) {
         return new ImageResponse(
           (
@@ -109,8 +105,9 @@ export async function GET(request: Request) {
   if (type === 'blog' && id) {
     const supabase = getSupabase()
     if (supabase) {
-      const { data: post } = await supabase.from('blog_posts').select('title, hero_image_url, category').eq('slug', id).maybeSingle()
-      const p = post as { title?: string; hero_image_url?: string; category?: string } | null
+      void supabase
+      const { getBlogPostForOgBySlug } = await import('@/lib/data')
+      const p = await getBlogPostForOgBySlug(id)
       if (p?.title) {
         const heroUrl = p.hero_image_url
         return new ImageResponse(
@@ -159,8 +156,9 @@ export async function GET(request: Request) {
   if (type === 'broker' && id) {
     const supabase = getSupabase()
     if (supabase) {
-      const { data: broker } = await supabase.from('brokers').select('display_name, title, photo_url').eq('slug', id).eq('is_active', true).maybeSingle()
-      const b = broker as { display_name?: string; title?: string; photo_url?: string } | null
+      void supabase
+      const { getBrokerForOgBySlug } = await import('@/lib/data')
+      const b = await getBrokerForOgBySlug(id)
       if (b?.display_name) {
         return new ImageResponse(
           (

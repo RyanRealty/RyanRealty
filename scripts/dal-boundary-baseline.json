@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T02:12:33.719Z",
-  "total": 51,
+  "generatedAt": "2026-05-23T02:16:26.482Z",
+  "total": 43,
   "byFile": {
     "lib/cma.ts": 4,
     "lib/cma-delivery.ts": 3,
@@ -9,12 +9,8 @@
     "app/actions/broker-self.ts": 2,
     "app/actions/communities.ts": 2,
     "app/actions/dashboard.ts": 2,
-    "app/api/og/route.tsx": 2,
-    "app/api/open-houses/rsvp/route.ts": 2,
     "app/api/pdf/cma/route.ts": 2,
     "components/listing/ListingValuationSection.tsx": 2,
-    "lib/terminal-scope-counts.ts": 2,
-    "lib/video-tours-listing-videos-join.ts": 2,
     "app/actions/admin-listings.ts": 1,
     "app/actions/cities.ts": 1,
     "app/actions/geocode.ts": 1,
