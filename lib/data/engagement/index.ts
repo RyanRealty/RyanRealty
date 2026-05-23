@@ -148,3 +148,21 @@ export const decrementListingSaveCount = (k: string) => bumpCounter(k, 'save_cou
 export const incrementListingLikeCount = (k: string) => bumpCounter(k, 'like_count', 1)
 export const decrementListingLikeCount = (k: string) => bumpCounter(k, 'like_count', -1)
 export const incrementListingViewCount = (k: string) => bumpCounter(k, 'view_count', 1)
+
+/**
+ * Top N listing_keys by view_count (descending). Used by the homepage
+ * "featured" tile picker. Returns empty array if engagement_metrics is empty.
+ */
+export async function getTopViewedListingKeys(limit = 20): Promise<string[]> {
+  const supabase = supabaseAnon()
+  if (!supabase) return []
+  const safeLimit = Math.min(Math.max(limit, 1), 200)
+  const { data } = await supabase
+    .from('engagement_metrics')
+    .select('listing_key, view_count')
+    .order('view_count', { ascending: false })
+    .limit(safeLimit)
+  return ((data ?? []) as Array<{ listing_key?: string }>)
+    .map((r) => (r?.listing_key ?? '').trim())
+    .filter(Boolean)
+}

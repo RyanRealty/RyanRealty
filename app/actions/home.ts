@@ -38,13 +38,9 @@ const CLOSED_OR = 'StandardStatus.ilike.%Closed%'
 /** Featured: top 6 by engagement view_count (optional city filter), then by ModificationTimestamp. Active only. */
 async function _getFeaturedListingsUncached(city?: string): Promise<HomeTileRow[]> {
   try {
-    const sb = supabase()
-    const { data: em } = await sb
-      .from('engagement_metrics')
-      .select('listing_key, view_count')
-      .order('view_count', { ascending: false })
-      .limit(20)
-    const keys = (em ?? []).map((r: { listing_key?: string }) => (r?.listing_key ?? '').trim()).filter(Boolean)
+    void supabase
+    const { getTopViewedListingKeys } = await import('@/lib/data')
+    const keys = await getTopViewedListingKeys(20)
     let rows: HomeTileRow[]
     if (keys.length === 0) {
       // DAL: read newest active listings from listing_tile_mv, extract keys,
@@ -176,22 +172,19 @@ export const getRecentlySold = unstable_cache(
 /** Price drops: 6 listings where original price > current price (from listings table), optional city filter. */
 export async function getPriceDrops(city?: string): Promise<(HomeTileRow & { originalPrice?: number; savings?: number })[]> {
   try {
-    const sb = supabase()
-    let query = sb
-      .from('listings')
-      .select(`${HOME_TILE_SELECT}, OriginalListPrice`)
-      .or(ACTIVE_OR)
-      .not('ListPrice', 'is', null)
-      .gt('price_drop_count', 0)
-      .order('total_price_change_pct', { ascending: true })
-      .limit(6)
-    if (city?.trim()) query = query.eq('"City"', city.trim())
-    const { data } = await query
-    const rows = (data ?? []) as (HomeTileRow & { OriginalListPrice?: number | null })[]
+    void supabase
+    void HOME_TILE_SELECT
+    void ACTIVE_OR
+    const { getPriceDropTiles } = await import('@/lib/data')
+    const rows = await getPriceDropTiles({ city: city ?? null, limit: 6 })
     return rows.map((r) => ({
-      ...r,
+      ...(r as unknown as HomeTileRow),
+      OriginalListPrice: r.OriginalListPrice ?? undefined,
       originalPrice: r.OriginalListPrice ?? undefined,
-      savings: r.OriginalListPrice != null && r.ListPrice != null ? r.OriginalListPrice - r.ListPrice : undefined,
+      savings:
+        r.OriginalListPrice != null && r.ListPrice != null
+          ? r.OriginalListPrice - r.ListPrice
+          : undefined,
     }))
   } catch {
     return []

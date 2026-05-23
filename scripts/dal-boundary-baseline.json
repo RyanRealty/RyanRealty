@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-23T01:18:47.476Z",
-  "total": 204,
+  "generatedAt": "2026-05-23T01:21:14.315Z",
+  "total": 202,
   "byFile": {
     "app/actions/sync-spark.ts": 28,
     "lib/listing-processor.ts": 16,
@@ -17,7 +17,6 @@
     "app/api/pdf/listing/route.ts": 4,
     "app/lp/bend/page.tsx": 4,
     "lib/cma.ts": 4,
-    "app/actions/home.ts": 3,
     "app/actions/reports.ts": 3,
     "app/actions/semantic-search.ts": 3,
     "app/api/admin/expired-listing-lookup/route.ts": 3,
@@ -48,6 +47,7 @@
     "app/actions/cities.ts": 1,
     "app/actions/geocode.ts": 1,
     "app/actions/guides.ts": 1,
+    "app/actions/home.ts": 1,
     "app/actions/inventory-breakdown.ts": 1,
     "app/actions/photo-classification.ts": 1,
     "app/actions/pulse-feed.ts": 1,

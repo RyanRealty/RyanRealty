@@ -93,6 +93,8 @@ export type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
 export { getListingDetail } from '@/lib/data/listings/getListingDetail'
 export { getListingRawRowByKey } from '@/lib/data/listings/getListingRawRow'
 export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
+export { getPriceDropTiles } from '@/lib/data/listings/getPriceDropTiles'
+export type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 
 // Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'
@@ -130,6 +132,7 @@ export {
   incrementListingLikeCount,
   decrementListingLikeCount,
   incrementListingViewCount,
+  getTopViewedListingKeys,
 } from '@/lib/data/engagement'
 export type { EngagementCounts } from '@/lib/data/engagement'
 
