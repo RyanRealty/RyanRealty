@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.48 (2026-05-23)
+
+### Other
+- DAL: clear lib/cma.ts (subject + comp pool + by-key)
+
+---
+
+
 ## v1.282.47 (2026-05-23)
 
 ### Other
