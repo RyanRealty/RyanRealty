@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.282.6 (2026-05-23)
+
+### Maintenance
+- perf(cities): getCommunitiesInCity uses geo_snapshot_mv — 329→327
+
+---
+
+
 ## v1.282.5 (2026-05-23)
 
 ### Maintenance
