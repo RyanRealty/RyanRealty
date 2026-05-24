@@ -41,11 +41,11 @@ So "fix the FB ads" really means **get the infrastructure ready so when you re-l
 
 ## CRITICAL — fix these BEFORE re-launching any campaign
 
-### 1. Archive the misconfigured "Home Valuation + Notes" lead form
+### 1. ✅ DONE — "Home Valuation + Notes" form archived via API
 
-**Verified 2026-05-24 via Graph API:** the active form `Home Valuation + Notes` (id `2621615651544418`) has a bogus "Inbox URL" custom question, no privacy policy URL, no thank-you screen, and no follow-up URL configured. It's a leftover from an old experiment and should not be used in any campaign.
+**Applied 2026-05-24 via `scripts/meta-apply-fixes.mjs`** (POST `/{form_id}` with `{status: ARCHIVED}` returned HTTP 200). Verified — the form now shows `status: ARCHIVED` in Meta. No further action.
 
-**Action:** Open https://business.facebook.com/latest/leads_forms and archive form id `2621615651544418`.
+Re-run `node scripts/meta-apply-fixes.mjs` anytime to re-detect and archive new misconfigured forms (any active form whose questions contain "Inbox URL" or "Select your private tour" — both stale-test patterns).
 
 The two GOOD active forms have verified-correct schemas:
 
@@ -88,16 +88,41 @@ The two GOOD active forms have verified-correct schemas:
 | Q5 | Custom short text | "What city or neighborhood?" |
 | Thank you CTA | "Browse current listings" → `https://ryan-realty.com/lp/buyer-listing-alerts` |
 
+### 1b. Add privacy_policy URL to both ACTIVE forms (UI only — Meta blocks API write on ACTIVE forms)
+
+**Verified 2026-05-24:** `POST /{form_id}` with `{ privacy_policy: { url, link_text } }` returns HTTP 200 `{"success":true}` but the value does NOT persist when re-read. Meta locks the `privacy_policy` field on ACTIVE forms (re-creating the form is the only API path).
+
+**Action:** open https://business.facebook.com/latest/leads_forms → for each of `Bend Home Value 2026 (Seller) v3` (id `2008523140027183`) + `Bend Listing Alerts 2026 (Buyer) v3` (id `970206419135413`) → Edit → Privacy → set `url=https://ryan-realty.com/privacy` + `link_text=Privacy policy` → Save.
+
 ### 2. Investigate the leaking Dead Pixel
 
 `Dead Pixel` (`590593947302147`) fired 3 days ago. The canonical pixel is `1546878946032105`. Something somewhere is sending events to the wrong place.
 
-**Verified 2026-05-24 via two independent checks:**
+**Verified 2026-05-24 via three independent API + code checks:**
 
-1. **Next.js codebase clean.** `rg "590593947302147"` returns zero hits in any `.ts`/`.tsx`/`.js`/`.mjs`/`.html` file — only documentation references.
-2. **WordPress HTML clean.** A live curl of https://ryan-realty.com/ returned 472,998 bytes containing ZERO occurrences of `590593947302147`. The canonical pixel `1546878946032105` appears in exactly 4 `fbq()` calls (init + PageView + ViewContent + the custom-event wrapper). WP is innocent.
+1. **Next.js codebase clean.** `rg "590593947302147"` returns zero hits in any `.ts`/`.tsx`/`.js`/`.mjs`/`.html` file.
+2. **WordPress HTML clean.** Live curl of https://ryan-realty.com/ returned 472,998 bytes with ZERO occurrences. Only canonical pixel `1546878946032105` appears (in 4 `fbq()` calls).
+3. **🎯 SOURCE IDENTIFIED via Marketing API.** `GET /{dead_pixel}/assigned_users?business={biz}` returned:
+   - **System User:** `Conversions API System User` (id `122166497978674230`), permissions `ADVERTISE`, `UPLOAD`, `ANALYZE`
+   - **Shared ad account:** `act_599206346213887` (NOT yours — yours is `act_1178780510184911`)
 
-**The source is firing server-to-server or via an OAuth-connected integration.** The Marketing API does not expose per-event source attribution — only the Events Manager UI can show the firing source per event.
+   This is the leak. One or both of those entities is firing CAPI events server-to-server to the dead pixel.
+
+**Why I couldn't delete it programmatically:** `DELETE /{dead_pixel}/assigned_users` requires `ads_management` scope; our page access token only has page-level scopes. Verified via `HTTP 10: Application does not have permission for this action`.
+
+**Action (UI, 2 minutes):**
+
+1. **Open https://business.facebook.com/settings/system-users?business_id=733664948512665**
+2. Find `Conversions API System User` (id `122166497978674230`). Click it.
+3. Under "Assigned assets" → "Datasets/Pixels", find the entry for pixel `590593947302147` ("Dead Pixel").
+4. Click the `...` menu next to it → **Remove access**. That kills the leak instantly.
+5. Then under the same System User, check the "Apps" tab to see which app/integration created it. Most likely candidates: an old Shopify, ThriveCart, ClickFunnels, GoHighLevel, or HighLevel integration. Whatever it is, that integration was firing CAPI events into the wrong pixel.
+
+After that:
+
+6. **Open https://business.facebook.com/events_manager2/list/pixel/590593947302147/overview** → "Settings" tab → "Connected Assets" → find ad account `act_599206346213887` → Remove.
+
+Once both are gone, run `node scripts/meta-apply-fixes.mjs` to verify (the `assigned_users` and `shared_accounts` lists should be empty).
 
 **Action:** open https://business.facebook.com/events_manager2/list/pixel/590593947302147/overview → "Diagnostics" tab. Meta will show:
 - The IP/domain firing the events
