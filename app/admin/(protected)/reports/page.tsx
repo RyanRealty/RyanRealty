@@ -27,6 +27,7 @@ export default async function AdminReportsPage() {
         <li><Link href="/admin/reports/traffic-sources" className="text-primary hover:underline">Traffic sources</Link> — Where every visitor came from. Joins GA4 with our visits + visitor_sessions tables. Highlights the GBP attribution gap + lists channels you should tag with canonical UTMs.</li>
         <li><Link href="/admin/analytics/action-required" className="text-primary hover:underline">Action required</Link> — Hot leads to call right now, warm prospects active, anonymous high-engagement for retargeting. Click any person to open their full profile.</li>
         <li><Link href="/admin/people" className="text-primary hover:underline">People index</Link> — Searchable list of every known FUB person seen on the site or assigned in the last 90 days. Filter by broker, audience, tier, source, activity window.</li>
+        <li><Link href="/admin/analytics/meta-health" className="text-primary hover:underline">Meta health</Link> — Live FB/IG infrastructure status: pixel firing recency, lead-form inventory, webhook subscription, recent leads, dead-pixel detection, auto-generated action items.</li>
       </ul>
       <p className="mt-10 text-sm text-muted-foreground">
         <Link href="/admin/sync" className="underline hover:no-underline">Back to Sync</Link>
