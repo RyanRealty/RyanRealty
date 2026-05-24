@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.293.0 (2026-05-24)
+
+### Features
+- feat(analytics): /admin/reports/traffic-sources + UTM convention doc
+
+---
+
+
 ## v1.292.0 (2026-05-24)
 
 ### Features
