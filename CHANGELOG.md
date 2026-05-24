@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.292.0 (2026-05-24)
+
+### Features
+- feat(analytics): Consent Mode v2 + /admin/people index + GA4 setup runbook
+
+---
+
+
 ## v1.291.0 (2026-05-24)
 
 ### Features
