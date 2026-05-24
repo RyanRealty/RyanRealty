@@ -88,11 +88,22 @@ The two GOOD active forms have verified-correct schemas:
 | Q5 | Custom short text | "What city or neighborhood?" |
 | Thank you CTA | "Browse current listings" → `https://ryan-realty.com/lp/buyer-listing-alerts` |
 
-### 1b. Add privacy_policy URL to both ACTIVE forms (UI only — Meta blocks API write on ACTIVE forms)
+### 1b. ✅ RESOLVED — privacy_policy was already set on both forms (false alarm)
 
-**Verified 2026-05-24:** `POST /{form_id}` with `{ privacy_policy: { url, link_text } }` returns HTTP 200 `{"success":true}` but the value does NOT persist when re-read. Meta locks the `privacy_policy` field on ACTIVE forms (re-creating the form is the only API path).
+**Verified 2026-05-24:** my earlier "missing privacy_policy" finding was wrong. Both forms have always had a valid privacy_policy URL set; the audit was reading the wrong field.
 
-**Action:** open https://business.facebook.com/latest/leads_forms → for each of `Bend Home Value 2026 (Seller) v3` (id `2008523140027183`) + `Bend Listing Alerts 2026 (Buyer) v3` (id `970206419135413`) → Edit → Privacy → set `url=https://ryan-realty.com/privacy` + `link_text=Privacy policy` → Save.
+The persisted value (visible via `GET /{form_id}?fields=legal_content,privacy_policy_url`):
+
+```
+url: https://ryan-realty.com/privacy-policy/
+link_text: Privacy Policy
+```
+
+That URL is reachable (HTTP 200, served by the WordPress side). `/privacy` redirects to it.
+
+**API gotcha that caused the false alarm:** Meta accepts writes via `POST /{form_id} { privacy_policy: { url, link_text } }` AND reads them back via `?fields=legal_content` or `?fields=privacy_policy_url`. The bare `?fields=privacy_policy` is NOT exposed via GET at all — it returns `HTTP 400: nonexisting field`. The form-LIST endpoint includes the projection but always returns `null` for the value, which is misleading. Always use `legal_content` for read verification.
+
+No action required for the seller + buyer v3 forms — they were compliant the whole time.
 
 ### 2. ✅ RESOLVED — Dead pixel leak killed (Zapier zap)
 

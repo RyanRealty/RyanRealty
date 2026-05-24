@@ -69,7 +69,10 @@ async function fb(path: string): Promise<unknown> {
 
 type PixelRow = { id: string; name: string; last_fired_time: string | null; is_canonical: boolean }
 type FormQuestion = { type: string; label?: string; key?: string; options?: Array<{ key: string; value: string }> }
-type LeadForm = { id: string; name: string; status: string; leads_count: number; questions?: FormQuestion[]; privacy_policy?: unknown; follow_up_action_url?: string }
+// Meta returns privacy_policy via the `legal_content` wrapper or as the flat
+// `privacy_policy_url`. The bare `privacy_policy` field is NOT exposed via GET
+// even when the value is set — that was a false-positive in earlier audits.
+type LeadForm = { id: string; name: string; status: string; leads_count: number; questions?: FormQuestion[]; privacy_policy_url?: string; legal_content?: { id?: string; privacy_policy?: { url?: string; link_text?: string } }; follow_up_action_url?: string }
 type Subscription = { id: string; name: string; subscribed_fields: string[] }
 type CampaignRow = { id: string; name: string; objective?: string; status: string; effective_status: string; created_time: string }
 
@@ -96,7 +99,10 @@ type FormQuality = {
 }
 
 function analyzeForm(f: LeadForm): FormQuality {
-  const hasPrivacyPolicy = !!f.privacy_policy
+  // Real persistence check: legal_content.privacy_policy.url OR
+  // the flat privacy_policy_url field. The plain `privacy_policy` field is
+  // never exposed via GET regardless of whether it's set.
+  const hasPrivacyPolicy = !!(f.privacy_policy_url || f.legal_content?.privacy_policy?.url)
   const hasFollowUp = !!f.follow_up_action_url
   // Find the question whose key/label suggests timeline / when-to-buy/sell.
   const tlMatch = (q: FormQuestion) => {
@@ -132,7 +138,7 @@ async function MetaHealthContent() {
   // Parallel: Meta API + Supabase
   const [page, formsRes, subsRes, campaignsRes, processedRes, spendRes] = await Promise.all([
     fb(`${PAGE_ID}?fields=id,name,verification_status,business`) as Promise<FbPage>,
-    fb(`${PAGE_ID}/leadgen_forms?fields=id,name,status,leads_count,questions,privacy_policy,follow_up_action_url&limit=100`) as Promise<FbList<LeadForm>>,
+    fb(`${PAGE_ID}/leadgen_forms?fields=id,name,status,leads_count,questions,privacy_policy_url,legal_content,follow_up_action_url&limit=100`) as Promise<FbList<LeadForm>>,
     fb(`${PAGE_ID}/subscribed_apps?fields=id,name,subscribed_fields`) as Promise<FbList<Subscription>>,
     fb(`${accountId}/campaigns?fields=id,name,objective,status,effective_status,created_time&limit=50`) as Promise<FbList<CampaignRow>>,
     supabase.from('processed_meta_leads').select('id, created_at, status, campaign_name, audience, intent', { count: 'exact' }).order('created_at', { ascending: false }).limit(20),
