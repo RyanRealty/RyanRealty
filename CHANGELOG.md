@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.298.5 (2026-05-24)
+
+### Bug Fixes
+- fix(meta-health): privacy_policy field reading — false alarm corrected
+
+---
+
+
 ## v1.298.4 (2026-05-24)
 
 ### Bug Fixes
