@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.298.4 (2026-05-24)
+
+### Bug Fixes
+- fix(lhci): resolve listing detail URL at runtime, fall back gracefully
+
+---
+
+
 ## v1.298.3 (2026-05-24)
 
 ### Other
