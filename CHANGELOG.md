@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.298.1 (2026-05-24)
+
+### Bug Fixes
+- fix(community map): pull section chrome out of CommunityMap entirely (CLS root fix)
+
+---
+
+
 ## v1.298.0 (2026-05-24)
 
 ### Features
