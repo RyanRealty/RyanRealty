@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.297.0 (2026-05-24)
+
+### Features
+- feat(analytics): meta-apply-fixes.mjs — what the API actually accepts
+
+---
+
+
 ## v1.296.0 (2026-05-24)
 
 ### Features
