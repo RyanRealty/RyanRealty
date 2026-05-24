@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.289.1 (2026-05-24)
+
+### Maintenance
+- docs(marketing-brain): organic growth plan 2026 + 5 research digests
+
+---
+
+
 ## v1.289.0 (2026-05-24)
 
 ### Features
