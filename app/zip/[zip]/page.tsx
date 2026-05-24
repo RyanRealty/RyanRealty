@@ -29,12 +29,12 @@ const CANONICAL_ZIPS = new Set([
 export const dynamicParams = false
 export const revalidate = 60
 
-// Empty during build to dodge Supabase statement-timeout flakes — see equivalent
-// comment in app/cities/[slug]/page.tsx. dynamicParams=false still locks the
-// canonical 10-ZIP allow-list; any other ZIP returns 404 via the CANONICAL_ZIPS
-// check inside the page handler.
+// dynamicParams=false above means ONLY the slugs returned here can resolve.
+// An empty array would 404 every ZIP. The zip page's data fetches are cheap
+// (one listings filter + simple aggregations) so build-time prerender of all
+// 10 canonical ZIPs is safe even on slow Supabase.
 export async function generateStaticParams(): Promise<Array<{ zip: string }>> {
-  return []
+  return Array.from(CANONICAL_ZIPS).map((zip) => ({ zip }))
 }
 
 function normalizeZip(raw: string): string {
