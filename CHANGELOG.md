@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.296.0 (2026-05-24)
+
+### Features
+- feat(analytics): meta-health form-quality check + verified fix-plan
+
+---
+
+
 ## v1.295.0 (2026-05-24)
 
 ### Features
