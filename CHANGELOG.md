@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.298.2 (2026-05-24)
+
+### Other
+- SITE_SPEC §43: record lhci scores post community CLS fix
+
+---
+
+
 ## v1.298.1 (2026-05-24)
 
 ### Bug Fixes
