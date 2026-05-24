@@ -23,6 +23,7 @@ export default async function AdminReportsPage() {
         <li><Link href="/admin/reports/market" className="text-primary hover:underline">Market report by area</Link></li>
         <li><Link href="/admin/reports/brokers" className="text-primary hover:underline">Broker performance</Link></li>
         <li><Link href="/admin/reports/leads" className="text-primary hover:underline">Lead analytics</Link></li>
+        <li><Link href="/admin/reports/lead-flow" className="text-primary hover:underline">Lead-flow report</Link> — End-to-end visibility: GA4 sessions → form submits → broker assignments → CMAs, with wiring health per LP</li>
       </ul>
       <p className="mt-10 text-sm text-muted-foreground">
         <Link href="/admin/sync" className="underline hover:no-underline">Back to Sync</Link>
