@@ -28,6 +28,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 
 export const dynamic = 'force-dynamic'
@@ -293,10 +294,10 @@ async function PeopleIndexContent({ params }: { params: Record<string, string | 
               .filter(([k]) => k !== 'q')
               .filter(([, v]) => Boolean(v))
               .map(([k, v]) => (
-                <input key={k} type="hidden" name={k} value={v!} />
+                <Input key={k} type="hidden" name={k} value={v!} readOnly />
               ))}
             <div className="flex-1 min-w-[200px]">
-              <label htmlFor="q" className="text-xs font-medium text-muted-foreground">Email contains</label>
+              <Label htmlFor="q" className="text-xs font-medium text-muted-foreground">Email contains</Label>
               <Input id="q" name="q" defaultValue={params.q ?? ''} placeholder="sarah@example.com" />
             </div>
             <Button type="submit">Search</Button>

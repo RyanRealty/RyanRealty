@@ -24,6 +24,7 @@ export default async function AdminReportsPage() {
         <li><Link href="/admin/reports/brokers" className="text-primary hover:underline">Broker performance</Link></li>
         <li><Link href="/admin/reports/leads" className="text-primary hover:underline">Lead analytics</Link></li>
         <li><Link href="/admin/reports/lead-flow" className="text-primary hover:underline">Lead-flow report</Link> — End-to-end visibility: GA4 sessions → form submits → broker assignments → CMAs, with wiring health per LP</li>
+        <li><Link href="/admin/reports/traffic-sources" className="text-primary hover:underline">Traffic sources</Link> — Where every visitor came from. Joins GA4 with our visits + visitor_sessions tables. Highlights the GBP attribution gap + lists channels you should tag with canonical UTMs.</li>
         <li><Link href="/admin/analytics/action-required" className="text-primary hover:underline">Action required</Link> — Hot leads to call right now, warm prospects active, anonymous high-engagement for retargeting. Click any person to open their full profile.</li>
         <li><Link href="/admin/people" className="text-primary hover:underline">People index</Link> — Searchable list of every known FUB person seen on the site or assigned in the last 90 days. Filter by broker, audience, tier, source, activity window.</li>
       </ul>
