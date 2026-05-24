@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.289.0 (2026-05-24)
+
+### Features
+- feat(analytics): bring 7 lead surfaces to gold-standard wiring parity
+
+---
+
+
 ## v1.288.16 (2026-05-23)
 
 ### Other
