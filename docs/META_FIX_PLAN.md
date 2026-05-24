@@ -94,7 +94,22 @@ The two GOOD active forms have verified-correct schemas:
 
 **Action:** open https://business.facebook.com/latest/leads_forms → for each of `Bend Home Value 2026 (Seller) v3` (id `2008523140027183`) + `Bend Listing Alerts 2026 (Buyer) v3` (id `970206419135413`) → Edit → Privacy → set `url=https://ryan-realty.com/privacy` + `link_text=Privacy policy` → Save.
 
-### 2. Investigate the leaking Dead Pixel
+### 2. ✅ RESOLVED — Dead pixel leak killed (Zapier zap)
+
+**Root cause identified by Matt 2026-05-24:** a Zapier zap was firing CAPI events through the `Conversions API System User` (id `122166497978674230`) into Dead Pixel `590593947302147`. Matt disabled the zap.
+
+**Verified via API:** dead pixel last fire was `2026-05-21 10:26 PT` (~74h ago at time of verification). No new fires since. Leak stopped.
+
+**Residual cleanup (optional defense-in-depth):**
+
+- Remove `Conversions API System User` (id `122166497978674230`) assignment from the dead pixel via **Business Settings → System Users**. Prevents a future Zapier reconnection from re-leaking to this pixel.
+- Remove shared ad account `act_599206346213887` from the dead pixel via **Events Manager → pixel `590593947302147` → Settings → Connected Assets**.
+
+Both are 30-second clicks. Skip if you're confident the zap stays off.
+
+Re-run `node scripts/meta-apply-fixes.mjs` after the cleanup to confirm `assigned_users` and `shared_accounts` are empty.
+
+### 2b. Original investigation log (kept for reference)
 
 `Dead Pixel` (`590593947302147`) fired 3 days ago. The canonical pixel is `1546878946032105`. Something somewhere is sending events to the wrong place.
 
