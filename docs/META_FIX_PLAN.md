@@ -14,17 +14,18 @@ Companion to `docs/UTM_TRACKING_CONVENTION.md` (UTM string per channel) and `doc
 |---|---|---|
 | **Ad spend (30d)** | **$35.00 / 1,033 impressions / 42 clicks** | Tiny test budget. No active campaigns right now. |
 | **Active campaigns** | **0** | 3 campaigns exist (Seller LP, Buyer LP, New Leads), all PAUSED |
-| **Active lead-ad forms** | **2** | `Bend Listing Alerts 2026 (Buyer) v3 (thank-you fix)` + `Home Valuation + Notes` are ACTIVE. 10 others archived. All have `leads_count: 0`. |
+| **Active lead-ad forms** | **3** | `Bend Home Value 2026 (Seller) v3 (thank-you fix)` (2008523140027183) + `Bend Listing Alerts 2026 (Buyer) v3 (thank-you fix)` (970206419135413) + `Home Valuation + Notes` (2621615651544418). The third is misconfigured — see §1 below. All have `leads_count: 0`. |
 | **Lifetime leads from Meta** | **0** | `processed_meta_leads` table is empty — forms exist but no campaign has actually used them to drive submissions yet |
 | **Webhook subscription** | ✅ `leadgen` subscribed | App "Ryan Realty" (901712509522992) subscribed correctly |
 | **Webhook endpoint** | ✅ Live (HTTP 200) | `/api/meta/lead-webhook` returns healthy |
 | **Canonical pixel** | ✅ Firing | `ryan-realty.com` (1546878946032105) last fired 2026-05-23 |
-| **Dead pixel still firing** | ⚠️ Investigate | `Dead Pixel` (590593947302147) fired 3 days ago — siphoning attribution |
+| **Dead pixel still firing** | ⚠️ External source | `Dead Pixel` (590593947302147) last fired 2026-05-21. Source IS NOT in our Next.js code (grepped clean) and IS NOT in WordPress HTML (curled clean — only canonical pixel id appears in 4 `fbq()` calls). Source is therefore an OAuth-connected app, Zapier/Make workflow, or stale CAPI integration. Cannot be identified via Marketing API — requires Events Manager UI inspection: https://business.facebook.com/events_manager2/list/pixel/590593947302147/overview |
 | **Dead pixel (truly dead)** | ○ OK | `Dead Pixel` (1234764517869771) last fired 2025-09-04 |
 | **Page verification** | ⚠️ `not_verified` | Optional but useful trust signal |
 | **CAPI access token** | ✅ Configured | `META_CAPI_ACCESS_TOKEN` set in Vercel prod |
 | **Page access token** | ✅ Long-lived | `META_PAGE_ACCESS_TOKEN` valid + has needed permissions |
 | **Domain verification meta tag** | ✅ In code | `facebook-domain-verification` in `app/layout.tsx` |
+| **Active forms question wording** | ✅ MATCHES webhook handler | Seller + Buyer v3 timeline options (`Now (0-3 months)`, `Soon (3-6 months)`, `This year (6-12 months)`, `Just researching`) all classify correctly via `classifyIntent()` in `app/api/meta/lead-webhook/route.ts`. **No edit needed.** |
 
 ---
 
@@ -40,26 +41,26 @@ So "fix the FB ads" really means **get the infrastructure ready so when you re-l
 
 ## CRITICAL — fix these BEFORE re-launching any campaign
 
-### 1. Audit your 2 ACTIVE lead-ad forms — make sure questions match the webhook handler
+### 1. Archive the misconfigured "Home Valuation + Notes" lead form
 
-Two forms are ACTIVE today:
-- `Bend Listing Alerts 2026 (Buyer) v3 (thank-you fix)` (id `970206419135413`)
-- `Home Valuation + Notes` (id `2621615651544418`)
+**Verified 2026-05-24 via Graph API:** the active form `Home Valuation + Notes` (id `2621615651544418`) has a bogus "Inbox URL" custom question, no privacy policy URL, no thank-you screen, and no follow-up URL configured. It's a leftover from an old experiment and should not be used in any campaign.
 
-Before re-launching: **open each one in Ads Manager → Instant Forms** and confirm the timeline question uses these EXACT 4 option values:
+**Action:** Open https://business.facebook.com/latest/leads_forms and archive form id `2621615651544418`.
 
-```
-Ready now
-Next 3-6 months
-Next 6-12 months
-Just exploring
-```
+The two GOOD active forms have verified-correct schemas:
 
-The webhook handler at `app/api/meta/lead-webhook/route.ts` `classifyIntent()` parses these to assign `seller:hot` / `seller:warm` / `seller:nurture`. Different option wording = leads come in as `nurture` regardless of actual intent = wrong workflow assignment.
+**`Bend Home Value 2026 (Seller) v3 (thank-you fix)` (2008523140027183)**
+- ✅ Timeline options (`Now (0-3 months)`, `Soon (3-6 months)`, `This year (6-12 months)`, `Just researching`) classify correctly via `classifyIntent()` → `hot`, `warm`, `warm`, `nurture`
+- ✅ Property address question (key `property_address`)
+- ✅ Why-selling context question
+- ⚠️ Missing privacy_policy URL — add via Ads Manager
 
-If the forms don't have this question or use different wording, the recommended fix is to clone the form and update the question rather than editing the live one (Meta limits which fields can be changed on an active form).
+**`Bend Listing Alerts 2026 (Buyer) v3 (thank-you fix)` (970206419135413)**
+- ✅ Timeline options classify correctly (same mapping as seller)
+- ✅ Rich pivot questions (price_range, areas, financing)
+- ⚠️ Missing privacy_policy URL — add via Ads Manager
 
-**Recommended spec for any new seller form** (mirrors `app/lp/seller-home-value` so the FUB tagger can canonically classify):
+**Recommended spec for any NEW seller form** (mirrors `app/lp/seller-home-value` — use only if rebuilding the v3 form):
 
 | Field | Type | Notes |
 |---|---|---|
@@ -91,17 +92,27 @@ If the forms don't have this question or use different wording, the recommended 
 
 `Dead Pixel` (`590593947302147`) fired 3 days ago. The canonical pixel is `1546878946032105`. Something somewhere is sending events to the wrong place.
 
-**Verified 2026-05-24:** I grepped the codebase for `590593947302147` and it does NOT appear anywhere in our code (the only matches are in this doc + the master-channel integration plan doc, both as references). The firing source is EXTERNAL.
+**Verified 2026-05-24 via two independent checks:**
 
-**Likely sources to audit (in priority order):**
+1. **Next.js codebase clean.** `rg "590593947302147"` returns zero hits in any `.ts`/`.tsx`/`.js`/`.mjs`/`.html` file — only documentation references.
+2. **WordPress HTML clean.** A live curl of https://ryan-realty.com/ returned 472,998 bytes containing ZERO occurrences of `590593947302147`. The canonical pixel `1546878946032105` appears in exactly 4 `fbq()` calls (init + PageView + ViewContent + the custom-event wrapper). WP is innocent.
 
-1. **WordPress AgentFire admin** → Pixel/Tracking settings. The old `ryan-realty.com` WP site predates the canonical pixel — check Settings → Tracking & Analytics. If `590593947302147` is in any pixel/CAPI/GA4 field there, replace with `1546878946032105`.
-2. **Google Tag Manager containers** (if any are configured for the WP site or the Vercel site). Look for a Meta Pixel tag template firing the wrong id.
-3. **Old social-publisher integrations** (Hootsuite, Buffer, Sprout Social, etc.) that auto-add tracking pixels to outbound links.
-4. **Zapier / Integromat / Make / Pabbly workflows** that fire conversion events into the wrong pixel.
-5. **An old Meta App** still attached to the Business Manager with the wrong pixel. Check Business Settings → Apps.
+**The source is firing server-to-server or via an OAuth-connected integration.** The Marketing API does not expose per-event source attribution — only the Events Manager UI can show the firing source per event.
 
-Once found, either disable the source or update its pixel id. Until then, the impact is bounded — the canonical pixel still receives the events from our codebase, so reporting on `1546878946032105` is correct. The leak just means some external attribution is going to a pixel you can't optimize against.
+**Action:** open https://business.facebook.com/events_manager2/list/pixel/590593947302147/overview → "Diagnostics" tab. Meta will show:
+- The IP/domain firing the events
+- The integration type (Browser Pixel, CAPI, Mobile App, Offline)
+- Specific event names being received
+- Last 7 days of activity
+
+Most likely candidates (in order of probability):
+
+1. **A Zapier / Make / Pabbly workflow** with a Meta Pixel action node still pointing at the old pixel. Check https://zapier.com/app/connections (or equivalents).
+2. **An old OAuth-connected app** in Business Settings → Apps. Anything from a vendor (CRM, email tool, listing syndication, social scheduler) might still be authorized to fire events to the old pixel.
+3. **A connected CRM (FUB, BoomTown, kvCORE, etc.)** with a Meta Pixel integration. FUB itself does NOT fire pixel events for us, but other historical CRMs might.
+4. **An old subdomain** — staging.ryan-realty.com, blog.ryan-realty.com, or an old single-page site — might have an old AgentFire WP installation with the wrong pixel id.
+
+Until found, the impact is bounded — the canonical pixel still receives our events correctly, so reporting on `1546878946032105` is accurate. The leak just means some external attribution is going to a pixel you can't optimize against (~5 events in the last 30 days based on the firing recency).
 
 ### 3. Switch on Aggregated Event Measurement (AEM) priority events
 

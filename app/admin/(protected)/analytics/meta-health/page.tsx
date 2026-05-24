@@ -68,9 +68,57 @@ async function fb(path: string): Promise<unknown> {
 }
 
 type PixelRow = { id: string; name: string; last_fired_time: string | null; is_canonical: boolean }
-type LeadForm = { id: string; name: string; status: string; leads_count: number }
+type FormQuestion = { type: string; label?: string; key?: string; options?: Array<{ key: string; value: string }> }
+type LeadForm = { id: string; name: string; status: string; leads_count: number; questions?: FormQuestion[]; privacy_policy?: unknown; follow_up_action_url?: string }
 type Subscription = { id: string; name: string; subscribed_fields: string[] }
 type CampaignRow = { id: string; name: string; objective?: string; status: string; effective_status: string; created_time: string }
+
+/** Mirrors classifyIntent() in app/api/meta/lead-webhook/route.ts.
+ *  Returns null when the option text wouldn't trigger any of the buckets,
+ *  which means a lead with that answer would be classified as no-tier
+ *  (i.e. the canonical FUB workflow would skip auto-routing). */
+function classifyOption(label: string): 'hot' | 'warm' | 'nurture' | null {
+  const a = label.toLowerCase()
+  if (a.includes('asap') || a.includes('immediately') || a.includes('right now') || /\bnow\b/.test(a) || a.includes('this month') || a.includes('0-3') || a.includes('0 to 3') || a.includes('within 3')) return 'hot'
+  if (a.includes('this year') || a.includes('next 3') || a.includes('next 6') || a.includes('3-12') || a.includes('3 to 12') || a.includes('within 12') || a.includes('soon') || a.includes('few months')) return 'warm'
+  if (a.includes('explor') || a.includes('research') || a.includes('just') || a.includes('curious') || a.includes('12+') || a.includes('more than 12') || a.includes('next year') || a.includes('not sure') || a.includes('eventually')) return 'nurture'
+  return null
+}
+
+type FormQuality = {
+  form: LeadForm
+  hasPrivacyPolicy: boolean
+  hasFollowUp: boolean
+  timelineQuestion: FormQuestion | null
+  timelineCoverage: Array<{ value: string; classification: 'hot' | 'warm' | 'nurture' | null }>
+  bogusQuestions: string[]
+  status: 'ok' | 'warning' | 'broken'
+}
+
+function analyzeForm(f: LeadForm): FormQuality {
+  const hasPrivacyPolicy = !!f.privacy_policy
+  const hasFollowUp = !!f.follow_up_action_url
+  // Find the question whose key/label suggests timeline / when-to-buy/sell.
+  const tlMatch = (q: FormQuestion) => {
+    const k = `${q.key ?? ''} ${q.label ?? ''}`.toLowerCase()
+    return /timeline|when|how[ _]soon|ready[ _]to|looking[ _]to|plan[ _]to/.test(k)
+  }
+  const timelineQuestion = f.questions?.find((q) => q.type === 'CUSTOM' && tlMatch(q) && Array.isArray(q.options)) ?? null
+  const timelineCoverage = (timelineQuestion?.options ?? []).map((o) => ({ value: o.value, classification: classifyOption(o.value) }))
+  const bogusQuestions: string[] = []
+  for (const q of f.questions ?? []) {
+    const label = (q.label ?? '').toLowerCase()
+    const key = (q.key ?? '').toLowerCase()
+    if (q.type === 'CUSTOM' && (label.includes('inbox url') || key.includes('inbox') || label.includes('select your private tour'))) {
+      bogusQuestions.push(q.label ?? q.key ?? '(unknown)')
+    }
+  }
+  const hasUnclassified = timelineCoverage.some((c) => c.classification === null)
+  let status: 'ok' | 'warning' | 'broken' = 'ok'
+  if (bogusQuestions.length > 0) status = 'broken'
+  else if (!hasPrivacyPolicy || hasUnclassified || !timelineQuestion) status = 'warning'
+  return { form: f, hasPrivacyPolicy, hasFollowUp, timelineQuestion, timelineCoverage, bogusQuestions, status }
+}
 
 type FbList<T> = { data?: T[] }
 type FbPage = { business?: { id: string }; verification_status?: string; name?: string }
@@ -84,7 +132,7 @@ async function MetaHealthContent() {
   // Parallel: Meta API + Supabase
   const [page, formsRes, subsRes, campaignsRes, processedRes, spendRes] = await Promise.all([
     fb(`${PAGE_ID}?fields=id,name,verification_status,business`) as Promise<FbPage>,
-    fb(`${PAGE_ID}/leadgen_forms?fields=id,name,status,leads_count&limit=50`) as Promise<FbList<LeadForm>>,
+    fb(`${PAGE_ID}/leadgen_forms?fields=id,name,status,leads_count,questions,privacy_policy,follow_up_action_url&limit=100`) as Promise<FbList<LeadForm>>,
     fb(`${PAGE_ID}/subscribed_apps?fields=id,name,subscribed_fields`) as Promise<FbList<Subscription>>,
     fb(`${accountId}/campaigns?fields=id,name,objective,status,effective_status,created_time&limit=50`) as Promise<FbList<CampaignRow>>,
     supabase.from('processed_meta_leads').select('id, created_at, status, campaign_name, audience, intent', { count: 'exact' }).order('created_at', { ascending: false }).limit(20),
@@ -106,6 +154,7 @@ async function MetaHealthContent() {
   const forms = formsRes.data ?? []
   const activeForms = forms.filter((f) => f.status === 'ACTIVE')
   const archivedForms = forms.filter((f) => f.status !== 'ACTIVE')
+  const activeFormQuality = activeForms.map(analyzeForm)
 
   const subs = subsRes.data ?? []
   const leadgenSubscribed = subs.some((s) => (s.subscribed_fields ?? []).includes('leadgen'))
@@ -125,15 +174,41 @@ async function MetaHealthContent() {
   const clicks = spendByMetric.get('clicks') ?? 0
 
   // Auto-generated action items
-  const actions: Array<{ severity: 'critical' | 'warning' | 'info'; message: string }> = []
+  const actions: Array<{ severity: 'critical' | 'warning' | 'info'; message: string; deepLink?: string }> = []
   if (activeForms.length === 0) {
     actions.push({ severity: 'critical', message: `NO ACTIVE LEAD-AD FORMS — ${archivedForms.length} archived, none live. No Meta campaign can capture a lead until at least one ACTIVE form exists. Create one in Ads Manager → Page → Publishing Tools → Lead Forms.` })
+  }
+  for (const fq of activeFormQuality) {
+    if (fq.status === 'broken') {
+      actions.push({
+        severity: 'critical',
+        message: `Form "${fq.form.name}" (${fq.form.id}) is MISCONFIGURED — bogus questions: ${fq.bogusQuestions.join(', ')}. Archive it via Ads Manager → Instant Forms.`,
+        deepLink: 'https://business.facebook.com/latest/leads_forms',
+      })
+    } else if (fq.status === 'warning') {
+      const issues: string[] = []
+      if (!fq.hasPrivacyPolicy) issues.push('no privacy_policy URL')
+      if (!fq.timelineQuestion) issues.push('no timeline question')
+      else {
+        const unclassified = fq.timelineCoverage.filter((c) => c.classification === null).map((c) => `"${c.value}"`)
+        if (unclassified.length) issues.push(`timeline options that DO NOT classify: ${unclassified.join(', ')}`)
+      }
+      actions.push({
+        severity: 'warning',
+        message: `Form "${fq.form.name}" (${fq.form.id}) needs attention: ${issues.join('; ')}.`,
+        deepLink: 'https://business.facebook.com/latest/leads_forms',
+      })
+    }
   }
   for (const p of pixels) {
     if (p.is_canonical) continue
     const daysAgo = p.last_fired_time ? Math.floor((Date.now() - new Date(p.last_fired_time).getTime()) / 86400000) : null
     if (daysAgo !== null && daysAgo <= 30) {
-      actions.push({ severity: 'warning', message: `Pixel "${p.name}" (${p.id}) is not your canonical pixel but fired ${daysAgo}d ago. Attribution is leaking. Search the codebase for that id and replace with ${PIXEL_ID}.` })
+      actions.push({
+        severity: 'warning',
+        message: `Pixel "${p.name}" (${p.id}) is not your canonical pixel but fired ${daysAgo}d ago. Codebase + WordPress HTML already verified clean — source is an external integration (Zapier, OAuth-connected app, or stale CAPI sender). Open Events Manager → Diagnostics tab to identify.`,
+        deepLink: `https://business.facebook.com/events_manager2/list/pixel/${p.id}/overview`,
+      })
     }
   }
   if (!leadgenSubscribed) {
@@ -195,6 +270,14 @@ async function MetaHealthContent() {
               <AlertDescription className="text-sm">
                 <Badge variant={a.severity === 'critical' ? 'destructive' : a.severity === 'warning' ? 'default' : 'outline'} className="mr-2">{a.severity}</Badge>
                 {a.message}
+                {a.deepLink && (
+                  <>
+                    {' '}
+                    <a href={a.deepLink} target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:no-underline">
+                      Open in Meta ↗
+                    </a>
+                  </>
+                )}
               </AlertDescription>
             </Alert>
           ))}
@@ -280,6 +363,62 @@ async function MetaHealthContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Form quality per ACTIVE form */}
+      {activeFormQuality.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Active lead-form quality</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              For each ACTIVE form: privacy_policy presence, follow_up URL, and a per-option classification through the webhook handler&apos;s <code className="rounded bg-muted px-1">classifyIntent()</code> logic. An option that classifies as <code className="rounded bg-muted px-1">null</code> means a lead picking that answer will be enrolled as <em>nurture</em> (or skipped) regardless of actual intent.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {activeFormQuality.map((fq) => (
+              <div key={fq.form.id} className="rounded-lg border border-border p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium">{fq.form.name}</div>
+                    <div className="text-xs text-muted-foreground">id {fq.form.id} · {fq.form.leads_count} lifetime leads</div>
+                  </div>
+                  <Badge variant={fq.status === 'broken' ? 'destructive' : fq.status === 'warning' ? 'default' : 'outline'}>
+                    {fq.status === 'broken' ? 'misconfigured — archive' : fq.status === 'warning' ? 'needs attention' : 'ok'}
+                  </Badge>
+                </div>
+                <ul className="mt-3 space-y-1 text-xs">
+                  <li>privacy_policy URL: {fq.hasPrivacyPolicy ? '✓ set' : <span className="text-destructive">✗ missing (Meta requires this for ad approval)</span>}</li>
+                  <li>follow_up URL: {fq.hasFollowUp ? '✓ set' : <span className="text-muted-foreground">not set (recommended for retention)</span>}</li>
+                  <li>
+                    timeline question:{' '}
+                    {fq.timelineQuestion ? (
+                      <>
+                        ✓ found ({fq.timelineQuestion.key ?? fq.timelineQuestion.label})
+                        <ul className="mt-1 space-y-0.5 pl-4 font-mono">
+                          {fq.timelineCoverage.map((c, i) => (
+                            <li key={i}>
+                              &quot;{c.value}&quot; →{' '}
+                              {c.classification ? (
+                                <Badge variant="outline" className="text-[10px]">{c.classification}</Badge>
+                              ) : (
+                                <Badge variant="destructive" className="text-[10px]">unclassified (lead becomes nurture)</Badge>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : (
+                      <span className="text-destructive">✗ none — leads cannot be tiered automatically</span>
+                    )}
+                  </li>
+                  {fq.bogusQuestions.length > 0 && (
+                    <li className="text-destructive">bogus questions: {fq.bogusQuestions.join(', ')}</li>
+                  )}
+                </ul>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Webhook subscriptions */}
       <Card>
