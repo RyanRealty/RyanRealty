@@ -4,21 +4,42 @@
 **Owner:** Matt Ryan
 **Property:** GA4 `527333348` (`G-ST40W4WM6T`) · Pixel `1546878946032105`
 
-This is the Admin-side click trail for everything the codebase already wires automatically. The code is shipped — these are the GA4 / Meta Ads Manager toggles you need to flip once for the data to actually surface in reports.
+This is the Admin-side click trail for everything the codebase wires automatically.
 
 ---
 
-## TL;DR — 7 GA4 clicks to unlock individual-user reporting
+## Status as of 2026-05-24 (verified live via Admin API)
 
-1. **Reporting Identity → Blended** (10 sec, unlocks User Explorer + cross-device)
-2. **Enable Google Signals** (10 sec, unlocks Demographics + Interests + better modeling)
-3. **Register `user_id` as a custom dimension** (30 sec, unlocks per-user pivots)
-4. **Register 6 event-scoped custom dimensions** (`lp_variant`, `lp_source`, `lp_campaign`, `lp_content`, `broker_slug`, `lead_classification`, `lead_type`) (1 min, unlocks campaign + LP + broker pivots)
-5. **Mark `generate_lead`, `listing_inquiry`, `home_valuation_cta_click` as Key Events** (formerly Conversions) (30 sec, makes them eligible for bid optimization)
-6. **Enable "Detailed location and device data"** for full geo (10 sec)
-7. **Run the User Explorer report** to see your first identified user (zero clicks — just opens it)
+| Setting | Status | Notes |
+|---|---|---|
+| Google Signals | ✅ ENABLED + CONSENTED | Auto-verified via `scripts/ga4-admin-setup.mjs` |
+| Custom dimensions registered | ✅ 18 of 18 | All canonical pivots (`lp_variant`, `lp_source`, `lp_medium`, `lp_campaign`, `lp_content`, `broker_slug`, `lead_classification`, `lead_type`, `assigned_broker`, plus 9 more existing) |
+| Conversion events (Key Events) | ✅ 17 marked | Includes all 4 just-added: `listing_inquiry`, `home_valuation_cta_click`, `cma_downloaded`, `newsletter_signup` |
+| Data retention | ✅ 14 months (max) | |
+| Other conversion lookback | ✅ 90 days | |
+| Acquisition conversion lookback | ✅ 30 days (max) | API doesn't allow > 30 days for acquisition channels |
+| Attribution model | ✅ Data-driven | `PAID_AND_ORGANIC_CHANNELS_DATA_DRIVEN` |
+| Industry / timezone / currency | ✅ REAL_ESTATE / America/Los_Angeles / USD | |
+| **Reporting Identity** | ⚠️ **NEEDS UI CLICK** | Admin API does not expose this. See §1 below. |
 
-Total: under 5 minutes.
+To re-verify or fix drift, run from a machine with Vercel CLI:
+```bash
+vercel env pull .env.tmp --environment=production --yes
+set -a && source .env.tmp && set +a
+node scripts/ga4-admin-setup.mjs --dry-run    # see diff
+node scripts/ga4-admin-setup.mjs              # apply
+rm .env.tmp
+```
+
+The script is idempotent — running it twice is safe.
+
+---
+
+## TL;DR — ONE click left
+
+The only remaining manual setup is **Reporting Identity → Blended**. Five-second click in the GA4 UI. See §1 below.
+
+Total time to read this doc end-to-end: 10 minutes. Total time to actually do the click: 10 seconds.
 
 ---
 
