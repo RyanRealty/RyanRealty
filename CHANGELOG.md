@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.294.0 (2026-05-24)
+
+### Features
+- feat(analytics): GA4 Admin API setup script — applied 4 new key events
+
+---
+
+
 ## v1.293.0 (2026-05-24)
 
 ### Features
