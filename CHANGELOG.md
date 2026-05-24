@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.291.0 (2026-05-24)
+
+### Features
+- feat(analytics): per-person view + GA4 user_id + Meta Pixel advanced matching
+
+---
+
+
 ## v1.290.0 (2026-05-24)
 
 ### Features
