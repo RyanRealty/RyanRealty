@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.297.2 (2026-05-24)
+
+### Bug Fixes
+- fix(community map): wrap loading + error placeholders in section chrome (CLS=0.403 -> 0)
+
+---
+
+
 ## v1.297.1 (2026-05-24)
 
 ### Bug Fixes
