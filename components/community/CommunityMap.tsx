@@ -131,8 +131,35 @@ export default function CommunityMap({
     [placeSearchQuery]
   )
 
-  if (loadError) return <div className="h-[400px] rounded-lg bg-muted flex items-center justify-center text-muted-foreground">Map failed to load.</div>
-  if (!isLoaded) return <div className="h-[400px] rounded-lg bg-muted animate-pulse" />
+  // Placeholder must match the loaded `<section>` shape (chrome + heading + map
+  // container) or the layout shifts when Google Maps finishes loading.
+  // SITE_SPEC §43 perf gate caught this at CLS=0.403 on /communities/[slug].
+  if (loadError) {
+    return (
+      <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="community-map-heading-error">
+        <div className="mx-auto max-w-7xl">
+          <h2 id="community-map-heading-error" className="text-2xl font-bold tracking-tight text-primary">
+            {communityName} Map
+          </h2>
+          <div className="mt-4 h-[400px] w-full rounded-lg bg-muted-foreground/10 flex items-center justify-center text-muted-foreground">
+            Map failed to load.
+          </div>
+        </div>
+      </section>
+    )
+  }
+  if (!isLoaded) {
+    return (
+      <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="community-map-heading-loading">
+        <div className="mx-auto max-w-7xl">
+          <h2 id="community-map-heading-loading" className="text-2xl font-bold tracking-tight text-primary">
+            {communityName} Map
+          </h2>
+          <div className="mt-4 h-[400px] w-full rounded-lg bg-muted-foreground/10 animate-pulse" />
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="community-map-heading">
