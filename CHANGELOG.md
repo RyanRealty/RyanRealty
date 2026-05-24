@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.298.6 (2026-05-24)
+
+### Bug Fixes
+- fix(crons): drop refresh-mvs to hourly + advisory-lock the MV refresh fns
+
+---
+
+
 ## v1.298.5 (2026-05-24)
 
 ### Bug Fixes
