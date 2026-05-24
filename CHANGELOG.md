@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.297.3 (2026-05-24)
+
+### Bug Fixes
+- fix(community map): match lazy skeleton to loaded section shape (CLS 0.388 -> 0)
+
+---
+
+
 ## v1.297.2 (2026-05-24)
 
 ### Bug Fixes
