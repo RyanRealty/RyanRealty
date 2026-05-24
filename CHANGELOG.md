@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.298.0 (2026-05-24)
+
+### Features
+- feat(gbp): admin route to set Website link with canonical UTMs
+
+---
+
+
 ## v1.297.3 (2026-05-24)
 
 ### Bug Fixes
