@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.298.3 (2026-05-24)
+
+### Other
+- docs+code: GBP UTM convention = utm_source=gbp&utm_medium=organic&utm_campaign=profile
+
+---
+
+
 ## v1.298.2 (2026-05-24)
 
 ### Other
