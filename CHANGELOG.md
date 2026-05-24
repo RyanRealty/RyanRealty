@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.290.0 (2026-05-24)
+
+### Features
+- feat(admin): /admin/reports/lead-flow end-to-end funnel report
+
+---
+
+
 ## v1.289.1 (2026-05-24)
 
 ### Maintenance
