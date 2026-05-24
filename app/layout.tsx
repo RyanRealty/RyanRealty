@@ -15,6 +15,7 @@ import AuthCodeRedirect from "../components/AuthCodeRedirect";
 import AuthErrorRedirect from "../components/AuthErrorRedirect";
 import FubIdentityBridge from "../components/FubIdentityBridge";
 import AgentAttributionBridge from "../components/AgentAttributionBridge";
+import AnalyticsIdentityBridge from "../components/AnalyticsIdentityBridge";
 import GoogleAnalytics from "../components/GoogleAnalytics";
 import { GoogleMapsBootstrap } from "../components/GoogleMapsBootstrap";
 import FollowUpBossPixel from "../components/FollowUpBossPixel";
@@ -210,6 +211,11 @@ export default function RootLayout({
                 Auth/sign-up redirects do NOT — LP visitors aren't authenticating. */}
             <FubIdentityBridge />
             <AgentAttributionBridge />
+            {/* Bridges FUB person id + signed-in email into GA4 user_id and
+                Meta Pixel advanced matching. Runs on every route (including
+                LPs) because identified visitors on an LP are exactly who
+                we most want stitched in GA4 + Meta. */}
+            <AnalyticsIdentityBridge />
             <HideOnLP>
               <AuthCodeRedirect />
               <AuthErrorRedirect />

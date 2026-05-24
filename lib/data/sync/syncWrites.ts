@@ -862,6 +862,27 @@ export async function listCmasForAdmin(options: {
   return { rows: (data ?? []) as Array<Record<string, unknown>>, total: count ?? data?.length ?? 0 }
 }
 
+/**
+ * Per-lead CMA history. Used by the admin person view to list every CMA
+ * ever created for one lead email. Results are ordered newest first.
+ */
+export async function listCmasForLeadEmail(options: {
+  email: string
+  limit?: number
+}): Promise<Array<Record<string, unknown>>> {
+  const sb = client()
+  if (!sb) return []
+  const email = options.email.trim().toLowerCase()
+  if (!email) return []
+  const { data } = await sb
+    .from('cmas')
+    .select('id, created_at, status, slug, lead_email')
+    .eq('lead_email', email)
+    .order('created_at', { ascending: false })
+    .limit(Math.min(Math.max(options.limit ?? 20, 1), 100))
+  return (data ?? []) as Array<Record<string, unknown>>
+}
+
 /** Aggregate CMA count for analytics (delivered/final/sent in range). */
 export async function countCmasInRange(options: {
   fromIso?: string

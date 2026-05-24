@@ -27,6 +27,9 @@ export default function FubIdentityBridge() {
       url.searchParams.delete(paramName)
       const newUrl = url.pathname + url.search + url.hash
       window.history.replaceState(null, '', newUrl)
+      // Tell the analytics bridge to re-sync GA4 user_id + Meta Pixel
+      // advanced matching now that fub_cid is freshly stamped.
+      window.dispatchEvent(new CustomEvent('fub-identified'))
     })
   }, [searchParams])
 

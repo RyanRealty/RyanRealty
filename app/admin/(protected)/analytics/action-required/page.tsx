@@ -76,9 +76,13 @@ async function HotLeadsCard() {
                 <li key={r.session_id} className="flex items-start justify-between gap-3 rounded-lg border border-border p-3">
                   <div className="flex-1">
                     <div className="font-medium">
-                      <a href={`https://app.followupboss.com/2/people/view/${r.fub_person_id}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                        {r.identified_email ?? `FUB #${r.fub_person_id}`}
-                      </a>
+                      {r.fub_person_id ? (
+                        <Link href={`/admin/people/${r.fub_person_id}`} className="text-primary hover:underline">
+                          {r.identified_email ?? `FUB #${r.fub_person_id}`}
+                        </Link>
+                      ) : (
+                        <span>{r.identified_email}</span>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       Score {r.peak_score} · fired {fmtRel(r.hot_lead_fired_at)} · {r.utm_source || 'direct'} · {r.ip_city || 'unknown'}
@@ -87,9 +91,16 @@ async function HotLeadsCard() {
                       {(r.intent_tags ?? []).map((t) => <Badge key={t} variant="secondary" className="text-[10px]">{t.replace(/_/g, ' ')}</Badge>)}
                     </div>
                   </div>
-                  <Link href={`/admin/visitors/${encodeURIComponent(r.session_id)}`} className="text-xs text-primary hover:underline whitespace-nowrap">
-                    journey →
-                  </Link>
+                  <div className="flex flex-col items-end gap-1 whitespace-nowrap text-xs">
+                    {r.fub_person_id && (
+                      <a href={`https://app.followupboss.com/2/people/view/${r.fub_person_id}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary hover:underline">
+                        FUB ↗
+                      </a>
+                    )}
+                    <Link href={`/admin/visitors/${encodeURIComponent(r.session_id)}`} className="text-primary hover:underline">
+                      journey →
+                    </Link>
+                  </div>
                 </li>
               )
             })}
@@ -131,9 +142,13 @@ async function WarmActiveCard() {
               return (
                 <li key={r.session_id} className="flex items-center justify-between gap-3 text-sm">
                   <div className="flex-1">
-                    <a href={r.fub_person_id ? `https://app.followupboss.com/2/people/view/${r.fub_person_id}` : '#'} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
-                      {r.identified_email ?? `FUB #${r.fub_person_id}`}
-                    </a>
+                    {r.fub_person_id ? (
+                      <Link href={`/admin/people/${r.fub_person_id}`} className="text-primary hover:underline font-medium">
+                        {r.identified_email ?? `FUB #${r.fub_person_id}`}
+                      </Link>
+                    ) : (
+                      <span className="font-medium">{r.identified_email}</span>
+                    )}
                     <span className="ml-2 text-xs text-muted-foreground">
                       score {r.engagement_score} · {r.utm_source || 'direct'} · {r.ip_city || '—'} · {fmtRel(r.last_seen_at)}
                     </span>
