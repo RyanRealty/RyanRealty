@@ -99,6 +99,10 @@
     {
       "path": "/api/cron/marketing-snapshot-google-ads",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/snapshot-channels",
+      "schedule": "0 12 * * *"
     }
   ]
 }

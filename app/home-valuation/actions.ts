@@ -4,11 +4,13 @@ import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
 import { sendEmail } from '@/lib/resend'
 import { getCachedCMA, computeCMA } from '@/lib/cma'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
+import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
+import { fireLeadGenerated } from '@/lib/lead-tracking'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -116,6 +118,28 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
     console.warn('[valuation] FUB send failed:', fubRes.error)
   }
 
+  // Canonical tagging — apply audience:seller + source:home-valuation +
+  // broker:matt + write to marketing_assignments so this lead surfaces in
+  // the same dashboards as /lp/seller-home-value submissions. Fire-and-forget
+  // so a tagging failure never blocks lead capture.
+  void (async () => {
+    try {
+      const found = await findPersonByEmail(email)
+      if (found?.id) {
+        await canonicallyTagLead({
+          fubPersonId: found.id,
+          audience: 'seller',
+          source: 'cma-request',
+          tier: 'warm',
+          address: fullAddress,
+          state: state || undefined,
+        })
+      }
+    } catch (err) {
+      console.warn('[valuation] canonical tagging failed (non-blocking):', err)
+    }
+  })()
+
   if (ADMIN_EMAIL) {
     await sendEmail({
       to: ADMIN_EMAIL,
@@ -220,6 +244,21 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
     }),
   }).catch((err) => {
     console.warn('[Valuation Form] CAPI call failed:', err)
+  })
+
+  // GA4 Measurement Protocol mirror — server-side generate_lead so
+  // attribution survives ad-blockers. Mirrors the gold-standard seller LP.
+  await fireLeadGenerated({
+    lp_variant: 'home-valuation',
+    lead_type: 'seller',
+    lead_classification: 'warm',
+    value: 500,
+    event_id: eventId,
+    extra: {
+      cma_sent: cmaSent,
+      property_city: city || undefined,
+      property_state: state || undefined,
+    },
   })
 
   return { success: true, cmaSent, eventId }

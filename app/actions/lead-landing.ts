@@ -1,9 +1,11 @@
 'use server'
 
-import { sendEvent, type FubEventPerson } from '@/lib/followupboss'
+import { sendEvent, findPersonByEmail, type FubEventPerson } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
 import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
+import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
+import { fireLeadGenerated } from '@/lib/lead-tracking'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -105,6 +107,37 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       inquiryType: input.audience === 'seller' ? 'Seller Lead Landing' : 'Buyer Lead Landing',
       message: `${input.pageTitle} | ${details || `intent=${input.leadIntent}`}`,
     }).catch((err) => console.error('[lead-landing] sendContactNotification failed:', err))
+
+    // Canonical tagging + ledger row so dashboards see this lead alongside
+    // the gold-standard LP submissions. Fire-and-forget; tagging failures
+    // never block the response.
+    void (async () => {
+      try {
+        const found = await findPersonByEmail(email)
+        if (found?.id) {
+          await canonicallyTagLead({
+            fubPersonId: found.id,
+            audience: input.audience === 'seller' ? 'seller' : 'buyer',
+            source: input.audience === 'seller' ? 'seller-lp' : 'buyer-lp',
+          })
+        }
+      } catch (err) {
+        console.warn('[lead-landing] canonical tagging failed (non-blocking):', err)
+      }
+    })()
+
+    // GA4 Measurement Protocol mirror.
+    await fireLeadGenerated({
+      lp_variant: `lead-landing-${input.audience}`,
+      lead_type: input.audience === 'seller' ? 'seller' : 'buyer',
+      value: leadValue,
+      event_id: eventId,
+      extra: {
+        intent: input.leadIntent,
+        page_path: input.pagePath,
+        timeframe: timeframe || undefined,
+      },
+    })
 
     return { error: null }
   } catch (err) {

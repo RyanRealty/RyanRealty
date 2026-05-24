@@ -5,6 +5,8 @@ import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { findPersonByEmail, sendEvent, type FubEventPerson } from '@/lib/followupboss'
 import { recordPartnerReferral } from '@/app/actions/partnership-revenue'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
+import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
+import { fireLeadGenerated } from '@/lib/lead-tracking'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -98,6 +100,21 @@ export async function trackHomeValuationCta(campaign?: CampaignInput): Promise<v
     value: 0,
   })
 
+  // GA4 Measurement Protocol — fire the CTA-click event distinctly from a
+  // form submission so dashboard pivots don't double-count intent. This is
+  // a mid-funnel signal, not a generate_lead.
+  await fireLeadGenerated({
+    event_name: 'home_valuation_cta_click',
+    lp_variant: 'home-valuation-cta',
+    lead_type: 'cta_click',
+    fub_person_id: fubPersonId ?? null,
+    extra: {
+      utm_source: campaign?.source,
+      utm_medium: campaign?.medium,
+      utm_campaign: campaign?.campaign,
+    },
+  })
+
   const partnerSlug = partnerSlugFromCampaign(campaign?.source)
   if (partnerSlug) {
     await recordPartnerReferral({
@@ -143,6 +160,39 @@ export async function submitExitIntentLead(input: {
     eventSourceUrl: input.pageUrl?.trim() || `${SITE_URL}/`,
     contentName: 'exit_intent_popup',
     value: 100,
+  })
+
+  // Canonical tagging — fire-and-forget. Re-look-up the FUB person and apply
+  // the canonical schema so this lead shows up in marketing_assignments and
+  // the FUB automation rule can enroll them in the nurture workflow.
+  void (async () => {
+    try {
+      const reFound = await findPersonByEmail(email)
+      if (reFound?.id) {
+        await canonicallyTagLead({
+          fubPersonId: reFound.id,
+          audience: 'buyer',
+          source: 'unknown',
+          tier: 'nurture',
+        })
+      }
+    } catch (err) {
+      console.warn('[exit-intent] canonical tagging failed (non-blocking):', err)
+    }
+  })()
+
+  // GA4 Measurement Protocol mirror.
+  await fireLeadGenerated({
+    lp_variant: 'exit-intent',
+    lead_type: 'exit_intent',
+    value: 100,
+    extra: {
+      context: input.context,
+      page_url: input.pageUrl,
+      utm_source: input.campaign?.source,
+      utm_medium: input.campaign?.medium,
+      utm_campaign: input.campaign?.campaign,
+    },
   })
 
   const partnerSlug = partnerSlugFromCampaign(input.campaign?.source)
@@ -219,6 +269,40 @@ export async function submitPageCTA(input: {
       eventSourceUrl: `${SITE_URL}/`,
       contentName: `page_cta_${input.leadType ?? 'general'}${input.area ? `_${input.area}` : ''}`,
       value,
+    })
+
+    // Canonical tagging + ledger row.
+    void (async () => {
+      try {
+        if (!email) return
+        const found = await findPersonByEmail(email)
+        if (found?.id) {
+          const audience = input.leadType === 'seller' ? 'seller' : 'buyer'
+          const source: LeadSource = input.leadType === 'seller'
+            ? 'homepage-cta'
+            : input.leadType === 'newsletter'
+              ? 'blog-email'
+              : 'homepage-cta'
+          await canonicallyTagLead({
+            fubPersonId: found.id,
+            audience,
+            source,
+          })
+        }
+      } catch (err) {
+        console.warn('[page-cta] canonical tagging failed (non-blocking):', err)
+      }
+    })()
+
+    // GA4 Measurement Protocol mirror.
+    await fireLeadGenerated({
+      lp_variant: `page-cta-${input.leadType ?? 'general'}${input.area ? `-${input.area}` : ''}`,
+      lead_type: input.leadType === 'seller' ? 'seller' : input.leadType === 'buyer' ? 'buyer' : 'page_cta',
+      value,
+      extra: {
+        area: input.area,
+        context: input.context,
+      },
     })
 
     return { error: null }

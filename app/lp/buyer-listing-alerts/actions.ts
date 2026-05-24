@@ -14,6 +14,7 @@ import {
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
+import { fireLeadGenerated } from '@/lib/lead-tracking'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -272,6 +273,25 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
         },
       }),
     }).catch((err) => console.warn('[buyer-lp] CAPI call failed:', err))
+
+    // ─── GA4 Measurement Protocol mirror ───────────────────────────────────
+    // Server-side generate_lead so attribution survives ad-blockers.
+    await fireLeadGenerated({
+      lp_variant: 'buyer-listing-alerts',
+      lead_type: 'buyer',
+      lead_classification: classification,
+      broker_slug: assignment.broker,
+      value: 300,
+      event_id: eventId,
+      fub_person_id: fubPersonId,
+      extra: {
+        timeline: timeline ?? 'unspecified',
+        budget_min: budgetMin,
+        budget_max: budgetMax,
+        search_area_count: searchAreasArr.length,
+        beds_min: bedsMin,
+      },
+    })
 
     return {
       success: true,

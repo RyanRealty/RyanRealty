@@ -10,6 +10,8 @@ import {
 } from '@/lib/followupboss'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
+import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
+import { fireLeadGenerated } from '@/lib/lead-tracking'
 
 /**
  * Heath at Tetherow CMA form server action.
@@ -130,7 +132,37 @@ export async function submitHeathCmaForm(
         taskType: 'Follow Up',
         dueInMinutes: 24 * 60,
       })
+
+      // Canonical schema layer — adds audience:seller + source:cma-request +
+      // broker:slug and writes the marketing_assignments ledger row.
+      // Idempotent against the manual tags above; lets the canonical FUB
+      // automation rule pick this lead up the same way it picks up
+      // /lp/seller-home-value submissions.
+      await canonicallyTagLead({
+        fubPersonId: existing.id,
+        audience: 'seller',
+        source: 'cma-request',
+        tier: classification,
+        address: input.address,
+      })
     }
+
+    // GA4 Measurement Protocol mirror — server-side generate_lead.
+    await fireLeadGenerated({
+      lp_variant: 'tetherow-heath-cma',
+      lead_type: 'seller',
+      lead_classification: classification,
+      broker_slug: attribution?.broker ?? 'matt',
+      value: 500,
+      event_id: eventId,
+      fub_person_id: existing?.id ?? null,
+      extra: {
+        property_address: input.address,
+        timeline: input.timeline,
+        bedrooms: input.bedrooms,
+        bathrooms: input.bathrooms,
+      },
+    })
   } catch (err) {
     console.error('[heath-cma] FUB submit failed', err)
     return { success: false, error: 'Could not submit. Try again shortly or call 541.213.6706.' }

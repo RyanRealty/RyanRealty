@@ -1,7 +1,9 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import { trackContactAgentInquiry } from '@/lib/followupboss'
+import { trackContactAgentInquiry, findPersonByEmail } from '@/lib/followupboss'
+import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
+import { fireLeadGenerated } from '@/lib/lead-tracking'
 
 export type TrackContactAgentParams = {
   listingUrl: string
@@ -70,5 +72,43 @@ export async function submitListingInquiry(params: SubmitListingInquiryParams): 
     },
     message: params.type === 'showing' ? 'Schedule a showing' : `Ask a question: ${(params.message ?? '').slice(0, 200)}`,
   }).catch((err) => console.error('[submitListingInquiry] FUB tracking failed:', err))
+
+  // Canonical tagging — listing inquiries are always buyer-side. Source is
+  // 'showings-request' for schedule-a-showing and 'idx-registration' for the
+  // ask-a-question modal (mirrors the FUB canonical source taxonomy).
+  void (async () => {
+    try {
+      const emailForLookup = params.email?.trim() || params.userEmail?.trim() || null
+      if (!emailForLookup) return
+      const found = await findPersonByEmail(emailForLookup)
+      if (found?.id) {
+        await canonicallyTagLead({
+          fubPersonId: found.id,
+          audience: 'buyer',
+          source: params.type === 'showing' ? 'showings-request' : 'idx-registration',
+          tier: 'warm',
+        })
+      }
+    } catch (err) {
+      console.warn('[submitListingInquiry] canonical tagging failed (non-blocking):', err)
+    }
+  })()
+
+  // GA4 Measurement Protocol — listing_inquiry event (distinct from
+  // generate_lead so dashboard pivots can break it out from form-fill leads).
+  await fireLeadGenerated({
+    event_name: 'listing_inquiry',
+    lp_variant: 'listing-detail',
+    lead_type: 'listing_inquiry',
+    value: 300,
+    fub_person_id: params.fubPersonId ?? null,
+    extra: {
+      inquiry_type: params.type,
+      mls_number: params.mlsNumber ?? undefined,
+      list_price: params.listPrice ?? undefined,
+      listing_key: params.listingKey,
+    },
+  })
+
   return { ok: true }
 }

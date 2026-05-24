@@ -1,5 +1,6 @@
 'use server'
 
+import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
@@ -13,6 +14,14 @@ import {
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
+import { fireLeadGenerated } from '@/lib/lead-tracking'
+
+function getServiceSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url?.trim() || !key?.trim()) return null
+  return createClient(url, key)
+}
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -143,6 +152,25 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
         customMoveTimeline: 'ready-now',
         customSellerPropertyAddress: address || 'unspecified',
       })
+
+      // Mirror the canonical assignment ledger row used by the gold-standard
+      // seller LP. Dashboards (Conversions broker split, Funnel step 6) read
+      // from marketing_assignments — without this row the lead never shows
+      // up in the broker-attribution view.
+      const supabase = getServiceSupabase()
+      if (supabase) {
+        const { error: insertError } = await supabase.from('marketing_assignments').insert({
+          audience: 'seller',
+          broker: assignment.broker,
+          fub_user_id: assignment.userId,
+          fub_person_id: fubPersonId,
+          source: 'expired-lp',
+          tier: 'hot',
+        })
+        if (insertError) {
+          console.warn('[expired-lp] marketing_assignments insert failed:', insertError.message)
+        }
+      }
     }
 
     // ─── 5-min realtime task for ALL expired LP leads (hot category) ──────
@@ -180,6 +208,23 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
         },
       }),
     }).catch((err) => console.warn('[expired-lp] CAPI call failed:', err))
+
+    // ─── GA4 Measurement Protocol mirror ───────────────────────────────────
+    // Expired listings are high-intent seller leads. Mirror generate_lead
+    // server-side so attribution survives ad-blockers.
+    await fireLeadGenerated({
+      lp_variant: 'expired-listing',
+      lead_type: 'seller',
+      lead_classification: 'hot',
+      broker_slug: assignment.broker,
+      value: 500,
+      event_id: eventId,
+      fub_person_id: fubPersonId,
+      extra: {
+        contact_path: contactPath,
+        property_address: address || undefined,
+      },
+    })
 
     return {
       success: true,
