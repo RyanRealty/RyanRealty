@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.297.1 (2026-05-24)
+
+### Bug Fixes
+- fix(zip): restore canonical 10-ZIP generateStaticParams (dynamicParams=false guard)
+
+### Maintenance
+- docs(meta): dead-pixel leak RESOLVED — Zapier zap was the source
+
+---
+
+
 ## v1.297.0 (2026-05-24)
 
 ### Features
