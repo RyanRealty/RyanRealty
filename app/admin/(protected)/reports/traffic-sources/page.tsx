@@ -293,7 +293,7 @@ async function TrafficSourcesContent() {
           </div>
           <Alert>
             <AlertDescription className="text-sm">
-              <strong>How to read this:</strong> GBP says it sent <strong>{formatInt(gbpWebsiteClicks)}</strong> clicks to the site, but GA4 lumps GBP traffic into the same <strong>google/organic</strong> bucket as regular search ({formatInt(ga4GoogleOrganic)} total). To separate them, change the GBP &ldquo;Website&rdquo; link to include UTMs: <code className="rounded bg-muted px-1">?utm_source=google&amp;utm_medium=organic&amp;utm_campaign=gbp-profile</code>. After that you&apos;ll see <code className="rounded bg-muted px-1">google / organic / gbp-profile</code> as a distinct campaign in GA4 Traffic acquisition. Full instructions in <Link href="#" className="underline">docs/UTM_TRACKING_CONVENTION.md</Link> §2.
+              <strong>How to read this:</strong> GBP says it sent <strong>{formatInt(gbpWebsiteClicks)}</strong> clicks to the site (source-side). GA4 google/organic = <strong>{formatInt(ga4GoogleOrganic)}</strong> sessions (regular search + any untagged GBP). The GBP &ldquo;Website&rdquo; link is now UTM-tagged with <code className="rounded bg-muted px-1">?utm_source=gbp&amp;utm_medium=organic&amp;utm_campaign=profile</code> (live 2026-05-24). Look for <strong>gbp / organic / profile</strong> rows in the &ldquo;First-touch UTM attribution&rdquo; table below as GBP visits land. Full convention in <code className="rounded bg-muted px-1">docs/UTM_TRACKING_CONVENTION.md</code> §2.
             </AlertDescription>
           </Alert>
         </CardContent>

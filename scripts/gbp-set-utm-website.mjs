@@ -34,7 +34,9 @@ if (!ACCOUNT_ID || !LOCATION_ID || !SUPABASE_URL || !SUPABASE_KEY || !CLIENT_ID 
   process.exit(1)
 }
 
-const DESIRED_URL = 'https://ryan-realty.com/?utm_source=google&utm_medium=organic&utm_campaign=gbp-profile&utm_content=knowledge-panel'
+// Canonical GBP Website URL — chosen by Matt 2026-05-24.
+// utm_source=gbp (not google) for instant distinguishability in reports.
+const DESIRED_URL = 'https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=profile'
 
 async function getAccessToken() {
   const { createClient } = await import('@supabase/supabase-js')

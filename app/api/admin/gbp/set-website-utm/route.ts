@@ -29,8 +29,14 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
+// Canonical GBP Website URL — chosen by Matt 2026-05-24.
+// Using utm_source=gbp (not utm_source=google) so the channel is
+// instantly distinguishable from regular Google organic in any report
+// without needing to filter by campaign. Tradeoff: GA4's default
+// "Organic Search" channel grouping won't auto-pick this up; see
+// docs/UTM_TRACKING_CONVENTION.md §2 for the channel-grouping override.
 const DESIRED_URL =
-  'https://ryan-realty.com/?utm_source=google&utm_medium=organic&utm_campaign=gbp-profile&utm_content=knowledge-panel'
+  'https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=profile'
 
 function unauthorized(reason: string) {
   return NextResponse.json({ ok: false, error: reason }, { status: 401 })

@@ -51,30 +51,41 @@ For Instagram-specific placements (Reels, Stories), use `utm_source=instagram` s
 
 ---
 
-## 2. Google Business Profile (GBP) — the one that's currently invisible
+## 2. Google Business Profile (GBP) — DONE ✓
 
-**Today:** GBP traffic gets lumped into `google / organic` along with regular search. GBP says you got X website clicks but GA4 only shows the aggregate organic-Google number — you can't tell them apart.
-
-**Fix:** change the GBP "Website" link to include UTMs.
+**Canonical URL (LIVE 2026-05-24, set by Matt):**
 
 ```
-https://ryan-realty.com/?utm_source=google&utm_medium=organic&utm_campaign=gbp-profile&utm_content=knowledge-panel
+https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=profile
 ```
 
-**Worth distinguishing:**
+**Why `utm_source=gbp` not `google`:** using a distinct source makes GBP traffic instantly visible in every GA4 report (Traffic Acquisition, Explorations, custom dashboards) without needing to drill into campaign-level filtering. The tradeoff is that GA4's default channel grouping for "Organic Search" looks specifically for `utm_source=google` — so GBP traffic will land in `Unassigned` / `Organic Other` unless you add the override below.
+
+**GA4 channel-grouping override (one-time, 30 sec):**
+
+1. GA4 → Admin → Data display → Channel groups → "Default Channel Group" → ⚙ → Create a copy → name it "Default + GBP"
+2. Edit the **Organic Search** rule → change `Source matches regex` from `google|bing|yahoo|...` to `google|gbp|bing|yahoo|...`
+3. Save
+4. GA4 → Admin → Property settings → Default reporting identity / channel grouping → switch to "Default + GBP"
+
+After that, GBP traffic still shows up as "Organic Search" in default reports AND is filterable as `utm_source=gbp` in deep dives.
+
+**Programmatic update path:** if you ever need to change this URL again, hit
+`POST https://ryanrealty.vercel.app/api/admin/gbp/set-website-utm` with
+`Authorization: Bearer $CRON_SECRET`. The endpoint reads + PATCHes the GBP
+location's `websiteUri` via the My Business Business Information API.
+Idempotent. Supports `?dryRun=true` for preview.
+
+**Verify:** `/admin/reports/traffic-sources` should show a new row `gbp / organic / profile` in the first-touch UTM table within 48 hours of the change going live. (GBP propagates the new link slowly — sometimes 24-48h.)
+
+**Worth tagging separately if you ever add them:**
 
 | Element | utm_content suggestion |
 |---|---|
-| Main Website link in knowledge panel | `knowledge-panel` |
-| Appointment / Booking URL | `booking-url` |
-| Menu URL (we don't use this — restaurant feature) | n/a |
-| Individual posts you publish | `post-<post-id>` or `post-<topic>` |
+| Appointment / Booking URL | `?utm_source=gbp&utm_medium=organic&utm_campaign=profile&utm_content=booking` |
+| Individual GBP posts you publish | `?utm_source=gbp&utm_medium=organic&utm_campaign=profile&utm_content=post-<topic>` |
 
-**Apply in:** Google Business Profile → Edit profile → Website. Save. Allow 24 hours for GBP to start sending the new URL.
-
-**Verify:** within 48 hours, `/admin/reports/traffic-sources` should show a new row `google / organic / gbp-profile` in the first-touch UTM table.
-
-**Note:** Google may occasionally strip UTMs from GBP links in specific surfaces. If you see your `gbp-profile` campaign disappear from reports, check that the link in GBP still has the parameters intact.
+**Note:** Google occasionally strips UTMs from GBP links in specific surfaces (the "Call" and "Directions" buttons on mobile, for instance). The website link consistently carries them.
 
 ---
 
