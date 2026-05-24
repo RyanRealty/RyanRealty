@@ -131,50 +131,31 @@ export default function CommunityMap({
     [placeSearchQuery]
   )
 
-  // Placeholder must match the loaded `<section>` shape (chrome + heading + map
-  // container) or the layout shifts when Google Maps finishes loading.
-  // SITE_SPEC §43 perf gate caught this at CLS=0.403 on /communities/[slug].
+  // Bare 400px placeholders — the page wrapper (app/communities/[slug]/page.tsx)
+  // provides the section + heading chrome. Keeping chrome out of this component
+  // means the SSR LazyCommunityMap skeleton matches CommunityMap's post-mount
+  // DOM byte-for-byte, avoiding the CLS=0.388 reflow caused by duplicated
+  // section chrome on hydration.
   if (loadError) {
     return (
-      <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="community-map-heading-error">
-        <div className="mx-auto max-w-7xl">
-          <h2 id="community-map-heading-error" className="text-2xl font-bold tracking-tight text-primary">
-            {communityName} Map
-          </h2>
-          <div className="mt-4 h-[400px] w-full rounded-lg bg-muted-foreground/10 flex items-center justify-center text-muted-foreground">
-            Map failed to load.
-          </div>
-        </div>
-      </section>
+      <div className="h-[400px] w-full rounded-lg bg-muted-foreground/10 flex items-center justify-center text-muted-foreground">
+        Map failed to load.
+      </div>
     )
   }
   if (!isLoaded) {
-    return (
-      <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="community-map-heading-loading">
-        <div className="mx-auto max-w-7xl">
-          <h2 id="community-map-heading-loading" className="text-2xl font-bold tracking-tight text-primary">
-            {communityName} Map
-          </h2>
-          <div className="mt-4 h-[400px] w-full rounded-lg bg-muted-foreground/10 animate-pulse" />
-        </div>
-      </section>
-    )
+    return <div className="h-[400px] w-full rounded-lg bg-muted-foreground/10 animate-pulse" />
   }
 
   return (
-    <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16" aria-labelledby="community-map-heading">
-      <div className="mx-auto max-w-7xl">
-        <h2 id="community-map-heading" className="text-2xl font-bold tracking-tight text-primary">
-          {communityName} Map
-        </h2>
-        <div className="mt-4 h-[400px] w-full overflow-hidden rounded-lg">
-          <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '100%' }}
-            center={center}
-            zoom={DEFAULT_ZOOM}
-            options={{ mapTypeControl: true, streetViewControl: false }}
-            onLoad={onMapLoad}
-          >
+    <div className="h-[400px] w-full overflow-hidden rounded-lg">
+      <GoogleMap
+        mapContainerStyle={{ width: '100%', height: '100%' }}
+        center={center}
+        zoom={DEFAULT_ZOOM}
+        options={{ mapTypeControl: true, streetViewControl: false }}
+        onLoad={onMapLoad}
+      >
             {placePosition && (
               <Marker
                 position={placePosition}
@@ -246,11 +227,9 @@ export default function CommunityMap({
                     View listing
                   </Button>
                 </div>
-              </InfoWindow>
-            )}
-          </GoogleMap>
-        </div>
-      </div>
-    </section>
+          </InfoWindow>
+        )}
+      </GoogleMap>
+    </div>
   )
 }

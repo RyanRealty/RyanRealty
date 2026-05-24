@@ -16,18 +16,18 @@ import dynamic from 'next/dynamic'
 import type { ComponentProps } from 'react'
 import type CommunityMap from '@/components/community/CommunityMap'
 
+// Just the 400px map placeholder — section chrome + heading lives in the
+// page (app/communities/[slug]/page.tsx) so the SSR'd HTML matches the
+// post-mount DOM byte-for-byte. Previously this skeleton + CommunityMap's
+// internal section duplicated the page chrome and produced CLS=0.388.
 function MapSkeleton() {
   return (
-    <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16">
-      <div className="mx-auto max-w-7xl">
-        {/* Heading placeholder — same vertical footprint as the loaded "<communityName> Map" h2 */}
-        <div className="h-8 w-1/2 rounded bg-muted-foreground/10" />
-        <div className="mt-4 h-[400px] w-full rounded-lg bg-muted-foreground/10 animate-pulse" />
-      </div>
-    </section>
+    <div className="h-[400px] w-full rounded-lg bg-muted-foreground/10 animate-pulse" />
   )
 }
 
+// ssr:false is required because @react-google-maps/api references `window`
+// at module top-level (server-side import crashes the build).
 const CommunityMapClient = dynamic(
   () => import('@/components/community/CommunityMap'),
   {
