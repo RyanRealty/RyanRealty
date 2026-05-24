@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.295.0 (2026-05-24)
+
+### Features
+- feat(analytics): Meta health dashboard + admin setup script + fix plan
+
+---
+
+
 ## v1.294.0 (2026-05-24)
 
 ### Features
