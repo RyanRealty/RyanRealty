@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.300.1 (2026-05-26)
+
+### Other
+- incident(db): emergency disable 7 high-freq crons - DB pinned, CF 522 on every REST call
+
+---
+
+
 ## v1.300.0 (2026-05-26)
 
 ### Features
