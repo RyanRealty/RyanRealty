@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.299.2 (2026-05-26)
+
+### Bug Fixes
+- fix(skyslope): correct FORM_TO_ACTIVITY mapping for OREF 040 / 050 / 110 / 059
+
+---
+
+
 ## v1.299.1 (2026-05-26)
 
 ### Maintenance
