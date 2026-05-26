@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.302.1 (2026-05-26)
+
+### Maintenance
+- docs(handoff): CF-522 incident RCA + forensic timeline for Claude Code
+
+---
+
+
 ## v1.302.0 (2026-05-26)
 
 ### Features
