@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.305.0 (2026-05-26)
+
+### Features
+- feat(712): Phase 8b archive move + If-Applicable toggle script (partial)
+
+---
+
+
 ## v1.304.0 (2026-05-26)
 
 ### Features
