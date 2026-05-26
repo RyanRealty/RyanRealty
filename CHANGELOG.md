@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.301.1 (2026-05-26)
+
+### Bug Fixes
+- fix(db): permanent guard against CF-522 incident — service_role timeout + advisory locks + cron stagger
+
+---
+
+
 ## v1.301.0 (2026-05-26)
 
 ### Features
