@@ -1,0 +1,87 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Brand voice — rules</title><link rel="stylesheet" href="_card.css">
+<style>
+  .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .head .lock { font-family: var(--font-mono); font-size: 10px; color: var(--muted-foreground); letter-spacing: 0.04em; text-transform: uppercase; }
+  .quote { background: var(--rr-navy); color: var(--rr-cream); border-radius: var(--radius-xl); padding: 22px 26px; font-family: var(--font-display); font-size: 24px; line-height: 1.25; letter-spacing: -0.01em; margin-bottom: 18px; }
+  .quote .sub { display: block; font-family: var(--font-sans); font-size: 13px; font-weight: 400; opacity: 0.7; margin-top: 8px; letter-spacing: 0; }
+  .rules { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .rule { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-xl); padding: 16px 16px 14px; }
+  .rule .num { font-family: var(--font-display); font-size: 36px; line-height: 1; color: var(--rr-navy); font-weight: 400; margin-bottom: 8px; }
+  .rule .verb { font-family: var(--font-sans); font-size: 15px; font-weight: 700; color: var(--rr-navy); letter-spacing: -0.01em; margin-bottom: 6px; }
+  .rule .desc { font-size: 11.5px; line-height: 1.45; color: var(--foreground); }
+
+  .pillars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+  .pillar { background: var(--rr-cream); border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-lg); padding: 12px 12px; }
+  .pillar b { display: block; font-family: var(--font-sans); font-size: 12.5px; font-weight: 700; color: var(--rr-navy); margin-bottom: 4px; }
+  .pillar span { font-size: 11px; line-height: 1.4; color: var(--foreground); }
+
+  .show-tell { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-xl); overflow: hidden; }
+  .show-tell .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-bottom: 1px solid rgba(16,39,66,0.08); }
+  .show-tell .row:last-child { border-bottom: none; }
+  .show-tell .cell { padding: 11px 16px; font-size: 12.5px; line-height: 1.5; }
+  .show-tell .cell.bad { background: #fdf6f3; color: #5a3a2d; border-right: 1px solid rgba(164,81,58,0.18); }
+  .show-tell .cell.bad::before { content: "✗ "; color: #a4513a; font-weight: 700; margin-right: 2px; }
+  .show-tell .cell.good { color: var(--foreground); }
+  .show-tell .cell.good::before { content: "✓ "; color: #2e7d3a; font-weight: 700; margin-right: 2px; }
+  .show-tell .header { background: #faf8f4; }
+  .show-tell .header .cell { font-family: var(--font-sans); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground); font-weight: 600; padding: 9px 16px; }
+  .show-tell .header .cell::before { content: none; }
+
+  .grammar { margin-top: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .g { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-lg); padding: 11px 14px; }
+  .g b { display: block; font-family: var(--font-sans); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground); font-weight: 600; margin-bottom: 4px; }
+  .g span { font-family: var(--font-mono); font-size: 12px; color: var(--rr-navy); font-variant-numeric: tabular-nums; }
+  .g span .note { display: block; font-family: var(--font-sans); font-size: 10.5px; color: var(--muted-foreground); font-variant-numeric: normal; margin-top: 2px; }
+</style>
+</head>
+<body><div class="card-root">
+  <div class="head">
+    <div class="label-eyebrow">Voice — the principle</div>
+    <div class="lock">Enforced on every surface · web · print · video · social · email</div>
+  </div>
+
+  <div class="quote">
+    Honest. Transparent. Trustworthy. Direct and kind.
+    <span class="sub">We don't tell you we're warm — we just speak warmly. We don't tell you we're expert — we just know the neighborhoods.</span>
+  </div>
+
+  <div class="label-eyebrow" style="margin-bottom:10px">Four rules that do most of the work</div>
+  <div class="rules">
+    <div class="rule"><div class="num">1</div><div class="verb">Direct</div><div class="desc">Short sentences. Active voice. One idea per line. If a clause can be cut without losing meaning, cut it.</div></div>
+    <div class="rule"><div class="num">2</div><div class="verb">Specific</div><div class="desc">Neighborhoods, not "the area." Dollar amounts, not "competitively priced." First names of brokers, not "our team of experts."</div></div>
+    <div class="rule"><div class="num">3</div><div class="verb">Kind</div><div class="desc">Directness is not coldness. "You" and "your." Never condescend, never hedge, never pressure.</div></div>
+    <div class="rule"><div class="num">4</div><div class="verb">Honest</div><div class="desc">Even when inconvenient. Soft market — say so. Listing has been sitting — say so. We don't know — say so. Trust is the product.</div></div>
+  </div>
+
+  <div class="label-eyebrow" style="margin-bottom:10px">Five voice attributes — the bar</div>
+  <div class="pillars">
+    <div class="pillar"><b>Trustworthy</b><span>Every claim sourced. Never promise outcomes we can't deliver.</span></div>
+    <div class="pillar"><b>Honest</b><span>Data drives the verdict. If data contradicts the story, the story changes.</span></div>
+    <div class="pillar"><b>Knowledgeable</b><span>Specifics over generalities. Define jargon inline. Cite sources.</span></div>
+    <div class="pillar"><b>Professional</b><span>Warm but never sloppy. No typos. Visually clean.</span></div>
+    <div class="pillar"><b>Dependable</b><span>Never write a CTA we can't honor. Follow through on every promised cadence.</span></div>
+  </div>
+
+  <div class="label-eyebrow" style="margin-bottom:10px">Show, don't tell — let the fact do the work</div>
+  <div class="show-tell">
+    <div class="row header"><div class="cell">Pandering / editorializing</div><div class="cell">Letting the fact do the work</div></div>
+    <div class="row"><div class="cell bad">Our team is passionate about helping you find your dream home!</div><div class="cell good">Your local team. Thirty-seven closings in Bend last year.</div></div>
+    <div class="row"><div class="cell bad">We pride ourselves on honest, transparent service.</div><div class="cell good">We'll tell you if the inspection found dry rot. We'll tell you if we think you're overpaying.</div></div>
+    <div class="row"><div class="cell bad">Experience the breathtaking beauty of Central Oregon living.</div><div class="cell good">Three blocks to the Deschutes. Twenty minutes to Mt. Bachelor.</div></div>
+    <div class="row"><div class="cell bad">Trust the experts who know the market!</div><div class="cell good">Median sale in Northwest Crossing last month: $895,000. 38 days on market.</div></div>
+    <div class="row"><div class="cell bad">Luxurious, turnkey, beautifully-appointed home!</div><div class="cell good">3 bd · 2 ba · 1,820 sqft. New roof, 2023. HOA $0.</div></div>
+  </div>
+
+  <div class="label-eyebrow" style="margin-top:20px;margin-bottom:10px">Numbers, units, casing — the grammar</div>
+  <div class="grammar">
+    <div class="g"><b>Phone</b><span>541.213.6706<span class="note">Dotted, not (541) 213-6706</span></span></div>
+    <div class="g"><b>Currency</b><span>$895,000<span class="note">Rounded to nearest thousand, not $894,750</span></span></div>
+    <div class="g"><b>Days</b><span>38 days<span class="note">Integer + "days," tabular-nums</span></span></div>
+    <div class="g"><b>Unavailable</b><span>—<span class="note">Em-dash, never "N/A"</span></span></div>
+    <div class="g"><b>Percent YoY</b><span>↑ 2.1% YoY<span class="note">Signed arrow, one decimal</span></span></div>
+    <div class="g"><b>Casing</b><span>Sentence case<span class="note">Title Case only for the hero H1</span></span></div>
+    <div class="g"><b>Person</b><span>you · we · our team<span class="note">Never "I" (except first-person Matt content)</span></span></div>
+    <div class="g"><b>Place separator</b><span>BEND · OREGON<span class="note">Middle dot U+00B7</span></span></div>
+    <div class="g"><b>Tabular numerals</b><span>font-variant-numeric: tabular-nums<span class="note">On every numeric surface</span></span></div>
+  </div>
+</div></body></html>

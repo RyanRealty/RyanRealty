@@ -1,0 +1,102 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Brand facts</title><link rel="stylesheet" href="_card.css">
+<style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .block { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-xl); padding: 16px 18px; }
+  .block.dark { background: var(--rr-navy); color: var(--rr-cream); border-color: var(--rr-navy); }
+  .block .eyebrow { font-family: var(--font-sans); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-foreground); font-weight: 600; margin-bottom: 12px; }
+  .block.dark .eyebrow { color: rgba(250,248,244,0.55); }
+  .block h3 { font-family: var(--font-sans); font-weight: 700; font-size: 16px; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .block.dark h3 { color: var(--rr-cream); }
+  .kv { display: grid; grid-template-columns: 90px 1fr; gap: 8px 14px; align-items: baseline; }
+  .kv dt { font-family: var(--font-sans); font-size: 11px; color: var(--muted-foreground); font-weight: 500; }
+  .block.dark .kv dt { color: rgba(250,248,244,0.6); }
+  .kv dd { font-family: var(--font-mono); font-size: 13px; color: var(--rr-navy); font-variant-numeric: tabular-nums; margin: 0; }
+  .block.dark .kv dd { color: var(--rr-cream); }
+  .kv dd .note { display: block; font-family: var(--font-sans); font-size: 10.5px; color: var(--muted-foreground); font-variant-numeric: normal; margin-top: 2px; }
+  .block.dark .kv dd .note { color: rgba(250,248,244,0.55); }
+
+  .handles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .handle { background: rgba(250,248,244,0.08); border: 1px solid rgba(250,248,244,0.18); border-radius: 8px; padding: 8px 10px; }
+  .handle .plat { font-family: var(--font-sans); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(250,248,244,0.55); font-weight: 600; margin-bottom: 2px; }
+  .handle .h { font-family: var(--font-mono); font-size: 12px; color: var(--rr-cream); }
+
+  .hashtag-row { margin-top: 14px; padding: 14px 16px; background: var(--rr-cream); border-radius: var(--radius-xl); border: 1px solid rgba(16,39,66,0.08); display: flex; align-items: center; gap: 16px; }
+  .hashtag-row .tag { font-family: var(--font-sans); font-weight: 700; font-size: 22px; color: var(--rr-navy); letter-spacing: -0.005em; }
+  .hashtag-row .desc { font-size: 12px; color: var(--foreground); line-height: 1.5; flex: 1; }
+  .hashtag-row .desc b { color: var(--rr-navy); }
+
+  .exempt { margin-top: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .exempt .e { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: 8px; padding: 10px 12px; font-size: 11.5px; line-height: 1.4; }
+  .exempt .e b { display: block; font-size: 11px; font-weight: 600; color: var(--rr-navy); margin-bottom: 3px; }
+  .exempt .e.req b::before { content: "✓ "; color: #2e7d3a; }
+  .exempt .e.skip b::before { content: "× "; color: #a4513a; }
+
+  .glyphs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+  .glyph { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: 8px; padding: 10px; display: flex; gap: 12px; align-items: center; }
+  .glyph .ch { font-family: var(--font-sans); font-size: 28px; font-weight: 600; color: var(--rr-navy); line-height: 1; width: 32px; text-align: center; }
+  .glyph .lbl { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted-foreground); line-height: 1.35; }
+  .glyph .lbl b { display: block; color: var(--foreground); font-family: var(--font-sans); font-size: 11.5px; font-weight: 600; }
+</style>
+</head>
+<body><div class="card-root">
+  <div class="label-eyebrow" style="margin-bottom:14px">Brand facts — the values producers pull verbatim</div>
+
+  <div class="grid">
+    <div class="block">
+      <div class="eyebrow">Brokerage facts</div>
+      <dl class="kv">
+        <dt>Name</dt><dd>Ryan Realty<span class="note">No "LLC" in marketing surfaces</span></dd>
+        <dt>Location</dt><dd>Bend, Oregon<span class="note">Signage: BEND · OREGON (middle dot)</span></dd>
+        <dt>Web</dt><dd>ryan-realty.com<span class="note">Hyphenated · lowercase · no www</span></dd>
+        <dt>Tagline</dt><dd>It's About Relationships.<span class="note">Signature line — use with the wordmark, not as filler</span></dd>
+      </dl>
+    </div>
+
+    <div class="block">
+      <div class="eyebrow">Phone numbers</div>
+      <dl class="kv">
+        <dt>Brand voice</dt><dd>541.213.6706<span class="note">Dotted · Matt direct · the yard-sign number</span></dd>
+        <dt>Bio / FUB</dt><dd>541.703.3095<span class="note">Use on social profiles, ads, lead-capture — routes through Follow Up Boss for attribution</span></dd>
+        <dt>Paul</dt><dd>541.977.6841</dd>
+        <dt>Rebecca</dt><dd>415.308.9087</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="block dark" style="margin-top:16px">
+    <div class="eyebrow">Social handles — locked 2026-05-13</div>
+    <div style="font-size:12px;line-height:1.5;color:rgba(250,248,244,0.78);margin-bottom:12px">
+      One handle across every hashtag-supporting platform. The old <code style="font-family:var(--font-mono);color:rgba(250,248,244,0.5)">@ryanrealtybend1</code> TikTok was a sandbox-OAuth byproduct and has been deleted — never reference it.
+    </div>
+    <div class="handles">
+      <div class="handle"><div class="plat">Instagram</div><div class="h">@ryanrealtybend</div></div>
+      <div class="handle"><div class="plat">TikTok</div><div class="h">@ryanrealtybend</div></div>
+      <div class="handle"><div class="plat">Threads</div><div class="h">@ryanrealtybend</div></div>
+      <div class="handle"><div class="plat">YouTube</div><div class="h">@ryanrealtybend</div></div>
+      <div class="handle"><div class="plat">X</div><div class="h">@ryanrealtybend</div></div>
+      <div class="handle"><div class="plat">Pinterest</div><div class="h">@ryanrealtybend</div></div>
+      <div class="handle"><div class="plat">Facebook</div><div class="h">/ryanrealtybend</div></div>
+      <div class="handle"><div class="plat">LinkedIn</div><div class="h">/ryanrealtybend</div></div>
+    </div>
+  </div>
+
+  <div class="hashtag-row">
+    <div class="tag">#RyanRealtyBend</div>
+    <div class="desc">
+      <b>Hard rule, locked 2026-05-14.</b> Every caption on every hashtag-supporting platform includes <b>#RyanRealtyBend</b> as the first hashtag in the trailing block. A post that ships without it is non-compliant — reject and fix before publish.
+    </div>
+  </div>
+
+  <div class="exempt">
+    <div class="e req"><b>Required</b>Instagram · TikTok · Threads · X · Pinterest · Facebook · LinkedIn · YouTube (Shorts + long-form descriptions) · any third-party scheduler posting to those</div>
+    <div class="e skip"><b>Exempt — do NOT inject</b>Gmail · SMS · blog body on ryan-realty.com · broker email signatures · FUB lead-nurture emails</div>
+  </div>
+
+  <div class="label-eyebrow" style="margin-top:18px;margin-bottom:8px">Unicode glyphs in use</div>
+  <div class="glyphs">
+    <div class="glyph"><div class="ch">·</div><div class="lbl"><b>Middle dot</b>U+00B7 — place separator, metadata, signage</div></div>
+    <div class="glyph"><div class="ch">—</div><div class="lbl"><b>Em dash</b>U+2014 — unavailable values only (banned as punctuation)</div></div>
+    <div class="glyph"><div class="ch">→</div><div class="lbl"><b>Right arrow</b>U+2192 — on CTA buttons: "Browse listings →"</div></div>
+    <div class="glyph"><div class="ch">↑</div><div class="lbl"><b>YoY arrow</b>U+2191 / U+2193 — "↑ 2.1% YoY"</div></div>
+  </div>
+</div></body></html>

@@ -1,12 +1,71 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Brand colors</title><link rel="stylesheet" href="_card.css"></head>
+<!doctype html><html><head><meta charset="utf-8"><title>Brand colors</title><link rel="stylesheet" href="_card.css">
+<style>
+  .palette { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .palette .swatch .chip { height: 140px; display: flex; align-items: flex-end; justify-content: space-between; padding: 14px; box-sizing: border-box; }
+  .palette .swatch .chip .hex { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; opacity: 0.85; }
+  .palette .swatch .chip .tok { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; opacity: 0.85; }
+  .palette .swatch .meta { padding: 12px 14px; }
+  .palette .swatch .meta b { font-size: 14px; }
+  .palette .swatch .meta span { font-size: 11px; }
+  .retired { background: #fbfaf7; border: 1px dashed rgba(16,39,66,0.18); border-radius: 12px; padding: 14px 16px; margin-top: 8px; }
+  .retired-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+  .retired-grid .ret { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid rgba(16,39,66,0.08); }
+  .retired-grid .swatch-mini { width: 28px; height: 28px; border-radius: 6px; position: relative; overflow: hidden; flex: none; }
+  .retired-grid .swatch-mini::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 47%, rgba(220,40,40,0.85) 47% 53%, transparent 53%); }
+  .retired-grid .ret-meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted-foreground); line-height: 1.35; }
+  .retired-grid .ret-meta b { display: block; font-family: var(--font-sans); font-size: 11.5px; font-weight: 600; color: var(--foreground); }
+  .util-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+  .util-row .util { padding: 10px 12px; border: 1px solid rgba(16,39,66,0.08); border-radius: 8px; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted-foreground); }
+  .util-row .util b { display: block; font-family: var(--font-sans); font-size: 11.5px; font-weight: 600; color: var(--foreground); margin-bottom: 2px; }
+  .heading-note { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; gap: 12px; }
+  .heading-note .lock { font-family: var(--font-mono); font-size: 10px; color: var(--muted-foreground); letter-spacing: 0.04em; text-transform: uppercase; }
+</style>
+</head>
 <body><div class="card-root">
-  <div class="label-eyebrow" style="margin-bottom:10px">Brand core</div>
-  <div class="grid-4">
-    <div class="swatch"><div class="chip" style="background:#102742"></div><div class="meta"><b>Navy</b>#102742<span>primary</span></div></div>
-    <div class="swatch"><div class="chip" style="background:#0a1a2e"></div><div class="meta"><b>Navy deep</b>#0a1a2e<span>hover / pressed</span></div></div>
-    <div class="swatch"><div class="chip" style="background:#faf8f4;border-right:1px solid var(--border)"></div><div class="meta"><b>Cream</b>#faf8f4<span>warm surface</span></div></div>
-    <div class="swatch"><div class="chip" style="background:#e8e2d4"></div><div class="meta"><b>Sand</b>#e8e2d4<span>stone neutral</span></div></div>
-    <div class="swatch"><div class="chip" style="background:#2e4a3a"></div><div class="meta"><b>Fir</b>#2e4a3a<span>forest accent</span></div></div>
-    <div class="swatch"><div class="chip" style="background:#8fb8d4"></div><div class="meta"><b>Sky</b>#8fb8d4<span>Deschutes accent</span></div></div>
+  <div class="heading-note">
+    <div class="label-eyebrow">Brand core — two colors</div>
+    <div class="lock">Locked 2026-05-13 · Matt's directive</div>
+  </div>
+  <div class="palette">
+    <div class="swatch">
+      <div class="chip" style="background:#102742;color:#faf8f4">
+        <span class="tok">--rr-navy</span><span class="hex">#102742</span>
+      </div>
+      <div class="meta"><b>Navy</b><span>Primary brand color. Logo, CTAs, headlines, focus intent, end-card backgrounds. oklch(0.270 0.058 253.912).</span></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:#faf8f4;color:#102742;border-bottom:1px solid rgba(16,39,66,0.08)">
+        <span class="tok">--rr-cream</span><span class="hex">#faf8f4</span>
+      </div>
+      <div class="meta"><b>Cream</b><span>Primary background. Warm off-white for flyers, IG carousels, all heritage moments, light UI surfaces.</span></div>
+    </div>
+  </div>
+
+  <div class="retired">
+    <div class="label-eyebrow" style="color:#a4513a">Retired — do not reintroduce</div>
+    <div class="retired-grid">
+      <div class="ret">
+        <div class="swatch-mini" style="background:#0a1a2e"></div>
+        <div class="ret-meta"><b>Navy deep</b>#0a1a2e → rgba(16,39,66,0.85)</div>
+      </div>
+      <div class="ret">
+        <div class="swatch-mini" style="background:#e8e2d4"></div>
+        <div class="ret-meta"><b>Sand</b>#e8e2d4 → rgba(16,39,66,0.08) borders</div>
+      </div>
+      <div class="ret">
+        <div class="swatch-mini" style="background:#2e4a3a"></div>
+        <div class="ret-meta"><b>Fir</b>#2e4a3a → gone</div>
+      </div>
+      <div class="ret">
+        <div class="swatch-mini" style="background:#8fb8d4"></div>
+        <div class="ret-meta"><b>Sky</b>#8fb8d4 → gone</div>
+      </div>
+    </div>
+    <div class="util-row">
+      <div class="util"><b>White</b>#FFFFFF — text-on-photo legibility only</div>
+      <div class="util"><b>Black</b>#000000 — scrim layers only</div>
+      <div class="util"><b>Hover/pressed</b>rgba(16,39,66,0.85)</div>
+      <div class="util"><b>Border/divider</b>rgba(16,39,66,0.08)</div>
+    </div>
   </div>
 </div></body></html>

@@ -22,11 +22,12 @@ Both live here as one system because they already share a designer's intent: **w
 ## Index
 
 - `README.md` — this file
-- `SKILL.md` — portable skill manifest
+- `SKILL.md` — portable skill manifest (load this first when generating content)
 - `colors_and_type.css` — all CSS vars (brand + semantic tokens + three type families + spacing + radii + shadows)
 - `fonts/` — **Amboqia_Boriango.otf** (primary display), **AzoSans-Medium.ttf** (accent)
 - `assets/` — web platform essentials (favicon, hero photo, team photo, partner marks)
 - `assets/brand/` — heritage brand kit (mascot, 14 numbered wordmarks, illustrations, tagline lockup, yard sign, postcard, IG highlights, scene illustrations)
+- `assets/team/` — **3 broker headshots** (Matt Ryan, Paul Stevenson, Rebecca Peterson) — 800×1200 transparent PNG, head height + alignment normalized
 - `preview/` — HTML cards for each token/concept (rendered in the Design System tab)
 - `ui_kits/website/` — interactive homepage replica of the Ryan Realty consumer site
 
@@ -129,12 +130,25 @@ Never. Not in marketing, not in UI, not in copy.
 
 ## VISUAL FOUNDATIONS
 
-### Color
-- **Brand primary:** Ryan Realty navy **`#102742`** (`oklch(0.270 0.058 253.912)`). The heritage illustrations ship as this exact navy; the web tokens inherit it. All CTAs, logo fills, focus intent.
-- **Neutral base = warm stone.** `#faf8f4` (cream) backgrounds on heritage marketing; warm stone greys on the website. Never cool/blue grey.
-- **Accents:** Fir green `#2e4a3a` (Central Oregon forest), Sky `#8fb8d4` (Deschutes).
-- **Semantic:** success (green), warning (amber), destructive (red). Used only in UI contexts.
-- **Chart ramp:** five-step blue from pale to brand navy. Used in the market-pulse charts.
+### Color — LOCKED 2026-05-13: two-color palette
+
+| Token | Hex | Use |
+|---|---|---|
+| `--rr-navy` | `#102742` (`oklch(0.270 0.058 253.912)`) | Primary brand color. Logo, CTAs, headlines, focus intent, end-card backgrounds. |
+| `--rr-cream` | `#faf8f4` | Warm off-white — primary background for cream surfaces (flyers, IG carousels, heritage moments). |
+
+**Retired 2026-05-13 by Matt's directive — never reintroduce:**
+
+- `--rr-navy-deep` (was `#0a1a2e` hover/pressed) → use `rgba(16,39,66,0.85)`
+- `--rr-sand` (was `#e8e2d4` stone neutral) → use `rgba(16,39,66,0.08)` for borders/dividers
+- `--rr-fir` (was `#2e4a3a` forest accent) → gone, no replacement
+- `--rr-sky` (was `#8fb8d4` Deschutes accent) → gone, no replacement
+- **Gold** (`#D4AF37` news + `#C8A864` listing reels) → retired; new renders are navy-on-cream
+
+Utility: white `#FFFFFF` and pure black `#000000` allowed for text-on-photo legibility and scrim layers only. Off-brand hex codes still banned.
+
+- **Semantic:** success (green), warning (amber), destructive (red). UI contexts only.
+- **Chart ramp:** five-step monochromatic blue from pale to brand navy. Used in market-pulse charts.
 - **No decorative gradients.** The only gradient is the navy protection overlay on the hero image.
 - **Heritage illustrations are monochrome navy** on cream or white. Do not tint them another color.
 
@@ -235,6 +249,40 @@ Never.
 - **Geist** loaded via Google Fonts here mirrors `next/font/geist` in production. No visual difference.
 - **Amboqia Boriango, Azo Sans** are bundled from the Rise Wise kit — no substitution.
 - CSS fallbacks: Amboqia → Playfair Display / Didot / Georgia. Azo Sans → Geist. Flag any fallback to the user as a visible downgrade on print collateral.
+
+---
+
+## Brokers (3 active)
+
+Full bios + headshots at `assets/team/`. Source of truth for the broker roster across web, social, video, print.
+
+| Slug | Name | Title | Phone | Email |
+|---|---|---|---|---|
+| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (FUB-tracked bio) | matt@ryan-realty.com |
+| `paul-stevenson` | Paul Stevenson | Broker | `541.977.6841` | — |
+| `rebecca-ryser-peterson` | Rebecca Ryser Peterson | Broker | `415.308.9087` | — |
+
+**Brand-voice phone:** `541.213.6706` (Matt direct — the yard sign number). Use this on signage, video VO, and signature heritage moments. Use the **bio / FUB-tracked phone** (`541.703.3095`) on social profiles, ads, and any lead-capture surface so calls route through Follow Up Boss for attribution.
+
+Files: `matt-ryan.png` / `paul-stevenson.png` / `rebecca-peterson.png` (transparent, default) and `.jpg` (white bg, legacy). 800×1200 · 552px head height · 20px top whitespace · face horizontally centered. Web mirror at `public/images/brokers/`.
+
+**Listing-agent rule.** Every per-listing deliverable (flyer / carousel / listing-tour-video end card / blog byline / lead-gen ad / email) includes the **listing agent's** headshot — resolve from the Supabase `listings` row (`ListAgentEmail`, `ListAgentFullName`) to one of the three brokers above. For brand-led content (market reports, news clips, memes, neighborhood guides), the brokerage speaks — omit the headshot and use **Jax** (`assets/brand/blue-dog.png`) instead.
+
+**Composite rule.** Never fake a rectangular frame behind the portrait. The transparent edge IS the composition.
+
+---
+
+## How the content engine uses this kit
+
+This design system is the **mandate-load** for every producer in the marketing brain. When a producer in `marketing_brain_skills/producers/` picks up an action row from `marketing_brain_actions`, it loads:
+
+1. **This kit's `SKILL.md`** — the visual brand spec (colors, type, layout, motion, asset paths)
+2. **`marketing_brain_skills/brand-voice/voice_guidelines.md`** — voice + banned vocabulary (regex'd before publish)
+3. **`social_media_skills/platform-best-practices/SKILL.md`** — 2026 platform rule layer
+
+That means **whatever lands here, every producer sees on the next run.** Edit one swatch or banned word, and every listing reel + flyer + IG carousel + GBP reply + email blast picks it up automatically.
+
+See the *Content engine map* preview card for the per-action-type pull list.
 
 ---
 

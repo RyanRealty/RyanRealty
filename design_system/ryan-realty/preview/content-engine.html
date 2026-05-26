@@ -1,0 +1,204 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Content engine map</title><link rel="stylesheet" href="_card.css">
+<style>
+  .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .head .lock { font-family: var(--font-mono); font-size: 10px; color: var(--muted-foreground); letter-spacing: 0.04em; text-transform: uppercase; }
+  .intro { font-size: 13px; line-height: 1.6; color: var(--foreground); margin-bottom: 22px; max-width: 88ch; }
+  .intro b { color: var(--rr-navy); }
+  .intro code { font-family: var(--font-mono); font-size: 12px; background: var(--rr-cream); padding: 1px 5px; border-radius: 4px; color: var(--rr-navy); }
+
+  /* Flow diagram */
+  .flow { display: grid; grid-template-columns: 1fr 24px 1fr 24px 1fr; align-items: stretch; gap: 0; margin-bottom: 24px; }
+  .node { background: #fff; border: 1px solid rgba(16,39,66,0.12); border-radius: var(--radius-xl); padding: 14px 16px; position: relative; }
+  .node.dark { background: var(--rr-navy); color: var(--rr-cream); border-color: var(--rr-navy); }
+  .node .step { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--muted-foreground); text-transform: uppercase; margin-bottom: 6px; }
+  .node.dark .step { color: rgba(250,248,244,0.55); }
+  .node .ttl { font-family: var(--font-sans); font-size: 14px; font-weight: 700; color: var(--rr-navy); margin-bottom: 6px; letter-spacing: -0.005em; }
+  .node.dark .ttl { color: var(--rr-cream); }
+  .node .desc { font-size: 11.5px; line-height: 1.45; color: var(--foreground); }
+  .node.dark .desc { color: rgba(250,248,244,0.78); }
+  .node ul { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-direction: column; gap: 3px; }
+  .node ul li { font-family: var(--font-mono); font-size: 10.5px; color: var(--rr-navy); }
+  .node.dark ul li { color: rgba(250,248,244,0.85); }
+  .arrow { display: flex; align-items: center; justify-content: center; font-family: var(--font-sans); font-size: 18px; color: rgba(16,39,66,0.4); font-weight: 700; }
+
+  /* Action-type matrix */
+  .matrix-label { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .matrix-label .ttl { font-family: var(--font-sans); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-foreground); font-weight: 600; }
+  .matrix-label .sub { font-family: var(--font-sans); font-size: 11.5px; color: var(--muted-foreground); }
+  .matrix { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-xl); overflow: hidden; margin-bottom: 24px; }
+  .matrix table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .matrix th, .matrix td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(16,39,66,0.06); vertical-align: top; line-height: 1.4; }
+  .matrix tr:last-child td { border-bottom: none; }
+  .matrix th { background: var(--rr-cream); font-family: var(--font-sans); font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground); }
+  .matrix .at { font-family: var(--font-mono); font-size: 11px; color: var(--rr-navy); white-space: nowrap; }
+  .matrix .pulls { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted-foreground); line-height: 1.5; }
+  .matrix .pulls b { color: var(--rr-navy); font-family: var(--font-sans); font-size: 11px; font-weight: 600; display: block; margin-bottom: 1px; }
+  .matrix .surface { font-size: 12px; color: var(--foreground); }
+  .pill { display: inline-block; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); font-size: 10px; }
+  .pill.heritage { background: rgba(16,39,66,0.08); color: var(--rr-navy); }
+  .pill.web { background: rgba(46,125,58,0.08); color: #2e5d2a; }
+
+  /* Quick-pull table */
+  .quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .quick .card { background: var(--rr-cream); border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-xl); padding: 14px 16px; }
+  .quick .card .q { font-family: var(--font-sans); font-size: 12.5px; font-weight: 600; color: var(--rr-navy); margin-bottom: 6px; line-height: 1.35; }
+  .quick .card .a { font-family: var(--font-mono); font-size: 11px; color: var(--foreground); line-height: 1.55; }
+  .quick .card .a code { background: #fff; padding: 1px 5px; border-radius: 3px; color: var(--rr-navy); }
+</style>
+</head>
+<body><div class="card-root">
+  <div class="head">
+    <div class="label-eyebrow">Content engine — how this design system plugs in</div>
+    <div class="lock">marketing_brain_actions → producer → publish</div>
+  </div>
+
+  <div class="intro">
+    Every producer in the content engine is mandate-loaded with <b>two skills</b> before it generates: <code>design_system/ryan-realty/SKILL.md</code> (this kit) and <code>marketing_brain_skills/brand-voice/voice_guidelines.md</code>. <b>Whatever lands here, the producers see.</b> That's the leverage — change one swatch or banned word here, every listing reel + flyer + IG carousel + GBP reply + email blast picks it up on the next run.
+  </div>
+
+  <div class="flow">
+    <div class="node">
+      <div class="step">01 · Signal</div>
+      <div class="ttl">Audit → action row</div>
+      <div class="desc">Brain audits (ads, CRM, website, MLS) emit rows into <code>marketing_brain_actions</code> with an action_type like <code>content:listing_reel</code> or <code>content:flyer</code>.</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node dark">
+      <div class="step">02 · Dispatch</div>
+      <div class="ttl">Producer picks up + loads brand</div>
+      <div class="desc">Producer reads its <code>SKILL.md</code>, then mandate-loads:</div>
+      <ul>
+        <li>· this design system</li>
+        <li>· voice_guidelines.md</li>
+        <li>· platform-best-practices.md</li>
+      </ul>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node">
+      <div class="step">03 · Draft → review → publish</div>
+      <div class="ttl">Quality gate + scorecard</div>
+      <div class="desc">Banned-word grep clean. All numbers traced. Scorecard ≥ format minimum. Matt approves. Then commit + publish — never before.</div>
+    </div>
+  </div>
+
+  <div class="matrix-label">
+    <span class="ttl">Action-type → what producers pull from here</span>
+    <span class="sub">Edit a row here, every matching producer picks up the change</span>
+  </div>
+  <div class="matrix">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:24%">action_type</th>
+          <th style="width:32%">Surface</th>
+          <th style="width:44%">Pulls from this design system</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="at">content:listing_reel</td>
+          <td class="surface"><span class="pill heritage">heritage</span> Listing tour video for IG / TikTok / YT Shorts</td>
+          <td class="pulls">
+            <b>Colors</b> Navy footer bar · cream text scrim<br>
+            <b>Type</b> Amboqia overlays · Geist captions<br>
+            <b>Asset</b> Listing agent's headshot (transparent PNG) · logo-blue.png in footer bar<br>
+            <b>Voice</b> Address · price · 3 specifics · #RyanRealtyBend
+          </td>
+        </tr>
+        <tr>
+          <td class="at">content:flyer</td>
+          <td class="surface"><span class="pill heritage">heritage</span> Print flyer + door-hanger + open-house leave-behind</td>
+          <td class="pulls">
+            <b>Asset</b> illustration-05.png · listing agent headshot · scene illustration<br>
+            <b>Type</b> Amboqia headline · Geist body · tabular-nums on price + sqft<br>
+            <b>Facts</b> Brand-voice phone (541.213.6706) · ryan-realty.com · BEND · OREGON
+          </td>
+        </tr>
+        <tr>
+          <td class="at">content:carousel</td>
+          <td class="surface"><span class="pill heritage">heritage</span> IG / FB / LinkedIn carousel (10 slides)</td>
+          <td class="pulls">
+            <b>Layout</b> Cream slide bg · navy type · 25% padding inside Amboqia frames<br>
+            <b>Asset</b> Jax (blue-dog.png) on cover · listing agent on last slide<br>
+            <b>Voice</b> Caption opens with one stat · #RyanRealtyBend first in trailing block
+          </td>
+        </tr>
+        <tr>
+          <td class="at">content:blog_post</td>
+          <td class="surface"><span class="pill web">web</span> 1,500–2,500 word piece on ryan-realty.com</td>
+          <td class="pulls">
+            <b>Type</b> Geist body 16px · Amboqia H1 (Title Case) · sentence-case H2/H3<br>
+            <b>Voice</b> Every claim sourced · every term defined · banned-word grep clean<br>
+            <b>Layout</b> max-w-7xl · py-12 sections · gap-6
+          </td>
+        </tr>
+        <tr>
+          <td class="at">content:gbp_reply / ops:reputation</td>
+          <td class="surface"><span class="pill web">web</span> Google Business Profile review responses</td>
+          <td class="pulls">
+            <b>Voice</b> Matt's canonical phrases (opening · acknowledge · close)<br>
+            <b>POV</b> "We" + "our team" · never "I" unless first-person · client is the subject<br>
+            <b>Tone</b> "It was genuinely a pleasure…" / "Honored to…"
+          </td>
+        </tr>
+        <tr>
+          <td class="at">content:news_clip / content:market_report</td>
+          <td class="surface"><span class="pill heritage">heritage</span> Vertical short-form market data video</td>
+          <td class="pulls">
+            <b>Colors</b> Navy · cream (no gold — retired)<br>
+            <b>Asset</b> Jax over the wordmark (brand speaks — no individual broker)<br>
+            <b>Voice</b> Verified trace per figure · "↑ 2.1% YoY" arrow grammar
+          </td>
+        </tr>
+        <tr>
+          <td class="at">site:copy_update / site:page_create</td>
+          <td class="surface"><span class="pill web">web</span> Pages under <code>app/</code> in the Next.js site</td>
+          <td class="pulls">
+            <b>Tokens</b> Inherits app/globals.css · ring is warm-stone, never navy<br>
+            <b>Type</b> Geist UI · Amboqia for hero H1 only<br>
+            <b>Voice</b> Sentence-case headings · "you/your" subject · tabular numerals
+          </td>
+        </tr>
+        <tr>
+          <td class="at">ops:email_send</td>
+          <td class="surface"><span class="pill web">web</span> Lead nurture / open-house follow-up / market-pulse email</td>
+          <td class="pulls">
+            <b>Header</b> email-banner.png (heritage) OR hero-old-mill-banner (cinematic)<br>
+            <b>Voice</b> Plain text style · subject under 60 chars · one CTA<br>
+            <b>Exempt</b> from #RyanRealtyBend — emails skip the hashtag rule
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="matrix-label">
+    <span class="ttl">Quick-pull index — the questions producers ask most</span>
+  </div>
+  <div class="quick">
+    <div class="card">
+      <div class="q">Which phone goes here?</div>
+      <div class="a">Lead-capture surface (social bio, ad, landing form) → <code>541.703.3095</code> (FUB-tracked).<br><br>Brand voice (yard sign, signature line, video VO, GBP reply) → <code>541.213.6706</code>.</div>
+    </div>
+    <div class="card">
+      <div class="q">Which headshot goes here?</div>
+      <div class="a">Per-listing deliverable → listing agent's headshot (resolve from Supabase <code>ListAgentEmail</code>).<br><br>Brand-led content (market, news, memes) → omit · use Jax (<code>blue-dog.png</code>).</div>
+    </div>
+    <div class="card">
+      <div class="q">Heritage or web register?</div>
+      <div class="a">Print · sign · IG · postcard · listing video · email banner → <span class="pill heritage">heritage</span><br><br>Homepage · search · dashboard · form · blog → <span class="pill web">web</span></div>
+    </div>
+    <div class="card">
+      <div class="q">Hero photo?</div>
+      <div class="a">Default: <code>assets/hero/hero-old-mill-master-4k.jpg</code>.<br><br>Pre-cropped per-platform variants in same folder.</div>
+    </div>
+    <div class="card">
+      <div class="q">Logo variant?</div>
+      <div class="a">Heritage print · sign · postcard → <code>brand/logo-blue.png</code><br><br>Web header on cream → <code>assets/logo.png</code><br><br>Reversed on navy → <code>logo-header-white.png</code></div>
+    </div>
+    <div class="card">
+      <div class="q">Voice ship-blocker?</div>
+      <div class="a">Em-dash · semicolon · <code>!</code> · emoji · any banned word · any unsourced stat · any "guaranteed" outcome → reject and fix before publish.</div>
+    </div>
+  </div>
+</div></body></html>

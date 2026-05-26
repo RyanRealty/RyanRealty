@@ -1,11 +1,13 @@
 ---
 name: ryan-realty
-description: Ryan Realty brand system — Bend, Oregon real estate. Two registers — heritage Americana (blue lab mascot "Jax", navy engraving-style illustrations, "It's About Relationships" tagline, yard signs/postcards) and modern web (shadcn/ui radix-nova + Geist + navy #102742 primary on warm stone). Amboqia Boriango is the primary display face. Plainspoken local voice, tabular numerals, Heroicons 2px stroke, documentary Central Oregon photography, no emoji.
+description: Ryan Realty brand system — Bend, Oregon real estate. Two registers — heritage Americana (blue lab mascot "Jax", navy engraving-style illustrations, "It's About Relationships" tagline, yard signs/postcards) and modern web (shadcn/ui radix-nova + Geist + navy #102742 primary on warm stone). Amboqia Boriango is the primary display face. Plainspoken local voice, tabular numerals, Heroicons 2px stroke, documentary Central Oregon photography, no emoji. Three brokers — Matt Ryan (Principal), Paul Stevenson, Rebecca Peterson.
 ---
 
 # Ryan Realty — Brand Skill
 
-Use this skill when designing any artifact for **Ryan Realty**, a Bend, Oregon real estate brokerage serving Central Oregon. **Tagline: "It's About Relationships."** Phone: `541.213.6706`. Web: `ryan-realty.com`.
+Use this skill when designing any artifact for **Ryan Realty**, a Bend, Oregon real estate brokerage serving Central Oregon. **Tagline: "It's About Relationships."** Brand-voice phone: `541.213.6706` (Matt direct, yard sign). Bio / FUB-tracked phone: `541.703.3095` (use on social profiles + ads + lead-capture). Web: `ryan-realty.com`. Mascot: **Jax** the blue lab.
+
+**Locked palette (2026-05-13):** navy `#102742` + cream `#faf8f4`. The previous accents — navy-deep, sand, fir, sky, gold — are retired and must not be reintroduced.
 
 ## Two registers — pick one
 
@@ -21,6 +23,18 @@ Don't mix the two on the same surface. A web page may include a heritage hero or
 1. Link `colors_and_type.css` — defines every color/type/radius/shadow/spacing variable.
 2. Load brand fonts from `fonts/`: **Amboqia_Boriango.otf** (primary display), **AzoSans-Medium.ttf** (accent). Geist loads via Google Fonts.
 3. Pull imagery from `assets/` (web: hero-poster, team, partner marks) and `assets/brand/` (heritage: mascot, wordmarks, illustrations, scenes, yard sign, postcard).
+
+## Brokers (3 active)
+
+Headshots live at `assets/team/{slug}.png` (transparent, default) and `.jpg` (white bg, legacy). 800×1200 · normalized head height + alignment.
+
+| Slug | Name | Title | Phone | Email |
+|---|---|---|---|---|
+| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (bio/FUB) | matt@ryan-realty.com |
+| `paul-stevenson` | Paul Stevenson | Broker | `541.977.6841` | — |
+| `rebecca-ryser-peterson` | Rebecca Ryser Peterson | Broker | `415.308.9087` | — |
+
+**Listing-agent rule.** On any per-listing deliverable, include the listing agent's headshot. The listing's broker is in the Supabase `listings` row (`ListAgentEmail` / `ListAgentFullName` — resolve to one of the three above). For brand-led content (market reports, news, memes, neighborhood guides), drop the headshot and use Jax (`assets/brand/blue-dog.png`) instead. Never fake a rectangular frame behind a transparent portrait.
 
 ## Voice
 
@@ -45,7 +59,8 @@ Let what we say create the tone. **Never describe the tone overtly.** Warmth, tr
 - **Tagline "It's About Relationships."** is a signature line — with the wordmark, not sprinkled in body copy.
 - **Extended promise:** *"Building community through authentic relationships and exceptional customer service."* — verbatim.
 - **Mantras:** *"Love where you live."* · *"Local Expertise."* · *"Quality · Local · Service."*
-- **Phone:** `541.213.6706` (dotted). **URL:** `ryan-realty.com`.
+- **Phone:** brand-voice `541.213.6706` (Matt direct — yard sign, signage, video VO) · bio/FUB-tracked `541.703.3095` (social profiles, ads, lead-capture).
+- **URL:** `ryan-realty.com`. **Social:** `@ryanrealtybend` on every platform (IG, TikTok, Threads, YouTube, X, Pinterest), `/ryanrealtybend` on FB + LinkedIn. **Hashtag:** every caption on a hashtag-supporting platform includes `#RyanRealtyBend` as the first hashtag in the trailing block.
 - **Sentence case** for web headings; Title Case only for the hero H1.
 - **"You/your"** is the subject. **"We/our team"** when the broker identity matters. **Never "I".**
 - **Tabular numerals** for every price, count, day range. Round. Unavailable → em-dash `—`.
@@ -81,8 +96,7 @@ Let what we say create the tone. **Never describe the tone overtly.** Warmth, tr
 - **Mascot alone:** `assets/brand/blue-dog.png` · `white-dog.png`.
 - **Scene illustrations:** `assets/brand/scene-tower.png` (Tower Theater marquee) · `scene-water-pageant.png` (historic downtown).
 - **Web wordmark:** `assets/logo.png` (navy on cream) · `logo-header-white.png` (reversed on navy).
-- **CANONICAL BRAND HERO (LOCKED 2026-05-13):** `assets/hero/hero-old-mill-master-4k.jpg` (1920×1080 F1 frame of iStock Old Mill drone — three smokestacks, American flag, Deschutes River with floaters, Cascade mountains). **Use for any design surface needing a banner / cover / header / hero photo.** Pre-cropped at every social-platform aspect lives in the same folder. See `assets/hero/README.md` for usage rules + regeneration commands.
-- **Legacy site hero:** `assets/hero-poster.webp` (Deschutes aerial) — being phased out in favor of the F1 master above.
+- **Hero photography:** `assets/hero-poster.webp` (Deschutes aerial).
 
 ## What not to do
 

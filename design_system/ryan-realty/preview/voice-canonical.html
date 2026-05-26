@@ -1,0 +1,143 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Canonical phrases</title><link rel="stylesheet" href="_card.css">
+<style>
+  .head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; gap: 12px; }
+  .head .lock { font-family: var(--font-mono); font-size: 10px; color: var(--muted-foreground); letter-spacing: 0.04em; text-transform: uppercase; }
+  .intro { font-size: 13px; color: var(--foreground); line-height: 1.55; margin-bottom: 18px; }
+  .intro b { color: var(--rr-navy); }
+
+  .top { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .signature-block {
+    background: var(--rr-cream);
+    border-radius: var(--radius-xl);
+    padding: 22px 26px;
+    border: 1px solid rgba(16,39,66,0.08);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .signature-block .ttl { font-family: var(--font-sans); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-foreground); font-weight: 600; }
+  .signature-block .tag { font-family: var(--font-display); font-size: 32px; line-height: 1.15; color: var(--rr-navy); letter-spacing: -0.01em; }
+  .signature-block .promise { font-family: var(--font-sans); font-size: 13.5px; line-height: 1.5; color: var(--rr-navy); font-weight: 500; }
+  .signature-block .promise em { font-style: normal; font-weight: 700; }
+  .signature-block .note { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); line-height: 1.5; padding-top: 8px; border-top: 1px solid rgba(16,39,66,0.08); }
+
+  .mantras { background: var(--rr-navy); color: var(--rr-cream); border-radius: var(--radius-xl); padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; }
+  .mantras .ttl { font-family: var(--font-sans); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(250,248,244,0.55); font-weight: 600; }
+  .mantras .item { font-family: var(--font-display); font-size: 20px; line-height: 1.2; color: var(--rr-cream); letter-spacing: -0.005em; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 16px; }
+  .section { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-xl); padding: 16px 18px; }
+  .section h3 { font-family: var(--font-sans); font-size: 14px; font-weight: 700; color: var(--rr-navy); margin: 0 0 4px; letter-spacing: -0.005em; }
+  .section .why { font-size: 11px; color: var(--muted-foreground); margin-bottom: 12px; line-height: 1.45; }
+  .section ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 7px; }
+  .section li { padding: 8px 12px; background: var(--rr-cream); border-radius: 8px; font-size: 13px; line-height: 1.45; color: var(--rr-navy); border-left: 2px solid rgba(16,39,66,0.18); }
+  .section li::before { content: "" "; font-family: var(--font-display); color: rgba(16,39,66,0.35); }
+  .section li::after { content: "" "; font-family: var(--font-display); color: rgba(16,39,66,0.35); }
+
+  .favorites { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-xl); padding: 16px 18px; margin-bottom: 16px; }
+  .favorites h3 { font-family: var(--font-sans); font-size: 14px; font-weight: 700; color: var(--rr-navy); margin: 0 0 4px; }
+  .favorites .why { font-size: 11px; color: var(--muted-foreground); margin-bottom: 12px; }
+  .favorite-words { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fav { font-family: var(--font-mono); font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--rr-cream); color: var(--rr-navy); border: 1px solid rgba(16,39,66,0.08); }
+
+  .persona { background: var(--rr-cream); border-radius: var(--radius-xl); padding: 18px 22px; border-left: 4px solid var(--rr-navy); }
+  .persona .ttl { font-family: var(--font-sans); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-foreground); font-weight: 600; margin-bottom: 6px; }
+  .persona h3 { font-family: var(--font-display); font-size: 22px; font-weight: 400; color: var(--rr-navy); margin: 0 0 8px; letter-spacing: -0.005em; }
+  .persona p { font-size: 12.5px; line-height: 1.55; color: var(--foreground); margin: 0; }
+  .persona p b { color: var(--rr-navy); }
+</style>
+</head>
+<body><div class="card-root">
+  <div class="head">
+    <div class="label-eyebrow">Canonical phrases — lift verbatim</div>
+    <div class="lock">Source: Matt's GBP review corpus + signage</div>
+  </div>
+
+  <div class="intro">
+    Templates drawn from <b>Matt's actual writing</b> — Google Business Profile responses, signage, the heritage lockup. When producers need an opening, an acknowledgement, or a closing, these are the patterns to use. They score highest on fingerprint match against the corpus.
+  </div>
+
+  <div class="top">
+    <div class="signature-block">
+      <div class="ttl">Signature line + extended promise</div>
+      <div class="tag">It's About Relationships.</div>
+      <div class="promise">
+        <em>Building community through authentic relationships and exceptional customer service.</em>
+      </div>
+      <div class="note">Use the tagline with the wordmark on heritage marketing — not as filler in body copy. Use the extended promise verbatim on the yard sign and heritage signage. Don't paraphrase either.</div>
+    </div>
+
+    <div class="mantras">
+      <div class="ttl">Mantras — short stamps</div>
+      <div class="item">Love where you live.</div>
+      <div class="item">Local Expertise.</div>
+      <div class="item">Quality · Local · Service.</div>
+      <div class="item">Your local team.</div>
+      <div class="item">Honest guidance.</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="section">
+      <h3>Openings</h3>
+      <div class="why">For GBP replies, thank-you emails, post-close follow-ups.</div>
+      <ul>
+        <li>Thank you so much for taking the time to…</li>
+        <li>[Name], thank you for…</li>
+        <li>This genuinely made my day.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>Acknowledging the client</h3>
+      <div class="why">For testimonials, replies, anywhere the client is the subject.</div>
+      <ul>
+        <li>It was genuinely a pleasure working with you.</li>
+        <li>You were a great client to work with because [specific reason].</li>
+        <li>That kind of trust makes all the difference.</li>
+        <li>It means a lot to me and to our team.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>Positioning Ryan Realty</h3>
+      <div class="why">For about copy, broker bios, "why us" moments.</div>
+      <ul>
+        <li>A small business like ours.</li>
+        <li>Honored to…</li>
+        <li>Privilege to…</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>Closings</h3>
+      <div class="why">For email sign-offs, post-close touches, testimonials.</div>
+      <ul>
+        <li>I'm always here if you need anything down the road.</li>
+        <li>Wishing you all the best in your new chapter.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="favorites">
+    <h3>Words to favor in Matt's voice</h3>
+    <div class="why">High-frequency vocabulary across the GBP corpus. Use these when reaching for the right word.</div>
+    <div class="favorite-words">
+      <span class="fav">genuinely</span>
+      <span class="fav">honored</span>
+      <span class="fav">privilege</span>
+      <span class="fav">small business like ours</span>
+      <span class="fav">trust</span>
+      <span class="fav">chapter</span>
+      <span class="fav">the finish line</span>
+      <span class="fav">the unpredictable market</span>
+      <span class="fav">without the high pressure</span>
+    </div>
+  </div>
+
+  <div class="persona">
+    <div class="ttl">Reference seller persona</div>
+    <h3>The out-of-state owner selling Bend.</h3>
+    <p>
+      Default reader for seller-aimed content unless another audience is named. <b>Geographically remote</b>, needs someone they trust to physically handle the property. Earned by <b>weekly updates, on-site repair checks, same-day responsiveness</b>. Drawn from the review corpus — SwankHQ, Jim Creekmore, Stephen Graham, samuel hay, Audra Hedberg. Write to this reader by default. Full persona in <code style="font-family:var(--font-mono);font-size:11px">voice_guidelines.md §9</code>.
+    </p>
+  </div>
+</div></body></html>

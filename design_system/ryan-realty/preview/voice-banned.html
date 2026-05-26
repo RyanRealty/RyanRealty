@@ -1,0 +1,120 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Banned vocabulary</title><link rel="stylesheet" href="_card.css">
+<style>
+  .head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; gap: 12px; }
+  .head .lock { font-family: var(--font-mono); font-size: 10px; color: var(--muted-foreground); letter-spacing: 0.04em; text-transform: uppercase; }
+  .alert { background: #fdf6f3; border-left: 3px solid #a4513a; border-radius: 6px; padding: 12px 16px; margin-bottom: 18px; font-size: 12.5px; line-height: 1.55; color: #5a3a2d; }
+  .alert b { color: #a4513a; }
+  .group { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-xl); padding: 16px 18px; margin-bottom: 14px; }
+  .group .label { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .group .label .ttl { font-family: var(--font-sans); font-size: 14px; font-weight: 700; color: var(--rr-navy); letter-spacing: -0.005em; }
+  .group .label .why { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted-foreground); }
+  .words { display: flex; flex-wrap: wrap; gap: 6px; }
+  .word { font-family: var(--font-mono); font-size: 11.5px; padding: 3px 9px; border-radius: 999px; background: #fbf2ee; color: #6b3a2a; text-decoration: line-through; text-decoration-color: rgba(164,81,58,0.55); text-decoration-thickness: 1px; }
+  .punct { font-family: var(--font-mono); font-size: 13px; padding: 4px 12px; background: #fbf2ee; color: #6b3a2a; border-radius: 6px; text-decoration: line-through; text-decoration-color: rgba(164,81,58,0.55); text-decoration-thickness: 1.5px; }
+
+  .phrases { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .phrase { font-family: var(--font-sans); font-size: 11.5px; padding: 7px 10px; background: #fbf2ee; color: #6b3a2a; border-radius: 6px; line-height: 1.35; }
+  .phrase .strike { text-decoration: line-through; text-decoration-color: rgba(164,81,58,0.5); text-decoration-thickness: 1px; }
+
+  .tropes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .trope { padding: 9px 12px; background: #fbf2ee; border-radius: 6px; font-size: 11.5px; line-height: 1.45; color: #5a3a2d; }
+  .trope b { color: #a4513a; display: block; margin-bottom: 2px; font-size: 11px; }
+
+  .footer-rule { margin-top: 6px; padding: 14px 16px; background: var(--rr-navy); color: var(--rr-cream); border-radius: var(--radius-xl); font-size: 12.5px; line-height: 1.55; }
+  .footer-rule b { color: #fff; }
+</style>
+</head>
+<body><div class="card-root">
+  <div class="head">
+    <div class="label-eyebrow">Banned vocabulary — hard fails</div>
+    <div class="lock">Ship-blocker · regex'd before publish</div>
+  </div>
+
+  <div class="alert">
+    <b>Layer 1 of voice validation.</b> Any caption, body copy, VO script, on-screen text, blog, email, listing copy, or ad headline that contains any of these stops at validation. No publish. Fix the copy, not the workaround.
+  </div>
+
+  <div class="group">
+    <div class="label"><span class="ttl">Banned punctuation</span><span class="why">Em-dash allowed only as data placeholder for unavailable values</span></div>
+    <div class="words">
+      <span class="punct">—</span>
+      <span class="punct">;</span>
+      <span class="punct">: (dramatic)</span>
+      <span class="punct">!</span>
+    </div>
+    <div style="font-size:11px;color:var(--muted-foreground);margin-top:8px;line-height:1.5">
+      Em dashes in body. Semicolons. Dramatic colons (introducing a punchline). Exclamation marks in body copy. Compound hyphens are fine where standard English requires (single-family, out-of-state, 30-year fixed, first-time buyer).
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="label"><span class="ttl">Real-estate clichés</span><span class="why">Generic emotion words that say nothing specific</span></div>
+    <div class="words">
+      <span class="word">stunning</span><span class="word">nestled</span><span class="word">boasts</span><span class="word">charming</span><span class="word">pristine</span><span class="word">gorgeous</span><span class="word">breathtaking</span><span class="word">must-see</span><span class="word">dream home</span><span class="word">meticulously maintained</span><span class="word">hidden gem</span><span class="word">truly</span><span class="word">spacious</span><span class="word">cozy</span><span class="word">luxurious</span><span class="word">turnkey</span><span class="word">immaculate</span><span class="word">captivating</span><span class="word">exquisite</span><span class="word">entertainer's dream</span><span class="word">tucked away</span><span class="word">updated throughout</span>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="label"><span class="ttl">AI filler</span><span class="why">Vocabulary that signals "written by a model"</span></div>
+    <div class="words">
+      <span class="word">delve</span><span class="word">leverage</span><span class="word">tapestry</span><span class="word">navigate</span><span class="word">robust</span><span class="word">seamless</span><span class="word">comprehensive</span><span class="word">elevate</span><span class="word">unlock</span><span class="word">holistic</span><span class="word">dynamic</span><span class="word">vibrant</span><span class="word">bustling</span><span class="word">eclectic</span><span class="word">curated</span><span class="word">bespoke</span><span class="word">foster</span>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="label"><span class="ttl">Meta-tone — claiming the quality instead of showing it</span><span class="why">Show, don't tell</span></div>
+    <div class="words">
+      <span class="word">passionate</span><span class="word">dedicated</span><span class="word">premier</span><span class="word">luxury</span><span class="word">boutique</span><span class="word">concierge</span><span class="word">white-glove</span>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="label"><span class="ttl">Vague qualifiers — use the real number</span><span class="why">Hedging is forbidden — pull the data instead</span></div>
+    <div class="words">
+      <span class="word">approximately</span><span class="word">roughly</span><span class="word">about</span><span class="word">around</span><span class="word">fairly</span><span class="word">somewhat</span><span class="word">may</span><span class="word">could</span><span class="word">potentially</span>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="label"><span class="ttl">Banned phrases</span><span class="why">Opening hooks, pandering, talking-down, marketing slop, fake urgency</span></div>
+    <div class="phrases">
+      <div class="phrase"><span class="strike">Get ready to fall in love</span></div>
+      <div class="phrase"><span class="strike">You won't believe</span></div>
+      <div class="phrase"><span class="strike">Introducing…</span></div>
+      <div class="phrase"><span class="strike">Stunning new listing</span></div>
+      <div class="phrase"><span class="strike">What a beautiful home</span></div>
+      <div class="phrase"><span class="strike">You have great taste</span></div>
+      <div class="phrase"><span class="strike">Don't worry, we will handle everything</span></div>
+      <div class="phrase"><span class="strike">Let me explain in simple terms</span></div>
+      <div class="phrase"><span class="strike">Top producing</span></div>
+      <div class="phrase"><span class="strike">Top 1 percent</span></div>
+      <div class="phrase"><span class="strike">White glove service</span></div>
+      <div class="phrase"><span class="strike">Luxury concierge</span></div>
+      <div class="phrase"><span class="strike">Premier brokerage</span></div>
+      <div class="phrase"><span class="strike">Exclusive</span></div>
+      <div class="phrase"><span class="strike">Boutique brokerage</span></div>
+      <div class="phrase"><span class="strike">Your real estate journey</span></div>
+      <div class="phrase"><span class="strike">We are passionate about…</span></div>
+      <div class="phrase"><span class="strike">We pride ourselves on…</span></div>
+      <div class="phrase"><span class="strike">Act fast</span></div>
+      <div class="phrase"><span class="strike">Don't miss out</span></div>
+      <div class="phrase"><span class="strike">Won't last long</span></div>
+      <div class="phrase"><span class="strike">Love what we do</span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="label"><span class="ttl">Banned tropes</span><span class="why">Structural patterns that fail even when worded carefully</span></div>
+    <div class="tropes">
+      <div class="trope"><b>Dramatic before-and-after</b>"Most agents do X. We do Y."</div>
+      <div class="trope"><b>Fake humility brag</b>"We are just so honored to be voted…"</div>
+      <div class="trope"><b>Market-doom or market-hype</b>"The market is crashing." "The market is on fire."</div>
+      <div class="trope"><b>Agent-as-hero arc</b>Content where the broker is the protagonist, not the client.</div>
+    </div>
+  </div>
+
+  <div class="footer-rule">
+    <b>Emoji.</b> Never. Not in marketing, not in UI, not in any caption on any platform, not in a broker email signature. There is no exception. <br><br>
+    <b>Other hard fails.</b> Any unsourced market statistic. Any "guaranteed" outcome claim. Any fair-housing violation. Any number that can't be traced to a primary source on one line.
+  </div>
+</div></body></html>

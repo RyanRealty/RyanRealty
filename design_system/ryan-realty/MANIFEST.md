@@ -1,13 +1,21 @@
 # Ryan Realty Design System — Repository Manifest
 
-Canonical source for the Ryan Realty brand system. Ingested 2026-05-12 from the
-Claude Design project `b87a4e11-1017-4fb5-bc82-ed8fec1ec568`.
+**Source of truth lives in the codebase at `RyanRealty/design_system/ryan-realty/`** (flipped 2026-05-14 from the old "edit here, re-export to repo" rule).
+
+The producers in `marketing_brain_skills/producers/` mandate-load the codebase copy on every run, so whatever is in the repo IS what ships. This Claude Design project is a **visual previewer + prototyping surface**:
+
+- **To make a change live:** edit `RyanRealty/design_system/ryan-realty/` directly in Claude Code or Cursor. Commit + push. Producers pick it up on the next run.
+- **To see token cards visually:** come here, ask me to *"sync from codebase"*, and I'll mirror the latest into this project so the Design System tab reflects it.
+- **To prototype a new token / card / preview:** build it here, copy it into the codebase when ready.
+
+The pull direction is **codebase → this project**, never the reverse, unless you explicitly tell me to commit something back.
 
 ## Read order
 
-1. **`README.md`** — full brand overview (voice, content rules, typography, layout, iconography)
-2. **`SKILL.md`** — portable skill manifest (the two-register model, type decision tree, asset cheat sheet)
+1. **`README.md`** — full brand overview (voice, content rules, typography, layout, iconography, broker roster, content-engine integration)
+2. **`SKILL.md`** — portable skill manifest (two-register model, type decision tree, asset cheat sheet, broker resolution rule)
 3. **`colors_and_type.css`** — every CSS var (brand + semantic tokens + three type families + spacing + radii + shadows)
+4. **`preview/`** — token gallery (open the Design System tab to see each card)
 
 ## Two registers
 
@@ -18,197 +26,140 @@ Claude Design project `b87a4e11-1017-4fb5-bc82-ed8fec1ec568`.
 
 Never mix the two on the same surface (except a single cross-register hero or footer block).
 
-## Brand colors (hex) — LOCKED 2026-05-13: navy + cream only
+## Brand colors (locked 2026-05-13)
+
+**Two-color palette only.** Matt's directive: "I want to get rid of navy-deep, sand, fir, sky — we won't be using that in anything else, so remove those entirely."
 
 | Token | Hex | Use |
 |---|---|---|
 | `--rr-navy` | `#102742` | Primary brand navy. Logo, CTAs, headlines, focus intent, end-card backgrounds. |
-| `--rr-cream` | `#faf8f4` | Warm off-white — primary background for cream surfaces (flyers, IG carousels, heritage moments). |
+| `--rr-cream` | `#faf8f4` | Warm off-white — primary background for cream surfaces. |
 
-**Retired 2026-05-13 by Matt's directive — never reintroduce:**
+**Retired — never reintroduce:**
 
-- `--rr-navy-deep` (was `#0a1a2e` for hover/pressed) → use `rgba(16,39,66,0.85)` for hover/pressed states
-- `--rr-sand` (was `#e8e2d4` stone neutral) → use `rgba(16,39,66,0.08)` for borders/dividers
-- `--rr-fir` (was `#2e4a3a` forest accent)
-- `--rr-sky` (was `#8fb8d4` Deschutes accent)
+- `--rr-navy-deep` (was `#0a1a2e`) → `rgba(16,39,66,0.85)` for hover/pressed
+- `--rr-sand` (was `#e8e2d4`) → `rgba(16,39,66,0.08)` for borders/dividers
+- `--rr-fir` (was `#2e4a3a` forest)
+- `--rr-sky` (was `#8fb8d4` Deschutes)
+- **Gold** (`#D4AF37` news, `#C8A864` listing reels) — both retired; new renders use navy-on-cream
 
-Utility: white `#FFFFFF` and pure black `#000000` are allowed for text-on-photo legibility and scrim layers. Off-brand hex codes still banned.
-
-Semantic web tokens (cards, popovers, muted, foreground, etc.) live in `colors_and_type.css` as `oklch()` values that mirror the existing `app/globals.css` radix-nova base. The chart ramp is monochromatic blue.
+Utility: `#FFFFFF` and `#000000` allowed for text-on-photo legibility and scrim layers only.
 
 ## Type families
 
-- `--font-heritage`: Amboqia Boriango (fallback Playfair Display, Didot, Georgia, serif)
-- `--font-display`: Amboqia Boriango (fallback Playfair Display, Georgia, serif)
-- `--font-accent`: Azo Sans (fallback Geist, system-ui)
-- `--font-sans`: Geist (fallback system-ui, -apple-system, 'Segoe UI')
-- `--font-mono`: Geist Mono (fallback ui-monospace, Cascadia Code, Menlo)
+- `--font-heritage` / `--font-display`: **Amboqia Boriango** (fallback Playfair Display, Didot, Georgia, serif)
+- `--font-accent`: **Azo Sans Medium** (fallback Geist, system-ui)
+- `--font-sans`: **Geist** (fallback system-ui, -apple-system, 'Segoe UI')
+- `--font-mono`: **Geist Mono**
 
-Font files in `fonts/`:
-- `Amboqia_Boriango.otf` — primary display
-- `AzoSans-Medium.ttf` — accent (paired with wordmark on certain marketing pieces)
+Font files in `fonts/`: `Amboqia_Boriango.otf`, `AzoSans-Medium.ttf`. Geist + Geist Mono load via Google Fonts (production uses `next/font/geist`).
 
-Geist + Geist Mono are loaded via Google Fonts (production uses `next/font/geist`).
+## Radii · Shadows · Motion
 
-## Radii
+- **Base radius** `--radius: 0.625rem` (10px). Ladder: sm 6 · md 8 · lg 10 · xl 14 · 2xl 18 · 3xl 22. Button/input = lg, card = xl, badge = pill.
+- **Shadows navy-tinted** (`rgb(16 39 66 / opacity)`). `--shadow-sm` cards · `--shadow-md` hover · `--shadow-lg` hero search.
+- **Focus ring:** 3px **warm stone** — never navy.
+- **Motion ladder:** 200ms fades · 300ms entrances · 400ms fade-up · 2s loops · 20s Ken Burns. Respect `prefers-reduced-motion`.
 
-Base `--radius: 0.625rem` (10px). Ladder:
-- `sm` 6px · `md` 8px · `lg` 10px · `xl` 14px · `2xl` 18px · `3xl` 22px
+## Brokers — three active
 
-Component mapping: **button/input = lg (10px)**, **card = xl (14px)**, **badge = pill**.
+Source-of-truth headshots in `assets/team/`. Each broker has `.png` (transparent, default) and `.jpg` (white bg, legacy). All 800×1200, 552px head height, 20px top whitespace, face centered. Web mirror at `public/images/brokers/`.
 
-## Shadows (navy-tinted)
+| Slug | Name | Title | Phone | Email |
+|---|---|---|---|---|
+| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (FUB) | matt@ryan-realty.com |
+| `paul-stevenson` | Paul Stevenson | Broker | `541.977.6841` | — |
+| `rebecca-ryser-peterson` | Rebecca Ryser Peterson | Broker | `415.308.9087` | — |
 
-All shadows use `rgb(16 39 66 / opacity)` for the navy tint. From light to heavy:
-- `--shadow-xs`, `--shadow-sm` (cards), `--shadow-md`, `--shadow-lg` (hero search), `--shadow-xl`
-- `--shadow-drop` `0 2px 10px rgb(0 0 0 / 0.15)` for hero H1 drop shadow
+**Brand-voice phone:** `541.213.6706` (Matt direct — the yard-sign number). Use on signage, video VO, signature heritage moments.
 
-## Motion ladder
+**Listing-agent rule.** Per-listing deliverables include the listing agent's headshot — resolve via Supabase `listings.ListAgentEmail / ListAgentFullName`. Brand-led content uses Jax (`assets/brand/blue-dog.png`) instead.
 
-- 200ms fades · 300ms entrances · 400ms fade-up · 2s loops · 20s Ken Burns
-- ease-out entrances, ≤16px travel
-- Always respect `prefers-reduced-motion`
+**Composite rule.** Never fake a rectangular frame behind the transparent portrait.
 
-## Layout
+## Brand facts (the values producers pull verbatim)
 
-- Max content width `max-w-7xl` (1280px), centered, `px-4 sm:px-6` gutters
-- Sections `py-12`, hero `min-h-[60vh]`
-- Grids: 1 → 2 → 4 columns; `gap-4` between cells, `gap-6` between sections
-- Cards padding `p-5` / `p-6`
-- Heritage moments breathe: 25%+ padding inside any Amboqia-typeset frame
+- **Location:** Bend, Oregon (signage: `BEND · OREGON` with middle dot U+00B7)
+- **Web:** `ryan-realty.com` (hyphenated, lowercase, no www)
+- **Social handles** (locked 2026-05-13): `@ryanrealtybend` on IG, TikTok, Threads, YouTube, X, Pinterest. `/ryanrealtybend` on FB and LinkedIn.
+- **Hashtag rule** (locked 2026-05-14): every caption on every hashtag-supporting platform includes `#RyanRealtyBend` as the first hashtag in the trailing block. Email + SMS + on-site blog body are exempt.
+- **Place separator:** middle dot · — e.g. `BEND · OREGON`, `QUALITY · LOCAL · SERVICE`
+- **Tagline:** "It's About Relationships." — used with the wordmark on heritage marketing, not as filler.
 
-## Focus ring
+## Voice + content rules (binding on every surface)
 
-3px **warm stone** (never navy).
+- **Honest. Transparent. Trustworthy. Direct and kind.**
+- **Show, don't tell.** Let the fact do the work.
+- **Four rules:** Direct. Specific. Kind. Honest, even when inconvenient.
+- **"You/your"** is the subject. **"We/our team"** for broker identity. **Never "I"** (except first-person Matt content).
+- **Sentence case** web headings (Title Case only for hero H1).
+- **Tabular numerals** for every price, count, day range.
+- **Currency rounded** to nearest thousand: `$895,000` not `$894,750`.
+- **Days = integer + "days":** `38 days`.
+- **Unavailable → em-dash `—`** (em-dash banned as punctuation, allowed as data placeholder).
+- **Percents:** one decimal, signed arrow: `↑ 2.1% YoY`.
+- **No emoji.** Anywhere. Ever.
+- **No exclamation marks** in body. **No pressure / scarcity framing.**
+
+Full banned vocabulary — clichés, AI filler, meta-tone words, vague qualifiers, banned phrases, banned tropes — lives in the `voice-banned.html` preview card and in `marketing_brain_skills/brand-voice/voice_guidelines.md` §6.
+
+## Content engine integration
+
+This kit is the **mandate-load** for every producer in `marketing_brain_skills/producers/`. When a producer picks up an action row from `marketing_brain_actions`, it loads:
+
+1. **`SKILL.md`** (this kit) — visual brand spec
+2. **`marketing_brain_skills/brand-voice/voice_guidelines.md`** — voice + banned vocabulary
+3. **`social_media_skills/platform-best-practices/SKILL.md`** — 2026 platform rule layer
+
+Edit a swatch or banned word here and every listing reel + flyer + IG carousel + GBP reply + email blast picks it up on the next run. See the *Content engine map* preview card for the per-action-type pull list.
 
 ## Asset directory
 
-### `assets/hero/` — canonical brand hero (LOCKED 2026-05-13)
-
-**Every design surface that needs a Ryan Realty banner / cover photo / header image / cinematic anchor uses F1 from this folder by default.** See `assets/hero/README.md` for usage rules.
-
-| File | Resolution | Aspect | Use |
-|---|---|---|---|
-| `hero-old-mill-master-4k.jpg` | 1920×1080 | 16:9 | **Source of truth** — F1 frame, regenerate crops from this |
-| `hero-old-mill-banner-2048x1152.jpg` | 2048×1152 | 16:9 | Generic 16:9 hero |
-| `banner-2048x1152-youtube.jpg` | 2048×1152 | 16:9 | YouTube channel art |
-| `banner-1500x500-x.jpg` | 1500×500 | 3:1 | X / Twitter header |
-| `banner-820x312-facebook.jpg` | 820×312 | 2.63:1 | Facebook Page cover |
-| `banner-1024x576-gbp.jpg` | 1024×576 | 16:9 | Google Business Profile cover |
-| `banner-800x450-pinterest.jpg` | 800×450 | 16:9 | Pinterest cover |
-| `banner-1128x191-linkedin.jpg` | 1128×191 | 5.9:1 | LinkedIn Company cover |
-
-F1 = Old Mill District drone shot at 3.61s of `iStock-1330945786`. Three smokestacks, American flag at top, Deschutes River with floaters + kayakers, theater stage, Cascade mountain horizon. Stock subscription license — active sub required for use. Registered in `data/asset-library/manifest.json` (photo id `113232e1-1bd0-499e-8247-4c85c2386878`, video uuid in stock/ folder).
+### `assets/team/` — broker headshots
+Three transparent PNGs + JPG fallbacks. See "Brokers" section above for the resolution rule.
 
 ### `assets/` — web platform essentials
-
-| File | Use |
-|---|---|
-| `favicon.ico`, `apple-touch-icon.png`, `icon-512.png` | Browser/PWA icons |
-| `logo.png` | Web wordmark (navy on cream) |
-| `logo-header-white.png` | Reversed wordmark (white on dark) |
-| `hero-poster.webp` | Deschutes River through downtown Bend — legacy site hero (consider replacing with `hero/hero-old-mill-master-4k.jpg` on next refresh) |
-| `hero-alpine-clean.jpg`, `hero-applegate-clean.jpg`, `hero-awbrey-clean.jpg`, `hero-bend-alpine.png`, `hero-bend-desktop.png`, `hero-bend-downtown.png`, `hero-deschutes-clean.jpg` | Alternate documentary hero options |
-| `team.webp` | Team photo |
-| `morgan-data-shuttle-logo.svg`, `oregon-data-share-logo.svg` | Partner marks |
+`logo.png` (web wordmark, navy on cream) · `logo-header-white.png` (reversed) · `hero-poster.webp` (Deschutes aerial) · `team.webp` · partner SVGs · favicon/apple-touch/icon-512 · alternate hero crops.
 
 ### `assets/brand/` — heritage brand kit
+- **Wordmarks:** `logo-blue.png` (heritage navy on transparent — print/signage primary), `logo-black.png` (1-color), `logo-white.png` + `logo-stacked-white.png` (reversed for dark)
+- **Mascot:** `blue-dog.png` (Jax full color) · `white-dog.png` (reversed)
+- **Signature lockup:** `illustration-05.png` (wordmark + beer-glass + dog + tagline ribbon)
+- **14 numbered heritage variations:** `illustration-01.png` through `illustration-14.png`
+- **Scene illustrations:** `scene-tower.png` (Tower Theater) · `scene-water-pageant.png` (historic downtown)
+- **Standalone tagline:** `tagline-its-about-relationships.jpg`
+- **Print collateral:** `yard-sign.png` · `postcard-magnet.png` · `email-banner.png`
+- **Social:** `ig-highlight-community.png` · `ig-highlight-swan.png` · `qr-code.png`
 
-| File | Use |
+## Preview cards (open the Design System tab)
+
+| Card | What's on it |
 |---|---|
-| `logo-blue.png` | Heritage wordmark — primary navy (print + signage) |
-| `logo-black.png` | Heritage wordmark — 1-color print |
-| `logo-white.png`, `logo-stacked-white.png` | Heritage wordmark — reversed for dark backgrounds |
-| `ryan-realty-stacked-logo-blue.png`, `ryan-realty-stacked-logo-white.png` | Stacked variants |
-| `illustration-01.png` | Primary stacked wordmark (no dog) |
-| `illustration-02.png` – `illustration-04.png` | Numbered heritage wordmark variations |
-| **`illustration-05.png`** | **Signature lockup**: "Ryan Realty · It's About Relationships · BEND OREGON" with beer-glass hand on left and blue lab on right |
-| `illustration-06.png` – `illustration-14.png` | Additional heritage variations (9 more) |
-| **`blue-dog.png`** | **Jax** the blue lab mascot, full color |
-| `white-dog.png`, `white-dog-trans.png` | Mascot — white variant for dark backgrounds |
-| `lab.png` | Larger / hi-res mascot |
-| `scene-tower.png` | Tower Theater marquee scene (heritage decorative) |
-| `scene-water-pageant.png` | Historic downtown scene (heritage decorative) |
-| `tagline-its-about-relationships.jpg` | Tagline lockup standalone |
-| `email-banner.png` | Email header banner |
-| `ig-highlight-community.png`, `ig-highlight-swan.png` | Instagram highlight covers |
-| `yard-sign.png` | Yard sign artwork |
-| `postcard-magnet.png` | Postcard / magnet artwork |
-| `qr-code.png` | Brand QR code |
+| `colors-brand.html` | Two-color palette + retired tokens with strike marks |
+| `colors-semantic.html` · `colors-neutrals.html` · `colors-chart.html` | Semantic UI tokens, warm-stone neutrals, blue chart ramp |
+| `type-families.html` · `type-display.html` · `type-headings.html` · `type-body.html` · `type-heritage.html` · `type-tabular.html` | Three type families across every weight/size |
+| `spacing-scale.html` · `spacing-radii.html` · `spacing-shadows.html` | Spacing tokens, radius ladder, navy-tinted shadows |
+| `components-buttons.html` · `components-input.html` · `components-badges.html` · `components-cta.html` · `components-listing-card.html` · `components-stat-card.html` | shadcn-aligned UI primitives |
+| `brand-logo.html` · `brand-logo-reversed.html` · `brand-wordmarks.html` · `brand-lockup.html` · `brand-mascot.html` · `brand-scenes.html` · `brand-iconography.html` · `brand-collateral.html` · `brand-hero.html` | Heritage kit gallery |
+| **`team-brokers.html`** | **3 broker cards with headshots + contact + listing-agent rule** |
+| **`brand-facts.html`** | **Phones · handles · #RyanRealtyBend · glyphs** |
+| **`voice-rules.html`** | **4 rules · 5 attributes · show vs tell · grammar** |
+| **`voice-banned.html`** | **Hard-fail words · phrases · punctuation · tropes** |
+| **`voice-canonical.html`** | **Lift-verbatim templates from Matt's GBP corpus** |
+| **`content-engine.html`** | **Producer ↔ design-system map (which action_type pulls what)** |
 
-### `assets/team/` — broker headshots (locked 2026-05-12, transparent PNGs added 2026-05-13)
+## Editing / updating (flipped 2026-05-14)
 
-Three brokers, three byte-identical headshots — normalized to share head height, top whitespace, and horizontal centering. Use these on any broker-branded content (listing flyer / carousel / video, blog byline, ad creative, email signature). Source-of-truth location for the entire team.
+**The codebase is the source of truth.** Hand-edit `RyanRealty/design_system/ryan-realty/colors_and_type.css`, `README.md`, `SKILL.md`, `preview/*.html`, `assets/team/*` etc directly in Claude Code / Cursor. Commit + push.
 
-Each broker has **two file variants** — use the `.png` by default:
+To refresh this Claude Design project from the codebase, ask the design agent: *"sync from codebase"*. The agent will mirror these paths from the mounted `RyanRealty/design_system/ryan-realty/` folder into this project:
 
-| Broker | Transparent PNG (default) | White-bg JPG (legacy) |
-|---|---|---|
-| Matt Ryan | `matt-ryan.png` | `matt-ryan.jpg` |
-| Paul Stevenson | `paul-stevenson.png` | `paul-stevenson.jpg` |
-| Rebecca Peterson | `rebecca-peterson.png` | `rebecca-peterson.jpg` |
+- `colors_and_type.css`
+- `README.md` · `SKILL.md` · `MANIFEST.md`
+- `preview/*.html` (all preview cards)
+- `assets/team/*.{png,jpg}` (broker headshots)
+- `assets/brand/*` (heritage kit) — only if changed
+- `assets/hero/*` (canonical hero) — only if changed
+- `fonts/*` — only if changed
 
-**Specs (every file):** 800×1200 px · 20px whitespace above head · 552px head height (top-of-head to chin) · face horizontally centered · natural color (no filter). `.jpg` has a pure white background; `.png` has transparent background (alpha-matted via rembg `u2net_human_seg` with `alpha_matting=True`).
-
-**Use the `.png` by default.** The transparent version composites cleanly over cream, navy, photos, banners, gradients — anywhere — without a rectangular white box around the subject. Only fall back to `.jpg` if the renderer can't handle alpha.
-
-**Never fake a frame.** Don't add a rectangular fill, drop-shadow box, or border behind the transparent portrait. The transparent edge IS the composition.
-
-**Web mirror:** Identical files also live at `public/images/brokers/` under web-convention names (`peterson-rebecca.jpg`, `ryan-matt.jpg`, `stevenson-paul.jpg`). Both locations stay in sync.
-
-**Listing-agent rule:** On any per-listing deliverable, include the listing agent's headshot. The listing's broker is in the Supabase `listings` row (`ListAgentEmail` / `ListAgentFullName` — resolve to one of the three above). For brand-led content (market reports, news, memes), omit the headshot and use the Jax mascot from `assets/brand/blue-dog.png` instead.
-
-**Re-shoot note:** Rebecca's source is 414×600 (upscaled 2× for the canonical file). Fine for web/social/IG/email. For print larger than 4×6", a high-res re-shoot is needed.
-
-**Re-crop script:** `out/headshot-proofs/normalize_headshots.py` re-runs the alignment if a new headshot needs to join the set.
-
-### `assets/brand/navy-cream/` — element-level cutouts (for compositing)
-
-`element-beer-stein.png`, `element-running-horse.png`, `element-seated-dog.png`, `element-swan-arch.png`, `element-swan.png`, `element-tagline-relationships.png`, `element-wheel-log-medallion.png` (each with `-trans.png` transparent variants where applicable).
-
-Use these to compose custom heritage layouts when the pre-rendered wordmarks don't fit the surface.
-
-## Preview cards (token visuals)
-
-`preview/` contains a self-rendering HTML card per token concept (colors, typography, spacing, radii, shadows, components). Open any HTML file in a browser to see the token applied with the official font/color stack.
-
-## UI kit
-
-`ui_kits/website/index.html` — interactive homepage replica of the Ryan Realty consumer site.
-
-## Voice + content rules (binding)
-
-See `SKILL.md` and `README.md` for the full voice spec. Highlights enforced across **every** Ryan Realty content surface (website, video, print, social, email):
-
-- **Honest. Transparent. Trustworthy. Direct and kind.**
-- **Show, don't tell** — let the fact do the work
-- **Phone:** `541.213.6706` (dotted)
-- **Web:** `ryan-realty.com` (hyphenated, lowercase)
-- **Place separator:** middle dot · — e.g. `BEND · OREGON`
-- **"You/your"** is the subject. **"We/our team"** for broker identity. **Never "I".**
-- **Sentence case** for web headings; Title Case only for hero H1
-- **Tabular numerals** for every price, count, day range
-- **Unavailable** → em-dash `—` (not `N/A`)
-- **No emoji.** Anywhere. Ever.
-- **No exclamation marks** in body
-- **No pressure / scarcity framing**
-
-### Banned vocabulary (verbatim from SKILL.md)
-
-- Meta-tone: *passionate, dedicated, premier, luxury, boutique, concierge, white-glove*
-- Real-estate clichés: *dream home, nestled, breathtaking, turnkey, must-see*
-- Marketing exhortations: *Don't miss out! Act now!*
-- Hedging: *may, could, potentially*
-
-## Source provenance
-
-This kit merges two prior bodies of work:
-
-1. **Brand kit from Rise Wise** — heritage Americana identity (Amboqia Boriango, blue lab mascot, 14 numbered wordmarks, scene illustrations, signage, postcards)
-2. **`RyanRealty/RyanRealty` repo** — shipped Next.js 16 + Tailwind v4 + shadcn/ui platform (radix-nova stone neutrals, custom nav, listing cards)
-
-Both share a designer's intent: warm stone neutrals, single brand navy, documentary Central Oregon imagery, tabular data-first UI.
-
-## Editing / updating
-
-Changes to this kit are made in the Claude Design project, then re-exported here. Do not hand-edit `colors_and_type.css` in this repo — update the source, re-export, replace.
+The agent will register any new/changed preview cards in the Design System tab automatically.

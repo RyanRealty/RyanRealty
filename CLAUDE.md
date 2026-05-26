@@ -518,6 +518,21 @@ The shadcn/ui-only rule above still holds. v2 additions:
 - The radix-nova stone neutral base is correct. Do not migrate to slate or cool greys.
 - The `--primary` oklch in `app/globals.css` evaluates to `#102742`. Do not edit.
 
+## Source of truth (flipped 2026-05-14)
+
+**The codebase at `design_system/ryan-realty/` is the source of truth for the brand system, not the Claude Design project.**
+
+Producers in `marketing_brain_skills/producers/` mandate-load this folder on every run. Whatever lives here IS what ships across every flyer, listing reel, IG carousel, GBP reply, and market report. Hand-edits to `colors_and_type.css`, `README.md`, `SKILL.md`, `MANIFEST.md`, `preview/*.html`, and `assets/team/*` happen directly in Claude Code or Cursor — commit and push and the next producer run sees them.
+
+The Claude Design project at `b87a4e11-1017-4fb5-bc82-ed8fec1ec568` is a **visual previewer + prototyping surface**. It mirrors this folder for the Design System tab and is the place to design new tokens, preview cards, or visual variants before they ship.
+
+### How sync works in each direction
+
+- **Codebase → design project.** When Matt opens the design project and asks *"sync from codebase"*, the design agent mirrors `design_system/ryan-realty/` into the project so the Design System tab reflects current truth. Pull, don't push.
+- **Design project → codebase.** When Matt prototypes a new card / token / variation in the design project, the design agent writes the file under `codebase-patches/design_system/ryan-realty/<exact-codebase-path>` in its workspace. When Matt opens Claude Code in this repo and asks *"apply design patches"*, the codebase agent rsyncs `codebase-patches/design_system/ryan-realty/` into `design_system/ryan-realty/`, commits, and pushes.
+
+The codebase never depends on the design project being available. The design project never holds canonical state alone.
+
 ## Skill self-binding (the rule that keeps this real)
 
 Every content skill (`video_production_skills/*`, `social_media_skills/*`, `automation_skills/*`) MUST reference BOTH of these in its "Required references" section:

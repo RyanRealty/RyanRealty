@@ -1,0 +1,128 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Broker roster</title><link rel="stylesheet" href="_card.css">
+<style>
+  .roster-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  .roster-head .lock { font-family: var(--font-mono); font-size: 10px; color: var(--muted-foreground); letter-spacing: 0.04em; text-transform: uppercase; }
+  .roster { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .broker {
+    background: var(--rr-cream);
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(16,39,66,0.08);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .broker .portrait {
+    height: 280px;
+    background: linear-gradient(180deg, #ece6da 0%, var(--rr-cream) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .broker .portrait img {
+    position: absolute; bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    height: 100%; width: auto;
+    display: block;
+  }
+  .broker .body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .broker .name { font-family: var(--font-sans); font-weight: 700; font-size: 18px; color: var(--rr-navy); letter-spacing: -0.01em; line-height: 1.1; }
+  .broker .title { font-family: var(--font-sans); font-size: 12px; font-weight: 500; color: var(--rr-navy); opacity: 0.7; line-height: 1.3; }
+  .broker .contact { display: flex; flex-direction: column; gap: 4px; font-family: var(--font-mono); font-size: 11px; color: var(--rr-navy); font-variant-numeric: tabular-nums; padding-top: 8px; border-top: 1px solid rgba(16,39,66,0.08); }
+  .broker .contact .row { display: flex; gap: 8px; align-items: baseline; }
+  .broker .contact .lbl { color: rgba(16,39,66,0.55); width: 38px; flex: none; }
+  .broker .contact a { color: var(--rr-navy); text-decoration: none; }
+  .broker .slug { position: absolute; top: 12px; left: 12px; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.06em; color: rgba(16,39,66,0.6); background: rgba(250,248,244,0.85); padding: 3px 7px; border-radius: 4px; backdrop-filter: blur(4px); }
+  .role-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--rr-navy); color: var(--rr-cream); font-family: var(--font-sans); font-size: 9.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .role-pill.ghost { background: transparent; color: var(--rr-navy); border: 1px solid rgba(16,39,66,0.18); }
+
+  .specs { margin-top: 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .specs .spec { background: #fff; border: 1px solid rgba(16,39,66,0.08); border-radius: var(--radius-lg); padding: 10px 12px; }
+  .specs .spec b { display: block; font-family: var(--font-sans); font-size: 11px; font-weight: 600; color: var(--foreground); margin-bottom: 4px; }
+  .specs .spec span { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted-foreground); line-height: 1.4; }
+  .rules { margin-top: 14px; padding: 12px 14px; border-left: 3px solid var(--rr-navy); background: rgba(16,39,66,0.04); border-radius: 4px; font-size: 12px; line-height: 1.5; color: var(--foreground); }
+  .rules b { color: var(--rr-navy); }
+</style>
+</head>
+<body><div class="card-root">
+  <div class="roster-head">
+    <div>
+      <div class="label-eyebrow" style="margin-bottom:6px">Broker roster · 3 active</div>
+      <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--muted-foreground)">Source-of-truth headshots — 800×1200 transparent PNG, head height + alignment normalized.</div>
+    </div>
+    <div class="lock">Locked 2026-05-12 · alpha 2026-05-13</div>
+  </div>
+
+  <div class="roster">
+    <div class="broker">
+      <div class="slug">matt-ryan</div>
+      <div class="portrait"><img src="../assets/team/matt-ryan.png" alt="Matt Ryan"></div>
+      <div class="body">
+        <div>
+          <div class="name">Matt Ryan</div>
+          <div class="title">Owner &amp; Principal Broker</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="role-pill">Principal</span>
+          <span class="role-pill ghost">Bend</span>
+        </div>
+        <div class="contact">
+          <div class="row"><span class="lbl">brand</span><span>541.213.6706</span></div>
+          <div class="row"><span class="lbl">bio</span><span>541.703.3095 · FUB-tracked</span></div>
+          <div class="row"><span class="lbl">email</span><span>matt@ryan-realty.com</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="broker">
+      <div class="slug">paul-stevenson</div>
+      <div class="portrait"><img src="../assets/team/paul-stevenson.png" alt="Paul Stevenson"></div>
+      <div class="body">
+        <div>
+          <div class="name">Paul Stevenson</div>
+          <div class="title">Broker</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="role-pill ghost">Redmond</span>
+          <span class="role-pill ghost">La Pine</span>
+        </div>
+        <div class="contact">
+          <div class="row"><span class="lbl">phone</span><span>541.977.6841</span></div>
+          <div class="row"><span class="lbl">email</span><span>—</span></div>
+          <div class="row"><span class="lbl">slug</span><span>paul-stevenson</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="broker">
+      <div class="slug">rebecca-ryser-peterson</div>
+      <div class="portrait"><img src="../assets/team/rebecca-peterson.png" alt="Rebecca Ryser Peterson"></div>
+      <div class="body">
+        <div>
+          <div class="name">Rebecca Ryser Peterson</div>
+          <div class="title">Broker</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="role-pill ghost">Bend</span>
+          <span class="role-pill ghost">Investment</span>
+        </div>
+        <div class="contact">
+          <div class="row"><span class="lbl">phone</span><span>415.308.9087</span></div>
+          <div class="row"><span class="lbl">email</span><span>—</span></div>
+          <div class="row"><span class="lbl">slug</span><span>rebecca-ryser-peterson</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="specs">
+    <div class="spec"><b>File format</b><span>.png (transparent) — default · .jpg (white bg) — legacy fallback</span></div>
+    <div class="spec"><b>Dimensions</b><span>800 × 1200 px · 552px head height · 20px top whitespace · face centered</span></div>
+    <div class="spec"><b>Web mirror</b><span>public/images/brokers/{ryan-matt, stevenson-paul, peterson-rebecca}.png</span></div>
+    <div class="spec"><b>Re-crop</b><span>out/headshot-proofs/normalize_headshots.py — re-runs alignment on new shoots</span></div>
+  </div>
+
+  <div class="rules">
+    <b>Listing-agent rule.</b> Every per-listing deliverable (flyer, IG carousel, listing tour video end card, blog byline, lead ad, email) includes the <b>listing agent's headshot</b> — resolve via Supabase <code>listings.ListAgentEmail / ListAgentFullName</code>. For brand-led content (market reports, news, memes, neighborhood guides), the brokerage speaks — drop the headshot, use <b>Jax</b> (<code>assets/brand/blue-dog.png</code>) instead.
+    <br><br>
+    <b>Composite rule.</b> Never fake a rectangular frame behind the portrait. No filled box, no drop-shadow fake-card, no hard border. The transparent edge <em>is</em> the composition.
+  </div>
+</div></body></html>
