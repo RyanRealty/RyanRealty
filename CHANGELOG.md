@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.307.3 (2026-05-26)
+
+### Maintenance
+- perf(homepage): switch market snapshot to single-row market_pulse_live lookup
+
+---
+
+
 ## v1.307.2 (2026-05-26)
 
 ### Other
