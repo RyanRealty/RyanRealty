@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.307.2 (2026-05-26)
+
+### Other
+- handoff: rebuild status block — homepage v2 shipped, 13 routes blocked on mockups
+
+---
+
+
 ## v1.307.1 (2026-05-26)
 
 ### Other
