@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.302.0 (2026-05-26)
+
+### Features
+- feat(recon): pull Matt's competitor FB ads research from Apify into local pattern library
+
+---
+
+
 ## v1.301.2 (2026-05-26)
 
 ### Bug Fixes
