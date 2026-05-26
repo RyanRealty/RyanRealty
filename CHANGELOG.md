@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.304.0 (2026-05-26)
+
+### Features
+- feat(712): build master Legacy template + switch 712 + reassign docs
+
+---
+
+
 ## v1.303.1 (2026-05-26)
 
 ### Bug Fixes
