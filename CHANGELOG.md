@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.307.1 (2026-05-26)
+
+### Other
+- homepage: full v2 rebuild on the mockup, legacy torn out
+
+---
+
+
 ## v1.307.0 (2026-05-26)
 
 ### Features
