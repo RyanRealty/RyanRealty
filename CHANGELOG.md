@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.307.0 (2026-05-26)
+
+### Features
+- feat(gmail): add matt.lists.homes@gmail.com as 4th broker inbox
+
+---
+
+
 ## v1.306.0 (2026-05-26)
 
 ### Features
