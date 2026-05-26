@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.301.0 (2026-05-26)
+
+### Features
+- feat(meta): build 6-tier paid retargeting campaign shells + FUB audience rebuild
+
+---
+
+
 ## v1.300.1 (2026-05-26)
 
 ### Other
