@@ -1,8 +1,12 @@
 {
   "crons": [
     {
+      "path": "/api/cron/sync-delta",
+      "schedule": "3,18,33,48 * * * *"
+    },
+    {
       "path": "/api/cron/sync-history-terminal",
-      "schedule": "0 * * * *"
+      "schedule": "12 * * * *"
     },
     {
       "path": "/api/cron/sync-full",
@@ -22,19 +26,27 @@
     },
     {
       "path": "/api/cron/refresh-listing-year-stats",
-      "schedule": "0 */4 * * *"
+      "schedule": "27 */4 * * *"
     },
     {
       "path": "/api/cron/refresh-place-content",
       "schedule": "0 3 * * *"
     },
     {
+      "path": "/api/cron/refresh-video-tours-cache",
+      "schedule": "37 * * * *"
+    },
+    {
       "path": "/api/cron/refresh-mvs",
-      "schedule": "0 * * * *"
+      "schedule": "8 * * * *"
     },
     {
       "path": "/api/cron/market-report",
       "schedule": "0 14 * * 6"
+    },
+    {
+      "path": "/api/cron/visitor-hot-lead-escalation",
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/token-heartbeat",
@@ -65,8 +77,24 @@
       "schedule": "30 12 * * *"
     },
     {
+      "path": "/api/cron/producer-dispatcher",
+      "schedule": "23 * * * *"
+    },
+    {
+      "path": "/api/cron/producer-runtime",
+      "schedule": "47 * * * *"
+    },
+    {
+      "path": "/api/cron/publisher-sweep",
+      "schedule": "53 * * * *"
+    },
+    {
       "path": "/api/cron/gbp-monthly-digest",
       "schedule": "0 13 1 * *"
+    },
+    {
+      "path": "/api/cron/gbp-health-check",
+      "schedule": "42 * * * *"
     },
     {
       "path": "/api/cron/marketing-snapshot-google-ads",
