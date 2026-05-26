@@ -112,3 +112,69 @@ For Claude cloud or UI paste routines, use **`docs/marketing/facebook-seller-gro
 5. Next tests
 6. Risks/blockers
 7. Expected impact next cycle
+
+---
+
+## LIVE STATE (last updated 2026-05-26)
+
+**Always cross-check against:** `.auto-memory/memory_marketing_analytics_session_2026-05-26.md` (canonical session memory) and `docs/plans/CROSS_AGENT_HANDOFF.md` (latest commit + pending decisions).
+
+### Meta ad account `act_1178780510184911` — Custom Audiences pushed this cycle
+
+| Audience ID | Name | Records | Source script |
+|---|---|---|---|
+| `120244161522810698` | RR MLS — Bend Property Owners (all) | 9,058 | `scripts/meta-upload-mls-audiences.mjs` |
+| `120244161526200698` | RR MLS — 97703 Property Owners | 7,178 | same |
+| `120244161528410698` | RR MLS — Absentee Owners (Bend area) | 1,619 | same |
+| `120243107433010698` | FUB Suppression — All Current Contacts | ~8,000 | pre-existing |
+
+### Pending audience builds (script ready, NOT yet run)
+
+`scripts/meta-rebuild-fub-audiences.mjs` creates:
+- `RR Database — Targetable (no realtors/compliance/test)` — 10,164 contacts
+- `RR FUB Hard-Stop Exclusion (realtors+compliance+test)` — 3,023 contacts
+
+### Pending campaign build (designed, NOT yet built)
+
+6-tier structure stored in detail in `.auto-memory/memory_marketing_analytics_session_2026-05-26.md` ("The designed-but-not-built 6-tier campaign structure"):
+1. Database Nurture (25%) — INCLUDES targetable FUB list
+2. Bend Resident TOFU (25%) — broad geo + interests + LAL
+3. West Bend 97703 Premium TOFU (15%) — uses 97703 MLS audience
+4. Out-of-Area / Absentee Owner TOFU (10%) — uses Absentee MLS audience
+5. MOFU Retargeting (20%) — uses to-be-created `AUD-CORE-Sellers-180d` WCA
+6. BOFU Hot (5%) — sub-window of #5
+
+ALL must have `special_ad_categories: ['HOUSING']`, `RR FUB Hard-Stop Exclusion` + `AUD-CORE-Converters-365d` excluded.
+
+### GA4 baseline applied via API (2026-05-24)
+
+- Google Signals ENABLED
+- 4 conversion events newly marked: `listing_inquiry`, `home_valuation_cta_click`, `cma_downloaded`, `newsletter_signup`
+- 18 custom dimensions registered (`lp_variant`, `broker_slug`, `lead_classification`, etc.)
+- Retention 14mo, data-driven attribution, 90d other-conversion lookback
+
+Re-run `node scripts/ga4-admin-setup.mjs --dry-run` any time to verify state (should report Planned: 0).
+
+### Identity wiring (live for every visitor)
+
+- GA4 `user_id` set via `components/AnalyticsIdentityBridge.tsx` (reads from `/api/identity/me` → `hashedUserId`)
+- Meta Pixel `em` advanced matching re-init'd on every identified visitor (same component → `hashedEmail`)
+- Consent Mode v2 (denied defaults, url_passthrough true, ads_data_redaction true) in `components/GoogleAnalytics.tsx`
+- 7 server actions fire `canonicallyTagLead` + `fireLeadGenerated` (lib helper at `lib/lead-tracking.ts`)
+
+### Dashboards live (admin-only)
+
+- `/admin/reports/lead-flow` — funnel with wiring health
+- `/admin/reports/traffic-sources` — GBP attribution gap + untagged channels
+- `/admin/analytics/meta-health` — pixel/form/webhook/spend
+- `/admin/people` (index) + `/admin/people/[fubPersonId]` (single-pane-of-glass)
+
+### Outstanding UI-only items (API has no path)
+
+- GA4 Reporting Identity → Blended (Matt skipped, not blocking)
+- GA4 default channel grouping: add `gbp` to Organic Search regex (Matt skipped, see UTM convention doc)
+- Meta AEM priority events (`/{pixel}/aem_conversion_configs` returns 400)
+- Domain verification finalize (`/{business}/verified_domains` returns 400)
+- Page verification (requires business document upload)
+- Dead pixel `590593947302147` System User + foreign account unassignment (cosmetic only — leak source killed via Zapier zap removal)
+- IG / TikTok / LinkedIn bio link UTMs (Meta locks IG bio update API)

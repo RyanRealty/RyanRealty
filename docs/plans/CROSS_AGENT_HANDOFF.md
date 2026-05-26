@@ -10,40 +10,95 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Cursor Agent (this session)** — Resumed locked Facebook Ad Campaign Optimization agent and unblocked the FUB execution pipeline. |
-| **Stopped at (UTC)** | 2026-05-10 05:35 — Live FUB API fallback shipped (150 outreach packets, 55 applied) and GA4 service account creds pushed to Vercel production; awaiting one-click GA4 property access grant. |
-| **`main` @ commit** | `009e3b40` (Vercel production READY). |
-| **Task focus** | Restore Facebook seller optimization data flow after the legacy `fub_contacts_cache` / `fub_contacts` tables were dropped, plus tighten packet lifecycle and Facebook attribution. |
+| **Surface** | **Cursor Agent (Claude Opus, 2026-05-23 → 2026-05-26)** — Marketing analytics infrastructure + Meta retargeting audience build. |
+| **Stopped at (UTC)** | 2026-05-26 13:05 — 3 MLS Custom Audiences pushed to Meta + dashboards/scripts live. Awaiting Matt's green light to (a) run the FUB-list rebuild and (b) build the 6 campaign shells. |
+| **`main` @ commit** | `65fdd91` (Vercel production READY through whole chain). |
+| **Task focus** | Wire every lead-capture surface to gold-standard, surface admin dashboards, set GA4 admin baseline via API, build Meta Custom Audiences from MLS export, design 6-tier retargeting campaign structure. |
 
-### Done this session (Cursor Agent)
+### Done this session (Cursor Agent) — 16 commits
 
-- Recovered the locked agent state from `agent_insights` + prior Cursor transcripts.
-- Added `fetchMyLeadsFromFubLive` in `lib/followupboss.ts` — paginates the FUB People API by assigned user id (env map → broker email lookup) and returns the legacy snapshot row shape.
-- `app/api/cron/fub-outreach-execution/route.ts` now tries `fub_contacts_cache` → `fub_contacts` → live FUB API; surfaces `source_table` + `source_warning` in the response payload.
-- `app/actions/dashboard.ts` `getFubPipelineSnapshot` uses the same live fallback so the admin marketing command center stops returning empty pipelines.
-- Seller-funnel attribution in `getDashboardMarketingData` now counts visits with `utm_source=facebook`, `fbclid=`, or a Facebook/Instagram/Messenger referrer (was UTM-only).
-- Both weekly crons mark prior `pending` / `in_progress` insights of their type as `implemented` after a successful new write so the queue reflects reality.
-- Production verification (commit `2762ec96`):
-  - `marketing-optimization-report` → `score 45/100 (at_risk)`, packet `52149c3e-14c1-47f2-8359-581f476a760f` (pending).
-  - `fub-outreach-execution` → `source_table=fub_api_live`, `my_leads_count=1500`, `targetable_count=1433`, `generated_outreach=150`, `applied_count=55`. Packet `9a636a91-f788-4670-98a5-54494577b082` (pending).
-  - Old `pending` packets auto-rolled to `implemented` ✓.
+**Pages built:** `/admin/reports/lead-flow`, `/admin/reports/traffic-sources`, `/admin/analytics/meta-health`, `/admin/people`, `/admin/people/[fubPersonId]`.
+
+**Scripts (all idempotent, --dry-run supported):**
+- `scripts/ga4-admin-setup.mjs` — applied: Google Signals ENABLED, 4 new key events, retention 14mo, data-driven attribution
+- `scripts/meta-admin-setup.mjs` + `scripts/meta-apply-fixes.mjs` — Meta audit + form-archive (archived "Home Valuation + Notes" with bogus questions)
+- `scripts/meta-upload-mls-audiences.mjs` — **RUN 2026-05-25**: pushed 3 audiences from 9,058-owner MLS CSV
+- `scripts/meta-rebuild-fub-audiences.mjs` — **NOT RUN** (awaiting green light)
+- `scripts/gbp-set-utm-website.mjs` + `/api/admin/gbp/set-website-utm` — GBP Website URL updater (Matt set URL manually via GBP admin)
+
+**Code wiring shipped:**
+- 7 lead surfaces fire `canonicallyTagLead` + `fireLeadGenerated` server-side (ad-blocker resilient)
+- `AnalyticsIdentityBridge.tsx` — sets GA4 `user_id` + Meta Pixel `em` advanced matching for every identified visitor
+- `components/GoogleAnalytics.tsx` — full Consent Mode v2 (gtag('consent','default',{...denied}) + url_passthrough + ads_data_redaction)
+- `/api/identity/me` endpoint returns hashed identity tokens
+- `snapshot-channels` cron added to vercel.json
+
+**Docs added:** `docs/GA4_USER_TRACKING_SETUP.md`, `docs/META_FIX_PLAN.md`, `docs/UTM_TRACKING_CONVENTION.md`.
+
+**Resolved findings:**
+- Dead pixel leak (`590593947302147`) — Matt killed the Zapier zap firing CAPI events through "Conversions API System User" (id 122166497978674230). Verified 74h zero fires.
+- Lead-form privacy_policy "missing" was a false alarm — Meta exposes it via `?fields=legal_content` not `?fields=privacy_policy`. Both ACTIVE forms have valid privacy URL.
+
+**Strategic decisions from Matt this session (carry forward):**
+- TARGET his FUB database (sphere marketing), don't exclude it
+- Realtor exclusion is hard-stop across every tier (same `HARD_STOP_TAGS` as `lib/canonical-lead-tagger.ts`)
+- 97703 is the premium focus (West Bend / NW Crossing / Awbrey / Tetherow)
+- Out-of-area absentee owners get their own tier
+- GBP UTM convention: `utm_source=gbp&utm_medium=organic&utm_campaign=profile` (his choice, NOT `utm_source=google`)
+- Skipped $700 BatchData skip-trace enrichment for now (accepts lower MLS audience match rate)
+- Skipped GA4 Reporting Identity click + channel grouping override (deemed not blocking)
+
+**Meta state verified via Graph API:**
+- 3 new MLS audiences live, displaying `1000-1000` floor (privacy-rounded, sub-1000 actual matches expected for name+address-only schema)
+- Page Access Token has `ads_management`, `business_management`, `pages_manage_ads`, plus 25 other scopes (verified via `debug_token`)
+- Page is type=PAGE, `expires_at: 0` (never)
 
 ### Next agent should (Cursor or Claude Code)
 
-1. `git pull --rebase origin main` (latest commit `009e3b40`).
-2. **Grant GA4 access to the service account** — Vercel production now has `GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL=viewer@ryanrealty.iam.gserviceaccount.com`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`, `GOOGLE_SERVICE_ACCOUNT_SUBJECT=matt@ryan-realty.com`, and `GOOGLE_GA4_PROPERTY_ID=527333348` (verified by hitting the cron — GA4 client now reaches the API). Current error from the live cron: `7 PERMISSION_DENIED: User does not have sufficient permissions for this property.` The service account is missing from the GA4 property's access list. **Fix:** open https://analytics.google.com → Admin → Property Access Management for property `527333348` → Add user → `viewer@ryanrealty.iam.gserviceaccount.com` with `Viewer` role → Save. After granting, rerun `/api/cron/marketing-optimization-report` (no redeploy needed) and confirm `ga4.ok=true` plus a higher `score`.
-3. **Push GA4 service account creds to Vercel preview + development** — `GOOGLE_SERVICE_ACCOUNT_*` are only in production right now. The Vercel CLI `env add` for preview demands a git branch arg even with `--yes --value --force --sensitive` (CLI 50.38.3 and 53.3.1 both hit the same prompt bug from a non-interactive shell). Add via the Vercel dashboard env UI (or by passing an explicit branch like `main`) when you need preview/dev to mirror production.
-4. Investigate why only 55 of 150 outreach attempts changed FUB state — likely some contacts already had the target stage and merged tags so `updatePersonAutomationState` returned `false` with no body to send. Consider relaxing that guard or always falling back to `addPersonNote` so `applied_count` matches `generated_outreach`.
-5. Optional: re-introduce a `fub_contacts_cache` mirror table so the dashboard does not pay the FUB API cost on every render (live pull is fine for the weekly cron, less ideal for the dashboard).
+1. `git pull --rebase origin main` (latest commit `65fdd91`).
+2. **Read `.auto-memory/memory_marketing_analytics_session_2026-05-26.md`** for the full session memory (audiences, IDs, decisions, designed-but-not-built spec).
+3. **Re-probe Meta audience match status** — by now (24-72h after upload) the displayed sizes for the 3 RR MLS audiences should be settled. Run:
+   ```bash
+   vercel env pull /tmp/.env --environment=production --yes && set -a && source /tmp/.env && set +a
+   node -e "fetch('https://graph.facebook.com/v21.0/act_'+process.env.META_AD_ACCOUNT_ID.replace(/^act_/,'')+'/customaudiences?fields=id,name,approximate_count_lower_bound,approximate_count_upper_bound,delivery_status&access_token='+process.env.META_PAGE_ACCESS_TOKEN).then(r=>r.json()).then(d=>console.log(JSON.stringify(d.data?.filter(a=>a.name.startsWith('RR MLS')), null, 2)))" && rm /tmp/.env
+   ```
+4. **Two pending tasks waiting on Matt's "go":**
+   - Run `node scripts/meta-rebuild-fub-audiences.mjs` (30 sec) — creates Targetable + Hard-Stop audiences
+   - Build the 6 campaign shells per spec in the memory file (~15 min, all via Meta Marketing API: `POST /act_X/campaigns` + `/adsets` with proper `targeting_spec` including the audience IDs in the memory file). Set `special_ad_categories: ['HOUSING']`. All paused, no creative attached.
+5. **Audience IDs to reference when building campaigns:**
+   - `120244161522810698` — RR MLS — Bend Property Owners (all)
+   - `120244161526200698` — RR MLS — 97703 Property Owners
+   - `120244161528410698` — RR MLS — Absentee Owners (Bend area)
+   - `120243107433010698` — FUB Suppression (existing, pre-this-session)
+   - After running rebuild: 2 more audience IDs returned by the script
+6. **For new audiences needed for Tier 4/5:** create `AUD-CORE-Sellers-180d` (WCA, URL contains seller LP paths, exclude Lead converters) + `AUD-CORE-Converters-365d` (WCA, Lead event last 365d, used as universal exclusion) + `AUD-LAL-1pct-Targetable` (Special Ad Audience Lookalike of RR Database — Targetable).
 
-### Skills actually read (paths)
+### Skills to read (paths)
 
-- `/Users/matthewryan/RyanRealty/.claude/skills/facebook-seller-growth/SKILL.md`
-- `/Users/matthewryan/.cursor/plugins/cache/cursor-public/supabase/release_v0.1.4/skills/supabase/SKILL.md`
+- **MANDATORY**: `.auto-memory/memory_marketing_analytics_session_2026-05-26.md` (this session's full state)
+- `.claude/skills/facebook-seller-growth/SKILL.md` — meta-rules + Cloud Routine prompt
+- `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` — canonical architecture
+- `docs/META_FIX_PLAN.md` — Meta state + what's UI-only
+- `docs/UTM_TRACKING_CONVENTION.md` — per-channel UTM spec including GBP
+- `docs/MARKETING_LEAD_FLOW.md` — every lead-creation path
 
 ---
 
 ## History (optional; newest first)
+
+### 2026-05-10 — Cursor Agent — Facebook Ad Campaign Optimization (FUB pipeline unblock)
+
+- Surface / commit / status: **`main` @ `009e3b40`**, Vercel READY. GA4 service account creds pushed to production, awaiting one-click GA4 property access grant.
+- Done this session:
+  - Added `fetchMyLeadsFromFubLive` in `lib/followupboss.ts` — paginates FUB People API by assigned user id.
+  - `app/api/cron/fub-outreach-execution/route.ts` tries `fub_contacts_cache` → `fub_contacts` → live FUB API.
+  - `app/actions/dashboard.ts getFubPipelineSnapshot` uses same live fallback.
+  - Seller-funnel attribution in `getDashboardMarketingData` now counts `utm_source=facebook`, `fbclid=`, or Facebook/Instagram/Messenger referrer.
+  - Both weekly crons mark prior `pending` / `in_progress` insights of their type as `implemented` after successful new write.
+  - Production verification: `score 45/100 (at_risk)`, packet `52149c3e`, outreach: `source_table=fub_api_live`, `my_leads_count=1500`, `applied_count=55`.
+- Open follow-ups (carried into 2026-05-23 session and largely resolved):
+  - GA4 service account access granted (verified working this session).
+  - Investigate why only 55 of 150 outreach attempts changed FUB state — still open, lower priority now.
 
 ### 2026-04-24 — Claude Code — Schoolhouse v5 listing video build, Gate 1 complete
 
