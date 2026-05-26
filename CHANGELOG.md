@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.303.0 (2026-05-26)
+
+### Features
+- feat(recon): seller-acquisition strategy + gallery seller-gen classifier
+
+---
+
+
 ## v1.302.1 (2026-05-26)
 
 ### Maintenance
