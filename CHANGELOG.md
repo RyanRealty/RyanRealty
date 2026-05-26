@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.303.1 (2026-05-26)
+
+### Bug Fixes
+- fix(migrations): restore repo↔DB parity for 4 highest-risk orphans (locked-in habit #1)
+
+---
+
+
 ## v1.303.0 (2026-05-26)
 
 ### Features
