@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.300.0 (2026-05-26)
+
+### Features
+- feat(skyslope): 712 SW 1st St checklist purity runbook + executed fixes
+
+---
+
+
 ## v1.299.2 (2026-05-26)
 
 ### Bug Fixes
