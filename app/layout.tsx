@@ -2,9 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { validateEnv } from "@/lib/env";
 import { Suspense } from "react";
 import "./globals.css";
-import { getBrokerageSettings } from "./actions/brokerage";
-import Footer from "../components/layout/Footer";
-import HeaderWithSession from "../components/layout/HeaderWithSession";
+import SiteHeader from "../components/site/SiteHeader";
+import SiteFooter from "../components/site/SiteFooter";
 import SignInPromptWithSession from "../components/layout/SignInPromptWithSession";
 import VisitTrackerWithSession from "../components/layout/VisitTrackerWithSession";
 import HideOnLP from "../components/layout/HideOnLP";
@@ -85,43 +84,9 @@ export const viewport: Viewport = {
   themeColor: "#102742",
 };
 
-function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 1200): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
-  ])
-}
-
-/* Server island — fetches brokerage settings only. NO cookie reads here:
- * `getBrokerageSettings` uses the service-role client + unstable_cache so
- * it never opts the route out of static rendering. The header / sign-in /
- * visit-tracker chrome moved to client-side session fetch via /api/auth/me
- * (see HeaderWithSession / SignInPromptWithSession / VisitTrackerWithSession).
- *
- * Why: keeping `getSession()` on the server forced
- * `Cache-Control: private, no-store` on every response — the SITE_SPEC
- * §45-47 cold-cache p95 root cause. Moving the cookie read out of the
- * render path lets the next.config edge-cache rule actually take effect
- * and the Vercel CDN can cache the prerendered HTML. */
-async function HeaderShellIsland() {
-  const brokerage = await withTimeout(getBrokerageSettings(), null, 1200)
-  const brokerageName = brokerage?.name ?? 'Ryan Realty'
-  const headerLogoUrl = brokerage?.logo_url?.trim() || '/logo-header-white.png'
-  return <HeaderWithSession brokerageName={brokerageName} headerLogoUrl={headerLogoUrl} />
-}
-
-async function FooterIsland() {
-  const brokerage = await withTimeout(getBrokerageSettings(), null, 1200)
-  const brokerageName = brokerage?.name ?? 'Ryan Realty'
-  const brokerageLogoUrl = brokerage?.logo_url?.trim() || null
-  const brokerageAddress =
-    brokerage?.address_line1 || brokerage?.city
-      ? [brokerage?.address_line1, brokerage?.address_line2, brokerage?.city, brokerage?.state, brokerage?.postal_code]
-          .filter(Boolean)
-          .join(', ')
-      : null
-  return <Footer brokerageName={brokerageName} brokerageLogoUrl={brokerageLogoUrl} brokerageEmail={brokerage?.primary_email ?? null} brokeragePhone={brokerage?.primary_phone ?? null} brokerageAddress={brokerageAddress} />
-}
+/* Site v2 chrome is fully static — no brokerage fetch, no server-side cookie
+ * read, no Suspense wrapper required. SiteHeader + SiteFooter render
+ * synchronously and the static shell stays cacheable at the Vercel edge. */
 
 export default function RootLayout({
   children,
@@ -175,19 +140,13 @@ export default function RootLayout({
           <HideOnLP>
             <JsonLd />
           </HideOnLP>
-          {/* Header streams in independently — fetches brokerage server-side
-              (cookie-free) then client-fetches session from /api/auth/me. The
-              HideOnLP unmounts the chrome on /lp/* after hydration. */}
+          {/* Static site v2 chrome. HideOnLP unmounts on /lp/* after hydration. */}
           <HideOnLP>
-            <Suspense fallback={<div className="h-16 bg-primary" />}>
-              <HeaderShellIsland />
-            </Suspense>
+            <SiteHeader />
           </HideOnLP>
           <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
           <HideOnLP>
-            <Suspense fallback={<div className="min-h-[200px] bg-primary" />}>
-              <FooterIsland />
-            </Suspense>
+            <SiteFooter />
           </HideOnLP>
           <HideOnLP>
             <CookieConsentBanner />

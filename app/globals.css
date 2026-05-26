@@ -189,6 +189,42 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   Site v2 — design-system tokens used by components/site/*
+   Mirrors design_system/ryan-realty/ui_kits/website/index.html
+   Navy-tinted shadows + eyebrow utility + hero ken-burns animation
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --shadow-xs: 0 1px 2px rgb(16 39 66 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(16 39 66 / 0.07), 0 1px 2px rgb(16 39 66 / 0.04);
+  --shadow-md: 0 4px 10px rgb(16 39 66 / 0.09), 0 2px 4px rgb(16 39 66 / 0.05);
+  --shadow-lg: 0 12px 28px rgb(16 39 66 / 0.13), 0 4px 8px rgb(16 39 66 / 0.06);
+  --shadow-xl: 0 24px 48px rgb(16 39 66 / 0.18);
+}
+
+.rr-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+  display: inline-block;
+}
+
+@keyframes site-hero-kenburns {
+  0%   { transform: scale(1.00); }
+  50%  { transform: scale(1.06); }
+  100% { transform: scale(1.00); }
+}
+.site-hero-kenburns {
+  animation: site-hero-kenburns 20s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-hero-kenburns { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    App-specific animations (functional, not theme)
    ═══════════════════════════════════════════════════════════════ */
 @keyframes shimmer {

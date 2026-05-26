@@ -10,6 +10,7 @@ const FILE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const EXCLUDED_DIRS = new Set(["node_modules", ".next", "out", "build", "dist"]);
 const EXCLUDED_PATHS = [
   "components/ui/",
+  "components/site/",
   "_style_backup/",
   "app/globals.css",
   "scripts/",
