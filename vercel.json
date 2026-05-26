@@ -1,10 +1,6 @@
 {
   "crons": [
     {
-      "path": "/api/cron/sync-delta",
-      "schedule": "*/10 * * * *"
-    },
-    {
       "path": "/api/cron/sync-history-terminal",
       "schedule": "0 * * * *"
     },
@@ -33,20 +29,12 @@
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/cron/refresh-video-tours-cache",
-      "schedule": "*/30 * * * *"
-    },
-    {
       "path": "/api/cron/refresh-mvs",
       "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/market-report",
       "schedule": "0 14 * * 6"
-    },
-    {
-      "path": "/api/cron/visitor-hot-lead-escalation",
-      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/token-heartbeat",
@@ -77,24 +65,8 @@
       "schedule": "30 12 * * *"
     },
     {
-      "path": "/api/cron/producer-dispatcher",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/producer-runtime",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/publisher-sweep",
-      "schedule": "*/10 * * * *"
-    },
-    {
       "path": "/api/cron/gbp-monthly-digest",
       "schedule": "0 13 1 * *"
-    },
-    {
-      "path": "/api/cron/gbp-health-check",
-      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/cron/marketing-snapshot-google-ads",
