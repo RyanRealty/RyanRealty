@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.305.1 (2026-05-26)
+
+### Other
+- design-system: sync v2 from Claude Design project
+
+---
+
+
 ## v1.305.0 (2026-05-26)
 
 ### Features
