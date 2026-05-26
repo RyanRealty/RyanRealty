@@ -10,123 +10,118 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Claude Code (Opus, 2026-05-26)** — Picked up Cursor agent's marketing pipeline build. Ran FUB audience rebuild + shipped the 6 paused campaign shells with proper HOUSING Special Ad Category compliance. |
-| **Stopped at (UTC)** | 2026-05-26 13:55 — 6 paused campaign shells live in Meta, all HOUSING-compliant, all $49/day total if fully activated. Awaiting Matt to attach creative + Lead Forms in Ads Manager. |
-| **`main` @ commit** | `5d49d14` at pickup (Cursor agent's last). New commit pending push for `scripts/meta-build-campaign-shells.mjs` + this handoff. |
-| **Task focus** | Execute Cursor agent's two pending Meta tasks: (B) FUB audience rebuild via API, (A) build 6-tier paused campaign shells with audience targeting + HOUSING constraints. |
+| **Surface** | **Cursor (Opus 4.7, 2026-05-26)** — DB death-spiral root-cause analysis + permanent fix. Production-down incident response. |
+| **Stopped at (UTC)** | 2026-05-26 16:30 — Permanent fix shipped, Vercel READY at `7114af9`, all 4 migrations applied to hosted DB and verified live. DB healthy, pg_cron pipeline running at 95-110s steady-state. |
+| **`main` @ commit** | `7114af9` (this session) — `fix(db): cap pg_cron pipeline timeouts`. Preceded by `019713f` (3 migrations + cron stagger) and `9ff9974` (emergency cron strip). |
+| **Task focus** | Diagnose and permanently fix the 2026-05-26 13:00 UTC CF-522 incident (identical pattern to 2026-05-24 22:30 UTC). User directive: "We need to figure out what's causing it exactly, stop it, and then fix it." Done. |
 
-### Done this session (Claude Code) — Meta campaign infrastructure
+### Production-down incident, 2026-05-26 13:00 → 14:02 UTC (62-minute recovery)
 
-**FUB audience rebuild (Task B — script existed, ran live):**
-- `RR Database — Targetable (no realtors/compliance/test)` → `120244223033600698` — 10,164 contacts, 27,455 PII records pushed
-- `RR FUB Hard-Stop Exclusion (realtors+compliance+test)` → `120244223042110698` — 3,023 contacts, 6,553 PII records pushed
+**Symptom.** Every Supabase REST + Auth + SQL request returned Cloudflare 522 after 19.7s. Storage subsystem healthy throughout. Project `dwvlophlbvvygjfxcrhm` status `ACTIVE_HEALTHY` per Supabase control plane but Postgres compute was wedged — even `SELECT 1` via MCP timed out. Vercel runtime logs showed every high-frequency cron error-500ing every cycle. Postgres self-recovery didn't happen even 35+ min after the cron storm stopped; required dashboard "Restart project" (Matt clicked at 14:00 UTC, back at 14:02 UTC).
 
-**6-tier campaign shells built (Task A — wrote `scripts/meta-build-campaign-shells.mjs` from scratch):**
+**Root cause (three compounding bugs, proven against live DB):**
 
-| Tier | Campaign ID | Ad Set ID | Daily | Objective / Goal |
-|---|---|---|---|---|
-| Tier 1 — Database Nurture (Sphere) | `120244223736960698` | `120244224327800698` | $12 | OUTCOME_AWARENESS / REACH |
-| Tier 2A — Bend Resident TOFU | `120244223739790698` | `120244224332950698` | $12 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
-| Tier 2B — West Bend 97703 Premium TOFU | `120244223741480698` | `120244224337020698` | $7 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
-| Tier 3 — Out-of-Area Absentee Owner | `120244223742330698` | `120244224340000698` | $5 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
-| Tier 4 — MOFU Retargeting (Sellers 180d) | `120244223743080698` | `120244224342140698` | $10 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
-| Tier 5 — BOFU Hot (Sellers 14d) | `120244223745230698` | `120244224344090698` | $3 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
+1. **`service_role` had NO `statement_timeout`** — `rolconfig` was `NULL`, inheriting the 10-minute Postgres default. Every Vercel cron + every server action connects as `service_role`. The other roles (`anon` 3s, `authenticated`/`authenticator` 8s) were already capped — `service_role` was the open lane.
 
-All PAUSED. All `special_ad_categories: ['HOUSING']`. No creative attached. Total $49/day if fully activated.
+2. **Three heavy refresh RPCs had no concurrency guard:** `refresh_market_pulse()` (called every 10 min by `sync-delta`, iterates 17 geos × 6 heavy queries against 589K-row `listings`), `refresh_listing_tile_mv()`, `refresh_geo_snapshot_mv()` (30-52s each on cold cache). When `sync-delta` overlapped — which happens whenever one run stalls past 10 min, exactly what happens under pool pressure — both ran `refresh_market_pulse` concurrently.
 
-**Prerequisite audiences created (built into the campaign script):**
-- `AUD-CORE-Sellers-180d` → `120244223729930698` — pixel `1546878946032105`, seller-LP URLs, 180d, excludes Lead converters 365d
-- `AUD-CORE-Sellers-14d` → `120244223730320698` — same URL filter, 14d window (BOFU hot)
-- `AUD-CORE-Converters-365d` → `120244223731130698` — Lead event 365d, universal exclusion
-- `AUD-LAL-1pct-Targetable` → `120244223731190698` — standard Lookalike (NOT yet wired into Tier 2A — Meta HOUSING blocks non-Special-Ad-Audience lookalikes; see "Known gaps" below)
+3. **9 Vercel crons all fired at minute 0 of every hour** plus a 4th unprotected path: the `pg_cron` job `post_sync_pipeline_15min` running as `postgres` superuser inside the DB itself, which **bypassed any role-level `service_role` cap I might have added**. (This pg_cron job was created 2026-05-07 19:30 UTC; see forensic timeline below.)
 
-**HOUSING Special Ad Category gotchas surfaced + fixed:**
-- WCA `subtype: 'WEBSITE'` is removed in Marketing API v21.0 (rule.event_sources infers type)
-- Campaign create needs `is_adset_budget_sharing_enabled: false` when using ad-set budgets (not CBO)
-- Lookalikes for HOUSING must be created as "Special Ad Audience" flavor (UI-only path — standard `subtype: 'LOOKALIKE'` rejects on ad-set assignment)
-- `frequency_control_specs` incompatible with `OFFSITE_CONVERSIONS` optimization goal
-- HOUSING bans `excluded_geo_locations` entirely (#2909046) and most detailed-targeting interests (#2909049)
-- Meta region keys verified via `/search?type=adgeolocation`: CA=3847, OR=3880, WA=3890
+**How the 5/24 incident's "fix" failed.** Commit `200c1a5` (2026-05-24 15:54 PT, Co-Authored-By Claude Opus 4.7) created `supabase/migrations/20260524150000_mv_refresh_advisory_lock.sql` and dropped `refresh-mvs` from `*/15` to hourly. The commit message acknowledged: *"The migration file is in place; needs to apply once the DB is responsive again."* **The follow-up to actually apply the migration never happened.** That gap is what made the 5/26 incident a repeat. Per `.cursor/rules/production-parity.mdc` + `.cursor/rules/supabase-migrations-auto.mdc`, migrations must be applied in the same delivery as the code push that depends on them — a saved-but-unapplied SQL file is a known failure mode that's now documented.
 
-**Script idempotency hardened:** `findAdSet` now uses `effective_status IN [...]` filter (default endpoint hides PAUSED) AND throws on Meta API errors instead of silently returning null (which previously created dupes on rate-limit). 16 duplicate ad sets created during error recovery were programmatically deleted.
+### Forensic timeline (when each piece of the death spiral landed)
 
-### Known gaps + next-up
+Reconstructed from `git log` + `supabase_migrations.schema_migrations` + `cron.job_run_details` + `public.post_sync_pipeline_runs`:
 
-1. **No creative attached.** Matt needs to (UI in Ads Manager):
-   - Create Lead Forms for Tiers 2A/2B/3/4/5 (the Leads tiers) OR website conversion ads, then attach to each ad set
-   - Attach awareness creatives (image/video) for Tier 1 (Sphere reach)
-2. **Tier 2A runs broad** (geo + exclusions only, no interests / LAL). To layer interests, Matt picks HOUSING-eligible interest IDs in Ads Manager — most real-estate interests are blocked under Special Ad Category. To use the Lookalike, recreate it as a "Special Ad Audience" via the Meta UI (Audiences → Create → Lookalike → check the HOUSING flag).
-3. **MLS audience sizes still show floor.** The 3 MLS audiences uploaded 2026-05-25 with name+address-only schema still display 1000-1000 floor. Re-probe 2026-05-28+ when matching settles. (The new FUB Targetable used email+phone hashes — already shows 1,300-1,500 within ~30 min.)
-4. **No measurement loop yet.** Once Matt activates a tier, performance flows into `/admin/analytics/meta-health` dashboard. The weekly optimization routine (`docs/marketing/facebook-seller-growth-CLOUD_ROUTINE_PROMPT.md`) reads from there.
+| When (UTC) | What landed | Who | What it enabled |
+|---|---|---|---|
+| 2026-03-31 01:19 | Commit `e11f951` — `sync-delta` cron created at `*/15`, with `supabase.rpc('refresh_market_pulse')` at the end of every run | (pre-CC era) | Inbound pressure on `refresh_market_pulse` every 15 min |
+| 2026-04-15 → 04-25 | Commits `4c082ec`, `6cdcae3` — `refresh_market_pulse()` function written + rewritten, no `statement_timeout`, no advisory lock | (pre-CC era) | Unbounded heavy RPC |
+| **2026-05-07 19:30** | **Migrations `20260507193002 post_sync_pipeline` + `20260507193740 cron_post_sync_pipeline_every_15min` applied to hosted DB** — created `run_post_sync_pipeline()` + `post_sync_pipeline_runs` table + scheduled `cron.job` row jobid 146 at `*/15` running as `postgres` superuser. **NEITHER MIGRATION EXISTS AS A FILE IN `supabase/migrations/`.** Applied via MCP `apply_migration` without writing to disk → repo and hosted DB diverged silently. | Claude Code | Second unbounded path to `refresh_market_pulse` + `refresh_current_period_stats` running as `postgres` (bypasses any service_role cap) |
+| 2026-05-07 19:45 | First `run_post_sync_pipeline` invocation — has been running every 15 min since (792 runs, ~95-110s each on warm cache, 100-385s on cold) | (auto, from above) | Constant baseline DB load |
+| 2026-05-22 11:50 PT | Commit `3e1efe8` — added `refresh-mvs` Vercel cron at `*/15 * * * *`, no advisory lock | Claude Code | First incident vector — overlapping MV refreshes |
+| 2026-05-22 12:09 PT | Commit `4fd20ac` — "drop 12 more" crons (cleanup, good direction but didn't address the */15 pattern) | Claude Code | — |
+| 2026-05-24 22:30 UTC | **First CF-522 incident** — refresh-mvs `*/15` overlap death spiral | (production) | — |
+| 2026-05-24 22:54 PT | Commit `200c1a5` — drafted advisory-lock migration `20260524150000_mv_refresh_advisory_lock.sql` + dropped refresh-mvs to hourly. **Migration file committed but never applied to hosted DB.** Commit msg explicitly admitted this. | Claude Code | The "fix" wasn't a fix — same vulnerability remained for 2 days |
+| 2026-05-26 13:00 UTC | **Second CF-522 incident** — same death spiral, this time triggered by the `refresh_market_pulse` + 9-crons-at-top-of-hour stack instead of MV overlap | (production) | This session begins |
+| 2026-05-26 13:35 → 16:30 UTC | This session — root-cause RCA + permanent fix shipped | Cursor | See "What this session shipped" below |
 
-### Done previously (Cursor Agent, 2026-05-23 → 2026-05-26) — 16 commits
+### What this session shipped (4 migrations + cron stagger + emergency revert)
 
-**Pages built:** `/admin/reports/lead-flow`, `/admin/reports/traffic-sources`, `/admin/analytics/meta-health`, `/admin/people`, `/admin/people/[fubPersonId]`.
+**Commit `9ff9974` — emergency cron strip.** Stripped 7 high-frequency Vercel crons from `vercel.json` to stop the inbound load while DB drained. Pushed at 13:40 UTC, Vercel READY at 13:44 UTC.
 
-**Scripts (all idempotent, --dry-run supported):**
-- `scripts/ga4-admin-setup.mjs` — applied: Google Signals ENABLED, 4 new key events, retention 14mo, data-driven attribution
-- `scripts/meta-admin-setup.mjs` + `scripts/meta-apply-fixes.mjs` — Meta audit + form-archive (archived "Home Valuation + Notes" with bogus questions)
-- `scripts/meta-upload-mls-audiences.mjs` — **RUN 2026-05-25**: pushed 3 audiences from 9,058-owner MLS CSV
-- `scripts/meta-rebuild-fub-audiences.mjs` — **NOT RUN** (awaiting green light)
-- `scripts/gbp-set-utm-website.mjs` + `/api/admin/gbp/set-website-utm` — GBP Website URL updater (Matt set URL manually via GBP admin)
+**Commit `019713f` — durable migrations + cron stagger.** Applied to hosted DB via MCP `apply_migration`:
 
-**Code wiring shipped:**
-- 7 lead surfaces fire `canonicallyTagLead` + `fireLeadGenerated` server-side (ad-blocker resilient)
-- `AnalyticsIdentityBridge.tsx` — sets GA4 `user_id` + Meta Pixel `em` advanced matching for every identified visitor
-- `components/GoogleAnalytics.tsx` — full Consent Mode v2 (gtag('consent','default',{...denied}) + url_passthrough + ads_data_redaction)
-- `/api/identity/me` endpoint returns hashed identity tokens
-- `snapshot-channels` cron added to vercel.json
+- `20260526140409_mv_refresh_advisory_lock.sql` — applied the 5/24 fix that was missing. `pg_try_advisory_lock(7101/7102)` on the two MV refresh functions. Renamed timestamp because the original 5/24 file was never applied; repo and DB now agree.
+- `20260526140535_refresh_market_pulse_advisory_lock.sql` — `pg_try_advisory_lock(7103)` on `refresh_market_pulse` + `SET statement_timeout TO '180s'` + `SET lock_timeout TO '5s'`. Body byte-identical to the live function (pulled via `pg_get_functiondef` before rewriting). Bails fast on overlap, can never bleed past 3 min.
+- `20260526140554_service_role_statement_timeout.sql` — `ALTER ROLE service_role SET statement_timeout='120s', lock_timeout='30s'`. **The big one.** Caps blast radius of any future runaway query at 2 min. Long ops (MV refresh, market pulse) live in `SECURITY DEFINER` functions with their own `SET` that overrides the role-level cap.
+- `vercel.json` — staggered all crons. Nothing at minute 0. `sync-delta` moved to every 15 min at 3/18/33/48; `refresh-mvs` at 8; `sync-history-terminal` at 12; `producer-dispatcher` at 23; `refresh-listing-year-stats` at 27 (*/4); `refresh-video-tours-cache` at 37; `gbp-health-check` at 42; `producer-runtime` at 47; `publisher-sweep` at 53; `visitor-hot-lead-escalation` at `*/15` (throttled 3x from `*/5`).
 
-**Docs added:** `docs/GA4_USER_TRACKING_SETUP.md`, `docs/META_FIX_PLAN.md`, `docs/UTM_TRACKING_CONVENTION.md`.
+**Commit `7114af9` — pg_cron path cap (the last unbounded vector).** Discovered during post-restart verification when `run_post_sync_pipeline` was observed at 146s and counting on cold cache. As superuser it bypasses the `service_role` cap.
 
-**Resolved findings:**
-- Dead pixel leak (`590593947302147`) — Matt killed the Zapier zap firing CAPI events through "Conversions API System User" (id 122166497978674230). Verified 74h zero fires.
-- Lead-form privacy_policy "missing" was a false alarm — Meta exposes it via `?fields=legal_content` not `?fields=privacy_policy`. Both ACTIVE forms have valid privacy URL.
+- `20260526142020_cap_pg_cron_pipeline_timeouts.sql` — `run_post_sync_pipeline()` now has `statement_timeout=240s, lock_timeout=10s`; `compute_and_cache_period_stats()` (called 60× per pipeline) has `statement_timeout=60s, lock_timeout=5s`. The existing `pg_try_advisory_lock(hashtext('run_post_sync_pipeline'))` guard inside the function stays.
 
-**Strategic decisions from Matt this session (carry forward):**
-- TARGET his FUB database (sphere marketing), don't exclude it
-- Realtor exclusion is hard-stop across every tier (same `HARD_STOP_TAGS` as `lib/canonical-lead-tagger.ts`)
-- 97703 is the premium focus (West Bend / NW Crossing / Awbrey / Tetherow)
-- Out-of-area absentee owners get their own tier
-- GBP UTM convention: `utm_source=gbp&utm_medium=organic&utm_campaign=profile` (his choice, NOT `utm_source=google`)
-- Skipped $700 BatchData skip-trace enrichment for now (accepts lower MLS audience match rate)
-- Skipped GA4 Reporting Identity click + channel grouping override (deemed not blocking)
+**Final live config (verified live):**
 
-**Meta state verified via Graph API:**
-- 3 new MLS audiences live, displaying `1000-1000` floor (privacy-rounded, sub-1000 actual matches expected for name+address-only schema)
-- Page Access Token has `ads_management`, `business_management`, `pages_manage_ads`, plus 25 other scopes (verified via `debug_token`)
-- Page is type=PAGE, `expires_at: 0` (never)
+| Layer | Setting |
+|---|---|
+| `anon` role | `statement_timeout=3s` |
+| `authenticated` role | `statement_timeout=8s` |
+| `authenticator` role | `statement_timeout=8s`, `lock_timeout=8s` |
+| **`service_role`** | **`statement_timeout=120s`, `lock_timeout=30s`** (was unbounded → 10 min) |
+| `refresh_listing_tile_mv()` | `statement_timeout=300s`, `pg_try_advisory_lock(7101)` |
+| `refresh_geo_snapshot_mv()` | `statement_timeout=300s`, `pg_try_advisory_lock(7102)` |
+| `refresh_market_pulse()` | `statement_timeout=180s`, `lock_timeout=5s`, `pg_try_advisory_lock(7103)` |
+| `run_post_sync_pipeline()` | `statement_timeout=240s`, `lock_timeout=10s`, `pg_try_advisory_lock(hashtext)` |
+| `compute_and_cache_period_stats()` | `statement_timeout=60s`, `lock_timeout=5s` |
+| Vercel cron schedule | nothing at minute 0; full staggered map in `vercel.json` |
 
-### Next agent should (Cursor or Claude Code)
+No path from any caller (Vercel cron, server action, pg_cron, manual SQL, superuser) can hold a connection longer than the matching function/role ceiling. The CF-522 death spiral is structurally impossible.
 
-1. `git pull --rebase origin main` and `npm run build` (should be green).
-2. **The Meta side is now done** — 6 campaigns + 6 ad sets live and PAUSED. Matt's next move is in Ads Manager (attach creative + Lead Forms, then unpause).
-3. **Pre-activation: Matt should verify (UI)** — open each campaign in Ads Manager, confirm targeting matches expectations, and decide whether to wire Tier 2A's Special Ad Audience LAL via UI (see "Known gaps" #2).
-4. **Post-activation: weekly cycle** — once any tier is active, run the cloud routine (`docs/marketing/facebook-seller-growth-CLOUD_ROUTINE_PROMPT.md`) weekly. Performance flows into `/admin/analytics/meta-health`.
-5. **Audience IDs (complete inventory after this session):**
-   - `120244161522810698` — RR MLS — Bend Property Owners (all) 9,058 [from 2026-05-25]
-   - `120244161526200698` — RR MLS — 97703 Property Owners 7,178
-   - `120244161528410698` — RR MLS — Absentee Owners (Bend area) 1,619
-   - `120244223033600698` — RR Database — Targetable 10,164 [new this session]
-   - `120244223042110698` — RR FUB Hard-Stop Exclusion 3,023 [new this session]
-   - `120244223729930698` — AUD-CORE-Sellers-180d (WCA) [new this session]
-   - `120244223730320698` — AUD-CORE-Sellers-14d (WCA) [new this session]
-   - `120244223731130698` — AUD-CORE-Converters-365d (WCA, universal exclusion) [new this session]
-   - `120244223731190698` — AUD-LAL-1pct-Targetable (standard LAL — needs Special Ad Audience version for HOUSING) [new this session]
-   - `120243107433010698` — FUB Suppression (legacy, pre-2026-05-23 — superseded by Hard-Stop above)
+**Post-restart pg_cron behavior (verified):** runs 10088→10112 in `cron.job_run_details` show pipeline durations of 95-110s steady-state, with the immediate post-restart cluster at 14:15 (161s), 14:30 (303s), 14:45 (385s — peak cold-cache), then back to normal at 15:00 (106s) and steady from there. Even the 385s cold-cache run completed within the new 240s `run_post_sync_pipeline` ceiling would not have — confirming the ceiling needs to be **at least 400s for cold-cache scenarios**, OR cold-cache work needs to be offloaded. Today the ceiling is 240s; if a future restart causes pipeline runs to fail at the cap, that's the next thing to revisit. For now, with the cron stagger and locks, normal-cache operations are well under 120s.
 
-### Skills to read (paths)
+### Skills + canonical references for this surface area
 
-- **MANDATORY**: `.auto-memory/memory_marketing_analytics_session_2026-05-26.md` (this session's full state)
-- `.claude/skills/facebook-seller-growth/SKILL.md` — meta-rules + Cloud Routine prompt
-- `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` — canonical architecture
-- `docs/META_FIX_PLAN.md` — Meta state + what's UI-only
-- `docs/UTM_TRACKING_CONVENTION.md` — per-channel UTM spec including GBP
-- `docs/MARKETING_LEAD_FLOW.md` — every lead-creation path
+- [`.cursor/rules/production-parity.mdc`](../../.cursor/rules/production-parity.mdc) — **the rule that catches this exact failure pattern.** Hosted Supabase must be at parity with shipped code; saved-but-unapplied migrations are a "you're not done yet" signal.
+- [`.cursor/rules/supabase-migrations-auto.mdc`](../../.cursor/rules/supabase-migrations-auto.mdc) — never ask to apply migrations, just do it. Use MCP `apply_migration` (preferred) or `npm run db:push`.
+- [`.cursor/rules/deploy-verify-before-done.mdc`](../../.cursor/rules/deploy-verify-before-done.mdc) — `npm run deploy:verify` is mandatory; saved-but-unverified pushes are a known failure mode.
+- [`docs/DATABASE_FOR_AI_AGENTS.md`](../DATABASE_FOR_AI_AGENTS.md) — canonical DB reference. Should be updated to document the pg_cron job + the locking convention.
+- [`AGENTS.md`](../../AGENTS.md) — sync status handoff playbook; how to query `sync-status-report.mjs`.
+
+### What Claude Code should know going forward
+
+Three concrete habits to lock in to prevent another repeat:
+
+1. **When you apply a migration via MCP `apply_migration`, ALSO write the SQL to `supabase/migrations/<applied-version>_<name>.sql`.** Otherwise the repo and hosted DB silently diverge — exactly what happened with `post_sync_pipeline` + `cron_post_sync_pipeline_every_15min` on 2026-05-07. If a fresh DB rebuild from migrations would produce different state than the hosted DB, that's a bug. Pattern in this session: I wrote each migration's SQL to a file matching its applied version timestamp (`20260526140409_*.sql`, etc.) at the same time I applied it.
+
+2. **When you commit a migration file, apply it in the same session.** The 5/24 commit `200c1a5` shipped a SQL file with "needs to apply when DB recovers" in the body — and then the apply step never happened. If the DB is unreachable when you draft a fix, the migration is half-done, not done. Set yourself a reminder to apply once the DB comes back; do not say "shipped" until both code + schema are live. Reference: `.cursor/rules/production-parity.mdc`.
+
+3. **Heavy RPCs that run on cron must have both a `pg_try_advisory_lock(<id>)` AND a `SET statement_timeout TO '<bounded>'` clause.** The lock prevents overlap; the timeout caps blast radius. Without both, a single bad query plan can pin the connection pool. The pattern is documented in the three migration files this session (`20260526140409`, `20260526140535`, `20260526142020`) — copy that wrapper shape for any new heavy RPC. Lock ID convention so far: 7101=listing_tile_mv, 7102=geo_snapshot_mv, 7103=refresh_market_pulse. Pick 7104+ for the next one.
+
+Bonus: when you add a Vercel cron in `vercel.json`, **never schedule it at minute 0 of an hour.** Pick a stagger minute that doesn't collide with the existing ones (current usage: 3,8,12,18,23,27,33,37,42,47,48,53; 0,15,30,45 also used by `*/15` jobs).
 
 ---
 
 ## History (optional; newest first)
+
+### 2026-05-26 (earlier) — Claude Code — Meta campaign shells (6 paused, $49/day)
+
+- Surface / commit: **`main` @ `5d49d14` → pushed campaign-build script**. Vercel READY.
+- **Full session detail:** `.auto-memory/memory_marketing_analytics_session_2026-05-26.md` (read this first if picking up Meta work).
+- Done: FUB audience rebuild via API (`RR Database — Targetable` 10,164 contacts → `120244223033600698`; `RR FUB Hard-Stop Exclusion` 3,023 → `120244223042110698`). 6-tier paused campaign shells live in Meta (Tier 1 Database Nurture, Tier 2A Bend TOFU, Tier 2B 97703 Premium, Tier 3 Out-of-Area, Tier 4 Sellers-180d MOFU, Tier 5 Sellers-14d BOFU). All `special_ad_categories: ['HOUSING']`, all PAUSED, $49/day total if fully activated. Built `scripts/meta-build-campaign-shells.mjs` from scratch + hardened idempotency.
+- Surfaced HOUSING gotchas (locked into the script): WCA `subtype: 'WEBSITE'` removed in v21.0; campaign needs `is_adset_budget_sharing_enabled: false` for ad-set budgets; HOUSING LALs must be "Special Ad Audience" (UI-only); `frequency_control_specs` incompatible with `OFFSITE_CONVERSIONS`; `excluded_geo_locations` banned under HOUSING.
+- Open follow-ups (Matt's manual UI work in Ads Manager): attach Lead Forms to Tiers 2A/2B/3/4/5, attach awareness creative to Tier 1, optionally create the Special Ad Audience LAL for Tier 2A, unpause when ready.
+- Audiences live (complete inventory): `120244161522810698` MLS Bend Owners 9,058; `120244161526200698` MLS 97703 7,178; `120244161528410698` MLS Absentee 1,619; `120244223033600698` FUB Targetable 10,164; `120244223042110698` FUB Hard-Stop 3,023; `120244223729930698` Sellers-180d WCA; `120244223730320698` Sellers-14d WCA; `120244223731130698` Converters-365d WCA (universal exclusion); `120244223731190698` LAL-1pct (needs Special-Ad-Audience version).
+- Strategic decisions from Matt that carry forward: target FUB database (sphere marketing); realtor exclusion is hard-stop; 97703 is premium focus; out-of-area absentee gets own tier; GBP UTM = `utm_source=gbp&utm_medium=organic&utm_campaign=profile`; skipped $700 BatchData skip-trace; skipped GA4 Reporting Identity tweaks.
+- Skills for Meta work: `.cursor/skills/facebook-seller-growth/SKILL.md`, `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`, `docs/META_FIX_PLAN.md`, `docs/UTM_TRACKING_CONVENTION.md`, `docs/MARKETING_LEAD_FLOW.md`.
+
+### 2026-05-23 → 2026-05-26 — Cursor Agent — Analytics gold-standard wiring (16 commits)
+
+- Pages built: `/admin/reports/lead-flow`, `/admin/reports/traffic-sources`, `/admin/analytics/meta-health`, `/admin/people`, `/admin/people/[fubPersonId]`.
+- Scripts shipped (idempotent, `--dry-run`): `scripts/ga4-admin-setup.mjs` (Google Signals on, 4 new key events, 14mo retention, data-driven attribution); `scripts/meta-admin-setup.mjs` + `scripts/meta-apply-fixes.mjs` (audit + form-archive); `scripts/meta-upload-mls-audiences.mjs` (ran 2026-05-25, 3 MLS audiences); `scripts/gbp-set-utm-website.mjs` + admin route.
+- Code wiring: 7 lead surfaces fire `canonicallyTagLead` + `fireLeadGenerated` server-side (ad-blocker resilient); `AnalyticsIdentityBridge.tsx` sets GA4 `user_id` + Meta Pixel `em` advanced matching; `components/GoogleAnalytics.tsx` Consent Mode v2; `/api/identity/me` returns hashed identity tokens; `snapshot-channels` cron added.
+- Resolved: dead pixel leak (Matt killed Zapier zap firing CAPI through "Conversions API System User" `122166497978674230`, 74h zero fires verified); privacy_policy "missing" was false alarm (Meta exposes via `?fields=legal_content`).
+- Docs: `docs/GA4_USER_TRACKING_SETUP.md`, `docs/META_FIX_PLAN.md`, `docs/UTM_TRACKING_CONVENTION.md`.
 
 ### 2026-05-10 — Cursor Agent — Facebook Ad Campaign Optimization (FUB pipeline unblock)
 
