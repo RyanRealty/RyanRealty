@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.306.0 (2026-05-26)
+
+### Features
+- feat(template-1784578): add 5 rural activities for listing-side rural files
+
+---
+
+
 ## v1.305.1 (2026-05-26)
 
 ### Other
