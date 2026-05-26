@@ -115,36 +115,50 @@ For Claude cloud or UI paste routines, use **`docs/marketing/facebook-seller-gro
 
 ---
 
-## LIVE STATE (last updated 2026-05-26)
+## LIVE STATE (last updated 2026-05-26, Claude Code session)
 
 **Always cross-check against:** `.auto-memory/memory_marketing_analytics_session_2026-05-26.md` (canonical session memory) and `docs/plans/CROSS_AGENT_HANDOFF.md` (latest commit + pending decisions).
 
-### Meta ad account `act_1178780510184911` — Custom Audiences pushed this cycle
+### Meta ad account `act_1178780510184911` — Custom Audiences (canonical inventory)
 
-| Audience ID | Name | Records | Source script |
+| Audience ID | Name | Records | Source |
 |---|---|---|---|
 | `120244161522810698` | RR MLS — Bend Property Owners (all) | 9,058 | `scripts/meta-upload-mls-audiences.mjs` |
 | `120244161526200698` | RR MLS — 97703 Property Owners | 7,178 | same |
 | `120244161528410698` | RR MLS — Absentee Owners (Bend area) | 1,619 | same |
-| `120243107433010698` | FUB Suppression — All Current Contacts | ~8,000 | pre-existing |
+| `120244223033600698` | RR Database — Targetable (no realtors/compliance/test) | 10,164 | `scripts/meta-rebuild-fub-audiences.mjs` |
+| `120244223042110698` | RR FUB Hard-Stop Exclusion (realtors+compliance+test) | 3,023 | same — universal exclusion |
+| `120244223729930698` | AUD-CORE-Sellers-180d (WCA) | n/a | `scripts/meta-build-campaign-shells.mjs` |
+| `120244223730320698` | AUD-CORE-Sellers-14d (WCA) | n/a | same |
+| `120244223731130698` | AUD-CORE-Converters-365d (WCA) | n/a | same — universal exclusion |
+| `120244223731190698` | AUD-LAL-1pct-Targetable (standard LAL) | n/a | same — NOT yet HOUSING-compatible, see below |
 
-### Pending audience builds (script ready, NOT yet run)
+`120243107433010698` "FUB Suppression — All Current Contacts" is legacy/superseded by the Hard-Stop exclusion above.
 
-`scripts/meta-rebuild-fub-audiences.mjs` creates:
-- `RR Database — Targetable (no realtors/compliance/test)` — 10,164 contacts
-- `RR FUB Hard-Stop Exclusion (realtors+compliance+test)` — 3,023 contacts
+### Live campaign shells (PAUSED, HOUSING-compliant, no creative attached)
 
-### Pending campaign build (designed, NOT yet built)
+All 6 tiers shipped 2026-05-26 via `scripts/meta-build-campaign-shells.mjs`. Total $49/day if fully activated. Matt's next move: attach creative + Lead Forms in Ads Manager, then unpause.
 
-6-tier structure stored in detail in `.auto-memory/memory_marketing_analytics_session_2026-05-26.md` ("The designed-but-not-built 6-tier campaign structure"):
-1. Database Nurture (25%) — INCLUDES targetable FUB list
-2. Bend Resident TOFU (25%) — broad geo + interests + LAL
-3. West Bend 97703 Premium TOFU (15%) — uses 97703 MLS audience
-4. Out-of-Area / Absentee Owner TOFU (10%) — uses Absentee MLS audience
-5. MOFU Retargeting (20%) — uses to-be-created `AUD-CORE-Sellers-180d` WCA
-6. BOFU Hot (5%) — sub-window of #5
+| Tier | Campaign ID | Ad Set ID | Daily | Objective / Optimization |
+|---|---|---|---|---|
+| Tier 1 — Database Nurture (Sphere) | `120244223736960698` | `120244224327800698` | $12 | OUTCOME_AWARENESS / REACH |
+| Tier 2A — Bend Resident TOFU | `120244223739790698` | `120244224332950698` | $12 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
+| Tier 2B — West Bend 97703 Premium TOFU | `120244223741480698` | `120244224337020698` | $7 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
+| Tier 3 — Out-of-Area Absentee Owner | `120244223742330698` | `120244224340000698` | $5 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
+| Tier 4 — MOFU Retargeting (Sellers 180d) | `120244223743080698` | `120244224342140698` | $10 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
+| Tier 5 — BOFU Hot (Sellers 14d) | `120244223745230698` | `120244224344090698` | $3 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
 
-ALL must have `special_ad_categories: ['HOUSING']`, `RR FUB Hard-Stop Exclusion` + `AUD-CORE-Converters-365d` excluded.
+### HOUSING Special Ad Category — locked rules surfaced this session
+
+When editing or extending paid Meta tooling, the following constraints are HARD and apply to every ad set under `special_ad_categories: ['HOUSING']`:
+
+1. **Standard Lookalikes are rejected on assignment.** Use Special Ad Audience LALs (UI-only — Meta Marketing API doesn't expose the flag). The `AUD-LAL-1pct-Targetable` audience is a standard LAL; it needs to be recreated as Special Ad Audience via Ads Manager before it can be added to Tier 2A.
+2. **`excluded_geo_locations` is banned (#2909046).** The Absentee MLS audience filter (mailing city ≠ site city) does Bend-exclusion in audience space instead of geo space.
+3. **Detailed targeting (`flexible_spec.interests` etc.) is severely restricted (#2909049).** Most real-estate interest IDs are blocked. Tier 2A runs broad on geo + exclusions; if interests are needed, pick HOUSING-eligible ones via the UI.
+4. **WCA `subtype: 'WEBSITE'` is removed in v21.0** — omit subtype, let Meta infer from `rule.event_sources`.
+5. **`frequency_control_specs` is incompatible with `OFFSITE_CONVERSIONS`** — let Meta auto-optimize frequency.
+6. **Campaign create requires `is_adset_budget_sharing_enabled: false`** when using ad-set budgets (not CBO).
+7. **Region keys must be verified** via `/search?type=adgeolocation` — CA=3847, OR=3880, WA=3890 (not the older `3877` / `3895` I had cached).
 
 ### GA4 baseline applied via API (2026-05-24)
 

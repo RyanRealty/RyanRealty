@@ -10,12 +10,56 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Cursor Agent (Claude Opus, 2026-05-23 → 2026-05-26)** — Marketing analytics infrastructure + Meta retargeting audience build. |
-| **Stopped at (UTC)** | 2026-05-26 13:05 — 3 MLS Custom Audiences pushed to Meta + dashboards/scripts live. Awaiting Matt's green light to (a) run the FUB-list rebuild and (b) build the 6 campaign shells. |
-| **`main` @ commit** | `65fdd91` (Vercel production READY through whole chain). |
-| **Task focus** | Wire every lead-capture surface to gold-standard, surface admin dashboards, set GA4 admin baseline via API, build Meta Custom Audiences from MLS export, design 6-tier retargeting campaign structure. |
+| **Surface** | **Claude Code (Opus, 2026-05-26)** — Picked up Cursor agent's marketing pipeline build. Ran FUB audience rebuild + shipped the 6 paused campaign shells with proper HOUSING Special Ad Category compliance. |
+| **Stopped at (UTC)** | 2026-05-26 13:55 — 6 paused campaign shells live in Meta, all HOUSING-compliant, all $49/day total if fully activated. Awaiting Matt to attach creative + Lead Forms in Ads Manager. |
+| **`main` @ commit** | `5d49d14` at pickup (Cursor agent's last). New commit pending push for `scripts/meta-build-campaign-shells.mjs` + this handoff. |
+| **Task focus** | Execute Cursor agent's two pending Meta tasks: (B) FUB audience rebuild via API, (A) build 6-tier paused campaign shells with audience targeting + HOUSING constraints. |
 
-### Done this session (Cursor Agent) — 16 commits
+### Done this session (Claude Code) — Meta campaign infrastructure
+
+**FUB audience rebuild (Task B — script existed, ran live):**
+- `RR Database — Targetable (no realtors/compliance/test)` → `120244223033600698` — 10,164 contacts, 27,455 PII records pushed
+- `RR FUB Hard-Stop Exclusion (realtors+compliance+test)` → `120244223042110698` — 3,023 contacts, 6,553 PII records pushed
+
+**6-tier campaign shells built (Task A — wrote `scripts/meta-build-campaign-shells.mjs` from scratch):**
+
+| Tier | Campaign ID | Ad Set ID | Daily | Objective / Goal |
+|---|---|---|---|---|
+| Tier 1 — Database Nurture (Sphere) | `120244223736960698` | `120244224327800698` | $12 | OUTCOME_AWARENESS / REACH |
+| Tier 2A — Bend Resident TOFU | `120244223739790698` | `120244224332950698` | $12 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
+| Tier 2B — West Bend 97703 Premium TOFU | `120244223741480698` | `120244224337020698` | $7 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
+| Tier 3 — Out-of-Area Absentee Owner | `120244223742330698` | `120244224340000698` | $5 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
+| Tier 4 — MOFU Retargeting (Sellers 180d) | `120244223743080698` | `120244224342140698` | $10 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
+| Tier 5 — BOFU Hot (Sellers 14d) | `120244223745230698` | `120244224344090698` | $3 | OUTCOME_LEADS / OFFSITE_CONVERSIONS |
+
+All PAUSED. All `special_ad_categories: ['HOUSING']`. No creative attached. Total $49/day if fully activated.
+
+**Prerequisite audiences created (built into the campaign script):**
+- `AUD-CORE-Sellers-180d` → `120244223729930698` — pixel `1546878946032105`, seller-LP URLs, 180d, excludes Lead converters 365d
+- `AUD-CORE-Sellers-14d` → `120244223730320698` — same URL filter, 14d window (BOFU hot)
+- `AUD-CORE-Converters-365d` → `120244223731130698` — Lead event 365d, universal exclusion
+- `AUD-LAL-1pct-Targetable` → `120244223731190698` — standard Lookalike (NOT yet wired into Tier 2A — Meta HOUSING blocks non-Special-Ad-Audience lookalikes; see "Known gaps" below)
+
+**HOUSING Special Ad Category gotchas surfaced + fixed:**
+- WCA `subtype: 'WEBSITE'` is removed in Marketing API v21.0 (rule.event_sources infers type)
+- Campaign create needs `is_adset_budget_sharing_enabled: false` when using ad-set budgets (not CBO)
+- Lookalikes for HOUSING must be created as "Special Ad Audience" flavor (UI-only path — standard `subtype: 'LOOKALIKE'` rejects on ad-set assignment)
+- `frequency_control_specs` incompatible with `OFFSITE_CONVERSIONS` optimization goal
+- HOUSING bans `excluded_geo_locations` entirely (#2909046) and most detailed-targeting interests (#2909049)
+- Meta region keys verified via `/search?type=adgeolocation`: CA=3847, OR=3880, WA=3890
+
+**Script idempotency hardened:** `findAdSet` now uses `effective_status IN [...]` filter (default endpoint hides PAUSED) AND throws on Meta API errors instead of silently returning null (which previously created dupes on rate-limit). 16 duplicate ad sets created during error recovery were programmatically deleted.
+
+### Known gaps + next-up
+
+1. **No creative attached.** Matt needs to (UI in Ads Manager):
+   - Create Lead Forms for Tiers 2A/2B/3/4/5 (the Leads tiers) OR website conversion ads, then attach to each ad set
+   - Attach awareness creatives (image/video) for Tier 1 (Sphere reach)
+2. **Tier 2A runs broad** (geo + exclusions only, no interests / LAL). To layer interests, Matt picks HOUSING-eligible interest IDs in Ads Manager — most real-estate interests are blocked under Special Ad Category. To use the Lookalike, recreate it as a "Special Ad Audience" via the Meta UI (Audiences → Create → Lookalike → check the HOUSING flag).
+3. **MLS audience sizes still show floor.** The 3 MLS audiences uploaded 2026-05-25 with name+address-only schema still display 1000-1000 floor. Re-probe 2026-05-28+ when matching settles. (The new FUB Targetable used email+phone hashes — already shows 1,300-1,500 within ~30 min.)
+4. **No measurement loop yet.** Once Matt activates a tier, performance flows into `/admin/analytics/meta-health` dashboard. The weekly optimization routine (`docs/marketing/facebook-seller-growth-CLOUD_ROUTINE_PROMPT.md`) reads from there.
+
+### Done previously (Cursor Agent, 2026-05-23 → 2026-05-26) — 16 commits
 
 **Pages built:** `/admin/reports/lead-flow`, `/admin/reports/traffic-sources`, `/admin/analytics/meta-health`, `/admin/people`, `/admin/people/[fubPersonId]`.
 
@@ -55,23 +99,21 @@
 
 ### Next agent should (Cursor or Claude Code)
 
-1. `git pull --rebase origin main` (latest commit `65fdd91`).
-2. **Read `.auto-memory/memory_marketing_analytics_session_2026-05-26.md`** for the full session memory (audiences, IDs, decisions, designed-but-not-built spec).
-3. **Re-probe Meta audience match status** — by now (24-72h after upload) the displayed sizes for the 3 RR MLS audiences should be settled. Run:
-   ```bash
-   vercel env pull /tmp/.env --environment=production --yes && set -a && source /tmp/.env && set +a
-   node -e "fetch('https://graph.facebook.com/v21.0/act_'+process.env.META_AD_ACCOUNT_ID.replace(/^act_/,'')+'/customaudiences?fields=id,name,approximate_count_lower_bound,approximate_count_upper_bound,delivery_status&access_token='+process.env.META_PAGE_ACCESS_TOKEN).then(r=>r.json()).then(d=>console.log(JSON.stringify(d.data?.filter(a=>a.name.startsWith('RR MLS')), null, 2)))" && rm /tmp/.env
-   ```
-4. **Two pending tasks waiting on Matt's "go":**
-   - Run `node scripts/meta-rebuild-fub-audiences.mjs` (30 sec) — creates Targetable + Hard-Stop audiences
-   - Build the 6 campaign shells per spec in the memory file (~15 min, all via Meta Marketing API: `POST /act_X/campaigns` + `/adsets` with proper `targeting_spec` including the audience IDs in the memory file). Set `special_ad_categories: ['HOUSING']`. All paused, no creative attached.
-5. **Audience IDs to reference when building campaigns:**
-   - `120244161522810698` — RR MLS — Bend Property Owners (all)
-   - `120244161526200698` — RR MLS — 97703 Property Owners
-   - `120244161528410698` — RR MLS — Absentee Owners (Bend area)
-   - `120243107433010698` — FUB Suppression (existing, pre-this-session)
-   - After running rebuild: 2 more audience IDs returned by the script
-6. **For new audiences needed for Tier 4/5:** create `AUD-CORE-Sellers-180d` (WCA, URL contains seller LP paths, exclude Lead converters) + `AUD-CORE-Converters-365d` (WCA, Lead event last 365d, used as universal exclusion) + `AUD-LAL-1pct-Targetable` (Special Ad Audience Lookalike of RR Database — Targetable).
+1. `git pull --rebase origin main` and `npm run build` (should be green).
+2. **The Meta side is now done** — 6 campaigns + 6 ad sets live and PAUSED. Matt's next move is in Ads Manager (attach creative + Lead Forms, then unpause).
+3. **Pre-activation: Matt should verify (UI)** — open each campaign in Ads Manager, confirm targeting matches expectations, and decide whether to wire Tier 2A's Special Ad Audience LAL via UI (see "Known gaps" #2).
+4. **Post-activation: weekly cycle** — once any tier is active, run the cloud routine (`docs/marketing/facebook-seller-growth-CLOUD_ROUTINE_PROMPT.md`) weekly. Performance flows into `/admin/analytics/meta-health`.
+5. **Audience IDs (complete inventory after this session):**
+   - `120244161522810698` — RR MLS — Bend Property Owners (all) 9,058 [from 2026-05-25]
+   - `120244161526200698` — RR MLS — 97703 Property Owners 7,178
+   - `120244161528410698` — RR MLS — Absentee Owners (Bend area) 1,619
+   - `120244223033600698` — RR Database — Targetable 10,164 [new this session]
+   - `120244223042110698` — RR FUB Hard-Stop Exclusion 3,023 [new this session]
+   - `120244223729930698` — AUD-CORE-Sellers-180d (WCA) [new this session]
+   - `120244223730320698` — AUD-CORE-Sellers-14d (WCA) [new this session]
+   - `120244223731130698` — AUD-CORE-Converters-365d (WCA, universal exclusion) [new this session]
+   - `120244223731190698` — AUD-LAL-1pct-Targetable (standard LAL — needs Special Ad Audience version for HOUSING) [new this session]
+   - `120243107433010698` — FUB Suppression (legacy, pre-2026-05-23 — superseded by Hard-Stop above)
 
 ### Skills to read (paths)
 

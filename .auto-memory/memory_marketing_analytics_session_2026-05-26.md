@@ -91,13 +91,20 @@ The complete arc from "Claude Code session hit rate limit while patching lead-fl
 
 ## Pending / next-up (decision points for next session)
 
-### Awaiting Matt's green light
+### Done by Claude Code 2026-05-26 (originally Awaiting Matt's green light)
 
-1. **Run `scripts/meta-rebuild-fub-audiences.mjs`** — script built, would create 2 new audiences:
-   - `RR Database — Targetable (no realtors/compliance/test)` — 10,164 contacts (Tier 1 nurture target)
-   - `RR FUB Hard-Stop Exclusion (realtors+compliance+test)` — 3,023 contacts (excluded from every campaign)
-   - 30 sec runtime. Replaces stale `FUB Suppression — All Current Contacts` audience (7,600-8,900).
-2. **Build 6 campaign shells** — designed but NOT yet built. Spec below.
+1. ✅ **FUB audience rebuild executed** — `scripts/meta-rebuild-fub-audiences.mjs` ran successfully:
+   - `RR Database — Targetable` → `120244223033600698` (10,164 contacts, 27,455 PII records pushed)
+   - `RR FUB Hard-Stop Exclusion` → `120244223042110698` (3,023 contacts, 6,553 PII records pushed)
+2. ✅ **6 campaign shells built** — `scripts/meta-build-campaign-shells.mjs` (new script, written this session). All 6 campaigns + 6 ad sets PAUSED, all HOUSING-compliant, $49/day total if fully activated. IDs in `docs/plans/CROSS_AGENT_HANDOFF.md` Current block.
+3. ✅ **4 prerequisite audiences also created** — `AUD-CORE-Sellers-180d`, `AUD-CORE-Sellers-14d`, `AUD-CORE-Converters-365d`, `AUD-LAL-1pct-Targetable`.
+
+### NEW pending (Matt's UI work in Ads Manager)
+
+1. Attach creative to each ad set (Lead Forms for Tiers 2-5; awareness creative for Tier 1)
+2. Recreate `AUD-LAL-1pct-Targetable` as a "Special Ad Audience" Lookalike via UI (Meta blocks standard LALs in HOUSING ad sets — see HOUSING-locked rules in `.cursor/skills/facebook-seller-growth/SKILL.md`)
+3. (Optional) Add HOUSING-eligible interest IDs to Tier 2A via UI (most real-estate interests are blocked under Special Ad Category)
+4. Unpause tiers in budget priority order: T1 first to warm Database Nurture, then T4/T5 (high-intent retarget) once Sellers-180d/14d WCAs have populated
 
 ### Awaiting Matt's UI clicks (no API path)
 
@@ -219,7 +226,8 @@ These can all be created via `POST /act_X/customaudiences` with the right `rule`
 | `scripts/meta-admin-setup.mjs` | Idempotent Meta audit (URLs, pixels, forms) + optional `--fix-utms` | Audited only, never used `--fix-utms` (all current campaigns are Lead Ads, URL=fb.me) |
 | `scripts/meta-apply-fixes.mjs` | Form archive + dead-pixel forensics | Run — archived `Home Valuation + Notes`, identified leak source |
 | `scripts/meta-upload-mls-audiences.mjs` | Upload MLS CSV → 3 Custom Audiences | Run 2026-05-25 — 3 audiences live |
-| `scripts/meta-rebuild-fub-audiences.mjs` | FUB → 2 Custom Audiences (clean + hard-stop) | **NOT YET RUN — awaiting green light** |
+| `scripts/meta-rebuild-fub-audiences.mjs` | FUB → 2 Custom Audiences (clean + hard-stop) | ✅ Run 2026-05-26 (Claude Code) — 2 audiences live |
+| `scripts/meta-build-campaign-shells.mjs` | Build the 6 paused HOUSING campaigns + 4 prereq audiences | ✅ Run 2026-05-26 (Claude Code) — 6 paused shells live, no creative |
 | `scripts/gbp-set-utm-website.mjs` + `/api/admin/gbp/set-website-utm` | GBP Website URL UTM updater | Blocked on Supabase 522 issue 2026-05-24; Matt set URL manually via GBP admin instead |
 
 Every script supports `--dry-run`. All require `vercel env pull .env.tmp && source .env.tmp` for credentials.
