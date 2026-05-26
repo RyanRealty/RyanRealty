@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.299.1 (2026-05-26)
+
+### Maintenance
+- docs(handoff): marketing analytics + meta audience session memory (2026-05-26)
+
+---
+
+
 ## v1.299.0 (2026-05-25)
 
 ### Features
