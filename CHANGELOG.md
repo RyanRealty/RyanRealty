@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.301.2 (2026-05-26)
+
+### Bug Fixes
+- fix(db): cap pg_cron pipeline timeouts (the last unbounded vector)
+
+---
+
+
 ## v1.301.1 (2026-05-26)
 
 ### Bug Fixes
