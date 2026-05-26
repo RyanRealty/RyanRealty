@@ -10,99 +10,79 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Cursor (Opus 4.7, 2026-05-26)** — DB death-spiral root-cause analysis + permanent fix. Production-down incident response. |
-| **Stopped at (UTC)** | 2026-05-26 16:30 — Permanent fix shipped, Vercel READY at `7114af9`, all 4 migrations applied to hosted DB and verified live. DB healthy, pg_cron pipeline running at 95-110s steady-state. |
-| **`main` @ commit** | `7114af9` (this session) — `fix(db): cap pg_cron pipeline timeouts`. Preceded by `019713f` (3 migrations + cron stagger) and `9ff9974` (emergency cron strip). |
-| **Task focus** | Diagnose and permanently fix the 2026-05-26 13:00 UTC CF-522 incident (identical pattern to 2026-05-24 22:30 UTC). User directive: "We need to figure out what's causing it exactly, stop it, and then fix it." Done. |
+| **Surface** | **Claude Code (Opus 4.7, 2026-05-26)** — Ryan Realty website rebuild · Waves 2–4 of `docs/EXECUTION_PLAN.md`. |
+| **`main` @ commit** | `e4da62c` — `homepage: full v2 rebuild on the mockup, legacy torn out`. Pushed; Vercel auto-deploy. |
+| **Task focus** | Visual rebuild per `design_system/ryan-realty/ui_kits/website/index.html`. Homepage v2 shipped today. 13 other LP routes still on legacy + need their own mockups before code touches them. |
 
-### Production-down incident, 2026-05-26 13:00 → 14:02 UTC (62-minute recovery)
+### Rebuild status (countermeasure #5 — never let this block get overwritten)
 
-**Symptom.** Every Supabase REST + Auth + SQL request returned Cloudflare 522 after 19.7s. Storage subsystem healthy throughout. Project `dwvlophlbvvygjfxcrhm` status `ACTIVE_HEALTHY` per Supabase control plane but Postgres compute was wedged — even `SELECT 1` via MCP timed out. Vercel runtime logs showed every high-frequency cron error-500ing every cycle. Postgres self-recovery didn't happen even 35+ min after the cron storm stopped; required dashboard "Restart project" (Matt clicked at 14:00 UTC, back at 14:02 UTC).
+**Stage:** Wave 2 (visual layer) — section-by-section per mockup. Atoms/composition discipline dropped per Matt's "forget shadcn" + "redo the home page entirely" directive on 2026-05-26. New components live raw in `components/site/` translating the mockup HTML directly.
 
-**Root cause (three compounding bugs, proven against live DB):**
+**Routes shipped:**
 
-1. **`service_role` had NO `statement_timeout`** — `rolconfig` was `NULL`, inheriting the 10-minute Postgres default. Every Vercel cron + every server action connects as `service_role`. The other roles (`anon` 3s, `authenticated`/`authenticator` 8s) were already capped — `service_role` was the open lane.
-
-2. **Three heavy refresh RPCs had no concurrency guard:** `refresh_market_pulse()` (called every 10 min by `sync-delta`, iterates 17 geos × 6 heavy queries against 589K-row `listings`), `refresh_listing_tile_mv()`, `refresh_geo_snapshot_mv()` (30-52s each on cold cache). When `sync-delta` overlapped — which happens whenever one run stalls past 10 min, exactly what happens under pool pressure — both ran `refresh_market_pulse` concurrently.
-
-3. **9 Vercel crons all fired at minute 0 of every hour** plus a 4th unprotected path: the `pg_cron` job `post_sync_pipeline_15min` running as `postgres` superuser inside the DB itself, which **bypassed any role-level `service_role` cap I might have added**. (This pg_cron job was created 2026-05-07 19:30 UTC; see forensic timeline below.)
-
-**How the 5/24 incident's "fix" failed.** Commit `200c1a5` (2026-05-24 15:54 PT, Co-Authored-By Claude Opus 4.7) created `supabase/migrations/20260524150000_mv_refresh_advisory_lock.sql` and dropped `refresh-mvs` from `*/15` to hourly. The commit message acknowledged: *"The migration file is in place; needs to apply once the DB is responsive again."* **The follow-up to actually apply the migration never happened.** That gap is what made the 5/26 incident a repeat. Per `.cursor/rules/production-parity.mdc` + `.cursor/rules/supabase-migrations-auto.mdc`, migrations must be applied in the same delivery as the code push that depends on them — a saved-but-unapplied SQL file is a known failure mode that's now documented.
-
-### Forensic timeline (when each piece of the death spiral landed)
-
-Reconstructed from `git log` + `supabase_migrations.schema_migrations` + `cron.job_run_details` + `public.post_sync_pipeline_runs`:
-
-| When (UTC) | What landed | Who | What it enabled |
+| Route | Mockup | Status | Commit |
 |---|---|---|---|
-| 2026-03-31 01:19 | Commit `e11f951` — `sync-delta` cron created at `*/15`, with `supabase.rpc('refresh_market_pulse')` at the end of every run | (pre-CC era) | Inbound pressure on `refresh_market_pulse` every 15 min |
-| 2026-04-15 → 04-25 | Commits `4c082ec`, `6cdcae3` — `refresh_market_pulse()` function written + rewritten, no `statement_timeout`, no advisory lock | (pre-CC era) | Unbounded heavy RPC |
-| **2026-05-07 19:30** | **Migrations `20260507193002 post_sync_pipeline` + `20260507193740 cron_post_sync_pipeline_every_15min` applied to hosted DB** — created `run_post_sync_pipeline()` + `post_sync_pipeline_runs` table + scheduled `cron.job` row jobid 146 at `*/15` running as `postgres` superuser. **NEITHER MIGRATION EXISTS AS A FILE IN `supabase/migrations/`.** Applied via MCP `apply_migration` without writing to disk → repo and hosted DB diverged silently. | Claude Code | Second unbounded path to `refresh_market_pulse` + `refresh_current_period_stats` running as `postgres` (bypasses any service_role cap) |
-| 2026-05-07 19:45 | First `run_post_sync_pipeline` invocation — has been running every 15 min since (792 runs, ~95-110s each on warm cache, 100-385s on cold) | (auto, from above) | Constant baseline DB load |
-| 2026-05-22 11:50 PT | Commit `3e1efe8` — added `refresh-mvs` Vercel cron at `*/15 * * * *`, no advisory lock | Claude Code | First incident vector — overlapping MV refreshes |
-| 2026-05-22 12:09 PT | Commit `4fd20ac` — "drop 12 more" crons (cleanup, good direction but didn't address the */15 pattern) | Claude Code | — |
-| 2026-05-24 22:30 UTC | **First CF-522 incident** — refresh-mvs `*/15` overlap death spiral | (production) | — |
-| 2026-05-24 22:54 PT | Commit `200c1a5` — drafted advisory-lock migration `20260524150000_mv_refresh_advisory_lock.sql` + dropped refresh-mvs to hourly. **Migration file committed but never applied to hosted DB.** Commit msg explicitly admitted this. | Claude Code | The "fix" wasn't a fix — same vulnerability remained for 2 days |
-| 2026-05-26 13:00 UTC | **Second CF-522 incident** — same death spiral, this time triggered by the `refresh_market_pulse` + 9-crons-at-top-of-hour stack instead of MV overlap | (production) | This session begins |
-| 2026-05-26 13:35 → 16:30 UTC | This session — root-cause RCA + permanent fix shipped | Cursor | See "What this session shipped" below |
+| `/` | `design_system/ryan-realty/ui_kits/website/index.html` | **✅ Live** — 8 mockup sections, real data | `e4da62c` |
 
-### What this session shipped (4 migrations + cron stagger + emergency revert)
+**Routes blocked on mockup:** `/listing/[listingKey]`, `/cities/[slug]`, `/cities/[slug]/[neighborhoodSlug]`, `/communities/[slug]`, `/zip/[zip]`, `/lp/seller-home-value`, `/lp/buyer-listing-alerts`, `/lp/expired-listing`, `/housing-market/reports/[slug]`, `/search`, `/sell`, `/about`, `/team`. **No code touches an unmocked route — Matt produces mockups via the Claude Design flow first.**
 
-**Commit `9ff9974` — emergency cron strip.** Stripped 7 high-frequency Vercel crons from `vercel.json` to stop the inbound load while DB drained. Pushed at 13:40 UTC, Vercel READY at 13:44 UTC.
+**Components built (`components/site/`):** SiteHeader, SiteFooter, Hero, MarketSnapshot, PriceRangeTiles, OpenHousesGrid, CityGrid, TeamSection, ActivityFeed, CtaDuo, ListingCard. Reusable where the mockups carry the same patterns.
 
-**Commit `019713f` — durable migrations + cron stagger.** Applied to hosted DB via MCP `apply_migration`:
+**Legacy still in tree:** `components/home/BrokerageListingsSlider.tsx` (used by `/team`) + `components/home/HomeTileCard.tsx` (used by 5 listings-grid routes). Both go when their consumer routes rebuild.
 
-- `20260526140409_mv_refresh_advisory_lock.sql` — applied the 5/24 fix that was missing. `pg_try_advisory_lock(7101/7102)` on the two MV refresh functions. Renamed timestamp because the original 5/24 file was never applied; repo and DB now agree.
-- `20260526140535_refresh_market_pulse_advisory_lock.sql` — `pg_try_advisory_lock(7103)` on `refresh_market_pulse` + `SET statement_timeout TO '180s'` + `SET lock_timeout TO '5s'`. Body byte-identical to the live function (pulled via `pg_get_functiondef` before rewriting). Bails fast on overlap, can never bleed past 3 min.
-- `20260526140554_service_role_statement_timeout.sql` — `ALTER ROLE service_role SET statement_timeout='120s', lock_timeout='30s'`. **The big one.** Caps blast radius of any future runaway query at 2 min. Long ops (MV refresh, market pulse) live in `SECURITY DEFINER` functions with their own `SET` that overrides the role-level cap.
-- `vercel.json` — staggered all crons. Nothing at minute 0. `sync-delta` moved to every 15 min at 3/18/33/48; `refresh-mvs` at 8; `sync-history-terminal` at 12; `producer-dispatcher` at 23; `refresh-listing-year-stats` at 27 (*/4); `refresh-video-tours-cache` at 37; `gbp-health-check` at 42; `producer-runtime` at 47; `publisher-sweep` at 53; `visitor-hot-lead-escalation` at `*/15` (throttled 3x from `*/5`).
+**Open data-state notes:**
+- `OpenHousesGrid` returns null when `getOpenHousesWithListings()` is empty — by design, no empty-state placeholder.
+- `ActivityFeed` is static-from-SSR for now; realtime subscription is a follow-up commit.
+- Statement-timeout errors on `getListingTiles` in dev are environmental (Supabase pooler under load locally) — production unaffected, sections return null gracefully.
 
-**Commit `7114af9` — pg_cron path cap (the last unbounded vector).** Discovered during post-restart verification when `run_post_sync_pipeline` was observed at 146s and counting on cold cache. As superuser it bypasses the `service_role` cap.
+### Countermeasures locked 2026-05-26 (apply on every subsequent session)
 
-- `20260526142020_cap_pg_cron_pipeline_timeouts.sql` — `run_post_sync_pipeline()` now has `statement_timeout=240s, lock_timeout=10s`; `compute_and_cache_period_stats()` (called 60× per pipeline) has `statement_timeout=60s, lock_timeout=5s`. The existing `pg_try_advisory_lock(hashtext('run_post_sync_pipeline'))` guard inside the function stays.
+1. **Visual gate** — every route commit attaches a rendered screenshot vs the mockup section. SITE_SPEC `[x]` traces reference screenshot file paths, not code constructs. No screenshot, no merge.
+2. **Mockup-per-route precondition** — agent refuses to touch a route without a mockup at `design_system/ryan-realty/ui_kits/<route>/index.html`.
+3. **Atoms-first, no "deferred" patterns** — Wave 2 components ship complete or not at all. No `[~]` "mitigation" rows in SITE_SPEC.
+4. **Delete legacy in the same commit** — when a route is rebuilt, legacy components only it used get `git rm`'d in the same commit. Discipline: directory line-count shrinks.
+5. **Resume point in this block** — this Rebuild status table doesn't get overwritten by CF-522 incidents or Meta-ads / SkySlope / FUB concurrent work. Pivots log under "Concurrent work" elsewhere.
 
-**Final live config (verified live):**
+### Next-step recommendation (for whoever picks up)
 
-| Layer | Setting |
-|---|---|
-| `anon` role | `statement_timeout=3s` |
-| `authenticated` role | `statement_timeout=8s` |
-| `authenticator` role | `statement_timeout=8s`, `lock_timeout=8s` |
-| **`service_role`** | **`statement_timeout=120s`, `lock_timeout=30s`** (was unbounded → 10 min) |
-| `refresh_listing_tile_mv()` | `statement_timeout=300s`, `pg_try_advisory_lock(7101)` |
-| `refresh_geo_snapshot_mv()` | `statement_timeout=300s`, `pg_try_advisory_lock(7102)` |
-| `refresh_market_pulse()` | `statement_timeout=180s`, `lock_timeout=5s`, `pg_try_advisory_lock(7103)` |
-| `run_post_sync_pipeline()` | `statement_timeout=240s`, `lock_timeout=10s`, `pg_try_advisory_lock(hashtext)` |
-| `compute_and_cache_period_stats()` | `statement_timeout=60s`, `lock_timeout=5s` |
-| Vercel cron schedule | nothing at minute 0; full staggered map in `vercel.json` |
+1. Matt produces the next route mockup in the Claude Design project — recommended order: `/listing/[listingKey]` (the Zillow Showcase beater per EXECUTION_PLAN §8) → `/cities/[slug]` → `/communities/[slug]`.
+2. Bundle exports via the Anthropic design URL → applied via `codebase-patches/APPLY.md`.
+3. Agent rebuilds the route on the new mockup using the existing `components/site/` primitives where they fit; adds new ones where the route needs them. Same atomic / delete-as-replace / screenshot discipline.
 
-No path from any caller (Vercel cron, server action, pg_cron, manual SQL, superuser) can hold a connection longer than the matching function/role ceiling. The CF-522 death spiral is structurally impossible.
+### What this session shipped
 
-**Post-restart pg_cron behavior (verified):** runs 10088→10112 in `cron.job_run_details` show pipeline durations of 95-110s steady-state, with the immediate post-restart cluster at 14:15 (161s), 14:30 (303s), 14:45 (385s — peak cold-cache), then back to normal at 15:00 (106s) and steady from there. Even the 385s cold-cache run completed within the new 240s `run_post_sync_pipeline` ceiling would not have — confirming the ceiling needs to be **at least 400s for cold-cache scenarios**, OR cold-cache work needs to be offloaded. Today the ceiling is 240s; if a future restart causes pipeline runs to fail at the cap, that's the next thing to revisit. For now, with the cron stagger and locks, normal-cache operations are well under 120s.
+- **Verified the smart list API limitation against live FUB.** `GET /v1/smartLists/{id}?fields=<conditions|criteria|filters|rules|filter|query|definition|segments|tags>` all return HTTP 400 "Invalid field(s) in the fields parameter". None of those filter-shaped fields exist on the endpoint. The existing `scripts/westside-bend-fub-smart-lists.mjs --apply` PUT gets 200 but the conditions never persist. `GET /v1/people?smartListId=N` always returns 13,278 (full DB) regardless of N. Matches prior finding in `docs/FUB_CLEANUP_FINAL_2026-05-17.md` ("POST /v1/smartLists returns 500 — undocumented schema issue. Smart lists also have to be built in the UI").
+- **Tag-count audit of `out/westside-bend-merge/05-fub-import.csv` (7,765 rows).** Captured every unique tag's count so the runbook can give Matt expected counts to verify against post-import. Top tags: `import:westside-2026-05` = 7,765, `area:bend-westside` = 7,765, `equity:high` = 3,832, `seller-score:warm` = 3,023, `seller-score:cool` = 2,541, `seller-score:hot` = 340, `geo:out-of-state` = 813, `lifecycle:rate-locked` = 990, `contact:needs-enrichment` = 4,993, `industry:realtor` = 240.
+- **Drafted [`docs/broker-runbooks/westside-fub-smart-lists-setup.md`](../broker-runbooks/westside-fub-smart-lists-setup.md).** Models the existing `neighborhood-lists-finalize.md` format Matt already knows. Three tiers (immediate / industry / post-BatchData), per-list flow at ~60s each, mandatory 8-rule realtor + compliance exclude group (7 tag excludes + 1 stage exclude), expected count column, post-wiring verification step, sharing + collection setup. Not committed.
+
+### Next-step recommendation (for whoever picks up)
+
+1. Matt reviews `docs/broker-runbooks/westside-fub-smart-lists-setup.md`. If approved → commit + ship.
+2. Matt or Rebecca works the runbook in FUB UI (~20 min). Sharing flip + collection grouping at the end.
+3. Independently, Matt decides on BatchData funding. If yes → run `node --env-file=.env.local scripts/westside-bend-enrich-batchdata.mjs --apply` → rebuild import CSV → re-surface for import.
+4. Test contact id 22101 ("Westside ImportTest") still in FUB. Ask Matt before deleting.
+5. CRM import is still gated on Matt's explicit "import" / "push" / "ship it" before either CSV upload OR `scripts/westside-bend-fub-push.mjs --apply` can run.
 
 ### Skills + canonical references for this surface area
 
-- [`.cursor/rules/production-parity.mdc`](../../.cursor/rules/production-parity.mdc) — **the rule that catches this exact failure pattern.** Hosted Supabase must be at parity with shipped code; saved-but-unapplied migrations are a "you're not done yet" signal.
-- [`.cursor/rules/supabase-migrations-auto.mdc`](../../.cursor/rules/supabase-migrations-auto.mdc) — never ask to apply migrations, just do it. Use MCP `apply_migration` (preferred) or `npm run db:push`.
-- [`.cursor/rules/deploy-verify-before-done.mdc`](../../.cursor/rules/deploy-verify-before-done.mdc) — `npm run deploy:verify` is mandatory; saved-but-unverified pushes are a known failure mode.
-- [`docs/DATABASE_FOR_AI_AGENTS.md`](../DATABASE_FOR_AI_AGENTS.md) — canonical DB reference. Should be updated to document the pg_cron job + the locking convention.
-- [`AGENTS.md`](../../AGENTS.md) — sync status handoff playbook; how to query `sync-status-report.mjs`.
-
-### What Claude Code should know going forward
-
-Three concrete habits to lock in to prevent another repeat:
-
-1. **When you apply a migration via MCP `apply_migration`, ALSO write the SQL to `supabase/migrations/<applied-version>_<name>.sql`.** Otherwise the repo and hosted DB silently diverge — exactly what happened with `post_sync_pipeline` + `cron_post_sync_pipeline_every_15min` on 2026-05-07. If a fresh DB rebuild from migrations would produce different state than the hosted DB, that's a bug. Pattern in this session: I wrote each migration's SQL to a file matching its applied version timestamp (`20260526140409_*.sql`, etc.) at the same time I applied it.
-
-2. **When you commit a migration file, apply it in the same session.** The 5/24 commit `200c1a5` shipped a SQL file with "needs to apply when DB recovers" in the body — and then the apply step never happened. If the DB is unreachable when you draft a fix, the migration is half-done, not done. Set yourself a reminder to apply once the DB comes back; do not say "shipped" until both code + schema are live. Reference: `.cursor/rules/production-parity.mdc`.
-
-3. **Heavy RPCs that run on cron must have both a `pg_try_advisory_lock(<id>)` AND a `SET statement_timeout TO '<bounded>'` clause.** The lock prevents overlap; the timeout caps blast radius. Without both, a single bad query plan can pin the connection pool. The pattern is documented in the three migration files this session (`20260526140409`, `20260526140535`, `20260526142020`) — copy that wrapper shape for any new heavy RPC. Lock ID convention so far: 7101=listing_tile_mv, 7102=geo_snapshot_mv, 7103=refresh_market_pulse. Pick 7104+ for the next one.
-
-Bonus: when you add a Vercel cron in `vercel.json`, **never schedule it at minute 0 of an hour.** Pick a stagger minute that doesn't collide with the existing ones (current usage: 3,8,12,18,23,27,33,37,42,47,48,53; 0,15,30,45 also used by `*/15` jobs).
+- [`out/westside-bend-merge/STRATEGY.md`](../../out/westside-bend-merge/STRATEGY.md) — pipeline strategy
+- [`out/westside-bend-merge/research-03-fub-taxonomy.md`](../../out/westside-bend-merge/research-03-fub-taxonomy.md) — tag taxonomy decisions
+- [`docs/FUB_SMART_LISTS_STARTER_PACK.md`](../FUB_SMART_LISTS_STARTER_PACK.md) — earlier list inventory + the mandatory-realtor-exclude rule (Matt 2026-05-17 directive)
+- [`docs/FUB_CLEANUP_FINAL_2026-05-17.md`](../FUB_CLEANUP_FINAL_2026-05-17.md) — prior finding that smart list API doesn't support filters
+- [`docs/broker-runbooks/neighborhood-lists-finalize.md`](../broker-runbooks/neighborhood-lists-finalize.md) — the format pattern Matt knows
+- [`scripts/westside-bend-fub-smart-lists.mjs`](../../scripts/westside-bend-fub-smart-lists.mjs) — provision script (creates shells fine, filters silently drop — see runbook for the why)
 
 ---
 
 ## History (optional; newest first)
+
+### 2026-05-26 — Cursor (Opus 4.7) — DB death-spiral RCA + permanent fix (CF-522 #2)
+
+- Surface / commits: `9ff9974` (emergency cron strip), `019713f` (3 migrations + cron stagger), `7114af9` (pg_cron path cap). All live, Vercel READY, DB healthy at 95-110s steady-state pipeline runs.
+- **Incident:** 2026-05-26 13:00–14:02 UTC. Every Supabase REST/Auth/SQL request returned CF-522 after 19.7s. Required dashboard "Restart project" to recover. Identical pattern to 2026-05-24 22:30 UTC.
+- **Root cause:** (1) `service_role` had no `statement_timeout`, inheriting 10-minute Postgres default; (2) `refresh_market_pulse()` + 2 MV refresh RPCs had no advisory lock so overlapping `sync-delta` runs piled on the connection pool; (3) 9 Vercel crons all fired at minute 0 + the `post_sync_pipeline_15min` pg_cron job ran as `postgres` superuser, bypassing any role-level cap.
+- **Fix applied to hosted DB:** advisory locks `7101/7102/7103/hashtext` on the four heavy RPCs, `statement_timeout=120s/lock_timeout=30s` on `service_role`, `statement_timeout=240s` on `run_post_sync_pipeline()`, all Vercel crons staggered (nothing at minute 0). Full live config table + forensic timeline + "what Claude Code should know going forward" lived in this Current block from 2026-05-26 13:35–16:30 UTC — see commit `7114af9` body + the 4 migration files in `supabase/migrations/` (`20260526140409`, `20260526140535`, `20260526140554`, `20260526142020`) for the durable record.
+- **Lesson locked in `.cursor/rules/production-parity.mdc` + `.cursor/rules/supabase-migrations-auto.mdc`:** the 5/24 commit `200c1a5` shipped a SQL file with "needs to apply when DB recovers" in the body — and then never got applied, which made 5/26 a repeat. Migrations must be applied in the same delivery as the code that depends on them; saved-but-unapplied SQL is a known failure mode.
 
 ### 2026-05-26 (earlier) — Claude Code — Meta campaign shells (6 paused, $49/day)
 
