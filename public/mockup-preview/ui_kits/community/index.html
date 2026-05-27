@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Resort community mockup. Ryan Realty</title>
+<link rel="icon" href="../../assets/favicon.ico">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="../_shared/site-mockup.css">
+<style>
+  .amenity-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+  @media (max-width: 820px) { .amenity-grid { grid-template-columns: repeat(2,1fr); } }
+  .amenity { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .amenity .icon { width: 32px; height: 32px; background: rgb(from var(--primary) r g b / 0.08); color: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+  .amenity h4 { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
+  .amenity p { margin: 0; font-size: 12px; color: var(--muted-foreground); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="../website/index.html"><img src="../../assets/logo-header-white.png" alt="Ryan Realty"></a>
+    <nav class="nav">
+      <a href="../city/index.html">Search</a>
+      <a href="../community/index.html">Communities</a>
+      <a href="../market-report/index.html">Market</a>
+      <a href="../team/index.html">Meet the Team</a>
+      <a href="../sell/index.html">Sell</a>
+    </nav>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost-on-navy">Sign in</button>
+      <button class="btn btn-on-navy">List your home</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="breadcrumb">
+    <a href="../website/index.html">Home</a><span class="sep">›</span>
+    <a href="../city/index.html">Bend</a><span class="sep">›</span>
+    <span class="current">Tetherow</span>
+  </div>
+</div>
+
+<!-- Hero -->
+<section class="hero" style="min-height:560px;padding:100px 0 80px">
+  <div class="hero-img" style="background:url('../../assets/hero-applegate-clean.jpg') center/cover;animation:kenburns 20s ease-in-out infinite alternate"></div>
+  <div class="hero-overlay"></div>
+  <div class="container hero-content">
+    <div class="eyebrow-on-navy">Bend · Resort community</div>
+    <h1>Tetherow</h1>
+    <p class="lede">Master-planned golf community on Bend's west side. David McLay Kidd 18-hole course, full club + spa, 9 named sub-neighborhoods, ~700 lots. Median sale $1,495,000 over the last 12 months.</p>
+    <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
+      <a href="#listings" class="btn btn-on-navy btn-lg">See 15 active homes</a>
+      <a href="../seller-lp/index.html" class="btn btn-ghost-on-navy btn-lg">Free CMA. sell my Tetherow home</a>
+    </div>
+    <div class="stat-band">
+      <div class="stat"><span class="v">15</span><span class="l">Active SFR</span></div>
+      <div class="stat"><span class="v">$1.50M</span><span class="l">Median list</span></div>
+      <div class="stat"><span class="v">$1.495M</span><span class="l">Median sale · 12mo</span></div>
+      <div class="stat"><span class="v">$398</span><span class="l">Median $/sqft</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- About Tetherow -->
+<section class="block">
+  <div class="container">
+    <div class="split">
+      <div>
+        <div class="rr-eyebrow">About Tetherow</div>
+        <h2 style="margin-top:6px">A golf community that put architectural intention first.</h2>
+        <p>Tetherow opened the David McLay Kidd 18-hole course in 2008 and added the Tetherow Lodges resort hotel in 2014. Homesites are clustered into 9 named sub-neighborhoods, each with its own architectural guidelines and lot-size norm: Heath, Tartan Druim, Triple Knot, Lodges at Bachelor View, Westbrook Meadows, Sunrise Village, Campbell Road, Roald West, and 1st on the Hillsites.</p>
+        <p>Buyers here are typically out-of-state with primary or secondary-home intent. The club is golf-led but membership tiers cover non-golf families. HOA dues run $1,200-$2,800 annually depending on sub-neighborhood; the club is a separate equity membership ($45k-$95k initiation).</p>
+      </div>
+      <div class="split-img" style="background-image:url('../../assets/hero-applegate.png');background-size:cover;background-position:center"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Sub-neighborhoods -->
+<section class="block muted">
+  <div class="container">
+    <div class="block-head">
+      <div>
+        <div class="rr-eyebrow">9 sub-neighborhoods within Tetherow</div>
+        <h2 style="margin-top:6px">Find the one that fits</h2>
+        <p class="subtitle">Each has its own dues, builder roster, and architectural review committee.</p>
+      </div>
+    </div>
+    <div class="grid-4">
+      <a href="#" class="city-card"><div class="name">Heath</div><div class="median">$1,895,000</div><div class="stats">3 active · gated custom</div></a>
+      <a href="#" class="city-card"><div class="name">Tartan Druim</div><div class="median">$2,195,000</div><div class="stats">2 active · course-front</div></a>
+      <a href="#" class="city-card"><div class="name">Triple Knot</div><div class="median">$1,650,000</div><div class="stats">4 active · single-family</div></a>
+      <a href="#" class="city-card"><div class="name">Lodges at Bachelor V</div><div class="median">$895,000</div><div class="stats">3 active · townhomes</div></a>
+      <a href="#" class="city-card"><div class="name">Westbrook Meadows</div><div class="median">$1,245,000</div><div class="stats">1 active · cottage homes</div></a>
+      <a href="#" class="city-card"><div class="name">Sunrise Village</div><div class="median">$1,395,000</div><div class="stats">2 active · single-family</div></a>
+      <a href="#" class="city-card"><div class="name">Campbell Road</div><div class="median">$1,495,000</div><div class="stats">0 active · custom acreage</div></a>
+      <a href="#" class="city-card"><div class="name">1st On The Hillsites</div><div class="median">$2,495,000</div><div class="stats">0 active · view homes</div></a>
+    </div>
+  </div>
+</section>
+
+<!-- Amenities -->
+<section class="block">
+  <div class="container">
+    <div class="block-head">
+      <div>
+        <div class="rr-eyebrow">Amenities</div>
+        <h2 style="margin-top:6px">What you get inside the gates</h2>
+      </div>
+    </div>
+    <div class="amenity-grid">
+      <div class="amenity"><div class="icon">⛳</div><h4>Tetherow Golf</h4><p>David McLay Kidd 18-hole course. Linksland-style layout. PGA Tour qualifier-rated.</p></div>
+      <div class="amenity"><div class="icon">🏊</div><h4>Athletic Club</h4><p>25-meter outdoor pool, fitness center, tennis + pickleball courts.</p></div>
+      <div class="amenity"><div class="icon">🍴</div><h4>Solomon's + The Row</h4><p>Two on-property restaurants. Members + resort guests + public lunch.</p></div>
+      <div class="amenity"><div class="icon">🏔️</div><h4>20 min to Bachelor</h4><p>Direct access via Cascade Lakes Hwy. First-on-mountain skiable on a 6:45 a.m. departure.</p></div>
+      <div class="amenity"><div class="icon">🌲</div><h4>Trails</h4><p>Connected to Bend's paved trail system. Direct access to Deschutes National Forest singletrack.</p></div>
+      <div class="amenity"><div class="icon">🏨</div><h4>Tetherow Lodges</h4><p>50-room resort hotel on-property. Owners get preferred rates + member pricing on event space.</p></div>
+      <div class="amenity"><div class="icon">🏘️</div><h4>STR-friendly sub-areas</h4><p>Lodges at Bachelor View permits short-term rentals. Other sub-neighborhoods don't.</p></div>
+      <div class="amenity"><div class="icon">🎓</div><h4>Schools</h4><p>Highland Elem · Pacific Crest Middle · Summit High. Bend-La Pine School District.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Active listings -->
+<section class="block muted" id="listings">
+  <div class="container">
+    <div class="block-head">
+      <div>
+        <div class="rr-eyebrow">Available now</div>
+        <h2 style="margin-top:6px">Active homes in Tetherow</h2>
+        <p class="subtitle">15 SFR + 4 townhomes. Sorted by list price, descending.</p>
+      </div>
+      <a class="head-action" href="#">View all 19 →</a>
+    </div>
+    <div class="listings">
+      <article class="listing"><div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-deschutes-clean.jpg');background-size:cover;background-position:center"></div><div class="badges"><span class="b b-hot">Hot</span></div></div><div class="info"><div class="price">$2,495,000</div><div class="addr">61482 Skyline Ranch Rd</div><div class="city">Bend, OR 97702 · Heath</div><div class="meta"><span>5 bd</span><span>·</span><span>4.5 ba</span><span>·</span><span>4,200 sqft</span></div></div></article>
+      <article class="listing"><div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-awbrey-clean.jpg');background-size:cover;background-position:center"></div></div><div class="info"><div class="price">$1,895,000</div><div class="addr">61020 Tetherow Loop</div><div class="city">Bend, OR 97702 · Triple Knot</div><div class="meta"><span>4 bd</span><span>·</span><span>3.5 ba</span><span>·</span><span>3,400 sqft</span></div></div></article>
+      <article class="listing"><div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-bend-downtown.png');background-size:cover;background-position:center"></div><div class="badges"><span class="b b-drop">Price drop</span></div></div><div class="info"><div class="price">$1,495,000</div><div class="addr">60875 SW Westbrook Pl</div><div class="city">Bend, OR 97702 · Westbrook Meadows</div><div class="meta"><span>3 bd</span><span>·</span><span>3 ba</span><span>·</span><span>2,800 sqft</span></div></div></article>
+      <article class="listing"><div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-alpine-clean.jpg');background-size:cover;background-position:center"></div><div class="badges"><span class="b b-new">New</span></div></div><div class="info"><div class="price">$895,000</div><div class="addr">61055 Bachelor View Loop</div><div class="city">Bend, OR 97702 · Lodges at Bachelor V</div><div class="meta"><span>3 bd</span><span>·</span><span>2.5 ba</span><span>·</span><span>1,900 sqft</span></div></div></article>
+    </div>
+  </div>
+</section>
+
+<!-- Recent closings -->
+<section class="block">
+  <div class="container">
+    <div class="block-head">
+      <div>
+        <div class="rr-eyebrow">Recent closings · 12 months</div>
+        <h2 style="margin-top:6px">What's selling and at what price</h2>
+        <p class="subtitle">Source: Oregon Data Share closed sales. 28 SFR + 12 townhomes closed in Tetherow over the trailing 12 months.</p>
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:1fr 1fr 100px 100px 110px;gap:0;padding:14px 18px;background:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted-foreground)">
+        <span>Address</span><span>Sub</span><span style="text-align:right">$/sqft</span><span style="text-align:right">Sale/list</span><span style="text-align:right">Sold</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 100px 100px 110px;gap:0;padding:14px 18px;border-top:1px solid var(--border);font-size:13px;font-variant-numeric:tabular-nums">
+        <span>60912 Hillside Loop</span><span style="color:var(--muted-foreground)">Heath</span><span style="text-align:right;font-weight:600">$528</span><span style="text-align:right">98.4%</span><span style="text-align:right;color:var(--muted-foreground)">May 14</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 100px 100px 110px;gap:0;padding:14px 18px;border-top:1px solid var(--border);font-size:13px;font-variant-numeric:tabular-nums">
+        <span>61118 Westbrook Pl</span><span style="color:var(--muted-foreground)">Westbrook</span><span style="text-align:right;font-weight:600">$412</span><span style="text-align:right">102.1%</span><span style="text-align:right;color:var(--muted-foreground)">Apr 28</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 100px 100px 110px;gap:0;padding:14px 18px;border-top:1px solid var(--border);font-size:13px;font-variant-numeric:tabular-nums">
+        <span>61294 Tetherow Lp</span><span style="color:var(--muted-foreground)">Triple Knot</span><span style="text-align:right;font-weight:600">$445</span><span style="text-align:right">95.8%</span><span style="text-align:right;color:var(--muted-foreground)">Apr 15</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 100px 100px 110px;gap:0;padding:14px 18px;border-top:1px solid var(--border);font-size:13px;font-variant-numeric:tabular-nums">
+        <span>60724 Bachelor View Lp</span><span style="color:var(--muted-foreground)">Lodges</span><span style="text-align:right;font-weight:600">$385</span><span style="text-align:right">99.0%</span><span style="text-align:right;color:var(--muted-foreground)">Apr 2</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOA + dues -->
+<section class="block muted">
+  <div class="container">
+    <div class="split">
+      <div>
+        <div class="rr-eyebrow">HOA + dues reality</div>
+        <h2 style="margin-top:6px">What you actually pay each month</h2>
+        <p>Tetherow has two layers: the master HOA (Tetherow Owners Association, ~$1,200/yr) and the sub-neighborhood HOA. Heath adds $1,600/yr. Lodges at Bachelor View runs ~$2,800/yr (covers exterior + snow). The Tetherow Club membership is separate equity, not part of HOA.</p>
+        <p>None of this is hidden. we'll walk you through every line item, including the master capital reserve study, before you write an offer.</p>
+      </div>
+      <div class="form-card">
+        <h3>Free Tetherow buyer guide</h3>
+        <p class="sub">PDF with sub-neighborhood comparison, HOA + club dues breakdown, recent comps, and how to think about course frontage vs view vs walkability.</p>
+        <div class="field"><label>Email</label><input type="email" placeholder="you@email.com"></div>
+        <div class="field"><label>What you're looking for</label><select><option>Primary residence</option><option>Second home</option><option>Investment / STR</option><option>Just researching</option></select></div>
+        <button class="btn btn-primary" style="width:100%">Email me the guide</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="block">
+  <div class="container">
+    <div class="cta-duo">
+      <div class="cta-card">
+        <div class="ico">🏠</div>
+        <h3>Tour a Tetherow home this weekend</h3>
+        <p>We've walked most of the active inventory. We can tell you which lots have which course views and which back to traffic.</p>
+        <div class="actions">
+          <a href="tel:5412136706" class="btn btn-primary">Schedule a tour</a>
+        </div>
+      </div>
+      <div class="cta-card">
+        <div class="ico">📍</div>
+        <h3>Thinking of selling your Tetherow home?</h3>
+        <p>Free written CMA from a broker who closed five Tetherow deals in the last year. No pressure.</p>
+        <div class="actions">
+          <a href="../seller-lp/index.html" class="btn btn-primary">Get your CMA</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-cols">
+      <div>
+        <img class="wm" src="../../assets/logo-header-white.png" alt="Ryan Realty">
+        <p>Your local team for Central Oregon real estate.</p>
+        <div class="footer-partners">
+          <img src="../../assets/oregon-data-share-logo.svg" alt="Oregon Data Share">
+          <img src="../../assets/morgan-data-shuttle-logo.svg" alt="Morgan Data Shuttle">
+        </div>
+      </div>
+      <div><h4>Search</h4><a>Homes for sale</a><a>Open houses</a><a>By community</a><a>Map search</a></div>
+      <div><h4>Market</h4><a>Housing market hub</a><a>Monthly reports</a><a>Sold data</a></div>
+      <div><h4>Company</h4><a>Meet the team</a><a>Sell your home</a><a>Contact</a></div>
+    </div>
+    <div class="legal">© 2026 Ryan Realty LLC · Bend, Oregon · Licensed in Oregon · Principal Broker license 201206613. Equal Housing Opportunity.</div>
+  </div>
+</footer>
+
+</body>
+</html>

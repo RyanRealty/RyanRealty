@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ryan Realty. 14 page mockups</title>
+<link rel="icon" href="../assets/favicon.ico">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="./_shared/site-mockup.css">
+<style>
+  .index-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (max-width: 720px) { .index-grid { grid-template-columns: 1fr; } }
+  .mock-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    text-decoration: none;
+    color: var(--foreground);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    display: block;
+  }
+  .mock-card:hover { border-color: rgb(from var(--primary) r g b / 0.4); box-shadow: var(--shadow-md); }
+  .mock-card .num { font-family: var(--font-display); font-size: 14px; color: var(--primary); font-weight: 700; letter-spacing: 0.04em; }
+  .mock-card h3 { margin: 6px 0 4px; font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+  .mock-card .route { font-size: 13px; color: var(--muted-foreground); font-family: var(--font-mono); font-variant-numeric: tabular-nums; word-break: break-all; }
+  .mock-card .source { font-size: 12px; color: var(--muted-foreground); margin-top: 8px; line-height: 1.5; }
+  .mock-card .source b { color: var(--foreground); font-weight: 600; }
+  .badge-done { display: inline-block; font-size: 10px; font-weight: 700; color: rgb(from var(--success) r g b); text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border: 1px solid rgb(from var(--success) r g b / 0.3); border-radius: 9999px; margin-left: 8px; }
+  .badge-new { display: inline-block; font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border: 1px solid rgb(from var(--primary) r g b / 0.3); border-radius: 9999px; margin-left: 8px; background: rgb(from var(--primary) r g b / 0.06); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="#"><img src="../assets/logo-header-white.png" alt="Ryan Realty"></a>
+    <div style="color:rgba(255,255,255,0.85);font-size:13px;letter-spacing:0.04em">Mockup index · 14 routes</div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="container">
+    <div class="rr-eyebrow">Page mockups · pre-build review</div>
+    <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);font-weight:700;letter-spacing:-0.02em;margin:8px 0 8px;line-height:1.1">14 mockups · one design language.</h1>
+    <p style="font-size:17px;color:var(--muted-foreground);max-width:680px;margin:0 0 32px;line-height:1.55">All 14 page templates the site needs. Same navy + cream palette, Amboqia + Geist type, eyebrow → H2 → subtitle → head-action pattern, card and grid primitives. Click any card to open the full-page mockup. The homepage is the locked reference at the top.</p>
+
+    <div class="index-grid">
+      <a class="mock-card" href="./website/index.html" target="_blank">
+        <div class="num">01 <span class="badge-done">Locked reference</span></div>
+        <h3>Homepage</h3>
+        <div class="route">/</div>
+        <div class="source"><b>Source:</b> the locked homepage mockup that drives the brand language for everything else. The 8 sections. hero, market snapshot, price range, open houses, search by city, brokers, activity, CTA duo. are the visual vocabulary all 13 other routes inherit.</div>
+      </a>
+      <a class="mock-card" href="./listing-detail/index.html" target="_blank">
+        <div class="num">02 <span class="badge-new">New</span></div>
+        <h3>Listing detail</h3>
+        <div class="route">/homes-for-sale/&lt;city&gt;/&lt;community&gt;/&lt;address&gt;-&lt;mls#&gt;</div>
+        <div class="source"><b>Mined from:</b> the existing ShowcaseHero/Bar/KeyFacts/Description/Map family + the site-property-landing producer spec. The Zillow-Showcase-beater layout: photo gallery hero, sticky tour-scheduler right rail, mortgage calculator, neighborhood market context panel (the moat), Text-Matt sticky CTA.</div>
+      </a>
+      <a class="mock-card" href="./city/index.html" target="_blank">
+        <div class="num">03 <span class="badge-new">New · template × 11</span></div>
+        <h3>City landing page</h3>
+        <div class="route">/homes-for-sale/&lt;city&gt;</div>
+        <div class="source"><b>Mined from:</b> app/lp/bend/page.tsx (973 lines, the heaviest city LP in the repo). Hero with market stat band, live market snapshot, price band tiles, weekend open houses, communities in this city, activity feed, "why work with us in this city" team section.</div>
+      </a>
+      <a class="mock-card" href="./neighborhood/index.html" target="_blank">
+        <div class="num">04 <span class="badge-new">New · template × 14</span></div>
+        <h3>Bend neighborhood</h3>
+        <div class="route">/homes-for-sale/bend/&lt;neighborhood&gt;</div>
+        <div class="source"><b>Mined from:</b> site-neighborhood-page producer spec. Hero with district name + stat band, rolling-90d closed-sales stats, boundary polygon map, about + character paragraph, schools section, active listings grid, adjacent neighborhoods cross-link.</div>
+      </a>
+      <a class="mock-card" href="./community/index.html" target="_blank">
+        <div class="num">05 <span class="badge-new">New · template × 14</span></div>
+        <h3>Resort community</h3>
+        <div class="route">/homes-for-sale/&lt;city&gt;/&lt;community&gt;</div>
+        <div class="source"><b>Mined from:</b> app/lp/tetherow/page.tsx (1,709 lines + 5 sub-components + the 153 KB static archive at public/lp/tetherow/_archive-static-2026-05-18/). Hero with master stats, sub-neighborhoods carousel, amenities grid, active inventory, recent closings table, HOA reality, free guide CTA.</div>
+      </a>
+      <a class="mock-card" href="./zip/index.html" target="_blank">
+        <div class="num">06 <span class="badge-new">New · template × 10</span></div>
+        <h3>ZIP page</h3>
+        <div class="route">/zip/&lt;5-digit&gt;</div>
+        <div class="source"><b>Derived from:</b> city LP shape, narrowed to ZIP scope. Hero + market stats, neighborhoods/communities inside this ZIP, listings filtered by postal_code, cross-link to other ZIPs we serve.</div>
+      </a>
+      <a class="mock-card" href="./search/index.html" target="_blank">
+        <div class="num">07 <span class="badge-new">New</span></div>
+        <h3>Search + map</h3>
+        <div class="route">/search</div>
+        <div class="source"><b>Wired to:</b> search_listings_advanced RPC. Sticky search bar with typeahead, filter chip row, results count + sort, 50/50 map + grid split (collapses to map-on-top on mobile), pagination at the bottom.</div>
+      </a>
+      <a class="mock-card" href="./seller-lp/index.html" target="_blank">
+        <div class="num">08 <span class="badge-new">New</span></div>
+        <h3>Seller home value LP</h3>
+        <div class="route">/lp/seller-home-value</div>
+        <div class="source"><b>Mined from:</b> app/lp/seller-home-value/page.tsx (647 lines, already live). Hero with multi-step CMA form on the right, market snapshot for credibility, "what's in the valuation" 3-step explainer, recent sales social proof, broker bios, FAQ.</div>
+      </a>
+      <a class="mock-card" href="./buyer-alerts-lp/index.html" target="_blank">
+        <div class="num">09 <span class="badge-new">New</span></div>
+        <h3>Buyer listing alerts LP</h3>
+        <div class="route">/lp/buyer-listing-alerts</div>
+        <div class="source"><b>Mined from:</b> listing-alerts producer spec. Hero with criteria-capture form on the right, sample digest preview, 3-step how-it-works, "10-minute MLS freshness" credibility block, "what we DON'T do" anti-pattern list.</div>
+      </a>
+      <a class="mock-card" href="./expired-lp/index.html" target="_blank">
+        <div class="num">10 <span class="badge-new">New</span></div>
+        <h3>Expired listing LP</h3>
+        <div class="route">/lp/expired-listing</div>
+        <div class="source"><b>Mined from:</b> expired-listing-lp producer spec. Empathy-first hero (no urgency), sentiment acknowledgment, 5-cause audit framework (price, photos, MLS description, syndication, agent engagement), re-list vs hold vs rent decision frame, free audit form.</div>
+      </a>
+      <a class="mock-card" href="./market-report/index.html" target="_blank">
+        <div class="num">11 <span class="badge-new">New · template per city/region</span></div>
+        <h3>Market report</h3>
+        <div class="route">/housing-market/reports/&lt;slug&gt;</div>
+        <div class="source"><b>Derived from:</b> homepage market snapshot patterns, extended to long-form. Key stats hero band, 12-month trend chart, price band breakdown table, city-level comparison row, narrative paragraphs, subscribe-to-monthly form, methodology footer with trace.</div>
+      </a>
+      <a class="mock-card" href="./sell/index.html" target="_blank">
+        <div class="num">12 <span class="badge-new">New</span></div>
+        <h3>Sell page</h3>
+        <div class="route">/sell</div>
+        <div class="source"><b>Derived from:</b> seller LP language extended to a top-level information page. 3-step process explainer, "what it costs" honest commission conversation, recent sales social proof, CTA back to seller LP, FAQ.</div>
+      </a>
+      <a class="mock-card" href="./about/index.html" target="_blank">
+        <div class="num">13 <span class="badge-new">New</span></div>
+        <h3>About page</h3>
+        <div class="route">/about</div>
+        <div class="source"><b>Derived from:</b> brand kit at design_system/ryan-realty/assets/brand/. Hero, heritage Amboqia tagline strip ("It's About Relationships · Ryan Realty · Bend · Oregon"), story (founded 2023), 4 values cards, Jax mascot section, service area, 2 CTAs.</div>
+      </a>
+      <a class="mock-card" href="./team/index.html" target="_blank">
+        <div class="num">14 <span class="badge-new">New</span></div>
+        <h3>Team page</h3>
+        <div class="route">/team</div>
+        <div class="source"><b>Wired to:</b> brokers table (3 rows). Hero + 3 broker cards (Matt, Paul, Rebecca) at full detail. large headshot, title, bio, specialty tags, license #, call/text/email CTAs. Reviews section. Contact form with broker routing.</div>
+      </a>
+    </div>
+
+    <div style="margin-top:48px;padding:24px;background:var(--muted);border-radius:14px;border:1px solid var(--border)">
+      <div class="rr-eyebrow">How to use this</div>
+      <h3 style="margin:6px 0 12px;font-size:20px">Review checklist</h3>
+      <ol style="margin:0;padding-left:20px;line-height:1.75;color:var(--foreground)">
+        <li>Click each card to open the full mockup in a new tab.</li>
+        <li>Scan top-to-bottom. is the section structure right for that route?</li>
+        <li>Mark anything to redirect. too much content, wrong order, missing block, wrong data source.</li>
+        <li>If all 14 look right, I run the /goal and start Wave 3 / route 2 (listing detail), per docs/EXECUTION_PLAN.md.</li>
+        <li>If you want to iterate on any mockup via the Claude Design tool, send me back a new bundle and I'll apply the patch via codebase-patches/APPLY.md.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

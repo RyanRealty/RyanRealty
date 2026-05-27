@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Team page mockup. Ryan Realty</title>
+<link rel="icon" href="../../assets/favicon.ico">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="../_shared/site-mockup.css">
+<style>
+  .broker-large { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 32px; box-shadow: var(--shadow-sm); display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start; }
+  @media (max-width: 720px) { .broker-large { grid-template-columns: 1fr; } }
+  .broker-large .headshot-big { width: 100%; aspect-ratio: 4/5; background: var(--muted); border-radius: 12px; }
+  .broker-large h3 { margin: 0; font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .broker-large .title { font-size: 14px; color: var(--muted-foreground); margin-top: 4px; }
+  .broker-large .bio { font-size: 15px; line-height: 1.65; color: var(--foreground); margin-top: 18px; }
+  .broker-large .specialties { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+  .broker-large .specialties .tag { font-size: 11px; font-weight: 600; color: var(--primary); background: rgb(from var(--primary) r g b / 0.08); padding: 4px 10px; border-radius: 9999px; }
+  .broker-large .contact-line { font-size: 13px; color: var(--muted-foreground); margin-top: 20px; font-variant-numeric: tabular-nums; padding-top: 16px; border-top: 1px solid var(--border); }
+  .broker-large .contact-line a { color: var(--primary); text-decoration: none; }
+  .broker-large .actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .review { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+  .review .stars { color: rgb(from var(--warning) r g b); font-size: 14px; letter-spacing: 2px; }
+  .review .quote { margin: 12px 0 14px; font-size: 14px; line-height: 1.65; color: var(--foreground); }
+  .review .who { font-size: 13px; font-weight: 600; color: var(--foreground); }
+  .review .where { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="../website/index.html"><img src="../../assets/logo-header-white.png" alt="Ryan Realty"></a>
+    <nav class="nav">
+      <a href="../city/index.html">Search</a>
+      <a href="../community/index.html">Communities</a>
+      <a href="../market-report/index.html">Market</a>
+      <a href="../team/index.html">Meet the Team</a>
+      <a href="../sell/index.html">Sell</a>
+    </nav>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost-on-navy">Sign in</button>
+      <button class="btn btn-on-navy">List your home</button>
+    </div>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero" style="min-height:420px;padding:80px 0 56px">
+  <div class="hero-img" style="background:url('../../assets/hero-awbrey-clean.jpg') center/cover;animation:kenburns 20s ease-in-out infinite alternate"></div>
+  <div class="hero-overlay"></div>
+  <div class="container hero-content">
+    <div class="eyebrow-on-navy">Meet the team</div>
+    <h1>Three brokers. That's it.</h1>
+    <p class="lede">No layered hand-offs. The broker you meet is the broker who closes your deal. All three are active, licensed in Oregon, and have lived and worked across Central Oregon for years.</p>
+  </div>
+</section>
+
+<!-- Broker 1: Matt -->
+<section class="block">
+  <div class="container">
+    <div class="broker-large">
+      <div class="headshot-big" style="background:#faf8f4 url('../../assets/team/matt-ryan.png') center/cover"></div>
+      <div>
+        <div class="rr-eyebrow">Owner & Principal Broker</div>
+        <h3 style="margin-top:8px">Matt Ryan</h3>
+        <div class="title">Founded Ryan Realty in 2023. Closed 37 Central Oregon transactions in the last 12 months.</div>
+        <div class="bio">
+          <p style="margin:0 0 12px">Matt has lived in Bend since 2018 and got his real estate license in 2019. He worked under a national brokerage for four years before founding Ryan Realty in June 2023. to do real estate without the lead-gen script. He's closed deals in Awbrey Butte, Tetherow, NW Crossing, Sunriver, Eagle Crest, and most of Central Oregon's resort communities. He'll tell you what an inspection found two blocks over last month.</p>
+          <p style="margin:0">Specialties: resort communities, west-side Bend, second-home buyers, sellers who need an honest price thesis.</p>
+        </div>
+        <div class="specialties">
+          <span class="tag">Tetherow</span>
+          <span class="tag">Awbrey Butte</span>
+          <span class="tag">Sunriver</span>
+          <span class="tag">NW Crossing</span>
+          <span class="tag">Eagle Crest</span>
+          <span class="tag">Second-home buyers</span>
+          <span class="tag">Luxury sellers</span>
+        </div>
+        <div class="contact-line">
+          <strong>541.213.6706</strong> · <a href="mailto:matt@ryan-realty.com">matt@ryan-realty.com</a> · Oregon Principal Broker license 201206613
+        </div>
+        <div class="actions">
+          <a href="tel:5412136706" class="btn btn-primary">Call Matt</a>
+          <a href="sms:5412136706" class="btn btn-outline">Text 541.213.6706</a>
+          <a href="mailto:matt@ryan-realty.com" class="btn btn-outline">Email</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Broker 2: Paul -->
+<section class="block">
+  <div class="container">
+    <div class="broker-large">
+      <div class="headshot-big" style="background:#faf8f4 url('../../assets/team/paul-stevenson.png') center/cover"></div>
+      <div>
+        <div class="rr-eyebrow">Broker</div>
+        <h3 style="margin-top:8px">Paul Stevenson</h3>
+        <div class="title">South-county specialist. La Pine, Sunriver, Crosswater, Three Rivers. Licensed since 2019.</div>
+        <div class="bio">
+          <p style="margin:0 0 12px">Paul covers the south end of our service area. Sunriver, Crosswater, Three Rivers, Vandevert Ranch, La Pine. He knows the well + septic + STR-permit reality cold, which matters because half the inventory south of Lava Butte has its own utility infrastructure. He's the broker you call if the property has a Class 5 septic, an A-rated well log, or a question about Deschutes County's STR moratorium.</p>
+          <p style="margin:0">Specialties: south-county rural + resort, second-home and STR buyers, inspection-heavy transactions.</p>
+        </div>
+        <div class="specialties">
+          <span class="tag">Sunriver</span>
+          <span class="tag">Crosswater</span>
+          <span class="tag">Three Rivers</span>
+          <span class="tag">La Pine</span>
+          <span class="tag">Vandevert Ranch</span>
+          <span class="tag">STR + rentals</span>
+          <span class="tag">Rural systems</span>
+        </div>
+        <div class="contact-line">
+          <strong>541.977.6841</strong> · Oregon Broker license 201259123
+        </div>
+        <div class="actions">
+          <a href="tel:5419776841" class="btn btn-primary">Call Paul</a>
+          <a href="sms:5419776841" class="btn btn-outline">Text 541.977.6841</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Broker 3: Rebecca -->
+<section class="block">
+  <div class="container">
+    <div class="broker-large">
+      <div class="headshot-big" style="background:#faf8f4 url('../../assets/team/rebecca-peterson.png') center/cover"></div>
+      <div>
+        <div class="rr-eyebrow">Broker</div>
+        <h3 style="margin-top:8px">Rebecca Ryser Peterson</h3>
+        <div class="title">Westside Bend + buyer-side specialist. NW Crossing, Old Bend, River West. Licensed since 2020.</div>
+        <div class="bio">
+          <p style="margin:0 0 12px">Rebecca handles most of our buyer side and the City-of-Bend-west listings. She's detail-driven on inspections, contract terms, and the after-pending negotiation work that most agents punt to the closer. If your buyer agency feels like it's coasting, she's the broker to compare it to.</p>
+          <p style="margin:0">Specialties: first-time + relocating buyers, west-side Bend, post-inspection negotiations, dual-language (English + Mandarin).</p>
+        </div>
+        <div class="specialties">
+          <span class="tag">NW Crossing</span>
+          <span class="tag">Old Bend</span>
+          <span class="tag">River West</span>
+          <span class="tag">First-time buyers</span>
+          <span class="tag">Relocating buyers</span>
+          <span class="tag">Post-inspection</span>
+        </div>
+        <div class="contact-line">
+          <strong>415.308.9087</strong> · Oregon Broker license 201254727
+        </div>
+        <div class="actions">
+          <a href="tel:4153089087" class="btn btn-primary">Call Rebecca</a>
+          <a href="sms:4153089087" class="btn btn-outline">Text 415.308.9087</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Reviews -->
+<section class="block muted">
+  <div class="container">
+    <div class="block-head">
+      <div>
+        <div class="rr-eyebrow">What clients say</div>
+        <h2 style="margin-top:6px">Recent reviews</h2>
+        <p class="subtitle">Aggregated from Google Business Profile, Zillow agent profile, and Realtor.com. We don't curate. these are the most recent five.</p>
+      </div>
+      <a class="head-action" href="#">View all 47 reviews →</a>
+    </div>
+    <div class="grid-3">
+      <div class="review">
+        <div class="stars">★★★★★</div>
+        <p class="quote">Matt was the only broker we talked to who told us a listing we loved was overpriced. He showed us three comps and told us to wait two weeks for the seller to drop. We closed at $35K under list. Saved us from a bad offer.</p>
+        <div class="who">. K. and J. M.</div>
+        <div class="where">Bought in Awbrey Butte · 2026</div>
+      </div>
+      <div class="review">
+        <div class="stars">★★★★★</div>
+        <p class="quote">We had an expired listing from another brokerage. Matt sent us a one-page audit in two days. photos were dark, MLS description was generic, and the price was 8% above the closed comps. We re-listed in March with him and closed in 21 days.</p>
+        <div class="who">. David W.</div>
+        <div class="where">Sold in Tetherow · 2026</div>
+      </div>
+      <div class="review">
+        <div class="stars">★★★★★</div>
+        <p class="quote">Rebecca walked us through inspections on a 1992 rural Sunriver property. well log, septic, propane tank certifications, fire mitigation rating. She caught a missing easement that would have cost us $40K to resolve after closing. Worth every penny of commission.</p>
+        <div class="who">. A. and R. L.</div>
+        <div class="where">Bought in Sunriver · 2026</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="block">
+  <div class="container">
+    <div class="split even">
+      <div>
+        <div class="rr-eyebrow">Get in touch</div>
+        <h2 style="margin-top:6px">Schedule a call with the right broker.</h2>
+        <p>Not sure who to talk to? Fill the form. Matt routes you to the broker whose specialty matches your situation. 20-minute call, no pitch, no obligation.</p>
+      </div>
+      <div class="form-card">
+        <h3>Tell us a bit about your situation</h3>
+        <div class="field"><label>Your name</label><input type="text" placeholder="First Last"></div>
+        <div class="field"><label>Email</label><input type="email" placeholder="you@email.com"></div>
+        <div class="field"><label>Phone (optional)</label><input type="tel" placeholder="541.555.0123"></div>
+        <div class="field"><label>What's on your mind?</label>
+          <select>
+            <option>Buying in Central Oregon</option>
+            <option>Selling. need a CMA</option>
+            <option>My listing expired. need an audit</option>
+            <option>Just researching the market</option>
+            <option>Something else</option>
+          </select>
+        </div>
+        <div class="field"><label>Anything else?</label><textarea placeholder="Optional"></textarea></div>
+        <button class="btn btn-primary btn-lg" style="width:100%">Send</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-cols">
+      <div><img class="wm" src="../../assets/logo-header-white.png" alt="Ryan Realty"><p>Your local team for Central Oregon real estate.</p></div>
+      <div><h4>Search</h4><a>Homes for sale</a></div>
+      <div><h4>Sell</h4><a>Free valuation</a></div>
+      <div><h4>Company</h4><a>Meet the team</a><a>About</a><a>Contact</a></div>
+    </div>
+    <div class="legal">© 2026 Ryan Realty LLC · Bend, Oregon · License 201206613. Equal Housing Opportunity.</div>
+  </div>
+</footer>
+
+</body>
+</html>

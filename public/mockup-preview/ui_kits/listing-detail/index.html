@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Listing detail mockup. Ryan Realty</title>
+<link rel="icon" href="../../assets/favicon.ico">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="../_shared/site-mockup.css">
+<style>
+  /* Listing-detail specific */
+  .ld-hero { min-height: 540px; padding: 100px 0 80px; }
+  .ld-photo-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: repeat(2, 1fr); gap: 8px; height: 520px; border-radius: 14px; overflow: hidden; }
+  .ld-photo-grid .p { background: var(--muted); position: relative; }
+  .ld-photo-grid .p:first-child { grid-row: span 2; background: linear-gradient(135deg,#aabba2,#5d6e54); }
+  .ld-photo-grid .p:nth-child(2) { background: linear-gradient(135deg,#c9b88e,#6e6444); }
+  .ld-photo-grid .p:nth-child(3) { background: linear-gradient(135deg,#a8b9c4,#4f5e72); }
+  .ld-photo-grid .p:nth-child(4) { background: linear-gradient(135deg,#b3a78e,#5d5240); }
+  .ld-photo-grid .p:nth-child(5) { background: linear-gradient(135deg,#bcae9d,#666155); }
+  .ld-photo-grid .view-all { position: absolute; bottom: 14px; right: 14px; background: rgba(255,255,255,0.95); color: var(--foreground); border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+  .ld-grid { display: grid; grid-template-columns: 1fr 360px; gap: 32px; align-items: start; }
+  @media (max-width: 980px) { .ld-grid { grid-template-columns: 1fr; } }
+  .ld-side { position: sticky; top: 88px; }
+  .ld-price-block { padding: 24px 0 18px; border-bottom: 1px solid var(--border); }
+  .ld-price-block .price { font-family: var(--font-display); font-size: 40px; font-weight: 700; letter-spacing: -0.02em; color: var(--foreground); font-variant-numeric: tabular-nums; }
+  .ld-price-block .addr { font-size: 18px; color: var(--foreground); margin-top: 4px; }
+  .ld-price-block .city { font-size: 14px; color: var(--muted-foreground); margin-top: 2px; }
+  .ld-price-block .pills { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .ld-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ld-pill.active { background: rgb(from var(--success) r g b / 0.12); color: oklch(0.35 0.15 149); border: 1px solid rgb(from var(--success) r g b / 0.25); }
+  .ld-pill.dom { background: var(--muted); color: var(--foreground); border: 1px solid var(--border); }
+  .ld-pill.psqft { background: rgb(from var(--primary) r g b / 0.08); color: var(--primary); border: 1px solid rgb(from var(--primary) r g b / 0.18); }
+  .ld-section { padding: 32px 0; border-bottom: 1px solid var(--border); }
+  .ld-section h3 { margin: 0 0 16px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .ld-section p { margin: 0; font-size: 15px; line-height: 1.65; color: var(--foreground); }
+  .ld-section .meta { font-size: 13px; color: var(--muted-foreground); margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .mortgage-calc { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .mortgage-calc { grid-template-columns: 1fr; } }
+  .nbhd-context { background: rgb(from var(--primary) r g b / 0.04); border: 1px solid rgb(from var(--primary) r g b / 0.15); border-radius: 14px; padding: 24px; }
+  .nbhd-context h3 { margin: 0 0 4px; font-size: 18px; }
+  .nbhd-context .freshness { font-size: 11px; color: var(--muted-foreground); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .text-matt { background: var(--primary); color: #fff; border-radius: 14px; padding: 24px; text-align: center; }
+  .text-matt h4 { margin: 0 0 8px; font-size: 18px; font-weight: 700; }
+  .text-matt p { margin: 0 0 14px; font-size: 14px; color: rgba(255,255,255,0.85); }
+  .text-matt .number { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.01em; color: #fff; font-variant-numeric: tabular-nums; display: block; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="../website/index.html"><img src="../../assets/logo-header-white.png" alt="Ryan Realty"></a>
+    <nav class="nav">
+      <a href="../city/index.html">Search</a>
+      <a href="../community/index.html">Communities</a>
+      <a href="../market-report/index.html">Market</a>
+      <a href="../team/index.html">Meet the Team</a>
+      <a href="../sell/index.html">Sell</a>
+    </nav>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost-on-navy">Sign in</button>
+      <button class="btn btn-on-navy">List your home</button>
+    </div>
+  </div>
+</header>
+
+<!-- ───────── Breadcrumb ───────── -->
+<div class="container">
+  <div class="breadcrumb">
+    <a href="../website/index.html">Home</a><span class="sep">›</span>
+    <a href="../city/index.html">Bend</a><span class="sep">›</span>
+    <a href="../community/index.html">Sunriver</a><span class="sep">›</span>
+    <span class="current">17364 Beaver Dr</span>
+  </div>
+</div>
+
+<!-- ───────── Photo gallery hero ───────── -->
+<section class="block" style="padding-top:8px">
+  <div class="container">
+    <div class="ld-photo-grid">
+      <div class="p"></div>
+      <div class="p"></div>
+      <div class="p"></div>
+      <div class="p"></div>
+      <div class="p">
+        <button class="view-all">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          View all 47 photos
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── Main content + sticky scheduler ───────── -->
+<section class="block" style="padding-top:0">
+  <div class="container">
+    <div class="ld-grid">
+
+      <!-- LEFT. main content -->
+      <div>
+        <!-- Price + address -->
+        <div class="ld-price-block">
+          <div class="price">$1,249,000</div>
+          <div class="addr">17364 Beaver Dr</div>
+          <div class="city">Sunriver, OR 97707 · Sunriver Resort</div>
+          <div class="pills">
+            <span class="ld-pill active">● Active</span>
+            <span class="ld-pill dom">38 days on market</span>
+            <span class="ld-pill psqft">$439/sqft</span>
+          </div>
+          <div style="margin-top:18px;display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-lg">Schedule a tour</button>
+            <button class="btn btn-outline">Ask a question</button>
+            <button class="btn btn-outline">Save</button>
+            <button class="btn btn-outline">Share</button>
+          </div>
+        </div>
+
+        <!-- Specs grid -->
+        <div class="ld-section">
+          <h3>Key facts</h3>
+          <div class="specs-grid">
+            <div class="spec-cell"><div class="l">Bedrooms</div><div class="v">4</div></div>
+            <div class="spec-cell"><div class="l">Bathrooms</div><div class="v">3</div></div>
+            <div class="spec-cell"><div class="l">Square feet</div><div class="v">2,840</div></div>
+            <div class="spec-cell"><div class="l">Lot size</div><div class="v">1.20 acres</div></div>
+            <div class="spec-cell"><div class="l">Year built</div><div class="v">1998</div></div>
+            <div class="spec-cell"><div class="l">Garage</div><div class="v">2 spaces</div></div>
+            <div class="spec-cell"><div class="l">HOA</div><div class="v">$285/mo</div></div>
+            <div class="spec-cell"><div class="l">Property tax</div><div class="v">$8,940/yr</div></div>
+            <div class="spec-cell"><div class="l">Property type</div><div class="v">Single-family</div></div>
+            <div class="spec-cell"><div class="l">Heating</div><div class="v">Forced air</div></div>
+            <div class="spec-cell"><div class="l">Cooling</div><div class="v">Central A/C</div></div>
+            <div class="spec-cell"><div class="l">MLS#</div><div class="v">220189422</div></div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="ld-section">
+          <h3>About this home</h3>
+          <p>Four-bedroom home on 1.20 acres in the Sunriver Resort community. Built in 1998. Hardwood floors throughout the main level, vaulted great room with stone fireplace, and a kitchen with quartz counters opening to the deck. Primary suite on the main floor. Three additional bedrooms upstairs. Two-car garage with attached storage room.</p>
+          <p style="margin-top:14px">HOA covers community amenities including the Sage Springs Spa, North Pool, Cove aquatic park, golf at Crosswater and Meadows courses (member rates), and access to 30+ miles of paved trails.</p>
+        </div>
+
+        <!-- Neighborhood market context (THE Zillow beater) -->
+        <div class="ld-section">
+          <div class="nbhd-context">
+            <div class="rr-eyebrow">Live market context</div>
+            <h3>Sunriver market right now</h3>
+            <div class="freshness">Updated 12 min ago · market_pulse_live</div>
+            <div class="grid-4" style="gap:14px">
+              <div>
+                <div style="font-size:11px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:0.08em">Active in Sunriver</div>
+                <div style="font-family:var(--font-display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;margin-top:4px">37</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:0.08em">Median list</div>
+                <div style="font-family:var(--font-display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;margin-top:4px">$1,120,000</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:0.08em">Median DOM</div>
+                <div style="font-family:var(--font-display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;margin-top:4px">64 days</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:0.08em">Months of supply</div>
+                <div style="font-family:var(--font-display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;margin-top:4px">5.2</div>
+              </div>
+            </div>
+            <p style="margin:16px 0 0;font-size:13px;color:var(--muted-foreground)">This home is listed at <b style="color:var(--foreground)">$1,249,000</b> · 11.5% above the Sunriver median list. <a href="../community/index.html" style="color:var(--primary);font-weight:600;text-decoration:none">See full Sunriver market →</a></p>
+          </div>
+        </div>
+
+        <!-- Schools -->
+        <div class="ld-section">
+          <h3>Schools</h3>
+          <div class="grid-3" style="gap:14px">
+            <div class="stat-card">
+              <div class="label">Elementary</div>
+              <div style="font-size:17px;font-weight:700;margin-top:6px">Three Rivers Elementary</div>
+              <div class="sub">Bend-La Pine School District</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Middle</div>
+              <div style="font-size:17px;font-weight:700;margin-top:6px">La Pine Middle</div>
+              <div class="sub">Bend-La Pine School District</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">High</div>
+              <div style="font-size:17px;font-weight:700;margin-top:6px">La Pine High</div>
+              <div class="sub">Bend-La Pine School District</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mortgage estimate -->
+        <div class="ld-section">
+          <h3>Estimated monthly payment</h3>
+          <div class="mortgage-calc">
+            <div>
+              <div class="field">
+                <label>List price</label>
+                <input type="text" value="$1,249,000" readonly>
+              </div>
+              <div class="field">
+                <label>Down payment (20%)</label>
+                <input type="text" value="$249,800">
+              </div>
+              <div class="field">
+                <label>Interest rate</label>
+                <input type="text" value="6.875%">
+              </div>
+              <div class="field">
+                <label>Loan term</label>
+                <select><option>30 years</option><option>15 years</option></select>
+              </div>
+            </div>
+            <div style="background:var(--muted);border-radius:14px;padding:24px;align-self:start">
+              <div style="font-size:12px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:0.08em">Estimated monthly</div>
+              <div style="font-family:var(--font-display);font-size:36px;font-weight:700;letter-spacing:-0.02em;margin:6px 0 14px;font-variant-numeric:tabular-nums">$7,485/mo</div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)"><span>Principal + interest</span><b style="font-variant-numeric:tabular-nums">$6,567</b></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)"><span>Property tax</span><b style="font-variant-numeric:tabular-nums">$745</b></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span>HOA</span><b style="font-variant-numeric:tabular-nums">$285</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Property history -->
+        <div class="ld-section">
+          <h3>Property history</h3>
+          <div class="timeline">
+            <div class="timeline-event">
+              <div class="when">Apr 18, 2026</div>
+              <div class="what">Listed for sale · $1,249,000</div>
+            </div>
+            <div class="timeline-event">
+              <div class="when">Mar 10, 2024</div>
+              <div class="what">Sold · $985,000 · MLS 220089422</div>
+            </div>
+            <div class="timeline-event">
+              <div class="when">Feb 1, 2024</div>
+              <div class="what">Listed for sale · $999,000</div>
+            </div>
+            <div class="timeline-event">
+              <div class="when">Aug 22, 2018</div>
+              <div class="what">Sold · $625,000</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div class="ld-section">
+          <h3>Location</h3>
+          <div class="placeholder-map" style="aspect-ratio:21/9">Map · Sunriver Resort boundary + POI overlay</div>
+          <div class="meta">15 minutes to Mt. Bachelor · 22 minutes to downtown Bend · 1 block to the Deschutes River paved trail</div>
+        </div>
+
+        <!-- Similar listings -->
+        <div class="ld-section">
+          <h3>Similar homes in Sunriver</h3>
+          <div class="listings-3">
+            <article class="listing">
+              <div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-deschutes-clean.jpg');background-size:cover;background-position:center"></div><div class="badges"><span class="b b-hot">Hot</span></div></div>
+              <div class="info"><div class="price">$1,395,000</div><div class="addr">8127 Spring River Loop</div><div class="city">Sunriver, OR 97707</div><div class="meta"><span>4 bd</span><span>·</span><span>3 ba</span><span>·</span><span>3,100 sqft</span></div></div>
+            </article>
+            <article class="listing">
+              <div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-awbrey-clean.jpg');background-size:cover;background-position:center"></div></div>
+              <div class="info"><div class="price">$1,150,000</div><div class="addr">17850 Eagle Crest Dr</div><div class="city">Sunriver, OR 97707</div><div class="meta"><span>3 bd</span><span>·</span><span>2.5 ba</span><span>·</span><span>2,400 sqft</span></div></div>
+            </article>
+            <article class="listing">
+              <div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-bend-downtown.png');background-size:cover;background-position:center"></div><div class="badges"><span class="b b-drop">Price drop</span></div></div>
+              <div class="info"><div class="price">$1,089,000</div><div class="addr">17012 Oncken Pl</div><div class="city">Sunriver, OR 97707</div><div class="meta"><span>3 bd</span><span>·</span><span>2 ba</span><span>·</span><span>2,180 sqft</span></div></div>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT. sticky scheduler -->
+      <aside class="ld-side">
+        <!-- Listing agent card -->
+        <div class="form-card" style="margin-bottom:16px;text-align:center">
+          <div style="width:88px;height:88px;border-radius:50%;background:#faf8f4 url('../../assets/team/matt-ryan.png') center/cover;margin:0 auto 12px"></div>
+          <div style="font-size:11px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:0.08em">Listing Agent</div>
+          <div style="font-size:17px;font-weight:700;letter-spacing:-0.01em;margin-top:4px">Matt Ryan</div>
+          <div style="font-size:13px;color:var(--muted-foreground);margin-top:2px">Owner & Principal Broker · Ryan Realty</div>
+        </div>
+
+        <!-- Showing scheduler form -->
+        <div class="form-card">
+          <h3>Schedule a tour</h3>
+          <p class="sub">Pick a time. Matt confirms within the day.</p>
+          <div class="field"><label>Full name</label><input type="text" placeholder="Your name"></div>
+          <div class="field"><label>Email</label><input type="email" placeholder="you@email.com"></div>
+          <div class="field"><label>Phone</label><input type="tel" placeholder="541.555.0123"></div>
+          <div class="field"><label>Preferred time</label><input type="datetime-local"></div>
+          <div class="field"><label>Notes (optional)</label><textarea placeholder="Anything we should know?"></textarea></div>
+          <button class="btn btn-primary btn-lg" style="width:100%">Request showing</button>
+          <p style="font-size:11px;color:var(--muted-foreground);margin:12px 0 0;text-align:center;line-height:1.5">By submitting, you consent to be contacted by Ryan Realty about this property.</p>
+        </div>
+
+        <!-- Text Matt direct -->
+        <div class="text-matt" style="margin-top:16px">
+          <h4>Have a quick question?</h4>
+          <p>Text Matt directly. He answers his own phone.</p>
+          <span class="number">541.213.6706</span>
+          <a href="sms:5412136706" class="btn btn-on-navy" style="width:100%">Text now</a>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── Mobile sticky CTA ───────── -->
+<div class="sticky-cta">
+  <div class="meta"><b>$1,249,000</b> · 17364 Beaver Dr</div>
+  <div style="display:flex;gap:10px"><a href="tel:5412136706" class="btn btn-ghost-on-navy">Call</a><a href="sms:5412136706" class="btn btn-on-navy">Text Matt</a></div>
+</div>
+
+<!-- ───────── Footer ───────── -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-cols">
+      <div>
+        <img class="wm" src="../../assets/logo-header-white.png" alt="Ryan Realty">
+        <p>Your local team for Central Oregon real estate. Bend, Redmond, Sisters, Sunriver, and surrounding communities.</p>
+        <div class="footer-partners">
+          <img src="../../assets/oregon-data-share-logo.svg" alt="Oregon Data Share">
+          <img src="../../assets/morgan-data-shuttle-logo.svg" alt="Morgan Data Shuttle">
+        </div>
+      </div>
+      <div><h4>Search</h4><a>Homes for sale</a><a>Open houses</a><a>By community</a><a>Map search</a></div>
+      <div><h4>Market</h4><a>Housing market hub</a><a>Monthly reports</a><a>Sold data</a></div>
+      <div><h4>Company</h4><a>Meet the team</a><a>Sell your home</a><a>Contact</a></div>
+    </div>
+    <div class="legal">
+      Listings courtesy of Oregon Data Share and Morgan Data Shuttle. Information deemed reliable but not guaranteed. © 2026 Ryan Realty LLC · Bend, Oregon · Licensed in Oregon · Principal Broker license 201206613. Equal Housing Opportunity.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

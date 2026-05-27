@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Search + map mockup. Ryan Realty</title>
+<link rel="icon" href="../../assets/favicon.ico">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="../_shared/site-mockup.css">
+<style>
+  .search-bar-row { background: #fff; padding: 14px 24px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .search-bar-row .search-input { flex: 1; min-width: 240px; display: flex; gap: 10px; align-items: center; background: var(--muted); border-radius: 10px; padding: 10px 14px; }
+  .search-bar-row .search-input input { flex: 1; background: transparent; border: 0; outline: none; font-size: 14px; font-family: var(--font-sans); color: var(--foreground); }
+  .results-count { font-size: 13px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; padding: 14px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .results-count .sort { display: flex; gap: 10px; align-items: center; font-size: 13px; }
+  .results-count select { padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 13px; font-family: var(--font-sans); }
+  .results-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 24px; }
+  @media (max-width: 720px) { .results-grid { grid-template-columns: 1fr; } }
+  .pagination { padding: 24px; display: flex; justify-content: center; gap: 8px; }
+  .pagination .pg { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 13px; font-family: var(--font-sans); font-variant-numeric: tabular-nums; cursor: pointer; }
+  .pagination .pg.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="../website/index.html"><img src="../../assets/logo-header-white.png" alt="Ryan Realty"></a>
+    <nav class="nav">
+      <a href="../city/index.html">Search</a>
+      <a href="../community/index.html">Communities</a>
+      <a href="../market-report/index.html">Market</a>
+      <a href="../team/index.html">Meet the Team</a>
+      <a href="../sell/index.html">Sell</a>
+    </nav>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost-on-navy">Sign in</button>
+      <button class="btn btn-on-navy">List your home</button>
+    </div>
+  </div>
+</header>
+
+<!-- Top search bar (always sticky below header on search route) -->
+<div class="search-bar-row">
+  <div class="search-input">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="search" placeholder="City, community, neighborhood, address, MLS#, or ZIP">
+  </div>
+  <button class="btn btn-outline">Save this search</button>
+  <button class="btn btn-primary">Get daily alerts</button>
+</div>
+
+<!-- Filter chip bar -->
+<div class="filter-bar" style="padding:14px 24px;border-bottom:1px solid var(--border)">
+  <span class="chip active">Bend</span>
+  <span class="chip">+ City</span>
+  <span class="chip">$700k - $1.5M</span>
+  <span class="chip">3+ bd</span>
+  <span class="chip">2+ ba</span>
+  <span class="chip">1,800+ sqft</span>
+  <span class="chip">SFR only</span>
+  <span class="chip">+ Filters</span>
+</div>
+
+<!-- Results count + sort -->
+<div class="results-count">
+  <span><b style="color:var(--foreground)">186 homes</b> · Bend · $700k-$1.5M · 3+ bd · sorted by newest</span>
+  <div class="sort">
+    <label>Sort:</label>
+    <select><option>Newest</option><option>Price: low to high</option><option>Price: high to low</option><option>$/sqft: low to high</option><option>Days on market</option></select>
+  </div>
+</div>
+
+<!-- Split: map + results -->
+<div class="map-split">
+  <div class="map-side">
+    <div style="text-align:center">
+      <div>Map · 186 listings</div>
+      <div style="margin-top:8px;font-size:10px;opacity:0.6">Cluster pins · click to filter to map view</div>
+    </div>
+  </div>
+  <div class="results-side">
+    <div class="results-grid">
+      <article class="listing"><div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-deschutes-clean.jpg');background-size:cover;background-position:center"></div><div class="badges"><span class="b b-hot">Hot</span></div></div><div class="info"><div class="price">$1,249,000</div><div class="addr">2732 NW Ordway Ave</div><div class="city">Bend, OR 97703 · Awbrey Butte</div><div class="meta"><span>4 bd</span><span>·</span><span>3 ba</span><span>·</span><span>2,840 sqft</span><span>·</span><span>$440/sqft</span></div></div></article>
+      <article class="listing"><div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-awbrey-clean.jpg');background-size:cover;background-position:center"></div><div class="badges"><span class="b b-new">New</span></div></div><div class="info"><div class="price">$895,000</div><div class="addr">61234 Sandalwood Cir</div><div class="city">Bend, OR 97702 · SW Bend</div><div class="meta"><span>3 bd</span><span>·</span><span>2 ba</span><span>·</span><span>1,820 sqft</span><span>·</span><span>$492/sqft</span></div></div></article>
+      <article class="listing"><div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-bend-downtown.png');background-size:cover;background-position:center"></div></div><div class="info"><div class="price">$985,000</div><div class="addr">19021 Trail Ridge Ct</div><div class="city">Bend, OR 97702 · Mountain View</div><div class="meta"><span>4 bd</span><span>·</span><span>2.5 ba</span><span>·</span><span>2,200 sqft</span><span>·</span><span>$448/sqft</span></div></div></article>
+      <article class="listing"><div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-alpine-clean.jpg');background-size:cover;background-position:center"></div><div class="badges"><span class="b b-drop">Price drop</span></div></div><div class="info"><div class="price">$1,395,000</div><div class="addr">2845 NW Awbrey Rd</div><div class="city">Bend, OR 97703 · Awbrey Butte</div><div class="meta"><span>5 bd</span><span>·</span><span>3.5 ba</span><span>·</span><span>3,440 sqft</span><span>·</span><span>$406/sqft</span></div></div></article>
+      <article class="listing"><div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-applegate-clean.jpg');background-size:cover;background-position:center"></div><div class="badges"><span class="b b-open">Open Sat 11-1</span></div></div><div class="info"><div class="price">$1,150,000</div><div class="addr">2718 NW Polar Ridge Dr</div><div class="city">Bend, OR 97703 · NW Crossing</div><div class="meta"><span>4 bd</span><span>·</span><span>3 ba</span><span>·</span><span>2,650 sqft</span><span>·</span><span>$434/sqft</span></div></div></article>
+      <article class="listing"><div class="media"><div class="bg" style="background-image:linear-gradient(180deg,rgba(16,39,66,0.0),rgba(16,39,66,0.25)),url('../../assets/hero-bend-desktop.png');background-size:cover;background-position:center"></div></div><div class="info"><div class="price">$929,000</div><div class="addr">3408 SW 26th St</div><div class="city">Bend, OR 97702 · Old Bend</div><div class="meta"><span>3 bd</span><span>·</span><span>2 ba</span><span>·</span><span>1,540 sqft</span><span>·</span><span>$603/sqft</span></div></div></article>
+    </div>
+    <div class="pagination">
+      <button class="pg">←</button>
+      <button class="pg active">1</button>
+      <button class="pg">2</button>
+      <button class="pg">3</button>
+      <button class="pg">4</button>
+      <button class="pg">…</button>
+      <button class="pg">16</button>
+      <button class="pg">→</button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer" style="margin-top:0">
+  <div class="container">
+    <div class="footer-cols">
+      <div><img class="wm" src="../../assets/logo-header-white.png" alt="Ryan Realty"><p>Your local team for Central Oregon real estate.</p></div>
+      <div><h4>Search</h4><a>Homes for sale</a><a>Open houses</a><a>Map search</a></div>
+      <div><h4>Market</h4><a>Housing market hub</a><a>Monthly reports</a></div>
+      <div><h4>Company</h4><a>Meet the team</a><a>Contact</a></div>
+    </div>
+    <div class="legal">© 2026 Ryan Realty LLC · License 201206613. Equal Housing Opportunity.</div>
+  </div>
+</footer>
+
+</body>
+</html>

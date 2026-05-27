@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Market report mockup. Ryan Realty</title>
+<link rel="icon" href="../../assets/favicon.ico">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="../_shared/site-mockup.css">
+<style>
+  .chart { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 24px; height: 360px; display: flex; align-items: center; justify-content: center; color: var(--muted-foreground); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .price-bands { background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .price-band { display: grid; grid-template-columns: 1fr 100px 100px 100px 100px; gap: 0; padding: 16px 22px; border-top: 1px solid var(--border); font-size: 13px; align-items: center; }
+  .price-band:first-child { border-top: 0; background: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); padding: 14px 22px; }
+  .price-band .b { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .city-rows { background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .city-row { display: grid; grid-template-columns: 1.4fr 100px 110px 100px 80px; gap: 0; padding: 16px 22px; border-top: 1px solid var(--border); font-size: 13px; align-items: center; font-variant-numeric: tabular-nums; }
+  .city-row:first-child { border-top: 0; background: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); padding: 14px 22px; }
+  .city-row b { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="../website/index.html"><img src="../../assets/logo-header-white.png" alt="Ryan Realty"></a>
+    <nav class="nav">
+      <a href="../city/index.html">Search</a>
+      <a href="../community/index.html">Communities</a>
+      <a href="../market-report/index.html">Market</a>
+      <a href="../team/index.html">Meet the Team</a>
+      <a href="../sell/index.html">Sell</a>
+    </nav>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost-on-navy">Sign in</button>
+      <button class="btn btn-on-navy">List your home</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="breadcrumb">
+    <a href="../website/index.html">Home</a><span class="sep">›</span>
+    <a href="#">Housing market</a><span class="sep">›</span>
+    <span class="current">Bend · May 2026</span>
+  </div>
+</div>
+
+<!-- Hero -->
+<section class="block" style="padding-top:32px">
+  <div class="container">
+    <div class="rr-eyebrow">Monthly market report · published 2026-05-26</div>
+    <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);font-weight:700;letter-spacing:-0.02em;margin:8px 0 6px;line-height:1.1">Bend housing market · May 2026</h1>
+    <p style="font-size:18px;color:var(--muted-foreground);max-width:680px;margin:0 0 24px;line-height:1.55">Inventory rose 4.2% over April but pending counts fell 3 days. Median sale price holds at $869K. a 2.1% YoY climb. Bend is a balanced market right now, leaning seller in the under-$1M segment.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a href="#" class="btn btn-primary">Subscribe to monthly reports</a>
+      <a href="#" class="btn btn-outline">Download PDF (1 page)</a>
+      <a href="#" class="btn btn-outline">Previous month →</a>
+    </div>
+  </div>
+</section>
+
+<!-- Top stats -->
+<section class="block">
+  <div class="container">
+    <div class="block-head">
+      <div>
+        <div class="rr-eyebrow">Key stats · May 2026</div>
+        <h2 style="margin-top:6px">Bend at a glance</h2>
+        <p class="subtitle">SFR + condos + townhomes. City of Bend polygon. Source: Oregon Data Share via market_stats_cache, methodology v4-2026-05-15.</p>
+      </div>
+    </div>
+    <div class="grid-4">
+      <div class="stat-card"><div class="label">Active residential listings</div><div class="value">612</div><div class="sub">SFR + condo + TH</div><span class="delta up">↑ 4.2% vs Apr 2026</span></div>
+      <div class="stat-card"><div class="label">Median sale price</div><div class="value">$869,000</div><div class="sub">May 2026 closed sales</div><span class="delta up">↑ 2.1% YoY</span></div>
+      <div class="stat-card"><div class="label">Median days on market</div><div class="value">38</div><div class="sub">List → pending</div><span class="delta down">↓ 6 days vs Apr</span></div>
+      <div class="stat-card"><div class="label">Sale-to-list ratio</div><div class="value">97.4%</div><div class="sub">Median across May closed</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Trend chart -->
+<section class="block muted">
+  <div class="container">
+    <div class="block-head">
+      <div>
+        <div class="rr-eyebrow">12-month trend</div>
+        <h2 style="margin-top:6px">Median sale price · Bend SFR · 12 months</h2>
+        <p class="subtitle">Each point is a monthly median computed across closed SFR sales inside the City of Bend polygon. Trend line is a 3-month moving average.</p>
+      </div>
+    </div>
+    <div class="chart">{{ Recharts line chart · 12 data points · navy primary line + light navy MA }}</div>
+  </div>
+</section>
+
+<!-- Price band breakdown -->
+<section class="block">
+  <div class="container">
+    <div class="block-head">
+      <div>
+        <div class="rr-eyebrow">Inventory by price</div>
+        <h2 style="margin-top:6px">Where the activity is</h2>
+        <p class="subtitle">Active listing counts by price band. The under-$1M band has the lowest months of supply right now (3.8). that's where multiple-offer situations are still happening.</p>
+      </div>
+    </div>
+    <div class="price-bands">
+      <div class="price-band"><span>Price band</span><span class="b" style="text-align:right">Active</span><span class="b" style="text-align:right">Sold · 90d</span><span class="b" style="text-align:right">Med DOM</span><span class="b" style="text-align:right">MoS</span></div>
+      <div class="price-band"><span>Under $600k</span><span class="b">84</span><span class="b">62</span><span class="b">28</span><span class="b" style="color:rgb(from var(--success) r g b / 1)">3.2</span></div>
+      <div class="price-band"><span>$600k-$900k</span><span class="b">218</span><span class="b">142</span><span class="b">32</span><span class="b" style="color:rgb(from var(--success) r g b / 1)">3.8</span></div>
+      <div class="price-band"><span>$900k-$1.5M</span><span class="b">186</span><span class="b">88</span><span class="b">48</span><span class="b">5.2</span></div>
+      <div class="price-band"><span>$1.5M-$2.5M</span><span class="b">82</span><span class="b">28</span><span class="b">66</span><span class="b" style="color:var(--destructive)">7.8</span></div>
+      <div class="price-band"><span>$2.5M+</span><span class="b">42</span><span class="b">8</span><span class="b">128</span><span class="b" style="color:var(--destructive)">14.0</span></div>
+    </div>
+    <p style="font-size:12px;color:var(--muted-foreground);margin-top:12px">Months of supply formula: active ÷ (sold past 6 months / 6). ≤ 4 = seller's market. 4-6 = balanced. ≥ 6 = buyer's market.</p>
+  </div>
+</section>
+
+<!-- City breakdown -->
+<section class="block muted">
+  <div class="container">
+    <div class="block-head">
+      <div>
+        <div class="rr-eyebrow">Central Oregon · city-level</div>
+        <h2 style="margin-top:6px">How Bend compares</h2>
+        <p class="subtitle">All 11 Central Oregon cities we cover.</p>
+      </div>
+    </div>
+    <div class="city-rows">
+      <div class="city-row"><span>City</span><span style="text-align:right">Active</span><span style="text-align:right">Median list</span><span style="text-align:right">Med DOM</span><span style="text-align:right">MoS</span></div>
+      <div class="city-row"><span><b>Bend</b></span><span><b>612</b></span><span><b>$905,000</b></span><span><b>38</b></span><span><b>4.2</b></span></div>
+      <div class="city-row"><span>Redmond</span><span>284</span><span>$568,000</span><span>42</span><span>4.5</span></div>
+      <div class="city-row"><span>Sisters</span><span>94</span><span>$985,000</span><span>51</span><span>6.4</span></div>
+      <div class="city-row"><span>Sunriver</span><span>78</span><span>$1,120,000</span><span>64</span><span>7.2</span></div>
+      <div class="city-row"><span>La Pine</span><span>62</span><span>$395,000</span><span>48</span><span>5.1</span></div>
+      <div class="city-row"><span>Tumalo</span><span>28</span><span>$1,250,000</span><span>57</span><span>8.5</span></div>
+      <div class="city-row"><span>Prineville</span><span>71</span><span>$425,000</span><span>44</span><span>4.8</span></div>
+      <div class="city-row"><span>Terrebonne</span><span>18</span><span>$612,000</span><span>39</span><span>4.0</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Narrative -->
+<section class="block">
+  <div class="container">
+    <div class="split">
+      <div>
+        <div class="rr-eyebrow">The narrative</div>
+        <h2 style="margin-top:6px">What's actually happening in Bend right now.</h2>
+        <p>Under $1M: tight. Median DOM is 32 days and listings priced correctly are getting offers within the first week. The under-$600k segment is essentially out of inventory at 3.2 MoS.</p>
+        <p>$1M-$2.5M: balanced. Properties priced at-market sell in 6-9 weeks, those priced above sit. Several listings in this band have had 5%+ price reductions in May.</p>
+        <p>$2.5M+: buyer's market. 14.0 months of supply. Aspirational listings sit for 4+ months. The closed sales in this band are happening at 88-94% of list. If you're selling here, expect a longer timeline and plan for a meaningful negotiation.</p>
+      </div>
+      <div>
+        <div class="form-card">
+          <h3>Want this report delivered every month?</h3>
+          <p class="sub">One email, the first Monday of each month. Bend, Sunriver, Redmond, or Central Oregon overview. your choice.</p>
+          <div class="field"><label>Email</label><input type="email" placeholder="you@email.com"></div>
+          <div class="field"><label>Which report?</label><select><option>Bend</option><option>Sunriver</option><option>Redmond</option><option>Sisters</option><option>Central Oregon overview</option></select></div>
+          <button class="btn btn-primary" style="width:100%">Subscribe</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Methodology -->
+<section class="block muted">
+  <div class="container">
+    <div class="rr-eyebrow">Methodology</div>
+    <h2 style="margin-top:6px;font-size:24px">How the numbers in this report were computed</h2>
+    <p style="max-width:780px;font-size:14px;line-height:1.65;color:var(--foreground);margin-top:14px">All figures sourced from Oregon Data Share via Spark MLS replication. SFR-only filter (PropertyType='A' + property_sub_type='Single Family Residence'). City-level filter uses the City of Bend incorporated-place polygon (TIGER 2024). Period: closed sales with CloseDate in May 2026. Method version v4-2026-05-15.</p>
+    <p style="font-size:13px;color:var(--muted-foreground);margin-top:14px">Trace: market_stats_cache · geo_type='city' · geo_slug='bend' · period_type='monthly' · period_start='2026-05-01' · methodology_version='v4-2026-05-15' · refreshed 4h ago.</p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-cols">
+      <div><img class="wm" src="../../assets/logo-header-white.png" alt="Ryan Realty"><p>Your local team for Central Oregon real estate.</p></div>
+      <div><h4>Search</h4><a>Homes for sale</a></div>
+      <div><h4>Market</h4><a>Housing market hub</a><a>Monthly reports</a><a>Sold data</a></div>
+      <div><h4>Company</h4><a>Meet the team</a><a>Contact</a></div>
+    </div>
+    <div class="legal">© 2026 Ryan Realty LLC · License 201206613. Equal Housing Opportunity.</div>
+  </div>
+</footer>
+
+</body>
+</html>
