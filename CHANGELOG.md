@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.309.0 (2026-05-27)
+
+### Features
+- feat(analytics): client-side bot filter before gtag config fires
+
+---
+
+
 ## v1.308.1 (2026-05-27)
 
 ### Maintenance
