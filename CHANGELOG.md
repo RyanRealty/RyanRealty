@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.324.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l2): RootProvider consolidates analytics + identity + consent
+
+---
+
+
 ## v1.323.1 (2026-05-27)
 
 ### Bug Fixes
