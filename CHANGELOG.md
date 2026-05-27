@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.332.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): lift Hero onto primitives + em-dash cleanup
+
+---
+
+
 ## v1.331.0 (2026-05-27)
 
 ### Features
