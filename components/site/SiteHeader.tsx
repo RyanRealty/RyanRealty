@@ -1,10 +1,20 @@
 import Link from 'next/link'
-import Image from 'next/image'
+import { CTAButton, RyanRealtyMark } from '@/components/site/primitives'
+import MobileNav from '@/components/site/MobileNav'
 
 /**
- * Site v2 header — sticky navy bar, white wordmark, 5 nav links, Sign in + List your home.
+ * Site v2 header — sticky navy bar, white wordmark, 5 nav links, Sign in
+ * + List your home CTAs on the desktop side; hamburger + drawer on
+ * sub-md (via MobileNav).
+ *
  * Mirrors design_system/ryan-realty/ui_kits/website/index.html §header.
+ *
+ * Refactored 2026-05-27 to use the new Wave 2 Layer 1 primitives:
+ *   - RyanRealtyMark replaces raw <Image src="/logo-header-white.png" />
+ *   - CTAButton replaces the bespoke <Link> + className soup for the two CTAs
+ *   - MobileNav (sibling client component) handles sub-md
  */
+
 const NAV_LINKS = [
   { href: '/homes-for-sale', label: 'Search' },
   { href: '/communities', label: 'Communities' },
@@ -15,26 +25,27 @@ const NAV_LINKS = [
 
 export default function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 bg-primary text-white border-b border-white/10">
-      <div className="mx-auto max-w-7xl px-6 flex items-center justify-between h-[72px] gap-6">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-primary text-white">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-6 px-4 sm:px-6">
         <Link href="/" aria-label="Ryan Realty home" className="shrink-0">
-          <Image
-            src="/logo-header-white.png"
-            alt="Ryan Realty"
-            width={200}
-            height={40}
-            className="h-8 w-auto"
-            style={{ width: 'auto', height: '2rem' }}
+          <RyanRealtyMark
+            variant="horizontal"
+            tone="white"
+            width={140}
             priority
+            className="h-8 w-auto"
           />
         </Link>
 
-        <nav aria-label="Primary" className="hidden md:flex items-center gap-7">
+        <nav
+          aria-label="Primary"
+          className="hidden items-center gap-7 md:flex"
+        >
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-white/85 hover:text-white transition"
+              className="text-sm font-medium text-white/85 transition hover:text-white"
             >
               {link.label}
             </Link>
@@ -42,18 +53,23 @@ export default function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2.5">
-          <Link
+          <CTAButton
             href="/account/sign-in"
-            className="hidden sm:inline-flex items-center rounded-[10px] border border-white/35 px-[18px] py-[9px] text-sm font-semibold text-white hover:bg-white/10 transition active:translate-y-px"
+            tone="on-navy-ghost"
+            size="md"
+            className="hidden sm:inline-flex"
           >
             Sign in
-          </Link>
-          <Link
+          </CTAButton>
+          <CTAButton
             href="/lp/seller-home-value"
-            className="inline-flex items-center rounded-[10px] bg-white px-[18px] py-[9px] text-sm font-semibold text-primary hover:bg-[#f0eee8] transition active:translate-y-px"
+            tone="on-navy"
+            size="md"
+            className="hidden sm:inline-flex"
           >
             List your home
-          </Link>
+          </CTAButton>
+          <MobileNav />
         </div>
       </div>
     </header>
