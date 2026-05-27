@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.318.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l1): typography primitives — Display/H1/H2/H3/Body/Caption
+
+---
+
+
 ## v1.317.0 (2026-05-27)
 
 ### Features
