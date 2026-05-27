@@ -136,11 +136,23 @@ export function CTAButton({
 
 // ─── TextLink ─────────────────────────────────────────────────────────
 
+type TextLinkTone = 'primary' | 'on-navy' | 'muted'
+type TextLinkWeight = 'semibold' | 'normal'
+
 type TextLinkProps = {
   href: string
   external?: boolean
   /** Underline behavior. Default 'on-hover'. */
   underline?: 'always' | 'on-hover' | 'never'
+  /**
+   * Color register:
+   *   primary  — navy text, hover → 85% navy (default; body, CTAs)
+   *   on-navy  — white/72 text, hover → white (footer nav, header subnav on navy bg)
+   *   muted    — muted-foreground text, hover → foreground (secondary link lists)
+   */
+  tone?: TextLinkTone
+  /** Font weight — semibold default; pass 'normal' for body-weight link lists. */
+  weight?: TextLinkWeight
   children: ReactNode
   className?: string
 } & Omit<ComponentPropsWithoutRef<typeof Link>, 'href' | 'className' | 'children'>
@@ -151,22 +163,45 @@ const underlineClass = {
   never: 'no-underline',
 } as const
 
+const textLinkToneClass: Record<TextLinkTone, string> = {
+  primary: 'text-primary hover:text-primary/85',
+  'on-navy': 'text-white/72 hover:text-white',
+  muted: 'text-muted-foreground hover:text-foreground',
+}
+
+const textLinkWeightClass: Record<TextLinkWeight, string> = {
+  semibold: 'font-semibold',
+  normal: 'font-normal',
+}
+
 export function TextLink({
   href,
   external,
   underline = 'on-hover',
+  tone = 'primary',
+  weight = 'semibold',
   children,
   className,
   ...rest
 }: TextLinkProps) {
   const classes = cn(
-    'inline-flex items-center gap-1 text-primary font-semibold transition-colors hover:text-primary/85',
+    'inline-flex items-center gap-1 transition-colors',
+    textLinkToneClass[tone],
+    textLinkWeightClass[weight],
     underlineClass[underline],
     className,
   )
   if (external) {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" className={classes}>
+        {children}
+      </a>
+    )
+  }
+  // tel: and mailto: links can't go through Next <Link> (no route to prefetch).
+  if (href.startsWith('tel:') || href.startsWith('mailto:')) {
+    return (
+      <a href={href} className={classes}>
         {children}
       </a>
     )

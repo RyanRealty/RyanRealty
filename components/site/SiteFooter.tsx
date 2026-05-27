@@ -1,9 +1,28 @@
-import Link from 'next/link'
 import Image from 'next/image'
+import {
+  Body,
+  Caption,
+  Container,
+  MiddleDot,
+  RyanRealtyMark,
+  Stack,
+  TextLink,
+} from '@/components/site/primitives'
 
 /**
  * Site v2 footer — navy bg, 4-column grid (brand+partners / Search / Market / Company),
  * legal line beneath. Mirrors design_system/ryan-realty/ui_kits/website/index.html §footer.
+ *
+ * Refactored 2026-05-27 onto the Wave 2 Layer 1 primitives:
+ *   - RyanRealtyMark replaces raw <Image src="/logo-header-white.png" />
+ *   - TextLink (tone="on-navy", weight="normal") replaces nav-link className soup
+ *   - Container handles max-width + horizontal padding
+ *   - Stack handles vertical rhythm within each column
+ *   - Caption owns the legal copy line
+ *   - MiddleDot for the place-separator pattern (BEND · OREGON)
+ *
+ * No em-dashes, no semicolons, no banned words. License # 201206613 + Equal Housing
+ * Opportunity language preserved verbatim.
  */
 
 type FooterColumn = {
@@ -43,23 +62,25 @@ const COLUMNS: ReadonlyArray<FooterColumn> = [
 export default function SiteFooter() {
   return (
     <footer className="bg-primary text-white/85">
-      <div className="mx-auto max-w-7xl px-6 pt-14 pb-8">
+      <Container className="pt-14 pb-8">
         <div className="grid gap-10 grid-cols-1 md:grid-cols-[1.3fr_repeat(3,1fr)]">
           {/* Brand column */}
-          <div>
-            <Image
-              src="/logo-header-white.png"
-              alt="Ryan Realty"
-              width={200}
-              height={40}
-              className="mb-3.5"
-              style={{ width: 'auto', height: '2.25rem' }}
+          <Stack gap="loose" className="items-start">
+            <RyanRealtyMark
+              variant="horizontal"
+              tone="white"
+              width={140}
+              className="h-9 w-auto"
             />
-            <p className="text-[13px] leading-[1.6] text-white/72 max-w-[40ch]">
+            <Body
+              size="small"
+              tone="on-photo"
+              className="max-w-[40ch] text-white/72"
+            >
               Your local team for Central Oregon real estate. Bend, Redmond, Sisters,
               Sunriver, and surrounding communities.
-            </p>
-            <div className="flex items-center gap-4 mt-3.5 opacity-75">
+            </Body>
+            <div className="flex items-center gap-4 opacity-75">
               <Image
                 src="/images/oregon-data-share-logo.svg"
                 alt="Oregon Data Share"
@@ -75,46 +96,70 @@ export default function SiteFooter() {
                 className="h-7 w-auto brightness-0 invert"
               />
             </div>
-            <div className="mt-5 text-[13px] text-white/72 space-y-1 tabular-nums">
-              <p>
-                <a href="tel:5412136706" className="hover:text-white">541.213.6706</a>
-                <span className="text-white/40"> · </span>
-                <a href="https://ryan-realty.com" className="hover:text-white">ryan-realty.com</a>
+            <div className="text-[13px] text-white/72 tabular-nums space-y-1">
+              <p className="flex items-center gap-1.5">
+                <TextLink
+                  href="tel:5412136706"
+                  tone="on-navy"
+                  weight="normal"
+                  underline="never"
+                >
+                  541.213.6706
+                </TextLink>
+                <MiddleDot className="text-white/40" />
+                <TextLink
+                  href="https://ryan-realty.com"
+                  tone="on-navy"
+                  weight="normal"
+                  underline="never"
+                  external
+                >
+                  ryan-realty.com
+                </TextLink>
               </p>
-              <p>BEND · OREGON</p>
+              <p>
+                BEND <MiddleDot className="text-white/40" /> OREGON
+              </p>
             </div>
-          </div>
+          </Stack>
 
           {/* Nav columns */}
           {COLUMNS.map((col) => (
-            <div key={col.heading}>
-              <h4 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-white mb-3.5">
+            <Stack key={col.heading} gap="default">
+              <h4 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-white">
                 {col.heading}
               </h4>
-              <ul className="space-y-2">
+              <ul className="flex flex-col gap-2">
                 {col.links.map((link) => (
                   <li key={link.href}>
-                    <Link
+                    <TextLink
                       href={link.href}
-                      className="text-sm text-white/72 hover:text-white transition"
+                      tone="on-navy"
+                      weight="normal"
+                      underline="never"
+                      className="text-sm"
                     >
                       {link.label}
-                    </Link>
+                    </TextLink>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Stack>
           ))}
         </div>
 
-        <div className="mt-10 pt-5 border-t border-white/15 text-xs leading-[1.6] text-white/55">
-          Listings data provided by Oregon Data Share and Morgan Data Shuttle.
-          Information deemed reliable but not guaranteed. All listings courtesy of
-          participating MLS members. © {new Date().getFullYear()} Ryan Realty LLC ·
-          Bend, Oregon · Licensed in the State of Oregon · Principal Broker license{' '}
-          <span className="tabular-nums">201206613</span>. Equal Housing Opportunity.
+        <div className="mt-10 pt-5 border-t border-white/15">
+          <Caption tone="on-photo" className="text-white/55 leading-[1.6]">
+            Listings data provided by Oregon Data Share and Morgan Data Shuttle.
+            Information deemed reliable but not guaranteed. All listings courtesy of
+            participating MLS members. © {new Date().getFullYear()} Ryan Realty LLC{' '}
+            <MiddleDot className="text-white/40" /> Bend, Oregon{' '}
+            <MiddleDot className="text-white/40" /> Licensed in the State of Oregon{' '}
+            <MiddleDot className="text-white/40" /> Principal Broker license{' '}
+            <span className="tabular-nums">201206613</span>. Equal Housing Opportunity.
+          </Caption>
         </div>
-      </div>
+      </Container>
     </footer>
   )
 }
