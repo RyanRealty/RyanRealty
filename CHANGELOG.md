@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.334.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): add BreadcrumbNav
+
+---
+
+
 ## v1.333.1 (2026-05-27)
 
 ### Maintenance
