@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.323.1 (2026-05-27)
+
+### Bug Fixes
+- fix(wave-2-l1): Stack primitive defaults to items-start
+
+---
+
+
 ## v1.323.0 (2026-05-27)
 
 ### Features
