@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.307.5 (2026-05-27)
+
+### Other
+- preview: 14 mockups with mobile viewport fix
+
+---
+
+
 ## v1.307.4 (2026-05-27)
 
 ### Other
