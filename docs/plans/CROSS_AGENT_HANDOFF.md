@@ -11,8 +11,8 @@
 | Field | Value |
 |--------|--------|
 | **Surface** | **Claude Code (Opus 4.7, 2026-05-27 — overnight run)** — Ryan Realty website rebuild · Wave 2 of `docs/EXECUTION_PLAN.md`. Continuous-execution mode per Matt's 2026-05-27 directive. |
-| **`main` @ commit** | `b5aed1e` — `feat(wave-2-l3): add SocialProofBlock`. Pushed; Vercel auto-deploy. |
-| **Task focus** | **Wave 2 Layers 1 + 2 COMPLETE. Layer 3 lift-existing COMPLETE (8/8). Layer 3 NEW blocks: 7 of 12 shipped this run.** Brand-voice + DAL ESLint guardrails live at error level. Shipped this overnight run: BreadcrumbNav (`e74201a`), BrokerCard (`6dbb243`), FAQBlock (`1eff69d`), CTABar (`56c6059`), ContentSection (`286ba8a`), RelatedAreas (`aedc1f6`), TestimonialBlock (`ddae724`), SocialProofBlock (`b5aed1e`). All ship type + lint clean. Remaining L3 (deferred to next run as the heavier 1-day-each items per plan): HeroBlock unified, NeighborhoodMap (dynamic-imported Google Maps + PostGIS overlay), PriceChart (dynamic-imported recharts), LeadCaptureBlock (FUB-wired, 4 variants). Listing detail page still broken on prod (React #310 in legacy showcase components) — fix lands when Wave 2 Layer 4 rebuilds those components. Next pickup: finish the 4 remaining L3 heavies OR jump straight to L4 (listing detail surface). |
+| **`main` @ commit** | `c5f6fbf` — `feat(wave-2-l3): add NeighborhoodMap (dynamic-imported Google Maps)`. Pushed; Vercel auto-deploy. |
+| **Task focus** | **Wave 2 ENTIRE Layers 1 + 2 + 3 COMPLETE.** Brand-voice + DAL ESLint guardrails live at error level. All 8 existing homepage composition blocks lifted onto primitives + brand-voice cleaned. All 12 new Layer 3 blocks shipped (BreadcrumbNav, BrokerCard, FAQBlock, CTABar, ContentSection, RelatedAreas, TestimonialBlock, SocialProofBlock, LeadCaptureBlock, HeroBlock, PriceChart, NeighborhoodMap). All ship type + lint clean. Listing detail page still broken on prod (React #310 in legacy showcase components) — fix lands when Wave 2 Layer 4 rebuilds those components. Next pickup: Wave 2 Layer 4 (listing detail surface) — that's the React #310 fix, plus Wave 3 page migrations adopting the Layer 3 blocks. |
 
 ### Today's session log (2026-05-27)
 
@@ -60,7 +60,7 @@ Started at `c7ad24a` (last commit of 2026-05-26). Eleven feature commits + one r
 | 1.9 Page-migration to DAL | not yet started |
 | **2 Layer 1** atomic primitives | ✅ **COMPLETE.** 21 primitives in `components/site/primitives/`: data (Price, TabularNumber, PercentChange, DaysCount, Eyebrow, MiddleDot), typography (DisplayHeading, H1, H2, H3, Body, Caption), layout (Container, Section, Stack, Grid), brand (Logo, RyanRealtyMark, JaxMascot), CTA (CTAButton, TextLink, IconButton, BadgePill). |
 | **2 Layer 2** layout shell | ✅ **COMPLETE.** SiteHeader + MobileNav + SiteFooter refactored onto primitives. RootProvider consolidates analytics + identity + consent (`components/site/providers/`). MetadataBlock + pageMetadata + typed json-ld builder (`components/site/MetadataBlock.tsx`, `lib/site/page-metadata.ts`, `lib/site/json-ld.ts`). Stack primitive hardened to default `items-start`. |
-| **2 Layer 3** LP composition | mostly done. ✅ all 8 existing homepage blocks lifted onto primitives + brand-voice cleaned (Hero, MarketSnapshot, PriceRangeTiles, OpenHousesGrid, CityGrid, ActivityFeed, CtaDuo, TeamSection). ✅ 7 of 12 new blocks per plan §9 shipped (BreadcrumbNav, BrokerCard, FAQBlock, CTABar, ContentSection, RelatedAreas, TestimonialBlock, SocialProofBlock). ⏳ Remaining: HeroBlock unified, NeighborhoodMap, PriceChart, LeadCaptureBlock (each 1-day per plan). |
+| **2 Layer 3** LP composition | ✅ **COMPLETE.** All 8 existing homepage blocks lifted onto primitives + brand-voice cleaned (Hero, MarketSnapshot, PriceRangeTiles, OpenHousesGrid, CityGrid, ActivityFeed, CtaDuo, TeamSection). All 12 new blocks per plan §9 shipped (BreadcrumbNav, BrokerCard, FAQBlock, CTABar, ContentSection, RelatedAreas, TestimonialBlock, SocialProofBlock, LeadCaptureBlock, HeroBlock, PriceChart, NeighborhoodMap). 20 components total, every one type + lint clean. |
 | **2 Layer 4** listing detail surface | not yet started — **fixes the React #310 on the broken listing detail page** |
 | **Guardrails** | ✅ brand-voice ESLint rule live at `error` level for user-facing JSX (`rr-brand-voice/no-violations`). DAL boundary `no-restricted-syntax` also at `error`. 189 + 51 baseline violations surfaced in `f47cb7e`'s commit body; PR-diff CI gate (`scripts/check-brand-voice.mjs`, `scripts/check-dal-boundary.mjs`) blocks net-new only. |
 
@@ -97,11 +97,14 @@ Apply: do not ask Matt what to do next. The plan is the answer. Surface a questi
 
 **Start here:**
 
-1. **Finish Wave 2 Layer 3 NEW blocks** (4 remaining heavies). Each is a multi-hour task because of the deps:
-   - `<HeroBlock>` (unified version, supersedes the current `Hero` — accepts headline / lede / search-bar / city-chips / Ken-Burns-photo config as props so subdivision / community / city pages can drop a customized hero in one line).
-   - `<NeighborhoodMap>` (dynamic-imported `@react-google-maps/api` or the project's existing Google Maps lib; PostGIS polygon overlay from `boundaries`; mobile-first interaction).
-   - `<PriceChart>` (dynamic-imported recharts; reads `getPriceHistory` DAL fn that's already shipped; 6-month / 12-month / 5-year time windows).
-   - `<LeadCaptureBlock>` (FUB-wired single form with 4 variants: buyer / seller / expired / inquiry — see `app/lp/seller-home-value/page.tsx` for the existing inline pattern to lift; uses `canonicallyTagLead` + `fireLeadGenerated` server-side per the analytics gold-standard wiring).
+1. **Wave 2 Layer 4** (listing detail surface) — **THE BIG ONE.** This is where the React #310 bug on prod evaporates because the legacy `components/listing/showcase/*` get replaced. Build into `components/site/listing-detail/`: `ListingDetailShell`, `ListingVideoEmbed` (uses getListingVideos, tier fallback), `PhotoGallery` (lazy beyond fold, AVIF first), `PriceBlock`, `PropertySpecs`, `DescriptionBlock` (voice-scrubbed remarks, brand-voice ESLint catches at commit time), `ListingAgentCard` (composes the just-shipped `BrokerCard` with `compact` variant), `MortgageCalculator`, `SimilarListings` (uses the already-shipped `getSimilarListings` DAL fn), `PropertyHistory`, `OpenHouses`, `NeighborhoodMarketContext`, `PriceVsNeighborhoodPill`, `BendLifestylePanel`, `TextMattCTA`, `TransparentCMASummary`, `ClimateRiskBlock`.
+
+2. **Wave 3 page migrations** (in parallel with L4). Each route gets its own commit that swaps to the new Layer 3 blocks. Use the lift commits from the L3 audit run (`45508e5..c77cd28`) as the architecture template. The 8 new Layer 3 blocks not yet wired into any page get adopted here:
+   - `/` homepage — already uses 8 lifted blocks; consider adopting `<HeroBlock>` directly (Hero is already a thin wrapper).
+   - `/cities/<slug>` — wire `<HeroBlock>`, `<MarketSnapshot>`, `<PriceChart>`, `<NeighborhoodMap>`, `<RelatedAreas>`.
+   - `/communities/<slug>` — same shape as cities, plus `<FAQBlock>`.
+   - `/contact` — wire `<LeadCaptureBlock variant="inquiry">` + `<FAQBlock>`.
+   - `/lp/buyer-listing-alerts` + `/lp/seller-home-value` + `/lp/expired-listing` — migrate from the inline LP forms to `<LeadCaptureBlock variant="buyer|seller|expired">`. Lift the existing server actions unchanged; the block's `onSubmit` prop plugs them in.
 2. **Wave 2 Layer 4** (listing detail surface) — **THE BIG ONE.** This is where the React #310 bug evaporates because the legacy components get replaced. Build into `components/site/listing-detail/`: `ListingDetailShell`, `ListingVideoEmbed`, `PhotoGallery`, `PriceBlock`, `PropertySpecs`, `DescriptionBlock`, `ListingAgentCard`, `MortgageCalculator`, `SimilarListings` (uses the already-shipped `getSimilarListings` DAL fn), `PropertyHistory`, `OpenHouses`, `NeighborhoodMarketContext` (the Zillow beater), `PriceVsNeighborhoodPill`, `BendLifestylePanel`, `TextMattCTA`, `TransparentCMASummary`, `ClimateRiskBlock`.
 3. **Wave 3 route 1**: `/` homepage swap to use the lifted Layer 3 blocks. Audit + delete legacy.
 4. **Wave 3 route 2**: `/listing/[listingKey]` swap to Layer 4 components → 5 EMPTY regions become real content → **the broken page is fixed.** Same commit also `git rm`'s `components/listing/showcase/*` per the locked discipline.
@@ -153,11 +156,13 @@ Layer 3 NEW-blocks run (7 of 12, all type + lint clean, no page wired yet — pa
 - **`ddae724`** — `TestimonialBlock` (`components/site/TestimonialBlock.tsx`). Client quotes with attribution. Two layouts: 1-item hero quote (22-26px display weight) vs 2-4-item grid. Banned: star ratings, review-platform logos, fake humility brag (banned trope §6.4).
 - **`b5aed1e`** — `SocialProofBlock` (`components/site/SocialProofBlock.tsx`). Quantitative trust signals: stats grid (count / price compact / days) + recent-sold cards + optional CTA. Different from TestimonialBlock; numbers carry the proof. Every figure must trace to a verified source per CLAUDE.md §0 Data Accuracy.
 
-Layer 3 STILL TODO (deferred — each is a multi-hour task per plan):
-- `HeroBlock` (unified version, supersedes the current Hero — accepts headline / lede / search / chips / kenburns config as props)
-- `NeighborhoodMap` (dynamic-imported Google Maps with PostGIS polygon overlay)
-- `PriceChart` (dynamic-imported recharts)
-- `LeadCaptureBlock` (FUB-wired, 4 variants: buyer / seller / expired / inquiry)
+Layer 3 closeout (the four heavies):
+- **`b635e8f`** — `LeadCaptureBlock` (scaffold). Single canonical form with four variants (buyer / seller / expired / inquiry). Caller-owned `onSubmit` so the three existing LP actions plug in unchanged. FUB wiring + identity tagging + GA4/Pixel fire stays inside the existing server actions per the analytics gold-standard wiring.
+- **`8717924`** — `HeroBlock` (NEW) + `Hero` refactored to delegate. HeroBlock is the canonical config-driven hero with headline / lede / photo / optional search / optional chip nav. Homepage Hero becomes a thin wrapper with the locked Old Mill config. Identical browser render verified.
+- **`7270667`** — `PriceChart` (two files). Server-safe wrapper + lazy-loaded recharts AreaChart. Reads `PriceHistoryPoint[]` from getPriceHistory. Navy area + line, tabular-nums tooltip, currency compacted on Y axis.
+- **`c5f6fbf`** — `NeighborhoodMap` (two files). Server-safe wrapper + lazy-loaded GoogleMap + Polygon. Locked navy stroke + cream fill styling. Generic version of the BendInteractiveMap pattern. Polygons from boundaries table only — GIS rule enforces authoritative source.
+
+Layer 3 is **complete**. 20 components total: 8 lifted, 12 new. All ship type + lint clean. No page wired against the new blocks yet — Wave 3 page migrations adopt them per route.
 
 ### Earlier session work (pre Layer 2 completion)
 
