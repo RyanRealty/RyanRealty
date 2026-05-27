@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.319.1 (2026-05-27)
+
+### Maintenance
+- docs: refresh CROSS_AGENT_HANDOFF.md for 2026-05-27 session
+
+---
+
+
 ## v1.319.0 (2026-05-27)
 
 ### Features
