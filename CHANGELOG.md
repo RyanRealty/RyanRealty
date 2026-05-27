@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.329.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): lift PriceRangeTiles onto primitives + en-dash cleanup
+
+---
+
+
 ## v1.328.0 (2026-05-27)
 
 ### Features
