@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.311.0 (2026-05-27)
+
+### Features
+- feat(analytics-ops): land orphan Meta + GA4 scripts from 2026-05-26 session
+
+---
+
+
 ## v1.310.0 (2026-05-27)
 
 ### Features
