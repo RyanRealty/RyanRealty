@@ -1,5 +1,17 @@
-import Link from 'next/link'
 import { getRegionPulse } from '@/lib/data/market/getRegionPulse'
+import {
+  Body,
+  Container,
+  DaysCount,
+  Eyebrow,
+  Grid,
+  H2,
+  Price,
+  Section,
+  Stack,
+  TabularNumber,
+  TextLink,
+} from '@/components/site/primitives'
 
 /**
  * Site v2 market snapshot — 4 stat cards on the homepage.
@@ -7,23 +19,33 @@ import { getRegionPulse } from '@/lib/data/market/getRegionPulse'
  * Data path (per EXECUTION_PLAN.md Wave 1 / CLAUDE.md §0 data accuracy):
  *   single SELECT against market_pulse_live where geo_type='region' AND
  *   geo_slug='central-oregon' AND property_type='A'. Indexed lookup.
- *   refresh_market_pulse() repopulates this row every 10–15 min, so the
+ *   refresh_market_pulse() repopulates this row every 10 to 15 min, so the
  *   numbers shown trace to the same pre-aggregated source the cron writes.
  *
  * No raw `listings` aggregation. No per-city fan-out. One round-trip.
  *
- * Unavailable values render as em-dash per brand voice. Currency rounded
- * to the nearest $1k. Tabular numerals throughout.
+ * Lifted onto Wave 2 Layer 1 primitives 2026-05-27:
+ *   - Container/Section own the outer chrome
+ *   - Eyebrow + H2 + Body cover the heading region
+ *   - Grid handles the 4-up responsive stat layout (lg:4 / sm:2 / xs:1)
+ *   - Price, TabularNumber, DaysCount own the numeric formatting; the
+ *     three exempt cases (em-dash placeholder, $1k rounding, days-suffix)
+ *     are now enforced by the primitives instead of by ad-hoc fmt helpers.
+ *
+ * Soft pastel direction-badge palette stays inline pending a future
+ * BadgePill "soft" tone extension. Tracked as Wave 2 Layer 3 follow-up.
  */
+
+type DirectionBadgeKind = 'up' | 'down' | 'hot' | 'balanced' | 'buyer'
 
 type StatCardProps = {
   label: string
-  value: string
-  sub: string
-  badge?: { kind: 'up' | 'down' | 'hot' | 'balanced' | 'buyer'; text: string }
+  value: React.ReactNode
+  sub: React.ReactNode
+  badge?: { kind: DirectionBadgeKind; text: string }
 }
 
-const BADGE_CLASS: Record<NonNullable<StatCardProps['badge']>['kind'], string> = {
+const BADGE_CLASS: Record<DirectionBadgeKind, string> = {
   up: 'bg-success/10 text-[oklch(0.35_0.15_149)] border-success/25',
   down: 'bg-destructive/10 text-destructive border-destructive/20',
   hot: 'bg-destructive/10 text-destructive border-destructive/25',
@@ -48,21 +70,11 @@ function StatCard({ label, value, sub, badge }: StatCardProps) {
   )
 }
 
-function fmtMoneyRound1k(n: number | null): string {
-  if (n == null) return '—'
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString()}`
-}
-
-function fmtInt(n: number | null): string {
-  if (n == null) return '—'
-  return Math.round(n).toLocaleString()
-}
-
 /**
  * Months of supply classifies the market per the locked CLAUDE.md threshold:
- *   ≤ 4 → seller's market · 4–6 → balanced · ≥ 6 → buyer's market.
- * Verdict copy matches the threshold, not the snapshot's `market_health_label`
- * field — that label is computed elsewhere and can be opinionated.
+ *   value of 4 or less is a seller's market, 4 to 6 is balanced, 6 or more is a
+ *   buyer's market. Verdict copy matches the threshold, not the snapshot's
+ *   `market_health_label` field, which is computed elsewhere and can be opinionated.
  */
 function marketVerdict(mos: number | null): { kind: 'hot' | 'balanced' | 'buyer'; text: string } | undefined {
   if (mos == null) return undefined
@@ -89,58 +101,64 @@ function fmtFreshness(iso: string): string {
 
 export default async function MarketSnapshot() {
   const pulse = await getRegionPulse()
+  const verdict = marketVerdict(pulse?.monthsOfSupply ?? null)
 
   return (
-    <section className="py-14 border-t border-border first:border-t-0">
-      <div className="mx-auto max-w-7xl px-6">
+    <Section padding="default" divider>
+      <Container>
         <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
-          <div>
-            <div className="rr-eyebrow">Market snapshot</div>
-            <h2 className="mt-1.5 text-[clamp(1.5rem,2vw+0.5rem,1.875rem)] font-bold tracking-[-0.01em] text-foreground">
-              Central Oregon housing market
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1.5">
+          <Stack gap="tight">
+            <Eyebrow>Market snapshot</Eyebrow>
+            <H2>Central Oregon housing market</H2>
+            <Body size="small" tone="muted">
               Refreshed every 15 minutes from Oregon Data Share. SFR + condos +
               townhomes across the 11 Central Oregon communities we serve.
               {pulse?.updatedAt ? ` Updated ${fmtFreshness(pulse.updatedAt)}.` : ''}
-            </p>
-          </div>
-          <Link
+            </Body>
+          </Stack>
+          <TextLink
             href="/housing-market"
-            className="text-sm font-semibold text-primary hover:underline whitespace-nowrap"
+            underline="on-hover"
+            className="whitespace-nowrap text-sm"
           >
             Open the housing market hub →
-          </Link>
+          </TextLink>
         </div>
 
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <Grid cols={4} gap="default">
           <StatCard
             label="Active residential listings"
-            value={fmtInt(pulse?.activeCount ?? null)}
+            value={<TabularNumber value={pulse?.activeCount ?? null} />}
             sub="Homes, condos, townhomes"
           />
           <StatCard
             label="Median list price"
-            value={fmtMoneyRound1k(pulse?.medianListPrice ?? null)}
+            value={<Price value={pulse?.medianListPrice ?? null} />}
             sub="Central Oregon residential"
           />
           <StatCard
             label="Typical days to pending"
-            value={fmtInt(pulse?.medianDaysToPending ?? null)}
+            value={<DaysCount value={pulse?.medianDaysToPending ?? null} fallback="—" />}
             sub="From list to under contract"
           />
           <StatCard
             label="Months of supply"
             value={
-              pulse?.monthsOfSupply != null
-                ? pulse.monthsOfSupply.toFixed(1)
-                : '—'
+              <TabularNumber
+                value={pulse?.monthsOfSupply ?? null}
+                fractionDigits={1}
+              />
             }
-            sub={`${fmtInt(pulse?.pendingCount ?? null)} pending · ${fmtInt(pulse?.soldCount30d ?? null)} closed last 30d`}
-            badge={marketVerdict(pulse?.monthsOfSupply ?? null)}
+            sub={
+              <>
+                <TabularNumber value={pulse?.pendingCount ?? null} /> pending ·{' '}
+                <TabularNumber value={pulse?.soldCount30d ?? null} /> closed last 30d
+              </>
+            }
+            badge={verdict}
           />
-        </div>
-      </div>
-    </section>
+        </Grid>
+      </Container>
+    </Section>
   )
 }
