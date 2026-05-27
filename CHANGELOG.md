@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.338.1 (2026-05-27)
+
+### Maintenance
+- docs: refresh CROSS_AGENT_HANDOFF.md — Layer 3 NEW (7 of 12) shipped
+
+---
+
+
 ## v1.338.0 (2026-05-27)
 
 ### Features
