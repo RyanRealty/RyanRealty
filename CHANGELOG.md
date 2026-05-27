@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.317.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l1): atomic data primitives — Price/Number/Percent/Days/Eyebrow/MiddleDot
+
+---
+
+
 ## v1.316.0 (2026-05-27)
 
 ### Features
