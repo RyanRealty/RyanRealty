@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.335.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): add FAQBlock
+- feat(wave-2-l3): add BrokerCard
+
+---
+
+
 ## v1.334.0 (2026-05-27)
 
 ### Features
