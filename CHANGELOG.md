@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.315.1 (2026-05-27)
+
+### Maintenance
+- chore(wave-1.8): re-add activity + leads DAL stubs
+
+---
+
+
 ## v1.315.0 (2026-05-27)
 
 ### Features
