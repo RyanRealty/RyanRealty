@@ -113,8 +113,12 @@ const stackGapClass = {
 } as const
 
 export function Stack({ children, gap = 'default', className }: StackProps) {
+  // items-start by default: Stack is for vertical rhythm of left-aligned
+  // content, not space-filling layouts. Default flex column align-items is
+  // 'stretch', which would force an <img> or w-fit child to fill the cross
+  // axis. Consumers that need a stretch column pass className="items-stretch".
   return (
-    <div className={cn('flex flex-col', stackGapClass[gap], className)}>
+    <div className={cn('flex flex-col items-start', stackGapClass[gap], className)}>
       {children}
     </div>
   )

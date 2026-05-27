@@ -65,7 +65,7 @@ export default function SiteFooter() {
       <Container className="pt-14 pb-8">
         <div className="grid gap-10 grid-cols-1 md:grid-cols-[1.3fr_repeat(3,1fr)]">
           {/* Brand column */}
-          <Stack gap="loose" className="items-start">
+          <Stack gap="loose">
             <RyanRealtyMark
               variant="horizontal"
               tone="white"
