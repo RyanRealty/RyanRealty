@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.323.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l2): refactor SiteFooter onto primitives + extend TextLink
+
+---
+
+
 ## v1.322.1 (2026-05-27)
 
 ### Maintenance
