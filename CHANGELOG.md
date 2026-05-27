@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.315.0 (2026-05-27)
+
+### Features
+- feat(meta): personal-user OAuth mint + ad-attach script via certified user
+
+---
+
+
 ## v1.314.0 (2026-05-27)
 
 ### Features
