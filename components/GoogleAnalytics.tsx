@@ -151,6 +151,26 @@ export default function GoogleAnalytics() {
                   return;
                 }
 
+                // ─── Country filter ────────────────────────────────────
+                // Ryan Realty serves Central Oregon. Non-US "users" in
+                // GA4 are overwhelmingly bots / crawlers / scraper farms
+                // (Singapore AWS, Shanghai, Dublin, Lulea Meta DC, Karachi,
+                // etc.) that pollute conversion data. We read the country
+                // cookie set by middleware.ts (from Vercel's
+                // x-vercel-ip-country header) and skip gtag init for
+                // anything that isn't US OR unknown.
+                //
+                // Unknown country (empty cookie) is treated as US-eligible
+                // so local dev + proxy-stripped requests still fire. The
+                // false negative cost (rare US visitor with stripped geo)
+                // is lower than the false positive cost (every crawler
+                // showing up as a user).
+                var cookieMatch = (document.cookie || '').match(/(?:^|; )rr_geo_country=([^;]*)/);
+                var country = cookieMatch ? decodeURIComponent(cookieMatch[1]).toUpperCase() : '';
+                if (country && country !== 'US') {
+                  return;
+                }
+
                 var params = new URLSearchParams(window.location.search || '');
                 var utmSource = params.get('utm_source');
                 var inferredSource = null;

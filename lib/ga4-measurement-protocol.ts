@@ -123,6 +123,24 @@ export async function fireGa4Event(params: Ga4MpFireParams): Promise<Ga4MpFireRe
     return { ok: false, error: 'GA4_API_SECRET_MISSING' }
   }
 
+  // Country filter — mirror of the client-side filter in
+  // components/GoogleAnalytics.tsx. Ryan Realty serves Central Oregon;
+  // non-US events are overwhelmingly bot traffic from datacenter IPs.
+  // Best-effort: only enforces when the middleware-set x-country-code
+  // header is present on the request. Server actions called outside a
+  // request context (crons, scripts) bypass this and fire normally —
+  // those are intentional automation, not visitor pageviews.
+  try {
+    const { headers } = await import('next/headers')
+    const headerStore = await headers()
+    const country = headerStore.get('x-country-code')?.toUpperCase()
+    if (country && country !== 'US') {
+      return { ok: false, error: `country_filtered:${country}` }
+    }
+  } catch {
+    // Not in a request context (cron / script / build). Fall through.
+  }
+
   const clientId = params.clientId?.trim() || randomUUID()
   const eventParams = sanitizeParams(params.eventParams || {})
   const userProperties = params.userProperties ? sanitizeUserProperties(params.userProperties) : undefined

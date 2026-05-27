@@ -77,12 +77,50 @@ const HOST_LP_ROOT_REWRITES: Record<string, string> = {
   // 'buyer.ryan-realty.com': '/lp/buyer-listing-alerts',
 }
 
+/**
+ * Read the visitor's country from edge-proxy IP-geo headers.
+ * Cloudflare: `cf-ipcountry`. Vercel: `x-vercel-ip-country`.
+ * Returns ISO-2 country code (e.g. "US", "CN") or empty if not detected.
+ *
+ * Used to gate analytics tracking — Ryan Realty serves Central Oregon
+ * buyers and sellers. International traffic is overwhelmingly bots /
+ * crawlers / scraper farms (Singapore AWS, Shanghai, Dublin, Lulea Meta
+ * datacenter, Karachi, etc.) that pollute GA4 + Google Ads conversion
+ * data. Tracking only fires for visitors with country=US OR no detectable
+ * country (local dev / unknown).
+ */
+function readCountry(request: NextRequest): string {
+  const h = request.headers
+  const raw = h.get('cf-ipcountry') || h.get('x-vercel-ip-country') || ''
+  return raw.trim().toUpperCase().slice(0, 2)
+}
+
 function buildNextResponse(pathname: string, request: NextRequest): NextResponse {
   // Always set x-pathname on the forwarded request headers so server
   // components can read it via headers().get('x-pathname').
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-pathname', pathname)
-  return NextResponse.next({ request: { headers: requestHeaders } })
+
+  // Pass country code through to server components + read-side cookie for
+  // the client. Empty string means "unknown" — treated as US-equivalent
+  // (don't filter local dev or proxy-stripped requests).
+  const country = readCountry(request)
+  if (country) requestHeaders.set('x-country-code', country)
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  // Cookie is read by components/GoogleAnalytics.tsx to skip gtag init
+  // for non-US visitors. SameSite=Lax + 1-hour TTL: country can shift on
+  // VPN reconnect or mobile-tower handoff, so we re-resolve frequently.
+  // Not HttpOnly — the client needs to read it.
+  if (country) {
+    response.cookies.set('rr_geo_country', country, {
+      path: '/',
+      maxAge: 3600,
+      sameSite: 'lax',
+      secure: true,
+    })
+  }
+  return response
 }
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
