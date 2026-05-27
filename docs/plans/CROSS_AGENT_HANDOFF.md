@@ -10,9 +10,9 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Claude Code (Opus 4.7, 2026-05-27 — late session)** — Ryan Realty website rebuild · Wave 2 of `docs/EXECUTION_PLAN.md`. Continuous-execution mode per Matt's 2026-05-27 directive. |
-| **`main` @ commit** | `9a46f2f` — `feat(wave-2-l2): MetadataBlock + pageMetadata helper`. Pushed; Vercel auto-deploy. |
-| **Task focus** | **Wave 2 Layer 2 COMPLETE.** SiteHeader, MobileNav, SiteFooter, RootProvider, MetadataBlock all shipped. Stack primitive hardened (defaults to `items-start`). Wave 2 Layer 1 atomic primitives also complete (21). Wave 1 DAL done modulo a few stubs that ship on demand. Listing detail page still broken on prod (React #310 in legacy showcase components) — fix lands when Wave 2 Layer 4 rebuilds those components. Next step: Wave 2 Layer 3 (LP composition blocks). |
+| **Surface** | **Claude Code (Opus 4.7, 2026-05-27 — late late session)** — Ryan Realty website rebuild · Wave 2 of `docs/EXECUTION_PLAN.md`. Continuous-execution mode per Matt's 2026-05-27 directive. |
+| **`main` @ commit** | `c77cd28` — `feat(wave-2-l3): lift ActivityFeed onto primitives`. Pushed; Vercel auto-deploy. |
+| **Task focus** | **Wave 2 Layers 1 + 2 + 3-lift-existing COMPLETE.** Hardened brand-voice + DAL boundary into real ESLint gates. All 8 existing homepage composition blocks now consume Wave 2 Layer 1 primitives (Hero, MarketSnapshot, PriceRangeTiles, OpenHousesGrid, CityGrid, ActivityFeed, CtaDuo, TeamSection). Brand-voice cleanup applied as each block was lifted. Listing detail page still broken on prod (React #310 in legacy showcase components) — fix lands when Wave 2 Layer 4 rebuilds those components. Next step: Wave 2 Layer 3 NEW blocks per plan §9 (HeroBlock unified, NeighborhoodMap, PriceChart, LeadCaptureBlock, BrokerCard, ContentSection, CTABar, BreadcrumbNav, FAQBlock, RelatedAreas, SocialProofBlock, TestimonialBlock), OR jump straight to Wave 2 Layer 4 (listing detail). |
 
 ### Today's session log (2026-05-27)
 
@@ -60,8 +60,9 @@ Started at `c7ad24a` (last commit of 2026-05-26). Eleven feature commits + one r
 | 1.9 Page-migration to DAL | not yet started |
 | **2 Layer 1** atomic primitives | ✅ **COMPLETE.** 21 primitives in `components/site/primitives/`: data (Price, TabularNumber, PercentChange, DaysCount, Eyebrow, MiddleDot), typography (DisplayHeading, H1, H2, H3, Body, Caption), layout (Container, Section, Stack, Grid), brand (Logo, RyanRealtyMark, JaxMascot), CTA (CTAButton, TextLink, IconButton, BadgePill). |
 | **2 Layer 2** layout shell | ✅ **COMPLETE.** SiteHeader + MobileNav + SiteFooter refactored onto primitives. RootProvider consolidates analytics + identity + consent (`components/site/providers/`). MetadataBlock + pageMetadata + typed json-ld builder (`components/site/MetadataBlock.tsx`, `lib/site/page-metadata.ts`, `lib/site/json-ld.ts`). Stack primitive hardened to default `items-start`. |
-| **2 Layer 3** LP composition | not yet started (a few exist already in `components/site/`: MarketSnapshot, PriceRangeTiles, OpenHousesGrid, CityGrid, Hero, ActivityFeed, CtaDuo, TeamSection — should be lifted to use new primitives). |
+| **2 Layer 3** LP composition | partial — all 8 existing homepage blocks lifted onto Wave 2 Layer 1 primitives + brand-voice cleaned (Hero, MarketSnapshot, PriceRangeTiles, OpenHousesGrid, CityGrid, ActivityFeed, CtaDuo, TeamSection). Remaining: the 12 NEW blocks per plan §9 Layer 3 (HeroBlock unified, NeighborhoodMap, PriceChart, LeadCaptureBlock, BrokerCard, ContentSection, CTABar, BreadcrumbNav, FAQBlock, RelatedAreas, SocialProofBlock, TestimonialBlock). |
 | **2 Layer 4** listing detail surface | not yet started — **fixes the React #310 on the broken listing detail page** |
+| **Guardrails** | ✅ brand-voice ESLint rule live at `error` level for user-facing JSX (`rr-brand-voice/no-violations`). DAL boundary `no-restricted-syntax` also at `error`. 189 + 51 baseline violations surfaced in `f47cb7e`'s commit body; PR-diff CI gate (`scripts/check-brand-voice.mjs`, `scripts/check-dal-boundary.mjs`) blocks net-new only. |
 
 ### Broken on prod right now
 
@@ -96,7 +97,7 @@ Apply: do not ask Matt what to do next. The plan is the answer. Surface a questi
 
 **Start here:**
 
-1. **Wave 2 Layer 3** (LP composition blocks). Audit the existing `components/site/` composition blocks against the mockup and lift them to use the new primitives (`Eyebrow`/`H2`/`Section`/`Container`/`Grid`/`Stack`/etc). Add what's missing per plan §9 Layer 3: `<HeroBlock>` (unified version), `<NeighborhoodMap>` (dynamic-imported Google Maps), `<PriceChart>` (dynamic-imported recharts), `<LeadCaptureBlock>` (FUB-wired, 4 variants), `<BrokerCard>` (transparent PNG, no rectangular frame), `<ContentSection>`, `<CTABar>`, `<BreadcrumbNav>`, `<FAQBlock>`, `<RelatedAreas>`, `<SocialProofBlock>`, `<TestimonialBlock>`.
+1. **Wave 2 Layer 3 NEW blocks** (the existing 8 are already lifted). Add per plan §9 Layer 3: `<HeroBlock>` (unified version, supersedes Hero), `<NeighborhoodMap>` (dynamic-imported Google Maps with PostGIS polygon overlay), `<PriceChart>` (dynamic-imported recharts), `<LeadCaptureBlock>` (FUB-wired, 4 variants: buyer/seller/expired/inquiry), `<BrokerCard>` (transparent PNG, no rectangular frame), `<ContentSection>`, `<CTABar>`, `<BreadcrumbNav>`, `<FAQBlock>`, `<RelatedAreas>`, `<SocialProofBlock>`, `<TestimonialBlock>`. Each ships as its own commit. Use the lift commits from this session (`45508e5..c77cd28`) as the architecture template — Section + Container + Stack + Eyebrow + H2/Body for the chrome, format primitives (Price/TabularNumber/DaysCount/MiddleDot) for the data.
 2. **Wave 2 Layer 4** (listing detail surface) — **THE BIG ONE.** This is where the React #310 bug evaporates because the legacy components get replaced. Build into `components/site/listing-detail/`: `ListingDetailShell`, `ListingVideoEmbed`, `PhotoGallery`, `PriceBlock`, `PropertySpecs`, `DescriptionBlock`, `ListingAgentCard`, `MortgageCalculator`, `SimilarListings` (uses the already-shipped `getSimilarListings` DAL fn), `PropertyHistory`, `OpenHouses`, `NeighborhoodMarketContext` (the Zillow beater), `PriceVsNeighborhoodPill`, `BendLifestylePanel`, `TextMattCTA`, `TransparentCMASummary`, `ClimateRiskBlock`.
 3. **Wave 3 route 1**: `/` homepage swap to use the lifted Layer 3 blocks. Audit + delete legacy.
 4. **Wave 3 route 2**: `/listing/[listingKey]` swap to Layer 4 components → 5 EMPTY regions become real content → **the broken page is fixed.** Same commit also `git rm`'s `components/listing/showcase/*` per the locked discipline.
@@ -117,12 +118,26 @@ Apply: do not ask Matt what to do next. The plan is the answer. Surface a questi
 - Broken legacy surface: [`components/listing/showcase/`](../../components/listing/showcase/) + [`app/listing/[listingKey]/page.tsx`](../../app/listing/[listingKey]/page.tsx) — DO NOT TOUCH, will be deleted in Wave 3.
 - Memory: `~/.claude/projects/-Users-matthewryan-RyanRealty/memory/MEMORY.md`
 
-### What this session shipped (Wave 2 Layer 2 completion run)
+### What this session shipped (Wave 2 Layer 2 + Layer 3 lift + guardrails)
 
-- **`8aa4475`** — SiteFooter onto primitives + extend TextLink primitive (tone `primary|on-navy|muted`, weight `semibold|normal`, tel/mailto routed past Next Link).
-- **`b0b8974`** — Stack primitive defaults to `items-start` so flex-col children stop stretching by default. Single-line primitive change; SiteFooter brand column drops the now-redundant override.
-- **`61f5580`** — RootProvider consolidates ComparisonProvider + AnalyticsScripts + IdentityBridges + CookieConsentBanner. Layout.tsx loses the 25-import salad; analytics + identity bridges + consent live behind one named provider at `components/site/providers/`.
-- **`9a46f2f`** — MetadataBlock + pageMetadata + typed json-ld builder. Three files: `components/site/MetadataBlock.tsx` (renders one or more `<script type="application/ld+json">` tags), `lib/site/page-metadata.ts` (returns Next.js Metadata with OG + Twitter + canonical), `lib/site/json-ld.ts` (discriminated-union typed builder for realEstateListing / breadcrumb / webPage / faqPage / place / article). Smoke-tested output validates against schema.org. Page migrations come in Wave 3.
+Layer 2 completion:
+- **`8aa4475`** — SiteFooter onto primitives + extend TextLink (tone `primary|on-navy|muted`, weight, tel/mailto handling)
+- **`b0b8974`** — Stack primitive defaults to `items-start`; SiteFooter brand column drops the now-redundant override
+- **`61f5580`** — RootProvider consolidates ComparisonProvider + AnalyticsScripts + IdentityBridges + CookieConsentBanner
+- **`9a46f2f`** — MetadataBlock + pageMetadata + typed json-ld builder
+
+Guardrails (locked enforcement):
+- **`f47cb7e`** — `feat(guardrails): brand-voice ESLint rule + DAL boundary flipped to error`. Custom plugin `rr-brand-voice/no-violations` blocks em-dash, en-dash, semicolon, exclamation, and the §6.2 banned-word list inside JSX text + string-literal JSX attribute values. Standalone "—" stays allowed as a data placeholder. 6 valid + 10 invalid RuleTester cases pass. DAL boundary `no-restricted-syntax` flipped from warn to error. Lint now surfaces 189 brand-voice errors across user-facing surfaces + 51 DAL errors in `scripts/` + 1 in `data/` — these are documented in the commit body, not blocking; production builds pass because the gate is per-PR-diff, not per-baseline.
+
+Layer 3 lift-existing run (all 8 homepage composition blocks consume primitives + are brand-voice clean):
+- **`45508e5`** — MarketSnapshot: Section/Container/Stack/Eyebrow/H2/Body + Price/TabularNumber/DaysCount; retired ad-hoc fmtMoneyRound1k/fmtInt helpers
+- **`3a86684`** — CtaDuo + brand-voice cleanup: "Thinking about selling?" → "Considering a sale?", em-dash retired
+- **`ec36e8e`** — TeamSection: Section/Container/Stack/Eyebrow/H2/Body/CTAButton
+- **`6f4196f`** — PriceRangeTiles + en-dash cleanup: "$600k – $900k" → "$600k to $900k", "luxury homes" → "larger homes and estates"
+- **`aba1c9b`** — CityGrid: Price + TabularNumber + MiddleDot for the per-city stat lines
+- **`cb6022f`** — OpenHousesGrid + en-dash cleanup in formatted badge strings (open-house time-range now uses hyphen)
+- **`f89f344`** — Hero + em-dash cleanup in lede + photo alt; DisplayHeading owns the H1
+- **`c77cd28`** — ActivityFeed: Price + MiddleDot for the activity rows; retired fmtPrice helper
 
 ### Earlier session work (pre Layer 2 completion)
 
