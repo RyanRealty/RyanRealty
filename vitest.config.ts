@@ -10,6 +10,7 @@ export default defineConfig({
       'video/**/*.test.ts',
       'video/**/*.test.tsx',
       'scripts/skyslope-pdf-advisory-agent.test.mjs',
+      'eslint-rules/**/*.test.mjs',
     ],
     globals: false,
   },

@@ -2,6 +2,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
+import rrBrandVoice from "./eslint-rules/no-brand-voice-violations.js";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -13,6 +14,7 @@ const eslintConfig = defineConfig([
     // that don't affect runtime correctness.
     plugins: {
       "react-hooks": reactHooksPlugin,
+      "rr-brand-voice": rrBrandVoice,
     },
     rules: {
       "react-hooks/rules-of-hooks": "error",
@@ -27,16 +29,19 @@ const eslintConfig = defineConfig([
             // Downgrade no-explicit-any to warning — Supabase query builder
             // callbacks use pragmatic `any` for filter chain parameters.
             "@typescript-eslint/no-explicit-any": "warn",
+      // Brand-voice gate: block em-dash, en-dash, semicolon, exclamation,
+      // and the §6.2 banned-word list in JSX text + string-literal JSX
+      // attribute values. Standalone "—" stays allowed as data placeholder.
+      // Canonical source: marketing_brain_skills/brand-voice/voice_guidelines.md §6.1 + §6.2.
+      "rr-brand-voice/no-violations": "error",
       // Design-system compliance is enforced by scripts/lint-design-tokens.sh
       // Run: npm run lint:design-tokens
       //
       // DAL boundary: only lib/data/ may call supabase.from('<bannedTable>').
-      // Currently `warn` because 380 baseline violations exist (see
-      // scripts/dal-boundary-baseline.json). The ratchet check
-      // (scripts/check-dal-boundary.mjs) is the active gate in CI — this rule
-      // surfaces the violation in-editor. Flip to `error` once baseline hits 0
-      // (end of Wave 2/3 per docs/EXECUTION_PLAN.md). See docs/DATA_ACCESS_LAYER.md.
-      "no-restricted-syntax": ["warn", {
+      // Flipped to `error` on 2026-05-27 per the brand-voice + DAL guardrails
+      // commit. The ratchet check (scripts/check-dal-boundary.mjs) remains the
+      // CI gate; the editor rule now hard-blocks too. See docs/DATA_ACCESS_LAYER.md.
+      "no-restricted-syntax": ["error", {
         selector: "CallExpression[callee.property.name='from'][arguments.0.value=/^(listings|listing_videos|video_tours_cache|listing_history|market_stats_cache|market_pulse_live|engagement_metrics|properties|neighborhoods|communities|cities|listing_photos|listing_agents|open_houses|boundaries|neighborhood_subdivisions|subdivision_flags|app_config|activity_events|expired_listings|cmas|cma_comps)$/]",
         message: "DAL boundary: supabase.from('<table>') is banned outside lib/data/. Use the canonical function from @/lib/data/ instead. See docs/DATA_ACCESS_LAYER.md.",
       }],
@@ -48,6 +53,28 @@ const eslintConfig = defineConfig([
     files: ["lib/data/**/*.{ts,tsx,mjs,js}"],
     rules: {
       "no-restricted-syntax": "off",
+    },
+  },
+  {
+    // Brand-voice rule is OFF in surfaces that are not user-facing prose:
+    //   - API routes + server actions
+    //   - admin tools (internal-only UI)
+    //   - lib/ (data + helpers, not strings shown to users)
+    //   - scripts/ (dev tooling)
+    //   - eslint-rules/ (lint rules themselves contain example banned tokens)
+    //   - any *.test.* file (RuleTester payloads contain banned tokens by design)
+    // Main block above leaves it ON at error level everywhere else, which is
+    // the user-facing surface: app/* pages + components/* + LP routes.
+    files: [
+      "app/api/**/*.{ts,tsx}",
+      "app/admin/**/*.{ts,tsx}",
+      "lib/**/*.{ts,tsx}",
+      "scripts/**/*.{ts,tsx,mjs,js}",
+      "eslint-rules/**/*.{js,mjs}",
+      "**/*.test.{ts,tsx,mjs}",
+    ],
+    rules: {
+      "rr-brand-voice/no-violations": "off",
     },
   },
   // Override default ignores of eslint-config-next.
