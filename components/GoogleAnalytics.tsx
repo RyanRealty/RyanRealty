@@ -120,6 +120,37 @@ export default function GoogleAnalytics() {
           <Script id="ga4-gads-config" strategy="afterInteractive">
             {`
               (function() {
+                // ─── Bot detection ─────────────────────────────────────
+                // Per docs/broker-runbooks/ga4-bigquery-and-bot-filter.md,
+                // ~40% of GA4 "users" (last 90d) were datacenter bots
+                // (Singapore AWS, Boardman, Dublin, Lulea). Most labeled
+                // crawlers are already filtered by GA4's built-in
+                // "Exclude all hits from known bots and spiders" — but
+                // headless Chrome + Playwright + custom scrapers slip
+                // through. We catch them here BEFORE gtag('config') fires,
+                // so no PageView, no Lead, no session pollution.
+                //
+                // Signals:
+                //   1. navigator.webdriver === true (Playwright, Selenium,
+                //      Puppeteer, Chrome DevTools Protocol all set this)
+                //   2. UA regex matching common headless / crawler markers
+                //   3. Empty navigator.languages (headless default)
+                //
+                // We intentionally do NOT call gtag('config') for bots.
+                // Other Consent Mode v2 gtag() calls earlier (defaults,
+                // url_passthrough, ads_data_redaction) still ran — those
+                // are state-setters, not events.
+                var ua = (navigator.userAgent || '');
+                var botRe = /headless|crawler|spider|crawl|wget|curl|python|java|googlebot|bingbot|yandex|baidu|duckduckbot|slurp|sentry|phantom|puppeteer|playwright|selenium|fetch\\/|node-fetch|axios|httpclient|okhttp|libwww/i;
+                var isBot = (
+                  navigator.webdriver === true ||
+                  botRe.test(ua) ||
+                  (Array.isArray(navigator.languages) && navigator.languages.length === 0)
+                );
+                if (isBot) {
+                  return;
+                }
+
                 var params = new URLSearchParams(window.location.search || '');
                 var utmSource = params.get('utm_source');
                 var inferredSource = null;
@@ -158,8 +189,8 @@ export default function GoogleAnalytics() {
                 }
 
                 ${hasGA4 ? `gtag('config', '${GA4_ID!.replace(/'/g, "\\'")}', gaConfig);` : ''}
+                ${hasGoogleAds ? `gtag('config', '${GOOGLE_ADS_ID!.replace(/'/g, "\\'")}');` : ''}
               })();
-              ${hasGoogleAds ? `gtag('config', '${GOOGLE_ADS_ID!.replace(/'/g, "\\'")}');` : ''}
             `}
           </Script>
         </>
