@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.331.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): lift OpenHousesGrid onto primitives + time-range en-dash fix
+
+---
+
+
 ## v1.330.0 (2026-05-27)
 
 ### Features
