@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.328.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): lift TeamSection onto primitives
+- feat(wave-2-l3): lift CtaDuo onto primitives + brand-voice cleanup
+
+---
+
+
 ## v1.327.0 (2026-05-27)
 
 ### Features
