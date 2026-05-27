@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.327.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): lift MarketSnapshot onto primitives
+
+---
+
+
 ## v1.326.0 (2026-05-27)
 
 ### Features
