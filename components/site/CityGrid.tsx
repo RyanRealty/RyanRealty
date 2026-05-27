@@ -1,12 +1,28 @@
 import Link from 'next/link'
 import { getCitiesForIndex } from '@/app/actions/cities'
+import {
+  Body,
+  Container,
+  Eyebrow,
+  Grid,
+  H2,
+  MiddleDot,
+  Price,
+  Section,
+  Stack,
+  TabularNumber,
+} from '@/components/site/primitives'
 
 /**
- * Site v2 city grid — 8 city cards with median + active count + DOM-style stats line.
- * Mirrors design_system/ryan-realty/ui_kits/website/index.html §cities.
+ * Site v2 city grid — 8 city cards with median + active count + community
+ * count. Mirrors design_system/ryan-realty/ui_kits/website/index.html §cities.
  *
  * Data accuracy: every figure traces to geo_snapshot_mv via getCitiesForIndex().
- * Unavailable values render as em-dash per brand voice.
+ * Unavailable values render as em-dash via the Price primitive's fallback.
+ *
+ * Lifted onto Wave 2 Layer 1 primitives 2026-05-27. fmtMoneyRound1k() retired
+ * in favor of <Price>; raw count formatting moved to <TabularNumber>; the
+ * stats-line separator moved to <MiddleDot>.
  */
 
 // 8 mockup-aligned cities. Order matches market relevance for Central Oregon.
@@ -40,9 +56,47 @@ function PinIcon() {
   )
 }
 
-function fmtMoneyRound1k(n: number | null): string {
-  if (n == null) return '—'
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString()}`
+type CityCardData = {
+  slug: string
+  name: string
+  medianPrice: number | null
+  activeCount: number
+  communityCount: number
+}
+
+function CityCard({ city }: { city: CityCardData }) {
+  return (
+    <Link
+      href={`/cities/${city.slug}`}
+      className="group bg-card border border-border rounded-[14px] p-[18px] flex flex-col gap-1.5 shadow-sm hover:border-primary/30 hover:shadow-md transition"
+    >
+      <div className="flex items-center gap-2 text-[17px] font-bold tracking-[-0.01em] text-foreground">
+        <span className="text-primary">
+          <PinIcon />
+        </span>
+        {city.name}
+      </div>
+      <div className="text-[15px] font-semibold text-foreground mt-0.5">
+        <Price value={city.medianPrice} />
+      </div>
+      <div className="text-xs text-muted-foreground">
+        {city.activeCount > 0 ? (
+          <>
+            <TabularNumber value={city.activeCount} /> active
+          </>
+        ) : (
+          'No active listings'
+        )}
+        {city.communityCount > 0 ? (
+          <>
+            {' '}
+            <MiddleDot className="text-muted-foreground/60" />{' '}
+            <TabularNumber value={city.communityCount} /> communities
+          </>
+        ) : null}
+      </div>
+    </Link>
+  )
 }
 
 export default async function CityGrid() {
@@ -60,40 +114,22 @@ export default async function CityGrid() {
   }
 
   return (
-    <section className="py-14 bg-muted border-y border-border">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="mb-6">
-          <div className="rr-eyebrow">Communities</div>
-          <h2 className="mt-1.5 text-[clamp(1.5rem,2vw+0.5rem,1.875rem)] font-bold tracking-[-0.01em] text-foreground">
-            Search by city
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1.5">
+    <Section padding="default" tone="muted" divider>
+      <Container>
+        <Stack gap="tight" className="mb-6">
+          <Eyebrow>Communities</Eyebrow>
+          <H2>Search by city</H2>
+          <Body size="small" tone="muted">
             Eleven Central Oregon communities. Median prices refreshed daily.
-          </p>
-        </div>
+          </Body>
+        </Stack>
 
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <Grid cols={4} gap="default">
           {shown.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/cities/${c.slug}`}
-              className="group bg-card border border-border rounded-[14px] p-[18px] flex flex-col gap-1.5 shadow-sm hover:border-primary/30 hover:shadow-md transition"
-            >
-              <div className="flex items-center gap-2 text-[17px] font-bold tracking-[-0.01em] text-foreground">
-                <span className="text-primary"><PinIcon /></span>
-                {c.name}
-              </div>
-              <div className="text-[15px] font-semibold tabular-nums text-foreground mt-0.5">
-                {fmtMoneyRound1k(c.medianPrice)}
-              </div>
-              <div className="text-xs text-muted-foreground tabular-nums">
-                {c.activeCount > 0 ? `${c.activeCount.toLocaleString()} active` : 'No active listings'}
-                {c.communityCount > 0 ? ` · ${c.communityCount} communities` : ''}
-              </div>
-            </Link>
+            <CityCard key={c.slug} city={c} />
           ))}
-        </div>
-      </div>
-    </section>
+        </Grid>
+      </Container>
+    </Section>
   )
 }
