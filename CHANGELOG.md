@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.316.0 (2026-05-27)
+
+### Features
+- feat(wave-1.8): getPriceHistory DAL function
+
+---
+
+
 ## v1.315.1 (2026-05-27)
 
 ### Maintenance
