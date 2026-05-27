@@ -20,8 +20,8 @@ export default function TeamSection({ teamImageSrc }: { teamImageSrc?: string | 
             Local knowledge, honest guidance, and a small team that has lived,
             worked, and closed deals across Bend, Redmond, Sisters, Sunriver, and
             surrounding communities. We tell you what the inspection found. We
-            tell you when a listing has been sitting. We tell you what we don't
-            know.
+            tell you when a listing has been sitting. We tell you what we
+            do not know.
           </p>
           <div className="mt-6 flex gap-2.5 flex-wrap">
             <Link

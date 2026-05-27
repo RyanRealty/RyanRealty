@@ -41,6 +41,10 @@
       "schedule": "8 * * * *"
     },
     {
+      "path": "/api/cron/refresh-similar-listings",
+      "schedule": "30 4 * * *"
+    },
+    {
       "path": "/api/cron/market-report",
       "schedule": "0 14 * * 6"
     },
