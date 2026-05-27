@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.325.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l2): MetadataBlock + pageMetadata helper
+
+---
+
+
 ## v1.324.0 (2026-05-27)
 
 ### Features
