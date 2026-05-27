@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.341.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): add NeighborhoodMap (dynamic-imported Google Maps)
+
+---
+
+
 ## v1.340.0 (2026-05-27)
 
 ### Features
