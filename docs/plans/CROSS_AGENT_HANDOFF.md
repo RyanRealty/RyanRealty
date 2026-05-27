@@ -11,8 +11,8 @@
 | Field | Value |
 |--------|--------|
 | **Surface** | **Claude Code (Opus 4.7, 2026-05-27)** — Ryan Realty website rebuild · Wave 2 of `docs/EXECUTION_PLAN.md`. Continuous-execution mode per Matt's 2026-05-27 directive. |
-| **`main` @ commit** | `e62983a` — `feat(wave-2-l1): layout primitives — Container/Section/Stack/Grid`. Pushed; Vercel auto-deploy. |
-| **Task focus** | Wave 2 Layer 1 atomic primitives (continuing). Wave 1 DAL is done modulo a few stubs that ship on demand. Listing detail page is broken on prod (React #310 hydration error in legacy showcase components) — fix lands when Wave 2 Layer 4 rebuilds those components. |
+| **`main` @ commit** | `041d8f4` — `feat(wave-2-l2): MobileNav drawer + refactor SiteHeader to use primitives`. Pushed; Vercel auto-deploy. |
+| **Task focus** | Wave 2 Layer 1 atomic primitives COMPLETE (21 of them). Wave 2 Layer 2 (layout shell) started — SiteHeader refactored, MobileNav added. Wave 1 DAL is done modulo a few stubs that ship on demand. Listing detail page still broken on prod (React #310 hydration error in legacy showcase components) — fix lands when Wave 2 Layer 4 rebuilds those components. |
 
 ### Today's session log (2026-05-27)
 
@@ -32,6 +32,9 @@ Started at `c7ad24a` (last commit of 2026-05-26). Eleven feature commits + one r
 | `cc2ee4e` | wave-2 L1: data primitives — Price/TabularNumber/PercentChange/DaysCount/Eyebrow/MiddleDot |
 | `3de449d` | wave-2 L1: typography primitives — DisplayHeading/H1/H2/H3/Body/Caption |
 | `e62983a` | wave-2 L1: layout primitives — Container/Section/Stack/Grid |
+| `b4ed707` | wave-2 L1: brand primitives — Logo/RyanRealtyMark/JaxMascot + assets at `/public/brand/` |
+| `93af50d` | wave-2 L1: CTA primitives — CTAButton/TextLink/IconButton/BadgePill **(Layer 1 complete: 21 primitives)** |
+| `041d8f4` | wave-2 L2: MobileNav drawer (shadcn Sheet) + SiteHeader refactor onto new primitives |
 
 **DB side-effects unreverted (intentional, harmless):**
 - `public.listing_detail_mv` materialized view + `refresh_listing_detail_mv()` function still in production. Nothing reads from them now. Will be re-adopted in Wave 3 when the listing detail page rebuilds.
@@ -51,9 +54,9 @@ Started at `c7ad24a` (last commit of 2026-05-26). Eleven feature commits + one r
 | 1.7 MV refresh wiring | ✅ hourly `/api/cron/refresh-mvs` (tile + geo) + nightly `/api/cron/refresh-similar-listings` |
 | 1.8 Remaining DAL functions | partial — `getPriceHistory` done; activity + leads stubbed; real implementations land per-page as Wave 3 needs them |
 | 1.9 Page-migration to DAL | not yet started |
-| **2 Layer 1** atomic primitives | ✅ data + typography + layout shipped today. **TODO:** Logo/RyanRealtyMark/JaxMascot/CTAButton/TextLink/IconButton/BadgePill |
-| **2 Layer 2** layout shell | not yet started (`<SiteHeader>` exists in `components/site/` from yesterday) |
-| **2 Layer 3** LP composition | not yet started (a few exist already in `components/site/`: MarketSnapshot, PriceRangeTiles, etc.) |
+| **2 Layer 1** atomic primitives | ✅ **COMPLETE.** 21 primitives in `components/site/primitives/`: data (Price, TabularNumber, PercentChange, DaysCount, Eyebrow, MiddleDot), typography (DisplayHeading, H1, H2, H3, Body, Caption), layout (Container, Section, Stack, Grid), brand (Logo, RyanRealtyMark, JaxMascot), CTA (CTAButton, TextLink, IconButton, BadgePill). |
+| **2 Layer 2** layout shell | partial — SiteHeader refactored onto primitives, MobileNav drawer added. **TODO:** SiteFooter refactor (same pattern), `<RootProvider>` (Supabase + Sentry + GA + brand consent wrapper), `<MetadataBlock>` (OG + Twitter + JSON-LD per page). |
+| **2 Layer 3** LP composition | not yet started (a few exist already in `components/site/`: MarketSnapshot, PriceRangeTiles, OpenHousesGrid, CityGrid, Hero, ActivityFeed, CtaDuo, TeamSection — should be lifted to use new primitives). |
 | **2 Layer 4** listing detail surface | not yet started — **fixes the React #310 on the broken listing detail page** |
 
 ### Broken on prod right now
@@ -87,12 +90,19 @@ Apply: do not ask Matt what to do next. The plan is the answer. Surface a questi
 
 ### Next-step recommendation (for whoever picks up)
 
-1. **Continue Wave 2 Layer 1 primitives.** Brand assets next: `Logo`, `RyanRealtyMark`, `JaxMascot`. Then CTAs: `CTAButton`, `TextLink`, `IconButton`, `BadgePill` (wrap shadcn primitives with brand tokens). Each batch in its own commit; should fit in 30-50 LOC each.
-2. **Then Wave 2 Layer 2** (layout shell): the existing `components/site/SiteHeader.tsx` + `SiteFooter.tsx` mostly cover this. Audit them against the locked mockup. Add `<MobileNav>` drawer + `<RootProvider>` + `<MetadataBlock>`.
-3. **Then Wave 2 Layer 3** (LP composition blocks): a few exist (`MarketSnapshot`, `PriceRangeTiles`, `OpenHousesGrid`, `CityGrid`, `Hero`). Audit + lift to use the new primitives. Add `<HeroBlock>` (new unified version), `<NeighborhoodMap>`, `<PriceChart>`, `<LeadCaptureBlock>` (FUB-wired, 4 variants), `<BrokerCard>`, `<ContentSection>`, `<CTABar>`, `<BreadcrumbNav>`, `<FAQBlock>`, `<RelatedAreas>`, `<SocialProofBlock>`, `<TestimonialBlock>`.
-4. **Then Wave 2 Layer 4** (listing detail surface) — the big one. This is where the React #310 bug evaporates because the legacy components get replaced. New: `ListingDetailShell`, `ListingVideoEmbed`, `PhotoGallery`, `PriceBlock`, `PropertySpecs`, `DescriptionBlock`, `ListingAgentCard`, `MortgageCalculator`, `SimilarListings` (uses the already-shipped `getSimilarListings`), `PropertyHistory`, `OpenHouses`, `NeighborhoodMarketContext` (the Zillow beater), `PriceVsNeighborhoodPill`, `BendLifestylePanel`, `TextMattCTA`, `TransparentCMASummary`, `ClimateRiskBlock`.
-5. **Then Wave 3 route 1**: `/` homepage swap (mostly done) — audit + delete legacy.
-6. **Then Wave 3 route 2**: `/listing/[listingKey]` swap to the new components → 5 EMPTY regions become real content → broken page is fixed.
+**Start here:**
+
+1. **Finish Wave 2 Layer 2.** SiteFooter refactor onto primitives (same pattern as the SiteHeader refactor in `041d8f4`). Then `<RootProvider>` (Supabase + Sentry + GA + brand consent wrapper) + `<MetadataBlock>` (OG + Twitter + JSON-LD per page).
+2. **Wave 2 Layer 3** (LP composition blocks). Audit the existing `components/site/` composition blocks against the mockup and lift them to use the new primitives (`Eyebrow`/`H2`/`Section`/`Container`/`Grid`/`Stack`/etc). Add what's missing per plan §9 Layer 3: `<HeroBlock>` (unified version), `<NeighborhoodMap>` (dynamic-imported Google Maps), `<PriceChart>` (dynamic-imported recharts), `<LeadCaptureBlock>` (FUB-wired, 4 variants), `<BrokerCard>` (transparent PNG, no rectangular frame), `<ContentSection>`, `<CTABar>`, `<BreadcrumbNav>`, `<FAQBlock>`, `<RelatedAreas>`, `<SocialProofBlock>`, `<TestimonialBlock>`.
+3. **Wave 2 Layer 4** (listing detail surface) — **THE BIG ONE.** This is where the React #310 bug evaporates because the legacy components get replaced. Build into `components/site/listing-detail/`: `ListingDetailShell`, `ListingVideoEmbed`, `PhotoGallery`, `PriceBlock`, `PropertySpecs`, `DescriptionBlock`, `ListingAgentCard`, `MortgageCalculator`, `SimilarListings` (uses the already-shipped `getSimilarListings` DAL fn), `PropertyHistory`, `OpenHouses`, `NeighborhoodMarketContext` (the Zillow beater), `PriceVsNeighborhoodPill`, `BendLifestylePanel`, `TextMattCTA`, `TransparentCMASummary`, `ClimateRiskBlock`.
+4. **Wave 3 route 1**: `/` homepage swap to use the lifted Layer 3 blocks. Audit + delete legacy.
+5. **Wave 3 route 2**: `/listing/[listingKey]` swap to Layer 4 components → 5 EMPTY regions become real content → **the broken page is fixed.** Same commit also `git rm`'s `components/listing/showcase/*` per the locked discipline.
+
+**Quick wins available in parallel (independent of Wave 2 progression):**
+
+- Implement the activity + leads DAL stubs (`getRecentActivity`, `subscribeActivity`, `createBuyerLead`, `createSellerLead`, `createExpiredLead`). Existing inline FUB-creation logic in `app/lp/seller-home-value/page.tsx` and `app/lp/expired-listing/page.tsx` is the model — lift to the canonical DAL function, then migrate the page imports.
+- Build `getMarketReport(slug)` DAL function (plan §4) — needed by `/housing-market/reports/[slug]`.
+- Lift the homepage v2 composition blocks (`MarketSnapshot`, `Hero`, `PriceRangeTiles`, etc.) to use new primitives — small commits, no functional change, just style alignment.
 
 ### Key file paths
 
