@@ -25,24 +25,22 @@ function isAuthorized(request: Request): boolean {
  * GET /api/cron/refresh-mvs
  *
  * Refreshes the DAL materialized views applied in migrations 20260522144509
- * (listing_tile_mv), 20260522144510 (geo_snapshot_mv), and 20260527150000
- * (listing_detail_mv). All refreshed CONCURRENTLY so user reads keep working
- * during the refresh.
+ * (listing_tile_mv) and 20260522144510 (geo_snapshot_mv). Both refreshed
+ * CONCURRENTLY so user reads keep working during the refresh.
  *
- * Schedule: hourly at :08 via vercel.json.
+ * Schedule: every 15 minutes via vercel.json.
  *
  * Why a separate cron and not inline in sync-delta?
  *   - listing_tile_mv refresh ~ 30-40s CONCURRENTLY (589K rows).
  *   - geo_snapshot_mv refresh ~ 35s CONCURRENTLY (aggregate over same).
- *   - listing_detail_mv refresh ~ 60-90s CONCURRENTLY (589K wide rows).
- *   - sync-delta's own work + the refresh budget would push past the
+ *   - sync-delta's own work + the 75s of refresh would push past the
  *     Vercel cron serverless timeout.
  *   - Decoupling means a stuck refresh doesn't block sync-delta, and
  *     vice versa. They each get their own observability surface.
  *
  * Auth: Authorization: Bearer CRON_SECRET
  *
- * Returns: { ok, ran_at, listing_tile_mv, geo_snapshot_mv, listing_detail_mv, duration_ms }
+ * Returns: { ok, ran_at, listing_tile_mv: {...}, geo_snapshot_mv: {...}, duration_ms }
  */
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
@@ -90,22 +88,7 @@ export async function GET(request: Request) {
     error: geoError?.message ?? geoData?.error ?? null,
   }
 
-  // listing_detail_mv third — drives the listing detail page hot path.
-  // Wider than the tile MV (~60-90s expected); CONCURRENTLY keeps reads
-  // unblocked. Advisory lock 7104 prevents overlapping runs.
-  const detailStart = Date.now()
-  const { data: detailData, error: detailError } = await supabase.rpc(
-    'refresh_listing_detail_mv',
-  )
-  const detailMs = Date.now() - detailStart
-  const detailResult = {
-    ok: !detailError && detailData?.ok !== false,
-    duration_ms: detailMs,
-    rpc_duration_ms: detailData?.duration_ms ?? null,
-    error: detailError?.message ?? detailData?.error ?? null,
-  }
-
-  const ok = tileResult.ok && geoResult.ok && detailResult.ok
+  const ok = tileResult.ok && geoResult.ok
 
   return NextResponse.json(
     {
@@ -113,7 +96,6 @@ export async function GET(request: Request) {
       ran_at: ranAt,
       listing_tile_mv: tileResult,
       geo_snapshot_mv: geoResult,
-      listing_detail_mv: detailResult,
       duration_ms: Date.now() - startMs,
     },
     { status: ok ? 200 : 500 },

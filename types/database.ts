@@ -3211,6 +3211,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_jobs: {
+        Row: {
+          error_message: string | null
+          id: string
+          page: number
+          records_processed: number
+          resource_id: string | null
+          resource_type: string
+          skiptoken: string | null
+          started_at: string | null
+          status: string
+          total_records_expected: number | null
+          updated_at: string
+        }
+        Insert: {
+          error_message?: string | null
+          id?: string
+          page?: number
+          records_processed?: number
+          resource_id?: string | null
+          resource_type: string
+          skiptoken?: string | null
+          started_at?: string | null
+          status?: string
+          total_records_expected?: number | null
+          updated_at?: string
+        }
+        Update: {
+          error_message?: string | null
+          id?: string
+          page?: number
+          records_processed?: number
+          resource_id?: string | null
+          resource_type?: string
+          skiptoken?: string | null
+          started_at?: string | null
+          status?: string
+          total_records_expected?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sync_logs: {
         Row: {
           alert_sent: boolean
@@ -3286,6 +3328,33 @@ export type Database = {
           terminal_to_year?: number | null
           updated_at?: string
           year_sync_matrix_cache?: Json | null
+        }
+        Relationships: []
+      }
+      sync_state_by_resource: {
+        Row: {
+          last_error_message: string | null
+          last_sync_duration_ms: number | null
+          last_sync_status: string | null
+          last_sync_timestamp: string | null
+          resource_type: string
+          updated_at: string
+        }
+        Insert: {
+          last_error_message?: string | null
+          last_sync_duration_ms?: number | null
+          last_sync_status?: string | null
+          last_sync_timestamp?: string | null
+          resource_type: string
+          updated_at?: string
+        }
+        Update: {
+          last_error_message?: string | null
+          last_sync_duration_ms?: number | null
+          last_sync_status?: string | null
+          last_sync_timestamp?: string | null
+          resource_type?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3674,6 +3743,39 @@ export type Database = {
           user_agent?: string | null
           user_id?: string | null
           visit_id?: string
+        }
+        Relationships: []
+      }
+      year_sync_log: {
+        Row: {
+          completed_at: string
+          error: string | null
+          history_inserted: number
+          id: string
+          listings_finalized: number
+          listings_upserted: number
+          status: string
+          year: number
+        }
+        Insert: {
+          completed_at?: string
+          error?: string | null
+          history_inserted?: number
+          id?: string
+          listings_finalized?: number
+          listings_upserted?: number
+          status: string
+          year: number
+        }
+        Update: {
+          completed_at?: string
+          error?: string | null
+          history_inserted?: number
+          id?: string
+          listings_finalized?: number
+          listings_upserted?: number
+          status?: string
+          year?: number
         }
         Relationships: []
       }

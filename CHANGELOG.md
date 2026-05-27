@@ -1,53 +1,5 @@
 # Changelog
 
-## v1.312.0 (2026-05-27)
-
-### Features
-- feat(wave-1.5): listing_detail_mv + DAL rewrite
-
----
-
-
-## v1.311.0 (2026-05-27)
-
-### Features
-- feat(analytics-ops): land orphan Meta + GA4 scripts from 2026-05-26 session
-
----
-
-
-## v1.310.0 (2026-05-27)
-
-### Features
-- feat(analytics): non-US country filter for GA4 + Ads tracking
-
----
-
-
-## v1.309.0 (2026-05-27)
-
-### Features
-- feat(analytics): client-side bot filter before gtag config fires
-
----
-
-
-## v1.308.1 (2026-05-27)
-
-### Maintenance
-- chore(wave-0): close foundation gaps per EXECUTION_PLAN §0
-
----
-
-
-## v1.308.0 (2026-05-27)
-
-### Features
-- feat(gcp): user-token mint flow + GA4 BigQuery link runbook
-
----
-
-
 ## v1.307.7 (2026-05-27)
 
 ### Other

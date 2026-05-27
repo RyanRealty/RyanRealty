@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 /**
- * Site v2 team / social-proof section. split layout, text + team photo, on a
+ * Site v2 team / social-proof section — split layout, text + team photo, on a
  * muted surface. Mirrors design_system/ryan-realty/ui_kits/website/index.html §social.
  */
 
@@ -20,8 +20,8 @@ export default function TeamSection({ teamImageSrc }: { teamImageSrc?: string | 
             Local knowledge, honest guidance, and a small team that has lived,
             worked, and closed deals across Bend, Redmond, Sisters, Sunriver, and
             surrounding communities. We tell you what the inspection found. We
-            tell you when a listing has been sitting. We tell you what we
-            do not know.
+            tell you when a listing has been sitting. We tell you what we don't
+            know.
           </p>
           <div className="mt-6 flex gap-2.5 flex-wrap">
             <Link

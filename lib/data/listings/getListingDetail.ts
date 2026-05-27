@@ -1,27 +1,17 @@
 /**
  * getListingDetail — fetch a full ListingDetail row for the detail page.
  *
- * Reads from `public.listing_detail_mv` (Wave 1.5, migration
- * `20260527150000_listing_detail_mv.sql`). The MV pre-projects every
- * column the detail page needs into a single indexed row, replacing the
- * 50-column raw read against `public.listings` that this function did
- * before. Unique index on `listing_key` → sub-5ms point lookup.
+ * Reads from `public.listings` directly today. A future `listing_detail_mv`
+ * migration will pre-join + project the relevant fields and this function
+ * will switch to it without changing the public contract.
  *
  * Per docs/DATA_ACCESS_LAYER.md — every page that needs listing detail
  * data calls this function (never `.from('listings')` directly).
  *
- * The function deliberately does NOT fetch videos, photos, or similar
- * listings; callers should `Promise.all` getListingDetail +
- * getListingVideos + getSimilarListings + getListingPhotos to keep the
- * read path explicit and avoid making one mega-function that's
- * impossible to compose.
- *
- * Freshness: hourly refresh via /api/cron/refresh-mvs at :08
- * (CONCURRENTLY, no read lock). Detail data lags up to one hour after a
- * listings INSERT/UPDATE. The `unstable_cache` window stacks on top
- * (revalidate: 60s default), so the worst-case stale read is roughly
- * one hour. Per-row trigger pattern is deferred — lands in a follow-up
- * if staleness becomes a real complaint.
+ * The function deliberately does NOT fetch videos or similar listings;
+ * callers should `Promise.all` getListingDetail + getListingVideos +
+ * getSimilarListings to keep the read path explicit and avoid making one
+ * mega-function that's impossible to compose.
  */
 
 import { unstable_cache } from 'next/cache'
@@ -36,37 +26,34 @@ const InputSchema = z.object({
 
 export type GetListingDetailResult = ListingDetail | null
 
-// MV column list — snake_case, no quoting needed. Order matches the
-// migration's SELECT projection so a `select('*')` is fastest, but we
-// keep the explicit projection for type-safety + grep-ability.
-const DETAIL_MV_SELECT = [
-  'listing_key',
-  'list_number',
-  'standard_status',
-  'list_price',
-  'original_list_price',
-  'close_price',
-  'close_date',
-  'beds',
-  'baths',
-  'sqft',
-  'street_number',
-  'street_name',
-  'city',
-  'state',
-  'postal_code',
-  'subdivision_name',
-  'lat',
-  'lng',
-  'photo_url',
-  'property_type',
+const DETAIL_SELECT = [
+  '"ListingKey"',
+  '"ListNumber"',
+  '"StandardStatus"',
+  '"ListPrice"',
+  '"OriginalListPrice"',
+  '"ClosePrice"',
+  '"CloseDate"',
+  '"BedroomsTotal"',
+  '"BathroomsTotal"',
+  '"TotalLivingAreaSqFt"',
+  '"StreetNumber"',
+  '"StreetName"',
+  '"City"',
+  '"State"',
+  '"PostalCode"',
+  '"SubdivisionName"',
+  '"Latitude"',
+  '"Longitude"',
+  '"PhotoURL"',
+  '"PropertyType"',
   'property_sub_type',
-  'on_market_date',
-  'modified_at',
-  'dom',
-  'list_agent_name',
+  '"OnMarketDate"',
+  '"ModificationTimestamp"',
+  '"DaysOnMarket"',
+  '"ListAgentName"',
   'list_agent_email',
-  'list_office_name',
+  '"ListOfficeName"',
   'public_remarks',
   'price_per_sqft',
   'price_drop_count',
@@ -88,41 +75,39 @@ const DETAIL_MV_SELECT = [
   'estimated_monthly_piti',
   'listing_quality_score',
   'sale_to_list_ratio',
-  'address_slug',
   'boundary_city',
   'boundary_neighborhood',
   'boundary_subdivision',
-  'refreshed_at',
 ].join(',')
 
-type DetailMvRow = {
-  listing_key: string
-  list_number: string | null
-  standard_status: ListingStatus
-  list_price: number | null
-  original_list_price: number | null
-  close_price: number | null
-  close_date: string | null
-  beds: number | null
-  baths: number | null
-  sqft: number | null
-  street_number: string | null
-  street_name: string | null
-  city: string | null
-  state: string | null
-  postal_code: string | null
-  subdivision_name: string | null
-  lat: number | null
-  lng: number | null
-  photo_url: string | null
-  property_type: string | null
+type ListingRow = {
+  ListingKey: string
+  ListNumber: string | null
+  StandardStatus: ListingStatus
+  ListPrice: number | null
+  OriginalListPrice: number | null
+  ClosePrice: number | null
+  CloseDate: string | null
+  BedroomsTotal: number | null
+  BathroomsTotal: number | null
+  TotalLivingAreaSqFt: number | null
+  StreetNumber: string | null
+  StreetName: string | null
+  City: string | null
+  State: string | null
+  PostalCode: string | null
+  SubdivisionName: string | null
+  Latitude: number | null
+  Longitude: number | null
+  PhotoURL: string | null
+  PropertyType: string | null
   property_sub_type: string | null
-  on_market_date: string | null
-  modified_at: string | null
-  dom: number | null
-  list_agent_name: string | null
+  OnMarketDate: string | null
+  ModificationTimestamp: string | null
+  DaysOnMarket: number | null
+  ListAgentName: string | null
   list_agent_email: string | null
-  list_office_name: string | null
+  ListOfficeName: string | null
   public_remarks: string | null
   price_per_sqft: number | null
   price_drop_count: number | null
@@ -144,11 +129,9 @@ type DetailMvRow = {
   estimated_monthly_piti: number | null
   listing_quality_score: number | null
   sale_to_list_ratio: number | null
-  address_slug: string | null
   boundary_city: string | null
   boundary_neighborhood: string | null
   boundary_subdivision: string | null
-  refreshed_at: string | null
 }
 
 function slug(s: string | null | undefined): string | null {
@@ -156,56 +139,60 @@ function slug(s: string | null | undefined): string | null {
   return s.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
 }
 
-function rowToDetail(row: DetailMvRow): ListingDetail {
+function rowToDetail(row: ListingRow): ListingDetail {
   const propertyAge =
     row.year_built && row.year_built > 1800
       ? new Date().getFullYear() - row.year_built
       : null
   const closePricePerSqft =
-    row.close_price != null && row.sqft && row.sqft > 0
-      ? Math.round(row.close_price / row.sqft)
+    row.ClosePrice != null && row.TotalLivingAreaSqFt && row.TotalLivingAreaSqFt > 0
+      ? Math.round(row.ClosePrice / row.TotalLivingAreaSqFt)
       : null
 
   return {
-    listingKey: row.listing_key,
-    listNumber: row.list_number,
-    status: row.standard_status,
-    listPrice: row.list_price,
-    closePrice: row.close_price,
-    beds: row.beds,
-    baths: row.baths,
-    sqft: row.sqft,
-    streetNumber: row.street_number,
-    streetName: row.street_name,
-    city: row.city,
-    citySlug: slug(row.city),
-    postalCode: row.postal_code,
-    subdivisionName: row.subdivision_name,
-    subdivisionSlug: slug(row.subdivision_name),
-    lat: row.lat,
-    lng: row.lng,
-    photoUrl: row.photo_url,
-    propertyType: row.property_type,
+    // ListingTile subset
+    listingKey: row.ListingKey,
+    listNumber: row.ListNumber,
+    status: row.StandardStatus,
+    listPrice: row.ListPrice,
+    closePrice: row.ClosePrice,
+    beds: row.BedroomsTotal,
+    baths: row.BathroomsTotal,
+    sqft: row.TotalLivingAreaSqFt,
+    streetNumber: row.StreetNumber,
+    streetName: row.StreetName,
+    city: row.City,
+    citySlug: slug(row.City),
+    postalCode: row.PostalCode,
+    subdivisionName: row.SubdivisionName,
+    subdivisionSlug: slug(row.SubdivisionName),
+    lat: row.Latitude,
+    lng: row.Longitude,
+    photoUrl: row.PhotoURL,
+    propertyType: row.PropertyType,
     propertySubType: row.property_sub_type,
-    onMarketDate: row.on_market_date,
-    modifiedAt: row.modified_at,
+    onMarketDate: row.OnMarketDate,
+    modifiedAt: row.ModificationTimestamp,
     pricePerSqft: row.price_per_sqft,
     lotSizeAcres: row.lot_size_acres,
     yearBuilt: row.year_built,
     garageSpaces: row.garage_spaces,
     poolYn: row.pool_yn,
     hasVirtualTour: row.has_virtual_tour,
-    dom: row.dom,
+    dom: row.DaysOnMarket,
     priceDropCount: row.price_drop_count,
-    addressSlug: row.address_slug,
+    addressSlug:
+      row.StreetNumber && row.StreetName
+        ? slug(`${row.StreetNumber}-${row.StreetName}`)
+        : null,
     boundaryCity: row.boundary_city,
     boundaryNeighborhood: row.boundary_neighborhood,
     boundarySubdivision: row.boundary_subdivision,
 
     // Detail-only fields
-    originalListPrice: row.original_list_price,
-    closeDate: row.close_date,
-    totalLivingAreaSqFt: row.sqft,
+    originalListPrice: row.OriginalListPrice,
+    closeDate: row.CloseDate,
+    totalLivingAreaSqFt: row.TotalLivingAreaSqFt,
     fireplaceYn: row.fireplace_yn,
     waterfrontYn: row.waterfront_yn,
     architecturalStyle: row.architectural_style,
@@ -222,19 +209,19 @@ function rowToDetail(row: DetailMvRow): ListingDetail {
     closePricePerSqft,
     saleToListRatio: row.sale_to_list_ratio,
     estimatedMonthlyPiti: row.estimated_monthly_piti,
-    photos: [], // populated separately via getListingPhotos
+    photos: [], // populated separately via getListingPhotos (TODO Wave 1.6)
     videos: [], // populated separately via getListingVideos
-    listAgentName: row.list_agent_name,
+    listAgentName: row.ListAgentName,
     listAgentEmail: row.list_agent_email,
     listAgentPhone: null, // not stored in our schema
-    listOfficeName: row.list_office_name,
+    listOfficeName: row.ListOfficeName,
     publicRemarks: row.public_remarks,
-    communityId: null, // TODO: resolve via neighborhood_subdivisions when needed
-    communityName: row.subdivision_name,
-    communitySlug: slug(row.subdivision_name),
+    communityId: null, // TODO Wave 1.6: resolve via neighborhood_subdivisions
+    communityName: row.SubdivisionName,
+    communitySlug: slug(row.SubdivisionName),
     neighborhoodName: row.boundary_neighborhood,
     neighborhoodSlug: slug(row.boundary_neighborhood),
-    refreshedAt: row.refreshed_at ?? new Date().toISOString(),
+    refreshedAt: new Date().toISOString(),
   }
 }
 
@@ -242,12 +229,12 @@ async function fetchOne(listingKey: string): Promise<GetListingDetailResult> {
   const supabase = supabaseAnon()
   if (!supabase) return null
   const { data, error } = await supabase
-    .from('listing_detail_mv')
-    .select(DETAIL_MV_SELECT)
-    .eq('listing_key', listingKey)
+    .from('listings')
+    .select(DETAIL_SELECT)
+    .eq('"ListingKey"', listingKey)
     .maybeSingle()
   if (error || !data) return null
-  return rowToDetail(data as unknown as DetailMvRow)
+  return rowToDetail(data as unknown as ListingRow)
 }
 
 export const getListingDetail = (listingKey: string): Promise<GetListingDetailResult> => {
