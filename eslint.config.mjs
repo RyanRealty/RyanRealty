@@ -36,10 +36,24 @@ const eslintConfig = defineConfig([
       // (scripts/check-dal-boundary.mjs) is the active gate in CI — this rule
       // surfaces the violation in-editor. Flip to `error` once baseline hits 0
       // (end of Wave 2/3 per docs/EXECUTION_PLAN.md). See docs/DATA_ACCESS_LAYER.md.
-      "no-restricted-syntax": ["warn", {
-        selector: "CallExpression[callee.property.name='from'][arguments.0.value=/^(listings|listing_videos|video_tours_cache|listing_history|market_stats_cache|market_pulse_live|engagement_metrics|properties|neighborhoods|communities|cities|listing_photos|listing_agents|open_houses|boundaries|neighborhood_subdivisions|subdivision_flags|app_config|activity_events|expired_listings|cmas|cma_comps)$/]",
-        message: "DAL boundary: supabase.from('<table>') is banned outside lib/data/. Use the canonical function from @/lib/data/ instead. See docs/DATA_ACCESS_LAYER.md.",
-      }],
+      "no-restricted-syntax": ["warn",
+        {
+          // DAL boundary — see comment above.
+          selector: "CallExpression[callee.property.name='from'][arguments.0.value=/^(listings|listing_videos|video_tours_cache|listing_history|market_stats_cache|market_pulse_live|engagement_metrics|properties|neighborhoods|communities|cities|listing_photos|listing_agents|open_houses|boundaries|neighborhood_subdivisions|subdivision_flags|app_config|activity_events|expired_listings|cmas|cma_comps)$/]",
+          message: "DAL boundary: supabase.from('<table>') is banned outside lib/data/. Use the canonical function from @/lib/data/ instead. See docs/DATA_ACCESS_LAYER.md.",
+        },
+        {
+          // Sentry tracesSampleRate ceiling — per docs/EXECUTION_PLAN.md §0.4.
+          // Literal numbers above 0.2 risk 10x'ing the Sentry bill. The existing
+          // sentry.*.config.ts files key off NODE_ENV: 0.1 in prod, 1 in dev. A
+          // bare `tracesSampleRate: 0.5` (or higher literal) bypasses that safety —
+          // fail loudly. Dev-side `tracesSampleRate: 1` still lives behind the
+          // ternary, which doesn't trigger this selector (the value node is the
+          // ConditionalExpression, not a Literal).
+          selector: "Property[key.name='tracesSampleRate'][value.type='Literal'][value.value>0.2]",
+          message: "Sentry tracesSampleRate literal exceeds 0.2 ceiling. Use the NODE_ENV ternary pattern (0.1 in prod, 1 in dev) — a hardcoded high rate will 10x the Sentry bill. See docs/EXECUTION_PLAN.md §0.4.",
+        },
+      ],
     },
   },
   {

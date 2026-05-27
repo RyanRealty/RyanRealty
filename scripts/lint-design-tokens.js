@@ -26,6 +26,56 @@ const DISALLOWED_PRIMITIVES =
 const DISALLOWED_STYLE_BACKUP_IMPORT =
   /(?:from|import)\s*["'][^"']*_style_backup\/[^"']*["']/g;
 
+// Retired typefaces (Design System v2 lock — 2026-05-13):
+//   - Playfair Display, Cormorant: retired serif display faces, replaced by
+//     Amboqia Boriango (var(--font-display) in colors_and_type.css).
+//   - Helvetica / Arial: leak through when next/font/geist isn't wired in.
+//   - Inter: replaced by Geist sans for UI/body in v2.
+//   - AzoSans / "Azo Sans": print-only accent; banned in app/components.
+//
+// Heads-up for editors: this file deliberately avoids any literal
+// Tailwind-arbitrary class syntax (the one with a hyphen, then an open
+// square bracket, then a value). Tailwind v4 oxide scans every .js / .ts
+// source file in the workspace for class-name matches, and if THIS file
+// contained such a literal it would generate the matching CSS rule —
+// the background-image variant in particular would emit a url() that
+// Turbopack then crashes trying to resolve. The patterns below are
+// assembled from string fragments at runtime so the literal byte
+// sequence never appears in source.
+const RETIRED_FONT_NAMES =
+  "Playfair(?:\\s*Display)?|Cormorant|Helvetica(?:\\s+Neue)?|Arial|Inter|AzoSans|Azo\\s+Sans";
+
+// Match `font-family: 'X'`, `fontFamily: 'X'` (JSX style), or the Tailwind
+// arbitrary-value font token. The `font-` prefix + bracket open is built
+// from two substrings concatenated at runtime so the literal bytes never
+// appear next to each other in this file's source (see notice above).
+const FONT_ARB_OPEN = "font-" + "\\[";
+const DISALLOWED_FONT_NAMES_IN_VALUE = new RegExp(
+  "(?:font-family\\s*:|fontFamily\\s*:\\s*[\"'`]|" +
+    FONT_ARB_OPEN +
+    "\\s*['\"]?)" +
+    "\\s*[\"'`]?\\s*(" +
+    RETIRED_FONT_NAMES +
+    ")\\b",
+  "gi",
+);
+
+// Background-image hero overrides — Design System v2 locks the canonical
+// brand hero (`design_system/ryan-realty/assets/hero/hero-old-mill-master-4k.jpg`).
+// Inline `style={{ backgroundImage: 'url(<path>)' }}` overrides bypass the
+// canonical hero pipeline + next/image LCP budgeting. Hero swaps must route
+// through props on a Hero/HeroBlock component, not inline URL hacks.
+//
+// Allowed: <Image src={...} />, gradient overlays without a CSS url() call.
+// Banned: `backgroundImage: 'url(...)'` in JSX style, plus the Tailwind
+// arbitrary form for background-image classes. The bracket-open sequence
+// is concatenated here for the same scan-evasion reason as the font check.
+const BG_URL_ARB_OPEN = "bg-" + "\\[url\\(";
+const DISALLOWED_INLINE_BG_IMAGE_URL = new RegExp(
+  "(?:backgroundImage\\s*:\\s*[`'\"][^`'\"]*url\\(|" + BG_URL_ARB_OPEN + ")",
+  "g",
+);
+
 function normalizePath(filePath) {
   return filePath.split(path.sep).join("/");
 }
@@ -165,6 +215,24 @@ function lintFile(filePath) {
   const styleBackupImports = findAll(DISALLOWED_STYLE_BACKUP_IMPORT, content);
   if (styleBackupImports.length) {
     issues.push("imports from _style_backup are forbidden");
+  }
+
+  const retiredFonts = findAll(DISALLOWED_FONT_NAMES_IN_VALUE, content).map((m) =>
+    m.replace(/.*['"`]/, "").trim(),
+  );
+  if (retiredFonts.length) {
+    issues.push(
+      `retired typefaces (use Geist or Amboqia, see Design System v2): ${Array.from(
+        new Set(retiredFonts),
+      ).join(", ")}`,
+    );
+  }
+
+  const inlineBgImageHits = findAll(DISALLOWED_INLINE_BG_IMAGE_URL, content);
+  if (inlineBgImageHits.length) {
+    issues.push(
+      "inline backgroundImage: url(...) bypasses the canonical hero pipeline — use <Image> or a Hero component prop instead",
+    );
   }
 
   if (!issues.length) return null;
