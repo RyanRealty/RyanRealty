@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.308.1 (2026-05-27)
+
+### Maintenance
+- chore(wave-0): close foundation gaps per EXECUTION_PLAN §0
+
+---
+
+
 ## v1.308.0 (2026-05-27)
 
 ### Features
