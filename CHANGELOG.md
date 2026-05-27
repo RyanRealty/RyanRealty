@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.310.0 (2026-05-27)
+
+### Features
+- feat(analytics): non-US country filter for GA4 + Ads tracking
+
+---
+
+
 ## v1.309.0 (2026-05-27)
 
 ### Features
