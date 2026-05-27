@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.320.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l1): brand primitives — Logo/RyanRealtyMark/JaxMascot
+
+---
+
+
 ## v1.319.1 (2026-05-27)
 
 ### Maintenance
