@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.321.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l1): CTA primitives — CTAButton/TextLink/IconButton/BadgePill
+
+---
+
+
 ## v1.320.0 (2026-05-27)
 
 ### Features
