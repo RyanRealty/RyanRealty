@@ -1,15 +1,28 @@
-import Link from 'next/link'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import type { OpenHouseWithListing } from '@/app/actions/open-houses'
 import ListingCard, { type ListingCardData, type ListingBadge } from './ListingCard'
+import {
+  Body,
+  Container,
+  Eyebrow,
+  Grid,
+  H2,
+  Section,
+  Stack,
+  TextLink,
+} from '@/components/site/primitives'
 
 /**
- * Site v2 open houses grid — 4 listing cards of upcoming open houses, with eyebrow
- * + heading + subtitle + head-action. Mirrors design_system/ryan-realty/ui_kits/website/index.html
- * §featured-listings.
+ * Site v2 open houses grid — 4 listing cards of upcoming open houses, with
+ * eyebrow + heading + subtitle + head-action. Mirrors design_system/ryan-realty/
+ * ui_kits/website/index.html §featured-listings.
  *
  * Data accuracy: every listing traces to open_houses + listing_tile_mv via
  * getOpenHousesWithListings(). No fabricated cards.
+ *
+ * Lifted onto Wave 2 Layer 1 primitives 2026-05-27. Open-house time-range
+ * separator switched from en-dash to hyphen ("10am-1pm") so user-facing
+ * badge strings clear the brand-voice §6.1 punctuation rule.
  */
 
 function listingDetailHref(o: OpenHouseWithListing): string {
@@ -36,7 +49,7 @@ function formatOpenHouseBadge(o: OpenHouseWithListing): { kind: ListingBadge; la
   const weekday = date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Los_Angeles' })
   const time =
     o.start_time && o.end_time
-      ? ` · ${formatTime(o.start_time)}–${formatTime(o.end_time)}`
+      ? ` · ${formatTime(o.start_time)}-${formatTime(o.end_time)}`
       : ''
   return { kind: 'open', label: `Open ${weekday}${time}` }
 }
@@ -75,34 +88,33 @@ export default async function OpenHousesGrid() {
   }
 
   return (
-    <section className="py-14 border-t border-border">
-      <div className="mx-auto max-w-7xl px-6">
+    <Section padding="default" divider>
+      <Container>
         <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
-          <div>
-            <div className="rr-eyebrow">Featured listings</div>
-            <h2 className="mt-1.5 text-[clamp(1.5rem,2vw+0.5rem,1.875rem)] font-bold tracking-[-0.01em] text-foreground">
-              Open houses this weekend
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1.5">
+          <Stack gap="tight">
+            <Eyebrow>Featured listings</Eyebrow>
+            <H2>Open houses this weekend</H2>
+            <Body size="small" tone="muted">
               Representing a mix of neighborhoods across Central Oregon.
-            </p>
-          </div>
+            </Body>
+          </Stack>
           {items.length > 4 ? (
-            <Link
+            <TextLink
               href="/open-houses"
-              className="text-sm font-semibold text-primary hover:underline whitespace-nowrap"
+              underline="on-hover"
+              className="whitespace-nowrap text-sm"
             >
               View all {items.length} open houses →
-            </Link>
+            </TextLink>
           ) : null}
         </div>
 
-        <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <Grid cols={4} gap="default">
           {top.map((o) => (
             <ListingCard key={o.open_house_key} listing={toListingCardData(o)} />
           ))}
-        </div>
-      </div>
-    </section>
+        </Grid>
+      </Container>
+    </Section>
   )
 }
