@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.322.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l2): MobileNav drawer + refactor SiteHeader to use primitives
+
+---
+
+
 ## v1.321.0 (2026-05-27)
 
 ### Features
