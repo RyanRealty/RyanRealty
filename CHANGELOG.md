@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.314.0 (2026-05-27)
+
+### Features
+- feat(wave-1.6): similar_listings_mv + getSimilarListings DAL fn
+
+---
+
+
 ## v1.313.0 (2026-05-27)
 
 ### Features
