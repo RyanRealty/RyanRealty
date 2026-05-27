@@ -1,8 +1,21 @@
-import Link from 'next/link'
+import {
+  Body,
+  Container,
+  CTAButton,
+  Grid,
+  H3,
+  Section,
+  Stack,
+} from '@/components/site/primitives'
 
 /**
- * Site v2 CTA duo — 2 conversion cards (buyer listing alerts + seller home value)
- * on a muted surface. Mirrors design_system/ryan-realty/ui_kits/website/index.html §cta-duo.
+ * Site v2 CTA duo — two conversion cards (buyer listing alerts + seller
+ * home value) on a muted surface. Mirrors design_system/ryan-realty/ui_kits/
+ * website/index.html §cta-duo.
+ *
+ * Lifted onto Wave 2 Layer 1 primitives 2026-05-27. Copy edited at the
+ * same time to clear the new brand-voice ESLint gate (em-dash replaced
+ * with a period, "thinking about" replaced with "Considering").
  */
 
 function BellIcon() {
@@ -23,66 +36,69 @@ function PinIcon() {
   )
 }
 
+function IconBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="w-11 h-11 rounded-[10px] bg-primary text-white flex items-center justify-center">
+      {children}
+    </div>
+  )
+}
+
+function CtaCard({
+  icon,
+  title,
+  body,
+  primary,
+  secondary,
+}: {
+  icon: React.ReactNode
+  title: string
+  body: string
+  primary: { href: string; label: string }
+  secondary: { href: string; label: string }
+}) {
+  return (
+    <div className="bg-card border border-border rounded-[14px] p-7 shadow-sm">
+      <Stack gap="tight">
+        <IconBadge>{icon}</IconBadge>
+        <H3>{title}</H3>
+        <Body size="small" tone="muted" className="leading-[1.55] max-w-[60ch]">
+          {body}
+        </Body>
+        <div className="flex gap-2.5 flex-wrap pt-1">
+          <CTAButton href={primary.href} tone="primary" size="md">
+            {primary.label}
+          </CTAButton>
+          <CTAButton href={secondary.href} tone="outline" size="md">
+            {secondary.label}
+          </CTAButton>
+        </div>
+      </Stack>
+    </div>
+  )
+}
+
 export default function CtaDuo() {
   return (
-    <section className="py-14 bg-muted border-t border-border">
-      <div className="mx-auto max-w-7xl px-6 grid gap-4 grid-cols-1 md:grid-cols-2">
-        {/* Buyer alerts */}
-        <div className="bg-card border border-border rounded-[14px] p-7 shadow-sm">
-          <div className="w-11 h-11 rounded-[10px] bg-primary text-white flex items-center justify-center">
-            <BellIcon />
-          </div>
-          <h3 className="mt-3.5 mb-1.5 text-xl font-bold tracking-[-0.01em] text-foreground">
-            Never miss a new listing
-          </h3>
-          <p className="text-sm leading-[1.55] text-muted-foreground m-0 mb-4">
-            Save a search and get instant alerts when matching homes hit the market.
-            Set your criteria once and we handle the rest.
-          </p>
-          <div className="flex gap-2.5 flex-wrap">
-            <Link
-              href="/lp/buyer-listing-alerts"
-              className="inline-flex items-center rounded-[10px] bg-primary text-white px-[18px] py-[9px] text-sm font-semibold hover:bg-primary/85 transition active:translate-y-px"
-            >
-              Set up alerts
-            </Link>
-            <Link
-              href="/homes-for-sale"
-              className="inline-flex items-center rounded-[10px] bg-card text-foreground border border-border px-[18px] py-[9px] text-sm font-semibold hover:bg-muted transition active:translate-y-px"
-            >
-              Browse listings
-            </Link>
-          </div>
-        </div>
-
-        {/* Seller valuation */}
-        <div className="bg-card border border-border rounded-[14px] p-7 shadow-sm">
-          <div className="w-11 h-11 rounded-[10px] bg-primary text-white flex items-center justify-center">
-            <PinIcon />
-          </div>
-          <h3 className="mt-3.5 mb-1.5 text-xl font-bold tracking-[-0.01em] text-foreground">
-            Thinking about selling?
-          </h3>
-          <p className="text-sm leading-[1.55] text-muted-foreground m-0 mb-4">
-            Get a free home valuation from a local broker who knows your neighborhood
-            — not an automated estimate from a national site.
-          </p>
-          <div className="flex gap-2.5 flex-wrap">
-            <Link
-              href="/lp/seller-home-value"
-              className="inline-flex items-center rounded-[10px] bg-primary text-white px-[18px] py-[9px] text-sm font-semibold hover:bg-primary/85 transition active:translate-y-px"
-            >
-              Get a valuation
-            </Link>
-            <Link
-              href="/team"
-              className="inline-flex items-center rounded-[10px] bg-card text-foreground border border-border px-[18px] py-[9px] text-sm font-semibold hover:bg-muted transition active:translate-y-px"
-            >
-              Meet the team
-            </Link>
-          </div>
-        </div>
-      </div>
-    </section>
+    <Section padding="default" tone="muted" divider>
+      <Container>
+        <Grid cols={2} gap="default">
+          <CtaCard
+            icon={<BellIcon />}
+            title="Never miss a new listing"
+            body="Save a search and get instant alerts when matching homes hit the market. Set your criteria once and we handle the rest."
+            primary={{ href: '/lp/buyer-listing-alerts', label: 'Set up alerts' }}
+            secondary={{ href: '/homes-for-sale', label: 'Browse listings' }}
+          />
+          <CtaCard
+            icon={<PinIcon />}
+            title="Considering a sale?"
+            body="Get a free home valuation from a broker who knows your neighborhood. Local insight, not a national algorithm."
+            primary={{ href: '/lp/seller-home-value', label: 'Get a valuation' }}
+            secondary={{ href: '/team', label: 'Meet the team' }}
+          />
+        </Grid>
+      </Container>
+    </Section>
   )
 }
