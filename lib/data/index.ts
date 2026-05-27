@@ -162,6 +162,7 @@ export {
   getMarketPulseCitySnapshots,
 } from '@/lib/data/market/getMarketPulseSnapshot'
 export type { MarketPulseSnapshot } from '@/lib/data/market/getMarketPulseSnapshot'
+export { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 
 // Brokers (real impls with hardcoded fallback)
 export {
