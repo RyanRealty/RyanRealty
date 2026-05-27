@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.341.1 (2026-05-27)
+
+### Maintenance
+- docs: refresh CROSS_AGENT_HANDOFF.md — Wave 2 Layer 3 COMPLETE
+
+---
+
+
 ## v1.341.0 (2026-05-27)
 
 ### Features
