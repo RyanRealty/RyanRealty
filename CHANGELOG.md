@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.307.4 (2026-05-27)
+
+### Other
+- preview: publish 14 mockup HTMLs at /mockup-preview/ for mobile review
+
+---
+
+
 ## v1.307.3 (2026-05-26)
 
 ### Maintenance
