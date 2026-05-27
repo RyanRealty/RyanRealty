@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.336.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): add RelatedAreas
+- feat(wave-2-l3): add ContentSection
+- feat(wave-2-l3): add CTABar
+
+---
+
+
 ## v1.335.0 (2026-05-27)
 
 ### Features
