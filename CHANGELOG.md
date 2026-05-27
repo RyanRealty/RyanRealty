@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.313.0 (2026-05-27)
+
+### Features
+- feat(meta): HTTPS OAuth callback for personal-user token mint
+
+---
+
+
 ## v1.312.1 (2026-05-27)
 
 ### Other
