@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.308.0 (2026-05-27)
+
+### Features
+- feat(gcp): user-token mint flow + GA4 BigQuery link runbook
+
+---
+
+
 ## v1.307.7 (2026-05-27)
 
 ### Other
