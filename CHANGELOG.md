@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.307.6 (2026-05-27)
+
+### Other
+- preview: swap resort tile imagery to canonical Old Mill photo
+
+---
+
+
 ## v1.307.5 (2026-05-27)
 
 ### Other
