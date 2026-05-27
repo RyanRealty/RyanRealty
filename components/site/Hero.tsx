@@ -4,6 +4,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import {
+  Body,
+  Container,
+  DisplayHeading,
+} from '@/components/site/primitives'
 
 /**
  * Site v2 hero — full-bleed Old Mill photo with Ken Burns, navy overlay (bottom-up),
@@ -11,6 +16,11 @@ import { useState } from 'react'
  *
  * Per CLAUDE.md / SITE_SPEC: canonical brand hero is the Old Mill master at
  * public/brand/hero/hero-old-mill-master-4k.jpg.
+ *
+ * Lifted onto Wave 2 Layer 1 primitives 2026-05-27. Em-dashes in JSX text
+ * (lede) and alt attribute (photo) replaced with periods + cleaner phrasing
+ * to clear the brand-voice gate. Search form + Ken Burns + chip nav stay
+ * inline because they're hero-specific patterns with no clean primitive yet.
  */
 const HERO_IMAGE = '/brand/hero/hero-old-mill-master-4k.jpg'
 
@@ -44,7 +54,7 @@ export default function Hero() {
       <div className="absolute inset-0 site-hero-kenburns">
         <Image
           src={HERO_IMAGE}
-          alt="Old Mill District drone view — American flag, Deschutes River, Cascade mountains"
+          alt="Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains."
           fill
           priority
           sizes="100vw"
@@ -52,7 +62,7 @@ export default function Hero() {
         />
       </div>
 
-      {/* Navy overlay — stronger at bottom for legibility, fading to clear at top so the photo reads */}
+      {/* Navy overlay, stronger at the bottom for legibility, fading to clear at the top so the photo reads. */}
       <div
         className="absolute inset-0"
         aria-hidden
@@ -62,21 +72,23 @@ export default function Hero() {
         }}
       />
 
-      <div className="relative mx-auto max-w-7xl px-6 w-full">
+      <Container className="relative w-full">
         <div className="max-w-[780px] text-white">
-          <h1
-            className="font-bold leading-[1.02] tracking-[-0.02em] m-0"
-            style={{
-              fontSize: 'clamp(2.5rem, 5vw, 4rem)',
-              filter: 'drop-shadow(0 2px 10px rgba(0,0,0,0.25))',
-            }}
+          <DisplayHeading
+            as="h1"
+            className="text-white text-[clamp(2.5rem,5vw,4rem)] leading-[1.02] tracking-[-0.02em] m-0"
+            style={{ filter: 'drop-shadow(0 2px 10px rgba(0,0,0,0.25))' }}
           >
             Find Your Home in Central Oregon
-          </h1>
-          <p className="mt-3.5 mb-7 text-[18px] leading-[1.55] text-white/92 max-w-[560px]">
+          </DisplayHeading>
+          <Body
+            size="large"
+            tone="on-photo"
+            className="mt-3.5 mb-7 text-white/92 max-w-[560px] leading-[1.55]"
+          >
             Search homes for sale across Bend, Redmond, Sisters, Sunriver, and
-            surrounding communities — with honest guidance from your local team.
-          </p>
+            surrounding communities. Honest guidance from your local team.
+          </Body>
 
           <form
             onSubmit={handleSubmit}
@@ -86,7 +98,7 @@ export default function Hero() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="City, community, neighborhood, address, or broker…"
+              placeholder="City, community, neighborhood, address, or broker"
               aria-label="Search homes for sale in Central Oregon"
               className="flex-1 min-w-0 px-[18px] py-4 text-[15px] text-foreground placeholder:text-muted-foreground bg-transparent border-0 outline-none"
             />
@@ -113,7 +125,7 @@ export default function Hero() {
             </ul>
           </nav>
         </div>
-      </div>
+      </Container>
     </section>
   )
 }
