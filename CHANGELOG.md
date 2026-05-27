@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.339.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): add HeroBlock + refactor Hero to delegate
+- feat(wave-2-l3): add LeadCaptureBlock scaffold (4 variants)
+
+---
+
+
 ## v1.338.1 (2026-05-27)
 
 ### Maintenance
