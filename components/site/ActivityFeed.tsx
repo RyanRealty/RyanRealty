@@ -1,13 +1,28 @@
 import Link from 'next/link'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { ACTIVITY_FEED_DEFAULT_CITIES, type ActivityFeedItem } from '@/app/actions/activity-feed-shared'
+import {
+  Container,
+  Eyebrow,
+  Grid,
+  H2,
+  MiddleDot,
+  Price,
+  Section,
+  Stack,
+  TextLink,
+} from '@/components/site/primitives'
 
 /**
- * Site v2 activity feed — 4–8 recent activity rows (new listing / price drop /
+ * Site v2 activity feed — 4 to 8 recent activity rows (new listing / price drop /
  * open house / pending / closed) on the homepage. Static for now; realtime
- * subscription is a follow-up. Mirrors design_system/ryan-realty/ui_kits/website/index.html §activity.
+ * subscription is a follow-up. Mirrors design_system/ryan-realty/ui_kits/website/
+ * index.html §activity.
  *
  * Data accuracy: every row traces to activity_events via getActivityFeedWithFallbackMulti().
+ *
+ * Lifted onto Wave 2 Layer 1 primitives 2026-05-27. fmtPrice() helper retired
+ * in favor of <Price compact={false}>. Separators moved to <MiddleDot>.
  */
 
 function HomeIcon() {
@@ -67,11 +82,6 @@ function leadFor(event: ActivityFeedItem['event_type']): string {
   }
 }
 
-function fmtPrice(n: number | null | undefined): string {
-  if (n == null) return ''
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString()}`
-}
-
 function buildAddress(item: ActivityFeedItem): string {
   const street = [item.StreetNumber, item.StreetName].filter(Boolean).join(' ').trim()
   const city = item.City
@@ -92,6 +102,37 @@ function relTime(iso: string): string {
   return `${d}d ago`
 }
 
+function ActivityRow({ item }: { item: ActivityFeedItem }) {
+  return (
+    <Link
+      href={`/listing/${item.listing_key}`}
+      className="flex items-center gap-3.5 p-3.5 bg-card border border-border rounded-xl hover:border-primary/25 transition"
+    >
+      <span className="shrink-0 w-9 h-9 rounded-full bg-primary/8 text-primary flex items-center justify-center">
+        {iconFor(item.event_type)}
+      </span>
+      <span className="flex-1 text-[13px] leading-[1.45] text-foreground">
+        <b className="font-semibold">{leadFor(item.event_type)}</b>
+        {' '}
+        <MiddleDot className="text-muted-foreground/60" />
+        {' '}
+        {buildAddress(item)}
+        {item.ListPrice ? (
+          <span className="text-muted-foreground">
+            {' '}
+            <MiddleDot className="text-muted-foreground/60" />
+            {' '}
+            <Price value={item.ListPrice} />
+          </span>
+        ) : null}
+      </span>
+      <span className="text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
+        {relTime(item.event_at)}
+      </span>
+    </Link>
+  )
+}
+
 export default async function ActivityFeed() {
   const items = await getActivityFeedWithFallbackMulti({
     cities: [...ACTIVITY_FEED_DEFAULT_CITIES],
@@ -101,46 +142,28 @@ export default async function ActivityFeed() {
   if (items.length === 0) return null
 
   return (
-    <section className="py-14 border-t border-border">
-      <div className="mx-auto max-w-7xl px-6">
+    <Section padding="default" divider>
+      <Container>
         <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
-          <div>
-            <div className="rr-eyebrow">Live activity</div>
-            <h2 className="mt-1.5 text-[clamp(1.5rem,2vw+0.5rem,1.875rem)] font-bold tracking-[-0.01em] text-foreground">
-              What&apos;s happening right now
-            </h2>
-          </div>
-          <Link
+          <Stack gap="tight">
+            <Eyebrow>Live activity</Eyebrow>
+            <H2>What&apos;s happening right now</H2>
+          </Stack>
+          <TextLink
             href="/housing-market"
-            className="text-sm font-semibold text-primary hover:underline whitespace-nowrap"
+            underline="on-hover"
+            className="whitespace-nowrap text-sm"
           >
             Full market pulse →
-          </Link>
+          </TextLink>
         </div>
 
-        <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
+        <Grid cols={2} gap="tight">
           {items.slice(0, 8).map((item) => (
-            <Link
-              key={item.id}
-              href={`/listing/${item.listing_key}`}
-              className="flex items-center gap-3.5 p-3.5 bg-card border border-border rounded-xl hover:border-primary/25 transition"
-            >
-              <span className="shrink-0 w-9 h-9 rounded-full bg-primary/8 text-primary flex items-center justify-center">
-                {iconFor(item.event_type)}
-              </span>
-              <span className="flex-1 text-[13px] leading-[1.45] text-foreground">
-                <b className="font-semibold">{leadFor(item.event_type)}</b>
-                {' · '}
-                {buildAddress(item)}
-                {item.ListPrice ? <span className="text-muted-foreground"> · {fmtPrice(item.ListPrice)}</span> : null}
-              </span>
-              <span className="text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
-                {relTime(item.event_at)}
-              </span>
-            </Link>
+            <ActivityRow key={item.id} item={item} />
           ))}
-        </div>
-      </div>
-    </section>
+        </Grid>
+      </Container>
+    </Section>
   )
 }
