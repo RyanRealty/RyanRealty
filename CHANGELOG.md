@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.330.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): lift CityGrid onto primitives
+
+---
+
+
 ## v1.329.0 (2026-05-27)
 
 ### Features
