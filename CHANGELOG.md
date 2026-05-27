@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.319.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l1): layout primitives — Container/Section/Stack/Grid
+
+---
+
+
 ## v1.318.0 (2026-05-27)
 
 ### Features
