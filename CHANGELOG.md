@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.333.1 (2026-05-27)
+
+### Maintenance
+- docs: refresh CROSS_AGENT_HANDOFF.md — L2 done, L3 lift done, guardrails live
+
+---
+
+
 ## v1.333.0 (2026-05-27)
 
 ### Features
