@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.312.1 (2026-05-27)
+
+### Other
+- revert: roll back today's commits to last-good state
+
+---
+
+
 ## v1.307.7 (2026-05-27)
 
 ### Other
