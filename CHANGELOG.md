@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.312.0 (2026-05-27)
+
+### Features
+- feat(wave-1.5): listing_detail_mv + DAL rewrite
+
+---
+
+
 ## v1.311.0 (2026-05-27)
 
 ### Features
