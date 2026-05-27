@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.326.0 (2026-05-27)
+
+### Features
+- feat(guardrails): brand-voice ESLint rule + DAL boundary flipped to error
+
+---
+
+
 ## v1.325.1 (2026-05-27)
 
 ### Maintenance
