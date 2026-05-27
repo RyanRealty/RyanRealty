@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.307.7 (2026-05-27)
+
+### Other
+- preview: use absolute URL in mockup-preview redirect
+
+---
+
+
 ## v1.307.6 (2026-05-27)
 
 ### Other
