@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.333.0 (2026-05-27)
+
+### Features
+- feat(wave-2-l3): lift ActivityFeed onto primitives
+
+---
+
+
 ## v1.332.0 (2026-05-27)
 
 ### Features
