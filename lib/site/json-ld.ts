@@ -1,0 +1,235 @@
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
+
+/**
+ * Typed schema.org JSON-LD builders for the site v2 MetadataBlock.
+ *
+ * Pages compose <MetadataBlock schemas={[...]} /> with a discriminated
+ * union of schema-type inputs. This module owns the typed input shapes
+ * + the conversion to schema.org JSON. Keeps the component itself a
+ * thin renderer.
+ *
+ * Conventions:
+ *   - Absolute URLs everywhere (schema.org parsers prefer absolute).
+ *   - Empty fields omitted (no `undefined` keys in serialized JSON).
+ *   - LD type `@id` references the canonical site URL so cross-page
+ *     references resolve.
+ */
+
+// ─── Public input shapes (discriminated union) ────────────────────────
+
+type AddressInput = {
+  street?: string
+  city?: string
+  state?: string
+  postalCode?: string
+  country?: string
+}
+
+type GeoInput = { lat: number; lng: number }
+
+export type SchemaInput =
+  | RealEstateListingInput
+  | BreadcrumbInput
+  | WebPageInput
+  | FaqPageInput
+  | PlaceInput
+  | ArticleInput
+
+export type RealEstateListingInput = {
+  type: 'realEstateListing'
+  name: string
+  description?: string
+  url?: string
+  address?: AddressInput
+  geo?: GeoInput
+  beds?: number
+  baths?: number
+  livingAreaSqft?: number
+  lotSizeSqft?: number
+  yearBuilt?: number
+  listPrice?: number
+  photos?: ReadonlyArray<string>
+  listingAgent?: { name?: string; email?: string; telephone?: string }
+}
+
+export type BreadcrumbInput = {
+  type: 'breadcrumb'
+  items: ReadonlyArray<{ name: string; url: string }>
+}
+
+export type WebPageInput = {
+  type: 'webPage'
+  name: string
+  description?: string
+  url?: string
+}
+
+export type FaqPageInput = {
+  type: 'faqPage'
+  items: ReadonlyArray<{ question: string; answer: string }>
+}
+
+export type PlaceInput = {
+  type: 'place'
+  name: string
+  description?: string
+  url?: string
+  geo?: GeoInput
+  address?: AddressInput
+  containedInPlace?: string
+}
+
+export type ArticleInput = {
+  type: 'article'
+  headline: string
+  description?: string
+  url?: string
+  image?: string
+  datePublished?: string
+  dateModified?: string
+  authorName?: string
+}
+
+// ─── Builder ──────────────────────────────────────────────────────────
+
+export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
+  const site = getCanonicalSiteUrl()
+  const absoluteUrl = (u?: string): string | undefined => {
+    if (!u) return undefined
+    if (u.startsWith('http://') || u.startsWith('https://')) return u
+    return `${site}${u.startsWith('/') ? '' : '/'}${u}`
+  }
+
+  switch (input.type) {
+    case 'realEstateListing':
+      return prune({
+        '@context': 'https://schema.org',
+        '@type': 'SingleFamilyResidence',
+        name: input.name,
+        description: input.description,
+        url: absoluteUrl(input.url),
+        address: input.address ? prune({
+          '@type': 'PostalAddress',
+          streetAddress: input.address.street,
+          addressLocality: input.address.city,
+          addressRegion: input.address.state,
+          postalCode: input.address.postalCode,
+          addressCountry: input.address.country ?? 'US',
+        }) : undefined,
+        geo: input.geo ? {
+          '@type': 'GeoCoordinates',
+          latitude: input.geo.lat,
+          longitude: input.geo.lng,
+        } : undefined,
+        numberOfRooms: input.beds,
+        numberOfBathroomsTotal: input.baths,
+        floorSize: input.livingAreaSqft != null ? {
+          '@type': 'QuantitativeValue',
+          value: input.livingAreaSqft,
+          unitCode: 'FTK',
+        } : undefined,
+        lotSize: input.lotSizeSqft != null ? {
+          '@type': 'QuantitativeValue',
+          value: input.lotSizeSqft,
+          unitCode: 'FTK',
+        } : undefined,
+        yearBuilt: input.yearBuilt,
+        offers: input.listPrice != null ? {
+          '@type': 'Offer',
+          price: input.listPrice,
+          priceCurrency: 'USD',
+        } : undefined,
+        image: input.photos && input.photos.length > 0 ? input.photos.slice(0, 5).map(absoluteUrl) : undefined,
+        listingAgent: input.listingAgent ? prune({
+          '@type': 'RealEstateAgent',
+          name: input.listingAgent.name,
+          email: input.listingAgent.email,
+          telephone: input.listingAgent.telephone,
+        }) : undefined,
+      })
+
+    case 'breadcrumb':
+      return {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: input.items.map((item, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: item.name,
+          item: absoluteUrl(item.url),
+        })),
+      }
+
+    case 'webPage':
+      return prune({
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: input.name,
+        description: input.description,
+        url: absoluteUrl(input.url),
+      })
+
+    case 'faqPage':
+      return {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: input.items.map(({ question, answer }) => ({
+          '@type': 'Question',
+          name: question,
+          acceptedAnswer: { '@type': 'Answer', text: answer },
+        })),
+      }
+
+    case 'place':
+      return prune({
+        '@context': 'https://schema.org',
+        '@type': 'Place',
+        name: input.name,
+        description: input.description,
+        url: absoluteUrl(input.url),
+        geo: input.geo ? {
+          '@type': 'GeoCoordinates',
+          latitude: input.geo.lat,
+          longitude: input.geo.lng,
+        } : undefined,
+        address: input.address ? prune({
+          '@type': 'PostalAddress',
+          streetAddress: input.address.street,
+          addressLocality: input.address.city,
+          addressRegion: input.address.state,
+          postalCode: input.address.postalCode,
+          addressCountry: input.address.country ?? 'US',
+        }) : undefined,
+        containedInPlace: input.containedInPlace ? {
+          '@type': 'Place',
+          name: input.containedInPlace,
+        } : undefined,
+      })
+
+    case 'article':
+      return prune({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: input.headline,
+        description: input.description,
+        url: absoluteUrl(input.url),
+        image: absoluteUrl(input.image),
+        datePublished: input.datePublished,
+        dateModified: input.dateModified,
+        author: input.authorName ? {
+          '@type': 'Person',
+          name: input.authorName,
+        } : undefined,
+      })
+  }
+}
+
+function prune<T extends Record<string, unknown>>(obj: T): T {
+  const out = {} as Record<string, unknown>
+  for (const [k, v] of Object.entries(obj)) {
+    if (v == null) continue
+    if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v as object).length === 0) continue
+    out[k] = v
+  }
+  return out as T
+}
