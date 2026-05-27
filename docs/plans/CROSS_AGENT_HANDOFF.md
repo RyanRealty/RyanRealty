@@ -10,9 +10,9 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Claude Code (Opus 4.7, 2026-05-27)** — Ryan Realty website rebuild · Wave 2 of `docs/EXECUTION_PLAN.md`. Continuous-execution mode per Matt's 2026-05-27 directive. |
-| **`main` @ commit** | `041d8f4` — `feat(wave-2-l2): MobileNav drawer + refactor SiteHeader to use primitives`. Pushed; Vercel auto-deploy. |
-| **Task focus** | Wave 2 Layer 1 atomic primitives COMPLETE (21 of them). Wave 2 Layer 2 (layout shell) started — SiteHeader refactored, MobileNav added. Wave 1 DAL is done modulo a few stubs that ship on demand. Listing detail page still broken on prod (React #310 hydration error in legacy showcase components) — fix lands when Wave 2 Layer 4 rebuilds those components. |
+| **Surface** | **Claude Code (Opus 4.7, 2026-05-27 — late session)** — Ryan Realty website rebuild · Wave 2 of `docs/EXECUTION_PLAN.md`. Continuous-execution mode per Matt's 2026-05-27 directive. |
+| **`main` @ commit** | `9a46f2f` — `feat(wave-2-l2): MetadataBlock + pageMetadata helper`. Pushed; Vercel auto-deploy. |
+| **Task focus** | **Wave 2 Layer 2 COMPLETE.** SiteHeader, MobileNav, SiteFooter, RootProvider, MetadataBlock all shipped. Stack primitive hardened (defaults to `items-start`). Wave 2 Layer 1 atomic primitives also complete (21). Wave 1 DAL done modulo a few stubs that ship on demand. Listing detail page still broken on prod (React #310 in legacy showcase components) — fix lands when Wave 2 Layer 4 rebuilds those components. Next step: Wave 2 Layer 3 (LP composition blocks). |
 
 ### Today's session log (2026-05-27)
 
@@ -35,6 +35,10 @@ Started at `c7ad24a` (last commit of 2026-05-26). Eleven feature commits + one r
 | `b4ed707` | wave-2 L1: brand primitives — Logo/RyanRealtyMark/JaxMascot + assets at `/public/brand/` |
 | `93af50d` | wave-2 L1: CTA primitives — CTAButton/TextLink/IconButton/BadgePill **(Layer 1 complete: 21 primitives)** |
 | `041d8f4` | wave-2 L2: MobileNav drawer (shadcn Sheet) + SiteHeader refactor onto new primitives |
+| `8aa4475` | wave-2 L2: SiteFooter refactor onto primitives + extend TextLink (tone, weight, tel:/mailto) |
+| `b0b8974` | wave-2 L1 fix: Stack primitive defaults to `items-start` to prevent flex-stretch regressions |
+| `61f5580` | wave-2 L2: RootProvider consolidates ComparisonProvider + AnalyticsScripts + IdentityBridges + CookieConsentBanner; layout.tsx loses 25-import salad |
+| `9a46f2f` | wave-2 L2: MetadataBlock + pageMetadata + lib/site/json-ld typed schema.org builder **(Layer 2 complete)** |
 
 **DB side-effects unreverted (intentional, harmless):**
 - `public.listing_detail_mv` materialized view + `refresh_listing_detail_mv()` function still in production. Nothing reads from them now. Will be re-adopted in Wave 3 when the listing detail page rebuilds.
@@ -55,7 +59,7 @@ Started at `c7ad24a` (last commit of 2026-05-26). Eleven feature commits + one r
 | 1.8 Remaining DAL functions | partial — `getPriceHistory` done; activity + leads stubbed; real implementations land per-page as Wave 3 needs them |
 | 1.9 Page-migration to DAL | not yet started |
 | **2 Layer 1** atomic primitives | ✅ **COMPLETE.** 21 primitives in `components/site/primitives/`: data (Price, TabularNumber, PercentChange, DaysCount, Eyebrow, MiddleDot), typography (DisplayHeading, H1, H2, H3, Body, Caption), layout (Container, Section, Stack, Grid), brand (Logo, RyanRealtyMark, JaxMascot), CTA (CTAButton, TextLink, IconButton, BadgePill). |
-| **2 Layer 2** layout shell | partial — SiteHeader refactored onto primitives, MobileNav drawer added. **TODO:** SiteFooter refactor (same pattern), `<RootProvider>` (Supabase + Sentry + GA + brand consent wrapper), `<MetadataBlock>` (OG + Twitter + JSON-LD per page). |
+| **2 Layer 2** layout shell | ✅ **COMPLETE.** SiteHeader + MobileNav + SiteFooter refactored onto primitives. RootProvider consolidates analytics + identity + consent (`components/site/providers/`). MetadataBlock + pageMetadata + typed json-ld builder (`components/site/MetadataBlock.tsx`, `lib/site/page-metadata.ts`, `lib/site/json-ld.ts`). Stack primitive hardened to default `items-start`. |
 | **2 Layer 3** LP composition | not yet started (a few exist already in `components/site/`: MarketSnapshot, PriceRangeTiles, OpenHousesGrid, CityGrid, Hero, ActivityFeed, CtaDuo, TeamSection — should be lifted to use new primitives). |
 | **2 Layer 4** listing detail surface | not yet started — **fixes the React #310 on the broken listing detail page** |
 
@@ -92,11 +96,10 @@ Apply: do not ask Matt what to do next. The plan is the answer. Surface a questi
 
 **Start here:**
 
-1. **Finish Wave 2 Layer 2.** SiteFooter refactor onto primitives (same pattern as the SiteHeader refactor in `041d8f4`). Then `<RootProvider>` (Supabase + Sentry + GA + brand consent wrapper) + `<MetadataBlock>` (OG + Twitter + JSON-LD per page).
-2. **Wave 2 Layer 3** (LP composition blocks). Audit the existing `components/site/` composition blocks against the mockup and lift them to use the new primitives (`Eyebrow`/`H2`/`Section`/`Container`/`Grid`/`Stack`/etc). Add what's missing per plan §9 Layer 3: `<HeroBlock>` (unified version), `<NeighborhoodMap>` (dynamic-imported Google Maps), `<PriceChart>` (dynamic-imported recharts), `<LeadCaptureBlock>` (FUB-wired, 4 variants), `<BrokerCard>` (transparent PNG, no rectangular frame), `<ContentSection>`, `<CTABar>`, `<BreadcrumbNav>`, `<FAQBlock>`, `<RelatedAreas>`, `<SocialProofBlock>`, `<TestimonialBlock>`.
-3. **Wave 2 Layer 4** (listing detail surface) — **THE BIG ONE.** This is where the React #310 bug evaporates because the legacy components get replaced. Build into `components/site/listing-detail/`: `ListingDetailShell`, `ListingVideoEmbed`, `PhotoGallery`, `PriceBlock`, `PropertySpecs`, `DescriptionBlock`, `ListingAgentCard`, `MortgageCalculator`, `SimilarListings` (uses the already-shipped `getSimilarListings` DAL fn), `PropertyHistory`, `OpenHouses`, `NeighborhoodMarketContext` (the Zillow beater), `PriceVsNeighborhoodPill`, `BendLifestylePanel`, `TextMattCTA`, `TransparentCMASummary`, `ClimateRiskBlock`.
-4. **Wave 3 route 1**: `/` homepage swap to use the lifted Layer 3 blocks. Audit + delete legacy.
-5. **Wave 3 route 2**: `/listing/[listingKey]` swap to Layer 4 components → 5 EMPTY regions become real content → **the broken page is fixed.** Same commit also `git rm`'s `components/listing/showcase/*` per the locked discipline.
+1. **Wave 2 Layer 3** (LP composition blocks). Audit the existing `components/site/` composition blocks against the mockup and lift them to use the new primitives (`Eyebrow`/`H2`/`Section`/`Container`/`Grid`/`Stack`/etc). Add what's missing per plan §9 Layer 3: `<HeroBlock>` (unified version), `<NeighborhoodMap>` (dynamic-imported Google Maps), `<PriceChart>` (dynamic-imported recharts), `<LeadCaptureBlock>` (FUB-wired, 4 variants), `<BrokerCard>` (transparent PNG, no rectangular frame), `<ContentSection>`, `<CTABar>`, `<BreadcrumbNav>`, `<FAQBlock>`, `<RelatedAreas>`, `<SocialProofBlock>`, `<TestimonialBlock>`.
+2. **Wave 2 Layer 4** (listing detail surface) — **THE BIG ONE.** This is where the React #310 bug evaporates because the legacy components get replaced. Build into `components/site/listing-detail/`: `ListingDetailShell`, `ListingVideoEmbed`, `PhotoGallery`, `PriceBlock`, `PropertySpecs`, `DescriptionBlock`, `ListingAgentCard`, `MortgageCalculator`, `SimilarListings` (uses the already-shipped `getSimilarListings` DAL fn), `PropertyHistory`, `OpenHouses`, `NeighborhoodMarketContext` (the Zillow beater), `PriceVsNeighborhoodPill`, `BendLifestylePanel`, `TextMattCTA`, `TransparentCMASummary`, `ClimateRiskBlock`.
+3. **Wave 3 route 1**: `/` homepage swap to use the lifted Layer 3 blocks. Audit + delete legacy.
+4. **Wave 3 route 2**: `/listing/[listingKey]` swap to Layer 4 components → 5 EMPTY regions become real content → **the broken page is fixed.** Same commit also `git rm`'s `components/listing/showcase/*` per the locked discipline.
 
 **Quick wins available in parallel (independent of Wave 2 progression):**
 
@@ -114,7 +117,14 @@ Apply: do not ask Matt what to do next. The plan is the answer. Surface a questi
 - Broken legacy surface: [`components/listing/showcase/`](../../components/listing/showcase/) + [`app/listing/[listingKey]/page.tsx`](../../app/listing/[listingKey]/page.tsx) — DO NOT TOUCH, will be deleted in Wave 3.
 - Memory: `~/.claude/projects/-Users-matthewryan-RyanRealty/memory/MEMORY.md`
 
-### What this session shipped
+### What this session shipped (Wave 2 Layer 2 completion run)
+
+- **`8aa4475`** — SiteFooter onto primitives + extend TextLink primitive (tone `primary|on-navy|muted`, weight `semibold|normal`, tel/mailto routed past Next Link).
+- **`b0b8974`** — Stack primitive defaults to `items-start` so flex-col children stop stretching by default. Single-line primitive change; SiteFooter brand column drops the now-redundant override.
+- **`61f5580`** — RootProvider consolidates ComparisonProvider + AnalyticsScripts + IdentityBridges + CookieConsentBanner. Layout.tsx loses the 25-import salad; analytics + identity bridges + consent live behind one named provider at `components/site/providers/`.
+- **`9a46f2f`** — MetadataBlock + pageMetadata + typed json-ld builder. Three files: `components/site/MetadataBlock.tsx` (renders one or more `<script type="application/ld+json">` tags), `lib/site/page-metadata.ts` (returns Next.js Metadata with OG + Twitter + canonical), `lib/site/json-ld.ts` (discriminated-union typed builder for realEstateListing / breadcrumb / webPage / faqPage / place / article). Smoke-tested output validates against schema.org. Page migrations come in Wave 3.
+
+### Earlier session work (pre Layer 2 completion)
 
 - **Verified the smart list API limitation against live FUB.** `GET /v1/smartLists/{id}?fields=<conditions|criteria|filters|rules|filter|query|definition|segments|tags>` all return HTTP 400 "Invalid field(s) in the fields parameter". None of those filter-shaped fields exist on the endpoint. The existing `scripts/westside-bend-fub-smart-lists.mjs --apply` PUT gets 200 but the conditions never persist. `GET /v1/people?smartListId=N` always returns 13,278 (full DB) regardless of N. Matches prior finding in `docs/FUB_CLEANUP_FINAL_2026-05-17.md` ("POST /v1/smartLists returns 500 — undocumented schema issue. Smart lists also have to be built in the UI").
 - **Tag-count audit of `out/westside-bend-merge/05-fub-import.csv` (7,765 rows).** Captured every unique tag's count so the runbook can give Matt expected counts to verify against post-import. Top tags: `import:westside-2026-05` = 7,765, `area:bend-westside` = 7,765, `equity:high` = 3,832, `seller-score:warm` = 3,023, `seller-score:cool` = 2,541, `seller-score:hot` = 340, `geo:out-of-state` = 813, `lifecycle:rate-locked` = 990, `contact:needs-enrichment` = 4,993, `industry:realtor` = 240.
