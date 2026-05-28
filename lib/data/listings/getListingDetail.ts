@@ -246,7 +246,11 @@ export const getListingDetail = (listingKey: string): Promise<GetListingDetailRe
   InputSchema.parse({ listingKey })
   return unstable_cache(
     () => fetchOne(listingKey),
-    ['listing-detail', listingKey],
+    // v2 cache-key bump 2026-05-28 — invalidates the null results
+    // that were cached during the column-quoting bug (commit 2ded4d5
+    // through f136a40). Without this, listings queried during the
+    // broken window stay 404 until natural revalidation.
+    ['listing-detail-v2', listingKey],
     {
       revalidate: CACHE_WINDOWS.listingDetail,
       tags: [cacheTag.listings, cacheTag.listing(listingKey)],

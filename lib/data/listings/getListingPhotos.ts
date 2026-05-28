@@ -110,7 +110,10 @@ export const getListingPhotos = (listingKey: string): Promise<ListingPhoto[]> =>
   InputSchema.parse({ listingKey })
   return unstable_cache(
     () => fetchPhotos(listingKey),
-    ['listing-photos', listingKey],
+    // v2 cache-key bump 2026-05-28 — paired with getListingDetail v2
+    // bump to invalidate empty photo arrays cached during the
+    // column-quoting bug window.
+    ['listing-photos-v2', listingKey],
     {
       revalidate: CACHE_WINDOWS.listingTile,
       tags: [cacheTag.listings, cacheTag.listing(listingKey)],
