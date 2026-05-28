@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.342.0 (2026-05-28)
+
+### Features
+- feat(wave-2-l4): listing detail — Shell + PriceBlock + PropertySpecs + Description + AgentCard
+
+---
+
+
 ## v1.341.1 (2026-05-27)
 
 ### Maintenance
