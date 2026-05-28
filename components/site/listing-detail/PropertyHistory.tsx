@@ -29,6 +29,10 @@ export type ListingHistoryEvent = {
 
 type Props = {
   history: ReadonlyArray<ListingHistoryEvent>
+  /** D76 (DESIGN_DIRECTIVES.md) — defaults to 'all' so the timeline
+   * shows every MLS event including Photo + empty FieldChange touches.
+   * Pass 'meaningful-only' to filter to lifecycle events only. */
+  mode?: 'all' | 'meaningful-only'
   className?: string
 }
 
@@ -65,15 +69,33 @@ function eventLabel(raw: string | undefined): string {
   return EVENT_LABEL[raw] ?? raw.replace(/_/g, ' ')
 }
 
-export function PropertyHistory({ history, className }: Props) {
-  if (history.length === 0) return null
+// MLS sync events include pure-metadata noise (Photo updates, generic
+// FieldChange touches without a price delta) alongside meaningful
+// lifecycle events. Surface only the lifecycle ones — buyers don't
+// care that the listing got new photos at 2am.
+function isMeaningfulEvent(ev: ListingHistoryEvent): boolean {
+  const raw = (ev.event ?? '').toLowerCase()
+  if (raw === 'photo' || raw === 'photos' || raw === 'photo_change') return false
+  // FieldChange with a price delta or a substantive description is
+  // a real event; otherwise it's MLS plumbing.
+  if (raw === 'fieldchange' || raw === 'field_change') {
+    if (ev.price_change && ev.price_change !== 0) return true
+    if (ev.description && ev.description.trim().length > 8) return true
+    return false
+  }
+  return true
+}
 
-  // Sort newest first for the timeline view.
-  const events = [...history].sort((a, b) => {
+export function PropertyHistory({ history, mode = 'all', className }: Props) {
+  // Sort newest first for the timeline view. Filter only when the caller
+  // explicitly asks — default 'all' surfaces every event per D76.
+  const filtered = mode === 'meaningful-only' ? history.filter(isMeaningfulEvent) : history
+  const events = [...filtered].sort((a, b) => {
     const ta = a.event_date ? Date.parse(a.event_date) : 0
     const tb = b.event_date ? Date.parse(b.event_date) : 0
     return tb - ta
   })
+  if (events.length === 0) return null
 
   return (
     <Stack gap="default" className={className}>

@@ -7,7 +7,6 @@ import {
   H2,
   Price,
   Stack,
-  TabularNumber,
 } from '@/components/site/primitives'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -172,7 +171,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
         </div>
         <Body size="small" tone="muted" className="mt-2">
           Loan amount <Price value={Math.round(result.principal)} /> ·{' '}
-          <TabularNumber value={result.down ? Math.round(result.down) : 0} /> down ·{' '}
+          <Price value={Math.round(result.down)} /> down ·{' '}
           {termInput} year term
         </Body>
       </div>

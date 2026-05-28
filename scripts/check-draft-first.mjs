@@ -50,6 +50,12 @@ const USER_FACING_PATTERNS = [
   /^app\/lp\/.+\.(tsx|jsx)$/,
   /^components\/site\/(?!primitives\/).+\.(tsx|jsx)$/,
   /^public\/.+\.html$/,
+  // Rendered video deliverables — videos published to the tracked
+  // library are user-facing and require explicit Matt approval per
+  // CLAUDE.md §0.5 "Draft-First, Commit-Last" (the video-review-gate
+  // rule). Closes GAP-2 from the 2026-05-28 guardrail inventory.
+  /^public\/v5_library\/.+\.(mp4|mov|webm)$/,
+  /^public\/videos\/.+\.(mp4|mov|webm)$/,
 ]
 
 const NEVER_USER_FACING = [

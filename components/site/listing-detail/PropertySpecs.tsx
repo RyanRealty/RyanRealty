@@ -53,8 +53,39 @@ type Spec = {
   value: React.ReactNode
 }
 
+// MLS PropertyType single-letter code → friendly label.
+// Codes per docs/DATABASE_FOR_AI_AGENTS.md + verified against active
+// PropertyType distribution in the listings table (8 codes A..H).
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  A: 'Residential',
+  B: 'Condo or townhome',
+  C: 'Manufactured home',
+  D: 'Lots and land',
+  E: 'Multi-family',
+  F: 'Farm or ranch',
+  G: 'Commercial',
+  H: 'Other',
+}
+
+function propertyTypeLabel(code: string | null | undefined): string | null {
+  if (!code) return null
+  // Single-letter MLS codes get mapped to a friendly label. Anything
+  // else (multi-word PropertySubType strings from richer feeds) renders
+  // as-is.
+  if (code.length <= 2) return PROPERTY_TYPE_LABELS[code.toUpperCase()] ?? null
+  return code
+}
+
 function buildSpecs(listing: Props['listing']): Spec[] {
   const sqft = listing.sqft ?? listing.totalLivingAreaSqFt ?? null
+  // Prefer the richer PropertySubType when it's a real string; fall
+  // back to the single-letter PropertyType code mapped to a friendly
+  // label. Masked / placeholder values like "********" are filtered.
+  const subType =
+    listing.propertySubType && !listing.propertySubType.startsWith('***')
+      ? listing.propertySubType
+      : null
+  const ptypeLabel = propertyTypeLabel(subType) ?? propertyTypeLabel(listing.propertyType)
   const out: Spec[] = [
     { label: 'Bedrooms', value: <TabularNumber value={listing.beds} /> },
     { label: 'Bathrooms', value: <TabularNumber value={listing.baths} fractionDigits={1} /> },
@@ -64,7 +95,7 @@ function buildSpecs(listing: Props['listing']): Spec[] {
       value: listing.lotSizeAcres ? <><TabularNumber value={listing.lotSizeAcres} fractionDigits={2} /> acres</> : '—',
     },
     { label: 'Year built', value: listing.yearBuilt ? <span className="tabular-nums">{listing.yearBuilt}</span> : '—' },
-    { label: 'Property type', value: listing.propertySubType ?? listing.propertyType ?? '—' },
+    { label: 'Property type', value: ptypeLabel ?? '—' },
     { label: 'Garage', value: listing.garageSpaces ? <><TabularNumber value={listing.garageSpaces} /> spaces</> : '—' },
     {
       label: 'HOA',
@@ -79,10 +110,10 @@ function buildSpecs(listing: Props['listing']): Spec[] {
       value: listing.listNumber ? <span className="tabular-nums">{listing.listNumber}</span> : '—',
     },
   ]
-  if (listing.architecturalStyle) {
+  if (listing.architecturalStyle && !listing.architecturalStyle.startsWith('***')) {
     out.push({ label: 'Style', value: listing.architecturalStyle })
   }
-  if (listing.schoolDistrict) {
+  if (listing.schoolDistrict && !listing.schoolDistrict.startsWith('***')) {
     out.push({ label: 'School district', value: listing.schoolDistrict })
   }
   return out

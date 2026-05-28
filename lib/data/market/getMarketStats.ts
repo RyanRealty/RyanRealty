@@ -10,7 +10,7 @@
 
 import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
-import { supabaseServer } from '@/lib/data/client'
+import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import type { GeoType, IsoTimestamp } from '@/lib/data/types/shared'
 import type { MarketStats, MoSVerdict } from '@/lib/data/types/market'
@@ -36,7 +36,12 @@ export const getMarketStats = unstable_cache(
   async (input: GetMarketStatsInput): Promise<MarketStats | null> => {
     const { geoType, geoSlug, periodType } = InputSchema.parse(input)
 
-    const supabase = await supabaseServer()
+    // market_stats_cache is a public table (no RLS, no cookies). Use
+    // supabaseAnon so this function is safe inside unstable_cache.
+    // See lib/data/brokers/getBrokers.ts for the original of this bug
+    // fixed earlier today.
+    const supabase = supabaseAnon()
+    if (!supabase) return null
     const { data, error } = await supabase
       .from('market_stats_cache')
       .select(
@@ -58,24 +63,25 @@ export const getMarketStats = unstable_cache(
     }
     if (!data) return null
 
-    const monthsOfSupply = data.months_of_supply as number | null
+    const row = data as unknown as Record<string, unknown>
+    const monthsOfSupply = row.months_of_supply as number | null
     return {
-      geoType: data.geo_type as GeoType,
-      geoSlug: data.geo_slug as string,
-      periodType: data.period_type as MarketStats['periodType'],
-      periodStart: data.period_start as IsoTimestamp,
-      periodEnd: data.period_end as IsoTimestamp,
-      medianSalePrice: data.median_sale_price as number | null,
-      medianListPrice: data.median_list_price as number | null,
-      medianDaysOnMarket: data.median_dom as number | null,
+      geoType: row.geo_type as GeoType,
+      geoSlug: row.geo_slug as string,
+      periodType: row.period_type as MarketStats['periodType'],
+      periodStart: row.period_start as IsoTimestamp,
+      periodEnd: row.period_end as IsoTimestamp,
+      medianSalePrice: row.median_sale_price as number | null,
+      medianListPrice: row.median_list_price as number | null,
+      medianDaysOnMarket: row.median_dom as number | null,
       monthsOfSupply,
       mosVerdict: classifyMoS(monthsOfSupply),
-      saleToListRatio: data.sale_to_list_ratio as number | null,
-      soldCount: data.sold_count as number | null,
-      activeCount: data.active_count as number | null,
-      yoyChangePct: data.yoy_change_pct as number | null,
-      refreshedAt: data.refreshed_at as IsoTimestamp,
-      methodologyVersion: (data.methodology_version as string) ?? 'unknown',
+      saleToListRatio: row.sale_to_list_ratio as number | null,
+      soldCount: row.sold_count as number | null,
+      activeCount: row.active_count as number | null,
+      yoyChangePct: row.yoy_change_pct as number | null,
+      refreshedAt: row.refreshed_at as IsoTimestamp,
+      methodologyVersion: (row.methodology_version as string) ?? 'unknown',
     }
   },
   ['market-stats'],

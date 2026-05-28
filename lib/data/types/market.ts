@@ -33,8 +33,13 @@ export type MarketPulse = {
   activeCount: number
   medianListPrice: Currency | null
   newThisWeek: number
+  /** Approximation of price-drop activity as a percent (0-100). */
   priceDropsThisWeek: number
   closedLast30Days: number
+  /** Sourced from market_pulse_live.months_of_supply. */
+  monthsOfSupply: number | null
+  /** Sourced from market_pulse_live.median_days_to_pending. */
+  medianDaysToPending: number | null
   refreshedAt: IsoTimestamp
 }
 

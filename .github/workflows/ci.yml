@@ -40,6 +40,14 @@ jobs:
       - run: npm run ci:mockup-coverage
       - run: npm run ci:page-dal
       - run: npm run ci:static-params
+      # G16 data access discipline + G17 mixed-case column quoting +
+      # G21 DAL internal cache discipline + G22 producer pipeline guard.
+      # The full unified-enforcement layer landed 2026-05-28; each
+      # gate closes one or more systemic gaps in out/guardrail-inventory.
+      - run: npm run ci:data-access
+      - run: npm run ci:dal-column-quoting
+      - run: npm run ci:dal-internal-discipline
+      - run: npm run ci:producer-guard
       - run: npm run test
       - run: npm run build
       # Post-build gates: bundle budget + route smoke. Bundle budget
@@ -61,6 +69,16 @@ jobs:
       - name: Lighthouse CI
         if: github.event_name == 'pull_request'
         run: npm run ci:lighthouse
+        continue-on-error: false
+
+      # G23 — pa11y-ci. The Lighthouse a11y category covers aggregate
+      # scoring but misses specific WCAG 2.1 failures that show up at
+      # component-level (missing alt text, unlabeled inputs, contrast
+      # failures on specific elements). pa11y-ci catches those.
+      # Closes GAP-3 from out/guardrail-inventory-2026-05-28.md.
+      - name: pa11y-ci accessibility
+        if: github.event_name == 'pull_request'
+        run: npm run ci:a11y
         continue-on-error: false
 
       # Build health tracking

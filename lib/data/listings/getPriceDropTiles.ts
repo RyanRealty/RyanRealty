@@ -104,7 +104,7 @@ export async function getPriceDropTiles(options?: {
     .gt('price_drop_count', 0)
     .order('total_price_change_pct', { ascending: true })
     .limit(limit)
-  if (options?.city?.trim()) query = query.eq('"City"', options.city.trim())
+  if (options?.city?.trim()) query = query.eq('City', options.city.trim())
   const { data, error } = await query
   if (error) return []
   return (data ?? []) as unknown as PriceDropTile[]

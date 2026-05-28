@@ -333,6 +333,27 @@ function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// Heuristic — does this chunk look like JavaScript / TypeScript code
+// rather than user-facing JSX text? The `>` / `<` extractor frequently
+// catches JS expressions between a TS generic (`React.TouchEvent>`) and
+// a less-than operator (`if (a < b)`) and treats the JS code in between
+// as JSX text. Those chunks contain unmistakable code markers:
+//   - arrow function `=>`
+//   - statement terminator `;`
+//   - `const`/`let`/`var`/`function`/`return` keywords
+//   - `useState/useEffect/useCallback/useMemo/useRef` React hooks
+//   - object property `: ` followed by capitalised type name
+// A chunk that contains any of these is JS, not JSX text — skip it so
+// `!==`, `&&`, etc. don't fire the punctuation rule.
+function looksLikeJsCode(text) {
+  if (/=>/.test(text)) return true
+  if (/;\s*$/.test(text)) return true
+  if (/\b(const|let|var|function|return|if|else|for|while|switch|case|break|continue|throw|try|catch|finally|new|typeof|instanceof|in|of)\b/.test(text)) return true
+  if (/\buse(State|Effect|Callback|Memo|Ref|Context|Reducer|Layout(?:Effect)?)\b/.test(text)) return true
+  if (/[a-z]\([^)]*\)\s*[{=]/.test(text)) return true
+  return false
+}
+
 // Pull "content" chunks from source: string literals (single, double,
 // backtick) and JSX text between tags. Skip line + block comments and
 // import lines so code identifiers like `dynamic(...)` don't false-
@@ -407,7 +428,7 @@ function extractContent(src) {
       if (nextLt > i + 1) {
         const raw = src.slice(i + 1, nextLt)
         const text = raw.replace(/\{[^{}]*\}/g, '').trim()
-        if (text.length > 0) {
+        if (text.length > 0 && !looksLikeJsCode(text)) {
           chunks.push({ type: 'jsx-text', text })
         }
         i = nextLt

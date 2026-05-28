@@ -9,12 +9,36 @@ export type Testimonial = {
   source: TestimonialSource
 }
 
-/** Testimonials from ryan-realty.com (Google reviews). Add Zillow entries as needed. */
+/** Testimonials from Ryan Realty Google Business Profile. Pulled 2026-05-22 via GBP API. */
 export const TESTIMONIALS: Testimonial[] = [
   {
     quote:
-      "We had an excellent experience working with Matt! He was smart, understood our needs right away, and acted quickly while staying calm and patient throughout the process. Even in a tough market, he sold our home faster than we expected. Truly the best — highly recommend!",
+      "I'd highly recommend Matt Ryan as his attention to detail and art of the negotiations with data on both buyers/sellers is impressive. He seems to navigate the process between buyers / sellers to a \"T\" and he exemplifies the communication and clarity. You will not be disappointed.",
+    author: "Ernie Oster",
+    source: "Google",
+  },
+  {
+    quote:
+      "Matt is the most professional, communicative, and honest Real Estate Broker I have ever worked with. Matt kept me informed on a weekly basis as to the progress of selling my home in the Bend area. He had very constructive ideas to improve my property and always found a reasonable subcontractor to improve my chances of selling my home. If you are selling or buying a home I suggest you contact Matt Ryan immediately. Matt is the best!",
+    author: "Douglas Grant",
+    source: "Google",
+  },
+  {
+    quote:
+      "We had an excellent experience working with Matt! He was smart, understood our needs right away, and acted quickly while staying calm and patient throughout the process. Even in a tough market, he sold our home faster than we expected. Truly the best, highly recommend!",
     author: "Audra Hedberg",
+    source: "Google",
+  },
+  {
+    quote:
+      "Matt worked really hard for us and is a highly skilled negotiator. He takes his role seriously as an agent looking out for your best interests and is definitely not like other realtors just trying to make a quick buck. He analyzed the market very thoroughly and helped us make a really good choice. We would work with him again anytime.",
+    author: "Nick Crawley",
+    source: "Google",
+  },
+  {
+    quote:
+      "After interviewing several agents my wife and I selected Matt to represent us in the estate sale of a three bedroom home. The house needed interior paint, carpet etc. Matt promptly found two contractors to make the repairs at a reasonable price. He took time to check on the repairs while we were out of the country on vacation. Upon our return we found the house freshly painted, sparkling clean and ready to sell. He took excellent photos and video of the property for the listing. The house sold quickly.",
+    author: "Jim Creekmore",
     source: "Google",
   },
   {
@@ -27,6 +51,12 @@ export const TESTIMONIALS: Testimonial[] = [
     quote:
       "Matt did a great job helping us sell our home. His presentation and marketing were professional and thorough. He was patient, low pressure with us and provided expert guidance. We would not hesitate to recommend or use Matt's services again.",
     author: "Gary Timms",
+    source: "Google",
+  },
+  {
+    quote:
+      "Matt is driven, honest and hard working without the high pressure. He listens and is extremely helpful with every step in the process. He helped us find and purchase land, helped line up a builder for a new house. He then sold our current house in less than a week. We highly recommend Matt and will use him again when needed.",
+    author: "Charise Millard",
     source: "Google",
   },
   {

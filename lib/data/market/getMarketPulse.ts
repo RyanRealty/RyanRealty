@@ -8,7 +8,7 @@
 
 import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
-import { supabaseServer } from '@/lib/data/client'
+import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import type { GeoType, IsoTimestamp } from '@/lib/data/types/shared'
 import type { MarketPulse } from '@/lib/data/types/market'
@@ -24,12 +24,19 @@ export const getMarketPulse = unstable_cache(
   async (input: GetMarketPulseInput): Promise<MarketPulse | null> => {
     const { geoType, geoSlug } = InputSchema.parse(input)
 
-    const supabase = await supabaseServer()
+    // market_pulse_live is a public view (no RLS, no cookies). Use
+    // supabaseAnon so this function is safe inside unstable_cache.
+    // supabaseServer() reads cookies() which Next.js forbids in a
+    // cache scope — same bug fixed in lib/data/brokers/getBrokers.ts
+    // earlier this session.
+    const supabase = supabaseAnon()
+    if (!supabase) return null
     const { data, error } = await supabase
       .from('market_pulse_live')
       .select(
-        'geo_type, geo_slug, active_count, median_list_price, new_this_week, ' +
-          'price_drops_this_week, closed_last_30_days, refreshed_at'
+        'geo_type, geo_slug, active_count, median_list_price, new_count_7d, ' +
+          'price_reduction_share, sold_count_30d, months_of_supply, ' +
+          'median_days_to_pending, updated_at',
       )
       .eq('geo_type', geoType)
       .eq('geo_slug', geoSlug)
@@ -41,18 +48,30 @@ export const getMarketPulse = unstable_cache(
     }
     if (!data) return null
 
+    const row = data as unknown as Record<string, unknown>
     return {
-      geoType: data.geo_type as GeoType,
-      geoSlug: data.geo_slug as string,
-      activeCount: (data.active_count as number) ?? 0,
-      medianListPrice: data.median_list_price as number | null,
-      newThisWeek: (data.new_this_week as number) ?? 0,
-      priceDropsThisWeek: (data.price_drops_this_week as number) ?? 0,
-      closedLast30Days: (data.closed_last_30_days as number) ?? 0,
-      refreshedAt: data.refreshed_at as IsoTimestamp,
+      geoType: row.geo_type as GeoType,
+      geoSlug: row.geo_slug as string,
+      activeCount: (row.active_count as number) ?? 0,
+      medianListPrice: row.median_list_price as number | null,
+      newThisWeek: (row.new_count_7d as number) ?? 0,
+      priceDropsThisWeek: Math.round(((row.price_reduction_share as number) ?? 0) * 100),
+      closedLast30Days: (row.sold_count_30d as number) ?? 0,
+      monthsOfSupply: row.months_of_supply as number | null,
+      medianDaysToPending: row.median_days_to_pending as number | null,
+      refreshedAt: row.updated_at as IsoTimestamp,
     }
   },
-  ['market-pulse'],
+  // v2 cache-key bump 2026-05-28 — old key entries hold null from when
+  // the function queried non-existent columns (refreshed_at / new_this_week /
+  // price_drops_this_week / closed_last_30_days) and from when it was
+  // shipping cookies-in-cache errors. Fresh slot for the corrected
+  // schema (updated_at / new_count_7d / price_reduction_share /
+  // sold_count_30d / months_of_supply / median_days_to_pending).
+  // v3 bump 2026-05-28 — v2 holds null from before the anon-read RLS
+  // policy landed on market_pulse_live + market_stats_cache (migration
+  // 20260528010000_anon_read_market_tables.sql).
+  ['market-pulse-v3'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

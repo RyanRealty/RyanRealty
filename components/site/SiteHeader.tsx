@@ -37,6 +37,10 @@ export default function SiteHeader() {
           />
         </Link>
 
+        {/* D74 — nav text upsized from text-sm (14px) to text-[15px]
+            so the menu reads at the same weight as the CTAs on
+            desktop. Mirrored in the design_system mockup CSS so the
+            parity gate stays honest. */}
         <nav
           aria-label="Primary"
           className="hidden items-center gap-7 md:flex"
@@ -45,7 +49,7 @@ export default function SiteHeader() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-white/85 transition hover:text-white"
+              className="text-[15px] font-medium text-white/85 transition hover:text-white"
             >
               {link.label}
             </Link>

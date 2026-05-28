@@ -19,74 +19,27 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
+import { createRequire } from 'node:module'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const ROOT = join(__dirname, '..')
 const BASELINE_PATH = join(ROOT, 'scripts/brand-voice-baseline.json')
 
+// Single source of truth for the banned vocabulary, shared with the
+// ESLint plugin at eslint-rules/no-brand-voice-violations.js. Test
+// scripts/__tests__/brand-voice-vocabulary.test.cjs verifies parity.
+const require = createRequire(import.meta.url)
+const VOCAB = require('./brand-voice-vocabulary.cjs')
+
 const SCAN_DIRS = ['app', 'components']
 const EXCLUDED_DIRS = new Set(['node_modules', '.next', 'out', 'build', 'dist', '__tests__'])
 const FILE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx'])
 
-// The hard-fail banned vocabulary. Each MUST be word-boundary matched
-// (so "stunning" hits but "kingstunning" wouldn't — though that's unlikely).
-// Pulled from voice_guidelines.md §6 and the SITE_SPEC.md banned list.
-const BANNED_WORDS = [
-  // Real-estate clichés
-  'stunning',
-  'nestled',
-  'breathtaking',
-  'charming',
-  'gorgeous',
-  'pristine',
-  'boasts',
-  'must-see',
-  'must see',
-  'dream home',
-  'meticulously maintained',
-  "entertainer's dream",
-  'tucked away',
-  'hidden gem',
-  'turnkey',
-  'immaculate',
-  'captivating',
-  'exquisite',
-  // AI filler
-  'delve',
-  'leverage',
-  'tapestry',
-  'navigate',
-  'robust',
-  'seamless',
-  'comprehensive',
-  'elevate',
-  'unlock',
-  'holistic',
-  'vibrant',
-  'bustling',
-  'eclectic',
-  'curated',
-  'bespoke',
-  'foster',
-  // Vague hedging
-  'approximately',
-  'roughly',
-  // Marketing slop
-  'top producing',
-  'white glove',
-  'luxury concierge',
-  'premier brokerage',
-  'boutique brokerage',
-  'your real estate journey',
-  'we are passionate about',
-  'we pride ourselves on',
-  // Fake urgency
-  "don't miss out",
-  "won't last long",
-  'act fast',
-  'act now',
-]
+// Banned words sourced from scripts/brand-voice-vocabulary.cjs so this
+// list and the ESLint rule's list cannot drift. Modify lists THERE,
+// not here. The full canonical reference is CLAUDE.md §3.
+const BANNED_WORDS = VOCAB.BANNED_WORD_STRINGS
 
 function normalize(p) {
   return p.split(sep).join('/')
@@ -166,6 +119,14 @@ function extractStringLiterals(src) {
   return literals
 }
 
+// A string literal is a code-mechanical token when it appears as an
+// import path (`from '<...>'`) or as the argument to `require()` or
+// `import()`. Those are NOT user-facing prose and matching banned
+// words inside them is a false positive (the canonical example is
+// `import dynamic from 'next/dynamic'` flagging the AI-filler word
+// "dynamic"). Skip them.
+const IMPORT_PATH_LINE = /(^|\s)(from|import\s*\(|require\s*\()\s*['"`]/
+
 function scanFile(absPath) {
   const relPath = normalize(relative(ROOT, absPath))
   let content
@@ -174,15 +135,19 @@ function scanFile(absPath) {
   } catch {
     return null
   }
+  const lines = content.split('\n')
 
   const literals = extractStringLiterals(content)
   const violations = []
   for (const lit of literals) {
+    const lineNum = content.slice(0, lit.startIndex).split('\n').length
+    const lineText = lines[lineNum - 1] ?? ''
+    // Skip if this string literal is on an import line.
+    if (IMPORT_PATH_LINE.test(lineText)) continue
     const lower = lit.value.toLowerCase()
     for (const word of BANNED_WORDS) {
       const re = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
       if (re.test(lower)) {
-        const lineNum = content.slice(0, lit.startIndex).split('\n').length
         violations.push({ word, line: lineNum, snippet: lit.value.slice(0, 80) })
       }
     }

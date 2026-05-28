@@ -73,6 +73,30 @@
       "name": "ListingAgentCard",
       "section": "ld-side: Listing agent compact card (transparent PNG headshot)",
       "blocking": true
+    },
+    {
+      "name": "PhotoGalleryLightbox",
+      "section": "fullscreen lightbox primitive consumed by ListingHero (D75 — thumbnails + dots + swipe + counter)",
+      "blocking": true,
+      "notes": "Lifted out of ListingHero per DESIGN_DIRECTIVES.md D75 so every gallery surface inherits the same nav contract. Page does NOT import directly — ListingHero does."
+    },
+    {
+      "name": "ClimateRiskBlock",
+      "section": "Climate risk grid — flood / wildfire / heat / drought 1-10 cards + source line (D77 Zillow Showcase parity)",
+      "blocking": true,
+      "notes": "Page passes `risk={null}` when no FEMA/WUI/NOAA data has been resolved for the parcel. Component renders a 'Get the climate report' CTA in that case — never a fake number per CLAUDE.md §0."
+    },
+    {
+      "name": "VacationRentalPotential",
+      "section": "Resort-community STR projection — peak/off-peak nightly + occupancy + annual gross (D77)",
+      "blocking": true,
+      "notes": "Page passes a real projection only when the listing's community is in the STR-allowed resort set (Tetherow, Sunriver, Eagle Crest, etc.) AND comp data is available. Otherwise `projection={null}` and the component renders a CTA."
+    },
+    {
+      "name": "TransparentCMASummary",
+      "section": "When Ryan Realty has run a CMA on this listing, show the range + suggested + comp count + PDF link (D77)",
+      "blocking": true,
+      "notes": "Component returns null when `cma={null}` — page queries public.cmas for the listing_key. This is the 'show our work' differentiator vs Zillow Showcase."
     }
   ],
   "deferredComponents": [
@@ -82,7 +106,7 @@
     },
     {
       "name": "PhotoGallery",
-      "reason": "Folded into ListingHero. Standalone fullscreen lightbox stays available, but the photo-grid hero is the primary surface."
+      "reason": "Folded into ListingHero + PhotoGalleryLightbox primitive."
     },
     {
       "name": "OpenHouses",
@@ -91,18 +115,6 @@
     {
       "name": "PriceVsNeighborhoodPill",
       "reason": "Embedded inside NeighborhoodMarketContext rather than a standalone primitive."
-    },
-    {
-      "name": "VacationRentalPotential",
-      "reason": "Wave 4 extension — not in the base mockup."
-    },
-    {
-      "name": "TransparentCMASummary",
-      "reason": "Wave 4 extension — requires CMA generation engine wiring."
-    },
-    {
-      "name": "ClimateRiskBlock",
-      "reason": "Wave 4 extension — needs First Street Foundation API integration."
     }
   ]
 }

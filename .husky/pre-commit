@@ -1,1 +1,12 @@
+#!/usr/bin/env bash
+# Pre-commit gates. Run cheap structural checks before any heavy tests.
+
+set -eo pipefail
+
+# Producer guard (G22) — every staged scripts/build_*.py must call
+# require_action_row() or be explicitly exempted. Closes GAP-10.
+# Runs against staged files only; no-op when no producer is staged.
+node scripts/check-producer-guard.mjs
+
+# Existing test suite (legacy step).
 npm test

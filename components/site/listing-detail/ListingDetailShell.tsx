@@ -49,7 +49,11 @@ type Props = {
     | 'publicRemarks'
   >
   breadcrumbs: ReadonlyArray<BreadcrumbNavItem>
-  /** Main content column children (price, photos, description, history, etc.). */
+  /** Full-width hero — renders edge-to-edge above the main+sidebar grid
+   * per Zillow Showcase parity. The photo grid / autoplay video lives
+   * here, NOT inside the main column. */
+  hero?: ReactNode
+  /** Main content column children (price, specs, description, etc.). */
   main: ReactNode
   /** Sidebar column children (agent card, mortgage calc, contact CTA). */
   sidebar?: ReactNode
@@ -71,6 +75,7 @@ function buildAddressLine(
 export function ListingDetailShell({
   listing,
   breadcrumbs,
+  hero,
   main,
   sidebar,
   className,
@@ -120,8 +125,16 @@ export function ListingDetailShell({
           <BreadcrumbNav items={breadcrumbs} includeJsonLd={false} />
         </Container>
       </Section>
+      {hero ? (
+        // Hero band: edge-to-edge full-viewport-width, no Container
+        // constraint. Zillow Showcase parity — immersive photo / video
+        // hero spans the page above the main+sidebar grid.
+        <section aria-label="Listing hero" className="w-full px-4 sm:px-6 lg:px-8 pt-2">
+          {hero}
+        </section>
+      ) : null}
       <Section padding="default">
-        <Container className={cn('grid gap-10', sidebar ? 'lg:grid-cols-[1.6fr_1fr]' : '', className)}>
+        <Container className={cn('grid gap-10', sidebar ? 'lg:grid-cols-[1.6fr_360px]' : '', className)}>
           <div className="min-w-0 flex flex-col gap-10">{main}</div>
           {sidebar ? (
             <aside className="lg:sticky lg:top-24 lg:self-start flex flex-col gap-6">

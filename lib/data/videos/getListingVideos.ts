@@ -37,6 +37,20 @@ type CacheListingEntry = {
 }
 
 /**
+ * Pull an `iframe src="..."` URL out of an MLS-supplied ObjectHtml
+ * payload. The RETS Spark feed wraps the video reference in an iframe
+ * HTML snippet (typical pattern: `<iframe src="https://player.vimeo.com/video/123" ...>`).
+ * Returns the unescaped URL, or null if no iframe was found.
+ */
+function extractIframeSrc(html: string): string | null {
+  const m = /<iframe[^>]+src\s*=\s*["']([^"']+)["']/i.exec(html)
+  if (!m) return null
+  // Spark double-encodes ampersands inside the HTML — convert &amp; back to &
+  // so the embed URL stays browser-loadable.
+  return m[1].replace(/&amp;/g, '&')
+}
+
+/**
  * Detect the video source/embed shape from a URL.
  */
 function classifyVideo(url: string, hintSource?: string | null): {
@@ -142,7 +156,7 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   const { data: detailRow, error: detailErr } = await supabase
     .from('listings')
     .select('details')
-    .eq('"ListingKey"', listingKey)
+    .eq('ListingKey', listingKey)
     .maybeSingle()
   if (!detailErr && detailRow) {
     const details = (detailRow as { details: unknown }).details
@@ -152,6 +166,11 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
         for (const v of videos) {
           if (!v || typeof v !== 'object') continue
           const vid = v as Record<string, unknown>
+          // Pull a URL from any of the documented direct fields, or fall
+          // back to extracting the iframe src from ObjectHtml. The MLS
+          // RETS feed for Central Oregon stores the canonical video
+          // payload as `ObjectHtml` containing a Vimeo / YouTube iframe;
+          // direct fields like MediaURL are rarely populated.
           const url =
             typeof vid.MediaURL === 'string'
               ? vid.MediaURL
@@ -159,7 +178,9 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
                 ? vid.VideoURL
                 : typeof vid.Url === 'string'
                   ? vid.Url
-                  : null
+                  : typeof vid.ObjectHtml === 'string'
+                    ? extractIframeSrc(vid.ObjectHtml)
+                    : null
           if (!url || seen.has(url)) continue
           seen.add(url)
           const { source, embedType } = classifyVideo(url, typeof vid.Source === 'string' ? vid.Source : null)
@@ -180,7 +201,11 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
 export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
   unstable_cache(
     () => fetchVideos(listingKey),
-    ['listing-videos', listingKey],
+    // v2 cache-key bump 2026-05-28 — invalidates entries cached before
+    // the ObjectHtml iframe extraction landed. Listings with videos in
+    // details.Videos JSONB (raw MLS payload) were previously returning
+    // empty arrays because only MediaURL/VideoURL/Url were inspected.
+    ['listing-videos-v3', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],

@@ -34,25 +34,63 @@
  * have caught it before any commit shipped.
  */
 
+import { readFileSync, existsSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 const BASE = (process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:3000').replace(/\/+$/, '')
 const LISTING_KEY = process.env.SMOKE_LISTING_KEY
 const TIMEOUT_MS = Number(process.env.SMOKE_TIMEOUT_MS ?? 15_000)
+// CONCURRENCY caps parallel HTTP requests so the smoke covers the
+// full canonical set without overwhelming the dev/start:ci server.
+const CONCURRENCY = Number(process.env.SMOKE_CONCURRENCY ?? 6)
 
-const ROUTES = [
-  { path: '/', name: 'homepage' },
-  { path: '/cities/bend', name: 'cities/bend' },
-  { path: '/communities', name: 'communities index' },
-  { path: '/team', name: 'team' },
-  { path: '/about', name: 'about' },
-  { path: '/contact', name: 'contact' },
-  { path: '/sell', name: 'sell' },
-  { path: '/housing-market', name: 'housing market hub' },
-  { path: '/lp/seller-home-value', name: 'seller LP' },
-  { path: '/lp/buyer-listing-alerts', name: 'buyer LP' },
-  ...(LISTING_KEY
-    ? [{ path: `/listing/${LISTING_KEY}`, name: 'listing detail' }]
-    : []),
-]
+// Read the canonical public-route set from docs/ROUTE_INVENTORY.md
+// (G16-style sources-of-truth pattern). The inventory is regenerated
+// by scripts/index-routes.mjs from the canonical slug arrays committed
+// in the repo, so a route added to `app/<route>/page.tsx` plus the
+// slug source automatically gets smoke-tested next CI run. Closes
+// GAP-9 from out/guardrail-inventory-2026-05-28.md.
+function loadRoutesFromInventory() {
+  const path = resolve('docs/ROUTE_INVENTORY.md')
+  if (!existsSync(path)) return null
+  const md = readFileSync(path, 'utf8')
+  const routes = []
+  // The inventory lists routes as `\`/path\`` under per-category H2
+  // headings. Pull every backticked route literal.
+  const re = /^- `([^`]+)`/gm
+  let m
+  while ((m = re.exec(md))) {
+    const path = m[1]
+    if (path.includes('<runtime-resolved>')) continue
+    routes.push({ path, name: path === '/' ? 'homepage' : path.replace(/^\//, '') })
+  }
+  return routes
+}
+
+const INVENTORY_ROUTES = loadRoutesFromInventory()
+const ROUTES = INVENTORY_ROUTES
+  ? [
+      ...INVENTORY_ROUTES,
+      ...(LISTING_KEY
+        ? [{ path: `/listing/${LISTING_KEY}`, name: 'listing detail (live)' }]
+        : []),
+    ]
+  : // Fallback to the original hardcoded set if the inventory is missing.
+    [
+      { path: '/', name: 'homepage' },
+      { path: '/cities/bend', name: 'cities/bend' },
+      { path: '/communities', name: 'communities index' },
+      { path: '/team', name: 'team' },
+      { path: '/about', name: 'about' },
+      { path: '/contact', name: 'contact' },
+      { path: '/sell', name: 'sell' },
+      { path: '/housing-market', name: 'housing market hub' },
+      { path: '/lp/seller-home-value', name: 'seller LP' },
+      { path: '/lp/buyer-listing-alerts', name: 'buyer LP' },
+      ...(LISTING_KEY
+        ? [{ path: `/listing/${LISTING_KEY}`, name: 'listing detail' }]
+        : []),
+    ]
 
 const args = new Set(process.argv.slice(2))
 const REPORT = args.has('--report')
@@ -97,11 +135,21 @@ async function checkRoute(route) {
   }
 }
 
-async function main() {
+async function runWithConcurrency(items, worker, concurrency) {
   const results = []
-  for (const r of ROUTES) {
-    results.push(await checkRoute(r))
+  let cursor = 0
+  async function next() {
+    while (cursor < items.length) {
+      const idx = cursor++
+      results[idx] = await worker(items[idx])
+    }
   }
+  await Promise.all(Array.from({ length: concurrency }, () => next()))
+  return results
+}
+
+async function main() {
+  const results = await runWithConcurrency(ROUTES, checkRoute, CONCURRENCY)
   const failed = results.filter((r) => !r.ok)
 
   if (JSON_OUT) {

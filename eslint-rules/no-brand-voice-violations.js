@@ -34,40 +34,14 @@
 
 'use strict'
 
-// ─── Banned punctuation ───────────────────────────────────────────────
+// Banned vocabulary loaded from the single source of truth at
+// scripts/brand-voice-vocabulary.cjs. Both this ESLint rule and the
+// CI script scripts/check-brand-voice.mjs consume the same module so
+// the lists cannot drift apart. See feedback memory entry for
+// `no-adhoc-sql` and the G20 gate (data-access vocabulary discipline).
 
-const PUNCTUATION = [
-  { char: '—', label: 'em-dash (U+2014)', advice: 'Replace with a period or comma.' },
-  { char: '–', label: 'en-dash (U+2013)', advice: 'Replace with a period or comma.' },
-  { char: ';', label: 'semicolon', advice: 'Replace with a period.' },
-  { char: '!', label: 'exclamation mark', advice: 'Drop or rephrase. Body prose is exclamation-free.' },
-]
-
-// ─── §6.2 banned words (canonical list, do not reorder lightly) ───────
-
-const CLICHES = [
-  'stunning', 'breathtaking', 'gorgeous', 'charming', 'pristine', 'nestled',
-  'boasts', 'must-see', 'dream home', 'meticulously maintained',
-  "entertainer's dream", 'tucked away', 'hidden gem', 'truly', 'spacious',
-  'cozy', 'luxurious', 'updated throughout', 'turnkey', 'immaculate',
-  'captivating', 'exquisite',
-]
-
-const AI_FILLER = [
-  'delve', 'leverage', 'tapestry', 'navigate', 'robust', 'seamless',
-  'comprehensive', 'elevate', 'unlock', 'holistic', 'dynamic', 'vibrant',
-  'bustling', 'eclectic', 'curated', 'bespoke', 'foster',
-]
-
-const VAGUE_QUALIFIERS = [
-  'approximately', 'roughly', 'about', 'around', 'fairly', 'somewhat',
-]
-
-const BANNED_WORDS = [
-  ...CLICHES.map((w) => ({ word: w, category: 'real-estate cliché' })),
-  ...AI_FILLER.map((w) => ({ word: w, category: 'AI filler' })),
-  ...VAGUE_QUALIFIERS.map((w) => ({ word: w, category: 'vague qualifier' })),
-]
+const VOCAB = require('../scripts/brand-voice-vocabulary.cjs')
+const { PUNCTUATION, BANNED_WORDS } = VOCAB
 
 // Escape regex metachars then build a single regex per word with
 // word-boundary anchors. `\b` is ASCII-only but every banned token here
