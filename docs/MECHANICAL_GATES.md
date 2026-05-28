@@ -18,11 +18,15 @@ keeps being violated, the answer is a new gate, not more prose.
 | G4 | Design tokens — no raw hex, no retired fonts, no bg-image hero | `scripts/lint-design-tokens.js --base-diff` | CLAUDE.md §5 / Plan §10 |
 | G5 | SEO route metadata + JSON-LD authoring | `scripts/check-seo-routes.mjs` + `scripts/check-seo-authoring.mjs` | Plan §1 |
 | G6 | **Mockup parity** — every gated route imports every component the matching mockup contract requires | `scripts/check-mockup-parity.mjs` (ratcheted) + per-route `design_system/ryan-realty/ui_kits/<route>/parity.json` | Plan §1 + Wave 3 §9 |
-| G7 | **Page DAL completeness** — every `app/<route>/page.tsx` reads through `@/lib/data` (positive direction) | `scripts/check-page-dal.mjs` (ratcheted) | Plan §1 |
-| G8 | **`generateStaticParams` on every dynamic route** | `scripts/check-static-params.mjs` (ratcheted) | Plan Wave 3 §9 |
-| G9 | First-frame thumbnail quality (video pipeline) | `scripts/check_first_frame.py` | CLAUDE.md §4 |
-| G10 | TypeScript strict | `tsc --noEmit` via `next build` | Plan §1 |
-| G11 | Lighthouse perf / a11y / BP / SEO ≥ 0.85 | `npm run ci:lighthouse` (nightly via quality.yml) | Plan §1 |
+| G7 | **Mockup coverage** — every mockup directory must have a `parity.json` contract | `scripts/check-mockup-coverage.mjs` (allowlisted) | Plan §1 + Wave 3 §9 |
+| G8 | **Page DAL completeness** — every `app/<route>/page.tsx` reads through `@/lib/data` (positive direction) | `scripts/check-page-dal.mjs` (ratcheted) | Plan §1 |
+| G9 | **`generateStaticParams` on every dynamic route** | `scripts/check-static-params.mjs` (ratcheted) | Plan Wave 3 §9 |
+| G10 | **Bundle budget** — total + per-chunk JS size ceiling + growth-vs-baseline detection | `scripts/check-bundle-budget.mjs` (baselined) post-`next build` | Plan §1 |
+| G11 | **Route smoke** — every canonical route returns 200, non-blank, non-404 against a live server | `scripts/check-route-smoke.mjs` + start-server-and-test | feedback memory "verify before moving on" |
+| G12 | **Draft-first commit gate** — user-facing diffs require an `Approved-by: matt` or `Draft-shown: <url>` line | `.husky/commit-msg` → `scripts/check-draft-first.mjs` | CLAUDE.md §0.5 |
+| G13 | First-frame thumbnail quality (video pipeline) | `scripts/check_first_frame.py` | CLAUDE.md §4 |
+| G14 | TypeScript strict | `tsc --noEmit` via `next build` | Plan §1 |
+| G15 | Lighthouse perf ≥ 0.90 / a11y ≥ 0.95 / BP ≥ 0.90 / SEO ≥ 0.95 / LCP ≤ 2500ms / CLS ≤ 0.10 | `npm run ci:lighthouse` (blocks PRs) | Plan §1 |
 
 Run them all locally before pushing:
 ```bash
@@ -93,17 +97,17 @@ Dynamic routes (paths containing `[slug]`) must export `generateStaticParams` so
 
 Scope excludes the same auth-gated directories as G7.
 
-## What's NOT yet mechanized (TODOs)
+## What's NOT yet mechanized (intentionally — runtime telemetry only)
 
-| Guardrail | Why not mechanized yet | Path to mechanize |
+| Guardrail | Why this stays prose | Where it lives instead |
 |---|---|---|
-| Bundle ≤ 250 KB per route | Requires `next build` output parsing | `scripts/check-bundle-budget.mjs` parsing `.next/build-manifest.json` |
-| TTFB p95 < 200ms | Production telemetry, not pre-deploy | Vercel Analytics alert on regression |
-| LCP ≤ 2500ms per route | Lighthouse covers, but not blocking PRs | Lower Lighthouse threshold to perf ≥ 0.90 in `lighthouserc.cjs` |
-| Draft-first commit gate (G17 from session 2026-05-28) | Cannot mechanize agent self-discipline | Pre-commit hook that requires a `Co-reviewed-by: matt` line on user-facing diffs |
-| Browser-render verification before "done" | Process gate, requires runtime check | Optional Playwright smoke per commit on changed routes |
+| TTFB p95 < 200ms (listing) / < 300ms (LP) | Production telemetry, not pre-deploy | Vercel Analytics dashboard + manual review |
+| MV refresh successfully for 7 consecutive days | Runtime health, not pre-deploy | `monitoring_alerts` + Supabase advisor digest |
+| Pixel-diff every section vs mockup (visual parity) | Subjective human-judgement step | Mockup parity (G6) handles the structural check; visual sign-off stays with Matt |
+| Data accuracy (every published number traces to a verified source) | Per-content-piece runtime concern, not a static lint | Producer-side `citations.json` files + per-deliverable verification trace |
+| Spark × Supabase market-data reconciliation gate | Video pipeline, not website | `scripts/_voice_lib.py` + producer pre-render gate |
 
-Filing one of these is adding a `scripts/check-<thing>.mjs` + a `package.json` script + a line in `.github/workflows/ci.yml`. The pattern is the same every time.
+Everything mechanizable for the WEBSITE surface has been mechanized. Adding new gates as new failure modes surface is the pattern (see "How to add a new gate" below).
 
 ## How to add a new gate
 

@@ -37,10 +37,23 @@ jobs:
       # docs/MECHANICAL_GATES.md for the full catalog + add-a-gate
       # instructions.
       - run: npm run ci:mockup-parity
+      - run: npm run ci:mockup-coverage
       - run: npm run ci:page-dal
       - run: npm run ci:static-params
       - run: npm run test
       - run: npm run build
+      # Post-build gates: bundle budget + route smoke. Bundle budget
+      # parses .next/static after the build step above. Route smoke
+      # starts the production server and hits the canonical route set,
+      # asserting no 404/5xx/blank-page regressions per CLAUDE.md
+      # "verify before moving on."
+      - run: npm run ci:bundle-budget
+      - name: Route smoke test
+        if: github.event_name == 'pull_request'
+        run: |
+          # Pick a real listing key (falls back to a known-active one)
+          export SMOKE_LISTING_KEY=$(node scripts/pick-lhci-listing.mjs 2>/dev/null | grep -oE '[0-9]{20,}' | head -1)
+          npm run ci:route-smoke:start
 
       # Lighthouse CI — gates PRs on perf/a11y/BP/SEO regression against
       # lighthouserc.cjs thresholds. Uses start-server-and-test under the hood.

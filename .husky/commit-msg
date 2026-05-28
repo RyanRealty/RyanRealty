@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Draft-first gate for user-facing diffs per CLAUDE.md §0.5.
+# Bypass for the gate itself: DRAFT_FIRST_OK=1 git commit ...
+node scripts/check-draft-first.mjs "$1"
