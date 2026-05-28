@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.352.0 (2026-05-28)
+
+### Features
+- feat(gates): G26-G29 implementations + G25 catalog entries
+- feat(gates): G25–G29 — design directive propagation system
+
+---
+
+
 ## v1.351.0 (2026-05-28)
 
 ### Features
