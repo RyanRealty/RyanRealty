@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.346.2 (2026-05-28)
+
+### Bug Fixes
+- fix(producers): close Tier-1/2 reference gaps + register expired-listing-lp
+
+---
+
+
 ## v1.346.1 (2026-05-28)
 
 ### Maintenance
