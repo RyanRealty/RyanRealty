@@ -10,11 +10,161 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Claude Code (Opus 4.7, 2026-05-27 — overnight run continuing)** — Ryan Realty website rebuild · Wave 2 of `docs/EXECUTION_PLAN.md`. Continuous-execution mode per Matt's 2026-05-27 directive. |
-| **`main` @ commit** | `a9d47e7` — `feat(wave-2-l4): listing detail — ListingVideoEmbed + TextMattCTA`. Pushed; Vercel auto-deploy. |
-| **Task focus** | **Wave 2 Layers 1 + 2 + 3 + 4-core all shipped.** Brand-voice + DAL ESLint guardrails live at error level. 20 Layer 3 composition blocks complete. **12 Layer 4 listing-detail components** shipped this stretch (ListingDetailShell, PriceBlock, PropertySpecs, DescriptionBlock, ListingAgentCard, SimilarListings, PropertyHistory, MortgageCalculator, OpenHouses, PhotoGallery, ListingVideoEmbed, TextMattCTA) — all type + brand-voice lint clean, all in `components/site/listing-detail/`. Listing detail page on prod is still broken until Wave 3 actually swaps `app/listing/[listingKey]/page.tsx` over to these components — that's the React #310 fix. Remaining L4 (speculative blocks, deferred): NeighborhoodMarketContext, PriceVsNeighborhoodPill, BendLifestylePanel, TransparentCMASummary, ClimateRiskBlock — each needs upstream data we don't have wired yet. Next pickup: Wave 3 listing-detail page rebuild — the single commit that fixes the React #310 production bug. |
+| **Surface** | **Claude Code (Opus 4.7, 2026-05-28)** — Ryan Realty website rebuild · Wave 3 listing-detail rebuild + mechanical guardrails. Continuous-execution mode. Handing off near context cap. |
+| **`main` @ commit** | `13e9c18` — `feat(gates): mechanize remaining guardrails — coverage + bundle + draft-first + smoke`. Pushed; Vercel auto-deploy. |
+| **Working tree** | **UNCOMMITTED DRAFT — awaiting Matt's `Approved-by: matt` to ship.** 12 files staged for the Wave 3 listing-detail rebuild + DAL fixes. See "Uncommitted draft" below. |
+| **Task focus** | Wave 3 listing-detail page rebuilt against the mockup contract. All 13 required parity components imported. All gates green. Draft is live at `http://localhost:3000/listing/20250801191429117679000000`. Waiting for Matt to look + approve before commit + push. |
 
-### Today's session log (2026-05-27)
+### Uncommitted draft (the next agent's first job)
+
+**`git diff --stat`:**
+```
+app/listing/[listingKey]/page.tsx                  | 733 ++++++--------- (full rebuild)
+components/site/NeighborhoodMap.tsx                |   2 + (use client for Next 16 ssr:false)
+components/site/PriceChart.tsx                     |   2 + (use client)
+components/site/listing-detail/ListingDetailShell.tsx | 17 +- (hero prop, edge-to-edge)
+lib/data/market/getMarketPulse.ts                  |  45 +- (supabaseAnon + schema fix + v3 key)
+lib/data/market/getMarketStats.ts                  |  40 +- (supabaseAnon; schema mismatch deferred)
+lib/data/types/market.ts                           |   5 +  (MarketPulse += MoS, medianDaysToPending)
+lib/testimonials.ts                                |  34 +- (incidental)
+scripts/mockup-parity-baseline.json                |  23 +- (re-baselined to empty after fix)
+```
+
+**Untracked NEW files (must `git add` together):**
+- `components/site/listing-detail/ListingHero.tsx` — full-bleed photo-grid hero w/ video-when-available + lightbox
+- `components/site/listing-detail/PriceCtaStrip.tsx` — price + 4-button CTA (replaces PriceBlock)
+- `components/site/listing-detail/NeighborhoodMarketContext.tsx` — THE Zillow beater
+- `components/site/listing-detail/SchoolsBlock.tsx`
+- `components/site/listing-detail/ListingLocationMap.tsx` + `ListingLocationMap.client.tsx`
+
+**Supabase migration applied to hosted DB this session** (`dwvlophlbvvygjfxcrhm`):
+- `supabase/migrations/20260528010000_anon_read_market_tables.sql` — anon SELECT policy on `market_pulse_live` + `market_stats_cache` (both had RLS on with zero policies → silent nulls).
+
+**To ship:** Matt opens the local page, says "ship it" / "approved" / "go" → first commit must carry `Approved-by: matt` in the body (the `.husky/commit-msg` hook enforces this for any user-facing diff).
+
+### Open questions Matt asked (already answered, document so the new agent can confirm)
+
+1. **"where is the video"** — Verified across all 3 tiers for the Tumalo test listing (`20250801191429117679000000`): `listing_videos` 0 rows (table is empty company-wide), `listings.details.Videos` empty array, `details.VideoTourURL` null. **Photo-grid fallback is correct.** Of 7,485 active listings, 1,036 (~14%) have video in the `Videos` JSONB array — those will trigger the autoplay-video hero automatically. Tumalo just isn't one of them.
+
+2. **"do the mockups use the stacked logo or the horizontal ones"** — **Horizontal.** Confirmed `design_system/ryan-realty/ui_kits/listing-detail/index.html:53` + `website/index.html:322` both reference `logo-header-white.png` (the horizontal white wordmark). No discrepancy with `SiteHeader.tsx`. The stacked logo (`stacked_logo_white.png`) is for video end-cards only per CLAUDE.md §4.
+
+### DAL bug catalog fixed this session (do NOT re-introduce)
+
+1. **PostgREST literal-quote bug** (commit `f136a40` + `a255f37` cache-key bump). `lib/data/listings/getListingDetail.ts` used `.eq('"ListingKey"', key)` — PostgREST sent the literal `"` characters as part of the column name, so every query returned null → production "Page not found" on every listing. **Fix:** strip the literal quotes; PostgREST will quote them itself. Cache key bumped to `'listing-detail-v2'` to invalidate stale nulls in unstable_cache.
+2. **`supabaseServer()` inside `unstable_cache`** (multiple DALs). `supabaseServer()` calls `cookies()` which Next 16 forbids inside cache scope → page render throws. **Fix:** every cached function that reads PUBLIC data (no RLS auth needed) uses `supabaseAnon()`. Applied to `getBrokers`, `getMarketPulse`, `getMarketStats`. Cache keys bumped to invalidate.
+3. **`market_pulse_live` schema mismatch.** DAL queried `refreshed_at` / `new_this_week` / `price_drops_this_week` / `closed_last_30_days` — none exist. Real columns: `updated_at` / `new_count_7d` / `price_reduction_share` / `sold_count_30d`. **Fix:** rewrote the column list. Cache key `'market-pulse-v3'`.
+4. **`market_stats_cache` schema mismatch.** Same class of bug — DAL queries many columns that don't exist. **Partial fix:** page bypasses `getMarketStats` (passes `null` to `NeighborhoodMarketContext`); the block renders fine with pulse alone. **Full fix deferred** — separate ticket.
+5. **RLS with zero policies.** `market_pulse_live` + `market_stats_cache` had RLS enabled but no policies → anon got null silently. **Fix:** migration `20260528010000_anon_read_market_tables.sql` (applied to hosted DB).
+6. **Next 16 `ssr:false` requires `'use client'`.** Server components can't pass `{ssr:false}` to `next/dynamic`. Wrap the dynamic-import in a `'use client'` parent. Applied to `ListingLocationMap`, `PriceChart`, `NeighborhoodMap`.
+7. **`N/A` subdivision lookup.** Listings with `SubdivisionName='N/A'` slugify to `na` — no `market_pulse_live` row matches. **Fix:** NOISE_SLUGS set in `app/listing/[listingKey]/page.tsx` (`na`, `none`, `unknown`, `outside-city-limits`) falls through to city-scope.
+
+### Mockup-driven rebuild — Matt's directive (2026-05-28)
+
+**"You are not using the fucking mockups."** Locked: every Wave 3 page rebuild MUST consume `design_system/ryan-realty/ui_kits/<route>/index.html` as the layout contract, not the plan's component checklist alone. Mockup-parity gate (G6) mechanically enforces this — every gated route has a `parity.json` listing every component the mockup says the page must import. Adding a new gated route: drop the mockup + create the `parity.json` + the gate auto-picks it up.
+
+**Hero is edge-to-edge.** First listing-detail rebuild squeezed `ListingHero` into the main column (~700px). Matt: "this is not a competitor to the zillow showcase at all. the hero section should be a true hero and span the whole page." **Fix:** `ListingDetailShell` accepts a `hero` prop and renders it in a dedicated edge-to-edge `<section className="w-full px-4 sm:px-6 lg:px-8 pt-2">` ABOVE the main+sidebar grid. DOM-eval confirmed hero width = 1280px (full viewport). Photo grid height: `h-[420px] sm:h-[520px] lg:h-[600px] xl:h-[680px]`.
+
+### Mechanical gates landed this session (the enforcement layer)
+
+Matt's 2026-05-28 directive: "build whatever gate that will enforce the guardrails attempted to be implemented in the plan… there are likely more." All 15 gates now live, catalogued in [`docs/MECHANICAL_GATES.md`](../MECHANICAL_GATES.md):
+
+| # | Gate | Mechanism |
+|---|---|---|
+| G1 | DAL boundary | ESLint `no-restricted-syntax` (error) + ratcheted script |
+| G2 | Brand voice in JSX | `rr-brand-voice/no-violations` ESLint plugin |
+| G3 | Brand voice in content files | `check-brand-voice.mjs` (ratcheted) |
+| G4 | Design tokens | `lint-design-tokens.js --base-diff` |
+| G5 | SEO route metadata + JSON-LD | `check-seo-routes.mjs` + `check-seo-authoring.mjs` |
+| **G6** | **Mockup parity** | per-route `parity.json` + `check-mockup-parity.mjs` (would have caught the listing-detail miss) |
+| **G7** | **Mockup coverage** | `check-mockup-coverage.mjs` — every mockup needs a parity.json |
+| **G8** | **Page DAL completeness** | `check-page-dal.mjs` — every `app/*/page.tsx` imports `@/lib/data` |
+| **G9** | **`generateStaticParams`** | `check-static-params.mjs` on every dynamic route |
+| **G10** | **Bundle budget** | `check-bundle-budget.mjs` post-`next build` |
+| **G11** | **Route smoke** | `check-route-smoke.mjs` against live server |
+| **G12** | **Draft-first commit gate** | `.husky/commit-msg` → `check-draft-first.mjs` requires `Approved-by: matt` or `Draft-shown: <url>` on user-facing diffs |
+| G13 | First-frame thumbnail (video) | `check_first_frame.py` |
+| G14 | TypeScript strict | `tsc --noEmit` via `next build` |
+| G15 | Lighthouse perf/a11y | `ci:lighthouse` |
+
+Run all gates locally: `npm run ci:gates`. The umbrella runs G1–G9 in sequence. CI runs the same set.
+
+**Ratchet pattern:** G3 / G6 / G7 / G8 / G9 use JSON baseline files in `scripts/`. The gate fails on NEW violations beyond the baseline only. As Wave 3 migrations close gaps, baselines shrink. To re-baseline after intentionally accepting a deferred contract: `npm run ci:<gate>:baseline`.
+
+### Next-step recommendation (for whoever picks up)
+
+1. **Confirm Matt's approval, then commit + push the draft.** Single commit message:
+   ```
+   feat(wave-3): listing detail page rebuild against the mockup
+
+   Rebuilds app/listing/[listingKey]/page.tsx against
+   design_system/ryan-realty/ui_kits/listing-detail/index.html. Edge-to-edge
+   hero (photo grid + autoplay video fallback). 13 required components
+   imported per parity.json. DAL fixes: supabaseServer→supabaseAnon in
+   getMarketPulse/getMarketStats, schema realigned, cache keys bumped, RLS
+   policies added.
+
+   Approved-by: matt
+   ```
+   The hook will validate the marker. If it strips, re-stage and commit.
+
+2. **Wave 3 other route migrations** (no mockups for some yet — create them as we go):
+   - `/` homepage — already lifted to Layer 3 blocks; consider direct `HeroBlock` adoption
+   - `/cities/<slug>` — wire `HeroBlock` + `MarketSnapshot` + `PriceChart` + `NeighborhoodMap` + `RelatedAreas`
+   - `/communities/<slug>` — same shape + `FAQBlock`
+   - `/contact` — `LeadCaptureBlock variant="inquiry"` + `FAQBlock`
+   - `/lp/*` — migrate to `LeadCaptureBlock` variants
+   Each route gets its own `parity.json` (G6) + page-DAL row (G8) + static-params (G9).
+
+3. **Backlog (independent, parallelizable):**
+   - Full fix for `getMarketStats` (rewrite column list against actual `market_stats_cache` schema → page can render MoS + median DOM from stats not pulse).
+   - Activity + leads DAL stubs (`getRecentActivity`, `subscribeActivity`, `createBuyerLead`, `createSellerLead`, `createExpiredLead`). LP page server actions are the model.
+   - `getMarketReport(slug)` DAL function for `/housing-market/reports/[slug]`.
+
+### Critical guardrails (do NOT skip)
+
+- **Draft-first commit (CLAUDE.md §0.5):** never commit user-facing diffs without explicit Matt approval. The `.husky/commit-msg` hook enforces this — every commit touching `app/**/page.tsx`, `app/**/layout.tsx`, `components/site/**`, or `app/globals.css` requires `Approved-by: matt` or `Draft-shown: <url>` in the message body. Skill / docs / DAL / scripts commits are exempt.
+- **Brand voice (CLAUDE.md §3):** every drafted string scanned for em-dash, en-dash, semicolon, exclamation, banned words BEFORE it reaches Matt or commit. ESLint plugin `rr-brand-voice/no-violations` enforces in JSX.
+- **DAL boundary (CLAUDE.md §6):** no raw `.from('<table>')` outside `lib/data/`. Every cached read uses `supabaseAnon()` (NOT `supabaseServer()` — cookies-in-cache).
+- **Push directly to main; pull-rebase-stash dance:** `git stash` → `git pull --rebase origin main` → `git stash pop` → re-stage → commit → push. Parallel changelog-bot commits land in between.
+- **Verify before moving on:** every fix must browser-render AND timely-load. SQL EXPLAIN + green CI is necessary but not sufficient (memory: `feedback_verify_before_moving_on.md`).
+
+### Key file paths
+
+- Plan: [`docs/EXECUTION_PLAN.md`](../EXECUTION_PLAN.md)
+- Gates: [`docs/MECHANICAL_GATES.md`](../MECHANICAL_GATES.md)
+- Mockup contracts: [`design_system/ryan-realty/ui_kits/<route>/parity.json`](../../design_system/ryan-realty/ui_kits/)
+- Listing-detail components (18 total): [`components/site/listing-detail/`](../../components/site/listing-detail/)
+- DAL: [`lib/data/`](../../lib/data/) — every function in `lib/data/index.ts`
+- Migrations applied this session: `supabase/migrations/20260528010000_anon_read_market_tables.sql`
+- Memory: `~/.claude/projects/-Users-matthewryan-RyanRealty/memory/MEMORY.md`
+
+### How to verify the draft locally before committing
+
+```bash
+# Start dev server
+npm run dev
+
+# Open the test listing in browser
+open http://localhost:3000/listing/20250801191429117679000000
+
+# Hero should be edge-to-edge (1280px wide on desktop), photo grid (5 photos,
+# "View all N photos" overlay on the 5th), with lightbox keyboard nav.
+# NeighborhoodMarketContext should render with "Bend market right now" +
+# active count + median list price. NO React #310 error in console.
+
+# Then run all gates
+npm run ci:gates
+
+# Expected: all green. mockup-parity baseline should be re-emptied
+# (scripts/mockup-parity-baseline.json shows routes: []).
+```
+
+### Historical session log (collapsed — see git log for detail)
+
+The full 2026-05-27 + earlier 2026-05-28 session log used to live here (Wave 2 Layer 1+2+3+4 builds, 41 commits, brand-voice + DAL ESLint gates, listing-detail core scaffolding, the React #310 diagnosis, the legacy showcase deletion plan). All shipped to `main` and is recoverable via `git log --oneline c7ad24a..a9d47e7` and `a9d47e7..13e9c18`. Trimmed here so the Current block stays scannable.
+
+<details>
+<summary>Click to expand the original session-log table</summary>
 
 Started at `c7ad24a` (last commit of 2026-05-26). Eleven feature commits + one revert. Direction: forward through `EXECUTION_PLAN.md`.
 
@@ -200,6 +350,8 @@ Layer 4 still TODO (deferred — needs upstream data wiring that's not done):
 - [`docs/FUB_CLEANUP_FINAL_2026-05-17.md`](../FUB_CLEANUP_FINAL_2026-05-17.md) — prior finding that smart list API doesn't support filters
 - [`docs/broker-runbooks/neighborhood-lists-finalize.md`](../broker-runbooks/neighborhood-lists-finalize.md) — the format pattern Matt knows
 - [`scripts/westside-bend-fub-smart-lists.mjs`](../../scripts/westside-bend-fub-smart-lists.mjs) — provision script (creates shells fine, filters silently drop — see runbook for the why)
+
+</details>
 
 ---
 
