@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.349.1 (2026-05-28)
+
+### Maintenance
+- docs(handoff): Wave 3 listing-detail rebuild — uncommitted draft + session catalog
+
+---
+
+
 ## v1.349.0 (2026-05-28)
 
 ### Features
