@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.347.2 (2026-05-28)
+
+### Bug Fixes
+- fix(dal): bump cache key v2 to invalidate stale null entries
+
+---
+
+
 ## v1.347.1 (2026-05-28)
 
 ### Bug Fixes
