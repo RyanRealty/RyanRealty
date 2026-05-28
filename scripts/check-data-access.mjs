@@ -43,8 +43,11 @@ import { resolve } from 'node:path'
 const args = process.argv.slice(2)
 const REFRESH = args.includes('--refresh')
 
-const SCHEMA_PATH = resolve('docs/DATABASE_SCHEMA_SNAPSHOT.md')
-const DAL_PATH = resolve('docs/DAL_INDEX.md')
+// Repo-relative paths for git operations + absolute paths for filesystem.
+const SCHEMA_REL = 'docs/DATABASE_SCHEMA_SNAPSHOT.md'
+const DAL_REL = 'docs/DAL_INDEX.md'
+const SCHEMA_PATH = resolve(SCHEMA_REL)
+const DAL_PATH = resolve(DAL_REL)
 const SCHEMA_SCRIPT = resolve('scripts/snapshot-schema.mjs')
 const DAL_SCRIPT = resolve('scripts/index-dal.mjs')
 
@@ -56,24 +59,24 @@ function run(label, cmd, args) {
   }
 }
 
-function gitTracked(path) {
+function gitTracked(relPath) {
   try {
-    execFileSync('git', ['ls-files', '--error-unmatch', path], { stdio: 'pipe' })
+    execFileSync('git', ['ls-files', '--error-unmatch', relPath], { stdio: 'pipe' })
     return true
   } catch {
     return false
   }
 }
 
-function snapshotEqualToTracked(path) {
-  const fresh = readFileSync(path, 'utf8')
+function snapshotEqualToTracked(absPath, relPath) {
+  const fresh = readFileSync(absPath, 'utf8')
   // Strip the `**Generated:** <ISO>` line — it changes every run and
   // a timestamp diff is not a meaningful schema drift.
   const stripTimestamp = (s) =>
     s.replace(/^\*\*Generated:\*\* .*$/m, '**Generated:** <iso>')
   let tracked
   try {
-    tracked = execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' })
+    tracked = execFileSync('git', ['show', `HEAD:${relPath}`], { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] })
   } catch {
     return { equal: false, reason: 'file is not in HEAD yet (new file?)' }
   }
@@ -97,28 +100,28 @@ if (REFRESH) {
 // Step 2 — diff against committed
 let failed = false
 
-for (const [label, path] of [
-  ['schema-snapshot', SCHEMA_PATH],
-  ['dal-index', DAL_PATH],
+for (const [label, absPath, relPath] of [
+  ['schema-snapshot', SCHEMA_PATH, SCHEMA_REL],
+  ['dal-index', DAL_PATH, DAL_REL],
 ]) {
-  if (!existsSync(path)) {
-    console.error(`\n[${label}] file missing on disk after regenerate: ${path}`)
+  if (!existsSync(absPath)) {
+    console.error(`\n[${label}] file missing on disk after regenerate: ${absPath}`)
     failed = true
     continue
   }
-  if (!gitTracked(path)) {
+  if (!gitTracked(relPath)) {
     console.error(
-      `\n[${label}] ${path} is not yet tracked in git. Stage + commit it (\`git add ${path}\`) to baseline the gate.`,
+      `\n[${label}] ${relPath} is not yet tracked in git. Stage + commit it (\`git add ${relPath}\`) to baseline the gate.`,
     )
     failed = true
     continue
   }
-  const eq = snapshotEqualToTracked(path)
+  const eq = snapshotEqualToTracked(absPath, relPath)
   if (eq.equal) {
     console.log(`  ${label}: matches HEAD ✓`)
   } else {
     console.error(`\n[${label}] DRIFT — ${eq.reason}`)
-    console.error(`  Fix: \`npm run ci:data-access -- --refresh\` then commit ${path}.`)
+    console.error(`  Fix: \`npm run ci:data-access -- --refresh\` then commit ${relPath}.`)
     failed = true
   }
 }
