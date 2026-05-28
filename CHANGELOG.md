@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.345.0 (2026-05-28)
+
+### Features
+- feat(wave-2-l4): listing detail — PhotoGallery (lightbox)
+
+---
+
+
 ## v1.344.0 (2026-05-28)
 
 ### Features
