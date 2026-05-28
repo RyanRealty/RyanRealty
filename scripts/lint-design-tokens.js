@@ -26,6 +26,72 @@ const DISALLOWED_PRIMITIVES =
 const DISALLOWED_STYLE_BACKUP_IMPORT =
   /(?:from|import)\s*["'][^"']*_style_backup\/[^"']*["']/g;
 
+// G26 — Arbitrary Tailwind brackets (closes DESIGN_DIRECTIVES.md
+// D17/D18/D19/D20/D21/D22). Drift from the locked layout ladder:
+// arbitrary `max-w-[1200px]`, `py-[120px]`, `gap-[18px]`,
+// `p-[22px]`, `rounded-[16px]` etc. silently fork the design system
+// per-page. Allowed exceptions: `rounded-[10px]` (the canonical
+// button radius), `ring-[3px]` (the canonical focus ring).
+const ARBITRARY_BRACKET_ALLOWLIST = new Set([
+  'rounded-[10px]', // D21 canonical button radius
+  'rounded-[14px]', // D22 canonical card radius (Tailwind `rounded-xl` is equivalent — both allowed)
+  'ring-[3px]', // D25 canonical focus ring width
+  'tracking-[-0.01em]', // D14 hero H1 tracking
+  'tracking-[-0.02em]', // D14 hero H1 tracking variant
+  'tracking-[0.08em]', // D14 all-caps signage tracking
+  'tracking-[0.12em]', // D13 eyebrow tracking
+])
+const DISALLOWED_ARBITRARY_BRACKETS =
+  /\b(?:max-w|min-w|w|h|max-h|min-h|py|px|pt|pb|pl|pr|p|mt|mb|ml|mr|m|gap|gap-x|gap-y|rounded|shadow|text|leading|tracking)-\[[^\]]+\]/g
+
+// G27 — Decorative gradients (closes D72). Only the navy protection
+// scrim is allowed.
+const DISALLOWED_LINEAR_GRADIENT =
+  /linear-gradient\([^)]*\)/g
+const ALLOWED_GRADIENT_PATTERNS = [
+  /linear-gradient\([^)]*rgba\(16\s*,\s*39\s*,\s*66/i, // navy protection scrim
+  /linear-gradient\([^)]*var\(--rr-navy/i, // navy var scrim
+  /linear-gradient\([^)]*to\s+top[^)]*transparent[^)]*black/i, // canonical photo bottom scrim
+]
+
+// G28 — Non-token shadow detection (closes D23/D24). Inline
+// `box-shadow: 0 ... rgba(0, 0, 0, ...)` on non-photo surfaces.
+const DISALLOWED_BLACK_SHADOW =
+  /box-shadow\s*:\s*[^;]*rgba\(\s*0\s*,\s*0\s*,\s*0/g
+
+// G24 — Retired-font detection (closes GAP-4 from out/guardrail-inventory-2026-05-28.md).
+// Design System v2 locked the brand to Amboqia + Azo Sans + Geist.
+// Any of these retired font families showing up in source means brand
+// typography is drifting silently. Detection covers:
+//   - `font-family:` declarations referencing the retired family
+//   - `font-<retired>` tailwind utility (e.g. `font-playfair`)
+//   - `next/font/google` imports of the retired family
+//   - Bare `@import url(...google...<retired>...)` lines
+const RETIRED_FONTS = [
+  'Playfair',
+  'Helvetica',
+  'Inter',
+  'AzoSans', // AzoSans was retired from web in DS v2 (still used in print)
+  'system-ui',
+  'Arial',
+]
+const DISALLOWED_FONT_FAMILY = new RegExp(
+  `font-family\\s*:\\s*[^;\\n]*['\"\`]?(?:${RETIRED_FONTS.join('|')})['\"\`]?`,
+  'gi',
+)
+const DISALLOWED_FONT_TAILWIND_UTILITY = new RegExp(
+  `\\bfont-(?:${RETIRED_FONTS.map((f) => f.toLowerCase()).join('|')})\\b`,
+  'g',
+)
+const DISALLOWED_FONT_NEXT_IMPORT = new RegExp(
+  `from\\s+['\"\`]next/font/google['\"\`][\\s\\S]{0,200}?\\b(?:${RETIRED_FONTS.join('|')})\\b`,
+  'gi',
+)
+const DISALLOWED_FONT_GOOGLE_CSS = new RegExp(
+  `@import\\s+url\\([^)]*fonts\\.googleapis\\.com[^)]*(?:${RETIRED_FONTS.join('|')})`,
+  'gi',
+)
+
 function normalizePath(filePath) {
   return filePath.split(path.sep).join("/");
 }
@@ -165,6 +231,60 @@ function lintFile(filePath) {
   const styleBackupImports = findAll(DISALLOWED_STYLE_BACKUP_IMPORT, content);
   if (styleBackupImports.length) {
     issues.push("imports from _style_backup are forbidden");
+  }
+
+  // G24 — retired font detection.
+  const retiredFontFamily = findAll(DISALLOWED_FONT_FAMILY, content);
+  if (retiredFontFamily.length) {
+    issues.push(
+      `retired font in font-family declaration: ${retiredFontFamily.slice(0, 3).join(", ")} (allowed: Amboqia, Geist, Azo Sans for print)`,
+    );
+  }
+
+  // G26 — arbitrary Tailwind brackets outside the allowlist.
+  const arbitrary = findAll(DISALLOWED_ARBITRARY_BRACKETS, content).filter(
+    (m) => !ARBITRARY_BRACKET_ALLOWLIST.has(m),
+  );
+  if (arbitrary.length) {
+    issues.push(
+      `arbitrary Tailwind utilities (D17/D18/D19/D20/D21/D22): ${arbitrary.slice(0, 4).join(", ")} (use the locked ladder — max-w-7xl, py-12/14/16, gap-4/5/6, p-5/6, rounded-xl)`,
+    );
+  }
+
+  // G27 — decorative gradients (D72).
+  const gradients = findAll(DISALLOWED_LINEAR_GRADIENT, content).filter(
+    (g) => !ALLOWED_GRADIENT_PATTERNS.some((p) => p.test(g)),
+  );
+  if (gradients.length) {
+    issues.push(
+      `decorative linear-gradient (D72): ${gradients.slice(0, 1).join("")} (only navy protection scrim is allowed)`,
+    );
+  }
+
+  // G28 — non-token black shadows (D23/D24).
+  const blackShadows = findAll(DISALLOWED_BLACK_SHADOW, content);
+  if (blackShadows.length) {
+    issues.push(
+      `black shadow detected (D23/D24): use --shadow-sm / --shadow-md / --shadow-lg navy-tinted tokens. Found: ${blackShadows.slice(0, 1).join("").slice(0, 60)}...`,
+    );
+  }
+  const retiredFontUtil = findAll(DISALLOWED_FONT_TAILWIND_UTILITY, content);
+  if (retiredFontUtil.length) {
+    issues.push(
+      `retired font Tailwind utility: ${retiredFontUtil.slice(0, 3).join(", ")} (use font-display / font-sans / font-mono per Design System v2)`,
+    );
+  }
+  const retiredFontImport = findAll(DISALLOWED_FONT_NEXT_IMPORT, content);
+  if (retiredFontImport.length) {
+    issues.push(
+      `next/font/google importing a retired font: ${retiredFontImport.slice(0, 1).join("")} — only Geist is allowed (already loaded in app/layout.tsx)`,
+    );
+  }
+  const retiredFontCss = findAll(DISALLOWED_FONT_GOOGLE_CSS, content);
+  if (retiredFontCss.length) {
+    issues.push(
+      `Google Fonts @import for retired font family: ${retiredFontCss.slice(0, 1).join("")}`,
+    );
   }
 
   if (!issues.length) return null;

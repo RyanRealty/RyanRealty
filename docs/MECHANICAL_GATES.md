@@ -28,13 +28,27 @@ keeps being violated, the answer is a new gate, not more prose.
 | G14 | TypeScript strict | `tsc --noEmit` via `next build` | Plan §1 |
 | G15 | Lighthouse perf ≥ 0.90 / a11y ≥ 0.95 / BP ≥ 0.90 / SEO ≥ 0.95 / LCP ≤ 2500ms / CLS ≤ 0.10 | `npm run ci:lighthouse` (blocks PRs) | Plan §1 |
 | **G16** | **Data access discipline** — `docs/DATABASE_SCHEMA_SNAPSHOT.md` matches live Supabase + `docs/DAL_INDEX.md` matches `lib/data/`. Drift fails CI. | `scripts/check-data-access.mjs` (regenerates both via `_agent_schema_dump()` RPC + AST walk; diffs vs HEAD) | CLAUDE.md "Data Access Discipline" + feedback `no-adhoc-sql.md` |
+| **G17** | **SQL column quoting** — `lib/data/*.ts` cannot call `.eq('"ColumnName"', …)` etc. with LITERAL double-quote characters inside the JS string (that's the 2026-05-28 "Listing Not Found" regression class). | `scripts/check-dal-column-quoting.mjs` | Inventory GAP-1 |
+| **G18** | **`force-dynamic` + `revalidate` coexistence** — ESLint refuses both exports in the same route file (silently disables ISR cache). | `eslint-rules/no-dynamic-revalidate.js` plugin (`rr-no-dynamic-revalidate/no-dynamic-revalidate`) | Plan §0.4 + Inventory GAP-5 |
+| **G19** | **Sentry `tracesSampleRate` budget** — ESLint refuses literal values > 0.2 in `sentry.*.config.{ts,js}` (silent quota drain). | `eslint.config.mjs` `no-restricted-syntax` scoped to sentry config files | Plan §0.4 + Inventory GAP-6 |
+| **G20** | **Brand-voice vocabulary single source** — ESLint plugin + CI script + runtime hook all consume `scripts/brand-voice-vocabulary.cjs`. Test asserts parity. | `scripts/__tests__/brand-voice-vocabulary.test.cjs` | Inventory GAP-7 |
+| **G21** | **DAL internal cache discipline** — `getMarketStats / getMarketPulse / getPriceHistory / getGeoSnapshot` etc. must `.from('<cache>')`, never `.from('listings')`. | `scripts/check-dal-internal-discipline.mjs` (with delegation support) | Inventory GAP-8 |
+| **G22** | **Producer pipeline guard** — every staged `scripts/build_*.py` must call `require_action_row(payload)` from `_producer_lib` or carry `# @producer-guard-exempt: <reason>`. | `scripts/check-producer-guard.mjs` + `.husky/pre-commit` | Inventory GAP-10 + feedback `brain-pipeline-protocol` |
+| **G23** | **pa11y-ci in CI** — catches WCAG 2.1 failures the Lighthouse aggregate score misses. | `npm run ci:a11y` wired into `.github/workflows/CI.yml` (PRs only) | Inventory GAP-3 |
+| **G24** | **Retired-font detection** — `font-family:`, Tailwind utilities like `font-playfair`, `next/font/google` imports of Playfair/Inter/Helvetica/AzoSans/system-ui all refused. | `scripts/lint-design-tokens.js` (added `RETIRED_FONTS` set) | Plan §0.3 + Inventory GAP-4 |
+| **G25** | **Design directive registry** — every rule in `docs/DESIGN_DIRECTIVES.md` must be `enforced`, `deferred`, or `wont-fix`. Any `open` directive fails CI. | `scripts/check-design-directives.mjs` | DESIGN_DIRECTIVES.md "Maintenance protocol" |
+| **G26** | **Arbitrary Tailwind brackets** — `max-w-[*]`, `py-[*]`, `gap-[*]`, `p-[*]`, `rounded-[*]`, `shadow-[*]` etc. banned outside a small allowlist (`rounded-[10px]`, `rounded-[14px]`, `ring-[3px]`, `tracking-[-0.01em]`, `tracking-[-0.02em]`, `tracking-[0.08em]`, `tracking-[0.12em]`). | `scripts/lint-design-tokens.js` G26 patterns | DESIGN_DIRECTIVES.md D17/D18/D19/D20/D21/D22/D14 |
+| **G27** | **Decorative gradients** — `linear-gradient(...)` banned except the navy protection scrim and the canonical photo bottom-to-transparent. | `scripts/lint-design-tokens.js` G27 patterns | DESIGN_DIRECTIVES.md D72 |
+| **G28** | **Black box-shadows** — `box-shadow: ... rgba(0, 0, 0, ...)` banned. Must use `--shadow-sm/md/lg` navy-tinted vars. | `scripts/lint-design-tokens.js` G28 pattern | DESIGN_DIRECTIVES.md D23/D24 |
+| **G29** | **Inline `<style>` JSX banned** — `<style>{...}</style>` and `createGlobalStyle(...)` blocked in `app/**` + `components/site/**`. Style belongs in Tailwind + globals.css + CSS modules. | ESLint `no-restricted-syntax` `JSXElement[openingElement.name.name='style']` | DESIGN_DIRECTIVES.md D32/D33 |
+| **G-runtime** | **Six runtime tool refusals** — Bash destructive / DB CLI / `--no-verify`; `execute_sql` against `information_schema` / DAL-covered tables; Write/Edit to `app/<route>/page.tsx` without `parity.json`; Write/Edit content with banned-voice tokens. Each can be bypassed with explicit `-- audit:` SQL comment, `# allow-destructive: <reason>` Bash trailer, `// @no-parity` or `// brand-voice:exempt` file marker, or `ALLOW_ALL_HOOKS=1`. | `.claude/settings.json` + `.claude/hooks/pre-tool-use.mjs` (26 tests) | Inventory L2 |
 
 Run them all locally before pushing:
 ```bash
 npm run ci:gates
 ```
 
-That umbrella runs design-tokens + seo-routes + dal-boundary + brand-voice + mockup-parity + page-dal + static-params in sequence. CI runs the same set in `.github/workflows/ci.yml`.
+That umbrella runs design-tokens + seo-routes + dal-boundary + brand-voice + mockup-parity + mockup-coverage + page-dal + static-params + data-access + dal-column-quoting + dal-internal-discipline + producer-guard + hook-tests in sequence. CI runs the same set in `.github/workflows/CI.yml` plus pa11y-ci + Lighthouse on PRs and route-smoke against `start-server-and-test`.
 
 ## The ratchet pattern
 

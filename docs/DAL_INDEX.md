@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-05-28T16:43:13.596Z
+**Generated:** 2026-05-28T18:47:30.412Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -333,8 +333,6 @@ Companion files:
 **Tables:** `listing_videos`, `video_tours_cache`, `listings`
 
 **Selected columns:** `video_url`, `source`, `duration_seconds`, `sort_order`, `listings`, `details`
-
-**Cache keys:** `listing-videos`
 
 **TTL windows:** `CACHE_WINDOWS.videos`
 

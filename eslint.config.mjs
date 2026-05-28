@@ -3,6 +3,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
 import rrBrandVoice from "./eslint-rules/no-brand-voice-violations.js";
+import rrNoDynamicRevalidate from "./eslint-rules/no-dynamic-revalidate.js";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -41,10 +42,60 @@ const eslintConfig = defineConfig([
       // Flipped to `error` on 2026-05-27 per the brand-voice + DAL guardrails
       // commit. The ratchet check (scripts/check-dal-boundary.mjs) remains the
       // CI gate; the editor rule now hard-blocks too. See docs/DATA_ACCESS_LAYER.md.
-      "no-restricted-syntax": ["error", {
-        selector: "CallExpression[callee.property.name='from'][arguments.0.value=/^(listings|listing_videos|video_tours_cache|listing_history|market_stats_cache|market_pulse_live|engagement_metrics|properties|neighborhoods|communities|cities|listing_photos|listing_agents|open_houses|boundaries|neighborhood_subdivisions|subdivision_flags|app_config|activity_events|expired_listings|cmas|cma_comps)$/]",
-        message: "DAL boundary: supabase.from('<table>') is banned outside lib/data/. Use the canonical function from @/lib/data/ instead. See docs/DATA_ACCESS_LAYER.md.",
-      }],
+      "no-restricted-syntax": ["error",
+        {
+          // G1: DAL boundary
+          selector: "CallExpression[callee.property.name='from'][arguments.0.value=/^(listings|listing_videos|video_tours_cache|listing_history|market_stats_cache|market_pulse_live|engagement_metrics|properties|neighborhoods|communities|cities|listing_photos|listing_agents|open_houses|boundaries|neighborhood_subdivisions|subdivision_flags|app_config|activity_events|expired_listings|cmas|cma_comps)$/]",
+          message: "DAL boundary: supabase.from('<table>') is banned outside lib/data/. Use the canonical function from @/lib/data/ instead. See docs/DATA_ACCESS_LAYER.md.",
+        },
+        {
+          // G29: D32/D33 — inline <style> JSX element banned in app/** and components/site/**
+          // (this selector matches anywhere; lib/data/ override below turns it off there).
+          selector: "JSXElement[openingElement.name.name='style']",
+          message: "D32: inline <style> JSX elements are banned in user-facing code. Use Tailwind utilities, app/globals.css, or CSS modules. The design-system primitives (DisplayHeading, CTAButton, Container etc.) own typography/layout — do not re-define them per-page.",
+        },
+        {
+          // G29: D33 — client-side <style> injection (styled-components / createGlobalStyle)
+          selector: "CallExpression[callee.name='createGlobalStyle']",
+          message: "D33: client-side <style> injection (styled-components / createGlobalStyle / similar) is banned. Use Tailwind utilities + app/globals.css.",
+        },
+      ],
+    },
+  },
+  {
+    // G18 — force-dynamic + revalidate coexistence detection (closes GAP-5).
+    // EXECUTION_PLAN §0.4 calls for a rule that blocks the combination of
+    // `export const dynamic = 'force-dynamic'` with `export const revalidate = N`
+    // in the same file because the two settings silently fight each other —
+    // force-dynamic disables every caching layer, making any `revalidate`
+    // setting a no-op while masking the cold-render cost. The rule lives in
+    // its own `files` block so it scopes ONLY to App Router route files
+    // (page.tsx, layout.tsx, route.ts) where the two exports are meaningful.
+    files: [
+      "app/**/page.{ts,tsx}",
+      "app/**/layout.{ts,tsx}",
+      "app/**/route.{ts,tsx}",
+    ],
+    plugins: { "rr-no-dynamic-revalidate": rrNoDynamicRevalidate },
+    rules: {
+      "rr-no-dynamic-revalidate/no-dynamic-revalidate": "error",
+    },
+  },
+  {
+    // G19 — Sentry tracesSampleRate budget guard (closes GAP-6). Blocks
+    // accidentally re-enabling 100% trace sampling in sentry.{client,server,edge}.config.ts.
+    // > 0.2 silently drains the Sentry monthly quota and slows production.
+    files: ["sentry.*.config.{ts,tsx,js,mjs}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "Property[key.name='tracesSampleRate'][value.type='Literal'][value.value>0.2]",
+          message:
+            "G19: tracesSampleRate must be <= 0.2 in Sentry config. Values above 0.2 drain Sentry quota and slow production. If a temporary boost is needed for debugging, use the SENTRY_TRACES_SAMPLE_RATE env variable rather than hard-coding.",
+        },
+      ],
     },
   },
   {
