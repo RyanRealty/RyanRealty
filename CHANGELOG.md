@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.349.0 (2026-05-28)
+
+### Features
+- feat(gates): mechanize remaining guardrails — coverage + bundle + draft-first + smoke
+
+---
+
+
 ## v1.348.0 (2026-05-28)
 
 ### Features
