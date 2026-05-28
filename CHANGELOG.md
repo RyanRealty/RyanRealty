@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.350.0 (2026-05-28)
+
+### Features
+- feat(gates): G16 data-access discipline + schema snapshot + DAL index
+
+### Bug Fixes
+- fix(g16): use repo-relative paths for git show in data-access gate
+
+---
+
+
 ## v1.349.1 (2026-05-28)
 
 ### Maintenance
