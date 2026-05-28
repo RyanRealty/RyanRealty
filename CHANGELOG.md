@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.351.0 (2026-05-28)
+
+### Features
+- feat(gates): unified enforcement architecture — 8 new gates + runtime hooks
+
+---
+
+
 ## v1.350.0 (2026-05-28)
 
 ### Features
