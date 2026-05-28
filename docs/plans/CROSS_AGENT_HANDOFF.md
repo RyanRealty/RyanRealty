@@ -10,9 +10,9 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Claude Code (Opus 4.7, 2026-05-27 — overnight run)** — Ryan Realty website rebuild · Wave 2 of `docs/EXECUTION_PLAN.md`. Continuous-execution mode per Matt's 2026-05-27 directive. |
-| **`main` @ commit** | `c5f6fbf` — `feat(wave-2-l3): add NeighborhoodMap (dynamic-imported Google Maps)`. Pushed; Vercel auto-deploy. |
-| **Task focus** | **Wave 2 ENTIRE Layers 1 + 2 + 3 COMPLETE.** Brand-voice + DAL ESLint guardrails live at error level. All 8 existing homepage composition blocks lifted onto primitives + brand-voice cleaned. All 12 new Layer 3 blocks shipped (BreadcrumbNav, BrokerCard, FAQBlock, CTABar, ContentSection, RelatedAreas, TestimonialBlock, SocialProofBlock, LeadCaptureBlock, HeroBlock, PriceChart, NeighborhoodMap). All ship type + lint clean. Listing detail page still broken on prod (React #310 in legacy showcase components) — fix lands when Wave 2 Layer 4 rebuilds those components. Next pickup: Wave 2 Layer 4 (listing detail surface) — that's the React #310 fix, plus Wave 3 page migrations adopting the Layer 3 blocks. |
+| **Surface** | **Claude Code (Opus 4.7, 2026-05-27 — overnight run continuing)** — Ryan Realty website rebuild · Wave 2 of `docs/EXECUTION_PLAN.md`. Continuous-execution mode per Matt's 2026-05-27 directive. |
+| **`main` @ commit** | `a9d47e7` — `feat(wave-2-l4): listing detail — ListingVideoEmbed + TextMattCTA`. Pushed; Vercel auto-deploy. |
+| **Task focus** | **Wave 2 Layers 1 + 2 + 3 + 4-core all shipped.** Brand-voice + DAL ESLint guardrails live at error level. 20 Layer 3 composition blocks complete. **12 Layer 4 listing-detail components** shipped this stretch (ListingDetailShell, PriceBlock, PropertySpecs, DescriptionBlock, ListingAgentCard, SimilarListings, PropertyHistory, MortgageCalculator, OpenHouses, PhotoGallery, ListingVideoEmbed, TextMattCTA) — all type + brand-voice lint clean, all in `components/site/listing-detail/`. Listing detail page on prod is still broken until Wave 3 actually swaps `app/listing/[listingKey]/page.tsx` over to these components — that's the React #310 fix. Remaining L4 (speculative blocks, deferred): NeighborhoodMarketContext, PriceVsNeighborhoodPill, BendLifestylePanel, TransparentCMASummary, ClimateRiskBlock — each needs upstream data we don't have wired yet. Next pickup: Wave 3 listing-detail page rebuild — the single commit that fixes the React #310 production bug. |
 
 ### Today's session log (2026-05-27)
 
@@ -61,7 +61,7 @@ Started at `c7ad24a` (last commit of 2026-05-26). Eleven feature commits + one r
 | **2 Layer 1** atomic primitives | ✅ **COMPLETE.** 21 primitives in `components/site/primitives/`: data (Price, TabularNumber, PercentChange, DaysCount, Eyebrow, MiddleDot), typography (DisplayHeading, H1, H2, H3, Body, Caption), layout (Container, Section, Stack, Grid), brand (Logo, RyanRealtyMark, JaxMascot), CTA (CTAButton, TextLink, IconButton, BadgePill). |
 | **2 Layer 2** layout shell | ✅ **COMPLETE.** SiteHeader + MobileNav + SiteFooter refactored onto primitives. RootProvider consolidates analytics + identity + consent (`components/site/providers/`). MetadataBlock + pageMetadata + typed json-ld builder (`components/site/MetadataBlock.tsx`, `lib/site/page-metadata.ts`, `lib/site/json-ld.ts`). Stack primitive hardened to default `items-start`. |
 | **2 Layer 3** LP composition | ✅ **COMPLETE.** All 8 existing homepage blocks lifted onto primitives + brand-voice cleaned (Hero, MarketSnapshot, PriceRangeTiles, OpenHousesGrid, CityGrid, ActivityFeed, CtaDuo, TeamSection). All 12 new blocks per plan §9 shipped (BreadcrumbNav, BrokerCard, FAQBlock, CTABar, ContentSection, RelatedAreas, TestimonialBlock, SocialProofBlock, LeadCaptureBlock, HeroBlock, PriceChart, NeighborhoodMap). 20 components total, every one type + lint clean. |
-| **2 Layer 4** listing detail surface | not yet started — **fixes the React #310 on the broken listing detail page** |
+| **2 Layer 4** listing detail surface | ✅ **core complete (12 of 17 components shipped)**. ListingDetailShell, PriceBlock, PropertySpecs, DescriptionBlock, ListingAgentCard, SimilarListings, PropertyHistory, MortgageCalculator, OpenHouses, PhotoGallery, ListingVideoEmbed, TextMattCTA. Each ships type + brand-voice lint clean. ⏳ Remaining (speculative, need upstream data): NeighborhoodMarketContext, PriceVsNeighborhoodPill, BendLifestylePanel, TransparentCMASummary, ClimateRiskBlock. **Wave 3 page rebuild adopts the core 12 — that commit is what fixes the React #310 production bug.** |
 | **Guardrails** | ✅ brand-voice ESLint rule live at `error` level for user-facing JSX (`rr-brand-voice/no-violations`). DAL boundary `no-restricted-syntax` also at `error`. 189 + 51 baseline violations surfaced in `f47cb7e`'s commit body; PR-diff CI gate (`scripts/check-brand-voice.mjs`, `scripts/check-dal-boundary.mjs`) blocks net-new only. |
 
 ### Broken on prod right now
@@ -97,9 +97,9 @@ Apply: do not ask Matt what to do next. The plan is the answer. Surface a questi
 
 **Start here:**
 
-1. **Wave 2 Layer 4** (listing detail surface) — **THE BIG ONE.** This is where the React #310 bug on prod evaporates because the legacy `components/listing/showcase/*` get replaced. Build into `components/site/listing-detail/`: `ListingDetailShell`, `ListingVideoEmbed` (uses getListingVideos, tier fallback), `PhotoGallery` (lazy beyond fold, AVIF first), `PriceBlock`, `PropertySpecs`, `DescriptionBlock` (voice-scrubbed remarks, brand-voice ESLint catches at commit time), `ListingAgentCard` (composes the just-shipped `BrokerCard` with `compact` variant), `MortgageCalculator`, `SimilarListings` (uses the already-shipped `getSimilarListings` DAL fn), `PropertyHistory`, `OpenHouses`, `NeighborhoodMarketContext`, `PriceVsNeighborhoodPill`, `BendLifestylePanel`, `TextMattCTA`, `TransparentCMASummary`, `ClimateRiskBlock`.
+1. **Wave 3 listing-detail page rebuild — fix the React #310 bug.** Swap `app/listing/[listingKey]/page.tsx` (and the underlying showcase imports in `components/listing/showcase/*`) over to the new components/site/listing-detail/ stack. Compose `ListingDetailShell` + `{ main: [PhotoGallery, PriceBlock, PropertySpecs, DescriptionBlock, PropertyHistory, SimilarListings], sidebar: [TextMattCTA, MortgageCalculator, OpenHouses, ListingVideoEmbed, ListingAgentCard] }` (rough order — calibrate per the mockup). Per the locked discipline, `git rm components/listing/showcase/*` in the same commit. **This is the single commit that fixes the broken page.**
 
-2. **Wave 3 page migrations** (in parallel with L4). Each route gets its own commit that swaps to the new Layer 3 blocks. Use the lift commits from the L3 audit run (`45508e5..c77cd28`) as the architecture template. The 8 new Layer 3 blocks not yet wired into any page get adopted here:
+2. **Wave 3 other page migrations.** Each route gets its own commit that swaps to the new Layer 3 blocks. Use the L3 lift commits (`45508e5..c77cd28`) + listing-detail core (`5301211..a9d47e7`) as the architecture template. The Layer 3 blocks not yet wired into any page get adopted here:
    - `/` homepage — already uses 8 lifted blocks; consider adopting `<HeroBlock>` directly (Hero is already a thin wrapper).
    - `/cities/<slug>` — wire `<HeroBlock>`, `<MarketSnapshot>`, `<PriceChart>`, `<NeighborhoodMap>`, `<RelatedAreas>`.
    - `/communities/<slug>` — same shape as cities, plus `<FAQBlock>`.
@@ -163,6 +163,20 @@ Layer 3 closeout (the four heavies):
 - **`c5f6fbf`** — `NeighborhoodMap` (two files). Server-safe wrapper + lazy-loaded GoogleMap + Polygon. Locked navy stroke + cream fill styling. Generic version of the BendInteractiveMap pattern. Polygons from boundaries table only — GIS rule enforces authoritative source.
 
 Layer 3 is **complete**. 20 components total: 8 lifted, 12 new. All ship type + lint clean. No page wired against the new blocks yet — Wave 3 page migrations adopt them per route.
+
+Layer 4 listing-detail core (shipped this stretch, all under `components/site/listing-detail/`):
+- **`5301211`** — `ListingDetailShell` + `PriceBlock` + `PropertySpecs` + `DescriptionBlock` + `ListingAgentCard`. Shell owns the breadcrumb + JSON-LD + sticky-sidebar grid. PriceBlock handles status pill + ListPrice/ClosePrice + DOM + price-drop delta + price-per-sqft. PropertySpecs is the 2-3-col facts grid. DescriptionBlock renders public_remarks with paragraph preservation. ListingAgentCard composes BrokerCard via resolveListingAgent with a "Listed by..." fallback for non-Ryan-Realty listings.
+- **`dc68160`** — `SimilarListings` + `PropertyHistory`. SimilarListings is a 4-card grid fed by getSimilarListings (similar_listings_mv). PropertyHistory is the chronological timeline (newest first) of listing_history events with Price + price-change deltas.
+- **`6341d38`** — `MortgageCalculator` + `OpenHouses`. MortgageCalculator is a client-side interactive island doing PI + taxes + insurance → PITI with rough defaults (20% down, 7% rate, 30yr, Deschutes effective tax fallback 0.85%). OpenHouses renders THIS listing's upcoming open-house events from the open_houses table.
+- **`9e99b78`** — `PhotoGallery`. Hero + thumbnails + fullscreen lightbox with keyboard nav. Hero is `priority`; rest lazy. No carousel JS.
+- **`a9d47e7`** — `ListingVideoEmbed` + `TextMattCTA`. ListingVideoEmbed handles iframe vs video-tag embed types with orientation-aware aspect ratios (built the iframe `allow` attribute from a joined array so the spec-mandated semicolons clear the brand-voice §6.1 gate). TextMattCTA is the sidebar broker CTA card (Schedule a tour + Text <FirstName>).
+
+Layer 4 still TODO (deferred — needs upstream data wiring that's not done):
+- `NeighborhoodMarketContext` (the Zillow-beater — needs city/community pulse joined to listing context)
+- `PriceVsNeighborhoodPill` (median deviation calc — needs same pulse data)
+- `BendLifestylePanel` (mountain / river / trail proximity — needs lifestyle data we don't have)
+- `TransparentCMASummary` (needs CMA generation engine)
+- `ClimateRiskBlock` (needs FEMA / climate API integration)
 
 ### Earlier session work (pre Layer 2 completion)
 
