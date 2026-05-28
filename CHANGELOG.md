@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.347.1 (2026-05-28)
+
+### Bug Fixes
+- fix(dal): strip literal double-quotes from PostgREST column refs
+
+---
+
+
 ## v1.347.0 (2026-05-28)
 
 ### Features
