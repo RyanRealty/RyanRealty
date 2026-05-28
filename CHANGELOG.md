@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.354.0 (2026-05-28)
+
+### Features
+- feat(wave-3): city route parity contract + G16 row-count fix
+
+### Maintenance
+- docs(handoff): refresh — listing-detail shipped, city rebuild queued
+
+---
+
+
 ## v1.353.0 (2026-05-28)
 
 ### Features
