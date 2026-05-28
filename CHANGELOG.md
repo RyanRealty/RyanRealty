@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.348.0 (2026-05-28)
+
+### Features
+- feat(gates): mechanical guardrails — mockup parity + page DAL + static params
+
+---
+
+
 ## v1.347.2 (2026-05-28)
 
 ### Bug Fixes
