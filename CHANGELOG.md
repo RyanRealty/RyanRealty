@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.343.0 (2026-05-28)
+
+### Features
+- feat(wave-2-l4): listing detail — SimilarListings + PropertyHistory
+
+---
+
+
 ## v1.342.0 (2026-05-28)
 
 ### Features
