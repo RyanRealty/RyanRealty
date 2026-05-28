@@ -10,37 +10,45 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Claude Code (Opus 4.7, 2026-05-28)** — Ryan Realty website rebuild · Wave 3 listing-detail rebuild + mechanical guardrails. Continuous-execution mode. Handing off near context cap. |
-| **`main` @ commit** | `13e9c18` — `feat(gates): mechanize remaining guardrails — coverage + bundle + draft-first + smoke`. Pushed; Vercel auto-deploy. |
-| **Working tree** | **UNCOMMITTED DRAFT — awaiting Matt's `Approved-by: matt` to ship.** 12 files staged for the Wave 3 listing-detail rebuild + DAL fixes. See "Uncommitted draft" below. |
-| **Task focus** | Wave 3 listing-detail page rebuilt against the mockup contract. All 13 required parity components imported. All gates green. Draft is live at `http://localhost:3000/listing/20250801191429117679000000`. Waiting for Matt to look + approve before commit + push. |
+| **Surface** | **Claude Code (Opus 4.8, 2026-05-28)** — Ryan Realty website rebuild · Wave 3. Listing-detail page SHIPPED + approved. Design-directive propagation system live. Next: `/cities/[slug]` rebuild against the now-committed parity contract. |
+| **`main` @ commit** | `4126a12` — `feat(wave-3): city route parity contract + G16 row-count fix`. Pushed; Vercel auto-deploy. Prior: `acd86e0` (listing-detail wired), `3df6ea7` (listing-detail components), `db1568e` + `ff8f8ab` (G25-G29), `f516c65` (G16-G24 + runtime hooks). |
+| **Working tree** | Clean except unrelated scratch scripts (`scripts/_712-*`, `_bear-*`, `_crowson-*`, `_build-seller-ad-*` — other sessions' work, leave alone). |
+| **Task focus** | **Next concrete task: rebuild `app/cities/[slug]/page.tsx` against `design_system/ryan-realty/ui_kits/city/parity.json`.** Contract committed; gap baselined. See "Next: city page rebuild" below. |
 
-### Uncommitted draft (the next agent's first job)
+### SHIPPED this session (all on `main`, all gates green)
 
-**`git diff --stat`:**
+**Listing-detail page** — `app/listing/[listingKey]/page.tsx` rebuilt against the mockup, 17 parity components, edge-to-edge hero, autoplay video (Vimeo/YouTube extracted from MLS `details.Videos[].ObjectHtml`), NeighborhoodMarketContext (the Zillow beater), PhotoGalleryLightbox (thumbnails+dots+swipe+counter), ClimateRiskBlock + VacationRentalPotential + TransparentCMASummary (D77, data-as-prop with CTA when null). Live: `http://localhost:3000/listing/20260408183243260637000000` (has YouTube video).
+
+**Mechanical enforcement — 15 gates + runtime hooks.** Full catalog `docs/MECHANICAL_GATES.md`. New this session: G16 data-access (schema snapshot + DAL index, row-count-normalized), G17 SQL column quoting, G18 force-dynamic+revalidate, G19 Sentry sample rate, G20 brand-voice vocab single-source, G21 DAL cache discipline, G22 producer guard, G23 pa11y-ci, G24 retired fonts, **G25 design-directive registry**, G26 arbitrary Tailwind brackets, G27 gradients, G28 black shadows, G29 inline `<style>` ban. Runtime: `.claude/hooks/pre-tool-use.mjs` (six refusals: rm -rf / push --force / reset --hard / psql / pg_dump / --no-verify; execute_sql vs information_schema / DAL-covered tables; Write/Edit without parity.json or with banned voice).
+
+**Design propagation system** — `docs/DESIGN_DIRECTIVES.md` (77 rows: 43 enforced, 27 deferred-with-target, 7 wont-fix, 0 open). **This is the answer to "how does feedback propagate."** Every directive Matt issues → a row (status `open`) → G25 fails CI until it's `enforced` (gate built) or `deferred` (with Wave target). Fix lands in the lowest reusable unit (primitive / token / ESLint rule / CI script) and cascades. D73-D77 (Matt's 2026-05-28 directives) all closed + enforced.
+
+### Next: city page rebuild (the queued task)
+
+`design_system/ryan-realty/ui_kits/city/parity.json` is committed. It defines the target component set — ALL already exist as Wave 2 Layer 3 blocks, so this is **composition, not new components**:
+
 ```
-app/listing/[listingKey]/page.tsx                  | 733 ++++++--------- (full rebuild)
-components/site/NeighborhoodMap.tsx                |   2 + (use client for Next 16 ssr:false)
-components/site/PriceChart.tsx                     |   2 + (use client)
-components/site/listing-detail/ListingDetailShell.tsx | 17 +- (hero prop, edge-to-edge)
-lib/data/market/getMarketPulse.ts                  |  45 +- (supabaseAnon + schema fix + v3 key)
-lib/data/market/getMarketStats.ts                  |  40 +- (supabaseAnon; schema mismatch deferred)
-lib/data/types/market.ts                           |   5 +  (MarketPulse += MoS, medianDaysToPending)
-lib/testimonials.ts                                |  34 +- (incidental)
-scripts/mockup-parity-baseline.json                |  23 +- (re-baselined to empty after fix)
+SiteHeader · BreadcrumbNav · HeroBlock · MarketSnapshot · PriceRangeTiles
+· OpenHousesGrid · RelatedAreas · ActivityFeed · CTABar · SiteFooter
 ```
 
-**Untracked NEW files (must `git add` together):**
-- `components/site/listing-detail/ListingHero.tsx` — full-bleed photo-grid hero w/ video-when-available + lightbox
-- `components/site/listing-detail/PriceCtaStrip.tsx` — price + 4-button CTA (replaces PriceBlock)
-- `components/site/listing-detail/NeighborhoodMarketContext.tsx` — THE Zillow beater
-- `components/site/listing-detail/SchoolsBlock.tsx`
-- `components/site/listing-detail/ListingLocationMap.tsx` + `ListingLocationMap.client.tsx`
+The current `app/cities/[slug]/page.tsx` is LEGACY (imports `components/city/*`, `components/geo-page/*`, `app/actions/*` — NOT the DAL, NOT Wave 2 primitives). The gap is baselined in `scripts/mockup-parity-baseline.json` so CI is green; the rebuild shrinks the baseline.
 
-**Supabase migration applied to hosted DB this session** (`dwvlophlbvvygjfxcrhm`):
-- `supabase/migrations/20260528010000_anon_read_market_tables.sql` — anon SELECT policy on `market_pulse_live` + `market_stats_cache` (both had RLS on with zero policies → silent nulls).
+**Rebuild recipe:**
+1. Wire data through `@/lib/data` only. Need `getCityLP(slug)` or compose from `getMarketStats('city', slug)` + `getMarketPulse` + `getCityListings` + `getRecentActivity` + `getOpenHouses`. Check `docs/DAL_INDEX.md` for what exists; add DAL functions for gaps (do NOT use `app/actions/*`).
+2. Compose the 10 components in mockup order (read `design_system/ryan-realty/ui_kits/city/index.html`).
+3. `git rm` the `legacyToDelete` list in the parity.json (components/city/*, components/geo-page/* that only this page used) in the SAME commit.
+4. Run `node scripts/check-mockup-parity.mjs --write-baseline` to shrink the baseline once the page imports the components.
+5. Verify: full-page screenshot via `scripts/_shot-*.mjs` (read EVERY section per `feedback_verify_entire_surface.md`), `npm run ci:gates` exits 0, no React errors in console.
+6. Show Matt the rendered page. Wait for "ship it". Commit with `Approved-by: matt`.
 
-**To ship:** Matt opens the local page, says "ship it" / "approved" / "go" → first commit must carry `Approved-by: matt` in the body (the `.husky/commit-msg` hook enforces this for any user-facing diff).
+Then repeat for `/communities/[slug]` (same shape + FAQBlock) and `/` homepage (already uses 8 lifted blocks; add a parity.json).
+
+### Critical lessons locked this session (memory entries written)
+
+- `feedback_verify_entire_surface.md` — full-page screenshot, read EVERY section before claiming done. "above the fold yes, below the fold no" is the phrase to never produce again.
+- `feedback_no_adhoc_sql.md` — never `execute_sql` to fish for columns; read `docs/DATABASE_SCHEMA_SNAPSHOT.md`. The runtime hook now BLOCKS schema-discovery SQL.
+- Draft-first: never commit user-facing diffs without Matt's explicit "ship it" / "go". The `.husky/commit-msg` hook + `Approved-by: matt` marker enforce it.
 
 ### Open questions Matt asked (already answered, document so the new agent can confirm)
 
