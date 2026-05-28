@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|mcp__.*__execute_sql|mcp__.*__apply_migration",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-tool-use.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}

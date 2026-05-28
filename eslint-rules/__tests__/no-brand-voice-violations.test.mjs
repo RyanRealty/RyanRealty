@@ -75,8 +75,11 @@ ruleTester.run('rr-brand-voice/no-violations', rule, {
     },
     {
       name: '§6.2 real-estate cliché in JSX text is flagged (stunning)',
+      // "stunning" matches the cliché list; "stunning new listing" ALSO
+      // matches the hype-opening list (full phrase). Both fire as
+      // separate violations, which is correct — both rules are real.
       code: `const x = () => <p>A stunning new listing in Bend.</p>`,
-      errors: [{ messageId: 'bannedWord' }],
+      errors: [{ messageId: 'bannedWord' }, { messageId: 'bannedWord' }],
     },
     {
       name: '§6.2 AI filler in JSX text is flagged (leverage)',
