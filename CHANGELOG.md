@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.346.0 (2026-05-28)
+
+### Features
+- feat(wave-2-l4): listing detail — ListingVideoEmbed + TextMattCTA
+
+---
+
+
 ## v1.345.0 (2026-05-28)
 
 ### Features
