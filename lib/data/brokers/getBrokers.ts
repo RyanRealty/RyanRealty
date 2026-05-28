@@ -148,7 +148,13 @@ export async function searchBrokersByDisplayName(
 
 export const getBrokers = unstable_cache(
   async (): Promise<Broker[]> => {
-    const supabase = await supabaseServer()
+    // Public `brokers` table — no RLS, no cookies. Using supabaseAnon
+    // here so this function is safe to call from inside any cached
+    // scope (Next.js forbids cookies()/supabaseServer() inside
+    // unstable_cache). The previous supabaseServer() call broke every
+    // page that depended on resolveListingAgent → getBrokers.
+    const supabase = supabaseAnon()
+    if (!supabase) return FALLBACK_BROKERS
     const { data, error } = await supabase
       .from('brokers')
       .select(
@@ -163,7 +169,7 @@ export const getBrokers = unstable_cache(
       return FALLBACK_BROKERS
     }
 
-    return data.map((row: Record<string, unknown>) => ({
+    return (data as unknown as Array<Record<string, unknown>>).map((row) => ({
       slug: row.slug as BrokerSlug,
       fullName: row.full_name as string,
       title: row.title as string,
