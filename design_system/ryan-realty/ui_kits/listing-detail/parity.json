@@ -1,0 +1,108 @@
+{
+  "route": "app/listing/[listingKey]/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/listing-detail/index.html",
+  "competitiveTarget": "Zillow Showcase + Hilton & Hyland editorial register (per docs/research/top-brokerage-listing-content-audit.md)",
+  "requiredComponents": [
+    {
+      "name": "ListingHero",
+      "section": "ld-photo-grid full-bleed hero (5-photo grid, 520px height, 'View all N photos' overlay). Auto-plays muted listing video when getListingVideos returns one — falls back to photo grid otherwise.",
+      "blocking": true,
+      "notes": "Supersedes both PhotoGallery and ListingVideoEmbed. Video-at-hero is the Zillow Showcase parity feature; the mockup shows a photo-grid hero; the component picks the right surface based on data."
+    },
+    {
+      "name": "PriceCtaStrip",
+      "section": "ld-price-block — price + address + city·subdivision + 3-pill row (Active · DOM · $/sqft) + 4-button CTA row (Schedule a tour · Ask a question · Save · Share)",
+      "blocking": true,
+      "notes": "Supersedes PriceBlock. Save + Share state persists to saved_listings + likes tables. Schedule + Ask route to /contact?listingKey=<key> pre-tagged."
+    },
+    {
+      "name": "PropertySpecs",
+      "section": "ld-section: Key facts grid — beds, baths, sqft, lot, year built, garage, HOA, property tax, property type, heating, cooling, MLS#",
+      "blocking": true
+    },
+    {
+      "name": "DescriptionBlock",
+      "section": "ld-section: About this home — public_remarks paragraphed, 68ch column, brand-voice clean",
+      "blocking": true
+    },
+    {
+      "name": "NeighborhoodMarketContext",
+      "section": "nbhd-context (THE ZILLOW BEATER) — live market stats for THIS subdivision/neighborhood: active count, median list, median DOM, months of supply + 'This home is listed at $X · Y% above the median'. Data source: getMarketStats('neighborhood', slug) + getMarketPulse",
+      "blocking": true,
+      "notes": "Per Plan §8 'What we BEAT' rank 1. No competitor surfaces this. This is the differentiator."
+    },
+    {
+      "name": "SchoolsBlock",
+      "section": "ld-section: Schools — elementary, middle, high stat cards with school district",
+      "blocking": true,
+      "notes": "Per Plan §8 Zillow Showcase parity — schools is table stakes."
+    },
+    {
+      "name": "MortgageCalculator",
+      "section": "ld-section: Estimated monthly payment — mortgage-calc dual column (inputs + PITI summary panel)",
+      "blocking": true
+    },
+    {
+      "name": "PropertyHistory",
+      "section": "ld-section: Property history — timeline of listed/sold/price-change events from listing_history",
+      "blocking": true
+    },
+    {
+      "name": "ListingLocationMap",
+      "section": "ld-section: Location — 21:9 map with subdivision boundary + POI overlay + lifestyle line (minutes to Mt. Bachelor / downtown / trail)",
+      "blocking": true,
+      "notes": "Per Plan §8 'What we BEAT' rank 6 — Bend lifestyle data."
+    },
+    {
+      "name": "SimilarListings",
+      "section": "ld-section: Similar listings — 4-card grid from getSimilarListings",
+      "blocking": true
+    },
+    {
+      "name": "ListingDetailShell",
+      "section": "page chrome — breadcrumb + main+sticky-sidebar grid + JSON-LD",
+      "blocking": true
+    },
+    {
+      "name": "TextMattCTA",
+      "section": "ld-side sticky: text-matt block — broker contact card with phone + Schedule a tour + Text Matt",
+      "blocking": true,
+      "notes": "Per Plan §8 'What we BEAT' rank 2 — sticky 'Text Matt: 541.213.6706' CTA."
+    },
+    {
+      "name": "ListingAgentCard",
+      "section": "ld-side: Listing agent compact card (transparent PNG headshot)",
+      "blocking": true
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "ListingVideoEmbed",
+      "reason": "Folded into ListingHero (video-at-hero is the Showcase pattern, not a mid-page click-to-play)."
+    },
+    {
+      "name": "PhotoGallery",
+      "reason": "Folded into ListingHero. Standalone fullscreen lightbox stays available, but the photo-grid hero is the primary surface."
+    },
+    {
+      "name": "OpenHouses",
+      "reason": "Embedded inside TextMattCTA / PriceCtaStrip when present, not a separate top-level section per the mockup."
+    },
+    {
+      "name": "PriceVsNeighborhoodPill",
+      "reason": "Embedded inside NeighborhoodMarketContext rather than a standalone primitive."
+    },
+    {
+      "name": "VacationRentalPotential",
+      "reason": "Wave 4 extension — not in the base mockup."
+    },
+    {
+      "name": "TransparentCMASummary",
+      "reason": "Wave 4 extension — requires CMA generation engine wiring."
+    },
+    {
+      "name": "ClimateRiskBlock",
+      "reason": "Wave 4 extension — needs First Street Foundation API integration."
+    }
+  ]
+}

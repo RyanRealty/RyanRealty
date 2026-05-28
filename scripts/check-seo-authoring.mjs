@@ -120,7 +120,14 @@ function hasCanonicalAlternates(content) {
 }
 
 function hasMetadataForwarding(content) {
-  return /return\s+generate[A-Za-z0-9_]*Metadata\s*\(/m.test(content)
+  // Recognize the legacy `return generateXxxMetadata(...)` forwarding
+  // pattern PLUS the canonical Wave 2 Layer 2 helper `pageMetadata(...)`
+  // from lib/site/page-metadata, which sets `alternates.canonical` for
+  // every caller by construction.
+  return (
+    /return\s+generate[A-Za-z0-9_]*Metadata\s*\(/m.test(content) ||
+    /return\s+pageMetadata\s*\(/m.test(content)
+  )
 }
 
 const failures = []

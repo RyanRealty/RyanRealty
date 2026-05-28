@@ -773,6 +773,24 @@ Launch parallel subagents in a single message when work is independent. **Never 
 
 ---
 
+## Mechanical guardrails (READ FIRST)
+
+Prose rules in this file are advisory. The **only** rules I am required to follow are the ones encoded as mechanical gates — they fail my commit. Full catalog: [`docs/MECHANICAL_GATES.md`](docs/MECHANICAL_GATES.md).
+
+Before every commit on a user-facing surface:
+
+```bash
+npm run ci:gates
+```
+
+That runs design-tokens + seo-routes + DAL boundary + brand-voice + **mockup parity** + **page DAL** + **static params**. If any fails, the commit doesn't ship.
+
+The most important one added 2026-05-28 is **mockup parity** (`scripts/check-mockup-parity.mjs`). Every Wave 3 page rebuild must satisfy the corresponding `design_system/ryan-realty/ui_kits/<route>/parity.json` contract — which enumerates every component the mockup says the page must import. If I edit `app/<route>/page.tsx` without the matching components, CI fails. Adding a new gated route: place the mockup + create the `parity.json` + the gate auto-picks it up.
+
+**If a guardrail keeps being violated, the answer is a new mechanical gate, not more prose.** Add it via the pattern in `docs/MECHANICAL_GATES.md` "How to add a new gate."
+
+---
+
 ## Work Standards
 
 - **No shortcuts, no assumptions.** When coding, implement the full solution from start to finish. Never stop halfway and present partial work as complete. When answering questions about the codebase, trace the logic all the way through to a confirmed answer — no surface-level glances, no guesses.

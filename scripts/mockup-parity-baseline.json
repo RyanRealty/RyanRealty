@@ -1,0 +1,24 @@
+{
+  "generatedAt": "2026-05-28T13:43:45.515Z",
+  "reason": "Per-route snapshot of components a parity.json contract requires but the route does not yet import. Gate fails only on NEW missing components beyond this baseline. As each rebuild closes its gap, the route disappears here.",
+  "routes": [
+    {
+      "route": "app/listing/[listingKey]/page.tsx",
+      "knownMissing": [
+        "ListingHero",
+        "PriceCtaStrip",
+        "PropertySpecs",
+        "DescriptionBlock",
+        "NeighborhoodMarketContext",
+        "SchoolsBlock",
+        "MortgageCalculator",
+        "PropertyHistory",
+        "ListingLocationMap",
+        "SimilarListings",
+        "ListingDetailShell",
+        "TextMattCTA",
+        "ListingAgentCard"
+      ]
+    }
+  ]
+}

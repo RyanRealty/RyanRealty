@@ -30,6 +30,15 @@ jobs:
       - run: npm run ci:design-tokens
       - run: npm run ci:dal-boundary
       - run: npm run ci:brand-voice
+      # Wave-2 mechanical gates (added 2026-05-28). Each gate is
+      # ratcheted: a baseline file in scripts/ records the legacy
+      # state, the gate fails ONLY on NEW violations. As Wave 3
+      # page migrations land, the baselines shrink. See
+      # docs/MECHANICAL_GATES.md for the full catalog + add-a-gate
+      # instructions.
+      - run: npm run ci:mockup-parity
+      - run: npm run ci:page-dal
+      - run: npm run ci:static-params
       - run: npm run test
       - run: npm run build
 
