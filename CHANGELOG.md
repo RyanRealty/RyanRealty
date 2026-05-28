@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.347.0 (2026-05-28)
+
+### Features
+- feat(wave-3): rebuild /listing/[listingKey] on Layer 4 — fixes React #310
+
+---
+
+
 ## v1.346.3 (2026-05-28)
 
 ### Maintenance
