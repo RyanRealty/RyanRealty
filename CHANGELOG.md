@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.353.0 (2026-05-28)
+
+### Features
+- feat(wave-3): wire listing-detail page + DAL fixes + propagation gates
+- feat(wave-3): listing-detail rebuild + D73-D77 design propagation
+
+---
+
+
 ## v1.352.0 (2026-05-28)
 
 ### Features
