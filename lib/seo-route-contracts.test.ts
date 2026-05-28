@@ -21,7 +21,19 @@ describe('SEO route metadata contracts', () => {
 
     for (const file of files) {
       const content = readRouteFile(file)
-      expect(content).toMatch(/alternates:\s*\{[^}]*\bcanonical\b/m)
+      // The canonical alternates contract is satisfied by either:
+      //   (a) literal `alternates: { canonical }` inline in the file, OR
+      //   (b) a call to `pageMetadata(...)` from lib/site/page-metadata
+      //       which always sets `alternates: { canonical }` per its
+      //       signature (see lib/site/page-metadata.ts L69).
+      const hasInlineCanonical = /alternates:\s*\{[^}]*\bcanonical\b/m.test(
+        content,
+      )
+      const usesPageMetadata = /\bpageMetadata\s*\(/m.test(content)
+      expect(
+        hasInlineCanonical || usesPageMetadata,
+        `${file} must set alternates.canonical (either inline or via pageMetadata())`,
+      ).toBe(true)
     }
   })
 
