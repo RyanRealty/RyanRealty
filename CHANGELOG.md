@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.346.3 (2026-05-28)
+
+### Maintenance
+- docs(handoff): seller-ad session memory 2026-05-28
+
+---
+
+
 ## v1.346.2 (2026-05-28)
 
 ### Bug Fixes
