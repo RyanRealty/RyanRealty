@@ -26,34 +26,39 @@ const InputSchema = z.object({
 
 export type GetListingDetailResult = ListingDetail | null
 
+// Mixed-case columns in `listings` are sent bare to PostgREST — the
+// supabase-js client URL-encodes them correctly. Literal double-quotes
+// here would be sent as part of the column name and cause every row to
+// be missing from the response. See lib/data/listings/getListingRawRow.ts
+// for the working pattern.
 const DETAIL_SELECT = [
-  '"ListingKey"',
-  '"ListNumber"',
-  '"StandardStatus"',
-  '"ListPrice"',
-  '"OriginalListPrice"',
-  '"ClosePrice"',
-  '"CloseDate"',
-  '"BedroomsTotal"',
-  '"BathroomsTotal"',
-  '"TotalLivingAreaSqFt"',
-  '"StreetNumber"',
-  '"StreetName"',
-  '"City"',
-  '"State"',
-  '"PostalCode"',
-  '"SubdivisionName"',
-  '"Latitude"',
-  '"Longitude"',
-  '"PhotoURL"',
-  '"PropertyType"',
+  'ListingKey',
+  'ListNumber',
+  'StandardStatus',
+  'ListPrice',
+  'OriginalListPrice',
+  'ClosePrice',
+  'CloseDate',
+  'BedroomsTotal',
+  'BathroomsTotal',
+  'TotalLivingAreaSqFt',
+  'StreetNumber',
+  'StreetName',
+  'City',
+  'State',
+  'PostalCode',
+  'SubdivisionName',
+  'Latitude',
+  'Longitude',
+  'PhotoURL',
+  'PropertyType',
   'property_sub_type',
-  '"OnMarketDate"',
-  '"ModificationTimestamp"',
-  '"DaysOnMarket"',
-  '"ListAgentName"',
+  'OnMarketDate',
+  'ModificationTimestamp',
+  'DaysOnMarket',
+  'ListAgentName',
   'list_agent_email',
-  '"ListOfficeName"',
+  'ListOfficeName',
   'public_remarks',
   'price_per_sqft',
   'price_drop_count',
@@ -231,7 +236,7 @@ async function fetchOne(listingKey: string): Promise<GetListingDetailResult> {
   const { data, error } = await supabase
     .from('listings')
     .select(DETAIL_SELECT)
-    .eq('"ListingKey"', listingKey)
+    .eq('ListingKey', listingKey)
     .maybeSingle()
   if (error || !data) return null
   return rowToDetail(data as unknown as ListingRow)

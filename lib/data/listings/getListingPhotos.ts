@@ -79,8 +79,8 @@ async function fetchPhotos(listingKey: string): Promise<ListingPhoto[]> {
   // Tier 2 — listings.details.Photos JSONB.
   const { data: detail } = await sb
     .from('listings')
-    .select('details, "PhotoURL"')
-    .eq('"ListingKey"', listingKey)
+    .select('details, PhotoURL')
+    .eq('ListingKey', listingKey)
     .maybeSingle()
 
   const details = (detail as { details?: { Photos?: DetailsPhotoJson[] } } | null)?.details
