@@ -70,17 +70,23 @@ function gitTracked(relPath) {
 
 function snapshotEqualToTracked(absPath, relPath) {
   const fresh = readFileSync(absPath, 'utf8')
-  // Strip the `**Generated:** <ISO>` line — it changes every run and
-  // a timestamp diff is not a meaningful schema drift.
-  const stripTimestamp = (s) =>
-    s.replace(/^\*\*Generated:\*\* .*$/m, '**Generated:** <iso>')
+  // Normalize the volatile bits that are NOT schema:
+  //   - the `**Generated:** <ISO>` timestamp line
+  //   - the `· **rows ≈ N**` row-count annotations (counts fluctuate
+  //     every Spark sync; the gate checks SCHEMA — columns + types —
+  //     not live row counts).
+  // A real column/type/table change still produces a diff and fails.
+  const normalize = (s) =>
+    s
+      .replace(/^\*\*Generated:\*\* .*$/m, '**Generated:** <iso>')
+      .replace(/ · \*\*rows ≈ [0-9,]+\*\*/g, ' · **rows ≈ N**')
   let tracked
   try {
     tracked = execFileSync('git', ['show', `HEAD:${relPath}`], { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] })
   } catch {
     return { equal: false, reason: 'file is not in HEAD yet (new file?)' }
   }
-  if (stripTimestamp(fresh) === stripTimestamp(tracked)) return { equal: true }
+  if (normalize(fresh) === normalize(tracked)) return { equal: true }
   return { equal: false, reason: 'content differs from committed copy' }
 }
 

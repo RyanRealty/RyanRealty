@@ -1,5 +1,21 @@
 {
-  "generatedAt": "2026-05-28T14:37:29.944Z",
+  "generatedAt": "2026-05-28T20:33:33.549Z",
   "reason": "Per-route snapshot of components a parity.json contract requires but the route does not yet import. Gate fails only on NEW missing components beyond this baseline. As each rebuild closes its gap, the route disappears here.",
-  "routes": []
+  "routes": [
+    {
+      "route": "app/cities/[slug]/page.tsx",
+      "knownMissing": [
+        "SiteHeader",
+        "BreadcrumbNav",
+        "HeroBlock",
+        "MarketSnapshot",
+        "PriceRangeTiles",
+        "OpenHousesGrid",
+        "RelatedAreas",
+        "ActivityFeed",
+        "CTABar",
+        "SiteFooter"
+      ]
+    }
+  ]
 }
