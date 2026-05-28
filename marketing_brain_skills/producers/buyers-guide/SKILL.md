@@ -529,3 +529,10 @@ pending -> in_production -> executed (email sent successfully)
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `marketing_brain_skills/research/asset-library-map.md`
 - `data/resort-communities.json`
+
+## Content-producer additional references
+
+- `automation_skills/content_engine/SKILL.md`
+- `social_media_skills/platform-best-practices/SKILL.md`
+- `video_production_skills/ANTI_SLOP_MANIFESTO.md`
+- `video_production_skills/VIRAL_GUARDRAILS.md`
