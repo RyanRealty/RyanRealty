@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.346.1 (2026-05-28)
+
+### Maintenance
+- docs: refresh CROSS_AGENT_HANDOFF.md — Wave 2 Layer 4 core (12 of 17) shipped
+
+---
+
+
 ## v1.346.0 (2026-05-28)
 
 ### Features
