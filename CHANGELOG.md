@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.362.1 (2026-05-29)
+
+### Maintenance
+- chore(gates): lock homepage + city parity contracts (regression protection)
+
+---
+
+
 ## v1.362.0 (2026-05-29)
 
 ### Features
