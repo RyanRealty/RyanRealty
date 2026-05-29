@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.363.1 (2026-05-29)
+
+### Bug Fixes
+- fix(build): export readRrSessionId from lib/tracking — unblock production deploys
+
+---
+
+
 ## v1.363.0 (2026-05-29)
 
 ### Features
