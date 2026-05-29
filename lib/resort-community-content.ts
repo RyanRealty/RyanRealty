@@ -50,9 +50,27 @@ export type ResortCourseSpecs = {
 export type ResortMembershipTier = {
   name?: string
   tier?: string
+  label?: string
+  eyebrow?: string
   price?: string | number | null
   description?: string | null
+  details?: Array<{ label?: string; value?: string }>
+  waitlist_status?: string
   [k: string]: unknown
+}
+
+export type ResortSignatureHole = {
+  number?: number | null
+  par?: number | null
+  yardage?: number | null
+  description?: string | null
+}
+
+export type ResortBuilder = {
+  name?: string
+  role?: string | null
+  description?: string | null
+  website?: string | null
 }
 
 export type ResortCommunityContent = {
@@ -66,7 +84,9 @@ export type ResortCommunityContent = {
   driveTimes: ResortDriveTime[]
   courseRankings: ResortCourseRanking[]
   courseSpecs: ResortCourseSpecs | null
+  signatureHole: ResortSignatureHole | null
   membershipTiers: ResortMembershipTier[]
+  builders: ResortBuilder[]
   membershipOfficePhone?: string | null
   hoaMasterAnnual?: number | null
   hoaBoard?: Record<string, unknown> | null
@@ -136,7 +156,9 @@ export async function getResortCommunityContent(
     driveTimes,
     courseRankings,
     courseSpecs: (c.course_specs as ResortCourseSpecs) ?? null,
+    signatureHole: (c.signature_hole as ResortSignatureHole) ?? null,
     membershipTiers,
+    builders: toArray<ResortBuilder>(c.builders),
     membershipOfficePhone:
       typeof c.membership_office_phone === 'string' ? c.membership_office_phone : null,
     hoaMasterAnnual:

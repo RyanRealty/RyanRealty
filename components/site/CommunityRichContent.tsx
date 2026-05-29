@@ -140,6 +140,147 @@ export function CommunityRichContent({
           </Container>
         </section>
       ) : null}
+
+      {content.courseSpecs || content.signatureHole || content.courseRankings.length > 0 ? (
+        <section className="border-t border-border bg-background py-10 md:py-14">
+          <Container>
+            <h2 className="text-2xl font-bold text-foreground mb-6">Golf at {name}</h2>
+
+            {content.courseSpecs ? (
+              <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {content.courseSpecs.par ? (
+                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                    <div className="text-2xl font-bold text-foreground tabular-nums">{content.courseSpecs.par}</div>
+                    <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">Par</div>
+                  </div>
+                ) : null}
+                {content.courseSpecs.yardage ? (
+                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                    <div className="text-2xl font-bold text-foreground tabular-nums">
+                      {content.courseSpecs.yardage.toLocaleString()}
+                    </div>
+                    <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">Yards</div>
+                  </div>
+                ) : null}
+                {content.courseSpecs.rating ? (
+                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                    <div className="text-2xl font-bold text-foreground tabular-nums">{content.courseSpecs.rating}</div>
+                    <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">Rating</div>
+                  </div>
+                ) : null}
+                {content.courseSpecs.slope ? (
+                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                    <div className="text-2xl font-bold text-foreground tabular-nums">{content.courseSpecs.slope}</div>
+                    <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">Slope</div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {content.courseSpecs?.summary ? (
+              <p className="mb-8 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                {content.courseSpecs.summary}
+              </p>
+            ) : null}
+
+            {content.signatureHole?.description ? (
+              <div className="mb-8 rounded-2xl border border-border bg-secondary/40 p-6">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Signature hole</p>
+                <p className="text-base font-semibold text-foreground tabular-nums">
+                  Hole {content.signatureHole.number}
+                  {content.signatureHole.par ? `, par ${content.signatureHole.par}` : ''}
+                  {content.signatureHole.yardage ? `, ${content.signatureHole.yardage} yards` : ''}
+                </p>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-foreground">
+                  {content.signatureHole.description}
+                </p>
+              </div>
+            ) : null}
+
+            {content.courseRankings.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {content.courseRankings.map((r, i) => (
+                  <div key={i} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                    <div className="text-xl font-bold text-foreground tabular-nums">{r.rank}</div>
+                    <div className="mt-1 text-sm font-medium text-foreground">{r.publication}</div>
+                    {r.description ? (
+                      <div className="mt-1 text-xs text-muted-foreground">{r.description}</div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </Container>
+        </section>
+      ) : null}
+
+      {content.membershipTiers.length > 0 ? (
+        <section className="border-t border-border bg-secondary/40 py-10 md:py-14">
+          <Container>
+            <h2 className="text-2xl font-bold text-foreground mb-6">Membership at {name}</h2>
+            <div className="grid gap-5 lg:grid-cols-3">
+              {content.membershipTiers.map((t, i) => (
+                <div key={i} className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                  {t.eyebrow ? (
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">{t.eyebrow}</p>
+                  ) : null}
+                  <p className="text-base font-semibold text-foreground">{t.name ?? t.label ?? t.tier}</p>
+                  {t.description ? (
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t.description}</p>
+                  ) : null}
+                  {Array.isArray(t.details) && t.details.length > 0 ? (
+                    <dl className="mt-4 space-y-1.5 text-sm">
+                      {t.details.map((d, j) => (
+                        <div key={j} className="flex justify-between gap-4">
+                          <dt className="text-muted-foreground">{d.label}</dt>
+                          <dd className="font-medium text-foreground text-right">{d.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : null}
+                  {t.waitlist_status ? (
+                    <p className="mt-3 text-xs text-muted-foreground">{t.waitlist_status}</p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            {content.membershipOfficePhone ? (
+              <p className="mt-5 text-sm text-muted-foreground tabular-nums">
+                Membership office: {content.membershipOfficePhone}
+              </p>
+            ) : null}
+          </Container>
+        </section>
+      ) : null}
+
+      {content.builders.length > 0 ? (
+        <section className="border-t border-border bg-background py-10 md:py-14">
+          <Container>
+            <h2 className="text-2xl font-bold text-foreground mb-6">Builders in {name}</h2>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {content.builders.map((b, i) => (
+                <div key={`${b.name}-${i}`} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                  <p className="text-base font-semibold text-foreground">{b.name}</p>
+                  {b.role ? <p className="mt-0.5 text-xs text-muted-foreground">{b.role}</p> : null}
+                  {b.description ? (
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{b.description}</p>
+                  ) : null}
+                  {b.website ? (
+                    <a
+                      href={b.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-block text-xs font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                      Visit website
+                    </a>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+      ) : null}
     </>
   )
 }
