@@ -68,6 +68,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
         <p className="text-xs font-medium text-muted-foreground mb-2">Specialised views</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <Link className="text-primary hover:underline" href="/admin/analytics/action-required">🚨 Action required (start here)</Link>
+          <Link className="text-primary hover:underline font-medium" href="/admin/analytics/ad-roi">💰 Marketing ROI (is my ad money working?)</Link>
           <Link className="text-primary hover:underline" href="/admin/visitors/live">🟢 Live visitors</Link>
           <Link className="text-primary hover:underline" href="/admin/analytics/social">📣 Social channels</Link>
           <Link className="text-primary hover:underline" href="/admin/analytics/demographics">👥 Demographics (age, geo)</Link>

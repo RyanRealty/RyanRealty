@@ -99,7 +99,9 @@ type SessionRow = {
 export async function backfillSessionToFub(params: {
   sessionId: string
   fubPersonId: number
-  email: string
+  /** Optional. Form paths always have it; the email-click bridge knows only
+   *  the FUB id, so it stitches without an email (the id is the join key). */
+  email?: string
   identifiedVia: IdentifiedVia
 }): Promise<BackfillResult> {
   const supabase = getServiceSupabase()
@@ -154,7 +156,7 @@ export async function backfillSessionToFub(params: {
       .update({
         identified_at: new Date().toISOString(),
         fub_person_id: params.fubPersonId,
-        identified_email: params.email.toLowerCase(),
+        identified_email: params.email?.toLowerCase() ?? null,
         identified_via: params.identifiedVia,
       })
       .eq('session_id', params.sessionId)

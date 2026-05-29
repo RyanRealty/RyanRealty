@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { identifyFubFromEmailClick } from '@/app/actions/fub-identity-bridge'
+import { readRrSessionId } from '@/lib/tracking'
 
 const DEFAULT_FUB_PARAM = '_fuid'
 
@@ -22,7 +23,7 @@ export default function FubIdentityBridge() {
     const value = searchParams.get(paramName)
     if (!value) return
     done.current = true
-    identifyFubFromEmailClick(value).then(() => {
+    identifyFubFromEmailClick(value, readRrSessionId()).then(() => {
       const url = new URL(window.location.href)
       url.searchParams.delete(paramName)
       const newUrl = url.pathname + url.search + url.hash

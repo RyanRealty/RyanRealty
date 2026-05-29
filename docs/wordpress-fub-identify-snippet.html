@@ -96,6 +96,53 @@
     document.cookie = name + '=' + value + '; expires=' + exp.toUTCString() + '; path=/; SameSite=Lax; Secure';
   }
 
+  // ---------- Cross-surface session id (rr_session_id) ----------
+  // Reads (or mints) the same `rr_session_id` uuid the Vercel app's
+  // VisitTracker uses, then forwards it on identify so the endpoint can replay
+  // any anonymous visitor_events recorded under this id into FUB once we learn
+  // who the visitor is (server: /api/fub/identify backfill branch).
+  //
+  // IMPORTANT cross-origin note: localStorage is origin-scoped, so the id
+  // minted HERE (ryan-realty.com) is a DIFFERENT value than the one on
+  // ryanrealty.vercel.app. They do not — and cannot — match across origins.
+  // The cross-surface identity join is the FUB person id (resolved by email),
+  // not this session id. This id only stitches anonymous→known WITHIN the
+  // WordPress origin, and only has a backfill effect once anonymous WP page
+  // views are recorded into visitor_events (today they are not — see
+  // docs/ANALYTICS_LEAD_TRACKING.md "WordPress anonymous capture"). Forwarding
+  // it now is forward-compatible plumbing: harmless, validated as uuid v4 on
+  // both ends, idempotent backfill that no-ops when there is nothing to replay.
+  function rrUuidV4() {
+    var bytes = new Uint8Array(16);
+    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+      window.crypto.getRandomValues(bytes);
+    } else {
+      for (var i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
+    }
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10
+    var h = [];
+    for (var j = 0; j < 16; j++) {
+      var s = bytes[j].toString(16);
+      h.push(s.length === 1 ? '0' + s : s);
+    }
+    return h[0]+h[1]+h[2]+h[3]+'-'+h[4]+h[5]+'-'+h[6]+h[7]+'-'+h[8]+h[9]+'-'+h[10]+h[11]+h[12]+h[13]+h[14]+h[15];
+  }
+
+  function getOrCreateRrSessionId() {
+    var KEY = 'rr_session_id';
+    var RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    try {
+      var existing = window.localStorage.getItem(KEY);
+      if (existing && RE.test(existing)) return existing;
+      var fresh = rrUuidV4();
+      window.localStorage.setItem(KEY, fresh);
+      return fresh;
+    } catch (e) {
+      return undefined;
+    }
+  }
+
   // ---------- Source attribution (UTM + referrer + landing) ----------
   // Captured ONCE per session-storage life on the visitor's first hit, then
   // reused on every subsequent page so every event in FUB carries the same
@@ -241,6 +288,7 @@
         campaign: campaign,
         landingPage: src.landingPage,
         referrer: src.referrer,
+        sessionId: getOrCreateRrSessionId(),
       }),
     })
       .then(function(res) { return res.json(); })
