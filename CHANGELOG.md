@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.360.0 (2026-05-29)
+
+### Features
+- feat(seo): AI-agent citability layer — Dataset + FAQPage + entity JSON-LD on geo pages
+
+---
+
+
 ## v1.359.0 (2026-05-29)
 
 ### Features
