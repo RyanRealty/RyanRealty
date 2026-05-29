@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.355.1 (2026-05-29)
+
+### Other
+- Wave 3: boundary maps (polygon + in-polygon listings) on city/neighborhood/community + homepage city photo grid
+
+---
+
+
 ## v1.355.0 (2026-05-29)
 
 ### Features
