@@ -38,6 +38,10 @@ import { getGeoBoundaryMapData } from '@/lib/data'
 import { NeighborhoodMap as SiteNeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { CommunityRichContent } from '@/components/site/CommunityRichContent'
+import { FAQBlock } from '@/components/site/FAQBlock'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { buildMarketFaq } from '@/lib/site/market-faq'
+import type { SchemaInput } from '@/lib/site/json-ld'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -281,47 +285,50 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     { name: neighborhood.name, item: `${siteUrl}/cities/${citySlug}/${neighborhoodSlug}` },
   ]
 
+  // AI citability (D97 / G34): verified market Q&A + structured data, the same
+  // single-source pattern as the city + community pages. Neighborhood stats come
+  // from getNeighborhoodBySlug (geo_snapshot_mv medianListPrice + activeSfrCount,
+  // list-side — matching the visible NeighborhoodHero/MarketStats). avgDom is
+  // intentionally NOT fed: it is average days on market, not the median days to
+  // pending the FAQ phrases, so feeding it would mislabel the metric.
+  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, {
+    activeCount: neighborhood.activeCount,
+    medianListPrice: neighborhood.medianPrice,
+  })
+
+  const neighborhoodSchemas: SchemaInput[] = [
+    { type: 'breadcrumb', items: breadcrumbItems.map((b) => ({ name: b.name, url: b.item })) },
+    {
+      type: 'place',
+      placeType: 'Neighborhood',
+      name: neighborhood.name,
+      description: `Homes for sale and live single-family market data for ${neighborhood.name} in ${neighborhood.cityName}, Oregon.`,
+      url: `/cities/${citySlug}/${neighborhoodSlug}`,
+      address: { city: neighborhood.cityName, state: 'OR', country: 'US' },
+      containedInPlace: neighborhood.cityName,
+      geo: geo ?? undefined,
+      hasMap: boundaryMapData.polygon ? `/cities/${citySlug}/${neighborhoodSlug}` : undefined,
+      additionalProperty: datasetVariables.length > 0 ? datasetVariables : undefined,
+    },
+  ]
+  if (datasetVariables.length > 0) {
+    neighborhoodSchemas.push({
+      type: 'dataset',
+      name: `${neighborhood.name} real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
+      description: `Live single-family home market data for ${neighborhood.name} in ${neighborhood.cityName}, Oregon. Includes median list price and active inventory. Sourced from the regional MLS via Ryan Realty.`,
+      url: `/cities/${citySlug}/${neighborhoodSlug}`,
+      dateModified: asOfIso ?? undefined,
+      spatialCoverageName: `${neighborhood.name}, ${neighborhood.cityName}, OR`,
+      variableMeasured: datasetVariables,
+    })
+  }
+
   return (
     <main className="min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Place',
-            name: neighborhood.name,
-            address: {
-              addressLocality: neighborhood.cityName,
-              addressRegion: 'OR',
-              addressCountry: 'US',
-            },
-            ...(geo && {
-              geo: {
-                '@type': 'GeoCoordinates',
-                latitude: geo.lat,
-                longitude: geo.lng,
-              },
-            }),
-            url: `${siteUrl}/cities/${citySlug}/${neighborhoodSlug}`,
-          }),
-        }}
-      />
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            itemListElement: breadcrumbItems.map((item, i) => ({
-              '@type': 'ListItem',
-              position: i + 1,
-              name: item.name,
-              item: item.item,
-            })),
-          }),
-        }}
-      />
+      {/* AI-citability structured data: breadcrumb + Neighborhood Place + market
+          Dataset, via the shared MetadataBlock (replaces the old hand-coded
+          Place + BreadcrumbList scripts). FAQPage is emitted by the FAQBlock below. */}
+      <MetadataBlock schemas={neighborhoodSchemas} />
 
       <NeighborhoodPageTracker
         neighborhoodName={neighborhood.name}
@@ -501,6 +508,16 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         userEmail={null}
         engagementMap={engagementMap}
       />
+
+      {/* Common questions — direct-answer content + FAQPage JSON-LD (same
+          verified numbers as the Dataset above). */}
+      {faqs.length > 0 ? (
+        <FAQBlock
+          items={faqs}
+          eyebrow="Common questions"
+          title={`${neighborhood.name} real estate questions`}
+        />
+      ) : null}
 
       <GeoCTAWithBroker
         heading={`Looking for a Home in ${neighborhood.name}?`}

@@ -53,12 +53,12 @@ const CHECKS = [
   },
   {
     file: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
-    label: 'neighborhood: structured data present',
-    any: ['MetadataBlock', 'application/ld+json'],
+    label: 'neighborhood: entity + market Dataset + FAQPage',
+    all: ['MetadataBlock', 'buildMarketFaq'],
     why:
-      'Neighborhood pages MUST emit structured data (Place + BreadcrumbList).\n' +
-      '  FOLLOW-UP: migrate to MetadataBlock + buildMarketFaq (market Dataset + FAQ) in\n' +
-      '  the Wave 3 neighborhood rebuild so it matches city/community depth.',
+      'Neighborhood pages MUST emit the Neighborhood Place + market Dataset (via\n' +
+      '  MetadataBlock) and a verified FAQ (buildMarketFaq -> FAQBlock), matching the\n' +
+      '  city + community depth.',
   },
   {
     file: 'components/site/listing-detail/ListingDetailShell.tsx',
