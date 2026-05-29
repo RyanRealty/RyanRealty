@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.364.1 (2026-05-29)
+
+### Maintenance
+- docs(handoff): AI-citability layer COMPLETE across all page types
+
+---
+
+
 ## v1.364.0 (2026-05-29)
 
 ### Features
