@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.359.0 (2026-05-29)
+
+### Features
+- feat(communities): render remaining LP-depth (golf specs/rankings/signature hole, membership, builders) + DRY both pages onto CommunityRichContent
+
+---
+
+
 ## v1.358.1 (2026-05-29)
 
 ### Maintenance
