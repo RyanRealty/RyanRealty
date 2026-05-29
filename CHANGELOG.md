@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.364.0 (2026-05-29)
+
+### Features
+- feat(seo): neighborhood pages emit market Dataset + FAQPage (AI citability parity)
+
+---
+
+
 ## v1.363.1 (2026-05-29)
 
 ### Bug Fixes
