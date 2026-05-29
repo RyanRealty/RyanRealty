@@ -1,32 +1,23 @@
 {
   "route": "app/cities/[slug]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/city/index.html",
-  "competitiveTarget": "Beat Coldwell Banker / Windermere city pages — live neighborhood-level market data no competitor surfaces (EXECUTION_PLAN §8 rank 1).",
-  "note": "Wave 3 rebuild target. The current app/cities/[slug]/page.tsx is the LEGACY implementation (components/city/*, components/geo-page/*, app/actions/* — not DAL, not Wave 2 primitives). This contract is BASELINED in scripts/mockup-parity-baseline.json until the rebuild lands; G6 fails on NEW missing components beyond that baseline. The rebuild swaps to the components below, all of which already exist as Wave 2 Layer 3 blocks.",
+  "competitiveTarget": "Beat Coldwell Banker / Windermere city pages — live neighborhood-level market data no competitor surfaces, plus the in-boundary listing map (EXECUTION_PLAN §8 rank 1).",
+  "note": "Wave 3 rebuild has LANDED. app/cities/[slug]/page.tsx now imports the Wave 2 site-v2 blocks below (zero components/city/* or components/geo-page/* legacy imports remain). The baseline is CLEARED — the gate now enforces the city page's real block set, so dropping any required block fails G6. SiteHeader/SiteFooter render from app/layout.tsx (not the route file) and are documented under layoutComponents, not requiredComponents (the gate checks the route file's imports).",
   "requiredComponents": [
     {
-      "name": "SiteHeader",
-      "section": "site chrome — navy bar, horizontal logo, 15px nav (D73/D74)",
-      "blocking": true,
-      "notes": "Usually rendered by app/layout.tsx; listed so the parity contract documents the full surface."
-    },
-    {
       "name": "BreadcrumbNav",
-      "section": "Home > Homes for sale > Bend",
-      "blocking": true,
-      "notes": "Replaces components/layout/BreadcrumbStrip."
+      "section": "Home > Homes for sale > {City}",
+      "blocking": true
     },
     {
       "name": "HeroBlock",
-      "section": "hero — 'Homes for sale in {City}, Oregon' + lede + canonical Old Mill photo + Ken Burns",
-      "blocking": true,
-      "notes": "Replaces components/city/CityHero. D28 Ken Burns + D35 canonical hero inherited from the primitive."
+      "section": "hero — 'Homes for sale in {City}, Oregon' + lede + canonical Old Mill photo + Ken Burns (D28/D35)",
+      "blocking": true
     },
     {
       "name": "MarketSnapshot",
-      "section": "'{City} housing market' — 4 stat cards from getMarketStats + getMarketPulse (active count, median list, median DOM, months of supply)",
-      "blocking": true,
-      "notes": "Replaces components/city/CityMarketStats + CityOverview. Data through @/lib/data — getMarketStats('city', slug) + getMarketPulse."
+      "section": "'{City} housing market' — live SFR stat cards from getMarketStats('city', slug) + getMarketPulse (active count, median list, median DOM, months of supply)",
+      "blocking": true
     },
     {
       "name": "PriceRangeTiles",
@@ -35,40 +26,48 @@
     },
     {
       "name": "OpenHousesGrid",
-      "section": "'Open houses · {weekend}' — this city's upcoming open houses",
-      "blocking": true,
-      "notes": "Renders nothing when no open houses scheduled."
+      "section": "'Open houses · {weekend}' — this city's upcoming open houses (renders nothing when none scheduled)",
+      "blocking": true
+    },
+    {
+      "name": "NeighborhoodMap",
+      "section": "in-boundary listing map — authoritative city polygon + for-sale pins via getGeoBoundaryMapData (D93/D94)",
+      "blocking": true
     },
     {
       "name": "RelatedAreas",
-      "section": "'Explore by neighborhood' — neighborhood + community cross-nav tiles with active counts",
-      "blocking": true,
-      "notes": "Replaces components/geo-page/CommunitiesBar + CommunitiesSlider."
+      "section": "'Explore by neighborhood' + 'Resort & master-planned communities' — split neighborhood vs golf/community cross-nav tiles with photos + active counts",
+      "blocking": true
+    },
+    {
+      "name": "ArticleGrid",
+      "section": "'Guides & market updates' — recent blog posts scoped to the city (D80)",
+      "blocking": true
     },
     {
       "name": "ActivityFeed",
-      "section": "'What's happening right now' — recent activity rows (new/price-drop/pending/sold)",
-      "blocking": true,
-      "notes": "Replaces components/geo-page/GeoSectionLatestActivity. Data through @/lib/data getRecentActivity (city-scoped)."
+      "section": "'What's happening right now' — live new / price-drop / pending / sold rows (getRecentActivity, city-scoped)",
+      "blocking": true
     },
     {
       "name": "CTABar",
       "section": "'Local brokers. Specific numbers. No pressure.' — contact CTA band",
-      "blocking": true,
-      "notes": "Replaces components/geo-page/GeoCTAWithBroker."
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "SiteHeader",
+      "section": "site chrome — navy bar, horizontal logo, 15px nav (D73/D74). Renders from app/layout.tsx.",
+      "note": "Not in requiredComponents because the gate checks the route file; documented here for full-surface completeness."
     },
     {
       "name": "SiteFooter",
-      "section": "navy footer — license #201206613, dotted phone, hyphen URL, middle-dot separator (D65)",
-      "blocking": true,
-      "notes": "Usually from app/layout.tsx."
+      "section": "navy footer — license #201206613, dotted phone, hyphen URL, middle-dot separator (D65). Renders from app/layout.tsx.",
+      "note": "Not in requiredComponents because the gate checks the route file; documented here for full-surface completeness."
     }
   ],
   "deferredComponents": [
-    {
-      "name": "ListingsGrid",
-      "reason": "Featured + newest listings render via the homes-for-sale search surface; the city page links to it rather than embedding a full grid per the mockup."
-    },
     {
       "name": "FAQBlock",
       "reason": "City FAQ is a Wave 3 content-pass addition once per-city Q/A copy is written."

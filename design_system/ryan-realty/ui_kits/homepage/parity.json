@@ -1,0 +1,48 @@
+{
+  "route": "app/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/index.html",
+  "competitiveTarget": "The homepage is the brand's front door. Beat Coldwell Banker / Windermere / eXp Central Oregon home pages by leading with live local market data + open houses + real broker presence instead of a stock hero + IDX search box (EXECUTION_PLAN §8).",
+  "note": "The homepage was already rebuilt onto the Wave 2 site-v2 blocks (no legacy components left), so this contract is NOT baselined — it passes immediately and exists to LOCK the block set against regression. SiteHeader/SiteFooter are intentionally omitted from requiredComponents because they render from app/layout.tsx, not app/page.tsx (the gate checks the route file's imports).",
+  "requiredComponents": [
+    {
+      "name": "Hero",
+      "section": "hero — 'Find Your Home in Central Oregon' + search-everything bar + canonical Old Mill drone photo",
+      "blocking": true
+    },
+    {
+      "name": "MarketSnapshot",
+      "section": "Central Oregon / Bend market snapshot — live SFR stat cards from getMarketPulse + getMarketStats",
+      "blocking": true
+    },
+    {
+      "name": "PriceRangeTiles",
+      "section": "'Browse by price range' — budget-bracket tiles linking to filtered search",
+      "blocking": true
+    },
+    {
+      "name": "OpenHousesGrid",
+      "section": "'Open houses this weekend' — upcoming open houses across the service area (getUpcomingOpenHouses, spec homes filtered out)",
+      "blocking": true
+    },
+    {
+      "name": "CityGrid",
+      "section": "'Explore Central Oregon' — city photo cards (Bend, Redmond, Sisters, Sunriver, La Pine, …) via getGeoTileImages",
+      "blocking": true
+    },
+    {
+      "name": "TeamSection",
+      "section": "'Meet the team' — the three brokers (Matt, Paul, Rebecca) with transparent headshots",
+      "blocking": true
+    },
+    {
+      "name": "ActivityFeed",
+      "section": "'What's happening right now' — live new / price-drop / pending / sold activity",
+      "blocking": true
+    },
+    {
+      "name": "CtaDuo",
+      "section": "buyer + seller dual CTA band — 'Find your home' / 'List your home'",
+      "blocking": true
+    }
+  ]
+}
