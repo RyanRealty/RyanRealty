@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { trackCtaClick } from '@/lib/cta-tracking'
+import { getLpContext, readRrSessionId } from '@/lib/tracking'
 import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 
 type Props = {
@@ -54,6 +55,12 @@ export default function LeadLandingForm({
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    // Capture the visitor's real first-touch attribution + anonymous session
+    // id before the server hop. getLpContext() reads utm_* from the URL and
+    // the persisted rr_lp_context; readRrSessionId() returns the uuid that
+    // ties this submit to the prior anonymous browsing in visitor_sessions.
+    const lpContext = getLpContext()
+    const sessionId = readRrSessionId()
     startTransition(async () => {
       const { submitLeadLandingForm } = await import('@/app/actions/lead-landing')
       const result = await submitLeadLandingForm({
@@ -66,6 +73,8 @@ export default function LeadLandingForm({
         phone,
         timeframe,
         message,
+        lpContext,
+        sessionId,
       })
 
       if (result.error) {

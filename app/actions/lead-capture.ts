@@ -7,8 +7,11 @@ import { recordPartnerReferral } from '@/app/actions/partnership-revenue'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { backfillSessionToFub } from '@/lib/visitor-backfill'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 async function fireCapiLead(args: {
   eventName: 'Lead' | 'ViewContent'
@@ -70,17 +73,32 @@ function partnerSlugFromCampaign(source?: string): 'lender_referral' | 'relocati
   return null
 }
 
-export async function trackHomeValuationCta(campaign?: CampaignInput): Promise<void> {
+export async function trackHomeValuationCta(campaign?: CampaignInput, sessionId?: string): Promise<void> {
   const [session, fubPersonId] = await Promise.all([getSession(), getFubPersonIdFromCookie()])
   const email = session?.user?.email?.trim() ?? null
   let person: FubEventPerson | null = null
+  let resolvedPersonId: number | null = fubPersonId ?? null
   if (email) {
     const existing = await findPersonByEmail(email)
     person = existing ? { id: existing.id } : { emails: [{ value: email }] }
+    if (existing?.id) resolvedPersonId = existing.id
   } else if (fubPersonId != null && fubPersonId > 0) {
     person = { id: fubPersonId }
   }
   if (!person) return
+
+  // Stitch the anonymous browsing session to this known person at the moment
+  // they click the valuation CTA. Requires a resolved FUB id + a valid session
+  // uuid. Non-blocking; this is what lets the dashboard match the visit to a
+  // name even when the lead never fills a separate form.
+  if (resolvedPersonId && sessionId && UUID_V4_RE.test(sessionId)) {
+    void backfillSessionToFub({
+      sessionId,
+      fubPersonId: resolvedPersonId,
+      email: email ?? undefined,
+      identifiedVia: 'form_submit',
+    }).catch((err) => console.warn('[home-valuation-cta] session stitch failed (non-blocking):', err))
+  }
 
   await sendEvent({
     type: 'Seller Inquiry',
@@ -134,6 +152,9 @@ export async function submitExitIntentLead(input: {
   context?: string
   pageUrl?: string
   campaign?: CampaignInput
+  /** Anonymous visitor session id (uuid v4). When present we stitch the prior
+   *  browsing history to this person and mark the session identified. */
+  sessionId?: string
 }): Promise<{ ok: boolean; error?: string }> {
   const email = input.email.trim().toLowerCase()
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -175,9 +196,21 @@ export async function submitExitIntentLead(input: {
           source: 'unknown',
           tier: 'nurture',
         })
+
+        // Stitch the anonymous browsing history to this person and mark the
+        // visitor_sessions row identified — what the Marketing ROI dashboard
+        // counts as "matched to a name".
+        if (input.sessionId && UUID_V4_RE.test(input.sessionId)) {
+          await backfillSessionToFub({
+            sessionId: input.sessionId,
+            fubPersonId: reFound.id,
+            email,
+            identifiedVia: 'form_submit',
+          })
+        }
       }
     } catch (err) {
-      console.warn('[exit-intent] canonical tagging failed (non-blocking):', err)
+      console.warn('[exit-intent] canonical tagging / session stitch failed (non-blocking):', err)
     }
   })()
 

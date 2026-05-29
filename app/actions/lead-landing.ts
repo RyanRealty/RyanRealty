@@ -6,14 +6,26 @@ import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { backfillSessionToFub } from '@/lib/visitor-backfill'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function websiteSource(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
     .toLowerCase() || 'ryan-realty.com'
+}
+
+type LpContextInput = {
+  lp_variant?: string
+  lp_source?: string
+  lp_medium?: string
+  lp_campaign?: string
+  lp_content?: string
+  lp_term?: string
 }
 
 type SubmitLeadLandingInput = {
@@ -26,6 +38,16 @@ type SubmitLeadLandingInput = {
   phone?: string
   timeframe?: string
   message?: string
+  /** Real first-touch attribution captured client-side (utm_* from the URL +
+   *  persisted rr_lp_context). When the visitor arrived from a Facebook ad,
+   *  lp_source='facebook' — so the FUB person carries the true origin instead
+   *  of a hardcoded 'landing_page'. */
+  lpContext?: LpContextInput
+  /** Anonymous visitor session id (uuid v4) from localStorage. When present,
+   *  we stitch this lead's prior browsing history to the FUB person and mark
+   *  the visitor_sessions row identified — which is what the Marketing ROI
+   *  dashboard counts as "matched to a name". */
+  sessionId?: string
 }
 
 export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Promise<{ error: string | null }> {
@@ -67,10 +89,11 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       pageTitle: input.pageTitle,
       message: details || `intent=${input.leadIntent}`,
       campaign: {
-        source: 'landing_page',
-        medium: 'website',
-        campaign: input.leadIntent,
-        content: input.audience,
+        source: input.lpContext?.lp_source ?? 'landing_page',
+        medium: input.lpContext?.lp_medium ?? 'website',
+        campaign: input.lpContext?.lp_campaign ?? input.leadIntent,
+        content: input.lpContext?.lp_content ?? input.audience,
+        ...(input.lpContext?.lp_term ? { term: input.lpContext.lp_term } : {}),
       },
     })
     if (!result.ok) return { error: result.error ?? 'Could not submit request right now' }
@@ -108,9 +131,9 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       message: `${input.pageTitle} | ${details || `intent=${input.leadIntent}`}`,
     }).catch((err) => console.error('[lead-landing] sendContactNotification failed:', err))
 
-    // Canonical tagging + ledger row so dashboards see this lead alongside
-    // the gold-standard LP submissions. Fire-and-forget; tagging failures
-    // never block the response.
+    // Canonical tagging + session stitch so dashboards see this lead alongside
+    // the gold-standard LP submissions. Fire-and-forget; failures never block
+    // the response.
     void (async () => {
       try {
         const found = await findPersonByEmail(email)
@@ -120,9 +143,23 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
             audience: input.audience === 'seller' ? 'seller' : 'buyer',
             source: input.audience === 'seller' ? 'seller-lp' : 'buyer-lp',
           })
+
+          // Stitch the anonymous browsing history to this FUB person and mark
+          // the visitor_sessions row identified. This is the join that ties a
+          // Facebook ad click (utm_source=facebook, stored on the session) to a
+          // real name — and what the Marketing ROI dashboard counts as
+          // "matched to a name". Mirrors the buyer LP gold standard.
+          if (input.sessionId && UUID_V4_RE.test(input.sessionId)) {
+            await backfillSessionToFub({
+              sessionId: input.sessionId,
+              fubPersonId: found.id,
+              email,
+              identifiedVia: 'form_submit',
+            })
+          }
         }
       } catch (err) {
-        console.warn('[lead-landing] canonical tagging failed (non-blocking):', err)
+        console.warn('[lead-landing] canonical tagging / session stitch failed (non-blocking):', err)
       }
     })()
 

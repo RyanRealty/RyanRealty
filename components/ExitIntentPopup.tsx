@@ -13,9 +13,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { submitExitIntentLead } from '@/app/actions/lead-capture'
+import { getLpContext, readRrSessionId } from '@/lib/tracking'
 
 const SESSION_KEY = 'ryan_realty_exit_popup_seen'
 
+// Map the captured LP context (URL utm_* merged with persisted rr_lp_context)
+// to the campaign shape FUB expects. Using getLpContext() instead of reading
+// the URL directly means a visitor who landed on a Facebook-tagged page and
+// then navigated to a non-tagged page still attributes to facebook.
 function readCampaign(): {
   source?: string
   medium?: string
@@ -24,13 +29,13 @@ function readCampaign(): {
   content?: string
 } {
   if (typeof window === 'undefined') return {}
-  const query = new URLSearchParams(window.location.search)
+  const ctx = getLpContext()
   return {
-    source: query.get('utm_source') ?? undefined,
-    medium: query.get('utm_medium') ?? undefined,
-    campaign: query.get('utm_campaign') ?? undefined,
-    term: query.get('utm_term') ?? undefined,
-    content: query.get('utm_content') ?? undefined,
+    source: ctx.lp_source,
+    medium: ctx.lp_medium,
+    campaign: ctx.lp_campaign,
+    term: ctx.lp_term,
+    content: ctx.lp_content,
   }
 }
 
@@ -63,6 +68,7 @@ export default function ExitIntentPopup() {
       context: `exit-intent:${pathname}`,
       pageUrl: typeof window !== 'undefined' ? window.location.href : undefined,
       campaign,
+      sessionId: readRrSessionId(),
     })
     setSubmitting(false)
     setStatus(result.ok ? 'success' : 'error')
