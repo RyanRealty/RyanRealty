@@ -33,6 +33,8 @@ export const CACHE_WINDOWS = {
   videos: 600,
   activity: 60,
   brokers: 86400,
+  blog: 600,
+  assets: 86400,
 } as const
 
 /**
@@ -50,4 +52,6 @@ export const cacheTag = {
   videos: 'videos' as const,
   activity: 'activity' as const,
   brokers: 'brokers' as const,
+  blog: 'blog' as const,
+  assets: 'assets' as const,
 }

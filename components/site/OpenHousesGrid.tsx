@@ -45,8 +45,10 @@ function buildCityLine(o: OpenHouseWithListing): string {
 }
 
 function formatOpenHouseBadge(o: OpenHouseWithListing): { kind: ListingBadge; label: string } {
+  // event_date is a bare Pacific calendar date ("2026-05-30"). Read it as UTC
+  // so the weekday matches that date (Pacific would shift midnight back a day).
   const date = new Date(o.event_date)
-  const weekday = date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Los_Angeles' })
+  const weekday = date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
   const time =
     o.start_time && o.end_time
       ? ` · ${formatTime(o.start_time)}-${formatTime(o.end_time)}`
@@ -79,28 +81,70 @@ function toListingCardData(o: OpenHouseWithListing): ListingCardData {
   }
 }
 
-export default async function OpenHousesGrid() {
-  const items = await getOpenHousesWithListings().catch(() => [] as OpenHouseWithListing[])
+type Props = {
+  /**
+   * When provided, only open houses in this city are shown.
+   * Pass the city name as it appears in the MLS (e.g. "Bend", "Redmond").
+   * Omit for the homepage / all-Central-Oregon view.
+   */
+  city?: string
+  /** Eyebrow label override. Defaults to "Featured listings". */
+  eyebrow?: string
+  /** Section heading override. Defaults to "Open houses this weekend". */
+  heading?: string
+  /** Body subtitle override. */
+  subtitle?: string
+  /** View-all link href. Defaults to "/open-houses". */
+  viewAllHref?: string
+  /**
+   * When set, fetch open houses from today through today+N days instead of the
+   * default "this weekend" window. City/community pages pass 14.
+   */
+  daysAhead?: number
+}
+
+export default async function OpenHousesGrid({
+  city,
+  eyebrow = 'Featured listings',
+  heading = 'Open houses this weekend',
+  subtitle,
+  viewAllHref = '/open-houses',
+  daysAhead,
+}: Props = {}) {
+  const window =
+    daysAhead && daysAhead > 0
+      ? {
+          dateFrom: new Date().toISOString().slice(0, 10),
+          dateTo: new Date(Date.now() + daysAhead * 86_400_000).toISOString().slice(0, 10),
+        }
+      : {}
+  const items = await getOpenHousesWithListings({ ...(city ? { city } : {}), ...window }).catch(
+    () => [] as OpenHouseWithListing[]
+  )
   const top = items.slice(0, 4)
 
   if (top.length === 0) {
     return null
   }
 
+  const defaultSubtitle = city
+    ? `Upcoming open houses in ${city}.`
+    : 'Representing a mix of neighborhoods across Central Oregon.'
+
   return (
     <Section padding="default" divider>
       <Container>
         <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
           <Stack gap="tight">
-            <Eyebrow>Featured listings</Eyebrow>
-            <H2>Open houses this weekend</H2>
+            <Eyebrow>{eyebrow}</Eyebrow>
+            <H2>{heading}</H2>
             <Body size="small" tone="muted">
-              Representing a mix of neighborhoods across Central Oregon.
+              {subtitle ?? defaultSubtitle}
             </Body>
           </Stack>
           {items.length > 4 ? (
             <TextLink
-              href="/open-houses"
+              href={viewAllHref}
               underline="on-hover"
               className="whitespace-nowrap text-sm"
             >

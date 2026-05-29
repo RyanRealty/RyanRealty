@@ -31,6 +31,11 @@ export const getMarketPulse = unstable_cache(
     // earlier this session.
     const supabase = supabaseAnon()
     if (!supabase) return null
+    // property_type='A' is the SFR-only convention every Ryan Realty surface
+    // follows (CLAUDE.md §0, docs/DATABASE_FOR_AI_AGENTS.md §0). market_pulse_live
+    // holds one row per (geo_type, geo_slug, property_type); without this filter
+    // .maybeSingle() breaks the day a non-'A' row lands. getRegionPulse already
+    // pins 'A' — this keeps the city path consistent with it.
     const { data, error } = await supabase
       .from('market_pulse_live')
       .select(
@@ -40,6 +45,7 @@ export const getMarketPulse = unstable_cache(
       )
       .eq('geo_type', geoType)
       .eq('geo_slug', geoSlug)
+      .eq('property_type', 'A')
       .maybeSingle()
 
     if (error) {

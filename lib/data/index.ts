@@ -126,6 +126,20 @@ export type {
   GetListingVideoCandidatesOptions,
 } from '@/lib/data/listings/getListingVideoCandidates'
 
+// Open houses — read from listings."OpenHouses" jsonb (the standalone
+// open_houses table sync is dead; see getUpcomingOpenHouses for the rule).
+export { getUpcomingOpenHouses } from '@/lib/data/open-houses/getUpcomingOpenHouses'
+export type { UpcomingOpenHouseRow } from '@/lib/data/open-houses/getUpcomingOpenHouses'
+
+// Blog — recent published posts for the city/community "guides" rail.
+export { getRecentBlogPosts } from '@/lib/data/blog/getRecentBlogPosts'
+export type { BlogPostCard } from '@/lib/data/blog/getRecentBlogPosts'
+
+// Geo tile imagery — representative photos from asset_library (the canonical
+// geo-tagged store) for city/neighborhood area cards. See getGeoTileImages.
+export { getGeoTileImages } from '@/lib/data/media/getGeoTileImages'
+export type { GeoTileImageMap } from '@/lib/data/media/getGeoTileImages'
+
 // Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'
 export {

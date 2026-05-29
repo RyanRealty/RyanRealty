@@ -85,11 +85,14 @@ async function _getOpenHousesWithListingsUncached(filters: OpenHousesFilters = {
   const dateFrom = filters.dateFrom ?? defaultRange.dateFrom
   const dateTo = filters.dateTo ?? defaultRange.dateTo
 
-  const { getOpenHousesInRange } = await import('@/lib/data')
-  const rows = await getOpenHousesInRange({
+  // Source: listings."OpenHouses" jsonb (live sync). The standalone
+  // open_houses table sync is dead — see getUpcomingOpenHouses for the rule.
+  const { getUpcomingOpenHouses } = await import('@/lib/data')
+  const rows = await getUpcomingOpenHouses({
     dateFromIso: dateFrom,
     dateToIso: dateTo,
     todayIso: today,
+    city: filters.city,
   })
 
   const listingKeys = [...new Set((rows ?? []).map((r: { listing_key: string }) => r.listing_key))]
@@ -156,6 +159,7 @@ async function _getOpenHousesWithListingsUncached(filters: OpenHousesFilters = {
       street_name?: string | null
       latitude?: number | null
       longitude?: number | null
+      photo_url?: string | null
     } | undefined
     // DAL listing_tile_mv inlines the address/geo fields the legacy
     // properties join used to provide. No properties table join needed.
@@ -195,7 +199,10 @@ async function _getOpenHousesWithListingsUncached(filters: OpenHousesFilters = {
       street_number: listRec?.street_number ?? null,
       street_name: listRec?.street_name ?? null,
       unparsed_address: address || null,
-      photo_url: heroByKey.get(row.listing_key) ?? null,
+      // Prefer the hero photo, but fall back to the tile photo — listing_photos
+      // is sparse (most listings only carry the tile/PhotoURL), so without this
+      // fallback open-house + listing cards render an empty placeholder.
+      photo_url: heroByKey.get(row.listing_key) ?? listRec?.photo_url ?? null,
       latitude: listRec?.latitude ?? null,
       longitude: listRec?.longitude ?? null,
     })
@@ -205,7 +212,9 @@ async function _getOpenHousesWithListingsUncached(filters: OpenHousesFilters = {
 
 export const getOpenHousesWithListings = unstable_cache(
   _getOpenHousesWithListingsUncached,
-  ['open-houses-with-listings'],
+  // v2 — source moved to listings."OpenHouses" jsonb + photo falls back to the
+  // tile when listing_photos is sparse. Bumped to drop stale null-photo entries.
+  ['open-houses-with-listings-v3'],
   { revalidate: 900, tags: ['open-houses'] }
 )
 

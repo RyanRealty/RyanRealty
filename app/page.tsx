@@ -25,12 +25,12 @@ export const revalidate = 60
 export const metadata: Metadata = {
   title: 'Ryan Realty — Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
   description:
-    'Find your next home in Central Oregon. Search homes in Bend, Redmond, Sisters, Sunriver and surrounding communities. Honest guidance from your local team.',
+    'Find your next home in Central Oregon. Search homes in Bend, Redmond, Sisters, Sunriver and surrounding communities. Real numbers, direct from the brokers who close deals here.',
   alternates: { canonical: siteUrl },
   openGraph: {
     title: 'Ryan Realty — Central Oregon Real Estate',
     description:
-      'Search homes in Bend, Redmond, Sisters, Sunriver and surrounding communities. Honest guidance from your local team.',
+      'Search homes in Bend, Redmond, Sisters, Sunriver and surrounding communities. Real numbers, direct from the brokers who close deals here.',
     url: siteUrl,
     siteName: 'Ryan Realty',
     type: 'website',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Ryan Realty — Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
-    description: 'Honest guidance from your local team for Central Oregon real estate.',
+    description: 'Real numbers, direct from the brokers who close deals in Central Oregon.',
   },
 }
 
@@ -55,7 +55,7 @@ function getTeamImageSrc(brokerage: BrokerageSettingsRow | null): string {
   }
 }
 
-function SectionSkeleton({ minH = 'min-h-[320px]' }: { minH?: string }) {
+function SectionSkeleton({ minH = 'min-h-80' }: { minH?: string }) {
   return <div className={`${minH} px-6 py-14 border-t border-border`} aria-hidden />
 }
 

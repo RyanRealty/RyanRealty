@@ -17,7 +17,6 @@ import SignUpTracker from "../components/tracking/SignUpTracker";
 import AdminHashRedirect from "../components/AdminHashRedirect";
 import InstallPrompt from "../components/pwa/InstallPrompt";
 import ComparisonTray from "@/components/comparison/ComparisonTray";
-import LazyChatWidget from "@/components/chat/LazyChatWidget";
 import ExitIntentPopup from "@/components/ExitIntentPopup";
 import { getCanonicalSiteUrl } from "@/lib/share-metadata";
 import { GeistSans } from "geist/font/sans";
@@ -150,7 +149,6 @@ export default function RootLayout({
           </Suspense>
           <HideOnLP>
             <ComparisonTray />
-            <LazyChatWidget />
             <ExitIntentPopup />
           </HideOnLP>
         </RootProvider>

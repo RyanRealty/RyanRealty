@@ -133,9 +133,35 @@ function ActivityRow({ item }: { item: ActivityFeedItem }) {
   )
 }
 
-export default async function ActivityFeed() {
+type Props = {
+  /**
+   * When provided, only activity for this city is shown.
+   * Pass the city name as it appears in the MLS (e.g. "Bend", "Redmond").
+   * Omit for the homepage multi-city view.
+   */
+  city?: string
+  /** Eyebrow label override. Defaults to "Live activity". */
+  eyebrow?: string
+  /** Section heading override. */
+  heading?: string
+  /** View-all link label. */
+  viewAllLabel?: string
+  /** View-all link href. Defaults to "/housing-market". */
+  viewAllHref?: string
+}
+
+export default async function ActivityFeed({
+  city,
+  eyebrow = 'Live activity',
+  heading,
+  viewAllLabel = 'Full market pulse →',
+  viewAllHref = '/housing-market',
+}: Props = {}) {
+  const cities = city ? [city] : [...ACTIVITY_FEED_DEFAULT_CITIES]
+  const h2 = heading ?? (city ? `What is happening in ${city}` : "What's happening right now")
+
   const items = await getActivityFeedWithFallbackMulti({
-    cities: [...ACTIVITY_FEED_DEFAULT_CITIES],
+    cities: cities as string[],
     limit: 8,
   }).catch(() => [])
 
@@ -146,15 +172,15 @@ export default async function ActivityFeed() {
       <Container>
         <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
           <Stack gap="tight">
-            <Eyebrow>Live activity</Eyebrow>
-            <H2>What&apos;s happening right now</H2>
+            <Eyebrow>{eyebrow}</Eyebrow>
+            <H2>{h2}</H2>
           </Stack>
           <TextLink
-            href="/housing-market"
+            href={viewAllHref}
             underline="on-hover"
             className="whitespace-nowrap text-sm"
           >
-            Full market pulse →
+            {viewAllLabel}
           </TextLink>
         </div>
 

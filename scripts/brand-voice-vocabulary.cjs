@@ -96,6 +96,14 @@ const MARKETING_SLOP = [
   'your real estate journey',
   'we are passionate about',
   'we pride ourselves on',
+  // D79 — self-describing tone filler. Let a specific fact carry the line.
+  'honest guidance from a local team',
+  'honest guidance from your local team',
+  'guidance from a local team',
+  'guidance from your local team',
+  'from your local team',
+  'trusted local team',
+  'your trusted',
 ]
 
 // Fake urgency — §6.2 (full canonical list).

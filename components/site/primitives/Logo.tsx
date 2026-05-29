@@ -40,16 +40,22 @@ type WordmarkProps = {
   className?: string
 }
 
+// D73 fix (2026-05-28): `wordmark-white.png` / `wordmark-navy.png` are
+// 959×629 (1.5:1) — the STACKED lockup, byte-identical to the stacked
+// files. The horizontal slots pointed at them, so every header rendered
+// a tiny squished stacked mark. The TRUE horizontal wordmark is the
+// 2271×454 (5:1) transparent lockup; recolored navy + white live at
+// /brand/logo-horizontal-{white,navy}.png.
 const WORDMARK_SRC: Record<`${'horizontal' | 'stacked'}-${Tone}`, string> = {
-  'horizontal-navy': '/brand/wordmark-navy.png',
-  'horizontal-white': '/brand/wordmark-white.png',
+  'horizontal-navy': '/brand/logo-horizontal-navy.png',
+  'horizontal-white': '/brand/logo-horizontal-white.png',
   'stacked-navy': '/brand/wordmark-stacked-navy.png',
   'stacked-white': '/brand/wordmark-stacked-white.png',
 }
 
 const WORDMARK_INTRINSIC = {
-  horizontal: { width: 959, height: 629 },
-  stacked: { width: 959, height: 629 },
+  horizontal: { width: 2271, height: 454 }, // 5:1 true horizontal lockup
+  stacked: { width: 959, height: 629 }, // 1.5:1 print/signage lockup
 } as const
 
 export function RyanRealtyMark({

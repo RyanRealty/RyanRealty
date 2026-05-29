@@ -26,7 +26,7 @@ export default function Hero() {
   return (
     <HeroBlock
       headline="Find Your Home in Central Oregon"
-      lede="Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Honest guidance from your local team."
+      lede="Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Real numbers, direct from the brokers who close deals here."
       showSearch
       chips={CITY_CHIPS}
     />

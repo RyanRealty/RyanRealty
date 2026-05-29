@@ -52,4 +52,56 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/import\s*\{\s*VacationRentalPotential\s*\}/)
     expect(src).toMatch(/import\s*\{\s*TransparentCMASummary\s*\}/)
   })
+
+  it('D78 — city hero active count comes from getMarketPulse, not geo_snapshot all-count', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    // Hero activeCount must derive from the market pulse (same source as
+    // the MarketSnapshot card), never from snapshot.activeAllCount.
+    expect(src).toMatch(/getMarketPulse\s*\(/)
+    expect(src).toMatch(/activeCount\s*=\s*pulse\?\.activeCount/)
+    expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
+  })
+
+  it('D83/D85 — defined neighborhoods section sources designated Bend polygons only', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    expect(src).toMatch(/bendNeighborhoodPolygons/)
+    expect(src).toMatch(/items=\{bendNeighborhoodItems\}/)
+  })
+
+  it('D85 — golf & master-planned communities are a SEPARATE section from neighborhoods', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    // distinct item list + its own RelatedAreas section
+    expect(src).toMatch(/golfCommunityItems/)
+    expect(src).toMatch(/items=\{golfCommunityItems\}/)
+    expect(src).toMatch(/master-planned/)
+    // the old combined "neighborhoods and communities" list must be gone
+    expect(src).not.toMatch(/withinCityItems/)
+  })
+
+  it('D86 — area tiles source imagery from the canonical helpers', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    expect(src).toMatch(/getGeoTileImages/)
+    expect(src).toMatch(/golfCommunityImage|GOLF_COMMUNITY_IMAGES/)
+    // never hardcode a landing-page image path in the page
+    expect(src).not.toMatch(/['"`]\/lp\/[^'"`]*\.(jpg|jpeg|png|webp)/)
+  })
+
+  it('D80 — city page surfaces a blog/guides section from real posts', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    expect(src).toMatch(/getRecentBlogPosts/)
+    expect(src).toMatch(/ArticleGrid/)
+  })
+
+  it('D84 — city page has a separate "Explore other cities" section', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    expect(src).toMatch(/otherCityItems/)
+    expect(src).toMatch(/Explore other cities/)
+  })
+
+  it('D87 — multi-word city geo_keys are slugified (La Pine, Powell Butte not dropped)', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    // geo_key spaces normalized before the service-area match + in the href
+    expect(src).toMatch(/replace\(\/\\s\+\/g, '-'\)/)
+    expect(src).toMatch(/'la-pine'/)
+  })
 })

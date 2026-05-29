@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   Container,
@@ -38,6 +39,13 @@ export type RelatedAreaItem = {
   href: string
   /** Optional active-listing count rendered as "N active" under the name. */
   activeCount?: number | null
+  /**
+   * Optional tile photo. When ANY item in the grid has one, the grid renders
+   * as photo cards (image + name/count overlaid on a navy scrim). Source it
+   * from the canonical stores: asset_library (getGeoTileImages) for cities /
+   * neighborhoods, GOLF_COMMUNITY_IMAGES (lib/geo-images) for golf communities.
+   */
+  imageUrl?: string | null
 }
 
 type Props = {
@@ -51,14 +59,15 @@ type Props = {
   className?: string
 }
 
-function AreaTile({ item }: { item: RelatedAreaItem }) {
+/** Compact text row — used when no item in the grid has a photo. */
+function AreaTextTile({ item }: { item: RelatedAreaItem }) {
   return (
     <Link
       href={item.href}
-      className="group bg-card border border-border rounded-[14px] px-5 py-4 flex items-center justify-between gap-3 shadow-sm hover:border-primary/40 hover:shadow-md transition"
+      className="group bg-card border border-border rounded-xl px-5 py-4 flex items-center justify-between gap-3 shadow-sm hover:border-primary/40 hover:shadow-md transition"
     >
       <div className="min-w-0">
-        <div className="text-[15px] font-bold tracking-[-0.01em] text-foreground truncate">
+        <div className="text-sm font-bold tracking-tight text-foreground truncate">
           {item.name}
         </div>
         {typeof item.activeCount === 'number' ? (
@@ -77,6 +86,42 @@ function AreaTile({ item }: { item: RelatedAreaItem }) {
   )
 }
 
+/** Photo card — image with a navy bottom-up scrim and the name/count overlaid.
+ * Items missing a photo fall back to a solid navy card so the grid stays
+ * uniform (never a stark white box). */
+function AreaPhotoTile({ item }: { item: RelatedAreaItem }) {
+  return (
+    <Link
+      href={item.href}
+      className="group relative block aspect-[4/3] overflow-hidden rounded-xl border border-border shadow-sm hover:shadow-md transition"
+    >
+      {item.imageUrl ? (
+        <Image
+          src={item.imageUrl}
+          alt={item.name}
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          className="object-cover transition duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-primary" aria-hidden />
+      )}
+      <div
+        className="absolute inset-0 bg-gradient-to-t from-primary via-primary/30 to-transparent"
+        aria-hidden
+      />
+      <div className="absolute inset-x-0 bottom-0 p-4">
+        <div className="text-sm font-bold tracking-tight text-white drop-shadow">{item.name}</div>
+        {typeof item.activeCount === 'number' ? (
+          <div className="text-xs text-white/85 mt-0.5">
+            <TabularNumber value={item.activeCount} /> active
+          </div>
+        ) : null}
+      </div>
+    </Link>
+  )
+}
+
 export function RelatedAreas({
   items,
   title = 'Related areas',
@@ -87,6 +132,10 @@ export function RelatedAreas({
 }: Props) {
   if (items.length === 0) return null
 
+  // If any item carries a photo, render the whole grid as photo cards so it
+  // reads as one consistent set (D86). Otherwise keep the compact text rows.
+  const hasImages = items.some((i) => i.imageUrl)
+
   return (
     <Section padding="default" tone={tone} divider className={className}>
       <Container>
@@ -96,9 +145,13 @@ export function RelatedAreas({
         </Stack>
 
         <Grid cols={cols} gap="default">
-          {items.map((item) => (
-            <AreaTile key={item.href} item={item} />
-          ))}
+          {items.map((item) =>
+            hasImages ? (
+              <AreaPhotoTile key={item.href} item={item} />
+            ) : (
+              <AreaTextTile key={item.href} item={item} />
+            ),
+          )}
         </Grid>
       </Container>
     </Section>

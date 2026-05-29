@@ -1,4 +1,5 @@
 import { getRegionPulse } from '@/lib/data/market/getRegionPulse'
+import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import {
   Body,
   Container,
@@ -78,8 +79,8 @@ function StatCard({ label, value, sub, badge }: StatCardProps) {
  */
 function marketVerdict(mos: number | null): { kind: 'hot' | 'balanced' | 'buyer'; text: string } | undefined {
   if (mos == null) return undefined
-  if (mos <= 4) return { kind: 'hot', text: 'Seller’s market' }
-  if (mos >= 6) return { kind: 'buyer', text: 'Buyer’s market' }
+  if (mos <= 4) return { kind: 'hot', text: "Seller's market" }
+  if (mos >= 6) return { kind: 'buyer', text: "Buyer's market" }
   return { kind: 'balanced', text: 'Balanced' }
 }
 
@@ -99,9 +100,52 @@ function fmtFreshness(iso: string): string {
   }
 }
 
-export default async function MarketSnapshot() {
-  const pulse = await getRegionPulse()
-  const verdict = marketVerdict(pulse?.monthsOfSupply ?? null)
+type Props = {
+  /**
+   * When provided, the snapshot fetches city-scoped data from
+   * market_pulse_live instead of the region aggregate. Pass the
+   * city's slug (e.g. "bend", "redmond"). Omit for the homepage
+   * region-level snapshot.
+   */
+  citySlug?: string
+  cityName?: string
+}
+
+export default async function MarketSnapshot({ citySlug, cityName }: Props = {}) {
+  // City-scoped path — getMarketPulse reads market_pulse_live for the city row.
+  // Region path — getRegionPulse reads the pre-aggregated central-oregon row.
+  let activeCount: number | null = null
+  let medianListPrice: number | null = null
+  let medianDaysToPending: number | null = null
+  let monthsOfSupply: number | null = null
+  let closedLast30Days: number | null = null
+  let updatedAt = ''
+
+  if (citySlug) {
+    const pulse = await getMarketPulse({ geoType: 'city', geoSlug: citySlug })
+    if (pulse) {
+      activeCount = pulse.activeCount
+      medianListPrice = pulse.medianListPrice
+      medianDaysToPending = pulse.medianDaysToPending
+      monthsOfSupply = pulse.monthsOfSupply
+      closedLast30Days = pulse.closedLast30Days
+      updatedAt = pulse.refreshedAt
+    }
+  } else {
+    const regionPulse = await getRegionPulse()
+    if (regionPulse) {
+      activeCount = regionPulse.activeCount
+      medianListPrice = regionPulse.medianListPrice
+      medianDaysToPending = regionPulse.medianDaysToPending
+      monthsOfSupply = regionPulse.monthsOfSupply
+      closedLast30Days = regionPulse.soldCount30d
+      updatedAt = regionPulse.updatedAt
+    }
+  }
+
+  const verdict = marketVerdict(monthsOfSupply)
+  const geoLabel = cityName ?? 'Central Oregon'
+  const marketHubHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
 
   return (
     <Section padding="default" divider>
@@ -109,50 +153,48 @@ export default async function MarketSnapshot() {
         <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
           <Stack gap="tight">
             <Eyebrow>Market snapshot</Eyebrow>
-            <H2>Central Oregon housing market</H2>
+            <H2>{geoLabel} housing market</H2>
             <Body size="small" tone="muted">
-              Refreshed every 15 minutes from Oregon Data Share. SFR + condos +
-              townhomes across the 11 Central Oregon communities we serve.
-              {pulse?.updatedAt ? ` Updated ${fmtFreshness(pulse.updatedAt)}.` : ''}
+              Refreshed every 15 minutes from Oregon Data Share. Single-family homes only.
+              {updatedAt ? ` Updated ${fmtFreshness(updatedAt)}.` : ''}
             </Body>
           </Stack>
           <TextLink
-            href="/housing-market"
+            href={marketHubHref}
             underline="on-hover"
             className="whitespace-nowrap text-sm"
           >
-            Open the housing market hub →
+            {cityName ? `Open ${cityName} market report →` : 'Open the housing market hub →'}
           </TextLink>
         </div>
 
         <Grid cols={4} gap="default">
           <StatCard
-            label="Active residential listings"
-            value={<TabularNumber value={pulse?.activeCount ?? null} />}
-            sub="Homes, condos, townhomes"
+            label="Active single-family homes"
+            value={<TabularNumber value={activeCount} />}
+            sub="For sale now"
           />
           <StatCard
             label="Median list price"
-            value={<Price value={pulse?.medianListPrice ?? null} />}
-            sub="Central Oregon residential"
+            value={<Price value={medianListPrice} />}
+            sub={`${geoLabel} single-family`}
           />
           <StatCard
             label="Typical days to pending"
-            value={<DaysCount value={pulse?.medianDaysToPending ?? null} fallback="—" />}
+            value={<DaysCount value={medianDaysToPending} fallback="—" />}
             sub="From list to under contract"
           />
           <StatCard
             label="Months of supply"
             value={
               <TabularNumber
-                value={pulse?.monthsOfSupply ?? null}
+                value={monthsOfSupply}
                 fractionDigits={1}
               />
             }
             sub={
               <>
-                <TabularNumber value={pulse?.pendingCount ?? null} /> pending ·{' '}
-                <TabularNumber value={pulse?.soldCount30d ?? null} /> closed last 30d
+                <TabularNumber value={closedLast30Days} /> closed last 30 days
               </>
             }
             badge={verdict}
