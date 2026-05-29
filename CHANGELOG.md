@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.354.1 (2026-05-29)
+
+### Other
+- Wave 3 city page: real imagery, neighborhood/community split, live open houses + blog, logo fix
+
+---
+
+
 ## v1.354.0 (2026-05-28)
 
 ### Features
