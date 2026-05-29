@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.358.0 (2026-05-29)
+
+### Features
+- feat(communities): rich verified content for all 27 communities + neighborhoods, subdivision pages, spatial MV boundary fix
+
+---
+
+
 ## v1.357.0 (2026-05-29)
 
 ### Features
