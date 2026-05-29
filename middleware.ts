@@ -67,6 +67,82 @@ function pickLimiter(pathname: string): Ratelimit | null {
   return null
 }
 
+// ─── Bot / geo screening (page routes only) ─────────────────────────────────
+//
+// Why this exists: GA4's built-in "known bots" filter only drops *declared*
+// crawlers (Googlebot, Bingbot, ...). It does nothing about JS-executing
+// scraper bots running in data centers — they render the page, gtag.js fires,
+// and GA4 logs a real session from an IP that geolocates to China/Singapore/etc.
+// That is the "traffic from places like China" noise. Two layers stop it:
+//
+//   1. UA denylist — obvious automation (HTTP client libraries, CLI tools,
+//      security scanners, zero-value aggressive crawlers) and requests with no
+//      User-Agent at all.
+//   2. Geo block — page views geolocating to high-spam / data-center origins.
+//      Vercel sets x-vercel-ip-country at the edge; it is absent in local dev,
+//      so this layer no-ops locally.
+//
+// Verified good crawlers (search, AI, social link-preview, our own perf tooling)
+// are allowlisted FIRST and bypass BOTH layers — so SEO and share-card unfurling
+// never break, even if a good crawler ever requests from a blocked country.
+//
+// Scope: PAGE ROUTES ONLY. /api/* is never screened here — webhooks (Meta CAPI,
+// FUB, Spark), Vercel crons, and other server-to-server callers legitimately use
+// non-browser UAs and may originate from foreign IPs. Static assets already skip
+// middleware via the matcher.
+//
+// Operational knobs (no redeploy needed):
+//   BOT_SCREEN_DISABLED=1   — kill switch, disables all screening instantly.
+//   BLOCK_COUNTRIES=CN,RU   — override the geo list (CSV of ISO-3166 alpha-2).
+
+// Always allow. Mirrors the AI crawlers in app/robots.ts, plus search engines,
+// social unfurlers, and our perf tooling (Lighthouse / PageSpeed Insights).
+const GOOD_BOT_RE =
+  /(googlebot|google-inspectiontool|storebot-google|google-read-aloud|adsbot-google|mediapartners-google|googleother|google-extended|apis-google|feedfetcher-google|bingbot|bingpreview|adidxbot|msnbot|slurp|duckduckbot|applebot|gptbot|oai-searchbot|chatgpt-user|perplexitybot|claudebot|claude-searchbot|claude-web|anthropic-ai|cohere-ai|ccbot|chrome-lighthouse|google page speed|pagespeed|facebookexternalhit|facebookcatalog|facebot|twitterbot|linkedinbot|slackbot|slack-imgproxy|whatsapp|discordbot|telegrambot|skypeuripreview|pinterest|redditbot|embedly|flipboard|vercelbot|vercel-screenshot)/i
+
+// Always block. Unambiguous automation: HTTP client libraries, CLI tools,
+// security scanners, and aggressive zero-value crawlers. No real visitor sends
+// these. (AhrefsBot is intentionally absent — it feeds our own Ahrefs site
+// audit. Sophisticated headless bots faking a real browser UA are caught by the
+// geo layer, not this list.)
+const BAD_BOT_RE =
+  /(curl\/|wget|python-requests|python-urllib|urllib|aiohttp|httpx|libwww-perl|lwp::|java\/|okhttp|go-http-client|node-fetch|axios|guzzlehttp|apache-httpclient|httpclient|winhttp|wininet|mechanize|scrapy|httrack|colly|zgrab|masscan|nmap|nikto|sqlmap|nuclei|wpscan|gobuster|censys|internet-measurement|l9scan|netcraftsurveyagent|semrushbot|mj12bot|dotbot|dataforseobot|petalbot|bytespider|blexbot|megaindex|serpstatbot|seekport|barkrowler|spbot)/i
+
+function parseBlockedCountries(): Set<string> {
+  const fromEnv = (process.env.BLOCK_COUNTRIES || '').trim()
+  const codes = fromEnv
+    ? fromEnv.split(',').map((c) => c.trim().toUpperCase()).filter(Boolean)
+    : ['CN', 'HK', 'RU', 'SG'] // default: top data-center / GA4-spam origins
+  return new Set(codes)
+}
+const BLOCKED_COUNTRIES = parseBlockedCountries()
+
+/**
+ * Decide whether to block a page request. Returns a short reason string when the
+ * request should be 403'd, or null to let it through. Never screens /api/*.
+ */
+function screenBotRequest(request: NextRequest, pathname: string): string | null {
+  if (process.env.BOT_SCREEN_DISABLED === '1') return null
+  if (pathname.startsWith('/api/')) return null
+
+  const ua = request.headers.get('user-agent') ?? ''
+
+  // 1. Verified good crawlers bypass everything (SEO + social safety).
+  if (GOOD_BOT_RE.test(ua)) return null
+
+  // 2. No User-Agent on an HTML page route is effectively always a script.
+  if (ua.trim() === '') return 'empty-ua'
+
+  // 3. Obvious automation / scanners / junk crawlers.
+  if (BAD_BOT_RE.test(ua)) return 'bad-ua'
+
+  // 4. Geo block — Vercel sets this header at the edge; absent locally (→ allow).
+  const country = (request.headers.get('x-vercel-ip-country') ?? '').toUpperCase()
+  if (country && BLOCKED_COUNTRIES.has(country)) return `geo:${country}`
+
+  return null
+}
+
 /**
  * Map of landing-page subdomains to the underlying LP path they serve at the
  * root. Add buyer/recruit/etc. here as we ship them.
@@ -89,6 +165,18 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const url = request.nextUrl
   const pathname = url.pathname
   const host = (request.headers.get('host') ?? '').toLowerCase()
+
+  // ─── (0) Bot / geo screening for page routes (never /api/*) ────────────
+  // Block obvious automation and high-spam-origin page views before anything
+  // renders, so gtag.js never fires for them — keeps GA4 clean. Good crawlers
+  // and /api/* are exempt (see screenBotRequest).
+  const botBlockReason = screenBotRequest(request, pathname)
+  if (botBlockReason) {
+    return new NextResponse('Forbidden', {
+      status: 403,
+      headers: { 'x-bot-screen': botBlockReason, 'cache-control': 'no-store' },
+    })
+  }
 
   // ─── (1) Host-based rewrite for LP subdomains ──────────────────────────
   // seller.ryan-realty.com/ → /lp/seller-home-value (transparent rewrite —
