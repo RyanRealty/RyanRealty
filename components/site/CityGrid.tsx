@@ -100,7 +100,7 @@ function CityCard({ city, imageUrl }: { city: CityCardData; imageUrl: string | n
 export default async function CityGrid() {
   const [cities, geoImages] = await Promise.all([
     getCitiesForIndex().catch(() => []),
-    getGeoTileImages([...CITY_ORDER]).catch(() => ({})),
+    getGeoTileImages([...CITY_ORDER]).catch((): Record<string, string[]> => ({})),
   ])
   const bySlug = new Map(cities.map((c) => [c.slug, c]))
   const ordered = CITY_ORDER.map((slug) => bySlug.get(slug)).filter(

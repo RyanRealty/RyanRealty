@@ -1,16 +1,87 @@
 /**
- * Inline JSON-LD for SEO and AI discoverability.
- * Renders in root layout for site-wide identity.
+ * Site-wide identity JSON-LD, rendered once in the root layout.
+ *
+ * Emits the canonical Organization entity (RealEstateAgent + LocalBusiness)
+ * that every other page's JSON-LD references by @id, plus the WebSite block
+ * with the sitelinks SearchAction.
+ *
+ * The Organization is the anchor AI engines and Google use to attribute every
+ * citation. It carries verified NAP, the locked social profiles (sameAs), the
+ * brokerage founding date, and the three licensed brokers (founder + employees)
+ * pulled live from the cached brokers DAL so the markup never diverges from the
+ * roster. Broker license numbers come from public.brokers (OREA-authoritative).
  */
-export default function JsonLd() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'
+import { getBrokers } from '@/lib/data/brokers/getBrokers'
+import type { Broker } from '@/lib/data/types/broker'
+import { teamPath } from '@/lib/slug'
 
-  const organization = {
+// Social profiles — LOCKED 2026-05-13 (CLAUDE.md): @ryanrealtybend everywhere,
+// /ryanrealtybend on Facebook + LinkedIn vanity.
+const SAME_AS = [
+  'https://www.instagram.com/ryanrealtybend',
+  'https://www.facebook.com/ryanrealtybend',
+  'https://www.youtube.com/@ryanrealtybend',
+  'https://www.tiktok.com/@ryanrealtybend',
+  'https://x.com/ryanrealtybend',
+  'https://www.linkedin.com/company/ryanrealtybend',
+  'https://www.pinterest.com/ryanrealtybend',
+  'https://www.threads.net/@ryanrealtybend',
+]
+
+/** "541.213.6706" -> "+1-541-213-6706" (schema.org E.164-ish telephone). */
+function toTel(dotted: string | null | undefined): string | undefined {
+  if (!dotted) return undefined
+  const digits = dotted.replace(/\D/g, '')
+  if (digits.length !== 10) return undefined
+  return `+1-${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+function prune<T extends Record<string, unknown>>(obj: T): T {
+  const out = {} as Record<string, unknown>
+  for (const [k, v] of Object.entries(obj)) {
+    if (v == null) continue
+    if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v as object).length === 0) continue
+    out[k] = v
+  }
+  return out as T
+}
+
+function brokerAgent(b: Broker, baseUrl: string): Record<string, unknown> {
+  const url = `${baseUrl}${teamPath(b.slug)}`
+  return prune({
+    '@type': 'RealEstateAgent',
+    '@id': `${url}#person`,
+    name: b.fullName,
+    jobTitle: b.title,
+    url,
+    image: b.headshotPng ? `${baseUrl}${b.headshotPng}` : undefined,
+    telephone: toTel(b.phoneDirect),
+    email: b.email ?? undefined,
+    worksFor: { '@id': `${baseUrl}#organization` },
+    identifier: b.licenseNumber
+      ? { '@type': 'PropertyValue', propertyID: 'Oregon Real Estate License', value: b.licenseNumber }
+      : undefined,
+  })
+}
+
+export default async function JsonLd() {
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const brokers = await getBrokers().catch(() => [] as Broker[])
+  const principal = brokers.find((b) => b.isPrincipal) ?? null
+  const team = brokers.filter((b) => !b.isPrincipal)
+
+  const organization = prune({
     '@context': 'https://schema.org',
     '@type': ['RealEstateAgent', 'LocalBusiness'],
+    '@id': `${baseUrl}#organization`,
     name: 'Ryan Realty',
-    description: 'Central Oregon real estate. Browse homes for sale, search by city and neighborhood, view maps and listing details.',
+    legalName: 'Ryan Realty LLC',
+    description:
+      'Independent real estate brokerage serving Bend, Redmond, Sisters, Sunriver, and Central Oregon. Browse homes for sale, search by city and neighborhood, and see live market data.',
     url: baseUrl,
+    telephone: '+1-541-213-6706',
+    email: 'matt@ryan-realty.com',
+    foundingDate: '2023-06-21',
     areaServed: {
       '@type': 'GeoCircle',
       geoMidpoint: { '@type': 'GeoCoordinates', latitude: 44.0582, longitude: -121.3153 },
@@ -22,15 +93,18 @@ export default function JsonLd() {
       addressRegion: 'OR',
       addressCountry: 'US',
     },
-    sameAs: [],
-  }
+    sameAs: SAME_AS,
+    founder: principal ? brokerAgent(principal, baseUrl) : undefined,
+    employee: team.length > 0 ? team.map((b) => brokerAgent(b, baseUrl)) : undefined,
+  })
 
   const website = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': `${baseUrl}#website`,
     name: 'Ryan Realty',
     url: baseUrl,
-    description: 'Search Central Oregon homes for sale. Browse listings, maps, and find your next home.',
+    description: 'Search Central Oregon homes for sale. Browse listings, maps, and live market data.',
     publisher: { '@id': `${baseUrl}#organization` },
     potentialAction: {
       '@type': 'SearchAction',
@@ -43,9 +117,7 @@ export default function JsonLd() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({ ...organization, '@id': `${baseUrl}#organization` }),
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }}
       />
       <script
         type="application/ld+json"

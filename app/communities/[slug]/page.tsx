@@ -53,6 +53,10 @@ import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import { CommunityRichContent } from '@/components/site/CommunityRichContent'
 import { Container } from '@/components/site/primitives'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { FAQBlock } from '@/components/site/FAQBlock'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { buildMarketFaq } from '@/lib/site/market-faq'
+import type { SchemaInput } from '@/lib/site/json-ld'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -231,12 +235,61 @@ export default async function CommunityDetailPage({ params }: Props) {
   const subNeighborhoods = registryEntry?.sub_neighborhoods ?? []
   const hasSubNeighborhoods = subNeighborhoods.length > 0
 
+  // AI citability: verified market Q&A + structured data, same single-source
+  // pattern as the city page (FAQ text == FAQPage markup == Dataset values).
+  // Resort communities often have no neighborhood-level market_pulse_live row,
+  // so fall back to the community's own activeCount + medianPrice — the SAME
+  // verified numbers the hero lede above already displays.
+  const marketInput = pulse ?? {
+    activeCount: community.activeCount ?? null,
+    medianListPrice: community.medianPrice ?? null,
+  }
+  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(community.name, marketInput)
+
+  const communitySchemas: SchemaInput[] = [
+    {
+      type: 'breadcrumb',
+      items: [
+        { name: 'Home', url: '/' },
+        { name: 'Communities', url: '/communities' },
+        { name: cityName, url: `/cities/${citySlug}` },
+        { name: community.name, url: `/communities/${slug}` },
+      ],
+    },
+    {
+      type: 'place',
+      placeType: 'Place',
+      name: community.name,
+      description: `${community.name}, a community in ${cityName}, Oregon. Homes for sale and live single-family market data.`,
+      url: `/communities/${slug}`,
+      address: { city: cityName, state: 'OR', country: 'US' },
+      containedInPlace: cityName,
+      hasMap: boundaryMapData.polygon ? `/communities/${slug}` : undefined,
+      additionalProperty: datasetVariables.length > 0 ? datasetVariables : undefined,
+    },
+  ]
+  if (datasetVariables.length > 0) {
+    communitySchemas.push({
+      type: 'dataset',
+      name: `${community.name} real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
+      description: `Live single-family home market data for ${community.name} in ${cityName}, Oregon. Includes median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
+      url: `/communities/${slug}`,
+      dateModified: asOfIso ?? undefined,
+      spatialCoverageName: `${community.name}, ${cityName}, OR`,
+      variableMeasured: datasetVariables,
+    })
+  }
+
   return (
     <main className="min-h-screen bg-background">
+
+      {/* AI-citability structured data: full breadcrumb + community Place + market Dataset. */}
+      <MetadataBlock schemas={communitySchemas} />
 
       {/* Breadcrumb */}
       <Container className="pt-3 pb-1">
         <BreadcrumbNav
+          includeJsonLd={false}
           items={[
             { label: 'Home', href: '/' },
             { label: 'Communities', href: '/communities' },
@@ -510,6 +563,16 @@ export default async function CommunityDetailPage({ params }: Props) {
       />
 
       {/* CTA bar */}
+      {/* Common questions — direct-answer content + FAQPage JSON-LD (same
+          verified numbers as the Dataset above). */}
+      {faqs.length > 0 ? (
+        <FAQBlock
+          items={faqs}
+          eyebrow="Common questions"
+          title={`${community.name} real estate questions`}
+        />
+      ) : null}
+
       <CTABar
         eyebrow={`Why Ryan Realty in ${community.name}`}
         title="Local brokers. Specific numbers. No pressure."

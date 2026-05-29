@@ -65,40 +65,10 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@graph': [
-              {
-                '@type': 'RealEstateAgent',
-                name: 'Ryan Realty',
-                url: siteUrl,
-                areaServed: [
-                  { '@type': 'City', name: 'Bend', addressRegion: 'OR' },
-                  { '@type': 'City', name: 'Redmond', addressRegion: 'OR' },
-                  { '@type': 'City', name: 'Sisters', addressRegion: 'OR' },
-                  { '@type': 'City', name: 'Sunriver', addressRegion: 'OR' },
-                ],
-              },
-              {
-                '@type': 'WebSite',
-                name: 'Ryan Realty',
-                url: siteUrl,
-                potentialAction: {
-                  '@type': 'SearchAction',
-                  target: {
-                    '@type': 'EntryPoint',
-                    urlTemplate: `${siteUrl}/homes-for-sale?keywords={search_term_string}`,
-                  },
-                  'query-input': 'required name=search_term_string',
-                },
-              },
-            ],
-          }),
-        }}
-      />
+      {/* Site-wide Organization + WebSite JSON-LD is emitted once by the root
+          layout (<JsonLd>), with the canonical @id, sameAs, brokers, and NAP.
+          The homepage does NOT re-declare them — duplicate, thinner entities
+          confuse schema parsers (the #1 cause of markup being discarded). */}
 
       <Hero />
 

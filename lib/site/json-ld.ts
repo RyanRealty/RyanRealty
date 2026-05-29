@@ -33,7 +33,11 @@ export type SchemaInput =
   | WebPageInput
   | FaqPageInput
   | PlaceInput
+  | DatasetInput
   | ArticleInput
+
+/** A single named, verified statistic — feeds Place.additionalProperty + Dataset.variableMeasured. */
+export type StatValue = { name: string; value: string | number; unitText?: string }
 
 export type RealEstateListingInput = {
   type: 'realEstateListing'
@@ -71,12 +75,34 @@ export type FaqPageInput = {
 
 export type PlaceInput = {
   type: 'place'
+  /** schema.org subtype. City for a city page, Neighborhood for a Bend neighborhood, Place (default) for a resort/master-planned community. */
+  placeType?: 'City' | 'Neighborhood' | 'Place'
   name: string
   description?: string
   url?: string
   geo?: GeoInput
   address?: AddressInput
   containedInPlace?: string
+  hasMap?: string
+  /** Verified live stats (active count, median list price, etc.) surfaced as PropertyValue. */
+  additionalProperty?: ReadonlyArray<StatValue>
+}
+
+/**
+ * Market-statistics dataset for a geography. The single schema type AI engines
+ * parse as structured numeric claims (Google Dataset Search understands it).
+ * dateModified MUST be the real data-refresh timestamp (market_pulse_live
+ * refreshedAt) so freshness is honest — a stale date kills citation trust.
+ */
+export type DatasetInput = {
+  type: 'dataset'
+  name: string
+  description: string
+  url?: string
+  dateModified?: string
+  temporalCoverage?: string
+  spatialCoverageName?: string
+  variableMeasured: ReadonlyArray<StatValue>
 }
 
 export type ArticleInput = {
@@ -183,10 +209,11 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
     case 'place':
       return prune({
         '@context': 'https://schema.org',
-        '@type': 'Place',
+        '@type': input.placeType ?? 'Place',
         name: input.name,
         description: input.description,
         url: absoluteUrl(input.url),
+        hasMap: absoluteUrl(input.hasMap),
         geo: input.geo ? {
           '@type': 'GeoCoordinates',
           latitude: input.geo.lat,
@@ -204,6 +231,35 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
           '@type': 'Place',
           name: input.containedInPlace,
         } : undefined,
+        additionalProperty: input.additionalProperty && input.additionalProperty.length > 0
+          ? input.additionalProperty.map((p) => prune({
+              '@type': 'PropertyValue',
+              name: p.name,
+              value: p.value,
+              unitText: p.unitText,
+            }))
+          : undefined,
+      })
+
+    case 'dataset':
+      return prune({
+        '@context': 'https://schema.org',
+        '@type': 'Dataset',
+        name: input.name,
+        description: input.description,
+        url: absoluteUrl(input.url),
+        dateModified: input.dateModified,
+        temporalCoverage: input.temporalCoverage,
+        creator: { '@id': `${getCanonicalSiteUrl()}#organization` },
+        spatialCoverage: input.spatialCoverageName
+          ? { '@type': 'Place', name: input.spatialCoverageName }
+          : undefined,
+        variableMeasured: input.variableMeasured.map((v) => prune({
+          '@type': 'PropertyValue',
+          name: v.name,
+          value: v.value,
+          unitText: v.unitText,
+        })),
       })
 
     case 'article':

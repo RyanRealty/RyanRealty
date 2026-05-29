@@ -45,6 +45,10 @@ import { ArticleGrid } from '@/components/site/ArticleGrid'
 import { CTABar } from '@/components/site/CTABar'
 import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import { Container } from '@/components/site/primitives'
+import { FAQBlock } from '@/components/site/FAQBlock'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { buildMarketFaq } from '@/lib/site/market-faq'
+import type { SchemaInput } from '@/lib/site/json-ld'
 
 // ---------------------------------------------------------------------------
 // Static params
@@ -122,7 +126,7 @@ export default async function CityDetailPage({ params }: Props) {
         'prineville',
         'tumalo',
         'smith-rock',
-      ]).catch(() => ({})),
+      ]).catch((): Record<string, string[]> => ({})),
       // Shared boundary map data: authoritative city polygon + spatially-correct
       // listing pins (listings_in_boundary RPC). Replaces the old two-call pattern
       // (getBoundaryGeoJSON + getCityListings). Gate G31 enforces this path.
@@ -154,6 +158,49 @@ export default async function CityDetailPage({ params }: Props) {
     ledeParts.push(`Median ${pulse.medianDaysToPending} days to pending.`)
   }
   const lede = ledeParts.join(' ')
+
+  // -------------------------------------------------------------------------
+  // AI citability (CLAUDE.md "build for AI agents"): verified market Q&A +
+  // structured data. buildMarketFaq is the SINGLE source for the visible FAQ,
+  // the FAQPage JSON-LD (emitted by FAQBlock), and the Dataset variableMeasured
+  // below, so the markup can never diverge from the visible numbers. Every
+  // figure is null-guarded in the helper — nothing is invented. Dataset
+  // dateModified is the real market_pulse_live refresh timestamp.
+  // -------------------------------------------------------------------------
+  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, pulse)
+
+  const citySchemas: SchemaInput[] = [
+    {
+      type: 'breadcrumb',
+      items: [
+        { name: 'Home', url: '/' },
+        { name: 'Cities', url: '/cities' },
+        { name: cityName, url: `/cities/${slug}` },
+      ],
+    },
+    {
+      type: 'place',
+      placeType: 'City',
+      name: cityName,
+      description: `Homes for sale and live single-family market data for ${cityName}, Oregon.`,
+      url: `/cities/${slug}`,
+      address: { city: cityName, state: 'OR', country: 'US' },
+      containedInPlace: 'Central Oregon',
+      hasMap: boundaryMapData.polygon ? `/cities/${slug}` : undefined,
+      additionalProperty: datasetVariables.length > 0 ? datasetVariables : undefined,
+    },
+  ]
+  if (datasetVariables.length > 0) {
+    citySchemas.push({
+      type: 'dataset',
+      name: `${cityName}, Oregon real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
+      description: `Live single-family home market data for ${cityName}, Oregon. Includes median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
+      url: `/cities/${slug}`,
+      dateModified: asOfIso ?? undefined,
+      spatialCoverageName: `${cityName}, OR`,
+      variableMeasured: datasetVariables,
+    })
+  }
 
   // -------------------------------------------------------------------------
   // D85 — TWO distinct in-city sections (Matt directive 2026-05-28):
@@ -248,9 +295,15 @@ export default async function CityDetailPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-background">
 
+      {/* AI-citability structured data: full breadcrumb + City entity + market Dataset.
+          BreadcrumbNav's own JSON-LD is suppressed below so this is the single,
+          complete BreadcrumbList (including the city leaf). */}
+      <MetadataBlock schemas={citySchemas} />
+
       {/* Breadcrumb */}
       <Container className="pt-3 pb-1">
         <BreadcrumbNav
+          includeJsonLd={false}
           items={[
             { label: 'Home', href: '/' },
             { label: 'Cities', href: '/cities' },
@@ -280,7 +333,7 @@ export default async function CityDetailPage({ params }: Props) {
       {boundaryMapData.polygon ? (
         <NeighborhoodMap
           eyebrow={cityName}
-          title={`${cityName} homes on the map`}
+          title={`Where ${cityName} listings are`}
           polygons={[
             {
               slug,
@@ -361,6 +414,17 @@ export default async function CityDetailPage({ params }: Props) {
         subtitle={`Local housing news, neighborhood deep dives, and buyer and seller guides for ${cityName} and Central Oregon.`}
         tone="muted"
       />
+
+      {/* Common questions — direct-answer content + FAQPage JSON-LD (same
+          verified numbers as the Dataset above). Renders nothing when the
+          market pulse is unavailable. */}
+      {faqs.length > 0 ? (
+        <FAQBlock
+          items={faqs}
+          eyebrow="Common questions"
+          title={`${cityName} real estate questions`}
+        />
+      ) : null}
 
       {/* CTA bar */}
       <CTABar
