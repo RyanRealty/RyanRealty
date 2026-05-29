@@ -1,0 +1,44 @@
+{
+  "slug": "sunriver",
+  "name": "Sunriver",
+  "label": "Sunriver",
+  "city": "Sunriver",
+  "city_slug": "sunriver",
+  "state": "OR",
+  "is_resort": true,
+  "is_master_planned": true,
+  "acres": 3300,
+  "founded": 1968,
+  "about_prose": [
+    "Sunriver is a 3,300-acre master-planned resort and residential community 15 miles south of Bend along the eastern bank of the Deschutes River. The site was originally Camp Abbot, a U.S. Army engineer training facility that operated from 1942 to 1944. Portland developer John Gray acquired the former military tract in 1965, the first homesites sold in 1968, and Skidmore, Owings and Merrill completed the master plan in 1969.",
+    "The community holds roughly 4,200 homesites, a mix of single-family homes, condominiums, and cabins. About 2,023 residents (2020 Census) live there full time, with the balance held as vacation homes. The Sunriver Owners Association governs common areas, the paved-path network, and community facilities, while Sunriver Resort runs the hotel, golf courses, spa, marina, and stables.",
+    "Elevation sits at 4,170 feet, with more than 300 days of sun a year. Mt. Bachelor, one of the largest ski areas in the Pacific Northwest, is a 30-minute drive up the Cascade Lakes Highway."
+  ],
+  "amenities": [
+    { "category": "Golf", "name": "Crosswater Club", "description": "A 600-acre heathland-style course by Robert E. Cupp, opened 1995. The Deschutes and Little Deschutes rivers come into play on several holes. Ranked among Golf Digest's 100 Greatest Courses.", "access": "Members and Sunriver Resort guests only" },
+    { "category": "Golf", "name": "Woodlands Course", "description": "18-hole course by Robert Trent Jones Jr., opened 1982. Par 72, 6,847 yards, slope 143.", "access": "Resort guests and public tee times" },
+    { "category": "Golf", "name": "Meadows Course", "description": "18-hole course opened 1969, redesigned by John Fought in 1999. Par 71, 7,012 yards, slope 140.", "access": "Resort guests and public tee times" },
+    { "category": "Recreation", "name": "SHARC Aquatic and Recreation Center", "description": "A 22-acre facility with a seasonal lazy river, water slides, a tot pool, a year-round snow-tubing hill, disc golf, and event space.", "access": "Owners included; public admission available" },
+    { "category": "Recreation", "name": "Paved Path Network", "description": "34 miles of paved paths separated from roads, plus a 12-mile round-trip Sun Lava Path to Benham Falls and the Lava Lands Visitor Center.", "access": "Residents and guests" },
+    { "category": "Recreation", "name": "Sunriver Marina", "description": "Deschutes River marina renting canoes, kayaks, paddleboards, tubes, and rafts, with shuttle service for a 6-mile float.", "access": "Public; resort-guest discounts" },
+    { "category": "Recreation", "name": "Sunriver Stables", "description": "Guided trail rides through pine forest, seasonally mid-April through September, with pony rides available.", "access": "Public; reservations required" },
+    { "category": "Recreation", "name": "The Cove Aquatic Center", "description": "10,000-square-foot indoor facility with a heated pool, lazy river, two-story waterslide, splash pad, and outdoor spas.", "access": "Sunriver Resort guests only" },
+    { "category": "Other", "name": "Sunriver Nature Center and Observatory", "description": "An eight-acre campus established in 1968. The observatory holds the largest publicly accessible telescope collection in the United States. Sunriver earned a Dark Sky designation in 2020.", "access": "Public; admission charged" },
+    { "category": "Other", "name": "The Village at Sunriver", "description": "A commercial district of locally owned restaurants and shops, including Sunriver Brewing Company.", "access": "Public" }
+  ],
+  "drive_times": [
+    { "minutes": 25, "destination": "Bend / Old Mill District", "note": "17 miles north via US-97" },
+    { "minutes": 30, "destination": "Mt. Bachelor", "note": "Via Century Drive / Cascade Lakes Highway" },
+    { "minutes": 41, "destination": "Redmond Airport (RDM)", "note": "33 miles north via US-97" },
+    { "minutes": 15, "destination": "Lava Lands Visitor Center", "note": "Newberry National Volcanic Monument, 6 miles northeast" }
+  ],
+  "course_specs": { "summary": "Five courses: Crosswater (1995, Robert E. Cupp, private/resort-guest, Golf Digest Top 100), Woodlands (1982, Robert Trent Jones Jr., par 72, 6,847 yds), Meadows (1969, redesigned by John Fought 1999, par 71, 7,012 yds), plus the shorter family courses Caldera Links and Gray's Trail." },
+  "citations": [
+    { "fact": "3,300-acre master plan by Skidmore, Owings and Merrill (1969); Camp Abbot site acquired by John Gray 1965; first homesites sold 1968", "source_url": "https://en.wikipedia.org/wiki/Sunriver,_Oregon" },
+    { "fact": "~4,200 homesites; 2020 Census population 2,023; elevation 4,170 ft", "source_url": "https://keypropertiesoregon.com/our-communities/sunriver-oregon/" },
+    { "fact": "34 miles of paved paths + 12-mile Sun Lava Path; SHARC 22-acre rec center", "source_url": "https://visitcentraloregon.com/things-to-do/attractions/sunriver-bike-paths/" },
+    { "fact": "Crosswater (Robert E. Cupp, 1995, Golf Digest 100 Greatest); Woodlands (RTJ Jr., 1982, par 72, 6,847); Meadows (1999 Fought redesign, par 71, 7,012)", "source_url": "https://www.crosswater.com/golf" },
+    { "fact": "Nature Center est. 1968; largest publicly accessible telescope collection in US; Dark Sky designation 2020", "source_url": "https://www.snco.org/our-story" },
+    { "fact": "Sunriver to Bend 17 mi / ~25 min; to RDM 33 mi / ~41 min", "source_url": "https://www.rome2rio.com/s/Redmond-Airport-RDM/Sunriver-Resort" }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "slug": "bend-orchard-district",
+  "name": "Orchard District",
+  "label": "Orchard District",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "The Orchard District occupies central-northeast Bend, in the corridor often called Midtown. Its boundaries run from Pilot Butte on the east to the BNSF railroad and US-97 Parkway on the west, with Franklin Avenue to the south and Butler Market Road to the north. The neighborhood sits about a mile from downtown, close enough to reach by bike via the NE 6th Street Neighborhood Greenway, which runs from Greenwood Avenue to Butler Market Road with traffic calming and bike-priority markings.",
+    "The name traces to a 1930s commercial apple orchard that once stood behind what is now Wagner Mall. The orchard failed but left a warmer microclimate longtime residents call the banana belt, a product of lower elevation and shelter from prevailing winds. Most homes date from the 1950s through the 1970s, a mix of ranches and split-levels on larger-than-average city lots. The Orchard District Neighborhood Association, founded in 1982, notes the area is the most racially diverse neighborhood in Bend.",
+    "Pilot Butte State Scenic Viewpoint anchors the east edge, a 114-acre cinder cone donated to the state in 1927 that rises to 4,141 feet with summit views of the Three Sisters, Mount Jefferson, and Mount Hood. Hollinshead Park on NE Jones Road preserves 16.5 acres of a former working ranch, including the historic Hollinshead Barn, a 90-plot community garden run with OSU Extension Master Gardeners, an off-leash dog area, and a canal-side walking path."
+  ],
+  "amenities": [
+    { "category": "Parks", "name": "Pilot Butte State Scenic Viewpoint", "description": "A 114-acre cinder cone on US-20 rising nearly 500 feet, with three hiking trails to the 4,141-foot summit and Cascade views. Donated to Oregon in 1927.", "access": "Trails year-round; summit road May 1 to September 30" },
+    { "category": "Parks", "name": "Hollinshead Park", "description": "A 16.5-acre former ranch at 1235 NE Jones Road with a 90-plot community garden, a WaterWise demonstration garden, the 1940s Hollinshead-Matson Homestead Museum, an off-leash dog area, and a canal-side trail.", "access": "Open 5 AM to 10 PM" },
+    { "category": "Recreation", "name": "Juniper Swim and Fitness Center", "description": "A Bend Park and Recreation facility at 800 NE 6th Street with a 50-meter Olympic pool, an indoor 25-meter pool, a seasonal outdoor pool with a slide, and 200-plus weekly fitness classes.", "access": "Weekday hours begin 5:30 AM" },
+    { "category": "Schools", "name": "Juniper Elementary", "description": "A Bend-La Pine Schools technology magnet on the west side of Pilot Butte, offering a Code.org computer-science curriculum K-5.", "access": "District school-choice option" },
+    { "category": "Schools", "name": "Pilot Butte Middle School", "description": "The Bend-La Pine Schools middle school serving the Orchard District, at 1501 NE Neff Road.", "access": "Bend-La Pine Schools" },
+    { "category": "Landmark", "name": "NE 6th Street Neighborhood Greenway", "description": "One of Bend's first neighborhood greenways, from Greenwood Avenue to Butler Market Road, with speed humps, crosswalks, and pedestrian and cyclist priority.", "access": "Public street" }
+  ],
+  "drive_times": [
+    { "minutes": 5, "destination": "Downtown Bend", "note": "About a mile southwest via NE 3rd Street or US-97" },
+    { "minutes": 3, "destination": "Pilot Butte trailhead", "note": "Eastern edge of the neighborhood on US-20" },
+    { "minutes": 10, "destination": "Old Mill District", "note": "Via US-97 south to SW Reed Market Road" }
+  ],
+  "citations": [
+    { "fact": "Orchard District boundaries; one of 13 districts; association founded 1982", "source_url": "https://www.orcharddistrict.org/?page_id=62" },
+    { "fact": "Most racially diverse Bend neighborhood; 1930s apple orchard behind Wagner Mall; banana belt; homes 1950s-1970s", "source_url": "https://www.bendsource.com/news/orchard-west-the-bendites-bend-16319574/" },
+    { "fact": "Pilot Butte 114 ac, donated 1927, summit 4,141 ft", "source_url": "https://stateparks.oregon.gov/index.cfm?do=park.profile&parkId=33" },
+    { "fact": "Hollinshead Park 16.5 ac, 1235 NE Jones Rd, 90-plot garden, homestead museum; Juniper Swim + Fitness 800 NE 6th St", "source_url": "https://www.bendparksandrec.org/park/hollinshead-park/" }
+  ]
+}

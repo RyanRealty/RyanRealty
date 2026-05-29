@@ -1,0 +1,32 @@
+{
+  "slug": "vandevert-ranch",
+  "name": "Vandevert Ranch",
+  "label": "Vandevert Ranch",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": true,
+  "acres": 400,
+  "founded": 1892,
+  "about_prose": [
+    "Vandevert Ranch sits on 400 acres along both banks of the Little Deschutes River, about 16 miles south of Bend and just south of Sunriver. The land was homesteaded in 1892 by William Plutarch Vandevert, predating the city of Bend and Deschutes County, and operated as a working cattle ranch for nearly a century. The original log homestead and one-room schoolhouse survive on the property and are listed among Deschutes County's Historic Resources.",
+    "In 1988, Jim and Carol Gardner purchased and restored the homestead, converting the ranch into a gated residential community of roughly 22 custom homesites. Design guidelines require log, timber, and stone construction. The homeowners association holds about 350 acres of common land, including meadows, river frontage, a private fishing pond, and equestrian facilities."
+  ],
+  "amenities": [
+    { "category": "Recreation", "name": "Little Deschutes River Access", "description": "Private put-in and take-out points run along both banks of the river through the property.", "access": "HOA common area" },
+    { "category": "Recreation", "name": "Private Fishing Pond", "description": "A 3.2-acre pond with 1,000 feet of shoreline, stocked with rainbow trout.", "access": "HOA common area" },
+    { "category": "Recreation", "name": "Equestrian Facilities", "description": "Horse boarding with stables, a riding arena, paddocks, pasture, and 8 miles of riding trails, with a full-time animal caretaker.", "access": "HOA common area" },
+    { "category": "Recreation", "name": "Tennis and Pickleball Courts", "description": "On-site courts for community residents, alongside walking and biking trails through the common land.", "access": "HOA members" },
+    { "category": "Other", "name": "Historic Homestead and Schoolhouse", "description": "The 1892 log homestead and one-room schoolhouse are preserved on the property and listed among the county's Historic Resources.", "access": "Community landmark" }
+  ],
+  "drive_times": [
+    { "minutes": 5, "destination": "Sunriver", "note": "Vandevert Road is about 3 miles south of the Sunriver exit on US-97" },
+    { "minutes": 20, "destination": "Bend", "note": "About 16 miles north via US-97" }
+  ],
+  "citations": [
+    { "fact": "Homesteaded 1892 by William Plutarch Vandevert; predates Bend and Deschutes County; on the Little Deschutes ~15-16 mi south of Bend; 22-lot gated community", "source_url": "https://en.wikipedia.org/wiki/William_Vandevert" },
+    { "fact": "400 total acres; ~350 acres HOA common land; Gardners restored homestead 1988; homestead + schoolhouse historic; 3.2-acre fishing pond; 8 miles riding trails; log/timber/stone required", "source_url": "https://www.tuttlebendrealestate.com/blog/vandevert-ranch-unique-living/" },
+    { "fact": "Tennis and pickleball courts; clubhouse and community events", "source_url": "https://www.bendoregonrealestate.com/vandevert-ranch-real-estate-deschutes-county-or/" }
+  ]
+}

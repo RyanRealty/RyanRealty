@@ -36,6 +36,8 @@ import { getHomeTileRowsByKeys } from '@/app/actions/listings'
 import type { YearSeriesPoint } from '@/lib/report-year-compare'
 import { getGeoBoundaryMapData } from '@/lib/data'
 import { NeighborhoodMap as SiteNeighborhoodMap } from '@/components/site/NeighborhoodMap'
+import { getResortCommunityContent } from '@/lib/resort-community-content'
+import { CommunityRichContent } from '@/components/site/CommunityRichContent'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -131,6 +133,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   if (!neighborhood) notFound()
   // Boundary polygon slug: neighborhoods stored as "{citySlug}-{neighborhoodSlug}"
   const boundaryNeighborhoodSlug = `${citySlug}-${neighborhoodSlug}`
+
+  // Rich, verified neighborhood content (overview prose + amenities + drive
+  // times) from data/resort-community-[slug].json, keyed by the same
+  // "{citySlug}-{neighborhoodSlug}" slug. Null until a config is authored;
+  // enforced 100% by G33 / D96. Rendered via the shared CommunityRichContent.
+  const richContent = await getResortCommunityContent(boundaryNeighborhoodSlug).catch(() => null)
 
   const [listings, pendingListings, soldListings, neighborhoodPriceHistory, savedKeys, likedKeys, communitiesInNeighborhood, activityFeedRaw, brokers, savedCommunityKeys, likedCommunityKeys, inventoryBreakdown, cityVideoRows, boundaryMapData] = await Promise.all([
     withTimeout(getNeighborhoodListings(neighborhood.id, 24), []),
@@ -359,8 +367,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           Data via getGeoBoundaryMapData (shared DAL, Gate G31). */}
       {boundaryMapData.polygon ? (
         <SiteNeighborhoodMap
-          eyebrow={`${neighborhood.name}`}
-          title={`${neighborhood.name} homes on the map`}
           polygons={[
             {
               slug: boundaryNeighborhoodSlug,
@@ -379,6 +385,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           tone="muted"
         />
       ) : null}
+
+      {/* Verified rich neighborhood content (overview + amenities + drive times),
+          shared renderer with the community page. D95/D96, enforced by G33. */}
+      <CommunityRichContent content={richContent} name={neighborhood.name} />
 
       <BreadcrumbStrip
         items={[

@@ -17,7 +17,6 @@ import SignUpTracker from "../components/tracking/SignUpTracker";
 import AdminHashRedirect from "../components/AdminHashRedirect";
 import InstallPrompt from "../components/pwa/InstallPrompt";
 import ComparisonTray from "@/components/comparison/ComparisonTray";
-import ExitIntentPopup from "@/components/ExitIntentPopup";
 import { getCanonicalSiteUrl } from "@/lib/share-metadata";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
@@ -149,7 +148,6 @@ export default function RootLayout({
           </Suspense>
           <HideOnLP>
             <ComparisonTray />
-            <ExitIntentPopup />
           </HideOnLP>
         </RootProvider>
       </body>

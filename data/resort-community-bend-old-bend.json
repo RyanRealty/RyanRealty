@@ -1,0 +1,33 @@
+{
+  "slug": "bend-old-bend",
+  "name": "Old Bend",
+  "label": "Old Bend",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "Old Bend is the city's original residential core, bounded by the Deschutes River to the west, Drake Park and Franklin Avenue to the north, Highway 97 to the east, and Arizona Avenue to the south. At roughly 1 square mile it is the smallest of Bend's neighborhood association districts and the one that predates all others. Alexander M. Drake subdivided the land in 1910 through the Pilot Butte Development Company, with original lots priced at $100 to $250. The Oregon Trunk Line Railroad arrived in 1911 and the Shevlin-Hixon and Brooks-Scanlon sawmills opened in 1915, driving a building boom, and most of the homes date to that early-1900s mill era.",
+    "The Drake Park Neighborhood Historic District, listed on the National Register of Historic Places on June 3, 2005 (NRHP 05000380), covers 17 city blocks and 83 residential lots within Old Bend. Fourteen architectural styles are represented, led by 25 Craftsman bungalows and 17 Colonial Revival homes, with Tudor, Dutch Colonial, Spanish Colonial Revival, Cape Cod, and California Ranch in smaller numbers. The district reflects the neighborhood's mill-worker origins: compact lots, covered front porches, and craftsmanship-era detail at a pedestrian scale.",
+    "Drake Park, established by the City of Bend in 1921, sits along Mirror Pond at the northern edge. The 13-acre park has nearly half a mile of Deschutes River frontage and was purchased for $21,000 after the Women's Civic League collected 1,500 signatures to prevent its subdivision. The Deschutes River Trail runs through the park, connecting residents on foot or by bike directly to downtown, which sits within the neighborhood along the eastern edge."
+  ],
+  "amenities": [
+    { "category": "Parks", "name": "Drake Park and Mirror Pond", "description": "A 13-acre park established in 1921 at 777 NW Riverside Blvd, with nearly half a mile of Deschutes River frontage, open lawns, an outdoor stage, and the Deschutes River Trail.", "access": "Open daily 5 AM to 10 PM" },
+    { "category": "Landmark", "name": "Drake Park Neighborhood Historic District", "description": "Listed on the National Register June 3, 2005 (NRHP 05000380), covering 17 blocks and 83 homes in 14 architectural styles built mainly 1910 to the 1930s.", "access": "Walkable neighborhood; public streets" },
+    { "category": "Recreation", "name": "Deschutes River Trail", "description": "A paved multi-use path through Drake Park along the river, connecting Old Bend to downtown and the wider Bend trail network.", "access": "Trailhead at Drake Park" },
+    { "category": "Schools", "name": "William E. Miller Elementary", "description": "A Bend-La Pine Schools K-5 at 300 NW Crosby Dr serving the Old Bend area, in a LEED Gold building.", "access": "Bend-La Pine Schools" },
+    { "category": "Shopping", "name": "Downtown Bend", "description": "The Wall Street and Bond Street commercial core sits within and beside Old Bend, putting grocery, retail, and dining within a 5-to-10-minute walk of most addresses.", "access": "Walkable from Old Bend" }
+  ],
+  "drive_times": [
+    { "minutes": 15, "destination": "Redmond Airport (RDM)", "note": "Nearest commercial airport, north on Hwy 97" },
+    { "minutes": 10, "destination": "Bend Airport (BDN)", "note": "General aviation, about 5 miles east" },
+    { "minutes": 35, "destination": "Mt. Bachelor", "note": "Via Century Drive / Cascade Lakes Scenic Byway" }
+  ],
+  "citations": [
+    { "fact": "Old Bend boundaries + ~1 sq mi, smallest neighborhood association", "source_url": "https://www.oldbend.org/about/neighborhood-map/" },
+    { "fact": "Drake Park Historic District NRHP 05000380 (June 3, 2005); 17 blocks, 83 lots, 14 styles; subdivided 1910 by Drake; lots $100-$250", "source_url": "https://en.wikipedia.org/wiki/Drake_Park_Neighborhood_Historic_District" },
+    { "fact": "Drake Park 13 ac, 1921, 777 NW Riverside Blvd; $21,000 purchase; Women's Civic League 1,500 signatures", "source_url": "https://www.bendparksandrec.org/park/drake-park-and-mirror-pond/" },
+    { "fact": "William E. Miller Elementary K-5, 300 NW Crosby Dr, LEED Gold", "source_url": "https://www.greatschools.org/oregon/bend/3101-William-E-Miller-Elementary/" }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "bend-southern-crossing",
+  "name": "Southern Crossing",
+  "label": "Southern Crossing",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "Southern Crossing is one of 13 official neighborhood districts recognized by the City of Bend, established by Bend City Council on February 19, 2003. The district spans 882.9 acres in central Bend, straddling the Deschutes River, bounded on the east by the Bend Parkway (US-97), on the north by Arizona and Simpson Avenues, on the south by Powers Road, and on the west by Brookswood Boulevard and the Deschutes River corridor. The Old Mill District, built on the former Brooks-Scanlon and Shevlin-Hixon lumber-mill site, sits within the neighborhood and gives residents walkable access to riverfront retail, dining, and live entertainment.",
+    "The neighborhood holds roughly 2,057 tax lots and a mix of residential and commercial uses. Farewell Bend Park lies along the Deschutes at the northern edge and connects to the paved Deschutes River Trail, which extends north toward the Old Mill District and south to South Canyon Bridge. Schools serving the district include Pine Ridge Elementary (19840 Hollygrape St), Cascade Middle School (19619 Mountaineer Way), and Caldera High School (60925 SE 15th St), the district's newest high school, opened in 2021."
+  ],
+  "amenities": [
+    { "category": "Parks", "name": "Farewell Bend Park", "description": "A 22-acre park along the Deschutes at 1000 SW Reed Market Road with a lumber-mill-themed Kiwanis playground, a river beach, a canoe launch, a picnic shelter, and a Deschutes River Trail connection north to the Old Mill District and south to South Canyon Bridge.", "access": "Open 5 AM to 10 PM" },
+    { "category": "Parks", "name": "Blakely Park", "description": "A 3.4-acre neighborhood park at 1155 Brookswood Blvd with a large playground, a half-court, shade trees, and paved paths, named for the historic Old Blakely road.", "access": "Open 5 AM to 10 PM" },
+    { "category": "Landmark", "name": "Old Mill District", "description": "A riverfront retail and entertainment district on the former lumber-mill site within Southern Crossing, with shops, restaurants, the Tower Theatre, and direct Deschutes River Trail access.", "access": "Walkable from the northern portions" },
+    { "category": "Schools", "name": "Pine Ridge Elementary", "description": "A Bend-La Pine Schools K-5 at 19840 Hollygrape Street serving much of the district.", "access": "Bend-La Pine Schools" },
+    { "category": "Schools", "name": "Caldera High School", "description": "Bend-La Pine Schools' newest high school, opened fall 2021 at 60925 SE 15th Street, rezoned to serve Southern Crossing students.", "access": "Bend-La Pine Schools" }
+  ],
+  "drive_times": [
+    { "minutes": 5, "destination": "Downtown Bend", "note": "About 2 miles north via SW Bond Street" },
+    { "minutes": 3, "destination": "Old Mill District", "note": "Within the district boundary; walkable from the northern portions" },
+    { "minutes": 20, "destination": "Mt. Bachelor", "note": "Via Century Drive (OR-46) west" }
+  ],
+  "citations": [
+    { "fact": "Southern Crossing established by Bend City Council Feb 19, 2003; 882.9 acres; ~2,057 tax lots; boundaries", "source_url": "https://bendscna.org/about-scna/" },
+    { "fact": "Farewell Bend Park 22 ac, 1000 SW Reed Market Rd, Kiwanis playground, canoe launch, river trail", "source_url": "https://www.bendparksandrec.org/park/farewell-bend-park/" },
+    { "fact": "Blakely Park 3.4 ac, 1155 Brookswood Blvd, acquired 1995", "source_url": "https://www.bendparksandrec.org/park/blakely-park/" },
+    { "fact": "Caldera HS opened fall 2021, 60925 SE 15th St, rezoned to serve Southern Crossing", "source_url": "https://en.wikipedia.org/wiki/Caldera_High_School" }
+  ]
+}

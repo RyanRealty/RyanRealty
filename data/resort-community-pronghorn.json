@@ -1,0 +1,46 @@
+{
+  "slug": "pronghorn",
+  "name": "Pronghorn",
+  "label": "Pronghorn",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": true,
+  "is_master_planned": true,
+  "acres": 640,
+  "about_prose": [
+    "Pronghorn is a 640-acre master-planned resort community on Central Oregon's high desert, northeast of Bend off Powell Butte Highway. The property is surrounded by 20,000 acres of federally protected BLM land and sits within a juniper forest with views of Mt. Bachelor and the Three Sisters. The residential side includes four neighborhoods: Four Peaks, Estates, Residences, and Villas.",
+    "Two 18-hole championship golf courses anchor the community. The Jack Nicklaus Signature Course opened in 2004 as the only Jack Nicklaus course in Oregon. The Tom Fazio Championship Course opened in 2007 and is reserved for members and their guests. Pronghorn is one of only two clubs in the United States with both a Nicklaus and a Fazio course on the same property.",
+    "The resort operation rebranded from Pronghorn Resort to Juniper Preserve in October 2022 under The Resort Group, shifting toward wellness and hospitality. The 104-room Juniper Lodge opened in April 2019. Lodging, dining, spa, and golf run under the Juniper Preserve name, while the residential club continues as Pronghorn Club."
+  ],
+  "amenities": [
+    { "category": "Golf", "name": "Jack Nicklaus Signature Course", "description": "Par-72 course playing 7,379 yards from the tips, opened in 2004. Plays firm and fast across ancient lava ridges with Cascade views.", "access": "Public tee times available" },
+    { "category": "Golf", "name": "Tom Fazio Championship Course", "description": "Par-72 course playing 7,456 yards from the tips, opened in 2007. Rolling fairways and a signature par-3 eighth hole over a 45-foot canyon with an exposed lava tube.", "access": "Members and guests only" },
+    { "category": "Golf", "name": "Pronghorn Golf Academy", "description": "On-site instruction facility with a Sportsbox AI 3D swing-analysis studio and True Spec club fitting.", "access": "Resort guests and members" },
+    { "category": "Wellness", "name": "Juniper Spa", "description": "Full-service spa with treatments drawing on Central Oregon's landscape, plus an on-property lava cave used for guided meditation and sound baths.", "access": "Resort guests and members" },
+    { "category": "Recreation", "name": "The Trailhead", "description": "Outdoor recreation hub with heated pools, hot tubs, and fitness facilities.", "access": "Resort guests and members" },
+    { "category": "Dining", "name": "Iris Restaurant", "description": "Fine-dining restaurant at Juniper Preserve.", "access": "Resort guests, members, and public" },
+    { "category": "Dining", "name": "Coyote Lounge and Trailhead Grill", "description": "Bar and lounge at the clubhouse plus casual dining at the recreation hub and on-course Grill On The Green.", "access": "Resort guests and members" },
+    { "category": "Other", "name": "Juniper Lodge", "description": "104-room boutique hotel with private terraces and panoramic views, opened April 2019.", "access": "Hotel guests" },
+    { "category": "Other", "name": "Spirit Island Event Venue", "description": "7,000-square-foot private island venue for weddings and events, capacity up to 300.", "access": "Event bookings" }
+  ],
+  "drive_times": [
+    { "minutes": 20, "destination": "Downtown Bend", "note": "Northeast of Bend via Powell Butte Highway" },
+    { "minutes": 30, "destination": "Redmond Airport (RDM)", "note": "Roberts Field, the nearest commercial airport" },
+    { "minutes": 60, "destination": "Mt. Bachelor", "note": "Via Bend and Century Drive" }
+  ],
+  "course_rankings": [
+    { "rank": "#36", "publication": "Golf Digest America's 100 Greatest Public Courses", "description": "Nicklaus Signature Course" },
+    { "rank": "#18", "publication": "Golf Digest America's Best Golf Resorts (2025)", "description": "Juniper Preserve" },
+    { "rank": "#6", "publication": "Golf Digest Best in Oregon", "description": "Nicklaus Signature Course" }
+  ],
+  "course_specs": { "par": 72, "yardage": 7456, "summary": "Two par-72 courses. The Nicklaus Signature Course plays 7,379 yards (public access); the Fazio Championship Course plays 7,456 yards (members and guests only)." },
+  "membership_office_phone": "866.320.5024",
+  "citations": [
+    { "fact": "640 acres of juniper forest surrounded by 20,000 acres of BLM land; four residential neighborhoods; Juniper Lodge 104 rooms opened April 2019", "source_url": "https://www.theresortgroup.com/press/pronghorn" },
+    { "fact": "Nicklaus Course opened 2004 (only Nicklaus course in Oregon); Fazio 2007; one of two US clubs with both", "source_url": "https://www.northwestlinks.com/post/course-review-pronghorn-golf-club-nicklaus-fazio-courses" },
+    { "fact": "Rebranded Pronghorn Resort to Juniper Preserve October 2022", "source_url": "https://www.prweb.com/releases/pronghorn-club-and-resort-rebrands-as-juniper-preserve-a-destination-wellness-resort-825007482.html" },
+    { "fact": "Nicklaus 7,379 yds; Fazio 7,456 yds; both par 72", "source_url": "https://voyages.golf/stay-play-resort/pronghorn-resort/" },
+    { "fact": "Nicklaus #36 Golf Digest Public; #6 Best in Oregon; Juniper Preserve #18 Best Golf Resorts 2025", "source_url": "https://pronghorn.club/golf/" }
+  ]
+}

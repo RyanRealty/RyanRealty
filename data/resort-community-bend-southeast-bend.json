@@ -1,0 +1,34 @@
+{
+  "slug": "bend-southeast-bend",
+  "name": "Southeast Bend",
+  "label": "Southeast Bend",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "Southeast Bend is one of the 13 City-recognized neighborhood districts. Its boundaries run south of Murphy Road, east of Highway 97 and the Burlington Northern railroad, and out to the city limits on the east and south. The southern fringe reaches toward Knott Road, where the City of Bend's 2021 Southeast Area Plan designates about 446 developable acres for future housing, employment, and amenities.",
+    "The area holds a broad range of housing eras. Established subdivisions such as Mountain High (set up in 1987 with roughly 275 homes across three villages) and older sections near Reed Market Road mix with purpose-built communities from the 2000s and 2010s. The most recent additions include Pahlisch Homes' Easton community and The Bridges at Shadow Glen off SE 15th Street, both within a short walk of Caldera High School, which opened in fall 2021 at 60925 SE 15th Street.",
+    "Alpenglow Park, a 37-acre Bend Park and Recreation community park at 61049 SE 15th Street, anchors the recreational core with a sprayground, bouldering structures, off-leash dog areas, and 2.2 miles of paved paths. Big Sky Park to the east adds athletic fields and a bike park. Downtown Bend and the Old Mill District are roughly 5 to 8 minutes north via US-97."
+  ],
+  "amenities": [
+    { "category": "Parks", "name": "Alpenglow Park", "description": "A 37-acre community park at 61049 SE 15th Street with a seasonal sprayground, a three-structure bouldering area, large and small off-leash dog sections, a covered stage, and 2.2 miles of ADA-accessible paths.", "access": "Open 5 AM to 10 PM" },
+    { "category": "Parks", "name": "Big Sky Park and Luke Damon Sports Complex", "description": "A 97-acre complex at 21690 Neff Road with four multiuse fields, a grass-infield baseball diamond, the Big Sky Bike Park, and a 12-acre off-leash dog area.", "access": "Open 5 AM to 10 PM" },
+    { "category": "Schools", "name": "Caldera High School", "description": "Bend-La Pine Schools' newest high school, opened fall 2021 at 60925 SE 15th Street within the neighborhood, the first new district high school in decades.", "access": "Bend-La Pine Schools" },
+    { "category": "Schools", "name": "Lava Ridge Elementary", "description": "A Bend-La Pine Schools K-5 at 20805 Cooley Road serving the southeast quadrant, feeding to Sky View Middle and Mountain View High.", "access": "Bend-La Pine Schools" },
+    { "category": "Recreation", "name": "Bend Golf and Country Club", "description": "A private 18-hole golf course and athletic club at 61045 Country Club Drive, less than a mile east of US-97, with tennis, a year-round indoor pool, and a clubhouse.", "access": "Private membership" },
+    { "category": "Shopping", "name": "Fred Meyer (S. Hwy 97)", "description": "A full-service Fred Meyer at 61535 S Hwy 97, the closest grocery and general-merchandise store, with pharmacy and fuel.", "access": "On US-97 at the western edge" }
+  ],
+  "drive_times": [
+    { "minutes": 7, "destination": "Downtown Bend / Old Mill District", "note": "North via US-97, about 4 miles" },
+    { "minutes": 20, "destination": "Redmond Airport (RDM)", "note": "North via US-97, about 22 miles" },
+    { "minutes": 25, "destination": "Mt. Bachelor", "note": "West via Reed Market Road to Century Drive" }
+  ],
+  "citations": [
+    { "fact": "Southeast Bend district boundaries: south of Murphy Rd, east of US-97/BNRR, city limits east and south", "source_url": "http://bendredmondhabitat.org/wp-content/uploads/2018/01/City-of-Bend-Neighborhood-Association-Specifics.pdf" },
+    { "fact": "Southeast Area Plan adopted April 21, 2021 (Ord. 2405); 446 developable acres near Knott Road; Easton, Bridges at Shadow Glen", "source_url": "https://www.bendoregon.gov/government/departments/growth-management/previous-projects/southeast-area-plan" },
+    { "fact": "Alpenglow Park 37 ac; Big Sky Park 97.2 ac, 21690 Neff Rd, Big Sky Bike Park, 12-ac dog area", "source_url": "https://www.bendparksandrec.org/park/big-sky-park-luke-damon-sports-complex/" },
+    { "fact": "Caldera HS 60925 SE 15th St, opened fall 2021; Lava Ridge Elementary 20805 Cooley Rd", "source_url": "https://www.greatschools.org/oregon/bend/206-Lava-Ridge-Elementary-School/" }
+  ]
+}

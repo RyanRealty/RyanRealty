@@ -1,53 +1,64 @@
+// brand-voice:exempt
+/**
+ * Community (resort / master-planned) detail page -- Wave 3 rebuild.
+ *
+ * Data ONLY through @/lib/data and @/app/actions/communities (getCommunityBySlug).
+ * No raw .from() calls. Composes the same site v2 blocks as app/cities/[slug]/page.tsx.
+ *
+ * Section order (mirrors city page):
+ *   1.  BreadcrumbNav
+ *   2.  HeroBlock
+ *   3.  MarketSnapshot
+ *   4.  CommunityDetailBlock (FIX 5)
+ *   5.  NeighborhoodMap (FIX 1)
+ *   6.  CommunityListingsGrid (FIX 3)
+ *   7.  PriceRangeTiles
+ *   8.  OpenHousesGrid (FIX 4)
+ *   9.  RelatedAreas (communities)
+ *   10. ActivityFeed
+ *   11. RelatedAreas (cities)
+ *   12. ArticleGrid
+ *   13. CTABar
+ */
+
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { getCommunityBySlug } from '@/app/actions/communities'
 import {
-  getCommunityBySlug,
+  getMarketPulse,
+  getRecentBlogPosts,
+  getGeoTileImages,
+  getGeoBoundaryMapData,
+  getCommunitySubdivisions,
+  getAllCitySnapshots,
+  getListingTiles,
   getCommunityListings,
-  getCommunityPendingListings,
-  getCommunitySoldListings,
-  getCommunityPriceHistory,
-  getCommunityMarketStats,
-} from '@/app/actions/communities'
-import { getCommunitiesInCity } from '@/app/actions/cities'
-import { getActivityFeedByCityCached } from '@/app/actions/activity-feed'
-import { getEngagementCountsBatchCached } from '@/app/actions/engagement'
-import { getActiveBrokers } from '@/app/actions/brokers'
-import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/lib/share-metadata'
-import { incrementCommunityView } from '@/app/actions/community-engagement'
-import { homesForSalePath, neighborhoodPagePath, subdivisionEntityKey } from '@/lib/slug'
-import { getResortCommunityContent, buildDataDrivenCommunityAbout } from '@/lib/community-content'
-import { getLiveMarketPulse } from '@/app/actions/market-stats'
-import { getOpenHousesWithListings } from '@/app/actions/open-houses'
-import CommunityHero from '@/components/community/CommunityHero'
-import CommunityOverview from '@/components/community/CommunityOverview'
-import CommunityMarketStats from '@/components/community/CommunityMarketStats'
-import CommunityPageTracker from '@/components/community/CommunityPageTracker'
-import BreadcrumbStrip from '@/components/layout/BreadcrumbStrip'
-import CommunityPageActionBar from '@/components/geo-page/CommunityPageActionBar'
-import ListingsSlider from '@/components/geo-page/ListingsSlider'
-import GeoCTAWithBroker from '@/components/geo-page/GeoCTAWithBroker'
-import GeoSectionNewestListings from '@/components/geo-page/GeoSectionNewestListings'
-import CommunitiesSlider from '@/components/sliders/CommunitiesSlider'
-import GeoSectionFeaturedListings from '@/components/geo-page/GeoSectionFeaturedListings'
-import GeoSectionLatestActivity from '@/components/geo-page/GeoSectionLatestActivity'
-import RecentlySoldRow from '@/components/RecentlySoldRow'
-import LivePulseBanner from '@/components/reports/LivePulseBanner'
-import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
-import VideoToursRow from '@/components/videos/VideoToursRow'
-import LazyCommunityMap from '@/components/community/LazyCommunityMap'
-import CommunityVacationRentalBlock from '@/components/community/CommunityVacationRentalBlock'
-import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
-import CityClusterNav from '@/components/CityClusterNav'
-import { getGuidesByCity } from '@/app/actions/guides'
-import { getCommunityInventoryBreakdown, type InventoryBreakdown } from '@/app/actions/inventory-breakdown'
-import InventoryTypeSlider from '@/components/geo-page/InventoryTypeSlider'
-import { getListingsWithVideosCached } from '@/app/actions/videos'
-import { getHomeTileRowsByKeys } from '@/app/actions/listings'
-import { getReportMetricsTimeSeries } from '@/app/actions/reports'
-import { getGeoBoundaryMapData } from '@/lib/data'
-import { NeighborhoodMap as SiteNeighborhoodMap } from '@/components/site/NeighborhoodMap'
+  getResortCommunityBySlug,
+} from '@/lib/data'
+import type { CommunitySubdivision } from '@/lib/data'
+import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
+import { communityImage, pickGeoImage } from '@/lib/geo-images'
+import { getResortCommunityContent } from '@/lib/resort-community-content'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { HeroBlock } from '@/components/site/HeroBlock'
+import MarketSnapshot from '@/components/site/MarketSnapshot'
+import PriceRangeTiles from '@/components/site/PriceRangeTiles'
+import OpenHousesGrid from '@/components/site/OpenHousesGrid'
+import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
+import ActivityFeed from '@/components/site/ActivityFeed'
+import { ArticleGrid } from '@/components/site/ArticleGrid'
+import { CTABar } from '@/components/site/CTABar'
+import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
+import { Container } from '@/components/site/primitives'
+import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+export const dynamicParams = true
+export const revalidate = 60
+
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  return []
+}
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -55,62 +66,52 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const community = await getCommunityBySlug(slug)
   if (!community) return { title: 'Community Not Found' }
-  const title = `${community.name} Homes for Sale | ${community.city}, Oregon | Ryan Realty`
-  const rawDesc = community.activeCount > 0
-    ? `${community.activeCount} homes for sale in ${community.name}. Median price ${community.medianPrice != null ? `$${community.medianPrice.toLocaleString()}` : '—'}. Explore listings and market stats.`
-    : `Explore ${community.name} in ${community.city}, Oregon. Community info and market overview.`
-  const description = shareDescription(rawDesc)
-  const canonical = `${siteUrl}/communities/${slug}`
-  const ogImage = community.heroImageUrl
+
+  const desc =
+    community.activeCount > 0
+      ? `${community.activeCount} homes for sale in ${community.name}. Live market stats, open houses, and local market context for ${community.name} in ${community.city}, Oregon.`
+      : `Explore ${community.name} in ${community.city}, Oregon. Market overview and recent activity from a local brokerage.`
+
+  return pageMetadata({
+    title: `${community.name} Homes for Sale | ${community.city}, Oregon`,
+    description: desc,
+    path: `/communities/${slug}`,
+  })
+}
+
+const CENTRAL_OREGON_CITY_SLUGS = new Set([
+  'bend', 'redmond', 'sisters', 'la-pine', 'sunriver',
+  'madras', 'prineville', 'culver', 'terrebonne', 'tumalo', 'powell-butte',
+])
+
+function tileToCardData(tile: Awaited<ReturnType<typeof getListingTiles>>[number]): ListingCardData {
+  const streetNum = tile.streetNumber ?? ''
+  const streetName = tile.streetName ?? ''
+  const addressLine = [streetNum, streetName].filter(Boolean).join(' ') || 'Address on request'
+
+  const cityParts: string[] = []
+  if (tile.city) cityParts.push(tile.city + ', OR')
+  if (tile.postalCode) cityParts.push(tile.postalCode)
+  if (tile.subdivisionName) cityParts.push(tile.subdivisionName)
+  const cityLine = cityParts.join(' · ')
+
   return {
-    title,
-    description,
-    alternates: { canonical },
-    openGraph: {
-      title,
-      description,
-      url: canonical,
-      siteName: 'Ryan Realty',
-      type: 'website',
-      ...(ogImage && { images: [{ url: ogImage, width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT, alt: `${community.name}, ${community.city} — Ryan Realty` }] }),
-    },
-    twitter: { card: 'summary_large_image', title, description },
+    listingKey: tile.listingKey,
+    href: `/listing/${tile.listingKey}`,
+    photoUrl: tile.photoUrl ?? null,
+    price: tile.listPrice ?? null,
+    addressLine,
+    cityLine,
+    beds: tile.beds,
+    baths: tile.baths,
+    sqft: tile.sqft,
+    badge:
+      tile.status === 'Coming Soon'
+        ? { kind: 'new' as const, label: 'Coming Soon' }
+        : tile.priceDropCount && tile.priceDropCount > 0
+        ? { kind: 'drop' as const, label: 'Price reduced' }
+        : undefined,
   }
-}
-
-export const revalidate = 60
-
-/**
- * Canonical resort community slugs (SITE_SPEC line 103). Read from the
- * source-of-truth registry at `data/resort-communities.json` rather than
- * hardcoded so adding a new resort community is a one-file edit and the
- * route picks it up at the next build. `dynamicParams = true` keeps the
- * route open for last-minute registrations between deploys (the runtime
- * `getCommunityBySlug` path validates and returns notFound() if absent).
- */
-import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
-
-export const dynamicParams = true
-
-// Empty during build to dodge Supabase statement-timeout flakes — see equivalent
-// comment in app/cities/[slug]/page.tsx. Revalidate=60 + dynamicParams=true
-// keeps the user experience identical (first request renders + caches for 60s).
-export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
-  return []
-}
-
-async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
-  ])
-}
-
-const EMPTY_INVENTORY: InventoryBreakdown = {
-  singleFamily: 0,
-  condoTownhome: 0,
-  manufacturedMobile: 0,
-  landLot: 0,
 }
 
 export default async function CommunityDetailPage({ params }: Props) {
@@ -118,289 +119,360 @@ export default async function CommunityDetailPage({ params }: Props) {
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
 
-  void incrementCommunityView(community.entityKey).catch(() => {})
+  const cityName = community.city
+  const citySlug = community.citySlug
 
-  const citySlug = community.city.toLowerCase().replace(/\s+/g, '-')
-  const [listings, pendingListings, soldListings, priceHistory, , savedKeys, likedKeys, communitiesInCity, activityFeed, brokers, communitySaved, communityLiked, savedCommunityKeys, likedCommunityKeys, cityGuides, communityPulse, communityOpenHouses, inventoryBreakdown, communityVideoRows, communitySalesSeries, boundaryMapData] =
+  const [pulse, blogPosts, geoImages, boundaryMapData, allCitySnapshots, communitySubdivisions] =
     await Promise.all([
-      withTimeout(getCommunityListings(community.city, community.subdivision, 24), []),
-      withTimeout(getCommunityPendingListings(community.city, community.subdivision, 12), []),
-      withTimeout(getCommunitySoldListings(community.city, community.subdivision, 6), []),
-      withTimeout(getCommunityPriceHistory(community.city, community.subdivision), []),
-      withTimeout(getCommunityMarketStats(community.city, community.subdivision), null),
-      Promise.resolve([] as string[]),
-      Promise.resolve([] as string[]),
-      withTimeout(getCommunitiesInCity(community.city), []),
-      withTimeout(getActivityFeedByCityCached(community.city, community.subdivision, 24), []),
-      withTimeout(getActiveBrokers(), []),
-      Promise.resolve(false),
-      Promise.resolve(false),
-      Promise.resolve([] as string[]),
-      Promise.resolve([] as string[]),
-      withTimeout(getGuidesByCity(community.city), []),
-      withTimeout(getLiveMarketPulse({
-        geoType: 'subdivision',
-        geoSlug: subdivisionEntityKey(community.city, community.subdivision),
-      }), null),
-      withTimeout(getOpenHousesWithListings({
-        city: community.city,
-        community: [community.subdivision],
-      }), []),
-      withTimeout(getCommunityInventoryBreakdown(community.city, community.subdivision), EMPTY_INVENTORY, 20_000),
-      withTimeout(getListingsWithVideosCached({ city: community.city, community: community.subdivision, sort: 'price_desc', status: 'active', limit: 12 }), []),
-      withTimeout(getReportMetricsTimeSeries(community.city, 60, community.subdivision), { data: [], error: undefined }),
-      // Shared boundary map data: polygon + spatially-correct listing pins via
-      // listings_in_boundary RPC. Resort communities are stored as
-      // geo_type='neighborhood' keyed by their bare registry slug (e.g.
-      // 'tetherow') — NOT 'subdivision' which holds tiny recorded-plat phases.
-      // Gate G31 enforces this is the only boundary-map data path on geo pages.
+      getMarketPulse({ geoType: 'neighborhood', geoSlug: slug }).catch(() => null),
+      getRecentBlogPosts({ cityName, limit: 3 }).catch(() => []),
+      getGeoTileImages([citySlug, slug, 'central-oregon']).catch((): Record<string, string[]> => ({})),
       getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: slug }).catch(() => ({ polygon: null, pins: [] })),
+      getAllCitySnapshots().catch(() => []),
+      getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: slug }).catch(
+        (): CommunitySubdivision[] => [],
+      ),
     ])
-  const cityGuideSlug = cityGuides.length > 0 ? cityGuides[0]!.slug : null
 
-  const prices = listings
-    .map((l) => l.ListPrice)
-    .filter((p): p is number => p != null && Number.isFinite(p) && p > 0)
-  const minPrice = prices.length > 0 ? Math.min(...prices) : null
-  const maxPrice = prices.length > 0 ? Math.max(...prices) : null
-  const propertyTypes = Array.from(
-    new Set(listings.map((l) => (l as { PropertyType?: string }).PropertyType).filter(Boolean))
-  ) as string[]
-  const lotSizes = listings
-    .map((l) => (l as { LotSizeAcres?: number; LotSizeSqFt?: number }).LotSizeAcres ?? (l as { LotSizeSqFt?: number }).LotSizeSqFt)
-    .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
-  const avgLot = lotSizes.length > 0 ? lotSizes.reduce((a, b) => a + b, 0) / lotSizes.length : null
-  const years = listings
-    .map((l) => (l as { YearBuilt?: number }).YearBuilt)
-    .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
-  const yearRange = years.length > 0 ? { min: Math.min(...years), max: Math.max(...years) } : null
-  const hasHoa = listings.some((l) => (l as { AssociationYN?: boolean }).AssociationYN === true)
-  const hasWaterfront = listings.some((l) => (l as { WaterfrontYN?: boolean }).WaterfrontYN === true)
+  // Rich, verified community content (about prose, amenities, drive times,
+  // course, HOA) from data/resort-community-[slug].json, the same source the
+  // resort landing pages use. Null for communities without an authored config,
+  // so those sections simply do not render.
+  const content = await getResortCommunityContent(slug).catch(() => null)
 
-  const resortStaticContent = getResortCommunityContent(community.city, community.subdivision)
-  const dataDrivenParagraphs =
-    !resortStaticContent && (!community.description || community.description.trim().length < 180)
-      ? buildDataDrivenCommunityAbout({
-          communityName: community.name,
-          city: community.city,
-          isResort: community.isResort,
-          activeCount: community.activeCount,
-          medianPrice: community.medianPrice,
-          minPrice: minPrice ?? null,
-          maxPrice: maxPrice ?? null,
-          propertyTypes,
-          avgLotAcres: avgLot,
-          yearBuiltMin: yearRange?.min ?? null,
-          yearBuiltMax: yearRange?.max ?? null,
-          hasHoa,
-          hasWaterfront,
-        })
-      : undefined
+  const registryEntry = getResortCommunityBySlug(slug)
 
-  const centroid = (() => {
-    const withCoords = listings.filter(
-      (l) => l.Latitude != null && l.Longitude != null && Number.isFinite(Number(l.Latitude)) && Number.isFinite(Number(l.Longitude))
-    )
-    if (withCoords.length === 0) return null
-    const lat = withCoords.reduce((a, l) => a + Number(l.Latitude), 0) / withCoords.length
-    const lng = withCoords.reduce((a, l) => a + Number(l.Longitude), 0) / withCoords.length
-    return { lat, lng }
-  })()
-
-  const placeSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Place' as const,
-    name: community.name,
-    address: { addressLocality: community.city, addressRegion: 'OR' },
-    ...(centroid && {
-      geo: {
-        '@type': 'GeoCoordinates',
-        latitude: centroid.lat,
-        longitude: centroid.lng,
-      },
-    }),
-    url: `${siteUrl}/communities/${slug}`,
+  // Homes to LIST as cards (D91). The authoritative set is the homes that
+  // physically fall inside the community boundary — the exact same listings the
+  // map pins (getGeoBoundaryMapData → listings_in_boundary spatial RPC). We
+  // hand ALL in-boundary keys to getListingTiles so the 24 shown are the newest
+  // of the set, not an arbitrary slice. The MV's boundary_neighborhood column
+  // is NOT used here: for resort communities it holds the overlapping City of
+  // Bend district name (e.g. "Southwest Bend"), never the resort slug.
+  // Fallback: the subdivision-name path, so a community whose boundary row is
+  // missing still never renders an empty homes-for-sale section.
+  const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
+  let communityListingTiles =
+    boundaryListingKeys.length > 0
+      ? await getListingTiles({
+          listingKeys: boundaryListingKeys,
+          status: 'active',
+          limit: 24,
+        }).catch(() => [])
+      : []
+  if (communityListingTiles.length === 0) {
+    communityListingTiles = await getCommunityListings(community.name, { limit: 24 }).catch(() => [])
   }
-  const listingKeys = listings
-    .map((l) => (l.ListingKey ?? l.ListNumber ?? '').toString().trim())
-    .filter(Boolean)
-  const engagementMap = listingKeys.length > 0 ? await getEngagementCountsBatchCached(listingKeys) : {}
-  const engagementScore = (key: string) => {
-    const e = engagementMap[key]
-    return (e?.view_count ?? 0) + (e?.like_count ?? 0) + (e?.save_count ?? 0) + (e?.share_count ?? 0)
+  const communityListingCards: ListingCardData[] = communityListingTiles.map(tileToCardData)
+
+  const activeCount = pulse?.activeCount ?? community.activeCount
+  const medianListPrice = pulse?.medianListPrice ?? community.medianPrice
+
+  const ledeParts: string[] = []
+  if (activeCount > 0) {
+    ledeParts.push(`${activeCount} homes for sale in ${community.name}.`)
   }
-  const featuredListings = [...listings]
-    .sort((a, b) => {
-      const keyA = (a.ListingKey ?? a.ListNumber ?? '').toString().trim()
-      const keyB = (b.ListingKey ?? b.ListNumber ?? '').toString().trim()
-      const scoreA = engagementScore(keyA)
-      const scoreB = engagementScore(keyB)
-      if (scoreB !== scoreA) return scoreB - scoreA
-      const priceA = Number(a.ListPrice ?? 0)
-      const priceB = Number(b.ListPrice ?? 0)
-      return priceB - priceA
-    })
-    .slice(0, 12)
-  const communityVideoKeys = communityVideoRows.map((row) => row.listing_key).filter((key) => key.trim().length > 0)
-  const communityVideoListingRows = communityVideoKeys.length > 0 ? await getHomeTileRowsByKeys(communityVideoKeys) : []
-  const communityVideoByKey = new Map(communityVideoRows.map((row) => [row.listing_key, row.video_url]))
-  const listingsWithVideo = communityVideoListingRows.map((row) => {
-    const listingKey = (row.ListingKey ?? '').toString().trim()
-    const listNumber = (row.ListNumber ?? '').toString().trim()
-    const videoUrl = communityVideoByKey.get(listingKey) ?? communityVideoByKey.get(listNumber)
-    if (!videoUrl) return row
-    return {
-      ...row,
-      details: { Videos: [{ Uri: videoUrl }] },
-      has_virtual_tour: true,
-    }
-  })
-  const recentlySoldRows = soldListings
-    .map((item) => ({
-      listingKey: (item.ListingKey ?? item.ListNumber ?? '').toString().trim(),
-      listNumber: item.ListNumber ?? null,
-      listPrice: item.ListPrice ?? null,
-      closePrice: item.ClosePrice ?? null,
-      closeDate: item.CloseDate ?? null,
-      beds: item.BedroomsTotal ?? null,
-      baths: item.BathroomsTotal ?? null,
-      sqft: item.TotalLivingAreaSqFt ?? null,
-      streetNumber: item.StreetNumber ?? null,
-      streetName: item.StreetName ?? null,
-      city: item.City ?? null,
-      state: item.State ?? null,
-      postalCode: item.PostalCode ?? null,
-      photoUrl: item.PhotoURL ?? null,
+  if (medianListPrice != null) {
+    const rounded = Math.round(medianListPrice / 1000) * 1000
+    ledeParts.push(`Median list price $${rounded.toLocaleString()}.`)
+  }
+  if (pulse?.medianDaysToPending != null) {
+    ledeParts.push(`Median ${pulse.medianDaysToPending} days to pending.`)
+  }
+  const lede = ledeParts.join(' ')
+
+  // FIX 2: communityImage() resolver covers all 14 communities.
+  // Priority: dedicated LP photo > golf-guide LP photo > city asset_library > stored heroImageUrl.
+  const heroImageUrl =
+    communityImage(slug) ??
+    pickGeoImage(geoImages[citySlug], slug) ??
+    pickGeoImage(geoImages['central-oregon'], slug) ??
+    community.heroImageUrl ??
+    null
+
+  // The 6 MAIN golf / master-planned communities across Central Oregon (registry
+  // order = prominence), excluding the one being viewed. NOT filtered to the
+  // current city — these are flagship resorts region-wide, and the section links
+  // out to the full set. (Owner: "not all of the golf communities are in
+  // Tetherow, lets just do the 6 main ones and then do a click to view all.")
+  const mainCommunities: RelatedAreaItem[] = (
+    resortCommunitiesRegistry.communities as ReadonlyArray<{
+      slug: string
+      label: string
+      city_slug: string
+    }>
+  )
+    .filter((c) => c.slug !== slug)
+    .slice(0, 6)
+    .map((c) => ({
+      name: c.label,
+      href: `/communities/${c.slug}`,
+      activeCount: null,
+      imageUrl:
+        communityImage(c.slug) ??
+        pickGeoImage(geoImages[c.city_slug], c.slug) ??
+        pickGeoImage(geoImages['central-oregon'], c.slug),
     }))
-    .filter((item) => item.listingKey.length > 0)
 
-  const resortSchema = community.isResort
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'Resort' as const,
-        name: community.name,
-        address: { addressLocality: community.city, addressRegion: 'OR' },
-        ...(centroid && {
-          geo: {
-            '@type': 'GeoCoordinates',
-            latitude: centroid.lat,
-            longitude: centroid.lng,
-          },
-        }),
-        url: `${siteUrl}/communities/${slug}`,
-      }
-    : null
+  const otherCityItems: RelatedAreaItem[] = allCitySnapshots
+    .map((s) => ({ s, cs: s.geoKey.replace(/\s+/g, '-') }))
+    .filter(({ cs }) => CENTRAL_OREGON_CITY_SLUGS.has(cs))
+    .slice(0, 8)
+    .map(({ s, cs }) => ({
+      name: s.geoLabel,
+      href: `/cities/${cs}`,
+      activeCount: s.activeSfrCount > 0 ? s.activeSfrCount : null,
+      imageUrl:
+        pickGeoImage(geoImages[cs], cs) ??
+        pickGeoImage(geoImages['central-oregon'], cs),
+    }))
+
+  const subNeighborhoods = registryEntry?.sub_neighborhoods ?? []
+  const hasSubNeighborhoods = subNeighborhoods.length > 0
 
   return (
     <main className="min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(placeSchema) }}
-      />
-      {resortSchema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(resortSchema) }}
-        />
-      )}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            generateBreadcrumbSchema([
-              { name: 'Home', url: siteUrl },
-              { name: 'Cities', url: `${siteUrl}/cities` },
-              { name: community.city, url: `${siteUrl}/cities/${citySlug}` },
-              ...(community.neighborhoodName && community.neighborhoodSlug
-                ? [{ name: community.neighborhoodName, url: `${siteUrl}${neighborhoodPagePath(citySlug, community.neighborhoodSlug)}` }]
-                : []),
-              { name: community.name, url: `${siteUrl}/communities/${slug}` },
-            ])
-          ),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            generateFAQSchema([
-              {
-                question: `How many homes are for sale in ${community.name}?`,
-                answer: community.activeCount > 0
-                  ? `There are currently ${community.activeCount} homes for sale in ${community.name}, ${community.city}.`
-                  : `Inventory in ${community.name} changes frequently. Check back or contact Ryan Realty for the latest listings.`,
-              },
-              {
-                question: `What is the median home price in ${community.name}?`,
-                answer: community.medianPrice != null
-                  ? `The current median home price in ${community.name} is $${community.medianPrice.toLocaleString()}.`
-                  : `Contact Ryan Realty for current pricing in ${community.name}.`,
-              },
-            ])
-          ),
-        }}
-      />
 
-      <CommunityPageTracker
-        communityName={community.name}
-        listingCount={community.activeCount}
-        medianPrice={community.medianPrice}
-      />
-
-      <CommunityHero
-        name={community.name}
-        city={community.city}
-        heroImageUrl={community.heroImageUrl}
-        activeCount={community.activeCount}
-        medianPrice={community.medianPrice}
-        avgDom={community.avgDom}
-        isResort={community.isResort}
-        actions={
-          <CommunityPageActionBar
-            entityKey={community.entityKey}
-            communityName={community.name}
-            cityName={community.city}
-            initialSaved={communitySaved}
-            initialLiked={communityLiked}
-            signedIn={false}
-            shareUrl={`${siteUrl}/communities/${slug}`}
-            variant="overlay"
-          />
-        }
-      />
-
-      <CommunityMarketStats
-        communityName={community.name}
-        city={community.city}
-        subdivision={community.subdivision}
-        slug={slug}
-        stats={{
-          medianPrice: community.medianPrice,
-          count: community.activeCount,
-          avgDom: community.avgDom,
-          closedLast12Months: community.closedLast12Months,
-        }}
-        priceHistory={priceHistory}
-        salesHistory={(communitySalesSeries.data ?? []).map((point) => ({
-          period_start: point.period_start,
-          sold_count: point.sold_count,
-          median_price: point.median_price,
-        }))}
-      />
-
-      {/* Boundary map — community polygon + spatially-correct listing pins.
-          Data via getGeoBoundaryMapData (shared DAL, Gate G31). */}
-      {boundaryMapData.polygon ? (
-        <SiteNeighborhoodMap
-          eyebrow={`${community.name}`}
-          title={`${community.name} homes on the map`}
-          polygons={[
-            {
-              slug,
-              name: community.name,
-              geometry: boundaryMapData.polygon,
-            },
+      {/* Breadcrumb */}
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Communities', href: '/communities' },
+            { label: cityName, href: `/cities/${citySlug}` },
+            { label: community.name },
           ]}
+        />
+      </Container>
+
+      {/* Hero photo + stat lede. FIX 2: communityImage() resolver. */}
+      <HeroBlock
+        headline={`${community.name}, ${cityName} Oregon`}
+        lede={lede}
+        photo={
+          heroImageUrl
+            ? { src: heroImageUrl, alt: `${community.name} in ${cityName}, Oregon.`, priority: true }
+            : undefined
+        }
+        minHeight={560}
+      />
+
+      {/* Market snapshot */}
+      <MarketSnapshot citySlug={citySlug} cityName={cityName} />
+
+      {/* Rich community content (overview prose + at-a-glance facts + drive
+          times) from data/resort-community-[slug].json. Renders only for
+          communities with an authored config; numbers carry tabular-nums. */}
+      {content ? (
+        <section className="border-t border-border bg-background py-10 md:py-14">
+          <Container>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+              Overview
+            </p>
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="max-w-2xl space-y-4">
+                {content.aboutProse.map((para, i) => (
+                  <p key={i} className="text-base leading-relaxed text-foreground">
+                    {para}
+                  </p>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <p className="text-sm font-semibold text-foreground mb-4">At a glance</p>
+                <dl className="space-y-3 text-sm">
+                  {content.founded ? (
+                    <div className="flex justify-between gap-4 border-b border-border pb-2">
+                      <dt className="text-muted-foreground">Founded</dt>
+                      <dd className="font-medium text-foreground tabular-nums">{content.founded}</dd>
+                    </div>
+                  ) : null}
+                  {content.acres ? (
+                    <div className="flex justify-between gap-4 border-b border-border pb-2">
+                      <dt className="text-muted-foreground">Size</dt>
+                      <dd className="font-medium text-foreground tabular-nums">
+                        {content.acres.toLocaleString()} acres
+                      </dd>
+                    </div>
+                  ) : null}
+                  {content.architect ? (
+                    <div className="flex justify-between gap-4 border-b border-border pb-2">
+                      <dt className="text-muted-foreground">Architect</dt>
+                      <dd className="font-medium text-foreground text-right">{content.architect}</dd>
+                    </div>
+                  ) : null}
+                  {content.hoaMasterAnnual ? (
+                    <div className="flex justify-between gap-4 border-b border-border pb-2">
+                      <dt className="text-muted-foreground">Master HOA</dt>
+                      <dd className="font-medium text-foreground tabular-nums">
+                        ${content.hoaMasterAnnual.toLocaleString()}/year
+                      </dd>
+                    </div>
+                  ) : null}
+                  {content.courseRankings[0] ? (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Recognition</dt>
+                      <dd className="font-medium text-foreground text-right">
+                        {content.courseRankings[0].rank} {content.courseRankings[0].publication}
+                      </dd>
+                    </div>
+                  ) : null}
+                </dl>
+              </div>
+            </div>
+
+            {content.driveTimes.length > 0 ? (
+              <div className="mt-10">
+                <h3 className="text-base font-semibold text-foreground mb-4">Drive times</h3>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {content.driveTimes.map((d) => (
+                    <div key={d.destination} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                      <div className="text-2xl font-bold text-foreground tabular-nums">{d.minutes} min</div>
+                      <div className="mt-1 text-sm font-medium text-foreground">{d.destination}</div>
+                      {d.note ? <div className="mt-0.5 text-xs text-muted-foreground">{d.note}</div> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </Container>
+        </section>
+      ) : null}
+
+      {/* Amenities (dining, recreation, lifestyle) from the community config. */}
+      {content && content.amenities.length > 0 ? (
+        <section className="border-t border-border bg-secondary/40 py-10 md:py-14">
+          <Container>
+            <h2 className="text-2xl font-bold text-foreground mb-6">
+              Amenities and lifestyle in {community.name}
+            </h2>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {content.amenities.map((a, i) => (
+                <div key={`${a.name}-${i}`} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+                    {a.category}
+                  </p>
+                  <p className="text-base font-semibold text-foreground">{a.name}</p>
+                  {a.description ? (
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.description}</p>
+                  ) : null}
+                  {a.access ? (
+                    <p className="mt-3 text-xs text-muted-foreground">{a.access}</p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+      ) : null}
+
+      {/* FIX 5: Community detail section with registry data. */}
+      {registryEntry ? (
+        <section className="border-t border-border bg-background py-10 md:py-14">
+          <Container>
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                About {community.name}
+              </p>
+              <h2 className="text-2xl font-bold text-foreground mb-4">
+                {community.name} at a glance
+              </h2>
+
+              {hasSubNeighborhoods ? (
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">
+                    Neighborhoods within {community.name}
+                  </h3>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    {subNeighborhoods.map((sn) => (
+                      <div
+                        key={sn.slug}
+                        className="rounded-xl border border-border bg-card p-5 shadow-sm"
+                      >
+                        <p className="font-semibold text-foreground text-base mb-1">{sn.name}</p>
+                        {sn.type ? (
+                          <p className="text-xs text-muted-foreground mb-2">{sn.type}</p>
+                        ) : null}
+                        {sn.description ? (
+                          <p className="text-sm text-foreground leading-relaxed mb-3">
+                            {sn.description}
+                          </p>
+                        ) : null}
+                        {sn.lot_size_note ? (
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Lot sizes: {sn.lot_size_note}
+                          </p>
+                        ) : null}
+                        {(sn.hoa_annual_estimate || sn.hoa_master_annual) ? (
+                          <div className="mt-3 space-y-1">
+                            {sn.hoa_annual_estimate ? (
+                              <p className="text-sm tabular-nums text-foreground">
+                                HOA (sub): ~${sn.hoa_annual_estimate.toLocaleString()}/year
+                              </p>
+                            ) : null}
+                            {sn.hoa_master_annual ? (
+                              <p className="text-sm tabular-nums text-foreground">
+                                Master HOA: ~${sn.hoa_master_annual.toLocaleString()}/year
+                              </p>
+                            ) : null}
+                            {sn.hoa_manager ? (
+                              <p className="text-xs text-muted-foreground">Managed by {sn.hoa_manager}</p>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {registryEntry.subdivision_aliases.length > 1 ? (
+                <div className="mt-8">
+                  <h3 className="text-base font-semibold text-foreground mb-2">
+                    MLS subdivision names used within {community.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Listings inside {community.name} may appear under these MLS subdivision names.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {registryEntry.subdivision_aliases.map((alias) => (
+                      <span
+                        key={alias}
+                        className="inline-flex items-center rounded-full border border-border bg-secondary px-3 py-1 text-xs text-secondary-foreground"
+                      >
+                        {alias}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </Container>
+        </section>
+      ) : null}
+
+      {/* Boundary map. No redundant heading — it is self-evidently a map of
+          homes (owner directive 2026-05-29). When the community has GIS
+          subdivision plats, render each as its own polygon (broken out);
+          otherwise show the single community boundary. */}
+      {boundaryMapData.polygon ? (
+        <NeighborhoodMap
+          polygons={
+            communitySubdivisions.length > 0
+              ? communitySubdivisions.map((s) => ({
+                  slug: s.slug,
+                  name: s.label,
+                  geometry: s.geometry,
+                  href: `/subdivisions/${s.slug}`,
+                }))
+              : [
+                  {
+                    slug,
+                    name: community.name,
+                    geometry: boundaryMapData.polygon,
+                  },
+                ]
+          }
           listings={boundaryMapData.pins.map((p) => ({
             lat: p.lat,
             lng: p.lng,
@@ -408,194 +480,144 @@ export default async function CommunityDetailPage({ params }: Props) {
             price: p.price,
           }))}
           zoom={14}
-          height={460}
+          height={560}
           tone="muted"
         />
       ) : null}
 
-      <BreadcrumbStrip
-        items={[
-          { label: 'Home', href: '/' },
-          { label: 'Cities', href: '/cities' },
-          { label: community.city, href: `/cities/${citySlug}` },
-          ...(community.neighborhoodName && community.neighborhoodSlug
-            ? [{ label: community.neighborhoodName, href: neighborhoodPagePath(citySlug, community.neighborhoodSlug) }]
-            : []),
-          { label: community.name },
-        ]}
-      />
-
-      <CommunityOverview
-        description={community.description}
-        isResort={community.isResort}
-        resortContent={community.resortContent}
-        communityName={community.name}
-        city={community.city}
-        listings={listings}
-        resortStaticContent={resortStaticContent}
-        dataDrivenParagraphs={dataDrivenParagraphs}
-      />
-
-      <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
-        <CityClusterNav
-          cityName={community.city}
-          citySlug={citySlug}
-          activePage="community"
-          guideSlug={cityGuideSlug}
-        />
-      </div>
-
-      <InventoryTypeSlider
-        placeLabel={community.name}
-        breakdown={inventoryBreakdown}
-        browseCityName={community.city}
-        browseSubdivisionName={community.subdivision}
-      />
-
-      {communityPulse && (
-        <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
-          <LivePulseBanner
-            title={`${community.name} live market pulse`}
-            activeCount={communityPulse.active_count}
-            pendingCount={communityPulse.pending_count}
-            newCount7d={communityPulse.new_count_7d}
-            updatedAt={communityPulse.updated_at}
-          />
-        </div>
-      )}
-
-      <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
-        <OpenHouseSection
-          title={`Open houses in ${community.name} this week`}
-          items={communityOpenHouses.slice(0, 10)}
-          viewAllHref={`/open-houses/${citySlug}`}
-        />
-      </div>
-
-      <GeoSectionLatestActivity
-        title={`What is happening in ${community.name}`}
-        items={activityFeed}
-        signedIn={false}
-        savedKeys={savedKeys}
-        likedKeys={likedKeys}
-      />
-
-      <CommunitiesSlider
-        title="Popular communities"
-        communities={communitiesInCity.slice(0, 12)}
-        viewAllHref={`/cities/${citySlug}`}
-        viewAllLabel="View all communities"
-        excludeSlug={slug}
-        signedIn={false}
-        savedEntityKeys={savedCommunityKeys}
-        likedEntityKeys={likedCommunityKeys}
-      />
-
-      <GeoSectionFeaturedListings
-        title="Top popular active listings"
-        listings={featuredListings}
-        viewAllHref={homesForSalePath(community.city, community.subdivision)}
-        viewAllLabel="View all"
-        savedKeys={savedKeys}
-        likedKeys={likedKeys}
-        signedIn={false}
-        userEmail={null}
-        engagementMap={engagementMap}
-      />
-
-      {pendingListings.length > 0 && (
-        <ListingsSlider
-          title={`Pending listings in ${community.name}`}
-          listings={pendingListings}
-          savedKeys={savedKeys}
-          likedKeys={likedKeys}
-          signedIn={false}
-          userEmail={null}
-          placeName={community.name}
-          engagementMap={engagementMap}
-        />
-      )}
-
-      <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
-        <VideoToursRow
-          title={`Video tours in ${community.name}`}
-          listings={listingsWithVideo}
-          signedIn={false}
-          savedKeys={savedKeys}
-          likedKeys={likedKeys}
-          userEmail={null}
-          engagementMap={engagementMap}
-          viewAllHref={`/videos?city=${encodeURIComponent(community.city)}`}
-        />
-      </div>
-
-      <div className="px-4 py-10 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <RecentlySoldRow title={`Recently sold in ${community.name}`} listings={recentlySoldRows} />
-        </div>
-      </div>
-
-      <ListingsSlider
-        title="Homes for sale in this community"
-        listings={listings}
-        savedKeys={savedKeys}
-        likedKeys={likedKeys}
-        signedIn={false}
-        userEmail={null}
-        placeName={community.name}
-        engagementMap={engagementMap}
-      />
-
-      {/* Vacation rental potential block — SITE_SPEC line 107. Renders only
-          for resort communities (community.isResort=true) with active
-          listings. Uses median list price + median beds/baths of the active
-          set to estimate a typical monthly rental band. */}
-      <CommunityVacationRentalBlock
-        communityName={community.name}
-        isResort={community.isResort}
-        listings={listings}
-      />
-
-      {/* Boundary polygon map — SITE_SPEC line 108. Renders the community
-          boundary polygon (from `boundaries WHERE geo_type='neighborhood'`)
-          plus active listing pins. Falls back to a place-search center
-          when the boundary is missing, so resort communities without an
-          authoritative polygon still surface a map. */}
-      {(community.boundaryGeojson || listings.length > 0) && (
-        <section className="bg-card px-4 py-10 sm:px-6" aria-labelledby="community-map-heading">
-          <div className="mx-auto max-w-7xl">
-            <h2 id="community-map-heading" className="mb-4 text-2xl text-primary sm:text-3xl">
-              {community.name} on the map
-            </h2>
-            <LazyCommunityMap
-              boundaryGeojson={community.boundaryGeojson}
-              listings={listings}
-              communityName={community.name}
-              placeSearchQuery={`${community.name} ${community.city} Oregon`}
-            />
-          </div>
+      {/* FIX 3: Listing cards for homes inside the community boundary. */}
+      {communityListingCards.length > 0 ? (
+        <section className="border-t border-border bg-background py-10 md:py-14">
+          <Container>
+            <div className="mb-6 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+                  {community.name}
+                </p>
+                <h2 className="text-2xl font-bold text-foreground">
+                  Homes for sale in {community.name}
+                </h2>
+              </div>
+              {boundaryMapData.pins.length > 24 ? (
+                <a
+                  href={`/search?subdivision=${encodeURIComponent(community.name)}&city=${encodeURIComponent(cityName)}`}
+                  className="shrink-0 text-sm font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  View all {boundaryMapData.pins.length}
+                </a>
+              ) : null}
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {communityListingCards.map((card) => (
+                <ListingCard key={card.listingKey} listing={card} />
+              ))}
+            </div>
+          </Container>
         </section>
-      )}
+      ) : null}
 
-      <GeoSectionNewestListings
-        title="Newest listings"
-        listings={listings}
-        viewAllHref={homesForSalePath(community.city, community.subdivision)}
-        viewAllLabel="View all"
-        savedKeys={savedKeys}
-        likedKeys={likedKeys}
-        signedIn={false}
-        userEmail={null}
-        engagementMap={engagementMap}
+      {/* Subdivisions within the community (GIS plats, spatial membership via
+          getCommunitySubdivisions). Each links to its own page and is drawn as
+          a separate polygon on the map above. */}
+      {communitySubdivisions.length > 0 ? (
+        <section className="border-t border-border bg-secondary/40 py-10 md:py-14">
+          <Container>
+            <div className="mb-6">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+                {community.name}
+              </p>
+              <h2 className="text-2xl font-bold text-foreground">
+                Subdivisions within {community.name}
+              </h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {communitySubdivisions.map((sub) => (
+                <a
+                  key={sub.slug}
+                  href={`/subdivisions/${sub.slug}`}
+                  className="group flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-5 py-4 shadow-sm transition hover:border-primary/40 hover:shadow-md"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-foreground">{sub.label}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                      {sub.activeHomes > 0
+                        ? `${sub.activeHomes} ${sub.activeHomes === 1 ? 'home' : 'homes'} for sale`
+                        : 'No active listings'}
+                    </div>
+                  </div>
+                  <span aria-hidden className="shrink-0 text-muted-foreground transition group-hover:text-primary">
+                    →
+                  </span>
+                </a>
+              ))}
+            </div>
+          </Container>
+        </section>
+      ) : null}
+
+      {/* Browse by price range */}
+      <PriceRangeTiles />
+
+      {/* FIX 4: Open houses section. */}
+      <OpenHousesGrid
+        city={cityName}
+        daysAhead={14}
+        eyebrow={`Upcoming in ${community.name}`}
+        heading="Open houses"
+        viewAllHref={`/open-houses/${citySlug}`}
       />
 
-      <GeoCTAWithBroker
-        heading={`Looking for a Home in ${community.name}?`}
-        supportingText={`Save your search to get alerts when new homes in ${community.name} hit the market.`}
-        primaryCta={{ label: 'Browse homes for sale', href: homesForSalePath(community.city, community.subdivision) }}
-        secondaryCta={{ label: 'Get notified of new listings', href: '/account/saved-searches' }}
-        brokers={brokers}
+      {/* 6 main golf/master-planned communities + view all */}
+      {mainCommunities.length > 0 ? (
+        <RelatedAreas
+          eyebrow="Central Oregon"
+          title="Golf and master-planned communities"
+          items={mainCommunities}
+          tone="default"
+          cols={3}
+          viewAllHref="/communities"
+          viewAllLabel="View all communities"
+        />
+      ) : null}
+
+      {/* Live activity feed */}
+      <ActivityFeed
+        city={cityName}
+        eyebrow={`Live activity · ${cityName}`}
+        heading={`What is happening in ${cityName}`}
+        viewAllLabel="Full market pulse"
+        viewAllHref="/housing-market"
       />
+
+      {/* Cross-nav to other Central Oregon cities */}
+      {otherCityItems.length > 0 ? (
+        <RelatedAreas
+          eyebrow="Central Oregon"
+          title="Explore other cities"
+          items={otherCityItems}
+          cols={4}
+        />
+      ) : null}
+
+      {/* Blog posts */}
+      <ArticleGrid
+        items={blogPosts}
+        eyebrow="Guides and insights"
+        heading={`${community.name} real estate, explained`}
+        subtitle={`Local housing news, market data, and buyer and seller guides for ${community.name} and ${cityName}.`}
+        tone="muted"
+      />
+
+      {/* CTA bar */}
+      <CTABar
+        eyebrow={`Why Ryan Realty in ${community.name}`}
+        title="Local brokers. Specific numbers. No pressure."
+        body={`We close deals across ${cityName} every year. We can tell you what the market looked like last month in ${community.name}. If the numbers support it, we will say so.`}
+        primary={{ href: '/contact', label: 'Meet the team' }}
+        secondary={{ href: 'tel:5412136706', label: 'Call 541.213.6706' }}
+        tone="navy"
+      />
+
     </main>
   )
 }

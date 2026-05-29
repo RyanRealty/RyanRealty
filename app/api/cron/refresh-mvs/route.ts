@@ -25,8 +25,10 @@ function isAuthorized(request: Request): boolean {
  * GET /api/cron/refresh-mvs
  *
  * Refreshes the DAL materialized views applied in migrations 20260522144509
- * (listing_tile_mv) and 20260522144510 (geo_snapshot_mv). Both refreshed
- * CONCURRENTLY so user reads keep working during the refresh.
+ * (listing_tile_mv), 20260522144510 (geo_snapshot_mv), and 20260529020000
+ * (listing_boundary_xref_mv — the precomputed listing→boundary spatial join
+ * behind every map's pins + homes-for-sale cards). All refreshed CONCURRENTLY
+ * so user reads keep working during the refresh.
  *
  * Schedule: every 15 minutes via vercel.json.
  *
@@ -88,7 +90,23 @@ export async function GET(request: Request) {
     error: geoError?.message ?? geoData?.error ?? null,
   }
 
-  const ok = tileResult.ok && geoResult.ok
+  // listing_boundary_xref_mv third — the precomputed listing→boundary spatial
+  // join that drives the boundary-map pins + homes-for-sale cards on every
+  // city/neighborhood/community page (getGeoBoundaryMapData → listings_in_boundary).
+  // Keeps the in-polygon set current as listings change status / come on market.
+  const xrefStart = Date.now()
+  const { data: xrefData, error: xrefError } = await supabase.rpc(
+    'refresh_listing_boundary_xref_mv',
+  )
+  const xrefMs = Date.now() - xrefStart
+  const xrefResult = {
+    ok: !xrefError && xrefData?.ok !== false,
+    duration_ms: xrefMs,
+    rpc_duration_ms: xrefData?.duration_ms ?? null,
+    error: xrefError?.message ?? xrefData?.error ?? null,
+  }
+
+  const ok = tileResult.ok && geoResult.ok && xrefResult.ok
 
   return NextResponse.json(
     {
@@ -96,6 +114,7 @@ export async function GET(request: Request) {
       ran_at: ranAt,
       listing_tile_mv: tileResult,
       geo_snapshot_mv: geoResult,
+      listing_boundary_xref_mv: xrefResult,
       duration_ms: Date.now() - startMs,
     },
     { status: ok ? 200 : 500 },

@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-05-29T04:47:07.390Z
+**Generated:** 2026-05-29T12:57:18.548Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -109,6 +109,12 @@ Companion files:
 ### `lib/data/client.ts`
 
 **Exports:** `supabaseServer`, `supabaseAnon`
+
+---
+
+### `lib/data/communities/registry.ts`
+
+**Exports:** `getResortCommunityBySlug`, `getAllResortCommunities`, `getResortCommunitiesForCity`
 
 ---
 

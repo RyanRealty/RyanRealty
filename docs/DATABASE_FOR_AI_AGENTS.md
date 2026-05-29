@@ -22,6 +22,7 @@
 | **Active listings in a community** | `listings WHERE "SubdivisionName" = ANY(<aliases from neighborhood_subdivisions>) AND "StandardStatus" IN ('Active','Coming Soon','Active Under Contract')` | see §3a for the aliases | ≤ 10 min |
 | **Comparable sales (CMA)** | `listings WHERE "StandardStatus"='Closed' AND "CloseDate" >= ... AND <filters>` | `"ClosePrice"`, `close_price_per_sqft`, `sale_to_list_ratio`, `days_to_pending` | ≤ 10 min |
 | **Polygon for a community** | `boundaries WHERE geo_type=<type> AND geo_slug=<slug>` | `polygon` (PostGIS geometry) | manual |
+| **Homes inside a boundary** (map pins + "homes for sale" cards on city/neighborhood/community pages) | `listing_boundary_xref_mv WHERE geo_type=<type> AND geo_slug=<slug> AND standard_status='Active'` — via the `listings_in_boundary` RPC, wrapped by the `getGeoBoundaryMapData` DAL. **NEVER `ST_Within` against `listings` at request time** (it blows the anon 3s timeout — see §4d). | `listing_key`, `lat`, `lng`, `list_price` | ≤ 15 min (refreshed by `/api/cron/refresh-mvs`) |
 | **Which subdivisions roll up into a community** | `neighborhood_subdivisions WHERE neighborhood_slug=<slug>` | `subdivision_label` (the MLS SubdivisionName values) | manual |
 | **Is this a resort community?** | `subdivision_flags WHERE entity_key='<city>:<slug>'` | `is_resort` | manual |
 | **Methodology trace for any cache row** | `cache_methodology_definitions WHERE version=<version>` | `scope`, `definitions`, `notes` | every cache row carries `methodology_version` |
@@ -97,6 +98,7 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 | Table | Rows | Purpose |
 |---|---|---|
 | `public.boundaries` | 3,251 | All polygons. `geo_type ∈ {city, neighborhood, subdivision}`. **10 cities** (TIGER/Line), **28 neighborhoods** (14 Bend districts + 14 resort communities), **3,213 subdivisions** (Deschutes County GIS plats). PostGIS geometry in `polygon` (MULTIPOLYGON, SRID 4326). |
+| **`public.listing_boundary_xref_mv`** ⭐ | ~9.3K | **Precomputed listing→boundary spatial join** (mig `20260529020000`). ONE row per (boundary, on-market listing inside it): `(geo_type, geo_slug, listing_key, lat, lng, list_price, standard_status, property_type)`. Overlapping polygons (e.g. a Bend district AND the Tetherow resort, both `geo_type='neighborhood'`) each get their own row, so resort listings are correctly attributed even though their MLS `SubdivisionName` aliases collapse the `listing_tile_mv.boundary_neighborhood` column to the Bend district. **This is what the `listings_in_boundary` RPC reads** — a trivial indexed lookup, NOT a request-time `ST_Within`. Refreshed CONCURRENTLY by `/api/cron/refresh-mvs` (≤15 min). The boundary-map pins + "homes for sale" cards on every city/neighborhood/community page come from here via the `getGeoBoundaryMapData` DAL. |
 | `public.neighborhood_subdivisions` | 1,686 | Parent → child SubdivisionName aliases. For each `neighborhood_slug`, lists the `subdivision_label` values that aggregate under it. Resort communities (e.g. `tetherow`) have multiple aliases (Tetherow, Sunrise Village, Braeburn, …). Bend neighborhoods (e.g. `bend-awbrey-butte`) have many subdivision-plat names that fall inside the City of Bend district polygon. |
 | `public.subdivision_flags` | 14 | `entity_key='city:slug'`, `is_resort` boolean. Used by consumer code to route a (city, subdivision) request to the neighborhood-level cache for resort/area communities. |
 | `public.geo_places` | 0 | Optional hierarchy table (country → state → city → neighborhood → community). Not actively used. |
@@ -458,6 +460,12 @@ AND property_sub_type = 'Single Family Residence'
 `PropertyType` codes from Spark: `A`=Residential, `B`=Manufactured, `C`=Multi-Family, `D`=Land, `E`=Commercial, `F`=Farm/Ranch.
 
 `property_sub_type` for `A` includes: `'Single Family Residence'`, `'Condo/Townhouse'`. The cache RPCs filter to SFR exclusively — this matches consumer search behavior. If you need a lot report or a condo report, you'll need a separate query path.
+
+### 4d. Never `ST_Within` against `listings` at request time
+
+The boundary-map pins + "homes for sale" cards need the set of listings physically inside a polygon. The obvious query — `ST_Within(ST_MakePoint("Longitude","Latitude"), b.polygon)` joined to `listings` — is a **trap**. A wide-bbox polygon (Tetherow's bbox reaches dense central Bend) makes even an index-assisted scan evaluate `ST_Within` over thousands of candidates: ~10s cold, which blows the **anon role's 3s `statement_timeout`** (verified: 2 of 3 anon calls cancelled). The map outline still renders (the `boundary_geojson` RPC is cheap) but the pins + cards silently come back empty.
+
+**The fix, and the only supported path:** read the precomputed `listing_boundary_xref_mv` via the `listings_in_boundary(p_geo_type, p_geo_slug, p_limit)` RPC, wrapped by the `getGeoBoundaryMapData` DAL. The spatial join runs once at MV-refresh time (as the MV owner, no 3s cap); request time is a trivial `(geo_type, geo_slug)` index lookup — sub-10ms, never times out, identical for city / neighborhood / community pages. Gate **G31** enforces that every page rendering a boundary map imports `getGeoBoundaryMapData` rather than rolling its own query. If you ever need a status other than `'Active'`, the MV already carries `standard_status` + `property_type` — widen the RPC, don't reintroduce request-time `ST_Within`.
 
 ---
 

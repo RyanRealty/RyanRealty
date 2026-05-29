@@ -6,7 +6,6 @@ import {
   Grid,
   H2,
   Section,
-  Stack,
   TabularNumber,
 } from '@/components/site/primitives'
 
@@ -56,6 +55,13 @@ type Props = {
   tone?: 'default' | 'muted'
   /** Grid columns at the largest breakpoint. */
   cols?: 2 | 3 | 4
+  /**
+   * Optional "view all" link rendered to the right of the title — use when the
+   * grid is a capped subset (e.g. the 6 main golf/master-planned communities,
+   * with the full set at /communities).
+   */
+  viewAllHref?: string
+  viewAllLabel?: string
   className?: string
 }
 
@@ -128,6 +134,8 @@ export function RelatedAreas({
   eyebrow,
   tone = 'muted',
   cols = 4,
+  viewAllHref,
+  viewAllLabel = 'View all',
   className,
 }: Props) {
   if (items.length === 0) return null
@@ -139,10 +147,20 @@ export function RelatedAreas({
   return (
     <Section padding="default" tone={tone} divider className={className}>
       <Container>
-        <Stack gap="tight" className="mb-6">
-          {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-          <H2>{title}</H2>
-        </Stack>
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div className="flex flex-col items-start gap-2">
+            {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+            <H2>{title}</H2>
+          </div>
+          {viewAllHref ? (
+            <Link
+              href={viewAllHref}
+              className="shrink-0 text-sm font-medium text-primary underline-offset-2 hover:underline"
+            >
+              {viewAllLabel}
+            </Link>
+          ) : null}
+        </div>
 
         <Grid cols={cols} gap="default">
           {items.map((item) =>

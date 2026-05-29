@@ -1,0 +1,34 @@
+{
+  "slug": "widgi-creek",
+  "name": "Widgi Creek",
+  "label": "Widgi Creek",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": true,
+  "is_master_planned": true,
+  "founded": 1991,
+  "architect": "Robert Muir Graves",
+  "about_prose": [
+    "Widgi Creek is a golf community on Bend's west side, set among Ponderosa pines along the rim of the Deschutes River Canyon on SW Century Drive. The Golf Club at Widgi Creek, an 18-hole public course designed by Robert Muir Graves and opened in 1991, anchors the community and has been voted Central Oregon's favorite public golf course by The Source readers more than 20 times.",
+    "Residential options include single-family homes and the Elkai Woods townhomes, which front the fairways and back to the Deschutes National Forest. The community sits about 5 miles southwest of downtown Bend on the road to Mt. Bachelor, giving residents direct access to year-round recreation along the corridor."
+  ],
+  "amenities": [
+    { "category": "Golf", "name": "The Golf Club at Widgi Creek", "description": "18-hole course by Robert Muir Graves, with bent-grass fairways and greens, tight tree-lined fairways, and undulating greens along the Deschutes River Canyon.", "access": "Public tee times; membership options" },
+    { "category": "Golf", "name": "Practice Facility", "description": "Natural-grass driving range, two putting greens, and a practice bunker and chipping area.", "access": "Included with rounds and membership" },
+    { "category": "Dining", "name": "The Grill", "description": "Full-service restaurant and bar in the clubhouse with an outdoor deck and banquet facilities up to 150.", "access": "Open to public" },
+    { "category": "Recreation", "name": "Pickleball Courts", "description": "On-site pickleball with lessons available through the club.", "access": "Members and guests" },
+    { "category": "Golf", "name": "Golf Instruction", "description": "Operation 36 Golf Academy and on-staff professionals offer lessons for all levels.", "access": "Open to public" }
+  ],
+  "drive_times": [
+    { "minutes": 22, "destination": "Mt. Bachelor", "note": "Same road (SW Century Drive); Mt. Bachelor is 22 miles west of Bend" },
+    { "minutes": 35, "destination": "Redmond Airport (RDM)", "note": "RDM is about 16 miles north of Bend; Widgi Creek is 5 miles southwest" }
+  ],
+  "course_specs": { "par": 72, "yardage": 6911, "summary": "18 holes along the Deschutes River Canyon; bent-grass fairways and greens; rating 73.4, slope 134 from the back tees." },
+  "citations": [
+    { "fact": "Robert Muir Graves architect, opened 1991, par 72, 6,911 yds, slope 134, rating 73.4", "source_url": "https://www.golflink.com/golf-courses/or/bend/widgi-creek-golf-club" },
+    { "fact": "Voted Central Oregon's favorite public course by The Source 20+ times; pickleball, Operation 36 academy, The Grill, banquet 150", "source_url": "https://www.widgi.com/" },
+    { "fact": "18707 SW Century Dr; bent-grass; range balls with greens fees", "source_url": "https://www.golfpass.com/travel-advisor/courses/62-widgi-creek-golf-club" },
+    { "fact": "Elkai Woods townhomes front Widgi Creek fairways", "source_url": "https://www.redfin.com/OR/Bend/60462-Elkai-Woods-Dr-97702/home/146731913" }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "slug": "crosswater",
+  "name": "Crosswater",
+  "label": "Crosswater",
+  "city": "Sunriver",
+  "city_slug": "sunriver",
+  "state": "OR",
+  "is_resort": true,
+  "is_master_planned": true,
+  "acres": 600,
+  "founded": 1995,
+  "architect": "Robert E. Cupp",
+  "about_prose": [
+    "Crosswater is a private, gated golf community on 600 acres of woodlands and preserved wetlands within the Sunriver area, about 15 miles south of Bend. The community wraps around a heathland-style golf course designed by Robert E. Cupp and opened in 1995. The Deschutes and Little Deschutes Rivers thread through the property and cross the course up to seven times depending on tee selection. Residents also hold access to the broader Sunriver amenity network.",
+    "The community comprises estate lots, single-family homes, and Osprey Pointe condominiums, governed through the Crosswater Club. The club operates The Grille restaurant and a pro shop, with access to Sage Springs Spa and Fitness, and three miles of walking and biking trails run through the common area. The course has hosted the JELD-WEN Tradition (a PGA Tour Champions major, 2007 to 2010), the PGA Professional National Championship, and two NCAA Division I championships."
+  ],
+  "amenities": [
+    { "category": "Golf", "name": "Crosswater Golf Course", "description": "An 18-hole, par-72 heathland-style course playing 7,683 yards from the championship tees, with bent-grass fairways and greens and five tee placements per hole.", "access": "Members and Sunriver Resort guests" },
+    { "category": "Dining", "name": "The Grille", "description": "The club's on-site restaurant.", "access": "Members" },
+    { "category": "Wellness", "name": "Sage Springs Spa and Fitness", "description": "Full-service spa and fitness facility accessible through Crosswater Club membership.", "access": "Members" },
+    { "category": "Recreation", "name": "Walking and Biking Trails", "description": "Three miles of trails through the community's common area and wetlands.", "access": "Residents and members" },
+    { "category": "Recreation", "name": "Sunriver Resort Amenities", "description": "Crosswater residents have access to the broader Sunriver network, including the SHARC aquatic center and additional golf.", "access": "Per membership and ownership agreements" }
+  ],
+  "drive_times": [
+    { "minutes": 5, "destination": "Sunriver Village", "note": "Crosswater is within the Sunriver area" },
+    { "minutes": 20, "destination": "Bend", "note": "Sunriver is about 15 miles south of Bend" },
+    { "minutes": 41, "destination": "Redmond Airport (RDM)", "note": "33-mile drive north via US-97" },
+    { "minutes": 41, "destination": "Mt. Bachelor", "note": "22-mile drive via Century Drive" }
+  ],
+  "course_rankings": [
+    { "rank": "#69", "publication": "Golf Digest America's 100 Greatest Public Courses (2025-26)", "description": "Named Best New Resort Course of 1995; ranked as high as 28th in 2005-06" },
+    { "rank": "#11", "publication": "Golf Digest Best in State (Oregon, 2025-26)", "description": "Oregon course ranking" },
+    { "rank": "#17", "publication": "Golfweek Best Residential Golf Courses", "description": "Top residential golf community ranking" }
+  ],
+  "course_specs": { "par": 72, "yardage": 7683, "summary": "Heathland-style layout; bent-grass fairways and greens; five tee placements per hole; rating 76.5, slope 145. The Deschutes and Little Deschutes Rivers come into play on up to seven holes." },
+  "citations": [
+    { "fact": "600 acres, opened 1995, designed by Robert E. Cupp, par 72, 7,683 yds, rivers cross up to seven times", "source_url": "https://en.wikipedia.org/wiki/Crosswater_Club" },
+    { "fact": "Golf Digest Best New Resort Course 1995; 28th (2005-06); 69th (2025-26); #11 Best in State Oregon", "source_url": "https://www.sunriverresort.com/blog/golf-digest-names-crosswater-golf-course-one-of-americas-100-greatest-public-courses" },
+    { "fact": "Hosted JELD-WEN Tradition 2007-2010; PGA Professional National Championship; NCAA Division I championships", "source_url": "https://www.crosswater.com/golf" },
+    { "fact": "Golfweek #17 Best Residential; rating 76.5 slope 145; 3 miles of trails; Sage Springs Spa; The Grille", "source_url": "https://sunriverrealty.com/neighborhoods/crosswater" }
+  ]
+}

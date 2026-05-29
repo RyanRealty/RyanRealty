@@ -1,0 +1,33 @@
+{
+  "slug": "bend-old-farm-district",
+  "name": "Old Farm District",
+  "label": "Old Farm District",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "Old Farm District occupies the southeast quadrant of Bend, one of 13 neighborhood associations chartered by the city. Its northern edge runs along Murphy Road, its western boundary follows Brookswood south from Powers and Reed Market Roads to Century Drive, and its eastern and southern edges trace the city limits. The BNSF railroad and a Central Oregon Irrigation District canal cross the neighborhood, creating travel breaks that can turn a 1.5-mile straight-line trip into a 5-mile drive.",
+    "The housing stock reflects three eras. The western portion mixes 1990s ranch-style homes and early-2000s Craftsman builds, many on lots approaching a half acre, remnants of the agricultural parcels that gave the neighborhood its name. The area developed largely under Deschutes County jurisdiction before annexation, so older homes pre-date city sewer and some remain on septic. Newer subdivisions along the eastern and southern edges, including Bridges, Orion Greens, and Stone Creek, are on city sewer and built to current standards. Homes here have historically offered lower price points than northwest and west Bend.",
+    "Bend Park and Recreation completed the 37-acre Alpenglow Park at 61049 SE 15th Street in 2022, anchoring the neighborhood with one of the district's largest community parks. The 6.17-acre Stone Creek Park, directly west of Silver Rail Elementary, adds a bike pump track and skate spot with views toward Newberry National Volcanic Monument. Silver Rail Elementary is the primary K-5 school, with students feeding to High Desert Middle School at 61000 Diamondback Lane."
+  ],
+  "amenities": [
+    { "category": "Parks", "name": "Alpenglow Park", "description": "A 37-acre community park at 61049 SE 15th Street opened in 2022, with a seasonal sprayground, bouldering structures, a dog off-leash area, 2.2 miles of ADA-accessible paved paths, and a covered stage.", "access": "Open 5 AM to 10 PM" },
+    { "category": "Parks", "name": "Stone Creek Park", "description": "A 6.17-acre park at 61531 SE Stone Creek Lane with a bike pump track, bike skills course, skate spot, and a basalt lava-butte feature with views to Newberry National Volcanic Monument.", "access": "Open 5 AM to 10 PM" },
+    { "category": "Schools", "name": "Silver Rail Elementary", "description": "A Bend-La Pine Schools K-5 directly east of Stone Creek Park, the primary feeder for the neighborhood.", "access": "Bend-La Pine Schools" },
+    { "category": "Schools", "name": "High Desert Middle School", "description": "A Bend-La Pine Schools grades 6-8 campus at 61000 Diamondback Lane with about 693 students, offering Project Lead the Way and a Gifted and Talented program.", "access": "Bend-La Pine Schools" },
+    { "category": "Shopping", "name": "Reed Crossing Market", "description": "A neighborhood grocery and prepared-food market at 21185 SE Reed Market Road carrying locally sourced meat, produce, coffee, and brick-oven pizza.", "access": "Within the district on Reed Market Road" }
+  ],
+  "drive_times": [
+    { "minutes": 10, "destination": "Downtown Bend", "note": "Via Reed Market Road west or SE 15th Street north" },
+    { "minutes": 8, "destination": "Old Mill District", "note": "Via Reed Market Road west to SW Century Drive" },
+    { "minutes": 15, "destination": "Bend Airport (BDN)", "note": "Via SE 15th Street north and US-20 east" }
+  ],
+  "citations": [
+    { "fact": "Old Farm District one of 13 chartered associations; boundary description", "source_url": "https://oldfarmbend.com/" },
+    { "fact": "Alpenglow Park 37 ac, 61049 SE 15th St, opened 2022, 2.2 mi ADA paths, sprayground, bouldering", "source_url": "https://www.bendparksandrec.org/park/alpenglow-park/" },
+    { "fact": "Stone Creek Park 6.17 ac, 61531 SE Stone Creek Ln, pump track, skate spot", "source_url": "https://www.bendparksandrec.org/park/stone-creek/" },
+    { "fact": "High Desert Middle 61000 Diamondback Ln, ~693 students, PLTW + GT", "source_url": "https://www.bend.k12.or.us/highdesert" }
+  ]
+}

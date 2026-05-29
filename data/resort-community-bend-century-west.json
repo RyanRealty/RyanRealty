@@ -1,0 +1,32 @@
+{
+  "slug": "bend-century-west",
+  "name": "Century West",
+  "label": "Century West",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "Century West is a City of Bend neighborhood district centered on the SW Century Drive corridor in southwest Bend, recognized by the city on July 20, 2005. It sits about 2.5 miles southwest of central Bend, between the Deschutes River corridor to the north and the Deschutes National Forest boundary to the west. Housing is predominantly single-family homes built after 2000, making it one of Bend's newer west-side districts. SW Century Drive becomes the Cascade Lakes Scenic Byway heading west, placing the neighborhood at the start of the 66-mile route toward Mt. Bachelor and the High Cascade lakes.",
+    "Families are served by Bend-La Pine Schools, with Cascade Middle School and William E. Miller Elementary as primary assigned schools and Summit High School at the high school level. OSU-Cascades, the only four-year university in Central Oregon, opened its main campus at 1500 SW Chandler Ave in 2016 just north of the district and operates an annex at 497 SW Century Drive. The 22-acre Farewell Bend Park provides river access and a trailhead to the Deschutes River Trail a mile north."
+  ],
+  "amenities": [
+    { "category": "Parks", "name": "Farewell Bend Park", "description": "A 22-acre Bend Park and Recreation park at 1000 SW Reed Market Road along the Deschutes, with a lumber-mill-themed playground, climbing wall, covered picnic areas, and a Deschutes River Trail trailhead.", "access": "Limited street parking" },
+    { "category": "Schools", "name": "Cascade Middle School", "description": "A Bend-La Pine Schools grades 6-8 campus at 19619 Mountaineer Way, ranked in the top 10% of Oregon middle schools.", "access": "Bend-La Pine Schools" },
+    { "category": "Schools", "name": "William E. Miller Elementary", "description": "A Bend-La Pine Schools K-5 at 300 NW Crosby Dr, ranked in the top 5% of Oregon elementary schools.", "access": "Bend-La Pine Schools" },
+    { "category": "Landmark", "name": "OSU-Cascades", "description": "Oregon State University's branch campus, the only four-year university in Central Oregon, with a main campus at 1500 SW Chandler Ave (opened 2016) and a Century Drive annex at 497 SW Century Drive.", "access": "Public university" },
+    { "category": "Recreation", "name": "Cascade Lakes Scenic Byway Access", "description": "SW Century Drive becomes the Cascade Lakes Scenic Byway at the western edge, with direct access to the Deschutes National Forest and Mt. Bachelor.", "access": "Public road" }
+  ],
+  "drive_times": [
+    { "minutes": 5, "destination": "Old Mill District", "note": "About 2 miles northeast via SW Century Drive and Reed Market Road" },
+    { "minutes": 10, "destination": "Downtown Bend", "note": "About 2.5 miles northeast" },
+    { "minutes": 22, "destination": "Mt. Bachelor", "note": "22 miles west via Century Drive / Cascade Lakes Scenic Byway" }
+  ],
+  "citations": [
+    { "fact": "Century West established as City of Bend district July 20, 2005, Century Drive area", "source_url": "https://www.bendoregon.gov/government/departments/communications-engagement/neighborhood-districts" },
+    { "fact": "Cascade Middle 19619 Mountaineer Way, grades 6-8, top 10% Oregon", "source_url": "https://www.publicschoolreview.com/cascade-middle-school-profile/97702" },
+    { "fact": "William E. Miller Elementary 300 NW Crosby Dr, K-5, top 5% Oregon", "source_url": "https://www.publicschoolreview.com/william-e-miller-elementary-school-profile" },
+    { "fact": "OSU-Cascades main campus 1500 SW Chandler Ave (2016), annex 497 SW Century Dr; Mt. Bachelor 22 mi west", "source_url": "https://en.wikipedia.org/wiki/Oregon_State_University%E2%80%93Cascades" }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "bend-summit-west",
+  "name": "Summit West",
+  "label": "Summit West",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "Summit West is one of the thirteen neighborhood districts recognized by the City of Bend, occupying the northwest corner of the city between the urban growth boundary and Mt. Washington Drive. The district extends west from River West along Shevlin Park Road through subdivisions including NorthWest Crossing, Shevlin Commons, The Tree Farm, and Skyliner Summit, reaching Deschutes National Forest land to the west. It covers 1,553 acres across 49 subdivisions and was the youngest of Bend's districts when recognized.",
+    "The west-side street grid ends where the forest begins, giving Summit West a low-density, heavily forested character. Summit High School (2855 NW Clearwater Drive), Pacific Crest Middle School, and High Lakes Elementary (2500 NW High Lakes Loop) all sit within or beside the district, all Bend-La Pine Schools. The NorthWest Crossing town center puts everyday retail, coffee, and dining within the neighborhood, while Shevlin Park and the Phil's Trail system give residents immediate access to hundreds of miles of non-motorized trails."
+  ],
+  "amenities": [
+    { "category": "Parks", "name": "Shevlin Park", "description": "A 981-acre Bend Park and Recreation park at 18920 NW Shevlin Park Road, donated in 1920, with a 6-mile loop through old-growth ponderosa, a 2.5-mile Tumalo Creek trail, and a connection to the Deschutes National Forest Mrazek Trail.", "access": "Open sunrise to sunset; free" },
+    { "category": "Parks", "name": "Discovery Park", "description": "A 40-acre community park at 1315 NW Discovery Park Drive in NorthWest Crossing, with a natural play area, fenced off-leash dog park, a 51-bed community garden, and a 3-acre irrigation lake.", "access": "Open 5 AM to 10 PM" },
+    { "category": "Recreation", "name": "Skyline Sports Complex", "description": "A 24.4-acre athletic facility at 19617 Mountaineer Way, with four lighted fields, outdoor basketball courts, a playground, and a seasonal disc golf course.", "access": "Public; hosts district leagues" },
+    { "category": "Schools", "name": "Summit High School", "description": "Bend-La Pine Schools' west-side comprehensive high school at 2855 NW Clearwater Drive (grades 9-12), which gives the district its name.", "access": "Bend-La Pine Schools" },
+    { "category": "Recreation", "name": "Phil's Trail System", "description": "A trailhead at the district's edge connecting riders and runners to the Deschutes National Forest trail network, including the 34-mile Twin Bridges loop, an Oregon Scenic Bikeway.", "access": "Free; trailhead off NW Skyline Ranch Road" }
+  ],
+  "drive_times": [
+    { "minutes": 10, "destination": "Downtown Bend", "note": "Via Mt. Washington Drive to Newport Avenue" },
+    { "minutes": 5, "destination": "NorthWest Crossing town center", "note": "Within the district, on NW Crossing Drive" },
+    { "minutes": 22, "destination": "Mt. Bachelor", "note": "Via Century Drive / Cascade Lakes Highway" }
+  ],
+  "citations": [
+    { "fact": "Summit West youngest of 13 City of Bend districts; 1,553 acres, 49 subdivisions", "source_url": "https://www.summitwestbend.org/about" },
+    { "fact": "Shevlin Park 981 ac, 18920 NW Shevlin Park Rd, donated 1920, 6-mile loop", "source_url": "https://www.bendparksandrec.org/park/shevlin-park/" },
+    { "fact": "Discovery Park 40 ac, 1315 NW Discovery Park Dr, dog park, community garden, 3-ac lake", "source_url": "https://www.bendparksandrec.org/park/discovery-park/" },
+    { "fact": "Summit HS 2855 NW Clearwater Dr; High Lakes Elementary 2500 NW High Lakes Loop; all Bend-La Pine", "source_url": "https://www.bend.k12.or.us/summit/our-school/contact-us" }
+  ]
+}

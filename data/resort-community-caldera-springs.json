@@ -1,0 +1,41 @@
+{
+  "slug": "caldera-springs",
+  "name": "Caldera Springs",
+  "label": "Caldera Springs",
+  "city": "Sunriver",
+  "city_slug": "sunriver",
+  "state": "OR",
+  "is_resort": true,
+  "is_master_planned": true,
+  "acres": 1000,
+  "founded": 2006,
+  "about_prose": [
+    "Caldera Springs is a private residential resort community adjacent to Sunriver Resort, 15 miles south of Bend. The community launched in 2006 on 400 acres and expanded eastward in 2021, bringing the master plan to 1,000 acres. The original build-out included 320 single-family homesites and 45 cabins; the expansion adds a 220-acre Wildlife Forest Preserve permanently protected from development.",
+    "The community centers on 14.7 acres of lakes and streams, including Obsidian Lake and Trailmere Lake, where owners and resort guests paddle, kayak, and fly fish. Thirteen miles of paved and soft trails wind through forested terrain, and the par-27 Caldera Links course, designed by Bob Cupp, is available to owners and Sunriver Resort guests. A master-plan investment announced in 2024 funded Forest House, Forest Park, and a reimagined Lake House.",
+    "Caldera Springs operates in connection with Sunriver Resort and is managed by CoralTree Hospitality. Homes include custom single-family residences, Caldera Cabins, and Forestbrook vacation homes with attached studio units. The Forestbrook enclave began delivering homes in 2024, with pricing starting at $1.29 million; expansion-area homesites have been priced from the low $400,000s."
+  ],
+  "amenities": [
+    { "category": "Dining", "name": "Lake House", "description": "Waterfront restaurant on Obsidian Lake with indoor-outdoor dining and Mt. Bachelor views, plus the adjacent Shore Shack walkup bar with fire-pit seating.", "access": "Public" },
+    { "category": "Recreation", "name": "Forest House", "description": "Recreation center with multiple heated outdoor pools, one of Oregon's longest dual-racer water slides, a lazy river, a kids' pool, a 1,748-square-foot fitness center, a game room, and poolside dining.", "access": "Owners and Sunriver Resort vacation-home guests only" },
+    { "category": "Recreation", "name": "The Quarry", "description": "Infinity-edge pool overlooking Obsidian Lake, outdoor year-round spas, and a fitness center with stocked locker rooms.", "access": "Owners and resort guests" },
+    { "category": "Recreation", "name": "Forest Park", "description": "Four-season park with six pickleball courts, a dog park, a children's play area, and a winter sledding hill.", "access": "Owners and resort guests" },
+    { "category": "Recreation", "name": "Caldera Links Golf Course", "description": "A 9-hole, par-27 course designed by Bob Cupp, with holes from 60 to 185 yards plus putting and chipping greens.", "access": "Owners and Sunriver Resort guests" },
+    { "category": "Recreation", "name": "Lakes and Trails", "description": "14.7 acres of lakes and streams with paddleboard, kayak, and canoe rentals through The Outpost, connected by 13 miles of paved and soft trails.", "access": "Owners and resort guests" },
+    { "category": "Wellness", "name": "Spa at Sunriver Resort", "description": "Full-service spa at the adjacent Sunriver Resort, with complimentary fitness-center access for Caldera Springs owners and guests.", "access": "Owners and resort guests" },
+    { "category": "Other", "name": "Wildlife Forest Preserve", "description": "A 220-acre permanently protected open space supporting habitat for river otters and bald eagles observed on the community's waterways.", "access": "Community open space" }
+  ],
+  "drive_times": [
+    { "minutes": 2, "destination": "Sunriver Resort", "note": "Directly adjacent" },
+    { "minutes": 15, "destination": "Bend / Old Mill District", "note": "Sunriver is 15 miles south of Bend via US-97" },
+    { "minutes": 20, "destination": "Mt. Bachelor", "note": "Via Century Drive and Cascade Lakes Highway" },
+    { "minutes": 42, "destination": "Redmond Airport (RDM)", "note": "34 miles via US-97 north through Bend" }
+  ],
+  "citations": [
+    { "fact": "Established 2006 on 400 acres; original plan 320 homes + 45 cabins", "source_url": "https://www.pactrust.com/about/partnerships/caldera-springs/" },
+    { "fact": "600-acre expansion began 2021; master plan now 1,000 acres; 220-acre Wildlife Forest Preserve", "source_url": "https://ktvz.com/news/business/2024/09/10/caldera-springs-in-sunriver-expands-amenities-adds-new-elements-for-visitors-residents-to-enjoy/" },
+    { "fact": "14.7 acres of lakes; Forest House with pools, dual-racer slide, 1,748 sq ft fitness center; 13 miles of trails", "source_url": "https://calderasprings.com/lifestyle/" },
+    { "fact": "Forest Park: six pickleball courts, dog park, play area, sledding hill; Lake House public", "source_url": "https://www.bendsource.com/business/sunriver-resort-expands-its-amenity-offerings-with-the-debut-of-forest-house-forest-park-and-reimagined-lake-house-at-caldera-springs-21612444/" },
+    { "fact": "Caldera Links 9-hole par-27 (Bob Cupp), holes 60-185 yds", "source_url": "https://www.golforegon.com/golfcourses/sunriver-resort-caldera-links" },
+    { "fact": "Forestbrook homes from $1.29M, first nine delivered summer 2024; managed by CoralTree Hospitality", "source_url": "https://westernhomejournal.com/bend-oregon/a-new-era-at-caldera-springs/" }
+  ]
+}

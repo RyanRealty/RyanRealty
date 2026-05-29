@@ -1,0 +1,40 @@
+{
+  "slug": "brasada-ranch",
+  "name": "Brasada Ranch",
+  "label": "Brasada Ranch",
+  "city": "Powell Butte",
+  "city_slug": "powell-butte",
+  "state": "OR",
+  "is_resort": true,
+  "is_master_planned": true,
+  "acres": 1800,
+  "founded": 2007,
+  "architect": "Peter Jacobsen / Jim Hardy",
+  "about_prose": [
+    "Brasada Ranch is an 1,800-acre resort and residential community on the high-desert plateau of Powell Butte, at more than 3,000 feet. The land operated as a cattle ranch before development began in the mid-2000s, and the resort opened to guests in 2007. The master plan allows up to 750 home sites, and the community was the first Oregon resort to earn LEED Gold certification from the U.S. Green Building Council.",
+    "Nine hundred of the 1,800 acres are set aside as permanent open space, with trails for hiking, mountain biking, and equestrian use. Accommodations include Sage Canyon cabins, Cascade bungalows, and Ranch House suites. Membership and resort-guest access extends to the Brasada Canyons 18-hole golf course, Spa Brasada, indoor and outdoor pools, and two on-site restaurants."
+  ],
+  "amenities": [
+    { "category": "Golf", "name": "Brasada Canyons Golf Course", "description": "An 18-hole course co-designed by Peter Jacobsen and Jim Hardy, opened in 2007. Eleven holes route through canyon terrain with five tee settings.", "access": "Members and resort guests only" },
+    { "category": "Dining", "name": "Ranch House Restaurant", "description": "Year-round casual dining serving breakfast, lunch, and dinner with Cascade and high-desert views.", "access": "Resort guests and members" },
+    { "category": "Dining", "name": "Range Restaurant and Bar", "description": "Seasonal farm-to-table dining featuring Oregon-sourced produce, meats, and dairy.", "access": "Seasonal; private events year-round" },
+    { "category": "Wellness", "name": "Spa Brasada", "description": "A four-treatment-room spa offering massage, facials, and body treatments, plus salon services.", "access": "Resort guests and members" },
+    { "category": "Recreation", "name": "Pool Complex", "description": "Sundance Pool with a seasonal waterslide and lazy river, an adults-only Cascade pool, outdoor hot tubs, and an indoor heated lap pool.", "access": "Resort guests and members" },
+    { "category": "Recreation", "name": "Equestrian Center", "description": "Guided trail rides on American Quarter horses across 900 acres of open land, with instructors and pony rides.", "access": "Resort guests and members" },
+    { "category": "Recreation", "name": "Athletic Center", "description": "Strength and cardio equipment, Peloton bikes, pilates and yoga classes, plus tennis and pickleball courts.", "access": "Resort guests and members" }
+  ],
+  "drive_times": [
+    { "minutes": 22, "destination": "Redmond Airport (RDM)", "note": "16 miles by road" },
+    { "minutes": 22, "destination": "Redmond", "note": "14.4 miles via US-97" },
+    { "minutes": 25, "destination": "Bend", "note": "Via US-20 and Powell Butte Highway" },
+    { "minutes": 20, "destination": "Prineville", "note": "Via OR-126" }
+  ],
+  "course_specs": { "summary": "Brasada Canyons: 18 holes, five tee settings, opened 2007, designed by Peter Jacobsen and Jim Hardy. Eleven holes play through canyon terrain at 3,000+ ft with Cascade Range views." },
+  "citations": [
+    { "fact": "1,800 acres total; 900 acres permanent open space", "source_url": "https://www.brasada.com/" },
+    { "fact": "Resort opened 2007; former cattle ranch", "source_url": "https://www.ramonarentalsllc.com/history-of-brasada-ranch/" },
+    { "fact": "Golf by Peter Jacobsen + Jim Hardy, opened 2007, 18 holes, five tees", "source_url": "https://www.top100golfcourses.com/golf-course/brasada-ranch" },
+    { "fact": "First Oregon resort to earn LEED Gold", "source_url": "https://noordinaryresort.com/brasada-ranch-powell-butte/" },
+    { "fact": "22 min / 14.4 mi from Redmond; 16 mi from RDM", "source_url": "https://www.brasada.com/plan-your-stay" }
+  ]
+}

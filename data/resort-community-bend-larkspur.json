@@ -1,0 +1,34 @@
+{
+  "slug": "bend-larkspur",
+  "name": "Larkspur",
+  "label": "Larkspur",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "Larkspur is one of Bend's larger east-side neighborhood districts, bounded roughly by Highway 20 and Franklin Boulevard to the north, Reed Market Road to the south, the Parkway to the west, and the urban growth boundary to the east. It runs from the base of Pilot Butte south to the Reed Market corridor, about two miles north to south. Much of the area developed before full annexation, producing a mix of lot sizes rather than a uniform grid. Homes range from 1970s and 1980s ranch styles to Craftsman-influenced construction from the 1990s and 2000s on medium-size lots with established trees.",
+    "Pilot Butte State Scenic Viewpoint anchors the north end. The 114-acre cinder cone, donated to Oregon in 1927, rises about 490 feet and offers 360-degree views of the Cascades. Residents reach it via the Larkspur Trail, a 3.9-mile off-street path managed by Bend Park and Recreation that runs north from Larkspur Park through the Pinewood Natural Area to Neff Road near Pilot Butte Middle School, connecting to the Central Oregon Historic Canal Trail.",
+    "The Larkspur Community Center at 1600 SE Reed Market Road is the neighborhood's civic anchor. The 34,000-square-foot facility, reopened in April 2021 after a $23 million renovation, houses a fitness center, an aquatics center with a 135,000-gallon warm-water pool and current channel, group exercise studios, and classrooms. Downtown Bend sits three to four miles west via NE Franklin Avenue."
+  ],
+  "amenities": [
+    { "category": "Landmark", "name": "Pilot Butte State Scenic Viewpoint", "description": "A 114-acre cinder cone donated to Oregon in 1927, with year-round hiking trails gaining about 490 feet and a seasonal summit road (May 1 to September 30). Views reach Mount Bachelor, Broken Top, the Three Sisters, and beyond.", "access": "Trails year-round; summit road May 1 to September 30" },
+    { "category": "Recreation", "name": "Larkspur Community Center", "description": "A 34,000-square-foot Bend Park and Recreation facility at 1600 SE Reed Market Road, reopened April 2021 after a $23 million renovation, with a 135,000-gallon leisure pool and a fitness center with walk/jog track.", "access": "Open daily; see facility hours" },
+    { "category": "Parks", "name": "Larkspur Park", "description": "A neighborhood park with an all-abilities playground, bocce and horseshoe courts, a basketball court, and a natural area preserving juniper and rabbitbrush.", "access": "Open daily 5 AM to 10 PM" },
+    { "category": "Recreation", "name": "Larkspur Trail", "description": "A 3.9-mile north-south trail (2.58 miles paved) through the Pinewood Natural Area, connecting to Pilot Butte State Park via an underpass beneath Highway 20.", "access": "Open daily 5 AM to 10 PM; dogs on leash" },
+    { "category": "Schools", "name": "Bear Creek Elementary", "description": "A Bend-La Pine Schools K-5 at 51 SE 13th Street that hosts the district's Spanish Language Dual Immersion Program.", "access": "Bend-La Pine Schools" },
+    { "category": "Schools", "name": "Pilot Butte Middle School", "description": "A Bend-La Pine Schools 6-8 campus at 1501 NE Neff Road near the trail's north end, offering Gifted and Talented and International Baccalaureate programs.", "access": "Bend-La Pine Schools" }
+  ],
+  "drive_times": [
+    { "minutes": 10, "destination": "Downtown Bend", "note": "3 to 4 miles west via NE Franklin Avenue" },
+    { "minutes": 3, "destination": "Pilot Butte trailhead", "note": "Within the neighborhood; also walkable via the Larkspur Trail" },
+    { "minutes": 15, "destination": "Bend Airport (BDN)", "note": "Northeast via Highway 20 and 27th Street" }
+  ],
+  "citations": [
+    { "fact": "Larkspur boundaries: Hwy 20/Franklin north, Reed Market south, Parkway west, UGB east", "source_url": "https://larkspurnd.com/" },
+    { "fact": "Pilot Butte 114-acre cinder cone, donated 1927, summit road May 1-Sept 30, ~490 ft gain", "source_url": "https://stateparks.oregon.gov/index.cfm?do=park.profile&parkId=33" },
+    { "fact": "Larkspur Community Center 34,000 sq ft, reopened April 2021, $23M renovation, 135,000-gal pool", "source_url": "https://www.bendparksandrec.org/facility/larkspur-community-center/" },
+    { "fact": "Larkspur Trail 3.9 mi (2.58 paved), Hwy 20 underpass; Bear Creek Elementary dual immersion; Pilot Butte Middle IB", "source_url": "https://www.bendparksandrec.org/trail/larkspur-trail/" }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "slug": "bend-awbrey-butte",
+  "name": "Awbrey Butte",
+  "label": "Awbrey Butte",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "Awbrey Butte is a City of Bend neighborhood district in the northwest quadrant, recognized as a neighborhood association in December 2005. The butte is the highest landmass within the city limits, its summit reaching 4,230 feet, roughly 3 miles northwest of downtown via NW Newport Avenue. Its western and southern edges meet the Awbrey Glen Golf Club, and the Deschutes River canyon defines its northeastern edge.",
+    "Brooks Resources purchased 1,800 acres on the butte in 1970 and broke ground on the residential community in 1984, completing 782 homesites by 2005. Homesites are large, preserving mature ponderosa pines and view corridors to the Cascades. Roads wrap around the hill to stay largely invisible from below, and homes are required to use earth-tone exteriors. The result is a low-density, forested neighborhood inside the city.",
+    "Views are the defining asset. West-side homes take in a Cascade Range panorama from Mount Jefferson through Mount Bachelor, while east-facing slopes look over Bend's grid, the Old Mill smokestacks, and Pilot Butte. Two Bend Park and Recreation parks sit on the butte, Sylvan Park and Summit Park, each with tennis courts and trails, and the private Awbrey Glen Golf Club occupies the southwestern portion."
+  ],
+  "amenities": [
+    { "category": "Parks", "name": "Sylvan Park", "description": "A 3.8-acre park at 2996 NW 3 Sisters Drive atop the butte, with two tennis courts, a playground, and over half the site left in natural woods. Acquired from Brooks Resources in 1988.", "access": "Public, 5 AM to 10 PM" },
+    { "category": "Parks", "name": "Summit Park", "description": "A 3.8-acre park at 1150 NW Promontory Drive with two tennis courts, a half-court, open lawn, and an unpaved trail connecting to Sylvan Park.", "access": "Public, 5 AM to 10 PM" },
+    { "category": "Recreation", "name": "Awbrey Glen Golf Club", "description": "An 18-hole private club at 2500 NW Awbrey Glen Drive, designed by Gene Mason in 1993 and updated by David McLay Kidd, playing 7,007 yards through pines and rock outcrops.", "access": "Private membership" },
+    { "category": "Schools", "name": "High Lakes Elementary", "description": "The Bend-La Pine Schools K-5 serving Awbrey Butte, at 2500 NW High Lakes Loop. Students continue to Cascade Middle and Summit High.", "access": "Public, Bend-La Pine Schools" },
+    { "category": "Landmark", "name": "Awbrey Butte Summit", "description": "The butte's summit at 4,230 feet is the highest point within Bend's city limits, giving the neighborhood its elevation and views.", "access": "Neighborhood setting; summit fenced" }
+  ],
+  "drive_times": [
+    { "minutes": 10, "destination": "Downtown Bend", "note": "3 miles south via NW Newport Avenue" },
+    { "minutes": 12, "destination": "Old Mill District", "note": "About 4 miles southeast" },
+    { "minutes": 25, "destination": "Mt. Bachelor", "note": "Via Cascade Lakes Highway" }
+  ],
+  "citations": [
+    { "fact": "Awbrey Butte Neighborhood Association established Dec 2005; NW quadrant; highest land in city, summit 4,230 ft", "source_url": "https://bendoregon.gov/neighborhood-districts/" },
+    { "fact": "Brooks Resources bought 1,800 acres 1970, broke ground 1984, 782 homesites by 2005; earth-tone requirement", "source_url": "https://brooksresources.com/community/awbrey-butte/" },
+    { "fact": "Sylvan Park 3.8 ac (2996 NW 3 Sisters Dr); Summit Park 3.8 ac (1150 NW Promontory Dr)", "source_url": "https://www.bendparksandrec.org/park/sylvan-park/" },
+    { "fact": "Awbrey Glen Golf Club: Gene Mason 1993, updated David McLay Kidd, 7,007 yds, private", "source_url": "https://www.awbreyglen.com/golf" }
+  ]
+}

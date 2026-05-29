@@ -1,0 +1,34 @@
+{
+  "slug": "bend-southwest-bend",
+  "name": "Southwest Bend",
+  "label": "Southwest Bend",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "Southwest Bend is bounded by Powers Road to the north, the Deschutes River to the west, 3rd Street to the east, and the city limits to the south. The City of Bend recognized it in December 2001, making it the first neighborhood district established in the city. The area sits next to the Old Mill District, a 270-acre mixed-use development on the former Shevlin-Hixon and Brooks-Scanlon lumber-mill site, now home to roughly 60 retailers and the 8,000-seat Hayden Homes Amphitheater on the west bank of the Deschutes.",
+    "Housing spans a wide range of eras, with a share of homes from the 1970s through 1990s and the majority built after 1999 as the city grew following the timber industry's decline. The result is a mix of established ranch homes, newer single-family construction, and townhomes, many on lots that back to the Deschutes River Trail corridor.",
+    "SW Century Drive runs through the neighborhood and becomes the Cascade Lakes Scenic Byway heading west, reaching Mount Bachelor in about 22 miles. The Bend Whitewater Park sits at the district's northern edge on the Deschutes at SW Shevlin Hixon Drive, with three river channels for kayaking, paddleboarding, and floating. Schools serving the area include Elk Meadow Elementary (60880 Brookswood Blvd) and Summit High School."
+  ],
+  "amenities": [
+    { "category": "Parks", "name": "Farewell Bend Park", "description": "A 22-acre park at 1000 SW Reed Market Road with a river boat launch, boardwalk, picnic shelters, playground, and a Deschutes River Trail connection.", "access": "On foot or bike via the river trail" },
+    { "category": "Recreation", "name": "Bend Whitewater Park", "description": "A three-channel whitewater facility on the Deschutes at 166 SW Shevlin Hixon Drive, with four wave features for kayaks, SUP, and surfboards, plus a separate fish-passage channel.", "access": "Parking off Shevlin Hixon Drive" },
+    { "category": "Landmark", "name": "Old Mill District", "description": "A 270-acre mixed-use district on the former lumber-mill site, with about 60 stores and restaurants and the Hayden Homes Amphitheater. The three original smokestacks are preserved.", "access": "Walking distance from the northern portion via the river trail" },
+    { "category": "Parks", "name": "Riverbend Park", "description": "A river-access park at 799 SW Columbia St for floating, connected to the Whitewater Park, McKay Park, and Farewell Bend Park by trail and footbridge.", "access": "On-site parking; Old Mill Reach trailhead" },
+    { "category": "Schools", "name": "Elk Meadow Elementary", "description": "A Bend-La Pine Schools K-5 at 60880 Brookswood Blvd serving much of southwest Bend, ranked in the top 20% of Oregon public elementary schools.", "access": "Attendance zone covers most of the district" },
+    { "category": "Recreation", "name": "Deschutes River Trail (Old Mill Reach)", "description": "A 2.7-mile paved, level trail along the Deschutes connecting Farewell Bend, Riverbend, McKay, and Miller's Landing, with three footbridges for loops on both banks.", "access": "Multiple trailheads within and beside the district" }
+  ],
+  "drive_times": [
+    { "minutes": 5, "destination": "Downtown Bend", "note": "Via the 3rd Street corridor" },
+    { "minutes": 10, "destination": "Old Mill District", "note": "Walkable from the northern portion; a short drive from the south end" },
+    { "minutes": 35, "destination": "Mount Bachelor", "note": "Via SW Century Drive onto the Cascade Lakes Highway (OR-46), about 22 miles" }
+  ],
+  "citations": [
+    { "fact": "Southwest Bend boundaries; first Bend neighborhood district, established December 5, 2001", "source_url": "https://swbend.org/about-southwest-bend/" },
+    { "fact": "Old Mill District 270 acres, former lumber-mill site, ~60 stores, Hayden Homes Amphitheater 8,000", "source_url": "https://en.wikipedia.org/wiki/Old_Mill_District" },
+    { "fact": "Deschutes River Trail Old Mill Reach 2.7 mi paved; Farewell Bend Park 22 ac, 1000 SW Reed Market Rd", "source_url": "https://www.bendparksandrec.org/trail/deschutes-river-trail-old-mill-reach/" },
+    { "fact": "Elk Meadow Elementary, 60880 Brookswood Blvd, K-5, top 20% Oregon", "source_url": "https://www.publicschoolreview.com/elk-meadow-elementary-school-profile" }
+  ]
+}

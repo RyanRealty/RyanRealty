@@ -1,0 +1,39 @@
+{
+  "slug": "black-butte-ranch",
+  "name": "Black Butte Ranch",
+  "label": "Black Butte Ranch",
+  "city": "Sisters",
+  "city_slug": "sisters",
+  "state": "OR",
+  "is_resort": true,
+  "is_master_planned": true,
+  "acres": 1800,
+  "founded": 1970,
+  "about_prose": [
+    "Black Butte Ranch is an 1,800-acre residential resort community 8 miles northwest of Sisters, developed beginning in 1970 by Brooks Resources Corporation on a former cattle ranch. The property sits at 3,376 feet in Deschutes County, bordered on several sides by Deschutes National Forest. The homeowners association received the roads and common areas in 1982 and purchased the remaining resort assets, including the golf courses and Lodge, in 1987. The HOA has owned and operated the full resort since.",
+    "The community holds over 1,250 residences across condos, custom homes, and vacation rentals. On-property recreation includes 27 miles of paved bike paths, two 18-hole championship golf courses, a 12-hole putting course, five swimming pools, 14 tennis courts, 12 pickleball courts, and a full-service spa. The ranch lies 15 miles east of Hoodoo Ski Area and about 30 minutes from Redmond Municipal Airport."
+  ],
+  "amenities": [
+    { "category": "Golf", "name": "Big Meadow Golf Course", "description": "An 18-hole course designed by Robert Muir Graves, playing over 7,000 yards from the championship tees, with Cascade views.", "access": "Resort guests and members" },
+    { "category": "Golf", "name": "Glaze Meadow Golf Course", "description": "An 18-hole course playing 7,007 yards from the back tees, renovated in 2012 by John Fought, with five tee sets and grass-faced bunkers.", "access": "Resort guests and members" },
+    { "category": "Golf", "name": "Little Meadow Putting Course", "description": "A 12-hole putting course by John Fought, with holes between 45 and 105 feet.", "access": "Resort guests and members" },
+    { "category": "Dining", "name": "The Lodge Restaurant", "description": "The main dining venue, with Pacific Northwest cuisine and mountain views, alongside the Aspen Lounge.", "access": "Open to public" },
+    { "category": "Dining", "name": "Lakeside Bistro", "description": "Casual lakeside dining with breakfast, pizza, and craft beers.", "access": "Open to public" },
+    { "category": "Recreation", "name": "Trails and Bike Paths", "description": "27 miles of paved paths for biking, walking, and winter Nordic skiing, plus a private lake for fly fishing, canoeing, and paddleboarding.", "access": "Owners and guests" },
+    { "category": "Wellness", "name": "Black Butte Ranch Spa", "description": "Full-service spa with massage, facial, and body treatments, with online booking.", "access": "Resort guests and members" }
+  ],
+  "drive_times": [
+    { "minutes": 10, "destination": "Sisters", "note": "8 miles southeast via US-20" },
+    { "minutes": 30, "destination": "Redmond Airport (RDM)", "note": "16 miles north" },
+    { "minutes": 20, "destination": "Hoodoo Ski Area", "note": "12 miles west via US-20" },
+    { "minutes": 45, "destination": "Bend", "note": "About 30 miles east via US-20" }
+  ],
+  "course_specs": { "summary": "Two 18-hole championship courses: Big Meadow (Robert Muir Graves, 7,000+ yds) and Glaze Meadow (John Fought renovation 2012, 7,007 yds), plus the 12-hole Little Meadow putting course." },
+  "citations": [
+    { "fact": "1,800 acres, 8 mi NW of Sisters, developed by Brooks Resources from 1970", "source_url": "https://brooksresources.com/2025/06/brooks-resources-first-project-in-central-oregon-black-butte-ranchcelebrates-its-55th-anniversary/" },
+    { "fact": "HOA got roads/common areas 1982; bought golf courses + Lodge 1987", "source_url": "https://www.blackbutteranch.com/the-ranch/history/" },
+    { "fact": "27 mi paved paths, 5 pools, 14 tennis, 12 pickleball courts", "source_url": "https://www.blackbutteranch.com/activities/ranch-attractions/" },
+    { "fact": "Big Meadow (Robert Muir Graves, 7,000+ yds); Glaze Meadow (7,007 yds, 2012 Fought renovation); Little Meadow 12-hole putting", "source_url": "https://www.blackbutteranch.com/golf/golf-courses/" },
+    { "fact": "7 mi west of Sisters; RDM 16 mi north", "source_url": "https://www.blackbutteranch.com/directions/" }
+  ]
+}

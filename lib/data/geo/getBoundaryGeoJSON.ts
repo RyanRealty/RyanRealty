@@ -60,8 +60,14 @@ async function fetchBoundaryGeoJSON(
   })
 
   if (error) {
+    // THROW (do not return null) on a transient RPC error / statement timeout.
+    // This function is unstable_cache-wrapped: returning null here would CACHE
+    // the failure for the full TTL, blanking the boundary map for everyone for
+    // minutes after a single hiccup. Throwing means unstable_cache skips
+    // caching, the caller degrades gracefully for this one request, and the
+    // next request retries fresh. `null` is reserved for a genuine no-boundary.
     console.error('[getBoundaryGeoJSON] RPC error:', { geoType, geoSlug, error })
-    return null
+    throw new Error(`boundary_geojson RPC failed for ${geoType}/${geoSlug}: ${error.message}`)
   }
   if (!data) return null
 
@@ -92,7 +98,10 @@ export function getBoundaryGeoJSON(
   const { geoType, geoSlug } = input
   return unstable_cache(
     () => fetchBoundaryGeoJSON(geoType, geoSlug),
-    ['boundary-geojson-v1', geoType, geoSlug],
+    // v2: busts the disk-persisted entries holding the pre-correction resort
+    // hulls (e.g. Tetherow's 5,718-acre "spatial discovery" blob) now that the
+    // boundaries rows carry the authoritative county-GIS plat unions.
+    ['boundary-geojson-v2', geoType, geoSlug],
     {
       revalidate: cacheTTL(geoType),
       tags: cacheTags(geoType, geoSlug),

@@ -1,0 +1,34 @@
+{
+  "slug": "bend-boyd-acres",
+  "name": "Boyd Acres",
+  "label": "Boyd Acres",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "about_prose": [
+    "Boyd Acres occupies the northeastern corner of Bend, bounded by Hamby Road to the east, the Deschutes River to the west, Mt. Washington Drive and Butler Market Road to the south, and Cooley Road to the north. It is one of the city's larger neighborhood-association districts and sits on both sides of US-97 and US-20, giving residents direct access to the Bend Parkway.",
+    "The housing stock is predominantly single-family homes built since 2000, on lots ranging from under a tenth of an acre to nearly 20 acres, in Craftsman, Northwest Contemporary, and Ranch styles. Homes from the 1970s and 1980s appear in older pockets, making the neighborhood a genuine mix of eras. The area takes its name from Charles William Boyd, a rancher who arrived in 1904 and at his peak farmed around 600 acres. The Boyd Homestead still stands and now houses the Pomegranate Home and Garden shop.",
+    "Three irrigation canals cross the neighborhood. A 1.5-mile segment of the Pilot Butte Canal between Cooley Road and Yeoman Road was added to the National Register of Historic Places in February 2016, recognized for its role in the irrigation-driven settlement of Central Oregon beginning in 1903. The Boyd Acres Neighborhood Association is one of 13 city-recognized associations."
+  ],
+  "amenities": [
+    { "category": "Parks", "name": "Pine Nursery Park", "description": "A 159-acre Bend Park and Recreation park at 3750 NE Purcell Blvd with 16 pickleball courts (8 lighted), four softball fields, a 14-acre off-leash dog area, an ODFW-stocked fishing pond, disc golf, and an all-abilities playground.", "access": "Open 5 AM to 10 PM" },
+    { "category": "Parks", "name": "Rockridge Park", "description": "A 36.6-acre park at 20885 Egypt Drive with an 11,000-square-foot skatepark, a 9-hole disc golf course, over a mile of bike skills trails, and two playgrounds, preserving old-growth juniper and lava rock.", "access": "Open 5 AM to 10 PM; beside Lava Ridge Elementary and Sky View Middle" },
+    { "category": "Parks", "name": "Boyd Park", "description": "A 3-acre neighborhood park at 20750 Comet Lane with a multi-age playground, picnic pavilion, basketball half-court, and soft-surface trails with mountain views.", "access": "Open 5 AM to 10 PM" },
+    { "category": "Schools", "name": "Lava Ridge Elementary", "description": "A Bend-La Pine Schools K-5 at 20805 Cooley Road within the Boyd Acres attendance zone.", "access": "Bend-La Pine Schools" },
+    { "category": "Schools", "name": "Mountain View High School", "description": "The public high school serving Boyd Acres, at 2755 NE 27th Street, with about 1,261 students in grades 9-12.", "access": "Bend-La Pine Schools" },
+    { "category": "Landmark", "name": "Pilot Butte Canal Historic Segment", "description": "A 1.5-mile segment of the 1903 Pilot Butte Canal between Cooley and Yeoman Roads, added to the National Register of Historic Places in February 2016.", "access": "Neighborhood landmark" }
+  ],
+  "drive_times": [
+    { "minutes": 12, "destination": "Downtown Bend", "note": "Via US-97 south, roughly 6 miles from the neighborhood center" },
+    { "minutes": 5, "destination": "Cascade Village / US-20 retail", "note": "Big-box retail within the southern boundary" },
+    { "minutes": 20, "destination": "Bend Airport (BDN)", "note": "Via US-97 north, about 8 miles northeast" }
+  ],
+  "citations": [
+    { "fact": "Boyd Acres boundaries; one of 13 city-recognized associations", "source_url": "https://www.boydacresneighborhood.com/Boyd-Acres-Neighborhood.htm?m=92&s=583" },
+    { "fact": "Charles William Boyd arrived 1904, farmed ~600 acres; Boyd Homestead now Pomegranate Home and Garden", "source_url": "https://www.bendsource.com/news/boyd-acresfrom-rags-to-ranches-from-ranches-to-riches-16319610/" },
+    { "fact": "Pilot Butte Canal 1.5-mi segment added to NRHP February 2016", "source_url": "https://bendbulletin.com/2016/02/09/pilot-butte-canal-section-listed-as-nationally-historic/" },
+    { "fact": "Pine Nursery Park 159 ac, 3750 NE Purcell Blvd, 16 pickleball courts, 14-ac dog area, stocked pond", "source_url": "https://www.bendparksandrec.org/park/pine-nursery-park/" }
+  ]
+}

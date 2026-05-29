@@ -1,0 +1,34 @@
+{
+  "slug": "awbrey-glen",
+  "name": "Awbrey Glen",
+  "label": "Awbrey Glen",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": true,
+  "is_master_planned": true,
+  "founded": 1993,
+  "architect": "Gene Mason",
+  "about_prose": [
+    "Awbrey Glen is a private, gated golf community on the northwest side of Bend, developed by Brooks Resources Corporation. The 18-hole championship course opened in 1993 and was later updated by David McLay Kidd. Homes sit on large private lots across the developed sections of Awbrey Butte, many with direct views of the Cascade Range or the golf course. The community reached build-out in 2006 and transitioned to member ownership.",
+    "The club centers on golf but extends beyond it. The practice complex is one of the largest in the Pacific Northwest, anchored by a dual-ended driving range and The Loop, a five-hole par-three course. Members also have a lap pool, fitness center, and a catch-and-release lake stocked with rainbow trout. A member-run nonprofit, Give Back, has distributed over $1 million to Central Oregon families."
+  ],
+  "amenities": [
+    { "category": "Golf", "name": "18-Hole Championship Course", "description": "Designed by Gene Mason in 1993 and updated by David McLay Kidd. Par 72, playing 7,019 yards from the back tees, rating 72.8, slope 135.", "access": "Members and sponsored guests" },
+    { "category": "Golf", "name": "The Loop", "description": "A five-hole par-three short course, part of the club's learning center.", "access": "Members" },
+    { "category": "Golf", "name": "Practice Facility", "description": "Dual-ended driving range, practice bunkers, and putting and pitching greens, staffed by PGA Professionals.", "access": "Members" },
+    { "category": "Dining", "name": "Nineteen", "description": "The club's full-service restaurant and grill, with Cascade views, open for lunch and dinner.", "access": "Members and guests" },
+    { "category": "Recreation", "name": "Pool Complex", "description": "Lap pool, kiddie pool, and hot tub, open in summer.", "access": "Members" },
+    { "category": "Recreation", "name": "Catch-and-Release Lake", "description": "A private fishing lake stocked with rainbow trout.", "access": "Members" }
+  ],
+  "drive_times": [
+    { "minutes": 30, "destination": "Mt. Bachelor", "note": "22 miles southwest via Century Drive" }
+  ],
+  "course_specs": { "par": 72, "yardage": 7019, "summary": "18 holes, par 72, 7,019 yards from the back tees. Rating 72.8, slope 135, with six tee options." },
+  "citations": [
+    { "fact": "Course opened 1993, designed by Gene Mason, built by Brooks Resources", "source_url": "https://brooksresources.com/community/awbrey-glen/" },
+    { "fact": "Updated by David McLay Kidd; par 72, ~7,019 yds, rating 72.8, slope 135", "source_url": "https://www.golflink.com/golf-courses/or/bend/awbrey-glen-golf-club" },
+    { "fact": "The Loop five-hole par-three; dual-ended range; build-out 2006; member-owned", "source_url": "https://brooksresources.com/community/awbrey-glen/" },
+    { "fact": "Restaurant Nineteen; lap pool, kiddie pool, hot tub; Give Back nonprofit $1M+", "source_url": "https://www.awbreyglen.com/club-life" }
+  ]
+}

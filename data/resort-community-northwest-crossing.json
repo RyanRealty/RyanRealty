@@ -1,0 +1,36 @@
+{
+  "slug": "northwest-crossing",
+  "name": "NorthWest Crossing",
+  "label": "NorthWest Crossing",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": true,
+  "acres": 488,
+  "founded": 1999,
+  "about_prose": [
+    "NorthWest Crossing is a 488-acre master-planned, mixed-use community on the west side of Bend, developed beginning in 1999 by Brooks Resources Corporation and the Tennant family through their West Bend Property Company. The plan follows new-urbanist principles: a grid of tree-lined streets with front porches, traffic circles, and a walkable neighborhood center along NW Crossing Drive that mixes restaurants, retail, and LEED-certified commercial buildings. The community reached 1,335 residential units at buildout, from cottages and townhomes to single-family homes, with every home required to meet Earth Advantage certification standards.",
+    "The neighborhood holds more than 50 acres of parks, including the 40-acre Discovery Park (with a 3-acre lake, off-leash dog area, community garden, and trail connections to 650-acre Shevlin Park) and the 5-acre Compass Park, which anchors the center and hosts the weekly farmers market and a summer outdoor-movie series. High Lakes Elementary, Pacific Crest Middle School, and Summit High School serve the community. The NorthWest Crossing Saturday Farmers Market runs late May through late September."
+  ],
+  "amenities": [
+    { "category": "Recreation", "name": "Discovery Park", "description": "A 40-acre park with a 3-acre lake, natural play area, fenced off-leash dog park, community garden, and trails connecting to Shevlin Park.", "access": "Public, Bend Park and Recreation District" },
+    { "category": "Recreation", "name": "Compass Park", "description": "A 5-acre circular park at the neighborhood center, with a picnic shelter, open lawn, and a stage used for summer movie screenings.", "access": "Public, Bend Park and Recreation District" },
+    { "category": "Shopping", "name": "NW Crossing Drive Neighborhood Center", "description": "A mixed-use commercial corridor of LEED-certified buildings with restaurants, cafes, local businesses, and offices, including The Grove food hall.", "access": "Public" },
+    { "category": "Other", "name": "Saturday Farmers Market", "description": "Held every Saturday late May through late September, 10am to 2pm, on NW Crossing Drive, with over 150 vendors.", "access": "Public, free admission" },
+    { "category": "Education", "name": "Neighborhood Schools", "description": "High Lakes Elementary, Pacific Crest Middle School, and Summit High School (Bend-La Pine Schools) serve the community.", "access": "Bend-La Pine School District" },
+    { "category": "Recreation", "name": "Phil's Trail Access", "description": "The trail network connects to the broader Phil's Trail mountain-bike and running system, about 10 minutes by bike.", "access": "Public trail system" }
+  ],
+  "drive_times": [
+    { "minutes": 5, "destination": "Downtown Bend", "note": "West edge of Bend via NW Newport Ave" },
+    { "minutes": 30, "destination": "Mt. Bachelor", "note": "Via Century Drive (OR-372)" },
+    { "minutes": 25, "destination": "Redmond Airport (RDM)", "note": "About 17 miles north via US-97" }
+  ],
+  "citations": [
+    { "fact": "488 acres, developed from 1999 by Brooks Resources + Tennant Family via West Bend Property Company", "source_url": "https://brooksresources.com/community/northwest-crossing-2/" },
+    { "fact": "1,335 residential units at buildout; mixed-use; Earth Advantage required", "source_url": "https://cascadebusnews.com/the-mixed-use-dream-at-northwest-crossing-in-bend-oregon/" },
+    { "fact": "Discovery Park 40 acres w/ 3-acre lake, dog park, garden, Shevlin trail link; Compass Park 5 acres", "source_url": "https://www.bendparksandrec.org/park/discovery-park/" },
+    { "fact": "Saturday Farmers Market 150+ vendors, late May-late Sept, 10am-2pm", "source_url": "https://www.nwxfarmersmarket.com/" },
+    { "fact": "High Lakes Elementary, Pacific Crest Middle, Summit High (Bend-La Pine)", "source_url": "https://www.greatschools.org/oregon/bend/1700-High-Lakes-Elementary-School/" }
+  ]
+}

@@ -173,6 +173,15 @@ export type {
   BoundaryMapPin,
 } from '@/lib/data/geo/getGeoBoundaryMapData'
 
+// Geo — child GIS subdivision plats of a community (for the "broken out"
+// subdivision map polygons + the subdivisions-within section) via the
+// community_subdivisions RPC. Spatial membership; cached on the geo window.
+export { getCommunitySubdivisions } from '@/lib/data/geo/getCommunitySubdivisions'
+export type {
+  CommunitySubdivisionInput,
+  CommunitySubdivision,
+} from '@/lib/data/geo/getCommunitySubdivisions'
+
 // Market (real impls — no MV dependency, usable today)
 export { getMarketStats } from '@/lib/data/market/getMarketStats'
 export {
@@ -350,6 +359,14 @@ export {
   getCommunityNeighborhoodCityBySlug,
 } from '@/lib/data/communities/subdivisionFlags'
 export type { CommunityRowForBackfill } from '@/lib/data/communities/subdivisionFlags'
+
+// Resort community registry — typed read access to data/resort-communities.json
+export {
+  getResortCommunityBySlug,
+  getAllResortCommunities,
+  getResortCommunitiesForCity,
+} from '@/lib/data/communities/registry'
+export type { ResortCommunityEntry, SubNeighborhood } from '@/lib/data/communities/registry'
 
 // Admin sync verification counts (lives behind DAL boundary because the
 // sync-internal flags aren't on the public materialized view)

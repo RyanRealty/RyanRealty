@@ -1,0 +1,43 @@
+{
+  "slug": "eagle-crest",
+  "name": "Eagle Crest",
+  "label": "Eagle Crest",
+  "city": "Redmond",
+  "city_slug": "redmond",
+  "state": "OR",
+  "is_resort": true,
+  "is_master_planned": true,
+  "acres": 1700,
+  "founded": 1985,
+  "about_prose": [
+    "Eagle Crest is a 1,700-acre destination resort community 6 miles west of downtown Redmond on Cline Falls Road, at 3,622 feet along the east slopes of Cline Buttes and the Deschutes River canyon. It is one of eight official destination resorts under Oregon's land-use program. Established in 1985, it was developed in phases over three decades, adding gated residential enclaves and three golf courses.",
+    "The resort operates three 18-hole courses open to residents and guests. The Resort Course (6,672 yards, par 72), designed by Gene Mason, runs along the Deschutes River canyon rim. The Ridge Course (6,927 yards, par 72) by John Thronson threads through native juniper and has hosted the Oregon Open. The Challenge Course (4,160 yards, par 63) is a quicker executive layout.",
+    "Residential areas run under the Eagle Crest Master Association and, separately, The Ridge at Eagle Crest HOA. The Lodge at Eagle Crest holds 100 hotel rooms and 80 condominium units alongside a 10,000-square-foot conference center. Three sports centers, Resort, Ridge, and Lakeside, provide year-round recreation. The community sits 16 miles from Bend and 14 miles from Smith Rock State Park."
+  ],
+  "amenities": [
+    { "category": "Golf", "name": "Resort Course", "description": "Par-72 course playing 6,672 yards, designed by Gene Mason, following the Deschutes River canyon rim with holes perched above the river.", "access": "Resort guests and residents" },
+    { "category": "Golf", "name": "Ridge Course", "description": "Par-72 course playing 6,927 yards by John Thronson through native juniper forest. Host of the Oregon Open in 2006 and 2023.", "access": "Resort guests and residents" },
+    { "category": "Golf", "name": "Challenge Course", "description": "Par-63 executive course playing 4,160 yards, with four tee boxes per hole and a round of roughly three hours.", "access": "Resort guests and residents" },
+    { "category": "Recreation", "name": "Resort Sports Center", "description": "Two indoor and two outdoor tennis courts, three racquetball courts, an outdoor pool, hot tub, sauna, fitness center, and game room.", "access": "Pass required" },
+    { "category": "Recreation", "name": "Ridge Sports Center", "description": "Indoor lap pool, hot tub, wading pool, Cybex fitness center, basketball, pickleball, and volleyball courts.", "access": "Pass required" },
+    { "category": "Recreation", "name": "Lakeside Sports Center", "description": "Outdoor infinity-edge pool, splash park, kiddie pool, outdoor basketball, four pickleball courts, and a fitness center.", "access": "Pass required" },
+    { "category": "Recreation", "name": "Trails Network", "description": "Over 11 miles of paved paths plus a 1.5-mile Deschutes River trail, with access to river rafting and water sports.", "access": "Residents and guests" },
+    { "category": "Wellness", "name": "The Spa at Eagle Crest", "description": "Day spa inside the Ridge Sports Center offering massage, facials, body treatments, and nail care using organic skincare lines.", "access": "Resort guests and residents" },
+    { "category": "Dining", "name": "Niblick and Greene's", "description": "Full-service restaurant at the resort with dinner service and live music, alongside the Aerie, Silverleaf, and Greenside cafes.", "access": "Resort guests and residents" },
+    { "category": "Other", "name": "The Lodge and Conference Center", "description": "100-room hotel with 80 condominium units and 10,000 square feet of meeting space, including a ballroom seating up to 360.", "access": "Hotel guests; private events" }
+  ],
+  "drive_times": [
+    { "minutes": 10, "destination": "Downtown Redmond", "note": "6 miles via Cline Falls Highway" },
+    { "minutes": 14, "destination": "Redmond Airport (RDM)", "note": "Roberts Field, about 7.8 miles by road" },
+    { "minutes": 30, "destination": "Bend / Old Mill District", "note": "16 miles south via US-97" }
+  ],
+  "course_specs": { "summary": "Three 18-hole courses: Resort (par 72, 6,672 yds, Gene Mason), Ridge (par 72, 6,927 yds, John Thronson, host of the Oregon Open), and Challenge (par 63, 4,160 yds). An 18-hole live-turf putting course is also on site." },
+  "membership_office_phone": "855.682.4786",
+  "citations": [
+    { "fact": "1,700 acres, 6 miles west of Redmond, elev. 3,622 ft, established 1985; one of eight Oregon destination resorts; Lodge 100 rooms + 80 condos", "source_url": "https://en.wikipedia.org/wiki/Eagle_Crest_Resort" },
+    { "fact": "Resort Course 6,672 yds par 72 (Gene Mason); Ridge 6,927 yds par 72 (John Thronson, Oregon Open 2006/2023); Challenge 4,160 yds par 63", "source_url": "https://oregoncourses.com/eagle-crest-resort-course/" },
+    { "fact": "Three sports centers (Resort, Ridge, Lakeside); 11+ miles of paved paths + 1.5-mi river trail", "source_url": "https://ridgeowners.org/community/amenities/" },
+    { "fact": "Conference center 10,000 sq ft; ballroom seats 360", "source_url": "https://www.visitredmondoregon.com/meeting-venues/eagle-crest-resort-convention-center/" },
+    { "fact": "14 min / 7.8 mi to RDM; 30 min / 16 mi to Bend; 10 min / 6 mi to Redmond", "source_url": "https://www.rome2rio.com/s/Redmond-Airport-RDM/Eagle-Crest-Resort" }
+  ]
+}

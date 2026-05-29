@@ -25,7 +25,7 @@ import { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
 import type { BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 
-export type GeoType = 'city' | 'neighborhood'
+export type GeoType = 'city' | 'neighborhood' | 'subdivision'
 
 export type GeoBoundaryMapInput = {
   geoType: GeoType
@@ -59,12 +59,16 @@ async function fetchPins(
   })
 
   if (error) {
+    // THROW (do not return []) — see getBoundaryGeoJSON for the rationale. A
+    // swallowed transient timeout here would cache empty pins for the full TTL,
+    // showing a polygon with zero homes for minutes. Throwing keeps the failure
+    // out of unstable_cache so the next request retries.
     console.error('[getGeoBoundaryMapData] listings_in_boundary error:', {
       geoType,
       geoSlug,
       error,
     })
-    return []
+    throw new Error(`listings_in_boundary RPC failed for ${geoType}/${geoSlug}: ${error.message}`)
   }
 
   return ((data ?? []) as Array<{
@@ -93,16 +97,18 @@ async function fetchGeoBoundaryMapData(
   geoType: GeoType,
   geoSlug: string,
 ): Promise<GeoBoundaryMapData> {
-  const [polygon, pins] = await Promise.all([
-    getBoundaryGeoJSON({ geoType, geoSlug }).catch(() => null),
-    // Only fetch pins when a polygon exists — without a boundary there is
-    // nothing to display. The spatial RPC would return 0 rows anyway (JOIN
-    // returns nothing without a matching boundary row).
-    getBoundaryGeoJSON({ geoType, geoSlug })
-      .then((poly) => (poly ? fetchPins(geoType, geoSlug) : Promise.resolve([])))
-      .catch(() => []),
-  ])
+  // Fetch the polygon ONCE. getBoundaryGeoJSON throws on a transient RPC error
+  // (so this function throws → unstable_cache skips caching → the caller
+  // degrades gracefully for one request and the next retries) and returns null
+  // only for a genuine no-boundary geo (a cacheable empty result).
+  const polygon = await getBoundaryGeoJSON({ geoType, geoSlug })
+  if (!polygon) {
+    // No boundary row — nothing to map. Cacheable empty (not a failure).
+    return { polygon: null, pins: [] }
+  }
 
+  // fetchPins throws on a transient RPC error for the same no-poison reason.
+  const pins = await fetchPins(geoType, geoSlug)
   return { polygon, pins }
 }
 
@@ -117,7 +123,10 @@ export function getGeoBoundaryMapData(
   const { geoType, geoSlug } = input
   return unstable_cache(
     () => fetchGeoBoundaryMapData(geoType, geoSlug),
-    ['geo-boundary-map-v1', geoType, geoSlug],
+    // v4: resort boundaries corrected from the crude "spatial discovery" hulls
+    // to the authoritative county-GIS plat unions (Tetherow: 5,718ac→699ac,
+    // 149→29 homes). v3 busted land/junk rows; v2 the pre-index timeout poison.
+    ['geo-boundary-map-v4', geoType, geoSlug],
     {
       revalidate: cacheTTL(geoType),
       tags: cacheTags(geoType, geoSlug),

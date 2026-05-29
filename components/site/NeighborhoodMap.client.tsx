@@ -168,6 +168,23 @@ export default function NeighborhoodMapClient({
   const mapRef = useRef<google.maps.Map | null>(null)
   const [selectedPin, setSelectedPin] = useState<MapListingPin | null>(null)
 
+  // Compute the initial center+zoom ONCE (lazy useState initializer → stable
+  // references for the component's life). Why this matters: the parent passes a
+  // fresh `polygons` array each render and `center` defaults to a new object
+  // literal, so a center computed inline would change identity every render.
+  // @react-google-maps/api treats `center`/`zoom` as controlled props and
+  // re-applies them on any identity change — which would clobber the fitBounds
+  // call in onLoad and leave the map zoomed out (the polygon never frames).
+  // Stable refs here mean the library applies them only on first paint; the
+  // onLoad fitBounds then owns the final frame and survives every re-render.
+  const [initialView] = useState(() => {
+    const b = computeBounds(polygons)
+    const c = b
+      ? { lat: (b.north + b.south) / 2, lng: (b.east + b.west) / 2 }
+      : center
+    return { center: c, zoom }
+  })
+
   const containerStyle = useMemo(
     () => ({ width: '100%', height: height + 'px' }),
     [height],
@@ -185,13 +202,26 @@ export default function NeighborhoodMapClient({
     [],
   )
 
-  // fitBounds on load — zoom/pan to the polygon bounding box
+  // fitBounds on load — frame the POLYGON, not the listing pins.
+  // Using 48px padding on all sides gives the polygon a comfortable margin
+  // inside the map viewport. Pins live spatially inside the polygon so they
+  // are always visible after the polygon is framed.
+  // We store the bounds and call fitBounds once the map has a size; calling
+  // it a second time via a zero-timeout flush handles cases where the map
+  // container size resolves slightly late (dynamic import / SSR hydration).
   const handleMapLoad = useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map
       const bounds = computeBounds(polygons)
       if (bounds) {
-        map.fitBounds(bounds, 32) // 32px padding
+        const padding = { top: 48, right: 48, bottom: 48, left: 48 }
+        map.fitBounds(bounds, padding)
+        // Flush a second fit on the next tick so the bounds apply after the
+        // map container has fully painted its dimensions. Without this, a
+        // small community polygon can render off-centre on first load.
+        setTimeout(() => {
+          if (mapRef.current) mapRef.current.fitBounds(bounds, padding)
+        }, 0)
       }
     },
     [polygons],
@@ -231,8 +261,11 @@ export default function NeighborhoodMapClient({
     <div className="overflow-hidden rounded-xl border border-border shadow-sm">
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={center}
-        zoom={zoom}
+        // Stable initial center/zoom (computed once). fitBounds() in onLoad
+        // frames the polygon exactly and — because these props no longer change
+        // identity on re-render — is not clobbered afterward.
+        center={initialView.center}
+        zoom={initialView.zoom}
         options={mapOptions}
         onLoad={handleMapLoad}
         onClick={handleMapClick}
@@ -246,11 +279,12 @@ export default function NeighborhoodMapClient({
               paths={paths}
               options={{
                 strokeColor: NAVY,
-                strokeOpacity: 0.85,
-                strokeWeight: 2,
+                strokeOpacity: 0.95,
+                strokeWeight: 3,
                 fillColor: NAVY,
-                fillOpacity: 0.08,
+                fillOpacity: 0.1,
                 clickable: !!p.href,
+                zIndex: 1,
               }}
               onClick={() => onPolygonClick(p.href)}
             />

@@ -1,0 +1,34 @@
+{
+  "slug": "three-rivers",
+  "name": "Three Rivers",
+  "label": "Three Rivers",
+  "city": "Bend",
+  "city_slug": "bend",
+  "state": "OR",
+  "is_resort": false,
+  "is_master_planned": false,
+  "acres": 4819,
+  "about_prose": [
+    "Three Rivers is a census-designated community in south Deschutes County, south of Sunriver and north of La Pine, just west of US-97. The name comes from three waterways that converge in the area: the Deschutes River to the west, the Little Deschutes River to the east, and the spring-fed Spring River to the north. Elevation is 4,187 feet, and the 2020 census counted 3,925 residents across 7.53 square miles.",
+    "The area is made up of more than 20 distinct residential subdivisions at varying price points, from manufactured homes on smaller lots to riverfront properties on five-plus acres in a ponderosa and lodgepole pine landscape. Lot sizes range from under a quarter acre to several acres. Some subdivisions have community water and sewer; most rely on wells and septic. Students attend Three Rivers School (K-8, Bend-La Pine Schools), with high school at Caldera or La Pine High School."
+  ],
+  "amenities": [
+    { "category": "Recreation", "name": "River Access", "description": "The Deschutes, Little Deschutes, and Spring rivers pass through the area. Select properties have private river access; the River Meadows subdivision maintains common Deschutes River frontage with a community boat launch.", "access": "Varies by subdivision" },
+    { "category": "Recreation", "name": "Fly Fishing", "description": "The Deschutes River corridor is a recognized trout fishery, and the spring-fed Fall River within Fall River Estates is noted for dry-fly trout fishing.", "access": "Public access points and select private frontage" },
+    { "category": "Recreation", "name": "River Meadows Amenities", "description": "The River Meadows HOA maintains a seasonal swimming pool, a tennis court, four pickleball courts, a clubhouse, and 3 miles of paved paths along the Deschutes River.", "access": "River Meadows HOA members" },
+    { "category": "Recreation", "name": "Mt. Bachelor", "description": "Mt. Bachelor, the nearest major ski destination, is about 23 miles away via Century Drive or US-97.", "access": "Public, day-use and season passes" },
+    { "category": "Other", "name": "Sunriver Services", "description": "The Village at Sunriver offers grocery shopping, restaurants, and a medical clinic a short drive north on US-97.", "access": "Public retail and services" }
+  ],
+  "drive_times": [
+    { "minutes": 10, "destination": "Sunriver", "note": "Borders Sunriver's southern edge via US-97" },
+    { "minutes": 30, "destination": "Bend", "note": "22 miles north via US-97" },
+    { "minutes": 21, "destination": "La Pine", "note": "About 16 miles south via US-97" }
+  ],
+  "citations": [
+    { "fact": "CDP, 7.53 sq mi, elevation 4,187 ft, population 3,925 (2020); Deschutes, Little Deschutes, and Spring rivers converge", "source_url": "https://en.wikipedia.org/wiki/Three_Rivers,_Oregon" },
+    { "fact": "Bend-La Pine School District; Three Rivers School K-8; high school Caldera or La Pine", "source_url": "https://en.wikipedia.org/wiki/Three_Rivers,_Oregon" },
+    { "fact": "Lots range under half-acre to five acres; 20+ named subdivisions; mix of community sewer/water and well/septic", "source_url": "https://www.enjoybendlife.com/three-rivers-south/" },
+    { "fact": "River Meadows HOA: seasonal pool, tennis, 4 pickleball, clubhouse, 3 miles paved paths, Deschutes frontage with boat launch", "source_url": "https://www.enjoybendlife.com/three-rivers-south/river-meadows/" },
+    { "fact": "Three Rivers to Bend 22 mi / ~30 min", "source_url": "https://www.rome2rio.com/s/Three-Rivers-South/Bend" }
+  ]
+}

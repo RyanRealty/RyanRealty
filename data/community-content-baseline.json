@@ -1,0 +1,4 @@
+{
+  "_comment": "G33 rollout backlog. EMPTY = every resort/planned community AND Bend neighborhood with a detail page now has a verified, cited rich content config (data/resort-community-<slug>.json). The gate fails if any required geo is missing AND not listed here, so the empty list locks in 100% coverage: no new geo can ship thin. Content is researched from primary sources, never invented.",
+  "missing": []
+}
