@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.356.0 (2026-05-29)
+
+### Features
+- feat(analytics): Marketing ROI dashboard + email-click identity stitch
+
+---
+
+
 ## v1.355.1 (2026-05-29)
 
 ### Other
