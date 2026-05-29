@@ -42,6 +42,7 @@ keeps being violated, the answer is a new gate, not more prose.
 | **G28** | **Black box-shadows** — `box-shadow: ... rgba(0, 0, 0, ...)` banned. Must use `--shadow-sm/md/lg` navy-tinted vars. | `scripts/lint-design-tokens.js` G28 pattern | DESIGN_DIRECTIVES.md D23/D24 |
 | **G29** | **Inline `<style>` JSX banned** — `<style>{...}</style>` and `createGlobalStyle(...)` blocked in `app/**` + `components/site/**`. Style belongs in Tailwind + globals.css + CSS modules. | ESLint `no-restricted-syntax` `JSXElement[openingElement.name.name='style']` | DESIGN_DIRECTIVES.md D32/D33 |
 | **G30** | **Geo imagery canonical source** — area-tile/geo imagery on `app/cities/**`, `app/communities/**`, `components/site/**` must come from `getGeoTileImages()` (asset_library) or `GOLF_COMMUNITY_IMAGES` (`lib/geo-images.ts`). Fails on a hardcoded `/lp/...image` path or a fake `neighborhoods`/`communities` `hero_image_url` read on any geo surface. | `scripts/check-geo-imagery.mjs` (`npm run ci:geo-imagery`) | DESIGN_DIRECTIVES.md D82/D86 |
+| **G31** | **Boundary-map shared DAL** — every geo page (`app/cities/[slug]/page.tsx`, `app/cities/[slug]/[neighborhoodSlug]/page.tsx`, `app/communities/[slug]/page.tsx`) that renders `<NeighborhoodMap>` or `<SiteNeighborhoodMap>` MUST import `getGeoBoundaryMapData` from `@/lib/data`. Ad-hoc polygon + pin fetches that bypass the shared DAL are banned (they produce inconsistent map data — the old per-page City/SubdivisionName string-match divergence). | `scripts/check-boundary-map.mjs` (`npm run ci:boundary-map`) | DESIGN_DIRECTIVES.md D88 |
 | **G-runtime** | **Six runtime tool refusals** — Bash destructive / DB CLI / `--no-verify`; `execute_sql` against `information_schema` / DAL-covered tables; Write/Edit to `app/<route>/page.tsx` without `parity.json`; Write/Edit content with banned-voice tokens. Each can be bypassed with explicit `-- audit:` SQL comment, `# allow-destructive: <reason>` Bash trailer, `// @no-parity` or `// brand-voice:exempt` file marker, or `ALLOW_ALL_HOOKS=1`. | `.claude/settings.json` + `.claude/hooks/pre-tool-use.mjs` (26 tests) | Inventory L2 |
 
 Run them all locally before pushing:
@@ -49,7 +50,7 @@ Run them all locally before pushing:
 npm run ci:gates
 ```
 
-That umbrella runs design-tokens + seo-routes + dal-boundary + brand-voice + mockup-parity + mockup-coverage + page-dal + static-params + data-access + dal-column-quoting + dal-internal-discipline + producer-guard + hook-tests in sequence. CI runs the same set in `.github/workflows/CI.yml` plus pa11y-ci + Lighthouse on PRs and route-smoke against `start-server-and-test`.
+That umbrella runs design-tokens + seo-routes + dal-boundary + brand-voice + mockup-parity + mockup-coverage + page-dal + static-params + data-access + dal-column-quoting + dal-internal-discipline + producer-guard + geo-imagery + boundary-map + design-directives + hook-tests in sequence. CI runs the same set in `.github/workflows/CI.yml` plus pa11y-ci + Lighthouse on PRs and route-smoke against `start-server-and-test`.
 
 ## The ratchet pattern
 

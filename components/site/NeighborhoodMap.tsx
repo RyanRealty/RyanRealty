@@ -9,7 +9,7 @@ import {
   Section,
   Stack,
 } from '@/components/site/primitives'
-import type { NeighborhoodPolygon } from './NeighborhoodMap.client'
+import type { NeighborhoodPolygon, MapListingPin } from './NeighborhoodMap.client'
 
 /**
  * Site v2 neighborhood map block — section chrome + dynamic-imported
@@ -42,7 +42,7 @@ import type { NeighborhoodPolygon } from './NeighborhoodMap.client'
  *   />
  */
 
-export type { NeighborhoodPolygon } from './NeighborhoodMap.client'
+export type { NeighborhoodPolygon, MapListingPin } from './NeighborhoodMap.client'
 
 const NeighborhoodMapClient = dynamic(() => import('./NeighborhoodMap.client'), {
   ssr: false,
@@ -56,6 +56,8 @@ const NeighborhoodMapClient = dynamic(() => import('./NeighborhoodMap.client'), 
 
 type Props = {
   polygons: ReadonlyArray<NeighborhoodPolygon>
+  /** Listing pins to render inside the boundary. Must have numeric lat/lng. */
+  listings?: ReadonlyArray<MapListingPin>
   eyebrow?: string
   title?: string
   intro?: string
@@ -72,6 +74,7 @@ type Props = {
 
 export function NeighborhoodMap({
   polygons,
+  listings,
   eyebrow,
   title,
   intro,
@@ -99,6 +102,7 @@ export function NeighborhoodMap({
         ) : null}
         <NeighborhoodMapClient
           polygons={polygons}
+          listings={listings}
           center={center}
           zoom={zoom}
           height={height}

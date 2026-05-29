@@ -1,5 +1,8 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { getCitiesForIndex } from '@/app/actions/cities'
+import { getGeoTileImages } from '@/lib/data'
+import { pickGeoImage } from '@/lib/geo-images'
 import {
   Body,
   Container,
@@ -14,15 +17,15 @@ import {
 } from '@/components/site/primitives'
 
 /**
- * Site v2 city grid — 8 city cards with median + active count + community
+ * Site v2 city grid — 8 city photo cards with median + active count + community
  * count. Mirrors design_system/ryan-realty/ui_kits/website/index.html §cities.
  *
  * Data accuracy: every figure traces to geo_snapshot_mv via getCitiesForIndex().
  * Unavailable values render as em-dash via the Price primitive's fallback.
  *
- * Lifted onto Wave 2 Layer 1 primitives 2026-05-27. fmtMoneyRound1k() retired
- * in favor of <Price>; raw count formatting moved to <TabularNumber>; the
- * stats-line separator moved to <MiddleDot>.
+ * Imagery (D86): the photo on each card comes from the canonical asset_library
+ * store via getGeoTileImages(), seeded per city by pickGeoImage(). Never the
+ * fake hero_image_url stock columns. Same source the city-page tiles use.
  */
 
 // 8 mockup-aligned cities. Order matches market relevance for Central Oregon.
@@ -37,25 +40,6 @@ const CITY_ORDER = [
   'terrebonne',
 ] as const
 
-function PinIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
-  )
-}
-
 type CityCardData = {
   slug: string
   name: string
@@ -64,43 +48,60 @@ type CityCardData = {
   communityCount: number
 }
 
-function CityCard({ city }: { city: CityCardData }) {
+function CityCard({ city, imageUrl }: { city: CityCardData; imageUrl: string | null }) {
   return (
     <Link
       href={`/cities/${city.slug}`}
-      className="group bg-card border border-border rounded-[14px] p-[18px] flex flex-col gap-1.5 shadow-sm hover:border-primary/30 hover:shadow-md transition"
+      className="group block bg-card border border-border rounded-xl overflow-hidden shadow-sm hover:border-primary/30 hover:shadow-md transition"
     >
-      <div className="flex items-center gap-2 text-[17px] font-bold tracking-[-0.01em] text-foreground">
-        <span className="text-primary">
-          <PinIcon />
-        </span>
-        {city.name}
-      </div>
-      <div className="text-[15px] font-semibold text-foreground mt-0.5">
-        <Price value={city.medianPrice} />
-      </div>
-      <div className="text-xs text-muted-foreground">
-        {city.activeCount > 0 ? (
-          <>
-            <TabularNumber value={city.activeCount} /> active
-          </>
-        ) : (
-          'No active listings'
-        )}
-        {city.communityCount > 0 ? (
-          <>
-            {' '}
-            <MiddleDot className="text-muted-foreground/60" />{' '}
-            <TabularNumber value={city.communityCount} /> communities
-          </>
+      <div className="relative aspect-video overflow-hidden bg-primary">
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={city.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover transition duration-500 group-hover:scale-105"
+          />
         ) : null}
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-primary via-primary/25 to-transparent"
+          aria-hidden
+        />
+        <div className="absolute inset-x-0 bottom-0 p-4">
+          <div className="text-lg font-bold tracking-tight text-white drop-shadow">{city.name}</div>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="text-sm font-semibold text-foreground">
+          <Price value={city.medianPrice} />
+        </div>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          {city.activeCount > 0 ? (
+            <>
+              <TabularNumber value={city.activeCount} /> active
+            </>
+          ) : (
+            'No active listings'
+          )}
+          {city.communityCount > 0 ? (
+            <>
+              {' '}
+              <MiddleDot className="text-muted-foreground/60" />{' '}
+              <TabularNumber value={city.communityCount} /> communities
+            </>
+          ) : null}
+        </div>
       </div>
     </Link>
   )
 }
 
 export default async function CityGrid() {
-  const cities = await getCitiesForIndex().catch(() => [])
+  const [cities, geoImages] = await Promise.all([
+    getCitiesForIndex().catch(() => []),
+    getGeoTileImages([...CITY_ORDER]).catch(() => ({})),
+  ])
   const bySlug = new Map(cities.map((c) => [c.slug, c]))
   const ordered = CITY_ORDER.map((slug) => bySlug.get(slug)).filter(
     (c): c is NonNullable<typeof c> => c != null,
@@ -112,6 +113,9 @@ export default async function CityGrid() {
   if (shown.length === 0) {
     return null
   }
+
+  const cityImage = (slug: string): string | null =>
+    pickGeoImage(geoImages[slug], slug) ?? pickGeoImage(geoImages['central-oregon'], slug)
 
   return (
     <Section padding="default" tone="muted" divider>
@@ -126,7 +130,7 @@ export default async function CityGrid() {
 
         <Grid cols={4} gap="default">
           {shown.map((c) => (
-            <CityCard key={c.slug} city={c} />
+            <CityCard key={c.slug} city={c} imageUrl={cityImage(c.slug)} />
           ))}
         </Grid>
       </Container>

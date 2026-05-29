@@ -158,6 +158,21 @@ export {
 } from '@/lib/data/geo/getGeoSnapshot'
 export type { GeoSnapshot, GeoSnapshotInput } from '@/lib/data/geo/getGeoSnapshot'
 
+// Geo — boundary polygon (PostGIS → GeoJSON) via boundary_geojson RPC.
+// Returns null when no boundary row exists for the geo.
+export { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
+export type { BoundaryGeoJSONInput, BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
+
+// Geo — shared boundary map data (polygon + spatial pins) via listings_in_boundary RPC.
+// THE shared DAL for all three page types (city / neighborhood / community).
+// Gate G31 enforces this is the only import path for map data on geo pages.
+export { getGeoBoundaryMapData } from '@/lib/data/geo/getGeoBoundaryMapData'
+export type {
+  GeoBoundaryMapInput,
+  GeoBoundaryMapData,
+  BoundaryMapPin,
+} from '@/lib/data/geo/getGeoBoundaryMapData'
+
 // Market (real impls — no MV dependency, usable today)
 export { getMarketStats } from '@/lib/data/market/getMarketStats'
 export {

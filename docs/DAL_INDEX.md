@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-05-29T00:02:52.264Z
+**Generated:** 2026-05-29T04:47:07.390Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -129,6 +129,18 @@ Companion files:
 **Tables:** `engagement_metrics`
 
 **Selected columns:** `listing_key`, `view_count`, `like_count`, `save_count`, `share_count`
+
+---
+
+### `lib/data/geo/getBoundaryGeoJSON.ts`
+
+**Exports:** `getBoundaryGeoJSON`
+
+---
+
+### `lib/data/geo/getGeoBoundaryMapData.ts`
+
+**Exports:** `getGeoBoundaryMapData`
 
 ---
 

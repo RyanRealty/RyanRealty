@@ -10,10 +10,18 @@
 
 | Field | Value |
 |--------|--------|
-| **Surface** | **Claude Code (Opus 4.8, 2026-05-28)** — Ryan Realty website rebuild · Wave 3. Listing-detail page SHIPPED + approved. Design-directive propagation system live. Next: `/cities/[slug]` rebuild against the now-committed parity contract. |
-| **`main` @ commit** | `4126a12` — `feat(wave-3): city route parity contract + G16 row-count fix`. Pushed; Vercel auto-deploy. Prior: `acd86e0` (listing-detail wired), `3df6ea7` (listing-detail components), `db1568e` + `ff8f8ab` (G25-G29), `f516c65` (G16-G24 + runtime hooks). |
-| **Working tree** | Clean except unrelated scratch scripts (`scripts/_712-*`, `_bear-*`, `_crowson-*`, `_build-seller-ad-*` — other sessions' work, leave alone). |
-| **Task focus** | **Next concrete task: rebuild `app/cities/[slug]/page.tsx` against `design_system/ryan-realty/ui_kits/city/parity.json`.** Contract committed; gap baselined. See "Next: city page rebuild" below. |
+| **Surface** | **Claude Code (Opus 4.8, 2026-05-28)** — Ryan Realty website rebuild · Wave 3. City page (`/cities/[slug]`) SHIPPED + approved with real imagery, neighborhood/golf-community split, live open houses, blog. Reusable geo-imagery system built. Next: `/communities/[slug]` rebuild reusing the same units. |
+| **`main` @ commit** | `5431432` — city page: real imagery + neighborhood/community split + live open houses + blog + logo fix (34 files, Approved-by: matt). Migration `20260528040000_anon_read_asset_library.sql` applied to hosted Supabase. Prior: `4126a12`, `acd86e0`, `3df6ea7`. |
+| **Working tree** | **UNCOMMITTED draft (awaiting Matt approval):** `components/site/CityGrid.tsx` — homepage city grid given the same photo-card treatment (reuses `getGeoTileImages` + `pickGeoImage`). Verified rendering + gates green. Also unstaged: `.gitignore` (prior-session `.claude/` tracking change, left for its own commit). Scratch scripts (`scripts/_712-*`, `westside-bend-*`, etc.) are other sessions' — leave alone. |
+| **Task focus** | **Next: rebuild `app/communities/[slug]/page.tsx`** reusing the canonical units below. Then homepage `parity.json`. The community page already has listings/activity/guides — apply the new RelatedAreas-with-images (sibling communities), `getUpcomingOpenHouses(city)` open houses, and confirm its hero pulls a real photo. |
+
+### Canonical reusable units built this session (REUSE these — do not reinvent)
+
+- **Geo imagery:** `lib/data/media/getGeoTileImages.ts` (asset_library, anon-readable now) + `lib/geo-images.ts` (`GOLF_COMMUNITY_IMAGES`, `pickGeoImage`). City/neighborhood tiles → asset_library; golf/master communities → curated LP photos. **Gate G30** (`scripts/check-geo-imagery.mjs`) forbids hardcoded `/lp/` paths + fake hero columns on any geo surface.
+- **Open houses:** `getUpcomingOpenHouses({city,dateFrom,dateTo})` reads `listings."OpenHouses"` jsonb (the standalone `open_houses` table sync is DEAD), filters out `new_construction_yn` spec homes, dedups to soonest-per-listing. The `open_houses` action photo now falls back to the tile.
+- **Blog:** `getRecentBlogPosts({cityName})` + `<ArticleGrid>` "guides & insights" section.
+- **Area tiles:** `<RelatedAreas items=[{...,imageUrl}]>` renders photo cards (navy scrim) when any item has an image.
+- **Directives:** D80/D82/D85/D86/D87 in `docs/DESIGN_DIRECTIVES.md`; gate G30 in `docs/MECHANICAL_GATES.md`; 13 contract tests in `components/site/__tests__/site-contracts.test.ts`.
 
 ### SHIPPED this session (all on `main`, all gates green)
 

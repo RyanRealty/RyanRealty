@@ -27,6 +27,7 @@ import {
   getMarketPulse,
   getRecentBlogPosts,
   getGeoTileImages,
+  getGeoBoundaryMapData,
 } from '@/lib/data'
 import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
@@ -42,6 +43,7 @@ import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAre
 import ActivityFeed from '@/components/site/ActivityFeed'
 import { ArticleGrid } from '@/components/site/ArticleGrid'
 import { CTABar } from '@/components/site/CTABar'
+import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import { Container } from '@/components/site/primitives'
 
 // ---------------------------------------------------------------------------
@@ -101,7 +103,7 @@ export default async function CityDetailPage({ params }: Props) {
   // MarketSnapshot card uses — market_pulse_live (SFR, property_type='A').
   // geo_snapshot_mv carries a different active_sfr_count (807 vs 532 for
   // Bend) so we do NOT use it for any consumer-facing count.
-  const [cityMeta, communitySnapshots, allCitySnapshots, pulse, blogPosts, geoImages] =
+  const [cityMeta, communitySnapshots, allCitySnapshots, pulse, blogPosts, geoImages, boundaryMapData] =
     await Promise.all([
       getCityMetadataByName(cityName),
       getCityCommunitySnapshots(slug),
@@ -121,6 +123,10 @@ export default async function CityDetailPage({ params }: Props) {
         'tumalo',
         'smith-rock',
       ]).catch(() => ({})),
+      // Shared boundary map data: authoritative city polygon + spatially-correct
+      // listing pins (listings_in_boundary RPC). Replaces the old two-call pattern
+      // (getBoundaryGeoJSON + getCityListings). Gate G31 enforces this path.
+      getGeoBoundaryMapData({ geoType: 'city', geoSlug: slug }).catch(() => ({ polygon: null, pins: [] })),
     ])
 
   // Pick a representative asset_library photo for a place, seeded by its slug
@@ -267,6 +273,32 @@ export default async function CityDetailPage({ params }: Props) {
 
       {/* Market snapshot — city-scoped 4-stat cards */}
       <MarketSnapshot citySlug={slug} cityName={cityName} />
+
+      {/* Boundary map — city polygon + spatially-correct listing pins.
+          Data via getGeoBoundaryMapData (shared DAL, Gate G31).
+          Skipped when no boundary row exists for this city. */}
+      {boundaryMapData.polygon ? (
+        <NeighborhoodMap
+          eyebrow={cityName}
+          title={`${cityName} homes on the map`}
+          polygons={[
+            {
+              slug,
+              name: cityName,
+              geometry: boundaryMapData.polygon,
+            },
+          ]}
+          listings={boundaryMapData.pins.map((p) => ({
+            lat: p.lat,
+            lng: p.lng,
+            href: `/listing/${p.listingKey}`,
+            price: p.price,
+          }))}
+          zoom={12}
+          height={520}
+          tone="muted"
+        />
+      ) : null}
 
       {/* Browse by price range */}
       <PriceRangeTiles />

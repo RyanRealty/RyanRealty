@@ -44,6 +44,8 @@ import InventoryTypeSlider from '@/components/geo-page/InventoryTypeSlider'
 import { getListingsWithVideosCached } from '@/app/actions/videos'
 import { getHomeTileRowsByKeys } from '@/app/actions/listings'
 import { getReportMetricsTimeSeries } from '@/app/actions/reports'
+import { getGeoBoundaryMapData } from '@/lib/data'
+import { NeighborhoodMap as SiteNeighborhoodMap } from '@/components/site/NeighborhoodMap'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -119,7 +121,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   void incrementCommunityView(community.entityKey).catch(() => {})
 
   const citySlug = community.city.toLowerCase().replace(/\s+/g, '-')
-  const [listings, pendingListings, soldListings, priceHistory, , savedKeys, likedKeys, communitiesInCity, activityFeed, brokers, communitySaved, communityLiked, savedCommunityKeys, likedCommunityKeys, cityGuides, communityPulse, communityOpenHouses, inventoryBreakdown, communityVideoRows, communitySalesSeries] =
+  const [listings, pendingListings, soldListings, priceHistory, , savedKeys, likedKeys, communitiesInCity, activityFeed, brokers, communitySaved, communityLiked, savedCommunityKeys, likedCommunityKeys, cityGuides, communityPulse, communityOpenHouses, inventoryBreakdown, communityVideoRows, communitySalesSeries, boundaryMapData] =
     await Promise.all([
       withTimeout(getCommunityListings(community.city, community.subdivision, 24), []),
       withTimeout(getCommunityPendingListings(community.city, community.subdivision, 12), []),
@@ -147,6 +149,12 @@ export default async function CommunityDetailPage({ params }: Props) {
       withTimeout(getCommunityInventoryBreakdown(community.city, community.subdivision), EMPTY_INVENTORY, 20_000),
       withTimeout(getListingsWithVideosCached({ city: community.city, community: community.subdivision, sort: 'price_desc', status: 'active', limit: 12 }), []),
       withTimeout(getReportMetricsTimeSeries(community.city, 60, community.subdivision), { data: [], error: undefined }),
+      // Shared boundary map data: polygon + spatially-correct listing pins via
+      // listings_in_boundary RPC. Resort communities are stored as
+      // geo_type='neighborhood' keyed by their bare registry slug (e.g.
+      // 'tetherow') — NOT 'subdivision' which holds tiny recorded-plat phases.
+      // Gate G31 enforces this is the only boundary-map data path on geo pages.
+      getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: slug }).catch(() => ({ polygon: null, pins: [] })),
     ])
   const cityGuideSlug = cityGuides.length > 0 ? cityGuides[0]!.slug : null
 
@@ -379,6 +387,31 @@ export default async function CommunityDetailPage({ params }: Props) {
           median_price: point.median_price,
         }))}
       />
+
+      {/* Boundary map — community polygon + spatially-correct listing pins.
+          Data via getGeoBoundaryMapData (shared DAL, Gate G31). */}
+      {boundaryMapData.polygon ? (
+        <SiteNeighborhoodMap
+          eyebrow={`${community.name}`}
+          title={`${community.name} homes on the map`}
+          polygons={[
+            {
+              slug,
+              name: community.name,
+              geometry: boundaryMapData.polygon,
+            },
+          ]}
+          listings={boundaryMapData.pins.map((p) => ({
+            lat: p.lat,
+            lng: p.lng,
+            href: `/listing/${p.listingKey}`,
+            price: p.price,
+          }))}
+          zoom={14}
+          height={460}
+          tone="muted"
+        />
+      ) : null}
 
       <BreadcrumbStrip
         items={[

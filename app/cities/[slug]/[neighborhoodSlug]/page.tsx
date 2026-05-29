@@ -34,6 +34,8 @@ import VideoToursRow from '@/components/videos/VideoToursRow'
 import { getListingsWithVideosCached } from '@/app/actions/videos'
 import { getHomeTileRowsByKeys } from '@/app/actions/listings'
 import type { YearSeriesPoint } from '@/lib/report-year-compare'
+import { getGeoBoundaryMapData } from '@/lib/data'
+import { NeighborhoodMap as SiteNeighborhoodMap } from '@/components/site/NeighborhoodMap'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -127,7 +129,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const { slug: citySlug, neighborhoodSlug } = await params
   const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)
   if (!neighborhood) notFound()
-  const [listings, pendingListings, soldListings, neighborhoodPriceHistory, savedKeys, likedKeys, communitiesInNeighborhood, activityFeedRaw, brokers, savedCommunityKeys, likedCommunityKeys, inventoryBreakdown, cityVideoRows] = await Promise.all([
+  // Boundary polygon slug: neighborhoods stored as "{citySlug}-{neighborhoodSlug}"
+  const boundaryNeighborhoodSlug = `${citySlug}-${neighborhoodSlug}`
+
+  const [listings, pendingListings, soldListings, neighborhoodPriceHistory, savedKeys, likedKeys, communitiesInNeighborhood, activityFeedRaw, brokers, savedCommunityKeys, likedCommunityKeys, inventoryBreakdown, cityVideoRows, boundaryMapData] = await Promise.all([
     withTimeout(getNeighborhoodListings(neighborhood.id, 24), []),
     withTimeout(getNeighborhoodPendingListings(neighborhood.id, 12), []),
     withTimeout(getNeighborhoodSoldListings(neighborhood.id, 6), []),
@@ -141,6 +146,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     Promise.resolve([] as string[]),
     withTimeout(getNeighborhoodInventoryBreakdown(neighborhood.id), EMPTY_INVENTORY, 20_000),
     withTimeout(getListingsWithVideosCached({ city: neighborhood.cityName, sort: 'price_desc', status: 'active', limit: 20 }), []),
+    // Shared boundary map data: polygon + spatially-correct listing pins via
+    // listings_in_boundary RPC. Boundary slug for Bend neighborhoods is
+    // '{citySlug}-{neighborhoodSlug}' (e.g. 'bend-awbrey-butte'). Gate G31
+    // enforces this is the only boundary-map data path on geo pages.
+    getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }).catch(() => ({ polygon: null, pins: [] })),
   ])
 
   const heroImageUrl = neighborhood.heroImageUrl ?? null
@@ -344,6 +354,31 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           median_price: point.medianPrice,
         }))}
       />
+
+      {/* Boundary map — neighborhood polygon + spatially-correct listing pins.
+          Data via getGeoBoundaryMapData (shared DAL, Gate G31). */}
+      {boundaryMapData.polygon ? (
+        <SiteNeighborhoodMap
+          eyebrow={`${neighborhood.name}`}
+          title={`${neighborhood.name} homes on the map`}
+          polygons={[
+            {
+              slug: boundaryNeighborhoodSlug,
+              name: neighborhood.name,
+              geometry: boundaryMapData.polygon,
+            },
+          ]}
+          listings={boundaryMapData.pins.map((p) => ({
+            lat: p.lat,
+            lng: p.lng,
+            href: `/listing/${p.listingKey}`,
+            price: p.price,
+          }))}
+          zoom={13}
+          height={480}
+          tone="muted"
+        />
+      ) : null}
 
       <BreadcrumbStrip
         items={[
