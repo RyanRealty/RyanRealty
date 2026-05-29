@@ -145,10 +145,38 @@ Ryan Realty
     })
 
     if (!res.ok) {
-      return NextResponse.json(
-        { error: 'Gmail draft creation failed', detail: res.error, hint: res.hint },
-        { status: 502 },
-      )
+      // Resilience (Matt directive 2026-05-29): a Gmail-draft failure must not
+      // strand a built CMA. Fall back to emailing the PDF to the BROKER — never
+      // auto-send to the lead, which would bypass the human review the draft
+      // model exists for. Only a hard 502 if even the fallback fails.
+      try {
+        const { sendEmail } = await import('@/lib/resend')
+        const fb = await sendEmail({
+          to: impersonateAs,
+          subject: `[Action needed] CMA built, Gmail draft failed — ${subjectAddress}`,
+          html: `<p>The CMA for <strong>${subjectAddress}</strong> is built, but the Gmail draft could not be created (${res.error ?? 'unknown error'}). The PDF is attached. Review it and send to <strong>${to}</strong> manually.</p>`,
+          attachments: [{ filename: `${safeSlug}.pdf`, content: buffer }],
+        })
+        return NextResponse.json({
+          ok: true,
+          delivery: 'resend-fallback-to-broker',
+          to: impersonateAs,
+          intended_recipient: to,
+          draft_error: res.error,
+          fallback_message_id: fb.id ?? null,
+          pdf_bytes: buffer.byteLength,
+        })
+      } catch (fe) {
+        return NextResponse.json(
+          {
+            error: 'Gmail draft AND Resend fallback both failed',
+            draft_error: res.error,
+            hint: res.hint,
+            fallback_error: fe instanceof Error ? fe.message : String(fe),
+          },
+          { status: 502 },
+        )
+      }
     }
 
     return NextResponse.json({
