@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.363.0 (2026-05-29)
+
+### Features
+- feat(seller-ads): v10 generator — confident voice pass + multi-size placement variants
+- feat(fb-leads,cma): wire FB lead→CMA + CMA→Gmail draft delivery
+
+### Maintenance
+- docs(handoff): refresh Current block — AI-citability layer shipped
+
+---
+
+
 ## v1.362.1 (2026-05-29)
 
 ### Maintenance
