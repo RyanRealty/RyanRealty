@@ -129,6 +129,35 @@ export function trackPageView(pageType: string, params: Record<string, unknown> 
 }
 
 // ----------------------------------------------------------------------------
+// First-party session id — the key that stitches an anonymous visitor's
+// browsing history to the FUB person they become when they identify.
+// VisitTracker mints this uuid v4 into localStorage on first page view; the
+// lead forms + email-click bridge READ it (never mint) and hand it to the
+// server so backfillSessionToFub() can replay prior anonymous events under
+// the now-known person. Mirrors VisitTracker's key + validation exactly.
+// ----------------------------------------------------------------------------
+
+const RR_SESSION_STORAGE_KEY = 'rr_session_id'
+const RR_SESSION_UUID_V4_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+/**
+ * Read the visitor session id VisitTracker stored in localStorage. Returns
+ * undefined when absent or malformed (so it drops cleanly from a submission
+ * object). Never creates one — that's VisitTracker's job, and a form-only
+ * session with no prior tracked events has nothing to backfill anyway.
+ */
+export function readRrSessionId(): string | undefined {
+  if (typeof window === 'undefined') return undefined
+  try {
+    const id = window.localStorage.getItem(RR_SESSION_STORAGE_KEY)
+    return id && RR_SESSION_UUID_V4_RE.test(id) ? id : undefined
+  } catch {
+    return undefined
+  }
+}
+
+// ----------------------------------------------------------------------------
 // Landing page context — UTM capture + sessionStorage persistence.
 // See marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md for
 // the LP tracking convention this implements.
