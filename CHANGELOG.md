@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.358.1 (2026-05-29)
+
+### Maintenance
+- docs(handoff): rewrite Current block to shipped state (8329bd0) + clean next-steps queue
+
+---
+
+
 ## v1.358.0 (2026-05-29)
 
 ### Features
