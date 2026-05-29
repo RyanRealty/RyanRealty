@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.361.0 (2026-05-29)
+
+### Features
+- feat(seo): G34 gate — enforce AI structured data on every key surface (no exceptions)
+
+---
+
+
 ## v1.360.0 (2026-05-29)
 
 ### Features
