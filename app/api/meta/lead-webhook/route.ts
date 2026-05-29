@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { createRealtimeTask } from '@/lib/followupboss'
+import { createCmaRequest } from '@/lib/cma-request'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
 export const runtime = 'nodejs'
@@ -214,6 +215,7 @@ interface ParsedLead {
   phone: string | null
   buySellIntent: string | null
   timelineAnswer: string | null
+  propertyAddress: string | null
   audience: LeadAudience
   intent: LeadIntent
   possibleRealtor: boolean
@@ -242,6 +244,31 @@ function getTimelineAnswer(fields: LeadFieldData[]): string | null {
   for (const f of fields) {
     const key = f.name.toLowerCase()
     if (TIMELINE_FIELD_HINTS.some(h => key.includes(h))) {
+      const v = f.values?.[0]?.trim()
+      if (v) return v
+    }
+  }
+  return null
+}
+
+// A property address is the one custom field a seller lead form adds beyond the
+// prefilled name/email/phone — it's what the CMA producer needs. Match address-like
+// custom questions, but never the email field.
+const ADDRESS_FIELD_HINTS = [
+  'street_address',
+  'property_address',
+  'home_address',
+  'your_address',
+  'address',
+  'property',
+  'street',
+]
+
+function getPropertyAddress(fields: LeadFieldData[]): string | null {
+  for (const f of fields) {
+    const key = f.name.toLowerCase()
+    if (key.includes('email')) continue
+    if (ADDRESS_FIELD_HINTS.some(h => key.includes(h))) {
       const v = f.values?.[0]?.trim()
       if (v) return v
     }
@@ -334,6 +361,7 @@ function parseLeadFields(lead: MetaLeadDetail): ParsedLead {
     phone: get('phone_number') || get('phone'),
     buySellIntent,
     timelineAnswer,
+    propertyAddress: getPropertyAddress(fields),
     audience: detectAudience(lead, buySellIntent),
     intent: classifyIntent(timelineAnswer),
     possibleRealtor: detectPossibleRealtor(firstName, lastName, email),
@@ -521,6 +549,33 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
 
   // Add context note
   await addFubNote(personId, parsed)
+
+  // Seller lead that included a property address → kick off the CMA pipeline,
+  // exactly like the website LP path (createCmaRequest → cmas row + content:cma
+  // brain action → CMA producer builds the 15-page CMA + a Gmail draft for Matt).
+  // Skip realtors and leads with no usable contact.
+  if (parsed.audience === 'seller' && parsed.propertyAddress && parsed.email && !parsed.possibleRealtor) {
+    try {
+      const cma = await createCmaRequest({
+        rawAddress: parsed.propertyAddress,
+        parsedStreet: null,
+        parsedCity: null,
+        parsedState: null,
+        parsedPostalCode: null,
+        leadEmail: parsed.email,
+        leadName: [parsed.firstName, parsed.lastName].filter(Boolean).join(' ') || null,
+        leadPhone: parsed.phone,
+        leadTimeline: parsed.timelineAnswer,
+        leadClassification: parsed.intent,
+        fubPersonId: personId,
+      })
+      console.log(
+        `[lead-webhook] CMA request ${cma.ok ? `queued (${cma.slug})` : `FAILED: ${cma.error}`} for person ${personId}`,
+      )
+    } catch (e) {
+      console.error('[lead-webhook] createCmaRequest threw (continuing):', e)
+    }
+  }
 
   // Fire 5-min realtime task for hot leads (skip realtors)
   if (parsed.intent === 'hot' && !parsed.possibleRealtor) {

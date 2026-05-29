@@ -11,7 +11,7 @@ action_types:
   - content:cma
 output_type: document
 target_platforms: ["email"]
-asset_destination: public/cmas/<slug>/ + Resend delivery
+asset_destination: public/cmas/<slug>/ + Gmail-draft delivery (Resend fallback)
 auto_inputs: ["comparable listings from Spark", "broker resolved from public.brokers"]
 required_inputs: ["mls_id OR address"]
 optional_inputs: ["comp_count", "methodology_override"]
@@ -74,7 +74,7 @@ Spark CDN supports `320×240`, `640×480`, `800×600`, `1024×768`, `1280×960`,
 - Formal appraisal (this is an estimate, not a USPAP appraisal).  disclaim explicitly on the last page
 - Listing agreement, seller net sheet, transaction coordination.  those are separate producers
 - Marketing flyer for the subject after it's listed.  that's `flyer-design` for `content:just_listed_flyer` etc.
-- Email delivery of the finalized PDF.  that goes through `ops-email-send` after the CMA is finalized
+- Email delivery of the finalized PDF.  on finalization the canonical delivery is a **Gmail DRAFT** created via `POST /api/cma/[slug]/gmail-draft` (addressed to the lead, CMA PDF attached, BCC `ryan.realty@followupboss.me` so FUB logs it the moment it's sent). The signing broker reviews the draft in Gmail and sends it personally.  keeps a human on the pricing numbers (CLAUDE.md §0) and lands the email from a real mailbox instead of a no-reply. The Resend path (`ops-email-send` / `/api/cma/[slug]/email`) is the fallback when the `gmail.modify` DWD scope is unavailable. (This also satisfies the old "wire delivery to FUB" item.  the BCC logs the sent email on the lead's record.)
 
 ---
 
