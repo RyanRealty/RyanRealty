@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.355.0 (2026-05-29)
+
+### Features
+- feat(middleware): edge bot + geo screen to cut GA4 data-center spam
+
+---
+
+
 ## v1.354.1 (2026-05-29)
 
 ### Other
