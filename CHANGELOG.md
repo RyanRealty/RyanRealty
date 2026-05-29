@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.364.2 (2026-05-29)
+
+### Bug Fixes
+- fix(cma): Gmail-draft delivery falls back to broker email, never strands a CMA
+
+---
+
+
 ## v1.364.1 (2026-05-29)
 
 ### Maintenance
