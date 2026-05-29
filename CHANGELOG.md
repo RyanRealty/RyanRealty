@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.362.0 (2026-05-29)
+
+### Features
+- feat(seo): allow the full set of AI retrieval crawlers in robots.txt
+
+---
+
+
 ## v1.361.0 (2026-05-29)
 
 ### Features
