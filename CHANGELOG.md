@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.357.0 (2026-05-29)
+
+### Features
+- feat(attribution): forward real UTM + stitch visitor session on website lead paths
+
+### Maintenance
+- docs(fub): live audit of lead workflows — code tags leads but nothing enrolls into drips
+
+---
+
+
 ## v1.356.0 (2026-05-29)
 
 ### Features
