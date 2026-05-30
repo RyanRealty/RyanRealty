@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.370.1 (2026-05-30)
+
+### Bug Fixes
+- fix(hooks): brand-voice WRITE hook no longer false-flags != as an exclamation
+
+---
+
+
 ## v1.370.0 (2026-05-30)
 
 ### Features
