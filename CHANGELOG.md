@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.369.1 (2026-05-30)
+
+### Bug Fixes
+- fix(producers): de-fabricate cloud executor (CLAUDE.md §0)
+
+---
+
+
 ## v1.369.0 (2026-05-30)
 
 ### Features
