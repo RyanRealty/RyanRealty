@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.365.0 (2026-05-30)
+
+### Features
+- feat(seo): honest monthly price-trend chart on city pages (D98)
+
+---
+
+
 ## v1.364.2 (2026-05-29)
 
 ### Bug Fixes
