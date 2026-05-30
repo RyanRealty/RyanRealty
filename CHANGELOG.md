@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.377.1 (2026-05-30)
+
+### Maintenance
+- docs(handoff): mark skill+enforcement layer complete; resume at organic-growth data wiring
+
+---
+
+
 ## v1.377.0 (2026-05-30)
 
 ### Features
