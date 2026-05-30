@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.374.0 (2026-05-30)
+
+### Features
+- feat(neighborhood): structural rebuild onto site-v2 (516 -> ~265 lines)
+
+---
+
+
 ## v1.373.0 (2026-05-30)
 
 ### Features
