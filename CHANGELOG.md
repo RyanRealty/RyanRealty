@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.372.1 (2026-05-30)
+
+### Maintenance
+- docs(research): AI tool mastery + 2026 viral patterns + brain-logic map + organic-growth plan
+
+---
+
+
 ## v1.372.0 (2026-05-30)
 
 ### Features
