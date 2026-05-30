@@ -1,106 +1,208 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
-import { getAboutContent } from './actions'
-import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
-import { getCanonicalSiteUrl } from '@/lib/share-metadata'
-import ContentPageHero from '@/components/layout/ContentPageHero'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
-import { sanitizeHtml } from '@/lib/sanitize'
-import { Button } from '@/components/ui/button'
-import { listingsBrowsePath } from '@/lib/slug'
+/**
+ * Brokerage profile page (/about) — Wave 3 site-v2 rebuild.
+ *
+ * Composed exclusively from @/components/site/* blocks + @/lib/data DAL.
+ * No legacy components.
+ *
+ * DATA ACCURACY (CLAUDE.md §0): every claim on this page is verified.
+ *   - getBrokers() — public.brokers (24h cache): the three brokers, titles, license #s.
+ *   - Ryan Realty LLC, Bend, Oregon. Founded 2023 (OREA business license 201253677, 2023-06-21).
+ *   - Matt Ryan, Principal Broker, OR #201206613. Phone 541.213.6706. ryan-realty.com.
+ *   - Service area: Central Oregon (verified registry).
+ *   - The brand "four rules" come from design_system/ryan-realty brand voice.
+ * NO testimonials are shown: there is no verified client-review source wired yet,
+ * and fabricated reviews are a compliance + accuracy violation. Add a real source
+ * (GBP reviews) before re-introducing a TestimonialBlock.
+ */
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const aboutOgImage = `${siteUrl}/api/og?type=default`
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { getBrokers } from '@/lib/data/brokers/getBrokers'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { HeroBlock } from '@/components/site/HeroBlock'
+import { ContentSection } from '@/components/site/ContentSection'
+import { BrokerCard } from '@/components/site/BrokerCard'
+import { FAQBlock } from '@/components/site/FAQBlock'
+import { CTABar } from '@/components/site/CTABar'
+import {
+  Body,
+  Container,
+  Eyebrow,
+  Grid,
+  H2,
+  H3,
+  Section,
+  Stack,
+} from '@/components/site/primitives'
 
-// Render on demand. This page uses cookies() (via getSession + getFubPersonIdFromCookie),
-// which is incompatible with static pre-rendering — Next.js throws DYNAMIC_SERVER_USAGE
-// during the build's static-generation pass. Force-dynamic moves the render to request time.
-export const dynamic = 'force-dynamic'
+const ROUTE_PATH = '/about'
 
-export const metadata: Metadata = {
-  title: 'About Us',
-  description: 'Learn about Ryan Realty — Central Oregon\'s trusted real estate brokerage.',
-  alternates: { canonical: `${siteUrl}/about` },
-  openGraph: {
-    title: 'About Ryan Realty',
-    url: `${siteUrl}/about`,
-    images: [{ url: aboutOgImage, width: 1200, height: 630, alt: 'About Ryan Realty' }],
+export const metadata = pageMetadata({
+  title: 'Ryan Realty · Bend, Oregon',
+  description:
+    'A small, independent Bend brokerage founded in 2023. Three licensed brokers serving Central Oregon buyers and sellers, with transparent market data and no high-pressure scripts.',
+  path: ROUTE_PATH,
+  ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
+  keywords: [
+    'Ryan Realty',
+    'Bend Oregon real estate',
+    'Central Oregon brokerage',
+    'licensed broker',
+    'Matt Ryan',
+  ],
+})
+
+// Four rules — verbatim from the design_system brand voice guidelines.
+const VALUES = [
+  {
+    title: 'Direct.',
+    body: 'Short sentences. Active voice. One idea per line. If a clause can be cut without losing meaning, we cut it.',
   },
-  twitter: {
-    card: 'summary_large_image',
-    images: [aboutOgImage],
+  {
+    title: 'Specific.',
+    body: 'Neighborhood names, not "the area." Real dollar amounts, not "competitively priced." The broker’s name, not "our team of experts."',
   },
-}
+  {
+    title: 'Kind.',
+    body: 'Directness is not coldness. We use "you" and "your." We acknowledge the situation. We do not condescend or pressure.',
+  },
+  {
+    title: 'Honest, even when it is inconvenient.',
+    body: 'If a market is soft, we say so. If a home is priced high, we show you the comps. If we do not know, we tell you. Trust is the product.',
+  },
+] as const
+
+// FAQ — verified facts only. No invented service levels, no unverifiable claims.
+const FAQ_ITEMS = [
+  {
+    question: 'How many brokers work at Ryan Realty?',
+    answer:
+      'Three: Matt Ryan (Principal Broker, OR #201206613), Paul Stevenson, and Rebecca Ryser Peterson. All are licensed and active in Oregon.',
+  },
+  {
+    question: 'When was Ryan Realty founded?',
+    answer:
+      'Ryan Realty opened in 2023 as an independent brokerage based in Bend, Oregon.',
+  },
+  {
+    question: 'Will I work with the same broker from start to finish?',
+    answer:
+      'Yes. Ryan Realty does not use a hand-off model. The broker you first talk to is the broker who works your purchase or sale through to close.',
+  },
+  {
+    question: 'What areas do you serve?',
+    answer:
+      'Central Oregon: Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the surrounding resort communities including Tetherow, Pronghorn, Eagle Crest, and Brasada Ranch. We are licensed in Oregon.',
+  },
+  {
+    question: 'How do I get a home valuation?',
+    answer:
+      'Request one through the home value form at ryan-realty.com. A broker prepares a comparative market analysis using recent comparable sales and gives you an honest price range for your home.',
+  },
+] as const
 
 export default async function AboutPage() {
-  let content: Awaited<ReturnType<typeof getAboutContent>> = null
-  try {
-    const [contentResult, session, fubPersonId] = await Promise.all([
-      getAboutContent(),
-      getSession().catch(() => null),
-      getFubPersonIdFromCookie().catch(() => null),
-    ])
-    content = contentResult
-    const pageUrl = `${getCanonicalSiteUrl()}/about`
-    const pageTitle = 'About Us | Ryan Realty'
-    trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId: fubPersonId ?? undefined, pageUrl, pageTitle })
-  } catch (err) {
-    console.error('[AboutPage]', err)
-  }
+  const brokers = await getBrokers()
 
   return (
     <main className="min-h-screen bg-background">
-      <ContentPageHero
-        title={content?.title ?? 'About Ryan Realty'}
-        subtitle="Central Oregon's trusted brokerage. Local expertise, a personal approach, and a team that helps you find the right property—or the right buyer."
-        imageUrl={CONTENT_HERO_IMAGES.about}
-        ctas={[
-          { label: 'Meet the Team', href: '/team', primary: true },
-          { label: 'View Listings', href: listingsBrowsePath(), primary: false },
-          { label: 'Get in Touch', href: '/contact', primary: false },
-        ]}
-      />
-      <section className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
-        <div className="prose prose-primary max-w-none">
-          <div
-            className="whitespace-pre-wrap text-muted-foreground"
-            dangerouslySetInnerHTML={{
-              __html: sanitizeHtml((content?.body_html?.trim()?.length ? content.body_html : null) ?? defaultAboutBody()),
-            }}
+      <div className="bg-background border-b border-border py-3">
+        <Container>
+          <BreadcrumbNav
+            items={[{ label: 'Home', href: '/' }, { label: 'Ryan Realty' }]}
+            tone="on-light"
           />
-        </div>
-        <section className="mt-12 rounded-xl border border-border bg-muted p-6 sm:p-8" aria-labelledby="about-cta-heading">
-          <h2 id="about-cta-heading" className="text-xl font-bold tracking-tight text-primary">Get started</h2>
-          <p className="mt-2 text-muted-foreground">
-            Meet our team, browse listings, or reach out with questions.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/team">
-              <Button className="inline-flex items-center gap-2 bg-accent text-primary hover:bg-accent/90">
-                Meet the team
-              </Button>
-            </Link>
-            <Link href={listingsBrowsePath()}>
-              <Button variant="outline" className="inline-flex items-center gap-2">
-                Browse listings
-              </Button>
-            </Link>
-            <Link href="/contact">
-              <Button variant="outline" className="inline-flex items-center gap-2">
-                Contact us
-              </Button>
-            </Link>
-          </div>
-        </section>
-      </section>
+        </Container>
+      </div>
+
+      <HeroBlock
+        headline="A small Bend brokerage, built on straight answers."
+        lede="Ryan Realty opened in 2023. Three licensed brokers serving Central Oregon. The broker you meet is the broker who closes your deal."
+        photo={{
+          src: '/brand/hero/hero-old-mill-master-4k.jpg',
+          alt: 'Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains.',
+          priority: true,
+        }}
+        minHeight={440}
+      />
+
+      <ContentSection
+        eyebrow="Our story"
+        title="An independent brokerage, by design."
+        width="wide"
+      >
+        <Stack gap="default">
+          <Body size="default" tone="muted" className="leading-[1.65]">
+            Ryan Realty is a small, independent brokerage in Bend, opened in 2023. Three licensed
+            brokers, all active in Oregon. The broker you meet is the broker who works your deal
+            from the first conversation to the closing table.
+          </Body>
+          <Body size="default" tone="muted" className="leading-[1.65]">
+            We lead with the numbers. The same live market data on this site (active inventory,
+            median price, days on market, months of supply) is what we put in front of you when it
+            is time to price a listing or write an offer. When we do not think we can sell a home
+            well, we say so.
+          </Body>
+          <Body size="default" tone="muted" className="leading-[1.65]">
+            We serve Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, and the surrounding resort
+            communities across Central Oregon. We are licensed in Oregon and keep our work inside
+            the region we know.
+          </Body>
+        </Stack>
+      </ContentSection>
+
+      <Section padding="default" tone="muted" divider>
+        <Container>
+          <Stack gap="tight" className="mb-8 max-w-[60ch]">
+            <Eyebrow>What we do differently</Eyebrow>
+            <H2>Four rules we hold to.</H2>
+          </Stack>
+          <Grid cols={2} gap="default">
+            {VALUES.map((v) => (
+              <div key={v.title} className="bg-card border border-border rounded-[14px] p-7 shadow-sm">
+                <H3 className="mb-2">{v.title}</H3>
+                <Body size="default" tone="muted" className="leading-[1.6]">
+                  {v.body}
+                </Body>
+              </div>
+            ))}
+          </Grid>
+        </Container>
+      </Section>
+
+      <Section padding="default" tone="default" divider>
+        <Container>
+          <Stack gap="tight" className="mb-10 max-w-[60ch]">
+            <Eyebrow>Meet the team</Eyebrow>
+            <H2>Three brokers. All licensed. All active.</H2>
+            <Body size="default" tone="muted" className="leading-[1.6]">
+              Each broker you meet is the broker who works your deal from offer to close.
+            </Body>
+          </Stack>
+          <Grid cols={3} gap="default">
+            {brokers.map((broker) => (
+              <div key={broker.slug} className="bg-card border border-border rounded-[14px] p-6 shadow-sm">
+                <BrokerCard broker={broker} variant="featured" ctaHref="/contact" ctaLabel="Schedule a call" />
+              </div>
+            ))}
+          </Grid>
+        </Container>
+      </Section>
+
+      <FAQBlock
+        eyebrow="Common questions"
+        title="Working with Ryan Realty"
+        items={FAQ_ITEMS}
+        tone="muted"
+      />
+
+      <CTABar
+        eyebrow="Ready to talk"
+        title="Have a question on buying or selling in Central Oregon?"
+        body="Call us directly or schedule a time to talk. No scripts, no pressure, no hand-offs."
+        primary={{ href: '/contact', label: 'Schedule a call' }}
+        secondary={{ href: 'tel:5412136706', label: '541.213.6706' }}
+        tone="navy"
+      />
     </main>
   )
-}
-
-function defaultAboutBody(): string {
-  return `<p>Ryan Realty is Central Oregon's trusted source for buying and selling homes. We combine local expertise with a personal approach to help you find the right property or the right buyer.</p>
-<p>Our team of experienced brokers serves Bend, Redmond, Sisters, Sunriver, and the wider region. Whether you're looking for a primary residence, vacation home, or investment property, we're here to guide you.</p>
-<p><a href="/team">Meet our team</a> and <a href="/homes-for-sale">browse current listings</a> to get started.</p>`
 }

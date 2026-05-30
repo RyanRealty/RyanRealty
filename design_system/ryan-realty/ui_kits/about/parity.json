@@ -1,0 +1,56 @@
+{
+  "route": "app/about/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/about/index.html",
+  "competitiveTarget": "Beat generic national-brokerage profile pages by leading with honesty, verified facts, real broker names + licenses, and zero marketing-speak (CLAUDE.md Data Accuracy + brand voice).",
+  "note": "Wave 3 site-v2 rebuild. SiteHeader/SiteFooter render from app/layout.tsx. Every claim is verified: Ryan Realty LLC license 201253677 (founded 2023-06-21 OREA), Matt PB 201206613, brokers from getBrokers(). NO testimonials are rendered: there is no verified client-review source wired, and fabricated reviews are a compliance + Data Accuracy violation. TestimonialBlock is deferred until a real GBP-review source is wired.",
+  "requiredComponents": [
+    {
+      "name": "BreadcrumbNav",
+      "section": "Home > Ryan Realty — schema.org breadcrumb",
+      "blocking": true
+    },
+    {
+      "name": "HeroBlock",
+      "section": "hero — verified honest headline + lede (founded 2023, three brokers, no hand-offs) + canonical Old Mill hero photo",
+      "blocking": true
+    },
+    {
+      "name": "ContentSection",
+      "section": "Story section — independent-brokerage origin (verified: opened 2023, data-led, Central Oregon service area) + four-rule values grid",
+      "blocking": true
+    },
+    {
+      "name": "BrokerCard",
+      "section": "Team section — three broker cards (Matt Ryan, Paul Stevenson, Rebecca Ryser Peterson) via getBrokers()",
+      "blocking": true
+    },
+    {
+      "name": "FAQBlock",
+      "section": "Common questions — verified facts only (broker count, founding year, no-hand-off model, service area, valuation process)",
+      "blocking": true
+    },
+    {
+      "name": "CTABar",
+      "section": "'Ready to talk' — navy CTA band with schedule-a-call and phone number",
+      "blocking": true
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "TestimonialBlock",
+      "reason": "No verified client-review source is wired. Fabricated testimonials are a compliance + Data Accuracy violation, so the page renders none. Re-add (and restore to requiredComponents) once a real review source (e.g. Google Business Profile reviews) is connected."
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "SiteHeader",
+      "section": "site chrome — renders from app/layout.tsx",
+      "note": "Not in requiredComponents because the gate checks the route file."
+    },
+    {
+      "name": "SiteFooter",
+      "section": "navy footer — renders from app/layout.tsx",
+      "note": "Not in requiredComponents because the gate checks the route file."
+    }
+  ]
+}
