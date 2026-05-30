@@ -1,205 +1,196 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
-import { classifyMarketCondition } from '@/lib/market-condition'
-import { createClient } from '@supabase/supabase-js'
-import { getPageContent } from '@/app/actions/site-pages'
-import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
-import ContentPageHero from '@/components/layout/ContentPageHero'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
-import { sanitizeHtml } from '@/lib/sanitize'
-import { Button } from '@/components/ui/button'
-import BrokerSocialProofCta from '@/components/broker/BrokerSocialProofCta'
-import ShareButton from '@/components/ShareButton'
+/**
+ * Sell page (/sell) — Wave 3 site-v2 rebuild.
+ *
+ * Composed from @/components/site/* blocks + @/lib/data DAL. No legacy
+ * components/layout/* or components/broker/* or CMS getPageContent.
+ *
+ * DATA ACCURACY (CLAUDE.md §0): the value props describe real capabilities
+ * (live market data, a local licensed broker, a CMA with comparable sales,
+ * one broker start-to-finish). NO invented results, "results you can verify"
+ * claims, sale-percentages, or days-to-sell stats (D99). The current-market
+ * line is live getMarketPulse data for Bend, classified by the canonical
+ * months-of-supply thresholds. The lead path is the existing
+ * /lp/seller-home-value LP, which captures the lead and triggers the FUB
+ * seller workflow. This page has no form of its own.
+ */
 
-// Render on demand to avoid the 180s static-generation timeout. This page
-// performs heavy market-data fetches at build time (Supabase + market-condition
-// classification) and consistently busts the static export window.
-export const dynamic = 'force-dynamic'
+import { getMarketPulse } from '@/lib/data'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { HeroBlock } from '@/components/site/HeroBlock'
+import { ContentSection } from '@/components/site/ContentSection'
+import { FAQBlock } from '@/components/site/FAQBlock'
+import { CTABar } from '@/components/site/CTABar'
+import {
+  Body,
+  Container,
+  Eyebrow,
+  Grid,
+  H2,
+  H3,
+  Section,
+  Stack,
+  TextLink,
+} from '@/components/site/primitives'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const defaultOgImage = `${siteUrl}/api/og?type=default`
+export const revalidate = 300
 
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key)
-}
+export const metadata = pageMetadata({
+  title: 'Sell your home · Ryan Realty, Central Oregon',
+  description:
+    'List your Central Oregon home with Ryan Realty. Pricing from live market data, marketing from a local licensed broker, and one broker from valuation to close. Request a free home valuation.',
+  path: '/sell',
+  ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
+  keywords: [
+    'sell home Bend Oregon',
+    'Central Oregon home valuation',
+    'list home Bend',
+    'Ryan Realty seller',
+  ],
+})
 
-export const metadata: Metadata = {
-  title: 'Sell Your Home | Ryan Realty',
-  description: 'Thinking of selling? Get a free home value estimate and learn how Ryan Realty markets and sells Central Oregon homes.',
-  alternates: { canonical: `${siteUrl}/sell` },
-  openGraph: {
-    title: 'Sell Your Home | Ryan Realty',
-    description: 'Thinking of selling? Get a free home value estimate and learn how Ryan Realty markets and sells Central Oregon homes.',
-    url: `${siteUrl}/sell`,
-    type: 'website',
-    siteName: 'Ryan Realty',
-    images: [{ url: defaultOgImage, width: 1200, height: 630, alt: 'Ryan Realty sell your home' }],
+const VALUE_PROPS = [
+  {
+    title: 'Priced on real data',
+    body: 'We price your home against recent comparable sales and current active inventory, the same live market data shown across this site. You see the comps we use.',
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Sell Your Home | Ryan Realty',
-    description: 'Thinking of selling? Get a free home value estimate and learn how Ryan Realty markets and sells Central Oregon homes.',
-    images: [defaultOgImage],
+  {
+    title: 'Marketed by a local broker',
+    body: 'Your listing is handled by a licensed Ryan Realty broker who works the Central Oregon market every day, with professional photography and full MLS syndication.',
   },
-}
+  {
+    title: 'One broker, start to finish',
+    body: 'The broker who prices and lists your home is the broker who markets, negotiates, and closes it. No hand-offs, no call center.',
+  },
+] as const
 
-function defaultSellBody(): string {
-  return `<p>Get a data-driven estimate of your home's value and a plan that gets it sold.</p>
-<ul>
-<li><strong>Marketing plan</strong> — Professional photography, listing placement, and targeted outreach.</li>
-<li><strong>Data-driven pricing</strong> — We use local comps and market trends to price for a strong offer.</li>
-<li><strong>Local expertise</strong> — Central Oregon is our backyard. We know the neighborhoods and buyers.</li>
-</ul>
-<p><a href="/contact?inquiry=Selling">Contact us</a> for a free consultation.</p>`
+const FAQ_ITEMS = [
+  {
+    question: 'What does a home valuation cost?',
+    answer:
+      'Nothing. A broker prepares a comparative market analysis at no cost and no obligation.',
+  },
+  {
+    question: 'How do you decide on a list price?',
+    answer:
+      'We use recent comparable sales and current active inventory in your area, the same market data shown across this site. You see the comparable sales we base the price on.',
+  },
+  {
+    question: 'Will I work with the same broker the whole time?',
+    answer:
+      'Yes. The broker who lists your home is the broker who markets, negotiates, and closes it. Ryan Realty does not use a hand-off model.',
+  },
+  {
+    question: 'What areas do you list homes in?',
+    answer:
+      'Central Oregon: Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the surrounding communities.',
+  },
+] as const
+
+function marketType(mos: number): string {
+  if (mos <= 4) return "a seller's market"
+  if (mos < 6) return 'a balanced market'
+  return "a buyer's market"
 }
 
 export default async function SellPage() {
-  let pageContent: Awaited<ReturnType<typeof getPageContent>> = null
-  try {
-    const [pc, session, fubPersonId] = await Promise.all([
-      getPageContent('sell').catch(() => null),
-      getSession().catch(() => null),
-      getFubPersonIdFromCookie().catch(() => null),
-    ])
-    pageContent = pc
-    trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId: fubPersonId ?? undefined, pageUrl: `${siteUrl}/sell`, pageTitle: 'Sell Your Home | Ryan Realty' })
-  } catch (err) {
-    console.error('[SellPage] init error:', err)
-  }
+  const pulse = await getMarketPulse({ geoType: 'city', geoSlug: 'bend' }).catch(() => null)
 
-  const title = pageContent?.title?.trim() || 'Thinking of Selling?'
-  const bodyHtml = pageContent?.body_html?.trim() || defaultSellBody()
-
-  let conditionLabel = 'Balanced Market'
-  try {
-    const supabase = getSupabase()
-    if (supabase) {
-      const startOfMonth = new Date()
-      startOfMonth.setDate(1)
-      const periodStart = startOfMonth.toISOString().slice(0, 10)
-      const { data: row } = await supabase
-        .from('reporting_cache')
-        .select('metrics')
-        .eq('geo_type', 'city')
-        .eq('geo_name', 'Bend')
-        .eq('period_type', 'monthly')
-        .eq('period_start', periodStart)
-        .order('computed_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      const metrics = (row?.metrics as Record<string, unknown>) ?? {}
-      const result = classifyMarketCondition({
-        monthsOfInventory: metrics.inventory_months != null ? Number(metrics.inventory_months) : null,
-        avgDom: metrics.median_dom != null ? Number(metrics.median_dom) : null,
-        listToSoldRatio: null,
-      })
-      conditionLabel = result.label
-    }
-  } catch (err) {
-    console.error('[SellPage] market condition error:', err)
-  }
+  const sellerActive = pulse?.activeCount ?? 0
+  const mosRaw = typeof pulse?.monthsOfSupply === 'number' ? pulse.monthsOfSupply : null
+  const sellerMos = mosRaw === null ? null : Math.round(mosRaw * 10) / 10
+  const hasMos = mosRaw === null ? false : true
+  const showMarket = Boolean(pulse) && (sellerActive > 0 || hasMos)
+  const marketLead =
+    (sellerActive > 0
+      ? `${sellerActive} single-family homes are for sale in Bend`
+      : 'The Bend single-family market') +
+    (mosRaw === null ? '' : `, with ${sellerMos} months of supply, which is ${marketType(mosRaw)}`) +
+    '. See the full market picture before you list.'
 
   return (
     <main className="min-h-screen bg-background">
-      <ContentPageHero
-        title={title}
-        subtitle="Data-driven pricing, professional marketing, and a team that knows Central Oregon. Get a free valuation and a clear plan to sell."
-        imageUrl={CONTENT_HERO_IMAGES.sell}
-        ctas={[
-          // Primary CTA routes to the canonical seller LP per SITE_SPEC line 178.
-          // The /sell/valuation surface remains a second-tier intent page; the
-          // top-of-funnel ask is the LP that captures the lead and triggers
-          // the FUB seller workflow (docs/FUB_SELLER_WORKFLOW_2026-05-17.md).
-          { label: 'Get a home valuation', href: '/lp/seller-home-value', primary: true },
-          { label: 'Contact us to sell', href: '/contact?inquiry=Selling', primary: false },
-        ]}
-      />
-      <div className="mx-auto mt-4 flex w-full max-w-4xl justify-end px-4 sm:px-6">
-        <ShareButton
-          url={`${siteUrl}/sell`}
-          title="Sell your home with Ryan Realty"
-          text="Get a free valuation and a data-driven strategy to sell in Central Oregon."
-          trackContext="sell_page"
-          variant="compact"
-        />
+      <div className="bg-background border-b border-border py-3">
+        <Container>
+          <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Sell' }]} tone="on-light" />
+        </Container>
       </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
-      <section className="prose prose-primary max-w-none" aria-labelledby="sell-content-heading">
-        <h2 id="sell-content-heading" className="sr-only">Sell with us</h2>
-        <div
-          className="text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(bodyHtml) }}
-        />
-      </section>
-
-      <section className="mt-12 rounded-lg border border-border bg-muted p-6" aria-labelledby="market-heading">
-        <h2 id="market-heading" className="text-lg font-semibold text-primary">Market reports & data</h2>
-        <p className="mt-2 text-muted-foreground">
-          Current Bend conditions: <span className="font-medium text-primary">{conditionLabel}</span>
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Button asChild size="sm">
-            <Link href="/reports">Weekly market reports</Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/reports/explore">Explore market data</Link>
-          </Button>
-          <Button asChild size="sm" variant="ghost">
-            <Link href="/reports/city/Bend">Bend market report</Link>
-          </Button>
-        </div>
-      </section>
-
-      <section className="mt-12" aria-labelledby="seller-resources-heading">
-        <h2 id="seller-resources-heading" className="text-lg font-semibold text-foreground">Seller resources</h2>
-        <p className="mt-1 text-muted-foreground">Tips and guides from our blog.</p>
-        <Link href="/blog?category=Selling%20Tips" className="mt-3 inline-block text-primary hover:underline">
-          Selling tips on the blog
-        </Link>
-      </section>
-
-      <section className="mt-12" aria-labelledby="seller-intents-heading">
-        <h2 id="seller-intents-heading" className="text-lg font-semibold text-foreground">Seller strategy pages</h2>
-        <p className="mt-1 text-muted-foreground">
-          Choose your situation for a focused plan.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Button asChild size="sm" variant="outline">
-            <Link href="/sell/for-sale-by-owner">For sale by owner help</Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/sell/expired-listings">Expired listing relaunch</Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/sell/inherited-home">Inherited home guidance</Link>
-          </Button>
-        </div>
-      </section>
-
-      <section className="mt-12 rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="consult-heading">
-        <h2 id="consult-heading" className="text-lg font-semibold text-foreground">Get a free consultation</h2>
-        <p className="mt-1 text-muted-foreground">Tell us about your home and timeline. We&apos;ll follow up with a no-pressure conversation.</p>
-        <Button asChild className="mt-4">
-          <Link href="/contact?inquiry=Selling">Contact us</Link>
-        </Button>
-      </section>
-      </div>
-
-      <BrokerSocialProofCta
-        title="Seller Results You Can Verify"
-        subtitle="Top brokerages win with clarity, data, and trust. We pair that approach with deep Central Oregon knowledge and direct communication."
-        primaryCtaHref="/contact?inquiry=Selling"
-        primaryCtaLabel="Request a Strategy Call"
-        secondaryCtaHref="/sell/plan"
-        secondaryCtaLabel="Review Our Plan"
-        ctaContext="sell_page"
+      <HeroBlock
+        headline="Sell your Central Oregon home."
+        lede="Pricing from live market data, marketing from a local licensed broker, and one broker who works your sale from valuation to close. Start with a free home valuation."
+        photo={{
+          src: '/brand/hero/hero-old-mill-master-4k.jpg',
+          alt: 'Old Mill District drone view with the Deschutes River and the Cascade mountains.',
+          priority: true,
+        }}
+        minHeight={460}
       />
+
+      <Section padding="default" tone="default" divider>
+        <Container>
+          <Stack gap="tight" className="mb-8 max-w-[52ch]">
+            <Eyebrow>Why list with us</Eyebrow>
+            <H2>A small brokerage that prices on numbers, not adjectives.</H2>
+          </Stack>
+          <Grid cols={3} gap="default">
+            {VALUE_PROPS.map((v) => (
+              <div key={v.title} className="bg-card border border-border rounded-[14px] p-7 shadow-sm">
+                <H3 className="mb-2">{v.title}</H3>
+                <Body size="default" tone="muted" className="leading-[1.6]">
+                  {v.body}
+                </Body>
+              </div>
+            ))}
+          </Grid>
+        </Container>
+      </Section>
+
+      <ContentSection eyebrow="How it works" title="From first call to closing table." tone="muted" width="wide">
+        <Stack gap="default">
+          <Body size="default" tone="muted" className="leading-[1.65]">
+            1. Request a valuation. Share your home details and your timeline.
+          </Body>
+          <Body size="default" tone="muted" className="leading-[1.65]">
+            2. A broker prepares a comparative market analysis using recent comparable sales and a
+            walk-through of your home, then gives you an honest price range.
+          </Body>
+          <Body size="default" tone="muted" className="leading-[1.65]">
+            3. We agree on a price and a marketing plan: photography, MLS syndication, and the local
+            channels that reach Central Oregon buyers.
+          </Body>
+          <Body size="default" tone="muted" className="leading-[1.65]">
+            4. We list, market, negotiate the offers, and work the transaction through to close.
+          </Body>
+        </Stack>
+      </ContentSection>
+
+      {showMarket ? (
+        <Section padding="default" tone="default" divider>
+          <Container>
+            <Stack gap="tight" className="max-w-[60ch]">
+              <Eyebrow>The Bend market right now</Eyebrow>
+              <Body size="default" tone="muted" className="leading-[1.6]">
+                {marketLead}
+              </Body>
+              <TextLink href="/housing-market">
+                View Central Oregon market data
+              </TextLink>
+            </Stack>
+          </Container>
+        </Section>
+      ) : null}
+
+      <CTABar
+        eyebrow="What is your home worth?"
+        title="Get a free home valuation."
+        body="A broker prepares a comparative market analysis with recent comparable sales and an honest price range. No cost, no obligation."
+        primary={{ href: '/lp/seller-home-value', label: 'Get a home valuation' }}
+        secondary={{ href: '/contact?inquiry=Selling', label: 'Talk to a broker' }}
+        tone="navy"
+      />
+
+      <FAQBlock eyebrow="Common questions" title="Selling with Ryan Realty" items={FAQ_ITEMS} tone="muted" />
     </main>
   )
 }

@@ -1,0 +1,17 @@
+{
+  "route": "app/sell/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/sell/index.html",
+  "competitiveTarget": "Beat generic 'list with us' pages: honest value props (real comps, local broker, no hand-offs), a live current-market line, and a single clear valuation CTA, with zero invented results or 'verifiable results' claims (D99).",
+  "note": "Wave 3 site-v2 rebuild. The lead path is the existing /lp/seller-home-value LP (captures the lead + triggers the FUB seller workflow); this page does not embed a form. Value props describe real capabilities only. Current-market line is live getMarketPulse(Bend), classified by canonical MoS thresholds. Dropped the legacy CMS body + 'Seller Results You Can Verify' slop + the broken /sell/for-sale-by-owner|expired-listings|inherited-home links (those pages do not exist).",
+  "requiredComponents": [
+    { "name": "BreadcrumbNav", "section": "Home > Sell", "blocking": true },
+    { "name": "HeroBlock", "section": "hero — 'Sell your Central Oregon home.' + valuation-focused lede + canonical photo", "blocking": true },
+    { "name": "ContentSection", "section": "'How it works' — four verified steps from valuation to close", "blocking": true },
+    { "name": "CTABar", "section": "valuation conversion band — 'Get a free home valuation' -> /lp/seller-home-value", "blocking": true },
+    { "name": "FAQBlock", "section": "seller FAQ — verified facts only (cost, pricing method, no hand-offs, service area)", "blocking": true }
+  ],
+  "layoutComponents": [
+    { "name": "SiteHeader", "section": "renders from app/layout.tsx", "note": "gate checks the route file" },
+    { "name": "SiteFooter", "section": "renders from app/layout.tsx", "note": "gate checks the route file" }
+  ]
+}
