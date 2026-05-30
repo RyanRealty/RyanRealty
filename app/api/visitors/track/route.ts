@@ -139,6 +139,12 @@ type TrackBody = {
   metadata?: Record<string, unknown>
   /** REQUIRED: client-side consent state. Server enforces compliance. */
   consent?: ConsentLevel
+  /**
+   * Meta click-id from the ?fbclid= URL param. Persisted on session creation
+   * alongside utm_* for first-touch attribution + CAPI deduplication.
+   * Stripped to 512 chars max; only accepted at analytics/all consent level.
+   */
+  fbclid?: string
 }
 
 function getSupabase() {
@@ -257,6 +263,12 @@ export async function POST(request: NextRequest) {
   // Use a direct UPSERT via the supabase-js builder. The trigger handles
   // last_seen_at updates on event insert; we still upsert here so first-touch
   // fields land on session creation.
+  // fbclid is PII-adjacent (identifies a specific Meta ad click); only capture
+  // it when the visitor has granted analytics or full consent — same gate as UTMs.
+  const fbclid = !minimalOnly && typeof body.fbclid === 'string' && body.fbclid.trim()
+    ? body.fbclid.trim().slice(0, 512)
+    : undefined
+
   const sessionInsert = {
     session_id: sessionId,
     source_domain: sourceDomain,
@@ -265,6 +277,7 @@ export async function POST(request: NextRequest) {
     utm_campaign: campaign?.campaign ?? undefined,
     utm_content:  campaign?.content ?? undefined,
     utm_term:     campaign?.term ?? undefined,
+    fbclid,
     referrer:     body.referrer?.slice(0, 1024) ?? undefined,
     landing_page: body.landingPage?.slice(0, 1024) ?? undefined,
     user_agent:   userAgent,

@@ -74,11 +74,11 @@ function consentLevel(): 'all' | 'analytics' | 'essential' | 'declined' {
 }
 
 /**
- * Best-effort UTM + referrer capture once per session (sessionStorage). Mirrors
+ * Best-effort UTM + fbclid + referrer capture once per session (sessionStorage). Mirrors
  * the WP snippet's captureSource so we get consistent first-touch attribution
  * regardless of which surface the visitor landed on first.
  */
-function captureSource(): { campaign?: { source?: string; medium?: string; campaign?: string; content?: string; term?: string }; referrer?: string; landingPage?: string } {
+function captureSource(): { campaign?: { source?: string; medium?: string; campaign?: string; content?: string; term?: string }; referrer?: string; landingPage?: string; fbclid?: string } {
   if (typeof window === 'undefined') return {}
   const STORAGE_KEY = 'rr_source_v1'
   try {
@@ -93,6 +93,10 @@ function captureSource(): { campaign?: { source?: string; medium?: string; campa
     utm_content: params.get('utm_content') ?? undefined,
     utm_term: params.get('utm_term') ?? undefined,
   }
+  // Meta click-id — present when visitor arrives from a Facebook/Instagram ad.
+  // Captured once at session start (first-touch) and stored so we don't lose
+  // it on SPA navigation (the param disappears after the initial landing).
+  const fbclid = params.get('fbclid') ?? undefined
   const referrer = (typeof document !== 'undefined' ? document.referrer : '') || undefined
   // Auto-infer source from referrer host when no UTM
   if (!src.utm_source && referrer) {
@@ -118,6 +122,7 @@ function captureSource(): { campaign?: { source?: string; medium?: string; campa
       content: src.utm_content,
       term: src.utm_term,
     },
+    fbclid,
     referrer,
     landingPage: window.location.href,
   }
@@ -136,7 +141,7 @@ function fireVisitorEvent(pathname: string, eventType: 'page_view' | 'listing_vi
   if (!sessionId) return
   const consent = consentLevel()
   if (consent === 'declined') return
-  const { campaign, referrer, landingPage } = captureSource()
+  const { campaign, referrer, landingPage, fbclid } = captureSource()
   const payload = {
     sessionId,
     sourceDomain: typeof window !== 'undefined' ? window.location.hostname.toLowerCase().replace(/^www\./, '') : 'ryanrealty.vercel.app',
@@ -145,6 +150,7 @@ function fireVisitorEvent(pathname: string, eventType: 'page_view' | 'listing_vi
     pageTitle: typeof document !== 'undefined' ? document.title.slice(0, 200) : undefined,
     pageCategory: categorizePage(pathname),
     campaign,
+    fbclid,
     referrer,
     landingPage,
     consent,
