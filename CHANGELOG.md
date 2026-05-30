@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.368.1 (2026-05-30)
+
+### Maintenance
+- docs(handoff): /about shipped + record the content-fabrication risk (D99)
+
+---
+
+
 ## v1.368.0 (2026-05-30)
 
 ### Features
