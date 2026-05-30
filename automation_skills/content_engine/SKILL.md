@@ -240,6 +240,8 @@ Matt can override: "publish to ONLY {platform list}" or "build but don't publish
 - `video_production_skills/content_pipeline/SKILL.md`.  publish routing (Step 9)
 - `video_production_skills/ANTI_SLOP_MANIFESTO.md`.  banned content rules
 - `video_production_skills/VIRAL_GUARDRAILS.md`.  scorecard + format minimums
+- `video_production_skills/viral-playbook/SKILL.md`.  what's working NOW (2026 formats, hooks, hold rules, growth) — load before deciding WHAT to make
+- `video_production_skills/tool-mastery/SKILL.md`.  how to correctly use every AI tool (Replicate video models, ElevenLabs audio, Flux/Ideogram image) — load before deciding HOW to build it
 - `video_production_skills/VIDEO_PRODUCTION_SKILL.md`.  master hard constraints
 - `social_media_skills/flyer-design/SKILL.md`.  static flyers + design review gate
 - `automation_skills/triggers/listing_trigger/SKILL.md`.  automated listing pipeline

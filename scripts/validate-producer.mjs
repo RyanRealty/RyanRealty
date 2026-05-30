@@ -320,6 +320,8 @@ const CAPABILITY_AND_BRAIN_PATHS = new Set([
   'video_production_skills/captions',
   'video_production_skills/safe-zones',
   'video_production_skills/pulse-feed-safe-zone',
+  'video_production_skills/tool-mastery',
+  'video_production_skills/viral-playbook',
   'social_media_skills/meme-research',
   // Section H brain components
   'marketing_brain_skills/weekly-cycle',

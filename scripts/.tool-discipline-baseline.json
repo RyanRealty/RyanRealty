@@ -1,0 +1,31 @@
+{
+  "generated": "manual",
+  "violations": [
+    "elevenlabs-inline::listing_video_v4/scripts/align_bend_pulse_bridges.py",
+    "elevenlabs-inline::listing_video_v4/scripts/gen_tumalo_alignment.py",
+    "elevenlabs-inline::listing_video_v4/scripts/gen_tumalo_vo.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_bend_pulse_v4_bridges.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_bend_pulse_vo.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_bend_wildfire_r327.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_news_merger_vo.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_news_remax_real.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_news_vo.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_vo_v51.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_vo_v53.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_vo_v54.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_vo_v55.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_vo_v56.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_vo_v57_s05b.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_vo_v57_s11.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_vo_v58.py",
+    "elevenlabs-inline::listing_video_v4/scripts/synth_vo_v59.py",
+    "elevenlabs-inline::scripts/synth-vo-long.mjs",
+    "elevenlabs-inline::video/evergreen-education/scripts/synth-vo-masterclass.mjs",
+    "elevenlabs-inline::video/evergreen-education/scripts/synth-vo.mjs",
+    "elevenlabs-inline::video/listing-tour/scripts/prepare-tour.ts",
+    "elevenlabs-inline::video/market-report/scripts/synth-vo.mjs",
+    "replicate-video-inline::app/actions/broker-headshot.ts",
+    "replicate-video-inline::listing_video_v4/scripts/transcribe_council_audio_replicate.py",
+    "replicate-video-inline::scripts/build_virtual_staging.py"
+  ]
+}

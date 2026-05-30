@@ -108,8 +108,10 @@ Before touching any deliverable, read the tier references that apply to this pro
 - `social_media_skills/platform-best-practices/SKILL.md` — platform rule layer
 - `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
 - `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard + format minimums
+- [`video_production_skills/viral-playbook/SKILL.md`](../../video_production_skills/viral-playbook/SKILL.md) — what's working NOW (2026 formats, hooks, hold rules, growth mechanics). Load before deciding WHAT to make.
 
 **Tier 3 — every video / animated producer:**
+- [`video_production_skills/tool-mastery/SKILL.md`](../../video_production_skills/tool-mastery/SKILL.md) — how to correctly use every AI tool (Replicate video models + prompt templates + shot→model→cost matrix, ElevenLabs full audio suite, Flux/Ideogram/Grok image). Load before deciding HOW to build it.
 - [`video_production_skills/captions/SKILL.md`](../../video_production_skills/captions/SKILL.md) — single-word Amboqia caption rule. Import `SingleWordCaption` from `canonical/`. Never roll your own caption component.
 - [`video_production_skills/safe-zones/SKILL.md`](../../video_production_skills/safe-zones/SKILL.md) — platform-aware safe zones. Import constants from `canonical/safe-zones.ts`. Never hardcode coords.
 - [`video_production_skills/elevenlabs_voice/SKILL.md`](../../video_production_skills/elevenlabs_voice/SKILL.md) — Victoria voice. Use `scripts/_voice_lib.py` (Python) or `lib/voice/alignment.ts` (Node). Never inline the ElevenLabs API.
@@ -324,8 +326,10 @@ WHERE id='<id>';
 - `social_media_skills/platform-best-practices/SKILL.md` — 2026 platform rule layer
 - `video_production_skills/ANTI_SLOP_MANIFESTO.md` — banned content gate
 - `video_production_skills/VIRAL_GUARDRAILS.md` — scorecard + format minimums
+- `video_production_skills/viral-playbook/SKILL.md` — what's working NOW (2026 formats, hooks, hold rules, growth mechanics)
 
 **Tier 3 — every video / animated producer (locked 2026-05-20):**
+- `video_production_skills/tool-mastery/SKILL.md` — how to use every AI tool correctly (video models + prompts + cost matrix, ElevenLabs audio suite, Flux/Ideogram/Grok image, chaining pipelines)
 - `video_production_skills/captions/SKILL.md` — single-word Amboqia caption rule
 - `video_production_skills/captions/canonical/SingleWordCaption.tsx` — the only sanctioned caption component
 - `video_production_skills/captions/canonical/load-amboqia.ts` — Remotion font loader
