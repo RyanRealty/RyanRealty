@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.366.0 (2026-05-30)
+
+### Features
+- feat(tracking): extend cross-domain tracking to the seller./buyer. LP subdomains
+
+---
+
+
 ## v1.365.0 (2026-05-30)
 
 ### Features
