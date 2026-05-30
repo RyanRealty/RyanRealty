@@ -1,0 +1,16 @@
+{
+  "route": "app/team/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/team/index.html",
+  "competitiveTarget": "Beat generic brokerage team pages: real broker names, OREA license numbers, transparent-PNG headshots, and direct phone/email, with zero invented track-record or review claims.",
+  "note": "Wave 3 site-v2 rebuild. The broker grid renders ONLY verified getBrokers() data (name, title, license #, headshot, phone, email). No bios, stats, rankings, or track-record claims. No reviews UI until a verified review source is wired (D99). Each card links to the broker's profile via teamPath().",
+  "requiredComponents": [
+    { "name": "BreadcrumbNav", "section": "Home > Team", "blocking": true },
+    { "name": "HeroBlock", "section": "hero — 'Meet the brokers.' + lede (three licensed brokers, no hand-offs) + canonical Old Mill photo", "blocking": true },
+    { "name": "BrokerCard", "section": "team grid — featured cards for all brokers via getBrokers(), each linking to teamPath(slug)", "blocking": true },
+    { "name": "CTABar", "section": "'Ready to talk' — navy CTA band with schedule-a-call + phone", "blocking": true }
+  ],
+  "layoutComponents": [
+    { "name": "SiteHeader", "section": "renders from app/layout.tsx", "note": "gate checks the route file" },
+    { "name": "SiteFooter", "section": "renders from app/layout.tsx", "note": "gate checks the route file" }
+  ]
+}

@@ -1,128 +1,107 @@
-import type { Metadata } from 'next'
-import { getAgentsForIndex } from '@/app/actions/agents'
-import { getBrokerageSettings } from '@/app/actions/brokerage'
-import BrokerCard from '@/components/broker/BrokerCard'
-import BrokerSocialProofCta from '@/components/broker/BrokerSocialProofCta'
-import ContentPageHero from '@/components/layout/ContentPageHero'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
-import { listingsBrowsePath } from '@/lib/slug'
-import { generateBreadcrumbSchema } from '@/lib/structured-data'
-import BrokerageListingsSlider from '@/components/home/BrokerageListingsSlider'
-import { Suspense } from 'react'
+/**
+ * Team page (/team) — Wave 3 site-v2 rebuild.
+ *
+ * Composed from @/components/site/* blocks + @/lib/data DAL. No legacy
+ * components/broker/* or app/actions/agents.
+ *
+ * DATA ACCURACY (CLAUDE.md §0): the broker grid renders ONLY verified
+ * getBrokers() data (name, title, OREA license #, transparent headshot,
+ * direct phone, email). No invented bios, stats, rankings, or "track record"
+ * claims. BrokerCard does not render a bio field, so there is no fabrication
+ * surface.
+ */
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { getBrokers } from '@/lib/data/brokers/getBrokers'
+import { teamPath } from '@/lib/slug'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { HeroBlock } from '@/components/site/HeroBlock'
+import { BrokerCard } from '@/components/site/BrokerCard'
+import { CTABar } from '@/components/site/CTABar'
+import {
+  Body,
+  Container,
+  Eyebrow,
+  Grid,
+  H2,
+  Section,
+  Stack,
+} from '@/components/site/primitives'
 
-export const revalidate = 60
-
-export async function generateMetadata(): Promise<Metadata> {
-  const brokerage = await getBrokerageSettings()
-  const name = brokerage?.name ?? 'Ryan Realty'
-  return {
-    title: `Our Team | ${name} — Central Oregon Real Estate`,
-    description: `Meet the brokers at ${name}. Expert real estate agents serving Bend, Redmond, Sisters, Sunriver, and Central Oregon.`,
-    alternates: { canonical: `${siteUrl}/team` },
-    openGraph: {
-      title: `Our Team | ${name}`,
-      description: `Meet the brokers at ${name}. Your Central Oregon real estate experts.`,
-      url: `${siteUrl}/team`,
-      siteName: name,
-      type: 'website',
-      images: [{ url: `${siteUrl}/api/og?type=default`, width: 1200, height: 630, alt: `Our Team | ${name}` }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      images: [`${siteUrl}/api/og?type=default`],
-    },
-  }
-}
+export const metadata = pageMetadata({
+  title: 'Our team · Ryan Realty, Bend Oregon',
+  description:
+    'Meet the three licensed brokers at Ryan Realty. A small, independent Bend brokerage serving buyers and sellers across Central Oregon.',
+  path: '/team',
+  ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
+  keywords: [
+    'Ryan Realty team',
+    'Bend Oregon real estate brokers',
+    'Matt Ryan',
+    'Central Oregon broker',
+  ],
+})
 
 export default async function TeamPage() {
-  const [agents, brokerage] = await Promise.all([
-    getAgentsForIndex(),
-    getBrokerageSettings(),
-  ])
-  const brokerageName = brokerage?.name ?? 'Ryan Realty'
+  const brokers = await getBrokers()
 
   return (
     <main className="min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'CollectionPage',
-            name: `Our Team | ${brokerageName}`,
-            description: `Meet the brokers at ${brokerageName}. Central Oregon real estate experts.`,
-            url: `${siteUrl}/team`,
-            publisher: { '@type': 'Organization', name: brokerageName },
-          }),
+      <div className="bg-background border-b border-border py-3">
+        <Container>
+          <BreadcrumbNav
+            items={[{ label: 'Home', href: '/' }, { label: 'Team' }]}
+            tone="on-light"
+          />
+        </Container>
+      </div>
+
+      <HeroBlock
+        headline="Meet the brokers."
+        lede="Three licensed brokers, all active in Oregon. The broker you meet is the broker who works your deal from offer to close."
+        photo={{
+          src: '/brand/hero/hero-old-mill-master-4k.jpg',
+          alt: 'Old Mill District drone view with the Deschutes River and the Cascade mountains.',
+          priority: true,
         }}
+        minHeight={440}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': ['LocalBusiness', 'RealEstateAgent'],
-            name: brokerageName,
-            url: siteUrl,
-            areaServed: {
-              '@type': 'GeoCircle',
-              geoMidpoint: { '@type': 'GeoCoordinates', latitude: 44.0582, longitude: -121.3153 },
-              geoRadius: '80000',
-            },
-            employee: agents.map((agent) => ({
-              '@type': 'Person',
-              name: agent.display_name,
-              jobTitle: agent.title ?? 'Real Estate Agent',
-              url: `${siteUrl}/team/${agent.slug}`,
-              ...(agent.photo_url ? { image: agent.photo_url } : {}),
-            })),
-          }),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            generateBreadcrumbSchema([
-              { name: 'Home', url: siteUrl },
-              { name: 'Team', url: `${siteUrl}/team` },
-            ])
-          ),
-        }}
-      />
-      <ContentPageHero
-        title="Our Team"
-        subtitle={`The people behind ${brokerageName}. Local experts ready to help you find or sell your next home in Central Oregon.`}
-        imageUrl={CONTENT_HERO_IMAGES.team}
-        ctas={[
-          { label: 'View Listings', href: listingsBrowsePath(), primary: true },
-          { label: 'Contact Us', href: '/contact', primary: false },
-        ]}
-      />
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-        {agents.length === 0 ? (
-          <p className="text-muted-foreground">Team profiles are being updated. Check back soon.</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {agents.map((agent) => (
-              <BrokerCard key={agent.id} agent={agent} basePath="team" />
+
+      <Section padding="default" tone="default" divider>
+        <Container>
+          <Stack gap="tight" className="mb-10 max-w-[52ch]">
+            <Eyebrow>The team</Eyebrow>
+            <H2>Small by design. Local by choice.</H2>
+            <Body size="default" tone="muted" className="leading-[1.6]">
+              Ryan Realty is a three-broker shop. You work with the same person from the first
+              showing to the closing table. Call any broker directly using the number on their card.
+            </Body>
+          </Stack>
+          <Grid cols={3} gap="default">
+            {brokers.map((broker) => (
+              <div
+                key={broker.slug}
+                className="bg-card border border-border rounded-[14px] p-6 shadow-sm"
+              >
+                <BrokerCard
+                  broker={broker}
+                  variant="featured"
+                  ctaHref={teamPath(broker.slug)}
+                  ctaLabel="View profile"
+                />
+              </div>
             ))}
-          </div>
-        )}
-      </section>
-      <Suspense fallback={null}>
-        <BrokerageListingsSlider />
-      </Suspense>
-      <BrokerSocialProofCta
-        title="Work With a Proven Local Team"
-        subtitle="Each broker page includes reviews, track record, and direct contact options so buyers and sellers can move forward with confidence."
-        primaryCtaHref="/contact"
-        primaryCtaLabel="Talk to Ryan Realty"
-        secondaryCtaHref="/reviews"
-        secondaryCtaLabel="Read More Reviews"
-        ctaContext="team_index"
+          </Grid>
+        </Container>
+      </Section>
+
+      <CTABar
+        eyebrow="Ready to talk"
+        title="Have a question for the team?"
+        body="Call any broker directly, or schedule a time to talk. No scripts, no hand-offs."
+        primary={{ href: '/contact', label: 'Schedule a call' }}
+        secondary={{ href: 'tel:5412136706', label: '541.213.6706' }}
+        tone="navy"
       />
     </main>
   )
