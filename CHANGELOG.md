@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.371.0 (2026-05-30)
+
+### Features
+- feat(producers): local render worker (cloud-queues/local-renders architecture)
+
+---
+
+
 ## v1.370.1 (2026-05-30)
 
 ### Bug Fixes
