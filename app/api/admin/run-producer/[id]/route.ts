@@ -21,6 +21,12 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import {
+  classifyProducerFromDisk,
+  canCloudComplete,
+  buildTextProducerSystemPrompt,
+  buildVisualDeferralEnvelope,
+} from '@/lib/marketing-brain/producer-output-class'
 
 const MODEL = 'claude-sonnet-4-5'
 const INPUT_COST_PER_TOKEN = 0.000003
@@ -100,9 +106,16 @@ export async function POST(
   const producerSlug = row.assigned_producer ?? 'unknown'
   const skillPath = path.join(process.cwd(), producerSlug, 'SKILL.md')
 
+  // Classify from output_type. Visual producers cannot be rendered in this
+  // serverless route — refuse rather than let the model fabricate a draft_path
+  // + citations + scorecard for a deliverable that was never created
+  // (CLAUDE.md §0). They are deferred to the local render worker.
+  let cls: ReturnType<typeof classifyProducerFromDisk>['cls']
   let skillContent: string
   try {
-    skillContent = fs.readFileSync(skillPath, 'utf-8')
+    const res = classifyProducerFromDisk(producerSlug, process.cwd())
+    cls = res.cls
+    skillContent = res.skillContent
   } catch {
     const msg = `SKILL.md not found at ${skillPath}`
     await service.from('producer_execution_failures').insert({
@@ -117,19 +130,31 @@ export async function POST(
     return NextResponse.json({ error: msg }, { status: 422 })
   }
 
-  const systemPrompt = `${skillContent}
+  if (!canCloudComplete(cls)) {
+    const deferEnvelope = buildVisualDeferralEnvelope(
+      (row.executor_response ?? {}) as Record<string, unknown>,
+      cls,
+      producerSlug,
+    )
+    await service
+      .from('marketing_brain_actions')
+      .update({ executor_response: deferEnvelope })
+      .eq('id', id)
+      .eq('status', 'in_production')
+    return NextResponse.json({
+      ok: true,
+      action_id: id,
+      deferred: true,
+      output_class: cls,
+      new_status: 'in_production',
+      reason:
+        'Visual producer deferred to the local render worker (scripts/render-worker.mjs). The serverless runtime cannot render video/image/PDF/web-page deliverables; running it here would fabricate citations + scorecard for a file that was never created.',
+    })
+  }
 
----
-
-You are executing this producer recipe for a specific action row. Read the recipe above carefully, then produce the required output as a valid JSON object with no markdown fences or surrounding text. The object must include:
-- draft_summary: string (1-3 sentences describing what was produced)
-- draft_path: string (where to find the draft, e.g. out/<action_id>/draft.html or "inline")
-- citations: array of objects each with {figure, source, table_or_endpoint, filter, value, fetched_at}
-- scorecard: object with keys matching the viral scorecard categories and numeric scores 1-10
-- publish_payload: object with at minimum {action_type, caption, platforms: string[]} and any platform-specific fields the producer recipe requires
-- contact_sheet_path: string (path to HTML contact sheet or "inline")
-
-If you cannot complete a step, write your best attempt and note the gap in draft_summary. Never return raw markdown outside the JSON structure.`
+  // Text producer: hardened prompt — figures come from the (already verified)
+  // payload, never invented; citations trace to payload provenance.
+  const systemPrompt = buildTextProducerSystemPrompt(skillContent)
 
   const userMessage = JSON.stringify({
     action_id: row.id,
@@ -229,16 +254,18 @@ If you cannot complete a step, write your best attempt and note the gap in draft
     return NextResponse.json({ error: msg, raw_preview: rawText.slice(0, 300) }, { status: 422 })
   }
 
+  // Only TEXT producers reach here (visual deferred above). The deliverable is
+  // the inline text — no rendered file, so no draft_path / scorecard.
   const existingEnvelope = (row.executor_response ?? {}) as Record<string, unknown>
   const updatedEnvelope: Record<string, unknown> = {
     ...existingEnvelope,
     producer_output: producerOutput,
+    output_class: 'text',
+    deliverable_text: producerOutput.deliverable_text ?? null,
     publish_payload: producerOutput.publish_payload ?? null,
-    draft_path: producerOutput.draft_path ?? null,
     draft_summary: producerOutput.draft_summary ?? null,
     citations: producerOutput.citations ?? [],
-    scorecard: producerOutput.scorecard ?? {},
-    contact_sheet_path: producerOutput.contact_sheet_path ?? null,
+    needs_render: false,
     completed_at: new Date().toISOString(),
     model: MODEL,
     input_tokens: inputTokens,

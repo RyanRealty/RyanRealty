@@ -32,6 +32,12 @@ import path from 'path'
 import Anthropic from '@anthropic-ai/sdk'
 import { isAuthorizedCron } from '@/lib/marketing-brain/snapshot'
 import { createServiceClient } from '@/lib/supabase/service'
+import {
+  classifyProducerFromDisk,
+  canCloudComplete,
+  buildTextProducerSystemPrompt,
+  buildVisualDeferralEnvelope,
+} from '@/lib/marketing-brain/producer-output-class'
 
 export const maxDuration = 300
 
@@ -158,6 +164,7 @@ export async function GET(request: NextRequest) {
   const client = new Anthropic({ apiKey: anthropicKey })
   const executed: RuntimeResult[] = []
   const errors: RuntimeError[] = []
+  const deferred: Array<{ action_id: string; producer_slug: string; output_class: string }> = []
   let runCumulativeCostUsd = 0
 
   for (const row of rows) {
@@ -169,9 +176,17 @@ export async function GET(request: NextRequest) {
     const producerSlug = row.assigned_producer ?? 'unknown'
     const skillPath = path.join(process.cwd(), producerSlug, 'SKILL.md')
 
+    // Classify the producer from its SKILL.md output_type. VISUAL producers
+    // (video/image/pdf/web-page) cannot be rendered in serverless and must NOT
+    // be executed here — otherwise the model fabricates a draft_path + citations
+    // + scorecard for a deliverable that was never created (CLAUDE.md §0
+    // violation). Those are deferred to the local render worker.
+    let cls: ReturnType<typeof classifyProducerFromDisk>['cls']
     let skillContent: string
     try {
-      skillContent = fs.readFileSync(skillPath, 'utf-8')
+      const res = classifyProducerFromDisk(producerSlug, process.cwd())
+      cls = res.cls
+      skillContent = res.skillContent
     } catch {
       const msg = `SKILL.md not found at ${skillPath}`
       console.error(`[producer-runtime] ${msg}`)
@@ -180,19 +195,27 @@ export async function GET(request: NextRequest) {
       continue
     }
 
-    const systemPrompt = `${skillContent}
+    if (!canCloudComplete(cls)) {
+      // Visual / unknown producer: do NOT call the model. Tag the row for the
+      // local render worker and leave it in 'in_production'. No fabrication, no cost.
+      const deferEnvelope = buildVisualDeferralEnvelope(
+        (row.executor_response ?? {}) as Record<string, unknown>,
+        cls,
+        producerSlug,
+      )
+      await supabase
+        .from('marketing_brain_actions')
+        .update({ executor_response: deferEnvelope })
+        .eq('id', row.id)
+        .eq('status', 'in_production')
+      console.log(`[producer-runtime] ${row.id} (${producerSlug}) deferred to local render worker (output_type=${cls})`)
+      deferred.push({ action_id: row.id, producer_slug: producerSlug, output_class: cls })
+      continue
+    }
 
----
-
-You are executing this producer recipe for a specific action row. Read the recipe above carefully, then produce the required output as a valid JSON object with no markdown fences or surrounding text. The object must include:
-- draft_summary: string (1-3 sentences describing what was produced)
-- draft_path: string (where to find the draft, e.g. out/<action_id>/draft.html or "inline")
-- citations: array of objects each with {figure, source, table_or_endpoint, filter, value, fetched_at}
-- scorecard: object with keys matching the viral scorecard categories and numeric scores 1-10
-- publish_payload: object with at minimum {action_type, caption, platforms: string[]} and any platform-specific fields the producer recipe requires
-- contact_sheet_path: string (path to HTML contact sheet or "inline")
-
-If you cannot complete a step, write your best attempt and note the gap in draft_summary. Never return raw markdown outside the JSON structure.`
+    // Text producer: hardened prompt — numbers come from the payload, never
+    // invented; citations trace to payload provenance; no fabricated render path.
+    const systemPrompt = buildTextProducerSystemPrompt(skillContent)
 
     const userMessage = JSON.stringify({
       action_id: row.id,
@@ -267,16 +290,21 @@ If you cannot complete a step, write your best attempt and note the gap in draft
     }
 
     // Merge executor_response: preserve existing envelope from dispatcher.
+    // Only TEXT producers reach this point (visual producers were deferred
+    // above). The deliverable IS the inline text — there is no rendered file,
+    // so we do NOT store a draft_path or a viral scorecard (those were the
+    // fabricated fields in the old prompt). Citations trace to payload
+    // provenance per buildTextProducerSystemPrompt.
     const existingEnvelope = (row.executor_response ?? {}) as Record<string, unknown>
     const updatedEnvelope: Record<string, unknown> = {
       ...existingEnvelope,
       producer_output: producerOutput,
+      output_class: 'text',
+      deliverable_text: producerOutput.deliverable_text ?? null,
       publish_payload: producerOutput.publish_payload ?? null,
-      draft_path: producerOutput.draft_path ?? null,
       draft_summary: producerOutput.draft_summary ?? null,
       citations: producerOutput.citations ?? [],
-      scorecard: producerOutput.scorecard ?? {},
-      contact_sheet_path: producerOutput.contact_sheet_path ?? null,
+      needs_render: false,
       completed_at: new Date().toISOString(),
       model: MODEL,
       input_tokens: inputTokens,
@@ -333,10 +361,12 @@ If you cannot complete a step, write your best attempt and note the gap in draft
     startedAt,
     candidates_found: rows.length,
     executed_count: executed.length,
+    deferred_count: deferred.length,
     error_count: errors.length,
     run_cost_usd: runCumulativeCostUsd,
     executed,
+    deferred,
     errors,
-    note: "Rows transitioned to 'ready'. Matt must approve before publisher-sweep will publish.",
+    note: "Text producers transitioned to 'ready' (Matt must approve before publisher-sweep). Visual producers left 'in_production' tagged deferred_to_local_render for the local render worker.",
   })
 }
