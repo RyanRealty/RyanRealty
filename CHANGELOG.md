@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.369.0 (2026-05-30)
+
+### Features
+- feat(team): rebuild /team onto site-v2, verified broker data only
+
+---
+
+
 ## v1.368.2 (2026-05-30)
 
 ### Maintenance
