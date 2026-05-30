@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.375.1 (2026-05-30)
+
+### Maintenance
+- docs(handoff): Wave 3 executed — all routes site-v2, prod verified
+
+---
+
+
 ## v1.375.0 (2026-05-30)
 
 ### Features
