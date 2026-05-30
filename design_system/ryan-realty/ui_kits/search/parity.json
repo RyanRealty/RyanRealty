@@ -1,0 +1,15 @@
+{
+  "route": "app/search/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/search/index.html",
+  "competitiveTarget": "Redfin/Zillow-grade map search. Headline: search-as-you-move (pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch). Plus list↔map hover sync, photo popups on markers, mobile list/map toggle.",
+  "note": "Wave 3 site-v2 rebuild of the default split view. /homes-for-sale rewrites here; /search and /listings 301 here. The split view renders MapSearchView (the unified orchestrator); list + map views keep their existing components. Data: getViewportSearch -> getViewportListings (bbox + polygon aware, one set drives list + markers). Initial bounds seeded from getGeoBoundaryMapData (DAL).",
+  "requiredComponents": [
+    { "name": "SearchFilters", "section": "sticky search + filter chip bar (mockup: search-bar-row + filter-bar)", "blocking": true },
+    { "name": "MapSearchView", "section": "split map + results with search-as-you-move (mockup: map-split)", "blocking": true },
+    { "name": "SearchResults", "section": "results list (list view + mobile)", "blocking": true }
+  ],
+  "layoutComponents": [
+    { "name": "SiteHeader", "section": "renders from app/layout.tsx", "note": "gate checks the route file" },
+    { "name": "SiteFooter", "section": "renders from app/layout.tsx", "note": "gate checks the route file" }
+  ]
+}
