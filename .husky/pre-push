@@ -33,8 +33,12 @@ if [ "$NEEDS_STRICT" -eq 0 ]; then
 fi
 
 if [ "$NEEDS_STRICT" -eq 1 ]; then
-  echo "Running strict local quality gates..."
-  npm run quality:local:strict
+  # Canonical gate suite (cross-platform). Replaces quality:local:strict,
+  # whose build:clean-local step is PowerShell-only and silently no-ops /
+  # breaks on macOS — which is why this hook had been effectively disabled.
+  # Re-armed 2026-05-30 to enforce the same ci:gates that CI runs (LAUNCH-15).
+  echo "Running canonical gate suite (ci:gates)..."
+  npm run ci:gates
 else
   echo "Running fast local quality gates..."
   npm run quality:local

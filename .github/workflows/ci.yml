@@ -26,28 +26,16 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run lint
-      - run: npm run lint:seo-routes
-      - run: npm run ci:design-tokens
-      - run: npm run ci:dal-boundary
-      - run: npm run ci:brand-voice
-      # Wave-2 mechanical gates (added 2026-05-28). Each gate is
-      # ratcheted: a baseline file in scripts/ records the legacy
-      # state, the gate fails ONLY on NEW violations. As Wave 3
-      # page migrations land, the baselines shrink. See
-      # docs/MECHANICAL_GATES.md for the full catalog + add-a-gate
-      # instructions.
-      - run: npm run ci:mockup-parity
-      - run: npm run ci:mockup-coverage
-      - run: npm run ci:page-dal
-      - run: npm run ci:static-params
-      # G16 data access discipline + G17 mixed-case column quoting +
-      # G21 DAL internal cache discipline + G22 producer pipeline guard.
-      # The full unified-enforcement layer landed 2026-05-28; each
-      # gate closes one or more systemic gaps in out/guardrail-inventory.
-      - run: npm run ci:data-access
-      - run: npm run ci:dal-column-quoting
-      - run: npm run ci:dal-internal-discipline
-      - run: npm run ci:producer-guard
+      # Canonical gate suite — runs ALL mechanical gates (the same
+      # `ci:gates` developers run locally + pre-push), not a hand-picked
+      # subset. Adding a gate to package.json's `ci:gates` chain now
+      # auto-enforces it here too. Previously CI hand-listed ~13 gates
+      # and silently omitted 9 (no-mojibake, producer-skills,
+      # tool-discipline, geo-imagery, boundary-map, community-page,
+      # community-content, ai-structured-data, design-directives,
+      # hook-tests). Wired 2026-05-30 — gate LAUNCH-15 / DATA-15 / SKILL-12.
+      # See docs/MECHANICAL_GATES.md.
+      - run: npm run ci:gates
       - run: npm run test
       - run: npm run build
       # Post-build gates: bundle budget + route smoke. Bundle budget
