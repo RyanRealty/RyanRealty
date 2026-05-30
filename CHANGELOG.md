@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.376.0 (2026-05-30)
+
+### Features
+- feat(skills): retire interior-AI ban + add G36 tool-discipline gate (not yet activated)
+
+---
+
+
 ## v1.375.1 (2026-05-30)
 
 ### Maintenance
