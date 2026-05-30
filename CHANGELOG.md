@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.1 (2026-05-30)
+
+### Bug Fixes
+- fix(build): commit untracked MapSearchView (broke Vercel build at app/search/page.tsx)
+
+---
+
+
 ## v1.379.0 (2026-05-30)
 
 ### Features
