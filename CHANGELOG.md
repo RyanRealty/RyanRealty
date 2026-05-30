@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.368.0 (2026-05-30)
+
+### Features
+- feat(about): rebuild /about onto site-v2, verified-facts-only (D99)
+
+---
+
+
 ## v1.367.0 (2026-05-30)
 
 ### Features
