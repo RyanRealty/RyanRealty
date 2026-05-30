@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.375.0 (2026-05-30)
+
+### Features
+- feat(attribution): capture fbclid on visitor sessions
+
+---
+
+
 ## v1.374.0 (2026-05-30)
 
 ### Features
