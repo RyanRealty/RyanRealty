@@ -48,7 +48,7 @@ admin reset, criteria edit.
 This skill owns the entire saved-search backend: schema migration, API
 routes (subscribe, unsubscribe, criteria-edit), cron job, email template,
 FUB integration. The skill does NOT render the criteria-capture form on
-the LP — that lives inside the `site-community-page` (or sister) producer.
+the LP. That lives inside the `site-community-page` (or sister) producer.
 This producer receives the form submission and runs the matching engine.
 
 **Status:** Canonical
@@ -70,7 +70,7 @@ This producer receives the form submission and runs the matching engine.
 
 ### In scope
 
-- `ops:listing_alerts_setup`: one-time DB migration + cron registration + Resend template authoring. Idempotent — running again checks state and only applies missing pieces.
+- `ops:listing_alerts_setup`: one-time DB migration + cron registration + Resend template authoring. Idempotent. Running again checks state and only applies missing pieces.
 - `ops:listing_alerts_digest_send`: nightly cron at 7:00am PT that finds new matches for every active subscriber and sends digest emails.
 - `ops:listing_alerts_pause`: triggered by FUB webhook when a subscriber sends a message to a broker. Auto-pauses for 14 days so we're not double-emailing while a human is engaged.
 - `ops:listing_alerts_unsubscribe`: one-click unsubscribe from any digest email. Updates `listing_alerts.status` to 'unsubscribed', stamps `unsubscribed_at`.
@@ -89,7 +89,7 @@ This producer receives the form submission and runs the matching engine.
 - The seller CMA flow (use `cma` producer).
 - The buyer's guide PDF (use `buyers-guide` producer).
 - Real-time SMS push of new listings (out of scope for v1; SMS is a future iteration).
-- Saved searches that span multiple communities (criteria must specify exactly one community_slug OR a city slug, not a "anywhere in Bend" search — that would explode the digest size).
+- Saved searches that span multiple communities (criteria must specify exactly one community_slug OR a city slug, not a "anywhere in Bend" search, as that would explode the digest size).
 
 ---
 
@@ -102,7 +102,7 @@ This producer receives the form submission and runs the matching engine.
 | `ops:listing_alerts_pause` | `subscriber_email`, `reason` | Triggered by FUB webhook on outbound broker → subscriber message. Pauses for 14 days. |
 | `ops:listing_alerts_unsubscribe` | `subscriber_email`, `unsubscribe_token` | Triggered by GET request to `/api/listing-alerts/unsubscribe?token=...` from email link. |
 
-### Payload schema for subscribe (the form submission, not an action_type — this is the inbound API):
+### Payload schema for subscribe (the form submission, not an action_type; this is the inbound API):
 
 ```typescript
 interface ListingAlertsSubscribePayload {
@@ -117,7 +117,7 @@ interface ListingAlertsSubscribePayload {
   baths_min?: number;                // optional; defaults to 0
   sqft_min?: number;                 // optional
   property_type?: string;            // defaults to 'A' (Single-family); 'C' for Condo allowed
-  subdivision?: string;              // optional — if subscriber picked a specific sub-neighborhood
+  subdivision?: string;              // optional, if subscriber picked a specific sub-neighborhood
   consent_marketing: boolean;        // must be true
   consent_sms?: boolean;             // future SMS feature, capture now even if not used
   utm?: {                            // captured from LP query params
@@ -516,29 +516,29 @@ pending -> in_production -> executed (DB row updated)
 
 **Required reading before executing:**
 
-- `CLAUDE.md` §0 — Data Accuracy
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `CLAUDE.md` "Supabase Database — MANDATORY READ before any SQL"
-- `docs/DATABASE_FOR_AI_AGENTS.md` — listings table mixed-case columns + the SFR-only convention
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — email digest copy must pass the same voice guardrail
-- `docs/FUB_SELLER_WORKFLOW_2026-05-17.md` — FUB integration pattern (we mirror this for the buyer side)
-- `docs/MARKETING_LEAD_FLOW.md` — webhook + dedup detail
+- `CLAUDE.md` §0. Data Accuracy
+- `CLAUDE.md` §0.5. Draft-First, Commit-Last
+- `CLAUDE.md` "Supabase Database, MANDATORY READ before any SQL"
+- `docs/DATABASE_FOR_AI_AGENTS.md`. Listings table mixed-case columns + the SFR-only convention
+- `marketing_brain_skills/brand-voice/voice_guidelines.md`. Email digest copy must pass the same voice guardrail
+- `docs/FUB_SELLER_WORKFLOW_2026-05-17.md`. FUB integration pattern (we mirror this for the buyer side)
+- `docs/MARKETING_LEAD_FLOW.md`. Webhook + dedup detail
 
 **Producers this skill integrates with:**
 
-- `marketing_brain_skills/producers/site-community-page/SKILL.md` — renders the Custom Alerts form that submits to this producer's /subscribe endpoint
-- `marketing_brain_skills/producers/site-subdivision-page/SKILL.md` (pending) — same, at the subdivision tier
-- `marketing_brain_skills/producers/site-city-page/SKILL.md` (pending) — same, at the city tier
-- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md` — FUB lead creation pattern (reuse the same helper)
-- `marketing_brain_skills/producers/ops-email-send/SKILL.md` — Resend send pattern (reuse the same client wrapper)
+- `marketing_brain_skills/producers/site-community-page/SKILL.md`. Renders the Custom Alerts form that submits to this producer's /subscribe endpoint
+- `marketing_brain_skills/producers/site-subdivision-page/SKILL.md` (pending). Same, at the subdivision tier
+- `marketing_brain_skills/producers/site-city-page/SKILL.md` (pending). Same, at the city tier
+- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md`. FUB lead creation pattern (reuse the same helper)
+- `marketing_brain_skills/producers/ops-email-send/SKILL.md`. Resend send pattern (reuse the same client wrapper)
 
 **Sibling backend producers:**
 
-- `app/api/cron/seller-workflow-pause/route.ts` — existing 15-minute cron that pauses the seller-side workflow on broker reply. This producer's pause logic mirrors that pattern.
+- `app/api/cron/seller-workflow-pause/route.ts`. Existing 15-minute cron that pauses the seller-side workflow on broker reply. This producer's pause logic mirrors that pattern.
 
 **Registry entry:**
 
-- `marketing_brain_skills/producers/REGISTRY.md` — Section D (operational producers), row `listing-alerts`. Action types as above. Approval: `matt-review-PR` for setup, `none` for runtime.
+- `marketing_brain_skills/producers/REGISTRY.md`. Section D (operational producers), row `listing-alerts`. Action types as above. Approval: `matt-review-PR` for setup, `none` for runtime.
 
 ---
 
@@ -546,7 +546,7 @@ pending -> in_production -> executed (DB row updated)
 
 1. **Real-time push (not daily digest).** Today the digest fires once per day at 7am PT. A real-time push for the absolute top-of-funnel match (a brand-new $5M Tetherow listing for a $4-6M-criteria subscriber) would be a meaningful upgrade. SMS via Twilio + opt-in capture on the LP form.
 
-2. **Saved-search delta detection across price changes.** Today we capture "new listings". A second match type — "price drop on a listing already in the subscriber's awareness" — would re-engage subscribers who saw a home, didn't act, and the seller dropped 5%. Already partially scaffolded via `match_type='price_drop'` in the schema.
+2. **Saved-search delta detection across price changes.** Today we capture "new listings". A second match type, "price drop on a listing already in the subscriber's awareness," would re-engage subscribers who saw a home, didn't act, and the seller dropped 5%. Already partially scaffolded via `match_type='price_drop'` in the schema.
 
 3. **Subscriber portal.** Today the only way to edit criteria is to ask Matt to do it via the admin queue, OR unsubscribe + resubscribe with new criteria. A magic-link login page at `/my-alerts` that lets the subscriber edit their own criteria would reduce admin overhead.
 
@@ -560,7 +560,12 @@ pending -> in_production -> executed (DB row updated)
 
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
+- `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
 - `docs/DATABASE_FOR_AI_AGENTS.md`
 - `docs/MARKETING_LEAD_FLOW.md`
 - `docs/FUB_SELLER_WORKFLOW_2026-05-17.md`

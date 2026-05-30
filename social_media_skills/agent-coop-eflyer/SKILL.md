@@ -7,7 +7,7 @@ description: >
   plain-text body fallback, and a sub-60-character subject line. Voice is peer-to-peer broker.
   "your client?" angle, no consumer sales hype. Producer prepares the artifacts and surfaces
   them; Matt sends via Resend from the `mail.ryan-realty.com` sender to a manually managed
-  local agent list. Email body is hashtag-stripping surface — no #RyanRealtyBend in the body.
+  local agent list. Email body is hashtag-stripping surface. No #RyanRealtyBend in the body.
   Use this whenever Matt says "agent coop eflyer for <address>", "agent-to-agent email for
   <MLS#>", "buyer agent blast", "build the coop flyer", "agent email for <listing>", or any
   phrasing that asks for a flyer aimed at other agents rather than at consumers.

@@ -112,8 +112,8 @@ Does NOT handle non-resort neighborhoods like NW Crossing or Old Bend
 
 ```typescript
 interface SiteSubdivisionPagePayload {
-  community_slug: string;            // 'tetherow' | 'pronghorn' | etc. — must match a row in resort-communities.json
-  subdivision_slug: string;          // 'heath' | 'tartan-druim' | etc. — must match a sub_neighborhoods[].slug under the parent community
+  community_slug: string;            // 'tetherow' | 'pronghorn' | etc. --EMDASH-- must match a row in resort-communities.json
+  subdivision_slug: string;          // 'heath' | 'tartan-druim' | etc. --EMDASH-- must match a sub_neighborhoods[].slug under the parent community
   hero_headline: string;             // Playfair Display H1. Sentence case. May include dynamic-month-year span.
                                      // e.g. 'Heath at Tetherow: <data-dyn-month-year>'
   meta_description: string;          // 150-160 chars. Must include sub name + parent community + 'Bend, OR' + a verified figure.
@@ -283,16 +283,16 @@ Page structure (lighter than the parent community page):
 2. **Sticky scroll CTA** (inherited component)
 3. **Hero** with sub-plat aerial bg image, eyebrow "Inside <Community>", H1, four-stat bar (or three-stat if KPIs are thin)
 4. **Breadcrumb** strip: Home › Bend › Tetherow › Heath (linked)
-5. **About this sub-neighborhood** — single paragraph from `sub_neighborhoods[].description`, expanded with architectural guidelines + lot size norms if available
-6. **Map + drive times** — sub-plat-specific Google Static Map + drive times inherited from parent community
-7. **HOA + dues** — single card pulling from `sub_neighborhoods[].hoa_annual_estimate` + the parent's master assessment for context
-8. **Live market** — KPI grid filtered to this sub-plat (or the "data thin" callout pointing to parent stats)
-9. **Architecture + builders** — character section + the filtered builder roster (which builders have completed homes specifically in this sub-plat, sourced from `sub_neighborhoods[].builders` or computed from `listings.ListingAgentFullName` + `ConstructionMaterials` heuristics if not configured)
+5. **About this sub-neighborhood** --EMDASH-- single paragraph from `sub_neighborhoods[].description`, expanded with architectural guidelines + lot size norms if available
+6. **Map + drive times** --EMDASH-- sub-plat-specific Google Static Map + drive times inherited from parent community
+7. **HOA + dues** --EMDASH-- single card pulling from `sub_neighborhoods[].hoa_annual_estimate` + the parent's master assessment for context
+8. **Live market** --EMDASH-- KPI grid filtered to this sub-plat (or the "data thin" callout pointing to parent stats)
+9. **Architecture + builders** --EMDASH-- character section + the filtered builder roster (which builders have completed homes specifically in this sub-plat, sourced from `sub_neighborhoods[].builders` or computed from `listings.ListingAgentFullName` + `ConstructionMaterials` heuristics if not configured)
 10. **Active inventory** grid (8 cards) with per-listing "Schedule a showing" buttons
 11. **Recent closings** strip (8-12 rows)
-12. **Parent community sidebar** — compact "About Tetherow" card with the parent community's master HOA, course recognition, and a "See all Tetherow communities" link back to `/lp/<community>/`
-13. **CMA seller form** — full form, FUB tags include subdivision precision
-14. **Buyer cross-link** — single CTA "See the full Tetherow buyer track" linking to `/lp/<community>/#buyer`
+12. **Parent community sidebar** --EMDASH-- compact "About Tetherow" card with the parent community's master HOA, course recognition, and a "See all Tetherow communities" link back to `/lp/<community>/`
+13. **CMA seller form** --EMDASH-- full form, FUB tags include subdivision precision
+14. **Buyer cross-link** --EMDASH-- single CTA "See the full Tetherow buyer track" linking to `/lp/<community>/#buyer`
 15. **Methodology** footer
 16. **JSON-LD** Place (containedInPlace = parent community) + RealEstateAgent
 
@@ -433,14 +433,14 @@ Same as `site-community-page`: pending -> in_production -> ready -> approved -> 
 
 **Sibling producers:**
 
-- `marketing_brain_skills/producers/site-community-page/SKILL.md` — Tier 2 (parent of this skill's output)
-- `marketing_brain_skills/producers/site-listing-page/SKILL.md` — Tier 4 (one tier deeper; per-property)
-- `marketing_brain_skills/producers/site-city-page/SKILL.md` — Tier 1 (one tier higher; city-level)
-- `marketing_brain_skills/producers/site-neighborhood-page/SKILL.md` — sibling for non-resort neighborhoods
+- `marketing_brain_skills/producers/site-community-page/SKILL.md` --EMDASH-- Tier 2 (parent of this skill's output)
+- `marketing_brain_skills/producers/site-listing-page/SKILL.md` --EMDASH-- Tier 4 (one tier deeper; per-property)
+- `marketing_brain_skills/producers/site-city-page/SKILL.md` --EMDASH-- Tier 1 (one tier higher; city-level)
+- `marketing_brain_skills/producers/site-neighborhood-page/SKILL.md` --EMDASH-- sibling for non-resort neighborhoods
 
 **Registry entry:**
 
-- `marketing_brain_skills/producers/REGISTRY.md` — Section D, row `site-subdivision-page`.
+- `marketing_brain_skills/producers/REGISTRY.md` --EMDASH-- Section D, row `site-subdivision-page`.
 
 ---
 
@@ -464,5 +464,9 @@ Same as `site-community-page`: pending -> in_production -> ready -> approved -> 
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
 - `data/resort-communities.json`
 - `marketing_brain_skills/producers/site-community-page/SKILL.md` (parent tier)

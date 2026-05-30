@@ -16,7 +16,7 @@
 
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve, dirname, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
@@ -313,6 +313,14 @@ const CAPABILITY_AND_BRAIN_PATHS = new Set([
   'video_production_skills/publisher',
   'video_production_skills/quality_gate',
   'social_media_skills/platform-best-practices',
+  // Canonical reference / rule skills — NOT brain-callable producers. These
+  // define rules (caption format, safe zones, meme research library) that other
+  // producers load; they don't follow the 11-section producer template and are
+  // absent from REGISTRY.md by design.
+  'video_production_skills/captions',
+  'video_production_skills/safe-zones',
+  'video_production_skills/pulse-feed-safe-zone',
+  'social_media_skills/meme-research',
   // Section H brain components
   'marketing_brain_skills/weekly-cycle',
   'marketing_brain_skills/diagnose-performance',
@@ -326,12 +334,12 @@ const CAPABILITY_AND_BRAIN_PATHS = new Set([
   'marketing_brain_skills/snapshot-channels',
 ])
 
-function isCapabilityOrBrain(skillPath) {
+export function isCapabilityOrBrain(skillPath) {
   const rel = relative(REPO_ROOT, skillPath).replace(/\/SKILL\.md$/, '')
   return CAPABILITY_AND_BRAIN_PATHS.has(rel)
 }
 
-function runGates(skillPath) {
+export function runGates(skillPath) {
   const failures = []
   const warnings = []
 
@@ -591,6 +599,11 @@ function runGates(skillPath) {
 // Entry point
 // ---------------------------------------------------------------------------
 
+// Run the CLI only when this file is invoked directly (node scripts/validate-producer.mjs <path>).
+// When imported (e.g. by scripts/check-producer-skills.mjs) the entry block is skipped so
+// runGates can be reused in-process without triggering process.exit.
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+if (isMain) {
 const args = process.argv.slice(2)
 if (args.length === 0) {
   process.stderr.write('Usage: node scripts/validate-producer.mjs <path-to-SKILL.md>\n')
@@ -631,4 +644,5 @@ if (result.pass) {
     `FAIL: ${relative(REPO_ROOT, skillPath)} - ${result.failures.length} gate(s) failed. See stderr for details.\n`,
   )
   process.exit(1)
+}
 }

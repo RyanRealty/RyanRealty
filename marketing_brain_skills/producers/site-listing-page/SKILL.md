@@ -46,7 +46,7 @@ example_outputs:
 `/lp/listings/<mls-slug>/` for every relevant single-family residential
 listing in the Oregon RMLS feed. The page is the deepest tier in the
 search-authority stack and is designed to win the SERP for the address
-query — beating Zillow, Realtor.com, Redfin, and the listing brokerage's
+query --EMDASH-- beating Zillow, Realtor.com, Redfin, and the listing brokerage's
 own page for any address inside our defined geo focus (Bend, Tetherow,
 Pronghorn, Sunriver, Broken Top, etc.).
 
@@ -65,7 +65,7 @@ The skill operates in two modes per the listing's brokerage:
 
 1. **Our listings (ListAgentEmail belongs to Ryan Realty):** Full broker-of-record block. Showing CTA routes to the listing agent. Marketing language permitted (within brand voice). "Listed by Ryan Realty" badge.
 
-2. **OPM listings (other people's listings):** Mandatory IDX-compliant attribution: listing brokerage name + listing agent name at the top of the page. Showing CTA routes to our buyer's agent ("Schedule a tour with Ryan Realty"). Editorial language only — no marketing claims for the home itself. Listing photos via the IDX broker license. "Listed by <Other Brokerage>" badge.
+2. **OPM listings (other people's listings):** Mandatory IDX-compliant attribution: listing brokerage name + listing agent name at the top of the page. Showing CTA routes to our buyer's agent ("Schedule a tour with Ryan Realty"). Editorial language only --EMDASH-- no marketing claims for the home itself. Listing photos via the IDX broker license. "Listed by <Other Brokerage>" badge.
 
 Both modes share the same page template and live data flow.
 
@@ -83,7 +83,7 @@ Both modes share the same page template and live data flow.
 - `site:listing_page_update`: refresh on price change, status change (Active → Pending → Closed), new photos, or 30-day cadence.
 - `site:listing_page_archive`: when a listing closes, mark the page as archived but keep it live for SEO (with a "This home sold for $X on Y" header).
 - `ops:listing_pages_batch_sync`: nightly cron that walks the listings table and dispatches create/update/archive actions for every relevant SFR.
-- ISR config: `export const revalidate = 3600` (1 hour) at the route level. Listing data turns over fast — even price changes mid-day should reflect within an hour.
+- ISR config: `export const revalidate = 3600` (1 hour) at the route level. Listing data turns over fast --EMDASH-- even price changes mid-day should reflect within an hour.
 - Live Supabase data: the single `listings` row + `listing_history` rows + filtered comps query.
 - JSON-LD `RealEstateListing` schema with full property facts.
 - IDX attribution component: server-rendered listing brokerage + listing agent name per Oregon RMLS rules. NON-NEGOTIABLE.
@@ -95,7 +95,7 @@ Both modes share the same page template and live data flow.
 - Comp set: 6-8 recent closings in the same sub-plat or same school district + price tier.
 - Property fact table: bedrooms, bathrooms, total living sqft, lot size, year built, garage spaces, HOA dues, taxes, MLS number, status, days on market, price-per-sqft, original list, list price.
 - Listing history: price changes, status changes from `listing_history` rows.
-- Brand voice validation on all generated copy (NOT on the listing's own MLS Public Remarks — that's the listing brokerage's words and we display them verbatim).
+- Brand voice validation on all generated copy (NOT on the listing's own MLS Public Remarks --EMDASH-- that's the listing brokerage's words and we display them verbatim).
 
 ### Out of scope
 
@@ -167,8 +167,8 @@ interface SiteListingPageActionRow {
 
 **Step 2.** Load mandatory references:
 - `CLAUDE.md` §0, §0.5, design system, brand voice
-- `marketing_brain_skills/research/platform-bible.md` §24 — real-estate compliance (IDX, fair housing, NAR)
-- `data/resort-communities.json` — for parent community linking
+- `marketing_brain_skills/research/platform-bible.md` §24 --EMDASH-- real-estate compliance (IDX, fair housing, NAR)
+- `data/resort-communities.json` --EMDASH-- for parent community linking
 - The parent community route file IF the listing is inside one of our tracked resort communities
 
 **Step 3.** Pull the listing row + history:
@@ -232,7 +232,7 @@ LIMIT 8;
 
 If less than 3 comps available with tight criteria, widen the search progressively (drop the sub-plat filter, then the bedroom filter).
 
-**Step 7.** Brand-voice-validate any copy this skill generates (page H1, subhead, school-block text, community context block). The MLS PublicRemarks are displayed verbatim — those are the listing brokerage's content, not ours.
+**Step 7.** Brand-voice-validate any copy this skill generates (page H1, subhead, school-block text, community context block). The MLS PublicRemarks are displayed verbatim --EMDASH-- those are the listing brokerage's content, not ours.
 
 **Step 8.** Scaffold the page at `app/lp/listings/<mls_slug>/page.tsx`.
 
@@ -243,19 +243,19 @@ ISR config: `export const revalidate = 3600` (1 hour).
 Page structure:
 
 1. **Topbar** (inherited from layout)
-2. **Sticky scroll CTA** — "Schedule a showing" (routes per mode)
-3. **Breadcrumb** — Home › Bend › <Parent Community> › <Sub-Plat> › <Address>
-4. **Hero** — full-width gallery (12-20 photos from listings.PhotoURL + AdditionalPhotoURLs), photo nav arrows + keyboard, modal lightbox on click. Eyebrow shows status pill (Active / Pending / Closed). H1 shows the address. Subhead shows the price + key stats (beds/baths/sqft/lot).
-5. **IDX attribution strip** — "Listed by <ListOfficeName> · <ListingAgentFullName>" on a thin navy strip. NON-NEGOTIABLE. Renders even for our own listings (where it says "Listed by Ryan Realty · Matt Ryan").
-6. **Property fact table** — full MLS facts in a clean two-column layout
-7. **Price + history strip** — current price + status pill + original list + days on market. If price has changed: a small "Price history" expandable with `listing_history` rows.
-8. **MLS Public Remarks** — verbatim, no edits, attribution footer ("Description provided by listing brokerage")
-9. **Map + drive times** — single point pin + drive-time anchors to community amenities (inherited from parent community page if exists)
-10. **Schools** — Bend-La Pine school assignment with GreatSchools links
-11. **Comp set** — table of 6-8 recent closings (from Step 6)
-12. **Parent community context block** — compact sidebar with the parent community's master HOA, course recognition, sub-neighborhood character; "See all <Community> homes" back-link
-13. **CTA section** — "Schedule a tour" form (routes to listing agent OR buyer's agent per mode)
-14. **Methodology footer** — data sources, refresh cadence ("ISR 1h"), MLS attribution
+2. **Sticky scroll CTA** --EMDASH-- "Schedule a showing" (routes per mode)
+3. **Breadcrumb** --EMDASH-- Home › Bend › <Parent Community> › <Sub-Plat> › <Address>
+4. **Hero** --EMDASH-- full-width gallery (12-20 photos from listings.PhotoURL + AdditionalPhotoURLs), photo nav arrows + keyboard, modal lightbox on click. Eyebrow shows status pill (Active / Pending / Closed). H1 shows the address. Subhead shows the price + key stats (beds/baths/sqft/lot).
+5. **IDX attribution strip** --EMDASH-- "Listed by <ListOfficeName> · <ListingAgentFullName>" on a thin navy strip. NON-NEGOTIABLE. Renders even for our own listings (where it says "Listed by Ryan Realty · Matt Ryan").
+6. **Property fact table** --EMDASH-- full MLS facts in a clean two-column layout
+7. **Price + history strip** --EMDASH-- current price + status pill + original list + days on market. If price has changed: a small "Price history" expandable with `listing_history` rows.
+8. **MLS Public Remarks** --EMDASH-- verbatim, no edits, attribution footer ("Description provided by listing brokerage")
+9. **Map + drive times** --EMDASH-- single point pin + drive-time anchors to community amenities (inherited from parent community page if exists)
+10. **Schools** --EMDASH-- Bend-La Pine school assignment with GreatSchools links
+11. **Comp set** --EMDASH-- table of 6-8 recent closings (from Step 6)
+12. **Parent community context block** --EMDASH-- compact sidebar with the parent community's master HOA, course recognition, sub-neighborhood character; "See all <Community> homes" back-link
+13. **CTA section** --EMDASH-- "Schedule a tour" form (routes to listing agent OR buyer's agent per mode)
+14. **Methodology footer** --EMDASH-- data sources, refresh cadence ("ISR 1h"), MLS attribution
 15. **JSON-LD** `RealEstateListing` schema with full property facts; `RealEstateAgent` for the listing agent (our agent OR the OPM listing agent per IDX rules)
 
 Design system: Web register (shadcn/ui only). Navy on cream. Photo gallery uses shadcn `<Dialog>` for the lightbox.
@@ -411,7 +411,7 @@ Same as `site-community-page`: pending → in_production → ready → approved 
 | Non-SFR | PropertyType != 'A' | Kill |
 | Route already exists (create) | File found | Kill; suggest update |
 | Photo URL dead | PhotoURL returns 404 | Use placeholder gray card; note in PR |
-| IDX attribution data missing | ListAgentFullName or ListOfficeName null | Kill — cannot ship without attribution |
+| IDX attribution data missing | ListAgentFullName or ListOfficeName null | Kill --EMDASH-- cannot ship without attribution |
 | Comp set empty | < 1 comp after widening | Render with "No recent comps available" note |
 | Voice fail | banned word in generated copy | Kill after 2 iterations |
 | TypeScript fail | type error | Kill after 2 iterations |
@@ -424,29 +424,29 @@ Same as `site-community-page`: pending → in_production → ready → approved 
 **Required reading:**
 
 - `CLAUDE.md` §0, §0.5
-- `marketing_brain_skills/research/platform-bible.md` §24 — IDX + fair housing + NAR compliance (NON-NEGOTIABLE)
+- `marketing_brain_skills/research/platform-bible.md` §24 --EMDASH-- IDX + fair housing + NAR compliance (NON-NEGOTIABLE)
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `data/resort-communities.json`
-- `docs/DATABASE_FOR_AI_AGENTS.md` — listings table columns
+- `docs/DATABASE_FOR_AI_AGENTS.md` --EMDASH-- listings table columns
 
 **Sibling producers:**
 
-- `site-community-page` — parent of this skill's output (Tier 2 → Tier 4)
-- `site-subdivision-page` — between this skill and the community page
-- `site-property-landing` — older sibling, for OUR listings only (this skill supersedes it; site-property-landing handles single-page-only conversion-optimized layouts for active OUR listings only; this skill handles SEO-authority layouts for ALL listings)
+- `site-community-page` --EMDASH-- parent of this skill's output (Tier 2 → Tier 4)
+- `site-subdivision-page` --EMDASH-- between this skill and the community page
+- `site-property-landing` --EMDASH-- older sibling, for OUR listings only (this skill supersedes it; site-property-landing handles single-page-only conversion-optimized layouts for active OUR listings only; this skill handles SEO-authority layouts for ALL listings)
 
-**Related content producers (one tier up — content created for the same listing):**
+**Related content producers (one tier up --EMDASH-- content created for the same listing):**
 
-- `listing-tour-video` — the video that can embed on the listing page
-- `listing_reveal` — short reel that can embed
-- `flyer-design` — for the flyer download CTA
-- `site-matterport-embed` — for the 3D tour embed
-- `virtual_staging` — if the listing has empty rooms
+- `listing-tour-video` --EMDASH-- the video that can embed on the listing page
+- `listing_reveal` --EMDASH-- short reel that can embed
+- `flyer-design` --EMDASH-- for the flyer download CTA
+- `site-matterport-embed` --EMDASH-- for the 3D tour embed
+- `virtual_staging` --EMDASH-- if the listing has empty rooms
 
 **Registry entry:**
 
-- `marketing_brain_skills/producers/REGISTRY.md` — Section D, row `site-listing-page`.
+- `marketing_brain_skills/producers/REGISTRY.md` --EMDASH-- Section D, row `site-listing-page`.
 
 ---
 
@@ -468,8 +468,11 @@ Same as `site-community-page`: pending → in_production → ready → approved 
 
 - `CLAUDE.md §0 (Data Accuracy)`
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
-- `marketing_brain_skills/research/platform-bible.md` §24 (IDX/fair housing/NAR compliance)
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md` §24 (IDX/fair housing/NAR compliance)
+- `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
 - `data/resort-communities.json`
 - `docs/DATABASE_FOR_AI_AGENTS.md`

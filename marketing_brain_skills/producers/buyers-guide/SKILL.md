@@ -49,7 +49,7 @@ dense and low-pressure: not a brochure, not a sales pitch. Real numbers,
 real diligence items, real photo references.
 
 The canonical version of each guide is a public web page at
-`/lp/<community>/buyers-guide/` — this serves SEO + AEO (Google + LLM
+`/lp/<community>/buyers-guide/`. This serves SEO + AEO (Google + LLM
 citations: "what's in the Tetherow buyer's guide?"). The PDF is generated
 from that same web page via Puppeteer so the two never drift. The PDF is
 what gets emailed to a subscriber who fills out the "Send the guide" form
@@ -97,7 +97,7 @@ attachment via Resend.
 - Per-listing one-pager PDFs (use `site-listing-page` or `listing-tour-video`).
 - Generic email campaigns (use `ops-email-send`).
 - The community LP itself (use `site-community-page`).
-- Editorial content authoring for the resort itself — facts come from
+- Editorial content authoring for the resort itself. Facts come from
   `data/resort-communities.json`. This skill does NOT make up facts; if a
   field is missing, the section is omitted with a placeholder.
 
@@ -162,9 +162,9 @@ interface BuyersGuideActionRow {
 - `CLAUDE.md` §0, §0.5, brand voice
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
-- `data/resort-communities.json` — the row for `community_slug`
+- `data/resort-communities.json`. The row for `community_slug`
 - `public/lp/<slug>/index.html` (or the dynamic version, if `site-community-page`
-  has already ported it) — the buyer's guide reuses the same content
+  has already ported it). The buyer's guide reuses the same content
   scaffolding as the LP, just deeper
 
 **Step 3.** Confirm the web route doesn't exist:
@@ -199,22 +199,22 @@ ISR config: `export const revalidate = 21600` (6h, same as the LP).
 
 Page structure (14-20 page equivalent in PDF):
 
-1. **Cover** — Title, community name, "Buyer's Guide", date stamp ("Generated <Month Year>"), Ryan Realty white-horizontal-logo footer.
-2. **Letter from the broker** — One-page personal intro from Matt, with the canonical headshot.
-3. **What is <Community>** — The same overview paragraphs from the LP About section, expanded slightly.
-4. **The location** — Drive times + the Google Static Map + an additional schools-and-shopping-distance block.
-5. **The HOA reality** — Full table from `resort-communities.json` + the master fee + the disclosure-doc list.
-6. **The course / amenity profile** — One full page on the signature golf course or anchor amenity.
-7. **Sub-neighborhoods, by character** — One page per sub-neighborhood, with the typical lot size, common architectural pattern, builder roster, the "feels like" sentence.
-8. **The membership question** — Two pages on club membership: golf vs sport vs social, costs not public, the transfer-on-resale issue (the #1 buyer mistake), the right diligence questions to ask the membership office.
-9. **What each price tier actually buys** — 2-3 pages bucketed by tier ($1M-$1.5M, $1.5M-$2.5M, $2.5M-$4M, $4M+). For each tier: typical sqft, typical lot, typical sub-neighborhood, typical HOA bracket, typical age of build, typical views.
-10. **Recent closings** — A page with the verified close-history table (from Step 4 above).
-11. **Schools** — Bend-La Pine assignment, neighborhood school proximity, summer programs.
-12. **The builder roster** — From the LP, with the addition of "questions to ask before signing a build contract."
-13. **The financing reality** — Jumbo loan thresholds, typical down-payment expectations, the LO referral list.
-14. **What buyers say afterward** — 3-4 testimonial blocks (sourced from existing testimonial JSON or omitted).
-15. **What happens next** — How to schedule a showing, how to set custom alerts, how to read a Tetherow comp set, the next 30 days if you decide to write an offer.
-16. **Disclaimers + methodology** — Full source citations, fair-housing notice, broker license number, address, contact.
+1. **Cover.** Title, community name, "Buyer's Guide", date stamp ("Generated <Month Year>"), Ryan Realty white-horizontal-logo footer.
+2. **Letter from the broker.** One-page personal intro from Matt, with the canonical headshot.
+3. **What is <Community>.** The same overview paragraphs from the LP About section, expanded slightly.
+4. **The location.** Drive times + the Google Static Map + an additional schools-and-shopping-distance block.
+5. **The HOA reality.** Full table from `resort-communities.json` + the master fee + the disclosure-doc list.
+6. **The course / amenity profile.** One full page on the signature golf course or anchor amenity.
+7. **Sub-neighborhoods, by character.** One page per sub-neighborhood, with the typical lot size, common architectural pattern, builder roster, the "feels like" sentence.
+8. **The membership question.** Two pages on club membership: golf vs sport vs social, costs not public, the transfer-on-resale issue (the #1 buyer mistake), the right diligence questions to ask the membership office.
+9. **What each price tier actually buys.** 2-3 pages bucketed by tier ($1M-$1.5M, $1.5M-$2.5M, $2.5M-$4M, $4M+). For each tier: typical sqft, typical lot, typical sub-neighborhood, typical HOA bracket, typical age of build, typical views.
+10. **Recent closings.** A page with the verified close-history table (from Step 4 above).
+11. **Schools.** Bend-La Pine assignment, neighborhood school proximity, summer programs.
+12. **The builder roster.** From the LP, with the addition of "questions to ask before signing a build contract."
+13. **The financing reality.** Jumbo loan thresholds, typical down-payment expectations, the LO referral list.
+14. **What buyers say afterward.** 3-4 testimonial blocks (sourced from existing testimonial JSON or omitted).
+15. **What happens next.** How to schedule a showing, how to set custom alerts, how to read a Tetherow comp set, the next 30 days if you decide to write an offer.
+16. **Disclaimers + methodology.** Full source citations, fair-housing notice, broker license number, address, contact.
 
 Each "page" is a server component that renders within a `<section>` wrapper.
 The PDF renderer (Step 7) treats CSS `@page` breaks as page boundaries.
@@ -308,7 +308,7 @@ await browser.close()
 **Step 4.** Author the Resend email template at
 `lib/buyers-guide/email-template.tsx` (React Email). The cover email is short:
 - Personalized greeting if name provided
-- One paragraph: "Here's the Tetherow buyer's guide as a PDF. The data inside was current as of <date>. If you have questions, reply to this email — it lands in our inbox, not a queue."
+- One paragraph: "Here's the Tetherow buyer's guide as a PDF. The data inside was current as of <date>. If you have questions, reply to this email. It lands in our inbox, not a queue."
 - Sign-off: Matt's signature block
 - Footer with unsubscribe link
 
@@ -360,7 +360,7 @@ await fubCreatePerson({
 
 **Step 5.** Log to `marketing_brain_actions` as executed.
 
-**Step 6.** No surface to Matt — runtime ops doesn't need approval.
+**Step 6.** No surface to Matt. Runtime ops doesn't need approval.
 
 ---
 
@@ -489,21 +489,21 @@ pending -> in_production -> executed (email sent successfully)
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
 - `data/resort-communities.json`
-- `public/lp/tetherow/index.html` — content reference for the parallel LP
-- `marketing_brain_skills/research/asset-library-map.md` — hero + sub-neighborhood photo paths
+- `public/lp/tetherow/index.html`. Content reference for the parallel LP
+- `marketing_brain_skills/research/asset-library-map.md`. Hero + sub-neighborhood photo paths
 
 **Producers this integrates with:**
 
-- `marketing_brain_skills/producers/site-community-page/SKILL.md` — renders the "Send the guide" form that POSTs to this producer's /request endpoint
-- `marketing_brain_skills/producers/site-subdivision-page/SKILL.md` (pending) — same at the subdivision tier
-- `marketing_brain_skills/producers/site-city-page/SKILL.md` (pending) — same at the city tier
-- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md` — FUB lead pattern
-- `marketing_brain_skills/producers/ops-email-send/SKILL.md` — Resend send pattern
-- `marketing_brain_skills/producers/listing-alerts/SKILL.md` — sibling backend producer (same lead-routing pattern)
+- `marketing_brain_skills/producers/site-community-page/SKILL.md`. Renders the "Send the guide" form that POSTs to this producer's /request endpoint
+- `marketing_brain_skills/producers/site-subdivision-page/SKILL.md` (pending). Same at the subdivision tier
+- `marketing_brain_skills/producers/site-city-page/SKILL.md` (pending). Same at the city tier
+- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md`. FUB lead pattern
+- `marketing_brain_skills/producers/ops-email-send/SKILL.md`. Resend send pattern
+- `marketing_brain_skills/producers/listing-alerts/SKILL.md`. Sibling backend producer (same lead-routing pattern)
 
 **Registry entry:**
 
-- `marketing_brain_skills/producers/REGISTRY.md` — Section A (content producers), row `buyers-guide`. Note: although this is a content producer in spirit, it ALSO owns the ops:buyers_guide_send runtime, which is unusual. Registry listing notes this dual nature.
+- `marketing_brain_skills/producers/REGISTRY.md`. Section A (content producers), row `buyers-guide`. Note: although this is a content producer in spirit, it ALSO owns the ops:buyers_guide_send runtime, which is unusual. Registry listing notes this dual nature.
 
 ---
 
@@ -515,7 +515,7 @@ pending -> in_production -> executed (email sent successfully)
 
 3. **Print-on-demand.** Some buyers want a physical copy mailed. Add an `/api/buyers-guide/print-request` endpoint that hands the PDF to Lulu or Mixam for direct mail.
 
-4. **Annual editions.** Add a `pdf_year` field and archive previous editions. "Tetherow 2025 Buyer's Guide" vs "2026 Buyer's Guide" — useful for historical reference and shows the broker doing the work year over year.
+4. **Annual editions.** Add a `pdf_year` field and archive previous editions. "Tetherow 2025 Buyer's Guide" vs "2026 Buyer's Guide." Useful for historical reference and shows the broker doing the work year over year.
 
 5. **Auto-refresh when a section changes upstream.** When `resort-communities.json` is edited for a particular slug, trigger `content:buyers_guide_update` automatically. Today this requires manual triggering.
 
@@ -527,7 +527,10 @@ pending -> in_production -> executed (email sent successfully)
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
 - `data/resort-communities.json`
 
 ## Content-producer additional references

@@ -14,7 +14,7 @@ description: >
   with a city government, taxing authority, school district mention, and
   a city-wide MLS dataset, not a master-planned resort community. The
   skill outputs a Next.js dynamic route at app/lp/[city]/page.tsx with
-  ISR 6h. The page is the broadest of the four tiers — it lists every
+  ISR 6h. The page is the broadest of the four tiers --EMDASH-- it lists every
   resort community + neighborhood inside the city as a tile grid, shows
   city-wide market stats, calls out major neighborhoods, and serves as
   the top-of-funnel SEO surface for "homes for sale in Bend" type
@@ -93,7 +93,7 @@ The city page links to those, doesn't substitute for them.
 - Per-listing pages (use `site-listing-page`)
 - Editing the city's static content in `bend-market-bible.md` (manual research producer)
 - City government info pages (we link to the city's official site)
-- Tourist/visitor info content (out of scope — this is a real-estate LP)
+- Tourist/visitor info content (out of scope --EMDASH-- this is a real-estate LP)
 
 ---
 
@@ -161,8 +161,8 @@ interface SiteCityPageActionRow {
 - `CLAUDE.md` §0, §0.5, design system, brand voice
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/research/bend-market-bible.md` (especially for Bend; for other cities, look for sister bibles or surface "research needed" to Matt)
-- `data/resort-communities.json` — read every community where `city == payload.city_slug`
-- `marketing_brain_skills/research/asset-library-map.md` — for hero image (the canonical Old Mill District hero is the default for Bend)
+- `data/resort-communities.json` --EMDASH-- read every community where `city == payload.city_slug`
+- `marketing_brain_skills/research/asset-library-map.md` --EMDASH-- for hero image (the canonical Old Mill District hero is the default for Bend)
 
 **Step 3.** Verify the city has a boundary polygon:
 
@@ -278,18 +278,18 @@ Page structure (rich, similar to community page):
 1. **Topbar** (inherited from layout)
 2. **Sticky scroll CTA** ("Browse Bend homes" or "What's my Bend home worth?")
 3. **Hero** with the canonical city hero image (Old Mill for Bend; per-city defaults in resort-communities.json or asset-library-map.md). Eyebrow "<City>, Oregon". H1 with dynamic-month-year. Subhead with the headline figure. Four-stat bar.
-4. **About <City>** — rich SEO + AEO overview. 5-7 paragraphs covering: what makes the city distinct, geography, climate (honest disclosure on wildfire smoke + winter), economy, population, schools, the relocation pitch. Right column: sticky "City at a glance" panel.
-5. **The market right now** — full KPI grid: active, pending, median, DOM, S/L, $/sqft, YoY momentum, price-tier distribution
-6. **Resort communities inside <City>** — tile grid linking to every `/lp/<community>/` page. Photo, name, price tier, sold count badge per community.
-7. **Neighborhoods at a glance** — matrix showing every named neighborhood (NW Crossing, Old Bend, etc.) with median + price-tier badge. Each links to `/lp/neighborhoods/<slug>/` if built.
-8. **Map** — full-city map with all major communities pinned + neighborhood centroids
-9. **The relocation block** — "Thinking about moving to <City>?" — cost of living, schools (Bend-La Pine assignment + GreatSchools), employer base (St Charles, Deschutes Brewery, Mt Bachelor, BendBroadband), climate honest disclosure, taxes (no sales tax in OR), wildfire risk window
-10. **City vs peer cities comparison** — table of Bend vs Redmond vs Sisters vs La Pine
+4. **About <City>** --EMDASH-- rich SEO + AEO overview. 5-7 paragraphs covering: what makes the city distinct, geography, climate (honest disclosure on wildfire smoke + winter), economy, population, schools, the relocation pitch. Right column: sticky "City at a glance" panel.
+5. **The market right now** --EMDASH-- full KPI grid: active, pending, median, DOM, S/L, $/sqft, YoY momentum, price-tier distribution
+6. **Resort communities inside <City>** --EMDASH-- tile grid linking to every `/lp/<community>/` page. Photo, name, price tier, sold count badge per community.
+7. **Neighborhoods at a glance** --EMDASH-- matrix showing every named neighborhood (NW Crossing, Old Bend, etc.) with median + price-tier badge. Each links to `/lp/neighborhoods/<slug>/` if built.
+8. **Map** --EMDASH-- full-city map with all major communities pinned + neighborhood centroids
+9. **The relocation block** --EMDASH-- "Thinking about moving to <City>?" --EMDASH-- cost of living, schools (Bend-La Pine assignment + GreatSchools), employer base (St Charles, Deschutes Brewery, Mt Bachelor, BendBroadband), climate honest disclosure, taxes (no sales tax in OR), wildfire risk window
+10. **City vs peer cities comparison** --EMDASH-- table of Bend vs Redmond vs Sisters vs La Pine
 11. **Active inventory** featured grid (12 cards) with showing CTAs
 12. **Schools** section with the Bend-La Pine district overview + per-area assignment table
-13. **What's happening in <City>** — major dev news, market events, climate notes (sourced from bend-market-bible.md)
-14. **Pipeline** — major construction projects, zoning changes, master-plan amendments
-15. **Buyer track** (three cards: showing, alerts, guide) — same pattern as community pages
+13. **What's happening in <City>** --EMDASH-- major dev news, market events, climate notes (sourced from bend-market-bible.md)
+14. **Pipeline** --EMDASH-- major construction projects, zoning changes, master-plan amendments
+15. **Buyer track** (three cards: showing, alerts, guide) --EMDASH-- same pattern as community pages
 16. **CMA seller form** (FUB tagged `city:bend`)
 17. **Methodology** footer
 18. **Footer** with the resort + community pages list (linking to all 14+)
@@ -411,7 +411,7 @@ Same as community-page: pending → in_production → ready → approved → exe
 
 **Sibling producers:**
 
-- `site-community-page` (Tier 2 — child of this skill's output)
+- `site-community-page` (Tier 2 --EMDASH-- child of this skill's output)
 - `site-neighborhood-page` (Tier 2 sibling for non-resort neighborhoods)
 - `site-subdivision-page` (Tier 3)
 - `site-listing-page` (Tier 4)
@@ -424,7 +424,7 @@ Same as community-page: pending → in_production → ready → approved → exe
 
 **Registry entry:**
 
-- `marketing_brain_skills/producers/REGISTRY.md` — Section D, row `site-city-page`.
+- `marketing_brain_skills/producers/REGISTRY.md` --EMDASH-- Section D, row `site-city-page`.
 
 ---
 
@@ -448,6 +448,9 @@ Same as community-page: pending → in_production → ready → approved → exe
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
+- `marketing_brain_skills/research/asset-library-map.md`
 - `marketing_brain_skills/research/bend-market-bible.md` (for Bend)
 - `data/resort-communities.json`
 - `marketing_brain_skills/producers/site-community-page/SKILL.md` (Tier 2 child producer)

@@ -172,7 +172,7 @@ interface SiteCommunityPageActionRow {
 
 ## 4. The recipe
 
-**Step 1 — Read the action row and claim it.**
+**Step 1 --EMDASH-- Read the action row and claim it.**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -182,24 +182,24 @@ WHERE id = '<id>' AND status = 'pending';
 
 If the UPDATE affected zero rows, halt silently (another producer beat us to it).
 
-**Step 2 — Load mandatory references.**
+**Step 2 --EMDASH-- Load mandatory references.**
 
 In order:
 
-1. `CLAUDE.md` §0 — Data Accuracy mandate (every figure traces to live Supabase)
-2. `CLAUDE.md` §0.5 — Draft-First, Commit-Last (open PR, never push to main directly)
-3. `CLAUDE.md` "Design System Rules: MANDATORY" — shadcn/ui only
-4. `CLAUDE.md` "Design System v2: Heritage + Web Registers" — Web register
-5. `design_system/ryan-realty/SKILL.md` — color tokens, type families, shadow ladder, radii
-6. `design_system/ryan-realty/colors_and_type.css` — CSS variable definitions
-7. `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice enforcement (the hard fail list)
-8. `marketing_brain_skills/research/asset-library-map.md` — hero asset paths
-9. `data/resort-communities.json` — find the row for `payload.community_slug`
-10. `public/lp/tetherow/index.html` — visual + content reference (2,495 lines, the gold-standard exemplar)
-11. `app/sitemap.ts` — sitemap structure to extend
+1. `CLAUDE.md` §0 --EMDASH-- Data Accuracy mandate (every figure traces to live Supabase)
+2. `CLAUDE.md` §0.5 --EMDASH-- Draft-First, Commit-Last (open PR, never push to main directly)
+3. `CLAUDE.md` "Design System Rules: MANDATORY" --EMDASH-- shadcn/ui only
+4. `CLAUDE.md` "Design System v2: Heritage + Web Registers" --EMDASH-- Web register
+5. `design_system/ryan-realty/SKILL.md` --EMDASH-- color tokens, type families, shadow ladder, radii
+6. `design_system/ryan-realty/colors_and_type.css` --EMDASH-- CSS variable definitions
+7. `marketing_brain_skills/brand-voice/voice_guidelines.md` --EMDASH-- voice enforcement (the hard fail list)
+8. `marketing_brain_skills/research/asset-library-map.md` --EMDASH-- hero asset paths
+9. `data/resort-communities.json` --EMDASH-- find the row for `payload.community_slug`
+10. `public/lp/tetherow/index.html` --EMDASH-- visual + content reference (2,495 lines, the gold-standard exemplar)
+11. `app/sitemap.ts` --EMDASH-- sitemap structure to extend
 12. `app/lp/tetherow/page.tsx` IF IT EXISTS (the Tetherow port is the architectural exemplar after this skill executes once)
 
-**Step 3 — Route check.**
+**Step 3 --EMDASH-- Route check.**
 
 For `create`: confirm `app/lp/<slug>/page.tsx` does NOT exist. If it does,
 `status='killed'` with response:
@@ -212,7 +212,7 @@ Use site:community_page_update to refresh sections.
 For `update`: confirm the file DOES exist. If missing, `status='killed'` and
 suggest `site:community_page_create`.
 
-**Step 4 — Resolve community config.**
+**Step 4 --EMDASH-- Resolve community config.**
 
 Read the matching row in `data/resort-communities.json`. Required fields:
 
@@ -297,7 +297,7 @@ Add the row first, then re-run this action.
 
 Don't fabricate community facts.
 
-**Step 5 — Pull live market data.**
+**Step 5 --EMDASH-- Pull live market data.**
 
 Always re-pull. Never use values cached in the action row payload. Per
 CLAUDE.md §0, every figure on the page traces to a live query in this session.
@@ -386,7 +386,7 @@ f. **Reconciliation gate.** If any figure pulled here differs from
 `resort-communities.json` by more than 5%, halt and surface to Matt with the
 delta. Don't auto-update the JSON.
 
-**Step 6 — Generate map asset.**
+**Step 6 --EMDASH-- Generate map asset.**
 
 ```bash
 MAP_URL="https://maps.googleapis.com/maps/api/staticmap?\
@@ -409,7 +409,7 @@ If the master plan straddles a wide range (e.g. Sunriver at 3,300 acres),
 pull the bounding box from `boundaries` and compute the right zoom from the
 size of the box, not the centroid.
 
-**Step 7 — Voice-validate all generated copy.**
+**Step 7 --EMDASH-- Voice-validate all generated copy.**
 
 Before writing the route file, run `payload.hero_headline`,
 `payload.meta_description`, and every paragraph that this skill generates
@@ -422,7 +422,7 @@ hidden gem, truly, spacious, cozy, luxurious, updated throughout, turnkey,
 immaculate, captivating, exquisite, delve, leverage, tapestry, navigate,
 robust, seamless, comprehensive, elevate, unlock, holistic, dynamic, vibrant,
 bustling, eclectic, curated, bespoke, foster, premier, approximately,
-polygon (jargon — homeowners do not care), don't miss, act now, won't last.
+polygon (jargon --EMDASH-- homeowners do not care), don't miss, act now, won't last.
 
 Banned punctuation in body copy: em-dash, en-dash (except numeric ranges
 where it's swapped to "to"), semicolon, exclamation mark, dramatic colon.
@@ -430,7 +430,7 @@ where it's swapped to "to"), semicolon, exclamation mark, dramatic colon.
 If a violation persists after 2 auto-fix iterations, kill the action with the
 specific banned token and rule cited.
 
-**Step 8 — Scaffold the route file.**
+**Step 8 --EMDASH-- Scaffold the route file.**
 
 For `create`, write `app/lp/<slug>/page.tsx`. Page structure mirrors the
 Tetherow exemplar (`public/lp/tetherow/index.html`) but as TSX with server
@@ -479,7 +479,7 @@ Critical sections of the page:
 19. **Sub-neighborhoods** horizontal-scroll carousel (from
     `sub_neighborhoods` in config). Each card href links to
     `/lp/<community>/<sub_slug>/` (subdivision pages produced by
-    `site-subdivision-page` — those are likely placeholders at create time).
+    `site-subdivision-page` --EMDASH-- those are likely placeholders at create time).
 20. **Builder roster** (from `builders` in config).
 21. **Pipeline** (from a `pipeline` array in config if present, else omitted).
 22. **Comparison row** (live from the comparison query).
@@ -498,8 +498,8 @@ Design system rules (Web register):
 
 - `bg-background` for page background (cream `#faf8f4`)
 - `bg-primary text-primary-foreground` for CTAs (navy `#102742`)
-- All containers use `<Card>` from `@/components/ui/card` — no raw divs
-- `font-display` class (Playfair Display) for hero H1, section H2s — sentence case body, Title Case only the hero
+- All containers use `<Card>` from `@/components/ui/card` --EMDASH-- no raw divs
+- `font-display` class (Playfair Display) for hero H1, section H2s --EMDASH-- sentence case body, Title Case only the hero
 - Geist for everything else
 - Radii: `rounded-xl` (14px) for cards, `rounded-lg` (10px) for buttons
 - No gold. No off-brand hex. No custom CSS classes outside shadcn/ui token system.
@@ -512,7 +512,7 @@ For `update`: read the existing route file, identify which sections live in
 `payload.sections_to_update`, replace only those sections, preserve all others
 verbatim. Re-run live queries only for the sections being updated.
 
-**Step 9 — Update sitemap.**
+**Step 9 --EMDASH-- Update sitemap.**
 
 For creates only:
 
@@ -525,7 +525,7 @@ For creates only:
 }
 ```
 
-**Step 10 — TypeScript compile check.**
+**Step 10 --EMDASH-- TypeScript compile check.**
 
 ```bash
 cd /Users/matthewryan/RyanRealty && npx tsc --noEmit 2>&1
@@ -534,7 +534,7 @@ cd /Users/matthewryan/RyanRealty && npx tsc --noEmit 2>&1
 Zero errors required. If errors, fix within 2 iterations. If unfixable, kill
 with the tsc output in the response.
 
-**Step 11 — Branch, commit, push, open PR.**
+**Step 11 --EMDASH-- Branch, commit, push, open PR.**
 
 Branch: `site-community/<slug>-<first-8-of-action-id>`
 
@@ -557,10 +557,10 @@ Static config sourced from data/resort-communities.json.
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 git push origin site-community/<slug>-<prefix>
 gh pr create --title "site-community-page(<slug>): <create|update> /lp/<slug>/" \
-  --body "<PR body — see Output format section>"
+  --body "<PR body --EMDASH-- see Output format section>"
 ```
 
-**Step 12 — Write citations.json.**
+**Step 12 --EMDASH-- Write citations.json.**
 
 ```json
 {
@@ -616,7 +616,7 @@ gh pr create --title "site-community-page(<slug>): <create|update> /lp/<slug>/" 
 
 Store at `out/site-community/<slug>/citations.json`.
 
-**Step 13 — Update action row to `ready`.**
+**Step 13 --EMDASH-- Update action row to `ready`.**
 
 ```sql
 UPDATE marketing_brain_actions
@@ -639,7 +639,7 @@ SET status = 'ready',
 WHERE id = '<id>';
 ```
 
-**Step 14 — Surface draft to Matt.**
+**Step 14 --EMDASH-- Surface draft to Matt.**
 
 Use the format in §6.
 
@@ -682,9 +682,9 @@ out/site-community/<slug>/citations.json          (always)
 
 ### Files
 
-- `app/lp/<slug>/page.tsx` — <new | updated sections: X, Y, Z>
-- `app/sitemap.ts` — <added entry | unchanged>
-- `public/lp/<slug>/img/<slug>-location-map.png` — <new | refreshed>
+- `app/lp/<slug>/page.tsx` --EMDASH-- <new | updated sections: X, Y, Z>
+- `app/sitemap.ts` --EMDASH-- <added entry | unchanged>
+- `public/lp/<slug>/img/<slug>-location-map.png` --EMDASH-- <new | refreshed>
 
 ### Live data sources (ISR revalidate = 6h)
 
@@ -810,9 +810,9 @@ measured
 | Route already exists (create) | `app/lp/<slug>/page.tsx` found on disk | Kill; suggest `site:community_page_update` |
 | Route missing (update) | File not found | Kill; suggest `site:community_page_create` |
 | Slug not in resort-communities.json | No matching row | Kill; surface to Matt with instruction to add the row first |
-| Boundaries query returns 0 rows | Community has no registered polygon | Kill; surface to Matt with the data accuracy rule (GIS authoritative only — no fabricated coordinates) |
+| Boundaries query returns 0 rows | Community has no registered polygon | Kill; surface to Matt with the data accuracy rule (GIS authoritative only --EMDASH-- no fabricated coordinates) |
 | Data reconciliation delta > 5% | Figure in resort-communities.json differs from live cache by more than 5% | Kill; surface specific figure, cache value, JSON value, delta % |
-| Insufficient closed sales for comparison row | Peer community has < 3 closings in window | Render row with peer's column showing "—" and footnote |
+| Insufficient closed sales for comparison row | Peer community has < 3 closings in window | Render row with peer's column showing "--EMDASH--" and footnote |
 | Voice fail after 2 iterations | Banned word persists | Kill; surface specific violation and rule |
 | TypeScript error after 2 iterations | Persistent type error | Kill; surface tsc output |
 | Google Static Maps quota exceeded | curl returns 403 / 429 | Kill; surface to Matt with the key billing dashboard URL |
@@ -826,39 +826,39 @@ measured
 
 **Required reading before executing:**
 
-- `CLAUDE.md` §0 — Data Accuracy
-- `CLAUDE.md` §0.5 — Draft-First, Commit-Last
-- `CLAUDE.md` "Design System Rules: MANDATORY" — shadcn/ui only
+- `CLAUDE.md` §0 --EMDASH-- Data Accuracy
+- `CLAUDE.md` §0.5 --EMDASH-- Draft-First, Commit-Last
+- `CLAUDE.md` "Design System Rules: MANDATORY" --EMDASH-- shadcn/ui only
 - `CLAUDE.md` "Design System v2: Heritage + Web Registers"
-- `design_system/ryan-realty/SKILL.md` — color tokens, type families, radii, shadows
-- `design_system/ryan-realty/colors_and_type.css` — CSS variable definitions
-- `marketing_brain_skills/brand-voice/voice_guidelines.md` — voice enforcement
-- `automation_skills/content_engine/SKILL.md` — content routing bus
-- `social_media_skills/platform-best-practices/SKILL.md` — 2026 platform rule layer for the on-page CTAs
-- `marketing_brain_skills/research/asset-library-map.md` — hero asset paths
-- `marketing_brain_skills/research/bend-market-bible.md` — community fact references where the data is sparse in resort-communities.json
-- `data/resort-communities.json` — the canonical community config
-- `public/lp/tetherow/index.html` — the visual + content exemplar (gold standard)
-- `app/sitemap.ts` — sitemap structure to extend
-- `app/actions/lead-capture.ts` — FUB lead routing (CMA + buyer forms)
-- `marketing_brain_skills/research/platform-bible.md` §24 — fair housing + real estate compliance
+- `design_system/ryan-realty/SKILL.md` --EMDASH-- color tokens, type families, radii, shadows
+- `design_system/ryan-realty/colors_and_type.css` --EMDASH-- CSS variable definitions
+- `marketing_brain_skills/brand-voice/voice_guidelines.md` --EMDASH-- voice enforcement
+- `automation_skills/content_engine/SKILL.md` --EMDASH-- content routing bus
+- `social_media_skills/platform-best-practices/SKILL.md` --EMDASH-- 2026 platform rule layer for the on-page CTAs
+- `marketing_brain_skills/research/asset-library-map.md` --EMDASH-- hero asset paths
+- `marketing_brain_skills/research/bend-market-bible.md` --EMDASH-- community fact references where the data is sparse in resort-communities.json
+- `data/resort-communities.json` --EMDASH-- the canonical community config
+- `public/lp/tetherow/index.html` --EMDASH-- the visual + content exemplar (gold standard)
+- `app/sitemap.ts` --EMDASH-- sitemap structure to extend
+- `app/actions/lead-capture.ts` --EMDASH-- FUB lead routing (CMA + buyer forms)
+- `marketing_brain_skills/research/platform-bible.md` §24 --EMDASH-- fair housing + real estate compliance
 
 **Sibling producers in the same tier system:**
 
-- `marketing_brain_skills/producers/site-neighborhood-page/SKILL.md` — Tier 2 producer for in-city neighborhoods that are NOT master-planned resorts (NW Crossing, Old Bend, etc.). Use that instead of this skill for those.
-- `marketing_brain_skills/producers/site-subdivision-page/SKILL.md` — Tier 3 (lives one level deeper inside a community page; the Heath exemplar inside Tetherow). Not yet authored — pending.
-- `marketing_brain_skills/producers/site-listing-page/SKILL.md` — Tier 4 (per-property). Not yet authored — pending.
-- `marketing_brain_skills/producers/site-city-page/SKILL.md` — Tier 1 (/lp/bend/). Not yet authored — pending.
+- `marketing_brain_skills/producers/site-neighborhood-page/SKILL.md` --EMDASH-- Tier 2 producer for in-city neighborhoods that are NOT master-planned resorts (NW Crossing, Old Bend, etc.). Use that instead of this skill for those.
+- `marketing_brain_skills/producers/site-subdivision-page/SKILL.md` --EMDASH-- Tier 3 (lives one level deeper inside a community page; the Heath exemplar inside Tetherow). Not yet authored --EMDASH-- pending.
+- `marketing_brain_skills/producers/site-listing-page/SKILL.md` --EMDASH-- Tier 4 (per-property). Not yet authored --EMDASH-- pending.
+- `marketing_brain_skills/producers/site-city-page/SKILL.md` --EMDASH-- Tier 1 (/lp/bend/). Not yet authored --EMDASH-- pending.
 
 **Producers this skill delegates the work of:**
 
-- `marketing_brain_skills/producers/listing-alerts/SKILL.md` — receives the Custom Alerts form submissions (saved-search backend). Not yet authored — pending.
-- `marketing_brain_skills/producers/buyers-guide/SKILL.md` — receives the Buyer's Guide form submissions (PDF + content). Not yet authored — pending.
-- `marketing_brain_skills/producers/cma/SKILL.md` — receives the seller CMA form submissions (existing /api/cma endpoint).
+- `marketing_brain_skills/producers/listing-alerts/SKILL.md` --EMDASH-- receives the Custom Alerts form submissions (saved-search backend). Not yet authored --EMDASH-- pending.
+- `marketing_brain_skills/producers/buyers-guide/SKILL.md` --EMDASH-- receives the Buyer's Guide form submissions (PDF + content). Not yet authored --EMDASH-- pending.
+- `marketing_brain_skills/producers/cma/SKILL.md` --EMDASH-- receives the seller CMA form submissions (existing /api/cma endpoint).
 
 **Registry entry:**
 
-- `marketing_brain_skills/producers/REGISTRY.md` — Section D (site-* producers), row `site-community-page`. Action types: `site:community_page_create`, `site:community_page_update`. Approval: `matt-review-PR`. Estimated runtime: 30-45 min.
+- `marketing_brain_skills/producers/REGISTRY.md` --EMDASH-- Section D (site-* producers), row `site-community-page`. Action types: `site:community_page_create`, `site:community_page_update`. Approval: `matt-review-PR`. Estimated runtime: 30-45 min.
 
 ---
 
@@ -868,7 +868,7 @@ What would make this skill 10x better:
 
 1. **Auto-discover peer communities.** Today `comparison_peers` is a hand-curated list in `resort-communities.json`. A query against `market_stats_cache` clustering by median price + acres + amenity profile could surface peers automatically. This would also keep the comparison row consistent across all 14 resorts.
 
-2. **Resort-communities.json schema validation.** Author a JSON schema and a precommit hook so a malformed config row is caught before it reaches this skill. Today a missing field in the config will surface as a TypeScript error mid-build — the schema check should run first.
+2. **Resort-communities.json schema validation.** Author a JSON schema and a precommit hook so a malformed config row is caught before it reaches this skill. Today a missing field in the config will surface as a TypeScript error mid-build --EMDASH-- the schema check should run first.
 
 3. **Hero-asset auto-source.** Today the hero image is hand-placed at `public/lp/<slug>/img/<slug>-aerial-hero.jpg`. A small assist that pulls the canonical aerial from the resort's own marketing page (with editorial attribution) and writes it into place would unblock 13 resort builds without manual Asset Library curation.
 
@@ -884,7 +884,10 @@ What would make this skill 10x better:
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/voice_guidelines.md`
+- `marketing_brain_skills/research/tool-inventory.md`
+- `marketing_brain_skills/research/platform-bible.md`
 - `marketing_brain_skills/research/asset-library-map.md`
+- `marketing_brain_skills/research/bend-market-bible.md`
 - `automation_skills/content_engine/SKILL.md`
 - `social_media_skills/platform-best-practices/SKILL.md`
 - `data/resort-communities.json`
