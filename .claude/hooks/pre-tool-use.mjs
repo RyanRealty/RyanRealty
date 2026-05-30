@@ -294,6 +294,11 @@ if (tool_name === 'Write' || tool_name === 'Edit' || tool_name === 'MultiEdit') 
       for (const p of vocab.PUNCTUATION || []) {
         for (const chunk of scannable) {
           if (!chunk.text.includes(p.char)) continue
+          // Exclamation false-positive: the `!=` / `!==` comparison operators
+          // are JS code, not prose punctuation. A JSX expression container
+          // (`{a != null ? ... : ...}`) is sometimes extracted as a chunk, so
+          // skip when every `!` in the chunk is part of `!=` (no prose `!`).
+          if (p.char === '!' && !/!(?!=)/.test(chunk.text)) continue
           // Standalone data-placeholder em-dash is allowed (e.g.
           // `<dd>{"—"}</dd>` or a JSX text node whose trimmed value
           // is just `"—"`).

@@ -240,6 +240,28 @@ run(
   { deny: false },
 )
 run(
+  'Write: != operator in a JSX expression is not flagged as an exclamation',
+  {
+    tool_name: 'Write',
+    tool_input: {
+      file_path: 'components/site/Stat.tsx',
+      content: 'export const Stat = ({ n }) => <div>{n != null ? <span>{n}</span> : null}</div>',
+    },
+  },
+  { deny: false },
+)
+run(
+  'Write: a real prose exclamation is still denied',
+  {
+    tool_name: 'Write',
+    tool_input: {
+      file_path: 'components/site/Stat.tsx',
+      content: 'export const Stat = () => <div>Sold over asking!</div>',
+    },
+  },
+  { deny: true, contains: 'WRITE-BRAND-VOICE' },
+)
+run(
   'Write: banned word in API route is allowed (excluded)',
   {
     tool_name: 'Write',
