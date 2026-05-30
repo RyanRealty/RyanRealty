@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.367.0 (2026-05-30)
+
+### Features
+- feat(producers): green-baseline + G35 SKILL gate + tool-utilization audit
+
+---
+
+
 ## v1.366.0 (2026-05-30)
 
 ### Features
