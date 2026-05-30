@@ -1,9 +1,8 @@
 {
-  "generatedAt": "2026-05-28T13:43:57.070Z",
+  "generatedAt": "2026-05-30T14:19:59.107Z",
   "reason": "Snapshot of pre-DAL pages. The gate fails only on NEW violations beyond this baseline. Each line should disappear as Wave 3 page migrations route pages through @/lib/data/.",
-  "total": 96,
+  "total": 87,
   "violators": [
-    "app/about/page.tsx",
     "app/accessibility/page.tsx",
     "app/account/buying-preferences/page.tsx",
     "app/account/page.tsx",
@@ -21,11 +20,8 @@
     "app/blog/page.tsx",
     "app/buy/[intent]/page.tsx",
     "app/buy/page.tsx",
-    "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
-    "app/cities/[slug]/page.tsx",
     "app/cities/page.tsx",
     "app/cma-drafts/[id]/page.tsx",
-    "app/communities/[slug]/page.tsx",
     "app/communities/page.tsx",
     "app/compare/page.tsx",
     "app/contact/page.tsx",
@@ -55,7 +51,6 @@
     "app/housing-market/reports/[slug]/page.tsx",
     "app/housing-market/reports/page.tsx",
     "app/join/page.tsx",
-    "app/listing/[listingKey]/page.tsx",
     "app/listing/by-address/[...slug]/page.tsx",
     "app/listing/by-key/[listingKey]/page.tsx",
     "app/listings/[listingKey]/page.tsx",
@@ -85,19 +80,15 @@
     "app/resources/page.tsx",
     "app/reviews/page.tsx",
     "app/search/[...slug]/page.tsx",
-    "app/search/page.tsx",
     "app/sell/[intent]/page.tsx",
-    "app/sell/page.tsx",
     "app/sell/plan/page.tsx",
     "app/sell/valuation/page.tsx",
     "app/signup/page.tsx",
     "app/team/[slug]/edit/page.tsx",
     "app/team/[slug]/page.tsx",
-    "app/team/page.tsx",
     "app/terms/page.tsx",
     "app/tools/appreciation/page.tsx",
     "app/tools/mortgage-calculator/page.tsx",
-    "app/videos/page.tsx",
-    "app/zip/[zip]/page.tsx"
+    "app/videos/page.tsx"
   ]
 }

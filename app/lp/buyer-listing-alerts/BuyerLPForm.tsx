@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { trackEvent, getLpContext } from '@/lib/tracking'
+import { trackEvent, getLpContext, readRrSessionId } from '@/lib/tracking'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -52,6 +52,7 @@ export default function BuyerLPForm() {
       timeline: (formData.get('timeline')?.toString() || undefined) as BuyerLPTimeline | undefined,
       searchAreas: areas,
       notes: formData.get('notes')?.toString() ?? '',
+      sessionId: readRrSessionId(),
     }
     startTransition(async () => {
       const r = await submitBuyerLPForm(submission)
@@ -133,13 +134,18 @@ export default function BuyerLPForm() {
         <Label>Where are you looking? (pick any)</Label>
         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {SEARCH_AREAS.map((a) => (
-            <label key={a.slug} className="flex items-center gap-2 text-sm">
+            <Label
+              key={a.slug}
+              htmlFor={`area-${a.slug}`}
+              className="flex cursor-pointer items-center gap-2 text-sm font-normal"
+            >
               <Checkbox
+                id={`area-${a.slug}`}
                 checked={areas.includes(a.slug)}
                 onCheckedChange={() => toggleArea(a.slug)}
               />
               {a.label}
-            </label>
+            </Label>
           ))}
         </div>
       </div>

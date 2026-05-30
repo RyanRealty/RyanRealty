@@ -15,6 +15,9 @@ import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { backfillSessionToFub } from '@/lib/visitor-backfill'
+
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -41,6 +44,9 @@ export type ExpiredLPSubmission = {
   contactPath?: 'audit' | 'phone' | 'walkthrough'
   /** Optional notes. */
   notes?: string
+  /** Anonymous visitor session id (uuid v4) from localStorage. When present,
+   *  we stitch this lead's prior browsing history to the FUB person. */
+  sessionId?: string
 }
 
 export type ExpiredLPResult =
@@ -125,6 +131,18 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
     if (!fubPersonId && email) {
       const newlyCreated = await findPersonByEmail(email)
       if (newlyCreated?.id) fubPersonId = newlyCreated.id
+    }
+
+    // ─── Stitch anonymous browsing history to this FUB person ──────────────
+    // Replays prior anonymous visitor_events for this session into FUB and
+    // marks the visitor_sessions row identified. Non-blocking, idempotent.
+    if (fubPersonId && submission.sessionId && UUID_V4_RE.test(submission.sessionId)) {
+      void backfillSessionToFub({
+        sessionId: submission.sessionId,
+        fubPersonId,
+        email,
+        identifiedVia: 'form_submit',
+      }).catch((e) => console.warn('[expired-lp] session backfill failed (non-blocking):', e))
     }
 
     // ─── Compliance gate ───────────────────────────────────────────────────

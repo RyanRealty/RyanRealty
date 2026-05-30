@@ -4,8 +4,9 @@ import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
-import { trackEvent } from '@/lib/tracking'
+import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { submitSellerLPForm, type SellerLPTimeline } from './actions'
 
 declare global {
@@ -75,6 +76,7 @@ export default function SellerLPForm({
         email: opts.skipQualify ? prefillEmail ?? email.trim() : email.trim(),
         phone: opts.skipQualify ? prefillPhone ?? phone.trim() : phone.trim(),
         timeline: (timeline || undefined) as SellerLPTimeline | undefined,
+        sessionId: readRrSessionId(),
       })
       if (!result.success) {
         setError(result.error)
@@ -212,16 +214,17 @@ export default function SellerLPForm({
       aria-labelledby="seller-lp-form-heading-2"
       noValidate
     >
-      <button
+      <Button
         type="button"
+        variant="link"
         onClick={() => {
           setError(null)
           setStep('address')
         }}
-        className="mb-3 text-sm font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
+        className="mb-3 h-auto justify-start p-0 text-sm font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
       >
         ← Edit address
-      </button>
+      </Button>
 
       <h2 id="seller-lp-form-heading-2" className="font-display text-xl font-semibold text-primary">
         Where should we send your home value?
@@ -284,30 +287,32 @@ export default function SellerLPForm({
 
         <fieldset className="mt-2">
           <legend className="text-base font-medium text-foreground">When are you thinking about selling?</legend>
-          <div className="mt-3 grid gap-2">
+          <RadioGroup
+            value={timeline}
+            onValueChange={(v) => setTimeline(v as SellerLPTimeline)}
+            className="mt-3 gap-2"
+          >
             {TIMELINE_OPTIONS.map((opt) => (
-              <label
+              <Label
                 key={opt.value}
+                htmlFor={`seller-lp-timeline-${opt.value}`}
                 className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3 transition-colors',
+                  'flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3 font-normal transition-colors',
                   timeline === opt.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40',
                 )}
               >
-                <input
-                  type="radio"
-                  name="timeline"
+                <RadioGroupItem
+                  id={`seller-lp-timeline-${opt.value}`}
                   value={opt.value}
-                  checked={timeline === opt.value}
-                  onChange={(e) => setTimeline(e.target.value as SellerLPTimeline)}
-                  className="mt-1 h-5 w-5 accent-primary"
+                  className="mt-1"
                 />
                 <span>
                   <span className="block text-base font-semibold text-foreground">{opt.label}</span>
                   <span className="block text-sm text-muted-foreground">{opt.sub}</span>
                 </span>
-              </label>
+              </Label>
             ))}
-          </div>
+          </RadioGroup>
         </fieldset>
       </div>
 

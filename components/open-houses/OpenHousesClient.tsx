@@ -211,7 +211,7 @@ export default function OpenHousesClient({ initialOpenHouses, initialFilters }: 
                     <div className="flex h-full items-center justify-center text-muted-foreground">No photo</div>
                   )}
                   <span className="absolute left-2 top-2 rounded-md bg-destructive px-2 py-1 text-xs font-semibold text-destructive-foreground">
-                    <span aria-hidden>ðŸ“…</span> {formatDate(oh.event_date)} Â· {formatTime(oh.start_time)} – {formatTime(oh.end_time)}
+                    {formatDate(oh.event_date)} · {formatTime(oh.start_time)} – {formatTime(oh.end_time)}
                   </span>
                 </div>
                 <div className="p-4">
@@ -220,8 +220,8 @@ export default function OpenHousesClient({ initialOpenHouses, initialFilters }: 
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">{address(oh)}</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {oh.beds_total ?? '—'} bed Â· {oh.baths_full ?? '—'} bath
-                    {oh.living_area != null && ` Â· ${Number(oh.living_area).toLocaleString()} sq ft`}
+                    {oh.beds_total ?? '—'} bed · {oh.baths_full ?? '—'} bath
+                    {oh.living_area != null && ` · ${Number(oh.living_area).toLocaleString()} sq ft`}
                   </p>
                 </div>
               </Link>

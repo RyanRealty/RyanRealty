@@ -58,8 +58,16 @@ public/swe-worker*
 *.tsbuildinfo
 next-env.d.ts
 
-# Claude IDE local settings (optional)
-.claude
+# Claude IDE local settings — local-only file kept untracked
+.claude/settings.local.json
+.claude/launch.json
+.claude/skills
+.claude/worktrees
+.claude/cache
+.claude/projects
+# Shared: settings.json, hooks/, and any team-wide rules ARE checked in
+# so the runtime enforcement layer (G-runtime) ships with the repo and
+# every agent session honors the same refusals.
 
 # Local sync status deltas (Matt / agent — not committed)
 .cursor/local/

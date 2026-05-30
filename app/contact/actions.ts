@@ -4,8 +4,11 @@ import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { sendEvent, findPersonByEmail } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
+import { backfillSessionToFub } from '@/lib/visitor-backfill'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
+
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export type ContactFormState = { error?: string; success?: boolean; eventId?: string }
 
@@ -26,6 +29,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   const phone = formData.get('phone')?.toString()?.trim() ?? ''
   const inquiryType = formData.get('inquiryType')?.toString()?.trim() ?? 'General Inquiry'
   const message = formData.get('message')?.toString()?.trim() ?? ''
+  const sessionId = formData.get('sessionId')?.toString()?.trim() ?? ''
 
   if (!email) return { error: 'Email is required' }
 
@@ -58,6 +62,16 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
           audience: inferAudience(inquiryType),
           source: 'contact-form',
         })
+        // Stitch this visitor's prior anonymous browsing history to the FUB
+        // person. Idempotent; only replays when a real session id came through.
+        if (sessionId && UUID_V4_RE.test(sessionId)) {
+          await backfillSessionToFub({
+            sessionId,
+            fubPersonId: found.id,
+            email,
+            identifiedVia: 'form_submit',
+          })
+        }
       }
     } catch (err) {
       console.warn('[contact-form] canonical tagging failed (non-blocking):', err)

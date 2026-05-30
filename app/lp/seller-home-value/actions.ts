@@ -13,6 +13,7 @@ import {
 } from '@/lib/followupboss'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { createCmaRequest } from '@/lib/cma-request'
+import { backfillSessionToFub } from '@/lib/visitor-backfill'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
@@ -44,6 +45,10 @@ export type SellerLPSubmission = {
   timeline?: SellerLPTimeline
   /** Optional motivation field if the form ever surfaces it. */
   motivation?: string
+  /** rr_session_id (uuid v4 from localStorage) so the now-known person can be
+   *  stitched to their prior anonymous visitor_events and those events replayed
+   *  into FUB. Validated server-side before use. */
+  sessionId?: string
 }
 
 export type SellerLPResult =
@@ -260,6 +265,23 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       if (newlyCreated?.id) {
         fubPersonId = newlyCreated.id
       }
+    }
+
+    // ─── Anonymous-to-known backfill ─────────────────────────────────────────
+    // A form submit is a definite identification: we now have email + a FUB
+    // person id. If the client passed its rr_session_id, stamp the first-party
+    // visitor_sessions row (identified_at + fub_person_id) and replay all prior
+    // anonymous visitor_events for this browser into FUB as Viewed Property /
+    // Viewed Page events. Idempotent + never throws (see lib/visitor-backfill).
+    // Fire-and-forget — lead capture must never block on the replay.
+    const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (fubPersonId && email && submission.sessionId && UUID_V4_RE.test(submission.sessionId)) {
+      void backfillSessionToFub({
+        sessionId: submission.sessionId,
+        fubPersonId,
+        email,
+        identifiedVia: 'form_submit',
+      }).catch((e) => console.warn('[seller-lp] session backfill failed (non-blocking):', e))
     }
 
     // ─── Compliance gate ───────────────────────────────────────────────────

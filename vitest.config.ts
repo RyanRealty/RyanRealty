@@ -13,6 +13,8 @@ export default defineConfig({
       'eslint-rules/**/*.test.mjs',
       'components/site/__tests__/**/*.test.ts',
       'components/site/__tests__/**/*.test.tsx',
+      'components/search/__tests__/**/*.test.ts',
+      'components/search/__tests__/**/*.test.tsx',
     ],
     globals: false,
   },

@@ -366,6 +366,15 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Map-search app shell. Full height under the sticky header + filter bar
+   (60px header + 60px filter bar = 120px) and the fixed-width results rail.
+   These are app-shell layout primitives kept here (not as arbitrary Tailwind
+   brackets in the .tsx) so the design-token ladder stays clean — G26/D17. */
+.map-search-shell { height: calc(100vh - 120px); min-height: 400px; }
+.map-search-rail { width: 420px; min-width: 360px; max-width: 480px; }
+/* Map marker InfoWindow photo card width. */
+.map-infowindow-card { min-width: 200px; max-width: 240px; }
+
 /* ═══════════════════════════════════════════════════════════════
    Print styles — clean listing printout
    ═══════════════════════════════════════════════════════════════ */

@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { submitExpiredLPForm } from './actions'
+import { readRrSessionId } from '@/lib/tracking'
 
 export default function ExpiredLPForm() {
   const [pending, startTransition] = useTransition()
@@ -26,6 +27,7 @@ export default function ExpiredLPForm() {
       address: formData.get('address')?.toString() ?? '',
       contactPath: (formData.get('contactPath')?.toString() || 'audit') as 'audit' | 'phone' | 'walkthrough',
       notes: formData.get('notes')?.toString() ?? '',
+      sessionId: readRrSessionId(),
     }
     startTransition(async () => {
       const r = await submitExpiredLPForm(submission)

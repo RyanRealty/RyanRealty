@@ -11,6 +11,7 @@
  * surface.
  */
 
+import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
 import { teamPath } from '@/lib/slug'
@@ -28,7 +29,7 @@ import {
   Stack,
 } from '@/components/site/primitives'
 
-export const metadata = pageMetadata({
+export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
   description:
     'Meet the three licensed brokers at Ryan Realty. A small, independent Bend brokerage serving buyers and sellers across Central Oregon.',
@@ -69,10 +70,10 @@ export default async function TeamPage() {
 
       <Section padding="default" tone="default" divider>
         <Container>
-          <Stack gap="tight" className="mb-10 max-w-[52ch]">
+          <Stack gap="tight" className="mb-10 max-w-prose">
             <Eyebrow>The team</Eyebrow>
             <H2>Small by design. Local by choice.</H2>
-            <Body size="default" tone="muted" className="leading-[1.6]">
+            <Body size="default" tone="muted" className="leading-relaxed">
               Ryan Realty is a three-broker shop. You work with the same person from the first
               showing to the closing table. Call any broker directly using the number on their card.
             </Body>

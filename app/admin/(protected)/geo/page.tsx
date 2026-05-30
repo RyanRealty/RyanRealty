@@ -35,7 +35,7 @@ export default async function AdminGeoPage({
       </p>
       <p className="mt-2 text-sm text-muted-foreground">
         <Link href="/admin" className="underline">← Admin</Link>
-        {' Â· '}
+        {' · '}
         <Link href="/admin/geo/area-guide-upload" className="underline">Area Guide media upload</Link>
       </p>
 

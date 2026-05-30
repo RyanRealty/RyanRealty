@@ -46,6 +46,10 @@ export type ListingForMap = {
   PostalCode?: string | null
   BedroomsTotal?: number | null
   BathroomsTotal?: number | null
+  /** Hero photo for the marker popup card. */
+  PhotoURL?: string | null
+  /** Living area for the marker popup card. */
+  TotalLivingAreaSqFt?: number | null
   /** When true, marker label shows "video" instead of "showcase". */
   hasVideo?: boolean
 }
@@ -102,6 +106,10 @@ type Props = {
   onPolygonDrawn?: (polygon: MapPolygonPoint[] | null) => void
   /** Initial polygon to render (e.g. from URL saved search). */
   initialPolygon?: MapPolygonPoint[] | null
+  /** List↔map hover sync: the listing key currently hovered in the list (highlights its marker). */
+  hoveredKey?: string | null
+  /** List↔map hover sync: fired when the user hovers/unhovers a marker (null on mouseout). */
+  onMarkerHover?: (listingKey: string | null) => void
 }
 
 export default function SearchMapClustered({
@@ -117,11 +125,14 @@ export default function SearchMapClustered({
   boundaryGeojson,
   onPolygonDrawn,
   initialPolygon,
+  hoveredKey = null,
+  onMarkerHover,
 }: Props) {
   const router = useRouter()
   const mapRef = useRef<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
   const markersRef = useRef<google.maps.Marker[]>([])
+  const markersByKeyRef = useRef<Map<string, google.maps.Marker>>(new Map())
   const placeViewportRef = useRef<google.maps.LatLngBounds | null>(null)
   const [placeViewport, setPlaceViewport] = useState<google.maps.LatLngBounds | null>(null)
   const [showBoundary, setShowBoundary] = useState(true)
@@ -286,6 +297,7 @@ export default function SearchMapClustered({
     }
     markersRef.current.forEach((m) => m.setMap(null))
     markersRef.current = []
+    markersByKeyRef.current = new Map()
 
     const newMarkers: google.maps.Marker[] = validListings.map((l, i) => {
       const listingKey = (l.ListNumber ?? l.ListingKey ?? `point-${i}`).toString()
@@ -293,7 +305,7 @@ export default function SearchMapClustered({
       const label = priceLabel(price)
       const isSaved = savedSet.has(listingKey)
       const hasVideo = Boolean(l.hasVideo)
-      const markerLabel = [label, hasVideo ? 'video' : null, isSaved ? '♥' : null].filter(Boolean).join(' Â· ')
+      const markerLabel = [label, hasVideo ? 'video' : null, isSaved ? '♥' : null].filter(Boolean).join(' · ')
 
       const marker = new google.maps.Marker({
         position: { lat: l.Latitude, lng: l.Longitude },
@@ -315,6 +327,12 @@ export default function SearchMapClustered({
         onMarkerClick?.(listingKey)
       })
 
+      if (onMarkerHover) {
+        marker.addListener('mouseover', () => onMarkerHover(listingKey))
+        marker.addListener('mouseout', () => onMarkerHover(null))
+      }
+
+      markersByKeyRef.current.set(listingKey, marker)
       return marker
     })
 
@@ -365,7 +383,22 @@ export default function SearchMapClustered({
         // guard against "Cannot read properties of null (reading 'parentNode')" on unmount
       }
     }
-  }, [isLoaded, validListings, savedSet, onMarkerClick])
+  }, [isLoaded, validListings, savedSet, onMarkerClick, onMarkerHover])
+
+  // List↔map hover sync: enlarge the marker matching the list card under the cursor.
+  useEffect(() => {
+    const byKey = markersByKeyRef.current
+    if (byKey.size === 0) return
+    for (const [key, marker] of byKey) {
+      const isHover = key === hoveredKey
+      try {
+        marker.setIcon(getListingMarkerIcon({ hover: isHover }))
+        marker.setZIndex(isHover ? Number(google.maps.Marker.MAX_ZINDEX) : undefined)
+      } catch {
+        // marker DOM may be gone mid-pan; ignore
+      }
+    }
+  }, [hoveredKey, validListings])
 
   if (loadError) {
     return (
@@ -477,7 +510,20 @@ export default function SearchMapClustered({
             position={openInfo.position}
             onCloseClick={() => setOpenInfo(null)}
           >
-            <div className="min-w-[180px] p-1 text-foreground">
+            <div className="map-infowindow-card p-1 text-foreground">
+              {openListing.PhotoURL ? (
+                <div className="mb-1.5 overflow-hidden rounded-md" style={{ aspectRatio: '4 / 3' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={openListing.PhotoURL}
+                    alt={[openListing.StreetNumber, openListing.StreetName].filter(Boolean).join(' ') || 'Listing photo'}
+                    width={240}
+                    height={180}
+                    loading="lazy"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                </div>
+              ) : null}
               {((openListing.StreetNumber ?? openListing.StreetName ?? openListing.City) != null && (
                 <div className="text-sm text-muted-foreground">
                   {[openListing.StreetNumber, openListing.StreetName].filter(Boolean).join(' ')}
@@ -492,11 +538,15 @@ export default function SearchMapClustered({
                 ${Number(openListing.ListPrice ?? 0).toLocaleString()}
                 {savedSet.has(openKey) && <span className="ml-1 text-destructive" aria-hidden>♥</span>}
               </div>
-              {(openListing.BedroomsTotal != null || openListing.BathroomsTotal != null) && (
+              {(openListing.BedroomsTotal != null || openListing.BathroomsTotal != null || openListing.TotalLivingAreaSqFt != null) && (
                 <div className="text-xs text-muted-foreground">
-                  {[openListing.BedroomsTotal != null ? `${openListing.BedroomsTotal} bed` : null, openListing.BathroomsTotal != null ? `${openListing.BathroomsTotal} bath` : null]
+                  {[
+                    openListing.BedroomsTotal != null ? `${openListing.BedroomsTotal} bed` : null,
+                    openListing.BathroomsTotal != null ? `${openListing.BathroomsTotal} bath` : null,
+                    openListing.TotalLivingAreaSqFt != null ? `${Number(openListing.TotalLivingAreaSqFt).toLocaleString()} sqft` : null,
+                  ]
                     .filter(Boolean)
-                    .join(' Â· ')}
+                    .join(' · ')}
                 </div>
               )}
               <Button

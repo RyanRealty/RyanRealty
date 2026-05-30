@@ -3,10 +3,13 @@
 import {
   getListingsWithAdvanced,
   getListingsForMap,
+  getViewportListings,
   type AdvancedListingsFilters,
+  type MapBounds,
 } from '@/app/actions/listings'
 import type { ListingTileRow } from '@/app/actions/listings'
 import type { MapListingRow } from '@/app/actions/listings'
+import type { MapPolygonPoint } from '@/lib/map-polygon'
 
 export type SearchFilters = {
   city?: string
@@ -89,6 +92,49 @@ export async function getSearchListings(
   const offset = (page - 1) * limit
   const opts = toAdvancedFilters(filters, { limit, offset })
   return getListingsWithAdvanced(opts)
+}
+
+/**
+ * Search-as-you-move: fetch every home inside the current map viewport (or drawn
+ * polygon), applying the active filters. ONE result set feeds BOTH the list and
+ * the map markers so they stay in lockstep — the list is exactly the pins on the
+ * map. `capped` lets the UI show "500+" honestly when the area overflows the cap.
+ */
+export async function getViewportSearch(
+  filters: SearchFilters,
+  bounds: MapBounds,
+  polygon: MapPolygonPoint[] | null
+): Promise<{ listings: ListingTileRow[]; totalCount: number; capped: boolean }> {
+  const statusFilter =
+    filters.status === 'Sold' ? 'closed'
+    : filters.status === 'Pending' ? 'pending'
+    : filters.status === 'Active' ? 'active'
+    : 'active_and_pending'
+  const sort: 'newest' | 'oldest' | 'price_asc' | 'price_desc' =
+    filters.sort === 'price_asc' || filters.sort === 'priceAsc' ? 'price_asc'
+    : filters.sort === 'price_desc' || filters.sort === 'priceDesc' ? 'price_desc'
+    : filters.sort === 'oldest' ? 'oldest'
+    : 'newest'
+  return getViewportListings({
+    bounds,
+    polygon: polygon && polygon.length >= 3 ? polygon : null,
+    statusFilter,
+    sort,
+    city: filters.city,
+    subdivision: filters.subdivision,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    minBeds: filters.beds,
+    minBaths: filters.baths,
+    minSqFt: filters.minSqFt,
+    maxSqFt: filters.maxSqFt,
+    yearBuiltMin: filters.yearBuiltMin,
+    yearBuiltMax: filters.yearBuiltMax,
+    lotAcresMin: filters.lotAcresMin,
+    lotAcresMax: filters.lotAcresMax,
+    postalCode: filters.postalCode?.trim() || undefined,
+    propertyType: filters.propertyType,
+  })
 }
 
 export async function getSearchMapListings(filters: SearchFilters): Promise<MapListingRow[]> {

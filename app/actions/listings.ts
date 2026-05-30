@@ -1079,6 +1079,105 @@ export async function getListingsInBounds(
 }
 
 /**
+ * Viewport search (search-as-you-move). ONE fetch drives BOTH the list and the
+ * map markers so they can never diverge — the list shows exactly the homes whose
+ * pins are on the map. Returns the full in-view set (capped) plus an honest count.
+ *
+ * `capped` is true when the result hit the cap, so the UI can show "500+ in this
+ * area" instead of a wrong exact number (CLAUDE.md §0 data accuracy).
+ */
+export async function getViewportListings(
+  options: GetListingsInBoundsOptions & { cap?: number }
+): Promise<{ listings: ListingTileRow[]; totalCount: number; capped: boolean }> {
+  const { bounds, polygon } = options
+  const cap = Math.min(Math.max(options.cap ?? 500, 1), 1000)
+  const polygonBounds = polygon && polygon.length >= 3 ? getPolygonBounds(polygon) : null
+  const effectiveBounds = polygonBounds ?? bounds
+  const statusFilter = options.statusFilter ?? (options.includeClosed === true ? 'all' : 'active')
+  const dalStatus =
+    statusFilter === 'all'
+      ? 'all'
+      : statusFilter === 'active_and_pending'
+        ? 'active-and-pending'
+        : statusFilter === 'pending'
+          ? 'pending-only'
+          : statusFilter === 'closed'
+            ? 'closed'
+            : 'active'
+  const dalSort: 'newest' | 'oldest' | 'price-asc' | 'price-desc' =
+    options.sort === 'price_asc'
+      ? 'price-asc'
+      : options.sort === 'price_desc'
+        ? 'price-desc'
+        : options.sort === 'oldest'
+          ? 'oldest'
+          : 'newest'
+  const canonicalSubdivision = options.subdivision?.trim()
+    ? getSubdivisionMatchNames(options.subdivision.trim())[0] ?? null
+    : null
+
+  const { getListingTiles } = await import('@/lib/data')
+  // For polygon-restricted view we fetch a wide bbox first, then filter in
+  // memory by point-in-polygon, so we overfetch to keep the post-filter set full.
+  const fetchLimit = polygon && polygon.length >= 3 ? Math.min(cap * 4, 3000) : cap + 1
+  const tiles = await getListingTiles({
+    bbox: {
+      west: effectiveBounds.west,
+      south: effectiveBounds.south,
+      east: effectiveBounds.east,
+      north: effectiveBounds.north,
+    },
+    city: options.city?.trim() || undefined,
+    subdivision: canonicalSubdivision || undefined,
+    status: dalStatus,
+    minPrice: options.minPrice && options.minPrice > 0 ? options.minPrice : undefined,
+    maxPrice: options.maxPrice && options.maxPrice > 0 ? options.maxPrice : undefined,
+    minBeds: options.minBeds && options.minBeds > 0 ? options.minBeds : undefined,
+    minBaths: options.minBaths && options.minBaths > 0 ? options.minBaths : undefined,
+    minSqft: options.minSqFt && options.minSqFt > 0 ? options.minSqFt : undefined,
+    postalCode: options.postalCode?.trim() && /^\d{5}$/.test(options.postalCode.trim())
+      ? options.postalCode.trim()
+      : undefined,
+    sort: dalSort,
+    limit: fetchLimit,
+  })
+  let rows: ListingTileRow[] = tiles.map((t) => ({
+    ListingKey: t.listingKey,
+    ListNumber: t.listNumber,
+    ListPrice: t.listPrice,
+    BedroomsTotal: t.beds,
+    BathroomsTotal: t.baths,
+    StreetNumber: t.streetNumber,
+    StreetName: t.streetName,
+    City: t.city,
+    State: 'OR',
+    PostalCode: t.postalCode,
+    SubdivisionName: t.subdivisionName,
+    PhotoURL: t.photoUrl,
+    Latitude: t.lat,
+    Longitude: t.lng,
+    StandardStatus: t.status,
+    OnMarketDate: t.onMarketDate,
+    CloseDate: t.closeDate,
+    TotalLivingAreaSqFt: t.sqft,
+    ListOfficeName: null,
+    ListAgentName: null,
+  })) as ListingTileRow[]
+
+  if (polygon && polygon.length >= 3) {
+    rows = rows.filter((row) => {
+      const lat = Number(row.Latitude)
+      const lng = Number(row.Longitude)
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
+      return isPointInPolygon({ lat, lng }, polygon)
+    })
+  }
+
+  const capped = rows.length > cap
+  return { listings: rows.slice(0, cap), totalCount: rows.length, capped }
+}
+
+/**
  * Active (or active+pending+closed when includeClosed) count for filters. Used for pagination on search page.
  */
 export async function getActiveListingsCount(options: {

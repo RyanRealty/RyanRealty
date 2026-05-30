@@ -86,6 +86,9 @@ const P = {
   riverHome:    `${ROOT}/public/lp/central-oregon-golf/img/eagle-crest-01.jpg`,// home on Deschutes river bluff
   cascades:     `${ROOT}/public/lp/central-oregon-golf/img/three-sisters-backdrop.jpg`, // Cascades through pines
   tumaloCraftsman: `${ROOT}/data/comps/19496-tumalo-reservoir-rd-photos/20260310224736943770000000.jpg`, // real craftsman entry, green board-and-batten, wood porch — REAL HOME for Zestimate angle (note: 800x600, softest in set)
+  awbreyAerial: `${ROOT}/public/lp/central-oregon-golf/img/awbrey-glen-02.jpg`,  // Awbrey Glen golf aerial w/ Cascades — upscale westside
+  awbreySign:   `${ROOT}/public/lp/central-oregon-golf/img/awbrey-glen-01.jpg`,  // Awbrey Glen entrance monument — hyper-local recognition
+  nwCrossing:   `${ROOT}/out/seller-ad-concepts/assets/nw-crossing-02.jpg`,      // NW Crossing roundabout + craftsman district (real, Drive area-guide)
 }
 
 // ── Quote bank ─────────────────────────────────────────────────────────────
@@ -106,14 +109,16 @@ const Q = {
   creekmore: { text: 'He took time to check on the repairs while we were out of the country on vacation.', author: 'Jim Creekmore', source: 'Google' },
   millard:   { text: 'From the start of our journey to the end, Matt was right at every turn.', author: 'Doug Millard', source: 'Google' },
   timms:     { text: 'His presentation and marketing were professional and thorough.', author: 'Gary Timms', source: 'Google' },
-  charise:   { text: 'Matt is driven, honest and hard working without the high pressure.', author: 'Charise Millard', source: 'Google' },
+  charise:   { text: 'He sold our current house in less than a week.', author: 'Charise Millard', source: 'Google' },
   graham:    { text: 'He is responsive, professional, and above all, a trustworthy person.', author: 'Stephen Graham', source: 'Google' },
-  swank:     { text: 'He went the extra mile to help us out while selling our house while we were out of the country.', author: 'SwankHQ', source: 'Google' },
+  swank:     { text: 'He went the extra mile while we were out of the country.', author: 'SwankHQ', source: 'Google' },
   town:      { text: 'Matt worked diligently in providing information for both options and gave excellent advice to our current situation.', author: 'David Town', source: 'Google' },
-  fess:      { text: 'Matt has vital local knowledge, pays attention to detail and has excellent communication skills.', author: 'Helen Luna Fess', source: 'Google' },
+  fess:      { text: 'Matt has vital local knowledge and pays attention to detail.', author: 'Helen Luna Fess', source: 'Google' },
   anderson:  { text: 'Matt was the one we decided on and were 100% happy with the process.', author: 'Kim Anderson', source: 'Google' },
   detweiler: { text: 'Matt with Ryan Realty was great to work with.', author: 'D Detweiler', source: 'Google' },
   robinson:  { text: 'Goes the extra mile to cover the needs of his customers.', author: 'Paul Robinson', source: 'Google' },
+  annie:     { text: 'He negotiated a fair price when the buyer came in very low.', author: 'Annie Jenkins', source: 'Google' },
+  cjenkins:  { text: 'Matt sold our home quickly and without any hassle.', author: 'C. Jenkins', source: 'Google' },
 }
 
 // Two intents:
@@ -158,6 +163,14 @@ const VARIANTS = [
   { slug: '28-homes-like',     intent: 'lp', theme: 'Comps',      broker: 'team', photo: P.creekAerial,  photoFocus: 'center 48%', headline: 'What are homes like yours going for?',  subHeading: "See what homes like yours have actually sold for nearby, with a real number from our team and no guesswork.",button: "Get your home's value",       quote: Q.town },
   { slug: '29-value-think',    intent: 'lp', theme: 'Home value',  broker: 'team', photo: P.schoolKitch,  photoFocus: 'center 45%', headline: "Thinking about your home's value?",     subHeading: "We'll show you the real number and the recent sales it's built on. No online guess, no pressure.", button: "Find your home's value",      quote: Q.hedberg },
   { slug: '30-where-stands',   intent: 'lp', theme: 'Standing',   broker: 'matt', photo: P.riverHome,    photoFocus: 'center 38%', headline: 'Curious where your home stands today?', subHeading: "Get one real number you can count on, not a wide Zillow range. That's how we earn your business.",        button: "See your home's value",       quote: Q.swank },
+
+  // ════ REACTIVATION SET — T1/T2a/T2b value + curiosity ════
+  { slug: 'react-t1-v1-worth-today',       intent: 'lp', theme: 'Home value',   broker: 'matt', photo: P.schoolExt,    photoFocus: 'center 48%', headline: 'Curious what your home is worth today?',    subHeading: "A real number from our team based on what's actually sold near you, not an online guess.",         button: "Get your home's value",       quote: Q.charise },
+  { slug: 'react-t1-v2-make-a-move',       intent: 'lp', theme: 'Timing',       broker: 'matt', photo: P.farmhouse,    photoFocus: 'center 52%', headline: 'Is now your time to make a move?',          subHeading: "Honest answers about the Bend market and what your home would bring, with no pressure.",           button: 'Get your free home estimate', quote: Q.hedberg },
+  { slug: 'react-t2a-v1-bring-today',      intent: 'lp', theme: 'Home value',   broker: 'matt', photo: P.creekAerial, photoFocus: 'center 48%', headline: 'What would your home bring today?',         subHeading: "See what buyers are actually paying for homes like yours now. Real numbers, no guesswork.",         button: 'Get your instant estimate',   quote: Q.annie },
+  { slug: 'react-t2a-v2-out-of-state',     intent: 'lp', theme: 'Out of area',  broker: 'matt', photo: P.riverHome,   photoFocus: 'center 38%', headline: 'Own a Bend home from out of state?',        subHeading: "Our team and trusted network handle the prep, the repairs, and the sale while you stay put.",       button: "Get your home's value",       quote: Q.swank },
+  { slug: 'react-t2b-v1-west-bend-worth',  intent: 'lp', theme: 'West Bend',    broker: 'matt', photo: P.awbreyAerial, photoFocus: 'center 45%', headline: "What's your West Bend home worth?",         subHeading: "Find out what homes near you have actually sold for. A real number from our team, no pressure.",    button: "See your home's value",       quote: Q.fess },
+  { slug: 'react-t2b-v2-westside-going-for',intent:'lp', theme: 'West Bend',    broker: 'matt', photo: P.nwCrossing,  photoFocus: 'center 45%', headline: 'What are westside homes going for?',        subHeading: "See what comparable homes near you have actually sold for, with a real number from our local team.", button: "Get your home's value",       quote: Q.cjenkins },
 ]
 
 // ── Output formats (Meta placements) ─────────────────────────────────────────
@@ -290,6 +303,13 @@ const MULTISIZE = [
   { slug: '01-downsizing',  button: "Get your home's value" }, // top boomer motivation
   { slug: '16-worth-now',   button: "Get your home's value" }, // direct value question
   { slug: '28-homes-like',  button: "Get your home's value" }, // comps / value question
+  // ── Reactivation set ─────────────────────────────────────────────────────────
+  { slug: 'react-t1-v1-worth-today' },       // T1 curiosity value-question
+  { slug: 'react-t1-v2-make-a-move' },       // T1 timing
+  { slug: 'react-t2a-v1-bring-today' },      // T2a what-would-it-bring
+  { slug: 'react-t2a-v2-out-of-state' },     // T2a absentee owner
+  { slug: 'react-t2b-v1-west-bend-worth' },  // T2b west Bend value
+  { slug: 'react-t2b-v2-westside-going-for'},// T2b westside comps
 ]
 const MULTI_DIR = resolve(OUT_DIR, 'multisize')
 const MULTI_THUMB = resolve(MULTI_DIR, 'thumbs')
@@ -430,6 +450,13 @@ const EDIT = {
   '28-homes-like':      { pm: 9, pf: 8 },  // neighborhood aerial = homes like yours (comps); town
   '29-value-think':     { pm: 8, pf: 8 },  // kitchen = value driver; hedberg
   '30-where-stands':    { pm: 7, pf: 7 },  // river home = where it stands; swank
+  // Reactivation set
+  'react-t1-v1-worth-today':        { pm: 9, pf: 9 },  // craftsman exterior = big home value question; fess "vital local knowledge" — exact fit
+  'react-t1-v2-make-a-move':        { pm: 8, pf: 8 },  // twilight farmhouse = next-chapter timing; oster "you will not be disappointed" — confident close
+  'react-t2a-v1-bring-today':       { pm: 9, pf: 8 },  // creek neighborhood aerial = what homes bring; crawley "highly skilled negotiator"
+  'react-t2a-v2-out-of-state':      { pm: 8, pf: 9 },  // Deschutes river bluff home = absentee owner; swank "out of the country" — exact proof
+  'react-t2b-v1-west-bend-worth':   { pm: 10, pf: 9 }, // Awbrey Glen golf aerial = upscale westside Bend; charise "without the high pressure" — trust proof
+  'react-t2b-v2-westside-going-for':{ pm: 10, pf: 8 }, // Awbrey Glen entrance monument = hyper-local westside recognition; timms "professional and thorough"
 }
 function scoreAd(r) {
   const hook = hookTier(r)
@@ -594,6 +621,148 @@ ${multiResults.map(msCard).join('\n')}
 </body></html>`
 await writeFile(resolve(OUT_DIR, 'multisize-sheet.html'), msSheet, 'utf-8')
 
+// ── Reactivation contact sheet ───────────────────────────────────────────────
+// Three tier sections (T1 Database / T2A Premium Sellers / T2B West Bend),
+// each with its 2 variants. Shows 4:5 + 9:16 side by side plus the Meta ad
+// copy (primary text, headline, description, CTA). Static Meta copy per Matt.
+const REACT_META = {
+  'react-t1-v1-worth-today': {
+    primary: "Your home's value changes with every sale in your neighborhood. See where yours stands right now, based on what's actually sold nearby. No pressure, just the real number.",
+    headline: "Curious what your home is worth?",
+    description: "Free estimate, no commitment",
+    cta: "Get quote",
+  },
+  'react-t1-v2-make-a-move': {
+    primary: "A lot has changed in Bend over the last year. Before you decide anything, it helps to know your actual number. One form, real data from recent sales near you, no obligation.",
+    headline: "What's your Bend home worth now?",
+    description: "Based on real local sales",
+    cta: "Get quote",
+  },
+  'react-t2a-v1-bring-today': {
+    primary: "Equity looks different than it did two years ago. If you've owned your Bend home for a while, see what buyers are paying for homes like yours right now.",
+    headline: "What would your home bring today?",
+    description: "Based on current Bend sales",
+    cta: "Get quote",
+  },
+  'react-t2a-v2-out-of-state': {
+    primary: "Managing a Bend property from out of town is easier than it sounds when the right team is on the ground. Find out what your home is worth right now, and what a full-service sale would look like.",
+    headline: "Own a Bend home from out of state?",
+    description: "We handle it from here",
+    cta: "Get quote",
+  },
+  'react-t2b-v1-west-bend-worth': {
+    primary: "West Bend moves differently than the rest of Bend. What sold on your street matters more than a city-wide average. See what homes near you have actually sold for, from our team.",
+    headline: "What's your West Bend home worth?",
+    description: "Based on nearby Bend sales",
+    cta: "Get quote",
+  },
+  'react-t2b-v2-westside-going-for': {
+    primary: "Homes in Northwest Crossing, Awbrey Butte, and the westside have their own market. See what comparable homes have actually sold for near you, with a real number from our local team.",
+    headline: "What are westside homes going for?",
+    description: "Real comps from your neighborhood",
+    cta: "Get quote",
+  },
+}
+const REACT_TIERS = [
+  {
+    id: 'T1',
+    label: 'T1 — Database (all past seller leads)',
+    desc: 'Retargets everyone who previously engaged but never converted. Curiosity and value angle.',
+    slugs: ['react-t1-v1-worth-today', 'react-t1-v2-make-a-move'],
+  },
+  {
+    id: 'T2A',
+    label: 'T2A — Premium sellers (higher-value + longer tenure)',
+    desc: 'Equity-rich, longer-owned Bend homes. What-would-it-bring + absentee-owner angle.',
+    slugs: ['react-t2a-v1-bring-today', 'react-t2a-v2-out-of-state'],
+  },
+  {
+    id: 'T2B',
+    label: 'T2B — West Bend (NW Crossing, Awbrey Butte, westside)',
+    desc: 'Hyper-local westside Bend targeting. Neighborhood-specific value + comps angle.',
+    slugs: ['react-t2b-v1-west-bend-worth', 'react-t2b-v2-westside-going-for'],
+  },
+]
+
+// Look up the multiResults entry for each slug to get the rendered image paths.
+// Images are in multisize/ relative to OUT_DIR so we reference them as relative paths.
+const reactTierHtml = REACT_TIERS.map(tier => {
+  const variantsHtml = tier.slugs.map(slug => {
+    const entry = multiResults.find(e => e.slug === slug)
+    const meta = REACT_META[slug]
+    const v = VARIANTS.find(x => x.slug === slug)
+    if (!entry || !meta || !v) return `<div style="color:#e08a6a">Missing data for ${slug}</div>`
+    const img45  = entry.sizes['4x5']   // relative path like multisize/seller-v10-...-4x5.jpg
+    const img916 = entry.sizes['9x16']
+    return `
+<div class="rv-variant">
+  <div class="rv-slug">${slug}</div>
+  <div class="rv-hl">${v.headline}</div>
+  <div class="rv-row">
+    <div class="rv-images">
+      <figure>
+        <a href="${img45}" target="_blank"><img class="rv45" src="${img45}" alt="${slug} 4:5"></a>
+        <figcaption>4:5 · 1080×1350<br>FB / IG feed</figcaption>
+      </figure>
+      <figure>
+        <a href="${img916}" target="_blank"><img class="rv916" src="${img916}" alt="${slug} 9:16"></a>
+        <figcaption>9:16 · 1080×1920<br>stories / reels</figcaption>
+      </figure>
+    </div>
+    <div class="rv-copy">
+      <div class="rv-copy-label">Meta ad copy</div>
+      <div class="rv-primary"><span class="rv-field">Primary:</span> ${meta.primary}</div>
+      <div class="rv-headline"><span class="rv-field">Headline:</span> ${meta.headline}</div>
+      <div class="rv-desc"><span class="rv-field">Description:</span> ${meta.description}</div>
+      <div class="rv-cta-line"><span class="rv-field">CTA:</span> ${meta.cta}</div>
+      <div class="rv-review-label">Review on ad art</div>
+      <div class="rv-review">"${v.quote.text}"<span class="rv-revattr">${v.quote.author} · ${v.quote.source} review</span></div>
+    </div>
+  </div>
+</div>`
+  }).join('\n')
+  return `
+<div class="rv-tier">
+  <h2>${tier.label}</h2>
+  <p class="rv-tier-desc">${tier.desc}</p>
+  ${variantsHtml}
+</div>`
+}).join('\n')
+
+const reactSheet = `<!doctype html><html><head><meta charset="utf-8"><title>Reactivation ads — T1 / T2A / T2B contact sheet</title>
+<style>
+  body{font-family:Georgia,serif;background:#0a0d12;color:#faf6ec;margin:0;padding:36px}
+  h1{font-style:italic;font-size:34px;font-weight:400;margin:0 0 6px;letter-spacing:-0.01em}
+  p.lede{color:rgba(250,246,236,0.72);max-width:1200px;line-height:1.6;font-size:15px;font-style:italic;margin:0 0 32px}
+  .rv-tier{max-width:1240px;margin:0 auto 52px}
+  .rv-tier h2{font-family:Georgia,serif;font-size:13px;font-style:normal;font-weight:400;letter-spacing:0.24em;text-transform:uppercase;margin:0 0 4px;padding-bottom:10px;border-bottom:1px solid rgba(250,246,236,0.2);color:#faf6ec}
+  .rv-tier-desc{font-style:italic;font-size:13px;color:rgba(250,246,236,0.55);margin:6px 0 22px}
+  .rv-variant{margin:0 0 36px;padding:0 0 36px;border-bottom:1px solid rgba(250,246,236,0.08)}
+  .rv-variant:last-child{border-bottom:none}
+  .rv-slug{font-size:10px;text-transform:uppercase;letter-spacing:0.18em;color:rgba(250,246,236,0.4);margin-bottom:5px}
+  .rv-hl{font-style:italic;font-size:22px;color:#faf6ec;margin-bottom:14px;font-family:Georgia,serif}
+  .rv-row{display:flex;gap:32px;align-items:flex-start}
+  .rv-images{display:flex;gap:16px;align-items:flex-start;flex:0 0 auto}
+  .rv-images figure{margin:0;text-align:center}
+  .rv-images img{display:block;border:1px solid rgba(250,246,236,0.18);border-radius:3px;background:#000}
+  img.rv45{width:216px;height:270px}
+  img.rv916{width:152px;height:270px}
+  figcaption{margin-top:8px;font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:rgba(250,246,236,0.45);line-height:1.5}
+  .rv-copy{flex:1 1 auto;padding-top:4px}
+  .rv-copy-label,.rv-review-label{font-size:10px;text-transform:uppercase;letter-spacing:0.18em;color:rgba(250,246,236,0.38);margin-bottom:10px;margin-top:0}
+  .rv-review-label{margin-top:18px}
+  .rv-primary,.rv-headline,.rv-desc,.rv-cta-line{font-size:14px;line-height:1.55;color:rgba(250,246,236,0.82);margin-bottom:8px}
+  .rv-field{font-style:normal;font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:rgba(250,246,236,0.4);margin-right:6px}
+  .rv-review{font-style:italic;color:rgba(250,246,236,0.58);font-family:Georgia,serif;font-size:14px;line-height:1.45}
+  .rv-revattr{display:block;margin-top:5px;font-style:normal;font-size:11px;letter-spacing:0.04em;color:rgba(250,246,236,0.38)}
+</style></head><body>
+<h1>Reactivation ads — T1 / T2A / T2B</h1>
+<p class="lede">Six variants across three audience tiers. Each shows the 4:5 (FB/IG feed) and 9:16 (Stories/Reels) renders side by side with the corresponding Meta ad copy. All six use Matt's solo headshot. Click any image for full size.</p>
+${reactTierHtml}
+</body></html>`
+await writeFile(resolve(OUT_DIR, 'contact-sheet-reactivation.html'), reactSheet, 'utf-8')
+
 console.log(`\nMultisize sheet: ${resolve(OUT_DIR, 'multisize-sheet.html')}`)
+console.log(`Reactivation contact sheet: ${resolve(OUT_DIR, 'contact-sheet-reactivation.html')}`)
 console.log(`\nDone. Sheet: ${resolve(OUT_DIR, 'v10-contact-sheet.html')}`)
 console.log(`Scorecard: ${resolve(OUT_DIR, 'scorecard.json')}  (avg ${avg}, ${voiceFailN} voice fails)`)

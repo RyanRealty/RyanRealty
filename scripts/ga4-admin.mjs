@@ -189,6 +189,42 @@ const AUDIENCES = [
     membershipDurationDays: 30,
     spec: { kind: 'high_intent_sellers' },
   },
+  {
+    displayName: 'Facebook visitors',
+    description: 'First user source contains facebook or instagram. Everyone who first arrived from Meta.',
+    membershipDurationDays: 540,
+    spec: { kind: 'facebook_visitors' },
+  },
+  {
+    displayName: 'Google visitors',
+    description: 'First user source contains google. Anyone whose first arrival was from Google.',
+    membershipDurationDays: 540,
+    spec: { kind: 'google_visitors' },
+  },
+  {
+    displayName: 'Returning visitors',
+    description: '2+ sessions (session_start fired more than once). Repeat visitors regardless of conversion.',
+    membershipDurationDays: 540,
+    spec: { kind: 'returning_visitors' },
+  },
+  {
+    displayName: 'Identified Facebook leads',
+    description: 'Has a FUB Person ID AND first arrived from facebook or instagram. Named leads from Meta.',
+    membershipDurationDays: 540,
+    spec: { kind: 'identified_facebook_leads' },
+  },
+  {
+    displayName: 'Identified Google leads',
+    description: 'Has a FUB Person ID AND first arrived from google. Named leads from Google.',
+    membershipDurationDays: 540,
+    spec: { kind: 'identified_google_leads' },
+  },
+  {
+    displayName: 'Real site traffic',
+    description: 'Hostname is one of our domains. Apply as a Comparison to strip ghost / referral spam.',
+    membershipDurationDays: 540,
+    spec: { kind: 'real_site_traffic' },
+  },
 ]
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -264,6 +300,48 @@ function dimensionFilterGt(fieldName, value) {
     },
   }
 }
+
+// String CONTAINS leaf (case-insensitive). Used for traffic-source matching.
+function dimContains(fieldName, value) {
+  return {
+    dimensionOrMetricFilter: {
+      fieldName,
+      stringFilter: { matchType: 'CONTAINS', value, caseSensitive: false },
+    },
+  }
+}
+
+// Regex leaf. With value '.+' this means "dimension is set to any non-empty
+// value" — the canonical "fub_person_id is present" test.
+function dimRegex(fieldName, value) {
+  return {
+    dimensionOrMetricFilter: {
+      fieldName,
+      stringFilter: { matchType: 'FULL_REGEXP', value },
+    },
+  }
+}
+
+// INCLUDE clause whose single orGroup ORs together every leaf in `leaves`.
+// Multiple INCLUDE clauses on one audience AND together at the user level.
+function includeMultiOr(leaves) {
+  return {
+    clauseType: 'INCLUDE',
+    simpleFilter: {
+      scope: 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
+      filterExpression: {
+        andGroup: { filterExpressions: [{ orGroup: { filterExpressions: leaves } }] },
+      },
+    },
+  }
+}
+
+// Facebook/Instagram first-touch source leaves (reused by visitor + lead audiences).
+const FACEBOOK_SOURCE_LEAVES = [
+  dimContains('firstUserSource', 'facebook'),
+  dimContains('firstUserSource', 'instagram'),
+]
+const GOOGLE_SOURCE_LEAVES = [dimContains('firstUserSource', 'google')]
 
 function buildAudiencePayload(parent, audience) {
   const base = {
@@ -362,6 +440,80 @@ function buildAudiencePayload(parent, audience) {
         includeAcrossAllSessions(
           eventFilter('scroll_depth', [dimensionFilterGt('percent_scrolled', 74)])
         ),
+      ]
+      break
+
+    case 'facebook_visitors':
+      base.requestBody.filterClauses = [includeMultiOr(FACEBOOK_SOURCE_LEAVES)]
+      break
+
+    case 'google_visitors':
+      base.requestBody.filterClauses = [includeMultiOr(GOOGLE_SOURCE_LEAVES)]
+      break
+
+    case 'returning_visitors':
+      // 2+ sessions: session_start event fired more than once.
+      base.requestBody.filterClauses = [
+        {
+          clauseType: 'INCLUDE',
+          simpleFilter: {
+            scope: 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
+            filterExpression: wrapAndOrGroup({
+              eventFilter: {
+                eventName: 'session_start',
+                eventParameterFilterExpression: {
+                  andGroup: {
+                    filterExpressions: [
+                      {
+                        orGroup: {
+                          filterExpressions: [
+                            {
+                              dimensionOrMetricFilter: {
+                                fieldName: 'eventCount',
+                                numericFilter: {
+                                  operation: 'GREATER_THAN',
+                                  value: { int64Value: '1' },
+                                },
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            }),
+          },
+        },
+      ]
+      break
+
+    case 'identified_facebook_leads':
+      // FUB Person ID is set (regex .+ = any non-empty value) AND first source is Meta.
+      // Two INCLUDE clauses AND together at the user level.
+      base.requestBody.filterClauses = [
+        includeMultiOr([dimRegex('customEvent:fub_person_id', '.+')]),
+        includeMultiOr(FACEBOOK_SOURCE_LEAVES),
+      ]
+      break
+
+    case 'identified_google_leads':
+      base.requestBody.filterClauses = [
+        includeMultiOr([dimRegex('customEvent:fub_person_id', '.+')]),
+        includeMultiOr(GOOGLE_SOURCE_LEAVES),
+      ]
+      break
+
+    case 'real_site_traffic':
+      // Hostname is one of our real domains. ryan-realty.com CONTAINS also
+      // matches www.ryan-realty.com. Ghost spam fakes the hostname, so this
+      // cohort excludes it. Apply as a Comparison in any standard report.
+      base.requestBody.filterClauses = [
+        includeMultiOr([
+          dimContains('hostName', 'ryan-realty.com'),
+          dimContains('hostName', 'ryanrealty.vercel.app'),
+        ]),
       ]
       break
 

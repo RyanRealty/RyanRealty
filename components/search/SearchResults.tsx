@@ -142,7 +142,7 @@ export default function SearchResults({
           const photoUrl = listing.PhotoURL ?? ''
           return (
             <Link key={key} href={href} className="group" data-listing-key={key}>
-              <article className="bg-card rounded-lg overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-shadow">
+              <article className="bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <div className="relative aspect-[4/3] bg-border">
                   {photoUrl ? (
                     <Image
@@ -166,8 +166,8 @@ export default function SearchResults({
                     {formatAddress(listing)}
                   </p>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {listing.BedroomsTotal ?? '—'} Beds Â· {listing.BathroomsTotal ?? '—'} Baths
-                    {listing.SubdivisionName && ` Â· ${listing.SubdivisionName}`}
+                    {listing.BedroomsTotal ?? '—'} Beds · {listing.BathroomsTotal ?? '—'} Baths
+                    {listing.SubdivisionName && ` · ${listing.SubdivisionName}`}
                   </p>
                 </div>
               </article>

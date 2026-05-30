@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { submitContactForm } from './actions'
-import { trackEvent } from '@/lib/tracking'
+import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -32,6 +32,8 @@ export default function ContactForm({ defaultInquiryType }: { defaultInquiryType
     setLoading(true)
     setState({})
     const formData = new FormData(e.currentTarget)
+    const rrSession = readRrSessionId()
+    if (rrSession) formData.append('sessionId', rrSession)
     const result = await submitContactForm(formData)
     setLoading(false)
     setState(result)
