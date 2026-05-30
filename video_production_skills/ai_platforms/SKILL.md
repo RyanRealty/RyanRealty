@@ -21,9 +21,9 @@ description: >
 
 ## The hard rule (re-read every time)
 
-**No AI video for listing interiors.** Locked in v4b.  Wan 2.7 cloud drift, Kling on a horse, Hailuo on a stagecoach all shipped as slop. AI is reserved for **aerials and exterior depth shots, abstract/macro/nature B-roll, stat-card backgrounds, and Synthesia-only avatars**. Never interior architecture, never reflective surfaces, never faces (except Synthesia, which is a separate skill at [`. /news_video/SKILL.md`](. /news_video/SKILL.md)).
+**Anchor AI motion on something real; never ship warped output.** AI video MAY animate real listing photos.  exteriors AND interiors.  via image-to-video (i2v) from the actual listing photo, so the home stays faithful to what it really is (§0 data accuracy: animate the real property, never invent one). The old "no interiors / zero real-estate visuals" ban is RETIRED (Matt directive 2026-05-29). The failures it reacted to were text-to-video hallucinations, not i2v of a real photo. Use i2v from the real photo when fidelity matters; use text-to-video only for generic atmosphere / nature / abstract b-roll.
 
-For viral video specifically: **zero real estate visuals**. Visuals are science / nature / macro / abstract only. The stat overlay or VO is the only housing tether. (See [`. /quality_gate/SKILL.md`](. /quality_gate/SKILL.md) §1.3.)
+Slop guardrails still bind: **one camera move per clip** (concurrent moves warp geometry), no warped hands / text / architecture, brand-consistent, and every AI clip clears the quality gate before it is stitched. See [`tool-mastery/SKILL.md`](../tool-mastery/SKILL.md) for the per-model prompting and i2v-vs-t2v decision matrix.
 
 ---
 
@@ -232,10 +232,10 @@ Store in Drive: `06_Marketing & Brand > Marketing > Video Production > [Season]/
 - [ ] Brief written; Matt approved BEFORE any API call
 - [ ] Prompt in block format with zero banned vocab
 - [ ] Pre-flight checklist all green
-- [ ] No real estate visuals (zero houses/keys/families/neighborhoods) for viral content
+- [ ] AI clip anchored on a real photo (i2v) when the subject is a real property; t2v only for generic b-roll
+- [ ] One camera move per clip; no warped hands / text / architecture
 - [ ] No branding inside the video frame
-- [ ] Stat overlay or VO is the ONLY housing tether
-- [ ] Visual could plausibly air on a science/nature YouTube channel
+- [ ] Real listing depicted faithfully (§0): the AI animated the real home, did not invent one
 - [ ] Post-processing applied (stabilize, color lock, speed ramp, grain)
 - [ ] Export: 1080×1920, H.264, 24-30 fps, 6 Mbps
 - [ ] Artifacts saved to Drive with naming convention above
