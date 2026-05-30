@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.378.0 (2026-05-30)
+
+### Features
+- feat(site): pre-cutover baseline — LP forms, team, search, contact, lead capture
+- feat(cutover): legacy WordPress -> new-site 301 redirect map (LAUNCH-04)
+
+### Maintenance
+- docs(cutover): go-live runbook + rollback artifact (LAUNCH-16/12)
+
+### Other
+- security(db): revoke anon/public EXECUTE on admin + mutation functions (DATA-07/08)
+- ci(gates): enforce full ci:gates suite in CI + re-arm Mac-compatible pre-push
+
+---
+
+
 ## v1.377.1 (2026-05-30)
 
 ### Maintenance
