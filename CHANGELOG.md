@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.378.1 (2026-05-30)
+
+### Bug Fixes
+- fix(cutover): remove vercel.app staging-host leaks + add ci:no-staging-host gate
+
+---
+
+
 ## v1.378.0 (2026-05-30)
 
 ### Features
