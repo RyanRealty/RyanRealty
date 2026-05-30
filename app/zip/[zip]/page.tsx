@@ -1,22 +1,28 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
+/**
+ * ZIP listings page (/zip/[zip]) — Wave 3 site-v2 rebuild.
+ *
+ * ZIPs carry no market data (no boundaries, no market_stats_cache rows), so
+ * this is a pure "homes for sale in {zip}" listings page: hero + ListingCard
+ * grid + CTA. Data through @/lib/data (getZipListings -> getListingTiles,
+ * postal_code filter). No legacy ListingTile / app/actions.
+ */
+
 import { notFound } from 'next/navigation'
-import ListingTile from '@/components/ListingTile'
-import HomeValuationCta from '@/components/HomeValuationCta'
-import { getListingsWithAdvanced } from '@/app/actions/listings'
+import type { Metadata } from 'next'
+import { getZipListings } from '@/lib/data'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { HeroBlock } from '@/components/site/HeroBlock'
+import { CTABar } from '@/components/site/CTABar'
+import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { Body, Container, Grid, Section } from '@/components/site/primitives'
 
 type Params = { zip: string }
 
-/**
- * Canonical ZIP codes Ryan Realty actively serves (SITE_SPEC line 115).
- * Anything outside this list falls through to notFound() so we never SSG
- * an empty page for a random ZIP. dynamicParams=false keeps the route
- * strict — only the canonical 10 will resolve.
- */
+// Canonical ZIP codes Ryan Realty serves. dynamicParams=false keeps the route
+// strict so a random ZIP 404s rather than SSG-ing an empty page.
 const CANONICAL_ZIPS = new Set([
-  '97701', // Bend
-  '97702', // Bend
-  '97703', // Bend
+  '97701', '97702', '97703', // Bend
   '97756', // Redmond
   '97759', // Sisters
   '97739', // La Pine
@@ -29,10 +35,6 @@ const CANONICAL_ZIPS = new Set([
 export const dynamicParams = false
 export const revalidate = 60
 
-// dynamicParams=false above means ONLY the slugs returned here can resolve.
-// An empty array would 404 every ZIP. The zip page's data fetches are cheap
-// (one listings filter + simple aggregations) so build-time prerender of all
-// 10 canonical ZIPs is safe even on slow Supabase.
 export async function generateStaticParams(): Promise<Array<{ zip: string }>> {
   return Array.from(CANONICAL_ZIPS).map((zip) => ({ zip }))
 }
@@ -48,103 +50,112 @@ function median(values: number[]): number | null {
   return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!
 }
 
-function formatPriceShort(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return '—'
-  // Brand-voice rounding: nearest thousand.
-  const rounded = Math.round(n / 1000) * 1000
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rounded)
+function tileToCardData(tile: Awaited<ReturnType<typeof getZipListings>>[number]): ListingCardData {
+  const addressLine =
+    [tile.streetNumber ?? '', tile.streetName ?? ''].filter(Boolean).join(' ') || 'Address on request'
+  const cityParts: string[] = []
+  if (tile.city) cityParts.push(tile.city + ', OR')
+  if (tile.postalCode) cityParts.push(tile.postalCode)
+  if (tile.subdivisionName) cityParts.push(tile.subdivisionName)
+  return {
+    listingKey: tile.listingKey,
+    href: `/listing/${tile.listingKey}`,
+    photoUrl: tile.photoUrl ?? null,
+    price: tile.listPrice ?? null,
+    addressLine,
+    cityLine: cityParts.join(' · '),
+    beds: tile.beds,
+    baths: tile.baths,
+    sqft: tile.sqft,
+    badge:
+      tile.status === 'Coming Soon'
+        ? { kind: 'new' as const, label: 'Coming Soon' }
+        : tile.priceDropCount && tile.priceDropCount > 0
+          ? { kind: 'drop' as const, label: 'Price reduced' }
+          : undefined,
+  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { zip: rawZip } = await params
   const zip = normalizeZip(rawZip)
-  if (!zip || !CANONICAL_ZIPS.has(zip)) return { title: 'ZIP not found' }
-  const title = `Homes for Sale in ${zip} | Ryan Realty`
-  const description = `Browse active listings in ZIP code ${zip}, Central Oregon. Median price, active inventory, and real-time updates from the MLS.`
-  return {
-    title,
-    description,
-    alternates: { canonical: `/zip/${zip}` },
-    openGraph: {
-      title,
-      description,
-      url: `/zip/${zip}`,
-      type: 'website',
-      images: ['/api/og?type=default'],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: ['/api/og?type=default'],
-    },
+  if (!CANONICAL_ZIPS.has(zip)) {
+    return pageMetadata({ title: 'ZIP not found · Ryan Realty', description: 'This ZIP code is outside the Ryan Realty service area.', path: `/zip/${zip}`, noindex: true })
   }
+  return pageMetadata({
+    title: `Homes for sale in ${zip} · Ryan Realty`,
+    description: `Browse active single-family listings in ZIP code ${zip}, Central Oregon, with photos, prices, and live updates from the MLS.`,
+    path: `/zip/${zip}`,
+  })
 }
 
 export default async function ZipPage({ params }: { params: Promise<Params> }) {
   const { zip: rawZip } = await params
   const zip = normalizeZip(rawZip)
-  // notFound() for anything outside the canonical list (SITE_SPEC line 115).
-  if (!zip || !CANONICAL_ZIPS.has(zip)) notFound()
+  if (!CANONICAL_ZIPS.has(zip)) notFound()
 
-  const { listings } = await getListingsWithAdvanced({
-    postalCode: zip,
-    limit: 48,
-    offset: 0,
-    sort: 'newest',
-  })
-  const prices = (listings as Array<{ ListPrice?: number | null }>)
-    .map((l) => (typeof l.ListPrice === 'number' && Number.isFinite(l.ListPrice) ? l.ListPrice : null))
-    .filter((n): n is number => n != null)
-  const medianPrice = median(prices)
+  const tiles = await getZipListings(zip, { status: 'active', limit: 48 }).catch(() => [])
+  const cards = tiles.map(tileToCardData)
+  const prices = cards
+    .map((c) => c.price)
+    .filter((n): n is number => typeof n === 'number' && Number.isFinite(n))
+  const med = median(prices)
 
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: `${baseUrl}` },
-      { '@type': 'ListItem', position: 2, name: 'Search', item: `${baseUrl}/search` },
-      { '@type': 'ListItem', position: 3, name: zip, item: `${baseUrl}/zip/${zip}` },
-    ],
+  const ledeParts = [`${cards.length} active single-family listings in ${zip}.`]
+  if (med != null) {
+    ledeParts.push(`Median list price $${(Math.round(med / 1000) * 1000).toLocaleString()}.`)
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
-      <nav className="mb-4 text-sm text-muted-foreground" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-foreground">Home</Link>
-        <span className="mx-2">/</span>
-        <Link href="/search" className="hover:text-foreground">Search</Link>
-        <span className="mx-2">/</span>
-        <span>{zip}</span>
-      </nav>
-      <h1 className="text-3xl font-semibold text-foreground">Homes for sale in {zip}</h1>
-      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-        <span className="tabular-nums">
-          <span className="font-semibold text-foreground">{listings.length}</span> active listings
-        </span>
-        <span aria-hidden>·</span>
-        <span className="tabular-nums">
-          Median price <span className="font-semibold text-foreground">{formatPriceShort(medianPrice)}</span>
-        </span>
+    <main className="min-h-screen bg-background">
+      <div className="bg-background border-b border-border py-3">
+        <Container>
+          <BreadcrumbNav
+            items={[
+              { label: 'Home', href: '/' },
+              { label: 'Search', href: '/search' },
+              { label: zip },
+            ]}
+            tone="on-light"
+          />
+        </Container>
       </div>
-      {listings.length === 0 ? (
-        <p className="mt-8 text-muted-foreground">No active listings were found for ZIP {zip}. Check back soon as inventory turns over weekly.</p>
-      ) : (
-        <section className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((listing, index) => {
-            const listingKey = (listing.ListNumber ?? listing.ListingKey ?? `listing-${index}`).toString().trim()
-            return <ListingTile key={listingKey} listing={listing} listingKey={listingKey} signedIn={false} />
-          })}
-        </section>
-      )}
-      <section className="mt-10">
-        <HomeValuationCta />
-      </section>
+
+      <HeroBlock
+        headline={`Homes for sale in ${zip}`}
+        lede={ledeParts.join(' ')}
+        photo={{
+          src: '/brand/hero/hero-old-mill-master-4k.jpg',
+          alt: 'Old Mill District drone view with the Deschutes River and the Cascade mountains.',
+          priority: true,
+        }}
+        minHeight={360}
+      />
+
+      <Section padding="default" tone="default">
+        <Container>
+          {cards.length === 0 ? (
+            <Body tone="muted">
+              No active listings in ZIP {zip} right now. Inventory turns over weekly, so check back soon.
+            </Body>
+          ) : (
+            <Grid cols={3} gap="default">
+              {cards.map((c) => (
+                <ListingCard key={c.listingKey} listing={c} />
+              ))}
+            </Grid>
+          )}
+        </Container>
+      </Section>
+
+      <CTABar
+        eyebrow="Looking wider?"
+        title="Search every home in Central Oregon."
+        body="Filter by price, beds, baths, and more across Bend, Redmond, Sisters, Sunriver, and the surrounding communities."
+        primary={{ href: '/search', label: 'Search all homes' }}
+        secondary={{ href: '/contact', label: 'Talk to a broker' }}
+        tone="navy"
+      />
     </main>
   )
 }

@@ -1,0 +1,16 @@
+{
+  "route": "app/zip/[zip]/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/zip/index.html",
+  "competitiveTarget": "Long-tail SEO: 'homes for sale in {zip}'. ZIPs carry no market data (no boundaries/stats), so this is a clean listings page, not the full city pattern.",
+  "note": "Wave 3 site-v2 rebuild. Listings via getZipListings (DAL, postal_code filter). ListingCard grid + hero + CTA. No market snapshot / boundary map / chart (no zip-level data exists). Canonical 10 ZIPs, dynamicParams=false.",
+  "requiredComponents": [
+    { "name": "BreadcrumbNav", "section": "Home > Search > {zip}", "blocking": true },
+    { "name": "HeroBlock", "section": "hero — 'Homes for sale in {zip}' + active count + median list price", "blocking": true },
+    { "name": "ListingCard", "section": "active listings grid via getZipListings", "blocking": true },
+    { "name": "CTABar", "section": "'Search every home in Central Oregon' -> /search", "blocking": true }
+  ],
+  "layoutComponents": [
+    { "name": "SiteHeader", "section": "renders from app/layout.tsx", "note": "gate checks the route file" },
+    { "name": "SiteFooter", "section": "renders from app/layout.tsx", "note": "gate checks the route file" }
+  ]
+}
