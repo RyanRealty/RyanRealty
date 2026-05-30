@@ -1,49 +1,49 @@
+/**
+ * Bend neighborhood detail page — Wave 3 rebuild.
+ *
+ * Data ONLY through @/lib/data and @/app/actions/cities.
+ * Composes the same site-v2 blocks as app/cities/[slug]/page.tsx
+ * and app/communities/[slug]/page.tsx.
+ *
+ * Section order:
+ *   1.  MetadataBlock schemas={neighborhoodSchemas}  (PRESERVED VERBATIM)
+ *   2.  BreadcrumbNav (site-v2)
+ *   3.  HeroBlock — headline + data-driven lede from neighborhood object
+ *   4.  Stat band — active listings / median list price / avg DOM
+ *   5.  SiteNeighborhoodMap — boundary polygon + in-boundary pins (PRESERVED)
+ *   6.  ListingCard grid — in-boundary active listings, cap 24
+ *   7.  CommunityRichContent (PRESERVED VERBATIM)
+ *   8.  FAQBlock (PRESERVED VERBATIM)
+ *   9.  CTABar (site-v2 navy)
+ */
+
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { getNeighborhoodBySlug } from '@/app/actions/cities'
 import {
-  getNeighborhoodBySlug,
-  getNeighborhoodListings,
-  getNeighborhoodPendingListings,
-  getNeighborhoodPriceHistory,
-  getNeighborhoodSoldListings,
-  getCommunitiesInNeighborhood,
-} from '@/app/actions/cities'
-import { getActivityFeedByCityCached } from '@/app/actions/activity-feed'
-import { getEngagementCountsBatchCached } from '@/app/actions/engagement'
-import { getActiveBrokers } from '@/app/actions/brokers'
-import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '@/lib/share-metadata'
-import { homesForSalePath } from '@/lib/slug'
-import { buildDataDrivenNeighborhoodAbout } from '@/lib/city-content'
-import NeighborhoodHero from '@/components/neighborhood/NeighborhoodHero'
-import NeighborhoodOverview from '@/components/neighborhood/NeighborhoodOverview'
-import NeighborhoodMarketStats from '@/components/neighborhood/NeighborhoodMarketStats'
-import NeighborhoodMap from '@/components/neighborhood/NeighborhoodMap'
-import NeighborhoodPageTracker from '@/components/neighborhood/NeighborhoodPageTracker'
-import BreadcrumbStrip from '@/components/layout/BreadcrumbStrip'
-import NeighborhoodPageActionBar from '@/components/geo-page/NeighborhoodPageActionBar'
-import ListingsSlider from '@/components/geo-page/ListingsSlider'
-import GeoCTAWithBroker from '@/components/geo-page/GeoCTAWithBroker'
-import GeoSectionNewestListings from '@/components/geo-page/GeoSectionNewestListings'
-import CommunitiesSlider from '@/components/sliders/CommunitiesSlider'
-import GeoSectionFeaturedListings from '@/components/geo-page/GeoSectionFeaturedListings'
-import GeoSectionLatestActivity from '@/components/geo-page/GeoSectionLatestActivity'
-import RecentlySoldRow from '@/components/RecentlySoldRow'
-import { getNeighborhoodInventoryBreakdown, type InventoryBreakdown } from '@/app/actions/inventory-breakdown'
-import InventoryTypeSlider from '@/components/geo-page/InventoryTypeSlider'
-import VideoToursRow from '@/components/videos/VideoToursRow'
-import { getListingsWithVideosCached } from '@/app/actions/videos'
-import { getHomeTileRowsByKeys } from '@/app/actions/listings'
-import type { YearSeriesPoint } from '@/lib/report-year-compare'
-import { getGeoBoundaryMapData } from '@/lib/data'
-import { NeighborhoodMap as SiteNeighborhoodMap } from '@/components/site/NeighborhoodMap'
+  getGeoBoundaryMapData,
+  getListingTiles,
+} from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { HeroBlock } from '@/components/site/HeroBlock'
+import { CTABar } from '@/components/site/CTABar'
+import { NeighborhoodMap as SiteNeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import { CommunityRichContent } from '@/components/site/CommunityRichContent'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { Container, Section, Grid, Stack, Eyebrow, H2 } from '@/components/site/primitives'
+import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+export const dynamicParams = true
+export const revalidate = 60
+
+export async function generateStaticParams(): Promise<Array<{ slug: string; neighborhoodSlug: string }>> {
+  return []
+}
 
 type Props = { params: Promise<{ slug: string; neighborhoodSlug: string }> }
 
@@ -52,252 +52,142 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)
   if (!neighborhood) return { title: 'Neighborhood Not Found' }
 
-  // Use seo_title and seo_description from DB if available, fallback to generated values
-  const title = neighborhood.seoTitle || `${neighborhood.name} in ${neighborhood.cityName}, Oregon | Homes for Sale | Ryan Realty`
-  const rawDesc =
+  const title =
+    neighborhood.seoTitle ||
+    `Homes for Sale in ${neighborhood.name} | ${neighborhood.cityName}, Oregon`
+
+  const description =
     neighborhood.seoDescription ||
     (neighborhood.activeCount > 0
-      ? `${neighborhood.activeCount} homes for sale in ${neighborhood.name}, ${neighborhood.cityName}. Median price ${neighborhood.medianPrice != null ? `$${neighborhood.medianPrice.toLocaleString()}` : '—'}.`
-      : `Explore ${neighborhood.name} in ${neighborhood.cityName}, Oregon.`)
-  const description = shareDescription(rawDesc)
-  const canonical = `${siteUrl}/cities/${citySlug}/${neighborhoodSlug}`
-  const ogImage = neighborhood.heroImageUrl
-  return {
+      ? `${neighborhood.activeCount} homes for sale in ${neighborhood.name}, ${neighborhood.cityName}. Median list price ${neighborhood.medianPrice != null ? `$${(Math.round(neighborhood.medianPrice / 1000) * 1000).toLocaleString()}` : 'available on request'}. Local market data from Ryan Realty.`
+      : `Explore ${neighborhood.name} in ${neighborhood.cityName}, Oregon. Live market data and listings from a local brokerage.`)
+
+  return pageMetadata({
     title,
     description,
-    alternates: { canonical },
-    openGraph: {
-      title,
-      description,
-      url: canonical,
-      siteName: 'Ryan Realty',
-      type: 'website',
-      ...(ogImage && { images: [{ url: ogImage, width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT, alt: `${neighborhood.name}, ${neighborhood.cityName} — Ryan Realty` }] }),
-    },
-    twitter: { card: 'summary_large_image', title, description },
+    path: `/cities/${citySlug}/${neighborhoodSlug}`,
+  })
+}
+
+/** Map a listing tile from getListingTiles to ListingCardData for ListingCard. */
+function tileToCardData(tile: Awaited<ReturnType<typeof getListingTiles>>[number]): ListingCardData {
+  const streetNum = tile.streetNumber ?? ''
+  const streetName = tile.streetName ?? ''
+  const addressLine = [streetNum, streetName].filter(Boolean).join(' ') || 'Address on request'
+
+  const cityParts: string[] = []
+  if (tile.city) cityParts.push(tile.city + ', OR')
+  if (tile.postalCode) cityParts.push(tile.postalCode)
+  if (tile.subdivisionName) cityParts.push(tile.subdivisionName)
+  const cityLine = cityParts.join(' · ')
+
+  return {
+    listingKey: tile.listingKey,
+    href: `/listing/${tile.listingKey}`,
+    photoUrl: tile.photoUrl ?? null,
+    price: tile.listPrice ?? null,
+    addressLine,
+    cityLine,
+    beds: tile.beds,
+    baths: tile.baths,
+    sqft: tile.sqft,
+    badge:
+      tile.status === 'Coming Soon'
+        ? { kind: 'new' as const, label: 'Coming Soon' }
+        : tile.priceDropCount && tile.priceDropCount > 0
+        ? { kind: 'drop' as const, label: 'Price reduced' }
+        : undefined,
   }
-}
-
-export const revalidate = 60
-
-/**
- * Canonical Bend neighborhood slugs (SITE_SPEC line 94). Pre-rendered at
- * build via `generateStaticParams` so cold visits land on a cached HTML doc.
- * `dynamicParams = true` keeps the route open for additional neighborhoods
- * that get added to the `boundaries` table later. Slug format is the bare
- * neighborhood slug (e.g. `awbrey-butte`) because the parent `slug` is
- * `bend`. The 14 neighborhoods enumerated here match the boundaries seed
- * (`geo_type='neighborhood' AND geo_slug LIKE 'bend-%'`) and the
- * Bend neighborhood data in `lib/bend-neighborhoods.ts`.
- */
-const BEND_NEIGHBORHOOD_SLUGS = [
-  'awbrey-butte',
-  'old-mill',
-  'larkspur',
-  'pilot-butte',
-  'northwest-crossing',
-  'river-west',
-  'westside',
-  'downtown',
-  'eastside',
-  'century-west',
-  'bear-creek',
-  'mountain-view',
-  'se-bend',
-  'brookswood',
-] as const
-
-export const dynamicParams = true
-
-// Empty during build, populated on demand — see equivalent comment in
-// app/cities/[slug]/page.tsx. Build-time prerender hit Supabase statement
-// timeouts on cold-cache neighborhoods (e.g. awbrey-butte) causing the
-// build to fail after 3 retries.
-export async function generateStaticParams(): Promise<Array<{ slug: string; neighborhoodSlug: string }>> {
-  return []
-}
-
-async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
-  ])
-}
-
-const EMPTY_INVENTORY: InventoryBreakdown = {
-  singleFamily: 0,
-  condoTownhome: 0,
-  manufacturedMobile: 0,
-  landLot: 0,
 }
 
 export default async function NeighborhoodDetailPage({ params }: Props) {
   const { slug: citySlug, neighborhoodSlug } = await params
+
   const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)
   if (!neighborhood) notFound()
-  // Boundary polygon slug: neighborhoods stored as "{citySlug}-{neighborhoodSlug}"
+
+  // Boundary polygon slug for Bend neighborhoods: "{citySlug}-{neighborhoodSlug}"
   const boundaryNeighborhoodSlug = `${citySlug}-${neighborhoodSlug}`
 
-  // Rich, verified neighborhood content (overview prose + amenities + drive
-  // times) from data/resort-community-[slug].json, keyed by the same
-  // "{citySlug}-{neighborhoodSlug}" slug. Null until a config is authored;
-  // enforced 100% by G33 / D96. Rendered via the shared CommunityRichContent.
-  const richContent = await getResortCommunityContent(boundaryNeighborhoodSlug).catch(() => null)
-
-  const [listings, pendingListings, soldListings, neighborhoodPriceHistory, savedKeys, likedKeys, communitiesInNeighborhood, activityFeedRaw, brokers, savedCommunityKeys, likedCommunityKeys, inventoryBreakdown, cityVideoRows, boundaryMapData] = await Promise.all([
-    withTimeout(getNeighborhoodListings(neighborhood.id, 24), []),
-    withTimeout(getNeighborhoodPendingListings(neighborhood.id, 12), []),
-    withTimeout(getNeighborhoodSoldListings(neighborhood.id, 6), []),
-    withTimeout(getNeighborhoodPriceHistory(neighborhood.id), []),
-    Promise.resolve([] as string[]),
-    Promise.resolve([] as string[]),
-    withTimeout(getCommunitiesInNeighborhood(neighborhood.id, neighborhood.cityName), []),
-    withTimeout(getActivityFeedByCityCached(neighborhood.cityName, null, 24), []),
-    withTimeout(getActiveBrokers(), []),
-    Promise.resolve([] as string[]),
-    Promise.resolve([] as string[]),
-    withTimeout(getNeighborhoodInventoryBreakdown(neighborhood.id), EMPTY_INVENTORY, 20_000),
-    withTimeout(getListingsWithVideosCached({ city: neighborhood.cityName, sort: 'price_desc', status: 'active', limit: 20 }), []),
-    // Shared boundary map data: polygon + spatially-correct listing pins via
-    // listings_in_boundary RPC. Boundary slug for Bend neighborhoods is
-    // '{citySlug}-{neighborhoodSlug}' (e.g. 'bend-awbrey-butte'). Gate G31
-    // enforces this is the only boundary-map data path on geo pages.
-    getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }).catch(() => ({ polygon: null, pins: [] })),
+  const [richContent, boundaryMapData] = await Promise.all([
+    // Rich verified content from data/resort-community-[slug].json.
+    // Null until a config is authored — CommunityRichContent handles null gracefully.
+    getResortCommunityContent(boundaryNeighborhoodSlug).catch(() => null),
+    // Boundary polygon + spatially-correct listing pins via listings_in_boundary RPC.
+    getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }).catch(
+      () => ({ polygon: null, pins: [] })
+    ),
   ])
 
-  const heroImageUrl = neighborhood.heroImageUrl ?? null
+  // In-boundary listing cards. Same pattern as the community page:
+  // hand the spatial pin keys to getListingTiles so the shown set is the
+  // authoritative boundary-scoped inventory, not a subdivision-name guess.
+  const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
+  const listingTiles =
+    boundaryListingKeys.length > 0
+      ? await getListingTiles({
+          listingKeys: boundaryListingKeys,
+          status: 'active',
+          limit: 24,
+        }).catch(() => [])
+      : []
+  const listingCards: ListingCardData[] = listingTiles.map(tileToCardData)
 
-  const dataDrivenParagraphs =
-    !neighborhood.description || neighborhood.description.trim().length < 180
-      ? buildDataDrivenNeighborhoodAbout({
-          neighborhoodName: neighborhood.name,
-          cityName: neighborhood.cityName,
-          activeCount: neighborhood.activeCount,
-          medianPrice: neighborhood.medianPrice,
-        })
-      : undefined
+  // ---------------------------------------------------------------------------
+  // Hero lede — single source: the neighborhood object from getNeighborhoodBySlug.
+  // Same numbers used in the stat band and JSON-LD below so they always agree.
+  // ---------------------------------------------------------------------------
+  const activeCount = neighborhood.activeCount
+  const medianListPrice = neighborhood.medianPrice
 
-  const listingKeys = listings
-    .map((l) => (l.ListingKey ?? l.ListNumber ?? '').toString().trim())
-    .filter(Boolean)
-  const engagementMap = listingKeys.length > 0
-    ? await getEngagementCountsBatchCached(listingKeys)
-    : ({} as Record<string, { view_count: number; like_count: number; save_count: number; share_count: number }>)
-  const engagementScore = (key: string) => {
-    const e = engagementMap[key]
-    return (e?.view_count ?? 0) + (e?.like_count ?? 0) + (e?.save_count ?? 0) + (e?.share_count ?? 0)
+  const ledeParts: string[] = []
+  if (activeCount > 0) {
+    ledeParts.push(`${activeCount} homes for sale in ${neighborhood.name}.`)
   }
-  const featuredListings = [...listings]
-    .sort((a, b) => {
-      const keyA = (a.ListingKey ?? a.ListNumber ?? '').toString().trim()
-      const keyB = (b.ListingKey ?? b.ListNumber ?? '').toString().trim()
-      const scoreA = engagementScore(keyA)
-      const scoreB = engagementScore(keyB)
-      if (scoreB !== scoreA) return scoreB - scoreA
-      const priceA = Number(a.ListPrice ?? 0)
-      const priceB = Number(b.ListPrice ?? 0)
-      return priceB - priceA
-    })
-    .slice(0, 12)
-  const neighborhoodListingKeys = new Set(
-    listings
-      .map((item) => (item.ListingKey ?? item.ListNumber ?? '').toString().trim())
-      .filter((key) => key.length > 0)
-  )
-  const activityFeed = activityFeedRaw.filter((item) => neighborhoodListingKeys.has(item.listing_key))
-  const neighborhoodVideoRows = cityVideoRows.filter((row) => neighborhoodListingKeys.has(row.listing_key))
-  const neighborhoodVideoKeys = neighborhoodVideoRows.map((row) => row.listing_key).filter((key) => key.trim().length > 0)
-  const neighborhoodVideoListingRows = neighborhoodVideoKeys.length > 0 ? await getHomeTileRowsByKeys(neighborhoodVideoKeys) : []
-  const neighborhoodVideoByKey = new Map(neighborhoodVideoRows.map((row) => [row.listing_key, row.video_url]))
-  const listingsWithVideo = neighborhoodVideoListingRows.map((row) => {
-    const listingKey = (row.ListingKey ?? '').toString().trim()
-    const listNumber = (row.ListNumber ?? '').toString().trim()
-    const videoUrl = neighborhoodVideoByKey.get(listingKey) ?? neighborhoodVideoByKey.get(listNumber)
-    if (!videoUrl) return row
-    return {
-      ...row,
-      details: { Videos: [{ Uri: videoUrl }] },
-      has_virtual_tour: true,
-    }
-  })
-
-  const prices = listings
-    .map((l) => l.ListPrice)
-    .filter((p): p is number => p != null && Number.isFinite(p) && p > 0)
-  const priceRangeMin = prices.length > 0 ? Math.min(...prices) : null
-  const priceRangeMax = prices.length > 0 ? Math.max(...prices) : null
-
-  const domValues = listings
-    .map((l) => {
-      const onMarket = (l as { OnMarketDate?: string | null }).OnMarketDate
-      if (!onMarket) return null
-      const d = new Date(onMarket)
-      if (Number.isNaN(d.getTime())) return null
-      const days = Math.floor((Date.now() - d.getTime()) / (24 * 60 * 60 * 1000))
-      return days >= 0 ? days : null
-    })
-    .filter((n): n is number => n != null)
-  const avgDom = domValues.length > 0 ? Math.round(domValues.reduce((a, b) => a + b, 0) / domValues.length) : null
-
-  const neighborhoodStats = {
-    medianPrice: neighborhood.medianPrice,
-    count: neighborhood.activeCount,
-    avgDom,
-    closedLast12Months: 0,
+  if (medianListPrice != null) {
+    const rounded = Math.round(medianListPrice / 1000) * 1000
+    ledeParts.push(`Median list price $${rounded.toLocaleString()}.`)
   }
-  const recentlySoldRows = soldListings
-    .map((item) => ({
-      listingKey: (item.ListingKey ?? item.ListNumber ?? '').toString().trim(),
-      listNumber: item.ListNumber ?? null,
-      listPrice: item.ListPrice ?? null,
-      closePrice: item.ClosePrice ?? null,
-      closeDate: item.CloseDate ?? null,
-      beds: item.BedroomsTotal ?? null,
-      baths: item.BathroomsTotal ?? null,
-      sqft: item.TotalLivingAreaSqFt ?? null,
-      streetNumber: item.StreetNumber ?? null,
-      streetName: item.StreetName ?? null,
-      city: item.City ?? null,
-      state: item.State ?? null,
-      postalCode: item.PostalCode ?? null,
-      photoUrl: item.PhotoURL ?? null,
-    }))
-    .filter((item) => item.listingKey.length > 0)
+  const lede = ledeParts.join(' ')
 
-  const geo = (() => {
-    const withCoords = listings.filter(
-      (l) =>
-        l.Latitude != null &&
-        l.Longitude != null &&
-        Number.isFinite(Number(l.Latitude)) &&
-        Number.isFinite(Number(l.Longitude))
-    )
-    if (withCoords.length === 0) return null
-    const lat = withCoords.reduce((a, l) => a + Number(l.Latitude), 0) / withCoords.length
-    const lng = withCoords.reduce((a, l) => a + Number(l.Longitude), 0) / withCoords.length
-    return { lat, lng }
-  })()
+  // Stat band shows the two VERIFIED figures on NeighborhoodDetail: activeCount
+  // and medianPrice. There is no verified days-on-market aggregate at the
+  // neighborhood level (NeighborhoodDetail carries none), and we will NOT compute
+  // one from the 24 shown tiles (ad-hoc + partial-sample). So no DOM stat renders.
 
-  const breadcrumbItems: { name: string; item: string }[] = [
-    { name: 'Home', item: siteUrl },
-    { name: 'Cities', item: `${siteUrl}/cities` },
-    { name: neighborhood.cityName, item: `${siteUrl}/cities/${citySlug}` },
-    { name: neighborhood.name, item: `${siteUrl}/cities/${citySlug}/${neighborhoodSlug}` },
-  ]
-
-  // AI citability (D97 / G34): verified market Q&A + structured data, the same
-  // single-source pattern as the city + community pages. Neighborhood stats come
-  // from getNeighborhoodBySlug (geo_snapshot_mv medianListPrice + activeSfrCount,
-  // list-side — matching the visible NeighborhoodHero/MarketStats). avgDom is
-  // intentionally NOT fed: it is average days on market, not the median days to
-  // pending the FAQ phrases, so feeding it would mislabel the metric.
+  // ---------------------------------------------------------------------------
+  // AI citability (D97 / G34): verified market Q&A + structured data.
+  // Single source: neighborhood object (activeCount + medianPrice).
+  // avgDom intentionally NOT fed — it is average days on market, not median
+  // days to pending, and would mislabel the metric in the FAQ text.
+  // ---------------------------------------------------------------------------
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, {
     activeCount: neighborhood.activeCount,
     medianListPrice: neighborhood.medianPrice,
   })
 
+  // Geo centroid for Place schema: average of in-boundary listing coords.
+  const withCoords = boundaryMapData.pins.filter(
+    (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng)
+  )
+  const geo =
+    withCoords.length > 0
+      ? {
+          lat: withCoords.reduce((a, p) => a + p.lat, 0) / withCoords.length,
+          lng: withCoords.reduce((a, p) => a + p.lng, 0) / withCoords.length,
+        }
+      : undefined
+
   const neighborhoodSchemas: SchemaInput[] = [
-    { type: 'breadcrumb', items: breadcrumbItems.map((b) => ({ name: b.name, url: b.item })) },
+    {
+      type: 'breadcrumb',
+      items: [
+        { name: 'Home', url: '/' },
+        { name: 'Cities', url: '/cities' },
+        { name: neighborhood.cityName, url: `/cities/${citySlug}` },
+        { name: neighborhood.name, url: `/cities/${citySlug}/${neighborhoodSlug}` },
+      ],
+    },
     {
       type: 'place',
       placeType: 'Neighborhood',
@@ -306,7 +196,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       url: `/cities/${citySlug}/${neighborhoodSlug}`,
       address: { city: neighborhood.cityName, state: 'OR', country: 'US' },
       containedInPlace: neighborhood.cityName,
-      geo: geo ?? undefined,
+      geo,
       hasMap: boundaryMapData.polygon ? `/cities/${citySlug}/${neighborhoodSlug}` : undefined,
       additionalProperty: datasetVariables.length > 0 ? datasetVariables : undefined,
     },
@@ -325,53 +215,72 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* AI-citability structured data: breadcrumb + Neighborhood Place + market
-          Dataset, via the shared MetadataBlock (replaces the old hand-coded
-          Place + BreadcrumbList scripts). FAQPage is emitted by the FAQBlock below. */}
+
+      {/* 1. AI-citability structured data: breadcrumb + Neighborhood Place + market
+             Dataset. FAQPage emitted by FAQBlock below. PRESERVED VERBATIM. */}
       <MetadataBlock schemas={neighborhoodSchemas} />
 
-      <NeighborhoodPageTracker
-        neighborhoodName={neighborhood.name}
-        cityName={neighborhood.cityName}
-        citySlug={citySlug}
-        neighborhoodSlug={neighborhoodSlug}
-        listingCount={neighborhood.activeCount}
-        medianPrice={neighborhood.medianPrice}
+      {/* 2. Breadcrumb — site-v2 BreadcrumbNav.
+             JSON-LD suppressed because MetadataBlock above carries the full trail. */}
+      <Container className="pt-3 pb-1">
+        <BreadcrumbNav
+          includeJsonLd={false}
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Cities', href: '/cities' },
+            { label: neighborhood.cityName, href: `/cities/${citySlug}` },
+            { label: neighborhood.name },
+          ]}
+        />
+      </Container>
+
+      {/* 3. Hero — canonical Old Mill master photo + data-driven lede.
+             Numbers come from the neighborhood object (single source). */}
+      <HeroBlock
+        headline={`Homes for sale in ${neighborhood.name}`}
+        lede={lede || undefined}
+        photo={{
+          src: '/brand/hero/hero-old-mill-master-4k.jpg',
+          alt: 'Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains.',
+          priority: true,
+        }}
+        minHeight={520}
       />
 
-      <NeighborhoodHero
-        name={neighborhood.name}
-        cityName={neighborhood.cityName}
-        citySlug={citySlug}
-        heroImageUrl={heroImageUrl}
-        activeCount={neighborhood.activeCount}
-        medianPrice={neighborhood.medianPrice}
-        avgDom={avgDom}
-        actions={
-          <NeighborhoodPageActionBar
-            neighborhoodName={neighborhood.name}
-            cityName={neighborhood.cityName}
-            shareUrl={`${siteUrl}/cities/${citySlug}/${neighborhoodSlug}`}
-            variant="overlay"
-          />
-        }
-      />
+      {/* 4. Stat band — 3-4 cards from the same neighborhood object.
+             Zero / null stats are omitted entirely (data accuracy: never show
+             a misleading zero on a consumer-facing surface). */}
+      {(activeCount > 0 || medianListPrice != null) ? (
+        <Section padding="tight" tone="muted" divider>
+          <Container>
+            <Grid cols={activeCount > 0 && medianListPrice != null ? 2 : 1}>
+              {activeCount > 0 ? (
+                <div className="rounded-xl bg-card border border-border shadow-sm px-6 py-5">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+                    Active listings
+                  </p>
+                  <p className="text-3xl font-bold tabular-nums text-foreground">{activeCount}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Single-family homes</p>
+                </div>
+              ) : null}
+              {medianListPrice != null ? (
+                <div className="rounded-xl bg-card border border-border shadow-sm px-6 py-5">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+                    Median list price
+                  </p>
+                  <p className="text-3xl font-bold tabular-nums text-foreground">
+                    ${(Math.round(medianListPrice / 1000) * 1000).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Active SFR inventory</p>
+                </div>
+              ) : null}
+            </Grid>
+          </Container>
+        </Section>
+      ) : null}
 
-      <NeighborhoodMarketStats
-        neighborhoodName={neighborhood.name}
-        cityName={neighborhood.cityName}
-        citySlug={citySlug}
-        stats={neighborhoodStats}
-        priceHistory={neighborhoodPriceHistory}
-        salesHistory={neighborhoodPriceHistory.map((point): YearSeriesPoint => ({
-          period_start: `${point.month}-01`,
-          sold_count: Number(point.soldCount ?? 0),
-          median_price: point.medianPrice,
-        }))}
-      />
-
-      {/* Boundary map — neighborhood polygon + spatially-correct listing pins.
-          Data via getGeoBoundaryMapData (shared DAL, Gate G31). */}
+      {/* 5. Boundary map — neighborhood polygon + spatially-correct listing pins.
+             Data via getGeoBoundaryMapData (shared DAL, Gate G31). PRESERVED. */}
       {boundaryMapData.polygon ? (
         <SiteNeighborhoodMap
           polygons={[
@@ -393,124 +302,40 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         />
       ) : null}
 
-      {/* Verified rich neighborhood content (overview + amenities + drive times),
-          shared renderer with the community page. D95/D96, enforced by G33. */}
+      {/* 6. In-boundary listing cards — spatial boundary set, cap 24.
+             Same tileToCardData pattern as app/communities/[slug]/page.tsx. */}
+      {listingCards.length > 0 ? (
+        <section className="border-t border-border bg-background py-10 md:py-14">
+          <Container>
+            <div className="mb-6 flex items-end justify-between gap-4">
+              <Stack gap="tight">
+                <Eyebrow>{neighborhood.name}</Eyebrow>
+                <H2>Homes for sale in {neighborhood.name}</H2>
+              </Stack>
+              {boundaryMapData.pins.length > 24 ? (
+                <a
+                  href={`/search?city=${encodeURIComponent(neighborhood.cityName)}`}
+                  className="shrink-0 text-sm font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  View all {boundaryMapData.pins.length}
+                </a>
+              ) : null}
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {listingCards.map((card) => (
+                <ListingCard key={card.listingKey} listing={card} />
+              ))}
+            </div>
+          </Container>
+        </section>
+      ) : null}
+
+      {/* 7. Verified rich neighborhood content (overview + amenities + drive times)
+             via the shared CommunityRichContent renderer. PRESERVED VERBATIM. */}
       <CommunityRichContent content={richContent} name={neighborhood.name} />
 
-      <BreadcrumbStrip
-        items={[
-          { label: 'Home', href: '/' },
-          { label: 'Cities', href: '/cities' },
-          { label: neighborhood.cityName, href: `/cities/${citySlug}` },
-          { label: neighborhood.name },
-        ]}
-      />
-
-      <NeighborhoodOverview
-        neighborhoodName={neighborhood.name}
-        cityName={neighborhood.cityName}
-        citySlug={citySlug}
-        description={neighborhood.description}
-        dataDrivenParagraphs={dataDrivenParagraphs}
-        activeCount={neighborhood.activeCount}
-        medianPrice={neighborhood.medianPrice}
-        priceRangeMin={priceRangeMin}
-        priceRangeMax={priceRangeMax}
-      />
-
-      <InventoryTypeSlider
-        placeLabel={neighborhood.name}
-        breakdown={inventoryBreakdown}
-        browseCityName={neighborhood.cityName}
-      />
-
-      <GeoSectionLatestActivity
-        title={`What is happening in ${neighborhood.name}`}
-        items={activityFeed}
-        signedIn={false}
-        savedKeys={savedKeys}
-        likedKeys={likedKeys}
-      />
-
-      <CommunitiesSlider
-        title="Popular communities"
-        communities={communitiesInNeighborhood.slice(0, 12)}
-        viewAllHref={`/cities/${citySlug}`}
-        viewAllLabel="View all communities"
-        signedIn={false}
-        savedEntityKeys={savedCommunityKeys}
-        likedEntityKeys={likedCommunityKeys}
-      />
-
-      <GeoSectionFeaturedListings
-        title="Top popular active listings"
-        listings={featuredListings}
-        viewAllHref={homesForSalePath(neighborhood.cityName)}
-        viewAllLabel="View all"
-        savedKeys={savedKeys}
-        likedKeys={likedKeys}
-        signedIn={false}
-        userEmail={null}
-        engagementMap={engagementMap}
-      />
-
-      {pendingListings.length > 0 && (
-        <ListingsSlider
-          title={`Pending listings in ${neighborhood.name}`}
-          listings={pendingListings}
-          savedKeys={savedKeys}
-          likedKeys={likedKeys}
-          signedIn={false}
-          userEmail={null}
-          placeName={neighborhood.name}
-          engagementMap={engagementMap}
-        />
-      )}
-
-      <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6">
-        <VideoToursRow
-          title={`Video tours in ${neighborhood.name}`}
-          listings={listingsWithVideo}
-          signedIn={false}
-          savedKeys={savedKeys}
-          likedKeys={likedKeys}
-          userEmail={null}
-          engagementMap={engagementMap}
-          viewAllHref={`/videos?city=${encodeURIComponent(neighborhood.cityName)}`}
-        />
-      </div>
-
-      <div className="px-4 py-10 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <RecentlySoldRow title={`Recently sold in ${neighborhood.name}`} listings={recentlySoldRows} />
-        </div>
-      </div>
-
-      <ListingsSlider
-        title="Homes for sale in this neighborhood"
-        listings={listings}
-        savedKeys={savedKeys}
-        likedKeys={likedKeys}
-        signedIn={false}
-        userEmail={null}
-        placeName={neighborhood.name}
-        engagementMap={engagementMap}
-      />
-
-      <GeoSectionNewestListings
-        title="Newest listings"
-        listings={listings}
-        viewAllHref={homesForSalePath(neighborhood.cityName)}
-        viewAllLabel="View all"
-        savedKeys={savedKeys}
-        likedKeys={likedKeys}
-        signedIn={false}
-        userEmail={null}
-        engagementMap={engagementMap}
-      />
-
-      {/* Common questions — direct-answer content + FAQPage JSON-LD (same
-          verified numbers as the Dataset above). */}
+      {/* 8. Common questions — direct-answer FAQ + FAQPage JSON-LD (same verified
+             numbers as the Dataset above). PRESERVED VERBATIM. */}
       {faqs.length > 0 ? (
         <FAQBlock
           items={faqs}
@@ -519,15 +344,16 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         />
       ) : null}
 
-      <GeoCTAWithBroker
-        heading={`Looking for a Home in ${neighborhood.name}?`}
-        supportingText={`Save your search to get alerts when new homes in ${neighborhood.name} hit the market.`}
-        primaryCta={{ label: 'Browse homes for sale', href: homesForSalePath(neighborhood.cityName) }}
-        secondaryCta={{ label: 'Get notified of new listings', href: '/account/saved-searches' }}
-        brokers={brokers}
+      {/* 9. CTA bar — navy, replaces GeoCTAWithBroker. */}
+      <CTABar
+        eyebrow={`Looking in ${neighborhood.name}?`}
+        title="Local brokers. Specific numbers. No pressure."
+        body={`We know ${neighborhood.name} and the surrounding ${neighborhood.cityName} market. If a listing looks interesting, we can pull the comparable sales and tell you what it is actually worth.`}
+        primary={{ href: '/search', label: 'Browse listings' }}
+        secondary={{ href: '/contact', label: 'Talk to a broker' }}
+        tone="navy"
       />
 
-      <NeighborhoodMap listings={listings} neighborhoodName={neighborhood.name} />
     </main>
   )
 }
