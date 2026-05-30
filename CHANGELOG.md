@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.373.0 (2026-05-30)
+
+### Features
+- feat(skills): tool-mastery + viral-playbook loadable skills (organic-growth engine)
+
+---
+
+
 ## v1.372.1 (2026-05-30)
 
 ### Maintenance
