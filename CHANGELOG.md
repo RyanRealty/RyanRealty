@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.3 (2026-05-30)
+
+### Bug Fixes
+- fix(security): revoke anon EXECUTE on 4 missed admin/cron functions (DATA-07/08)
+
+---
+
+
 ## v1.379.2 (2026-05-30)
 
 ### Maintenance
