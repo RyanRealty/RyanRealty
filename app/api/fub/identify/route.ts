@@ -24,6 +24,8 @@ import { backfillSessionToFub } from '@/lib/visitor-backfill'
 const ALLOWED_ORIGINS = new Set<string>([
   'https://ryan-realty.com',
   'https://www.ryan-realty.com',
+  'https://seller.ryan-realty.com',
+  'https://buyer.ryan-realty.com',
 ])
 
 const GOOGLE_TOKENINFO = 'https://oauth2.googleapis.com/tokeninfo'

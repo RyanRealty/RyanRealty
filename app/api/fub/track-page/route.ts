@@ -28,6 +28,8 @@ import { trackPageView, trackListingView, addPersonTags, addPersonNote, createRe
 const ALLOWED_ORIGINS = new Set<string>([
   'https://ryan-realty.com',
   'https://www.ryan-realty.com',
+  'https://seller.ryan-realty.com',
+  'https://buyer.ryan-realty.com',
 ])
 
 function corsHeaders(origin: string | null): HeadersInit {

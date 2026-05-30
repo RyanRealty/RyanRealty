@@ -147,7 +147,7 @@ export default function GoogleAnalytics() {
                   // ryanrealty.vercel.app (Next.js). Prevents the same
                   // person from showing as two sessions.
                   linker: {
-                    domains: ['ryan-realty.com', 'www.ryan-realty.com', 'ryanrealty.vercel.app'],
+                    domains: ['ryan-realty.com', 'www.ryan-realty.com', 'seller.ryan-realty.com', 'buyer.ryan-realty.com', 'ryanrealty.vercel.app'],
                     accept_incoming: true
                   }
                 };

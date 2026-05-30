@@ -8,6 +8,8 @@ export const runtime = 'nodejs'
 const CORS_ALLOWED_ORIGINS = new Set([
   'https://ryan-realty.com',
   'https://www.ryan-realty.com',
+  'https://seller.ryan-realty.com',
+  'https://buyer.ryan-realty.com',
 ])
 
 function corsHeadersFor(origin: string | null): Record<string, string> {
