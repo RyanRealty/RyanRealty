@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.368.2 (2026-05-30)
+
+### Maintenance
+- docs(producers): keystone finding + cloud-queues/local-worker decision + build handoff
+
+---
+
+
 ## v1.368.1 (2026-05-30)
 
 ### Maintenance
