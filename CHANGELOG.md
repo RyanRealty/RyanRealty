@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.2 (2026-05-30)
+
+### Maintenance
+- chore(ci): track search parity.json contract (re-arm ci:mockup-parity for /search)
+
+---
+
+
 ## v1.379.1 (2026-05-30)
 
 ### Bug Fixes
