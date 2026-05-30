@@ -72,6 +72,20 @@ export default function PriceChartClient({ data, height = 280 }: Props) {
     rawIso: p.periodStart,
   }))
 
+  // Data-range y-axis. A $0 baseline flattens real 15-20% month-to-month swings
+  // into a meaningless flat line. This is the industry-standard framing for a
+  // price chart (Zillow / Redfin / FRED all do it), NOT a deceptive zoom: the
+  // axis is fully labeled and the swings shown are genuinely this large. Padded
+  // to round $25k bounds.
+  const medians = chartData
+    .map((d) => d.median)
+    .filter((n): n is number => n != null && Number.isFinite(n))
+  const dataMin = medians.length ? Math.min(...medians) : 0
+  const dataMax = medians.length ? Math.max(...medians) : 0
+  const pad = Math.max((dataMax - dataMin) * 0.2, 25000)
+  const yLo = Math.max(0, Math.floor((dataMin - pad) / 25000) * 25000)
+  const yHi = Math.ceil((dataMax + pad) / 25000) * 25000
+
   return (
     <div className="bg-card rounded-[14px] border border-border p-4 shadow-sm">
       <ResponsiveContainer width="100%" height={height}>
@@ -90,6 +104,7 @@ export default function PriceChartClient({ data, height = 280 }: Props) {
             axisLine={{ stroke: 'rgba(16,39,66,0.12)' }}
           />
           <YAxis
+            domain={[yLo, yHi]}
             tickFormatter={(v) => formatMoneyCompact(v as number)}
             tick={{ fill: 'rgb(16 39 66 / 0.6)', fontSize: 12 }}
             tickLine={false}
@@ -114,12 +129,12 @@ export default function PriceChartClient({ data, height = 280 }: Props) {
             }}
           />
           <Area
-            type="monotone"
+            type="linear"
             dataKey="median"
             stroke="#102742"
             strokeWidth={2}
             fill="url(#rrPriceChartFill)"
-            dot={false}
+            dot={{ r: 2.5, fill: '#102742', strokeWidth: 0 }}
             activeDot={{ r: 4, stroke: '#102742', strokeWidth: 2, fill: '#ffffff' }}
             isAnimationActive={false}
           />

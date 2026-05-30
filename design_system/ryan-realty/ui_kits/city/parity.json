@@ -20,6 +20,11 @@
       "blocking": true
     },
     {
+      "name": "PriceChart",
+      "section": "'Price trend' — verified monthly median SALE price (getPriceHistory -> market_stats_cache, SFR-only). Completed months only (drops the in-progress month), linear + per-month dots (no smoothing), data-range y-axis. Renders only where the series is >= 6 complete months; thin sub-city geos are omitted. D98.",
+      "blocking": true
+    },
+    {
       "name": "PriceRangeTiles",
       "section": "'Browse {City} homes by budget' — price-bracket tiles linking to filtered search",
       "blocking": true

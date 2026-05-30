@@ -25,6 +25,7 @@ import {
   getCityCommunitySnapshots,
   getAllCitySnapshots,
   getMarketPulse,
+  getPriceHistory,
   getRecentBlogPosts,
   getGeoTileImages,
   getGeoBoundaryMapData,
@@ -44,6 +45,7 @@ import ActivityFeed from '@/components/site/ActivityFeed'
 import { ArticleGrid } from '@/components/site/ArticleGrid'
 import { CTABar } from '@/components/site/CTABar'
 import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
+import { PriceChart } from '@/components/site/PriceChart'
 import { Container } from '@/components/site/primitives'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -107,12 +109,16 @@ export default async function CityDetailPage({ params }: Props) {
   // MarketSnapshot card uses — market_pulse_live (SFR, property_type='A').
   // geo_snapshot_mv carries a different active_sfr_count (807 vs 532 for
   // Bend) so we do NOT use it for any consumer-facing count.
-  const [cityMeta, communitySnapshots, allCitySnapshots, pulse, blogPosts, geoImages, boundaryMapData] =
+  const [cityMeta, communitySnapshots, allCitySnapshots, pulse, priceHistory, blogPosts, geoImages, boundaryMapData] =
     await Promise.all([
       getCityMetadataByName(cityName),
       getCityCommunitySnapshots(slug),
       getAllCitySnapshots(),
       getMarketPulse({ geoType: 'city', geoSlug: slug }).catch(() => null),
+      // Verified monthly median SALE price series from market_stats_cache
+      // (SFR-only, methodology v3). Renders a trend chart only where the series
+      // is rich; thin cities (e.g. La Pine, 2 months) fall below the gate.
+      getPriceHistory('city', slug, 'monthly', 24).catch(() => []),
       getRecentBlogPosts({ cityName, limit: 3 }).catch(() => []),
       // Canonical geo imagery from asset_library (getGeoTileImages adds the
       // central-oregon fallback tag itself). Covers the current city + the
@@ -292,6 +298,12 @@ export default async function CityDetailPage({ params }: Props) {
       imageUrl: cityImage(citySlug),
     }))
 
+  // Drop the in-progress current month from the price series. A partial period
+  // (only part of the month has closed) produces a misleading median, so the
+  // chart shows COMPLETED months only — never an unfinished spike at the edge.
+  const currentMonthKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }).slice(0, 7)
+  const completePriceMonths = priceHistory.filter((p) => p.periodStart.slice(0, 7) !== currentMonthKey)
+
   return (
     <main className="min-h-screen bg-background">
 
@@ -326,6 +338,19 @@ export default async function CityDetailPage({ params }: Props) {
 
       {/* Market snapshot — city-scoped 4-stat cards */}
       <MarketSnapshot citySlug={slug} cityName={cityName} />
+
+      {/* Price trend — verified monthly median SALE price (market_stats_cache,
+          SFR-only, methodology v3). Rendered only when the series is rich enough
+          to be an honest trend (>= 6 months); thin cities fall below the gate. */}
+      {completePriceMonths.length >= 6 ? (
+        <PriceChart
+          eyebrow="Price trend"
+          title={`${cityName} median sale price`}
+          intro="Monthly median sale price for single-family homes, completed months only. Each dot is one month, so the line shows the real month-to-month movement. From the regional MLS."
+          data={completePriceMonths}
+          tone="muted"
+        />
+      ) : null}
 
       {/* Boundary map — city polygon + spatially-correct listing pins.
           Data via getGeoBoundaryMapData (shared DAL, Gate G31).
