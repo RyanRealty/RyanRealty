@@ -259,7 +259,7 @@ ${d.anomalies.length > 0 ? `
 <ul style="margin:0;padding-left:20px;font-size:13px;color:#52606D;">${categoryList || '<li>No event data</li>'}</ul>
 
 <p style="margin:24px 0 0;font-size:12px;color:#9AA0A6;border-top:1px solid #E5E2D9;padding-top:12px;">
-Full dashboards: <a href="https://ryanrealty.vercel.app/admin/analytics" style="color:#102742;">analytics</a> · <a href="https://ryanrealty.vercel.app/admin/visitors/live" style="color:#102742;">live visitors</a> · <a href="https://ryanrealty.vercel.app/admin/analytics/social" style="color:#102742;">social channels</a> · <a href="https://ryanrealty.vercel.app/admin/analytics/cost-per-lead" style="color:#102742;">cost per lead</a> · <a href="https://ryanrealty.vercel.app/admin/analytics/lp-leaderboard" style="color:#102742;">LP leaderboard</a>
+Full dashboards: <a href="https://ryan-realty.com/admin/analytics" style="color:#102742;">analytics</a> · <a href="https://ryan-realty.com/admin/visitors/live" style="color:#102742;">live visitors</a> · <a href="https://ryan-realty.com/admin/analytics/social" style="color:#102742;">social channels</a> · <a href="https://ryan-realty.com/admin/analytics/cost-per-lead" style="color:#102742;">cost per lead</a> · <a href="https://ryan-realty.com/admin/analytics/lp-leaderboard" style="color:#102742;">LP leaderboard</a>
 </p>
 </div>
 </body></html>`

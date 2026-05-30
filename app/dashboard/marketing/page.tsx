@@ -569,11 +569,11 @@ export default async function MarketingBrainPage() {
   const hasAnyData = freshnessGrid.some((ch) => ch.lastDate !== null)
 
   const POPULATE_CMD =
-    'curl -H "Authorization: Bearer $CRON_SECRET" "https://ryanrealty.vercel.app/api/cron/marketing-snapshot-ga4?startDate=2026-02-12&endDate=2026-05-12"'
+    'curl -H "Authorization: Bearer $CRON_SECRET" "https://ryan-realty.com/api/cron/marketing-snapshot-ga4?startDate=2026-02-12&endDate=2026-05-12"'
   const COMP_CMD =
-    'curl -H "Authorization: Bearer $CRON_SECRET" "https://ryanrealty.vercel.app/api/cron/marketing-snapshot-competitor?startDate=2026-05-05&endDate=2026-05-12"'
+    'curl -H "Authorization: Bearer $CRON_SECRET" "https://ryan-realty.com/api/cron/marketing-snapshot-competitor?startDate=2026-05-05&endDate=2026-05-12"'
   const DECISIONS_CMD =
-    'curl -H "Authorization: Bearer $CRON_SECRET" "https://ryanrealty.vercel.app/api/cron/marketing-brain-cycle"'
+    'curl -H "Authorization: Bearer $CRON_SECRET" "https://ryan-realty.com/api/cron/marketing-brain-cycle"'
 
   return (
     <div className="space-y-6">
@@ -753,7 +753,7 @@ export default async function MarketingBrainPage() {
                   Trigger the first audit (cost-bearing). Set <code className="font-mono">ANTHROPIC_API_KEY</code> in Vercel env first.
                 </p>
                 <p className="font-mono text-[10px] text-muted-foreground break-all">
-                  curl -H &quot;Authorization: Bearer $CRON_SECRET&quot; &quot;https://ryanrealty.vercel.app/api/cron/marketing-audit-run?dryRun=true&quot;
+                  curl -H &quot;Authorization: Bearer $CRON_SECRET&quot; &quot;https://ryan-realty.com/api/cron/marketing-audit-run?dryRun=true&quot;
                 </p>
               </div>
             ) : (

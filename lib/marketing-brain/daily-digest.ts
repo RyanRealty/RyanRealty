@@ -171,7 +171,7 @@ function composeSubject(asOfDate: string, stats: DigestStats): string {
  * this is a tool, not a campaign.
  */
 function composeHtmlDigest(asOfDate: string, stats: DigestStats, markdown: string): string {
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const queueUrl = `${siteUrl}/admin/approval-queue`
   const inboxUrl = `${siteUrl}/dashboard/marketing/inbox`
 

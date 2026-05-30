@@ -58,7 +58,7 @@ export interface ReplyOutcome {
 }
 
 const PRODUCTION_DASHBOARD_BASE_URL =
-  process.env.MARKETING_DASHBOARD_BASE_URL?.replace(/\/$/, '') || 'https://ryanrealty.vercel.app'
+  process.env.MARKETING_DASHBOARD_BASE_URL?.replace(/\/$/, '') || 'https://ryan-realty.com'
 
 const REQUEST_PAGE_URL = `${PRODUCTION_DASHBOARD_BASE_URL}/marketing/request`
 

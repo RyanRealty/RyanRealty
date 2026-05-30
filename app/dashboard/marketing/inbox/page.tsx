@@ -275,14 +275,14 @@ export default async function MarketingInboxAdminPage() {
             </p>
             <pre className="rounded-md bg-muted p-3 text-xs overflow-x-auto">
 {`curl -H "Authorization: Bearer \\$CRON_SECRET" \\
-  "https://ryanrealty.vercel.app/api/cron/marketing-inbox-poll?maxMessages=5"`}
+  "https://ryan-realty.com/api/cron/marketing-inbox-poll?maxMessages=5"`}
             </pre>
             <p>
               Dry-run (no reply sent, no Gmail-side read-mark):
             </p>
             <pre className="rounded-md bg-muted p-3 text-xs overflow-x-auto">
 {`curl -H "Authorization: Bearer \\$CRON_SECRET" \\
-  "https://ryanrealty.vercel.app/api/cron/marketing-inbox-poll?dryReply=true&dryRead=true&maxMessages=1"`}
+  "https://ryan-realty.com/api/cron/marketing-inbox-poll?dryReply=true&dryRead=true&maxMessages=1"`}
             </pre>
             <p className="text-muted-foreground">
               Source of truth for the menu brokers see:{' '}

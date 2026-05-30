@@ -20,7 +20,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export type CreateCmaRequestInput = {
   rawAddress: string

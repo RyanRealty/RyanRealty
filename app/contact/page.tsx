@@ -11,7 +11,7 @@ import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { listingsBrowsePath } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 
-const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')}/api/og?type=default`
+const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
 type PageProps = { searchParams: Promise<{ inquiry?: string }> }
 

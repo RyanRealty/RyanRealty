@@ -142,7 +142,7 @@ function buildEmailHtml(params: {
       <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#102742;margin:0 0 8px;font-weight:600;">Agent pickup prompt (paste to Cursor/Claude)</div>
       <pre style="background:#102742;color:#F2EBDD;padding:16px;border-radius:6px;font-size:12px;line-height:1.55;overflow-x:auto;white-space:pre-wrap;font-family:'JetBrains Mono',ui-monospace,monospace;">${escapeHtml(pickupPrompt)}</pre>
 
-      <p style="font-size:11px;color:#94a3b8;margin:24px 0 0;">Sent automatically by /api/cron/marketing-optimization-report. Live state at <a href="https://ryanrealty.vercel.app/admin" style="color:#102742;">https://ryanrealty.vercel.app/admin</a>.</p>
+      <p style="font-size:11px;color:#94a3b8;margin:24px 0 0;">Sent automatically by /api/cron/marketing-optimization-report. Live state at <a href="https://ryan-realty.com/admin" style="color:#102742;">https://ryan-realty.com/admin</a>.</p>
     </div>
   </div>
 </body></html>`

@@ -43,7 +43,7 @@ export const dynamic = 'force-dynamic'
 const ALLOWED_EXACT_ORIGINS = new Set<string>([
   'https://ryan-realty.com',
   'https://www.ryan-realty.com',
-  'https://ryanrealty.vercel.app',
+  'https://ryanrealty.vercel.app', // staging-host-ok: incoming CORS origin (not an outgoing URL); keep through cutover
 ])
 
 function isAllowedOrigin(origin: string | null): boolean {

@@ -28,7 +28,7 @@ export async function sendAutoResponse(input: {
       return { error: null } // Silently skip — don't block the inquiry
     }
 
-    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
     const siteName = process.env.NEXT_PUBLIC_SITE_OWNER_NAME ?? 'Ryan Realty'
     const fromEmail = process.env.RESEND_ADMIN_EMAIL ?? `noreply@${siteUrl.replace(/^https?:\/\//, '')}`
 
