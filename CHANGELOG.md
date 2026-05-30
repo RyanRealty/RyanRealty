@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.377.0 (2026-05-30)
+
+### Features
+- feat(skills): activate G36 — enforce tool-mastery + viral-playbook auto-load
+
+---
+
+
 ## v1.376.0 (2026-05-30)
 
 ### Features
