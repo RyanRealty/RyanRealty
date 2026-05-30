@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.372.0 (2026-05-30)
+
+### Features
+- feat(zip): rebuild /zip/[zip] onto site-v2 listings page
+
+---
+
+
 ## v1.371.0 (2026-05-30)
 
 ### Features
