@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.0 (2026-05-30)
+
+### Features
+- feat(gate): content-provenance gate — no fabricated testimonials/claims (CONTENT-01)
+
+---
+
+
 ## v1.378.1 (2026-05-30)
 
 ### Bug Fixes
