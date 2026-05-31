@@ -136,3 +136,53 @@ export function pickGeoImage(urls: string[] | undefined, seed: string): string |
   for (let i = 0; i < seed.length; i += 1) h = (h * 31 + seed.charCodeAt(i)) >>> 0
   return urls[h % urls.length]
 }
+
+// ---------------------------------------------------------------------------
+// City hero photos — VERIFIED to depict the actual city (data-accuracy rule).
+//
+// Root cause of the wrong-city bug (IMG-01): the cities table has no
+// hero_image_url, so every city page passed no photo and HeroBlock fell back to
+// the hardcoded Bend Old Mill shot — showing Bend on Redmond, Sisters, etc.
+// cityHero(slug) GUARANTEES a non-Bend city can never render the Bend photo.
+//
+// Each entry's alt text describes what the photo ACTUALLY shows (honest per the
+// data-accuracy rule). Cities without a verified per-city photo yet use a
+// regional Cascade-Range image (true for all of Central Oregon, never a
+// specific wrong city) until a curated hero is sourced + verified.
+// ---------------------------------------------------------------------------
+
+export type CityHero = { src: string; alt: string }
+
+const CITY_HERO: Record<string, CityHero> = {
+  bend: {
+    src: '/brand/hero/hero-old-mill-master-4k.jpg',
+    alt: 'The Old Mill District and Deschutes River in Bend, Oregon',
+  },
+  sisters: {
+    src: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
+    alt: 'The Three Sisters mountains rising above Sisters, Oregon',
+  },
+  sunriver: {
+    src: '/lp/central-oregon-golf/img/sunriver-river.jpg',
+    alt: 'The Deschutes River winding through Sunriver, Oregon',
+  },
+}
+
+/** Regional fallback — accurate for any Central Oregon place; NEVER the Bend
+ *  Old Mill. Replaced per-city as curated heroes are sourced + verified. */
+const REGION_HERO: CityHero = {
+  src: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
+  alt: 'The Cascade Range over Central Oregon',
+}
+
+/** Resolve a verified hero photo for a city slug. Never returns the Bend
+ *  Old Mill photo for a non-Bend city. */
+export function cityHero(slug: string): CityHero {
+  return CITY_HERO[slug] ?? REGION_HERO
+}
+
+/** True when a slug has a city-specific (not regional-fallback) verified hero.
+ *  Used by the check-geo-hero gate to track sourcing coverage. */
+export function hasCuratedCityHero(slug: string): boolean {
+  return slug in CITY_HERO
+}

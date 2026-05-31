@@ -32,7 +32,7 @@ import {
 } from '@/lib/data'
 import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
-import { golfCommunityImage, pickGeoImage } from '@/lib/geo-images'
+import { golfCommunityImage, pickGeoImage, cityHero } from '@/lib/geo-images'
 import { getCityMetadataByName } from '@/lib/data/cities/getCityMetadata'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
@@ -145,6 +145,12 @@ export default async function CityDetailPage({ params }: Props) {
     pickGeoImage(geoImages[citySlug], citySlug) ?? pickGeoImage(geoImages['central-oregon'], citySlug)
 
   const heroImageUrl = cityMeta?.hero_image_url ?? null
+  // IMG-01: never let a non-Bend city fall back to the hardcoded Bend Old Mill
+  // photo. A DB hero wins; otherwise cityHero(slug) returns a verified per-city
+  // photo (or an honest regional Cascade image), with accurate alt text.
+  const heroPhoto = heroImageUrl
+    ? { src: heroImageUrl, alt: `${cityName}, Oregon` }
+    : cityHero(slug)
   const activeCount = pulse?.activeCount ?? 0
   const medianListPrice = pulse?.medianListPrice ?? snapshot.medianListPrice
 
@@ -328,11 +334,7 @@ export default async function CityDetailPage({ params }: Props) {
       <HeroBlock
         headline={`Homes for sale in ${cityName}, Oregon`}
         lede={lede}
-        photo={
-          heroImageUrl
-            ? { src: heroImageUrl, alt: `Aerial view of ${cityName}, Oregon.`, priority: true }
-            : undefined
-        }
+        photo={{ src: heroPhoto.src, alt: heroPhoto.alt, priority: true }}
         minHeight={560}
       />
 
