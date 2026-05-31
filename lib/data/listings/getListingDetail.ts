@@ -230,22 +230,47 @@ function rowToDetail(row: ListingRow): ListingDetail {
   }
 }
 
-async function fetchOne(listingKey: string): Promise<GetListingDetailResult> {
+/**
+ * Raw lookup. Returns the detail, or null for a GENUINE miss (no such listing).
+ * THROWS on a transient DB error (after 3 in-process retries) so the caller
+ * never caches a null that came from an error — see getListingDetail.
+ */
+async function fetchOneOrThrow(listingKey: string): Promise<GetListingDetailResult> {
   const supabase = supabaseAnon()
   if (!supabase) return null
-  const { data, error } = await supabase
-    .from('listings')
-    .select(DETAIL_SELECT)
-    .eq('ListingKey', listingKey)
-    .maybeSingle()
-  if (error || !data) return null
-  return rowToDetail(data as unknown as ListingRow)
+  let lastError: unknown = null
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data, error } = await supabase
+      .from('listings')
+      .select(DETAIL_SELECT)
+      .eq('ListingKey', listingKey)
+      .maybeSingle()
+    if (!error) {
+      return data ? rowToDetail(data as unknown as ListingRow) : null
+    }
+    lastError = error
+  }
+  throw new Error(
+    `listings detail lookup failed for ${listingKey}: ` +
+      (lastError instanceof Error ? lastError.message : JSON.stringify(lastError)),
+  )
 }
 
-export const getListingDetail = (listingKey: string): Promise<GetListingDetailResult> => {
+/**
+ * Listing-detail lookup.
+ *
+ * RESILIENCE (2026-05-31): same poison-null fix as getGeoSnapshot. The old code
+ * returned null on BOTH a genuine miss AND a transient DB error, and
+ * unstable_cache cached that null — pinning the listing to notFound() ("can't
+ * open the listing") for the whole revalidate window. The 2026-05-28 cache-key
+ * bump note below is the SAME bug biting earlier via a different trigger. Now a
+ * DB error throws (never cached) and we retry once uncached before giving up, so
+ * a healthy listing can never get stuck behind a cached not-found.
+ */
+export const getListingDetail = async (listingKey: string): Promise<GetListingDetailResult> => {
   InputSchema.parse({ listingKey })
-  return unstable_cache(
-    () => fetchOne(listingKey),
+  const cached = unstable_cache(
+    () => fetchOneOrThrow(listingKey),
     // v2 cache-key bump 2026-05-28 — invalidates the null results
     // that were cached during the column-quoting bug (commit 2ded4d5
     // through f136a40). Without this, listings queried during the
@@ -255,5 +280,14 @@ export const getListingDetail = (listingKey: string): Promise<GetListingDetailRe
       revalidate: CACHE_WINDOWS.listingDetail,
       tags: [cacheTag.listings, cacheTag.listing(listingKey)],
     }
-  )()
+  )
+  try {
+    return await cached()
+  } catch {
+    try {
+      return await fetchOneOrThrow(listingKey)
+    } catch {
+      return null
+    }
+  }
 }

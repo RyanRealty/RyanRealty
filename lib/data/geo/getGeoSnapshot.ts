@@ -60,7 +60,13 @@ function rowToSnapshot(row: GeoSnapshotMvRow): GeoSnapshot {
   }
 }
 
-async function fetchOne(input: GeoSnapshotInput): Promise<GeoSnapshot | null> {
+/**
+ * Raw lookup. Returns the row, or null for a GENUINE miss (no matching row).
+ * THROWS on a transient DB error — this distinction is load-bearing: see
+ * getGeoSnapshot below for why a null-on-error would poison the cache.
+ * Retries a transient error in-process (3 attempts) before throwing.
+ */
+async function fetchOneOrThrow(input: GeoSnapshotInput): Promise<GeoSnapshot | null> {
   const parsed = GeoSnapshotSchema.parse(input)
   const supabase = supabaseAnon()
   if (!supabase) return null
@@ -72,23 +78,46 @@ async function fetchOne(input: GeoSnapshotInput): Promise<GeoSnapshot | null> {
   const key = parsed.geoType === 'city'
     ? parsed.geoKey.toLowerCase().trim().replace(/-/g, ' ')
     : parsed.geoKey.toLowerCase().trim()
-  const { data, error } = await supabase
-    .from('geo_snapshot_mv')
-    .select('*')
-    .eq('geo_type', parsed.geoType)
-    .eq('geo_key', key)
-    .maybeSingle()
-  if (error || !data) return null
-  return rowToSnapshot(data as GeoSnapshotMvRow)
+  let lastError: unknown = null
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data, error } = await supabase
+      .from('geo_snapshot_mv')
+      .select('*')
+      .eq('geo_type', parsed.geoType)
+      .eq('geo_key', key)
+      .maybeSingle()
+    if (!error) {
+      // Success — a present row, or a genuine miss (null). Both are cacheable.
+      return data ? rowToSnapshot(data as GeoSnapshotMvRow) : null
+    }
+    lastError = error
+  }
+  throw new Error(
+    `geo_snapshot_mv lookup failed for ${parsed.geoType}:${key}: ` +
+      (lastError instanceof Error ? lastError.message : JSON.stringify(lastError)),
+  )
 }
 
 /**
  * Single-geo snapshot lookup. Sub-2ms via unique index on (geo_type, geo_key).
+ *
+ * RESILIENCE (fixes the intermittent "City Not Found" bug, 2026-05-31): the old
+ * code returned null on BOTH a genuine miss AND a transient DB error, and
+ * unstable_cache happily cached that null. A single timeout then pinned the page
+ * to notFound() for the entire revalidate window — that is why Bend / Sunriver /
+ * La Pine flickered to "City Not Found" while their MV rows were perfectly
+ * healthy. Now:
+ *   1. fetchOneOrThrow THROWS on a DB error — unstable_cache never caches a
+ *      rejected promise, so no poison-null is stored.
+ *   2. If the cached path throws, we make ONE direct uncached attempt so a blip
+ *      doesn't 404 a geo that has data.
+ *   3. Only a genuine miss (or a fully-failed retry) returns null. The public
+ *      function never throws, so consumers keep their simple `if (!snap) notFound()`.
  */
-export const getGeoSnapshot = (input: GeoSnapshotInput): Promise<GeoSnapshot | null> => {
+export const getGeoSnapshot = async (input: GeoSnapshotInput): Promise<GeoSnapshot | null> => {
   const parsed = GeoSnapshotSchema.parse(input)
-  return unstable_cache(
-    () => fetchOne(parsed),
+  const cached = unstable_cache(
+    () => fetchOneOrThrow(parsed),
     ['geo-snapshot', parsed.geoType, parsed.geoKey],
     {
       revalidate:
@@ -99,7 +128,18 @@ export const getGeoSnapshot = (input: GeoSnapshotInput): Promise<GeoSnapshot | n
             : CACHE_WINDOWS.geoNeighborhood,
       tags: [parsed.geoType === 'city' ? cacheTag.city(parsed.geoKey) : parsed.geoType === 'community' ? cacheTag.community(parsed.geoKey) : cacheTag.neighborhood(parsed.geoKey)],
     }
-  )()
+  )
+  try {
+    return await cached()
+  } catch {
+    // Transient DB error bubbled up (NOT cached). Try once uncached before the
+    // caller 404s — recovers in-render instead of showing a stale not-found.
+    try {
+      return await fetchOneOrThrow(parsed)
+    } catch {
+      return null
+    }
+  }
 }
 
 /**
