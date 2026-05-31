@@ -64,11 +64,19 @@ async function fetchOne(input: GeoSnapshotInput): Promise<GeoSnapshot | null> {
   const parsed = GeoSnapshotSchema.parse(input)
   const supabase = supabaseAnon()
   if (!supabase) return null
+  // geo_snapshot_mv stores CITY keys space-separated lowercase ("la pine"),
+  // but city-page slugs are hyphenated ("la-pine"). Normalize hyphens to spaces
+  // for cities so multi-word cities (La Pine, Powell Butte, Black Butte Ranch)
+  // resolve instead of 404'ing. Community/neighborhood keys keep their hyphens
+  // (their slugs intentionally use hyphenated subdivision names).
+  const key = parsed.geoType === 'city'
+    ? parsed.geoKey.toLowerCase().trim().replace(/-/g, ' ')
+    : parsed.geoKey.toLowerCase().trim()
   const { data, error } = await supabase
     .from('geo_snapshot_mv')
     .select('*')
     .eq('geo_type', parsed.geoType)
-    .eq('geo_key', parsed.geoKey.toLowerCase().trim())
+    .eq('geo_key', key)
     .maybeSingle()
   if (error || !data) return null
   return rowToSnapshot(data as GeoSnapshotMvRow)
@@ -150,7 +158,10 @@ export const getAllCommunitySnapshots = (): Promise<GeoSnapshot[]> =>
  * Fetch every community snapshot in a city. Powers the city LP communities bar.
  */
 export const getCityCommunitySnapshots = (citySlug: string): Promise<GeoSnapshot[]> => {
-  const cityLower = citySlug.toLowerCase().trim()
+  // community keys are space-separated lowercase ("la pine:south meadow"), so the
+  // hyphenated city slug ("la-pine") must be normalized or the communities bar is
+  // empty on every multi-word city.
+  const cityLower = citySlug.toLowerCase().trim().replace(/-/g, ' ')
   return unstable_cache(
     async () => {
       const supabase = supabaseAnon()
