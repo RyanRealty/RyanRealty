@@ -2,7 +2,7 @@
 
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
-import { findPersonByEmail, sendEvent, type FubEventPerson } from '@/lib/followupboss'
+import { findPersonByEmail, sendEvent, addPersonTags, type FubEventPerson } from '@/lib/followupboss'
 import { recordPartnerReferral } from '@/app/actions/partnership-revenue'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
@@ -342,5 +342,137 @@ export async function submitPageCTA(input: {
   } catch (err) {
     console.error('[submitPageCTA]', err)
     return { error: 'Something went wrong. Please try again.' }
+  }
+}
+
+/**
+ * Tetherow landing-page lead capture (buyer showings/alerts/guide + seller
+ * valuation + exit-intent). The /api/cma POST endpoint calls this.
+ *
+ * BUG FIX 2026-05-31: all 5 Tetherow forms POSTed to /api/cma, which had no
+ * top-level route handler (only /api/cma/[slug]/* existed) — so every luxury
+ * paid-traffic lead 404'd and was silently lost while the form showed a fake
+ * green success. This restores capture: FUB event -> Meta CAPI -> CANONICAL
+ * tags (audience:seller|buyer — NOT the old 'seller-intent' string that never
+ * triggered the FUB workflow) -> GA4 mirror. Tetherow is high-intent paid
+ * traffic, so tier='hot'.
+ */
+export async function submitTetherowLead(input: {
+  intent: 'buyer' | 'seller'
+  name?: string
+  email?: string
+  phone?: string
+  resort?: string
+  campaign?: string
+  /** comma-separated context tags from the form (resort:*, lp:*, etc.) */
+  contextTags?: string
+  // seller context
+  address?: string
+  subdivision?: string
+  timing?: string
+  bedrooms?: string
+  bathrooms?: string
+  // buyer context
+  property?: string
+  pageUrl?: string
+}): Promise<{ ok: boolean; error?: string }> {
+  const email = input.email?.trim().toLowerCase()
+  const phone = input.phone?.trim()
+  if (!email && !phone) return { ok: false, error: 'Email or phone is required' }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: 'Please enter a valid email address' }
+  }
+  try {
+    const fullName = input.name?.trim() || ''
+    const nameParts = fullName.split(/\s+/).filter(Boolean)
+    const firstName = nameParts[0] || undefined
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined
+
+    let person: FubEventPerson
+    if (email) {
+      const existing = await findPersonByEmail(email)
+      person = existing
+        ? { id: existing.id }
+        : {
+            emails: [{ value: email }],
+            ...(phone ? { phones: [{ value: phone }] } : {}),
+            ...(firstName ? { firstName } : {}),
+            ...(lastName ? { lastName } : {}),
+          }
+    } else {
+      person = {
+        phones: [{ value: phone! }],
+        ...(firstName ? { firstName } : {}),
+        ...(lastName ? { lastName } : {}),
+      }
+    }
+
+    const isSeller = input.intent === 'seller'
+    const eventType = isSeller ? 'Seller Inquiry' : 'General Inquiry'
+    const ctxBits = isSeller
+      ? [input.address, input.subdivision, input.timing,
+         input.bedrooms ? `${input.bedrooms} bd` : '', input.bathrooms ? `${input.bathrooms} ba` : '']
+      : [input.property]
+    const message = `Tetherow ${input.intent} lead. ${ctxBits.filter(Boolean).join(' · ') || 'no extra detail'}`
+    const pageUrl = input.pageUrl?.trim() || `${SITE_URL}/lp/tetherow/`
+
+    const result = await sendEvent({
+      type: eventType,
+      person,
+      source: websiteSource(),
+      sourceUrl: pageUrl,
+      pageUrl,
+      pageTitle: 'Tetherow Landing Page',
+      message,
+    })
+
+    // Luxury Tetherow paid leads are high-value.
+    const value = isSeller ? 1000 : 600
+    await fireCapiLead({
+      eventName: 'Lead', email, phone, firstName, lastName,
+      eventSourceUrl: pageUrl,
+      contentName: `tetherow_${input.intent}`,
+      value,
+    })
+
+    // Canonical tags (correct audience trigger) + preserved resort context.
+    // Fire-and-forget so a tagging blip never fails the capture.
+    void (async () => {
+      try {
+        if (!email) return
+        const found = await findPersonByEmail(email)
+        if (!found?.id) return
+        await canonicallyTagLead({
+          fubPersonId: found.id,
+          audience: isSeller ? 'seller' : 'buyer',
+          source: isSeller ? 'seller-lp' : 'buyer-lp',
+          tier: 'hot',
+          ...(isSeller && input.address ? { address: input.address, state: 'OR' } : {}),
+        })
+        // Keep the resort/campaign context tags, but DROP the legacy
+        // 'seller-intent'/'buyer-intent' strings (they never triggered the FUB
+        // workflow — canonicallyTagLead applies the real audience:* trigger).
+        const ctx = (input.contextTags ?? '')
+          .split(',')
+          .map((t) => t.trim())
+          .filter((t) => t && !/-intent$/.test(t))
+        ctx.push('resort:tetherow', 'lp:tetherow-landing-v1')
+        await addPersonTags(found.id, [...new Set(ctx)])
+      } catch (err) {
+        console.warn('[tetherow-lead] canonical tagging failed (non-blocking):', err)
+      }
+    })()
+
+    await fireLeadGenerated({
+      lp_variant: 'tetherow-landing-v1',
+      lead_type: isSeller ? 'seller' : 'buyer',
+      value,
+      extra: { resort: input.resort ?? 'tetherow', campaign: input.campaign, intent: input.intent },
+    })
+
+    return result.ok ? { ok: true } : { ok: false, error: result.error ?? 'Lead capture failed' }
+  } catch (err) {
+    console.error('[submitTetherowLead]', err)
+    return { ok: false, error: 'Something went wrong. Please try again.' }
   }
 }
