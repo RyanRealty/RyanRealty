@@ -8,10 +8,10 @@
  * No MV dependency — implementation is real and usable today.
  */
 
-import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached, readOrThrow } from '@/lib/data/cache/resilient'
 import type { GeoType, IsoTimestamp } from '@/lib/data/types/shared'
 import type { MarketStats, MoSVerdict } from '@/lib/data/types/market'
 
@@ -32,35 +32,32 @@ function classifyMoS(mos: number | null): MoSVerdict | null {
   return 'buyers'
 }
 
-export const getMarketStats = unstable_cache(
-  async (input: GetMarketStatsInput): Promise<MarketStats | null> => {
+async function fetchMarketStats(input: GetMarketStatsInput): Promise<MarketStats | null> {
     const { geoType, geoSlug, periodType } = InputSchema.parse(input)
 
     // market_stats_cache is a public table (no RLS, no cookies). Use
     // supabaseAnon so this function is safe inside unstable_cache.
-    // See lib/data/brokers/getBrokers.ts for the original of this bug
-    // fixed earlier today.
     const supabase = supabaseAnon()
     if (!supabase) return null
-    const { data, error } = await supabase
-      .from('market_stats_cache')
-      .select(
-        'geo_type, geo_slug, period_type, period_start, period_end, ' +
-          'median_sale_price, median_list_price, median_dom, months_of_supply, ' +
-          'sale_to_list_ratio, sold_count, active_count, yoy_change_pct, ' +
-          'refreshed_at, methodology_version'
-      )
-      .eq('geo_type', geoType)
-      .eq('geo_slug', geoSlug)
-      .eq('period_type', periodType)
-      .order('period_end', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    if (error) {
-      console.error('[getMarketStats]', { geoType, geoSlug, periodType, error })
-      return null
-    }
+    // readOrThrow THROWS on a transient DB error so a blip is never cached as
+    // "Not available" across the market pages for the whole TTL. Genuine miss
+    // (no cached row for this geo/period) still returns null.
+    const data = await readOrThrow(`getMarketStats(${geoType}:${geoSlug}:${periodType})`, () =>
+      supabase
+        .from('market_stats_cache')
+        .select(
+          'geo_type, geo_slug, period_type, period_start, period_end, ' +
+            'median_sale_price, median_list_price, median_dom, months_of_supply, ' +
+            'sale_to_list_ratio, sold_count, active_count, yoy_change_pct, ' +
+            'refreshed_at, methodology_version'
+        )
+        .eq('geo_type', geoType)
+        .eq('geo_slug', geoSlug)
+        .eq('period_type', periodType)
+        .order('period_end', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    )
     if (!data) return null
 
     const row = data as unknown as Record<string, unknown>
@@ -83,10 +80,17 @@ export const getMarketStats = unstable_cache(
       refreshedAt: row.refreshed_at as IsoTimestamp,
       methodologyVersion: (row.methodology_version as string) ?? 'unknown',
     }
-  },
-  ['market-stats'],
+}
+
+// v2 cache-key bump 2026-05-31 — evict poison-null entries cached before the
+// throw-on-error fix. makeResilientCached: error throws (never cached) + one
+// uncached retry before falling back to null.
+export const getMarketStats = makeResilientCached(
+  fetchMarketStats,
+  ['market-stats-v2'],
   {
     revalidate: CACHE_WINDOWS.marketStats,
     tags: [cacheTag.market],
-  }
+  },
+  null,
 )

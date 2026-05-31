@@ -16,6 +16,7 @@ import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 import type { ListingTile, ListingStatus } from '@/lib/data/types/listing'
 
 const ACTIVE_STATUSES: ListingStatus[] = ['Active', 'Coming Soon', 'Active Under Contract']
@@ -279,8 +280,10 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
 
   const { data, error } = await query
   if (error) {
-    console.error('[getListingTiles] supabase error:', error.message)
-    return []
+    // THROW (don't `return []`) so a transient error is never cached as
+    // "0 homes in this area" on the main search for the whole TTL. The
+    // resilient wrapper retries once uncached, then falls back to [].
+    throw new Error(`[getListingTiles] supabase error: ${error.message}`)
   }
   return (data ?? []).map((row) => mvRowToTile(row as ListingTileMvRow))
 }
@@ -292,13 +295,16 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
 export const getListingTiles = (filter: GetListingTilesFilter): Promise<ListingTile[]> => {
   const parsed = FilterSchema.parse(filter)
   const cacheKey = JSON.stringify(parsed)
-  return unstable_cache(
+  // v2 key bump 2026-05-31 — evict poison-empty entries cached before the
+  // throw-on-error fix (a swallowed anon-read once cached [] -> "0 homes").
+  return makeResilientCached(
     () => fetchTiles(parsed),
-    ['listing-tiles', cacheKey],
+    ['listing-tiles-v2', cacheKey],
     {
       revalidate: CACHE_WINDOWS.listingTile,
       tags: [cacheTag.listings],
-    }
+    },
+    [],
   )()
 }
 
