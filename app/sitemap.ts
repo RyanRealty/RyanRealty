@@ -7,7 +7,19 @@ const ACTIVE_STATUS_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
 
 import { fetchAllRows } from '@/lib/supabase/paginate'
-import { isCentralOregonCity, isCentralOregonCommunitySlug, SITE_CITY_SLUGS } from '@/lib/central-oregon'
+import { isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
+
+// The ONLY slugs with a real /communities/[slug] page — the curated resort
+// registry (data/resort-communities.json). The old code emitted every row of
+// the `communities` table, which included ~31 junk subdivision slugs that
+// render fabricated pages ("Industrial, Madras Oregon"). Keep this in sync with
+// the registry.
+const RESORT_COMMUNITY_SLUGS = [
+  'tetherow', 'broken-top', 'eagle-crest', 'pronghorn', 'caldera-springs',
+  'sunriver', 'awbrey-glen', 'northwest-crossing', 'crosswater',
+  'black-butte-ranch', 'brasada-ranch', 'widgi-creek', 'vandevert-ranch',
+  'three-rivers',
+] as const
 
 /**
  * Dynamic sitemap — generates at request time so it always has fresh data.
@@ -150,37 +162,37 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       }
     }
 
-    // Communities — paginate
-    const communityRows = await fetchAllRows<{ slug: string }>(
-      supabase, 'communities', 'slug',
-    )
-
-    for (const c of communityRows) {
-      // Central Oregon only — drop out-of-area community URLs (they 404).
-      if (!isCentralOregonCommunitySlug(c.slug)) continue
+    // Communities — ONLY the curated resort registry (slugs with a real page).
+    // Was: every `communities` table row, which leaked ~31 junk subdivision slugs
+    // that render fabricated "Industrial, Madras Oregon" pages.
+    for (const slug of RESORT_COMMUNITY_SLUGS) {
       dynamicPages.push({
-        url: `${baseUrl}/communities/${encodeURIComponent(c.slug)}`,
+        url: `${baseUrl}/communities/${slug}`,
         lastModified: now,
         changeFrequency: 'daily',
         priority: 0.8,
       })
     }
 
-    // Subdivisions per city
-    for (const city of cities) {
-      const subRows = await fetchAllRows<{ SubdivisionName?: string | null }>(
-        supabase, 'listings', 'SubdivisionName',
-        (q) => q.eq('City', city).not('SubdivisionName', 'is', null),
-      )
-
-      const subs = Array.from(
-        new Set(
-          subRows
-            .map((r) => (r.SubdivisionName ?? '').trim())
-            .filter((n) => n.length > 0)
-        )
-      )
-
+    // Subdivisions — ONE scan of active listings for (City, SubdivisionName)
+    // pairs, grouped in memory. Replaces the per-city N+1 loop that made ~24
+    // separate paginated scans of the 589K listings table (the main sitemap
+    // slowdown, ~11s -> a few seconds).
+    const cityNameSet = new Set(cities)
+    const subPairRows = await fetchAllRows<{ City?: string | null; SubdivisionName?: string | null }>(
+      supabase, 'listings', 'City, SubdivisionName',
+      (q) => q.or(ACTIVE_STATUS_OR).not('SubdivisionName', 'is', null).not('City', 'is', null),
+    )
+    const subsByCity = new Map<string, Set<string>>()
+    for (const r of subPairRows) {
+      const city = (r.City ?? '').trim()
+      const sub = (r.SubdivisionName ?? '').trim()
+      if (!city || !sub || !cityNameSet.has(city)) continue
+      let set = subsByCity.get(city)
+      if (!set) { set = new Set(); subsByCity.set(city, set) }
+      set.add(sub)
+    }
+    for (const [city, subs] of subsByCity) {
       const cityKey = cityEntityKey(city)
       for (const sub of subs) {
         const subSlug = slugify(sub)
@@ -306,19 +318,11 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       })
     }
 
-    // Market reports — paginate
-    const reports = await fetchAllRows<{ slug: string; created_at?: string | null }>(
-      supabase, 'market_reports', 'slug, created_at',
-    )
-
-    for (const r of reports) {
-      dynamicPages.push({
-        url: `${baseUrl}/housing-market/reports/${r.slug}`,
-        lastModified: r.created_at ? new Date(r.created_at) : now,
-        changeFrequency: 'weekly',
-        priority: 0.6,
-      })
-    }
+    // Market reports — TEMPORARILY EXCLUDED. /housing-market/reports/<slug> and
+    // /reports/<slug> currently return HTTP 500 (render throw downstream of
+    // getMarketReportBySlug — see docs/SITE_AUDIT_2026-05-31.md P0 #1). Feeding
+    // Google 10 server-error URLs harms crawl trust. Re-add once the render is
+    // fixed.
   } catch (e) {
     console.error('[sitemap] Error generating dynamic pages:', e)
     // Return static pages only if database query fails
