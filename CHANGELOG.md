@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.6 (2026-05-31)
+
+### Bug Fixes
+- fix(listing-video): embed bare-URL ObjectHtml videos (Dropbox/Aryeo) — VID-01
+
+---
+
+
 ## v1.379.5 (2026-05-31)
 
 ### Other
