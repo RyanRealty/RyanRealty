@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.10 (2026-05-31)
+
+### Bug Fixes
+- fix(seo): scope sitemap + communities to Central Oregon (lib/central-oregon)
+
+---
+
+
 ## v1.379.9 (2026-05-31)
 
 ### Bug Fixes
