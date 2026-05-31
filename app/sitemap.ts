@@ -7,7 +7,7 @@ const ACTIVE_STATUS_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
 
 import { fetchAllRows } from '@/lib/supabase/paginate'
-import { isCentralOregonCity, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
+import { isCentralOregonCity, isCentralOregonCommunitySlug, SITE_CITY_SLUGS } from '@/lib/central-oregon'
 
 /**
  * Dynamic sitemap — generates at request time so it always has fresh data.
@@ -72,6 +72,17 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/fair-housing`, lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
     { url: `${baseUrl}/dmca`, lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
   ]
+
+  // City tier — seed from the canonical list of cities that have a real page, so
+  // every best-schema city hub is ALWAYS in the sitemap regardless of live
+  // inventory or a dynamic-section timeout (the listings query can be heavy).
+  for (const citySlug of SITE_CITY_SLUGS) {
+    staticPages.push(
+      { url: `${baseUrl}/cities/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+      { url: `${baseUrl}/homes-for-sale/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.85 },
+      { url: `${baseUrl}/open-houses/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
+    )
+  }
 
   // If Supabase is not configured, return only static pages
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()

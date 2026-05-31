@@ -141,13 +141,30 @@ export async function GET(request: NextRequest) {
 
   let startDate: string
   let endDate: string
-  try {
-    ;({ startDate, endDate } = parseDateRange(request))
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'invalid date range' },
-      { status: 400 }
-    )
+  const sp = new URL(request.url).searchParams
+  if (sp.get('startDate') || sp.get('endDate')) {
+    // Explicit backfill range (?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD).
+    try {
+      ;({ startDate, endDate } = parseDateRange(request))
+    } catch (e) {
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : 'invalid date range' },
+        { status: 400 }
+      )
+    }
+  } else {
+    // GSC has a 2-3 day processing delay and data keeps SETTLING for ~a week.
+    // The old yesterday-only default wrote permanent ZEROS inside that delay and
+    // never re-pulled, so the whole Search channel read as 0 (and the health
+    // check graded it "green" on recency). Roll a [today-9 .. today-2] re-pull;
+    // upsertMetricRows is idempotent, so settled dates are corrected in place.
+    const isoDaysAgo = (n: number) => {
+      const x = new Date()
+      x.setUTCDate(x.getUTCDate() - n)
+      return x.toISOString().slice(0, 10)
+    }
+    startDate = isoDaysAgo(9)
+    endDate = isoDaysAgo(2)
   }
 
   // ?site= overrides both env and the lib default. Use this to point at

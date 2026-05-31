@@ -21,6 +21,15 @@ export const CENTRAL_OREGON_CITY_SLUGS: ReadonlySet<string> = new Set<string>([
   'prineville', 'powell-butte', 'paulina', 'post', 'mitchell',
 ])
 
+/** Cities with a real, working /cities/<slug> page (verified geo_snapshot_mv
+ *  rows). Used to SEED the sitemap so every best-schema city page is submitted.
+ *  Excludes tumalo (redirects to Bend) and community-only service-area slugs that
+ *  have no standalone city page — seeding those would put 404s in the sitemap. */
+export const SITE_CITY_SLUGS: readonly string[] = [
+  'bend', 'redmond', 'sisters', 'sunriver', 'la-pine',
+  'madras', 'prineville', 'culver', 'terrebonne', 'powell-butte',
+]
+
 /** Slugify a raw city name the same way route slugs are built (lowercase, spaces
  *  and separators → hyphens) so it can be tested against the service-area set. */
 export function citySlugForScope(city: string): string {
