@@ -76,14 +76,44 @@ export async function getActiveBrokers(): Promise<BrokerRow[]> {
   return _getActiveBrokersCached()
 }
 
+/**
+ * Broker slug aliases → the canonical slug stored in the `brokers` table.
+ *
+ * BUG FIX 2026-05-31: /team links (and CLAUDE.md agent-attribution params, and
+ * inbound/printed links) use several slug variants, but the DB rows are
+ * `matthew-ryan`, `paul-stevenson`, `rebecca-peterson`. /team linked to
+ * `matt-ryan` + `rebecca-ryser-peterson`, which matched no DB row → notFound()
+ * (rendered as a soft-404) → "there are no broker pages." Resolve every known
+ * variant to the canonical row so every link works.
+ */
+const BROKER_SLUG_ALIASES: Record<string, string> = {
+  matt: 'matthew-ryan',
+  'matt-ryan': 'matthew-ryan',
+  matthew: 'matthew-ryan',
+  'matthew-ryan': 'matthew-ryan',
+  rebecca: 'rebecca-peterson',
+  'rebecca-peterson': 'rebecca-peterson',
+  'rebecca-ryser-peterson': 'rebecca-peterson',
+  'rebecca-ryser': 'rebecca-peterson',
+  paul: 'paul-stevenson',
+  'paul-stevenson': 'paul-stevenson',
+}
+
 export async function getBrokerBySlug(slug: string): Promise<BrokerRow | null> {
   const supabase = await createServerClient()
+  const requested = slug.trim().toLowerCase()
+  const canonical = BROKER_SLUG_ALIASES[requested]
+  // Try the requested slug AND its canonical alias (if any) in one query, so a
+  // link using any known variant resolves. maybeSingle (not single) returns
+  // null cleanly on a genuine miss instead of throwing.
+  const candidates = canonical && canonical !== requested ? [requested, canonical] : [requested]
   const { data } = await supabase
     .from('brokers')
     .select(BROKER_SELECT)
-    .eq('slug', slug.trim())
+    .in('slug', candidates)
     .eq('is_active', true)
-    .single()
+    .limit(1)
+    .maybeSingle()
   return data as BrokerRow | null
 }
 
