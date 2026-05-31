@@ -69,6 +69,10 @@
       "schedule": "30 14 * * *"
     },
     {
+      "path": "/api/cron/seller-lead-attribution",
+      "schedule": "0 13 * * *"
+    },
+    {
       "path": "/api/cron/marketing-measurement-loop",
       "schedule": "0 15 * * *"
     },
