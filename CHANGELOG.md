@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.3 (2026-05-31)
+
+### Bug Fixes
+- fix(P0): restore Tetherow lead capture — /api/cma POST was 404 (leads lost)
+
+---
+
+
 ## v1.382.2 (2026-05-31)
 
 ### Bug Fixes
