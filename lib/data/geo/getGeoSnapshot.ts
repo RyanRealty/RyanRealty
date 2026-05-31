@@ -118,7 +118,10 @@ export const getGeoSnapshot = async (input: GeoSnapshotInput): Promise<GeoSnapsh
   const parsed = GeoSnapshotSchema.parse(input)
   const cached = unstable_cache(
     () => fetchOneOrThrow(parsed),
-    ['geo-snapshot', parsed.geoType, parsed.geoKey],
+    // v2 cache-key bump 2026-05-31 — evicts poison-null entries cached before the
+    // throw-on-error fix (Vercel's Data Cache persists across deploys, so the old
+    // nulls would otherwise linger until TTL and keep flashing "City Not Found").
+    ['geo-snapshot-v2', parsed.geoType, parsed.geoKey],
     {
       revalidate:
         parsed.geoType === 'city'

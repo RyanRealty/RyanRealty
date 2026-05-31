@@ -271,11 +271,11 @@ export const getListingDetail = async (listingKey: string): Promise<GetListingDe
   InputSchema.parse({ listingKey })
   const cached = unstable_cache(
     () => fetchOneOrThrow(listingKey),
-    // v2 cache-key bump 2026-05-28 — invalidates the null results
-    // that were cached during the column-quoting bug (commit 2ded4d5
-    // through f136a40). Without this, listings queried during the
-    // broken window stay 404 until natural revalidation.
-    ['listing-detail-v2', listingKey],
+    // v3 cache-key bump 2026-05-31 — evicts poison-null entries cached before the
+    // throw-on-error fix (Vercel Data Cache persists across deploys). v2 bump
+    // (2026-05-28) did the same for the column-quoting bug. Without this, listings
+    // cached null during a transient blip stay "Listing Not Found" until TTL.
+    ['listing-detail-v3', listingKey],
     {
       revalidate: CACHE_WINDOWS.listingDetail,
       tags: [cacheTag.listings, cacheTag.listing(listingKey)],
