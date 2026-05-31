@@ -1,6 +1,7 @@
 'use server'
 
 import { BetaAnalyticsDataClient } from '@google-analytics/data'
+import { classifyAiReferrer } from '@/lib/ai-referrers'
 
 const LEAD_EVENT_NAMES = [
   'generate_lead',
@@ -71,6 +72,14 @@ export type GA4Summary = {
     eventCount: number
     users: number
   }[]
+  /** AI-assistant referral traffic (ChatGPT, Perplexity, Gemini, ...), pulled
+   *  out of GA4's generic "Referral" bucket via lib/ai-referrers. One row per
+   *  engine, sessions descending. Powers the "traffic through AI" measurement. */
+  aiReferrers: {
+    engine: string
+    sessions: number
+    users: number
+  }[]
 }
 
 export type GA4ReportResult = { ok: true; data: GA4Summary } | { ok: false; error: string }
@@ -103,7 +112,7 @@ export async function getGA4Summary(
       },
     })
 
-    const [summaryResponse, sourceResponse, pageResponse, leadEventsResponse, leadSourcesResponse, socialChannelsResponse, lpFunnelsResponse, topEventsResponse] = await Promise.all([
+    const [summaryResponse, sourceResponse, pageResponse, leadEventsResponse, leadSourcesResponse, socialChannelsResponse, lpFunnelsResponse, topEventsResponse, aiReferrersResponse] = await Promise.all([
       client.runReport({
         property: `properties/${propertyId}`,
         dateRanges: [{ startDate, endDate }],
@@ -234,6 +243,17 @@ export async function getGA4Summary(
         orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
         limit: 50,
       }),
+      // AI-assistant referrers. Pull the top 50 referral hosts by sessions, then
+      // classify host-side via lib/ai-referrers. GA4 has no native AI channel,
+      // so this query + classifier is the only way to size AI-driven traffic.
+      client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'sessionSource' }],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }],
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+        limit: 50,
+      }),
     ])
 
     const summary = summaryResponse[0]
@@ -244,6 +264,7 @@ export async function getGA4Summary(
     const socialChannelsBreakdown = socialChannelsResponse[0]
     const lpFunnelsBreakdown = lpFunnelsResponse[0]
     const topEventsBreakdown = topEventsResponse[0]
+    const aiReferrersBreakdown = aiReferrersResponse[0]
 
     const row = summary.rows?.[0]
     if (!row || !row.metricValues?.length) {
@@ -265,6 +286,7 @@ export async function getGA4Summary(
           socialChannels: [],
           lpFunnels: [],
           topEvents: [],
+          aiReferrers: [],
         },
       }
     }
@@ -337,6 +359,20 @@ export async function getGA4Summary(
       return { eventName, eventCount, users }
     })
 
+    // Classify referral hosts into AI engines and aggregate per engine.
+    const aiByEngine = new Map<string, { sessions: number; users: number }>()
+    for (const r of aiReferrersBreakdown.rows ?? []) {
+      const engine = classifyAiReferrer(String(r.dimensionValues?.[0]?.value || ''))
+      if (!engine) continue
+      const sessions = parseInt(String(r.metricValues?.[0]?.value ?? 0), 10)
+      const users = parseInt(String(r.metricValues?.[1]?.value ?? 0), 10)
+      const cur = aiByEngine.get(engine) ?? { sessions: 0, users: 0 }
+      aiByEngine.set(engine, { sessions: cur.sessions + sessions, users: cur.users + users })
+    }
+    const aiReferrers = [...aiByEngine.entries()]
+      .map(([engine, v]) => ({ engine, sessions: v.sessions, users: v.users }))
+      .sort((a, b) => b.sessions - a.sessions)
+
     return {
       ok: true,
       data: {
@@ -355,6 +391,7 @@ export async function getGA4Summary(
         socialChannels,
         lpFunnels,
         topEvents,
+        aiReferrers,
       },
     }
   } catch (e) {

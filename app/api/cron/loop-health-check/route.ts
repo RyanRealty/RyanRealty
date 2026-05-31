@@ -56,6 +56,40 @@ export async function GET(req: NextRequest) {
          hours > 72 ? 'OAuth or API permission issue' : undefined)
   }
 
+  // Value-aware probe — recency alone is a LIAR. A channel can be "fresh"
+  // (recent fetched_at, graded green above) yet carry permanent ZEROS: GSC
+  // ingested inside its 2-3 day processing delay wrote 0s that never got
+  // re-pulled, so the whole Search channel read 0 while the recency check
+  // happily reported green. For the channels that MUST carry nonzero volume
+  // when healthy, sum the trailing-8-day account-scope volume metric and flag
+  // a fresh-but-zero channel that recency would otherwise hide.
+  const VALUE_AWARE: { channel: string; metric: string; label: string }[] = [
+    { channel: 'gsc', metric: 'impressions', label: 'GSC impressions' },
+    { channel: 'ga4', metric: 'sessions', label: 'GA4 sessions' },
+  ]
+  const eightDaysAgo = new Date(Date.now() - 8 * 24 * 3600 * 1000).toISOString().slice(0, 10)
+  for (const v of VALUE_AWARE) {
+    const { data: rows } = await supabase
+      .from('marketing_channel_daily')
+      .select('value')
+      .eq('channel', v.channel)
+      .eq('scope', 'account')
+      .eq('metric', v.metric)
+      .gte('date', eightDaysAgo)
+    const n = (rows || []).length
+    const sum = (rows || []).reduce((s, r) => s + Number(r.value || 0), 0)
+    if (n === 0) {
+      push(`value:${v.channel}`, 'red', `no ${v.metric} rows in 8d`,
+           'Account-scope volume rows are not being written. Ingestor is dead or misconfigured.')
+    } else {
+      push(`value:${v.channel}`, sum > 0 ? 'green' : 'yellow',
+           `${v.label} 8d sum = ${sum.toFixed(0)} (${n} rows)`,
+           sum === 0
+             ? 'Fresh but ZERO volume. Likely ingested inside the source processing-delay window. Verify the rolling re-pull is correcting settled dates.'
+             : undefined)
+    }
+  }
+
   // Strategy active
   const { data: strategy } = await supabase
     .from('marketing_strategy')
