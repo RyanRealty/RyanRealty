@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.6 (2026-05-31)
+
+### Bug Fixes
+- fix(P0): broker profile pages 404'd — slug alias resolution
+
+---
+
+
 ## v1.382.5 (2026-05-31)
 
 ### Maintenance
