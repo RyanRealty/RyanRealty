@@ -7,6 +7,7 @@ const ACTIVE_STATUS_OR =
   'StandardStatus.is.null,StandardStatus.ilike.%Active%,StandardStatus.ilike.%For Sale%,StandardStatus.ilike.%Coming Soon%'
 
 import { fetchAllRows } from '@/lib/supabase/paginate'
+import { isCentralOregonCity, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
 
 /**
  * Dynamic sitemap — generates at request time so it always has fresh data.
@@ -111,7 +112,10 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       new Set(
         ((cityRows ?? []) as Array<{ City?: string | null }>)
           .map((row) => (row.City ?? '').trim())
-          .filter((city) => city.length > 0)
+          // Central Oregon service area only — keep out-of-area cities (Medford,
+          // Ashland, Klamath Falls, ...) out of the sitemap so Google doesn't
+          // crawl + index 404'ing pages. Also scopes the per-city subdivision loop.
+          .filter((city) => city.length > 0 && isCentralOregonCity(city))
       )
     )
 
@@ -141,6 +145,8 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     )
 
     for (const c of communityRows) {
+      // Central Oregon only — drop out-of-area community URLs (they 404).
+      if (!isCentralOregonCommunitySlug(c.slug)) continue
       dynamicPages.push({
         url: `${baseUrl}/communities/${encodeURIComponent(c.slug)}`,
         lastModified: now,

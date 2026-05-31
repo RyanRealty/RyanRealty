@@ -12,6 +12,7 @@ import { listSubdivisionsWithFlags } from '@/app/actions/subdivision-flags'
 import type { CommunityForIndex, CommunityDetail } from '@/lib/communities'
 import { entityKeyToSlug } from '@/lib/community-slug'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
+import { isCentralOregonCity } from '@/lib/central-oregon'
 import { COMMUNITY_LISTING_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getGeoSnapshot, getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
@@ -51,24 +52,6 @@ export async function getCitySlugs(): Promise<Set<string>> {
   defaults.forEach((s) => set.add(s))
   return set
 }
-
-/**
- * Ryan Realty serves CENTRAL OREGON only. The MLS/Spark feed carries subdivisions
- * statewide (Medford, Ashland, Grants Pass, Klamath Falls, Central Point, ...),
- * and listing them floods the /communities index with hundreds of out-of-area
- * pages that 404 — broken links + off-brand + thin-content SEO harm. Scope the
- * index to the tri-county (Deschutes / Crook / Jefferson) towns the site serves.
- */
-const CENTRAL_OREGON_CITY_SLUGS = new Set<string>([
-  // Deschutes
-  'bend', 'redmond', 'sisters', 'sunriver', 'la-pine', 'tumalo', 'terrebonne',
-  'black-butte-ranch', 'camp-sherman', 'brothers', 'alfalfa',
-  // Jefferson
-  'madras', 'culver', 'metolius', 'warm-springs', 'gateway', 'ashwood',
-  'crooked-river', 'crooked-river-ranch',
-  // Crook
-  'prineville', 'powell-butte', 'paulina', 'post', 'mitchell',
-])
 
 /** All communities for index: from listings + subdivision_flags, with counts and hero. */
 async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
@@ -113,7 +96,7 @@ async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
   for (const r of rows) {
     // Central Oregon only — drop out-of-area subdivisions (Medford, Ashland,
     // Grants Pass, Klamath Falls, ...) that flood the index with 404'ing links.
-    if (!CENTRAL_OREGON_CITY_SLUGS.has(slugify(r.city))) continue
+    if (!isCentralOregonCity(r.city)) continue
     const entityKey = r.entity_key
     if (seen.has(entityKey)) continue
     seen.add(entityKey)
