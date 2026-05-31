@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.7 (2026-05-31)
+
+### Bug Fixes
+- fix(images): stop wrong-city heroes — verified cityHero resolver (IMG-01)
+
+---
+
+
 ## v1.379.6 (2026-05-31)
 
 ### Bug Fixes
