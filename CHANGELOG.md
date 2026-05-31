@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.9 (2026-05-31)
+
+### Maintenance
+- perf(P0): sitemap served from hourly cache, not regenerated per request
+
+---
+
+
 ## v1.382.8 (2026-05-31)
 
 ### Bug Fixes
