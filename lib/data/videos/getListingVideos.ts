@@ -18,6 +18,7 @@ import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { supabaseAnon } from '@/lib/data/client'
+import { parseListingVideoEmbedForTile, isDirectListingVideoFileUrl } from '@/lib/video-embed'
 import type { VideoEmbed, VideoSource } from '@/lib/data/types/video'
 
 const InputSchema = z.object({ listingKey: z.string().min(1).max(100) })
@@ -90,6 +91,69 @@ function classifyVideo(url: string, hintSource?: string | null): {
   return { source: 'mls-other', embedType: 'iframe', professional: true }
 }
 
+/**
+ * Derive a raw video URL from an MLS `details.Videos` entry. The RETS Spark feed
+ * stores the reference under `ObjectHtml`, which may be an <iframe> snippet, an
+ * <a> link, OR a BARE URL (Dropbox, Aryeo). The previous code only handled the
+ * <iframe> case via extractIframeSrc, silently dropping ~half of listing videos
+ * — including the $48.56M (Dropbox) and $21M (Aryeo) flagships.
+ */
+function deriveRawUrl(vid: Record<string, unknown>): string | null {
+  for (const f of ['MediaURL', 'VideoURL', 'Url'] as const) {
+    const v = vid[f]
+    if (typeof v === 'string' && /^https?:\/\//i.test(v.trim())) return v.trim()
+  }
+  const oh = vid.ObjectHtml
+  if (typeof oh === 'string') {
+    const html = oh.trim()
+    const iframe = extractIframeSrc(html)
+    if (iframe) return iframe
+    const a = /<a[^>]+href\s*=\s*["']([^"']+)["']/i.exec(html)
+    if (a) return a[1].replace(/&amp;/g, '&')
+    if (/^(?:https?:)?\/\/\S+$/i.test(html)) return html.replace(/&amp;/g, '&')
+  }
+  return null
+}
+
+/**
+ * Normalize a raw URL into an embeddable form + render mode:
+ *   - 'iframe'    YouTube/Vimeo/Matterport (canonical embed src) + Aryeo/Cloudflare
+ *   - 'video-tag' direct progressive file (.mp4/.webm/.mov)
+ *   - 'link'      hosts that block framing (Dropbox sends x-frame-options) → watch link
+ * Returns null to drop the entry (MapRight parcel maps are not walkthrough videos).
+ */
+function normalizeEmbed(
+  raw: string | null,
+  hintSource?: string | null,
+): { url: string; embedType: 'iframe' | 'video-tag' | 'link'; posterUrl?: string } | null {
+  if (!raw) return null
+  let url = raw.trim()
+  if (url.startsWith('//')) url = `https:${url}`
+  if (!/^https?:\/\//i.test(url)) return null
+  const low = url.toLowerCase()
+  const hint = (hintSource ?? '').toLowerCase()
+
+  if (low.includes('mapright') || hint.includes('mapright')) return null
+
+  const parsed = parseListingVideoEmbedForTile(url)
+  if (parsed) return { url: parsed.src, embedType: 'iframe', posterUrl: parsed.posterUrl ?? undefined }
+
+  if (isDirectListingVideoFileUrl(url)) return { url, embedType: 'video-tag' }
+
+  // Hosted players that allow framing (Aryeo verified framable 2026-05-31).
+  if (
+    low.includes('aryeo.com') ||
+    low.includes('cloudflarestream.com') ||
+    low.includes('videodelivery.net') ||
+    low.includes('player.vimeo.com')
+  ) {
+    return { url, embedType: 'iframe' }
+  }
+
+  // Dropbox + anything unrecognized: frame-blocked → watch link, never a broken iframe.
+  return { url, embedType: 'link' }
+}
+
 async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   InputSchema.parse({ listingKey })
   const supabase = supabaseAnon()
@@ -110,15 +174,16 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
       const url = row.video_url
       if (seen.has(url)) continue
       seen.add(url)
-      const { source, embedType } = classifyVideo(url, row.source)
+      const norm = normalizeEmbed(url, row.source)
+      if (!norm) continue
       out.push({
         source: 'our-render',
-        embedType,
-        url,
+        embedType: norm.embedType,
+        url: norm.url,
+        posterUrl: norm.posterUrl,
         durationSeconds: row.duration_seconds ?? undefined,
         professional: true,
       })
-      void source
     }
   }
 
@@ -137,12 +202,13 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
         const url = entry.video_url
         if (!url || seen.has(url)) continue
         seen.add(url)
-        const { source, embedType } = classifyVideo(url, entry.video_source)
+        const norm = normalizeEmbed(url, entry.video_source)
+        if (!norm) continue
         out.push({
-          source,
-          embedType,
-          url,
-          posterUrl: entry.poster_url ?? undefined,
+          source: classifyVideo(norm.url, entry.video_source).source,
+          embedType: norm.embedType,
+          url: norm.url,
+          posterUrl: entry.poster_url ?? norm.posterUrl,
           professional: true,
         })
       }
@@ -166,28 +232,21 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
         for (const v of videos) {
           if (!v || typeof v !== 'object') continue
           const vid = v as Record<string, unknown>
-          // Pull a URL from any of the documented direct fields, or fall
-          // back to extracting the iframe src from ObjectHtml. The MLS
-          // RETS feed for Central Oregon stores the canonical video
-          // payload as `ObjectHtml` containing a Vimeo / YouTube iframe;
-          // direct fields like MediaURL are rarely populated.
-          const url =
-            typeof vid.MediaURL === 'string'
-              ? vid.MediaURL
-              : typeof vid.VideoURL === 'string'
-                ? vid.VideoURL
-                : typeof vid.Url === 'string'
-                  ? vid.Url
-                  : typeof vid.ObjectHtml === 'string'
-                    ? extractIframeSrc(vid.ObjectHtml)
-                    : null
-          if (!url || seen.has(url)) continue
-          seen.add(url)
-          const { source, embedType } = classifyVideo(url, typeof vid.Source === 'string' ? vid.Source : null)
+          // The MLS RETS feed stores the canonical video under `ObjectHtml`,
+          // which is an <iframe> snippet for some videographers but a BARE URL
+          // (Dropbox, Aryeo) for others. deriveRawUrl handles all shapes;
+          // normalizeEmbed picks the embeddable form (or a watch-link).
+          const raw = deriveRawUrl(vid)
+          if (!raw || seen.has(raw)) continue
+          seen.add(raw)
+          const hint = typeof vid.Source === 'string' ? vid.Source : null
+          const norm = normalizeEmbed(raw, hint)
+          if (!norm) continue
           out.push({
-            source,
-            embedType,
-            url,
+            source: classifyVideo(norm.url, hint).source,
+            embedType: norm.embedType,
+            url: norm.url,
+            posterUrl: norm.posterUrl,
             professional: true,
           })
         }
@@ -201,11 +260,11 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
 export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
   unstable_cache(
     () => fetchVideos(listingKey),
-    // v2 cache-key bump 2026-05-28 — invalidates entries cached before
-    // the ObjectHtml iframe extraction landed. Listings with videos in
-    // details.Videos JSONB (raw MLS payload) were previously returning
-    // empty arrays because only MediaURL/VideoURL/Url were inspected.
-    ['listing-videos-v3', listingKey],
+    // v4 cache-key bump 2026-05-31 — invalidates entries cached before the
+    // bare-URL ObjectHtml fix (Dropbox/Aryeo videos were dropped because only
+    // <iframe>-wrapped ObjectHtml reached classifyVideo; ~49% of listing
+    // videos, incl. the luxury flagships, returned empty arrays).
+    ['listing-videos-v4', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],

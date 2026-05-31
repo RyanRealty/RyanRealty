@@ -28,7 +28,9 @@ type Props = {
 export function ListingVideoEmbed({ videos, className }: Props) {
   const [playing, setPlaying] = useState(false)
   if (videos.length === 0) return null
-  const video = videos[0]
+  // Prefer an inline-embeddable video; fall back to the first (e.g. a Dropbox
+  // 'link' video, which renders as a watch-link below).
+  const video = videos.find((v) => v.embedType !== 'link') ?? videos[0]
   const orientationClass =
     video.orientation === 'portrait'
       ? 'aspect-[9/16] max-w-[420px] mx-auto'
@@ -48,7 +50,22 @@ export function ListingVideoEmbed({ videos, className }: Props) {
           orientationClass,
         )}
       >
-        {playing ? (
+        {video.embedType === 'link' ? (
+          <a
+            href={video.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-primary/30 to-primary/10 text-primary-foreground"
+            aria-label="Watch the listing video tour (opens in a new tab)"
+          >
+            <span className="w-16 h-16 rounded-full bg-white/95 text-primary flex items-center justify-center shadow-lg">
+              <span aria-hidden className="text-2xl ml-1">▶</span>
+            </span>
+            <span className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+              Watch the video tour
+            </span>
+          </a>
+        ) : playing ? (
           video.embedType === 'iframe' ? (
             <iframe
               src={video.url}

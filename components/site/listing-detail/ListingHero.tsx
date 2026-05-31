@@ -87,8 +87,10 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
   if (total === 0 && videos.length === 0) return null
 
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
-  const hasVideo = videos.length > 0
-  const heroVideo = hasVideo ? videos[0] : null
+  // Only an embeddable video can be the autoplay hero. A frame-blocked 'link'
+  // video (e.g. Dropbox) surfaces as a watch-link in the detail section, not here.
+  const heroVideo = videos.find((v) => v.embedType === 'iframe' || v.embedType === 'video-tag') ?? null
+  const hasVideo = heroVideo != null
 
   return (
     <div className={cn('flex flex-col gap-2', className)}>

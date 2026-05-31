@@ -27,9 +27,10 @@ export type VideoOrientation = 'portrait' | 'landscape' | 'square'
 export type VideoEmbed = {
   /** Identifier for tracking which tier the video came from. */
   source: VideoSource
-  /** How the page should render this video. */
-  embedType: 'iframe' | 'video-tag'
-  /** Embed src OR direct video file URL. */
+  /** How the page should render this video. 'link' = host blocks framing
+   *  (e.g. Dropbox) so we surface a watch-link instead of a broken iframe. */
+  embedType: 'iframe' | 'video-tag' | 'link'
+  /** Embed src, direct video file URL, or (for 'link') the watch URL. */
   url: string
   /** Optional poster image preloaded for LCP. */
   posterUrl?: string
