@@ -1,40 +1,58 @@
 {
-  "_comment": "Rollback artifact for the ryan-realty.com domain cutover (gate LAUNCH-16). Captures the PRE-cutover live DNS/origin state so the swap is one-step reversible. Captured 2026-05-30 via dig + curl. Re-capture the AgentFire origin target from the Cloudflare dashboard BEFORE changing any record (Cloudflare proxy hides the true origin from dig).",
+  "_comment": "Rollback artifact for the ryan-realty.com domain cutover (gate LAUNCH-16). REVISED 2026-05-30 after discovering the LIVE DNS is in AgentFire's Cloudflare account (nameservers eva/jeff), NOT Matt's. Cutover mechanism is therefore a REGISTRAR (GoDaddy) NAMESERVER SWITCH to Matt's own Cloudflare zone (novalee/yahir), not an in-place A/CNAME edit. Rollback = revert GoDaddy nameservers to eva/jeff. AgentFire's zone is never modified, so it stays a clean revert target.",
   "capturedAt": "2026-05-30",
-  "dnsProvider": "Cloudflare",
-  "nameservers": ["eva.ns.cloudflare.com", "jeff.ns.cloudflare.com"],
-  "preCutover": {
-    "apex": {
-      "host": "ryan-realty.com",
-      "records": [
-        { "type": "A", "value": "104.21.28.38", "ttl": 300, "note": "Cloudflare proxy (orange cloud)" },
-        { "type": "A", "value": "172.67.144.15", "ttl": 300, "note": "Cloudflare proxy (orange cloud)" }
-      ],
-      "serves": "AgentFire (x-powered-by: AgentFire.com), HTTP 200, proxied via Cloudflare"
+  "registrar": "GoDaddy (godaddy.com, llc, id 146) — domain registration + where nameservers are set",
+  "dnsTopology": {
+    "liveZone_AgentFire": {
+      "owner": "AgentFire's Cloudflare account (Matt does NOT control it)",
+      "nameservers": ["eva.ns.cloudflare.com", "jeff.ns.cloudflare.com"],
+      "status": "ACTIVE / authoritative now — serves AgentFire site + Google Workspace email + go/seller (Vercel)",
+      "rule": "DO NOT MODIFY. It stays intact as the rollback target."
     },
-    "www": {
-      "host": "www.ryan-realty.com",
-      "records": [
-        { "type": "A", "value": "104.21.28.38", "ttl": 300 },
-        { "type": "A", "value": "172.67.144.15", "ttl": 300 }
-      ]
-    },
-    "ACTION_BEFORE_CUTOVER": "In the Cloudflare dashboard, open the DNS tab and RECORD the existing apex + www records exactly as configured (the proxied origin target / CNAME that points at AgentFire). Paste them into preCutover.cloudflareDashboardRecords below. dig only shows Cloudflare's edge IPs, not the AgentFire origin — you need the dashboard values to revert.",
-    "cloudflareDashboardRecords": "<<FILL IN FROM CLOUDFLARE DASHBOARD BEFORE CUTOVER>>"
+    "targetZone_Matt": {
+      "owner": "Matt@ryan-realty.com's Cloudflare account",
+      "accountId": "edc8240051ac5c72e40d45bb0758ee1a",
+      "zoneId": "e0e91042c38fe49ed0edd93b1079d061",
+      "nameservers": ["novalee.ns.cloudflare.com", "yahir.ns.cloudflare.com"],
+      "plan": "Free Website",
+      "status": "initializing (pending) — activates ONLY when GoDaddy NS are switched to these",
+      "rule": "Build the FULL record set here (Vercel apex/www DNS-only + Google Workspace email + go/seller + verifications) and verify BEFORE switching NS."
+    }
+  },
+  "liveRecordsInventory_fromDig": {
+    "_source": "dig against authoritative servers 2026-05-30 (eva/jeff). Proxied records hide their origin; values below are what resolves.",
+    "apex": "A 104.21.28.38 + 172.67.144.15 (Cloudflare-proxied -> AgentFire origin)",
+    "www": "A 104.21.28.38 + 172.67.144.15 (proxied -> AgentFire; 301 to apex)",
+    "MX_googleWorkspace": ["1 aspmx.l.google.com", "5 alt1.aspmx.l.google.com", "5 alt2.aspmx.l.google.com", "10 alt3.aspmx.l.google.com", "10 alt4.aspmx.l.google.com"],
+    "TXT_spf": "v=spf1 include:_spf.google.com ~all",
+    "TXT_googleVerify": "google-site-verification=nfMjssTfe2YhI4SeIkW1z1pIUXaLyu0fQ2qWXKzPgU4",
+    "TXT_tiktokVerify": "tiktok-developers-site-verification=C2lfROibMnRVBiFFFFKG3wXatiVG2kuU",
+    "TXT_dkim_google._domainkey": "v=DKIM1; k=rsa; p=<long key present> — SOURCE THE EXACT VALUE FROM GOOGLE ADMIN CONSOLE, do not trust a dig-truncated copy",
+    "TXT_dmarc": "_dmarc -> v=DMARC1; p=none;",
+    "go": "CNAME cname.vercel-dns.com (DNS-only -> Vercel)",
+    "seller": "CNAME cname.vercel-dns.com (DNS-only -> Vercel)",
+    "mail": "proxied (104.21.28.38/172.67.144.15) — AgentFire artifact; likely drop (Google webmail is mail.google.com)",
+    "autodiscover": "proxied — AgentFire artifact; not needed with Google Workspace; likely drop",
+    "CAVEAT": "dig only reveals records we explicitly query AND that are publicly resolvable. AgentFire's zone may contain ADDITIONAL records we cannot enumerate without account access. Before the NS switch, reconcile against Cloudflare's auto-scan in the target zone AND ideally an AgentFire zone export for 100% completeness."
   },
   "cutover": {
-    "target": "Vercel project ryanrealty (ryanrealty.vercel.app)",
-    "vercelApexInstructions": "Add ryan-realty.com + www.ryan-realty.com as domains on the Vercel project, then point Cloudflare DNS at Vercel per Vercel's instructions (apex A 76.76.21.21 OR CNAME to cname.vercel-dns.com for www; set the records to DNS-only / grey-cloud as Vercel recommends so Vercel's edge + TLS are authoritative).",
-    "ttlPlan": "TTL is already 300s — good. Do NOT raise it. Keep 300s through cutover so rollback propagates in minutes."
+    "mechanism": "In GoDaddy, change the domain's nameservers from [eva, jeff].ns.cloudflare.com to [novalee, yahir].ns.cloudflare.com. This makes Matt's pre-built Cloudflare zone authoritative (apex/www -> Vercel) in one move.",
+    "prereqs": [
+      "Matt's CF zone (novalee/yahir) fully built + verified: apex A 76.76.21.21 + www CNAME cname.vercel-dns.com (DNS-only/grey), Google Workspace MX + SPF + DKIM + DMARC replicated exactly, go + seller CNAMEs to Vercel, google + tiktok verification TXT.",
+      "ryan-realty.com + www.ryan-realty.com added + showing Valid Configuration on the Vercel project.",
+      "NEXT_PUBLIC_SITE_URL=https://ryan-realty.com carried in a fresh green production deploy.",
+      "Lower TTLs in the target zone (300s) before the switch."
+    ],
+    "irreversibleStep": "The GoDaddy NS switch is the public point of no easy return (NS-change propagation is bounded by the registrar/TLD TTL and resolver NS caching — can be slower than an A-record change)."
   },
   "rollback": {
-    "trigger": "Any post-swap smoke fails (LAUNCH-01/02/06, FUNNEL-01) OR a monitor detects the apex not serving the new app / the LP 404ing / leads not reaching FUB.",
+    "trigger": "Any post-cutover smoke fails: site not the new Next.js app, /lp/seller-home-value 404, leads not reaching FUB, OR Google Workspace email stops flowing.",
     "steps": [
-      "In Cloudflare DNS, revert the apex + www records to the values recorded in preCutover.cloudflareDashboardRecords (re-enable the orange-cloud proxy to AgentFire).",
-      "Confirm `curl -sI https://ryan-realty.com/ -A Mozilla` returns the AgentFire origin (x-powered-by: AgentFire.com).",
-      "TTL 300s → full propagation within ~5 minutes.",
-      "AgentFire hosting must remain active/paid through the rollback window — do NOT cancel it until the new site is verified stable for at least 48h."
+      "In GoDaddy, revert the domain nameservers from [novalee, yahir].ns.cloudflare.com back to [eva, jeff].ns.cloudflare.com.",
+      "AgentFire's Cloudflare zone was never modified, so reverting NS restores the exact prior state (AgentFire site + Google email + go/seller).",
+      "Confirm: dig +short ryan-realty.com NS shows eva/jeff again, and curl -sI https://ryan-realty.com returns x-powered-by: AgentFire.com."
     ],
-    "rollbackTargetStillLive": "VERIFY before cutover: the AgentFire origin must still be serving so the revert has somewhere to point. As of capture, https://ryan-realty.com/ returns 200 from AgentFire."
+    "rollbackTarget": "AgentFire's eva/jeff Cloudflare zone — untouched throughout, so a clean revert.",
+    "rollbackTargetStillLive": "VERIFIED 2026-05-30: apex 200 from AgentFire, www 301 -> apex. AgentFire hosting MUST stay active/paid through at least 48h post-cutover."
   }
 }
