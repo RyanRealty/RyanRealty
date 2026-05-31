@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.9 (2026-05-31)
+
+### Bug Fixes
+- fix(communities): scope index to Central Oregon — kills ~600 out-of-area 404 links
+
+---
+
+
 ## v1.379.8 (2026-05-31)
 
 ### Bug Fixes
