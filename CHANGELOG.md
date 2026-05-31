@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.380.0 (2026-05-31)
+
+### Features
+- feat(growth): GSC rolling re-pull + seed city tier into sitemap
+
+---
+
+
 ## v1.379.11 (2026-05-31)
 
 ### Bug Fixes
