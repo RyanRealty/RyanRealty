@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.7 (2026-05-31)
+
+### Bug Fixes
+- fix(P0): sitemap — kill junk pages, collapse N+1 scan, drop 500'ing reports
+
+---
+
+
 ## v1.382.6 (2026-05-31)
 
 ### Bug Fixes
