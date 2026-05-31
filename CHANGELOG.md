@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.1 (2026-05-31)
+
+### Bug Fixes
+- fix(prod): stop caching poison-nulls in geo + listing resolvers
+
+---
+
+
 ## v1.382.0 (2026-05-31)
 
 ### Features
