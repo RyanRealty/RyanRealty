@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.4 (2026-05-31)
+
+### Bug Fixes
+- fix(P0): stop poison-null caching on homepage/search/market resolvers
+
+---
+
+
 ## v1.382.3 (2026-05-31)
 
 ### Bug Fixes
