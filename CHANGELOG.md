@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.4 (2026-05-31)
+
+### Maintenance
+- docs(cutover): preserve post-cutover records (rollback artifact, gate review, agent prompts)
+
+---
+
+
 ## v1.379.3 (2026-05-30)
 
 ### Bug Fixes
