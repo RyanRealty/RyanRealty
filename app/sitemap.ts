@@ -31,7 +31,11 @@ const RESORT_COMMUNITY_SLUGS = [
  * chunks at /sitemap/[id].xml but never generates the /sitemap.xml index.
  */
 
-export const dynamic = 'force-dynamic'
+// ISR, not force-dynamic: the heavy generation (~14s of listings scans) runs at
+// build + once per hour in the background, and every crawler request is served
+// from cache instantly. force-dynamic re-ran the whole thing on EVERY hit, which
+// is why /sitemap.xml took 11-14s and intermittently timed out. A sitemap up to
+// an hour stale is fine for Google.
 export const revalidate = 3600
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
