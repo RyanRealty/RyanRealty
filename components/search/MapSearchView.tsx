@@ -121,6 +121,12 @@ export default function MapSearchView({
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
   const [polygon, setPolygon] = useState<MapPolygonPoint[] | null>(initialPolygon)
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
+  // Window the CARD list so the SSR payload + hydration cost stays small even
+  // when the viewport returns hundreds of homes. The MAP still gets every pin
+  // (mapListings below) — only the heavy cards are paged in. "Show more" reveals
+  // the rest from already-loaded data (no extra fetch).
+  const CARD_PAGE = 48
+  const [visibleCount, setVisibleCount] = useState(CARD_PAGE)
 
   const listContainerRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -136,6 +142,7 @@ export default function MapSearchView({
     setTotalCount(initialTotalCount)
     setCapped(initialCapped)
     setPolygon(initialPolygon)
+    setVisibleCount(CARD_PAGE)
   }, [initialListings, initialTotalCount, initialCapped, initialPolygon, filtersSnapshot])
 
   // Clean up any pending debounce on unmount.
@@ -220,8 +227,9 @@ export default function MapSearchView({
           <p className="mt-1 text-sm">Zoom out or pan to a different area to see listings.</p>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          {listings.map((l) => {
+          {listings.slice(0, visibleCount).map((l) => {
             const key = rowKey(l)
             const href = listingDetailPath(
               key,
@@ -278,6 +286,18 @@ export default function MapSearchView({
             )
           })}
         </div>
+        {listings.length > visibleCount && (
+          <div className="px-4 pb-6">
+            <button
+              type="button"
+              onClick={() => setVisibleCount((c) => c + CARD_PAGE)}
+              className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm font-semibold text-primary shadow-sm transition hover:shadow-md"
+            >
+              Show more homes
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   )
