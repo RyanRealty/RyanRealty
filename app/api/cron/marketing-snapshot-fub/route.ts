@@ -345,6 +345,29 @@ function buildRows(
       value: qualifiedSellers.length,
       metadata: { tags_matched: [...SELLER_LEAD_TAGS] },
     })
+
+    // qualified_seller_leads BY SOURCE — the attribution keystone. The account
+    // row above says "N sellers today"; this breakdown says WHICH channel/source
+    // drove each one, so the brain can self-improve on what actually produces
+    // sellers (the north-star) instead of optimizing raw traffic blind. Uses
+    // FUB's native lead `source` already on each person — no extra API calls,
+    // no writes. Keyed distinctly from the source-scope new_leads metric, so no
+    // collision; idempotent upsert corrects on re-pull.
+    const sellersBySource = new Map<string, number>()
+    for (const p of qualifiedSellers) {
+      const src = (typeof p.source === 'string' && p.source.trim()) ? p.source.trim() : 'unknown'
+      sellersBySource.set(src, (sellersBySource.get(src) ?? 0) + 1)
+    }
+    for (const [src, count] of sellersBySource) {
+      rows.push({
+        ...base,
+        scope: 'source',
+        scope_id: src,
+        metric: 'qualified_seller_leads',
+        value: count,
+        metadata: { source: src },
+      })
+    }
   }
 
   // ── source scope ───────────────────────────────────────────────────────
