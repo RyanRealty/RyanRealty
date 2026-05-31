@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.5 (2026-05-31)
+
+### Maintenance
+- docs: full-site audit findings + fix tracking (2026-05-31)
+
+---
+
+
 ## v1.382.4 (2026-05-31)
 
 ### Bug Fixes
