@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.11 (2026-05-31)
+
+### Bug Fixes
+- fix(cities): redirect /cities/tumalo -> /cities/bend (no MV data row)
+
+---
+
+
 ## v1.379.10 (2026-05-31)
 
 ### Bug Fixes
