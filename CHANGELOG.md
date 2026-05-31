@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.5 (2026-05-31)
+
+### Other
+- harden: untracked-import gate + schedule seller-lead-attribution cron
+
+---
+
+
 ## v1.379.4 (2026-05-31)
 
 ### Maintenance
