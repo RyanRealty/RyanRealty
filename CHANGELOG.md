@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.2 (2026-05-31)
+
+### Bug Fixes
+- fix(prod): bump geo + listing cache keys to evict pre-fix poison-nulls
+
+---
+
+
 ## v1.382.1 (2026-05-31)
 
 ### Bug Fixes
