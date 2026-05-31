@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.0 (2026-05-31)
+
+### Features
+- feat(growth): credit qualified seller leads by source (attribution keystone)
+
+---
+
+
 ## v1.381.0 (2026-05-31)
 
 ### Features
