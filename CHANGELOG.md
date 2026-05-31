@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.379.8 (2026-05-31)
+
+### Bug Fixes
+- fix(cities): multi-word city pages 404'd (La Pine, Powell Butte) — geo-key normalize
+
+---
+
+
 ## v1.379.7 (2026-05-31)
 
 ### Bug Fixes
