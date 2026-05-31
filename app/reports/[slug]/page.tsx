@@ -103,6 +103,11 @@ export default async function ReportPage({ params }: Props) {
               className="w-full object-cover"
               sizes="(max-width: 1024px) 100vw, 1024px"
               priority
+              // The banner is a pre-rendered 1200x336 image already sized for this
+              // slot. Next's image optimizer was throwing "Failed to load external
+              // image" on it and 500'ing the whole report page; unoptimized serves
+              // the (valid, public) Supabase URL directly and can't crash SSR.
+              unoptimized
             />
           </div>
         )}
