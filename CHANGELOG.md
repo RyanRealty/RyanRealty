@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.10 (2026-05-31)
+
+### Bug Fixes
+- fix(P0): market-report pages 500'd — next/image optimizer throw on banner
+
+---
+
+
 ## v1.382.9 (2026-05-31)
 
 ### Maintenance
