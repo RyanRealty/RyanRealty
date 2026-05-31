@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.381.0 (2026-05-31)
+
+### Features
+- feat(growth): AI-referrer measurement + value-aware loop health probe
+
+---
+
+
 ## v1.380.0 (2026-05-31)
 
 ### Features
