@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.8 (2026-05-31)
+
+### Bug Fixes
+- fix(P0): search perf — window cards, stop SSR'ing hundreds of listings
+
+---
+
+
 ## v1.382.7 (2026-05-31)
 
 ### Bug Fixes
