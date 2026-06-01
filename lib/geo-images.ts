@@ -11,14 +11,21 @@
  * `communityImage(slug)` — FULL resolver (hero + tile consumers).
  *   Priority order:
  *     1. Dedicated LP photo for that specific community (tetherow/img/ etc.)
- *     2. Central-Oregon-Golf LP photo for the community
- *     3. null (caller falls back to city asset_library photo via pickGeoImage)
+ *     2. Professional Area Guide photo (public/images/communities/<slug>.jpg)
+ *     3. Central-Oregon-Golf LP photo for the community
+ *     4. null (caller falls back to city asset_library photo via pickGeoImage)
  *
- * For communities that have no dedicated LP photo (broken-top, caldera-springs,
- * sunriver, northwest-crossing, black-butte-ranch, vandevert-ranch, three-rivers)
- * the resolver returns null so the page falls back to the city's asset_library
- * pool (Bend photos for Bend-city communities, Sisters for BBR, etc.). This is
- * intentional — a genuine city photo is better than a mismatched one.
+ * Area Guide photos sourced 2026-06-01 from snowdriftvisuals professional
+ * photography (shared via Google Drive). Licensed to Ryan Realty. Covers
+ * 5 of the 6 previously-null communities:
+ *   broken-top       → Area Guide - Broken Top - 01.JPG         (entrance sign + pines)
+ *   caldera-springs  → Area Guide - Caldera Springs - 01.JPG    (branded boulder + reflection)
+ *   northwest-crossing→ Area Guide - Northwest Crossing - 01.JPG (roundabout drone)
+ *   vandevert-ranch  → Area Guide - Vandevert Ranch - 01.JPG    (wooden gate entrance)
+ *   three-rivers     → Area Guide - Three Rivers Recreation Sites - 01.JPG (entry sign)
+ *
+ * Still falling back to city asset_library (no photo found):
+ *   black-butte-ranch → no snowdriftvisuals Area Guide photo exists in Drive
  *
  * `golfCommunityImage(slug)` — legacy alias pointing at the same table;
  * existing callers continue to work unchanged.
@@ -35,11 +42,34 @@
 /**
  * Community-specific dedicated LP photos.
  * Tetherow has its own LP with aerial course photography.
+ *
+ * Also includes the 5 communities whose Area Guide photos were sourced
+ * 2026-06-01 from snowdriftvisuals professional photography (Google Drive).
+ * Files are at public/images/communities/<slug>.jpg — processed to max
+ * 1920px wide, EXIF-rotated, metadata stripped, jpeg q60-75.
+ *
+ * Coverage:
+ *   tetherow          → dedicated LP aerial (highest quality)
+ *   broken-top        → Area Guide 01 — entrance sign + pines       (1280x960,  384KB)
+ *   caldera-springs   → Area Guide 01 — branded boulder + pool      (1280x853,  277KB)
+ *   northwest-crossing→ Area Guide 01 — roundabout drone shot       (1920x1440, 393KB)
+ *   vandevert-ranch   → Area Guide 01 — wooden gate entrance        (1280x853,  299KB)
+ *   three-rivers      → Area Guide 01 — Three Rivers entry sign     (1920x1280, 355KB)
+ *
+ * Still no dedicated photo (city fallback remains):
+ *   black-butte-ranch → no snowdriftvisuals Area Guide photo in Drive
  */
 const COMMUNITY_DEDICATED_IMAGES: Record<string, string> = {
   // Tetherow: use the aerial course shot from its own LP — richer than the
   // golf-guide hero, which is a closer fairway shot.
   tetherow: '/lp/tetherow/img/tetherow-aerial-course.jpg',
+
+  // Area Guide photos — snowdriftvisuals professional photography, 2026-06-01
+  'broken-top': '/images/communities/broken-top.jpg',
+  'caldera-springs': '/images/communities/caldera-springs.jpg',
+  'northwest-crossing': '/images/communities/northwest-crossing.jpg',
+  'vandevert-ranch': '/images/communities/vandevert-ranch.jpg',
+  'three-rivers': '/images/communities/three-rivers.jpg',
 }
 
 // ---------------------------------------------------------------------------
@@ -50,7 +80,8 @@ const COMMUNITY_DEDICATED_IMAGES: Record<string, string> = {
 /**
  * Per-community curated images from the central-oregon-golf landing page.
  * Covers 7 of 14 resort communities. Remaining 7 have no curated LP photo
- * here; communityImage() returns null so city-level photos fill the gap.
+ * here; communityImage() checks COMMUNITY_DEDICATED_IMAGES first, so 5 of
+ * those 7 now resolve to Area Guide photos before reaching this tier.
  *
  * Coverage:
  *   tetherow        → tetherow-hero.jpg   (secondary; dedicated wins above)
@@ -62,13 +93,13 @@ const COMMUNITY_DEDICATED_IMAGES: Record<string, string> = {
  *   brasada-ranch   → brasada-01.jpg
  *   sunriver        → sunriver-river.jpg  (Sunriver river scene)
  *
- * No curated LP photo (falls back to city asset_library):
- *   broken-top        → Bend city photo
- *   caldera-springs   → Sunriver city photo
- *   northwest-crossing→ Bend city photo
- *   black-butte-ranch → Sisters city photo
- *   vandevert-ranch   → Bend city photo
- *   three-rivers      → Bend city photo
+ * No curated LP photo — resolved by higher tiers or city fallback:
+ *   broken-top        → COMMUNITY_DEDICATED_IMAGES (Area Guide photo)
+ *   caldera-springs   → COMMUNITY_DEDICATED_IMAGES (Area Guide photo)
+ *   northwest-crossing→ COMMUNITY_DEDICATED_IMAGES (Area Guide photo)
+ *   vandevert-ranch   → COMMUNITY_DEDICATED_IMAGES (Area Guide photo)
+ *   three-rivers      → COMMUNITY_DEDICATED_IMAGES (Area Guide photo)
+ *   black-butte-ranch → city fallback (Sisters city photo) — no AG photo
  */
 export const GOLF_COMMUNITY_IMAGES: Record<string, string> = {
   tetherow: '/lp/central-oregon-golf/img/tetherow-hero.jpg',
@@ -90,24 +121,28 @@ export const GOLF_COMMUNITY_IMAGES: Record<string, string> = {
  *
  * Priority:
  *   1. Dedicated LP photo for that community (highest quality, most specific)
- *   2. Central-Oregon-Golf LP photo
- *   3. null — let the caller fall back to city asset_library via pickGeoImage
+ *   2. Area Guide photo at public/images/communities/<slug>.jpg
+ *   3. Central-Oregon-Golf LP photo
+ *   4. null — let the caller fall back to city asset_library via pickGeoImage
+ *
+ * Note: tiers 1 and 2 both live in COMMUNITY_DEDICATED_IMAGES (tetherow uses
+ * the LP, the 5 Area Guide communities use /images/communities/<slug>.jpg).
  *
  * Mapping (all 14 communities → source):
- *   tetherow          → /lp/tetherow/img/tetherow-aerial-course.jpg     (dedicated LP)
- *   pronghorn         → /lp/central-oregon-golf/img/pronghorn-01.jpg    (golf LP)
- *   awbrey-glen       → /lp/central-oregon-golf/img/awbrey-glen-01.jpg  (golf LP)
- *   widgi-creek       → /lp/central-oregon-golf/img/widgi-creek-01.jpg  (golf LP)
- *   crosswater        → /lp/central-oregon-golf/img/crosswater-01.jpg   (golf LP)
- *   eagle-crest       → /lp/central-oregon-golf/img/eagle-crest-01.jpg  (golf LP)
- *   brasada-ranch     → /lp/central-oregon-golf/img/brasada-01.jpg      (golf LP)
- *   sunriver          → /lp/central-oregon-golf/img/sunriver-river.jpg  (golf LP)
- *   broken-top        → null → Bend city photo                          (city fallback)
- *   caldera-springs   → null → Sunriver city photo                      (city fallback)
- *   northwest-crossing→ null → Bend city photo                          (city fallback)
- *   black-butte-ranch → null → Sisters city photo                       (city fallback)
- *   vandevert-ranch   → null → Bend city photo                          (city fallback)
- *   three-rivers      → null → Bend city photo                          (city fallback)
+ *   tetherow          → /lp/tetherow/img/tetherow-aerial-course.jpg          (dedicated LP)
+ *   broken-top        → /images/communities/broken-top.jpg                   (Area Guide photo)
+ *   caldera-springs   → /images/communities/caldera-springs.jpg              (Area Guide photo)
+ *   northwest-crossing→ /images/communities/northwest-crossing.jpg           (Area Guide photo)
+ *   vandevert-ranch   → /images/communities/vandevert-ranch.jpg              (Area Guide photo)
+ *   three-rivers      → /images/communities/three-rivers.jpg                 (Area Guide photo)
+ *   pronghorn         → /lp/central-oregon-golf/img/pronghorn-01.jpg         (golf LP)
+ *   awbrey-glen       → /lp/central-oregon-golf/img/awbrey-glen-01.jpg       (golf LP)
+ *   widgi-creek       → /lp/central-oregon-golf/img/widgi-creek-01.jpg       (golf LP)
+ *   crosswater        → /lp/central-oregon-golf/img/crosswater-01.jpg        (golf LP)
+ *   eagle-crest       → /lp/central-oregon-golf/img/eagle-crest-01.jpg       (golf LP)
+ *   brasada-ranch     → /lp/central-oregon-golf/img/brasada-01.jpg           (golf LP)
+ *   sunriver          → /lp/central-oregon-golf/img/sunriver-river.jpg       (golf LP)
+ *   black-butte-ranch → null → Sisters city photo                            (city fallback — no AG photo)
  */
 export function communityImage(slug: string): string | null {
   return (

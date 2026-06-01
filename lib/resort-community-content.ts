@@ -22,6 +22,8 @@ export type ResortAmenity = {
   name: string
   description?: string | null
   access?: string | null
+  /** Optional slug of a published blog post about this amenity (topic-cluster SEO). */
+  blog_slug?: string | null
 }
 
 export type ResortDriveTime = {

@@ -135,6 +135,10 @@ export type { UpcomingOpenHouseRow } from '@/lib/data/open-houses/getUpcomingOpe
 export { getRecentBlogPosts } from '@/lib/data/blog/getRecentBlogPosts'
 export type { BlogPostCard } from '@/lib/data/blog/getRecentBlogPosts'
 
+// Blog — fetch a set of posts by slug (amenity topic-cluster SEO).
+export { getBlogPostsBySlugs } from '@/lib/data/blog/getBlogPostsBySlugs'
+export type { AmenityBlogPost } from '@/lib/data/blog/getBlogPostsBySlugs'
+
 // Geo tile imagery — representative photos from asset_library (the canonical
 // geo-tagged store) for city/neighborhood area cards. See getGeoTileImages.
 export { getGeoTileImages } from '@/lib/data/media/getGeoTileImages'

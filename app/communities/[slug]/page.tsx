@@ -34,7 +34,9 @@ import {
   getListingTiles,
   getCommunityListings,
   getResortCommunityBySlug,
+  getBlogPostsBySlugs,
 } from '@/lib/data'
+import type { AmenityBlogPost } from '@/lib/data'
 import type { CommunitySubdivision } from '@/lib/data'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import { communityImage, pickGeoImage } from '@/lib/geo-images'
@@ -144,6 +146,18 @@ export default async function CommunityDetailPage({ params }: Props) {
   // resort landing pages use. Null for communities without an authored config,
   // so those sections simply do not render.
   const content = await getResortCommunityContent(slug).catch(() => null)
+
+  // Amenity topic-cluster SEO: collect any blog_slug values from the loaded
+  // amenities, then resolve which of those slugs have a published blog post.
+  // The map is passed to CommunityRichContent; amenity cards with a resolved
+  // post link out to /blog/<slug> and display the post's hero image.
+  const amenityBlogSlugs = (content?.amenities ?? [])
+    .map((a) => a.blog_slug)
+    .filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+  const postsBySlug: Record<string, AmenityBlogPost> =
+    amenityBlogSlugs.length > 0
+      ? await getBlogPostsBySlugs(amenityBlogSlugs).catch(() => ({}))
+      : {}
 
   const registryEntry = getResortCommunityBySlug(slug)
 
@@ -318,7 +332,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           amenities + golf course/rankings/signature hole + membership +
           builders) via the shared CommunityRichContent renderer, from
           data/resort-community-[slug].json. D95/D96. */}
-      <CommunityRichContent content={content} name={community.name} />
+      <CommunityRichContent content={content} name={community.name} postsBySlug={postsBySlug} />
 
       {/* FIX 5: Community detail section with registry data. */}
       {registryEntry ? (

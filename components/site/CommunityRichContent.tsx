@@ -1,6 +1,9 @@
 // brand-voice:exempt — renders verified content authored + checked elsewhere
+import Image from 'next/image'
+import Link from 'next/link'
 import { Container } from '@/components/site/primitives'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
+import type { AmenityBlogPost } from '@/lib/data'
 
 /**
  * Renders the rich, verified community/neighborhood content (overview prose +
@@ -19,9 +22,16 @@ import type { ResortCommunityContent } from '@/lib/resort-community-content'
 export function CommunityRichContent({
   content,
   name,
+  postsBySlug = {},
 }: {
   content: ResortCommunityContent | null
   name: string
+  /**
+   * Map of blog_slug -> published post metadata, resolved by the page server
+   * component. Amenities with a matching entry are rendered as a link card
+   * with the post's hero image. Amenities without a match render as today.
+   */
+  postsBySlug?: Record<string, AmenityBlogPost>
 }) {
   if (!content) return null
 
@@ -124,18 +134,58 @@ export function CommunityRichContent({
               Amenities and lifestyle in {name}
             </h2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {content.amenities.map((a, i) => (
-                <div key={`${a.name}-${i}`} className="rounded-xl border border-border bg-card p-5 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
-                    {a.category}
-                  </p>
-                  <p className="text-base font-semibold text-foreground">{a.name}</p>
-                  {a.description ? (
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.description}</p>
-                  ) : null}
-                  {a.access ? <p className="mt-3 text-xs text-muted-foreground">{a.access}</p> : null}
-                </div>
-              ))}
+              {content.amenities.map((a, i) => {
+                const post = a.blog_slug ? postsBySlug[a.blog_slug] : undefined
+                if (post) {
+                  // Amenity has a published blog post: render as a link card
+                  // with the post's hero image and a "Read more" affordance.
+                  return (
+                    <Link
+                      key={`${a.name}-${i}`}
+                      href={`/blog/${post.slug}`}
+                      className="group rounded-xl border border-border bg-card shadow-sm overflow-hidden hover:border-primary/40 hover:shadow-md transition-shadow"
+                    >
+                      {post.heroImageUrl ? (
+                        <div className="relative h-40 w-full bg-secondary">
+                          <Image
+                            src={post.heroImageUrl}
+                            alt={`${a.name} in ${name}`}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          />
+                        </div>
+                      ) : null}
+                      <div className="p-5">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+                          {a.category}
+                        </p>
+                        <p className="text-base font-semibold text-foreground">{a.name}</p>
+                        {a.description ? (
+                          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.description}</p>
+                        ) : null}
+                        {a.access ? <p className="mt-3 text-xs text-muted-foreground">{a.access}</p> : null}
+                        <p className="mt-3 text-xs font-medium text-primary group-hover:underline underline-offset-2">
+                          Read more
+                        </p>
+                      </div>
+                    </Link>
+                  )
+                }
+                // No published post: render the current static amenity card unchanged.
+                return (
+                  <div key={`${a.name}-${i}`} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+                      {a.category}
+                    </p>
+                    <p className="text-base font-semibold text-foreground">{a.name}</p>
+                    {a.description ? (
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.description}</p>
+                    ) : null}
+                    {a.access ? <p className="mt-3 text-xs text-muted-foreground">{a.access}</p> : null}
+                  </div>
+                )
+              })}
             </div>
           </Container>
         </section>

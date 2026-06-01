@@ -99,6 +99,18 @@ const BROKER_SLUG_ALIASES: Record<string, string> = {
   'paul-stevenson': 'paul-stevenson',
 }
 
+/**
+ * Per-broker Oregon real estate license numbers, confirmed by Matt from the
+ * official OREA registry (2026-06-01, ACTIVE Central Oregon brokers). Used to
+ * fill license_number ONLY when the brokers-table row has it null, so the public
+ * broker pages always show the compliant Oregon license. Remove an entry once it
+ * is set in the DB via the admin brokers panel. Oregon advertising compliance.
+ */
+const CONFIRMED_LICENSES: Record<string, string> = {
+  'paul-stevenson': '201259123',
+  'rebecca-peterson': '201254727',
+}
+
 export async function getBrokerBySlug(slug: string): Promise<BrokerRow | null> {
   const supabase = await createServerClient()
   const requested = slug.trim().toLowerCase()
@@ -114,7 +126,13 @@ export async function getBrokerBySlug(slug: string): Promise<BrokerRow | null> {
     .eq('is_active', true)
     .limit(1)
     .maybeSingle()
-  return data as BrokerRow | null
+  const broker = data as BrokerRow | null
+  // Fill the OREA-confirmed license when the DB row has none, so the broker page
+  // stays Oregon-advertising compliant until the number is entered in the admin panel.
+  if (broker && !broker.license_number?.trim() && CONFIRMED_LICENSES[broker.slug]) {
+    broker.license_number = CONFIRMED_LICENSES[broker.slug]!
+  }
+  return broker
 }
 
 /** All brokers for admin (including inactive). */
