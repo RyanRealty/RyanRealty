@@ -35,7 +35,8 @@ import {
   Eyebrow,
 } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
-import MotivatedListingCard from '@/components/site/motivated-sellers/MotivatedListingCard'
+import ListingCard from '@/components/site/ListingCard'
+import { motivatedToCardData } from '@/lib/site/listing-card'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
 // ─── ISR ─────────────────────────────────────────────────────────────────
@@ -223,12 +224,10 @@ export default async function MotivatedSellersPage() {
                 <H2>{listings.length} motivated seller homes in Central Oregon</H2>
               </div>
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {listings.map((listing) => (
-                  <MotivatedListingCard
-                    key={listing.listingKey}
-                    listing={listing}
-                  />
-                ))}
+                {listings.map((listing) => {
+                  const card = motivatedToCardData(listing)
+                  return card ? <ListingCard key={card.listingKey} listing={card} /> : null
+                })}
               </div>
             </Stack>
           ) : (

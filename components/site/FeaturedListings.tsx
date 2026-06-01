@@ -1,9 +1,26 @@
 import { Suspense } from 'react'
-import GeoSectionFeaturedListings from '@/components/geo-page/GeoSectionFeaturedListings'
+import Link from 'next/link'
 import { getListings } from '@/app/actions/listings'
+import type { ListingTileRow } from '@/app/actions/listings'
+import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { Container } from '@/components/site/primitives'
+
+/**
+ * FeaturedListings — premium active inventory for a scope, rendered as the
+ * CANONICAL design-system listing display: a responsive grid of <ListingCard>
+ * (design_system/ryan-realty/ui_kits/website §featured-listings .listings/.listing).
+ *
+ * This is the ONE listing presentation the whole site uses. There is no longer a
+ * bespoke per-section slider/tile — the canonical-listings gate forbids the old
+ * GeoSectionFeaturedListings / TilesSlider / ListingTile path on these surfaces.
+ *
+ * Self-fetching + Suspense so the page renders instantly and this fills in.
+ * Public (no session/cookie) so it stays inside the page ISR cache. Renders
+ * nothing when the scope has no active inventory.
+ */
 
 type Props = {
-  /** City name to scope to (e.g. "Bend"). Omit + pass nothing for region-wide. */
+  /** City name to scope to (e.g. "Bend"). Omit for region-wide. */
   city?: string
   /** Subdivision/community name to scope to (within a city). */
   subdivision?: string
@@ -17,39 +34,52 @@ function citySlug(city: string): string {
   return city.toLowerCase().trim().replace(/\s+/g, '-')
 }
 
-/**
- * Self-fetching featured-listings showcase. ANY geo page (home, city,
- * neighborhood, community) wires it with a single import, which the
- * check-mockup-parity gate can require so the section can't regress.
- *
- * Surfaces genuine single-family residential inventory for the scope.
- * Queries with propertyType 'A' (Residential SFR/multi-family) and
- * minBeds 1 to exclude land parcels and raw lots at the DB level.
- * Sorts newest first so the feed reflects current market activity rather
- * than surfacing trophy land at the top of a price-desc list.
- * Post-filters to rows that have a photo and positive sqft, then trims
- * to the requested limit. Public — does NOT read session/cookies, so it
- * stays inside the page's ISR cache and renders nothing (instead of
- * throwing) if the geo has no active listings.
- */
-async function FeaturedListingsInner({ city, subdivision, title, viewAllHref, viewAllLabel, limit = 12 }: Props) {
-  const overfetch = Math.min(limit * 2 + 6, 200)
+/** Map the active-listing tile row to the canonical ListingCard shape. */
+function toCardData(l: ListingTileRow): ListingCardData | null {
+  const key = (l.ListingKey ?? l.ListNumber ?? '').toString()
+  if (!key) return null
+  const addressLine = [l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || 'Address on request'
+  const cityParts: string[] = []
+  if (l.City) cityParts.push(`${l.City}, OR`)
+  if (l.PostalCode) cityParts.push(l.PostalCode)
+  if (l.SubdivisionName) cityParts.push(l.SubdivisionName)
+  return {
+    listingKey: key,
+    href: `/listing/${encodeURIComponent(key)}`,
+    photoUrl: l.PhotoURL ?? null,
+    price: l.ListPrice ?? null,
+    addressLine,
+    cityLine: cityParts.join(' · '),
+    beds: l.BedroomsTotal ?? null,
+    baths: l.BathroomsTotal ?? null,
+    sqft: null,
+  }
+}
+
+async function FeaturedListingsInner({
+  city,
+  subdivision,
+  title,
+  viewAllHref,
+  viewAllLabel,
+  limit = 8,
+}: Props) {
   const raw = await getListings({
     ...(city ? { city } : {}),
     ...(subdivision ? { subdivision } : {}),
     propertyType: 'A',
     minBeds: 1,
     sort: 'newest',
-    limit: overfetch,
+    limit: limit * 2 + 6,
   }).catch(() => [])
 
-  // propertyType 'A' + minBeds 1 already exclude raw land at the DB level;
-  // here we just require a photo so no blank-image cards reach the slider.
-  const listings = raw
+  const cards = raw
     .filter((l) => typeof l.PhotoURL === 'string' && l.PhotoURL.trim().length > 0)
+    .map(toCardData)
+    .filter((c): c is ListingCardData => c !== null)
     .slice(0, limit)
 
-  if (listings.length === 0) return null
+  if (cards.length === 0) return null
 
   const href =
     viewAllHref ??
@@ -68,13 +98,29 @@ async function FeaturedListingsInner({ city, subdivision, title, viewAllHref, vi
         : 'Featured Central Oregon homes')
 
   return (
-    <GeoSectionFeaturedListings
-      title={heading}
-      listings={listings}
-      viewAllHref={href}
-      viewAllLabel={viewAllLabel ?? 'View all homes'}
-      signedIn={false}
-    />
+    <section className="border-t border-border bg-card py-10 md:py-14">
+      <Container>
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Featured listings
+            </p>
+            <h2 className="text-2xl font-bold text-foreground">{heading}</h2>
+          </div>
+          <Link
+            href={href}
+            className="shrink-0 text-sm font-semibold text-primary underline-offset-2 hover:underline"
+          >
+            {viewAllLabel ?? 'View all homes'}
+          </Link>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {cards.map((card) => (
+            <ListingCard key={card.listingKey} listing={card} />
+          ))}
+        </div>
+      </Container>
+    </section>
   )
 }
 
