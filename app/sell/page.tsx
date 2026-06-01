@@ -21,16 +21,14 @@ import { HeroBlock } from '@/components/site/HeroBlock'
 import { ContentSection } from '@/components/site/ContentSection'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { CTABar } from '@/components/site/CTABar'
+import { SellValueProps } from '@/components/site/sell/SellValueProps'
+import { SellProcess } from '@/components/site/sell/SellProcess'
+import { SellCommission } from '@/components/site/sell/SellCommission'
+import { SellValuationCTA } from '@/components/site/sell/SellValuationCTA'
+import { SellMarketContext } from '@/components/site/sell/SellMarketContext'
 import {
   Body,
   Container,
-  Eyebrow,
-  Grid,
-  H2,
-  H3,
-  Section,
-  Stack,
-  TextLink,
 } from '@/components/site/primitives'
 
 export const revalidate = 300
@@ -49,36 +47,31 @@ export const metadata = pageMetadata({
   ],
 })
 
-const VALUE_PROPS = [
-  {
-    title: 'Priced on real data',
-    body: 'We price your home against recent comparable sales and current active inventory, the same live market data shown across this site. You see the comps we use.',
-  },
-  {
-    title: 'Marketed by a local broker',
-    body: 'Your listing is handled by a licensed Ryan Realty broker who works the Central Oregon market every day, with professional photography and full MLS syndication.',
-  },
-  {
-    title: 'One broker, start to finish',
-    body: 'The broker who prices and lists your home is the broker who markets, negotiates, and closes it. No hand-offs, no call center.',
-  },
-] as const
-
 const FAQ_ITEMS = [
   {
-    question: 'What does a home valuation cost?',
+    question: 'Do I need to sign a listing agreement to get the CMA?',
     answer:
-      'Nothing. A broker prepares a comparative market analysis at no cost and no obligation.',
+      'No. The comparative market analysis is free and requires no contract. If you decide to list with us after reading it, that is a separate signed agreement.',
   },
   {
     question: 'How do you decide on a list price?',
     answer:
-      'We use recent comparable sales and current active inventory in your area, the same market data shown across this site. You see the comparable sales we base the price on.',
+      'We use recent comparable sales and current active inventory in your area, the same market data shown across this site. You see the three closed comps and three active comps we base the range on.',
+  },
+  {
+    question: 'How long does it take to get listed?',
+    answer:
+      'From a signed agreement to live on MLS is typically 5 to 7 business days. Professional photos within 48 hours. MLS description and pricing locked the day after photos return.',
   },
   {
     question: 'Will I work with the same broker the whole time?',
     answer:
       'Yes. The broker who lists your home is the broker who markets, negotiates, and closes it. Ryan Realty does not use a hand-off model.',
+  },
+  {
+    question: 'What if my home is in a resort community with very few sales?',
+    answer:
+      'For slow-turnover areas like Pronghorn, Crosswater, Black Butte Ranch, or Vandevert Ranch, we expand the comp window to 12 or 24 months and tell you exactly which comps were stretched and why.',
   },
   {
     question: 'What areas do you list homes in?',
@@ -87,99 +80,75 @@ const FAQ_ITEMS = [
   },
 ] as const
 
-function marketType(mos: number): string {
-  if (mos <= 4) return "a seller's market"
-  if (mos < 6) return 'a balanced market'
-  return "a buyer's market"
-}
-
 export default async function SellPage() {
   const pulse = await getMarketPulse({ geoType: 'city', geoSlug: 'bend' }).catch(() => null)
-
-  const sellerActive = pulse?.activeCount ?? 0
-  const mosRaw = typeof pulse?.monthsOfSupply === 'number' ? pulse.monthsOfSupply : null
-  const sellerMos = mosRaw === null ? null : Math.round(mosRaw * 10) / 10
-  const hasMos = mosRaw === null ? false : true
-  const showMarket = Boolean(pulse) && (sellerActive > 0 || hasMos)
-  const marketLead =
-    (sellerActive > 0
-      ? `${sellerActive} single-family homes are for sale in Bend`
-      : 'The Bend single-family market') +
-    (mosRaw === null ? '' : `, with ${sellerMos} months of supply, which is ${marketType(mosRaw)}`) +
-    '. See the full market picture before you list.'
 
   return (
     <main className="min-h-screen bg-background">
       <div className="bg-background border-b border-border py-3">
         <Container>
-          <BreadcrumbNav items={[{ label: 'Home', href: '/' }, { label: 'Sell' }]} tone="on-light" />
+          <BreadcrumbNav
+            items={[{ label: 'Home', href: '/' }, { label: 'Sell' }]}
+            tone="on-light"
+          />
         </Container>
       </div>
 
       <HeroBlock
-        headline="Sell your Central Oregon home."
-        lede="Pricing from live market data, marketing from a local licensed broker, and one broker who works your sale from valuation to close. Start with a free home valuation."
+        headline="Selling your home, done honestly."
+        lede="A small team of three brokers. Specific numbers from the data. No layered hand-offs. The broker who prices your home is the broker who walks you to the finish line."
         photo={{
           src: '/brand/hero/hero-old-mill-master-4k.jpg',
           alt: 'Old Mill District drone view with the Deschutes River and the Cascade mountains.',
           priority: true,
         }}
-        minHeight={460}
+        minHeight={500}
+        chips={[
+          { label: 'Free home valuation', href: '/lp/seller-home-value' },
+          { label: 'Talk to a broker', href: '/contact?inquiry=Selling' },
+          { label: 'How we price', href: '#our-process' },
+        ]}
       />
 
-      <Section padding="default" tone="default" divider>
-        <Container>
-          <Stack gap="tight" className="mb-8 max-w-[52ch]">
-            <Eyebrow>Why list with us</Eyebrow>
-            <H2>A small brokerage that prices on numbers, not adjectives.</H2>
-          </Stack>
-          <Grid cols={3} gap="default">
-            {VALUE_PROPS.map((v) => (
-              <div key={v.title} className="bg-card border border-border rounded-[14px] p-7 shadow-sm">
-                <H3 className="mb-2">{v.title}</H3>
-                <Body size="default" tone="muted" className="leading-[1.6]">
-                  {v.body}
-                </Body>
-              </div>
-            ))}
-          </Grid>
-        </Container>
-      </Section>
+      <SellValueProps />
 
-      <ContentSection eyebrow="How it works" title="From first call to closing table." tone="muted" width="wide">
-        <Stack gap="default">
-          <Body size="default" tone="muted" className="leading-[1.65]">
-            1. Request a valuation. Share your home details and your timeline.
+      <SellProcess />
+
+      <SellCommission />
+
+      <SellMarketContext pulse={pulse} />
+
+      <SellValuationCTA
+        valuationHref="/lp/seller-home-value"
+        phoneHref="tel:5412136706"
+      />
+
+      <ContentSection
+        eyebrow="How it works"
+        title="From first call to closing table."
+        tone="default"
+        divider
+        width="wide"
+      >
+        <div className="space-y-4">
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">Request a valuation.</strong>{' '}
+            Share your address and your timeline. We prepare the written CMA and email it within 24 hours.
           </Body>
-          <Body size="default" tone="muted" className="leading-[1.65]">
-            2. A broker prepares a comparative market analysis using recent comparable sales and a
-            walk-through of your home, then gives you an honest price range.
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">Review the numbers together.</strong>{' '}
+            We walk you through the comparable sales, the active competition, and an honest price range. You decide the list price from real data.
           </Body>
-          <Body size="default" tone="muted" className="leading-[1.65]">
-            3. We agree on a price and a marketing plan: photography, MLS syndication, and the local
-            channels that reach Central Oregon buyers.
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">List and market.</strong>{' '}
+            Professional photography within 48 hours of signing. MLS syndication, open-house cadence, and weekly written updates on showings and traffic.
           </Body>
-          <Body size="default" tone="muted" className="leading-[1.65]">
-            4. We list, market, negotiate the offers, and work the transaction through to close.
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">Close.</strong>{' '}
+            We review every offer, negotiate, manage the transaction through inspection and appraisal, and stay with you to the closing table. The same broker, start to finish.
           </Body>
-        </Stack>
+        </div>
       </ContentSection>
-
-      {showMarket ? (
-        <Section padding="default" tone="default" divider>
-          <Container>
-            <Stack gap="tight" className="max-w-[60ch]">
-              <Eyebrow>The Bend market right now</Eyebrow>
-              <Body size="default" tone="muted" className="leading-[1.6]">
-                {marketLead}
-              </Body>
-              <TextLink href="/housing-market">
-                View Central Oregon market data
-              </TextLink>
-            </Stack>
-          </Container>
-        </Section>
-      ) : null}
 
       <CTABar
         eyebrow="What is your home worth?"
@@ -190,7 +159,12 @@ export default async function SellPage() {
         tone="navy"
       />
 
-      <FAQBlock eyebrow="Common questions" title="Selling with Ryan Realty" items={FAQ_ITEMS} tone="muted" />
+      <FAQBlock
+        eyebrow="Common questions"
+        title="Selling with Ryan Realty"
+        items={FAQ_ITEMS}
+        tone="muted"
+      />
     </main>
   )
 }

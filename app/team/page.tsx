@@ -5,10 +5,9 @@
  * components/broker/* or app/actions/agents.
  *
  * DATA ACCURACY (CLAUDE.md §0): the broker grid renders ONLY verified
- * getBrokers() data (name, title, OREA license #, transparent headshot,
+ * getBrokers() data (name, title, Oregon license #, transparent headshot,
  * direct phone, email). No invented bios, stats, rankings, or "track record"
- * claims. BrokerCard does not render a bio field, so there is no fabrication
- * surface.
+ * claims.
  */
 
 import type { Metadata } from 'next'
@@ -18,6 +17,7 @@ import { teamPath } from '@/lib/slug'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { BrokerCard } from '@/components/site/BrokerCard'
+import { BrokerContactCard } from '@/components/site/BrokerContactCard'
 import { CTABar } from '@/components/site/CTABar'
 import {
   Body,
@@ -78,21 +78,33 @@ export default async function TeamPage() {
               showing to the closing table. Call any broker directly using the number on their card.
             </Body>
           </Stack>
-          <Grid cols={3} gap="default">
-            {brokers.map((broker) => (
-              <div
-                key={broker.slug}
-                className="bg-card border border-border rounded-[14px] p-6 shadow-sm"
-              >
-                <BrokerCard
-                  broker={broker}
-                  variant="featured"
+
+          {/* Broker cards — full contact info visible at the grid level */}
+          <Grid cols={3} gap="loose">
+            {brokers.map((broker) => {
+              const firstName = broker.fullName.split(' ')[0] ?? broker.fullName
+              const trustLine = broker.isPrincipal
+                ? 'Principal broker and owner of Ryan Realty. Licensed in Oregon since 2012.'
+                : null
+              return (
+                <BrokerContactCard
+                  key={broker.slug}
+                  name={broker.fullName}
+                  title={broker.title}
+                  licenseNumber={broker.licenseNumber}
+                  phone={broker.phoneDirect}
+                  email={broker.email}
+                  headshotSrc={broker.headshotPng}
+                  headshotAlt={broker.fullName}
+                  trustLine={trustLine ?? undefined}
                   ctaHref={teamPath(broker.slug)}
-                  ctaLabel="View profile"
+                  firstName={firstName}
+                  variant="card"
                 />
-              </div>
-            ))}
+              )
+            })}
           </Grid>
+
         </Container>
       </Section>
 

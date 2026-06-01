@@ -61,6 +61,12 @@ function pickLimiter(pathname: string): Ratelimit | null {
   if (pathname.startsWith('/api/ai/')) return strict
   if (pathname.startsWith('/api/pdf/')) return strict
   if (pathname.startsWith('/api/cma/')) return strict
+  // /api/auth/me is the read-only session check the header / SignInPrompt /
+  // VisitTracker fire on EVERY page load. The 5/min auth limiter is for
+  // brute-force protection on login/callback, not a per-pageview session read —
+  // applying it here 429s any visitor who browses more than 5 pages a minute and
+  // breaks the auth chrome. Route it through the general (60/min) tier instead.
+  if (pathname === '/api/auth/me') return general
   if (pathname.startsWith('/api/auth/')) return auth
   if (pathname.startsWith('/api/open-houses/')) return auth
   if (pathname.startsWith('/api/admin/sync/')) return admin ?? general

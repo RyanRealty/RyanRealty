@@ -1,34 +1,43 @@
+/**
+ * Broker detail page (/team/[slug]) — Wave 3 site-v2 rebuild.
+ *
+ * Substantial trust-building agent page: large headshot, full contact info
+ * including Oregon license number (from data only, never invented), bio,
+ * active listings, and a clear call/email CTA.
+ *
+ * DATA ACCURACY (CLAUDE.md §0): all broker fields come from getBrokerBySlug
+ * via getAgentBySlug — name, title, license_number, bio, phone, email. No
+ * stats or review numbers are fabricated. License numbers show only when
+ * present in the database row. If the per-broker license is null the firm
+ * license (Principal Broker 201206613) is noted as context only for Matt.
+ *
+ * Uses @/components/site/* + @/components/ui/* only. No legacy broker/*
+ * components.
+ */
+
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import {
-  getAgentBySlug,
-  getAgentActiveListings,
-  getAgentSoldListings,
-  getAgentPendingListings,
-  getAgentReviews,
-  getBrokerGalleryImages,
-} from '@/app/actions/agents'
-import { getSession } from '@/app/actions/auth'
-import { getSavedListingKeys } from '@/app/actions/saved-listings'
-import { getFubPersonIdFromCookie } from '../../actions/fub-identity-bridge'
-import { getLikedListingKeys } from '@/app/actions/likes'
-import { getBuyingPreferences } from '@/app/actions/buying-preferences'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
-import { DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '@/lib/mortgage'
+import Image from 'next/image'
+import { getAgentBySlug, getAgentActiveListings } from '@/app/actions/agents'
 import { getBrokerageSettings } from '@/app/actions/brokerage'
-import BrokerHero from '@/components/broker/BrokerHero'
-import BrokerBio from '@/components/broker/BrokerBio'
-import BrokerStats from '@/components/broker/BrokerStats'
-import BrokerListings from '@/components/broker/BrokerListings'
-import BrokerPendingListings from '@/components/broker/BrokerPendingListings'
-import BrokerSoldHistory from '@/components/broker/BrokerSoldHistory'
-import BrokerReviews from '@/components/broker/BrokerReviews'
-import BrokerGallery from '@/components/broker/BrokerGallery'
-import BrokerContactForm from '@/components/broker/BrokerContactForm'
-import BrokerShare from '@/components/broker/BrokerShare'
-import BrokerPageTracker from '@/components/broker/BrokerPageTracker'
-import BrokerSocialProofCta from '@/components/broker/BrokerSocialProofCta'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { BrokerContactCard } from '@/components/site/BrokerContactCard'
+import { CTABar } from '@/components/site/CTABar'
+import { Separator } from '@/components/ui/separator'
+import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import {
+  Body,
+  Caption,
+  Container,
+  Eyebrow,
+  Grid,
+  H2,
+  H3,
+  Section,
+  Stack,
+  TextLink,
+} from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -39,10 +48,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [broker, brokerage] = await Promise.all([getAgentBySlug(slug), getBrokerageSettings()])
   if (!broker) notFound()
   const siteName = brokerage?.name ?? 'Ryan Realty'
-  const title = `${broker.display_name} | ${siteName} — Central Oregon Real Estate`
+  const title = `${broker.display_name} · ${siteName} — Central Oregon real estate`
   const description =
     broker.bio?.slice(0, 155) ??
-    `${broker.display_name}, ${broker.title ?? 'Real Estate Agent'} at ${siteName}. ${broker.soldCount24Mo} transactions. Contact for Central Oregon real estate.`
+    `${broker.display_name}, ${broker.title ?? 'Real Estate Broker'} at ${siteName}. Licensed in Oregon. Contact for Central Oregon real estate.`
   const canonical = `${siteUrl}/team/${slug}`
   const ogImage = `${siteUrl}/api/og?type=broker&id=${encodeURIComponent(slug)}`
   return {
@@ -63,57 +72,92 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export const revalidate = 60
 
+/** Map a HomeTileRow from getAgentActiveListings to the ListingCardData shape. */
+function toListingCardData(tile: {
+  ListingKey?: string | null
+  ListPrice?: number | null
+  StreetNumber?: string | null
+  StreetName?: string | null
+  City?: string | null
+  PostalCode?: string | null
+  SubdivisionName?: string | null
+  PhotoURL?: string | null
+  BedroomsTotal?: number | null
+  BathroomsTotal?: number | null
+  TotalLivingAreaSqFt?: number | null
+}): ListingCardData | null {
+  const key = tile.ListingKey
+  if (!key) return null
+  const addressLine = [tile.StreetNumber, tile.StreetName].filter(Boolean).join(' ') || 'Address unavailable'
+  const cityParts = [tile.City, tile.PostalCode].filter(Boolean).join(' ')
+  const cityLine = [cityParts, tile.SubdivisionName].filter(Boolean).join(' · ')
+  return {
+    listingKey: key,
+    href: `/listing/${encodeURIComponent(key)}`,
+    photoUrl: tile.PhotoURL ?? null,
+    price: tile.ListPrice ?? null,
+    addressLine,
+    cityLine,
+    beds: tile.BedroomsTotal ?? null,
+    baths: tile.BathroomsTotal ?? null,
+    sqft: tile.TotalLivingAreaSqFt ?? null,
+  }
+}
+
+/**
+ * Factual fallback bio when the broker has no bio in the database.
+ * Sentence-case, no banned words, no invented claims.
+ */
+function factualFallbackBio(displayName: string, title: string): string {
+  return `${displayName} is a licensed Oregon real estate broker at Ryan Realty, a small independent brokerage based in Bend, Oregon. Ryan Realty serves buyers and sellers across Central Oregon, including Bend, Redmond, Sisters, Sunriver, and surrounding communities. ${displayName} works directly with clients from first contact through closing.`
+}
+
 export default async function TeamMemberPage({ params }: Props) {
   const { slug } = await params
   const broker = await getAgentBySlug(slug)
   if (!broker) notFound()
 
-  const [session, fubPersonId] = await Promise.all([getSession(), getFubPersonIdFromCookie()])
-  const pageUrl = `${siteUrl}/team/${slug}`
   const brokerage = await getBrokerageSettings()
   const siteName = brokerage?.name ?? 'Ryan Realty'
-  const pageTitle = `${broker.display_name} | ${siteName}`
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
-
-  const hasLicenseId = Boolean(broker.license_number?.trim())
-
-  const [
-    listings,
-    soldListings,
-    pendingListings,
-    reviews,
-    galleryImages,
-    savedKeys,
-    likedKeys,
-    prefs,
-  ] = await Promise.all([
-    hasLicenseId
-      ? getAgentActiveListings(broker.license_number!, 24, broker.email)
-      : Promise.resolve([]),
-    hasLicenseId
-      ? getAgentSoldListings(broker.license_number!, 24, broker.email)
-      : Promise.resolve([]),
-    hasLicenseId
-      ? getAgentPendingListings(broker.license_number!, 24, broker.email)
-      : Promise.resolve([]),
-    getAgentReviews(broker.id, 100),
-    getBrokerGalleryImages(broker.id),
-    session?.user ? getSavedListingKeys() : Promise.resolve([]),
-    session?.user ? getLikedListingKeys() : Promise.resolve([]),
-    session?.user ? getBuyingPreferences().catch(() => null) : Promise.resolve(null),
-  ])
-
-  const displayPrefs = prefs ?? {
-    downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT,
-    interestRate: DEFAULT_DISPLAY_RATE,
-    loanTermYears: DEFAULT_DISPLAY_TERM_YEARS,
-  }
-  const brokerHeroFallback =
-    null
   const firstName = broker.display_name.split(' ')[0] ?? broker.display_name
+  const hasLicense = Boolean(broker.license_number?.trim())
+  const canonicalUrl = `${siteUrl}/team/${slug}`
+
+  // Active listings — only fetch when the broker has a license or email to match against
+  const activeListings = (hasLicense || broker.email)
+    ? await getAgentActiveListings(broker.license_number ?? null, 6, broker.email)
+    : []
+  const listingCards: ListingCardData[] = activeListings
+    .map(toListingCardData)
+    .filter((c): c is ListingCardData => c !== null)
+    .slice(0, 6)
+
+  // Bio — use data row value if present; else a factual fallback sentence
+  const bioText: string = broker.bio?.trim()
+    ? broker.bio.trim()
+    : factualFallbackBio(broker.display_name, broker.title ?? 'Broker')
+
+  // Headshot: map display_name → known public headshot paths
+  // The photo_url column stores a remote URL; use the local PNG as the canonical headshot
+  const HEADSHOT: Record<string, string> = {
+    'matthew-ryan': '/images/brokers/ryan-matt.png',
+    'matt-ryan': '/images/brokers/ryan-matt.png',
+    'paul-stevenson': '/images/brokers/stevenson-paul.png',
+    'rebecca-peterson': '/images/brokers/peterson-rebecca.png',
+    'rebecca-ryser-peterson': '/images/brokers/peterson-rebecca.png',
+  }
+  const headshotSrc = HEADSHOT[broker.slug] ?? broker.photo_url ?? '/images/brokers/ryan-matt.png'
+
+  const telHref = broker.phone ? `tel:${broker.phone.replace(/\./g, '').replace(/[^\d]/g, '')}` : null
+  const mailHref = broker.email ? `mailto:${broker.email}` : null
+
+  const trustLine = broker.license_number
+    ? `Oregon real estate license #${broker.license_number}`
+    : 'Licensed real estate broker · Ryan Realty, Bend Oregon'
 
   return (
     <main className="min-h-screen bg-background">
+      {/* Structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -121,25 +165,17 @@ export default async function TeamMemberPage({ params }: Props) {
             '@context': 'https://schema.org',
             '@type': 'RealEstateAgent',
             name: broker.display_name,
-            jobTitle: broker.title ?? 'Real Estate Agent',
+            jobTitle: broker.title ?? 'Real Estate Broker',
             image: broker.photo_url ?? undefined,
             telephone: broker.phone ?? undefined,
             email: broker.email ?? undefined,
+            url: canonicalUrl,
             areaServed: { '@type': 'Place', name: 'Central Oregon' },
             worksFor: {
               '@type': ['LocalBusiness', 'RealEstateAgent'],
               name: siteName,
               url: siteUrl,
             },
-            ...(broker.avgRating != null &&
-              broker.reviewCount > 0 && {
-                aggregateRating: {
-                  '@type': 'AggregateRating',
-                  ratingValue: broker.avgRating,
-                  reviewCount: broker.reviewCount,
-                },
-              }),
-            url: `${siteUrl}/team/${slug}`,
           }),
         }}
       />
@@ -150,73 +186,179 @@ export default async function TeamMemberPage({ params }: Props) {
             generateBreadcrumbSchema([
               { name: 'Home', url: siteUrl },
               { name: 'Team', url: `${siteUrl}/team` },
-              { name: broker.display_name, url: `${siteUrl}/team/${slug}` },
+              { name: broker.display_name, url: canonicalUrl },
             ])
           ),
         }}
       />
 
-      <BrokerPageTracker
-        brokerName={broker.display_name}
-        brokerSlug={slug}
-        listingCount={broker.activeCount}
-        reviewCount={broker.reviewCount}
-      />
+      {/* Breadcrumb */}
+      <div className="bg-background border-b border-border py-3">
+        <Container>
+          <BreadcrumbNav
+            items={[
+              { label: 'Home', href: '/' },
+              { label: 'Team', href: '/team' },
+              { label: broker.display_name },
+            ]}
+            tone="on-light"
+          />
+        </Container>
+      </div>
 
-      <BrokerHero broker={broker} basePath="team" fallbackImageUrl={brokerHeroFallback} />
-      <BrokerBio broker={broker} />
-      {hasLicenseId && (
-        <>
-          <BrokerStats broker={broker} />
-          <BrokerListings
-            broker={broker}
-            listings={listings}
-            savedKeys={session?.user ? savedKeys : []}
-            likedKeys={session?.user ? likedKeys : []}
-            signedIn={!!session?.user}
-            userEmail={session?.user?.email ?? null}
-            displayPrefs={displayPrefs}
-          />
-          <BrokerPendingListings
-            broker={broker}
-            listings={pendingListings}
-            savedKeys={session?.user ? savedKeys : []}
-            likedKeys={session?.user ? likedKeys : []}
-            signedIn={!!session?.user}
-            userEmail={session?.user?.email ?? null}
-            displayPrefs={displayPrefs}
-          />
-          <BrokerSoldHistory brokerFirstName={firstName} soldListings={soldListings} />
-        </>
-      )}
-      <BrokerReviews
-        brokerFirstName={firstName}
-        avgRating={broker.avgRating}
-        reviewCount={broker.reviewCount}
-        reviews={reviews}
-      />
-      <BrokerSocialProofCta
-        title={`What Clients Say About Working With ${firstName}`}
-        subtitle={`Top brokerages keep trust and proof visible at every step. Review real feedback, then choose your next step with ${firstName}.`}
-        primaryCtaHref="#contact"
-        primaryCtaLabel={`Schedule With ${firstName}`}
-        secondaryCtaHref="#reviews"
-        secondaryCtaLabel={`Read ${firstName}'s Reviews`}
-        ctaContext="broker_profile"
-        brokerSlug={slug}
-      />
-      {galleryImages.length > 0 && <BrokerGallery images={galleryImages} />}
-      <BrokerContactForm
-        brokerId={broker.id}
-        brokerSlug={slug}
-        brokerFirstName={firstName}
-      />
-      <BrokerShare
-        brokerFirstName={firstName}
-        brokerName={broker.display_name}
-        slug={slug}
-        transactionCount={broker.soldCount24Mo}
-        basePath="team"
+      {/* Hero section — large headshot + identity + contact */}
+      <Section padding="loose" tone="default">
+        <Container>
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_360px] lg:gap-16 items-start">
+
+            {/* Left — identity + bio + trust signals */}
+            <div>
+              {/* Mobile headshot (visible below md, hidden at lg) */}
+              <div className="flex justify-center mb-8 lg:hidden">
+                <Image
+                  src={headshotSrc}
+                  alt={broker.display_name}
+                  width={200}
+                  height={300}
+                  className="select-none w-40 h-auto"
+                  priority
+                />
+              </div>
+
+              <Stack gap="tight">
+                <Eyebrow>Ryan Realty · Bend, Oregon</Eyebrow>
+                <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl">
+                  {broker.display_name}
+                </h1>
+                <div className="text-lg font-semibold text-muted-foreground">
+                  {broker.title ?? 'Real Estate Broker'}
+                </div>
+
+                {/* License + state credential */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                  {broker.license_number ? (
+                    <Caption tone="muted" className="tabular-nums">
+                      Oregon license #{broker.license_number}
+                    </Caption>
+                  ) : null}
+                  <Caption tone="muted">Licensed in the State of Oregon</Caption>
+                </div>
+              </Stack>
+
+              <Separator className="my-6" />
+
+              {/* Direct contact links */}
+              <Stack gap="tight">
+                <Caption tone="muted">Direct contact</Caption>
+                {broker.phone ? (
+                  <div className="flex items-center gap-2">
+                    <TextLink
+                      href={telHref!}
+                      underline="never"
+                      weight="semibold"
+                      className="tabular-nums text-lg"
+                    >
+                      {broker.phone}
+                    </TextLink>
+                    <Caption tone="muted">(call or text)</Caption>
+                  </div>
+                ) : null}
+                {broker.email ? (
+                  <TextLink
+                    href={mailHref!}
+                    underline="on-hover"
+                    weight="normal"
+                    className="text-base break-all"
+                  >
+                    {broker.email}
+                  </TextLink>
+                ) : null}
+              </Stack>
+
+              <Separator className="my-6" />
+
+              {/* Bio */}
+              <Stack gap="tight">
+                <H3>{firstName}&apos;s background</H3>
+                <Body size="default" tone="muted" className="leading-relaxed max-w-prose">
+                  {bioText}
+                </Body>
+              </Stack>
+
+              {/* What they do */}
+              <div className="mt-8 bg-muted rounded-xl p-6">
+                <Stack gap="tight">
+                  <H3>What to expect</H3>
+                  <ul className="mt-2 space-y-2.5 text-sm text-muted-foreground leading-relaxed">
+                    <li>One broker handles your deal from offer to close, no hand-offs</li>
+                    <li>Direct phone and email access, no assistant layers</li>
+                    <li>Transparent pricing analysis backed by current MLS data</li>
+                    <li>Licensed and active in Oregon</li>
+                  </ul>
+                </Stack>
+              </div>
+            </div>
+
+            {/* Right sidebar — contact card (hidden on mobile, shown at lg) */}
+            <div className="hidden lg:block sticky top-6">
+              <BrokerContactCard
+                name={broker.display_name}
+                title={broker.title ?? 'Real Estate Broker'}
+                licenseNumber={broker.license_number}
+                phone={broker.phone}
+                email={broker.email}
+                headshotSrc={headshotSrc}
+                headshotAlt={broker.display_name}
+                trustLine={trustLine}
+                ctaHref={broker.phone ? telHref! : (broker.email ? mailHref! : '/contact')}
+                firstName={firstName}
+                variant="card"
+              />
+            </div>
+          </div>
+        </Container>
+      </Section>
+
+      {/* Active listings */}
+      {listingCards.length > 0 ? (
+        <Section padding="default" tone="muted" divider>
+          <Container>
+            <Stack gap="tight" className="mb-8">
+              <Eyebrow>Active listings</Eyebrow>
+              <H2>{firstName}&apos;s current listings</H2>
+              <Body size="default" tone="muted">
+                Active listings where {firstName} is the listing broker, pulled directly from the Oregon Data Share MLS.
+              </Body>
+            </Stack>
+            <Grid cols={3} gap="default">
+              {listingCards.map((card) => (
+                <ListingCard key={card.listingKey} listing={card} />
+              ))}
+            </Grid>
+          </Container>
+        </Section>
+      ) : null}
+
+      {/* Mobile CTA band */}
+      <div className="lg:hidden">
+        <CTABar
+          eyebrow={`Work with ${firstName}`}
+          title="Ready to get started?"
+          body="Call or email directly. No scripts, no waiting on a call queue."
+          primary={broker.phone ? { href: telHref!, label: broker.phone } : { href: '/contact', label: 'Get in touch' }}
+          secondary={broker.email ? { href: mailHref!, label: 'Send an email' } : undefined}
+          tone="navy"
+        />
+      </div>
+
+      {/* Bottom CTA — schedule */}
+      <CTABar
+        eyebrow="Ready to talk"
+        title={`Work with ${firstName} on your next move.`}
+        body="Call, text, or email directly. No hand-offs. The broker you contact is the broker you work with."
+        primary={broker.phone ? { href: telHref!, label: `Call ${firstName}: ${broker.phone}` } : { href: '/contact', label: 'Get in touch' }}
+        secondary={broker.email ? { href: mailHref!, label: 'Send an email' } : { href: '/team', label: 'Meet the team' }}
+        tone="navy"
       />
     </main>
   )

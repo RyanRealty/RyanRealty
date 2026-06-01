@@ -10,33 +10,38 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { CTAButton, IconButton, RyanRealtyMark } from '@/components/site/primitives'
+import { PRIMARY_NAV } from '@/lib/site-nav'
+import { cn } from '@/lib/utils'
 
 /**
  * MobileNav — hamburger + slide-out drawer for sub-md viewports.
  *
- * Pairs with the desktop nav inside SiteHeader. The hamburger is the
- * only visible piece below md; above md the desktop nav handles
- * everything. The drawer carries the same 5 nav links + the same
- * Sign in / List your home CTAs, sized for one-thumb operation.
+ * Every nav group from lib/site-nav.ts is rendered as a collapsible
+ * Accordion section so users can reach any part of the site on one thumb.
+ * CTAs (List your home / Sign in) are pinned at the bottom of the drawer.
  *
- * Wired to the canonical primitives:
+ * Primitives used:
  *   - IconButton for the hamburger trigger
  *   - RyanRealtyMark wordmark inside the drawer header
- *   - CTAButton for the in-drawer Sign in / List your home actions
+ *   - CTAButton for the in-drawer CTAs
  *   - shadcn Sheet for the drawer chrome
+ *   - shadcn Accordion for collapsible group sections
  */
-
-const NAV_LINKS = [
-  { href: '/homes-for-sale', label: 'Search' },
-  { href: '/communities', label: 'Communities' },
-  { href: '/housing-market', label: 'Market' },
-  { href: '/team', label: 'Meet the Team' },
-  { href: '/sell', label: 'Sell' },
-] as const
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false)
+
+  function close() {
+    setOpen(false)
+  }
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -49,35 +54,76 @@ export default function MobileNav() {
           <Bars3Icon className="h-5 w-5" aria-hidden />
         </IconButton>
       </SheetTrigger>
+
       <SheetContent
         side="right"
-        className="w-[88%] max-w-[360px] bg-background p-0"
+        className="flex w-[88%] max-w-[380px] flex-col bg-background p-0"
       >
+        {/* Drawer header */}
         <SheetHeader className="flex flex-row items-center justify-between border-b border-border px-5 py-4">
           <SheetTitle className="sr-only">Navigation menu</SheetTitle>
           <RyanRealtyMark width={140} tone="navy" />
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={close}
             aria-label="Close navigation menu"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/30"
+            className={cn(
+              'inline-flex h-9 w-9 items-center justify-center rounded-[10px]',
+              'text-foreground transition hover:bg-muted',
+              'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/30',
+            )}
           >
             <XMarkIcon className="h-5 w-5" aria-hidden />
           </button>
         </SheetHeader>
-        <nav aria-label="Mobile primary" className="flex flex-col gap-1 px-3 py-4">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setOpen(false)}
-              className="rounded-md px-3 py-3 text-base font-semibold text-foreground transition-colors hover:bg-muted"
-            >
-              {link.label}
-            </Link>
-          ))}
+
+        {/* Scrollable nav body */}
+        <nav
+          aria-label="Mobile primary"
+          className="flex-1 overflow-y-auto px-3 py-2"
+        >
+          <Accordion type="multiple" className="w-full">
+            {PRIMARY_NAV.map((group) => (
+              <AccordionItem
+                key={group.label}
+                value={group.label}
+                className="border-b border-border"
+              >
+                <AccordionTrigger
+                  className={cn(
+                    'rounded-md px-3 py-3 text-base font-semibold text-foreground',
+                    'hover:bg-muted hover:no-underline',
+                    '[&>svg]:text-muted-foreground',
+                  )}
+                >
+                  {group.label}
+                </AccordionTrigger>
+                <AccordionContent className="px-0 pb-1 pt-0">
+                  <ul className="flex flex-col gap-0.5">
+                    {group.children.map((link) => (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          onClick={close}
+                          className={cn(
+                            'block rounded-md px-6 py-2 text-sm text-muted-foreground',
+                            'transition hover:bg-muted hover:text-foreground',
+                            link.label.startsWith('All ') && 'font-medium text-foreground',
+                          )}
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </nav>
-        <div className="mt-auto flex flex-col gap-2 border-t border-border px-5 py-5">
+
+        {/* Pinned CTAs */}
+        <div className="flex flex-col gap-2 border-t border-border px-5 py-5">
           <CTAButton
             href="/lp/seller-home-value"
             tone="primary"
