@@ -322,11 +322,19 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       })
     }
 
-    // Market reports — TEMPORARILY EXCLUDED. /housing-market/reports/<slug> and
-    // /reports/<slug> currently return HTTP 500 (render throw downstream of
-    // getMarketReportBySlug — see docs/SITE_AUDIT_2026-05-31.md P0 #1). Feeding
-    // Google 10 server-error URLs harms crawl trust. Re-add once the render is
-    // fixed.
+    // Market reports — restored 2026-06-01 (the HTTP 500 was jsdom failing to
+    // load in serverless; fixed in lib/sanitize.ts, pages now 200).
+    const reports = await fetchAllRows<{ slug: string; created_at?: string | null }>(
+      supabase, 'market_reports', 'slug, created_at',
+    )
+    for (const r of reports) {
+      dynamicPages.push({
+        url: `${baseUrl}/housing-market/reports/${r.slug}`,
+        lastModified: r.created_at ? new Date(r.created_at) : now,
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      })
+    }
   } catch (e) {
     console.error('[sitemap] Error generating dynamic pages:', e)
     // Return static pages only if database query fails

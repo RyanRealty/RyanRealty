@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
-import { getMarketReportBySlug } from '../../actions/market-reports'
+import { getMarketReportBySlug, getReportImageUrl } from '../../actions/market-reports'
 import ShareButton from '../../../components/ShareButton'
 import { sanitizeHtml } from '@/lib/sanitize'
 
@@ -17,12 +17,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!report) return { title: 'Market report' }
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const reportUrl = `${siteUrl}/reports/${slug}`
-  // Banner DISABLED 2026-05-31: referencing the Supabase banner image (via
-  // next/image AND in OG/twitter metadata) threw "Failed to load external image"
-  // on the Vercel runtime and 500'd all 10 report pages — even though the URL is a
-  // valid public 200 and the page renders 200 locally. Ship the working content
-  // now; re-enable the banner once the prod-only image-load failure is root-caused.
-  const imageUrl = null as string | null
+  // Banner RE-ENABLED 2026-06-01: the report 500s were NOT the image — they were
+  // jsdom failing to load in serverless (see lib/sanitize.ts). With that fixed,
+  // the banner (valid public Supabase URL, unoptimized) renders fine.
+  const imageUrl = await getReportImageUrl(report.image_storage_path)
   return {
     title: report.title,
     description: `Central Oregon real estate market report: ${report.period_start} – ${report.period_end}. Pending and closed sales by city.`,
@@ -54,8 +52,8 @@ export default async function ReportPage({ params }: Props) {
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const reportUrl = `${siteUrl}/reports/${slug}`
-  const imageUrl = null as string | null
-  const [session, fubPersonId] = await Promise.all([
+  const [imageUrl, session, fubPersonId] = await Promise.all([
+    getReportImageUrl(report.image_storage_path),
     getSession(),
     getFubPersonIdFromCookie(),
   ])
