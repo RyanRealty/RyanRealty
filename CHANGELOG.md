@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.389.6 (2026-06-01)
+
+### Bug Fixes
+- fix(listings+search+analytics): listings resolve + load fast, GA4 unblocked, search resilient
+
+### Maintenance
+- chore(settings): allow git push in project Claude Code permissions
+
+---
+
+
 ## v1.389.5 (2026-06-01)
 
 ### Bug Fixes
