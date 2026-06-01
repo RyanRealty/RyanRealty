@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.389.3 (2026-06-01)
+
+### Bug Fixes
+- fix(hydration): kill React #418 in ListingTile (Date.now() + unpinned date locale)
+
+---
+
+
 ## v1.389.2 (2026-06-01)
 
 ### Maintenance
