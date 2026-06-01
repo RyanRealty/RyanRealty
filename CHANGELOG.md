@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.15 (2026-06-01)
+
+### Maintenance
+- chore: re-enable report banner + restore reports in sitemap (500 fixed)
+
+---
+
+
 ## v1.382.14 (2026-06-01)
 
 ### Bug Fixes
