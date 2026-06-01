@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.12 (2026-06-01)
+
+### Bug Fixes
+- fix(P0): report pages 500 — disable banner image (prod-only image-load throw)
+
+---
+
+
 ## v1.382.11 (2026-06-01)
 
 ### Bug Fixes
