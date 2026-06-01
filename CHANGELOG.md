@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.389.7 (2026-06-01)
+
+### Bug Fixes
+- fix(tracking+seo): unblock Meta Pixel, fix OG/social previews, dedup buyer conversions + G38 CSP gate
+
+---
+
+
 ## v1.389.6 (2026-06-01)
 
 ### Bug Fixes
