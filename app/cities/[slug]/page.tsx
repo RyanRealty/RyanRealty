@@ -77,7 +77,7 @@ type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
-  if (!snapshot) return { title: 'City Not Found' }
+  if (!snapshot) notFound()
 
   const cityName = snapshot.geoLabel
   // D78/D79: meta description leads with a concrete fact, no count that

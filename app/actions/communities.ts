@@ -169,9 +169,19 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
     neighborhood_id?: string | null
     neighborhoods?: { name: string; slug: string } | null
   } | null
-  let bannerUrl = await getBannerUrl('subdivision', entityKey)
   const flags = await listSubdivisionsWithFlags()
   const isResort = flags.some((f) => f.entity_key === entityKey && f.is_resort) || comm?.is_resort === true
+
+  // Junk-slug guard: a REAL community has at least one signal — active listings,
+  // a community DB row, a geo snapshot, or resort-registry membership. A bare
+  // (city, subdivision) string with NONE of those is a fabricated page (e.g.
+  // "Industrial, Madras Oregon" from an MLS subdivision artifact). Return null so
+  // the page notFound()s instead of rendering invented content.
+  if (activeCount <= 0 && !comm && !snapshot && !isResort) {
+    return null
+  }
+
+  let bannerUrl = await getBannerUrl('subdivision', entityKey)
   if (!bannerUrl) {
     const searchQuery = getBannerSearchQuery('subdivision', subdivision, city, isResort)
     const created = await getOrCreatePlaceBanner('subdivision', entityKey, searchQuery)

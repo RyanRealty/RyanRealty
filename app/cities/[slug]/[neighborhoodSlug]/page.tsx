@@ -50,7 +50,7 @@ type Props = { params: Promise<{ slug: string; neighborhoodSlug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug: citySlug, neighborhoodSlug } = await params
   const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)
-  if (!neighborhood) return { title: 'Neighborhood Not Found' }
+  if (!neighborhood) notFound()
 
   const title =
     neighborhood.seoTitle ||

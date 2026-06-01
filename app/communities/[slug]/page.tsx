@@ -70,7 +70,7 @@ type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const community = await getCommunityBySlug(slug)
-  if (!community) return { title: 'Community Not Found' }
+  if (!community) notFound()
 
   const desc =
     community.activeCount > 0

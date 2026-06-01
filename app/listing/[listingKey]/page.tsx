@@ -78,7 +78,7 @@ export const revalidate = 60
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { listingKey } = await params
   const listing = await getListingDetail(listingKey)
-  if (!listing) return { title: 'Listing not found | Ryan Realty' }
+  if (!listing) notFound()
 
   const street = [listing.streetNumber, listing.streetName].filter(Boolean).join(' ').trim()
   const addressFull = [street, listing.city ? `${listing.city}, OR` : '', listing.postalCode ?? '']

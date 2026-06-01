@@ -37,7 +37,7 @@ type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const [broker, brokerage] = await Promise.all([getAgentBySlug(slug), getBrokerageSettings()])
-  if (!broker) return { title: 'Team Member Not Found' }
+  if (!broker) notFound()
   const siteName = brokerage?.name ?? 'Ryan Realty'
   const title = `${broker.display_name} | ${siteName} — Central Oregon Real Estate`
   const description =
