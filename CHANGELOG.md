@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.389.4 (2026-06-01)
+
+### Bug Fixes
+- fix(maps): stop the whole-page crash on every map page (google.maps accessed before load)
+
+---
+
+
 ## v1.389.3 (2026-06-01)
 
 ### Bug Fixes
