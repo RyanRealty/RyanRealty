@@ -1,0 +1,28 @@
+{
+  "route": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/city/index.html",
+  "competitiveTarget": "Bend-neighborhood pages must surface the actual in-boundary homes for sale (ListingCard grid from getListingTiles), not just a description — that's the lead-gen unit no competitor has at neighborhood granularity.",
+  "note": "Created 2026-06-01 to gate the neighborhood page's listings grid (Matt directive: featured/real listings on every geo page, enforced by a gate not a one-off). The page already imports all required components, so this passes immediately and LOCKS the listings section + core structure against regression.",
+  "requiredComponents": [
+    {
+      "name": "BreadcrumbNav",
+      "section": "Home > {City} > {Neighborhood}",
+      "blocking": true
+    },
+    {
+      "name": "HeroBlock",
+      "section": "hero — '{Neighborhood} real estate' + lede",
+      "blocking": true
+    },
+    {
+      "name": "ListingCard",
+      "section": "'Homes for sale in {Neighborhood}' — in-boundary active listing cards from getListingTiles (the real homes, the lead-gen unit). MUST render listings, not just prose.",
+      "blocking": true
+    },
+    {
+      "name": "CTABar",
+      "section": "buyer/seller CTA band",
+      "blocking": true
+    }
+  ]
+}

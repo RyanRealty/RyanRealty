@@ -20,6 +20,11 @@
       "blocking": true
     },
     {
+      "name": "FeaturedListings",
+      "section": "'Featured homes in {City}' — premium active inventory slider for the city (getListings, price-desc). Real homes on every city page, not just stats + links.",
+      "blocking": true
+    },
+    {
       "name": "PriceChart",
       "section": "'Price trend' — verified monthly median SALE price (getPriceHistory -> market_stats_cache, SFR-only). Completed months only (drops the in-progress month), linear + per-month dots (no smoothing), data-range y-axis. Renders only where the series is >= 6 complete months; thin sub-city geos are omitted. D98.",
       "blocking": true

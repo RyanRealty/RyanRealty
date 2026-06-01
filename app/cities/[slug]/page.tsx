@@ -49,6 +49,7 @@ import { PriceChart } from '@/components/site/PriceChart'
 import { Container } from '@/components/site/primitives'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import FeaturedListings from '@/components/site/FeaturedListings'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
@@ -340,6 +341,10 @@ export default async function CityDetailPage({ params }: Props) {
 
       {/* Market snapshot — city-scoped 4-stat cards */}
       <MarketSnapshot citySlug={slug} cityName={cityName} />
+
+      {/* Featured listings — premium active inventory in this city. Self-fetching.
+          Locked into the city page by the mockup-parity gate. */}
+      <FeaturedListings city={cityName} />
 
       {/* Price trend — verified monthly median SALE price (market_stats_cache,
           SFR-only, methodology v3). Rendered only when the series is rich enough

@@ -15,6 +15,11 @@
       "blocking": true
     },
     {
+      "name": "FeaturedListings",
+      "section": "'Featured Central Oregon homes' — premium active inventory slider (getListings, price-desc). Real homes high on the page, not just search entry points.",
+      "blocking": true
+    },
+    {
       "name": "PriceRangeTiles",
       "section": "'Browse by price range' — budget-bracket tiles linking to filtered search",
       "blocking": true
