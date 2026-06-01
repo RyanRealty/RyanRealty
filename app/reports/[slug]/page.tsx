@@ -33,7 +33,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: report.title,
       description: `Weekly market report: ${report.period_start} – ${report.period_end}.`,
-      ...(imageUrl && { images: [imageUrl] }),
+      // Object form with explicit width/height (matches openGraph above). A BARE
+      // STRING here makes Next 16 fetch the URL to probe its dimensions during
+      // metadata resolution; that fetch failed on the Vercel runtime and threw
+      // "Failed to load external image", 500'ing all 10 report pages.
+      ...(imageUrl && { images: [{ url: imageUrl, width: 1200, height: 336, alt: report.title }] }),
     },
   }
 }
