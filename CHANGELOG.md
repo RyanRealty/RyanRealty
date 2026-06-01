@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.1 (2026-06-01)
+
+### Maintenance
+- perf(communities): timeout-guard the community detail page (was 35-50s hang -> 8-18s bounded)
+
+---
+
+
 ## v1.390.0 (2026-06-01)
 
 ### Features
