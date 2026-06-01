@@ -44,7 +44,7 @@ function formatListedDate(dateText: string | null | undefined): string | null {
   if (!dateText) return null
   const d = new Date(dateText)
   if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
 }
 
 function formatActivityDateTime(dateText: string | null | undefined): string | null {
@@ -56,6 +56,7 @@ function formatActivityDateTime(dateText: string | null | undefined): string | n
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: 'America/Los_Angeles',
   })
 }
 
@@ -213,11 +214,21 @@ function ListingTile({
     router.push(`/login${returnUrl ? `?returnUrl=${returnUrl}` : ''}`)
   }
   const price = Number(listing.ListPrice ?? 0)
-  const dom = daysOnMarket(
-    listing.OnMarketDate ?? undefined,
-    listing.CloseDate ?? null,
-    listing.StandardStatus ?? null
-  )
+  // dom is "now"-relative. Computing it during render (especially on an ISR-cached
+  // page where the server HTML was produced earlier) makes the server markup
+  // disagree with the client at hydration -> a fatal React #418 structural
+  // mismatch (the "New" badge appears/disappears, the days line changes). Compute
+  // it client-only so server + first client render agree (null), then fill in.
+  const [dom, setDom] = useState<number | null>(null)
+  useEffect(() => {
+    setDom(
+      daysOnMarket(
+        listing.OnMarketDate ?? undefined,
+        listing.CloseDate ?? null,
+        listing.StandardStatus ?? null,
+      ),
+    )
+  }, [listing.OnMarketDate, listing.CloseDate, listing.StandardStatus])
   const listedDate = formatListedDate(listing.OnMarketDate ?? null)
   const activityDateTime = formatActivityDateTime(activityAt)
   const hasOpenHouse = Array.isArray(listing.OpenHouses) && listing.OpenHouses.length > 0
