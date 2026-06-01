@@ -35,6 +35,7 @@ import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { Container, Section, Grid, Stack, Eyebrow, H2 } from '@/components/site/primitives'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import MotivatedListings from '@/components/site/MotivatedListings'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
@@ -333,6 +334,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       {/* 7. Verified rich neighborhood content (overview + amenities + drive times)
              via the shared CommunityRichContent renderer. PRESERVED VERBATIM. */}
       <CommunityRichContent content={richContent} name={neighborhood.name} />
+
+      {/* Motivated sellers in this city — price-cut + remarks-signal homes. */}
+      <MotivatedListings city={neighborhood.cityName} />
 
       {/* 8. Common questions — direct-answer FAQ + FAQPage JSON-LD (same verified
              numbers as the Dataset above). PRESERVED VERBATIM. */}

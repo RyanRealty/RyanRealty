@@ -89,6 +89,22 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     { url: `${baseUrl}/dmca`, lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
   ]
 
+  // Motivated sellers — pillar + per-city pages
+  staticPages.push({
+    url: `${baseUrl}/motivated-sellers`,
+    lastModified: now,
+    changeFrequency: 'daily',
+    priority: 0.8,
+  })
+  for (const citySlug of SITE_CITY_SLUGS) {
+    staticPages.push({
+      url: `${baseUrl}/motivated-sellers/${citySlug}`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.75,
+    })
+  }
+
   // City tier — seed from the canonical list of cities that have a real page, so
   // every best-schema city hub is ALWAYS in the sitemap regardless of live
   // inventory or a dynamic-section timeout (the listings query can be heavy).

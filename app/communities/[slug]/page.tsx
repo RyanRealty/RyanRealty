@@ -47,6 +47,7 @@ import { HeroBlock } from '@/components/site/HeroBlock'
 import MarketSnapshot from '@/components/site/MarketSnapshot'
 import PriceRangeTiles from '@/components/site/PriceRangeTiles'
 import OpenHousesGrid from '@/components/site/OpenHousesGrid'
+import MotivatedListings from '@/components/site/MotivatedListings'
 import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
 import ActivityFeed from '@/components/site/ActivityFeed'
 import { ArticleGrid } from '@/components/site/ArticleGrid'
@@ -522,6 +523,9 @@ export default async function CommunityDetailPage({ params }: Props) {
           </Container>
         </section>
       ) : null}
+
+      {/* Motivated sellers in this city — price-cut + remarks-signal homes. */}
+      <MotivatedListings city={cityName} />
 
       {/* Browse by price range */}
       <PriceRangeTiles />

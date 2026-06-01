@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-01T13:22:13.940Z
+**Generated:** 2026-06-01T14:40:16.099Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -685,7 +685,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 45**
+### `marketing_brain_actions` · **rows ≈ 46**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|

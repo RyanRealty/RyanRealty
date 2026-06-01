@@ -96,6 +96,12 @@ export { getListingRawRowByKey } from '@/lib/data/listings/getListingRawRow'
 export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
 export { getPriceDropTiles, getBrokerageListingTiles } from '@/lib/data/listings/getPriceDropTiles'
 export type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
+export { getMotivatedListings } from '@/lib/data/listings/getMotivatedListings'
+export type {
+  MotivatedListing,
+  GetMotivatedListingsInput,
+  GetMotivatedListingsResult,
+} from '@/lib/data/listings/getMotivatedListings'
 export { getListingVideoCandidates } from '@/lib/data/listings/getListingVideoCandidates'
 export {
   getListingDetailPhotos,
