@@ -89,7 +89,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
       ? 500
       : 200
-  await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://localhost:3000'}/api/meta-capi`, {
+  await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/api/meta-capi`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -104,7 +104,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
         value: leadValue,
         currency: 'USD',
       },
-      eventSourceUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://localhost:3000'}/contact`,
+      eventSourceUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/contact`,
     }),
   }).catch((err) => {
     console.warn('[Contact Form] CAPI call failed:', err)

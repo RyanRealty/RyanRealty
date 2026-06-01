@@ -107,7 +107,10 @@ async function probe(context, name, url, optional) {
   const problems = []
   let status = 0
   try {
-    const resp = await page.goto(`${BASE}${url}`, { timeout: NAV_TIMEOUT, waitUntil: 'networkidle' })
+    // NOT 'networkidle' — this site polls (live-pulse / analytics) so the network
+    // never idles; networkidle always times out. domcontentloaded + a hydration
+    // wait is what surfaces client crashes (#418, map errors) without false timeouts.
+    const resp = await page.goto(`${BASE}${url}`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' })
     status = resp?.status() ?? 0
     await page.waitForTimeout(HYDRATE_WAIT)
 

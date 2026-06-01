@@ -77,7 +77,7 @@ export default function BuyerLPForm() {
               content_name: 'buyer_lp_listing_alerts',
               value: 250,
               currency: 'USD',
-            })
+            }, { eventID: r.eventId })
           } catch {
             // Pixel suppressed (consent gate) — server-side lead still landed.
           }

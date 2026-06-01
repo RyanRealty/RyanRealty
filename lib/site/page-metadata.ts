@@ -50,7 +50,10 @@ const DEFAULT_KEYWORDS: ReadonlyArray<string> = [
   'Ryan Realty',
 ]
 
-const DEFAULT_OG_IMAGE = '/og-default.png'
+// Dynamic, always-present OG image (the /og-default.png + /og-home.png static
+// files never existed → every share rendered a broken image). The /api/og route
+// renders a branded 1200×630 card; robots.ts allows /api/og for social scrapers.
+const DEFAULT_OG_IMAGE = '/api/og?type=default'
 
 export function pageMetadata(input: PageMetadataInput): Metadata {
   const site = getCanonicalSiteUrl()

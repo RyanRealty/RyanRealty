@@ -15,7 +15,8 @@ import CtaDuo from '@/components/site/CtaDuo'
 import { getBrokerageSettings, type BrokerageSettingsRow } from './actions/brokerage'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const ogImage = `${siteUrl}/og-home.png`
+// /og-home.png never existed → broken homepage share image. Use the dynamic OG route.
+const ogImage = `${siteUrl}/api/og?type=default`
 
 /**
  * ISR cache the homepage shell at the edge for 60s. Each Suspense'd section

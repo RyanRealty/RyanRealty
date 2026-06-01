@@ -19,7 +19,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
+        // /api/og must stay crawlable — social scrapers (facebookexternalhit,
+        // Twitterbot, Slackbot, LinkedInBot, Discordbot, WhatsApp) fetch it to
+        // render link-preview cards. A longer Allow beats the /api/ Disallow.
+        allow: ['/', '/api/og'],
         disallow: ['/admin/', '/dashboard/', '/account/', '/api/', '/auth/'],
       },
       // AI retrieval / answer crawlers — these drive live citations (allow all).
