@@ -186,7 +186,7 @@ export default async function FAQPage() {
         imageUrl={CONTENT_HERO_IMAGES.about}
         ctas={[
           { label: 'Talk to us', href: '/contact', primary: true },
-          { label: 'Latest market report', href: '/market-report', primary: false },
+          { label: 'Latest market report', href: '/housing-market/reports', primary: false },
         ]}
       />
 

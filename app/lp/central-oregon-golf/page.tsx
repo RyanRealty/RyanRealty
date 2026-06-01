@@ -983,13 +983,13 @@ function CtaSection() {
         </p>
         <div className="golf-cta-row golf-cta-row--center">
           <Link
-            href="/seller-home-value?source=golf-lp"
+            href="/lp/seller-home-value?source=golf-lp"
             className="golf-cta golf-cta--cream"
           >
             Get a home valuation
           </Link>
           <Link
-            href="/buyer-listing-alerts?source=golf-lp"
+            href="/lp/buyer-listing-alerts?source=golf-lp"
             className="golf-cta golf-cta--outline"
           >
             Set up listing alerts

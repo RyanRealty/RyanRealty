@@ -58,7 +58,7 @@ export default function SiteHeader() {
 
         <div className="flex items-center gap-2.5">
           <CTAButton
-            href="/account/sign-in"
+            href="/login"
             tone="on-navy-ghost"
             size="md"
             className="hidden sm:inline-flex"

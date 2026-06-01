@@ -112,6 +112,10 @@ const nextConfig: NextConfig = {
       // 404'd. Send it to Bend rather than dead-end. Temporary (307) in case
       // Tumalo gets its own data + page later.
       { source: '/cities/tumalo', destination: '/cities/bend', permanent: false },
+      // /sold is linked from the site footer ("Sold data") but had no route -> 404
+      // on every page. Point it at the sold-listings view (search filtered to
+      // closed). Caught by the new check-internal-links gate.
+      { source: '/sold', destination: '/homes-for-sale?status=Sold', permanent: false },
       { source: '/search', destination: '/homes-for-sale', permanent: true },
       { source: '/search/:path*', destination: '/homes-for-sale/:path*', permanent: true },
       { source: '/listings', destination: '/homes-for-sale', permanent: true },

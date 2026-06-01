@@ -87,7 +87,7 @@ export default function MobileNav() {
             List your home
           </CTAButton>
           <CTAButton
-            href="/account/sign-in"
+            href="/login"
             tone="outline"
             size="md"
             className="w-full"
