@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.385.0 (2026-06-01)
+
+### Features
+- feat(gate): broken-internal-link gate + fix the 5 it caught
+
+---
+
+
 ## v1.384.0 (2026-06-01)
 
 ### Features
