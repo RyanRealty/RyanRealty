@@ -8,6 +8,7 @@ import MarketSnapshot from '@/components/site/MarketSnapshot'
 import PriceRangeTiles from '@/components/site/PriceRangeTiles'
 import OpenHousesGrid from '@/components/site/OpenHousesGrid'
 import CityGrid from '@/components/site/CityGrid'
+import ResortCommunities from '@/components/site/ResortCommunities'
 import FeaturedListings from '@/components/site/FeaturedListings'
 import TeamSection from '@/components/site/TeamSection'
 import ActivityFeed from '@/components/site/ActivityFeed'
@@ -90,6 +91,12 @@ export default async function Home() {
 
       <Suspense fallback={<SectionSkeleton />}>
         <CityGrid />
+      </Suspense>
+
+      {/* Resort + master-planned communities — the mockup section now built live
+          (components/site/ResortCommunities). Self-fetching; locked by parity. */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <ResortCommunities />
       </Suspense>
 
       <TeamSection teamImageSrc={teamImageSrc} />

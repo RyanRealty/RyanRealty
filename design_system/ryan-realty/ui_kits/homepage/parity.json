@@ -35,6 +35,11 @@
       "blocking": true
     },
     {
+      "name": "ResortCommunities",
+      "section": "'Resort + master-planned communities' — 8 marquee resort/golf community photo cards (Tetherow, Broken Top, Pronghorn, …) with live median + active count from getCommunityBySlug, linking to /communities/[slug]",
+      "blocking": true
+    },
+    {
       "name": "TeamSection",
       "section": "'Meet the team' — the three brokers (Matt, Paul, Rebecca) with transparent headshots",
       "blocking": true
