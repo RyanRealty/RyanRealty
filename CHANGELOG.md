@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.16 (2026-06-01)
+
+### Maintenance
+- docs: mark report-500 P0 fixed (jsdom serverless) + debugging lesson
+
+---
+
+
 ## v1.382.15 (2026-06-01)
 
 ### Maintenance
