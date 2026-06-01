@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.385.1 (2026-06-01)
+
+### Bug Fixes
+- fix: real 404s for invalid URLs + kill fabricated junk community pages
+
+---
+
+
 ## v1.385.0 (2026-06-01)
 
 ### Features
