@@ -231,24 +231,67 @@ function rowToDetail(row: ListingRow): ListingDetail {
 }
 
 /**
+ * One indexed point-lookup against a single column. Returns the row, or null
+ * for a genuine miss; sets `error` for a transient DB failure (so the caller
+ * can retry and never cache an error-null).
+ */
+async function fetchByColumn(
+  supabase: NonNullable<ReturnType<typeof supabaseAnon>>,
+  column: 'ListNumber' | 'ListingKey',
+  value: string,
+): Promise<{ row: ListingRow | null; error: unknown }> {
+  // Mixed-case columns go bare to PostgREST (the client encodes them). Both
+  // ListNumber (MLS#) and ListingKey (RETS key) are uniquely indexed — see
+  // supabase/migrations/20260402120000_performance_indexes.sql + 20260330100000.
+  // newest-modified first so a relisted MLS# resolves to the current row.
+  const { data, error } = await supabase
+    .from('listings')
+    .select(DETAIL_SELECT)
+    .eq(column, value)
+    .order('ModificationTimestamp', { ascending: false })
+    .limit(1)
+  if (error) return { row: null, error }
+  const row = Array.isArray(data) && data.length > 0 ? (data[0] as unknown as ListingRow) : null
+  return { row, error: null }
+}
+
+/**
  * Raw lookup. Returns the detail, or null for a GENUINE miss (no such listing).
  * THROWS on a transient DB error (after 3 in-process retries) so the caller
  * never caches a null that came from an error — see getListingDetail.
+ *
+ * RESOLUTION (2026-06-01): canonical listing URLs embed the MLS `ListNumber`
+ * (e.g. /homes-for-sale/bend/.../61072-manhae-220220595 → "220220595"), while
+ * internal links (geo grids) pass the RETS `ListingKey`. The old code queried
+ * ONLY `ListingKey`, so every MLS-numbered URL resolved to null → notFound().
+ * That bricked listing detail across the site. Now we resolve by EITHER column.
+ * A purely-numeric value is almost always an MLS#, so we try `ListNumber` first
+ * to save the second round-trip on the hot (search → listing) path; otherwise
+ * `ListingKey` first. Both columns are uniquely indexed, so each is a fast point
+ * lookup.
  */
 async function fetchOneOrThrow(listingKey: string): Promise<GetListingDetailResult> {
   const supabase = supabaseAnon()
   if (!supabase) return null
+  const numericFirst = /^\d{5,}$/.test(listingKey.trim())
+  const order: Array<'ListNumber' | 'ListingKey'> = numericFirst
+    ? ['ListNumber', 'ListingKey']
+    : ['ListingKey', 'ListNumber']
+
   let lastError: unknown = null
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const { data, error } = await supabase
-      .from('listings')
-      .select(DETAIL_SELECT)
-      .eq('ListingKey', listingKey)
-      .maybeSingle()
-    if (!error) {
-      return data ? rowToDetail(data as unknown as ListingRow) : null
+    let sawError = false
+    for (const column of order) {
+      const { row, error } = await fetchByColumn(supabase, column, listingKey)
+      if (error) {
+        lastError = error
+        sawError = true
+        break // restart the whole attempt — don't treat a DB error as a miss
+      }
+      if (row) return rowToDetail(row)
     }
-    lastError = error
+    // Both columns returned cleanly with no row → genuine miss, cache the null.
+    if (!sawError) return null
   }
   throw new Error(
     `listings detail lookup failed for ${listingKey}: ` +

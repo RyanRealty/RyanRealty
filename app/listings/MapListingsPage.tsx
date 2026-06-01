@@ -78,7 +78,7 @@ export default function MapListingsPage({ listings }: { listings: ListingForMap[
 
   if (loadError) {
     return (
-      <div className="flex h-[calc(100vh-120px)] w-full items-center justify-center bg-muted text-muted-foreground">
+      <div className="flex map-pane-shell w-full items-center justify-center bg-muted text-muted-foreground">
         Map failed to load. Check your Google Maps API key.
       </div>
     )
@@ -86,14 +86,14 @@ export default function MapListingsPage({ listings }: { listings: ListingForMap[
 
   if (!isLoaded) {
     return (
-      <div className="flex h-[calc(100vh-120px)] w-full items-center justify-center bg-muted text-muted-foreground">
+      <div className="flex map-pane-shell w-full items-center justify-center bg-muted text-muted-foreground">
         Loading map…
       </div>
     )
   }
 
   return (
-    <div className="relative h-[calc(100vh-120px)] w-full">
+    <div className="relative map-pane-shell w-full">
       <GoogleMap
         mapContainerStyle={{ width: '100%', height: '100%' }}
         center={center}

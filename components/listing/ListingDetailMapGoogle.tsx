@@ -79,7 +79,7 @@ export default function ListingDetailMapGoogle({ subjectListing, otherListings }
 
   if (loadError) {
     return (
-      <div className="flex h-[400px] items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground">
+      <div className="flex map-fixed-pane items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground">
         Map failed to load. Check your Google Maps API key.
       </div>
     )
@@ -87,7 +87,7 @@ export default function ListingDetailMapGoogle({ subjectListing, otherListings }
 
   if (!isLoaded) {
     return (
-      <div className="flex h-[400px] items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground">
+      <div className="flex map-fixed-pane items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground">
         Loading map…
       </div>
     )
@@ -135,7 +135,7 @@ export default function ListingDetailMapGoogle({ subjectListing, otherListings }
                 position={{ lat: subjectListing!.latitude, lng: subjectListing!.longitude }}
                 onCloseClick={() => setInfoSubject(false)}
               >
-                <div className="min-w-0 max-w-[200px] p-1 text-foreground">
+                <div className="min-w-0 infowindow-clamp p-1 text-foreground">
                   {(subjectListing as SubjectListingPoint).photoUrl && (
                     <div className="mb-1.5 flex justify-center overflow-hidden rounded border border-border bg-muted" style={{ width: 72, height: 54 }}>
                       {/* eslint-disable-next-line @next/next/no-img-element -- Map popup thumbnail: listing photo URL from API; small fixed size */}

@@ -1,4 +1,4 @@
-import { homesForSalePath, listingDetailPath } from '../../../lib/slug'
+import { homesForSalePath, listingDetailPath, getSubdivisionDisplayName } from '../../../lib/slug'
 
 /**
  * Structured data for city/subdivision search pages: WebPage, BreadcrumbList, Place, ItemList.
@@ -25,6 +25,10 @@ type Props = {
   bannerUrl: string | null
   siteUrl: string
   listings: ListingRow[]
+  /** Terminal preset crumb label (e.g. "Under $500K") so JSON-LD matches the visible breadcrumb. */
+  presetLabel?: string | null
+  /** Full canonical path including the preset segment, so page URLs match the canonical tag. */
+  canonicalPath?: string
 }
 
 export default function SearchPageJsonLd({
@@ -36,8 +40,10 @@ export default function SearchPageJsonLd({
   bannerUrl,
   siteUrl,
   listings,
+  presetLabel,
+  canonicalPath,
 }: Props) {
-  const pagePath = city ? homesForSalePath(city, subdivision ?? null) : '/homes-for-sale'
+  const pagePath = canonicalPath ?? (city ? homesForSalePath(city, subdivision ?? null) : '/homes-for-sale')
   const pageUrl = siteUrl ? `${siteUrl}${pagePath}` : undefined
   const description = subdivisionBlurb ?? cityMetaDescription ?? `Browse homes for sale in ${displayName}, Central Oregon.`
 
@@ -50,8 +56,11 @@ export default function SearchPageJsonLd({
     ...(pageUrl && { url: pageUrl }),
   }
 
+  // Mirror the visible breadcrumb (BreadcrumbStrip) exactly: same crumbs, same
+  // labels, same order — but with absolute URLs (schema.org requires them). The
+  // preset crumb (Defect: previously absent) is the terminal item on /[city]/[preset].
   const breadcrumbItems: { name: string; item?: string }[] = [
-    { name: 'Home', item: siteUrl || undefined },
+    { name: 'Home', item: siteUrl ? `${siteUrl}/` : undefined },
     { name: 'Homes for Sale', item: siteUrl ? `${siteUrl}/homes-for-sale` : undefined },
   ]
   if (city) {
@@ -60,9 +69,15 @@ export default function SearchPageJsonLd({
       item: siteUrl ? `${siteUrl}${homesForSalePath(city)}` : undefined,
     })
   }
-  if (subdivision) {
+  if (subdivision && city) {
     breadcrumbItems.push({
-      name: subdivision,
+      name: getSubdivisionDisplayName(subdivision),
+      item: siteUrl ? `${siteUrl}${homesForSalePath(city, subdivision)}` : undefined,
+    })
+  }
+  if (presetLabel) {
+    breadcrumbItems.push({
+      name: presetLabel,
       item: pageUrl,
     })
   }

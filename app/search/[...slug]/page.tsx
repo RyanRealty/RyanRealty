@@ -442,7 +442,7 @@ export default async function SearchPage({
   const bannerUrl = curatedCityImage ?? listingHero?.url ?? bannerResult?.url ?? null
   const bannerAttribution = listingHero?.attribution ?? bannerResult?.attribution ?? null
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || ''
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const searchPagePath = buildCanonicalPath(city ?? null, decodedSubdivision ?? null, subdivision ?? null, resolved.presetSlug)
   const [savedKeys, likedKeys, prefs] =
     session?.user
@@ -458,8 +458,13 @@ export default async function SearchPage({
     { label: 'Homes for Sale', href: '/homes-for-sale' },
   ]
   const cityLabel = city ?? (slug[0] ? decodeURIComponent(slug[0]) : '')
-  if (city) searchBreadcrumbItems.push({ label: cityLabel, href: subdivision || resolved.presetSlug ? `${siteUrl}${homesForSalePath(city)}` : undefined })
-  if (subdivision && decodedSubdivision) searchBreadcrumbItems.push({ label: getSubdivisionDisplayName(decodedSubdivision), href: resolved.presetSlug ? `${siteUrl}${homesForSalePath(city!, decodedSubdivision)}` : undefined })
+  // Visible breadcrumb hrefs are RELATIVE so they use the client-side router and
+  // are domain-agnostic. (Prefixing siteUrl made every city/subdivision crumb an
+  // absolute URL that, when NEXT_PUBLIC_SITE_URL points at the vercel preview host,
+  // navigated users off production onto the staging domain.) Absolute URLs live in
+  // the JSON-LD BreadcrumbList (SearchPageJsonLd), where schema.org requires them.
+  if (city) searchBreadcrumbItems.push({ label: cityLabel, href: subdivision || resolved.presetSlug ? homesForSalePath(city) : undefined })
+  if (subdivision && decodedSubdivision) searchBreadcrumbItems.push({ label: getSubdivisionDisplayName(decodedSubdivision), href: resolved.presetSlug ? homesForSalePath(city!, decodedSubdivision) : undefined })
   if (preset) searchBreadcrumbItems.push({ label: preset.shortLabel })
   if (!city && presetLabel) searchBreadcrumbItems.push({ label: presetLabel })
 
@@ -480,7 +485,7 @@ export default async function SearchPage({
         : await withTimeout(getCityBoundary(city), null, 1000)
       : null
     return (
-      <main className="flex flex-col h-[calc(100vh-120px)] min-h-[400px] overflow-hidden">
+      <main className="flex flex-col map-search-shell overflow-hidden">
         {searchBreadcrumbItems.length > 1 && (
           <div className="shrink-0">
             <BreadcrumbStrip items={searchBreadcrumbItems} />
@@ -560,7 +565,7 @@ export default async function SearchPage({
       {city && (
         <section className="w-full" aria-label={`Hero: ${displayName}`}>
           {(heroVideoUrl || bannerUrl) ? (
-            <div className="relative h-[40vh] w-full min-h-[240px] overflow-hidden bg-foreground sm:h-[50vh]">
+            <div className="relative w-full overflow-hidden bg-foreground geo-hero-band">
               {heroVideoUrl ? (
                 <video
                   src={heroVideoUrl}
@@ -602,7 +607,7 @@ export default async function SearchPage({
               </div>
             </div>
           ) : (
-            <div className="flex min-h-[240px] h-[40vh] flex-col items-center justify-center gap-4 bg-muted sm:h-[50vh]">
+            <div className="flex geo-hero-band flex-col items-center justify-center gap-4 bg-muted">
               <p className="text-sm text-muted-foreground">No hero media yet.</p>
               <HeroRefreshButton
                 refreshAction={refreshHeroMedia}
@@ -637,6 +642,8 @@ export default async function SearchPage({
             cityMetaDescription={cityContent?.metaDescription}
             bannerUrl={bannerUrl ?? null}
             siteUrl={siteUrl}
+            presetLabel={preset?.shortLabel ?? null}
+            canonicalPath={searchPagePath}
             listings={listings}
           />
           {city && subdivision && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys) && (

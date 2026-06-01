@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import ListingDetailPage from '@/app/listing/[listingKey]/page'
 import { generateMetadata as generateListingMetadata } from '@/app/listing/[listingKey]/page'
-import { resolveListingKeyFromBreadcrumbPath, resolveListingKeyFromCanonicalPath } from '@/app/actions/listing-detail'
+import { resolveListingKeyFromBreadcrumbPath } from '@/app/actions/listing-detail'
 import type { Metadata } from 'next'
 import { listingKeyFromSlug } from '@/lib/slug'
 
@@ -21,11 +21,8 @@ async function resolveListingKeyFromPathSegments(slug: string[]): Promise<string
   // - /homes-for-sale/{city}/{...area}/{listingKey}~{addressSlug} (legacy)
   const [candidateKey, candidateAddressSlug] = listingSegment.split('~')
   const keyFromSegment = listingKeyFromSlug(candidateKey ?? '')
-  const canonicalMatch = (candidateKey ?? '').trim().match(/^(.*)-(\d{5,})$/)
-  const canonicalPostalCode = canonicalMatch?.[2]?.length === 5 ? canonicalMatch[2] : null
 
-  // Prefer resolving from address slug when present.
-  // Some listing feeds may emit a segment key that does not directly match listing_key.
+  // Legacy `key~addressSlug` form: resolve from the address part first.
   const normalizedAddressSlug = (candidateAddressSlug ?? '').trim()
   if (normalizedAddressSlug) {
     const resolvedFromAddress = await resolveListingKeyFromBreadcrumbPath({
@@ -36,19 +33,15 @@ async function resolveListingKeyFromPathSegments(slug: string[]): Promise<string
     if (resolvedFromAddress) return resolvedFromAddress
   }
 
-  if (keyFromSegment) {
-    const resolvedFromCanonicalPath = await resolveListingKeyFromCanonicalPath({
-      citySlug,
-      areaSlugs,
-      keyOrMls: keyFromSegment,
-      postalCode: canonicalPostalCode,
-    })
-    if (resolvedFromCanonicalPath) return resolvedFromCanonicalPath
-  }
-
+  // Canonical URLs end in the MLS `ListNumber` (or a RETS `ListingKey`).
+  // getListingDetail resolves by EITHER column directly (both uniquely indexed),
+  // so hand the extracted id straight through. The MLS# is globally unique — no
+  // city/area disambiguation query is needed. This removes the ~30s
+  // resolveListingKeyFromCanonicalPath round-trip that previously made every
+  // canonical listing URL slow and, on miss, render "Page not found".
   if (keyFromSegment) return keyFromSegment
 
-  // Legacy fallback: resolve from address slug.
+  // Legacy fallback: resolve from a pure address slug (no embedded id).
   return resolveListingKeyFromBreadcrumbPath({
     citySlug,
     areaSlugs,

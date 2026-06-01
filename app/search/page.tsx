@@ -41,6 +41,20 @@ import TrackSearchView from '@/components/tracking/TrackSearchView'
 
 const DEFAULT_VIEW = 'split'
 
+/**
+ * Resolve a data promise to a fallback if it rejects OR exceeds the budget.
+ * The default split-search view is where ads land — a slow / statement-timing-out
+ * Supabase must NEVER crash the Server Components render to "Something went wrong".
+ * It degrades to an empty result the client UI already handles. Mirrors the guard
+ * pattern in app/search/[...slug]/page.tsx.
+ */
+async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 4000): Promise<T> {
+  return Promise.race([
+    promise.catch(() => fallback),
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ])
+}
+
 type SearchParams = {
   city?: string
   subdivision?: string
@@ -159,7 +173,10 @@ export default async function SearchPage({
   const session = view !== 'list' ? await getSession() : null
   const [savedKeys, likedKeys] =
     session?.user
-      ? await Promise.all([getSavedListingKeys(), getLikedListingKeys()])
+      ? await Promise.all([
+          withTimeout(getSavedListingKeys(), [] as string[], 1500),
+          withTimeout(getLikedListingKeys(), [] as string[], 1500),
+        ])
       : [[], [] as string[]]
 
   // SPLIT (default, the mockup target): unified search-as-you-move. ONE viewport
@@ -171,25 +188,34 @@ export default async function SearchPage({
   const citySlug = effectiveFilters.city ? slugify(effectiveFilters.city) : null
   const cityBoundaryGeo =
     view !== 'list' && citySlug
-      ? await getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug })
+      ? await withTimeout(getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }), null, 2000)
       : null
   const initialBounds = bboxFromGeometry(cityBoundaryGeo) ?? BEND_DEFAULT_BOUNDS
-  const viewport = view === 'split' ? await getViewportSearch(effectiveFilters, initialBounds, null) : null
+  const viewport =
+    view === 'split'
+      ? await withTimeout(getViewportSearch(effectiveFilters, initialBounds, null), {
+          listings: [],
+          totalCount: 0,
+          capped: false,
+        })
+      : null
 
   // LIST: paginated infinite-scroll browse (unchanged).
   const { listings, totalCount } =
-    view === 'list' ? await getSearchListings(effectiveFilters, page) : { listings: [], totalCount: 0 }
+    view === 'list'
+      ? await withTimeout(getSearchListings(effectiveFilters, page), { listings: [], totalCount: 0 })
+      : { listings: [], totalCount: 0 }
 
   // MAP: legacy full-screen marker set (unchanged).
-  const mapListings = view === 'map' ? await getSearchMapListings(effectiveFilters) : []
+  const mapListings = view === 'map' ? await withTimeout(getSearchMapListings(effectiveFilters), []) : []
   const mapListingsWithCoords =
-    mapListings.length > 0 ? await getGeocodedListings(mapListings) : mapListings
+    mapListings.length > 0 ? await withTimeout(getGeocodedListings(mapListings), mapListings) : mapListings
 
   // Boundary polygon for the map, shared by split + map views. Prefer the
   // authoritative boundaries-table geojson; fall back to the cities action.
   const boundaryGeojson =
     view !== 'list'
-      ? (cityBoundaryGeo ?? (await getCityBoundary(effectiveFilters.city || defaultCity)))
+      ? (cityBoundaryGeo ?? (await withTimeout(getCityBoundary(effectiveFilters.city || defaultCity), null, 2000)))
       : null
 
   const resultsCount = view === 'split' ? (viewport?.totalCount ?? 0) : view === 'map' ? mapListings.length : totalCount

@@ -83,7 +83,15 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://maps.googleapis.com https://maps.gstatic.com https://pagead2.googlesyndication.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://api.elevenlabs.io https://maps.googleapis.com https://maps.gstatic.com https://pagead2.googlesyndication.com; frame-src 'self' https://www.youtube.com https://player.vimeo.com https://googleads.g.doubleclick.net;" },
+          // GA4 + Google Ads need more than www.google-analytics.com: gtag beacons
+          // hit www.google.com/g/collect and the regional *.analytics.google.com /
+          // region1.google-analytics.com hosts, Google Signals/SODAR uses
+          // *.adtrafficquality.google, and ads conversions use *.doubleclick.net.
+          // Without these in connect-src the /g/collect fetch is CSP-blocked and
+          // tracking silently dies. (Verified 2026-06-01: console showed
+          // "Fetch API cannot load https://www.google.com/g/collect ... violates ...
+          // connect-src" on every page.)
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googletagmanager.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google-analytics.com https://www.google.com https://maps.googleapis.com https://maps.gstatic.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.adtrafficquality.google; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://*.google-analytics.com https://www.google-analytics.com https://*.analytics.google.com https://www.google.com https://www.googletagmanager.com https://*.doubleclick.net https://*.adtrafficquality.google https://api.elevenlabs.io https://maps.googleapis.com https://maps.gstatic.com https://pagead2.googlesyndication.com https://*.googlesyndication.com; frame-src 'self' https://www.youtube.com https://player.vimeo.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.google.com https://*.adtrafficquality.google;" },
         ],
       },
       // SITE_SPEC §45-47 — aggressive edge caching on the public LP families.
