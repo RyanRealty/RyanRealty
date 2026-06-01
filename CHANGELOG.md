@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.389.1 (2026-06-01)
+
+### Bug Fixes
+- fix(geo): resort community boundaries use the true county-GIS plat union, not the hull
+
+---
+
+
 ## v1.389.0 (2026-06-01)
 
 ### Features
