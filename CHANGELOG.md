@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.386.0 (2026-06-01)
+
+### Features
+- feat(site): comprehensive nav + footer, broker trust pages, sell rebuild, auth/cache fixes
+
+---
+
+
 ## v1.385.2 (2026-06-01)
 
 ### Bug Fixes
