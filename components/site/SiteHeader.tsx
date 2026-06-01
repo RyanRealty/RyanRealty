@@ -73,11 +73,10 @@ export default function SiteHeader() {
                   <NavigationMenuItem key={group.label}>
                     <NavigationMenuTrigger
                       className={cn(
-                        'bg-transparent text-[15px] font-medium text-white/85',
+                        'h-9 bg-transparent px-3 text-[15px] font-medium text-white/85',
                         'hover:bg-white/10 hover:text-white',
-                        'data-open:bg-white/10 data-open:text-white',
-                        'data-popup-open:bg-white/10 data-popup-open:text-white',
-                        'focus-visible:ring-white/40 h-9 px-3',
+                        'data-[state=open]:bg-white/10 data-[state=open]:text-white',
+                        'focus-visible:ring-white/40',
                         '[&_svg]:text-white/60',
                       )}
                     >
@@ -85,11 +84,12 @@ export default function SiteHeader() {
                     </NavigationMenuTrigger>
                     <NavigationMenuContent
                       className={cn(
-                        'bg-card text-foreground shadow-lg ring-1 ring-border',
-                        // Two-column grid for large child sets, single for small
+                        'rounded-xl bg-card p-3 text-foreground shadow-lg ring-1 ring-border',
+                        // Wide two-column grid for the big geo lists (no wrap),
+                        // a single comfortable column for the short groups.
                         group.children.length > 6
-                          ? 'grid grid-cols-2 gap-x-1 w-[380px] p-2'
-                          : 'flex flex-col w-[240px] p-2',
+                          ? 'grid w-[540px] grid-cols-2 gap-x-3 gap-y-0.5'
+                          : 'flex w-[280px] flex-col gap-0.5',
                       )}
                     >
                       {group.children.map((link) => (
@@ -97,11 +97,11 @@ export default function SiteHeader() {
                           <Link
                             href={link.href}
                             className={cn(
-                              'flex rounded-md px-3 py-2 text-sm text-foreground transition',
+                              'block truncate whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground/90 transition-colors',
                               'hover:bg-muted hover:text-foreground',
                               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
-                              // "All X" first item gets slightly stronger weight
-                              link.label.startsWith('All ') && 'font-medium',
+                              // "All X" overview link gets brand emphasis.
+                              link.label.startsWith('All ') && 'font-semibold text-primary',
                             )}
                           >
                             {link.label}
