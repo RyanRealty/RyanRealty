@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.3 (2026-06-01)
+
+### Other
+- gate(G37): add hydration-safety gate (React #418 regression class)
+
+---
+
+
 ## v1.390.2 (2026-06-01)
 
 ### Bug Fixes
