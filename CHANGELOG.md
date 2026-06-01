@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.386.1 (2026-06-01)
+
+### Other
+- perf+fix: cache reports queries, fix map markers/popup/CTA, curate featured listings
+
+---
+
+
 ## v1.386.0 (2026-06-01)
 
 ### Features
