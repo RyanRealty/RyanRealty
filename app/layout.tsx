@@ -17,6 +17,7 @@ import SignUpTracker from "../components/tracking/SignUpTracker";
 import AdminHashRedirect from "../components/AdminHashRedirect";
 import InstallPrompt from "../components/pwa/InstallPrompt";
 import ComparisonTray from "@/components/comparison/ComparisonTray";
+import StaleServiceWorkerReset from "@/components/site/StaleServiceWorkerReset";
 import { getCanonicalSiteUrl } from "@/lib/share-metadata";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
@@ -105,6 +106,10 @@ export default function RootLayout({
         <link rel="preload" as="image" href="/images/hero-poster.webp" fetchPriority="high" />
       </head>
       <body className="min-h-screen overflow-x-hidden antialiased">
+        {/* Evict any stale service worker left by the pre-cutover site on this
+            domain. Runs on every route (outside HideOnLP). No-op for the 99%
+            of visitors with a clean browser. */}
+        <StaleServiceWorkerReset />
         <RootProvider>
           <HideOnLP>
             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[100] focus:p-4 focus:bg-card focus:text-primary">
