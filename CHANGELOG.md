@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.385.2 (2026-06-01)
+
+### Bug Fixes
+- fix(cutover): evict stale pre-cutover service worker so returning visitors see the live site
+
+---
+
+
 ## v1.385.1 (2026-06-01)
 
 ### Bug Fixes
