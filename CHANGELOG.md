@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.13 (2026-06-01)
+
+### Bug Fixes
+- fix(P0): market-report 500s — jsdom fails to load in serverless (NOT the image)
+
+---
+
+
 ## v1.382.12 (2026-06-01)
 
 ### Bug Fixes
