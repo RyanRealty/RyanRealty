@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.388.0 (2026-06-01)
+
+### Features
+- feat: real Area Guide community hero photos + amenity-to-blog SEO architecture + reports pre-warm + broker license overlay
+
+---
+
+
 ## v1.387.0 (2026-06-01)
 
 ### Features
