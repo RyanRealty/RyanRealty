@@ -1,5 +1,6 @@
 'use server'
 
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 import { slugify, subdivisionEntityKey } from '@/lib/slug'
 import { getAllCitySnapshots } from '@/lib/data'
@@ -33,7 +34,47 @@ export type ReportFilters = {
 /**
  * Metrics for a city (and optional subdivision) and date range.
  * Optional property type and price range filters.
+ * Result is cached 3600s (revalidate tag: market-reports).
+ * Throws on RPC error so unstable_cache never stores a poison result.
  */
+const _fetchReportMetrics = unstable_cache(
+  async (
+    city: string,
+    periodStart: string,
+    periodEnd: string,
+    asOf: string | null,
+    subdivision: string | null,
+    includeCondoTown: boolean,
+    includeManufactured: boolean,
+    includeAcreage: boolean,
+    includeCommercial: boolean,
+    minPrice: number | null,
+    maxPrice: number | null,
+  ): Promise<ReportMetrics> => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url?.trim() || !key?.trim()) throw new Error('Supabase not configured')
+    const supabase = createClient(url, key)
+    const { data, error } = await supabase.rpc('get_city_period_metrics', {
+      p_city: city.trim(),
+      p_period_start: periodStart,
+      p_period_end: periodEnd,
+      p_as_of: asOf,
+      p_subdivision: subdivision,
+      p_include_condo_town: includeCondoTown,
+      p_include_manufactured: includeManufactured,
+      p_include_acreage: includeAcreage,
+      p_include_commercial: includeCommercial,
+      p_min_price: minPrice,
+      p_max_price: maxPrice,
+    })
+    if (error) throw new Error(error.message)
+    return data as ReportMetrics
+  },
+  ['report-metrics-v1'],
+  { revalidate: 3600, tags: ['market-reports'] },
+)
+
 export async function getReportMetrics(
   city: string,
   periodStart: string,
@@ -42,34 +83,69 @@ export async function getReportMetrics(
   subdivision?: string | null,
   filters?: ReportFilters | null
 ): Promise<{ data: ReportMetrics | null; error?: string }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) {
-    return { data: null, error: 'Supabase not configured' }
+  try {
+    const data = await _fetchReportMetrics(
+      city,
+      periodStart,
+      periodEnd,
+      asOf ?? null,
+      subdivision?.trim() || null,
+      filters?.includeCondoTown ?? false,
+      filters?.includeManufactured ?? false,
+      filters?.includeAcreage ?? false,
+      filters?.includeCommercial ?? false,
+      filters?.minPrice ?? null,
+      filters?.maxPrice ?? null,
+    )
+    return { data }
+  } catch (err) {
+    return { data: null, error: err instanceof Error ? err.message : String(err) }
   }
-  const supabase = createClient(url, key)
-  const { data, error } = await supabase.rpc('get_city_period_metrics', {
-    p_city: city.trim(),
-    p_period_start: periodStart,
-    p_period_end: periodEnd,
-    p_as_of: asOf ?? null,
-    p_subdivision: subdivision?.trim() || null,
-    p_include_condo_town: filters?.includeCondoTown ?? false,
-    p_include_manufactured: filters?.includeManufactured ?? false,
-    p_include_acreage: filters?.includeAcreage ?? false,
-    p_include_commercial: filters?.includeCommercial ?? false,
-    p_min_price: filters?.minPrice ?? null,
-    p_max_price: filters?.maxPrice ?? null,
-  })
-  if (error) {
-    return { data: null, error: error.message }
-  }
-  return { data: data as ReportMetrics }
 }
 
 /**
  * Price band counts (sales and current listings) for a city (and optional subdivision) and period.
+ * Result is cached 3600s (revalidate tag: market-reports).
+ * Throws on RPC error so unstable_cache never stores a poison result.
  */
+const _fetchReportPriceBands = unstable_cache(
+  async (
+    city: string,
+    periodStart: string,
+    periodEnd: string,
+    sales12mo: boolean,
+    subdivision: string | null,
+    includeCondoTown: boolean,
+    includeManufactured: boolean,
+    includeAcreage: boolean,
+    includeCommercial: boolean,
+    minPrice: number | null,
+    maxPrice: number | null,
+  ): Promise<ReportPriceBandsResult> => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url?.trim() || !key?.trim()) throw new Error('Supabase not configured')
+    const supabase = createClient(url, key)
+    const { data, error } = await supabase.rpc('get_city_price_bands', {
+      p_city: city.trim(),
+      p_period_start: periodStart,
+      p_period_end: periodEnd,
+      p_sales_12mo: sales12mo,
+      p_subdivision: subdivision,
+      p_include_condo_town: includeCondoTown,
+      p_include_manufactured: includeManufactured,
+      p_include_acreage: includeAcreage,
+      p_include_commercial: includeCommercial,
+      p_min_price: minPrice,
+      p_max_price: maxPrice,
+    })
+    if (error) throw new Error(error.message)
+    return data as ReportPriceBandsResult
+  },
+  ['report-price-bands-v1'],
+  { revalidate: 3600, tags: ['market-reports'] },
+)
+
 export async function getReportPriceBands(
   city: string,
   periodStart: string,
@@ -78,29 +154,24 @@ export async function getReportPriceBands(
   subdivision?: string | null,
   filters?: ReportFilters | null
 ): Promise<{ data: ReportPriceBandsResult | null; error?: string }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) {
-    return { data: null, error: 'Supabase not configured' }
+  try {
+    const data = await _fetchReportPriceBands(
+      city,
+      periodStart,
+      periodEnd,
+      sales12mo,
+      subdivision?.trim() || null,
+      filters?.includeCondoTown ?? false,
+      filters?.includeManufactured ?? false,
+      filters?.includeAcreage ?? false,
+      filters?.includeCommercial ?? false,
+      filters?.minPrice ?? null,
+      filters?.maxPrice ?? null,
+    )
+    return { data }
+  } catch (err) {
+    return { data: null, error: err instanceof Error ? err.message : String(err) }
   }
-  const supabase = createClient(url, key)
-  const { data, error } = await supabase.rpc('get_city_price_bands', {
-    p_city: city.trim(),
-    p_period_start: periodStart,
-    p_period_end: periodEnd,
-    p_sales_12mo: sales12mo,
-    p_subdivision: subdivision?.trim() || null,
-    p_include_condo_town: filters?.includeCondoTown ?? false,
-    p_include_manufactured: filters?.includeManufactured ?? false,
-    p_include_acreage: filters?.includeAcreage ?? false,
-    p_include_commercial: filters?.includeCommercial ?? false,
-    p_min_price: filters?.minPrice ?? null,
-    p_max_price: filters?.maxPrice ?? null,
-  })
-  if (error) {
-    return { data: null, error: error.message }
-  }
-  return { data: data as ReportPriceBandsResult }
 }
 
 export type ReportMetricsTimeSeriesPoint = {
@@ -113,80 +184,103 @@ export type ReportMetricsTimeSeriesPoint = {
 
 /**
  * Monthly time-series of sold count and median price (city, optional subdivision, last N months).
+ * Result is cached 3600s (revalidate tag: market-reports).
+ * Throws on RPC error so unstable_cache never stores a poison result.
  */
+const _fetchReportMetricsTimeSeries = unstable_cache(
+  async (
+    city: string,
+    numMonths: number,
+    subdivision: string | null,
+    includeCondoTown: boolean,
+    includeManufactured: boolean,
+    includeAcreage: boolean,
+    includeCommercial: boolean,
+    minPrice: number | null,
+    maxPrice: number | null,
+  ): Promise<ReportMetricsTimeSeriesPoint[]> => {
+    const hasCustomFilters =
+      includeCondoTown || includeManufactured || includeAcreage || includeCommercial ||
+      minPrice != null || maxPrice != null
+
+    // Default path: read precomputed monthly cache rows (no RPC, no pool pressure).
+    if (!hasCustomFilters) {
+      const geoSlug = subdivision
+        ? subdivisionEntityKey(city.trim(), subdivision.trim())
+        : slugify(city.trim())
+      const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
+      const cacheRows = await getMarketStatsCacheRowsForGeos({
+        geoSlugs: [geoSlug],
+        periodType: 'monthly',
+        columns: 'geo_slug, period_start, period_end, sold_count, median_sale_price',
+        orderBy: { column: 'period_start', ascending: false },
+      })
+      if (Array.isArray(cacheRows) && cacheRows.length > 0) {
+        const sliced = cacheRows.slice(0, Math.min(60, Math.max(1, numMonths)))
+        return sliced
+          .map((row) => {
+            const periodStart = String((row as { period_start?: string }).period_start ?? '')
+            const monthDate = new Date(periodStart)
+            const monthLabel = Number.isNaN(monthDate.getTime())
+              ? periodStart
+              : monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+            return {
+              period_start: periodStart,
+              period_end: String((row as { period_end?: string }).period_end ?? periodStart),
+              month_label: monthLabel,
+              sold_count: Number((row as { sold_count?: number }).sold_count ?? 0),
+              median_price: (row as { median_sale_price?: number | null }).median_sale_price ?? null,
+            } satisfies ReportMetricsTimeSeriesPoint
+          })
+          .sort((a, b) => a.period_start.localeCompare(b.period_start))
+      }
+    }
+
+    // Fallback: live RPC (custom filters or no cache rows). Throw on error.
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url?.trim() || !key?.trim()) throw new Error('Supabase not configured')
+    const supabase = createClient(url, key)
+    const { data, error } = await supabase.rpc('get_city_metrics_timeseries', {
+      p_city: city.trim(),
+      p_num_months: Math.min(60, Math.max(1, numMonths)),
+      p_subdivision: subdivision,
+      p_include_condo_town: includeCondoTown,
+      p_include_manufactured: includeManufactured,
+      p_include_acreage: includeAcreage,
+      p_include_commercial: includeCommercial,
+      p_min_price: minPrice,
+      p_max_price: maxPrice,
+    })
+    if (error) throw new Error(error.message)
+    return Array.isArray(data) ? data : (data as unknown as ReportMetricsTimeSeriesPoint[]) ?? []
+  },
+  ['report-metrics-timeseries-v1'],
+  { revalidate: 3600, tags: ['market-reports'] },
+)
+
 export async function getReportMetricsTimeSeries(
   city: string,
   numMonths: number = 12,
   subdivision?: string | null,
   filters?: ReportFilters | null
 ): Promise<{ data: ReportMetricsTimeSeriesPoint[] | null; error?: string }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) {
-    return { data: null, error: 'Supabase not configured' }
+  try {
+    const data = await _fetchReportMetricsTimeSeries(
+      city,
+      numMonths,
+      subdivision?.trim() || null,
+      filters?.includeCondoTown ?? false,
+      filters?.includeManufactured ?? false,
+      filters?.includeAcreage ?? false,
+      filters?.includeCommercial ?? false,
+      filters?.minPrice ?? null,
+      filters?.maxPrice ?? null,
+    )
+    return { data }
+  } catch (err) {
+    return { data: null, error: err instanceof Error ? err.message : String(err) }
   }
-  const supabase = createClient(url, key)
-  const hasCustomFilters =
-    (filters?.includeCondoTown ?? false) ||
-    (filters?.includeManufactured ?? false) ||
-    (filters?.includeAcreage ?? false) ||
-    (filters?.includeCommercial ?? false) ||
-    (filters?.minPrice ?? null) != null ||
-    (filters?.maxPrice ?? null) != null
-
-  // Default path: read precomputed monthly cache rows instead of live-scan RPC.
-  if (!hasCustomFilters) {
-    const geoType = subdivision?.trim() ? 'subdivision' : 'city'
-    const geoSlug = subdivision?.trim()
-      ? subdivisionEntityKey(city.trim(), subdivision.trim())
-      : slugify(city.trim())
-    void supabase
-    const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
-    const cacheRows = await getMarketStatsCacheRowsForGeos({
-      geoSlugs: [geoSlug],
-      periodType: 'monthly',
-      columns: 'geo_slug, period_start, period_end, sold_count, median_sale_price',
-      orderBy: { column: 'period_start', ascending: false },
-    })
-    void geoType
-    if (Array.isArray(cacheRows) && cacheRows.length > 0) {
-      const sliced = cacheRows.slice(0, Math.min(60, Math.max(1, numMonths)))
-      const rows = sliced
-        .map((row) => {
-          const periodStart = String((row as { period_start?: string }).period_start ?? '')
-          const monthDate = new Date(periodStart)
-          const monthLabel = Number.isNaN(monthDate.getTime())
-            ? periodStart
-            : monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-          return {
-            period_start: periodStart,
-            period_end: String((row as { period_end?: string }).period_end ?? periodStart),
-            month_label: monthLabel,
-            sold_count: Number((row as { sold_count?: number }).sold_count ?? 0),
-            median_price: (row as { median_sale_price?: number | null }).median_sale_price ?? null,
-          } satisfies ReportMetricsTimeSeriesPoint
-        })
-        .sort((a, b) => a.period_start.localeCompare(b.period_start))
-      return { data: rows }
-    }
-  }
-
-  const { data, error } = await supabase.rpc('get_city_metrics_timeseries', {
-    p_city: city.trim(),
-    p_num_months: Math.min(60, Math.max(1, numMonths)),
-    p_subdivision: subdivision?.trim() || null,
-    p_include_condo_town: filters?.includeCondoTown ?? false,
-    p_include_manufactured: filters?.includeManufactured ?? false,
-    p_include_acreage: filters?.includeAcreage ?? false,
-    p_include_commercial: filters?.includeCommercial ?? false,
-    p_min_price: filters?.minPrice ?? null,
-    p_max_price: filters?.maxPrice ?? null,
-  })
-  if (error) {
-    return { data: null, error: error.message }
-  }
-  const arr = Array.isArray(data) ? data : (data as unknown as ReportMetricsTimeSeriesPoint[]) ?? []
-  return { data: arr }
 }
 
 /**

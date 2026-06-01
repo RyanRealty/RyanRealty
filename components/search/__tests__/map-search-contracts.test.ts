@@ -86,7 +86,8 @@ describe('SearchMapClustered map primitive', () => {
 
   it('highlights the hovered marker via a key-indexed marker map', () => {
     expect(src).toMatch(/markersByKeyRef/)
-    expect(src).toMatch(/getListingMarkerIcon\(\{ hover: isHover \}\)/)
+    // Hover-aware price-pill marker icon, rebuilt per-key on hover change.
+    expect(src).toMatch(/buildPricePillIcon\([^)]*\{ hover: isHover \}/)
   })
 
   it('marker InfoWindow shows a photo card', () => {

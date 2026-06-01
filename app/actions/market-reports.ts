@@ -1,5 +1,6 @@
 'use server'
 
+import { unstable_cache } from 'next/cache'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { getListingTiles } from '@/lib/data'
 import {
@@ -455,16 +456,17 @@ export type SalesReportCardData = {
 }
 
 /**
- * Pre-populated sales report cards: for each city and each period (this week, last week, last month, last year),
- * returns summary data so the reports index can show cards without waiting for weekly generation.
+ * Inner fetch for getSalesReportCardsData — separated so unstable_cache can wrap it.
+ * Throws on missing config so a transient error is never cached as an empty result.
  */
-export async function getSalesReportCardsData(cities: string[]): Promise<SalesReportCardData[]> {
+async function _fetchSalesReportCardsData(
+  cityList: string[],
+  dateKey: string,
+): Promise<SalesReportCardData[]> {
+  void dateKey // included in unstable_cache key only; no runtime use
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return []
-
-  const cityList = [...new Set(cities.map((c) => c.trim()).filter(Boolean))]
-  if (cityList.length === 0) return []
+  if (!url?.trim() || !anonKey?.trim()) throw new Error('Supabase not configured')
 
   const cards: SalesReportCardData[] = []
   for (const period of SALES_PERIODS) {
@@ -498,6 +500,29 @@ export async function getSalesReportCardsData(cities: string[]): Promise<SalesRe
     }
   }
   return cards
+}
+
+const _getSalesReportCardsDataCached = unstable_cache(
+  _fetchSalesReportCardsData,
+  ['sales-report-cards-v1'],
+  { revalidate: 3600, tags: ['market-reports'] },
+)
+
+/**
+ * Pre-populated sales report cards: for each city and each period (this week, last week, last month, last year),
+ * returns summary data so the reports index can show cards without waiting for weekly generation.
+ * Cached 3600s; keyed by city list and current UTC date so each calendar day gets fresh period windows.
+ */
+export async function getSalesReportCardsData(cities: string[]): Promise<SalesReportCardData[]> {
+  const cityList = [...new Set(cities.map((c) => c.trim()).filter(Boolean))]
+  if (cityList.length === 0) return []
+  // Include today's UTC date in the key so the 7-day/monthly windows stay aligned.
+  const dateKey = new Date().toISOString().slice(0, 10)
+  try {
+    return await _getSalesReportCardsDataCached(cityList, dateKey)
+  } catch {
+    return []
+  }
 }
 
 /**

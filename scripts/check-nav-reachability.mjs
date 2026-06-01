@@ -29,7 +29,7 @@ const REQUIRED_HREFS = [
   '/housing-market',
   '/housing-market/reports',
   '/sell',
-  '/home-valuation',
+  '/sell/valuation',
   '/team',
   '/about',
   '/contact',

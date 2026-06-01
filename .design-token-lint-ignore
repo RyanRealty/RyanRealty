@@ -72,3 +72,10 @@ app/lp/seller-home-value/page.tsx
 # brand-color hex literals (#102742, #5f6c7c, #f5f3ed, #faf8f4) are
 # unavoidable. Tracked exception.
 app/api/cma/[slug]/email/route.ts
+
+# Clustered search map — price-pill markers are SVG data-URIs and the
+# listing popup renders inside a Google Maps InfoWindow, both isolated
+# from Tailwind/CSS-vars, so brand hex literals (#102742 navy, white,
+# charcoal, status red) are required inline. Same case as
+# components/ListingMapGoogle.tsx above.
+components/SearchMapClustered.tsx

@@ -4,7 +4,7 @@ import { getSession } from '@/app/actions/auth'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
 import { trackPageViewIfPossible } from '@/lib/followupboss'
 import { listMarketReports, getSalesReportCardsData } from '../actions/market-reports'
-import { getEngagementCountsBatch } from '@/app/actions/engagement'
+import { getEngagementCountsBatchCached } from '@/app/actions/engagement'
 import { getReportCities } from '@/app/actions/reports'
 import { getMarketReportData } from '@/app/actions/market-report'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/app/actions/market-report-types'
@@ -106,8 +106,8 @@ async function SalesReportsSection() {
     listMarketReports(30),
     getSalesReportCardsData(PRIMARY_CITIES),
   ])
-  const allListingKeys = salesCardsRaw.flatMap((c) => c.listingKeys)
-  const engagementMap = allListingKeys.length > 0 ? await getEngagementCountsBatch(allListingKeys) : {}
+  const allListingKeys = salesCardsRaw.flatMap((c) => c.listingKeys).slice(0, 200)
+  const engagementMap = allListingKeys.length > 0 ? await getEngagementCountsBatchCached(allListingKeys) : {}
   const salesCards = salesCardsRaw.map((card) => ({
     ...card,
     likeCount: card.listingKeys.reduce((s, k) => s + (engagementMap[k]?.like_count ?? 0), 0),

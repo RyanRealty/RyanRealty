@@ -22,17 +22,32 @@ function citySlug(city: string): string {
  * neighborhood, community) wires it with a single import, which the
  * check-mockup-parity gate can require so the section can't regress.
  *
- * Surfaces the premium active inventory for the scope (price-desc). Public —
- * does NOT read session/cookies, so it stays inside the page's ISR cache and
- * renders nothing (instead of throwing) if the geo has no active listings.
+ * Surfaces genuine single-family residential inventory for the scope.
+ * Queries with propertyType 'A' (Residential SFR/multi-family) and
+ * minBeds 1 to exclude land parcels and raw lots at the DB level.
+ * Sorts newest first so the feed reflects current market activity rather
+ * than surfacing trophy land at the top of a price-desc list.
+ * Post-filters to rows that have a photo and positive sqft, then trims
+ * to the requested limit. Public — does NOT read session/cookies, so it
+ * stays inside the page's ISR cache and renders nothing (instead of
+ * throwing) if the geo has no active listings.
  */
 async function FeaturedListingsInner({ city, subdivision, title, viewAllHref, viewAllLabel, limit = 12 }: Props) {
-  const listings = await getListings({
+  const overfetch = Math.min(limit * 2 + 6, 200)
+  const raw = await getListings({
     ...(city ? { city } : {}),
     ...(subdivision ? { subdivision } : {}),
-    sort: 'price_desc',
-    limit,
+    propertyType: 'A',
+    minBeds: 1,
+    sort: 'newest',
+    limit: overfetch,
   }).catch(() => [])
+
+  // propertyType 'A' + minBeds 1 already exclude raw land at the DB level;
+  // here we just require a photo so no blank-image cards reach the slider.
+  const listings = raw
+    .filter((l) => typeof l.PhotoURL === 'string' && l.PhotoURL.trim().length > 0)
+    .slice(0, limit)
 
   if (listings.length === 0) return null
 

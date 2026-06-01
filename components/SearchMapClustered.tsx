@@ -3,13 +3,51 @@
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { GoogleMap, InfoWindow, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
-import { useRouter } from 'next/navigation'
 import { MarkerClusterer } from '@googlemaps/markerclusterer'
 
-import { MAP_DEFAULT_CENTER, getListingMarkerIcon, MAP_LABEL_LISTING, MAP_COLOR_LISTING_PIN } from '@/lib/map-constants'
+import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { listingDetailPath } from '@/lib/slug'
 import type { MapPolygonPoint } from '@/lib/map-polygon'
 import { Button } from "@/components/ui/button"
+
+/** Brand navy — matches --rr-navy / --primary token. */
+const NAVY = '#102742'
+const WHITE = '#ffffff'
+
+/**
+ * Build a price-pill SVG data URI for a Google Maps custom marker icon.
+ * Produces a navy rounded-rect with white tabular-nums price text.
+ * Width is dynamic so short labels (e.g. "$1.2M") and long ones ("$1,200k") both fit.
+ */
+function buildPricePillIcon(label: string, opts?: { hover?: boolean }): google.maps.Icon {
+  const hover = opts?.hover ?? false
+  const fontSize = hover ? 14 : 13
+  const hPad = 12
+  const vPad = hover ? 8 : 6
+  // Approximate character width at the given font size
+  const charW = fontSize * 0.6
+  const textW = Math.ceil(label.length * charW)
+  const W = textW + hPad * 2
+  const H = fontSize + vPad * 2
+  const R = Math.floor(H / 2)
+  // Caret (downward triangle) pointing to the exact lat/lng
+  const caretH = 6
+  const caretW = 10
+  const totalH = H + caretH
+  const cx = W / 2
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${totalH}">
+    <rect x="0" y="0" width="${W}" height="${H}" rx="${R}" ry="${R}" fill="${NAVY}"/>
+    <polygon points="${cx - caretW / 2},${H} ${cx + caretW / 2},${H} ${cx},${totalH}" fill="${NAVY}"/>
+    <text x="${cx}" y="${H / 2 + fontSize * 0.36}" font-family="system-ui,-apple-system,sans-serif" font-size="${fontSize}" font-weight="600" fill="${WHITE}" text-anchor="middle" dominant-baseline="auto">${label}</text>
+  </svg>`
+
+  return {
+    url: 'data:image/svg+xml,' + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(W, totalH),
+    anchor: new google.maps.Point(cx, totalH),
+  }
+}
 
 type GeoJSONPolygon = { type: 'Polygon'; coordinates: number[][][] | number[][] }
 type GeoJSONMultiPolygon = { type: 'MultiPolygon'; coordinates: number[][][][] }
@@ -79,8 +117,8 @@ function getBounds(listings: ListingForMap[]) {
 }
 
 function priceLabel(price: number): string {
-  if (price >= 1_000_000) return `${(price / 1_000_000).toFixed(2)}M`
-  if (price >= 1_000) return `${(price / 1_000).toFixed(0)}k`
+  if (price >= 1_000_000) return `$${(price / 1_000_000).toFixed(1)}M`
+  if (price >= 1_000) return `$${(price / 1_000).toFixed(0)}k`
   return `$${price}`
 }
 
@@ -128,7 +166,6 @@ export default function SearchMapClustered({
   hoveredKey = null,
   onMarkerHover,
 }: Props) {
-  const router = useRouter()
   const mapRef = useRef<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
   const markersRef = useRef<google.maps.Marker[]>([])
@@ -145,7 +182,6 @@ export default function SearchMapClustered({
     listing: ListingForMap & { Latitude: number; Longitude: number }
   } | null>(null)
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
     libraries: ['places'],
   })
@@ -304,14 +340,13 @@ export default function SearchMapClustered({
       const price = Number(l.ListPrice ?? 0)
       const label = priceLabel(price)
       const isSaved = savedSet.has(listingKey)
-      const hasVideo = Boolean(l.hasVideo)
-      const markerLabel = [label, hasVideo ? 'video' : null, isSaved ? '♥' : null].filter(Boolean).join(' · ')
+      // Append a heart suffix for saved listings so it's visible on the pill
+      const pillLabel = isSaved ? `${label} ♥` : label
 
       const marker = new google.maps.Marker({
         position: { lat: l.Latitude, lng: l.Longitude },
         map,
-        label: { text: markerLabel, ...MAP_LABEL_LISTING },
-        icon: getListingMarkerIcon(),
+        icon: buildPricePillIcon(pillLabel),
       })
 
       marker.addListener('click', () => {
@@ -344,17 +379,22 @@ export default function SearchMapClustered({
         render: (cluster, _stats, map) => {
           const count = cluster.count
           const position = cluster.position
+          // Cluster badge: navy circle + white count, matches price-pill brand colors
+          const clusterLabel = String(count)
+          const fontSize = count >= 100 ? 11 : 13
+          const size = count >= 100 ? 36 : 32
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+            <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="${NAVY}" opacity="0.92"/>
+            <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 2}" fill="none" stroke="${WHITE}" stroke-width="1.5"/>
+            <text x="${size / 2}" y="${size / 2 + fontSize * 0.38}" font-family="system-ui,-apple-system,sans-serif" font-size="${fontSize}" font-weight="700" fill="${WHITE}" text-anchor="middle">${clusterLabel}</text>
+          </svg>`
           return new google.maps.Marker({
             position,
             map,
-            label: { text: String(count), color: 'white', fontSize: '12px', fontWeight: 'bold' },
             icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 12,
-              fillColor: MAP_COLOR_LISTING_PIN,
-              fillOpacity: 0.9,
-              strokeColor: 'white',
-              strokeWeight: 2,
+              url: 'data:image/svg+xml,' + encodeURIComponent(svg),
+              scaledSize: new google.maps.Size(size, size),
+              anchor: new google.maps.Point(size / 2, size / 2),
             },
             zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
           })
@@ -392,13 +432,21 @@ export default function SearchMapClustered({
     for (const [key, marker] of byKey) {
       const isHover = key === hoveredKey
       try {
-        marker.setIcon(getListingMarkerIcon({ hover: isHover }))
+        // Rebuild the pill icon at hover scale so it stays sharp (SVG-based)
+        const listing = validListings.find(
+          (l) => (l.ListNumber ?? l.ListingKey ?? '').toString() === key
+        )
+        const price = Number(listing?.ListPrice ?? 0)
+        const label = priceLabel(price)
+        const isSaved = savedSet.has(key)
+        const pillLabel = isSaved ? `${label} ♥` : label
+        marker.setIcon(buildPricePillIcon(pillLabel, { hover: isHover }))
         marker.setZIndex(isHover ? Number(google.maps.Marker.MAX_ZINDEX) : undefined)
       } catch {
         // marker DOM may be gone mid-pan; ignore
       }
     }
-  }, [hoveredKey, validListings])
+  }, [hoveredKey, validListings, savedSet])
 
   if (loadError) {
     return (
@@ -509,10 +557,13 @@ export default function SearchMapClustered({
           <InfoWindow
             position={openInfo.position}
             onCloseClick={() => setOpenInfo(null)}
+            options={{ maxWidth: 260 }}
           >
-            <div className="map-infowindow-card p-1 text-foreground">
-              {openListing.PhotoURL ? (
-                <div className="mb-1.5 overflow-hidden rounded-md" style={{ aspectRatio: '4 / 3' }}>
+            {/* Inline styles required: Google InfoWindow renders in an isolated
+                DOM context that does not inherit the app's Tailwind stylesheet. */}
+            <div style={{ width: 240, fontFamily: 'system-ui,-apple-system,sans-serif', color: '#1a1a1a', lineHeight: 1.4 }}>
+              {openListing.PhotoURL && (
+                <div style={{ marginBottom: 10, borderRadius: 8, overflow: 'hidden', aspectRatio: '4 / 3' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={openListing.PhotoURL}
@@ -523,9 +574,15 @@ export default function SearchMapClustered({
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   />
                 </div>
-              ) : null}
-              {((openListing.StreetNumber ?? openListing.StreetName ?? openListing.City) != null && (
-                <div className="text-sm text-muted-foreground">
+              )}
+              <div style={{ fontWeight: 700, fontSize: 16, color: NAVY, fontVariantNumeric: 'tabular-nums' }}>
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(openListing.ListPrice ?? 0))}
+                {savedSet.has(openKey) && (
+                  <span style={{ marginLeft: 6, color: '#dc2626', fontSize: 14 }} aria-hidden>&#9829;</span>
+                )}
+              </div>
+              {(openListing.StreetNumber ?? openListing.StreetName ?? openListing.City) != null && (
+                <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
                   {[openListing.StreetNumber, openListing.StreetName].filter(Boolean).join(' ')}
                   {[openListing.StreetNumber, openListing.StreetName].filter(Boolean).length > 0 &&
                   (openListing.City ?? openListing.State ?? openListing.PostalCode)
@@ -533,34 +590,40 @@ export default function SearchMapClustered({
                     : ''}
                   {[openListing.City, openListing.State, openListing.PostalCode].filter(Boolean).join(' ')}
                 </div>
-              )) || null}
-              <div className="mt-0.5 font-semibold">
-                ${Number(openListing.ListPrice ?? 0).toLocaleString()}
-                {savedSet.has(openKey) && <span className="ml-1 text-destructive" aria-hidden>♥</span>}
-              </div>
+              )}
               {(openListing.BedroomsTotal != null || openListing.BathroomsTotal != null || openListing.TotalLivingAreaSqFt != null) && (
-                <div className="text-xs text-muted-foreground">
+                <div style={{ fontSize: 12, color: '#777', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>
                   {[
-                    openListing.BedroomsTotal != null ? `${openListing.BedroomsTotal} bed` : null,
-                    openListing.BathroomsTotal != null ? `${openListing.BathroomsTotal} bath` : null,
+                    openListing.BedroomsTotal != null ? `${openListing.BedroomsTotal} bd` : null,
+                    openListing.BathroomsTotal != null ? `${openListing.BathroomsTotal} ba` : null,
                     openListing.TotalLivingAreaSqFt != null ? `${Number(openListing.TotalLivingAreaSqFt).toLocaleString()} sqft` : null,
                   ]
                     .filter(Boolean)
                     .join(' · ')}
                 </div>
               )}
-              <Button
-                type="button"
-                className="mt-1.5 block text-sm font-medium text-primary hover:underline"
-                onClick={() => router.push(listingDetailPath(
+              <a
+                href={listingDetailPath(
                   openKey,
                   { streetNumber: openListing.StreetNumber, streetName: openListing.StreetName, city: openListing.City, state: openListing.State, postalCode: openListing.PostalCode },
                   undefined,
                   { mlsNumber: openListing.ListNumber != null ? String(openListing.ListNumber) : null }
-                ))}
+                )}
+                style={{
+                  display: 'inline-block',
+                  marginTop: 10,
+                  padding: '6px 14px',
+                  borderRadius: 8,
+                  background: NAVY,
+                  color: WHITE,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                }}
               >
-                View listing →
-              </Button>
+                View listing
+              </a>
             </div>
           </InfoWindow>
         )}
