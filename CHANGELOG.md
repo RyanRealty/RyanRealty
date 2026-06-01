@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.387.0 (2026-06-01)
+
+### Features
+- feat: unified maps, redesigned search filters (fully wired), listing IDX compliance
+
+---
+
+
 ## v1.386.2 (2026-06-01)
 
 ### Bug Fixes
