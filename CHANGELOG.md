@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.389.0 (2026-06-01)
+
+### Features
+- feat(motivated-sellers): data layer + sliders on geo pages + SEO pillar/city pages
+
+---
+
+
 ## v1.388.0 (2026-06-01)
 
 ### Features
