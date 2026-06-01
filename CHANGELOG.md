@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.383.0 (2026-06-01)
+
+### Features
+- feat(geo): featured listings on home + city + neighborhood — GATE-ENFORCED
+
+---
+
+
 ## v1.382.16 (2026-06-01)
 
 ### Maintenance
