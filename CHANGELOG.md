@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.0 (2026-06-01)
+
+### Features
+- feat(homepage): live resort + master-planned communities section
+
+---
+
+
 ## v1.389.7 (2026-06-01)
 
 ### Bug Fixes
