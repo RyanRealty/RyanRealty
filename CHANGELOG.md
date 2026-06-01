@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.14 (2026-06-01)
+
+### Bug Fixes
+- fix(P0): report 500 — go DOM-free, remove jsdom import entirely
+
+---
+
+
 ## v1.382.13 (2026-06-01)
 
 ### Bug Fixes
