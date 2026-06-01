@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.389.5 (2026-06-01)
+
+### Bug Fixes
+- fix(maps): remove the last two RIGHT_TOP crashes + add maps-safety gate + session handoff
+
+---
+
+
 ## v1.389.4 (2026-06-01)
 
 ### Bug Fixes
