@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.384.0 (2026-06-01)
+
+### Features
+- feat(listing): Dropbox tour videos play as showcase hero + gate the rule
+
+---
+
+
 ## v1.383.0 (2026-06-01)
 
 ### Features
