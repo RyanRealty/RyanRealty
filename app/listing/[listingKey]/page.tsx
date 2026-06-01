@@ -11,6 +11,7 @@ import {
   resolveListingAgent,
 } from '@/lib/data'
 import { getSimilarListings } from '@/lib/data/listings/getSimilarListings'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
 import type { BreadcrumbNavItem } from '@/components/site/BreadcrumbNav'
@@ -106,11 +107,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   })
 }
 
-function buildLifestyleLine(_listing: { city: string | null }): string | null {
-  // Static for v1 — Bend-metro anchor facts. Future Wave 4 will compute
-  // per listing from lat/lng + a Bend POI dataset; until then we ship a
-  // conservative string accurate for any Bend-area home.
-  return '20 minutes to Mt. Bachelor · 12 minutes to downtown Bend · steps to the Deschutes River paved trail'
+// City-level geographic facts (no fabricated per-listing drive times). The old
+// version returned Bend distances ("12 minutes to downtown Bend") for EVERY
+// listing regardless of city — a Redmond/Sisters/La Pine home claimed Bend
+// proximity (CLAUDE.md §0 data-accuracy violation). These are unambiguous
+// city-level geographic relationships; a city without a verified line returns
+// null so the lifestyle line simply does not render rather than show a wrong one.
+const CITY_LIFESTYLE_LINE: Record<string, string> = {
+  bend: 'On the Deschutes River in Bend, near downtown and the route to Mt. Bachelor.',
+  redmond: 'In Redmond, at the center of the Central Oregon High Desert.',
+  sisters: 'In Sisters, at the foot of the Three Sisters.',
+  sunriver: 'In Sunriver, a Deschutes River resort community south of Bend.',
+  'la pine': 'In La Pine, high desert near the Cascade Lakes and Newberry National Volcanic Monument.',
+  tumalo: 'In Tumalo, just northwest of Bend.',
+  prineville: 'In Prineville, in the Crooked River valley.',
+  terrebonne: 'In Terrebonne, beneath Smith Rock State Park.',
+  'powell butte': 'In Powell Butte, ranch country between Bend and Prineville.',
+  madras: 'In Madras, near Lake Billy Chinook.',
+  'crooked river ranch': 'In Crooked River Ranch, high-desert canyon country north of Terrebonne.',
+}
+
+function buildLifestyleLine(listing: { city: string | null }): string | null {
+  const key = (listing.city ?? '').toLowerCase().trim()
+  return CITY_LIFESTYLE_LINE[key] ?? null
 }
 
 export default async function ListingDetailPage({ params }: PageProps) {
@@ -157,29 +176,41 @@ export default async function ListingDetailPage({ params }: PageProps) {
         }
       : null
 
+  // Every arm is timeout-guarded (not just .catch): the listing page is the #1
+  // ad-landing surface, and an unbounded pooler stall on any of these used to
+  // hang the render to FUNCTION_INVOCATION_TIMEOUT / "Something went wrong".
+  // Each section degrades independently. Enforced by the db-timeout-guard gate.
   const [similar, history, photos, videos, brokers, listingAgent, marketPulse, marketStats] =
     await Promise.all([
-      getSimilarListings(listingKey, 4).catch(() => []),
-      getListingDetailHistory(listingKey).catch(() => []),
-      getListingPhotos(listingKey).catch(() => []),
-      getListingVideos(listingKey).catch(() => []),
-      getBrokers().catch(() => []),
-      resolveListingAgent({
-        listAgentEmail: listing.listAgentEmail,
-        listAgentName: listing.listAgentName,
-      }),
+      withTimeoutFallback(getSimilarListings(listingKey, 4), [], 3000, 'listing:similar'),
+      withTimeoutFallback(getListingDetailHistory(listingKey), [], 3000, 'listing:history'),
+      withTimeoutFallback(getListingPhotos(listingKey), [], 4000, 'listing:photos'),
+      withTimeoutFallback(getListingVideos(listingKey), [], 3000, 'listing:videos'),
+      withTimeoutFallback(getBrokers(), [], 3000, 'listing:brokers'),
+      withTimeoutFallback(
+        resolveListingAgent({
+          listAgentEmail: listing.listAgentEmail,
+          listAgentName: listing.listAgentName,
+        }),
+        null,
+        3000,
+        'listing:agent',
+      ),
       marketGeo
-        ? getMarketPulse({ geoType: marketGeo.geoType, geoSlug: marketGeo.geoSlug }).catch(
-            () => null,
+        ? withTimeoutFallback(
+            getMarketPulse({ geoType: marketGeo.geoType, geoSlug: marketGeo.geoSlug }),
+            null,
+            3000,
+            'listing:pulse',
           )
         : Promise.resolve(null),
-      // getMarketStats currently queries columns that don't exist in
-      // market_stats_cache (median_list_price, months_of_supply,
-      // sale_to_list_ratio, active_count, yoy_change_pct, refreshed_at).
-      // Schema-mismatch DAL bug, separate fix. Until then pass null —
-      // NeighborhoodMarketContext renders fine with pulse alone (active
-      // count + median list price + comparison line). Median DOM + MoS
-      // stay blank in the meantime.
+      // market_stats_cache does NOT carry median_list_price / months_of_supply /
+      // sale_to_list_ratio / active_count / yoy_change_pct / refreshed_at —
+      // VERIFIED against information_schema 2026-06-01 (only median_dom exists).
+      // So this stays null on purpose (CLAUDE.md §0 — never render columns that
+      // don't exist). NeighborhoodMarketContext renders from pulse alone (active
+      // count + median list price + comparison). Do NOT "un-stub" this without
+      // first adding the columns to the cache + a methodology bump.
       Promise.resolve(null),
     ])
 

@@ -40,7 +40,7 @@ export default async function DashboardCollectionsPage() {
     <>
       <h1 className="text-2xl font-bold tracking-tight text-foreground">My Collections</h1>
       <p className="mt-1 text-muted-foreground">
-        All your saved homes in one place. Share a collection or organize into named groups (coming soon).
+        All your saved homes in one place.
       </p>
 
       {listings.length === 0 ? (
