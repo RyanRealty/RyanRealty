@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.2 (2026-06-01)
+
+### Bug Fixes
+- fix(listing+perf+accuracy): timeout-guard listing detail, city-accurate lifestyle line, G39 gate, drop dead shells
+
+---
+
+
 ## v1.390.1 (2026-06-01)
 
 ### Maintenance
