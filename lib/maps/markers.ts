@@ -33,14 +33,23 @@ export const MAP_RED_HEART = '#dc2626'
  * hides type control and fullscreen for its embedded-map context).
  */
 export function getBaseMapOptions(): google.maps.MapOptions {
-  return {
+  const opts: google.maps.MapOptions = {
     zoomControl: true,
-    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
     mapTypeControl: true,
     streetViewControl: false,
     fullscreenControl: true,
     gestureHandling: 'cooperative',
   }
+  // CRITICAL: this may be called during render BEFORE the Google Maps API
+  // script has loaded (e.g. a map component computing options on first paint).
+  // Touching google.maps.ControlPosition then throws "Cannot read properties of
+  // undefined (reading 'RIGHT_TOP')", which crashes the map and takes down the
+  // whole page via the error boundary. Only set the position once the enum
+  // exists; zoom control still renders at the default position otherwise.
+  if (typeof google !== 'undefined' && google.maps?.ControlPosition) {
+    opts.zoomControlOptions = { position: google.maps.ControlPosition.RIGHT_TOP }
+  }
+  return opts
 }
 
 /**
