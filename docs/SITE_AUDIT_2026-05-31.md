@@ -16,7 +16,18 @@ production-down hotfixes from the same session.
 
 ## REMAINING P0 (verified real, not yet fixed)
 
-1. **10 weekly market-report pages return HTTP 500** — `/housing-market/reports/<slug>` and `/reports/<slug>` both 500; all are in the sitemap feeding Google server errors. DB rows exist (image_storage_path + content_html non-null), so it's a render-time throw downstream of getMarketReportBySlug (suspect getReportImageUrl / sanitizeHtml / next/image of the storage URL). FILE: app/reports/[slug]/page.tsx. Until fixed, drop /housing-market/reports/* from sitemap.
+1. ~~10 weekly market-report pages return HTTP 500~~ **FIXED 2026-06-01.** Root cause
+   was NOT the image (the Vercel runtime log truncated to "Failed to load exter..." and
+   read as "image"; the full message was "Failed to load external **MODULE**"). lib/
+   sanitize.ts imported isomorphic-dompurify, which loads jsdom@29 on the server; jsdom
+   fails to bundle in the Vercel serverless runtime AT IMPORT TIME, so the whole sanitize
+   module + any route importing it 500'd. The report page always calls sanitizeHtml ->
+   always 500; listing pages only call it for video embeds -> mostly worked, hiding it.
+   Fix: lib/sanitize.ts is now DOM-free (allowlist regex), no jsdom in the bundle.
+   Commit 1974ab4. Verified 200 live. Banner + sitemap restored (c2ce066).
+   DEBUGGING LESSON: Vercel runtime-log messages truncate in the MCP table — disambiguate
+   a truncated error with a full-text `query=` (e.g. "external module" matched, "external
+   image"/"external font" returned zero) before assuming the word.
 2. **Soft-404s return HTTP 200** on every dynamic notFound() (/communities, /cities, /cities/[hood], /listing, /team) with robots index,follow — likely deploy-lag/streamed-render status. Add robots:{index:false} to not-found metadata + a route-smoke gate asserting invalid slugs 404.
 3. **sitemap.xml force-dynamic** aggregates raw 589K listings with ~10 sequential scans + N+1 per-city loop; nondeterministically collapses to ~63 URLs or times out (one catch silently returns static-only). Rebuild from listing_tile_mv / a sitemap MV + split into a sitemap index per family; serve last-good on error. Target <5s.
 4. **31 junk /communities slugs** in sitemap resolve to fabricated 200 pages ("Industrial, Madras Oregon") — /communities/[slug] accepts ANY subdivision string with no existence check. Emit only the 14 registry slugs; 404 arbitrary subdivisions. Add a gate.
