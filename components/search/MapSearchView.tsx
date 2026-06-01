@@ -85,6 +85,14 @@ function toSearchFilters(f: SearchFiltersInitial): SearchFilters {
     yearBuiltMax: f.yearBuiltMax ? Number(f.yearBuiltMax) : undefined,
     propertyType: f.propertyType || undefined,
     postalCode: f.postalCode || undefined,
+    garageMin: f.garageMin ? Number(f.garageMin) : undefined,
+    daysOnMarket: f.daysOnMarket || undefined,
+    keywords: f.keywords || undefined,
+    hasPool: f.hasPool === '1' ? true : undefined,
+    hasView: f.hasView === '1' ? true : undefined,
+    hasWaterfront: f.hasWaterfront === '1' ? true : undefined,
+    hasFireplace: f.hasFireplace === '1' ? true : undefined,
+    hasGolfCourse: f.hasGolfCourse === '1' ? true : undefined,
   }
 }
 

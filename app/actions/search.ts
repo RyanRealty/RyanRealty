@@ -30,6 +30,8 @@ export type SearchFilters = {
   hasPool?: boolean
   hasView?: boolean
   hasWaterfront?: boolean
+  hasFireplace?: boolean
+  hasGolfCourse?: boolean
   garageMin?: number
   daysOnMarket?: string
   hoa?: string
@@ -77,6 +79,8 @@ function toAdvancedFilters(
     hasPool: f.hasPool,
     hasView: f.hasView,
     hasWaterfront: f.hasWaterfront,
+    hasFireplace: f.hasFireplace,
+    hasGolfCourse: f.hasGolfCourse,
     garageMin: f.garageMin,
     newListingsDays: domFilter,
     keywords: f.keywords?.trim() || undefined,

@@ -9,45 +9,13 @@ import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { listingDetailPath } from '@/lib/slug'
 import type { MapPolygonPoint } from '@/lib/map-polygon'
 import { Button } from "@/components/ui/button"
-
-/** Brand navy — matches --rr-navy / --primary token. */
-const NAVY = '#102742'
-const WHITE = '#ffffff'
-
-/**
- * Build a price-pill SVG data URI for a Google Maps custom marker icon.
- * Produces a navy rounded-rect with white tabular-nums price text.
- * Width is dynamic so short labels (e.g. "$1.2M") and long ones ("$1,200k") both fit.
- */
-function buildPricePillIcon(label: string, opts?: { hover?: boolean }): google.maps.Icon {
-  const hover = opts?.hover ?? false
-  const fontSize = hover ? 14 : 13
-  const hPad = 12
-  const vPad = hover ? 8 : 6
-  // Approximate character width at the given font size
-  const charW = fontSize * 0.6
-  const textW = Math.ceil(label.length * charW)
-  const W = textW + hPad * 2
-  const H = fontSize + vPad * 2
-  const R = Math.floor(H / 2)
-  // Caret (downward triangle) pointing to the exact lat/lng
-  const caretH = 6
-  const caretW = 10
-  const totalH = H + caretH
-  const cx = W / 2
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${totalH}">
-    <rect x="0" y="0" width="${W}" height="${H}" rx="${R}" ry="${R}" fill="${NAVY}"/>
-    <polygon points="${cx - caretW / 2},${H} ${cx + caretW / 2},${H} ${cx},${totalH}" fill="${NAVY}"/>
-    <text x="${cx}" y="${H / 2 + fontSize * 0.36}" font-family="system-ui,-apple-system,sans-serif" font-size="${fontSize}" font-weight="600" fill="${WHITE}" text-anchor="middle" dominant-baseline="auto">${label}</text>
-  </svg>`
-
-  return {
-    url: 'data:image/svg+xml,' + encodeURIComponent(svg),
-    scaledSize: new google.maps.Size(W, totalH),
-    anchor: new google.maps.Point(cx, totalH),
-  }
-}
+import {
+  buildPricePillIcon,
+  buildClusterIcon,
+  formatPriceLabel,
+  buildInfoWindowHTML,
+  getBaseMapOptions,
+} from '@/lib/maps/markers'
 
 type GeoJSONPolygon = { type: 'Polygon'; coordinates: number[][][] | number[][] }
 type GeoJSONMultiPolygon = { type: 'MultiPolygon'; coordinates: number[][][][] }
@@ -116,12 +84,6 @@ function getBounds(listings: ListingForMap[]) {
   return { minLng, minLat, maxLng, maxLat } as const
 }
 
-function priceLabel(price: number): string {
-  if (price >= 1_000_000) return `$${(price / 1_000_000).toFixed(1)}M`
-  if (price >= 1_000) return `$${(price / 1_000).toFixed(0)}k`
-  return `$${price}`
-}
-
 export type MapBounds = { west: number; south: number; east: number; north: number }
 
 type Props = {
@@ -144,9 +106,9 @@ type Props = {
   onPolygonDrawn?: (polygon: MapPolygonPoint[] | null) => void
   /** Initial polygon to render (e.g. from URL saved search). */
   initialPolygon?: MapPolygonPoint[] | null
-  /** List↔map hover sync: the listing key currently hovered in the list (highlights its marker). */
+  /** List to map hover sync: the listing key currently hovered in the list (highlights its marker). */
   hoveredKey?: string | null
-  /** List↔map hover sync: fired when the user hovers/unhovers a marker (null on mouseout). */
+  /** List to map hover sync: fired when the user hovers/unhovers a marker (null on mouseout). */
   onMarkerHover?: (listingKey: string | null) => void
 }
 
@@ -321,12 +283,12 @@ export default function SearchMapClustered({
     }
   }, [isLoaded, onBoundsChanged, reportBounds])
 
-  // Create markers and clusterer when map and listings are ready
+  // Create markers and clusterer when map and listings are ready.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !window.google || validListings.length === 0) return
 
-    // Clear previous clusterer and markers
+    // Clear previous clusterer and markers.
     if (clustererRef.current) {
       clustererRef.current.clearMarkers()
       clustererRef.current = null
@@ -338,9 +300,9 @@ export default function SearchMapClustered({
     const newMarkers: google.maps.Marker[] = validListings.map((l, i) => {
       const listingKey = (l.ListNumber ?? l.ListingKey ?? `point-${i}`).toString()
       const price = Number(l.ListPrice ?? 0)
-      const label = priceLabel(price)
+      const label = formatPriceLabel(price)
       const isSaved = savedSet.has(listingKey)
-      // Append a heart suffix for saved listings so it's visible on the pill
+      // Append a heart suffix for saved listings so it is visible on the pill.
       const pillLabel = isSaved ? `${label} ♥` : label
 
       const marker = new google.maps.Marker({
@@ -379,23 +341,10 @@ export default function SearchMapClustered({
         render: (cluster, _stats, map) => {
           const count = cluster.count
           const position = cluster.position
-          // Cluster badge: navy circle + white count, matches price-pill brand colors
-          const clusterLabel = String(count)
-          const fontSize = count >= 100 ? 11 : 13
-          const size = count >= 100 ? 36 : 32
-          const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-            <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="${NAVY}" opacity="0.92"/>
-            <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 2}" fill="none" stroke="${WHITE}" stroke-width="1.5"/>
-            <text x="${size / 2}" y="${size / 2 + fontSize * 0.38}" font-family="system-ui,-apple-system,sans-serif" font-size="${fontSize}" font-weight="700" fill="${WHITE}" text-anchor="middle">${clusterLabel}</text>
-          </svg>`
           return new google.maps.Marker({
             position,
             map,
-            icon: {
-              url: 'data:image/svg+xml,' + encodeURIComponent(svg),
-              scaledSize: new google.maps.Size(size, size),
-              anchor: new google.maps.Point(size / 2, size / 2),
-            },
+            icon: buildClusterIcon(count),
             zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
           })
         },
@@ -425,19 +374,19 @@ export default function SearchMapClustered({
     }
   }, [isLoaded, validListings, savedSet, onMarkerClick, onMarkerHover])
 
-  // List↔map hover sync: enlarge the marker matching the list card under the cursor.
+  // List to map hover sync: enlarge the marker matching the list card under the cursor.
   useEffect(() => {
     const byKey = markersByKeyRef.current
     if (byKey.size === 0) return
     for (const [key, marker] of byKey) {
       const isHover = key === hoveredKey
       try {
-        // Rebuild the pill icon at hover scale so it stays sharp (SVG-based)
+        // Rebuild the pill icon at hover scale so it stays sharp (SVG-based).
         const listing = validListings.find(
           (l) => (l.ListNumber ?? l.ListingKey ?? '').toString() === key
         )
         const price = Number(listing?.ListPrice ?? 0)
-        const label = priceLabel(price)
+        const label = formatPriceLabel(price)
         const isSaved = savedSet.has(key)
         const pillLabel = isSaved ? `${label} ♥` : label
         marker.setIcon(buildPricePillIcon(pillLabel, { hover: isHover }))
@@ -481,7 +430,7 @@ export default function SearchMapClustered({
           color: 'var(--muted-foreground)',
         }}
       >
-        Loading map…
+        Loading map...
       </div>
     )
   }
@@ -506,11 +455,7 @@ export default function SearchMapClustered({
           }
         }}
         options={{
-          zoomControl: true,
-          zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
-          mapTypeControl: true,
-          streetViewControl: false,
-          fullscreenControl: true,
+          ...getBaseMapOptions(),
           draggable: !drawingMode,
           clickableIcons: !drawingMode,
         }}
@@ -560,71 +505,37 @@ export default function SearchMapClustered({
             options={{ maxWidth: 260 }}
           >
             {/* Inline styles required: Google InfoWindow renders in an isolated
-                DOM context that does not inherit the app's Tailwind stylesheet. */}
-            <div style={{ width: 240, fontFamily: 'system-ui,-apple-system,sans-serif', color: '#1a1a1a', lineHeight: 1.4 }}>
-              {openListing.PhotoURL && (
-                <div style={{ marginBottom: 10, borderRadius: 8, overflow: 'hidden', aspectRatio: '4 / 3' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={openListing.PhotoURL}
-                    alt={[openListing.StreetNumber, openListing.StreetName].filter(Boolean).join(' ') || 'Listing photo'}
-                    width={240}
-                    height={180}
-                    loading="lazy"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  />
-                </div>
-              )}
-              <div style={{ fontWeight: 700, fontSize: 16, color: NAVY, fontVariantNumeric: 'tabular-nums' }}>
-                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(openListing.ListPrice ?? 0))}
-                {savedSet.has(openKey) && (
-                  <span style={{ marginLeft: 6, color: '#dc2626', fontSize: 14 }} aria-hidden>&#9829;</span>
-                )}
-              </div>
-              {(openListing.StreetNumber ?? openListing.StreetName ?? openListing.City) != null && (
-                <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
-                  {[openListing.StreetNumber, openListing.StreetName].filter(Boolean).join(' ')}
-                  {[openListing.StreetNumber, openListing.StreetName].filter(Boolean).length > 0 &&
-                  (openListing.City ?? openListing.State ?? openListing.PostalCode)
-                    ? ', '
-                    : ''}
-                  {[openListing.City, openListing.State, openListing.PostalCode].filter(Boolean).join(' ')}
-                </div>
-              )}
-              {(openListing.BedroomsTotal != null || openListing.BathroomsTotal != null || openListing.TotalLivingAreaSqFt != null) && (
-                <div style={{ fontSize: 12, color: '#777', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>
-                  {[
-                    openListing.BedroomsTotal != null ? `${openListing.BedroomsTotal} bd` : null,
-                    openListing.BathroomsTotal != null ? `${openListing.BathroomsTotal} ba` : null,
-                    openListing.TotalLivingAreaSqFt != null ? `${Number(openListing.TotalLivingAreaSqFt).toLocaleString()} sqft` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </div>
-              )}
-              <a
-                href={listingDetailPath(
-                  openKey,
-                  { streetNumber: openListing.StreetNumber, streetName: openListing.StreetName, city: openListing.City, state: openListing.State, postalCode: openListing.PostalCode },
-                  undefined,
-                  { mlsNumber: openListing.ListNumber != null ? String(openListing.ListNumber) : null }
-                )}
-                style={{
-                  display: 'inline-block',
-                  marginTop: 10,
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  background: NAVY,
-                  color: WHITE,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                View listing
-              </a>
-            </div>
+                DOM context that does not inherit the app's Tailwind stylesheet.
+                All styles come from buildInfoWindowHTML in lib/maps/markers.ts. */}
+            <div
+              dangerouslySetInnerHTML={{
+                __html: buildInfoWindowHTML({
+                  price: openListing.ListPrice ?? null,
+                  photoURL: openListing.PhotoURL ?? null,
+                  streetNumber: openListing.StreetNumber ?? null,
+                  streetName: openListing.StreetName ?? null,
+                  city: openListing.City ?? null,
+                  state: openListing.State ?? null,
+                  postalCode: openListing.PostalCode ?? null,
+                  bedroomsTotal: openListing.BedroomsTotal ?? null,
+                  bathroomsTotal: openListing.BathroomsTotal ?? null,
+                  sqft: openListing.TotalLivingAreaSqFt ?? null,
+                  isSaved: savedSet.has(openKey),
+                  href: listingDetailPath(
+                    openKey,
+                    {
+                      streetNumber: openListing.StreetNumber,
+                      streetName: openListing.StreetName,
+                      city: openListing.City,
+                      state: openListing.State,
+                      postalCode: openListing.PostalCode,
+                    },
+                    undefined,
+                    { mlsNumber: openListing.ListNumber != null ? String(openListing.ListNumber) : null }
+                  ),
+                }),
+              }}
+            />
           </InfoWindow>
         )}
       </GoogleMap>
@@ -648,7 +559,7 @@ export default function SearchMapClustered({
               <Button
                 type="button"
                 onClick={() => {
-                  // Finalize the polygon
+                  // Finalize the polygon.
                   if (drawingPoints.length >= 3) {
                     const path = [...drawingPoints]
                     setActivePolygon(path)

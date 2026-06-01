@@ -2,7 +2,6 @@
 // brand-voice:exempt — pure UI component, no user-facing prose
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   GoogleMap,
   OverlayViewF,
@@ -11,6 +10,13 @@ import {
   InfoWindowF,
 } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
+import {
+  formatPriceLabel,
+  buildInfoWindowHTML,
+  getBaseMapOptions,
+  MAP_BOUNDARY_STYLES,
+  MAP_NAVY,
+} from '@/lib/maps/markers'
 import { cn } from '@/lib/utils'
 
 /**
@@ -19,24 +25,16 @@ import { cn } from '@/lib/utils'
  * Features:
  *   - fitBounds on load: zooms + pans to the polygon bounding box automatically.
  *   - Brand polygon: navy fill 0.08 opacity, navy stroke weight 2 (Design System v2).
- *   - Price-pill markers: Zillow-style navy pill per listing, "$795K" label.
- *     Rendered via OverlayViewF (no Maps cloud MapId required).
- *   - InfoWindow: clicking a pill opens a tiny preview with price + listing link.
+ *   - Price-pill markers: navy pill per listing, "$795K" label, matching all other
+ *     map surfaces site-wide. Rendered via OverlayViewF (no Maps cloud MapId required).
+ *   - InfoWindow: clicking a pill opens a shared preview card (photo, price, address,
+ *     beds/baths, link) from lib/maps/markers.ts, identical to search and listing maps.
  *
  * Data accuracy (CLAUDE.md GIS rule): polygons MUST come from the `boundaries`
  * table via getGeoBoundaryMapData. This component NEVER approximates.
  *
  * Gate G31 enforces that the parent page imports getGeoBoundaryMapData.
  */
-
-const NAVY = '#102742'
-
-const MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
-]
 
 export type NeighborhoodPolygon = {
   slug: string
@@ -51,10 +49,20 @@ export type NeighborhoodPolygon = {
 export type MapListingPin = {
   lat: number
   lng: number
-  /** Optional click target. */
+  /** Optional click target (full URL or path). */
   href?: string
   /** Price for the pill label. */
   price?: number | null
+  // Extended listing data for the shared InfoWindow card.
+  photoURL?: string | null
+  streetNumber?: string | null
+  streetName?: string | null
+  city?: string | null
+  state?: string | null
+  postalCode?: string | null
+  bedroomsTotal?: number | null
+  bathroomsTotal?: number | null
+  sqft?: number | null
 }
 
 type Props = {
@@ -106,15 +114,6 @@ function computeBounds(
   return { south: minLat, north: maxLat, west: minLng, east: maxLng }
 }
 
-/** Format a price as a compact pill label. */
-function formatPriceLabel(price: number): string {
-  if (price >= 1_000_000) {
-    const m = price / 1_000_000
-    return '$' + (m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)) + 'M'
-  }
-  return '$' + Math.round(price / 1_000) + 'K'
-}
-
 // ─── PricePill overlay ────────────────────────────────────────────────────────
 
 type PillProps = {
@@ -123,6 +122,12 @@ type PillProps = {
   onSelect: (pin: MapListingPin | null) => void
 }
 
+/**
+ * Navy price-pill overlay matching the SVG price-pill markers on the search map.
+ * Uses CSS classes because OverlayViewF renders inside the React tree (Tailwind applies).
+ * Color classes reference design tokens (bg-primary, text-white) which resolve to
+ * the same navy/white as the SVG markers built in lib/maps/markers.ts.
+ */
 function PricePill({ pin, isSelected, onSelect }: PillProps) {
   const label = pin.price ? formatPriceLabel(pin.price) : null
   if (!label) return null
@@ -131,7 +136,7 @@ function PricePill({ pin, isSelected, onSelect }: PillProps) {
     <OverlayViewF
       position={{ lat: pin.lat, lng: pin.lng }}
       mapPaneName={OVERLAY_MOUSE_TARGET}
-      getPixelPositionOffset={(w, h) => ({ x: -(w / 2), y: -(h / 2) })}
+      getPixelPositionOffset={(w, h) => ({ x: -(w / 2), y: -h })}
     >
       <button
         type="button"
@@ -140,15 +145,24 @@ function PricePill({ pin, isSelected, onSelect }: PillProps) {
           onSelect(isSelected ? null : pin)
         }}
         className={cn(
-          'flex items-center justify-center rounded-full border px-2 py-0.5 text-xs font-semibold leading-none shadow-sm transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          'relative flex items-center justify-center rounded-full border-2 border-white px-2.5 py-1 text-xs font-semibold leading-none shadow-md transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
           isSelected
             ? 'scale-110 border-white bg-white text-primary'
-            : 'border-white bg-primary text-white',
+            : 'bg-primary text-white',
         )}
         style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
         aria-label={'Listing at ' + label}
       >
         {label}
+        {/* Caret pointing down, matching the SVG price-pill anchor style */}
+        <span
+          aria-hidden
+          className={cn(
+            'absolute -bottom-[7px] left-1/2 -translate-x-1/2 border-4 border-transparent border-t-4',
+            isSelected ? 'border-t-white' : 'border-t-primary',
+          )}
+          style={{ borderTopWidth: 7, borderLeftWidth: 5, borderRightWidth: 5 }}
+        />
       </button>
     </OverlayViewF>
   )
@@ -163,12 +177,11 @@ export default function NeighborhoodMapClient({
   zoom = 11,
   height = 480,
 }: Props) {
-  const router = useRouter()
   const { ready, error } = useGoogleMapsReady()
   const mapRef = useRef<google.maps.Map | null>(null)
   const [selectedPin, setSelectedPin] = useState<MapListingPin | null>(null)
 
-  // Compute the initial center+zoom ONCE (lazy useState initializer → stable
+  // Compute the initial center+zoom ONCE (lazy useState initializer -> stable
   // references for the component's life). Why this matters: the parent passes a
   // fresh `polygons` array each render and `center` defaults to a new object
   // literal, so a center computed inline would change identity every render.
@@ -190,14 +203,15 @@ export default function NeighborhoodMapClient({
     [height],
   )
 
+  // Boundary map context: suppress POI labels, hide type control and fullscreen
+  // so the polygon is the focus. Gesture handling is cooperative (page stays
+  // scrollable). Zoom and street view match all other map surfaces.
   const mapOptions = useMemo<google.maps.MapOptions>(
     () => ({
-      styles: MAP_STYLES,
-      streetViewControl: false,
+      ...getBaseMapOptions(),
+      styles: MAP_BOUNDARY_STYLES,
       mapTypeControl: false,
       fullscreenControl: false,
-      zoomControl: true,
-      gestureHandling: 'cooperative',
     }),
     [],
   )
@@ -227,16 +241,9 @@ export default function NeighborhoodMapClient({
     [polygons],
   )
 
-  const onPolygonClick = useCallback(
-    (href: string | undefined) => {
-      if (href) router.push(href)
-    },
-    [router],
-  )
-
   const handleMapClick = useCallback(() => setSelectedPin(null), [])
 
-  // Cap at 150 pins for performance
+  // Cap at 150 pins for performance.
   const validPins = useMemo(
     () =>
       (listings ?? [])
@@ -254,8 +261,6 @@ export default function NeighborhoodMapClient({
       />
     )
   }
-
-  const hasPriceOnSelected = selectedPin !== null && selectedPin.price !== null && selectedPin.price !== undefined
 
   return (
     <div className="overflow-hidden rounded-xl border border-border shadow-sm">
@@ -278,15 +283,17 @@ export default function NeighborhoodMapClient({
               key={p.slug}
               paths={paths}
               options={{
-                strokeColor: NAVY,
+                strokeColor: MAP_NAVY,
                 strokeOpacity: 0.95,
                 strokeWeight: 3,
-                fillColor: NAVY,
+                fillColor: MAP_NAVY,
                 fillOpacity: 0.1,
                 clickable: !!p.href,
                 zIndex: 1,
               }}
-              onClick={() => onPolygonClick(p.href)}
+              onClick={() => {
+                if (p.href) window.location.href = p.href
+              }}
             />
           )
         })}
@@ -300,28 +307,31 @@ export default function NeighborhoodMapClient({
           />
         ))}
 
-        {hasPriceOnSelected && (
+        {selectedPin !== null && selectedPin.price != null && (
           <InfoWindowF
             position={{ lat: selectedPin.lat, lng: selectedPin.lng }}
             onCloseClick={() => setSelectedPin(null)}
-            options={{ pixelOffset: new google.maps.Size(0, -20) }}
+            options={{ pixelOffset: new google.maps.Size(0, -24), maxWidth: 260 }}
           >
-            <div className="min-w-[120px] text-sm">
-              <p
-                className="font-semibold text-primary"
-                style={{ fontVariantNumeric: 'tabular-nums' }}
-              >
-                {formatPriceLabel(selectedPin.price as number)}
-              </p>
-              {selectedPin.href ? (
-                <a
-                  href={selectedPin.href}
-                  className="mt-1 block text-xs text-muted-foreground underline hover:text-primary"
-                >
-                  View listing
-                </a>
-              ) : null}
-            </div>
+            {/* Inline styles required: Google InfoWindow renders in an isolated
+                DOM context. All styles come from buildInfoWindowHTML in lib/maps/markers.ts. */}
+            <div
+              dangerouslySetInnerHTML={{
+                __html: buildInfoWindowHTML({
+                  price: selectedPin.price,
+                  photoURL: selectedPin.photoURL ?? null,
+                  streetNumber: selectedPin.streetNumber ?? null,
+                  streetName: selectedPin.streetName ?? null,
+                  city: selectedPin.city ?? null,
+                  state: selectedPin.state ?? null,
+                  postalCode: selectedPin.postalCode ?? null,
+                  bedroomsTotal: selectedPin.bedroomsTotal ?? null,
+                  bathroomsTotal: selectedPin.bathroomsTotal ?? null,
+                  sqft: selectedPin.sqft ?? null,
+                  href: selectedPin.href ?? '#',
+                }),
+              }}
+            />
           </InfoWindowF>
         )}
       </GoogleMap>

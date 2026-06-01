@@ -3,17 +3,20 @@
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
-import { useRouter } from 'next/navigation'
 import {
   MAP_DEFAULT_CENTER,
   MAP_DEFAULT_ZOOM_REGION,
   MAP_DEFAULT_ZOOM_CITY,
-  getListingMarkerIcon,
   getCityPinIcon,
   MAP_LABEL_CITY,
 } from '@/lib/map-constants'
-import { Button } from "@/components/ui/button"
 import { listingDetailPath } from '@/lib/slug'
+import {
+  buildPricePillIcon,
+  formatPriceLabel,
+  buildInfoWindowHTML,
+  getBaseMapOptions,
+} from '@/lib/maps/markers'
 
 export type MapCenter = { latitude: number; longitude: number; zoom?: number }
 
@@ -33,6 +36,7 @@ export type ListingMapListing = {
   BedroomsTotal?: number | null
   BathroomsTotal?: number | null
   PhotoURL?: string | null
+  TotalLivingAreaSqFt?: number | null
 }
 
 type ListingMapProps = {
@@ -74,13 +78,11 @@ export default function ListingMapGoogle({
   cityPins,
   onBoundsChanged,
 }: ListingMapProps) {
-  const router = useRouter()
-  const [hoveredId, setHoveredId] = useState<string | number | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
   const onBoundsChangedRef = useRef(onBoundsChanged)
   onBoundsChangedRef.current = onBoundsChanged
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
     libraries: ['places'],
   })
@@ -194,7 +196,7 @@ export default function ListingMapGoogle({
     return (
       <div
         className={className}
-        style={{ ...defaultMapStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f4f4f5', color: '#71717a' }}
+        style={{ ...defaultMapStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--muted)', color: 'var(--muted-foreground)' }}
       >
         Map failed to load. Check your Google Maps API key.
       </div>
@@ -205,9 +207,9 @@ export default function ListingMapGoogle({
     return (
       <div
         className={className}
-        style={{ ...defaultMapStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f4f4f5', color: '#71717a' }}
+        style={{ ...defaultMapStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--muted)', color: 'var(--muted-foreground)' }}
       >
-        Loading map…
+        Loading map...
       </div>
     )
   }
@@ -219,13 +221,7 @@ export default function ListingMapGoogle({
         center={center}
         zoom={zoom}
         onLoad={onLoad}
-        options={{
-          zoomControl: true,
-          zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
-          mapTypeControl: true,
-          streetViewControl: false,
-          fullscreenControl: true,
-        }}
+        options={getBaseMapOptions()}
       >
         {pins?.map((pin) => (
           <Marker
@@ -245,48 +241,52 @@ export default function ListingMapGoogle({
           const lat = Number(l.Latitude)
           const lng = Number(l.Longitude)
           const price = Number(l.ListPrice ?? 0)
-          const priceLabel = price >= 1000 ? `${(price / 1000).toFixed(0)}k` : `$${price}`
+          const label = formatPriceLabel(price)
           return (
             <React.Fragment key={id}>
               <Marker
                 position={{ lat, lng }}
-                title={priceLabel}
-                icon={getListingMarkerIcon({ hover: hoveredId === id })}
-                onClick={() => setHoveredId(hoveredId === id ? null : id)}
+                title={label}
+                icon={buildPricePillIcon(label, { hover: openId === id })}
+                onClick={() => setOpenId(openId === id ? null : id)}
                 zIndex={2}
               />
-              {hoveredId === id && (
+              {openId === id && (
                 <InfoWindow
                   position={{ lat, lng }}
-                  onCloseClick={() => setHoveredId(null)}
+                  onCloseClick={() => setOpenId(null)}
+                  options={{ maxWidth: 260 }}
                 >
-                  <div className="min-w-[180px] p-1 text-foreground">
-                    {((l.StreetNumber ?? l.StreetName ?? l.City) != null && (
-                      <div className="text-sm text-muted-foreground">
-                        {[l.StreetNumber, l.StreetName].filter(Boolean).join(' ')}
-                        {([l.StreetNumber, l.StreetName].filter(Boolean).length > 0 && (l.City ?? l.State ?? l.PostalCode)) ? ', ' : ''}
-                        {[l.City, l.State, l.PostalCode].filter(Boolean).join(' ')}
-                      </div>
-                    )) || null}
-                    <div className="mt-0.5 font-semibold">${price.toLocaleString()}</div>
-                    {(l.BedroomsTotal != null || l.BathroomsTotal != null) && (
-                      <div className="text-xs text-muted-foreground">
-                        {[l.BedroomsTotal != null ? `${l.BedroomsTotal} bed` : null, l.BathroomsTotal != null ? `${l.BathroomsTotal} bath` : null].filter(Boolean).join(' · ')}
-                      </div>
-                    )}
-                    <Button
-                      type="button"
-                      className="mt-1.5 block text-sm font-medium text-primary hover:underline"
-                      onClick={() => router.push(listingDetailPath(
-                        id,
-                        { streetNumber: l.StreetNumber, streetName: l.StreetName, city: l.City, state: l.State, postalCode: l.PostalCode },
-                        undefined,
-                        { mlsNumber: l.ListNumber != null ? String(l.ListNumber) : null }
-                      ))}
-                    >
-                      View listing →
-                    </Button>
-                  </div>
+                  {/* Inline styles required: Google InfoWindow renders in an isolated
+                      DOM context. All styles come from buildInfoWindowHTML in lib/maps/markers.ts. */}
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: buildInfoWindowHTML({
+                        price: l.ListPrice ?? null,
+                        photoURL: l.PhotoURL ?? null,
+                        streetNumber: l.StreetNumber ?? null,
+                        streetName: l.StreetName ?? null,
+                        city: l.City ?? null,
+                        state: l.State ?? null,
+                        postalCode: l.PostalCode ?? null,
+                        bedroomsTotal: l.BedroomsTotal ?? null,
+                        bathroomsTotal: l.BathroomsTotal ?? null,
+                        sqft: l.TotalLivingAreaSqFt ?? null,
+                        href: listingDetailPath(
+                          id,
+                          {
+                            streetNumber: l.StreetNumber,
+                            streetName: l.StreetName,
+                            city: l.City,
+                            state: l.State,
+                            postalCode: l.PostalCode,
+                          },
+                          undefined,
+                          { mlsNumber: l.ListNumber != null ? String(l.ListNumber) : null }
+                        ),
+                      }),
+                    }}
+                  />
                 </InfoWindow>
               )}
             </React.Fragment>

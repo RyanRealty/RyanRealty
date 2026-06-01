@@ -79,3 +79,23 @@ app/api/cma/[slug]/email/route.ts
 # charcoal, status red) are required inline. Same case as
 # components/ListingMapGoogle.tsx above.
 components/SearchMapClustered.tsx
+
+# Shared map marker/InfoWindow primitives — SVG data-URI price-pill markers
+# and InfoWindow HTML builders require literal hex because Google Maps
+# isolates these from Tailwind/CSS-var inheritance. Canonical source of
+# truth for all inline hex on map surfaces; all map components import from here.
+lib/maps/markers.ts
+
+# NeighborhoodMap — the InfoWindow renders inside Google Maps' isolated DOM
+# context and therefore needs literal hex for brand colors, same pattern as
+# SearchMapClustered.tsx and ListingMapGoogle.tsx.
+components/site/NeighborhoodMap.client.tsx
+
+# Map-search filter UI (SearchFilters) + map-search shell (MapSearchView) — the
+# interactive filter bar uses responsive popover widths (w-[min(...)]) and a few
+# low-level controls the strict token ladder does not cover, and the map shell
+# carries legacy map-control primitives. Same tracked-exception category as the
+# predecessor components/SearchFilterBar.tsx above. Migrate toward shadcn as the
+# search surface is reworked.
+components/search/SearchFilters.tsx
+components/search/MapSearchView.tsx

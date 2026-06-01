@@ -62,6 +62,8 @@ type SearchParams = {
   hasPool?: string
   hasView?: string
   hasWaterfront?: string
+  hasFireplace?: string
+  hasGolfCourse?: string
   garageMin?: string
   daysOnMarket?: string
   keywords?: string
@@ -88,6 +90,8 @@ function parseFilters(sp: SearchParams) {
     hasPool: sp.hasPool === '1',
     hasView: sp.hasView === '1',
     hasWaterfront: sp.hasWaterfront === '1',
+    hasFireplace: sp.hasFireplace === '1',
+    hasGolfCourse: sp.hasGolfCourse === '1',
     garageMin: sp.garageMin != null ? Number(sp.garageMin) : undefined,
     daysOnMarket: sp.daysOnMarket?.trim(),
     keywords: sp.keywords?.trim(),
@@ -217,6 +221,8 @@ export default async function SearchPage({
     hasPool: sp.hasPool ?? '',
     hasView: sp.hasView ?? '',
     hasWaterfront: sp.hasWaterfront ?? '',
+    hasFireplace: sp.hasFireplace ?? '',
+    hasGolfCourse: sp.hasGolfCourse ?? '',
     garageMin: sp.garageMin ?? '',
     daysOnMarket: sp.daysOnMarket ?? '',
     keywords: sp.keywords ?? '',
@@ -271,7 +277,7 @@ export default async function SearchPage({
                 initialPage={page}
                 filters={initialFiltersFromUrl}
                 view="list"
-                hasActiveFilters={!!(filters.minPrice != null || filters.maxPrice != null || filters.city || filters.subdivision || filters.beds != null || filters.baths != null || filters.status !== 'Active' || filters.minSqFt != null || filters.maxSqFt != null || filters.lotAcresMin != null || filters.lotAcresMax != null || filters.yearBuiltMin != null || filters.yearBuiltMax != null || filters.propertyType || filters.hasPool || filters.hasView || filters.hasWaterfront || filters.garageMin != null || filters.daysOnMarket || filters.keywords)}
+                hasActiveFilters={!!(filters.minPrice != null || filters.maxPrice != null || filters.city || filters.subdivision || filters.beds != null || filters.baths != null || filters.status !== 'Active' || filters.minSqFt != null || filters.maxSqFt != null || filters.lotAcresMin != null || filters.lotAcresMax != null || filters.yearBuiltMin != null || filters.yearBuiltMax != null || filters.propertyType || filters.hasPool || filters.hasView || filters.hasWaterfront || filters.hasFireplace || filters.hasGolfCourse || filters.garageMin != null || filters.daysOnMarket || filters.keywords)}
               />
             )}
           </div>

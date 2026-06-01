@@ -32,6 +32,7 @@ import { VacationRentalPotential } from '@/components/site/listing-detail/Vacati
 import { TransparentCMASummary } from '@/components/site/listing-detail/TransparentCMASummary'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
 import ListingTracker from '@/components/listing/ListingTracker'
+import { ListingAttribution } from '@/components/listing/ListingAttribution'
 
 // PhotoGalleryLightbox is referenced for parity-gate coverage (D75);
 // the actual consumer is <ListingHero>, which renders it. Re-exporting
@@ -212,6 +213,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
     <>
       <PriceCtaStrip listing={listingWithPhotos} />
       <PropertySpecs listing={listingWithPhotos} />
+      <ListingAttribution
+        listAgentName={listing.listAgentName}
+        listOfficeName={listing.listOfficeName}
+        refreshedAt={listing.refreshedAt}
+      />
       <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
       {marketGeo ? (
         <NeighborhoodMarketContext
