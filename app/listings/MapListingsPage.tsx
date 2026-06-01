@@ -102,7 +102,6 @@ export default function MapListingsPage({ listings }: { listings: ListingForMap[
         onUnmount={onUnmount}
         options={{
           zoomControl: true,
-          zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
           mapTypeControl: true,
           fullscreenControl: true,
         }}

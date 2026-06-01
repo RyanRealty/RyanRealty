@@ -102,7 +102,6 @@ export default function ListingDetailMapGoogle({ subjectListing, otherListings }
         onLoad={onLoad}
         options={{
           zoomControl: true,
-          zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
           mapTypeControl: true,
           streetViewControl: false,
           fullscreenControl: true,
