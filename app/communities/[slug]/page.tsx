@@ -42,6 +42,7 @@ import type { CommunitySubdivision } from '@/lib/data'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import { communityImage, pickGeoImage } from '@/lib/geo-images'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
@@ -131,27 +132,30 @@ export default async function CommunityDetailPage({ params }: Props) {
   const cityName = community.city
   const citySlug = community.citySlug
 
+  // Every fetch is timeout-guarded (not just .catch) so a slow Supabase query
+  // degrades that one section instead of hanging the whole page. The community
+  // detail pages were taking 35-50s (the boundary + resort-plat-union spatial
+  // RPCs on the 589K listings table); a bounded render beats a 50s hang. See W5
+  // for the deeper query-optimization. Pattern mirrors app/search/page.tsx.
   const [pulse, blogPosts, geoImages, boundaryMapData, allCitySnapshots, communitySubdivisions, resortBoundary] =
     await Promise.all([
-      getMarketPulse({ geoType: 'neighborhood', geoSlug: slug }).catch(() => null),
-      getRecentBlogPosts({ cityName, limit: 3 }).catch(() => []),
-      getGeoTileImages([citySlug, slug, 'central-oregon']).catch((): Record<string, string[]> => ({})),
-      getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: slug }).catch(() => ({ polygon: null, pins: [] })),
-      getAllCitySnapshots().catch(() => []),
-      getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: slug }).catch(
-        (): CommunitySubdivision[] => [],
-      ),
+      withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: slug }), null, 3500, 'comm:pulse'),
+      withTimeoutFallback(getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'comm:blog'),
+      withTimeoutFallback(getGeoTileImages([citySlug, slug, 'central-oregon']), {} as Record<string, string[]>, 3000, 'comm:images'),
+      withTimeoutFallback(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: slug }), { polygon: null, pins: [] }, 4500, 'comm:boundary'),
+      withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'comm:cities'),
+      withTimeoutFallback(getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: slug }), [] as CommunitySubdivision[], 3000, 'comm:subs'),
       // Authoritative county-GIS plat union for resorts whose stored boundary is
       // an oversized spatial-discovery hull (e.g. Northwest Crossing). null for
       // unmapped communities -> the existing boundary is used.
-      getResortBoundaryGeoJSON(slug).catch(() => null),
+      withTimeoutFallback(getResortBoundaryGeoJSON(slug), null, 4500, 'comm:resortBoundary'),
     ])
 
   // Rich, verified community content (about prose, amenities, drive times,
   // course, HOA) from data/resort-community-[slug].json, the same source the
   // resort landing pages use. Null for communities without an authored config,
   // so those sections simply do not render.
-  const content = await getResortCommunityContent(slug).catch(() => null)
+  const content = await withTimeoutFallback(getResortCommunityContent(slug), null, 2500, 'comm:content')
 
   // Amenity topic-cluster SEO: collect any blog_slug values from the loaded
   // amenities, then resolve which of those slugs have a published blog post.
@@ -179,14 +183,20 @@ export default async function CommunityDetailPage({ params }: Props) {
   const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
   let communityListingTiles =
     boundaryListingKeys.length > 0
-      ? await getListingTiles({
-          listingKeys: boundaryListingKeys,
-          status: 'active',
-          limit: 24,
-        }).catch(() => [])
+      ? await withTimeoutFallback(
+          getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', limit: 24 }),
+          [],
+          4500,
+          'comm:tiles',
+        )
       : []
   if (communityListingTiles.length === 0) {
-    communityListingTiles = await getCommunityListings(community.name, { limit: 24 }).catch(() => [])
+    communityListingTiles = await withTimeoutFallback(
+      getCommunityListings(community.name, { limit: 24 }),
+      [],
+      4500,
+      'comm:listings',
+    )
   }
   const communityListingCards: ListingCardData[] = communityListingTiles.map(tileToCardData)
 
