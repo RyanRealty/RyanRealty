@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.389.2 (2026-06-01)
+
+### Maintenance
+- refactor(listings+nav): ONE canonical ListingCard everywhere, delete the old tiles/sliders/shadcn-nav, gate-locked
+
+---
+
+
 ## v1.389.1 (2026-06-01)
 
 ### Bug Fixes
