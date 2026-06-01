@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.4 (2026-06-01)
+
+### Maintenance
+- docs: session handoff Part B — comprehensive audit, fixes shipped, path to 100%
+
+---
+
+
 ## v1.390.3 (2026-06-01)
 
 ### Other
