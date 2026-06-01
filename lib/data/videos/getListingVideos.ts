@@ -122,7 +122,7 @@ function deriveRawUrl(vid: Record<string, unknown>): string | null {
  *   - 'link'      hosts that block framing (Dropbox sends x-frame-options) → watch link
  * Returns null to drop the entry (MapRight parcel maps are not walkthrough videos).
  */
-function normalizeEmbed(
+export function normalizeEmbed(
   raw: string | null,
   hintSource?: string | null,
 ): { url: string; embedType: 'iframe' | 'video-tag' | 'link'; posterUrl?: string } | null {
@@ -134,6 +134,22 @@ function normalizeEmbed(
   const hint = (hintSource ?? '').toLowerCase()
 
   if (low.includes('mapright') || hint.includes('mapright')) return null
+
+  // Dropbox FIRST (before the generic .mp4 check): it blocks IFRAME framing, and
+  // www.dropbox.com/<file>.mp4 serves an HTML PREVIEW, not the file — so the raw
+  // share URL is useless in a <video> tag. If the link points at a video FILE,
+  // rewrite to dl.dropboxusercontent.com (+ raw=1) which serves it inline, so it
+  // becomes a proper SHOWCASE HERO instead of a buried watch-link. (Matt: listing
+  // pages must use the tour video like a showcase listing.) Folders stay a link.
+  if (low.includes('dropbox.com')) {
+    if (/\.(mp4|m4v|mov|webm)(\?|$)/i.test(low)) {
+      let direct = url.replace(/:\/\/(?:www\.)?dropbox\.com/i, '://dl.dropboxusercontent.com')
+      direct = direct.replace(/([?&])dl=0\b/i, '$1raw=1')
+      if (!/[?&](?:dl|raw)=/i.test(direct)) direct += (direct.includes('?') ? '&' : '?') + 'raw=1'
+      return { url: direct, embedType: 'video-tag' }
+    }
+    return { url, embedType: 'link' }
+  }
 
   const parsed = parseListingVideoEmbedForTile(url)
   if (parsed) return { url: parsed.src, embedType: 'iframe', posterUrl: parsed.posterUrl ?? undefined }
@@ -150,7 +166,7 @@ function normalizeEmbed(
     return { url, embedType: 'iframe' }
   }
 
-  // Dropbox + anything unrecognized: frame-blocked → watch link, never a broken iframe.
+  // Anything unrecognized: frame-blocked → watch link, never a broken iframe.
   return { url, embedType: 'link' }
 }
 
@@ -264,7 +280,9 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // bare-URL ObjectHtml fix (Dropbox/Aryeo videos were dropped because only
     // <iframe>-wrapped ObjectHtml reached classifyVideo; ~49% of listing
     // videos, incl. the luxury flagships, returned empty arrays).
-    ['listing-videos-v4', listingKey],
+    // v5 bump 2026-06-01 — re-resolve Dropbox video FILES as inline video-tag
+    // (showcase hero) instead of the cached 'link' watch-link.
+    ['listing-videos-v5', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],
