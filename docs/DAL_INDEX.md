@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-01T14:40:16.155Z
+**Generated:** 2026-06-01T14:54:10.250Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -191,6 +191,16 @@ Companion files:
 **TTL windows:** `CACHE_WINDOWS.geoCity`, `CACHE_WINDOWS.geoCommunity`
 
 **Cache tags:** `parsed.geoType === 'city' ? cacheTag.city(parsed.geoKey) : parsed.geoType === 'community' ? cacheTag.community(parsed.geoKey) : cacheTag.neighborhood(parsed.geoKey)`, `'cities-index'`, `'communities-index'`, `cacheTag.city(cityLower)`
+
+---
+
+### `lib/data/geo/getResortBoundaryGeoJSON.ts`
+
+**Exports:** `getResortBoundaryGeoJSON`
+
+**TTL windows:** `CACHE_WINDOWS.geoNeighborhood`
+
+**Cache tags:** `cacheTag.neighborhood(slug), 'boundaries'`
 
 ---
 

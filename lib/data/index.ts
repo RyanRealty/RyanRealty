@@ -172,6 +172,7 @@ export type { GeoSnapshot, GeoSnapshotInput } from '@/lib/data/geo/getGeoSnapsho
 // Returns null when no boundary row exists for the geo.
 export { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
 export type { BoundaryGeoJSONInput, BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
+export { getResortBoundaryGeoJSON } from '@/lib/data/geo/getResortBoundaryGeoJSON'
 
 // Geo — shared boundary map data (polygon + spatial pins) via listings_in_boundary RPC.
 // THE shared DAL for all three page types (city / neighborhood / community).

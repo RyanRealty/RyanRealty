@@ -35,6 +35,7 @@ import {
   getCommunityListings,
   getResortCommunityBySlug,
   getBlogPostsBySlugs,
+  getResortBoundaryGeoJSON,
 } from '@/lib/data'
 import type { AmenityBlogPost } from '@/lib/data'
 import type { CommunitySubdivision } from '@/lib/data'
@@ -130,7 +131,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const cityName = community.city
   const citySlug = community.citySlug
 
-  const [pulse, blogPosts, geoImages, boundaryMapData, allCitySnapshots, communitySubdivisions] =
+  const [pulse, blogPosts, geoImages, boundaryMapData, allCitySnapshots, communitySubdivisions, resortBoundary] =
     await Promise.all([
       getMarketPulse({ geoType: 'neighborhood', geoSlug: slug }).catch(() => null),
       getRecentBlogPosts({ cityName, limit: 3 }).catch(() => []),
@@ -140,6 +141,10 @@ export default async function CommunityDetailPage({ params }: Props) {
       getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: slug }).catch(
         (): CommunitySubdivision[] => [],
       ),
+      // Authoritative county-GIS plat union for resorts whose stored boundary is
+      // an oversized spatial-discovery hull (e.g. Northwest Crossing). null for
+      // unmapped communities -> the existing boundary is used.
+      getResortBoundaryGeoJSON(slug).catch(() => null),
     ])
 
   // Rich, verified community content (about prose, amenities, drive times,
@@ -424,23 +429,35 @@ export default async function CommunityDetailPage({ params }: Props) {
           homes (owner directive 2026-05-29). When the community has GIS
           subdivision plats, render each as its own polygon (broken out);
           otherwise show the single community boundary. */}
-      {boundaryMapData.polygon ? (
+      {(resortBoundary || boundaryMapData.polygon) ? (
         <NeighborhoodMap
           polygons={
-            communitySubdivisions.length > 0
+            // Resorts with an authoritative plat union (e.g. Northwest Crossing)
+            // draw the single true footprint, NOT the over-inclusive hull/cells.
+            resortBoundary
+              ? [
+                  {
+                    slug,
+                    name: community.name,
+                    geometry: resortBoundary,
+                  },
+                ]
+              : communitySubdivisions.length > 0
               ? communitySubdivisions.map((s) => ({
                   slug: s.slug,
                   name: s.label,
                   geometry: s.geometry,
                   href: `/subdivisions/${s.slug}`,
                 }))
-              : [
+              : boundaryMapData.polygon
+              ? [
                   {
                     slug,
                     name: community.name,
                     geometry: boundaryMapData.polygon,
                   },
                 ]
+              : []
           }
           listings={boundaryMapData.pins.map((p) => ({
             lat: p.lat,
