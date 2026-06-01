@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.386.2 (2026-06-01)
+
+### Bug Fixes
+- fix(nav): mega-menu panels no longer wrap — wider 2-col layout + clean active state
+
+---
+
+
 ## v1.386.1 (2026-06-01)
 
 ### Other
