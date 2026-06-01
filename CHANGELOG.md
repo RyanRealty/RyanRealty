@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.382.11 (2026-06-01)
+
+### Bug Fixes
+- fix(P0): report 500 — twitter.images bare string triggered a failing probe fetch
+
+---
+
+
 ## v1.382.10 (2026-05-31)
 
 ### Bug Fixes
