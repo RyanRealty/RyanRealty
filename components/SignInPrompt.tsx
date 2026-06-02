@@ -31,6 +31,14 @@ function setDismissed() {
   }
 }
 
+// A 404 serves at an arbitrary path, so pathname can't identify it. The
+// not-found page (components/NotFoundClient) flags <html data-not-found> while
+// mounted; never auto-pop the social modal over that dead-end page.
+function isNotFoundPage(): boolean {
+  if (typeof document === 'undefined') return false
+  return document.documentElement.dataset.notFound === '1'
+}
+
 type InnerProps = { user: AuthUser | null; searchParams: ReturnType<typeof useSearchParams> }
 
 function SignInPromptInner({ user, searchParams }: InnerProps) {
@@ -57,12 +65,15 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
     // Never interrupt a landing-page or paid-traffic conversion with the social modal.
     if (isLandingPage || fromAdClick) return
     if (hasNextParam) {
-      setShow(true)
+      if (!isNotFoundPage()) setShow(true)
       return
     }
     if (wasDismissed()) return
     // Prompt logged-out visitors right away (don't wait). Tiny delay lets the first paint land.
-    const t = setTimeout(() => setShow(true), 1000)
+    // Re-check the 404 flag at fire time — by 1s the not-found page's effect has set it.
+    const t = setTimeout(() => {
+      if (!isNotFoundPage()) setShow(true)
+    }, 1000)
     return () => clearTimeout(t)
   }, [user, hasNextParam, isHome, isLandingPage, fromAdClick])
 

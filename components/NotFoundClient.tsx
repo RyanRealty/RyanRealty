@@ -80,6 +80,11 @@ export function NotFoundClient() {
   const suggestions = useMemo(() => suggestionsFor(pathname), [pathname])
 
   useEffect(() => {
+    // Mark the document so the global SignInPrompt knows this render is a 404
+    // and never auto-pops its sign-in modal over the dead-end page. A 404 serves
+    // at an arbitrary path, so pathname-based suppression can't catch it — this
+    // flag is the signal. Cleared on unmount (e.g. client-nav to a real page).
+    document.documentElement.dataset.notFound = '1'
     try {
       document.title = 'Page not found | Ryan Realty — Central Oregon Real Estate'
     } catch {
@@ -96,6 +101,9 @@ export function NotFoundClient() {
       } catch {
         // ignore
       }
+    }
+    return () => {
+      delete document.documentElement.dataset.notFound
     }
   }, [])
 
