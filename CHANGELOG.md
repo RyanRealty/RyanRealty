@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.8 (2026-06-02)
+
+### Bug Fixes
+- fix(leads): assign FB-form leads to a FUB user (were unassigned/invisible)
+
+---
+
+
 ## v1.390.7 (2026-06-02)
 
 ### Maintenance
