@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.399.1 (2026-06-02)
+
+### Maintenance
+- docs(skyslope): work-set #4-12 re-run complete — 9 deals verified
+- docs(claude): design system is the styling authority; per-surface mockups are the target (not "shadcn vs DS")
+
+---
+
+
 ## v1.399.0 (2026-06-02)
 
 ### Features
