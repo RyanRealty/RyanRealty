@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.11 (2026-06-02)
+
+### Maintenance
+- docs: record exact Tetherow LP color-mapping plan (needs Matt's visual review)
+
+---
+
+
 ## v1.390.10 (2026-06-02)
 
 ### Maintenance
