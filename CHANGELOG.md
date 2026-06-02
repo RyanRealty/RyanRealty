@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.7 (2026-06-02)
+
+### Maintenance
+- chore: delete 301-shadowed dead routes (/listings, /agents, /home-valuation page)
+
+---
+
+
 ## v1.390.6 (2026-06-02)
 
 ### Maintenance
