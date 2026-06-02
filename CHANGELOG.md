@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.397.0 (2026-06-02)
+
+### Features
+- feat(lp): rework 6 landing pages to design-system v2 + brand voice + above-fold conversion
+
+---
+
+
 ## v1.396.0 (2026-06-02)
 
 ### Features
