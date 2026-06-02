@@ -230,10 +230,17 @@ function rowToDetail(row: ListingRow): ListingDetail {
   }
 }
 
+// Hard ceiling on a single point-lookup. A healthy lookup is ~10ms (indexed),
+// so anything past this is a stalled pooler connection, not a slow query — we
+// ABORT it (freeing the connection) and let fetchOneOrThrow retry on a fresh
+// one. This is what turns the 30s+ cold-listing hang into a bounded render.
+const LISTING_FETCH_TIMEOUT_MS = 4000
+
 /**
  * One indexed point-lookup against a single column. Returns the row, or null
  * for a genuine miss; sets `error` for a transient DB failure (so the caller
- * can retry and never cache an error-null).
+ * can retry and never cache an error-null). Bounded by AbortSignal so a stalled
+ * connection surfaces as a (retryable) error instead of hanging the render.
  */
 async function fetchByColumn(
   supabase: NonNullable<ReturnType<typeof supabaseAnon>>,
@@ -244,20 +251,27 @@ async function fetchByColumn(
   // ListNumber (MLS#) and ListingKey (RETS key) are uniquely indexed — see
   // supabase/migrations/20260402120000_performance_indexes.sql + 20260330100000.
   // newest-modified first so a relisted MLS# resolves to the current row.
-  const { data, error } = await supabase
-    .from('listings')
-    .select(DETAIL_SELECT)
-    .eq(column, value)
-    .order('ModificationTimestamp', { ascending: false })
-    .limit(1)
-  if (error) return { row: null, error }
-  const row = Array.isArray(data) && data.length > 0 ? (data[0] as unknown as ListingRow) : null
-  return { row, error: null }
+  try {
+    const { data, error } = await supabase
+      .from('listings')
+      .select(DETAIL_SELECT)
+      .eq(column, value)
+      .order('ModificationTimestamp', { ascending: false })
+      .limit(1)
+      .abortSignal(AbortSignal.timeout(LISTING_FETCH_TIMEOUT_MS))
+    if (error) return { row: null, error }
+    const row = Array.isArray(data) && data.length > 0 ? (data[0] as unknown as ListingRow) : null
+    return { row, error: null }
+  } catch (err) {
+    // AbortError (timeout) or a thrown network failure — treat as transient so
+    // fetchOneOrThrow retries on a fresh connection instead of hanging.
+    return { row: null, error: err }
+  }
 }
 
 /**
  * Raw lookup. Returns the detail, or null for a GENUINE miss (no such listing).
- * THROWS on a transient DB error (after 3 in-process retries) so the caller
+ * THROWS on a transient DB error (after 2 in-process retries) so the caller
  * never caches a null that came from an error — see getListingDetail.
  *
  * RESOLUTION (2026-06-01): canonical listing URLs embed the MLS `ListNumber`
@@ -279,7 +293,7 @@ async function fetchOneOrThrow(listingKey: string): Promise<GetListingDetailResu
     : ['ListingKey', 'ListNumber']
 
   let lastError: unknown = null
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
     let sawError = false
     for (const column of order) {
       const { row, error } = await fetchByColumn(supabase, column, listingKey)

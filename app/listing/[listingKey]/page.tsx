@@ -75,7 +75,11 @@ void _PhotoGalleryLightboxImport
 
 type PageProps = { params: Promise<{ listingKey: string }> }
 
-export const revalidate = 60
+// 5-min warm window: under ad traffic the vast majority of listing hits serve
+// from the ISR/data cache and never touch the Supabase pooler. On-demand
+// revalidation (cacheTag.listing) still invalidates instantly when a listing
+// changes, so this only lengthens the backstop, not real freshness.
+export const revalidate = 300
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { listingKey } = await params
