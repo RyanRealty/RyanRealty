@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.15 (2026-06-02)
+
+### Maintenance
+- docs(skyslope): close out audit handoff — all 4 open items complete
+
+---
+
+
 ## v1.390.14 (2026-06-02)
 
 ### Bug Fixes
