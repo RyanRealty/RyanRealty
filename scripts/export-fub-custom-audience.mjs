@@ -57,9 +57,43 @@ if (!FUB_KEY) {
   console.error('FOLLOWUPBOSS_API_KEY (or FUB_API_KEY) is not set. Did you forget --env-file=.env.local?')
   process.exit(1)
 }
-if (!['lookalike-seed', 'suppression'].includes(MODE)) {
-  console.error(`Unknown --mode: ${MODE}. Valid modes: lookalike-seed, suppression`)
+if (!['lookalike-seed', 'suppression', 'seller-intent', 'neighborhood'].includes(MODE)) {
+  console.error(`Unknown --mode: ${MODE}. Valid modes: lookalike-seed, suppression, seller-intent, neighborhood`)
   process.exit(1)
+}
+// neighborhood mode requires --neighborhood <slug>
+const NEIGHBORHOOD = args.neighborhood ? String(args.neighborhood).toLowerCase() : null
+if (MODE === 'neighborhood' && !NEIGHBORHOOD) {
+  console.error('--mode neighborhood requires --neighborhood <slug> (e.g. bend-awbrey-butte)')
+  process.exit(1)
+}
+
+// ── compliance + realtor exclusion (applies to ALL targeting modes) ──────────
+// Suppression mode intentionally includes everyone (it's an EXCLUSION list, so
+// even DNC/realtor contacts belong there to prevent re-acquisition). Every other
+// mode is a TARGETING audience and MUST drop compliance-blocked + industry rows.
+const COMPLIANCE_BLOCK = /(compliance:hard-stop|do_not_email|do_not_text|do-not-call|contact:do-not|bounced|unsubscrib|opt-out|litigator|dnc)/i
+const REALTOR_BLOCK = /(industry:realtor|^realtor$|real estate agent|broker-recruit|loan officer|lender|title rep|escrow|vendor)/i
+function isExcludedFromTargeting(person) {
+  const tags = Array.isArray(person.tags) ? person.tags.map((t) => String(t).toLowerCase()) : []
+  const stage = String(person.stage || '').toLowerCase()
+  if (stage === 'real estate agent') return true
+  return tags.some((t) => COMPLIANCE_BLOCK.test(t) || REALTOR_BLOCK.test(t))
+}
+// seller-intent seed: high-likelihood-to-list owners (absentee OR high-equity
+// long-term), audience:seller tagged, minus exclusions.
+function isSellerIntentRow(person) {
+  if (isExcludedFromTargeting(person)) return false
+  const tags = Array.isArray(person.tags) ? person.tags.map((t) => String(t).toLowerCase()) : []
+  const has = (re) => tags.some((t) => re.test(t))
+  const seller = has(/audience:seller|seller:nurture|seller:hot|seller:warm|intent:expired/)
+  const highValue = has(/owner:absentee/) || (has(/equity:high|equity:very-high/) && has(/tenure:long-term/))
+  return seller && highValue
+}
+function isNeighborhoodRow(person) {
+  if (isExcludedFromTargeting(person)) return false
+  const tags = Array.isArray(person.tags) ? person.tags.map((t) => String(t).toLowerCase()) : []
+  return tags.includes(`neighborhood:${NEIGHBORHOOD}`)
 }
 
 mkdirSync(OUT_DIR, { recursive: true })
@@ -102,8 +136,13 @@ console.log(`out_dir=${OUT_DIR}`)
 const all = await fetchAllFubPeople({ limit: LIMIT })
 console.log(`Pulled ${all.length} FUB people total`)
 
-const filtered = MODE === 'lookalike-seed' ? all.filter(isLookalikeSeedRow) : all
-console.log(`Filtered to ${filtered.length} for ${MODE}`)
+const filtered =
+  MODE === 'lookalike-seed' ? all.filter((p) => isLookalikeSeedRow(p) && !isExcludedFromTargeting(p))
+  : MODE === 'seller-intent' ? all.filter(isSellerIntentRow)
+  : MODE === 'neighborhood' ? all.filter(isNeighborhoodRow)
+  : all /* suppression: everyone, by design */
+const excluded = all.length - filtered.length
+console.log(`Filtered to ${filtered.length} for ${MODE}${MODE !== 'suppression' ? ` (excluded ${excluded} compliance/realtor/non-match)` : ''}`)
 
 const rows = filtered.map(toMetaRow).filter((r) => r.email || r.phone)
 console.log(`Rows with at least one matchable identifier: ${rows.length}`)
