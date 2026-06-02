@@ -6,6 +6,8 @@ Continues `SESSION_HANDOFF_2026-06-01.md`. This session ran a full read-only aud
 
 ## ⭐ NEXT SESSION — START HERE (Matt authorized all of this 2026-06-01: "yes do it all", "go until you are done")
 
+**PROGRESS 2026-06-02 (5 items shipped to main this session):** ✅ item 0 Resend test (sent — but NO verified domain, real outbound to leads is broken; Matt-side DNS fix needed) · ✅ item 1 bbox index (live, EXPLAIN-verified) · ✅ item 2 FUB webhook assignment (core; cron reconciliation still open) · ✅ item 3 local branch cleanup (18 deleted; 11 remote branches need explicit OK) · ✅ item 4 dead-route cleanup (nav-slug claim was false). **REMAINING:** item 2 cron reconciliation, item 5 design-system migration (the big one), + the Matt-side items at the bottom.
+
 Execute in this order. Each is already authorized — no need to re-ask. Build + `npm run ci:gates` + push to main after each landable unit.
 
 0. **Resend test FIRST (Matt 2026-06-01: "resend should work, send a test").** Find the send path (`lib/` resend util / the seller-LP or CMA email route), confirm `RESEND_FROM` is set in Vercel env, send ONE test email to `matt@ryan-realty.com`, report the actual delivery result (id + inbox/spam). If it bounces on an unverified sender, that's the answer to surface — don't paper over it.
