@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.399.4 (2026-06-02)
+
+### Other
+- skill(skyslope): package form-compliance as a tracked turnkey skill
+
+---
+
+
 ## v1.399.3 (2026-06-02)
 
 ### Maintenance
