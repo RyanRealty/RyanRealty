@@ -352,7 +352,13 @@ export function trackListingClick(params: {
   })
 }
 
-/** User saved a listing (saved_property / lead). */
+/**
+ * User saved a listing. This is mid-funnel buyer INTENT (AddToWishlist), NOT a
+ * Lead. The old code fired both `fbq('Lead')` and GA4 `generate_lead` on every
+ * save, so saves polluted the Lead conversion both Meta and GA4 optimize toward
+ * — inflating lead volume and misdirecting ad budget toward savers. Saves are a
+ * wishlist/retargeting signal and feed a dedicated audience, not the Lead count.
+ */
 export function trackSaveListing(params: {
   listingKey: string
   listingUrl: string
@@ -367,10 +373,14 @@ export function trackSaveListing(params: {
     mls_number: params.mlsNumber,
   })
   pushDataLayer({
-    event: 'generate_lead',
-    method: 'save_listing',
+    event: 'add_to_wishlist',
+    currency: 'USD',
+    value: params.price,
+    items: [{ item_id: params.listingKey, item_name: params.mlsNumber ?? params.listingKey }],
   })
-  trackFbq('Lead', {
+  trackFbq('AddToWishlist', {
+    content_type: 'product',
+    content_ids: [params.listingKey],
     content_name: params.mlsNumber ?? params.listingKey,
     value: params.price,
     currency: 'USD',
