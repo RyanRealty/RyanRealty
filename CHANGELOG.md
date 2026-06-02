@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.2 (2026-06-02)
+
+### Maintenance
+- refactor(about): understated voice rewrite — show, don't state
+
+---
+
+
 ## v1.402.1 (2026-06-02)
 
 ### Bug Fixes
