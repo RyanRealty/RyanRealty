@@ -177,6 +177,27 @@ function resolveLegacyRedirect(pathname: string): string | null {
   return dest && dest !== p ? dest : null
 }
 
+// ─── Canonical production host ──────────────────────────────────────────────
+// The site answers on BOTH the custom domain (ryan-realty.com) and the Vercel
+// deployment alias (ryanrealty.vercel.app). Two equal public hosts silently
+// break Google/Facebook sign-in: @supabase/ssr writes the PKCE code_verifier as
+// a HOST-ONLY cookie on whichever host the visitor initiates from, but Supabase
+// Auth redirects the OAuth callback to the host in its Site URL / redirect
+// allow-list. When the visitor starts on the alias and the callback resolves on
+// the custom domain (or vice-versa), the verifier cookie is gone and
+// exchangeCodeForSession throws "code verifier could not be found" — the user
+// bounces to /auth-error and NO Follow Up Boss lead is created. Verified live
+// 2026-06-02: on ryan-realty.com the verifier cookie is written correctly
+// (Lax, persistent, host-only) and the flow completes; the failures all came
+// from visitors on ryanrealty.vercel.app.
+//
+// Funnel every browser (page) request to the canonical host so initiation and
+// callback always share one host. /api/* is excluded so server-to-server
+// callers (Meta CAPI, FUB, Spark webhooks, Vercel crons) that may hit the alias
+// and not follow redirects keep working. Also consolidates SEO to one hostname.
+const CANONICAL_HOST = 'ryan-realty.com'
+const NON_CANONICAL_HOSTS = new Set(['ryanrealty.vercel.app'])
+
 function buildNextResponse(pathname: string, request: NextRequest): NextResponse {
   // Always set x-pathname on the forwarded request headers so server
   // components can read it via headers().get('x-pathname').
@@ -189,6 +210,18 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const url = request.nextUrl
   const pathname = url.pathname
   const host = (request.headers.get('host') ?? '').toLowerCase()
+
+  // ─── (00) Canonical host — funnel the Vercel alias to ryan-realty.com ──
+  // Runs before everything else so OAuth initiation AND /auth/callback always
+  // land on the canonical host (where the PKCE verifier cookie lives). Never
+  // touches /api/* (webhooks/crons may target the alias and not follow 308s).
+  if (NON_CANONICAL_HOSTS.has(host) && !pathname.startsWith('/api/')) {
+    const redirectUrl = url.clone()
+    redirectUrl.protocol = 'https:'
+    redirectUrl.hostname = CANONICAL_HOST
+    redirectUrl.port = ''
+    return NextResponse.redirect(redirectUrl, 308)
+  }
 
   // ─── (0) Legacy URL → new-site 301 (domain cutover SEO preservation) ───
   // Runs FIRST so search crawlers and users get a clean single-hop 301 for any
