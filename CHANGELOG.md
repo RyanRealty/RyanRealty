@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.395.4 (2026-06-02)
+
+### Maintenance
+- chore(auth): remove Continue-with-Apple + delete legacy /api/auth/callback
+
+---
+
+
 ## v1.395.3 (2026-06-02)
 
 ### Bug Fixes
