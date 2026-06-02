@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.398.0 (2026-06-02)
+
+### Features
+- feat(auth): Google as primary sign-in button + immediate sign-in prompt
+
+---
+
+
 ## v1.397.0 (2026-06-02)
 
 ### Features
