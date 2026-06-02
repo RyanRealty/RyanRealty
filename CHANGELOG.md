@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.392.1 (2026-06-02)
+
+### Bug Fixes
+- fix(tracking): listing SAVE is AddToWishlist, not Lead (was corrupting ad optimization)
+
+---
+
+
 ## v1.392.0 (2026-06-02)
 
 ### Features
