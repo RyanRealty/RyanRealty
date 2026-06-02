@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.399.2 (2026-06-02)
+
+### Bug Fixes
+- fix(homepage): wire Heath community tile to the Tetherow photo (Heath is at Tetherow)
+- fix(auth): never auto-pop the social sign-in modal on /lp/* or ad traffic
+
+---
+
+
 ## v1.399.1 (2026-06-02)
 
 ### Maintenance
