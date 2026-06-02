@@ -328,9 +328,13 @@ For routine rebuilds — listing videos, news clips, market data drops, area gui
 
 # Design System Rules — MANDATORY
 
-## shadcn/ui is the ONLY styling authority
+## The Ryan Realty design system is the styling authority
 
-Every UI element on this site MUST use shadcn/ui components from `@/components/ui/`. No exceptions.
+The design system at `design_system/ryan-realty/` defines the look: navy `#102742` + cream `#faf8f4`, **Amboqia Boriango** display + **Geist** body, and the radii/shadows/spacing in `colors_and_type.css`. It is IMPLEMENTED as a themed component library at `@/components/ui/` — these are radix-nova primitives **re-skinned to the design system**. "shadcn" and "the design system" are the SAME thing here, not a choice to make. Build every UI element from `@/components/ui/` (the design-system components) so the whole site inherits the brand look. Do NOT hand-roll raw HTML controls on product/site surfaces, and do NOT treat "use the design system" and "use the components" as conflicting — they are one and the same.
+
+**The per-surface visual target for every page is its mockup at `design_system/ryan-realty/ui_kits/<surface>/index.html`** (homepage, search, city, listing-detail, sell, about, market-report, zip, team, …). When building or reworking a surface, match its mockup. Display headings (page H1s + section H2s) use the Amboqia face — via the `H1`/`H2`/`DisplayHeading` primitives in `components/site/primitives` (which carry `font-display`) — the way the landing pages and the mockups do, never plain Geist. The landing pages look more polished than the rest of the site precisely because they apply this treatment; the rest of the site is being brought up to the same bar.
+
+Every UI element MUST use the design-system components from `@/components/ui/`. No exceptions.
 
 ### Component Mapping (use these, not raw HTML):
 | Need | Use This | NOT This |
