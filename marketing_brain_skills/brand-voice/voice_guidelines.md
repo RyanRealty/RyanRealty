@@ -234,13 +234,17 @@ These mark AI-generated text and are banned in every piece of published content.
 These are AI-tells, real-estate clichés, or both. Never use any of these.
 
 **Real estate clichés.**
-stunning, breathtaking, gorgeous, charming, pristine, nestled, boasts, must-see, dream home, meticulously maintained, entertainer's dream, tucked away, hidden gem, truly, spacious, cozy, luxurious, updated throughout, turnkey, immaculate, captivating, exquisite
+stunning, breathtaking, gorgeous, charming, pristine, nestled, boasts, must-see, dream home, meticulously maintained, entertainer's dream, tucked away, hidden gem, truly, luxurious, updated throughout, immaculate, captivating, exquisite
+
+(Relaxed 2026-06-02: `spacious`, `cozy`, and `turnkey` are no longer banned — a room genuinely can be spacious or cozy, and turnkey is a precise term for move-in-ready.)
 
 **AI filler.**
-delve, leverage, tapestry, navigate, robust, seamless, comprehensive, elevate, unlock, holistic, dynamic, vibrant, bustling, eclectic, curated, bespoke, foster
+delve, tapestry, robust, seamless, elevate, unlock, holistic, dynamic, vibrant, bustling, eclectic, curated, bespoke
 
-**Vague qualifiers (substitute for the real number).**
-approximately, roughly, about, around, fairly, somewhat
+(Relaxed 2026-06-02: `leverage`, `navigate`, `comprehensive`, and `foster` are no longer banned — each has legitimate plain-English use. The cliché phrase "navigate your real estate journey" is still banned.)
+
+**Vague qualifiers.**
+Relaxed to empty 2026-06-02. The bare-word ban on about/around/approximately/roughly/fairly/somewhat blocked legitimate plain English and honest measurement hedges (acreage, drive times). The data-accuracy discipline still stands as a §0 rule: never substitute "about / roughly / approximately" for a STAT you can pull exactly (enforced by the per-figure verification trace, not a prose word-ban).
 
 ### 6.3 Banned phrases
 

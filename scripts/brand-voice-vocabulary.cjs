@@ -27,7 +27,10 @@ const PUNCTUATION = [
   { char: '!', label: 'exclamation mark', advice: 'Drop or rephrase. Body prose is exclamation-free.' },
 ]
 
-// Real-estate clichés — §6.2 (full canonical list from CLAUDE.md §3).
+// Real-estate clichés — §6.2.
+// Realism pass 2026-06-02: removed 'spacious' + 'cozy' (a room genuinely can be
+// spacious or cozy — accurate description, not hype) and 'turnkey' (precise term
+// for move-in-ready). The empty-hype clichés stay.
 const CLICHES = [
   'stunning',
   'breathtaking',
@@ -44,25 +47,24 @@ const CLICHES = [
   'tucked away',
   'hidden gem',
   'truly',
-  'spacious',
-  'cozy',
   'luxurious',
   'updated throughout',
-  'turnkey',
   'immaculate',
   'captivating',
   'exquisite',
 ]
 
-// AI filler — §6.2 (full canonical list).
+// AI filler — §6.2.
+// Realism pass 2026-06-02: removed 'leverage' (legit "leverage equity"),
+// 'navigate' (plain English; the cliché "navigate your real estate journey" is
+// still banned as a phrase), 'comprehensive' (a market analysis genuinely can
+// be), and 'foster' (plain verb — foster community/relationships). The true
+// AI-slop tells (delve, tapestry, seamless, robust, elevate, unlock, etc.) stay.
 const AI_FILLER = [
   'delve',
-  'leverage',
   'tapestry',
-  'navigate',
   'robust',
   'seamless',
-  'comprehensive',
   'elevate',
   'unlock',
   'holistic',
@@ -72,18 +74,15 @@ const AI_FILLER = [
   'eclectic',
   'curated',
   'bespoke',
-  'foster',
 ]
 
-// Vague qualifiers — §6.2 (full canonical list).
-const VAGUE_QUALIFIERS = [
-  'approximately',
-  'roughly',
-  'about',
-  'around',
-  'fairly',
-  'somewhat',
-]
+// Vague qualifiers — relaxed to empty 2026-06-02 (realism pass). A bare whole-word
+// ban on about/around/approximately/roughly/fairly/somewhat blocked legitimate
+// plain English ("questions about buying", "homes around Bend") and honest
+// measurement hedges (acreage, drive times). The data-accuracy discipline — never
+// substitute "about/roughly/approximately" for a pulled STAT — remains enforced as
+// a CLAUDE.md §0 principle (verification trace per figure), not a blunt prose ban.
+const VAGUE_QUALIFIERS = []
 
 // Marketing slop — §6.2 (full canonical list).
 const MARKETING_SLOP = [

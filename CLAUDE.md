@@ -118,11 +118,11 @@ Compound hyphens are allowed where standard English requires them (single-family
 
 ### Banned words (hard fail — full list in `voice_guidelines.md` §6.2)
 
-**Real-estate clichés:** stunning, breathtaking, gorgeous, charming, pristine, nestled, boasts, must-see, dream home, meticulously maintained, entertainer's dream, tucked away, hidden gem, truly, spacious, cozy, luxurious, updated throughout, turnkey, immaculate, captivating, exquisite
+**Real-estate clichés:** stunning, breathtaking, gorgeous, charming, pristine, nestled, boasts, must-see, dream home, meticulously maintained, entertainer's dream, tucked away, hidden gem, truly, luxurious, updated throughout, immaculate, captivating, exquisite
 
-**AI filler:** delve, leverage, tapestry, navigate, robust, seamless, comprehensive, elevate, unlock, holistic, dynamic, vibrant, bustling, eclectic, curated, bespoke, foster
+**AI filler:** delve, tapestry, robust, seamless, elevate, unlock, holistic, dynamic, vibrant, bustling, eclectic, curated, bespoke
 
-**Vague qualifiers (use the real number instead):** approximately, roughly, about, around, fairly, somewhat
+**Vague qualifiers:** relaxed 2026-06-02 — no longer a blanket banned-word gate (the bare-word ban on about/around/approximately/roughly/fairly/somewhat blocked legitimate plain English and honest measurement hedges). The data-accuracy rule still stands: never substitute "about / roughly / approximately" for a STAT you can pull exactly (§0, reviewer-enforced via the verification trace). In ordinary prose these words are fine.
 
 **Marketing slop:** top producing, top 1 percent, white glove, luxury concierge, premier brokerage, exclusive (as a brokerage descriptor), boutique brokerage, your real estate journey, we are passionate about, we pride ourselves on
 
@@ -280,9 +280,9 @@ Enforced by `scripts/check_first_frame.py` — every video render runs this chec
 ## Banned words (any caption, VO, on-screen text, blog, email, listing copy)
 - stunning, nestled, boasts, charming, pristine, gorgeous, breathtaking, must-see, dream home
 - meticulously maintained, entertainer's dream, tucked away, hidden gem
-- truly, spacious, cozy, luxurious, updated throughout
-- "approximately," "roughly," "about" as a substitute for the real number
-- Em-dashes, semicolons, AI filler ("delve," "leverage," "tapestry," "navigate," "robust," "seamless," "comprehensive," "elevate," "unlock")
+- truly, luxurious, updated throughout
+- "approximately," "roughly," "about" as a substitute for the real number (this is the §0 stat-discipline rule — these words are fine in ordinary prose, just never as a stand-in for a number you can pull)
+- Em-dashes, semicolons, AI filler ("delve," "tapestry," "robust," "seamless," "elevate," "unlock")
 
 ## Render hygiene
 - `cd listing_video_v4 && npx remotion render src/index.ts <CompId> out/<name>.mp4 --codec h264 --concurrency 1 --crf 22 --image-format=jpeg --jpeg-quality=92`

@@ -82,8 +82,8 @@ ruleTester.run('rr-brand-voice/no-violations', rule, {
       errors: [{ messageId: 'bannedWord' }, { messageId: 'bannedWord' }],
     },
     {
-      name: '§6.2 AI filler in JSX text is flagged (leverage)',
-      code: `const x = () => <p>We leverage local data.</p>`,
+      name: '§6.2 AI filler in JSX text is flagged (delve)',
+      code: `const x = () => <p>We delve into local data.</p>`,
       errors: [{ messageId: 'bannedWord' }],
     },
     {
@@ -98,7 +98,7 @@ ruleTester.run('rr-brand-voice/no-violations', rule, {
     },
     {
       name: 'banned text in {"…"} JSX expression container is flagged',
-      code: `const x = () => <p>{"This boasts a turnkey design."}</p>`,
+      code: `const x = () => <p>{"This boasts a pristine design."}</p>`,
       errors: [
         { messageId: 'bannedWord' },
         { messageId: 'bannedWord' },
