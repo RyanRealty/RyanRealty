@@ -13,21 +13,11 @@
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
-import { teamPath } from '@/lib/slug'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
-import { BrokerCard } from '@/components/site/BrokerCard'
-import { BrokerContactCard } from '@/components/site/BrokerContactCard'
+import { BrokerProfileRow } from '@/components/site/BrokerProfileRow'
 import { CTABar } from '@/components/site/CTABar'
-import {
-  Body,
-  Container,
-  Eyebrow,
-  Grid,
-  H2,
-  Section,
-  Stack,
-} from '@/components/site/primitives'
+import { Body, Container, Eyebrow, H2, Section, Stack } from '@/components/site/primitives'
 
 export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
@@ -58,7 +48,7 @@ export default async function TeamPage() {
       </div>
 
       <HeroBlock
-        headline="Meet the brokers."
+        headline="Three brokers. That's it."
         lede="Three licensed brokers, all active in Oregon. The broker you meet is the broker who works your deal from offer to close."
         photo={{
           src: '/brand/hero/hero-old-mill-master-4k.jpg',
@@ -79,31 +69,13 @@ export default async function TeamPage() {
             </Body>
           </Stack>
 
-          {/* Broker cards — full contact info visible at the grid level */}
-          <Grid cols={3} gap="loose">
-            {brokers.map((broker) => {
-              const firstName = broker.fullName.split(' ')[0] ?? broker.fullName
-              const trustLine = broker.isPrincipal
-                ? 'Principal broker and owner of Ryan Realty. Licensed in Oregon since 2012.'
-                : null
-              return (
-                <BrokerContactCard
-                  key={broker.slug}
-                  name={broker.fullName}
-                  title={broker.title}
-                  licenseNumber={broker.licenseNumber}
-                  phone={broker.phoneDirect}
-                  email={broker.email}
-                  headshotSrc={broker.headshotPng}
-                  headshotAlt={broker.fullName}
-                  trustLine={trustLine ?? undefined}
-                  ctaHref={teamPath(broker.slug)}
-                  firstName={firstName}
-                  variant="card"
-                />
-              )
-            })}
-          </Grid>
+          {/* Large broker profiles — verified bio, specialties, license, and
+              direct contact for each broker, straight from public.brokers. */}
+          <div className="flex flex-col gap-12 md:gap-16">
+            {brokers.map((broker) => (
+              <BrokerProfileRow key={broker.slug} broker={broker} />
+            ))}
+          </div>
 
         </Container>
       </Section>

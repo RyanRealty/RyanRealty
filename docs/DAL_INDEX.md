@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-01T14:54:10.250Z
+**Generated:** 2026-06-02T19:45:39.271Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -82,7 +82,7 @@ Companion files:
 
 **Tables:** `brokers`, `blog_posts`
 
-**Selected columns:** `id`, `slug`, `display_name`, `email`, `title`, `bio`, `phone`, `tagline`, `social_instagram`, `social_facebook`, `social_linkedin`, `social_youtube`, `social_tiktok`, `social_x`, `license_number`, `photo_url`, `hero_image_url`, `category`, `full_name`, `phone_direct`, `phone_fub`
+**Selected columns:** `id`, `slug`, `display_name`, `email`, `title`, `bio`, `phone`, `tagline`, `social_instagram`, `social_facebook`, `social_linkedin`, `social_youtube`, `social_tiktok`, `social_x`, `license_number`, `photo_url`, `hero_image_url`, `category`
 
 **TTL windows:** `CACHE_WINDOWS.brokers`
 

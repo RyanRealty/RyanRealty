@@ -2,11 +2,11 @@
   "route": "app/team/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/team/index.html",
   "competitiveTarget": "Beat generic brokerage team pages: real broker names, OREA license numbers, transparent-PNG headshots, and direct phone/email, with zero invented track-record or review claims.",
-  "note": "Wave 3 site-v2 rebuild. The broker grid renders ONLY verified getBrokers() data (name, title, license #, headshot, phone, email). No bios, stats, rankings, or track-record claims. No reviews UI until a verified review source is wired (D99). Each card links to the broker's profile via teamPath().",
+  "note": "Wave 3 site-v2 rebuild; broker-data fix 2026-06-02. Large BrokerProfileRow profiles render ONLY verified getBrokers() data — real bio, specialty pills, OREA license #, transparent headshot, and direct phone/email — for all three brokers. This was the fix for getBrokers querying non-existent columns (full_name/phone_direct/headshot_png) and silently serving a thin fallback that hid the real bios + contact + specialties. Still NO fabricated stats, rankings, track-record, or review text. Reviews-platform links render only when google_review_url/zillow_review_url are set in the DB (currently null). Each profile links to the broker's full page via teamPath(slug).",
   "requiredComponents": [
     { "name": "BreadcrumbNav", "section": "Home > Team", "blocking": true },
-    { "name": "HeroBlock", "section": "hero — 'Meet the brokers.' + lede (three licensed brokers, no hand-offs) + canonical Old Mill photo", "blocking": true },
-    { "name": "BrokerCard", "section": "team grid — featured cards for all brokers via getBrokers(), each linking to teamPath(slug)", "blocking": true },
+    { "name": "HeroBlock", "section": "hero — 'Three brokers. That's it.' + lede (three licensed brokers, no hand-offs) + canonical Old Mill photo", "blocking": true },
+    { "name": "BrokerProfileRow", "section": "team profiles — large headshot + role + name + license + specialty pills + bio + direct contact for all brokers via getBrokers(), each linking to teamPath(slug)", "blocking": true },
     { "name": "CTABar", "section": "'Ready to talk' — navy CTA band with schedule-a-call + phone", "blocking": true }
   ],
   "layoutComponents": [

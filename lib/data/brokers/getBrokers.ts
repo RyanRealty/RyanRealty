@@ -15,51 +15,84 @@
 import { unstable_cache } from 'next/cache'
 import { supabaseAnon, supabaseServer } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
-import type { Broker, BrokerSlug } from '@/lib/data/types/broker'
+import type { Broker } from '@/lib/data/types/broker'
+
+/** Canonical local transparent headshots, keyed by slug (+ known aliases). */
+const HEADSHOT_PNG: Record<string, string> = {
+  'matthew-ryan': '/images/brokers/ryan-matt.png',
+  'matt-ryan': '/images/brokers/ryan-matt.png',
+  'paul-stevenson': '/images/brokers/stevenson-paul.png',
+  'rebecca-peterson': '/images/brokers/peterson-rebecca.png',
+  'rebecca-ryser-peterson': '/images/brokers/peterson-rebecca.png',
+}
+const HEADSHOT_JPG: Record<string, string> = {
+  'matthew-ryan': '/images/brokers/ryan-matt.jpg',
+  'matt-ryan': '/images/brokers/ryan-matt.jpg',
+  'paul-stevenson': '/images/brokers/stevenson-paul.jpg',
+  'rebecca-peterson': '/images/brokers/peterson-rebecca.jpg',
+  'rebecca-ryser-peterson': '/images/brokers/peterson-rebecca.jpg',
+}
+
+/** Normalize a stored phone to the brand-voice dotted format (541.703.3095). */
+function normalizePhone(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const digits = raw.replace(/\D/g, '')
+  if (digits.length === 10) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+  if (digits.length === 11 && digits.startsWith('1')) {
+    const d = digits.slice(1)
+    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`
+  }
+  return raw.trim() || null
+}
 
 /**
- * Canonical broker fallback — used when the brokers table is unreachable
- * or unpopulated. Mirrors the locked roster in docs/SITE_SPEC.md.
+ * Canonical broker fallback — used ONLY when the brokers table is unreachable.
+ * Slugs + contact + licenses + specialties mirror the live public.brokers rows
+ * (verified 2026-06-02). Bios are long-form and live in the DB, so they stay
+ * null here; the detail page supplies a factual fallback sentence when absent.
  */
 const FALLBACK_BROKERS: Broker[] = [
   {
-    slug: 'matt-ryan',
+    slug: 'matthew-ryan',
     fullName: 'Matt Ryan',
     title: 'Owner & Principal Broker',
     email: 'matt@ryan-realty.com',
-    phoneDirect: '541.213.6706',
+    phoneDirect: '541.703.3095',
     phoneFub: '541.703.3095',
     headshotPng: '/images/brokers/ryan-matt.png',
     headshotJpg: '/images/brokers/ryan-matt.jpg',
     licenseNumber: '201206613',
     bio: null,
     isPrincipal: true,
+    specialties: ['Residential', 'Buyer Representation', 'Seller Services', 'Relocation'],
   },
   {
     slug: 'paul-stevenson',
     fullName: 'Paul Stevenson',
     title: 'Broker',
-    email: null,
-    phoneDirect: null,
+    email: 'paul@ryan-realty.com',
+    phoneDirect: '541.977.6841',
     phoneFub: '541.977.6841',
     headshotPng: '/images/brokers/stevenson-paul.png',
     headshotJpg: '/images/brokers/stevenson-paul.jpg',
-    licenseNumber: null,
+    licenseNumber: '201259123',
     bio: null,
     isPrincipal: false,
+    specialties: ['Redmond Area', 'Rural Properties', 'First-Time Buyers', 'Family Homes'],
   },
   {
-    slug: 'rebecca-ryser-peterson',
+    slug: 'rebecca-peterson',
     fullName: 'Rebecca Ryser Peterson',
     title: 'Broker',
-    email: null,
-    phoneDirect: null,
+    email: 'rebeccapeterson@ryan-realty.com',
+    phoneDirect: '415.308.9087',
     phoneFub: '415.308.9087',
     headshotPng: '/images/brokers/peterson-rebecca.png',
     headshotJpg: '/images/brokers/peterson-rebecca.jpg',
-    licenseNumber: null,
+    licenseNumber: '201254727',
     bio: null,
     isPrincipal: false,
+    specialties: ['First-Time Buyers', 'Investment Properties', 'Residential Sales', 'Relocation'],
   },
 ]
 
@@ -155,35 +188,66 @@ export const getBrokers = unstable_cache(
     // page that depended on resolveListingAgent → getBrokers.
     const supabase = supabaseAnon()
     if (!supabase) return FALLBACK_BROKERS
+    // NOTE: the brokers table uses display_name / phone / photo_url (NOT
+    // full_name / phone_direct / headshot_png). The prior select queried
+    // non-existent columns, so every call errored and silently served the
+    // fallback roster — hiding the real bios, specialties, and contact info.
     const { data, error } = await supabase
       .from('brokers')
       .select(
-        'slug, full_name, title, email, phone_direct, phone_fub, ' +
-          'headshot_png, headshot_jpg, license_number, bio, is_principal'
+        'slug, display_name, title, email, phone, photo_url, license_number, bio, ' +
+          'sort_order, is_active, tagline, specialties, designations, years_experience, ' +
+          'google_review_url, zillow_review_url, intro_video_url, ' +
+          'social_instagram, social_facebook, social_linkedin, social_youtube, social_tiktok, social_x'
       )
-      .order('is_principal', { ascending: false })
-      .order('full_name', { ascending: true })
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .order('display_name', { ascending: true })
 
     if (error || !data || data.length === 0) {
       if (error) console.error('[getBrokers] falling back to hardcoded roster', { error })
       return FALLBACK_BROKERS
     }
 
-    return (data as unknown as Array<Record<string, unknown>>).map((row) => ({
-      slug: row.slug as BrokerSlug,
-      fullName: row.full_name as string,
-      title: row.title as string,
-      email: row.email as string | null,
-      phoneDirect: row.phone_direct as string | null,
-      phoneFub: row.phone_fub as string | null,
-      headshotPng: row.headshot_png as string,
-      headshotJpg: row.headshot_jpg as string,
-      licenseNumber: row.license_number as string | null,
-      bio: row.bio as string | null,
-      isPrincipal: Boolean(row.is_principal),
-    }))
+    return (data as unknown as Array<Record<string, unknown>>).map((row) => {
+      const slug = (row.slug as string) ?? ''
+      const title = (row.title as string) ?? 'Broker'
+      const phone = normalizePhone(row.phone as string | null)
+      const photoUrl = (row.photo_url as string | null) ?? null
+      return {
+        slug,
+        fullName: (row.display_name as string) ?? '',
+        title,
+        email: (row.email as string | null) ?? null,
+        phoneDirect: phone,
+        phoneFub: phone,
+        headshotPng: HEADSHOT_PNG[slug] ?? photoUrl ?? '/images/brokers/ryan-matt.png',
+        headshotJpg: HEADSHOT_JPG[slug] ?? photoUrl ?? '/images/brokers/ryan-matt.jpg',
+        licenseNumber: (row.license_number as string | null) ?? null,
+        bio: (row.bio as string | null) ?? null,
+        isPrincipal: /principal/i.test(title) || (row.sort_order as number) === 0,
+        tagline: (row.tagline as string | null) ?? null,
+        specialties: Array.isArray(row.specialties) ? (row.specialties as string[]) : [],
+        designations: Array.isArray(row.designations) ? (row.designations as string[]) : [],
+        yearsExperience: (row.years_experience as number | null) ?? null,
+        photoUrl,
+        reviews: {
+          google: (row.google_review_url as string | null) ?? null,
+          zillow: (row.zillow_review_url as string | null) ?? null,
+        },
+        social: {
+          instagram: (row.social_instagram as string | null) ?? null,
+          facebook: (row.social_facebook as string | null) ?? null,
+          linkedin: (row.social_linkedin as string | null) ?? null,
+          youtube: (row.social_youtube as string | null) ?? null,
+          tiktok: (row.social_tiktok as string | null) ?? null,
+          x: (row.social_x as string | null) ?? null,
+        },
+        introVideoUrl: (row.intro_video_url as string | null) ?? null,
+      }
+    })
   },
-  ['brokers'],
+  ['brokers-v2'],
   {
     revalidate: CACHE_WINDOWS.brokers,
     tags: [cacheTag.brokers],
