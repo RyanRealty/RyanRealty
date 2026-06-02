@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.392.0 (2026-06-02)
+
+### Features
+- feat(leads): acknowledgment email for valuation submitters with no address match
+
+---
+
+
 ## v1.391.1 (2026-06-02)
 
 ### Other
