@@ -56,6 +56,28 @@ export function hasMarketingConsent(): boolean {
   return c !== null && c.marketing
 }
 
+/**
+ * Aggressive ad-traffic consent (Matt directive 2026-06-02): a visitor arriving
+ * from a paid/marketing click (fbclid / gclid / msclkid / ttclid / any utm_*)
+ * who has NOT yet made an explicit consent choice gets analytics+marketing
+ * auto-granted, so first-party behavioral intent tracking (visitor_events
+ * scoring -> hot-lead alerts) fires on the same page load. Does NOT override an
+ * explicit prior decision (essential-only / declined are respected). Returns
+ * true if it just granted consent.
+ */
+export function autoGrantConsentForAdTraffic(): boolean {
+  if (typeof window === 'undefined') return false
+  if (getConsent() !== null) return false // explicit prior choice — respect it
+  const qs = new URLSearchParams(window.location.search || '')
+  const fromAd =
+    qs.has('fbclid') || qs.has('gclid') || qs.has('msclkid') || qs.has('ttclid') ||
+    [...qs.keys()].some((k) => k.toLowerCase().startsWith('utm_'))
+  if (!fromAd) return false
+  setConsentState({ analytics: true, marketing: true })
+  try { window.dispatchEvent(new CustomEvent('cookie-consent', { detail: 'all' })) } catch {}
+  return true
+}
+
 export function getOrCreateVisitId(): string | null {
   if (typeof document === 'undefined') return null
   const name = 'ryan_realty_visit_id'
@@ -118,11 +140,11 @@ export default function CookieConsentBanner() {
         </DialogHeader>
         <Label className="flex items-center gap-3">
           <Checkbox checked={analytics} onCheckedChange={(checked) => setAnalytics(!!checked)} />
-          <span className="text-sm">Analytics (GA4) — understand how the site is used</span>
+          <span className="text-sm">Analytics (GA4) for understanding how the site is used</span>
         </Label>
         <Label className="flex items-center gap-3">
           <Checkbox checked={marketing} onCheckedChange={(checked) => setMarketing(!!checked)} />
-          <span className="text-sm">Marketing (Meta Pixel) — relevant ads</span>
+          <span className="text-sm">Marketing (Meta Pixel) for relevant ads</span>
         </Label>
         <DialogFooter>
           <Button type="button" onClick={savePreferences}>Save</Button>

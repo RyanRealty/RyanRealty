@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { trackVisit } from '@/app/actions/track-visit'
 import { trackReturnVisitAction } from '@/app/actions/track-return-visit'
-import { hasAnalyticsConsent, hasMarketingConsent, getOrCreateVisitId } from './CookieConsentBanner'
+import { hasAnalyticsConsent, hasMarketingConsent, getOrCreateVisitId, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
 
 const FUB_LAST_VISIT_KEY = 'fub_last_visit'
 const RETURN_VISIT_MS = 24 * 60 * 60 * 1000
@@ -189,6 +189,11 @@ export default function VisitTracker({ userId, userEmail }: Props) {
   const returnTracked = useRef(false)
 
   useEffect(() => {
+    // Aggressive ad-traffic consent (Matt 2026-06-02): a visitor arriving from a
+    // paid/marketing click with no prior consent choice gets analytics+marketing
+    // auto-granted so THIS first page view + all on-site intent scoring fires.
+    // Respects an explicit prior decision (essential/declined not overridden).
+    autoGrantConsentForAdTraffic()
     if (!hasAnalyticsConsent()) return
     const visitId = getOrCreateVisitId()
     if (!visitId || !pathname) return
