@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.396.0 (2026-06-02)
+
+### Features
+- feat(tracking): auto-grant analytics consent for ad traffic so on-site intent scoring fires
+
+---
+
+
 ## v1.395.9 (2026-06-02)
 
 ### Bug Fixes
