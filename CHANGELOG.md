@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.399.6 (2026-06-02)
+
+### Bug Fixes
+- fix(auth): suppress the social sign-in modal on the 404 page
+
+---
+
+
 ## v1.399.5 (2026-06-02)
 
 ### Bug Fixes
