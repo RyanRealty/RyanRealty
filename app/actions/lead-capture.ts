@@ -436,32 +436,37 @@ export async function submitTetherowLead(input: {
     })
 
     // Canonical tags (correct audience trigger) + preserved resort context.
-    // Fire-and-forget so a tagging blip never fails the capture.
-    void (async () => {
-      try {
-        if (!email) return
+    // MUST be awaited: on Vercel serverless the lambda freezes the instant the
+    // handler returns, so a fire-and-forget here was being killed mid-flight —
+    // leads landed with only the bare sendEvent default tag and lost their
+    // resort:tetherow / audience:seller tagging. Awaiting guarantees the tags
+    // write before the function returns. The inner try/catch preserves the
+    // original intent (a tagging blip never fails the capture itself).
+    try {
+      if (email) {
         const found = await findPersonByEmail(email)
-        if (!found?.id) return
-        await canonicallyTagLead({
-          fubPersonId: found.id,
-          audience: isSeller ? 'seller' : 'buyer',
-          source: isSeller ? 'seller-lp' : 'buyer-lp',
-          tier: 'hot',
-          ...(isSeller && input.address ? { address: input.address, state: 'OR' } : {}),
-        })
-        // Keep the resort/campaign context tags, but DROP the legacy
-        // 'seller-intent'/'buyer-intent' strings (they never triggered the FUB
-        // workflow — canonicallyTagLead applies the real audience:* trigger).
-        const ctx = (input.contextTags ?? '')
-          .split(',')
-          .map((t) => t.trim())
-          .filter((t) => t && !/-intent$/.test(t))
-        ctx.push('resort:tetherow', 'lp:tetherow-landing-v1')
-        await addPersonTags(found.id, [...new Set(ctx)])
-      } catch (err) {
-        console.warn('[tetherow-lead] canonical tagging failed (non-blocking):', err)
+        if (found?.id) {
+          await canonicallyTagLead({
+            fubPersonId: found.id,
+            audience: isSeller ? 'seller' : 'buyer',
+            source: isSeller ? 'seller-lp' : 'buyer-lp',
+            tier: 'hot',
+            ...(isSeller && input.address ? { address: input.address, state: 'OR' } : {}),
+          })
+          // Keep the resort/campaign context tags, but DROP the legacy
+          // 'seller-intent'/'buyer-intent' strings (they never triggered the FUB
+          // workflow — canonicallyTagLead applies the real audience:* trigger).
+          const ctx = (input.contextTags ?? '')
+            .split(',')
+            .map((t) => t.trim())
+            .filter((t) => t && !/-intent$/.test(t))
+          ctx.push('resort:tetherow', 'lp:tetherow-landing-v1')
+          await addPersonTags(found.id, [...new Set(ctx)])
+        }
       }
-    })()
+    } catch (err) {
+      console.warn('[tetherow-lead] canonical tagging failed (non-blocking):', err)
+    }
 
     await fireLeadGenerated({
       lp_variant: 'tetherow-landing-v1',
