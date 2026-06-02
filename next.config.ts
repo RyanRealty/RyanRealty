@@ -143,6 +143,42 @@ const nextConfig: NextConfig = {
       { source: '/reports', destination: '/housing-market/reports', permanent: true },
       { source: '/reports/explore', destination: '/housing-market/explore', permanent: true },
       { source: '/reports/:slug/:geoName', destination: '/housing-market/reports/:slug/:geoName', permanent: true },
+
+      // ── Legacy AgentFire/WordPress cutover 404s ─────────────────────────────
+      // URL shapes the sitemap-driven legacy map (middleware + legacy-redirects.json)
+      // doesn't cover. Verified against GA4 + live-probed 2026-06-02 — see
+      // scripts/ga4-404-report.mjs. Every destination is a guaranteed-200 page.
+      // (Legacy listing-detail URLs /listing/odsmls/<mls>/... resolve to the live
+      // listing via the app/listing/odsmls/[...slug] route, not a static rule.)
+
+      // Old AgentFire IDX *search* URLs, e.g. /properties/neighborhood-Boyd-Acres...
+      { source: '/properties', destination: '/homes-for-sale', permanent: true },
+      { source: '/properties/:path*', destination: '/homes-for-sale', permanent: true },
+
+      // Old WordPress dated blog permalinks (/<year>/<month>/<slug>). The slug
+      // rarely matches the new /blog/<slug>, so consolidate to the blog index
+      // (always 200) rather than risk a 301 to a 404.
+      { source: '/:year(2023)/:path*', destination: '/blog', permanent: true },
+      { source: '/:year(2024)/:path*', destination: '/blog', permanent: true },
+      { source: '/:year(2025)/:path*', destination: '/blog', permanent: true },
+
+      // Old WordPress static pages.
+      { source: '/sellers', destination: '/sell', permanent: true },
+      { source: '/best-neighborhoods-bend-oregon', destination: '/area-guides', permanent: true },
+
+      // Landing pages linked/advertised but never built — keep funnel traffic on a
+      // live LP instead of a dead end (307: revisit if these LPs ship later).
+      { source: '/lp/bend-luxury-concierge', destination: '/lp/bend', permanent: false },
+      { source: '/lp/awbrey-butte', destination: '/lp/bend', permanent: false },
+      { source: '/lp/woodside-ranch', destination: '/lp/bend', permanent: false },
+      // /lp/listings/<key> was never a route; the listing itself lives at /listing/<key>.
+      { source: '/lp/listings/:listingKey', destination: '/listing/:listingKey', permanent: true },
+
+      // Removed demo route still drawing traffic → the live Market Pulse page.
+      { source: '/pulse-video-demo', destination: '/pulse', permanent: true },
+
+      // Admin route moved under the (protected) group.
+      { source: '/admin/social', destination: '/admin/analytics/social', permanent: false },
     ];
   },
   async rewrites() {
