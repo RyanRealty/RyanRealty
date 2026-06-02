@@ -57,7 +57,6 @@ const CURATED = {
   '/cookie-policy': '/privacy',
   '/privacy-policy': '/privacy',
   '/terms-of-service': '/terms',
-  '/data-deletion': '/privacy',
   '/sitemap': '/',
   '/thank-you': '/',
   '/blog': '/blog',
