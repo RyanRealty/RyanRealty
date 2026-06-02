@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.16 (2026-06-02)
+
+### Maintenance
+- docs: listing perf resolved — compute MICRO->MEDIUM, cold listing 18s->1.9s verified
+
+---
+
+
 ## v1.390.15 (2026-06-02)
 
 ### Maintenance
