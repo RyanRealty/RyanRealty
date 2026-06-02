@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.392.2 (2026-06-02)
+
+### Bug Fixes
+- fix(lead-capture): await tetherow tagging so resort/audience tags survive serverless freeze
+
+---
+
+
 ## v1.392.1 (2026-06-02)
 
 ### Bug Fixes
