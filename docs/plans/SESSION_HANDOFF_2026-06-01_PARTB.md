@@ -6,6 +6,8 @@ Continues `SESSION_HANDOFF_2026-06-01.md`. This session ran a full read-only aud
 
 ## ⭐ NEXT SESSION — START HERE (Matt authorized all of this 2026-06-01: "yes do it all", "go until you are done")
 
+**⭐ LISTING PERF RESOLVED 2026-06-02.** Root cause was the Supabase compute tier: MICRO (1GB shared, 94% CPU, maxed) — trivial queries + index builds timed out, listing detail hung 18-30s. Matt upgraded MICRO→MEDIUM (4GB dedicated, ~$13→$63/mo). Verified live: cold/never-visited listing now loads in **1.9s** (was 18s→not-found), 624 Hill **1.9s** (was 30s), 438 9th **1.6s**. Compounded with the code fixes below (abort+retry on getListingDetail, listing ISR 60→300s, sitemap sourced from listing_tile_mv) + ANALYZE on listings/listing_tile_mv. Lesson: app-side resilience bounds the damage, but an undersized DB tier is an INFRA fix only Matt can apply (dashboard → Compute & Disk).
+
 **PROGRESS 2026-06-02 (5 items shipped to main this session):** ✅ item 0 Resend test (sent — but NO verified domain, real outbound to leads is broken; Matt-side DNS fix needed) · ✅ item 1 bbox index (live, EXPLAIN-verified) · ✅ item 2 FUB webhook assignment (core; cron reconciliation still open) · ✅ item 3 local branch cleanup (18 deleted; 11 remote branches need explicit OK) · ✅ item 4 dead-route cleanup (nav-slug claim was false). **REMAINING:** item 2 cron reconciliation, item 5 design-system migration (the big one), + the Matt-side items at the bottom.
 
 Execute in this order. Each is already authorized — no need to re-ask. Build + `npm run ci:gates` + push to main after each landable unit.
