@@ -2,6 +2,12 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { SoldStoryCard } from '@/components/seller-lp/SoldStoryCard'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import SellerLPForm from './SellerLPForm'
@@ -13,14 +19,14 @@ import {
 } from './data'
 
 export const metadata: Metadata = {
-  title: 'What’s Your Bend Home Really Worth? — Ryan Realty',
+  title: 'What’s Your Bend Home Really Worth? | Ryan Realty',
   description:
-    'A real comparative market analysis from local Bend sales — not an algorithm. No spam. No obligation. No hard sell.',
+    'A real comparative market analysis from local Bend sales, not an algorithm. No spam. No obligation. No hard sell.',
   robots: { index: false, follow: false },
   openGraph: {
     title: 'What’s Your Bend Home Really Worth?',
     description:
-      'A real comparative market analysis from local Bend sales — not an algorithm. No spam. No obligation. No hard sell.',
+      'A real comparative market analysis from local Bend sales, not an algorithm. No spam. No obligation. No hard sell.',
     type: 'website',
   },
 }
@@ -113,12 +119,12 @@ export default async function SellerHomeValuePage() {
           <Link
             href="/"
             className="flex items-center"
-            aria-label="Ryan Realty — Bend, Oregon"
+            aria-label="Ryan Realty · Bend, Oregon"
           >
             <span className="relative block h-7 w-[140px] shrink-0 sm:h-9 sm:w-[180px]">
               <Image
                 src="/images/brand/logo-horizontal-blue.png"
-                alt="Ryan Realty — Bend, Oregon"
+                alt="Ryan Realty · Bend, Oregon"
                 fill
                 sizes="(max-width: 640px) 140px, 180px"
                 className="object-contain object-left"
@@ -179,7 +185,7 @@ export default async function SellerHomeValuePage() {
               <span className="text-card/90">Here&rsquo;s the real number.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-card/90 sm:text-xl">
-              A real comparative market analysis from local sales — not an algorithm. Sent within one business
+              A real comparative market analysis from local sales, not an algorithm. Sent within one business
               day. No spam, no obligation, no hard sell.
             </p>
 
@@ -233,7 +239,7 @@ export default async function SellerHomeValuePage() {
             <Step
               num="2"
               title="Get the real number"
-              body="A comparative market analysis from actual recent sales near your home — sent within one business day."
+              body="A comparative market analysis from actual recent sales near your home, sent within one business day."
             />
             <Step
               num="3"
@@ -270,7 +276,7 @@ export default async function SellerHomeValuePage() {
               points={[
                 'Uses only true comparable sales in your specific neighborhood.',
                 'Accounts for finishes, view, lot, layout, and improvements.',
-                'Factors current Bend market velocity — not a national average.',
+                'Factors current Bend market velocity, not a national average.',
                 'Comes from a local broker who has walked similar homes recently.',
               ]}
               accent
@@ -290,7 +296,7 @@ export default async function SellerHomeValuePage() {
           format used by Vercel and Linear. Pairings verified by Matt
           2026-05-14; see scratch/social-proof-research.md for the brief. */}
       {hasSoldStories && (
-        <section className="border-b border-primary/10 bg-[#faf8f4]">
+        <section className="border-b border-primary/10 bg-card">
           <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -383,30 +389,33 @@ export default async function SellerHomeValuePage() {
           <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
             What you&rsquo;re probably wondering.
           </h2>
-          <div className="mt-8 space-y-6">
+          <Accordion type="single" collapsible className="mt-8 gap-4">
             <FAQ
+              value="faq-spam"
               q="Will you spam me or sell my info?"
               a="No. We never sell or share your information. You&rsquo;ll hear from Matt once, with your number. After that, it&rsquo;s up to you whether to talk further."
             />
             <FAQ
+              value="faq-real"
               q="Is this a real estimate, or marketing fluff?"
-              a="It&rsquo;s a real comparative market analysis from actual recent sales near your home. The truly precise valuation requires a 15-minute walkthrough, which you can decline. The number we send is genuinely useful on its own."
+              a="It&rsquo;s a real comparative market analysis from actual recent sales near your home. The precise valuation requires a 15-minute walkthrough, which you can decline. The number we send is genuinely useful on its own."
             />
             <FAQ
+              value="faq-list"
               q="Do I have to list with you to get the value?"
-              a="No. Many of the homeowners we send valuations to decide to stay another year, or longer. We send it anyway. We&rsquo;re here when the timing is right — whether that&rsquo;s next month or three years from now."
+              a="No. Many of the homeowners we send valuations to decide to stay another year, or longer. We send it anyway. We&rsquo;re here when the timing is right, whether that&rsquo;s next month or three years from now."
             />
-          </div>
+          </Accordion>
         </div>
       </section>
 
       {/* ─── Heritage block ──────────────────────────────────────────── */}
-      <section className="border-b border-primary/10 bg-[#faf8f4]">
+      <section className="border-b border-primary/10 bg-card">
         <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-16">
           <div className="relative mx-auto aspect-[4/3] w-full max-w-md">
             <Image
               src="/images/brand/signature-lockup.png"
-              alt="Ryan Realty — It's About Relationships. With Jax the blue lab."
+              alt="Ryan Realty. It's About Relationships. With Jax the blue lab."
               fill
               sizes="(max-width: 640px) 90vw, 480px"
               className="object-contain"
@@ -627,21 +636,18 @@ function PhoneIcon({ className }: { className?: string }) {
   )
 }
 
-function FAQ({ q, a }: { q: string; a: string }) {
+function FAQ({ value, q, a }: { value: string; q: string; a: string }) {
   return (
-    <details className="group rounded-xl border border-primary/10 bg-card p-5 open:border-primary/30">
-      <summary className="cursor-pointer list-none">
-        <span className="flex items-center justify-between gap-4">
-          <span className="font-display text-lg font-semibold text-primary">{q}</span>
-          <span
-            aria-hidden
-            className="shrink-0 text-2xl leading-none text-primary/60 transition-transform group-open:rotate-45"
-          >
-            +
-          </span>
-        </span>
-      </summary>
-      <p className="mt-3 text-base leading-relaxed text-foreground/85">{a}</p>
-    </details>
+    <AccordionItem
+      value={value}
+      className="rounded-xl border border-primary/10 bg-card px-5 not-last:border-b data-[state=open]:border-primary/30"
+    >
+      <AccordionTrigger className="py-4 font-display text-lg font-semibold text-primary hover:no-underline">
+        {q}
+      </AccordionTrigger>
+      <AccordionContent className="pb-4 text-base leading-relaxed text-foreground/85">
+        {a}
+      </AccordionContent>
+    </AccordionItem>
   )
 }

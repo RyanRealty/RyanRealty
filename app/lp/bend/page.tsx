@@ -16,6 +16,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 
 import { createServiceClient } from '@/lib/supabase/service'
@@ -280,11 +281,11 @@ export default async function BendCityPage() {
         .bend-section { padding: 64px 0; }
         .bend-section + .bend-section { border-top: 1px solid rgba(16,39,66,0.07); }
         .bend-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(16,39,66,0.6); margin-bottom: 12px; }
-        .bend-h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 72px; line-height: 1.02; margin: 0 0 18px; letter-spacing: -0.018em; font-weight: 500; }
+        .bend-h1 { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 72px; line-height: 1.02; margin: 0 0 18px; letter-spacing: -0.018em; font-weight: 500; }
         @media (max-width: 720px) { .bend-h1 { font-size: 48px; } }
-        .bend-h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 38px; line-height: 1.12; margin: 0 0 16px; letter-spacing: -0.012em; font-weight: 500; }
+        .bend-h2 { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 38px; line-height: 1.12; margin: 0 0 16px; letter-spacing: -0.012em; font-weight: 500; }
         @media (max-width: 720px) { .bend-h2 { font-size: 30px; } }
-        .bend-h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; line-height: 1.2; margin: 0 0 10px; font-weight: 500; }
+        .bend-h3 { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 22px; line-height: 1.2; margin: 0 0 10px; font-weight: 500; }
         .bend-prose { font-size: 17px; line-height: 1.68; margin: 0 0 16px; color: rgba(16,39,66,0.86); }
         .bend-prose.lg { font-size: 19px; line-height: 1.62; }
 
@@ -308,7 +309,7 @@ export default async function BendCityPage() {
         .facts-sidebar { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 16px; padding: 28px 30px; position: sticky; top: 28px; box-shadow: 0 1px 2px rgba(16,39,66,0.03), 0 6px 18px rgba(16,39,66,0.06); }
         .facts-sidebar dt { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(16,39,66,0.6); margin-top: 18px; }
         .facts-sidebar dt:first-of-type { margin-top: 0; }
-        .facts-sidebar dd { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; margin: 4px 0 0; line-height: 1.2; font-variant-numeric: tabular-nums; }
+        .facts-sidebar dd { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 22px; margin: 4px 0 0; line-height: 1.2; font-variant-numeric: tabular-nums; }
         .facts-sidebar dd .sub { display: block; font-family: 'Geist', system-ui, sans-serif; font-size: 12.5px; color: rgba(16,39,66,0.6); margin-top: 3px; font-weight: 500; letter-spacing: 0; }
 
         /* MAP SECTION */
@@ -332,7 +333,7 @@ export default async function BendCityPage() {
         .community-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 14px 32px rgba(16,39,66,0.12); }
         .community-photo { aspect-ratio: 16/10; background: rgba(16,39,66,0.06); background-size: cover; background-position: center; }
         .community-body { padding: 18px 22px 22px; }
-        .community-name { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; margin: 0 0 6px; font-weight: 500; }
+        .community-name { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 22px; margin: 0 0 6px; font-weight: 500; }
         .community-stats { display: flex; gap: 14px; font-size: 12.5px; color: rgba(16,39,66,0.62); flex-wrap: wrap; }
         .community-stats strong { color: #102742; font-weight: 600; }
 
@@ -358,24 +359,24 @@ export default async function BendCityPage() {
         .lifestyle-hero-body { padding: 38px 42px; display: flex; flex-direction: column; justify-content: center; }
         @media (max-width: 880px) { .lifestyle-hero-body { padding: 28px 26px; } }
         .lifestyle-hero-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(16,39,66,0.6); margin-bottom: 12px; }
-        .lifestyle-hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 14px; font-weight: 500; color: #102742; letter-spacing: -0.01em; }
+        .lifestyle-hero-title { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 14px; font-weight: 500; color: #102742; letter-spacing: -0.01em; }
         .lifestyle-hero-text { font-size: 15.5px; line-height: 1.62; color: rgba(16,39,66,0.82); margin: 0; }
 
         .lifestyle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; }
         @media (max-width: 920px) { .lifestyle-grid { grid-template-columns: repeat(1, 1fr); } }
         .lifestyle-card { position: relative; aspect-ratio: 4/5; border-radius: 16px; overflow: hidden; background-color: rgba(16,39,66,0.1); background-size: cover; background-position: center; box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 8px 24px rgba(16,39,66,0.1); display: flex; flex-direction: column; justify-content: flex-end; transition: transform 0.25s, box-shadow 0.25s; }
         .lifestyle-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 16px 36px rgba(16,39,66,0.18); }
-        .lifestyle-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(16,39,66,0) 0%, rgba(16,39,66,0) 35%, rgba(16,39,66,0.65) 70%, rgba(16,39,66,0.95) 100%); pointer-events: none; }
+        .lifestyle-card::before { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(to bottom, rgba(16,39,66,0) 0%, rgba(16,39,66,0) 35%, rgba(16,39,66,0.65) 70%, rgba(16,39,66,0.95) 100%); pointer-events: none; }
         .lifestyle-card-body { position: relative; z-index: 2; padding: 22px 24px 24px; color: #faf8f4; }
         .lifestyle-card-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(250,248,244,0.78); margin-bottom: 6px; }
-        .lifestyle-card h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; line-height: 1.15; margin: 0 0 8px; font-weight: 500; color: #faf8f4; letter-spacing: -0.005em; }
+        .lifestyle-card h3 { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 22px; line-height: 1.15; margin: 0 0 8px; font-weight: 500; color: #faf8f4; letter-spacing: -0.005em; }
         .lifestyle-card p { font-size: 13.5px; line-height: 1.5; color: rgba(250,248,244,0.92); margin: 0; }
 
         .lifestyle-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 24px; }
         @media (max-width: 920px) { .lifestyle-stats { grid-template-columns: 1fr; } }
         .lifestyle-stat { display: flex; align-items: flex-start; gap: 14px; padding: 22px 24px; background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px; box-shadow: 0 1px 2px rgba(16,39,66,0.03); }
         .lifestyle-stat-icon { flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; background: rgba(16,39,66,0.06); display: flex; align-items: center; justify-content: center; }
-        .lifestyle-stat-title { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; line-height: 1.2; font-weight: 500; color: #102742; margin: 0 0 6px; }
+        .lifestyle-stat-title { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 18px; line-height: 1.2; font-weight: 500; color: #102742; margin: 0 0 6px; }
         .lifestyle-stat-text { font-size: 13px; line-height: 1.55; color: rgba(16,39,66,0.78); margin: 0; }
 
         /* BROKER BIO — "Meet a local" personal block, builds trust before the final CTA */
@@ -383,7 +384,7 @@ export default async function BendCityPage() {
         @media (max-width: 760px) { .broker-bio { grid-template-columns: 1fr; padding: 28px 26px; gap: 22px; } }
         .broker-photo { aspect-ratio: 3/4; background: rgba(16,39,66,0.06); background-size: cover; background-position: center top; border-radius: 14px; max-width: 280px; }
         @media (max-width: 760px) { .broker-photo { max-width: 200px; margin: 0 auto; } }
-        .broker-name { font-family: 'Playfair Display', Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 4px; font-weight: 500; color: #102742; }
+        .broker-name { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 4px; font-weight: 500; color: #102742; }
         .broker-title { font-size: 12.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(16,39,66,0.6); margin-bottom: 16px; }
         .broker-text { font-size: 15px; line-height: 1.6; color: rgba(16,39,66,0.82); margin: 0 0 18px; }
         .broker-cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -398,7 +399,7 @@ export default async function BendCityPage() {
         @media (max-width: 500px) { .kpi-grid { grid-template-columns: 1fr; } }
         .kpi-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px; padding: 22px 24px; box-shadow: 0 1px 2px rgba(16,39,66,0.03); }
         .kpi-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(16,39,66,0.6); margin-bottom: 8px; }
-        .kpi-value { font-family: 'Playfair Display', Georgia, serif; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; font-weight: 500; }
+        .kpi-value { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; font-weight: 500; }
 
         /* COMPARE TABLE */
         .compare-table { width: 100%; border-collapse: collapse; background: white; border-radius: 14px; overflow: hidden; border: 1px solid rgba(16,39,66,0.08); margin-top: 22px; box-shadow: 0 1px 2px rgba(16,39,66,0.03); }
@@ -413,7 +414,7 @@ export default async function BendCityPage() {
         @media (max-width: 720px) { .cta-row { grid-template-columns: 1fr; } }
         .cta-card { background: #102742; color: #faf8f4; padding: 36px 34px; border-radius: 18px; }
         .cta-card.alt { background: white; color: #102742; border: 1px solid rgba(16,39,66,0.1); box-shadow: 0 1px 2px rgba(16,39,66,0.03), 0 8px 24px rgba(16,39,66,0.06); }
-        .cta-card h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; margin: 0 0 12px; color: inherit; font-weight: 500; }
+        .cta-card h3 { font-family: var(--font-amboqia), ui-serif, Georgia, serif; font-size: 28px; margin: 0 0 12px; color: inherit; font-weight: 500; }
         .cta-card p { font-size: 15px; line-height: 1.6; color: inherit; opacity: 0.92; margin: 0 0 20px; }
         .cta-card .btn { display: inline-flex; align-items: center; gap: 8px; background: #faf8f4; color: #102742; padding: 13px 26px; border-radius: 10px; font-size: 14.5px; font-weight: 700; text-decoration: none; }
         .cta-card.alt .btn { background: #102742; color: #faf8f4; }
@@ -435,14 +436,22 @@ export default async function BendCityPage() {
         <div className="hero-overlay" role="presentation" />
         <div className="bend-shell">
           <div className="bend-eyebrow">Bend · Central Oregon</div>
-          <h1 className="bend-h1">Welcome to Bend, Oregon.</h1>
+          <h1 className="bend-h1 font-display">Welcome to Bend, Oregon.</h1>
           <p>
             A small mountain city with the Cascades on one side and the high desert on the other.
             Search active homes, explore every neighborhood and resort community, and meet a local
             principal broker who actually lives here.
           </p>
           <div className="hero-cta-row">
-            <Link href="#listings" className="btn-primary">
+            <Link href="/lp/seller-home-value?source=bend-lp" className="btn-primary">
+              Get my Bend home value
+            </Link>
+            <Link href="/lp/buyer-listing-alerts?source=bend-lp" className="btn-primary">
+              Get new Bend listings by email
+            </Link>
+          </div>
+          <div className="hero-cta-row" style={{ marginTop: 14 }}>
+            <Link href="#listings" className="btn-ghost-light">
               See active homes
             </Link>
             <Link href="#neighborhoods" className="btn-ghost-light">
@@ -458,7 +467,7 @@ export default async function BendCityPage() {
           <div className="grid-2-1">
             <div>
               <div className="bend-eyebrow">A short introduction</div>
-              <h2 className="bend-h2">A small mountain city. A wide-open lifestyle.</h2>
+              <h2 className="bend-h2 font-display">A small mountain city. A wide-open lifestyle.</h2>
               <p className="bend-prose lg">
                 Bend sits on the eastern flank of the Cascade Range at 3,623 feet, with the
                 Deschutes River running through downtown and Mt. Bachelor rising 22 miles to the
@@ -507,7 +516,7 @@ export default async function BendCityPage() {
       <section id="neighborhoods" className="bend-section">
         <div className="bend-shell">
           <div className="bend-eyebrow">Explore by neighborhood</div>
-          <h2 className="bend-h2">Click a neighborhood to drill in.</h2>
+          <h2 className="bend-h2 font-display">Click a neighborhood to drill in.</h2>
           <p className="bend-prose" style={{ maxWidth: 760 }}>
             Every Bend neighborhood and resort community is mapped from official GIS boundaries.
             Hover to highlight, click to open the neighborhood page with live inventory, recent
@@ -535,7 +544,7 @@ export default async function BendCityPage() {
         <section className="bend-section">
           <div className="bend-shell">
             <div className="bend-eyebrow">Featured resort communities</div>
-            <h2 className="bend-h2">Master-planned, with their own search-authority pages.</h2>
+            <h2 className="bend-h2 font-display">Master-planned, with their own search-authority pages.</h2>
             <p className="bend-prose" style={{ maxWidth: 760 }}>
               Each of these communities has a dedicated landing page with HOA tiers, live
               inventory, and a buyer-side guide.
@@ -579,17 +588,17 @@ export default async function BendCityPage() {
       <section id="listings" className="bend-section">
         <div className="bend-shell">
           <div className="bend-eyebrow">Bend&rsquo;s premier inventory</div>
-          <h2 className="bend-h2">Featured homes for sale.</h2>
+          <h2 className="bend-h2 font-display">Featured homes for sale.</h2>
           <p className="bend-prose" style={{ maxWidth: 760 }}>
             A live look at top-of-market homes in Bend, sorted by price. Click any home for the
-            full package — gallery, history, neighborhood context, and a direct line to a local
+            full package. Gallery, history, neighborhood context, and a direct line to a local
             broker for a private showing.
           </p>
 
           {listings.length === 0 ? (
             <p className="bend-prose" style={{ color: 'rgba(16,39,66,0.6)' }}>
               Inventory is refreshing. Check back shortly or call{' '}
-              <a href="tel:+15412136706" style={{ textDecoration: 'underline' }}>541.213.6706</a>{' '}
+              <a href="tel:+15417033095" style={{ textDecoration: 'underline' }}>541.703.3095</a>{' '}
               for a live search.
             </p>
           ) : (
@@ -615,8 +624,8 @@ export default async function BendCityPage() {
                 <Link href="/homes-for-sale/bend" className="featured-cta-primary">
                   Search Bend homes →
                 </Link>
-                <a href="tel:+15412136706" className="featured-cta-secondary">
-                  Talk to a broker · 541.213.6706
+                <a href="tel:+15417033095" className="featured-cta-secondary">
+                  Talk to a broker · 541.703.3095
                 </a>
               </div>
             </>
@@ -628,7 +637,7 @@ export default async function BendCityPage() {
       <section className="bend-section">
         <div className="bend-shell">
           <div className="bend-eyebrow">The Bend lifestyle</div>
-          <h2 className="bend-h2">A small mountain town that lives big.</h2>
+          <h2 className="bend-h2 font-display">A small mountain town that lives big.</h2>
           <p className="bend-prose lg" style={{ maxWidth: 780 }}>
             People move to Bend for one of three reasons. The Cascades on one side. The
             Deschutes River through the middle. Or the food and beer scene that grew up around
@@ -637,14 +646,18 @@ export default async function BendCityPage() {
 
           {/* Hero lifestyle card — a single wide editorial moment */}
           <div className="lifestyle-hero">
-            <div
-              className="lifestyle-hero-img"
-              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1551524559-8af4e6624178?w=1600&q=80&auto=format')" }}
-              role="presentation"
-            />
+            <div className="lifestyle-hero-img" style={{ position: 'relative' }}>
+              <Image
+                src="https://images.unsplash.com/photo-1551524559-8af4e6624178?w=1600&q=80&auto=format"
+                alt="Mt. Bachelor and the Cascades above Bend"
+                fill
+                sizes="(max-width: 880px) 100vw, 55vw"
+                style={{ objectFit: 'cover' }}
+              />
+            </div>
             <div className="lifestyle-hero-body">
               <div className="lifestyle-hero-eyebrow">Mountain &amp; trail</div>
-              <h3 className="lifestyle-hero-title">Mt. Bachelor mornings, Phil&rsquo;s Trail afternoons.</h3>
+              <h3 className="lifestyle-hero-title font-display">Mt. Bachelor mornings, Phil&rsquo;s Trail afternoons.</h3>
               <p className="lifestyle-hero-text">
                 Mt. Bachelor opens late November and runs through late spring. By June the snow
                 lifts and the Phil&rsquo;s Trail network turns into one of the densest mountain-bike
@@ -657,10 +670,14 @@ export default async function BendCityPage() {
 
           {/* Three-card lifestyle grid below the hero */}
           <div className="lifestyle-grid">
-            <article
-              className="lifestyle-card"
-              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=900&q=80&auto=format')" }}
-            >
+            <article className="lifestyle-card">
+              <Image
+                src="https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=900&q=80&auto=format"
+                alt="The Deschutes River through Bend"
+                fill
+                sizes="(max-width: 920px) 100vw, 33vw"
+                style={{ objectFit: 'cover', zIndex: 0 }}
+              />
               <div className="lifestyle-card-body">
                 <div className="lifestyle-card-eyebrow">River &amp; water</div>
                 <h3>The Deschutes is downtown.</h3>
@@ -671,10 +688,14 @@ export default async function BendCityPage() {
               </div>
             </article>
 
-            <article
-              className="lifestyle-card"
-              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=900&q=80&auto=format')" }}
-            >
+            <article className="lifestyle-card">
+              <Image
+                src="https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=900&q=80&auto=format"
+                alt="Bend craft beer and food scene"
+                fill
+                sizes="(max-width: 920px) 100vw, 33vw"
+                style={{ objectFit: 'cover', zIndex: 0 }}
+              />
               <div className="lifestyle-card-body">
                 <div className="lifestyle-card-eyebrow">Beer &amp; food</div>
                 <h3>Where Oregon craft beer started.</h3>
@@ -686,10 +707,14 @@ export default async function BendCityPage() {
               </div>
             </article>
 
-            <article
-              className="lifestyle-card"
-              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=900&q=80&auto=format')" }}
-            >
+            <article className="lifestyle-card">
+              <Image
+                src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=900&q=80&auto=format"
+                alt="Downtown Bend culture and shops"
+                fill
+                sizes="(max-width: 920px) 100vw, 33vw"
+                style={{ objectFit: 'cover', zIndex: 0 }}
+              />
               <div className="lifestyle-card-body">
                 <div className="lifestyle-card-eyebrow">Downtown culture</div>
                 <h3>The Old Mill, the Tower, the Box Factory.</h3>
@@ -761,7 +786,7 @@ export default async function BendCityPage() {
       <section className="bend-section">
         <div className="bend-shell">
           <div className="bend-eyebrow">The market right now</div>
-          <h2 className="bend-h2">Bend single-family, rolling 12 months.</h2>
+          <h2 className="bend-h2 font-display">Bend single-family, rolling 12 months.</h2>
           <p className="bend-prose" style={{ maxWidth: 760 }}>
             Live data pulled from the Oregon RMLS feed and refreshed every six hours.
           </p>
@@ -805,7 +830,7 @@ export default async function BendCityPage() {
         <section className="bend-section">
           <div className="bend-shell">
             <div className="bend-eyebrow">Central Oregon at a glance</div>
-            <h2 className="bend-h2">Bend in context across the region.</h2>
+            <h2 className="bend-h2 font-display">Bend in context across the region.</h2>
             <table className="compare-table">
               <thead>
                 <tr>
@@ -838,7 +863,7 @@ export default async function BendCityPage() {
       <section className="bend-section">
         <div className="bend-shell">
           <div className="bend-eyebrow">Meet a local broker</div>
-          <h2 className="bend-h2">Matt Ryan — Oregon Principal Broker.</h2>
+          <h2 className="bend-h2 font-display">Matt Ryan, Oregon Principal Broker.</h2>
           <div className="broker-bio">
             <div
               className="broker-photo"
@@ -856,8 +881,8 @@ export default async function BendCityPage() {
                 spend 30 minutes on the phone with no pressure either way.
               </p>
               <div className="broker-cta-row">
-                <a href="tel:+15412136706" className="broker-cta-primary">
-                  Call 541.213.6706
+                <a href="tel:+15417033095" className="broker-cta-primary">
+                  Call 541.703.3095
                 </a>
                 <Link href="/team/matt-ryan" className="broker-cta-secondary">
                   See full bio →
@@ -889,8 +914,8 @@ export default async function BendCityPage() {
               <p>
                 Drill into any neighborhood above for HOA tiers and the buyer track, or call Matt
                 direct at{' '}
-                <a href="tel:+15412136706" style={{ color: '#102742', textDecoration: 'underline' }}>
-                  541.213.6706
+                <a href="tel:+15417033095" style={{ color: '#102742', textDecoration: 'underline' }}>
+                  541.703.3095
                 </a>{' '}
                 for a 30-minute relocation call.
               </p>

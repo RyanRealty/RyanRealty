@@ -7,6 +7,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -371,7 +379,7 @@ export default async function HeathAtTetherowPage() {
       <header className="sticky top-0 z-40 border-b border-primary/10 bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="flex items-center" aria-label="Ryan Realty">
-            <span className="relative block h-7 w-[140px] shrink-0 sm:h-9 sm:w-[180px]">
+            <span className="relative block h-7 w-36 shrink-0 sm:h-9 sm:w-44">
               <Image
                 src="/images/brand/logo-horizontal-blue.png"
                 alt="Ryan Realty, Bend, Oregon"
@@ -393,7 +401,7 @@ export default async function HeathAtTetherowPage() {
         <div className="absolute inset-0">
           <Image
             src={HEATH.heroImage}
-            alt="Tetherow course aerial — Heath sub-neighborhood frontage"
+            alt="Tetherow course aerial, Heath sub-neighborhood frontage"
             fill
             priority
             sizes="100vw"
@@ -402,7 +410,7 @@ export default async function HeathAtTetherowPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-primary/55 via-primary/40 to-primary/65" />
         </div>
         <div className="relative mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
-          <div className="text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground/85">
+          <div className="text-xs font-medium uppercase tracking-widest text-primary-foreground/85">
             Inside Tetherow
           </div>
           <h1 className="mt-3 font-display text-4xl leading-tight text-primary-foreground sm:text-5xl md:text-6xl">
@@ -413,6 +421,17 @@ export default async function HeathAtTetherowPage() {
           <p className="mt-5 max-w-2xl text-base text-primary-foreground/85 sm:text-lg">
             The original golf-frontage phase of Tetherow. Half-acre and larger lots, single-family custom homes, direct course frontage on the McLay Kidd holes. Live inventory, recent closings, and a data trace you can audit below.
           </p>
+
+          {/* Above-the-fold CTA, visible on mobile and desktop so a visitor can
+              act without scrolling. Jumps to the CMA form below. */}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button asChild size="lg" variant="secondary">
+              <Link href="#cma">What is my Heath home worth?</Link>
+            </Button>
+            <a href="tel:+15417033095" className="text-sm font-medium text-primary-foreground/90 tabular-nums hover:underline">
+              Or call 541.703.3095
+            </a>
+          </div>
 
           {/* Stat bar — Tetherow community-level metrics. Footnote explains
               that the MLS does not tag Heath separately, so values reflect
@@ -612,7 +631,7 @@ export default async function HeathAtTetherowPage() {
               Two assessments. One annualized total.
             </h2>
             <p className="mt-4 text-base leading-relaxed text-foreground">
-              Every Heath home pays the Tetherow master assessment plus the Heath sub-assessment. The Heath sub bills quarterly, the master rolls up to {priceWithComma(HEATH.hoa.masterAnnual)} per year. Combined: roughly {priceWithComma(HEATH.hoa.totalAnnual)} per year per home.
+              Every Heath home pays the Tetherow master assessment plus the Heath sub-assessment. The Heath sub bills quarterly, the master rolls up to {priceWithComma(HEATH.hoa.masterAnnual)} per year. Combined, that is {priceWithComma(HEATH.hoa.totalAnnual)} per year per home.
             </p>
           </div>
 
@@ -853,45 +872,45 @@ export default async function HeathAtTetherowPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="mt-10 overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Closed</th>
-                    <th className="px-4 py-3 text-left">Street</th>
-                    <th className="px-4 py-3 text-left">Beds / baths</th>
-                    <th className="px-4 py-3 text-right">Sqft</th>
-                    <th className="px-4 py-3 text-right">Close</th>
-                    <th className="px-4 py-3 text-right">$/sqft</th>
-                    <th className="px-4 py-3 text-right">Sale-to-list</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="mt-10 overflow-x-auto no-scrollbar rounded-xl border border-border bg-card shadow-sm">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead>Closed</TableHead>
+                    <TableHead>Street</TableHead>
+                    <TableHead>Beds / baths</TableHead>
+                    <TableHead className="text-right">Sqft</TableHead>
+                    <TableHead className="text-right">Close</TableHead>
+                    <TableHead className="text-right">$/sqft</TableHead>
+                    <TableHead className="text-right">Sale-to-list</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {recentCloses.map((c, i) => {
                     const stl = saleToListPct(c.ClosePrice, c.OriginalListPrice ?? c.ListPrice)
                     return (
-                      <tr key={`${c.CloseDate}-${i}`} className="border-t border-border">
-                        <td className="px-4 py-3">{formatCloseDate(c.CloseDate)}</td>
-                        <td className="px-4 py-3">{c.StreetName ?? '—'}</td>
-                        <td className="px-4 py-3 tabular-nums">
+                      <TableRow key={`${c.CloseDate}-${i}`}>
+                        <TableCell>{formatCloseDate(c.CloseDate)}</TableCell>
+                        <TableCell>{c.StreetName ?? '—'}</TableCell>
+                        <TableCell className="tabular-nums">
                           {c.BedroomsTotal ?? '—'} / {c.BathroomsTotal ?? '—'}
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums">{formatSqft(c.TotalLivingAreaSqFt)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{priceWithComma(c.ClosePrice)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{pricePerSqft(c.ClosePrice, c.TotalLivingAreaSqFt)}</td>
-                        <td
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{formatSqft(c.TotalLivingAreaSqFt)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{priceWithComma(c.ClosePrice)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{pricePerSqft(c.ClosePrice, c.TotalLivingAreaSqFt)}</TableCell>
+                        <TableCell
                           className={
-                            'px-4 py-3 text-right tabular-nums ' +
+                            'text-right tabular-nums ' +
                             (stl.verdict === 'pos' ? 'text-success-foreground font-medium' : stl.verdict === 'neg' ? 'text-destructive' : '')
                           }
                         >
                           {stl.value}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

@@ -325,6 +325,6 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[buyer-lp] Unexpected error:', msg)
-    return { success: false, error: 'Something went wrong. Please try again or call us at (541) 703-3095.' }
+    return { success: false, error: 'Something went wrong. Please try again or call us at 541.703.3095.' }
   }
 }

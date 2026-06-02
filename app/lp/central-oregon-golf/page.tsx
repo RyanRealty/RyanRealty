@@ -53,12 +53,12 @@ export const revalidate = 21600 // 6h
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = {
-  title: 'Central Oregon golf — every course, by architect | Ryan Realty',
+  title: 'Central Oregon golf, every course by architect | Ryan Realty',
   description:
     "30 courses across Bend, Sunriver, Sisters, Redmond, Powell Butte. Grouped by designer, mapped, and tied to the community you'd live in if you played here every week.",
   alternates: { canonical: `${siteUrl}/lp/central-oregon-golf/` },
   openGraph: {
-    title: 'Central Oregon golf — every course, by architect',
+    title: 'Central Oregon golf, every course by architect',
     description:
       "30 courses, 14 architects, 300 days of sunshine. The full Central Oregon golf brief, plus where to live if you'd play here every week.",
     type: 'website',
@@ -74,7 +74,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Central Oregon golf — every course, by architect',
+    title: 'Central Oregon golf, every course by architect',
     description: '30 courses, 14 architects, 300 days of sunshine.',
     images: [`${siteUrl}/lp/central-oregon-golf/img/tetherow-hero.jpg`],
   },
@@ -114,7 +114,7 @@ function buildJsonLd() {
       },
       {
         '@type': 'CollectionPage',
-        name: 'Central Oregon Golf — Every Course, By Architect',
+        name: 'Central Oregon Golf, Every Course By Architect',
         url: `${siteUrl}/lp/central-oregon-golf/`,
         description:
           "Central Oregon golf course directory grouped by architect. Verified design credits, holes, par, yardage, and the community each course sits inside.",
@@ -248,8 +248,8 @@ function StickyNav() {
         <a href="#where-to-live">Where to live</a>
         <a href="#insider">Insider notes</a>
         <a href="#faq">FAQ</a>
-        <Link href="#contact" className="golf-sticky-nav__cta">
-          Talk to a broker
+        <Link href="/lp/buyer-listing-alerts?source=golf-lp" className="golf-sticky-nav__cta">
+          See homes
         </Link>
       </div>
     </nav>
@@ -270,15 +270,25 @@ function HeroSection() {
           beats Bandon, and the back-nine views you don&apos;t get anywhere else.
         </p>
         <div className="golf-hero__cta-row">
-          <a href="#destination-courses" className="golf-cta golf-cta--primary">
-            The destination 8
-          </a>
-          <a href="#by-architect" className="golf-cta">
-            By architect
-          </a>
-          <a href="#season" className="golf-cta">
-            When to play
-          </a>
+          <Link
+            href="/lp/buyer-listing-alerts?source=golf-lp"
+            className="golf-cta golf-cta--primary"
+          >
+            See golf-community homes
+          </Link>
+          <Link
+            href="/lp/seller-home-value?source=golf-lp"
+            className="golf-cta golf-cta--cream-outline"
+          >
+            Get a home valuation
+          </Link>
+        </div>
+        <div className="golf-hero__jump-row">
+          <a href="#destination-courses">The destination 8</a>
+          <span aria-hidden>·</span>
+          <a href="#by-architect">By architect</a>
+          <span aria-hidden>·</span>
+          <a href="#season">When to play</a>
         </div>
       </div>
     </section>
@@ -308,7 +318,7 @@ function IntroSection() {
           <p>
             <strong>The climate.</strong> 300 days of sunshine, low humidity, cool nights. Even in
             July the morning round is sweater weather. The high-desert dry hardens the fairways
-            mid-summer and the ground game opens up — links rules in the high desert.
+            mid-summer and the ground game opens up. Links rules in the high desert.
           </p>
           <p>
             <strong>The elevation.</strong> 3,500-3,800 feet across the playing field. The ball
@@ -388,7 +398,7 @@ function MapSection() {
         <div className="golf-eyebrow">Every course on one map</div>
         <h2 className="golf-h2">Public, resort, private, municipal.</h2>
         <p className="golf-lede">
-          Public courses, resort courses, private clubs, and municipals — color-coded by access.
+          Public courses, resort courses, private clubs, and municipals, color-coded by access.
           Click a pin for designer, year, holes, and the community it sits in.
         </p>
         <div className="golf-map-wrap">
@@ -594,7 +604,7 @@ function WhereToLiveSection({
     },
     sunriver: {
       name: 'Sunriver',
-      pitch: 'You get four courses — Meadows, Woodlands, Crosswater, Caldera Links — plus 33 miles of paved bike paths.',
+      pitch: 'You get four courses, Meadows, Woodlands, Crosswater, Caldera Links, plus 33 miles of paved bike paths.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/sunriver-river.jpg',
       imageAlt: 'Sunriver Resort along the Deschutes River',
@@ -629,7 +639,7 @@ function WhereToLiveSection({
     },
     'eagle-crest': {
       name: 'Eagle Crest',
-      pitch: 'Three courses including the Ridge — the longest playing season in Central Oregon. Public access for residents.',
+      pitch: 'Three courses including the Ridge, the longest playing season in Central Oregon. Public access for residents.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/eagle-crest-01.jpg',
       imageAlt: 'Eagle Crest Resort terrain in Redmond, Oregon',
@@ -780,7 +790,7 @@ function DataTableSection() {
         <h2 className="golf-h2">Every course, side by side.</h2>
         <p className="golf-lede">
           Designer, year, holes, par, yardage, city, access. The full lookup table for green-fee
-          research. Per-course rates omitted — we publish what we can verify from the course&apos;s
+          research. Per-course rates omitted. We publish what we can verify from the course&apos;s
           own site, and rate cards change.
         </p>
 
@@ -829,7 +839,7 @@ function InsiderNotesSection() {
         <div className="golf-eyebrow">Insider notes</div>
         <h2 className="golf-h2">The seven things the directories don’t tell you.</h2>
         <p className="golf-lede">
-          Verifiable facts that only locals carry. Each note traces to a primary source — a course
+          Verifiable facts that only locals carry. Each note traces to a primary source, a course
           history page, a city public-works archive, or a published architectural profile.
         </p>
 
@@ -890,9 +900,9 @@ function StayVsBuySection() {
               </div>
             </div>
             <p className="golf-sb-note">
-              Add green fees, cart, range balls, and dinner — real landed cost lands around
-              $9,000–$12,000 a year. Cleanest math if your home course is somewhere else and
-              you fly in to play 12–18 rounds total.
+              Add green fees, cart, range balls, and dinner. Real landed cost lands at
+              $9,000 to $12,000 a year. Cleanest math if your home course is somewhere else and
+              you fly in to play 12 to 18 rounds total.
             </p>
           </div>
 
@@ -920,7 +930,7 @@ function StayVsBuySection() {
             </div>
             <p className="golf-sb-note">
               Pronghorn condos run $1.77M average and ticked +14% YoY. The carrying cost above
-              is net of mortgage interest you would have paid on resort nights — and the
+              is net of mortgage interest you would have paid on resort nights, and the
               appreciation offset is real once you hold three or four years.
             </p>
           </div>
@@ -1032,7 +1042,7 @@ function PageStyles() {
         display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
       }
       .golf-sticky-nav__brand {
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: var(--font-amboqia), Georgia, serif;
         font-size: 17px; font-weight: 500; color: #102742;
         letter-spacing: -0.005em;
         margin-right: 6px;
@@ -1080,7 +1090,7 @@ function PageStyles() {
       .golf-hero__inner { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; }
       .golf-hero__eyebrow { font-size: 11px; letter-spacing: 0.16em; opacity: 0.7; font-weight: 600; margin-bottom: 14px; }
       .golf-hero__h1 {
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: var(--font-amboqia), Georgia, serif;
         font-size: clamp(40px, 6vw, 72px);
         font-weight: 500;
         line-height: 1.05;
@@ -1089,6 +1099,16 @@ function PageStyles() {
       }
       .golf-hero__sub { max-width: 760px; font-size: 17px; line-height: 1.55; opacity: 0.88; margin: 0 0 28px; }
       .golf-hero__cta-row { display: flex; flex-wrap: wrap; gap: 10px; }
+      .golf-hero__jump-row {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+        margin-top: 18px; font-size: 13px;
+      }
+      .golf-hero__jump-row a {
+        color: rgba(250,248,244,0.82); text-decoration: none; font-weight: 500;
+        border-bottom: 1px solid rgba(250,248,244,0.28); padding-bottom: 1px;
+      }
+      .golf-hero__jump-row a:hover { color: #faf8f4; border-bottom-color: #faf8f4; }
+      .golf-hero__jump-row span { color: rgba(250,248,244,0.4); }
 
       .golf-cta {
         display: inline-flex; align-items: center; gap: 6px;
@@ -1102,6 +1122,8 @@ function PageStyles() {
       .golf-cta--primary:hover { background: rgba(250,248,244,0.92); }
       .golf-cta--cream { background: #faf8f4; color: #102742; border-color: #faf8f4; }
       .golf-cta--outline { background: transparent; color: #faf8f4; border-color: #faf8f4; }
+      .golf-cta--cream-outline { background: transparent; color: #faf8f4; border-color: rgba(250,248,244,0.6); }
+      .golf-cta--cream-outline:hover { background: rgba(250,248,244,0.1); border-color: #faf8f4; }
 
       .golf-section { padding: 88px 24px; }
       .golf-section--alt { background: rgba(16,39,66,0.04); }
@@ -1116,7 +1138,7 @@ function PageStyles() {
       .golf-eyebrow--cream { color: #faf8f4; opacity: 0.7; }
 
       .golf-h2 {
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: var(--font-amboqia), Georgia, serif;
         font-size: clamp(30px, 4vw, 44px);
         font-weight: 500;
         line-height: 1.12;
@@ -1141,7 +1163,7 @@ function PageStyles() {
       }
       .golf-rank-card:last-child { border-bottom: 1px solid rgba(250,248,244,0.14); }
       .golf-rank-num {
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: var(--font-amboqia), Georgia, serif;
         font-size: 56px; font-weight: 400; color: rgba(250,248,244,0.62); line-height: 1;
         font-variant-numeric: tabular-nums;
       }
@@ -1150,7 +1172,7 @@ function PageStyles() {
         width: 100%; max-width: 720px; aspect-ratio: 16 / 10; object-fit: cover;
         border-radius: 10px; margin-bottom: 6px; display: block;
       }
-      .golf-rank-name { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; font-weight: 500; margin: 0; color: #faf8f4; }
+      .golf-rank-name { font-family: var(--font-amboqia), Georgia, serif; font-size: 24px; font-weight: 500; margin: 0; color: #faf8f4; }
       .golf-rank-meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; opacity: 0.82; color: #faf8f4; align-items: center; }
       .golf-access-pill {
         display: inline-block; padding: 2px 9px; border-radius: 999px;
@@ -1175,7 +1197,7 @@ function PageStyles() {
         flex-shrink: 0; width: 64px; height: 64px; border-radius: 50%;
         background: #102742; color: #faf8f4;
         display: flex; align-items: center; justify-content: center;
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: var(--font-amboqia), Georgia, serif;
         font-size: 22px; font-weight: 500; letter-spacing: 0.02em;
         overflow: hidden; object-fit: cover;
       }
@@ -1184,7 +1206,7 @@ function PageStyles() {
         flex: 1; min-width: 0;
         display: flex; align-items: center; justify-content: space-between; gap: 12px;
       }
-      .golf-architect-name { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 500; margin: 0; color: #102742; line-height: 1.2; }
+      .golf-architect-name { font-family: var(--font-amboqia), Georgia, serif; font-size: 20px; font-weight: 500; margin: 0; color: #102742; line-height: 1.2; }
       .golf-architect-link {
         display: inline-flex; align-items: center; justify-content: center;
         width: 28px; height: 28px; border-radius: 50%;
@@ -1224,7 +1246,7 @@ function PageStyles() {
         background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 12px; padding: 18px 20px;
         display: flex; flex-direction: column; gap: 6px; min-height: 200px;
       }
-      .golf-season-month { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 500; color: #102742; }
+      .golf-season-month { font-family: var(--font-amboqia), Georgia, serif; font-size: 22px; font-weight: 500; color: #102742; }
       .golf-season-temps { font-size: 24px; font-weight: 500; color: #102742; font-variant-numeric: tabular-nums; }
       .golf-season-temp-low { font-size: 16px; color: rgba(16,39,66,0.55); font-weight: 400; margin-left: 4px; }
       .golf-season-status {
@@ -1233,7 +1255,7 @@ function PageStyles() {
         align-self: flex-start;
       }
       .golf-season-card--prime .golf-season-status { background: #102742; color: #faf8f4; }
-      .golf-season-card--high-season .golf-season-status { background: rgba(201,138,42,0.18); color: #8b5e1a; }
+      .golf-season-card--high-season .golf-season-status { background: rgba(16,39,66,0.14); color: #102742; box-shadow: inset 0 0 0 1px rgba(16,39,66,0.45); }
       .golf-season-card--shoulder .golf-season-status,
       .golf-season-card--late-season .golf-season-status { background: rgba(16,39,66,0.1); color: #102742; }
       .golf-season-card--mostly-closed .golf-season-status { background: rgba(16,39,66,0.06); color: rgba(16,39,66,0.62); }
@@ -1257,7 +1279,7 @@ function PageStyles() {
       }
       .golf-live-name {
         position: absolute; left: 18px; right: 18px; bottom: 14px; margin: 0;
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: var(--font-amboqia), Georgia, serif;
         font-size: 24px; font-weight: 500; color: #faf8f4;
         text-shadow: 0 1px 12px rgba(0,0,0,0.45);
         line-height: 1.15;
@@ -1297,7 +1319,7 @@ function PageStyles() {
         border-radius: 10px;
         box-shadow: 0 1px 2px rgba(16,39,66,0.04);
       }
-      .golf-insider-hook { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; font-weight: 500; color: #102742; margin-bottom: 8px; line-height: 1.3; }
+      .golf-insider-hook { font-family: var(--font-amboqia), Georgia, serif; font-size: 19px; font-weight: 500; color: #102742; margin-bottom: 8px; line-height: 1.3; }
       .golf-insider-body { font-size: 15px; line-height: 1.55; color: rgba(16,39,66,0.82); margin: 0 0 10px; }
       .golf-insider-source { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: rgba(16,39,66,0.55); letter-spacing: 0.03em; }
       .golf-insider-course { font-weight: 600; color: rgba(16,39,66,0.74); }
@@ -1326,7 +1348,7 @@ function PageStyles() {
         align-self: flex-start;
       }
       .golf-sb-tag--accent { background: rgba(250,248,244,0.18); color: #faf8f4; }
-      .golf-sb-title { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 500; margin: 0; line-height: 1.15; }
+      .golf-sb-title { font-family: var(--font-amboqia), Georgia, serif; font-size: 26px; font-weight: 500; margin: 0; line-height: 1.15; }
       .golf-sb-math { display: flex; flex-direction: column; gap: 8px; font-size: 14.5px; }
       .golf-sb-line { display: flex; justify-content: space-between; gap: 12px; }
       .golf-sb-line span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; }
@@ -1383,7 +1405,7 @@ function PageStyles() {
         opacity: 0.72;
       }
       .golf-live-featured-price {
-        font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 500;
+        font-family: var(--font-amboqia), Georgia, serif; font-size: 22px; font-weight: 500;
         color: #faf8f4; line-height: 1.05;
       }
       .golf-live-featured-meta {

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -44,16 +45,18 @@ export default function ExpiredLPForm() {
 
   if (result?.ok) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-8 text-center">
-        <p className="text-lg font-semibold">Thanks.</p>
-        <p className="mt-2 text-muted-foreground">{result.msg}</p>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Or call us right now:{' '}
-          <a href="tel:+15417033095" className="text-primary underline">
-            (541) 703-3095
-          </a>
-        </p>
-      </div>
+      <Card>
+        <CardContent className="p-8 text-center">
+          <p className="text-lg font-semibold">Thanks.</p>
+          <p className="mt-2 text-muted-foreground">{result.msg}</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Or call us right now:{' '}
+            <a href="tel:+15417033095" className="text-primary underline tabular-nums">
+              541.703.3095
+            </a>
+          </p>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -80,12 +83,12 @@ export default function ExpiredLPForm() {
       <div>
         <Label htmlFor="contactPath">How would you like us to start?</Label>
         <Select name="contactPath" defaultValue="audit">
-          <SelectTrigger>
+          <SelectTrigger id="contactPath">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="audit">Send me a free written audit of my prior listing</SelectItem>
-            <SelectItem value="phone">Call me — 20-minute conversation, no pitch</SelectItem>
+            <SelectItem value="phone">Call me. 20-minute conversation, no pitch</SelectItem>
             <SelectItem value="walkthrough">Come walk the property with me in person</SelectItem>
           </SelectContent>
         </Select>

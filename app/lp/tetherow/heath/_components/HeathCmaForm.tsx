@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
 import { submitHeathCmaForm, type HeathCmaTimeline } from '../actions'
 import { trackEvent } from '@/lib/tracking'
@@ -178,32 +179,34 @@ export default function HeathCmaForm() {
         <form className="mt-6 space-y-4" onSubmit={submit}>
           <fieldset className="space-y-3">
             <legend className="text-sm font-medium text-foreground">When are you thinking about selling?</legend>
-            <div className="space-y-2">
+            <RadioGroup
+              value={timeline}
+              onValueChange={(v) => setTimeline(v as HeathCmaTimeline)}
+              className="space-y-2"
+            >
               {TIMELINE_OPTIONS.map((opt) => (
-                <label
+                <Label
                   key={opt.value}
+                  htmlFor={`heath-timeline-${opt.value}`}
                   className={cn(
-                    'flex cursor-pointer gap-3 rounded-lg border p-3 transition',
+                    'flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal transition',
                     timeline === opt.value
                       ? 'border-primary bg-primary/5'
                       : 'border-border bg-card hover:border-primary/40'
                   )}
                 >
-                  <input
-                    type="radio"
-                    name="timeline"
+                  <RadioGroupItem
+                    id={`heath-timeline-${opt.value}`}
                     value={opt.value}
-                    checked={timeline === opt.value}
-                    onChange={() => setTimeline(opt.value)}
                     className="mt-1"
                   />
-                  <div>
-                    <div className="text-sm font-medium text-foreground">{opt.label}</div>
-                    <div className="text-xs text-muted-foreground">{opt.sub}</div>
-                  </div>
-                </label>
+                  <span>
+                    <span className="block text-sm font-medium text-foreground">{opt.label}</span>
+                    <span className="block text-xs text-muted-foreground">{opt.sub}</span>
+                  </span>
+                </Label>
               ))}
-            </div>
+            </RadioGroup>
           </fieldset>
 
           <div className="space-y-2">

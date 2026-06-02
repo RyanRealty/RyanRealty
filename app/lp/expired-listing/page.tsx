@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Card, CardContent } from '@/components/ui/card'
 import ExpiredLPForm from './ExpiredLPForm'
 
 /**
@@ -18,12 +19,12 @@ import ExpiredLPForm from './ExpiredLPForm'
  * brand-voice-compliant draft from the research doc, lightly edited.
  */
 export const metadata: Metadata = {
-  title: 'Your listing expired — here\'s an honest read on what to do next | Ryan Realty',
+  title: 'Your listing expired. An honest read on what to do next | Ryan Realty',
   description:
     'A free written audit of your prior listing. Pricing, photos, MLS description, syndication, agent responsiveness. We tell you what actually broke. You decide what to do next.',
   robots: { index: false, follow: false },
   openGraph: {
-    title: 'Your listing expired — here\'s an honest read on what to do next',
+    title: 'Your listing expired. An honest read on what to do next',
     description: 'A free written audit. You get the audit either way.',
     type: 'website',
   },
@@ -37,39 +38,55 @@ export default function ExpiredListingPage() {
   return (
     <main className="min-h-screen bg-background">
       {/* ─── Hero ──────────────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-3xl px-4 pt-12 pb-8 sm:pt-16">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">For Bend, Redmond, Sisters, and Central Oregon homeowners.</p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Your listing expired. Here&apos;s an honest read on what to do next.
-          </h1>
-          <div className="mt-6 space-y-4 text-base leading-7 text-foreground/80">
-            <p>
-              Your home was on the market. It didn&apos;t sell. The listing came down, the sign is gone, and the offers you were expecting never came in. That&apos;s a real outcome to sit with.
+      <section className="mx-auto max-w-6xl px-4 pt-8 pb-8 sm:pt-12">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start lg:gap-12">
+          {/* Left column on desktop. On mobile the hook stays on top, the
+              supporting copy drops below the form (order-3) so the form is
+              reachable without scrolling. */}
+          <div className="contents lg:block lg:pt-2">
+            <div className="order-1">
+              <p className="text-sm font-medium text-muted-foreground">For Bend, Redmond, Sisters, and Central Oregon homeowners.</p>
+              <h1 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+                Your listing expired. Here&apos;s an honest read on what to do next.
+              </h1>
+            </div>
+            <div className="order-3 mt-2 space-y-4 text-base leading-7 text-foreground/80 lg:order-none lg:mt-6">
+              <p>
+                Your home was on the market. It didn&apos;t sell. The listing came down, the sign is gone, and the offers you were expecting never came in. That&apos;s a real outcome to sit with.
+              </p>
+              <p>
+                Most of the time, an expired listing is not about the home. It&apos;s about one or two specific things that broke in the way it was priced, presented, or marketed. Those are knowable, and they&apos;re fixable.
+              </p>
+              <p className="font-medium">No pressure. No long pitch. A 20-minute conversation, on the phone or in person.</p>
+            </div>
+          </div>
+
+          {/* Lead form. order-2 on mobile (directly under the hook, above the
+              fold); right column, sticky, on desktop. */}
+          <div className="order-2 lg:order-none lg:sticky lg:top-6">
+            <Card className="bg-card shadow-sm">
+              <CardContent className="p-6 sm:p-8">
+                <ExpiredLPForm />
+              </CardContent>
+            </Card>
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              Or call us now:{' '}
+              <a href={`tel:${BROKER_PHONE_TEL}`} className="font-medium text-primary underline tabular-nums">
+                {BROKER_PHONE}
+              </a>
             </p>
-            <p>
-              Most of the time, an expired listing is not about the home. It&apos;s about one or two specific things that broke in the way it was priced, presented, or marketed. Sometimes it&apos;s three. The good news is that those are knowable, and they&apos;re fixable.
-            </p>
-            <p>
-              We do a free diagnostic on every expired listing in Bend, Redmond, Sisters, and the surrounding area. It&apos;s a written one-page audit of your prior listing covering pricing against the comparable sales in your neighborhood at the time, photo and staging quality, the MLS description, where it was syndicated and how often it was updated, and how the agent actually engaged with the buyer pool. You get the audit either way, whether or not you re-list with us.
-            </p>
-            <p>
-              If the audit says the right move is to wait, rent, or hold, we&apos;ll tell you that. If it says re-list, we&apos;ll walk you through what would change, what it would cost, and what the realistic timeline looks like.
-            </p>
-            <p className="font-medium">No pressure. No long pitch. A 20-minute conversation, on the phone or in person.</p>
           </div>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-          <ExpiredLPForm />
+        {/* The fuller diagnostic detail, kept verbatim, now sits under the form. */}
+        <div className="mx-auto mt-10 max-w-3xl space-y-4 text-base leading-7 text-foreground/80">
+          <p>
+            We do a free diagnostic on every expired listing in Bend, Redmond, Sisters, and the surrounding area. It&apos;s a written one-page audit of your prior listing covering pricing against the comparable sales in your neighborhood at the time, photo and staging quality, the MLS description, where it was syndicated and how often it was updated, and how the agent actually engaged with the buyer pool. You get the audit either way, whether or not you re-list with us.
+          </p>
+          <p>
+            If the audit says the right move is to wait, rent, or hold, we&apos;ll tell you that. If it says re-list, we&apos;ll walk you through what would change, what it would cost, and what the realistic timeline looks like.
+          </p>
         </div>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Or call us now:{' '}
-          <a href={`tel:${BROKER_PHONE_TEL}`} className="font-medium text-primary underline">
-            {BROKER_PHONE}
-          </a>
-        </p>
       </section>
 
       {/* ─── The 5 things that usually broke ───────────────────────────── */}
@@ -154,24 +171,30 @@ export default function ExpiredListingPage() {
       <section className="mx-auto max-w-3xl px-4 py-12 border-t border-border">
         <h2 className="text-2xl font-semibold tracking-tight">Three ways to start</h2>
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-border bg-card p-5">
-            <p className="font-semibold">Free written audit</p>
-            <p className="mt-2 text-sm text-foreground/80">
-              One-page review of the prior listing. In your inbox within the business day. No commitment.
-            </p>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-5">
-            <p className="font-semibold">20-minute call</p>
-            <p className="mt-2 text-sm text-foreground/80">
-              On the phone, no pitch. We tell you what we&apos;d do differently if anything.
-            </p>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-5">
-            <p className="font-semibold">In-person walkthrough</p>
-            <p className="mt-2 text-sm text-foreground/80">
-              We come to the property, walk it with you, and bring comps for your block.
-            </p>
-          </div>
+          <Card>
+            <CardContent className="p-5">
+              <p className="font-semibold">Free written audit</p>
+              <p className="mt-2 text-sm text-foreground/80">
+                One-page review of the prior listing. In your inbox within the business day. No commitment.
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <p className="font-semibold">20-minute call</p>
+              <p className="mt-2 text-sm text-foreground/80">
+                On the phone, no pitch. We tell you what we&apos;d do differently if anything.
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <p className="font-semibold">In-person walkthrough</p>
+              <p className="mt-2 text-sm text-foreground/80">
+                We come to the property, walk it with you, and bring comps for your block.
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="mt-10">
@@ -179,7 +202,7 @@ export default function ExpiredListingPage() {
           <div className="mt-6 space-y-5">
             <div>
               <p className="font-semibold">How long does this take?</p>
-              <p className="mt-2 text-foreground/80">The audit lands in your inbox within the business day. The call is 20 minutes. The walkthrough takes about an hour.</p>
+              <p className="mt-2 text-foreground/80">The audit lands in your inbox within the business day. The call is 20 minutes. The walkthrough takes as long as you want to spend on it.</p>
             </div>
             <div>
               <p className="font-semibold">What does it cost?</p>

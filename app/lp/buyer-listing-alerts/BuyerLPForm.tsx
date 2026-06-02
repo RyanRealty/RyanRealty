@@ -82,7 +82,7 @@ export default function BuyerLPForm() {
             // Pixel suppressed (consent gate) — server-side lead still landed.
           }
         }
-        setResult({ ok: true, msg: "Got it — your first batch of matches will be in your inbox within 30 minutes." })
+        setResult({ ok: true, msg: "Got it. Your first batch of matches will be in your inbox within 30 minutes." })
       } else {
         setResult({ ok: false, msg: r.error })
       }
@@ -92,12 +92,12 @@ export default function BuyerLPForm() {
   if (result?.ok) {
     return (
       <div className="rounded-2xl border border-border bg-card p-8 text-center">
-        <p className="text-lg font-semibold">Thanks!</p>
+        <p className="font-display text-lg font-semibold">Thanks for reaching out.</p>
         <p className="mt-2 text-muted-foreground">{result.msg}</p>
         <p className="mt-4 text-sm text-muted-foreground">
           Anything specific to factor in?{' '}
-          <a href="tel:+15417033095" className="text-primary underline">
-            (541) 703-3095
+          <a href="tel:+15417033095" className="tabular-nums text-primary underline">
+            541.703.3095
           </a>
         </p>
       </div>
@@ -105,22 +105,31 @@ export default function BuyerLPForm() {
   }
 
   return (
-    <form action={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <form action={onSubmit} className="space-y-3">
+      <p className="font-display text-lg font-semibold leading-tight text-foreground">
+        Start your listing alerts
+      </p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor="name">Name</Label>
           <Input id="name" name="name" required placeholder="Jane Smith" />
         </div>
         <div>
           <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" name="phone" type="tel" placeholder="541.xxx.xxxx" />
+          <Input id="phone" name="phone" type="tel" placeholder="541.703.3095" />
         </div>
       </div>
       <div>
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" required placeholder="you@example.com" />
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <Button type="submit" disabled={pending} className="w-full">
+        {pending ? 'Setting up your search…' : 'Start my listing alerts'}
+      </Button>
+      <p className="text-center text-xs text-muted-foreground">
+        Add details below to sharpen your matches. All optional.
+      </p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor="budgetMin">Budget min ($)</Label>
           <Input id="budgetMin" name="budgetMin" type="number" min="0" placeholder="400000" />
@@ -132,7 +141,7 @@ export default function BuyerLPForm() {
       </div>
       <div>
         <Label>Where are you looking? (pick any)</Label>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="mt-2 grid max-h-44 grid-cols-1 gap-2 overflow-y-auto rounded-lg border border-border p-2 sm:grid-cols-2">
           {SEARCH_AREAS.map((a) => (
             <Label
               key={a.slug}
@@ -172,9 +181,9 @@ export default function BuyerLPForm() {
               <SelectValue placeholder="When are you looking to buy?" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ready-now">Ready now (0–3 months)</SelectItem>
-              <SelectItem value="next-3-6">3–6 months</SelectItem>
-              <SelectItem value="next-6-12">6–12 months</SelectItem>
+              <SelectItem value="ready-now">Ready now (0 to 3 months)</SelectItem>
+              <SelectItem value="next-3-6">3 to 6 months</SelectItem>
+              <SelectItem value="next-6-12">6 to 12 months</SelectItem>
               <SelectItem value="exploring">Just exploring</SelectItem>
             </SelectContent>
           </Select>
@@ -187,8 +196,8 @@ export default function BuyerLPForm() {
       {result?.ok === false && (
         <p className="text-sm text-destructive">{result.msg}</p>
       )}
-      <Button type="submit" disabled={pending} className="w-full">
-        {pending ? 'Setting up your search…' : 'Start my listing alerts'}
+      <Button type="submit" disabled={pending} variant="outline" className="w-full">
+        {pending ? 'Setting up your search…' : 'Save my details and start alerts'}
       </Button>
     </form>
   )

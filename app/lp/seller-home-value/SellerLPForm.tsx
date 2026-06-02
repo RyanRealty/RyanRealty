@@ -133,8 +133,8 @@ export default function SellerLPForm({
         </p>
         <p className="mt-3 text-base text-muted-foreground">
           Prefer to talk right now? Call Matt directly at{' '}
-          <a href="tel:+15417033095" className="font-semibold text-primary underline underline-offset-2">
-            (541) 703-3095
+          <a href="tel:+15417033095" className="font-semibold text-primary underline underline-offset-2 tabular-nums">
+            541.703.3095
           </a>.
         </p>
       </div>
@@ -198,8 +198,8 @@ export default function SellerLPForm({
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
           No spam. No obligation. No hard sell. Or call Matt at{' '}
-          <a href="tel:+15417033095" className="font-semibold text-foreground underline underline-offset-2">
-            (541) 703-3095
+          <a href="tel:+15417033095" className="font-semibold text-foreground underline underline-offset-2 tabular-nums">
+            541.703.3095
           </a>.
         </p>
       </form>
@@ -230,7 +230,7 @@ export default function SellerLPForm({
         Where should we send your home value?
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Just two more fields. Phone is optional — Matt will reach out at whatever&rsquo;s easiest for you.
+        Just two more fields. Phone is optional. Matt will reach out at whatever&rsquo;s easiest for you.
       </p>
 
       <div className="mt-5 grid gap-4">
