@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.395.5 (2026-06-02)
+
+### Bug Fixes
+- fix(auth): canonicalize ryanrealty.vercel.app -> ryan-realty.com so Google/FB sign-in completes
+
+---
+
+
 ## v1.395.4 (2026-06-02)
 
 ### Maintenance
