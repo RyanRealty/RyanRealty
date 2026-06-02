@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.12 (2026-06-02)
+
+### Maintenance
+- docs: Tetherow LP decision — leave as-is (visually dialed; token migration not worth visual risk)
+
+---
+
+
 ## v1.390.11 (2026-06-02)
 
 ### Maintenance
