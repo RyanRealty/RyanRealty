@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 // @data-free static legal/policy page, no DAL access needed. @no-parity no mockup contract.
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
-const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'privacy@ryan-realty.com'
+const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'admin@ryan-realty.com'
 
 export const metadata: Metadata = {
   title: 'Cookie policy',
