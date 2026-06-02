@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.394.0 (2026-06-02)
+
+### Features
+- feat(fub): capture Property Search + Saved Search as FUB activity
+
+---
+
+
 ## v1.393.0 (2026-06-02)
 
 ### Features
