@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.3 (2026-06-02)
+
+### Bug Fixes
+- fix(skyslope): scrub expired S3 presigned URLs from eval fixtures
+
+---
+
+
 ## v1.402.2 (2026-06-02)
 
 ### Maintenance
