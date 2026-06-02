@@ -63,6 +63,9 @@ const COMMUNITY_DEDICATED_IMAGES: Record<string, string> = {
   // Tetherow: use the aerial course shot from its own LP — richer than the
   // golf-guide hero, which is a closer fairway shot.
   tetherow: '/lp/tetherow/img/tetherow-aerial-course.jpg',
+  // Heath is a sub-plat at Tetherow — use the Tetherow aerial (genuinely the
+  // same place) so the homepage tile shows a photo instead of the navy fallback.
+  heath: '/lp/tetherow/img/tetherow-aerial-course.jpg',
 
   // Area Guide photos — snowdriftvisuals professional photography, 2026-06-01
   'broken-top': '/images/communities/broken-top.jpg',
