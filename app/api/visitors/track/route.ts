@@ -34,7 +34,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { trackPageView, trackListingView } from '@/lib/followupboss'
+import { trackPageView, trackListingView, trackPropertySearch } from '@/lib/followupboss'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 
 export const runtime = 'nodejs'
@@ -371,7 +371,7 @@ export async function POST(request: NextRequest) {
   // under essential) and bounded so the page load never waits on the FUB API.
   const fubPersonId =
     !minimalOnly && session && typeof session.fub_person_id === 'number' ? session.fub_person_id : null
-  if (fubPersonId && (eventType === 'listing_view' || eventType === 'page_view')) {
+  if (fubPersonId && (eventType === 'listing_view' || eventType === 'page_view' || eventType === 'search')) {
     try {
       if (eventType === 'listing_view' && listing) {
         await withTimeoutFallback(
@@ -394,6 +394,18 @@ export async function POST(request: NextRequest) {
           undefined,
           2500,
           'fub:listing-view',
+        )
+      } else if (eventType === 'search') {
+        await withTimeoutFallback(
+          trackPropertySearch({
+            fubPersonId,
+            searchTerm: body.pageTitle?.slice(0, 200),
+            searchUrl: pageUrl,
+            campaign,
+          }),
+          undefined,
+          2500,
+          'fub:search',
         )
       } else {
         await withTimeoutFallback(

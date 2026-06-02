@@ -848,6 +848,86 @@ export async function trackListingView(params: {
 }
 
 /**
+ * Buyer ran a property search. Fires "Property Search" to FUB so an agent sees
+ * what a known lead is hunting for and nurture sequences can react. Attaches by
+ * email or fubPersonId; silent if neither (anonymous searches stay out of FUB).
+ */
+export async function trackPropertySearch(params: {
+  user?: { email?: string | null }
+  fubPersonId?: number | null
+  searchTerm?: string
+  resultsCount?: number
+  searchUrl?: string
+  campaign?: { source?: string; medium?: string; campaign?: string; term?: string; content?: string }
+}): Promise<void> {
+  const auth = getAuth()
+  if (!auth) return
+  const email = params.user?.email?.trim()
+  const fubId = params.fubPersonId
+  let person: FubEventPerson
+  if (email) {
+    const existing = await findPersonByEmail(email)
+    person = existing ? { id: existing.id } : { emails: [{ value: email }] }
+  } else if (fubId != null && fubId > 0) {
+    person = { id: fubId }
+  } else {
+    return
+  }
+  const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
+  const term = params.searchTerm?.trim() || 'Central Oregon'
+  const count = params.resultsCount != null ? ` (${params.resultsCount} results)` : ''
+  await sendEvent({
+    type: 'Property Search',
+    person,
+    source,
+    system: 'Ryan Realty Website',
+    sourceUrl: params.searchUrl,
+    message: `Searched: ${term}${count}`,
+    campaign: params.campaign,
+  })
+}
+
+/**
+ * Buyer SAVED a search — one of the highest-intent buyer actions. Fires
+ * "Saved Property Search" to FUB so the lead enters the right nurture and the
+ * agent sees a concrete buying signal. Attaches by email or fubPersonId.
+ */
+export async function trackSavedPropertySearch(params: {
+  user?: { email?: string | null }
+  fubPersonId?: number | null
+  searchName?: string
+  filtersSummary?: string
+  searchUrl?: string
+  resultsCount?: number
+}): Promise<void> {
+  const auth = getAuth()
+  if (!auth) return
+  const email = params.user?.email?.trim()
+  const fubId = params.fubPersonId
+  let person: FubEventPerson
+  if (email) {
+    const existing = await findPersonByEmail(email)
+    person = existing ? { id: existing.id } : { emails: [{ value: email }] }
+  } else if (fubId != null && fubId > 0) {
+    person = { id: fubId }
+  } else {
+    return
+  }
+  const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
+  const name = params.searchName?.trim() || 'a search'
+  const summary = params.filtersSummary?.trim() ? `, ${params.filtersSummary.trim()}` : ''
+  const count = params.resultsCount != null ? ` (${params.resultsCount} matches)` : ''
+  await sendEvent({
+    type: 'Saved Property Search',
+    person,
+    source,
+    system: 'Ryan Realty Website',
+    sourceUrl: params.searchUrl,
+    message: `Saved search: ${name}${summary}${count}`,
+  })
+}
+
+/**
  * Call when a user clicks a listing tile (card) anywhere on the site. Sends "Viewed Property" to FUB
  * with sourceUrl = page they clicked from (home, search, etc.). Silent, fire-and-forget from client.
  * If userEmail is provided, event is attached to that person; otherwise FUB may still record property/source.

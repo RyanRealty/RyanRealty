@@ -76,6 +76,26 @@ export async function createSavedSearch(
     cache_refreshed_at: new Date().toISOString(),
   })
   if (error) return { error: error.message }
+
+  // Mirror to FUB — saving a search is a top buyer-intent signal. Fire-and-forget
+  // so a FUB hiccup never blocks the save. The user is signed in here, so attach
+  // by their account email.
+  void (async () => {
+    try {
+      const { trackSavedPropertySearch } = await import('@/lib/followupboss')
+      const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+      await trackSavedPropertySearch({
+        user: { email: user.email ?? null },
+        searchName: name.trim() || 'Saved search',
+        filtersSummary: getFiltersSummary(normalizedFilters),
+        searchUrl: `${base}${buildSearchUrlFromFilters(normalizedFilters)}`,
+        resultsCount: warm.totalCount ?? undefined,
+      })
+    } catch {
+      // non-blocking
+    }
+  })()
+
   return { error: null }
 }
 
