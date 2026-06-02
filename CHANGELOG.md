@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.395.9 (2026-06-02)
+
+### Bug Fixes
+- fix(identity): stamp fub_cid on sign-in so future visits attribute to the FUB contact
+
+---
+
+
 ## v1.395.8 (2026-06-02)
 
 ### Maintenance
