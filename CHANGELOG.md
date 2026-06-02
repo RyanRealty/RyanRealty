@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.400.0 (2026-06-02)
+
+### Features
+- feat(meta): rebuild FUB->Meta custom audiences with precise realtor exclusion
+
+---
+
+
 ## v1.399.6 (2026-06-02)
 
 ### Bug Fixes
