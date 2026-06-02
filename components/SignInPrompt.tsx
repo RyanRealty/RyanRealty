@@ -47,8 +47,8 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
       return
     }
     if (wasDismissed()) return
-    // Only show after user has browsed for 30s (don't block first impression)
-    const t = setTimeout(() => setShow(true), 30_000)
+    // Prompt logged-out visitors right away (don't wait). Tiny delay lets the first paint land.
+    const t = setTimeout(() => setShow(true), 1000)
     return () => clearTimeout(t)
   }, [user, hasNextParam, isHome])
 
@@ -80,7 +80,7 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
           Get the most out of Ryan Realty
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sign in with Google, Apple, or Facebook to unlock your account—no new password needed.
+          Sign in with Google or Facebook. No new password needed.
         </p>
         <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-muted-foreground" aria-hidden>
           <li>Save searches and get new listing alerts</li>
@@ -91,7 +91,7 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
             type="button"
             disabled={!!loading}
             onClick={() => handleSignIn('google')}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-3 text-sm font-medium text-foreground shadow-sm hover:bg-muted disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
           >
             <GoogleIcon className="size-5" />
             {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}

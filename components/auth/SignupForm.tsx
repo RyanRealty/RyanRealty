@@ -61,7 +61,7 @@ export default function SignupForm({ next }: Props) {
         type="button"
         onClick={() => handleOAuth('google')}
         disabled={!!loading}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-3 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
       >
         <GoogleIcon className="size-5" />
         {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}

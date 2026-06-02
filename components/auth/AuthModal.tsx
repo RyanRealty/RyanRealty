@@ -123,7 +123,6 @@ export default function AuthModal({ open, onClose, onSuccess, next = '/dashboard
         <div className="space-y-3">
           <Button
             type="button"
-            variant="outline"
             onClick={() => handleOAuth('google')}
             disabled={!!loading}
             className="flex w-full items-center justify-center gap-3"
