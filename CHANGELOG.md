@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.393.0 (2026-06-02)
+
+### Features
+- feat(meta): dedup + CAPI mirror for ViewContent/Search/AddToWishlist/CompleteRegistration
+
+---
+
+
 ## v1.392.2 (2026-06-02)
 
 ### Bug Fixes
