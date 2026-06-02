@@ -1,0 +1,26 @@
+{
+  "skill_name": "skyslope-form-compliance",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "712-bundle-detection-and-dedup",
+      "prompt": "Process the closed SkySlope file for 712 SW 1st Street, Madras OR (sale GUID f50fe2a6-226c-4f81-8a59-9fc9a46ea5df). The closing was Caldwell/Mendoza buying from the Whites in April 2024. Run the skyslope-form-compliance pipeline in dry-run mode against the snapshot at evals/fixtures/712-sw-1st/. Produce Phase 0 through Phase 6 outputs and the Phase 5 plan. Don't make any live SkySlope API calls — read from the snapshot directory instead. Save outputs to the workspace.",
+      "expected_output": "Phase 4 dedup plan must (a) detect docId 3a29b3c2 as a bundle of OREF 043 + OREF 021, (b) pick 3a29b3c2 as canonical for the LBP dedup group with ef69fb6f as superseded_intermediate via Rule 1 (bundle > standalone), (c) pick abe92cee as canonical Prelim Title with b1e92cee + b2e92cee as abridged-archive via Rule 5, (d) pick 2c52ee38 as canonical EMR with 20d1e3eb as same-content-older-archive via Rule 4, (e) pick 720dbeb1 as canonical Residential Addendum with 1f0f0dd1 as superseded sellers-only via Rule 2, (f) pick b69dd220 as canonical EIFS with 4c8f0c9b as superseded via Rule 2, (g) pick 2c7fdcdc + 1f01b01f as duplicate wood-stove pair (envelope match, archive one) via Rule 4, (h) flag 5c3d1878 as wrong-cycle Boynton via Rule 6. Phase 5 emits cross-link ASSIGN for 3a29b3c2 to the Sale Addendums activity (in addition to Electronic Funds Advisory). Zero fabricated docIds in any phase output.",
+      "files": ["evals/fixtures/712-sw-1st/documents.json", "evals/fixtures/712-sw-1st/sale-detail.json", "evals/fixtures/712-sw-1st/binaries/", "evals/fixtures/712-sw-1st/gold.json"]
+    },
+    {
+      "id": 2,
+      "eval_name": "bear-st-single-party-preservation",
+      "prompt": "Audit the SkySlope folder for 15352 Bear Street, La Pine OR (sale GUID 2b9046c3-25aa-4efd-b4b1-bd381d6f2a8d). This is the Hernandez closing. Run the skyslope-form-compliance pipeline in dry-run mode against the snapshot at evals/fixtures/bear-st/. The tricky part: this folder has multiple OREF 043 EFA + OREF 092 Counter + OREF 080 Mutual Termination + OREF 047 FIRPTA + OREF 091 Compensation Notice docs that are single_party by design. The previous pass had a subagent strip _X from these because it applied a blanket 'both sides must sign' rule. Verify the new pipeline preserves _X correctly on every single_party form that has its obligated side's signatures.",
+      "expected_output": "Phase 3 signer-validation must (a) classify OREF 043 EFA as single_party and preserve fully_executed status when only one side signed, (b) classify OREF 092 Counter as single_party (counter-offering party only), (c) classify OREF 080 Mutual Termination as single_party (initiating party only), (d) classify OREF 047 FIRPTA as single_party (seller-side), (e) classify OREF 091 Compensation Notice as single_party (principal broker only). Phase 5 plan retains _X on all single_party forms with valid single-side sigs. Zero false strips of _X from any of these forms. Mutual forms (OREF 001, 002, 021, 022A, 022B, 025) still require both sides + agents.",
+      "files": ["evals/fixtures/bear-st/documents.json", "evals/fixtures/bear-st/sale-detail.json", "evals/fixtures/bear-st/binaries/", "evals/fixtures/bear-st/gold.json"]
+    },
+    {
+      "id": 3,
+      "eval_name": "ochoco-docid-discipline",
+      "prompt": "Run skyslope-form-compliance on 29500 SE Ochoco Way, Prineville OR (sale GUID eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5). The Stradford closing. Run in dry-run mode against the snapshot at evals/fixtures/ochoco-way/. Last time we ran this folder, the Phase 2 subagent fabricated 51 placeholder docIds ending '-0000-0000-0000-000000000001' because the prompt didn't enforce that returned docIds match documents.json. This pass must not produce any fabricated docIds — every docId in every phase output must exist verbatim in documents.json. Treat any GUID ending in the placeholder pattern as a fail.",
+      "expected_output": "Phase 2 classifier output contains zero fabricated docIds (zero GUIDs ending '-0000-0000-0000-000000000001'). Every docId in Phase 2, Phase 3, Phase 4, Phase 5 outputs validates against documents.json (every emitted GUID is found by `documents.find((d) => d.id.toLowerCase() === emittedGuid.toLowerCase())`). Phase 5 plan references only real docIds. Re-running the orchestrator's docId validation hard-fails any subagent output containing placeholders.",
+      "files": ["evals/fixtures/ochoco-way/documents.json", "evals/fixtures/ochoco-way/sale-detail.json", "evals/fixtures/ochoco-way/binaries/", "evals/fixtures/ochoco-way/gold.json"]
+    }
+  ]
+}

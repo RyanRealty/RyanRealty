@@ -1,0 +1,93 @@
+{
+  "fixture": "712-sw-1st",
+  "saleGuid": "f50fe2a6-226c-4f81-8a59-9fc9a46ea5df",
+  "property": "712 SW 1st Street, Madras OR 97741",
+  "active_cycle_sale_number": "04022024AB",
+  "active_cycle_buyers": ["Naomi Caldwell", "Matthew Mendoza"],
+  "active_cycle_sellers": ["Travis L. White", "Misty M. White"],
+  "active_cycle_close_date": "2024-05-08",
+  "binaries_path": "/Users/matthewryan/RyanRealty/tmp/712-dedup/binaries/",
+  "phase2_must_detect_bundles": [
+    {
+      "docId_prefix": "3a29b3c2",
+      "filename": "X_043_Advisory Regarding Electronic Funds.pdf",
+      "is_bundle": true,
+      "constituent_forms": [
+        { "oref": "043", "page_range": [1], "form_role": "EFA" },
+        { "oref": "021", "page_range": [2, 3], "form_role": "LBP" }
+      ],
+      "rationale": "Bundle with EFA on page 1 and fully-executed LBP buyer cert on pages 2-3 (envelope d10ffd9d). Was the primary regression that produced a false legal_gap flag in the original pass."
+    }
+  ],
+  "phase3_must_classify_as_single_party": [
+    { "docId_prefix": "30c8a6f2", "oref": "043", "signer_profile": "single_party", "signer_status": "fully_executed", "rationale": "OREF 043 EFA sellers-only side. Whites signed 04/04+04/05. Valid sellers-side single_party execution per oref-form-library.md." },
+    { "docId_prefix": "5c3d1878", "oref": "043", "signer_profile": "single_party", "signer_status": "fully_executed_wrong_cycle", "rationale": "OREF 043 EFA for the FAILED Boynton offer cycle (created by Michael Boynton, signed by Erik Boynton). Single_party signer profile satisfied but cycle mismatch." }
+  ],
+  "phase4_dedup_verdicts": [
+    {
+      "group_key": { "sale_number": "04022024AB", "oref_number": "043", "form_role": "EFA" },
+      "canonical_docId_prefix": "3a29b3c2",
+      "archive_docId_prefixes": ["30c8a6f2", "5c3d1878"],
+      "rule_applied": "Rule 1 (bundle > standalone) for 3a29b3c2 vs 30c8a6f2; Rule 6 (wrong cycle) for 5c3d1878"
+    },
+    {
+      "group_key": { "sale_number": null, "oref_number": null, "form_role": "Preliminary Title Report" },
+      "canonical_docId_prefix": "abe92cee",
+      "archive_docId_prefixes": ["b1e92cee", "b2e92cee"],
+      "rule_applied": "Rule 5 (most complete) — abe92cee is 57-page full Prelim with exhibits; b1/b2 are abridged"
+    },
+    {
+      "group_key": { "sale_number": null, "oref_number": null, "form_role": "Earnest Money Receipt" },
+      "canonical_docId_prefix": "2c52ee38",
+      "archive_docId_prefixes": ["20d1e3eb"],
+      "rule_applied": "Rule 4 (same content, newer upload) — both show $2,000 Caldwell/Mendoza check #105"
+    },
+    {
+      "group_key": { "sale_number": "04022024AB", "oref_number": "002", "form_role": "Residential Addendum" },
+      "canonical_docId_prefix": "720dbeb1",
+      "archive_docId_prefixes": ["1f0f0dd1"],
+      "rule_applied": "Rule 2 (fully_executed > superseded_intermediate)"
+    },
+    {
+      "group_key": { "sale_number": "04022024AB", "oref_number": "025", "form_role": "EIFS" },
+      "canonical_docId_prefix": "b69dd220",
+      "archive_docId_prefixes": ["4c8f0c9b"],
+      "rule_applied": "Rule 2 (fully_executed Residential variant > sellers-only Standard variant)"
+    },
+    {
+      "group_key": { "sale_number": "04022024AB", "oref_number": "002", "form_role": "Addendum (wood stove)" },
+      "canonical_docId_prefix": "2c7fdcdc",
+      "archive_docId_prefixes": ["1f01b01f"],
+      "rule_applied": "Rule 4 (same envelope a08b4211, identical content, newer timestamp wins)"
+    },
+    {
+      "group_key": { "sale_number": "04022024AB", "oref_number": "021", "form_role": "LBP" },
+      "canonical_docId_prefix": "3a29b3c2",
+      "archive_docId_prefixes": ["ef69fb6f"],
+      "rule_applied": "Rule 1 (bundle > standalone) — 3a29b3c2 bundle has fully-executed LBP buyer cert (envelope d10ffd9d) while ef69fb6f is sellers-only intermediate"
+    }
+  ],
+  "phase5_cross_links": [
+    {
+      "docId_prefix": "3a29b3c2",
+      "primary_activity": "Electronic Funds Advisory",
+      "cross_link_activities": ["Sale Addendums (or LBP if separate)"],
+      "rationale": "Bundle contains both EFA (assigned to EFA activity) and LBP (cross-linked to Sale Addendums so the LBP-required activity sees the fully-executed copy)"
+    }
+  ],
+  "phase5_total_actions": {
+    "archives": 9,
+    "canonicals_kept": 13,
+    "cross_links": 1,
+    "renames": "at least 9 (one PATCH per archive)",
+    "unassigns": "at least 9 (one per archive off its current activity)"
+  },
+  "must_not_emit_legal_gap_for": [
+    {
+      "oref": "021",
+      "reason": "LBP buyer cert IS fully executed in the 3a29b3c2 bundle (envelope d10ffd9d, Caldwell + Mendoza signed 04/08/2024). The standalone ef69fb6f looks unexecuted but is superseded by the bundle. Flagging this as legal_gap is a regression."
+    }
+  ],
+  "must_not_fabricate_docIds": true,
+  "every_emitted_docId_must_appear_in_documents_json": true
+}

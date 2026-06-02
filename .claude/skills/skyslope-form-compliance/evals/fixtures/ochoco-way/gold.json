@@ -1,0 +1,20 @@
+{
+  "fixture": "ochoco-way",
+  "saleGuid": "eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5",
+  "property": "29500 SE Ochoco Way, Prineville OR",
+  "active_cycle_sale_number": "MB/KS09202024",
+  "failed_cycle_sale_number": "JB9524",
+  "binaries_path": "/Users/matthewryan/RyanRealty/tmp/skyslope-pdfs/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/binaries/",
+  "docId_discipline_assertions": {
+    "must_not_emit_placeholder_docIds": true,
+    "placeholder_pattern_to_reject": "ends with '-0000-0000-0000-000000000001'",
+    "every_emitted_docId_must_validate_against": "documents.json (via documents.find((d) => d.id.toLowerCase() === emittedGuid.toLowerCase()))",
+    "must_emit_flag_for_human_if_doc_seems_missing": true,
+    "regression_reference": "Ochoco prior pass had a subagent fabricate 51 docIds ending '-0000-0000-0000-000000000001' because the prompt didn't enforce docId-must-exist-in-documents.json. Phase 5 plan then referenced fake GUIDs; Phase 7 PATCH returned HTTP 404. Recovery was 2+ hours of short-prefix matching to real GUIDs."
+  },
+  "expected_documents_count": 59,
+  "expected_activities_with_docs": ">= 8",
+  "phase2_must_classify_every_doc": true,
+  "must_not_fabricate_docIds": true,
+  "every_emitted_docId_must_appear_in_documents_json": true
+}

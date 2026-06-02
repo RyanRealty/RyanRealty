@@ -1,0 +1,58 @@
+{
+  "fixture": "bear-st",
+  "saleGuid": "2b9046c3-25aa-4efd-b4b1-bd381d6f2a8d",
+  "property": "15352 Bear Street, La Pine OR",
+  "active_cycle_sale_number": "Hernandez/15352 Bear St",
+  "binaries_path": "/Users/matthewryan/RyanRealty/tmp/skyslope-pdfs/2b9046c3-25aa-4efd-b4b1-bd381d6f2a8d/binaries/",
+  "phase3_must_classify_as_single_party_and_preserve_X": [
+    {
+      "oref": "043",
+      "form_name": "Advisory Regarding Electronic Funds",
+      "signer_profile": "single_party",
+      "rationale": "OREF 043 EFA — buyer-OR-seller, not both. Original pass had a subagent strip _X because it applied 'both sides must sign' without form-class lookup. Any sellers-only OR buyers-only EFA in this fixture with valid sigs MUST retain _X."
+    },
+    {
+      "oref": "092",
+      "form_name": "Counter Offer",
+      "signer_profile": "single_party",
+      "rationale": "OREF 092 Counter — only the counter-offering party signs. Mutual acceptance is implied by acceptance of a subsequent counter, not by the form being co-signed."
+    },
+    {
+      "oref": "080",
+      "form_name": "Mutual Termination Agreement",
+      "signer_profile": "single_party",
+      "rationale": "OREF 080 — single initiating party. Mutual is implied by acceptance, not by both parties signing this form."
+    },
+    {
+      "oref": "047",
+      "form_name": "FIRPTA Affidavit",
+      "signer_profile": "single_party",
+      "rationale": "OREF 047 — seller-side affidavit (or buyer-side on inverted transactions). Single_party."
+    },
+    {
+      "oref": "091",
+      "form_name": "Notice of Real Estate Compensation",
+      "signer_profile": "single_party",
+      "rationale": "OREF 091 — principal broker only. Single signature is the full execution."
+    },
+    {
+      "oref": "108",
+      "form_name": "Notice (various)",
+      "signer_profile": "single_party",
+      "rationale": "OREF 108 — issuing party only. Single_party by design."
+    }
+  ],
+  "phase3_must_classify_as_mutual_and_require_both_sides": [
+    { "oref": "001", "form_name": "Residential Real Estate Sale Agreement", "signer_profile": "mutual" },
+    { "oref": "002", "form_name": "Addendum to Real Estate Sale Agreement", "signer_profile": "mutual" },
+    { "oref": "020", "form_name": "Seller Property Disclosure", "signer_profile": "mutual" },
+    { "oref": "021", "form_name": "Lead-Based Paint Disclosure Addendum", "signer_profile": "mutual" },
+    { "oref": "022A", "form_name": "Buyer's Repair Addendum", "signer_profile": "mutual" },
+    { "oref": "022B", "form_name": "Seller's Repair Addendum", "signer_profile": "mutual" },
+    { "oref": "025", "form_name": "Exterior Siding/Stucco/EIFS Disclosure", "signer_profile": "mutual" }
+  ],
+  "must_not_strip_X_from_single_party_forms": true,
+  "must_not_fabricate_docIds": true,
+  "every_emitted_docId_must_appear_in_documents_json": true,
+  "regression_reference": "Bear St subagent in prior pass stripped _X from OREF 092 + OREF 043 single_party forms by applying 'both sides must sign' rule without form-class lookup. The fix is in references/failure-modes.md §2 and references/oref-form-library.md form profiles."
+}

@@ -1,0 +1,1757 @@
+{
+  "value": {
+    "sale": {
+      "saleGuid": "eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5",
+      "listingGuid": null,
+      "agentGuid": "41c18058-6c25-4acb-affc-3afc4ea9ac52",
+      "createdByGuid": "41c18058-6c25-4acb-affc-3afc4ea9ac52",
+      "mlsNumber": "220142414",
+      "portalEmail": "OchocoWay295002@skyslope.com",
+      "statusId": 60,
+      "status": "Closed",
+      "officeGuid": null,
+      "checklistType": "Residential — Standard",
+      "escrowNumber": "WT0267180",
+      "escrowClosingDate": "2024-11-22T00:00:00",
+      "actualClosingDate": "2024-11-22T00:00:00",
+      "contractAcceptanceDate": "2024-10-15T00:00:00",
+      "createdOn": "2026-04-03T13:27:42.52",
+      "checklistModifiedOn": "2026-05-18T09:31:42.67",
+      "deadDate": null,
+      "reviewerGuid": "41c18058-6c25-4acb-affc-3afc4ea9ac52",
+      "sourceId": null,
+      "source": null,
+      "otherSource": null,
+      "dealType": "Both Purchase & Listing",
+      "saleTypeId": 33,
+      "listingPrice": 0,
+      "salePrice": 360000,
+      "isOfficeLead": false,
+      "coBrokerCompany": "Coldwell Banker Bain",
+      "realPropertyType": null,
+      "realPropertySubtype": null,
+      "property": {
+        "streetNumber": "29500",
+        "streetAddress": "Ochoco Way",
+        "unit": "",
+        "direction": "SE",
+        "city": "Prineville",
+        "county": "Crook",
+        "state": "OR",
+        "zip": "97754",
+        "yearBuilt": 2007,
+        "realPropertyTypeId": null,
+        "realPropertySubtypeId": null
+      },
+      "commission": {
+        "transactionCoordinatorName": null,
+        "transactionCoordinatorFee": null,
+        "adminBrokerageComp": null,
+        "dateOfCheck": null,
+        "datePostedToLogBook": null,
+        "listingCommissionPercent": null,
+        "listingCommissionAmount": null,
+        "saleCommissionPercent": null,
+        "saleCommissionAmount": null,
+        "otherDeductions": null,
+        "personalDeal": false,
+        "commissionBreakdownDetails": null,
+        "officeGrossCommissionOnSale": null
+      },
+      "sellers": [
+        {
+          "contactGuid": "77ad6971-20f8-479d-a6f6-0fb6cef91084",
+          "firstName": "Brian",
+          "lastName": "Smith",
+          "phoneNumber": null,
+          "email": "",
+          "company": null,
+          "alternatePhone": null,
+          "streetNumber": null,
+          "streetName": null,
+          "zip": null,
+          "city": null,
+          "state": null,
+          "fax": null,
+          "notes": null,
+          "isTrustCompanyOrOtherEntity": false
+        },
+        {
+          "contactGuid": "d3e08f4e-2d15-4442-ba9d-5d8aeb2cfeb5",
+          "firstName": "Kim",
+          "lastName": "Anderson",
+          "phoneNumber": null,
+          "email": "",
+          "company": null,
+          "alternatePhone": null,
+          "streetNumber": null,
+          "streetName": null,
+          "zip": null,
+          "city": null,
+          "state": null,
+          "fax": null,
+          "notes": null,
+          "isTrustCompanyOrOtherEntity": false
+        }
+      ],
+      "buyers": [
+        {
+          "contactGuid": "2be82897-a6d3-41a1-84ef-af57f1c078ad",
+          "firstName": "Kacy",
+          "lastName": "Stradford",
+          "phoneNumber": null,
+          "email": "",
+          "company": null,
+          "alternatePhone": null,
+          "streetNumber": null,
+          "streetName": null,
+          "zip": null,
+          "city": null,
+          "state": null,
+          "fax": null,
+          "notes": null,
+          "isTrustCompanyOrOtherEntity": false
+        },
+        {
+          "contactGuid": "181579fa-d8e4-45ae-a8dc-4349ad46fbc7",
+          "firstName": "Thomas",
+          "lastName": "Stradford",
+          "phoneNumber": null,
+          "email": "",
+          "company": null,
+          "alternatePhone": null,
+          "streetNumber": null,
+          "streetName": null,
+          "zip": null,
+          "city": null,
+          "state": null,
+          "fax": null,
+          "notes": null,
+          "isTrustCompanyOrOtherEntity": false
+        }
+      ],
+      "titleContact": {
+        "contactGuid": "a598da8f-60c6-4004-ba58-96febbe8880b",
+        "firstName": "Tonya",
+        "lastName": "Moore",
+        "phoneNumber": null,
+        "alternatePhone": null,
+        "email": "tonya.moore@westerntitle.com",
+        "company": "Western Title",
+        "streetNumber": null,
+        "streetName": null,
+        "zip": null,
+        "city": null,
+        "state": null,
+        "fax": null,
+        "notes": null
+      },
+      "escrowContact": null,
+      "attorneyContact": [],
+      "lenderContact": null,
+      "otherSideAgentContact": {
+        "contactGuid": "6630cfb6-0938-4c0f-af25-ff2fe748a501",
+        "firstName": "Jim",
+        "lastName": "Goodwin",
+        "phoneNumber": "5412141297",
+        "email": "jimgoodwin@cbbain.com",
+        "company": "Coldwell Banker Bain",
+        "alternatePhone": null,
+        "streetNumber": null,
+        "streetName": null,
+        "zip": null,
+        "city": null,
+        "state": null,
+        "fax": null,
+        "brokerTaxId": null,
+        "notes": null
+      },
+      "homeWarrantyContact": null,
+      "miscContact": null,
+      "commercialLease": null,
+      "commissionBreakdowns": [],
+      "coAgentGuids": [],
+      "transactionCoordinators": [],
+      "commissionSplits": [
+        {
+          "agentGuid": "41c18058-6c25-4acb-affc-3afc4ea9ac52",
+          "amount": null,
+          "percentage": null
+        }
+      ],
+      "stage": null,
+      "commissionReferral": null,
+      "customFields": null,
+      "earnestMoneyDeposit": null,
+      "checklist": {
+        "typeId": 1639421,
+        "typeName": "Residential — Standard",
+        "activities": [
+          {
+            "order": 1,
+            "activityId": 1050868271,
+            "activityName": "Residential Sale Agreement",
+            "dateAssigned": "2026-05-18T09:31:42.6733333",
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:42.67",
+            "docs": [
+              "Advisory Regarding Manufactured Home.pdf",
+              "Advisory Regarding Manufactured Home_X.pdf",
+              "Advisory Regarding Septic Wells_X.pdf",
+              "Advisory Regarding Septic Wells_X.pdf",
+              "Ex Offer 2 Advisory Regarding Electronic Funds_X.pdf",
+              "Ex Offer 2 VA FHA Amendatory Clause_X.pdf",
+              "Ex Offer 2 VA FHA Amendatory Clause_X.pdf",
+              "Residential Real Estate Sale Agreement.pdf",
+              "Residential Real Estate Sale Agreement_X.pdf",
+              "Residential Real Estate Sale Agreement_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "929CC5DF-CBA1-40DA-B71D-6A3E8DFE769B",
+                "name": "Advisory Regarding Manufactured Home_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/67ffe80f70724fcbb47944231ace830e?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=d7edc6f1d0965217852aee2ee6e29124491b5d2a4a8a96f479e38b7ce4f8a677",
+                "documentServiceKey": "67ffe80f70724fcbb47944231ace830e",
+                "modifiedDate": "2026-05-18T09:47:36.2533333",
+                "uploadDate": "2026-04-04T10:24:33.64",
+                "dateAssigned": "2026-05-18T09:30:37.7733333",
+                "fileName": "Advisory Regarding Manufactured Home_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "5FE2679B-7ACF-45D7-A0E7-886F10F128D0",
+                "name": "Residential Real Estate Sale Agreement_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/c0652b3e5eaf4194ac55a9fc5d965bd3?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=42627803dacbb023b7d148e272af777204f097d33098da20a1615ffe5b7557f9",
+                "documentServiceKey": "c0652b3e5eaf4194ac55a9fc5d965bd3",
+                "modifiedDate": "2026-05-18T09:50:34.68",
+                "uploadDate": "2026-04-04T10:24:35.8766667",
+                "dateAssigned": "2026-05-18T09:31:42.6733333",
+                "fileName": "Residential Real Estate Sale Agreement_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "C3323CAC-863C-4239-9883-1686FA34CD8D",
+                "name": "Residential Real Estate Sale Agreement",
+                "url": "https://skyslope-documents.s3.amazonaws.com/7436d54d7ae3484d8e250297227b2c54?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=f5f25ca7b8112599a72189e0c10ec0079d2144d719048683d1c13e4192fcf9cd",
+                "documentServiceKey": "7436d54d7ae3484d8e250297227b2c54",
+                "modifiedDate": "2026-05-18T09:50:31.8833333",
+                "uploadDate": "2026-04-04T10:24:33.9633333",
+                "dateAssigned": "2026-05-18T09:31:42.11",
+                "fileName": "Residential Real Estate Sale Agreement.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "6AECBE74-6226-475C-B7E3-C2F61519519C",
+                "name": "Advisory Regarding Septic Wells_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/97a7f740373f485f9a929a65f1811309?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=2c032d8fee8b3cd053df38d262add9cde2874d9769e918b1fff32d3c1b5b9f2e",
+                "documentServiceKey": "97a7f740373f485f9a929a65f1811309",
+                "modifiedDate": "2026-05-18T09:47:36.5966667",
+                "uploadDate": "2026-04-04T10:24:35.31",
+                "dateAssigned": "2026-05-11T12:16:53.7666667",
+                "fileName": "Advisory Regarding Septic Wells_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "1A7E33B2-7E45-447C-AE4D-B438000BBD1E",
+                "name": "Advisory Regarding Manufactured Home",
+                "url": "https://skyslope-documents.s3.amazonaws.com/bde604d945e34ad1a36a176b5cf1ba5a?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=0df3aa1d1ee3a1dcec1321261bb4912a87ba83e7ab7388930105e217d4da2169",
+                "documentServiceKey": "bde604d945e34ad1a36a176b5cf1ba5a",
+                "modifiedDate": "2026-05-18T09:47:37.0566667",
+                "uploadDate": "2026-04-04T10:24:35.3633333",
+                "dateAssigned": "2026-05-18T09:30:39.8633333",
+                "fileName": "Advisory Regarding Manufactured Home.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "33BEF785-8C6A-4C09-BCD1-BE877A6E0DEF",
+                "name": "Ex Offer 2 VA FHA Amendatory Clause_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/9bff22c5bacf4c99a7527a0c3f4e5840?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=4f90ef0dcc464d453bed246e29d4a0e0a9ef40c3cbb252c4693396780e9157a6",
+                "documentServiceKey": "9bff22c5bacf4c99a7527a0c3f4e5840",
+                "modifiedDate": "2026-05-18T09:48:36.2866667",
+                "uploadDate": "2026-04-04T10:24:35.6333333",
+                "dateAssigned": "2026-04-07T03:54:33.9633333",
+                "fileName": "Ex Offer 2 VA FHA Amendatory Clause_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "36499CE3-556E-4ECF-912B-39B3CE528831",
+                "name": "Ex Offer 2 Advisory Regarding Electronic Funds_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/7cd84c61d58849e2a83b3f7285648df3?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=e16800aac63f851c8a8e9a9a0bd8edf15eb330b44c60f316efc9da3a5ad9197a",
+                "documentServiceKey": "7cd84c61d58849e2a83b3f7285648df3",
+                "modifiedDate": "2026-05-18T09:50:21.07",
+                "uploadDate": "2026-04-04T10:24:35.65",
+                "dateAssigned": "2026-05-18T09:31:37.59",
+                "fileName": "Ex Offer 2 Advisory Regarding Electronic Funds_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 2,
+            "activityId": 1050868272,
+            "activityName": "Pre Approval Letter or Proof of Funds ",
+            "dateAssigned": "2026-05-18T09:31:39.0666667",
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:39.057",
+            "docs": [
+              "Offer 1 Henry Pre Approval Letter_X.pdf",
+              "Offer 2 Pre Approval Letter_X.pdf",
+              "Offer 2 Pre Approval Letter_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "361866EE-8632-42E5-B00F-A2CD1DBFC6B0",
+                "name": "Offer 2 Pre Approval Letter_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/a8478e3b9a654594b4a4dec931db4276?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=bc551e568d576d522ca8839b475965cf2e010bc526c6fc86755ac26fb73b5722",
+                "documentServiceKey": "a8478e3b9a654594b4a4dec931db4276",
+                "modifiedDate": "2026-05-18T09:50:21.9366667",
+                "uploadDate": "2026-04-04T10:24:35.79",
+                "dateAssigned": "2026-05-18T09:31:39.0666667",
+                "fileName": "Offer 2 Pre Approval Letter_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "489AF21C-E4E5-4F1D-9030-BEB251FCFD78",
+                "name": "Offer 1 Henry Pre Approval Letter_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/02b2d8bf1b6f42a28d3202ea7437891d?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=b332aef6811d56dd9c1c48ecc2d08f005c4ea42c4e17023839753cfeb8a856cf",
+                "documentServiceKey": "02b2d8bf1b6f42a28d3202ea7437891d",
+                "modifiedDate": "2026-05-18T09:48:34.31",
+                "uploadDate": "2026-04-04T10:24:35.5466667",
+                "dateAssigned": "2026-05-18T09:30:43.8166667",
+                "fileName": "Offer 1 Henry Pre Approval Letter_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 3,
+            "activityId": 1050868273,
+            "activityName": "Counter Offers ",
+            "dateAssigned": "2026-05-18T09:31:40.47",
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:40.467",
+            "docs": [
+              "Counter Offer Form_X.pdf",
+              "Counter Offer Form_X.pdf",
+              "Counteroffer.pdf",
+              "Counteroffer.pdf",
+              "Counteroffer_X.pdf",
+              "Counteroffer_X.pdf",
+              "Counteroffer_X.pdf",
+              "Counteroffer_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "528EFDAE-FCE3-45DB-9714-2D66DDE0C0E0",
+                "name": "Counteroffer_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/1fbc66c811184e69acfb0a711f28a65d?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=68c87155f68f61e00f541d7c6e7dfcb1d41248fd29c3d945d438b2f0e49b3527",
+                "documentServiceKey": "1fbc66c811184e69acfb0a711f28a65d",
+                "modifiedDate": "2026-05-18T09:48:34.5066667",
+                "uploadDate": "2026-04-04T10:24:35.5366667",
+                "dateAssigned": "2026-05-18T09:30:44.02",
+                "fileName": "Counteroffer_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "2B759148-25F3-4C58-9868-899C04B21C65",
+                "name": "Counteroffer_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/1be952bb723c4421b475be10aa405cde?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=d83026cfa0ed9f71697c2a96750ed8673cbb816d47a18c9a3aa100089ff17e44",
+                "documentServiceKey": "1be952bb723c4421b475be10aa405cde",
+                "modifiedDate": "2026-05-18T09:50:23.25",
+                "uploadDate": "2026-04-04T10:24:35.7366667",
+                "dateAssigned": "2026-04-07T03:53:27.57",
+                "fileName": "Counteroffer_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "63406C8A-CAF7-422B-BA86-996AE826BA79",
+                "name": "Counteroffer_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/3cb6ef8f5b8545a898983f72f0e8fbc5?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=fef8ec353f34099dc85062980518d1264211bead0ec9d17040f44940f5f44638",
+                "documentServiceKey": "3cb6ef8f5b8545a898983f72f0e8fbc5",
+                "modifiedDate": "2026-05-18T09:50:23.63",
+                "uploadDate": "2026-04-04T10:24:35.8833333",
+                "dateAssigned": "2026-05-18T09:31:40.0233333",
+                "fileName": "Counteroffer_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "17CDF95D-26C2-4CBB-A60E-099D4AF4B94F",
+                "name": "Counteroffer",
+                "url": "https://skyslope-documents.s3.amazonaws.com/8c37676e3284400c9eb78423469fa232?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=cb46a599c44fb574814f7ce8dbdd1d85bbd29ccd796f53bdafeabbeca8b92d23",
+                "documentServiceKey": "8c37676e3284400c9eb78423469fa232",
+                "modifiedDate": "2026-05-18T09:50:24.1033333",
+                "uploadDate": "2026-04-04T10:24:35.8933333",
+                "dateAssigned": "2026-05-18T09:31:40.47",
+                "fileName": "Counteroffer.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "7A1C86DA-02B6-40F8-9801-62B2D3603FB8",
+                "name": "Counter Offer Form_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/1b7e827abd2a451da15addf2b80f3ee0?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=b3f96b66e9492db516a9a15cfef994de5dd0a7155107bc6d98cde0295bad8d51",
+                "documentServiceKey": "1b7e827abd2a451da15addf2b80f3ee0",
+                "modifiedDate": "2026-05-18T09:47:36.8066667",
+                "uploadDate": "2026-04-04T10:24:35.36",
+                "dateAssigned": "2026-05-18T09:30:38.3",
+                "fileName": "Counter Offer Form_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "96DDD6CF-CB24-4D00-ABEE-A4A2A79E3E1F",
+                "name": "Counteroffer",
+                "url": "https://skyslope-documents.s3.amazonaws.com/a3ea8ac11727434590b0f0159fa65814?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=65162c70b629d840d3ff4a71524be9e7aff9c86c5a6b45206e23bd93225a460e",
+                "documentServiceKey": "a3ea8ac11727434590b0f0159fa65814",
+                "modifiedDate": "2026-05-18T09:47:39.6066667",
+                "uploadDate": "2026-04-04T10:24:35.4466667",
+                "dateAssigned": "2026-05-18T09:30:40.0466667",
+                "fileName": "Counteroffer.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "80DFF27A-CDB5-4970-BB52-38B4825F35E9",
+                "name": "Counter Offer Form_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/883c0f78ac634073b64a3e020dc5d38b?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=41f7db484276a5b9184197c414f285250d5ca85ad0047e71cb7ef0b12f73fe5f",
+                "documentServiceKey": "883c0f78ac634073b64a3e020dc5d38b",
+                "modifiedDate": "2026-05-18T09:47:39.8866667",
+                "uploadDate": "2026-04-04T10:24:35.5033333",
+                "dateAssigned": "2026-05-18T09:30:40.29",
+                "fileName": "Counter Offer Form_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 4,
+            "activityId": 1050868274,
+            "activityName": "Sale Addendums ",
+            "dateAssigned": "2026-05-18T09:31:38.88",
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:38.873",
+            "docs": [
+              "Advisory to Seller Regarding Title.pdf",
+              "Advisory to Seller Regarding Title_X.pdf",
+              "Advisory to Seller Regarding Title_X.pdf",
+              "Ex Offer 2 Extension to Closing Date Addendum 2_X.pdf",
+              "Ex Offer 2 Extension to Closing Date Addendum_X.pdf",
+              "Ex Offer 2 Fully Executed Repair Addendums_X.pdf",
+              "Ex Offer 2 Signed Seller Repair Addendum v2_X.pdf",
+              "Ex Offer 2 Signed Seller Repair Addendum v2_X.pdf",
+              "Ex Offer 2 Signed Seller Repair Addendum_X.pdf",
+              "Ex OREF - 022A Offer 2 OREF 022A Buyers Repair Addendum 1_X.pdf",
+              "Ex OREF - 022A Offer 2 OREF 022A Buyers Repair Addendum 2_X.pdf",
+              "Notice of Final Agreement.pdf",
+              "Notice of Final Agreement_X.pdf",
+              "Notice of Final Agreement_X.pdf",
+              "OREF - 022B Sellers Repair Addendum 1_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "1D9AE4F6-4DB7-4C1F-9329-877C5380AF84",
+                "name": "Ex Offer 2 Signed Seller Repair Addendum_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/21dbe00fade646bc8d7462302909dfcc?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=f79390309b101fa16a3977fe56feb85390102b0b95b58f2a84f80f3f3534cbfa",
+                "documentServiceKey": "21dbe00fade646bc8d7462302909dfcc",
+                "modifiedDate": "2026-05-18T09:48:36.5966667",
+                "uploadDate": "2026-04-04T10:24:35.58",
+                "dateAssigned": "2026-05-18T09:31:37.15",
+                "fileName": "Ex Offer 2 Signed Seller Repair Addendum_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "CCCDB662-EED6-4CC3-9EEC-A041861F92DF",
+                "name": "Advisory to Seller Regarding Title",
+                "url": "https://skyslope-documents.s3.amazonaws.com/91bf3a656d844d729d088615e11bbeb4?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=4c667a51b3de01ad4912ec12071df2e79e6663f1b0246aa4403993a45ce396c6",
+                "documentServiceKey": "91bf3a656d844d729d088615e11bbeb4",
+                "modifiedDate": "2026-05-18T09:48:34.95",
+                "uploadDate": "2026-04-04T10:24:35.57",
+                "dateAssigned": "2026-05-18T09:30:44.5866667",
+                "fileName": "Advisory to Seller Regarding Title.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "935B7D7F-ECAD-460A-B433-B5E08FFF1E54",
+                "name": "Notice of Final Agreement",
+                "url": "https://skyslope-documents.s3.amazonaws.com/a37d92f20fb94215ab61bf15c5c16ce8?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=b21ff4154003ad06787041815e0322f5f48c618e55b91cfa75f53eca86ba7517",
+                "documentServiceKey": "a37d92f20fb94215ab61bf15c5c16ce8",
+                "modifiedDate": "2026-05-18T09:48:31.9066667",
+                "uploadDate": "2026-04-04T10:24:35.47",
+                "dateAssigned": "2026-05-18T09:30:40.8666667",
+                "fileName": "Notice of Final Agreement.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "1C5E2AA9-5B65-4C7F-BA17-A919011FB6E9",
+                "name": "Ex Offer 2 Signed Seller Repair Addendum v2_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/10e68a0d13c142bead7aac908e70cd53?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=42244fb0158642b4fb5559d109de5020c88c3e3aad648b52d8c43561a7e7c2be",
+                "documentServiceKey": "10e68a0d13c142bead7aac908e70cd53",
+                "modifiedDate": "2026-05-18T09:47:40.17",
+                "uploadDate": "2026-04-04T10:24:33.2533333",
+                "dateAssigned": "2026-05-18T09:30:40.6633333",
+                "fileName": "Ex Offer 2 Signed Seller Repair Addendum v2_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "8E4614C5-1B6A-4964-B605-BFF420C14FA6",
+                "name": "Ex Offer 2 Extension to Closing Date Addendum_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/123ff2e6dc4445f483ab4a15bb346d55?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=524f2bce597c3eb35ae946c511b06f473b8a0bff515f93fafc48be6b5f8b2577",
+                "documentServiceKey": "123ff2e6dc4445f483ab4a15bb346d55",
+                "modifiedDate": "2026-05-18T09:47:35.84",
+                "uploadDate": "2026-04-04T10:24:33.18",
+                "dateAssigned": "2026-05-18T09:30:37.4733333",
+                "fileName": "Ex Offer 2 Extension to Closing Date Addendum_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "544F9C17-5AAF-47F7-9ED6-329AF585331E",
+                "name": "Ex OREF - 022A Offer 2 OREF 022A Buyers Repair Addendum 1_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/e659c8ba289e4ac7a75eb796d5641779?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=0143bfcb06fc66ce0e47b5384d331db966f0e5631d5394f3c423b6f91f96f3f4",
+                "documentServiceKey": "e659c8ba289e4ac7a75eb796d5641779",
+                "modifiedDate": "2026-05-18T09:47:36.4266667",
+                "uploadDate": "2026-04-04T10:24:33.14",
+                "dateAssigned": "2026-05-18T09:30:37.9233333",
+                "fileName": "Ex OREF - 022A Offer 2 OREF 022A Buyers Repair Addendum 1_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "9DA50541-E242-4D00-B546-864C94AD5EF1",
+                "name": "Ex Offer 2 Extension to Closing Date Addendum 2_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/70218881276c4d0189fd65bfd6750a79?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=82812a56276f2e4acbf18cbe1225ab4942d09ffc0d409d6c52122d9e3e4aa9b3",
+                "documentServiceKey": "70218881276c4d0189fd65bfd6750a79",
+                "modifiedDate": "2026-05-18T09:47:35.53",
+                "uploadDate": "2026-04-04T10:24:33.0733333",
+                "dateAssigned": "2026-05-18T09:30:37.2066667",
+                "fileName": "Ex Offer 2 Extension to Closing Date Addendum 2_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "50299501-2A69-4731-9791-ADE9FBEF69A7",
+                "name": "Ex Offer 2 Fully Executed Repair Addendums_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/c103236098004ea98f1d76eabd478e94?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=04149cbf5ff9183d3110c64bc1ce9266d87c64d4b8f31180d69cb1dcb31e078f",
+                "documentServiceKey": "c103236098004ea98f1d76eabd478e94",
+                "modifiedDate": "2026-05-18T09:47:40.0433333",
+                "uploadDate": "2026-04-04T10:24:33.0533333",
+                "dateAssigned": "2026-05-18T09:30:40.4366667",
+                "fileName": "Ex Offer 2 Fully Executed Repair Addendums_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "75137F9B-BB31-4CB6-A793-590FC3E50FF9",
+                "name": "Ex OREF - 022A Offer 2 OREF 022A Buyers Repair Addendum 2_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/d869c3090ed34c8c96686dde6b3adede?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=2c2f9937c2ea289a6dd0dc71258a999d33f9f0e07db49db3d3ad2af19a989580",
+                "documentServiceKey": "d869c3090ed34c8c96686dde6b3adede",
+                "modifiedDate": "2026-05-18T09:47:35.69",
+                "uploadDate": "2026-04-04T10:24:33.0133333",
+                "dateAssigned": "2026-05-18T09:30:37.34",
+                "fileName": "Ex OREF - 022A Offer 2 OREF 022A Buyers Repair Addendum 2_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "EEF7C68C-F299-467D-B9F7-47364D158F80",
+                "name": "Notice of Final Agreement_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/c678b05c7b854b7fbfa32f1b29585224?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=24560aed9e078f5a8ccb892235dfb429cb175a7c9c22d3cba5d8e8241ed0d660",
+                "documentServiceKey": "c678b05c7b854b7fbfa32f1b29585224",
+                "modifiedDate": "2026-05-18T09:50:21.8066667",
+                "uploadDate": "2026-04-04T10:24:35.7133333",
+                "dateAssigned": "2026-05-18T09:31:38.88",
+                "fileName": "Notice of Final Agreement_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "EC0623F8-F5B8-466C-B23C-5F9FD3310146",
+                "name": "OREF - 022B Sellers Repair Addendum 1_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/60409b8479544c6c871c4a7795c60bc6?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=b6e52069050c89cc15fade47129566261b75d5658dcb3b27aa14526c37ddc351",
+                "documentServiceKey": "60409b8479544c6c871c4a7795c60bc6",
+                "modifiedDate": "2026-05-18T09:50:21.2633333",
+                "uploadDate": "2026-04-04T10:24:35.6433333",
+                "dateAssigned": "2026-05-18T09:31:37.76",
+                "fileName": "OREF - 022B Sellers Repair Addendum 1_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "90A02E37-2EF4-4859-84BE-DB42C730774C",
+                "name": "Advisory to Seller Regarding Title_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/953e3fa0057c476793cebb5a91078dc0?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=a773278e3db52253e0a13597ac706c7f09b13f6b53e820b61f5af87830413747",
+                "documentServiceKey": "953e3fa0057c476793cebb5a91078dc0",
+                "modifiedDate": "2026-05-18T09:48:36.7266667",
+                "uploadDate": "2026-04-04T10:24:35.6333333",
+                "dateAssigned": "2026-05-18T09:31:37.3",
+                "fileName": "Advisory to Seller Regarding Title_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 5,
+            "activityId": 1050868275,
+            "activityName": "Professional Inspection Addendum ",
+            "dateAssigned": null,
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 6,
+            "activityId": 1050868276,
+            "activityName": "Repair Addendums ",
+            "dateAssigned": null,
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "Completed",
+            "help": "",
+            "modifiedOn": "2026-05-11T12:02:53.537",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 7,
+            "activityId": 1050868277,
+            "activityName": "Delivery Addendum ",
+            "dateAssigned": null,
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 8,
+            "activityId": 1050868278,
+            "activityName": "Owner Association Addendum",
+            "dateAssigned": null,
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-05-11T12:03:01.723",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 9,
+            "activityId": 1050868279,
+            "activityName": "Solar Panel Addendum ",
+            "dateAssigned": "2026-05-18T09:30:44.1566667",
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:30:44.15",
+            "docs": [
+              "Advisory Regarding Earnest Money_X.pdf",
+              "Advisory Regarding Earnest Money_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "94AE364A-CB47-40A7-B9F4-7299B140ACB2",
+                "name": "Advisory Regarding Earnest Money_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/c622ad3f8dea4a278a399dc87b57353a?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=ba8a934bdecfaab6b90ecf7c4500599900ac204eeff174dcecc9b476d0a86e5a",
+                "documentServiceKey": "c622ad3f8dea4a278a399dc87b57353a",
+                "modifiedDate": "2026-05-18T09:48:34.6566667",
+                "uploadDate": "2026-04-04T10:24:35.53",
+                "dateAssigned": "2026-04-07T03:54:10.34",
+                "fileName": "Advisory Regarding Earnest Money_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 10,
+            "activityId": 1050868280,
+            "activityName": "Wood Stove Fireplace Insert Addendum ",
+            "dateAssigned": null,
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "Completed",
+            "help": "",
+            "modifiedOn": "2026-05-11T12:02:57.877",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 11,
+            "activityId": 1050868281,
+            "activityName": "Contingency Removal Addendum ",
+            "dateAssigned": null,
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 12,
+            "activityId": 1050868282,
+            "activityName": "Agreement to Occupy ",
+            "dateAssigned": null,
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 13,
+            "activityId": 1050868283,
+            "activityName": "Bill Of Sale ",
+            "dateAssigned": null,
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 14,
+            "activityId": 1050868284,
+            "activityName": "VA/FHA Ammendatory Clause ",
+            "dateAssigned": null,
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "Completed",
+            "help": "",
+            "modifiedOn": "2026-05-11T12:03:09.347",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 15,
+            "activityId": 1050868285,
+            "activityName": "Contingent Right To Purchase ",
+            "dateAssigned": null,
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 16,
+            "activityId": 1050868286,
+            "activityName": "Notice to Buyer | Seller ",
+            "dateAssigned": "2026-05-18T09:31:41.2633333",
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:41.253",
+            "docs": [
+              "Advisory Regarding Septic Wells_X.pdf",
+              "Advisory Regarding Septic Wells_X.pdf",
+              "Advisory Regarding Septic Wells_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "9A835B29-6C55-4DAD-9B45-9E3EF54F2886",
+                "name": "Advisory Regarding Septic Wells_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/1c7fda821028416ab8c1c1d279329ddd?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=1283a2dba18cb0958957b330d5b63006df0b591823cfb555d4844d036a1849fd",
+                "documentServiceKey": "1c7fda821028416ab8c1c1d279329ddd",
+                "modifiedDate": "2026-05-18T09:48:35.2633333",
+                "uploadDate": "2026-04-04T10:24:35.58",
+                "dateAssigned": "2026-04-07T03:57:50.87",
+                "fileName": "Advisory Regarding Septic Wells_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "5E119E04-6E4D-F111-BB41-12F8D622E63F",
+                "name": "Advisory Regarding Septic Wells_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/478a0a98462f4b27aa64fa225fffb2a4?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=448806e969d4188ff999475a878bd90954e67cae979e22faf1271b3884485e80",
+                "documentServiceKey": "478a0a98462f4b27aa64fa225fffb2a4",
+                "modifiedDate": "2026-05-18T09:50:31.4166667",
+                "uploadDate": "2026-05-11T12:16:33",
+                "dateAssigned": "2026-05-18T09:31:41.2633333",
+                "fileName": "Advisory Regarding Septic Wells_X.pdf",
+                "extension": "pdf",
+                "fileSize": null,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 17,
+            "activityId": 1050868287,
+            "activityName": "Termination of Contract ",
+            "dateAssigned": "2026-05-18T09:30:37.0566667",
+            "typeId": 62,
+            "typeName": "Sales Documentation",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:30:37.047",
+            "docs": [
+              "Offer 1 Termination.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "C4894CDD-2F78-4E70-AEFD-969C6152BBF8",
+                "name": "Offer 1 Termination",
+                "url": "https://skyslope-documents.s3.amazonaws.com/845bb91fb5974c9299760727b582869c?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=4c3e84bfeac0a521a570f6ac2300ef5bb5bc1ad7d136aa55cad0d5e5abfb54f1",
+                "documentServiceKey": "845bb91fb5974c9299760727b582869c",
+                "modifiedDate": "2026-05-18T09:47:35.3933333",
+                "uploadDate": "2026-04-04T10:24:33.0133333",
+                "dateAssigned": "2026-05-18T09:30:37.0566667",
+                "fileName": "Offer 1 Termination.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 18,
+            "activityId": 1050868288,
+            "activityName": "Documentation of Repairs or Maintenance ",
+            "dateAssigned": null,
+            "typeId": 63,
+            "typeName": "Miscellaneous Documentation",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 19,
+            "activityId": 1050868289,
+            "activityName": "Transaction Timeline",
+            "dateAssigned": null,
+            "typeId": 63,
+            "typeName": "Miscellaneous Documentation",
+            "status": "Required",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 20,
+            "activityId": 1050868290,
+            "activityName": "Broker Notes",
+            "dateAssigned": null,
+            "typeId": 63,
+            "typeName": "Miscellaneous Documentation",
+            "status": "Required",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 21,
+            "activityId": 1050868291,
+            "activityName": "Sellers Property Disclosures",
+            "dateAssigned": "2026-05-18T09:31:41.8333333",
+            "typeId": 64,
+            "typeName": "Disclosures",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:41.827",
+            "docs": [
+              "Sellers Property Disclosure Statement.pdf",
+              "Sellers Property Disclosure Statement.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "5221898F-6E75-4DAE-9A45-618EAA356E4F",
+                "name": "Sellers Property Disclosure Statement",
+                "url": "https://skyslope-documents.s3.amazonaws.com/07ccfdcb66764e199f9176671fc2ede9?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=a6f0001f1d16a42e992c3adbc94ee47d60cd1e95d4104143a0ec629b94ffe362",
+                "documentServiceKey": "07ccfdcb66764e199f9176671fc2ede9",
+                "modifiedDate": "2026-05-18T09:50:31.5466667",
+                "uploadDate": "2026-04-04T10:24:35.76",
+                "dateAssigned": "2026-04-07T03:57:30.7433333",
+                "fileName": "Sellers Property Disclosure Statement.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 22,
+            "activityId": 1050868292,
+            "activityName": "Lead Based Paint Disclosure ",
+            "dateAssigned": null,
+            "typeId": 64,
+            "typeName": "Disclosures",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 23,
+            "activityId": 1050868293,
+            "activityName": "Electronic Funds Advisory",
+            "dateAssigned": "2026-05-18T09:30:37.6266667",
+            "typeId": 64,
+            "typeName": "Disclosures",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:30:37.623",
+            "docs": [
+              "Advisory Regarding Electronic Funds.pdf",
+              "Advisory Regarding Electronic Funds.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "F1C574B9-7C0B-425F-A81E-3E09E5EAA7FD",
+                "name": "Advisory Regarding Electronic Funds",
+                "url": "https://skyslope-documents.s3.amazonaws.com/378cb0e10f35486f9e34e02c3657af13?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=ce39acb4768d8b70ee5391727426f6f548cfd41bc22d93e73c64606ffa3f4519",
+                "documentServiceKey": "378cb0e10f35486f9e34e02c3657af13",
+                "modifiedDate": "2026-05-18T09:47:36.09",
+                "uploadDate": "2026-04-04T10:24:33.11",
+                "dateAssigned": "2026-04-07T03:57:41.79",
+                "fileName": "Advisory Regarding Electronic Funds.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 24,
+            "activityId": 1050868294,
+            "activityName": "Real Estate Compensation Advisory",
+            "dateAssigned": "2026-05-18T09:31:38.61",
+            "typeId": 64,
+            "typeName": "Disclosures",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:38.603",
+            "docs": [
+              "Notice to Buyer.pdf",
+              "Notice to Buyer_X.pdf",
+              "Notice to Buyer_X.pdf",
+              "Notice to Buyer_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "5161F975-A556-43F4-B75A-4B30E3F1C945",
+                "name": "Notice to Buyer_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/a3fd273984f543b094efc4c4ff9e75ef?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=282f3bea3cb7f934febe344989b597a92cd778ab2d2f6d9e00d9d60a314e6b81",
+                "documentServiceKey": "a3fd273984f543b094efc4c4ff9e75ef",
+                "modifiedDate": "2026-05-18T09:48:34.1433333",
+                "uploadDate": "2026-04-04T10:24:35.5233333",
+                "dateAssigned": "2026-05-18T09:30:41.1666667",
+                "fileName": "Notice to Buyer_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "88E45219-1ABA-4348-98E5-AD8EEB8B9AEE",
+                "name": "Notice to Buyer",
+                "url": "https://skyslope-documents.s3.amazonaws.com/a6a0f6e1efca4ee5899379c31379958b?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=e0a6e9b0279adddf8c7b9b3e2b670bab099c379c9f91f41ac3d6261602aa6a68",
+                "documentServiceKey": "a6a0f6e1efca4ee5899379c31379958b",
+                "modifiedDate": "2026-05-18T09:48:34.82",
+                "uploadDate": "2026-04-04T10:24:35.5733333",
+                "dateAssigned": "2026-05-18T09:30:44.44",
+                "fileName": "Notice to Buyer.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "D35CF304-0C92-4DFC-864F-26AB31C9DAD1",
+                "name": "Notice to Buyer_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/7ff2a9b17ca6415891ffd1affa696e2f?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=f45c0aa8c65fb52fc096877429ec04d201624d47de23f6bd47052d65e82c0a33",
+                "documentServiceKey": "7ff2a9b17ca6415891ffd1affa696e2f",
+                "modifiedDate": "2026-05-18T09:48:35.11",
+                "uploadDate": "2026-04-04T10:24:35.5766667",
+                "dateAssigned": "2026-05-18T09:30:44.8133333",
+                "fileName": "Notice to Buyer_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "DAE3DD71-440A-41ED-8BBD-47D5F0406629",
+                "name": "Notice to Buyer_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/6fc8b5208bb84a40a9ce82d36b3bfccc?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=4cefe413a15dbc51aeb2a38e2a111a28536b75f43daa5c95ac5fa3ddc1b72fdc",
+                "documentServiceKey": "6fc8b5208bb84a40a9ce82d36b3bfccc",
+                "modifiedDate": "2026-05-18T09:50:21.4066667",
+                "uploadDate": "2026-04-04T10:24:35.6766667",
+                "dateAssigned": "2026-05-18T09:31:38.61",
+                "fileName": "Notice to Buyer_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 25,
+            "activityId": 1050868295,
+            "activityName": "FIRPTA Advisory",
+            "dateAssigned": "2026-05-18T09:31:40.18",
+            "typeId": 64,
+            "typeName": "Disclosures",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:40.177",
+            "docs": [
+              "Advisory Regarding FIRPTA Tax_X.pdf",
+              "Advisory Regarding FIRPTA Tax_X.pdf",
+              "Advisory Regarding FIRPTA Tax_X.pdf",
+              "FIRPTA Qualified SUb.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "2DB29CEC-024D-4C2A-88BB-BDCC04623777",
+                "name": "Advisory Regarding FIRPTA Tax_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/55473a9dfb2b433d95937accf8546785?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=9e7bb0ebbaea715d6a97300acec35afc8345146a4425742bc2ff9335f4791d67",
+                "documentServiceKey": "55473a9dfb2b433d95937accf8546785",
+                "modifiedDate": "2026-05-18T09:48:36.4366667",
+                "uploadDate": "2026-04-04T10:24:35.6166667",
+                "dateAssigned": "2026-05-18T09:31:37.0033333",
+                "fileName": "Advisory Regarding FIRPTA Tax_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "851E8CA7-055D-45EA-B99F-B5ECACD17F32",
+                "name": "Advisory Regarding FIRPTA Tax_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/253d8c5203054968a1795eca98d51511?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=3485a2c18d16f05b316b4417120fb3c32774132d090dddbd8d5a37d0c078e6fe",
+                "documentServiceKey": "253d8c5203054968a1795eca98d51511",
+                "modifiedDate": "2026-05-18T09:50:20.0833333",
+                "uploadDate": "2026-04-04T10:24:35.6766667",
+                "dateAssigned": "2026-04-07T03:58:01.3666667",
+                "fileName": "Advisory Regarding FIRPTA Tax_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "BFA9647D-6C4D-F111-BB41-12F8D622E63F",
+                "name": "FIRPTA Qualified SUb",
+                "url": "https://skyslope-documents.s3.amazonaws.com/35055941544c4ef3aa073609f80328e7?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=6cd11a5329e1ae3065fa25de8f1b3627f520e6a2c1e79fa9c9c22749205bbb31",
+                "documentServiceKey": "35055941544c4ef3aa073609f80328e7",
+                "modifiedDate": "2026-05-18T09:50:23.8033333",
+                "uploadDate": "2026-05-11T12:05:45",
+                "dateAssigned": "2026-05-18T09:31:40.18",
+                "fileName": "FIRPTA Qualified SUb.pdf",
+                "extension": "pdf",
+                "fileSize": null,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 26,
+            "activityId": 1050868296,
+            "activityName": "Real Estate Forms Advisory",
+            "dateAssigned": "2026-04-07T03:58:12.5633333",
+            "typeId": 64,
+            "typeName": "Disclosures",
+            "status": "Completed",
+            "help": "",
+            "modifiedOn": "2026-05-11T12:03:36.84",
+            "docs": [
+              "Advisory Regarding Fair Housing_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "44020B86-D0FD-45EE-AF9C-DADC6F5AF9A4",
+                "name": "Advisory Regarding Fair Housing_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/5dcfbf5220f54d438b1c5c3902cfb649?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=033df126757be0456df945507efb9afee06edbff46e6c27801ca8ea49089d6c5",
+                "documentServiceKey": "5dcfbf5220f54d438b1c5c3902cfb649",
+                "modifiedDate": "2026-05-18T09:48:36.87",
+                "uploadDate": "2026-04-04T10:24:35.7366667",
+                "dateAssigned": "2026-04-07T03:58:12.5633333",
+                "fileName": "Advisory Regarding Fair Housing_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 27,
+            "activityId": 1050868297,
+            "activityName": "Smoke Alarms Advisory",
+            "dateAssigned": "2026-05-18T09:30:41.0233333",
+            "typeId": 64,
+            "typeName": "Disclosures",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:30:41.017",
+            "docs": [
+              "Advisory Regarding Smoke and Carbon Monoxide Alarms_X.pdf",
+              "Advisory Regarding Smoke and Carbon Monoxide Alarms_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "26FF8925-9A79-49FA-A33D-7E05863345C7",
+                "name": "Advisory Regarding Smoke and Carbon Monoxide Alarms_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/ee3540085fa943d682743622967a2d92?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=f7140dfd6d284706ff8e54f215d9578c9dab02ee1019d21d233f8a0172bc0e4a",
+                "documentServiceKey": "ee3540085fa943d682743622967a2d92",
+                "modifiedDate": "2026-05-18T09:48:32.08",
+                "uploadDate": "2026-04-04T10:24:35.5066667",
+                "dateAssigned": "2026-05-18T09:30:41.0233333",
+                "fileName": "Advisory Regarding Smoke and Carbon Monoxide Alarms_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 28,
+            "activityId": 1050868298,
+            "activityName": "Association Advisory ",
+            "dateAssigned": null,
+            "typeId": 64,
+            "typeName": "Disclosures",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 29,
+            "activityId": 1050868299,
+            "activityName": "Lead Based Paint Advisory ",
+            "dateAssigned": null,
+            "typeId": 64,
+            "typeName": "Disclosures",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 30,
+            "activityId": 1050868300,
+            "activityName": "CCRs ",
+            "dateAssigned": null,
+            "typeId": 134,
+            "typeName": "Reports",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 31,
+            "activityId": 1050868301,
+            "activityName": "Association Documents ",
+            "dateAssigned": null,
+            "typeId": 134,
+            "typeName": "Reports",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 32,
+            "activityId": 1050868302,
+            "activityName": "Appraisal ",
+            "dateAssigned": null,
+            "typeId": 134,
+            "typeName": "Reports",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 33,
+            "activityId": 1050868303,
+            "activityName": "Home Inspection ",
+            "dateAssigned": "2026-05-18T09:31:41.9733333",
+            "typeId": 134,
+            "typeName": "Reports",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:41.97",
+            "docs": [
+              "Ochoco Repairs.pdf",
+              "SE Ochoco Inspection Report.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "EA5C910A-BF45-41C2-A81A-2F2878E16151",
+                "name": "SE Ochoco Inspection Report",
+                "url": "https://skyslope-documents.s3.amazonaws.com/ac38547f4f9b460e8c98294335d6365b?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=edd1b7874e688a3e9c861bcc9f8ac226b5de1033d7722f23f36c986daf4a3b72",
+                "documentServiceKey": "ac38547f4f9b460e8c98294335d6365b",
+                "modifiedDate": "2026-05-18T09:50:31.2733333",
+                "uploadDate": "2026-04-04T10:24:37.9266667",
+                "dateAssigned": "2026-05-18T09:31:41.06",
+                "fileName": "SE Ochoco Inspection Report.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "0C36BA78-419F-4DD9-A72F-B88DF7D0B5D8",
+                "name": "Ochoco Repairs",
+                "url": "https://skyslope-documents.s3.amazonaws.com/1eba0c96ba6949fe800764f79db843bb?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=c972315406feaf3d32cd6177d2d612f6b4fd9a83c6b3150b51dc4953492d465c",
+                "documentServiceKey": "1eba0c96ba6949fe800764f79db843bb",
+                "modifiedDate": "2026-05-18T09:50:31.7166667",
+                "uploadDate": "2026-04-04T10:24:36.1533333",
+                "dateAssigned": "2026-05-18T09:31:41.9733333",
+                "fileName": "Ochoco Repairs.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 34,
+            "activityId": 1050868304,
+            "activityName": "Broker Commission Demand from Title",
+            "dateAssigned": null,
+            "typeId": 135,
+            "typeName": "Closing Documents",
+            "status": "Completed",
+            "help": "",
+            "modifiedOn": "2026-05-11T12:16:57.81",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 35,
+            "activityId": 1050868305,
+            "activityName": "Earnest Money Receipt",
+            "dateAssigned": "2026-05-18T09:31:40.7433333",
+            "typeId": 135,
+            "typeName": "Closing Documents",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:40.74",
+            "docs": [
+              "Additional EM Receipt - IH.pdf",
+              "Additional EM Receipt - IH.pdf",
+              "EM Receipt - IH.pdf",
+              "EM Receipt - IH.pdf",
+              "EM Receipt - IH.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "15ADEE28-6E4D-F111-BB41-12F8D622E63F",
+                "name": "EM Receipt - IH",
+                "url": "https://skyslope-documents.s3.amazonaws.com/afaa56e230f94978856f00ddea60f70b?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=f3315349bcdddcb431c9d8935716af82069d4736664534239877b802f140ea2f",
+                "documentServiceKey": "afaa56e230f94978856f00ddea60f70b",
+                "modifiedDate": "2026-05-18T09:50:30.9733333",
+                "uploadDate": "2026-05-11T12:17:37",
+                "dateAssigned": "2026-05-11T12:23:33.3033333",
+                "fileName": "EM Receipt - IH.pdf",
+                "extension": "pdf",
+                "fileSize": null,
+                "pages": null
+              },
+              {
+                "id": "DB207389-6C4D-F111-BB41-12F8D622E63F",
+                "name": "Additional EM Receipt - IH",
+                "url": "https://skyslope-documents.s3.amazonaws.com/6ef753c8169d46f8978fdd26526da000?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=5eafa15f646fcc86b59b38b93b7896f5f38c8b8780b1d9267c250d0ccfabcccc",
+                "documentServiceKey": "6ef753c8169d46f8978fdd26526da000",
+                "modifiedDate": "2026-05-18T09:50:30.82",
+                "uploadDate": "2026-05-11T12:05:58",
+                "dateAssigned": "2026-05-11T12:17:47.45",
+                "fileName": "Additional EM Receipt - IH.pdf",
+                "extension": "pdf",
+                "fileSize": null,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 36,
+            "activityId": 1050868306,
+            "activityName": "Preliminary Title Report",
+            "dateAssigned": "2026-05-18T09:31:42.54",
+            "typeId": 135,
+            "typeName": "Closing Documents",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:42.54",
+            "docs": [
+              "PRELIMINARY REPORT - LINKED - LIVELOOK.pdf",
+              "PRELIMINARY REPORT - LINKED - LIVELOOK.pdf",
+              "PRELIMINARY REPORT - LINKED - LIVELOOK.pdf",
+              "PRELIMINARY REPORT - LINKED - LIVELOOK.pdf",
+              "PRELIMINARY REPORT - LINKED - LIVELOOK.pdf",
+              "PRELIMINARY REPORT - LINKED - LIVELOOK.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "627A007D-6E4D-F111-BB41-12F8D622E63F",
+                "name": "PRELIMINARY REPORT - LINKED - LIVELOOK",
+                "url": "https://skyslope-documents.s3.amazonaws.com/9336cf0c709e4b4287396e6ba52edeb1?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=a518cc5a0f34219859e819bbfd15c4b1460adbfe72307ccd207de4eba463e4b4",
+                "documentServiceKey": "9336cf0c709e4b4287396e6ba52edeb1",
+                "modifiedDate": "2026-05-18T09:50:32.43",
+                "uploadDate": "2026-05-11T12:20:01",
+                "dateAssigned": "2026-05-18T09:31:42.54",
+                "fileName": "PRELIMINARY REPORT - LINKED - LIVELOOK.pdf",
+                "extension": "pdf",
+                "fileSize": null,
+                "pages": null
+              },
+              {
+                "id": "F63DE600-6F4D-F111-BB41-12F8D622E63F",
+                "name": "PRELIMINARY REPORT - LINKED - LIVELOOK",
+                "url": "https://skyslope-documents.s3.amazonaws.com/88d91c08e721488e9dc46e13f042ea4a?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=d7a176429d9b82ba4872654a932eebf20dd44b76c79041a1c4603d1fc7f79b01",
+                "documentServiceKey": "88d91c08e721488e9dc46e13f042ea4a",
+                "modifiedDate": "2026-05-18T09:50:32.27",
+                "uploadDate": "2026-05-11T12:23:38",
+                "dateAssigned": "2026-05-11T12:24:58.4733333",
+                "fileName": "PRELIMINARY REPORT - LINKED - LIVELOOK.pdf",
+                "extension": "pdf",
+                "fileSize": null,
+                "pages": null
+              },
+              {
+                "id": "08016F95-6C4D-F111-BB41-12F8D622E63F",
+                "name": "PRELIMINARY REPORT - LINKED - LIVELOOK",
+                "url": "https://skyslope-documents.s3.amazonaws.com/2945e5974ba3412893861114cb73dd3e?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=77d31135d537be77267562329b4f65856f3445a8db4631ff6900a8606568308e",
+                "documentServiceKey": "2945e5974ba3412893861114cb73dd3e",
+                "modifiedDate": "2026-05-18T09:50:32.1",
+                "uploadDate": "2026-05-11T12:06:15",
+                "dateAssigned": "2026-05-11T12:18:07.44",
+                "fileName": "PRELIMINARY REPORT - LINKED - LIVELOOK.pdf",
+                "extension": "pdf",
+                "fileSize": null,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 37,
+            "activityId": 1050868307,
+            "activityName": "Final HUD",
+            "dateAssigned": "2026-05-18T09:31:40.3266667",
+            "typeId": 135,
+            "typeName": "Closing Documents",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:40.323",
+            "docs": [
+              "Final Sellers Statement IHLA.pdf",
+              "Final Sellers Statement IHLA.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "6CA9647D-6C4D-F111-BB41-12F8D622E63F",
+                "name": "Final Sellers Statement IHLA",
+                "url": "https://skyslope-documents.s3.amazonaws.com/f932be3060ae48849d75622a9fb20f13?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=a054feefd99e60e53752c5dea2648c2dcd2f382b919e9e7d1c7af303c9c3b1cf",
+                "documentServiceKey": "f932be3060ae48849d75622a9fb20f13",
+                "modifiedDate": "2026-05-18T09:50:23.9466667",
+                "uploadDate": "2026-05-11T12:05:45",
+                "dateAssigned": "2026-05-18T09:31:40.3266667",
+                "fileName": "Final Sellers Statement IHLA.pdf",
+                "extension": "pdf",
+                "fileSize": null,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 38,
+            "activityId": 1050868308,
+            "activityName": "Initial Agency Disclosure (042 | 10.4)",
+            "dateAssigned": "2026-05-18T09:31:40.9",
+            "typeId": 135,
+            "typeName": "Closing Documents",
+            "status": "In Review",
+            "help": "",
+            "modifiedOn": "2026-05-18T09:31:40.897",
+            "docs": [
+              "Offer 2 MLSCO Wire Fraud Advisory_X.pdf",
+              "Oregon Real Estate Agency Disclosure Pamphlet.pdf",
+              "Oregon Real Estate Agency Disclosure Pamphlet.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "04262A2D-79F0-4514-B050-BCC70CF88712",
+                "name": "Oregon Real Estate Agency Disclosure Pamphlet",
+                "url": "https://skyslope-documents.s3.amazonaws.com/25b0d31d427448b7b72a7f06eef70e38?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=11543a9e93924dec2de8f10034fbde364b241886e9968c6a2435397b5019849c",
+                "documentServiceKey": "25b0d31d427448b7b72a7f06eef70e38",
+                "modifiedDate": "2026-05-18T09:50:31.1366667",
+                "uploadDate": "2026-04-04T10:24:35.99",
+                "dateAssigned": "2026-04-07T03:58:54.3066667",
+                "fileName": "Oregon Real Estate Agency Disclosure Pamphlet.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              },
+              {
+                "id": "1CA275E6-002C-4474-BC44-2B320B4DFF80",
+                "name": "Offer 2 MLSCO Wire Fraud Advisory_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/0491c1ec58f7488c9d8dcc1f466ab366?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=96a8e07058dc377772b414802a3ba831b581673de25931c37b6d162a97eae182",
+                "documentServiceKey": "0491c1ec58f7488c9d8dcc1f466ab366",
+                "modifiedDate": "2026-05-18T09:50:21.58",
+                "uploadDate": "2026-04-04T10:24:35.84",
+                "dateAssigned": "2026-05-18T09:31:38.7366667",
+                "fileName": "Offer 2 MLSCO Wire Fraud Advisory_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 39,
+            "activityId": 1050868309,
+            "activityName": "Buyers Rep Agreement",
+            "dateAssigned": "2026-04-07T03:55:09.11",
+            "typeId": 614,
+            "typeName": "Buyer Agreement Documentation",
+            "status": "Completed",
+            "help": "",
+            "modifiedOn": "2026-04-10T08:21:47.667",
+            "docs": [
+              "MLSCO Listing Contract ODS_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "C34D4748-0CBB-4D13-BE89-AF508A4C49F1",
+                "name": "MLSCO Listing Contract ODS_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/adfe217b47564170ace96865dfda6807?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=5e830d0faf62f34a3f593121f897bb914b2091cfb942d654b9e40294aecfc799",
+                "documentServiceKey": "adfe217b47564170ace96865dfda6807",
+                "modifiedDate": "2026-05-18T09:50:20.9033333",
+                "uploadDate": "2026-04-04T10:24:35.6233333",
+                "dateAssigned": "2026-04-07T03:55:09.11",
+                "fileName": "MLSCO Listing Contract ODS_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 40,
+            "activityId": 1050868310,
+            "activityName": "Disclosed Limited Agency ",
+            "dateAssigned": "2026-04-07T03:55:20.11",
+            "typeId": 614,
+            "typeName": "Buyer Agreement Documentation",
+            "status": "Completed",
+            "help": "",
+            "modifiedOn": "2026-04-10T08:22:00.547",
+            "docs": [
+              "Disclosed Limited Agency Agreement for Sale_X.pdf"
+            ],
+            "checklistDocs": [
+              {
+                "id": "B7B105BC-3D2C-43E2-A755-BD90EF23B740",
+                "name": "Disclosed Limited Agency Agreement for Sale_X",
+                "url": "https://skyslope-documents.s3.amazonaws.com/46a0840ee1e24b92b896b912f5535876?X-Amz-Expires=300&x-amz-security-token=IQoJb3JpZ2luX2VjEM3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIE0RMIXyLeN8szTYsjwg%2FYiLhwzTJowpbQgENX2CX3PHAiEAxX0kJTdJhYfzgdSsAEuLT6j38HOk%2FCxGBM7E5JWC77Uq%2FgQIlv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2MzY4NzQzMDkwNTgiDPK6GrgaJ0IlGvpCbirSBGuJEzMGI6%2BjCzoA%2BZZaQQkGCxQKnwZrs5kdZAby2Zz2lZ518Edmhes5a23qmpqUWDVFzJ%2Fo%2FgfUAFD2ASAYcBX8XginO8H0UcNEuLohSLekg7GZ1snDkmX5lewCq19jPYjtSxT9sD0vIxbfuE8uuSxh69m7zS4Y0S2L4vunpTkWVjLzfkymv2ngc0sgnTU8mzlRp96QyMaOp8nbs4ZRkmNSLbxbP0EeWOdh6g26cifFC8ZBnvb6TVftzUwO7UfJn9e%2F49j5aJYj3tNcuWncJ%2FfLuctpVD5AVBkSWe98nMawkybTlzjVT8W1HBm0n%2BUXH%2FMEpnqN85fbOvZEOGl1cf3coeDWyrxBXX50QpD7GNwNS7qThz5LlI%2FCUi9oFum2cTSQDrlDxXX2Wc0xSDobOZtDPLuDpY%2BIfkPC%2FIORbGtuiMdOgKBnud8pRlxCNe%2FeeGQZc2I7v2%2BrRDidDMGR9hHjz81wpKPuirjeb9EPpAYAGr7PU0sDQLlH3DjtETfTGp18KzJWAMRCpRkirkGEvFzlVxCeB8vdTf7cG89yuBJVOePdzSb21oLbKO2%2FF%2B%2F07OpEq40vt5fOxskFLmeg0p5IlIhgYEo6KSuSxBmTThMwLB9jupcHobE3NSmcgaQxc8sPkmVbpplX2G1WY6yfX5N0Vhj0f0LqJ4BN5HnBUxKoOfOnta0f6ZXJqH8UO%2FfN%2BqzkYs7nHRCsnbvPADgeMBPgIQ7Xq9Zb%2FM%2FElW4H4bqCmyFWpKl5qQim8x8N9bNwFtLHy1kzc48OkCepviVDSV0m9zDOz9vQBjqUARkKiAEXzbubJXaFK8EPhT6%2B66%2FxuYtOlOG8fycAPfQgrR0iSmr5TE9GkM4aMl3v010wqcjCjzEg1cvKMNB%2FT%2FlxDNLZ%2F49%2FTgygH5OGZ63iqtjmL5nh89cW8bHPc0J0aFgzbFgNhORDVZvnKScihalHoHRdhsrudiJF30yFEPgMOabWabzzIfsSZ79KQRcK%2FK1hxAg%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAZISFKXXBIZTA7P65/20260527/us-east-1/s3/aws4_request&X-Amz-Date=20260527T130904Z&X-Amz-SignedHeaders=host;x-amz-security-token&X-Amz-Signature=3bf5d022e6a6701cc707bbdcda2d6433d25946655651b9338bd6c5a176eda2ba",
+                "documentServiceKey": "46a0840ee1e24b92b896b912f5535876",
+                "modifiedDate": "2026-05-18T09:50:22.92",
+                "uploadDate": "2026-04-04T10:24:35.94",
+                "dateAssigned": "2026-04-07T03:55:20.11",
+                "fileName": "Disclosed Limited Agency Agreement for Sale_X.pdf",
+                "extension": "pdf",
+                "fileSize": 0,
+                "pages": null
+              }
+            ],
+            "comments": []
+          },
+          {
+            "order": 41,
+            "activityId": 1050868311,
+            "activityName": "Record of Properties Shown ",
+            "dateAssigned": null,
+            "typeId": 614,
+            "typeName": "Buyer Agreement Documentation",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          },
+          {
+            "order": 42,
+            "activityId": 1050868312,
+            "activityName": "CMA or Comparables ",
+            "dateAssigned": null,
+            "typeId": 614,
+            "typeName": "Buyer Agreement Documentation",
+            "status": "Optional",
+            "help": "",
+            "modifiedOn": "2026-04-03T13:27:42.53",
+            "docs": [],
+            "checklistDocs": [],
+            "comments": []
+          }
+        ]
+      }
+    }
+  },
+  "warnings": [],
+  "links": [
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/agent",
+      "rel": "sale:agent",
+      "method": "PUT"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/office",
+      "rel": "sale:office",
+      "method": "PUT"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/checklistType",
+      "rel": "sale:checklistType",
+      "method": "PUT"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/commissionBreakdown",
+      "rel": "sale:commissionBreakdown",
+      "method": "PUT"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/commissions",
+      "rel": "sale:commissions",
+      "method": "PUT"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/commissionSplit",
+      "rel": "sale:commissionSplit",
+      "method": "PUT"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/property",
+      "rel": "sale:property",
+      "method": "PUT"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/referringagent",
+      "rel": "sale:referringagent",
+      "method": "PUT"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/updateSaleForm",
+      "rel": "sale:updateForm",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/updateCommissionBreakdownsForm",
+      "rel": "sale:commissionBreakdown",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/updateCommissionSplitForm",
+      "rel": "sale:checklistType",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/updateSaleCommissionsForm",
+      "rel": "sale:commissions",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/updateSalePropertyForm",
+      "rel": "sale:property",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/updateSaleReferringAgentForm",
+      "rel": "sale:referringagent",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/contacts/77ad6971-20f8-479d-a6f6-0fb6cef91084/updateSaleContactForm",
+      "rel": "sale:contact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/contacts/d3e08f4e-2d15-4442-ba9d-5d8aeb2cfeb5/updateSaleContactForm",
+      "rel": "sale:contact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/addSellerContactToSaleForm",
+      "rel": "sale:sellerContact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/contacts/2be82897-a6d3-41a1-84ef-af57f1c078ad/updateSaleContactForm",
+      "rel": "sale:contact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/contacts/181579fa-d8e4-45ae-a8dc-4349ad46fbc7/updateSaleContactForm",
+      "rel": "sale:contact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/addBuyerContactToSaleForm",
+      "rel": "sale:buyerContact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/addAttorneyContactToSaleForm",
+      "rel": "sale:attorneyContact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/addMiscellaneousContactToSaleForm",
+      "rel": "sale:miscellaneousContact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/addEscrowContactToSaleForm",
+      "rel": "sale:escrowContact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/addHomeWarrantyContactToSaleForm",
+      "rel": "sale:homeWarrantyContact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/addLenderContactToSaleForm",
+      "rel": "sale:lenderContact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/contacts/a598da8f-60c6-4004-ba58-96febbe8880b/updateSaleContactForm",
+      "rel": "sale:contact",
+      "method": "GET"
+    },
+    {
+      "href": "api/files/sales/eb9a24d6-f766-4fb7-bfca-a9c7e5b83cf5/contacts/6630cfb6-0938-4c0f-af25-ff2fe748a501/updateSaleContactForm",
+      "rel": "sale:contact",
+      "method": "GET"
+    },
+    {
+      "href": "https://app.skyslope.com/CreateTransaction.aspx?TransactionID=MjE4NDk5NjI=",
+      "rel": "SkySlope",
+      "method": null
+    }
+  ]
+}
