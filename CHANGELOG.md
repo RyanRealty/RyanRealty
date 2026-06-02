@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.399.3 (2026-06-02)
+
+### Maintenance
+- docs(auth): mark Google sign-in PKCE bug RESOLVED + verified live
+
+---
+
+
 ## v1.399.2 (2026-06-02)
 
 ### Bug Fixes
