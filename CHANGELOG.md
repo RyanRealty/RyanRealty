@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.9 (2026-06-02)
+
+### Maintenance
+- docs: handoff progress banner — 5 items shipped, item 2-crons + item 5 remain
+
+---
+
+
 ## v1.390.8 (2026-06-02)
 
 ### Bug Fixes
