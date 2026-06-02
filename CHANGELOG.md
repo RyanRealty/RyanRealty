@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.399.5 (2026-06-02)
+
+### Bug Fixes
+- fix(seo): redirect post-cutover 404s to live pages + smart 404 router
+
+---
+
+
 ## v1.399.4 (2026-06-02)
 
 ### Other
