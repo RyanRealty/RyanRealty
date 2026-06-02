@@ -1,31 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Script from 'next/script'
-import { hasMarketingConsent } from './CookieConsentBanner'
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
 
 /**
- * Loads Meta Pixel when NEXT_PUBLIC_META_PIXEL_ID is set and user has accepted cookies.
- * Sends PageView on load. Other events (ViewContent, Lead, etc.) are sent from lib/tracking.ts.
+ * Loads the Meta Pixel on EVERY page load when NEXT_PUBLIC_META_PIXEL_ID is set,
+ * and fires PageView. Other events (ViewContent, Lead, etc.) are sent from
+ * lib/tracking.ts and the LP forms.
+ *
+ * Matt directive 2026-06-02: the Pixel must fire on all traffic — Meta ad
+ * attribution, conversion optimization, and retargeting audiences are dead
+ * without it. This matches how GA4 loads here (on every visit, via Consent
+ * Mode), rather than the previous behavior where the Pixel only loaded AFTER a
+ * visitor accepted the cookie banner (so it almost never fired and `fbq` was
+ * undefined for most sessions).
+ *
+ * Privacy note: this fires before an explicit cookie opt-in. The site privacy
+ * policy must disclose Meta Pixel use. For EU traffic, gate via Meta Consent
+ * Mode (fbq('consent','revoke') by default, 'grant' on accept) instead.
  */
 export default function MetaPixel() {
-  const [consentGranted, setConsentGranted] = useState(false)
-
-  useEffect(() => {
-    if (hasMarketingConsent()) setConsentGranted(true)
-  }, [])
-
-  useEffect(() => {
-    const onConsent = () => {
-      if (hasMarketingConsent()) setConsentGranted(true)
-    }
-    window.addEventListener('cookie-consent', onConsent)
-    return () => window.removeEventListener('cookie-consent', onConsent)
-  }, [])
-
-  if (!PIXEL_ID || !consentGranted) return null
+  if (!PIXEL_ID) return null
 
   return (
     <>

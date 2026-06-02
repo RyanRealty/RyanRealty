@@ -238,49 +238,52 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
       })
     }
 
-    // Listings — paginate to get ALL active listings (Supabase caps at 1,000 per request)
+    // Listings — from the fast active-only slice of listing_tile_mv, NOT a full
+    // scan of the 589K-row, 800-column `listings` table. That scan was timing
+    // out at sitemap-generation time on the loaded pooler, silently dropping
+    // EVERY individual listing from the sitemap (0 listing URLs in prod). The MV
+    // is the lightweight tile view; filtering to on-market statuses returns the
+    // small active set fast and reliably so listings are actually discoverable.
     const listings = await fetchAllRows<{
-      ListingKey: string
-      ListNumber?: string | null
-      SubdivisionName?: string | null
-      City?: string | null
-      State?: string | null
-      PostalCode?: string | null
-      StreetNumber?: string | null
-      StreetName?: string | null
-      ModificationTimestamp?: string | null
+      listing_key: string
+      list_number?: string | null
+      subdivision_name?: string | null
+      city?: string | null
+      postal_code?: string | null
+      street_number?: string | null
+      street_name?: string | null
     }>(
-      supabase, 'listings',
-      'ListingKey, ListNumber, SubdivisionName, City, State, PostalCode, StreetNumber, StreetName, ModificationTimestamp',
-      (q) => q.or(ACTIVE_STATUS_OR),
+      supabase, 'listing_tile_mv',
+      'listing_key, list_number, subdivision_name, city, postal_code, street_number, street_name',
+      (q) => q.in('standard_status', ['Active', 'Coming Soon', 'Active Under Contract']),
     )
 
     for (const r of listings as Array<{
-      ListingKey: string
-      ListNumber?: string | null
-      SubdivisionName?: string | null
-      City?: string | null
-      State?: string | null
-      PostalCode?: string | null
-      StreetNumber?: string | null
-      StreetName?: string | null
-      ModificationTimestamp?: string | null
+      listing_key: string
+      list_number?: string | null
+      subdivision_name?: string | null
+      city?: string | null
+      postal_code?: string | null
+      street_number?: string | null
+      street_name?: string | null
     }>) {
+      // 'N/A' subdivision would slugify into a bogus /n-a/ URL segment — drop it.
+      const subdivision = r.subdivision_name && r.subdivision_name !== 'N/A' ? r.subdivision_name : null
       dynamicPages.push({
         url: `${baseUrl}${listingDetailPath(
-          r.ListingKey,
-          { streetNumber: r.StreetNumber ?? null, streetName: r.StreetName ?? null, city: r.City ?? null, state: r.State ?? null, postalCode: r.PostalCode ?? null },
+          r.listing_key,
+          { streetNumber: r.street_number ?? null, streetName: r.street_name ?? null, city: r.city ?? null, state: null, postalCode: r.postal_code ?? null },
           {
-            city: r.City ?? null,
+            city: r.city ?? null,
             neighborhood:
-              r.City && r.SubdivisionName
-                ? neighborhoodByCommunity.get(`${slugify(r.City)}:${slugify(r.SubdivisionName)}`) ?? null
+              r.city && subdivision
+                ? neighborhoodByCommunity.get(`${slugify(r.city)}:${slugify(subdivision)}`) ?? null
                 : null,
-            subdivision: r.SubdivisionName ?? null,
+            subdivision,
           },
-          { mlsNumber: r.ListNumber ?? null }
+          { mlsNumber: r.list_number ?? null }
         )}`,
-        lastModified: r.ModificationTimestamp ? new Date(r.ModificationTimestamp) : now,
+        lastModified: now,
         changeFrequency: 'daily',
         priority: 0.7,
       })
