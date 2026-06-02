@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.1 (2026-06-02)
+
+### Bug Fixes
+- fix(redirects): stop /data-deletion 301-ing to /privacy
+
+---
+
+
 ## v1.402.0 (2026-06-02)
 
 ### Features
