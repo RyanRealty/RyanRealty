@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.395.7 (2026-06-02)
+
+### Bug Fixes
+- fix(paid-funnel): wire Heath CAPI, kill dead /lp/listings 403 links, align buyer Lead value, forward _fbp/_fbc
+
+---
+
+
 ## v1.395.6 (2026-06-02)
 
 ### Bug Fixes
