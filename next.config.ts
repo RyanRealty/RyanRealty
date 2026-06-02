@@ -68,6 +68,11 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'sparkapi.com', pathname: '/**' },
       { protocol: 'https', hostname: '*.googleusercontent.com', pathname: '/**' },
       { protocol: 'https', hostname: 'cdn.resize.sparkplatform.com', pathname: '/**' },
+      // All Spark/FlexMLS photo CDN subdomains (cdn.resize + cdn.photos + future).
+      // Listing-detail gallery photos use cdn.photos.sparkplatform.com (the Uri300
+      // field) which was NOT allowlisted, so Next/Image blocked them -> broken
+      // images on the listing detail page. The wildcard covers every variant.
+      { protocol: 'https', hostname: '**.sparkplatform.com', pathname: '/**' },
       { protocol: 'http', hostname: 'localhost', pathname: '/**' },
     ],
     formats: ['image/avif', 'image/webp'],
