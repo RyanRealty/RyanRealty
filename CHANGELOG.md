@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.0 (2026-06-02)
+
+### Features
+- feat(legal): add /data-deletion page, fix dead privacy@ contact inbox
+
+---
+
+
 ## v1.401.1 (2026-06-02)
 
 ### Bug Fixes
