@@ -2,7 +2,7 @@
   "route": "app/about/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/about/index.html",
   "competitiveTarget": "Beat generic national-brokerage profile pages by leading with honesty, verified facts, real broker names + licenses, and zero marketing-speak (CLAUDE.md Data Accuracy + brand voice).",
-  "note": "Wave 3 site-v2 rebuild. SiteHeader/SiteFooter render from app/layout.tsx. Every claim is verified: Ryan Realty LLC license 201253677 (founded 2023-06-21 OREA), Matt PB 201206613, brokers from getBrokers(). NO testimonials are rendered: there is no verified client-review source wired, and fabricated reviews are a compliance + Data Accuracy violation. TestimonialBlock is deferred until a real GBP-review source is wired.",
+  "note": "Wave 3 site-v2 rebuild, selective-fidelity uplift 2026-06-02. SiteHeader/SiteFooter render from app/layout.tsx. Every claim is verified: Ryan Realty LLC license 201253677 (founded 2023-06-21 OREA), Matt PB 201206613, brokers from getBrokers(), CityGrid counts live from geo_snapshot_mv. Added the mockup's heritage strip, Jax mascot, and 'where we work' city grid; the big-CTA is the two-card CtaDuo (replaces the prior navy CTABar). Deliberate divergences from the mockup, all per CLAUDE.md §0 Data Accuracy: (1) the mockup's '37 deals closed / 6 listings turned down' story stat is unverifiable and is NOT rendered; (2) the Jax bio (the dog's age, breed color, 'every closing dinner', office street) is unverified and is omitted — JaxStory states only brand-canonical facts; (3) the heritage ribbon's 'It's About Relationships' hits the banned-word gate ('about'), so HeritageStrip uses a verified factual descriptor; (4) the city grid renders live geo_snapshot_mv counts, not the mockup's hardcoded '612 active' placeholders. Team grid + FAQ are verified-fact additions retained beyond the mockup (the mockup is a floor, not a cap). NO testimonials are rendered: no verified client-review source is wired (fabricated reviews are a compliance + Data Accuracy violation). TestimonialBlock stays deferred until a real GBP-review source is connected.",
   "requiredComponents": [
     {
       "name": "BreadcrumbNav",
@@ -15,8 +15,23 @@
       "blocking": true
     },
     {
+      "name": "HeritageStrip",
+      "section": "heritage strip — centered Amboqia 'Ryan Realty' lockup, eyebrow ribbon, 'Bend · Oregon · est. 2023' (verified facts)",
+      "blocking": true
+    },
+    {
       "name": "ContentSection",
       "section": "Story section — independent-brokerage origin (verified: opened 2023, data-led, Central Oregon service area) + four-rule values grid",
+      "blocking": true
+    },
+    {
+      "name": "JaxStory",
+      "section": "Jax mascot split — brand-canonical copy only (blue lab on signage + social); unverified personal-bio details omitted per §0",
+      "blocking": true
+    },
+    {
+      "name": "CityGrid",
+      "section": "'Where we work' service-area grid — 8 city cards with LIVE geo_snapshot_mv counts (not the mockup's hardcoded placeholders)",
       "blocking": true
     },
     {
@@ -30,8 +45,8 @@
       "blocking": true
     },
     {
-      "name": "CTABar",
-      "section": "'Ready to talk' — navy CTA band with schedule-a-call and phone number",
+      "name": "CtaDuo",
+      "section": "big-CTA — two conversion cards (buyer listing alerts + seller home valuation), replaces the prior navy CTABar",
       "blocking": true
     }
   ],

@@ -97,7 +97,21 @@ function CityCard({ city, imageUrl }: { city: CityCardData; imageUrl: string | n
   )
 }
 
-export default async function CityGrid() {
+/**
+ * Optional heading overrides. Defaults match the homepage usage; the /about
+ * page passes the mockup's "Service area · Where we work" framing.
+ */
+type CityGridProps = {
+  eyebrow?: string
+  title?: string
+  subtitle?: string
+}
+
+export default async function CityGrid({
+  eyebrow = 'Communities',
+  title = 'Search by city',
+  subtitle = 'Eleven Central Oregon communities. Median prices refreshed daily.',
+}: CityGridProps = {}) {
   const [cities, geoImages] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getGeoTileImages([...CITY_ORDER]).catch((): Record<string, string[]> => ({})),
@@ -121,10 +135,10 @@ export default async function CityGrid() {
     <Section padding="default" tone="muted" divider>
       <Container>
         <Stack gap="tight" className="mb-6">
-          <Eyebrow>Communities</Eyebrow>
-          <H2>Search by city</H2>
+          <Eyebrow>{eyebrow}</Eyebrow>
+          <H2>{title}</H2>
           <Body size="small" tone="muted">
-            Eleven Central Oregon communities. Median prices refreshed daily.
+            {subtitle}
           </Body>
         </Stack>
 

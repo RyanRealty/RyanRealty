@@ -22,7 +22,10 @@ import { HeroBlock } from '@/components/site/HeroBlock'
 import { ContentSection } from '@/components/site/ContentSection'
 import { BrokerCard } from '@/components/site/BrokerCard'
 import { FAQBlock } from '@/components/site/FAQBlock'
-import { CTABar } from '@/components/site/CTABar'
+import { HeritageStrip } from '@/components/site/HeritageStrip'
+import { JaxStory } from '@/components/site/JaxStory'
+import CityGrid from '@/components/site/CityGrid'
+import CtaDuo from '@/components/site/CtaDuo'
 import {
   Body,
   Container,
@@ -125,24 +128,26 @@ export default async function AboutPage() {
         minHeight={440}
       />
 
+      <HeritageStrip />
+
       <ContentSection
         eyebrow="Our story"
         title="An independent brokerage, by design."
         width="wide"
       >
         <Stack gap="default">
-          <Body size="default" tone="muted" className="leading-[1.65]">
+          <Body size="default" tone="muted" className="leading-relaxed">
             Ryan Realty is a small, independent brokerage in Bend, opened in 2023. Three licensed
             brokers, all active in Oregon. The broker you meet is the broker who works your deal
             from the first conversation to the closing table.
           </Body>
-          <Body size="default" tone="muted" className="leading-[1.65]">
+          <Body size="default" tone="muted" className="leading-relaxed">
             We lead with the numbers. The same live market data on this site (active inventory,
             median price, days on market, months of supply) is what we put in front of you when it
             is time to price a listing or write an offer. When we do not think we can sell a home
             well, we say so.
           </Body>
-          <Body size="default" tone="muted" className="leading-[1.65]">
+          <Body size="default" tone="muted" className="leading-relaxed">
             We serve Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, and the surrounding resort
             communities across Central Oregon. We are licensed in Oregon and keep our work inside
             the region we know.
@@ -152,7 +157,7 @@ export default async function AboutPage() {
 
       <Section padding="default" tone="muted" divider>
         <Container>
-          <Stack gap="tight" className="mb-8 max-w-[60ch]">
+          <Stack gap="tight" className="mb-8 max-w-prose">
             <Eyebrow>What we do differently</Eyebrow>
             <H2>Four rules we hold to.</H2>
           </Stack>
@@ -160,7 +165,7 @@ export default async function AboutPage() {
             {VALUES.map((v) => (
               <div key={v.title} className="bg-card border border-border rounded-[14px] p-7 shadow-sm">
                 <H3 className="mb-2">{v.title}</H3>
-                <Body size="default" tone="muted" className="leading-[1.6]">
+                <Body size="default" tone="muted" className="leading-relaxed">
                   {v.body}
                 </Body>
               </div>
@@ -169,12 +174,20 @@ export default async function AboutPage() {
         </Container>
       </Section>
 
+      <JaxStory />
+
+      <CityGrid
+        eyebrow="Service area"
+        title="Where we work"
+        subtitle="The Central Oregon cities we serve, with the surrounding resort communities. We are licensed in Oregon, Principal Broker license 201206613, and we keep our listings inside the region we know."
+      />
+
       <Section padding="default" tone="default" divider>
         <Container>
-          <Stack gap="tight" className="mb-10 max-w-[60ch]">
+          <Stack gap="tight" className="mb-10 max-w-prose">
             <Eyebrow>Meet the team</Eyebrow>
             <H2>Three brokers. All licensed. All active.</H2>
-            <Body size="default" tone="muted" className="leading-[1.6]">
+            <Body size="default" tone="muted" className="leading-relaxed">
               Each broker you meet is the broker who works your deal from offer to close.
             </Body>
           </Stack>
@@ -195,14 +208,7 @@ export default async function AboutPage() {
         tone="muted"
       />
 
-      <CTABar
-        eyebrow="Ready to talk"
-        title="Have a question on buying or selling in Central Oregon?"
-        body="Call us directly or schedule a time to talk. No scripts, no pressure, no hand-offs."
-        primary={{ href: '/contact', label: 'Schedule a call' }}
-        secondary={{ href: 'tel:5412136706', label: '541.213.6706' }}
-        tone="navy"
-      />
+      <CtaDuo />
     </main>
   )
 }
