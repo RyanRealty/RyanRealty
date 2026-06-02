@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import { createRealtimeTask } from '@/lib/followupboss'
+import { assignPersonToUser, createRealtimeTask } from '@/lib/followupboss'
 import { createCmaRequest } from '@/lib/cma-request'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
@@ -48,6 +48,13 @@ export const runtime = 'nodejs'
 
 const META_GRAPH_BASE = 'https://graph.facebook.com/v21.0'
 const FUB_BASE = 'https://api.followupboss.com/v1'
+
+// Default FUB user for inbound leads. Meta calls us server-to-server (no browser
+// cookie), so agent attribution can't be resolved in the webhook — route all
+// FB-form leads to Matt (userId 1), matching the "all leads to Matt" default
+// used by the LP paths (lib/canonical-lead-tagger, seller-home-value). Manual
+// reassignment in the FUB UI still works per-lead.
+const FUB_USER_MATT = 1
 
 function getMetaToken(): string {
   // Prefer the System User token (has `leads_retrieval` scope so we can
@@ -545,6 +552,25 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   if (!personId) {
     console.error(`[lead-webhook] FUB person creation failed for lead ${leadId}`)
     return
+  }
+
+  // Assign the person to a FUB user so the lead is not left unassigned/invisible
+  // (FB-form leads were landing with no owner). Meta calls us server-to-server
+  // with no browser cookie (see the GA4 note below), so agent attribution can't
+  // be resolved here — route to Matt, then record the assignment for the audit
+  // trail exactly like the seller-LP path (recordSellerAssignment).
+  const assigned = await assignPersonToUser(personId, FUB_USER_MATT)
+  console.log(`[lead-webhook] Person ${personId} assigned to FUB user ${FUB_USER_MATT}: ${assigned}`)
+  if (supabase) {
+    const { error: assignErr } = await supabase.from('marketing_assignments').insert({
+      audience: parsed.audience === 'buyer' ? 'buyer' : 'seller',
+      broker: 'matt',
+      fub_user_id: FUB_USER_MATT,
+      fub_person_id: personId,
+      source: 'meta-lead-form',
+      tier: parsed.intent === 'hot' || parsed.intent === 'warm' ? parsed.intent : 'nurture',
+    })
+    if (assignErr) console.warn('[lead-webhook] marketing_assignments insert failed:', assignErr.message)
   }
 
   // Add context note
