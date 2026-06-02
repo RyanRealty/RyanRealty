@@ -26,16 +26,24 @@ const REQUIRED = {
     'https://www.google-analytics.com',
     'https://*.adtrafficquality.google',
     'https://connect.facebook.net',
+    // Follow Up Boss tracking pixel (components/FollowUpBossPixel.tsx) loads
+    // its agent script from widgetbe.com. Drop it and FUB lead attribution dies.
+    'https://widgetbe.com',
   ],
   'connect-src': [
     'https://*.google-analytics.com',
     'https://www.google-analytics.com',
     'https://*.analytics.google.com',
+    // GA4 Signals / cross-device beacons to the APEX host — the wildcard above
+    // does NOT match the bare domain, so /g/collect to it was CSP-blocked.
+    'https://analytics.google.com',
     'https://www.google.com',
     'https://*.doubleclick.net',
     'https://*.adtrafficquality.google',
     'https://connect.facebook.net',
     'https://www.facebook.com',
+    // Follow Up Boss tracking pixel beacons back to widgetbe.com.
+    'https://widgetbe.com',
   ],
 }
 
