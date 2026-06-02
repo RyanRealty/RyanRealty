@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.10 (2026-06-02)
+
+### Maintenance
+- refactor(search): render canonical ListingCard in search results
+
+---
+
+
 ## v1.390.9 (2026-06-02)
 
 ### Maintenance
