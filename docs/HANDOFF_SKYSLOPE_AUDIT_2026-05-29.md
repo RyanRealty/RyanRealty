@@ -116,3 +116,33 @@ Pipeline (per deal): `fetch-folder-pdfs.mjs --guid` → `dump-classify-context.m
 2. Dead-cycle RSAs/counters retained on Drouillard (3 cycles) + Old Bend (3 cycles). Archivable if you want them thinned.
 
 **Builder/executor hardening this session** (durable, in the skill): `execute-plan.mjs sanitize()` now strips `# , ; % { } / \` (see `references/sanitize-fixes.md`); `build-phase5.mjs` tolerates 3 subagent schema variants, pulls real extensions from `manifest.json`, length-bounds names, infers bundle cross-links, protects dedup canonicals, and backfills any activity that archiving would empty.
+
+---
+
+# UPDATE 2026-06-02 — work-set #4–12 RE-RUN (all 9 verified through the current pipeline)
+
+After confirming all 21 deals had form-compliance + Broker Notes + 0 fabricated docIds, Matt asked to re-run the 9 work-set deals that had only an EARLIER/lighter pass (the 12-set minus 712/Bear/Ochoco). All 9 done via an **`--incremental` mode** added to `build-phase5.mjs`: keep the prior pass's good names, apply ONLY net-new changes (new archives prefix the EXISTING name; skip docs already named "ARCHIVE…"; rename only genuine mislabels; reassign/cross-link as needed).
+
+| Deal | guid8 | net-new |
+|---|---|---|
+| Butler | 6ef1013a | 2 archives (superseded $290K offer, seller-only counter) + RSA cross-link |
+| Crowson | 1f4436e6 | 7 archives + 3 mislabel fixes + 3 unassigned docs filed (was under-processed) |
+| Penhollow | e1892930 | 1 sale archive (3 more dups live in the LISTING folder — out of reach) |
+| Newport | 740abefb | 1 archive + OREF 060 signer-gap flag |
+| 35th | a0d269e0 | 2 archives + moved the 29-pg RSA into the empty RSA activity |
+| Ordway | f88642ff | 3 repair docs → empty Repair Addendums activity + 2 label fixes |
+| Kwinnum | b3d7cb82 | SPD bundle → empty Sellers Property Disclosures activity |
+| Cedar | 45549882 | 2 archives (buyers-only intermediates) + cross-link |
+| Huntington | 13e20213 | 6 WRONG-PROPERTY archives (712 SW 1st Boynton failed offer) + 2 refiles |
+
+**~24 net-new archives + ~12 refiles, 0 fabricated docIds.** Real catches: Crowson, 35th, Huntington.
+
+**Wrong-folder contamination is a recurring pattern** (docs land in the wrong SkySlope folder): Huntington held 6 docs from 712 SW 1st (Boynton); earlier 703↔122 SW 10th, Old Bend↔3480 SPD, Kwinnum had 2 OREF 081 wrong-property (prior-archived).
+
+**CRITICAL re-run lesson:** a subagent misclassified Huntington's real woodstove (`6070c129`, "Offer 6 Woodstove Fully Executed", Sale# Sciaraffo112724, 54474 Huntington) as a Boynton/712 wrong-property doc. **Always READ a doc's actual property/sale# before archiving on a "wrong-cycle/wrong-property" verdict** — I verified all 8 flagged Huntington docs, archived only the 6 confirmed Boynton, kept the woodstove + an unconfirmed FIRPTA.
+
+**Flags parked for Matt:** Newport OREF 060 sellers-only signer gap; Ordway buyer-only `_X` addenda (keep/strip?); Crowson Listing Agreement with no matching activity.
+
+**Remaining optional SkySlope cleanup:** the listing-side deals carry duplicate docs in their separate LISTING folders (e.g. Penhollow's 3) that a SALE-folder pass cannot touch. A listing-folder dedup pass is the only outstanding item, if ever wanted.
+
+**`--incremental` builder mode** (durable): archive net-new dupes by prefixing the existing name; skip already-"ARCHIVE"-named docs; rename only genuine mislabels (not already-clean canonicals); + a fallback that parses a numeric activityId out of `correct_activity_name` when the subagent leaves `correct_activity_id` null.
