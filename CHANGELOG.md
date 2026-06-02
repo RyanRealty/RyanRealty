@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.399.0 (2026-06-02)
+
+### Features
+- feat(design-system): apply Amboqia display face to site H1/H2 primitives
+
+---
+
+
 ## v1.398.0 (2026-06-02)
 
 ### Features
