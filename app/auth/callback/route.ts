@@ -1,10 +1,40 @@
 import { createClient } from '@/lib/supabase/server'
-import { trackSignedInUser } from '@/lib/followupboss'
+import { trackSignedInUser, findPersonByEmail } from '@/lib/followupboss'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { cookies, headers } from 'next/headers'
 
 const AUTH_NEXT_COOKIE = 'auth_next'
+const FUB_CID_COOKIE = 'fub_cid'
+const FUB_CID_MAX_AGE = 90 * 24 * 60 * 60 // 90 days — matches identifyFubFromEmailClick
+
+/**
+ * Stamp the durable fub_cid cookie on a freshly signed-in visitor by resolving
+ * their FUB person from the sign-in email. This makes every FUTURE visit on this
+ * browser attributable to the FUB contact (via getFubPersonIdFromCookie in the
+ * visitor-tracking path) — which is what generates "Visited Website" activity in
+ * FUB and lifts the visit-to-FUB bridge rate that was sitting at ~2%. Best-effort:
+ * a brand-new contact not yet in FUB simply gets stamped on a later visit. Never
+ * blocks or fails sign-in.
+ */
+async function stampFubCidFromEmail(res: NextResponse, email: string): Promise<void> {
+  const normalized = email.trim().toLowerCase()
+  if (!normalized) return
+  try {
+    const person = await findPersonByEmail(normalized)
+    if (person?.id) {
+      res.cookies.set(FUB_CID_COOKIE, String(person.id), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: FUB_CID_MAX_AGE,
+        path: '/',
+      })
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+  }
+}
 
 async function getBaseUrl(request: Request): Promise<string> {
   const h = await headers()
@@ -68,6 +98,7 @@ export async function GET(request: Request) {
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
+      await stampFubCidFromEmail(res, data.user.email ?? '')
       return res
     }
   }
@@ -90,6 +121,7 @@ export async function GET(request: Request) {
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
+      await stampFubCidFromEmail(res, data.user.email ?? '')
       return res
     }
   }
