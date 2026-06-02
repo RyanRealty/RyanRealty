@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.6 (2026-06-02)
+
+### Maintenance
+- perf(db): bbox index on listing_tile_mv(lat,lng) for map viewport queries
+
+---
+
+
 ## v1.390.5 (2026-06-02)
 
 ### Maintenance
