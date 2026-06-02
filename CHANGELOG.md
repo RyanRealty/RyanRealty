@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.391.1 (2026-06-02)
+
+### Other
+- legal: add Cookie Policy + tighten Privacy Policy for the tracking we actually do
+
+---
+
+
 ## v1.391.0 (2026-06-02)
 
 ### Features
