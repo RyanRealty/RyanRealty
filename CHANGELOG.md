@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.395.3 (2026-06-02)
+
+### Bug Fixes
+- fix(auth): initiate OAuth client-side so PKCE code_verifier survives to callback
+
+---
+
+
 ## v1.395.2 (2026-06-02)
 
 ### Bug Fixes
