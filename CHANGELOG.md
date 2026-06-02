@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.401.0 (2026-06-02)
+
+### Features
+- feat(ui-kit): /about + /zip mockup uplift, lock /community parity
+
+### Bug Fixes
+- fix(csp): allow Follow Up Boss pixel + GA4 apex hosts
+
+---
+
+
 ## v1.400.0 (2026-06-02)
 
 ### Features
