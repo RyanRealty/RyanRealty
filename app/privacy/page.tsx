@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
-const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'privacy@ryanrealty.com'
+const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'privacy@ryan-realty.com'
 
 export const metadata: Metadata = {
   title: 'Privacy & cookies',
@@ -28,9 +28,11 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <h1 className="text-2xl font-bold tracking-tight text-primary">Privacy & cookies</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Last updated: May 21, 2026</p>
+      <p className="mt-2 text-sm text-muted-foreground">Last updated: June 1, 2026</p>
       <p className="mt-4 text-primary">
-        How we collect, use, and protect your information when you use our website.
+        How we collect, use, and protect your information when you use our website. For the full list of
+        cookies and tracking technologies we use, see our{' '}
+        <a href="/cookies" className="text-accent-foreground underline hover:no-underline">cookie policy</a>.
       </p>
 
       <section className={SECTION_CLASS}>
@@ -79,7 +81,9 @@ export default function PrivacyPage() {
           <li><strong>Marketing</strong> — with your consent, for advertising and retargeting.</li>
         </ul>
         <p className={P_CLASS}>
-          You can change your cookie preferences via the cookie banner or your browser settings.
+          You can change your cookie preferences via the cookie banner or your browser settings. See our{' '}
+          <a href="/cookies" className="text-accent-foreground underline hover:no-underline">cookie policy</a>{' '}
+          for each cookie we use, its purpose, and how long it lasts.
         </p>
       </section>
 
@@ -100,7 +104,24 @@ export default function PrivacyPage() {
       <section className={SECTION_CLASS}>
         <h2 className={H2_CLASS}>Oregon Consumer Privacy Act</h2>
         <p className={P_CLASS}>
-          Oregon’s consumer privacy law (effective July 2025) may give you the right to access, correct, delete, and opt-out of targeted advertising. To exercise these rights, contact us at the email below. We will respond within 45 days where required.
+          Oregon’s Consumer Privacy Act (effective July 1, 2024) gives Oregon residents the right to access, correct, delete, and obtain a copy of their personal data, and to opt out of the sale of personal data, targeted advertising, and certain profiling. To exercise these rights, contact us at the email below. We will respond within 45 days where required.
+        </p>
+      </section>
+
+      <section className={SECTION_CLASS}>
+        <h2 className={H2_CLASS}>Recognizing you and targeted advertising</h2>
+        <p className={P_CLASS}>
+          Once you sign in, contact us, or follow a link we send, we may recognize you on later visits using a first-party cookie and associate the pages and listings you view with your contact record in Follow Up Boss, so our team can follow up on the homes you care about. We may also send a one-way hashed version of your email or phone to Meta and Google so they can match you to your visit and measure or target advertising. We never send them your raw email or phone. We may use this information to build advertising audiences and to tailor the ads you see. You can opt out as described below.
+        </p>
+      </section>
+
+      <section id="donotsell" className={SECTION_CLASS}>
+        <h2 className={H2_CLASS}>Do not sell or share my personal information</h2>
+        <p className={P_CLASS}>
+          We do not sell your personal information for money. We do use advertising and analytics services from Meta and Google that may involve sharing online identifiers, such as a hashed email or a cookie identifier, for cross-context behavioral advertising. Under California and Oregon law this can be treated as a sale or a share, and you have the right to opt out.
+        </p>
+        <p className={P_CLASS}>
+          To opt out on this browser, set Marketing to off in our cookie banner. That stops the Meta Pixel and advertising cookies here. To opt out across our systems, email us at <a href={`mailto:${contactEmail}`} className="text-accent-foreground underline hover:no-underline">{contactEmail}</a> with the subject line Do Not Sell or Share, and we will remove you from advertising audiences and stop sharing your identifiers. Opting out does not stop the essential or analytics functions you have allowed.
         </p>
       </section>
 
