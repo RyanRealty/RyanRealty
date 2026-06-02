@@ -14,6 +14,7 @@ import { getSimilarListings } from '@/lib/data/listings/getSimilarListings'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
+import { listingDetailPath } from '@/lib/slug'
 import type { BreadcrumbNavItem } from '@/components/site/BreadcrumbNav'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
@@ -103,10 +104,34 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? `${addressFull} | Ryan Realty`
     : `Listing ${listing.listingKey} | Ryan Realty`
 
+  // Canonical = the PUBLIC URL (matches the sitemap + internal links), NOT the
+  // internal /listing/<key> route. Pointing the canonical at /listing/<key>
+  // split indexing signal: the sitemap listed the pretty URL while the page
+  // told Google to index the raw-key one. Built with the same listingDetailPath
+  // helper the sitemap uses, so they agree.
+  const canonicalSubdivision =
+    listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
+  const canonicalPath = listingDetailPath(
+    listing.listingKey,
+    {
+      streetNumber: listing.streetNumber,
+      streetName: listing.streetName,
+      city: listing.city,
+      state: null,
+      postalCode: listing.postalCode,
+    },
+    {
+      city: listing.boundaryCity ?? listing.city,
+      neighborhood: listing.boundaryNeighborhood,
+      subdivision: canonicalSubdivision,
+    },
+    { mlsNumber: listing.listNumber },
+  )
+
   return pageMetadata({
     title,
     description,
-    path: `/listing/${listing.listingKey}`,
+    path: canonicalPath,
     ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,
   })
 }

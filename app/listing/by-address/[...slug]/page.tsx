@@ -60,5 +60,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug = [] } = await params
   const listingKey = await resolveListingKeyFromPathSegments(slug)
   if (!listingKey) return {}
-  return generateListingMetadata({ params: Promise.resolve({ listingKey }) })
+  const base = await generateListingMetadata({ params: Promise.resolve({ listingKey }) })
+  // Self-canonical to the PUBLIC URL the visitor/Googlebot actually requested —
+  // this IS the sitemap URL. Overrides the inherited canonical so the pretty URL
+  // is the indexed one and there's no canonical/sitemap split.
+  const canonical = `/homes-for-sale/${slug.map(encodeURIComponent).join('/')}`
+  return { ...base, alternates: { canonical } }
 }
