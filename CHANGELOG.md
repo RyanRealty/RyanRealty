@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.395.1 (2026-06-02)
+
+### Bug Fixes
+- fix(save): anonymous Save prompts sign-in; remove dead note functions
+
+---
+
+
 ## v1.395.0 (2026-06-02)
 
 ### Features
