@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.17 (2026-06-02)
+
+### Bug Fixes
+- fix(seo): listing canonical points at the public URL, not /listing/<rawkey>
+
+---
+
+
 ## v1.390.16 (2026-06-02)
 
 ### Maintenance
