@@ -44,7 +44,7 @@ import {
   type GolfCommunityKpi,
 } from '@/data/golf/community-kpis'
 import { loadGolfFeaturedListings } from '@/data/golf/featured-listings'
-import type { ListingCardData } from '@/components/lp/ListingCard'
+import { listingCardHref, type ListingCardData } from '@/components/lp/ListingCard'
 import { GolfCourseMap } from './_components/GolfCourseMap'
 
 export const dynamic = 'force-static'
@@ -707,7 +707,7 @@ function WhereToLiveSection({
 
                   {featured && (
                     <Link
-                      href={`/lp/listings/${encodeURIComponent(featured.listNumber ?? featured.listingKey)}/`}
+                      href={listingCardHref(featured)}
                       className="golf-live-featured"
                       aria-label={`Featured home: ${featured.address}`}
                     >

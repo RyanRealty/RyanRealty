@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { submitHeathCmaForm, type HeathCmaTimeline } from '../actions'
+import { trackEvent } from '@/lib/tracking'
 
 /**
  * Heath at Tetherow CMA form. Three-step (address + sub-plat context,
@@ -67,6 +68,29 @@ export default function HeathCmaForm() {
       if (!result.success) {
         setError(result.error)
         return
+      }
+      // Client-side Lead tracking. Shares result.eventId with the server CAPI
+      // Lead so Meta de-duplicates the browser + server events into one
+      // conversion. Both halves were previously missing on this LP.
+      try {
+        trackEvent('generate_lead', {
+          source: 'tetherow_heath_cma',
+          lead_classification: result.classification,
+          value: 500,
+        })
+      } catch {
+        // tracking suppressed — server-side lead + CAPI still landed
+      }
+      if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+        try {
+          window.fbq('track', 'Lead', {
+            content_name: 'tetherow_heath_cma',
+            value: 500,
+            currency: 'USD',
+          }, { eventID: result.eventId })
+        } catch {
+          // Pixel suppressed — server CAPI still fired
+        }
       }
       setStep('success')
     })

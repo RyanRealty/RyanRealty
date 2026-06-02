@@ -423,6 +423,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
 
     // ─── Meta CAPI Lead $500 with dedup event_id ──────────────────────────
     const eventId = generateEventId()
+    const capiCookies = await cookies()
     void fetch(`${siteUrl}/api/meta-capi`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -434,6 +435,8 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         lastName,
         eventId,
         eventSourceUrl: `${siteUrl}/lp/seller-home-value`,
+        fbp: capiCookies.get('_fbp')?.value,
+        fbc: capiCookies.get('_fbc')?.value,
         customData: {
           content_name: 'seller_lp_home_value',
           lead_type: 'seller_valuation',

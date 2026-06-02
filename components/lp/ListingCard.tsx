@@ -19,6 +19,7 @@
  * Server component — no client-side state. Pass listings in pre-sorted.
  */
 import Link from 'next/link'
+import { listingDetailPath } from '@/lib/slug'
 
 export type ListingCardData = {
   /** Unique key, used for React + the listing detail route. */
@@ -45,7 +46,7 @@ export type ListingCardData = {
 
 export interface ListingCardProps {
   listing: ListingCardData
-  /** Override the detail-page href. Default: /lp/listings/<listNumber|listingKey>/ */
+  /** Override the detail-page href. Default: the canonical /homes-for-sale detail URL. */
   href?: string
   /** Override the showing-CTA target. Default: same href + #schedule. */
   scheduleHref?: string
@@ -73,10 +74,28 @@ function statusPillStyle(label: string): { bg: string; text: string } {
   return { bg: '#102742', text: '#faf8f4' }
 }
 
+/**
+ * Canonical public detail URL for a listing card. Uses the real
+ * /homes-for-sale/<city>/<address-slug>-<mls> route via listingDetailPath —
+ * never the /lp/listings/<id>/ route, which does not exist and 403s.
+ */
+export function listingCardHref(
+  listing: Pick<ListingCardData, 'listingKey' | 'listNumber' | 'address' | 'city' | 'subdivision'>,
+): string {
+  const addr = (listing.address ?? '').trim()
+  const firstSpace = addr.indexOf(' ')
+  const streetNumber = firstSpace > 0 ? addr.slice(0, firstSpace) : null
+  const streetName = firstSpace > 0 ? addr.slice(firstSpace + 1) : addr || null
+  return listingDetailPath(
+    listing.listingKey,
+    { streetNumber, streetName, city: listing.city ?? null },
+    { city: listing.city ?? null, subdivision: listing.subdivision ?? null },
+    { mlsNumber: listing.listNumber ?? null },
+  )
+}
+
 export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
-  const detailHref =
-    href ??
-    `/lp/listings/${encodeURIComponent(listing.listNumber ?? listing.listingKey)}/`
+  const detailHref = href ?? listingCardHref(listing)
   const ctaHref = scheduleHref ?? `${detailHref}#schedule`
 
   const facts: string[] = []

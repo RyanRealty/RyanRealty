@@ -16,6 +16,7 @@ import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { cookies } from 'next/headers'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -204,6 +205,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
 
     // ─── Meta CAPI Lead $500 (high-intent seller signal) ──────────────────
     const eventId = generateEventId()
+    const capiCookies = await cookies()
     void fetch(`${siteUrl}/api/meta-capi`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -215,6 +217,8 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
         lastName,
         eventId,
         eventSourceUrl: `${siteUrl}/lp/expired-listing`,
+        fbp: capiCookies.get('_fbp')?.value,
+        fbc: capiCookies.get('_fbc')?.value,
         customData: {
           content_name: 'expired_listing_lp',
           lead_type: 'expired_listing',

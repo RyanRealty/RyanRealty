@@ -75,7 +75,7 @@ export default function BuyerLPForm() {
           try {
             window.fbq('track', 'Lead', {
               content_name: 'buyer_lp_listing_alerts',
-              value: 250,
+              value: 300,
               currency: 'USD',
             }, { eventID: r.eventId })
           } catch {
