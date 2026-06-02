@@ -39,9 +39,23 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
   const hasNextParam = typeof window !== 'undefined' ? !!searchParams?.get('next') : false
   const pathname = usePathname()
   const isHome = pathname === '/'
+  // Dedicated landing pages own their own conversion funnel (their own lead form).
+  // The global social sign-in modal must never auto-pop over an /lp/* page.
+  const isLandingPage = (pathname || '').startsWith('/lp/')
+  // Ad / marketing traffic (Matt directive 2026-06-02): a visitor arriving from a
+  // paid click should never be asked to continue with Google or Facebook. Detect
+  // the click ids plus any utm_* and suppress the auto-pop for that page load.
+  const fromAdClick = (() => {
+    if (typeof window === 'undefined') return false
+    const qs = new URLSearchParams(window.location.search || '')
+    return qs.has('fbclid') || qs.has('gclid') || qs.has('msclkid') || qs.has('ttclid') ||
+      [...qs.keys()].some((k) => k.toLowerCase().startsWith('utm_'))
+  })()
 
   useEffect(() => {
     if (user) return
+    // Never interrupt a landing-page or paid-traffic conversion with the social modal.
+    if (isLandingPage || fromAdClick) return
     if (hasNextParam) {
       setShow(true)
       return
@@ -50,7 +64,7 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
     // Prompt logged-out visitors right away (don't wait). Tiny delay lets the first paint land.
     const t = setTimeout(() => setShow(true), 1000)
     return () => clearTimeout(t)
-  }, [user, hasNextParam, isHome])
+  }, [user, hasNextParam, isHome, isLandingPage, fromAdClick])
 
   async function handleSignIn(provider: 'google' | 'facebook') {
     setLoading(provider)
