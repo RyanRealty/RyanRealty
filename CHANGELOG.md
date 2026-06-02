@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.395.6 (2026-06-02)
+
+### Bug Fixes
+- fix(auth): derive OAuth base URL from request host, not NEXT_PUBLIC_SITE_URL
+
+---
+
+
 ## v1.395.5 (2026-06-02)
 
 ### Bug Fixes
