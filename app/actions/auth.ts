@@ -1,10 +1,29 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { trackSignedInUser } from '@/lib/followupboss'
 
 const AUTH_NEXT_COOKIE = 'auth_next'
+
+/**
+ * Build the base URL from the INCOMING REQUEST origin (not the static NEXT_PUBLIC_SITE_URL).
+ * The PKCE code_verifier cookie is set on whatever domain the user is on; if redirectTo points
+ * at a different host (e.g. the vercel.app deployment URL), GoTrue returns the user to that other
+ * host where the cookie isn't sent, the token exchange has no verifier, and sign-in fails with
+ * "Could not sign in". Deriving the base from the request keeps the cookie and the callback on the
+ * same domain (ryan-realty.com in prod, localhost in dev, the preview host on previews).
+ * Falls back to NEXT_PUBLIC_SITE_URL only when request headers are unavailable.
+ */
+async function getRequestBaseUrl(): Promise<string> {
+  const h = await headers()
+  const host = h.get('x-forwarded-host') || h.get('host')
+  if (host) {
+    const proto = h.get('x-forwarded-proto') || (host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https')
+    return `${proto}://${host}`.replace(/\/$/, '')
+  }
+  return (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
+}
 
 export type AuthUser = {
   id: string
@@ -40,7 +59,7 @@ export async function getSession(): Promise<{ user: AuthUser } | null> {
 /** Return path cookie: 10 min, httpOnly, so OAuth redirect brings user back to the page they signed in from. */
 export async function getSignInUrl(provider: 'google' | 'facebook' | 'apple', next = '/'): Promise<{ url: string } | { error: string }> {
   const supabase = await createClient()
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
+  const base = await getRequestBaseUrl()
   const cookieStore = await cookies()
   const safeNext = next.startsWith('/') ? next : `/${next}`
   cookieStore.set(AUTH_NEXT_COOKIE, safeNext, {
@@ -82,7 +101,7 @@ export async function signInWithEmailPassword(
   const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
   if (error) return { ok: false, error: error.message }
   if (!data.user?.email) return { ok: false, error: 'Sign-in failed' }
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
+  const base = await getRequestBaseUrl()
   const sourceUrl = options?.sourceUrl || base
   await trackSignedInUser({
     email: data.user.email,
@@ -119,7 +138,7 @@ export async function signUpWithEmailPassword(
   })
   if (error) return { ok: false, error: error.message }
   if (!data.user?.email) return { ok: false, error: 'Sign-up failed' }
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
+  const base = await getRequestBaseUrl()
   const sourceUrl = options?.sourceUrl || base
   await trackSignedInUser({
     email: data.user.email,
@@ -142,7 +161,7 @@ export async function resetPasswordForEmail(
   options?: { next?: string }
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient()
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
+  const base = await getRequestBaseUrl()
   const next = options?.next?.startsWith('/') ? options.next : '/dashboard/settings'
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
     redirectTo: `${base}/auth/callback?next=${encodeURIComponent(next)}`,

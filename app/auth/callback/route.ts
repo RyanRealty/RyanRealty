@@ -2,13 +2,19 @@ import { createClient } from '@/lib/supabase/server'
 import { trackSignedInUser } from '@/lib/followupboss'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 
 const AUTH_NEXT_COOKIE = 'auth_next'
 
-function getBaseUrl(origin: string): string {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || origin
-  return base.replace(/\/$/, '') || origin
+async function getBaseUrl(request: Request): Promise<string> {
+  const h = await headers()
+  const host = h.get('x-forwarded-host') || h.get('host')
+  if (host) {
+    const proto = h.get('x-forwarded-proto') || (host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https')
+    return `${proto}://${host}`.replace(/\/$/, '')
+  }
+  const { origin } = new URL(request.url)
+  return (process.env.NEXT_PUBLIC_SITE_URL || origin).replace(/\/$/, '')
 }
 
 /** Ensure redirect target is a same-origin path (no protocol-relative or double slash). */
@@ -18,12 +24,12 @@ function safeRedirectPath(next: string): string {
 }
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
   const cookieStore = await cookies()
   const nextFromCookie = cookieStore.get(AUTH_NEXT_COOKIE)?.value
   const next = nextFromCookie ?? searchParams.get('next') ?? '/'
   const safeNext = safeRedirectPath(next)
-  const base = getBaseUrl(origin)
+  const base = await getBaseUrl(request)
 
   const errorParam = searchParams.get('error')
   const errorDesc = searchParams.get('error_description')
