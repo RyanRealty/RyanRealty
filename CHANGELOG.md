@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.395.8 (2026-06-02)
+
+### Maintenance
+- docs(paid-funnel): dashboard runbook for the un-pause + conversion + FUB items only Matt can do
+
+---
+
+
 ## v1.395.7 (2026-06-02)
 
 ### Bug Fixes
