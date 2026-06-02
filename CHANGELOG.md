@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.395.0 (2026-06-02)
+
+### Features
+- feat(meta-audiences): compliance+realtor exclusion on all targeting modes; add seller-intent + neighborhood seeds
+- feat(ga4): server-side add_to_wishlist mirror for saves
+
+---
+
+
 ## v1.394.0 (2026-06-02)
 
 ### Features
