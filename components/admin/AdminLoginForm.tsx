@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSignInUrl, signInWithEmailPassword, resetPasswordForEmail } from '@/app/actions/auth'
+import { signInWithEmailPassword, resetPasswordForEmail } from '@/app/actions/auth'
+import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import { GoogleIcon } from '@/components/icons/AuthProviderIcons'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -22,10 +23,11 @@ export default function AdminLoginForm() {
   async function handleGoogle() {
     setLoading('google')
     setError(null)
-    const result = await getSignInUrl('google', ADMIN_NEXT)
-    setLoading(null)
-    if ('url' in result) window.location.href = result.url
-    else setError(result.error)
+    const result = await signInWithOAuthBrowser('google', ADMIN_NEXT)
+    if (result.error) {
+      setLoading(null)
+      setError(result.error)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {

@@ -4,7 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
-import { getSignInUrl, signInWithEmailPassword, signUpWithEmailPassword, signOut } from '@/app/actions/auth'
+import { signInWithEmailPassword, signUpWithEmailPassword, signOut } from '@/app/actions/auth'
+import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import type { AuthUser } from '@/app/actions/auth'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
@@ -35,10 +36,11 @@ export default function AuthDropdown({ user }: Props) {
 
   async function handleSignInGoogle() {
     setLoading('google')
-    const result = await getSignInUrl('google', getNext())
-    setLoading(null)
-    if ('url' in result) window.location.href = result.url
-    else setOpen(false)
+    const result = await signInWithOAuthBrowser('google', getNext())
+    if (result.error) {
+      setLoading(null)
+      setOpen(false)
+    }
   }
 
   async function handleEmailSignIn(e: React.FormEvent) {

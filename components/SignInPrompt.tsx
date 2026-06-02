@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { getSignInUrl } from '@/app/actions/auth'
+import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import type { AuthUser } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { GoogleIcon, AppleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
@@ -56,9 +56,8 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
     setLoading(provider)
     const nextFromUrl = searchParams?.get('next')
     const next = nextFromUrl && nextFromUrl.startsWith('/') ? nextFromUrl : '/'
-    const result = await getSignInUrl(provider, next)
-    setLoading(null)
-    if ('url' in result) window.location.href = result.url
+    const result = await signInWithOAuthBrowser(provider, next)
+    if (result.error) setLoading(null)
   }
 
   function handleMaybeLater() {

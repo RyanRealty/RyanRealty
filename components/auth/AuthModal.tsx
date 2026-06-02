@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSignInUrl, signInWithEmailPassword, signUpWithEmailPassword } from '@/app/actions/auth'
+import { signInWithEmailPassword, signUpWithEmailPassword } from '@/app/actions/auth'
+import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import { GoogleIcon, AppleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -33,10 +34,11 @@ export default function AuthModal({ open, onClose, onSuccess, next = '/dashboard
   async function handleOAuth(provider: 'google' | 'apple' | 'facebook') {
     setLoading(provider)
     setError(null)
-    const result = await getSignInUrl(provider, next)
-    setLoading(null)
-    if ('url' in result) window.location.href = result.url
-    else setError(result.error)
+    const result = await signInWithOAuthBrowser(provider, next)
+    if (result.error) {
+      setLoading(null)
+      setError(result.error)
+    }
   }
 
   async function handleEmailSignIn(e: React.FormEvent) {

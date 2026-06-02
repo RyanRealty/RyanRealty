@@ -42,6 +42,12 @@ export async function GET(request: Request) {
 
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) {
+      // Surface the real reason instead of the generic "Could not sign in"
+      // fall-through (previously swallowed — e.g. a missing PKCE code_verifier).
+      console.error('[auth/callback] exchangeCodeForSession failed:', error.message)
+      Sentry.captureException(error, { tags: { area: 'auth-callback' } })
+    }
     if (!error && data.user) {
       const sourceUrl = `${base}${safeNext}`.replace(/\/$/, '') || base
       const name = data.user.user_metadata?.full_name ?? data.user.user_metadata?.name
