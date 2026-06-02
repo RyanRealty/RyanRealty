@@ -5,6 +5,8 @@
  * Event names from Section 30.3 (GA4 Custom Event Taxonomy).
  */
 
+import { trackEventWithCAPI } from '@/lib/meta-pixel-helpers'
+
 declare global {
   interface Window {
     dataLayer?: unknown[]
@@ -290,13 +292,16 @@ export function trackListingView(params: {
       }],
     },
   })
-  trackFbq('ViewContent', {
+  const viewContent = {
     content_type: 'product',
     content_ids: [params.listingKey],
     content_name: params.mlsNumber ?? params.listingKey,
     value: params.price,
     currency: 'USD',
-  })
+  }
+  // Pixel + server CAPI with a shared event_id (dedup) so listing views survive
+  // ad-blockers and feed value-based / catalog retargeting audiences.
+  void trackEventWithCAPI('ViewContent', viewContent, { customData: viewContent })
 }
 
 /** Search / geo page view (search or view_search_results). */
@@ -319,10 +324,11 @@ export function trackSearchView(params: {
     search_term: searchTerm || params.searchTerm,
     results_count: params.resultsCount,
   })
-  trackFbq('Search', {
+  const searchContent = {
     search_string: searchTerm || params.searchTerm,
     content_category: 'real_estate',
-  })
+  }
+  void trackEventWithCAPI('Search', searchContent, { customData: searchContent })
 }
 
 /** Listing card/tile click (before navigation). */
@@ -378,13 +384,14 @@ export function trackSaveListing(params: {
     value: params.price,
     items: [{ item_id: params.listingKey, item_name: params.mlsNumber ?? params.listingKey }],
   })
-  trackFbq('AddToWishlist', {
+  const wishlist = {
     content_type: 'product',
     content_ids: [params.listingKey],
     content_name: params.mlsNumber ?? params.listingKey,
     value: params.price,
     currency: 'USD',
-  })
+  }
+  void trackEventWithCAPI('AddToWishlist', wishlist, { customData: wishlist })
 }
 
 /** User signed up / created account. */
@@ -393,6 +400,6 @@ export function trackSignUp() {
     event: 'sign_up',
     method: 'Google',
   })
-  trackFbq('CompleteRegistration', { content_name: 'Account created' })
+  void trackEventWithCAPI('CompleteRegistration', { content_name: 'Account created' }, { customData: { content_name: 'Account created' } })
   if (GOOGLE_ADS_CONVERSION_SIGNUP) fireGoogleAdsConversion(GOOGLE_ADS_CONVERSION_SIGNUP)
 }

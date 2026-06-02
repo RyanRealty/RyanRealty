@@ -68,21 +68,26 @@ export async function trackEventWithCAPI(
     }
   }
 
-  // Send to CAPI
-  if (capiData && (capiData.email || capiData.phone || capiData.firstName || capiData.lastName)) {
+  // ALWAYS mirror to CAPI for resilience + dedup — not just when we know the
+  // visitor. The server route adds advanced matching from the _fbp/_fbc cookies
+  // + IP/UA even for an anonymous browse; raw email/phone (forms, known users)
+  // is included when available for full advanced matching. The shared eventId
+  // de-duplicates the CAPI event against the browser Pixel fire above.
+  if (typeof window !== 'undefined') {
     try {
       const res = await fetch('/api/meta-capi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
         body: JSON.stringify({
           eventName,
-          email: capiData.email,
-          phone: capiData.phone,
-          firstName: capiData.firstName,
-          lastName: capiData.lastName,
+          email: capiData?.email,
+          phone: capiData?.phone,
+          firstName: capiData?.firstName,
+          lastName: capiData?.lastName,
           eventId,
-          customData: capiData.customData,
-          eventSourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+          customData: capiData?.customData,
+          eventSourceUrl: window.location.href,
         }),
       })
       capiSent = res.ok
