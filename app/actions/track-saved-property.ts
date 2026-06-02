@@ -40,8 +40,9 @@ export async function trackSavedPropertyAction(params: {
       clientId,
       eventParams: {
         currency: 'USD',
-        value: params.property.price,
-        items: [{ item_id: params.listingKey, item_name: params.property.mlsNumber ?? params.listingKey }],
+        value: params.property.price ?? null,
+        item_id: params.listingKey,
+        item_name: params.property.mlsNumber ?? params.listingKey,
       },
     })
   } catch {
