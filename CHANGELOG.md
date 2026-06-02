@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.14 (2026-06-02)
+
+### Bug Fixes
+- fix(tracking+seo): Meta Pixel fires on every visit; sitemap lists individual listings
+
+---
+
+
 ## v1.390.13 (2026-06-02)
 
 ### Maintenance
