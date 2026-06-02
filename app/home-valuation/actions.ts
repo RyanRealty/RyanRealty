@@ -219,6 +219,38 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
     console.warn('[valuation] Auto-CMA failed:', e)
   }
 
+  // Every seller lead hears back immediately. Matched addresses got the CMA
+  // above; everyone else (no property match, or CMA generation/send failed)
+  // gets a same-second acknowledgment from the verified domain so no lead goes
+  // cold on first contact. firstName is parsed from the submitted `name` (same
+  // value used for the FUB person + the CMA greeting) — this is a transactional
+  // Resend send, not a FUB merge tag, because FUB blocks integration emails.
+  // reply-to is a monitored inbox so "reply to this email" actually reaches us.
+  if (!cmaSent) {
+    const firstName = name.split(/\s+/)[0] || ''
+    const greeting = firstName ? `Hi ${firstName},` : 'Hi there,'
+    await sendEmail({
+      to: email,
+      replyTo: 'matt@ryan-realty.com',
+      subject: 'We have your home-value request',
+      text: [
+        greeting,
+        '',
+        'Thank you for requesting a value estimate on your home. We have it, and someone on our team is pulling the numbers now.',
+        '',
+        'We do these by hand. Instead of an automated guess, we look at recent comparable sales and what is actually happening in your neighborhood right now, so the figure you get is one you can use. You will hear back from us shortly.',
+        '',
+        'If there is anything we should know about the home, recent updates, your timeline, or any questions, just reply to this email.',
+        '',
+        'Thanks again,',
+        'Matt Ryan',
+        'Ryan Realty',
+        '541.213.6706',
+        'ryan-realty.com',
+      ].join('\n'),
+    }).catch((err) => console.warn('[valuation] acknowledgment email failed (non-blocking):', err))
+  }
+
   // Send to Meta CAPI for deduplication with browser pixel.
   // Seller leads (valuation requests) are the highest-intent funnel entry,
   // so they carry the highest value per event. Meta's bid algorithm uses
