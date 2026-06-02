@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.401.1 (2026-06-02)
+
+### Bug Fixes
+- fix(brokers): surface real broker bios/specialties/contact on /team
+
+### Maintenance
+- chore(brand-voice): make the banned-word list realistic
+
+---
+
+
 ## v1.401.0 (2026-06-02)
 
 ### Features
