@@ -40,7 +40,7 @@ export function H1<T extends ElementType = 'h1'>({
   return (
     <Tag
       className={cn(
-        'text-[34px] font-bold leading-tight tracking-[-0.015em] text-foreground sm:text-[40px]',
+        'text-[34px] font-display leading-tight tracking-[-0.015em] text-foreground sm:text-[40px]',
         className,
       )}
       {...rest}
@@ -60,7 +60,7 @@ export function H2<T extends ElementType = 'h2'>({
   return (
     <Tag
       className={cn(
-        'text-[30px] font-bold leading-tight tracking-[-0.01em] text-foreground',
+        'text-[30px] font-display leading-tight tracking-[-0.01em] text-foreground',
         className,
       )}
       {...rest}
