@@ -2,26 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { getSearchListings } from '@/app/actions/search'
 import { listingDetailPath } from '@/lib/slug'
+import ListingCard from '@/components/site/ListingCard'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
-
-function formatPrice(n: number | null | undefined): string {
-  if (n == null) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
-}
-
-function formatAddress(listing: ListingTileRow): string {
-  const parts = [
-    [listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ').trim(),
-    listing.City,
-    listing.State,
-    listing.PostalCode,
-  ].filter(Boolean) as string[]
-  return parts.join(', ')
-}
 
 type Props = {
   initialListings: ListingTileRow[]
@@ -139,39 +124,30 @@ export default function SearchResults({
             state: listing.State,
             postalCode: listing.PostalCode,
           }, undefined, { mlsNumber: listing.ListNumber ?? null })
-          const photoUrl = listing.PhotoURL ?? ''
+          const cityParts = [listing.City, listing.State].filter(Boolean).join(', ')
+          const cityZip = [cityParts, listing.PostalCode].filter(Boolean).join(' ').trim()
+          const cityLine = listing.SubdivisionName ? `${cityZip} · ${listing.SubdivisionName}` : cityZip
+          const addressLine =
+            [listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ').trim() || cityParts || 'Listing'
+          // Wrapper carries data-listing-key for the map<->list hover sync
+          // (consumed by SearchSplitView / MapSearchView). ListingCard is the
+          // canonical site card — one look across the whole site.
           return (
-            <Link key={key} href={href} className="group" data-listing-key={key}>
-              <article className="bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <div className="relative aspect-[4/3] bg-border">
-                  {photoUrl ? (
-                    <Image
-                      src={photoUrl}
-                      alt={`${formatAddress(listing)} — property photo`}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width:640px) 100vw, (max-width:1280px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
-                      No photo
-                    </div>
-                  )}
-                  <div className="absolute top-2 left-2 rounded bg-primary text-primary-foreground text-sm font-semibold px-2 py-0.5">
-                    {formatPrice(listing.ListPrice)}
-                  </div>
-                </div>
-                <div className="p-3">
-                  <p className="font-medium text-primary truncate">
-                    {formatAddress(listing)}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {listing.BedroomsTotal ?? '—'} Beds · {listing.BathroomsTotal ?? '—'} Baths
-                    {listing.SubdivisionName && ` · ${listing.SubdivisionName}`}
-                  </p>
-                </div>
-              </article>
-            </Link>
+            <div key={key} data-listing-key={key}>
+              <ListingCard
+                listing={{
+                  listingKey: key,
+                  href,
+                  photoUrl: listing.PhotoURL,
+                  price: listing.ListPrice,
+                  addressLine,
+                  cityLine,
+                  beds: listing.BedroomsTotal,
+                  baths: listing.BathroomsTotal,
+                  sqft: listing.TotalLivingAreaSqFt ?? null,
+                }}
+              />
+            </div>
           )
         })}
       </div>

@@ -75,6 +75,9 @@ export type ListingTileRow = {
   State: string | null
   PostalCode: string | null
   SubdivisionName: string | null
+  /** Living area sqft. Present at runtime — getListings maps tile.sqft and the
+   * search_listings_advanced RPC returns TotalLivingAreaSqFt; the type omitted it. */
+  TotalLivingAreaSqFt?: number | null
   PhotoURL: string | null
   Latitude: number | null
   Longitude: number | null
