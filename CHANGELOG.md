@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.5 (2026-06-02)
+
+### Maintenance
+- docs: add NEXT SESSION START HERE queue to Part B handoff
+
+---
+
+
 ## v1.390.4 (2026-06-01)
 
 ### Maintenance
