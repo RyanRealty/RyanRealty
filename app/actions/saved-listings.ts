@@ -66,59 +66,6 @@ export async function toggleSavedListing(listingKey: string): Promise<{ saved: b
   return { saved: true, error }
 }
 
-/**
- * Update personal notes on a saved listing.
- * Notes are private to the user and persisted across sessions.
- */
-export async function updateSavedListingNote(listingKey: string, note: string): Promise<{ error: string | null }> {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Not signed in' }
-
-    const { error } = await supabase
-      .from('saved_listings')
-      .update({ note: note.trim() || null })
-      .eq('user_id', user.id)
-      .eq('listing_key', listingKey.trim())
-
-    if (error) {
-      // If 'note' column doesn't exist, ignore gracefully
-      if (error.message.includes('column') && error.message.includes('note')) {
-        console.error('[updateSavedListingNote] note column does not exist yet — needs migration')
-        return { error: null }
-      }
-      return { error: error.message }
-    }
-    return { error: null }
-  } catch (err) {
-    console.error('[updateSavedListingNote]', err)
-    return { error: 'Failed to update note' }
-  }
-}
-
-/**
- * Get the note for a saved listing.
- */
-export async function getSavedListingNote(listingKey: string): Promise<string | null> {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
-
-    const { data } = await supabase
-      .from('saved_listings')
-      .select('note')
-      .eq('user_id', user.id)
-      .eq('listing_key', listingKey.trim())
-      .maybeSingle()
-
-    return (data as { note?: string } | null)?.note ?? null
-  } catch {
-    return null
-  }
-}
-
 /** Public save count for a listing (social proof). Uses service role to count saved_listings. */
 export async function getSavedListingCount(listingKey: string): Promise<number> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL

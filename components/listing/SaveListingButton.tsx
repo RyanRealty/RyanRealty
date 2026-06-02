@@ -22,6 +22,17 @@ export default function SaveListingButton({ listingKey, saved, userEmail, listin
   async function handleClick(e: React.MouseEvent) {
     e.preventDefault()
     const result = await toggleSavedListing(listingKey)
+    if (result.error === 'Not signed in') {
+      // Route anonymous savers to sign-in (and back) — mirrors ListingActions —
+      // so the save -> account-creation lead-capture path isn't silently lost.
+      const returnUrl = encodeURIComponent(
+        typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/',
+      )
+      if (typeof window !== 'undefined') {
+        window.location.href = `/account?signin=1&returnUrl=${returnUrl}`
+      }
+      return
+    }
     if (result.saved) {
       if (userEmail && listingUrl && property) {
         trackSavedPropertyAction({
