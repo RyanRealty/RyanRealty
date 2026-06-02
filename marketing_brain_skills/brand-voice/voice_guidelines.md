@@ -288,6 +288,7 @@ Relaxed to empty 2026-06-02. The bare-word ban on about/around/approximately/rou
 - **Fake humility brag.** "We are just so honored to be voted..." We accept recognition without performing humility.
 - **Market-doom or market-hype take.** "The market is crashing." "The market is on fire." Both compete for attention by selling fear or FOMO. We describe what the data says and what it means for the reader.
 - **Agent-as-hero arc.** "When [client] came to me, they had been on the market for 90 days. I knew what had to be done..." Content where the broker is the protagonist instead of the client.
+- **Overtly stating a category, virtue, or obvious credential (don't tell — show).** "Independent brokerage by design." "We're honest / dedicated / local." "Three brokers, all licensed and active." A "meet our mascot" moment. A licensed, active broker is the baseline for a real-estate site, not a selling point; naming a category or a virtue out loud reads as cheese. If a line names a category, claims a virtue, or restates an obvious credential, cut it or replace it with the specific, concrete fact that demonstrates it (e.g. instead of "independent brokerage by design," show the operational fact — the broker you call is the one who closes your deal; founded June 2023; three brokers covering Central Oregon). Matt directive 2026-06-02.
 
 ---
 

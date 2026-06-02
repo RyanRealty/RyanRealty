@@ -99,7 +99,7 @@ export default async function SellPage() {
         lede="A small team of three brokers. Specific numbers from the data. No layered hand-offs. The broker who prices your home is the broker who walks you to the finish line."
         photo={{
           src: '/brand/hero/hero-old-mill-master-4k.jpg',
-          alt: 'Old Mill District drone view with the Deschutes River and the Cascade mountains.',
+          alt: 'Old Mill District drone view of Bend, Oregon, with the Deschutes River and the Cascade mountains.',
           priority: true,
         }}
         minHeight={500}

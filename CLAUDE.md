@@ -138,6 +138,7 @@ Compound hyphens are allowed where standard English requires them (single-family
 - Fake humility brag ("we are just so honored to be voted...")
 - Market-doom or market-hype ("the market is crashing" / "on fire")
 - Agent-as-hero arc (broker is the protagonist instead of the client)
+- **Overtly stating a category, virtue, or obvious credential** — "independent brokerage by design", "we're honest / dedicated / local", "three brokers, all licensed and active", a "meet our mascot" moment. A licensed, active broker is the baseline for a real-estate site, not a selling point; naming a category or virtue out loud reads as cheese. Show it with a specific, concrete fact, or cut it. (Matt directive 2026-06-02; memory `feedback-voice-no-overt-statements`.)
 
 ### Voice + formatting rules
 

@@ -2,7 +2,7 @@
   "route": "app/about/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/about/index.html",
   "competitiveTarget": "Beat generic national-brokerage profile pages by leading with honesty, verified facts, real broker names + licenses, and zero marketing-speak (CLAUDE.md Data Accuracy + brand voice).",
-  "note": "Wave 3 site-v2 rebuild, selective-fidelity uplift 2026-06-02. SiteHeader/SiteFooter render from app/layout.tsx. Every claim is verified: Ryan Realty LLC license 201253677 (founded 2023-06-21 OREA), Matt PB 201206613, brokers from getBrokers(), CityGrid counts live from geo_snapshot_mv. Added the mockup's heritage strip, Jax mascot, and 'where we work' city grid; the big-CTA is the two-card CtaDuo (replaces the prior navy CTABar). Deliberate divergences from the mockup, all per CLAUDE.md §0 Data Accuracy: (1) the mockup's '37 deals closed / 6 listings turned down' story stat is unverifiable and is NOT rendered; (2) the Jax bio (the dog's age, breed color, 'every closing dinner', office street) is unverified and is omitted — JaxStory states only brand-canonical facts; (3) the heritage ribbon's 'It's About Relationships' hits the banned-word gate ('about'), so HeritageStrip uses a verified factual descriptor; (4) the city grid renders live geo_snapshot_mv counts, not the mockup's hardcoded '612 active' placeholders. Team grid + FAQ are verified-fact additions retained beyond the mockup (the mockup is a floor, not a cap). NO testimonials are rendered: no verified client-review source is wired (fabricated reviews are a compliance + Data Accuracy violation). TestimonialBlock stays deferred until a real GBP-review source is connected.",
+  "note": "Site-v2 + understated-voice rework 2026-06-02 (Matt directive: don't overtly state things — see memory feedback-voice-no-overt-statements). SiteHeader/SiteFooter render from app/layout.tsx. Every claim verified: Ryan Realty LLC (founded June 2023, OREA 201253677), Matt PB 201206613, brokers from getBrokers(), CityGrid counts live from geo_snapshot_mv, the founder/fire-service/Red-Erickson story from Matt's verified broker bio. REMOVED per the voice directive: the Jax mascot section (Matt: 'that's dumb'), the heritage-strip self-label ('Independent brokerage'), the 'Four rules we hold to' virtue-stating block, and 'Three brokers. All licensed. All active.' (a licensed active broker is the baseline, not a selling point). The page now leads with the concrete origin story + live data, not stated virtues. Distinct hero (Deschutes, not the Old Mill brand hero) so /about doesn't look identical to every other page. NO testimonials (no verified review source wired).",
   "requiredComponents": [
     {
       "name": "BreadcrumbNav",
@@ -11,42 +11,32 @@
     },
     {
       "name": "HeroBlock",
-      "section": "hero — verified honest headline + lede (founded 2023, three brokers, no hand-offs) + canonical Old Mill hero photo",
-      "blocking": true
-    },
-    {
-      "name": "HeritageStrip",
-      "section": "heritage strip — centered Amboqia 'Ryan Realty' lockup, eyebrow ribbon, 'Bend · Oregon · est. 2023' (verified facts)",
+      "section": "hero — understated factual headline + concrete lede (founded 2023, three brokers, no hand-offs) on the Deschutes photo (page-distinct, not Old Mill)",
       "blocking": true
     },
     {
       "name": "ContentSection",
-      "section": "Story section — independent-brokerage origin (verified: opened 2023, data-led, Central Oregon service area) + four-rule values grid",
-      "blocking": true
-    },
-    {
-      "name": "JaxStory",
-      "section": "Jax mascot split — brand-canonical copy only (blue lab on signage + social); unverified personal-bio details omitted per §0",
+      "section": "Story — concrete origin (Matt, fire service, mentor Red Erickson, June 2023) + data-led approach. No self-labels.",
       "blocking": true
     },
     {
       "name": "CityGrid",
-      "section": "'Where we work' service-area grid — 8 city cards with LIVE geo_snapshot_mv counts (not the mockup's hardcoded placeholders)",
+      "section": "'Where we work' service-area grid — city cards with LIVE geo_snapshot_mv counts",
       "blocking": true
     },
     {
       "name": "BrokerCard",
-      "section": "Team section — three broker cards (Matt Ryan, Paul Stevenson, Rebecca Ryser Peterson) via getBrokers()",
+      "section": "Team section — three broker cards via getBrokers(), minimal heading + link to /team full profiles",
       "blocking": true
     },
     {
       "name": "FAQBlock",
-      "section": "Common questions — verified facts only (broker count, founding year, no-hand-off model, service area, valuation process)",
+      "section": "Common questions — verified facts only (brokers, founding, no-hand-off model, service area, valuation)",
       "blocking": true
     },
     {
       "name": "CtaDuo",
-      "section": "big-CTA — two conversion cards (buyer listing alerts + seller home valuation), replaces the prior navy CTABar",
+      "section": "big-CTA — two conversion cards (buyer listing alerts + seller home valuation)",
       "blocking": true
     }
   ],

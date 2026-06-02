@@ -52,7 +52,7 @@ export default async function TeamPage() {
         lede="Three licensed brokers, all active in Oregon. The broker you meet is the broker who works your deal from offer to close."
         photo={{
           src: '/brand/hero/hero-old-mill-master-4k.jpg',
-          alt: 'Old Mill District drone view with the Deschutes River and the Cascade mountains.',
+          alt: 'Old Mill District drone view of Bend, Oregon, with the Deschutes River and the Cascade mountains.',
           priority: true,
         }}
         minHeight={440}
