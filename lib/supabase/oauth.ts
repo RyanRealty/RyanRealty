@@ -22,7 +22,7 @@ import { createClient } from '@/lib/supabase/client'
  * the old server-set auth_next cookie is no longer in play.
  */
 export async function signInWithOAuthBrowser(
-  provider: 'google' | 'facebook' | 'apple',
+  provider: 'google' | 'facebook',
   next = '/',
 ): Promise<{ error?: string }> {
   const supabase = createClient()

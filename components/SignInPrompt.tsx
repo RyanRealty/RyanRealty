@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import type { AuthUser } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
-import { GoogleIcon, AppleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
+import { GoogleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
 
 const DISMISS_KEY = 'ryan_realty_signin_prompt_dismissed'
 const DISMISS_HOURS = 24
@@ -52,7 +52,7 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
     return () => clearTimeout(t)
   }, [user, hasNextParam, isHome])
 
-  async function handleSignIn(provider: 'google' | 'apple' | 'facebook') {
+  async function handleSignIn(provider: 'google' | 'facebook') {
     setLoading(provider)
     const nextFromUrl = searchParams?.get('next')
     const next = nextFromUrl && nextFromUrl.startsWith('/') ? nextFromUrl : '/'
@@ -95,15 +95,6 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
           >
             <GoogleIcon className="size-5" />
             {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
-          </Button>
-          <Button
-            type="button"
-            disabled={!!loading}
-            onClick={() => handleSignIn('apple')}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-3 text-sm font-medium text-foreground shadow-sm hover:bg-muted disabled:opacity-50"
-          >
-            <AppleIcon className="size-5" />
-            {loading === 'apple' ? 'Redirecting…' : 'Continue with Apple'}
           </Button>
           <Button
             type="button"

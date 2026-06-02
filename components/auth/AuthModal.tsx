@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithEmailPassword, signUpWithEmailPassword } from '@/app/actions/auth'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
-import { GoogleIcon, AppleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
+import { GoogleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,7 +31,7 @@ export default function AuthModal({ open, onClose, onSuccess, next = '/dashboard
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
 
-  async function handleOAuth(provider: 'google' | 'apple' | 'facebook') {
+  async function handleOAuth(provider: 'google' | 'facebook') {
     setLoading(provider)
     setError(null)
     const result = await signInWithOAuthBrowser(provider, next)
@@ -130,16 +130,6 @@ export default function AuthModal({ open, onClose, onSuccess, next = '/dashboard
           >
             <GoogleIcon className="size-5" />
             {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleOAuth('apple')}
-            disabled={!!loading}
-            className="flex w-full items-center justify-center gap-3"
-          >
-            <AppleIcon className="size-5" />
-            {loading === 'apple' ? 'Redirecting…' : 'Continue with Apple'}
           </Button>
           <Button
             type="button"
