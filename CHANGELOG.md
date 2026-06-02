@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.395.2 (2026-06-02)
+
+### Bug Fixes
+- fix(ga4): repair add_to_wishlist eventParams type (was committed broken via amend mishap)
+- fix(images): allowlist cdn.photos.sparkplatform.com so listing-detail gallery photos load
+
+---
+
+
 ## v1.395.1 (2026-06-02)
 
 ### Bug Fixes
