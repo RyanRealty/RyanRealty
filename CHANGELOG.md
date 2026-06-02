@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.391.0 (2026-06-02)
+
+### Features
+- feat(fub): mirror identified-lead browsing into FUB website activity
+
+---
+
+
 ## v1.390.17 (2026-06-02)
 
 ### Bug Fixes
