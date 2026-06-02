@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.390.13 (2026-06-02)
+
+### Maintenance
+- perf(listing): bound detail lookups so a stalled pooler can't hang the render
+
+---
+
+
 ## v1.390.12 (2026-06-02)
 
 ### Maintenance
