@@ -39,7 +39,7 @@ const BROKER_PHONE_TEL = '+15417033095'
 function fmtCompact(v: number): string {
   if (v >= 1_000_000) {
     const m = v / 1_000_000
-    const s = m.toFixed(m >= 10 ? 0 : m >= 3 ? 1 : 2).replace(/\.?0+$/, '')
+    const s = m.toFixed(m >= 100 ? 0 : m >= 3 ? 1 : 2).replace(/\.?0+$/, '')
     return `$${s}M`
   }
   const k = Math.round(v / 1000)
