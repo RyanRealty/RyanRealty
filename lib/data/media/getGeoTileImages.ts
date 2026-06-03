@@ -70,8 +70,10 @@ async function _getGeoTileImagesUncached(geoTags: string[]): Promise<GeoTileImag
 
 export const getGeoTileImages = unstable_cache(
   _getGeoTileImagesUncached,
-  // v2 — bumped after the asset_library anon-read RLS policy landed (the v1
-  // slot cached empty results from before anon could read the table).
-  ['geo-tile-images-v2'],
+  // v3 — bumped 2026-06-02 after the big curation pass approved ~490 new
+  // geo-tagged photos via SQL (no updateTag fired), so the warm v2 entry would
+  // otherwise serve the old small approved set for up to a day. v2 — bumped
+  // after the asset_library anon-read RLS policy landed.
+  ['geo-tile-images-v3'],
   { revalidate: CACHE_WINDOWS.assets, tags: [cacheTag.assets] },
 )
