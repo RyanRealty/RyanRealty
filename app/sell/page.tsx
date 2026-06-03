@@ -14,7 +14,8 @@
  * seller workflow. This page has no form of its own.
  */
 
-import { getMarketPulse, getSurfaceImage } from '@/lib/data'
+import { getMarketPulse, getSurfaceImage, getLifestyleImages } from '@/lib/data'
+import { LifestyleStrip } from '@/components/site/LifestyleStrip'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
@@ -90,6 +91,7 @@ export default async function SellPage() {
     seed: '/sell',
     fallback: OLD_MILL_HERO,
   })
+  const lifestyleImages = await getLifestyleImages(8)
 
   return (
     <main className="min-h-screen bg-background">
@@ -125,6 +127,13 @@ export default async function SellPage() {
       <SellCommission />
 
       <SellMarketContext pulse={pulse} />
+
+      <LifestyleStrip
+        images={lifestyleImages}
+        eyebrow="Why buyers come here"
+        title="The lifestyle your home is part of."
+        lede="Buyers move to Central Oregon for the life outside the front door. Trails, rivers, fairways, and ski lifts within reach. That demand is what your listing taps into."
+      />
 
       <SellValuationCTA
         valuationHref="/lp/seller-home-value"

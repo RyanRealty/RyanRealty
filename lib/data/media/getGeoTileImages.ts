@@ -74,6 +74,6 @@ export const getGeoTileImages = unstable_cache(
   // geo-tagged photos via SQL (no updateTag fired), so the warm v2 entry would
   // otherwise serve the old small approved set for up to a day. v2 — bumped
   // after the asset_library anon-read RLS policy landed.
-  ['geo-tile-images-v4'],
+  ['geo-tile-images-v5'],
   { revalidate: CACHE_WINDOWS.assets, tags: [cacheTag.assets] },
 )

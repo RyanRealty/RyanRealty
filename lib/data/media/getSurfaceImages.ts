@@ -47,7 +47,7 @@ export const getSurfaceImages = unstable_cache(
   _getSurfaceImagesUncached,
   // v2 — bumped 2026-06-03 after the rigorous re-screen re-tagged every approved
   // photo (identifiable landmarks place-locked, watermarked/off-region rejected).
-  ['surface-images-v2'],
+  ['surface-images-v3'],
   { revalidate: CACHE_WINDOWS.assets, tags: [cacheTag.assets] },
 )
 

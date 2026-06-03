@@ -154,6 +154,9 @@ export type { GeoTileImageMap } from '@/lib/data/media/getGeoTileImages'
 // homepage keeps its Old Mill master (not in asset_library, never returned here).
 export { getSurfaceImage, getSurfaceImages, pickSurfaceImage } from '@/lib/data/media/getSurfaceImages'
 export type { SurfaceImage, Surface } from '@/lib/data/media/getSurfaceImages'
+// Active-lifestyle photography (biking/skiing/fishing/…) for the LifestyleStrip.
+export { getLifestyleImages } from '@/lib/data/media/getLifestyleImages'
+export type { LifestyleImage } from '@/lib/data/media/getLifestyleImages'
 
 // Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'

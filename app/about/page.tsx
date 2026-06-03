@@ -17,7 +17,8 @@
 
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
-import { getSurfaceImage } from '@/lib/data'
+import { getSurfaceImage, getLifestyleImages } from '@/lib/data'
+import { LifestyleStrip } from '@/components/site/LifestyleStrip'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { ContentSection } from '@/components/site/ContentSection'
@@ -80,11 +81,14 @@ export default async function AboutPage() {
   // approved pool is empty.
   // Brand page: generic Central Oregon scenery (the region we serve), seeded by
   // route so it stays distinct. Picker falls back internally if the pool is thin.
-  const heroSrc = await getSurfaceImage('hero', {
-    geoTags: ['central-oregon'],
-    seed: ROUTE_PATH,
-    fallback: OLD_MILL_HERO,
-  })
+  const [heroSrc, lifestyleImages] = await Promise.all([
+    getSurfaceImage('hero', {
+      geoTags: ['central-oregon'],
+      seed: ROUTE_PATH,
+      fallback: OLD_MILL_HERO,
+    }),
+    getLifestyleImages(8),
+  ])
 
   return (
     <main className="min-h-screen bg-background">
@@ -129,6 +133,8 @@ export default async function AboutPage() {
         title="Where we work"
         subtitle="The Central Oregon cities and resort communities we cover. Active counts update daily."
       />
+
+      <LifestyleStrip images={lifestyleImages} />
 
       <Section padding="default" tone="muted" divider>
         <Container>
