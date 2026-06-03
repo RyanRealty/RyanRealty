@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.7 (2026-06-03)
+
+### Other
+- Redesign seller home-value LP: navy market dashboard, trusted-team block, animated stars
+
+---
+
+
 ## v1.402.6 (2026-06-03)
 
 ### Other
