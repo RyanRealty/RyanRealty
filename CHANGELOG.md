@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.16 (2026-06-03)
+
+### Other
+- Rebuild list LP as a social-proof "why list with us" page (/lp/sell-your-home)
+
+---
+
+
 ## v1.402.15 (2026-06-03)
 
 ### Other
