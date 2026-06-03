@@ -78,8 +78,10 @@ export default async function AboutPage() {
   // Distinct approved Bend/Central Oregon hero (seeded by route) so /about does
   // not reuse the homepage Old Mill banner. Falls back to Old Mill if the
   // approved pool is empty.
+  // Brand page: generic Central Oregon scenery (the region we serve), seeded by
+  // route so it stays distinct. Picker falls back internally if the pool is thin.
   const heroSrc = await getSurfaceImage('hero', {
-    geoTags: ['bend', 'central-oregon'],
+    geoTags: ['central-oregon'],
     seed: ROUTE_PATH,
     fallback: OLD_MILL_HERO,
   })

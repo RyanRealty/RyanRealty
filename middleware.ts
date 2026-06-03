@@ -191,12 +191,19 @@ function resolveLegacyRedirect(pathname: string): string | null {
 // (Lax, persistent, host-only) and the flow completes; the failures all came
 // from visitors on ryanrealty.vercel.app.
 //
+// 2026-06-03: www.ryan-realty.com is ALSO a live public alias and was NOT being
+// funneled, so a visitor who lands on www sets the verifier on www but Supabase
+// redirects the callback to the apex (its Site URL) — verifier missing → the
+// "sign-in issue" that clears on a second try (now on the apex). Adding www
+// closes that gap. (seller./go. subdomains are intentionally excluded: seller.
+// is a transparent LP rewrite and go. is a short-link host.)
+//
 // Funnel every browser (page) request to the canonical host so initiation and
 // callback always share one host. /api/* is excluded so server-to-server
 // callers (Meta CAPI, FUB, Spark webhooks, Vercel crons) that may hit the alias
 // and not follow redirects keep working. Also consolidates SEO to one hostname.
 const CANONICAL_HOST = 'ryan-realty.com'
-const NON_CANONICAL_HOSTS = new Set(['ryanrealty.vercel.app'])
+const NON_CANONICAL_HOSTS = new Set(['ryanrealty.vercel.app', 'www.ryan-realty.com'])
 
 function buildNextResponse(pathname: string, request: NextRequest): NextResponse {
   // Always set x-pathname on the forwarded request headers so server

@@ -3,7 +3,7 @@
 import { EyeIcon } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
 import ShareButton from '@/components/ShareButton'
-import { HeartIcon as ActionHeartIcon, BookmarkIcon as ActionBookmarkIcon } from '@/components/icons/ActionIcons'
+import { BookmarkIcon as ActionBookmarkIcon } from '@/components/icons/ActionIcons'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -13,9 +13,11 @@ import {
 } from '@/components/ui/tooltip'
 
 /**
- * Shared action bar for all card types: view count (read-only), share, like, save.
- * Same order and behavior on every tile (listing, city, community, neighborhood).
- * Uses shadcn Button + design tokens: unselected = muted; selected = accent/destructive.
+ * Shared action bar for all card TILES: view count (read-only), share, save.
+ * Liking happens ONLY on the listing detail page (components/listing/ListingActions),
+ * not on tiles (Matt directive 2026-06-03) — so the `like` prop is accepted for
+ * backward compat with existing callers but is intentionally NOT rendered here.
+ * Uses shadcn Button + design tokens: unselected = muted; selected = accent.
  */
 
 /** Standardized sizes: below-photo bar (small, like other platforms) */
@@ -76,20 +78,12 @@ function onDarkInactive() {
   return 'border-primary-foreground/30 bg-foreground/40 text-primary-foreground hover:bg-foreground/60'
 }
 
-function onDarkLikeActive() {
-  return 'border-destructive/60 text-destructive hover:bg-destructive/20'
-}
-
 function onDarkSaveActive() {
   return 'border-accent text-accent hover:bg-accent/20'
 }
 
 function onLightInactive() {
   return 'border-border bg-card/95 text-muted-foreground hover:bg-card hover:text-foreground'
-}
-
-function onLightLikeActive() {
-  return 'border-destructive/60 text-destructive hover:bg-destructive/10'
 }
 
 function onLightSaveActive() {
@@ -101,7 +95,6 @@ export default function CardActionBar({
   position = 'below',
   onClickWrap,
   share,
-  like,
   save,
   signedIn = true,
   guestCounts,
@@ -120,7 +113,6 @@ export default function CardActionBar({
       : 'absolute bottom-2 right-2 z-10 flex flex-wrap items-center justify-end gap-1.5'
 
   const belowButtonBase = 'flex flex-shrink-0 items-center justify-center rounded-full border-2 border-border bg-muted text-muted-foreground transition hover:bg-border hover:text-foreground disabled:opacity-60 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:shadow-none'
-  const belowActiveLike = 'border-2 border-destructive/60 text-destructive bg-muted hover:bg-destructive/10'
   const belowActiveSave = 'border-2 border-accent/60 text-accent bg-muted hover:bg-accent/10'
   const useBelowStyle = isBelow || isPriceRow
   const showViewCount = typeof viewCount === 'number' && Number.isFinite(viewCount)
@@ -167,26 +159,6 @@ export default function CardActionBar({
           {share.shareCount != null && (
             <span className={cn(countClass, countColor)}>{share.shareCount}</span>
           )}
-        </>
-      )}
-      {like && (
-        <>
-          <Button
-            type="button"
-            onClick={like.onToggle}
-            disabled={like.disabled}
-            className={cn(
-              useBelowStyle
-                ? cn(like.active ? belowActiveLike : belowButtonBase, buttonSize)
-                : cn(overlayBase, buttonSize, isDark
-                    ? (like.active ? onDarkLikeActive() : onDarkInactive())
-                    : (like.active ? onLightLikeActive() : onLightInactive())),
-            )}
-            aria-label={like.ariaLabel}
-          >
-            <ActionHeartIcon filled={like.active} className={iconSize} />
-          </Button>
-          {like.count != null && <span className={cn(countClass, countColor)}>{like.count}</span>}
         </>
       )}
       {save && (

@@ -40,7 +40,7 @@ export default async function TeamPage() {
   const brokers = await getBrokers()
   // Distinct approved hero so /team does not reuse the homepage Old Mill banner.
   const heroSrc = await getSurfaceImage('hero', {
-    geoTags: ['bend', 'central-oregon'],
+    geoTags: ['central-oregon'],
     seed: '/team',
     fallback: OLD_MILL_HERO,
   })

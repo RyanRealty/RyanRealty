@@ -86,7 +86,7 @@ export default async function SellPage() {
   const pulse = await getMarketPulse({ geoType: 'city', geoSlug: 'bend' }).catch(() => null)
   // Distinct approved hero so /sell does not reuse the homepage Old Mill banner.
   const heroSrc = await getSurfaceImage('hero', {
-    geoTags: ['bend', 'central-oregon'],
+    geoTags: ['central-oregon'],
     seed: '/sell',
     fallback: OLD_MILL_HERO,
   })

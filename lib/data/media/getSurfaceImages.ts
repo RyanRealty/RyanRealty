@@ -45,7 +45,9 @@ async function _getSurfaceImagesUncached(surface: Surface): Promise<SurfaceImage
 
 export const getSurfaceImages = unstable_cache(
   _getSurfaceImagesUncached,
-  ['surface-images-v1'],
+  // v2 — bumped 2026-06-03 after the rigorous re-screen re-tagged every approved
+  // photo (identifiable landmarks place-locked, watermarked/off-region rejected).
+  ['surface-images-v2'],
   { revalidate: CACHE_WINDOWS.assets, tags: [cacheTag.assets] },
 )
 

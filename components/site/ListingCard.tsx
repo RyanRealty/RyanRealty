@@ -2,8 +2,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 /**
- * Site v2 listing card — 4:3 photo on top, badges + favorite icon overlaid,
- * info block below (price, address, city · subdivision, bd/ba/sqft meta).
+ * Site v2 listing card — 4:3 photo on top, badge overlaid, info block below
+ * (price, address, city · subdivision, bd/ba/sqft meta). No like/favorite on
+ * tiles — liking is detail-page only (Matt directive 2026-06-03).
  * Mirrors design_system/ryan-realty/ui_kits/website/index.html §featured-listings .listing.
  */
 
@@ -70,14 +71,6 @@ export default function ListingCard({ listing }: { listing: ListingCardData }) {
           </div>
         ) : null}
 
-        <span
-          aria-hidden
-          className="absolute top-2.5 right-2.5 inline-flex items-center justify-center w-[34px] h-[34px] rounded-full bg-white/92 text-primary"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        </span>
       </div>
 
       <div className="px-4 pt-3.5 pb-4">

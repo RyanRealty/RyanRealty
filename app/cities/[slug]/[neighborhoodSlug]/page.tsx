@@ -112,7 +112,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   // banner. Prefer a photo tagged for this neighborhood or its city, else a
   // regional Central Oregon shot, seeded by route for a stable per-page choice.
   const neighborhoodHero = await getSurfaceImage('hero', {
-    geoTags: [neighborhoodSlug, `${citySlug}-${neighborhoodSlug}`, citySlug, 'central-oregon'],
+    geoTags: [neighborhoodSlug, `${citySlug}-${neighborhoodSlug}`, citySlug],
     seed: `${citySlug}/${neighborhoodSlug}`,
     fallback: '/brand/hero/hero-old-mill-master-4k.jpg',
   })

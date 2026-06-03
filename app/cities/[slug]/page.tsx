@@ -153,8 +153,11 @@ export default async function CityDetailPage({ params }: Props) {
   // hero from asset_library (also keeps Old Mill OFF the Bend city page —
   // homepage-only); otherwise cityHero(slug)'s verified per-city / regional
   // photo, with accurate alt text.
+  // Pass the city slug ONLY — the picker falls back to generic central-oregon
+  // internally. This prevents an identifiable OTHER place (e.g. Smith Rock,
+  // tagged terrebonne-only) from ever appearing on this city's hero.
   const approvedCityHero = await getSurfaceImage('hero', {
-    geoTags: [slug, 'central-oregon'],
+    geoTags: [slug],
     seed: `city/${slug}`,
     fallback: null,
   })
