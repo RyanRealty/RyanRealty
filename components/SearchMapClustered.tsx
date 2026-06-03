@@ -374,14 +374,20 @@ export default function SearchMapClustered({
     }
   }, [isLoaded, validListings, savedSet, onMarkerClick, onMarkerHover])
 
-  // List to map hover sync: enlarge the marker matching the list card under the cursor.
+  // Marker emphasis: in-place icon refresh for the marker that is either hovered
+  // (list-card sync) OR active (its InfoWindow is open after a click). Mutating
+  // the existing marker's icon — instead of recreating all markers — keeps the
+  // map flicker-free and avoids re-running the clusterer on every hover/click.
+  const activeKey = openInfo?.listingKey ?? null
   useEffect(() => {
     const byKey = markersByKeyRef.current
     if (byKey.size === 0) return
     for (const [key, marker] of byKey) {
       const isHover = key === hoveredKey
+      const isActive = key === activeKey
+      const emphasized = isHover || isActive
       try {
-        // Rebuild the pill icon at hover scale so it stays sharp (SVG-based).
+        // Rebuild the pill icon at emphasized scale so it stays sharp (SVG-based).
         const listing = validListings.find(
           (l) => (l.ListNumber ?? l.ListingKey ?? '').toString() === key
         )
@@ -389,13 +395,13 @@ export default function SearchMapClustered({
         const label = formatPriceLabel(price)
         const isSaved = savedSet.has(key)
         const pillLabel = isSaved ? `${label} ♥` : label
-        marker.setIcon(buildPricePillIcon(pillLabel, { hover: isHover }))
-        marker.setZIndex(isHover ? Number(google.maps.Marker.MAX_ZINDEX) : undefined)
+        marker.setIcon(buildPricePillIcon(pillLabel, { hover: emphasized, active: isActive }))
+        marker.setZIndex(emphasized ? Number(google.maps.Marker.MAX_ZINDEX) : undefined)
       } catch {
         // marker DOM may be gone mid-pan; ignore
       }
     }
-  }, [hoveredKey, validListings, savedSet])
+  }, [hoveredKey, activeKey, validListings, savedSet])
 
   if (loadError) {
     return (

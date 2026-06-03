@@ -42,12 +42,25 @@ export function getBaseMapOptions(): google.maps.MapOptions {
   }
   // CRITICAL: this may be called during render BEFORE the Google Maps API
   // script has loaded (e.g. a map component computing options on first paint).
-  // Touching google.maps.ControlPosition then throws "Cannot read properties of
-  // undefined (reading 'RIGHT_TOP')", which crashes the map and takes down the
-  // whole page via the error boundary. Only set the position once the enum
-  // exists; zoom control still renders at the default position otherwise.
+  // Touching google.maps.ControlPosition / MapTypeId then throws "Cannot read
+  // properties of undefined", which crashes the map and takes down the whole
+  // page via the error boundary. Only touch the enums once they exist; the
+  // controls still render at their defaults otherwise.
   if (typeof google !== 'undefined' && google.maps?.ControlPosition) {
     opts.zoomControlOptions = { position: google.maps.ControlPosition.RIGHT_TOP }
+  }
+  if (typeof google !== 'undefined' && google.maps?.MapTypeId && google.maps?.MapTypeControlStyle) {
+    // Offer roadmap / satellite / hybrid / terrain like Zillow/Redfin. The
+    // dropdown style keeps the control compact on the search map's chrome.
+    opts.mapTypeControlOptions = {
+      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+      mapTypeIds: [
+        google.maps.MapTypeId.ROADMAP,
+        google.maps.MapTypeId.SATELLITE,
+        google.maps.MapTypeId.HYBRID,
+        google.maps.MapTypeId.TERRAIN,
+      ],
+    }
   }
   return opts
 }
@@ -78,12 +91,17 @@ export const MAP_BOUNDARY_STYLES: google.maps.MapTypeStyle[] = [
  */
 export function buildPricePillIcon(
   label: string,
-  opts?: { hover?: boolean },
+  opts?: { hover?: boolean; active?: boolean },
 ): google.maps.Icon {
   const hover = opts?.hover ?? false
+  const active = opts?.active ?? false
   const fontSize = hover ? 14 : 13
   const hPad = 12
   const vPad = hover ? 8 : 6
+  // Active (clicked / InfoWindow-open) pills get a white outline ring so the
+  // selected home reads clearly on the map, Zillow/Redfin style. The ring lives
+  // inside an outer stroke padding so the pill geometry (and caret) is unchanged.
+  const ring = active ? 2 : 0
   // Approximate character width at the given font size.
   const charW = fontSize * 0.6
   const textW = Math.ceil(label.length * charW)
@@ -93,20 +111,29 @@ export function buildPricePillIcon(
   // Caret (downward triangle) pointing to the exact lat/lng.
   const caretH = 6
   const caretW = 10
-  const totalH = H + caretH
-  const cx = W / 2
+  // Pad the SVG canvas by the ring width on each side so the stroke is not clipped.
+  const totalW = W + ring * 2
+  const totalH = H + caretH + ring * 2
+  const ox = ring // x-offset of the pill body inside the padded canvas
+  const oy = ring // y-offset of the pill body inside the padded canvas
+  const cx = ox + W / 2
+
+  const ringAttrs = active
+    ? ` stroke="${MAP_WHITE}" stroke-width="${ring}"`
+    : ''
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${totalH}">` +
-    `<rect x="0" y="0" width="${W}" height="${H}" rx="${R}" ry="${R}" fill="${MAP_NAVY}"/>` +
-    `<polygon points="${cx - caretW / 2},${H} ${cx + caretW / 2},${H} ${cx},${totalH}" fill="${MAP_NAVY}"/>` +
-    `<text x="${cx}" y="${H / 2 + fontSize * 0.36}" font-family="system-ui,-apple-system,sans-serif" font-size="${fontSize}" font-weight="600" fill="${MAP_WHITE}" text-anchor="middle" dominant-baseline="auto">${label}</text>` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalH}">` +
+    `<rect x="${ox}" y="${oy}" width="${W}" height="${H}" rx="${R}" ry="${R}" fill="${MAP_NAVY}"${ringAttrs}/>` +
+    `<polygon points="${cx - caretW / 2},${oy + H} ${cx + caretW / 2},${oy + H} ${cx},${oy + H + caretH}" fill="${MAP_NAVY}"/>` +
+    `<text x="${cx}" y="${oy + H / 2 + fontSize * 0.36}" font-family="system-ui,-apple-system,sans-serif" font-size="${fontSize}" font-weight="600" fill="${MAP_WHITE}" text-anchor="middle" dominant-baseline="auto">${label}</text>` +
     `</svg>`
 
   return {
     url: 'data:image/svg+xml,' + encodeURIComponent(svg),
-    scaledSize: new google.maps.Size(W, totalH),
-    anchor: new google.maps.Point(cx, totalH),
+    scaledSize: new google.maps.Size(totalW, totalH),
+    // Anchor at the caret tip: horizontal center, full height (bottom of caret).
+    anchor: new google.maps.Point(cx, oy + H + caretH),
   }
 }
 

@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Sheet,
   SheetContent,
@@ -213,51 +214,54 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 // ---------------------------------------------------------------------------
 // Popover-based filter dropdown
 // ---------------------------------------------------------------------------
+//
+// Uses the design-system Popover (radix), which PORTALS the panel to the
+// document body. That is the fix for the old hand-rolled absolute panel: the
+// Row-2 chip bar scrolls horizontally (overflow-x-auto), and per the CSS spec
+// an `overflow-x: auto` box computes `overflow-y` to `auto` as well — so the
+// old absolutely-positioned panel was CLIPPED to nothing the moment it tried
+// to open below the bar. A portaled Popover renders outside that clipping
+// context entirely, so the panel is always visible and interactive.
 
 type FilterDropdownProps = {
   label: string
   active: boolean
   open: boolean
-  onToggle: () => void
-  onClose: () => void
+  onOpenChange: (open: boolean) => void
   children: React.ReactNode
-  align?: 'left' | 'right'
+  align?: 'start' | 'end'
 }
 
 function FilterDropdown({
   label,
   active,
   open,
-  onToggle,
-  onClose: _onClose,
+  onOpenChange,
   children,
-  align = 'left',
+  align = 'start',
 }: FilterDropdownProps) {
   return (
-    <div className="relative shrink-0">
-      <Button
-        type="button"
-        variant={active || open ? 'secondary' : 'outline'}
-        size="sm"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-haspopup="true"
-        className="gap-1 whitespace-nowrap"
-      >
-        {label}
-        <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-60" aria-hidden />
-      </Button>
-      {open && (
-        <div
-          className={cn(
-            'absolute top-full z-50 mt-1.5 w-[min(calc(100vw-2rem),22rem)] rounded-xl border border-border bg-card shadow-lg',
-            align === 'right' ? 'right-0' : 'left-0'
-          )}
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant={active || open ? 'secondary' : 'outline'}
+          size="sm"
+          aria-haspopup="dialog"
+          className="shrink-0 gap-1 whitespace-nowrap"
         >
-          {children}
-        </div>
-      )}
-    </div>
+          {label}
+          <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-60" aria-hidden />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align={align}
+        sideOffset={8}
+        className="w-[min(calc(100vw-2rem),22rem)] p-0"
+      >
+        {children}
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -353,17 +357,8 @@ export default function SearchFilters({ initialFilters }: Props) {
     initialFilters.keywords,
   ])
 
-  // Dropdown click-outside close
-  const barRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (barRef.current && !barRef.current.contains(e.target as Node)) {
-        setOpenPanel(null)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+  // Note: outside-click + Escape close are handled by the design-system Popover
+  // (radix) for the filter dropdowns, so no manual document listener is needed.
 
   // Location suggestions
   useEffect(() => {
@@ -399,8 +394,10 @@ export default function SearchFilters({ initialFilters }: Props) {
     [updateUrl]
   )
 
-  function toggle(panel: OpenPanel) {
-    setOpenPanel((p) => (p === panel ? null : panel))
+  // Map a single panel's Popover open/close into the shared openPanel state so
+  // only one dropdown is open at a time.
+  function panelOpenHandler(panel: Exclude<OpenPanel, null>) {
+    return (next: boolean) => setOpenPanel(next ? panel : null)
   }
 
   // ---------------------------------------------------------------------------
@@ -674,15 +671,17 @@ export default function SearchFilters({ initialFilters }: Props) {
 
       <Separator />
 
-      {/* Row 2: primary filter chips row */}
-      <div ref={barRef} className="flex min-w-0 items-center gap-2 overflow-x-auto px-3 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:px-4">
+      {/* Row 2: primary filter chips row.
+          Horizontal-scroll affordance kept for mobile (overflow-x-auto). The
+          dropdown panels portal to <body> via Popover, so this scroll container
+          no longer clips them (the old absolute-div approach was clipped here). */}
+      <div className="flex min-w-0 items-center gap-2 overflow-x-auto px-3 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:px-4">
         {/* For Sale / Status */}
         <FilterDropdown
           label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}
           active={!!(initialFilters.status && initialFilters.status !== 'Active')}
           open={openPanel === 'status'}
-          onToggle={() => toggle('status')}
-          onClose={() => setOpenPanel(null)}
+          onOpenChange={panelOpenHandler('status')}
         >
           <div className="p-3">
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
@@ -711,8 +710,7 @@ export default function SearchFilters({ initialFilters }: Props) {
           label={activePriceLabel ? `Price: ${activePriceLabel}` : 'Price'}
           active={!!activePriceLabel}
           open={openPanel === 'price'}
-          onToggle={() => toggle('price')}
-          onClose={() => setOpenPanel(null)}
+          onOpenChange={panelOpenHandler('price')}
         >
           <div className="p-3">
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Price range</p>
@@ -721,24 +719,40 @@ export default function SearchFilters({ initialFilters }: Props) {
                 <span className="text-xs text-muted-foreground">Min price</span>
                 <Input
                   type="number"
+                  inputMode="numeric"
                   placeholder="No min"
                   min={0}
                   step={25000}
                   defaultValue={initialFilters.minPrice}
                   className="tabular-nums"
                   onBlur={(e) => setFilter('minPrice', e.currentTarget.value || undefined)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      setFilter('minPrice', e.currentTarget.value || undefined)
+                      setOpenPanel(null)
+                    }
+                  }}
                 />
               </Label>
               <Label className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground">Max price</span>
                 <Input
                   type="number"
+                  inputMode="numeric"
                   placeholder="No max"
                   min={0}
                   step={25000}
                   defaultValue={initialFilters.maxPrice}
                   className="tabular-nums"
                   onBlur={(e) => setFilter('maxPrice', e.currentTarget.value || undefined)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      setFilter('maxPrice', e.currentTarget.value || undefined)
+                      setOpenPanel(null)
+                    }
+                  }}
                 />
               </Label>
             </div>
@@ -779,8 +793,7 @@ export default function SearchFilters({ initialFilters }: Props) {
           label={activeBedsLabel ?? 'Beds'}
           active={!!activeBedsLabel}
           open={openPanel === 'beds'}
-          onToggle={() => toggle('beds')}
-          onClose={() => setOpenPanel(null)}
+          onOpenChange={panelOpenHandler('beds')}
         >
           <div className="p-3">
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bedrooms (min)</p>
@@ -809,8 +822,7 @@ export default function SearchFilters({ initialFilters }: Props) {
           label={activeBathsLabel ?? 'Baths'}
           active={!!activeBathsLabel}
           open={openPanel === 'baths'}
-          onToggle={() => toggle('baths')}
-          onClose={() => setOpenPanel(null)}
+          onOpenChange={panelOpenHandler('baths')}
         >
           <div className="p-3">
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bathrooms (min)</p>
@@ -839,8 +851,7 @@ export default function SearchFilters({ initialFilters }: Props) {
           label={activeTypeLabel ?? 'Home type'}
           active={!!activeTypeLabel}
           open={openPanel === 'type'}
-          onToggle={() => toggle('type')}
-          onClose={() => setOpenPanel(null)}
+          onOpenChange={panelOpenHandler('type')}
         >
           <div className="p-3">
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Home type</p>
@@ -1092,6 +1103,9 @@ export default function SearchFilters({ initialFilters }: Props) {
                     </Label>
                   ))}
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  View, waterfront, fireplace, and golf course apply in list view.
+                </p>
               </section>
 
               <Separator />
@@ -1106,7 +1120,7 @@ export default function SearchFilters({ initialFilters }: Props) {
                     value={moreState.keywords}
                     onChange={(e) => setMoreState((s) => ({ ...s, keywords: e.target.value }))}
                   />
-                  <span className="text-xs text-muted-foreground">Searches listing description text</span>
+                  <span className="text-xs text-muted-foreground">List view searches the listing description. Split view matches address and area terms.</span>
                 </Label>
               </section>
 

@@ -119,6 +119,10 @@ export async function getViewportSearch(
     : filters.sort === 'price_desc' || filters.sort === 'priceDesc' ? 'price_desc'
     : filters.sort === 'oldest' ? 'oldest'
     : 'newest'
+  let domMax: number | undefined
+  if (filters.daysOnMarket === '7') domMax = 7
+  else if (filters.daysOnMarket === '30') domMax = 30
+  else if (filters.daysOnMarket === '90') domMax = 90
   return getViewportListings({
     bounds,
     polygon: polygon && polygon.length >= 3 ? polygon : null,
@@ -136,6 +140,10 @@ export async function getViewportSearch(
     yearBuiltMax: filters.yearBuiltMax,
     lotAcresMin: filters.lotAcresMin,
     lotAcresMax: filters.lotAcresMax,
+    garageMin: filters.garageMin,
+    daysOnMarket: domMax,
+    hasPool: filters.hasPool,
+    keywords: filters.keywords?.trim() || undefined,
     postalCode: filters.postalCode?.trim() || undefined,
     propertyType: filters.propertyType,
   })
@@ -147,6 +155,10 @@ export async function getSearchMapListings(filters: SearchFilters): Promise<MapL
     : filters.status === 'Pending' ? 'pending'
     : filters.status === 'Active' ? 'active'
     : 'active_and_pending'
+  let domMax: number | undefined
+  if (filters.daysOnMarket === '7') domMax = 7
+  else if (filters.daysOnMarket === '30') domMax = 30
+  else if (filters.daysOnMarket === '90') domMax = 90
   return getListingsForMap({
     city: filters.city,
     subdivision: filters.subdivision,
@@ -161,6 +173,10 @@ export async function getSearchMapListings(filters: SearchFilters): Promise<MapL
     yearBuiltMax: filters.yearBuiltMax,
     lotAcresMin: filters.lotAcresMin,
     lotAcresMax: filters.lotAcresMax,
+    garageMin: filters.garageMin,
+    daysOnMarket: domMax,
+    hasPool: filters.hasPool,
+    keywords: filters.keywords?.trim() || undefined,
     postalCode: filters.postalCode?.trim() || undefined,
     propertyType: filters.propertyType,
   })

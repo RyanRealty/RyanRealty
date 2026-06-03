@@ -49,6 +49,22 @@ const FilterSchema = z.object({
   minBeds: z.number().int().nonnegative().optional(),
   minBaths: z.number().nonnegative().optional(),
   minSqft: z.number().int().nonnegative().optional(),
+  /** Upper bound on living area (sqft <= maxSqft). Pairs with minSqft. */
+  maxSqft: z.number().int().positive().optional(),
+  /** year_built >= X — "built from" filter. */
+  yearBuiltMin: z.number().int().min(1700).max(2100).optional(),
+  /** year_built <= X — "built to" filter. */
+  yearBuiltMax: z.number().int().min(1700).max(2100).optional(),
+  /** lot_size_acres >= X — minimum lot size in acres. */
+  lotAcresMin: z.number().nonnegative().optional(),
+  /** lot_size_acres <= X — maximum lot size in acres. */
+  lotAcresMax: z.number().nonnegative().optional(),
+  /** garage_spaces >= X — minimum garage stalls. */
+  garageMin: z.number().int().nonnegative().optional(),
+  /** dom <= X — listed within the last X days on market. */
+  domMax: z.number().int().positive().optional(),
+  /** pool_yn = true — restrict to listings with a pool. */
+  hasPool: z.boolean().optional(),
   hasVirtualTour: z.boolean().optional(),
   /**
    * When true, restrict to listings missing a primary photo (photo_url IS NULL).
@@ -226,6 +242,18 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   if (parsed.minBeds) query = query.gte('beds', parsed.minBeds)
   if (parsed.minBaths) query = query.gte('baths', parsed.minBaths)
   if (parsed.minSqft) query = query.gte('sqft', parsed.minSqft)
+  if (parsed.maxSqft) query = query.lte('sqft', parsed.maxSqft)
+  if (parsed.yearBuiltMin) query = query.gte('year_built', parsed.yearBuiltMin)
+  if (parsed.yearBuiltMax) query = query.lte('year_built', parsed.yearBuiltMax)
+  if (parsed.lotAcresMin != null && parsed.lotAcresMin > 0) {
+    query = query.gte('lot_size_acres', parsed.lotAcresMin)
+  }
+  if (parsed.lotAcresMax != null && parsed.lotAcresMax > 0) {
+    query = query.lte('lot_size_acres', parsed.lotAcresMax)
+  }
+  if (parsed.garageMin) query = query.gte('garage_spaces', parsed.garageMin)
+  if (parsed.domMax) query = query.lte('dom', parsed.domMax)
+  if (parsed.hasPool === true) query = query.eq('pool_yn', true)
   if (parsed.hasVirtualTour === true) query = query.eq('has_virtual_tour', true)
   if (parsed.missingPhoto === true) query = query.is('photo_url', null)
   if (parsed.bbox) {

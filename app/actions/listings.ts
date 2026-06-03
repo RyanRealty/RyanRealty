@@ -887,8 +887,13 @@ export type MapListingRow = {
 }
 
 /**
- * Options for map listing query. Mirrors list search filters so map and list stay in sync (Zillow-style).
- * Year/lot filters live in details JSONB and are applied only in the RPC list search; map uses table columns only.
+ * Options for map/viewport listing query. Mirrors list search filters so map and
+ * list stay in sync (Zillow-style). Everything here maps to a listing_tile_mv
+ * column (price, beds, baths, sqft min/max, year, lot acres, garage, dom, pool,
+ * property type, postal, address keyword) and is applied by getListingTiles.
+ * The four amenity flags that live ONLY in details JSONB (view, waterfront,
+ * fireplace, golf course) are NOT in the MV, so they are honored only by the
+ * RPC-backed list search (getListingsAdvanced), not the map/viewport path.
  */
 export type GetListingsForMapOptions = {
   city?: string
@@ -908,8 +913,39 @@ export type GetListingsForMapOptions = {
   yearBuiltMax?: number
   lotAcresMin?: number
   lotAcresMax?: number
+  garageMin?: number
+  /** Days-on-market ceiling (dom <= X) — "listed within X days". */
+  daysOnMarket?: number
+  hasPool?: boolean
+  /** Free-text query matched against address + locality (street/city/subdivision/zip). */
+  keywords?: string
   postalCode?: string
   propertyType?: string
+}
+
+/** Shared helper: map the SearchFilters/Map option fields the MV can honor onto the getListingTiles filter shape. */
+function advancedTileFilters(options: GetListingsForMapOptions) {
+  return {
+    minPrice: options.minPrice && options.minPrice > 0 ? options.minPrice : undefined,
+    maxPrice: options.maxPrice && options.maxPrice > 0 ? options.maxPrice : undefined,
+    minBeds: options.minBeds && options.minBeds > 0 ? options.minBeds : undefined,
+    minBaths: options.minBaths && options.minBaths > 0 ? options.minBaths : undefined,
+    minSqft: options.minSqFt && options.minSqFt > 0 ? options.minSqFt : undefined,
+    maxSqft: options.maxSqFt && options.maxSqFt > 0 ? options.maxSqFt : undefined,
+    yearBuiltMin: options.yearBuiltMin && options.yearBuiltMin > 0 ? options.yearBuiltMin : undefined,
+    yearBuiltMax: options.yearBuiltMax && options.yearBuiltMax > 0 ? options.yearBuiltMax : undefined,
+    lotAcresMin: options.lotAcresMin != null && options.lotAcresMin > 0 ? options.lotAcresMin : undefined,
+    lotAcresMax: options.lotAcresMax != null && options.lotAcresMax > 0 ? options.lotAcresMax : undefined,
+    garageMin: options.garageMin && options.garageMin > 0 ? options.garageMin : undefined,
+    domMax: options.daysOnMarket && options.daysOnMarket > 0 ? options.daysOnMarket : undefined,
+    hasPool: options.hasPool === true ? true : undefined,
+    propertyType: options.propertyType?.trim() || undefined,
+    postalCode:
+      options.postalCode?.trim() && /^\d{5}$/.test(options.postalCode.trim())
+        ? options.postalCode.trim()
+        : undefined,
+    searchQuery: options.keywords?.trim() && options.keywords.trim().length >= 2 ? options.keywords.trim() : undefined,
+  }
 }
 
 /**
@@ -942,14 +978,7 @@ export async function getListingsForMap(options: GetListingsForMapOptions = {}):
     city: options.city?.trim() || undefined,
     subdivision: canonicalSubdivision || undefined,
     status: dalStatus,
-    minPrice: options.minPrice && options.minPrice > 0 ? options.minPrice : undefined,
-    maxPrice: options.maxPrice && options.maxPrice > 0 ? options.maxPrice : undefined,
-    minBeds: options.minBeds && options.minBeds > 0 ? options.minBeds : undefined,
-    minBaths: options.minBaths && options.minBaths > 0 ? options.minBaths : undefined,
-    minSqft: options.minSqFt && options.minSqFt > 0 ? options.minSqFt : undefined,
-    postalCode: options.postalCode?.trim() && /^\d{5}$/.test(options.postalCode.trim())
-      ? options.postalCode.trim()
-      : undefined,
+    ...advancedTileFilters(options),
     sort: 'newest',
     limit: Math.min(mapLimit, 5000),
   })
@@ -1031,14 +1060,7 @@ export async function getListingsInBounds(
     city: options.city?.trim() || undefined,
     subdivision: canonicalSubdivision || undefined,
     status: dalStatus,
-    minPrice: options.minPrice && options.minPrice > 0 ? options.minPrice : undefined,
-    maxPrice: options.maxPrice && options.maxPrice > 0 ? options.maxPrice : undefined,
-    minBeds: options.minBeds && options.minBeds > 0 ? options.minBeds : undefined,
-    minBaths: options.minBaths && options.minBaths > 0 ? options.minBaths : undefined,
-    minSqft: options.minSqFt && options.minSqFt > 0 ? options.minSqFt : undefined,
-    postalCode: options.postalCode?.trim() && /^\d{5}$/.test(options.postalCode.trim())
-      ? options.postalCode.trim()
-      : undefined,
+    ...advancedTileFilters(options),
     sort: dalSort,
     limit: polygon && polygon.length >= 3 ? polygonFetchLimit : Math.min(offset + limitClamp + 1, 500),
   })
@@ -1133,14 +1155,7 @@ export async function getViewportListings(
     city: options.city?.trim() || undefined,
     subdivision: canonicalSubdivision || undefined,
     status: dalStatus,
-    minPrice: options.minPrice && options.minPrice > 0 ? options.minPrice : undefined,
-    maxPrice: options.maxPrice && options.maxPrice > 0 ? options.maxPrice : undefined,
-    minBeds: options.minBeds && options.minBeds > 0 ? options.minBeds : undefined,
-    minBaths: options.minBaths && options.minBaths > 0 ? options.minBaths : undefined,
-    minSqft: options.minSqFt && options.minSqFt > 0 ? options.minSqFt : undefined,
-    postalCode: options.postalCode?.trim() && /^\d{5}$/.test(options.postalCode.trim())
-      ? options.postalCode.trim()
-      : undefined,
+    ...advancedTileFilters(options),
     sort: dalSort,
     limit: fetchLimit,
   })
