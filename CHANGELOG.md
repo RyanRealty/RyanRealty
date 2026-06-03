@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.9 (2026-06-03)
+
+### Other
+- Add /schools content pages (55 CO schools, verified data + homes feeding each)
+
+---
+
+
 ## v1.402.8 (2026-06-03)
 
 ### Other
