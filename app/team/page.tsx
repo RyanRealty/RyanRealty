@@ -13,6 +13,7 @@
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
+import { getSurfaceImage } from '@/lib/data'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { BrokerProfileRow } from '@/components/site/BrokerProfileRow'
@@ -33,8 +34,16 @@ export const metadata: Metadata = pageMetadata({
   ],
 })
 
+const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+
 export default async function TeamPage() {
   const brokers = await getBrokers()
+  // Distinct approved hero so /team does not reuse the homepage Old Mill banner.
+  const heroSrc = await getSurfaceImage('hero', {
+    geoTags: ['bend', 'central-oregon'],
+    seed: '/team',
+    fallback: OLD_MILL_HERO,
+  })
 
   return (
     <main className="min-h-screen bg-background">
@@ -51,8 +60,8 @@ export default async function TeamPage() {
         headline="Three brokers. That's it."
         lede="Three licensed brokers, all active in Oregon. The broker you meet is the broker who works your deal from offer to close."
         photo={{
-          src: '/brand/hero/hero-old-mill-master-4k.jpg',
-          alt: 'Old Mill District drone view of Bend, Oregon, with the Deschutes River and the Cascade mountains.',
+          src: heroSrc ?? OLD_MILL_HERO,
+          alt: 'Central Oregon high desert and Cascade mountains around Bend.',
           priority: true,
         }}
         minHeight={440}

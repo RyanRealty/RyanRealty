@@ -29,6 +29,7 @@ import {
   getRecentBlogPosts,
   getGeoTileImages,
   getGeoBoundaryMapData,
+  getSurfaceImage,
 } from '@/lib/data'
 import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
@@ -148,11 +149,20 @@ export default async function CityDetailPage({ params }: Props) {
 
   const heroImageUrl = cityMeta?.hero_image_url ?? null
   // IMG-01: never let a non-Bend city fall back to the hardcoded Bend Old Mill
-  // photo. A DB hero wins; otherwise cityHero(slug) returns a verified per-city
-  // photo (or an honest regional Cascade image), with accurate alt text.
+  // photo. A DB hero wins; otherwise prefer a curated, approved, city-tagged
+  // hero from asset_library (also keeps Old Mill OFF the Bend city page —
+  // homepage-only); otherwise cityHero(slug)'s verified per-city / regional
+  // photo, with accurate alt text.
+  const approvedCityHero = await getSurfaceImage('hero', {
+    geoTags: [slug, 'central-oregon'],
+    seed: `city/${slug}`,
+    fallback: null,
+  })
   const heroPhoto = heroImageUrl
     ? { src: heroImageUrl, alt: `${cityName}, Oregon` }
-    : cityHero(slug)
+    : approvedCityHero
+      ? { src: approvedCityHero, alt: `Central Oregon scenery around ${cityName}.` }
+      : cityHero(slug)
   const activeCount = pulse?.activeCount ?? 0
   const medianListPrice = pulse?.medianListPrice ?? snapshot.medianListPrice
 

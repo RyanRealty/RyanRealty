@@ -149,6 +149,11 @@ export type { AmenityBlogPost } from '@/lib/data/blog/getBlogPostsBySlugs'
 // geo-tagged store) for city/neighborhood area cards. See getGeoTileImages.
 export { getGeoTileImages } from '@/lib/data/media/getGeoTileImages'
 export type { GeoTileImageMap } from '@/lib/data/media/getGeoTileImages'
+// Approved, surface-tagged hero/card photography. getSurfaceImage gives a page
+// a DISTINCT approved hero (seeded by route) so heroes stop repeating; the
+// homepage keeps its Old Mill master (not in asset_library, never returned here).
+export { getSurfaceImage, getSurfaceImages, pickSurfaceImage } from '@/lib/data/media/getSurfaceImages'
+export type { SurfaceImage, Surface } from '@/lib/data/media/getSurfaceImages'
 
 // Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'

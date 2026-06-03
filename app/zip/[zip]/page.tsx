@@ -17,7 +17,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getZipListings } from '@/lib/data'
+import { getZipListings, getSurfaceImage } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
@@ -122,6 +122,14 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   const zip = normalizeZip(rawZip)
   if (!CANONICAL_ZIPS.has(zip)) notFound()
 
+  // Distinct approved Central Oregon hero, seeded by ZIP so it is stable per
+  // page but varies across ZIPs (instead of reusing the Old Mill banner).
+  const zipHero = await getSurfaceImage('hero', {
+    geoTags: ['central-oregon'],
+    seed: `zip-${zip}`,
+    fallback: '/brand/hero/hero-old-mill-master-4k.jpg',
+  })
+
   // ONE fetch feeds the hero lede, the subdivision grid, the market snapshot,
   // and the listing grid. propertyType 'A' = the codebase SFR convention.
   // limit is the MV cap (5000) so the active count + medians + subdivision
@@ -214,8 +222,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
         headline={`Homes for sale in ${zip}`}
         lede={ledeParts.join(' ')}
         photo={{
-          src: '/brand/hero/hero-old-mill-master-4k.jpg',
-          alt: 'Old Mill District drone view with the Deschutes River and the Cascade mountains.',
+          src: zipHero ?? '/brand/hero/hero-old-mill-master-4k.jpg',
+          alt: 'Central Oregon high desert and Cascade mountains.',
           priority: true,
         }}
         minHeight={360}

@@ -49,6 +49,7 @@ export default function AdminSidebar({ role, brokerId }: AdminSidebarProps) {
       navItem('/admin/resort-communities', 'Resort & master plan', '🏘'),
       navItem('/admin/site-pages', 'Site pages', '📄'),
       navItem('/admin/media', 'Media', '🗂'),
+      navItem('/admin/photos', 'Photo curation', '🌄'),
       navItem('/admin/banners', 'Banners', '🖼'),
       navItem('/admin/stock-photos', 'Stock photos', '📷'),
       navItem('/admin/query-builder', 'Query builder', '🔍'),

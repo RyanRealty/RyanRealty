@@ -17,6 +17,7 @@
 
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
+import { getSurfaceImage } from '@/lib/data'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
 import { ContentSection } from '@/components/site/ContentSection'
@@ -70,8 +71,18 @@ const FAQ_ITEMS = [
   },
 ] as const
 
+const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+
 export default async function AboutPage() {
   const brokers = await getBrokers()
+  // Distinct approved Bend/Central Oregon hero (seeded by route) so /about does
+  // not reuse the homepage Old Mill banner. Falls back to Old Mill if the
+  // approved pool is empty.
+  const heroSrc = await getSurfaceImage('hero', {
+    geoTags: ['bend', 'central-oregon'],
+    seed: ROUTE_PATH,
+    fallback: OLD_MILL_HERO,
+  })
 
   return (
     <main className="min-h-screen bg-background">
@@ -88,8 +99,8 @@ export default async function AboutPage() {
         headline="A small brokerage in Bend, Oregon."
         lede="Matt Ryan opened Ryan Realty in 2023. Today it is three brokers covering Central Oregon. The broker you call is the one who works your sale or purchase through to closing."
         photo={{
-          src: '/brand/hero/hero-old-mill-master-4k.jpg',
-          alt: 'Old Mill District drone view of Bend, Oregon, with the Deschutes River and the Cascade mountains.',
+          src: heroSrc ?? OLD_MILL_HERO,
+          alt: 'Central Oregon high desert and Cascade mountains around Bend.',
           priority: true,
         }}
         minHeight={440}

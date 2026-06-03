@@ -14,7 +14,7 @@
  * seller workflow. This page has no form of its own.
  */
 
-import { getMarketPulse } from '@/lib/data'
+import { getMarketPulse, getSurfaceImage } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
@@ -80,8 +80,16 @@ const FAQ_ITEMS = [
   },
 ] as const
 
+const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
+
 export default async function SellPage() {
   const pulse = await getMarketPulse({ geoType: 'city', geoSlug: 'bend' }).catch(() => null)
+  // Distinct approved hero so /sell does not reuse the homepage Old Mill banner.
+  const heroSrc = await getSurfaceImage('hero', {
+    geoTags: ['bend', 'central-oregon'],
+    seed: '/sell',
+    fallback: OLD_MILL_HERO,
+  })
 
   return (
     <main className="min-h-screen bg-background">
@@ -98,8 +106,8 @@ export default async function SellPage() {
         headline="Selling your home, done honestly."
         lede="A small team of three brokers. Specific numbers from the data. No layered hand-offs. The broker who prices your home is the broker who walks you to the finish line."
         photo={{
-          src: '/brand/hero/hero-old-mill-master-4k.jpg',
-          alt: 'Old Mill District drone view of Bend, Oregon, with the Deschutes River and the Cascade mountains.',
+          src: heroSrc ?? OLD_MILL_HERO,
+          alt: 'Central Oregon high desert and Cascade mountains around Bend.',
           priority: true,
         }}
         minHeight={500}

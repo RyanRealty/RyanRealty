@@ -23,6 +23,7 @@ import { getNeighborhoodBySlug } from '@/app/actions/cities'
 import {
   getGeoBoundaryMapData,
   getListingTiles,
+  getSurfaceImage,
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -106,6 +107,15 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)
   if (!neighborhood) notFound()
+
+  // Distinct approved hero so each neighborhood does not reuse the Old Mill
+  // banner. Prefer a photo tagged for this neighborhood or its city, else a
+  // regional Central Oregon shot, seeded by route for a stable per-page choice.
+  const neighborhoodHero = await getSurfaceImage('hero', {
+    geoTags: [neighborhoodSlug, `${citySlug}-${neighborhoodSlug}`, citySlug, 'central-oregon'],
+    seed: `${citySlug}/${neighborhoodSlug}`,
+    fallback: '/brand/hero/hero-old-mill-master-4k.jpg',
+  })
 
   // Boundary polygon slug for Bend neighborhoods: "{citySlug}-{neighborhoodSlug}"
   const boundaryNeighborhoodSlug = `${citySlug}-${neighborhoodSlug}`
@@ -241,8 +251,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         headline={`Homes for sale in ${neighborhood.name}`}
         lede={lede || undefined}
         photo={{
-          src: '/brand/hero/hero-old-mill-master-4k.jpg',
-          alt: 'Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains.',
+          src: neighborhoodHero ?? '/brand/hero/hero-old-mill-master-4k.jpg',
+          alt: `Central Oregon scenery around ${neighborhood.name}.`,
           priority: true,
         }}
         minHeight={520}

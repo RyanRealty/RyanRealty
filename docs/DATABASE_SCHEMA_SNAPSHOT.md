@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-01T14:54:10.177Z
+**Generated:** 2026-06-02T23:26:12.049Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 590,128**
+### `listings` · **rows ≈ 605,284**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 591,998**
+### `listing_tile_mv` · **rows ≈ 587,879**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -412,7 +412,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 9,359**
+### `market_stats_cache` · **rows ≈ 9,727**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -860,6 +860,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `used_in` | jsonb | no | '[]'::jsonb |
 | `approval` | text | no | 'approved'::text |
 | `notes` | text | yes |  |
+| `surface_tags` | ARRAY | yes | '{}'::text[] |
 
 ### `audit_runs`
 
