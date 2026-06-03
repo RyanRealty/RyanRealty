@@ -458,5 +458,9 @@ export type { ParkBoundaryGeometry } from '@/lib/data/parks/getParkBoundaryGeoJS
 
 // More functions get exported here as Wave 1-3 lands them.
 
+// Brokerage track record (seller conviction LP + similar surfaces)
+export { getBrokerageTrackRecord } from '@/lib/data/track-record'
+export type { BrokerageTrackRecord } from '@/lib/data/track-record'
+
 // Cache helpers ----------------------------------------------------
 export { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'

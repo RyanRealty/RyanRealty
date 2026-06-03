@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-05-30T14:19:59.107Z",
   "reason": "Snapshot of pre-DAL pages. The gate fails only on NEW violations beyond this baseline. Each line should disappear as Wave 3 page migrations route pages through @/lib/data/.",
-  "total": 88,
+  "total": 87,
   "violators": [
     "app/accessibility/page.tsx",
     "app/account/buying-preferences/page.tsx",
@@ -61,7 +61,6 @@
     "app/lp/buyer-listing-alerts/page.tsx",
     "app/lp/central-oregon-golf/page.tsx",
     "app/lp/expired-listing/page.tsx",
-    "app/lp/sell-your-home/page.tsx",
     "app/lp/seller-home-value/page.tsx",
     "app/lp/tetherow/heath/page.tsx",
     "app/lp/tetherow/page.tsx",
