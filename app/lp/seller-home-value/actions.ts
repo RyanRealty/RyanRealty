@@ -49,6 +49,12 @@ export type SellerLPSubmission = {
    *  stitched to their prior anonymous visitor_events and those events replayed
    *  into FUB. Validated server-side before use. */
   sessionId?: string
+  /**
+   * Which LP variant submitted the form.
+   * 'seller-lp'   — seller-home-value LP (default)
+   * 'list-now-lp' — sell-your-home BOFU LP (high listing intent)
+   */
+  source?: 'seller-lp' | 'list-now-lp'
 }
 
 export type SellerLPResult =
@@ -171,6 +177,8 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     const name = submission.name?.trim() ?? ''
     const phone = submission.phone?.trim() ?? ''
     const timeline = submission.timeline
+    const lpSource = submission.source ?? 'seller-lp'
+    const isListNowLp = lpSource === 'list-now-lp'
     const { classification, tierTag } = classifyTimeline(timeline)
 
     // ─── Resolve the FUB person ────────────────────────────────────────────
@@ -297,12 +305,16 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // ─── Apply canonical tags + assign broker + write custom fields ───────
     if (fubPersonId && !hardStopped) {
       // 1. Tags — canonical kebab-case namespaced schema (see docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4).
+      // list-now-lp adds seller:listing-intent to distinguish high-intent BOFU leads in FUB.
       const tags: string[] = [
         'audience:seller',
         tierTag,                         // seller:hot | seller:warm | seller:nurture
-        'source:seller-lp',
+        `source:${lpSource}`,            // source:seller-lp | source:list-now-lp
         `broker:${assignment.broker}`,
       ]
+      if (isListNowLp) {
+        tags.push('seller:listing-intent')
+      }
       await addPersonTags(fubPersonId, tags)
 
       // 2. Broker assignment via FUB's assignedUserId.
@@ -337,7 +349,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         userId: assignment.userId,
         fubPersonId,
         tier: classification,
-        source: 'seller-lp',
+        source: lpSource,
       })
     }
 
@@ -424,6 +436,10 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // ─── Meta CAPI Lead $500 with dedup event_id ──────────────────────────
     const eventId = generateEventId()
     const capiCookies = await cookies()
+    const capiSourceUrl = isListNowLp
+      ? `${siteUrl}/lp/sell-your-home`
+      : `${siteUrl}/lp/seller-home-value`
+    const capiContentName = isListNowLp ? 'seller_lp_list_now' : 'seller_lp_home_value'
     void fetch(`${siteUrl}/api/meta-capi`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -434,12 +450,12 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         firstName,
         lastName,
         eventId,
-        eventSourceUrl: `${siteUrl}/lp/seller-home-value`,
+        eventSourceUrl: capiSourceUrl,
         fbp: capiCookies.get('_fbp')?.value,
         fbc: capiCookies.get('_fbc')?.value,
         customData: {
-          content_name: 'seller_lp_home_value',
-          lead_type: 'seller_valuation',
+          content_name: capiContentName,
+          lead_type: isListNowLp ? 'seller_listing_intent' : 'seller_valuation',
           property_address: parsed.full,
           timeline: timeline ?? 'unspecified',
           classification,
@@ -479,7 +495,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         eventName: 'generate_lead',
         clientId: ga4ClientId,
         eventParams: {
-          lp_variant: 'seller-home-value',
+          lp_variant: isListNowLp ? 'sell-your-home' : 'seller-home-value',
           lp_source: utmSource,
           lp_medium: utmMedium,
           lp_campaign: utmCampaign,

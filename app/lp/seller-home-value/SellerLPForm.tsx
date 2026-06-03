@@ -34,12 +34,17 @@ export type SellerLPFormProps = {
    * since the page scrolls past the hero once the visitor advances).
    */
   heroVariant?: boolean
+  /**
+   * 'home-value' (default) — standard seller valuation copy.
+   * 'list-now'            — high-intent BOFU listing copy.
+   */
+  variant?: 'home-value' | 'list-now'
 }
 
 type Step = 'address' | 'qualify' | 'success'
 
 const TIMELINE_OPTIONS: { value: SellerLPTimeline; label: string; sub: string }[] = [
-  { value: 'ready-now', label: 'Ready to sell', sub: 'Let’s get moving.' },
+  { value: 'ready-now', label: 'Ready to sell', sub: "Let's get moving." },
   { value: 'next-3-6', label: 'Sometime this year', sub: 'Planning ahead, no rush.' },
   { value: 'exploring', label: 'Just curious', sub: 'Here for the number, not the sales pitch.' },
 ]
@@ -50,7 +55,9 @@ export default function SellerLPForm({
   prefillEmail,
   prefillPhone,
   heroVariant = false,
+  variant = 'home-value',
 }: SellerLPFormProps) {
+  const isListNow = variant === 'list-now'
   const [step, setStep] = useState<Step>('address')
   const [address, setAddress] = useState('')
   const [name, setName] = useState(prefillName ?? '')
@@ -88,6 +95,7 @@ export default function SellerLPForm({
         phone: opts.skipQualify ? prefillPhone ?? phone.trim() : phone.trim(),
         timeline: (timeline || undefined) as SellerLPTimeline | undefined,
         sessionId: readRrSessionId(),
+        source: isListNow ? 'list-now-lp' : 'seller-lp',
       })
       if (!result.success) {
         setError(result.error)
@@ -137,13 +145,32 @@ export default function SellerLPForm({
   // ─── Success state ─────────────────────────────────────────────────────
   if (step === 'success') {
     const isHot = resultClassification === 'hot'
+    if (isListNow) {
+      return (
+        <div className="rounded-2xl border border-primary/15 bg-card p-8 text-left shadow-sm">
+          <h2 className="font-display text-2xl font-semibold text-primary">
+            Thanks. A local broker will reach out to start your sale.
+          </h2>
+          <p className="mt-3 text-lg text-foreground/85">
+            {"We'll review your home and recent comps, then call you to talk pricing and a plan."}
+            {isHot ? ' Because your timeline is short, expect a call very soon.' : ''}
+          </p>
+          <p className="mt-3 text-base text-muted-foreground">
+            Prefer to talk right now? Call Matt directly at{' '}
+            <a href="tel:+15417033095" className="font-semibold text-primary underline underline-offset-2 tabular-nums">
+              541.703.3095
+            </a>.
+          </p>
+        </div>
+      )
+    }
     return (
       <div className="rounded-2xl border border-primary/15 bg-card p-8 text-left shadow-sm">
         <h2 className="font-display text-2xl font-semibold text-primary">
           Got it. Your home value is on its way.
         </h2>
         <p className="mt-3 text-lg text-foreground/85">
-          We’ll prepare a real comparative market analysis from recent local sales and send it your way.
+          {"We'll prepare a real comparative market analysis from recent local sales and send it your way."}
           {isHot ? ' Because your timeline is short, Matt will personally reach out shortly to walk through your number.' : ' Matt will follow up with your number and answer any questions.'}
         </p>
         <p className="mt-3 text-base text-muted-foreground">
@@ -195,7 +222,7 @@ export default function SellerLPForm({
           disabled={pending}
           className="mt-3 h-16 w-full rounded-xl bg-warning text-lg font-semibold text-warning-foreground shadow-xl transition-colors hover:bg-warning/90 disabled:opacity-70"
         >
-          {pending ? 'Working…' : 'Get my home value →'}
+          {pending ? 'Working…' : isListNow ? 'Start my home sale →' : 'Get my home value →'}
         </Button>
       </form>
     )
@@ -244,7 +271,7 @@ export default function SellerLPForm({
           disabled={pending}
           className="mt-5 h-14 w-full rounded-xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
         >
-          {pending ? 'Working…' : 'Get my home value →'}
+          {pending ? 'Working…' : isListNow ? 'Start my home sale →' : 'Get my home value →'}
         </Button>
 
       </form>
@@ -272,7 +299,7 @@ export default function SellerLPForm({
       </Button>
 
       <h2 id="seller-lp-form-heading-2" className="font-display text-xl font-semibold text-primary">
-        Where should we send it?
+        {isListNow ? 'How should we reach you?' : 'Where should we send it?'}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Two quick fields and it’s on its way. Phone is optional, and we promise not to call during dinner.
@@ -397,7 +424,7 @@ export default function SellerLPForm({
         disabled={pending}
         className="mt-6 h-14 w-full rounded-xl bg-warning text-lg font-semibold text-warning-foreground transition-colors hover:bg-warning/90 disabled:opacity-70"
       >
-        {pending ? 'Sending…' : 'Send my home value →'}
+        {pending ? 'Sending…' : isListNow ? 'Book my consultation →' : 'Send my home value →'}
       </Button>
     </form>
   )
