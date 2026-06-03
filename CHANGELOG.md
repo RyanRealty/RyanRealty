@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.11 (2026-06-03)
+
+### Other
+- Fix search filters (unclip dropdowns + wire dropped filters) + map upgrades
+
+---
+
+
 ## v1.402.10 (2026-06-03)
 
 ### Other
