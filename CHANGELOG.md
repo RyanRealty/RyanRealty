@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.15 (2026-06-03)
+
+### Other
+- Add ready-to-list seller LP (/lp/sell-your-home) for high-intent listing traffic
+
+---
+
+
 ## v1.402.14 (2026-06-03)
 
 ### Other
