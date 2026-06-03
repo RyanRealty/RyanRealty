@@ -17,10 +17,12 @@
  * search_listings_advanced RPC can actually honor — no empty-result presets.
  *
  * IMPORTANT: every slug below must exist in SEARCH_PRESETS (lib/search-presets.ts).
- * The 'on-golf-course' preset is intentionally NOT used — it reads the
- * amenities.golf_view flag which is unpopulated across the service area (0 rows
- * everywhere). The golf intent is served by 'golf-course-view' (details.View),
- * which returns real inventory.
+ * Two distinct, data-backed golf searches (migration 20260603140000 fixed the
+ * dead amenities.golf_view clause that made 'on-golf-course' return 0 rows):
+ *   'on-golf-course'   — homes on/fronting a course or in a golf community;
+ *                        reads details.View golf OR PublicRemarks golf course /
+ *                        fairway / golf community (Bend 117, Sunriver 24 active).
+ *   'golf-course-view' — the view-only subset, details.View ILIKE 'Golf'.
  */
 
 import type { SearchPreset } from '@/lib/search-presets'
@@ -43,8 +45,9 @@ export type CityPopularSearches = {
 export const CITY_POPULAR_SEARCHES: CityPopularSearches[] = [
   {
     // Bend — median ~$819K. Deep mid-to-upper market, strong luxury (393),
-    // new construction (248), mountain-view (227), townhomes (88) + condos (67),
-    // river-view (55), acreage (155).
+    // new construction (248), mountain-view (227), on-golf-course (117 — Tetherow,
+    // Pronghorn, Broken Top, Widgi Creek, Awbrey Glen), townhomes (88) + condos
+    // (67), acreage (155). Golf (117) edges out river-view (55) for a menu slot.
     city: 'Bend',
     citySlug: 'bend',
     presetSlugs: [
@@ -53,9 +56,9 @@ export const CITY_POPULAR_SEARCHES: CityPopularSearches[] = [
       'luxury',
       'new-construction',
       'mountain-view',
+      'on-golf-course',
       'townhomes',
       'condos',
-      'river-view',
       'single-level',
       'new-listings',
     ],
@@ -99,18 +102,19 @@ export const CITY_POPULAR_SEARCHES: CityPopularSearches[] = [
     ],
   },
   {
-    // Sunriver — resort market, median ~$677K. Condo-heavy (27), golf-view (15),
-    // under-500k (44), under-750k (68), luxury (20). No acreage (resort lots).
+    // Sunriver — resort market, median ~$677K. Condo-heavy (27), on-golf-course
+    // (24), golf-view (15), under-500k (44), under-750k (68), luxury (20). No
+    // acreage (resort lots). Golf is the defining Sunriver search — lead with it.
     city: 'Sunriver',
     citySlug: 'sunriver',
     presetSlugs: [
       'condos',
+      'on-golf-course',
       'golf-course-view',
       'under-500k',
       'under-750k',
       'under-1m',
       'luxury',
-      'with-view',
       'with-fireplace',
       'single-level',
       'new-listings',
