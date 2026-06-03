@@ -23,6 +23,7 @@ import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
 import { NeighborhoodMarketContext } from '@/components/site/listing-detail/NeighborhoodMarketContext'
 import { SchoolsBlock } from '@/components/site/listing-detail/SchoolsBlock'
+import { ParksNearbyBlock } from '@/components/site/listing-detail/ParksNearbyBlock'
 import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
@@ -289,6 +290,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         />
       ) : null}
       <SchoolsBlock listing={listingWithPhotos} />
+      <ParksNearbyBlock listing={listingWithPhotos} />
       <MortgageCalculator
         listPrice={listing.listPrice}
         taxAnnualAmount={listing.taxAnnualAmount}

@@ -79,7 +79,8 @@ export type PlaceInput = {
    * schema.org subtype. City for a city page, Neighborhood for a Bend
    * neighborhood, Place (default) for a resort/master-planned community.
    * Educational subtypes (School / ElementarySchool / MiddleSchool /
-   * HighSchool) for the /schools pages — all are schema.org Place subtypes.
+   * HighSchool) for the /schools pages, Park for the /parks pages — all are
+   * schema.org Place subtypes.
    */
   placeType?:
     | 'City'
@@ -89,6 +90,7 @@ export type PlaceInput = {
     | 'ElementarySchool'
     | 'MiddleSchool'
     | 'HighSchool'
+    | 'Park'
   name: string
   description?: string
   url?: string

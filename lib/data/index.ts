@@ -439,6 +439,23 @@ export type {
   SchoolsByLevel,
 } from '@/lib/data/schools/getSchools'
 
+// Parks — registry-backed content pages. getParkDetail joins the registry to
+// the REAL active SFR homes near a park (listings bounding box); getParks
+// returns the registry grouped by city for the index; getParkBoundaryGeoJSON
+// returns the authoritative polygon (boundaries table, geo_type='park').
+// Park facts (blurb, amenities, acreage) are verified + cited in the registry,
+// never invented (CLAUDE.md §0).
+export { getParkDetail } from '@/lib/data/parks/getParkDetail'
+export type {
+  ParkDetail,
+  ParkHomeTile,
+  ParkStats,
+} from '@/lib/data/parks/getParkDetail'
+export { getParks, getParksCount } from '@/lib/data/parks/getParks'
+export type { ParkCityGroup } from '@/lib/data/parks/getParks'
+export { getParkBoundaryGeoJSON } from '@/lib/data/parks/getParkBoundaryGeoJSON'
+export type { ParkBoundaryGeometry } from '@/lib/data/parks/getParkBoundaryGeoJSON'
+
 // More functions get exported here as Wave 1-3 lands them.
 
 // Cache helpers ----------------------------------------------------

@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-06-02T23:26:12.049Z
+**Generated:** 2026-06-03T12:34:48.570Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -299,7 +299,7 @@ Pre-projected detail row per listing. Currently unused in code (Wave 1.5 was rev
 | `list_office_name` | text | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `listing_tile_mv` · **rows ≈ 587,879**
+### `listing_tile_mv` · **rows ≈ 591,605**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -343,7 +343,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 75,689**
+### `similar_listings_mv` · **rows ≈ 74,327**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -412,7 +412,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 9,727**
+### `market_stats_cache` · **rows ≈ 9,957**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -570,7 +570,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 3**
+### `cmas` · **rows ≈ 4**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -685,7 +685,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `owner_lookup_attempts` | integer | yes | 0 |
 | `last_owner_lookup_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 46**
+### `marketing_brain_actions` · **rows ≈ 47**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
