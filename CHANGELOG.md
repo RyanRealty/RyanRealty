@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.5 (2026-06-03)
+
+### Other
+- Bump geo-tile-images cache key v2 to v3 for new approved photos
+
+---
+
+
 ## v1.402.4 (2026-06-03)
 
 ### Other
