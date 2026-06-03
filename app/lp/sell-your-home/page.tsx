@@ -162,9 +162,8 @@ export default async function ListYourHomePage() {
             <p className="text-center text-sm font-semibold uppercase tracking-wider text-primary-foreground/75">
               Ryan Realty · verified closed sales
             </p>
-            <div className="mt-6 grid grid-cols-2 gap-5 sm:grid-cols-4">
+            <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
               <StatBadge figure={fmtCompact(trackRecord.totalVolume)} label="in Bend homes sold" />
-              <StatBadge figure={String(trackRecord.homesSold)} label="closed transactions" />
               <StatBadge figure={fmtCompact(trackRecord.avgSalePrice)} label="average sale price" />
               <StatBadge figure={`${aggregate.rating}★`} label={`across ${aggregate.count} Google reviews`} />
             </div>
