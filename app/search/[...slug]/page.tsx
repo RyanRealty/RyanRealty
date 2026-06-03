@@ -26,7 +26,8 @@ import SaveSearchButton from '../../../components/SaveSearchButton'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
 import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, listingsBrowsePath, slugify } from '../../../lib/slug'
 import { entityKeyToSlug } from '../../../lib/community-slug'
-import { getPresetBySlug, isPresetSlug } from '../../../lib/search-presets'
+import { getPresetBySlug, isPresetSlug, resolvePresetYearBuiltMin } from '../../../lib/search-presets'
+import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
 import { communityPagePath } from '../../../lib/community-slug'
 import ListingTile from '../../../components/ListingTile'
 import AdvancedSearchFilters from '../../../components/AdvancedSearchFilters'
@@ -287,6 +288,7 @@ export default async function SearchPage({
     includeClosed: sp.includeClosed === '1',
   }
   // Predefined preset: apply preset params (preset wins for its keys so the page shows the right results)
+  const presetYearBuiltMin = preset ? resolvePresetYearBuiltMin(preset) : undefined
   const filterOpts = preset
     ? {
         ...filterOptsBase,
@@ -299,7 +301,12 @@ export default async function SearchPage({
         ...(preset.params.hasView != null && { hasView: preset.params.hasView }),
         ...(preset.params.hasFireplace != null && { hasFireplace: preset.params.hasFireplace }),
         ...(preset.params.hasGolfCourse != null && { hasGolfCourse: preset.params.hasGolfCourse }),
+        ...(preset.params.hasWaterfront != null && { hasWaterfront: preset.params.hasWaterfront }),
         ...(preset.params.viewContains != null && preset.params.viewContains !== '' && { viewContains: preset.params.viewContains }),
+        ...(preset.params.lotAcresMin != null && { lotAcresMin: preset.params.lotAcresMin }),
+        ...(presetYearBuiltMin != null && { yearBuiltMin: presetYearBuiltMin }),
+        ...(preset.params.propertySubType != null && preset.params.propertySubType !== '' && { propertySubType: preset.params.propertySubType }),
+        ...(preset.params.keywords != null && preset.params.keywords !== '' && { keywords: preset.params.keywords }),
         ...(preset.params.sort != null && { sort: preset.params.sort as AdvancedSort }),
       }
     : filterOptsBase
@@ -582,7 +589,7 @@ export default async function SearchPage({
                   <div className="absolute inset-0 animate-hero-ken-burns">
                     <Image
                       src={bannerUrl}
-                      alt={`Real estate in ${displayName}, Central Oregon – scenic area`}
+                      alt={`Real estate in ${displayName}, Central Oregon - scenic area`}
                       width={1200}
                       height={336}
                       className="h-full w-full object-cover"
@@ -724,6 +731,58 @@ export default async function SearchPage({
           variant="default"
         />
       </header>
+
+      {/* Preset intro — data-grounded, unique per city + preset. Counts pulled
+          live (totalCount = filtered result count; median = the city's current
+          active median from market stats). No invented figures. */}
+      {city && !subdivision && preset && (() => {
+        const allHomes = getAllCityHomesLink(cityEntityKey(city))
+        const otherPresets = getPopularSearchesForCity(cityEntityKey(city), 8)
+          .filter((l) => l.href !== searchPagePath)
+          .slice(0, 6)
+        return (
+          <section className="mb-10 rounded-xl border border-border bg-card p-6 shadow-sm" aria-labelledby="preset-intro-heading">
+            <h2 id="preset-intro-heading" className="text-base font-semibold text-foreground">
+              {preset.label} in {placeName}
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {totalCount > 0 ? (
+                <>
+                  There {totalCount === 1 ? 'is' : 'are'} currently{' '}
+                  <span className="font-medium text-foreground" style={{ fontVariantNumeric: 'tabular-nums' }}>{totalCount.toLocaleString()}</span>{' '}
+                  active {preset.shortLabel.toLowerCase()} {totalCount === 1 ? 'listing' : 'listings'} in {placeName}.
+                  {marketStats.medianPrice != null && (
+                    <> The median list price across all active homes in {placeName} is{' '}
+                      <span className="font-medium text-foreground" style={{ fontVariantNumeric: 'tabular-nums' }}>${marketStats.medianPrice.toLocaleString()}</span>.</>
+                  )}
+                  {' '}Browse the matches below, save the ones you like, and reach out when you want a closer look.
+                </>
+              ) : (
+                <>No active {preset.shortLabel.toLowerCase()} listings in {placeName} right now. Inventory changes daily, so save this search or explore the other searches below.</>
+              )}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {allHomes && (
+                <Link
+                  href={allHomes.href}
+                  className="rounded-lg border border-border bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                >
+                  {allHomes.label}
+                </Link>
+              )}
+              {otherPresets.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="rounded-lg border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition hover:bg-background"
+                >
+                  {placeName} {l.label}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )
+      })()}
 
       {/* About this community — show rich profile if available, else subdivision blurb */}
       {subdivision && (() => {

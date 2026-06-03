@@ -71,17 +71,24 @@ const CITY_LINKS: NavLink[] = [
  */
 export const PRIMARY_NAV: NavGroup[] = [
   {
-    label: 'Buy',
+    // "Homes" renders as a stylized mega-menu on desktop (SiteHeader) driven by
+    // lib/popular-searches.ts, and as this accordion section on mobile
+    // (MobileNav). The children below are the mobile fallback — browse links
+    // plus an "All [City] homes" link per city so every city hub is reachable
+    // on one thumb. Per-city popular searches live in the desktop mega-menu.
+    label: 'Homes',
     href: '/homes-for-sale',
     children: [
       { href: '/homes-for-sale', label: 'All homes for sale' },
       { href: '/search', label: 'Map search' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/compare', label: 'Compare properties' },
-      { href: '/homes-for-sale/bend/under-500k', label: 'Bend under $500k' },
-      { href: '/homes-for-sale/bend/500k-to-750k', label: 'Bend $500k to $750k' },
-      { href: '/homes-for-sale/redmond', label: 'Redmond homes' },
-      { href: '/homes-for-sale/sisters', label: 'Sisters homes' },
+      { href: '/homes-for-sale/bend', label: 'All Bend homes' },
+      { href: '/homes-for-sale/redmond', label: 'All Redmond homes' },
+      { href: '/homes-for-sale/sisters', label: 'All Sisters homes' },
+      { href: '/homes-for-sale/sunriver', label: 'All Sunriver homes' },
+      { href: '/homes-for-sale/la-pine', label: 'All La Pine homes' },
+      { href: '/homes-for-sale/prineville', label: 'All Prineville homes' },
     ],
   },
   {
