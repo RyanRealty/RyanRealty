@@ -71,6 +71,9 @@ export type OurListing = {
   sqft: number | null
   /** Pre-computed display price ("$3,000,000", "Sold · $1.7M", "Listed · $899K"). */
   displayPrice: string
+  /** Raw close price (number) for closed sales, for full-currency display.
+   *  Null/absent for active or non-closed entries. Sourced live from MLS. */
+  closePrice?: number | null
   /** Listing agent first name only (for "Marketed by Rebecca" attribution). */
   agentFirstName: string | null
 }
@@ -380,6 +383,7 @@ export async function getOurListings(): Promise<OurListing[]> {
             ? (r['TotalLivingAreaSqFt'] as number)
             : null,
         displayPrice,
+        closePrice,
         agentFirstName,
       })
     }

@@ -47,19 +47,18 @@
    the five stars every few seconds (most of the cycle rests at scale 1),
    staggered per star. Respect prefers-reduced-motion. */
 @keyframes lp-star-twinkle {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  45%      { transform: scale(1.4) rotate(-7deg); }
-  70%      { transform: scale(1.12) rotate(5deg); }
+  0%, 65%, 100% { transform: scale(1); }
+  82%           { transform: scale(1.12); }
 }
 .lp-star {
   display: inline-block;
   transform-origin: center 60%;
-  animation: lp-star-twinkle 1.7s ease-in-out infinite;
+  animation: lp-star-twinkle 3.2s ease-in-out infinite;
 }
-.lp-star:nth-child(2) { animation-delay: 0.13s; }
-.lp-star:nth-child(3) { animation-delay: 0.26s; }
-.lp-star:nth-child(4) { animation-delay: 0.39s; }
-.lp-star:nth-child(5) { animation-delay: 0.52s; }
+.lp-star:nth-child(2) { animation-delay: 0.1s; }
+.lp-star:nth-child(3) { animation-delay: 0.2s; }
+.lp-star:nth-child(4) { animation-delay: 0.3s; }
+.lp-star:nth-child(5) { animation-delay: 0.4s; }
 @media (prefers-reduced-motion: reduce) {
   .lp-star { animation: none; }
 }

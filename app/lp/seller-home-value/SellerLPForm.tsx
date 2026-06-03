@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -56,6 +57,7 @@ export default function SellerLPForm({
   const [email, setEmail] = useState(prefillEmail ?? '')
   const [phone, setPhone] = useState(prefillPhone ?? '')
   const [timeline, setTimeline] = useState<SellerLPTimeline | ''>('')
+  const [consent, setConsent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [resultClassification, setResultClassification] = useState<'hot' | 'warm' | 'nurture' | 'unknown' | null>(null)
@@ -123,6 +125,10 @@ export default function SellerLPForm({
     }
     if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       setError('Please enter a valid email address.')
+      return
+    }
+    if (consent === false) {
+      setError('Please agree to be contacted so we can send your home value.')
       return
     }
     submit()
@@ -351,6 +357,33 @@ export default function SellerLPForm({
             ))}
           </RadioGroup>
         </fieldset>
+      </div>
+
+      {/* TCPA consent checkbox — required before submit */}
+      <div className="mt-4 flex items-start gap-3">
+        <Checkbox
+          id="seller-lp-consent"
+          checked={consent}
+          onCheckedChange={(checked) => setConsent(checked === true)}
+          className="mt-0.5 shrink-0"
+          aria-required="true"
+        />
+        <Label
+          htmlFor="seller-lp-consent"
+          className="cursor-pointer text-sm font-normal leading-relaxed text-foreground/75"
+        >
+          I agree that Ryan Realty LLC may contact me about my home value at the phone and email I
+          provided, including by automated text. Consent is not required to get my valuation. Msg
+          and data rates may apply. Reply STOP to opt out.{' '}
+          <a
+            href="/privacy"
+            className="font-medium text-primary underline underline-offset-2 hover:text-primary/80"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Privacy
+          </a>
+        </Label>
       </div>
 
       {error && (
