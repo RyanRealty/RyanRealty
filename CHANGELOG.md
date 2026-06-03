@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.6 (2026-06-03)
+
+### Other
+- Fix watermarked/mis-tagged site photos, remove tile like button, fix www OAuth
+
+---
+
+
 ## v1.402.5 (2026-06-03)
 
 ### Other
