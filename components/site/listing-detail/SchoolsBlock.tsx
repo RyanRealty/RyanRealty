@@ -1,5 +1,7 @@
+import Link from 'next/link'
 import { Eyebrow, H3, Stack } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
+import { findSchoolByName } from '@/data/co-schools'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
 /**
@@ -71,13 +73,30 @@ function SchoolCard({
   name: string | null
   district: string | null
 }) {
+  // Link the school name to its /schools/[slug] page when it exists in the
+  // Central Oregon registry (slugify + lookup). Same card layout otherwise.
+  const registered = name ? findSchoolByName(name) : undefined
+
   return (
     <div className={cn('rounded-[14px] border border-border bg-card p-4 shadow-sm')}>
       <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
         {level}
       </div>
       <div className="mt-1.5 text-[17px] font-bold tracking-[-0.01em] text-foreground">
-        {name ?? '—'}
+        {name ? (
+          registered ? (
+            <Link
+              href={`/schools/${registered.slug}`}
+              className="text-primary transition-colors hover:text-primary/85 hover:underline"
+            >
+              {name}
+            </Link>
+          ) : (
+            name
+          )
+        ) : (
+          '—'
+        )}
       </div>
       {district ? (
         <div className="mt-1 text-xs text-muted-foreground">{district}</div>

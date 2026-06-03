@@ -423,6 +423,22 @@ export type {
   ListingDetailsJson as AdminListingDetailsJson,
 } from '@/lib/data/admin/listingEdit'
 
+// Schools — registry-backed content pages. getSchoolDetail joins the registry
+// to the REAL active SFR homes feeding a school (listings table); getSchools
+// returns the registry grouped by district for the index. Academic stats are
+// nullable + enriched later (never invented — CLAUDE.md §0).
+export { getSchoolDetail } from '@/lib/data/schools/getSchoolDetail'
+export type {
+  SchoolDetail,
+  SchoolHomeTile,
+  SchoolStats,
+} from '@/lib/data/schools/getSchoolDetail'
+export { getSchools, getSchoolsCount } from '@/lib/data/schools/getSchools'
+export type {
+  SchoolDistrictGroup,
+  SchoolsByLevel,
+} from '@/lib/data/schools/getSchools'
+
 // More functions get exported here as Wave 1-3 lands them.
 
 // Cache helpers ----------------------------------------------------

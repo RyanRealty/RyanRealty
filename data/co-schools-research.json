@@ -1,0 +1,1000 @@
+[
+  {
+    "name": "Summit High School",
+    "level": "high",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "9-12",
+    "enrollment": 1282,
+    "student_teacher_ratio": "26:1",
+    "greatschools_rating": "10/10",
+    "address": "2855 NW Clearwater Dr, Bend, OR 97701",
+    "blurb": "Summit High School is a public high school in Bend serving grades 9-12 as part of the Bend-La Pine Schools district. It offers AP courses, Project Lead The Way curriculum, and a Gifted & Talented program, and earns a perfect 10/10 rating from GreatSchools.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?ID=410198001451",
+      "https://www.greatschools.org/oregon/bend/1662-Summit-High-School/"
+    ]
+  },
+  {
+    "name": "Ridgeview High School",
+    "level": "high",
+    "city": "Redmond",
+    "found": true,
+    "district": "Redmond School District 2J",
+    "grades": "9-12",
+    "enrollment": 870,
+    "student_teacher_ratio": "21:1",
+    "greatschools_rating": "7/10",
+    "address": "4555 SW Elkhorn Ave, Redmond, OR 97756",
+    "blurb": "Ridgeview High School is a public high school serving grades 9-12 in the Redmond School District 2J, offering career and technical education, fine arts, and athletics alongside a college-prep curriculum. The school has an 86% graduation rate, above the Oregon state average, and emphasizes a schoolwide commitment to ensuring every student feels supported and challenged.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/redmond/3241-Ridgeview-High-School/",
+      "https://rvhs.redmondschools.org/",
+      "https://www.publicschoolreview.com/ridgeview-high-school-profile/97756",
+      "https://www.usnews.com/education/best-high-schools/oregon/districts/redmond-school-district-2j/ridgeview-high-school-139363"
+    ]
+  },
+  {
+    "name": "Caldera High School",
+    "level": "high",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine School District",
+    "grades": "9-12",
+    "enrollment": 1247,
+    "student_teacher_ratio": "",
+    "greatschools_rating": "4/10",
+    "address": "60925 SE 15th St, Bend, OR 97702",
+    "blurb": "Caldera High School opened in 2021 as the newest high school in the Bend-La Pine School District, built following a $268.3 million bond. The school takes its name from the Newberry National Volcanic Monument and competes in the OSAA 5A-4 Intermountain Conference as the Wolfpack.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/4295-Caldera-High-School/",
+      "https://www.publicschoolreview.com/caldera-high-school-profile",
+      "https://en.wikipedia.org/wiki/Caldera_High_School"
+    ]
+  },
+  {
+    "name": "Crook County High School",
+    "level": "high",
+    "city": "Prineville",
+    "found": true,
+    "district": "Crook County School District",
+    "grades": "9-12",
+    "enrollment": 877,
+    "student_teacher_ratio": "21:1",
+    "greatschools_rating": "6/10",
+    "address": "1100 SE Lynn Blvd, Prineville, OR 97754",
+    "blurb": "Crook County High School is the sole comprehensive public high school in the Crook County School District, serving grades 9-12 with AP courses and a Gifted and Talented program. The school stands out for its graduation rate of 95% or higher, placing it in the top 5% statewide.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/prineville/335-Crook-County-High-School/",
+      "https://www.publicschoolreview.com/crook-county-high-school-profile",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4103720&ID=410372000244"
+    ]
+  },
+  {
+    "name": "La Pine Senior High School",
+    "level": "high",
+    "city": "La Pine",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "9-12",
+    "enrollment": 440,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "2/10",
+    "address": "51633 Coach Rd, La Pine, OR 97739",
+    "blurb": "La Pine Senior High School is a public high school serving grades 9-12 in the Bend-La Pine Schools district, home to the Hawks who compete in OSAA 3A athletics. The baseball program won back-to-back Oregon 3A state championships in 2018 and 2019.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?ID=410198000272",
+      "https://www.greatschools.org/oregon/la-pine/205-Lapine-Senior-High-School/",
+      "https://en.wikipedia.org/wiki/La_Pine_Senior_High_School",
+      "https://www.publicschoolreview.com/lapine-senior-high-school-profile"
+    ]
+  },
+  {
+    "name": "Mountain View Senior High School",
+    "level": "high",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "9-12",
+    "enrollment": 1221,
+    "student_teacher_ratio": "19:1",
+    "greatschools_rating": "7/10",
+    "address": "2755 NE 27th Street, Bend, OR 97701",
+    "blurb": "Mountain View Senior High School is a public high school in Bend serving grades 9-12, known for one of the largest selections of Career and Technical Education (CTE) courses in the district and a dual-enrollment partnership with Central Oregon Community College that allows students to earn an Associate of Arts Oregon Transfer degree alongside their high school diploma.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/204-Mountain-View-Senior-High-School/",
+      "https://www.bend.k12.or.us/mountainview/our-school/school-information",
+      "https://www.bend.k12.or.us/mountainview/academics/academic-overview"
+    ]
+  },
+  {
+    "name": "Bend Senior High School",
+    "level": "high",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "9-12",
+    "enrollment": 1204,
+    "student_teacher_ratio": "22:1",
+    "greatschools_rating": "5/10",
+    "address": "230 NE 6th St, Bend, OR 97701",
+    "blurb": "Bend Senior High School is a public 9-12 school in the Bend-La Pine Schools district offering AP courses, International Baccalaureate, and Project Lead The Way programs. It serves approximately 1,204 students and is one of the primary high schools serving the Bend area.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4101980&ID=410198000270",
+      "https://www.greatschools.org/oregon/bend/203-Bend-Senior-High-School/"
+    ]
+  },
+  {
+    "name": "Sisters High School",
+    "level": "high",
+    "city": "Sisters",
+    "found": true,
+    "district": "Sisters School District 6",
+    "grades": "9-12",
+    "enrollment": 419,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "8/10",
+    "address": "1700 W McKinney Butte Rd, Sisters, OR 97759",
+    "blurb": "Sisters High School is a public high school serving grades 9-12 in Sisters, Oregon, rated 8/10 by GreatSchools and performing above average compared to public and charter schools in Oregon. The school offers AP courses and a Gifted & Talented program, and maintains a student-teacher ratio lower than the state average.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/sisters/1128-Sisters-High-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4111490&ID=411149000073"
+    ]
+  },
+  {
+    "name": "Redmond High School",
+    "level": "high",
+    "city": "Redmond",
+    "found": true,
+    "district": "Redmond School District 2j",
+    "grades": "9-12",
+    "enrollment": 896,
+    "student_teacher_ratio": "19:1",
+    "greatschools_rating": "4/10",
+    "address": "675 SW Rimrock Way, Redmond, OR 97756",
+    "blurb": "Redmond High School is a public 9-12 school serving approximately 896 students in the Redmond School District 2j. The school offers Advanced Placement courses and a Gifted & Talented program.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/redmond/979-Redmond-High-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&ID=411035000282"
+    ]
+  },
+  {
+    "name": "Madras High School",
+    "level": "high",
+    "city": "Madras",
+    "found": true,
+    "district": "Jefferson County School District 509J",
+    "grades": "9-12",
+    "enrollment": 781,
+    "student_teacher_ratio": "24:1",
+    "greatschools_rating": "5/10",
+    "address": "390 SE 10th Street, Madras, OR 97741",
+    "blurb": "Madras High School is a public 9\u201312 school serving around 781 students in Jefferson County School District 509J, offering AP courses and a Gifted & Talented program. It is one of two high schools in the district.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/madras/541-Madras-High-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&ID=410674000456"
+    ]
+  },
+  {
+    "name": "Culver High School",
+    "level": "high",
+    "city": "Culver",
+    "found": true,
+    "district": "Culver School District 4",
+    "grades": "9-12",
+    "enrollment": 229,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "5/10",
+    "address": "710 5th Ave, Culver, OR 97734",
+    "blurb": "Culver High School is the sole high school in Culver School District 4, serving grades 9-12 in a small rural community in Jefferson County, Central Oregon. The school offers AP courses and a Gifted and Talented program.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/culver/342-Culver-High-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4103840&ID=410384000447",
+      "https://www.culver.k12.or.us/csdhighschool/"
+    ]
+  },
+  {
+    "name": "Gilchrist Junior/Senior High School",
+    "level": "high",
+    "city": "Gilchrist",
+    "found": true,
+    "district": "Klamath County School District",
+    "grades": "7-12",
+    "enrollment": 105,
+    "student_teacher_ratio": "8.91:1",
+    "greatschools_rating": "2/10",
+    "address": "201 Mountain View Dr, Gilchrist, OR 97737",
+    "blurb": "Gilchrist Junior/Senior High School is a small rural public school serving grades 7-12 in Klamath County, Oregon, with approximately 105 students and a student-teacher ratio well below the state average. The school, home to the Grizzlies, is part of the Klamath County School District.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&ID=410702001467",
+      "https://www.greatschools.org/oregon/gilchrist/1943-Gilchrist-Junior-Senior-High-School/",
+      "https://www.kcsd.k12.or.us/schools/gilchrist/our-school/"
+    ]
+  },
+  {
+    "name": "Pacific Crest Middle School",
+    "level": "middle",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "6-8",
+    "enrollment": 609,
+    "student_teacher_ratio": "24:1",
+    "greatschools_rating": "6/10",
+    "address": "3030 NW Elwood Lane, Bend, OR 97701",
+    "blurb": "Pacific Crest Middle School serves grades 6\u20138 in northwest Bend and is known for its Gifted and Talented program and Project Lead The Way STEM curriculum. The school ranks in the top 10% of Oregon middle schools, with math and reading proficiency rates well above state averages.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/4174-Pacific-Crest-Middle-School/",
+      "https://www.publicschoolreview.com/pacific-crest-middle-school-profile",
+      "https://www.bend.k12.or.us/pacificcrest"
+    ]
+  },
+  {
+    "name": "Obsidian Middle School",
+    "level": "middle",
+    "city": "Redmond",
+    "found": true,
+    "district": "Redmond School District 2J",
+    "grades": "6-8",
+    "enrollment": 591,
+    "student_teacher_ratio": "18:1",
+    "greatschools_rating": "5/10",
+    "address": "1335 SW Obsidian Ave, Redmond, OR 97756",
+    "blurb": "Obsidian Middle School is a public school serving grades 6-8 in Redmond School District 2J, offering a Gifted and Talented program. It is one of five middle schools in the district.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/redmond/978-Obsidian-Middle-School/",
+      "https://www.schooldigger.com/go/OR/schools/1035000281/school.aspx",
+      "https://oms.redmondschools.org/"
+    ]
+  },
+  {
+    "name": "Crook County Middle School",
+    "level": "middle",
+    "city": "Prineville",
+    "found": true,
+    "district": "Crook County School District",
+    "grades": "6-8",
+    "enrollment": 616,
+    "student_teacher_ratio": "15:1",
+    "greatschools_rating": "8/10",
+    "address": "100 NE Knowledge St, Prineville, OR 97754",
+    "blurb": "Crook County Middle School serves grades 6-8 and offers a Gifted and Talented program along with strong support for English language learners. The school maintains a student-teacher ratio below the state average and is rated above average compared to Oregon public schools at the same grade level.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4103720&ID=410372000243",
+      "https://www.greatschools.org/oregon/prineville/334-Crook-County-Middle-School/"
+    ]
+  },
+  {
+    "name": "Cascade Middle School",
+    "level": "middle",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "6-8",
+    "enrollment": 614,
+    "student_teacher_ratio": "23:1",
+    "greatschools_rating": "10/10",
+    "address": "19619 Mountaineer Way, Bend, OR 97702",
+    "blurb": "Cascade Middle School is a public grades 6\u20138 school in Bend that ranks in the top 10% of Oregon middle schools and offers a Gifted and Talented program including advanced humanities classes across all three grade levels.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/193-Cascade-Middle-School/",
+      "https://www.publicschoolreview.com/cascade-middle-school-profile/97702",
+      "https://www.bend.k12.or.us/cascade"
+    ]
+  },
+  {
+    "name": "La Pine Middle School",
+    "level": "middle",
+    "city": "La Pine",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "6-8",
+    "enrollment": 272,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "2/10",
+    "address": "16360 First St, La Pine, OR 97739",
+    "blurb": "La Pine Middle School serves grades 6-8 in the Bend-La Pine Schools district and offers a Gifted and Talented program. Approximately 65% of students qualify for free or reduced-price lunch.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/lapine/198-Lapine-Middle-School/",
+      "https://www.publicschoolreview.com/lapine-middle-school-profile"
+    ]
+  },
+  {
+    "name": "Pilot Butte Middle School",
+    "level": "middle",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "6-8",
+    "enrollment": 686,
+    "student_teacher_ratio": "19:1",
+    "greatschools_rating": "7/10",
+    "address": "1501 NE Neff Rd, Bend, OR 97701",
+    "blurb": "Pilot Butte Middle School is a public grades 6-8 school in the Bend-La Pine Schools district, offering a Gifted & Talented program and International Baccalaureate. It rates above average compared to Oregon middle schools with a 7/10 GreatSchools rating.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/202-Pilot-Butte-Middle-School/",
+      "https://www.publicschoolreview.com/pilot-butte-middle-school-profile"
+    ]
+  },
+  {
+    "name": "High Desert Middle School",
+    "level": "middle",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "6-8",
+    "enrollment": 677,
+    "student_teacher_ratio": "22:1",
+    "greatschools_rating": "5/10",
+    "address": "61000 Diamondback Lane, Bend, OR 97702",
+    "blurb": "High Desert Middle School serves grades 6-8 and hosts the Bend-La Pine Schools district's middle school Dual Immersion pathway, alongside a Gifted & Talented program and Project Lead The Way curriculum.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/197-High-Desert-Middle-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4101980&ID=410198000263",
+      "https://www.bend.k12.or.us/highdesert",
+      "https://www.donorschoose.org/schools/oregon/bend-la-pine-school-district-1/high-desert-middle-school/59701"
+    ]
+  },
+  {
+    "name": "Sisters Middle School",
+    "level": "middle",
+    "city": "Sisters",
+    "found": true,
+    "district": "Sisters School District 6",
+    "grades": "6-8",
+    "enrollment": 260,
+    "student_teacher_ratio": "13:1",
+    "greatschools_rating": "6/10",
+    "address": "15200 McKenzie Highway, Sisters, OR 97759",
+    "blurb": "Sisters Middle School is accredited by the Northwest Accreditation Association with Merit and serves grades 6-8 within Sisters School District 6. The school offers integrated arts education, a Gifted and Talented program, and experiential learning opportunities including sixth-grade farm-based education.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4111490&ID=411149000943",
+      "https://www.greatschools.org/oregon/sisters/1130-Sisters-Middle-School/",
+      "https://middleschool.ssd6.org/"
+    ]
+  },
+  {
+    "name": "Sky View Middle School",
+    "level": "middle",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "6-8",
+    "enrollment": 586,
+    "student_teacher_ratio": "20:1",
+    "greatschools_rating": "7/10",
+    "address": "63555 NE 18th Street, Bend, OR 97701",
+    "blurb": "Sky View Middle School serves grades 6-8 as part of Bend-La Pine Schools and offers a Gifted and Talented program along with strong support for English learners. The school performs above average compared to public and charter schools in Oregon at the same grade levels.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/1701-Sky-View-Middle-School/",
+      "https://skyview.blschools.org/",
+      "https://www.bend.k12.or.us/skyview/our-school/school-information"
+    ]
+  },
+  {
+    "name": "Three Rivers K-8 School",
+    "level": "middle",
+    "city": "Sunriver",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-8",
+    "enrollment": 421,
+    "student_teacher_ratio": "18.75:1",
+    "greatschools_rating": "4/10",
+    "address": "56900 Enterprise Drive, Sunriver, OR 97707",
+    "blurb": "Three Rivers K-8 School is a public K-8 school in Sunriver serving students from kindergarten through eighth grade as part of Bend-La Pine Schools. The school offers a Gifted and Talented program and is noted for strong support for students with IEPs.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?ID=410198001350",
+      "https://www.greatschools.org/oregon/sunriver/210-Three-Rivers-K-8-School/"
+    ]
+  },
+  {
+    "name": "Elton Gregory Middle School",
+    "level": "middle",
+    "city": "Redmond",
+    "found": true,
+    "district": "Redmond School District 2J",
+    "grades": "6-8",
+    "enrollment": 679,
+    "student_teacher_ratio": "21:1",
+    "greatschools_rating": "4/10",
+    "address": "1220 NW Upas Ave, Redmond, OR 97756",
+    "blurb": "Elton Gregory Middle School serves grades 6\u20138 in the Redmond School District 2J and offers a Gifted and Talented program alongside standard middle school academics. The school's mascot is the Huskies and it emphasizes student responsibility, respect, and whole-child support.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/redmond/980-Elton-Gregory-Middle-School/",
+      "https://egms.redmondschools.org/",
+      "https://www.publicschoolreview.com/elton-gregory-middle-school-profile"
+    ]
+  },
+  {
+    "name": "Jefferson County Middle School",
+    "level": "middle",
+    "city": "Madras",
+    "found": true,
+    "district": "Jefferson County School District 509J",
+    "grades": "6-8",
+    "enrollment": 426,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "5/10",
+    "address": "1180 SE Kemper Way, Madras, OR 97741",
+    "blurb": "Jefferson County Middle School serves grades 6-8 and offers a Gifted and Talented program. It performs at an average level compared to other Oregon public middle schools.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/madras/543-Jefferson-County-Middle-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4106740&ID=410674000656",
+      "https://www.jcsd.k12.or.us/schools"
+    ]
+  },
+  {
+    "name": "Culver Middle School",
+    "level": "middle",
+    "city": "Culver",
+    "found": true,
+    "district": "Culver School District #4",
+    "grades": "6-8",
+    "enrollment": 162,
+    "student_teacher_ratio": "15:1",
+    "greatschools_rating": "8/10",
+    "address": "218 West F Street, Culver, OR 97734",
+    "blurb": "Culver Middle School is the only middle school in Culver School District #4, serving grades 6\u20138 with small class sizes and a Gifted and Talented program. The school performs above average compared to public and charter schools in Oregon at the same grade level.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4103840&ID=410384000119",
+      "https://www.greatschools.org/oregon/culver/340-Culver-Middle-School/",
+      "https://www.culver.k12.or.us/"
+    ]
+  },
+  {
+    "name": "William E Miller Elementary",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 509,
+    "student_teacher_ratio": "21:1",
+    "greatschools_rating": "8/10",
+    "address": "300 NW Crosby Dr, Bend, OR 97701",
+    "blurb": "William E. Miller Elementary is a K-5 public school in Bend that consistently ranks among the top 5% of Oregon elementary schools. The school is housed in a LEED Gold certified building and offers a Gifted and Talented program.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/3101-William-E-Miller-Elementary/",
+      "https://www.publicschoolreview.com/william-e-miller-elementary-school-profile",
+      "https://www.bend.k12.or.us/MILLER"
+    ]
+  },
+  {
+    "name": "La Pine Elementary School",
+    "level": "elementary",
+    "city": "La Pine",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 415,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "4/10",
+    "address": "51615 Coach Rd, La Pine, OR 97739",
+    "blurb": "La Pine Elementary is a public K-5 school in the Bend-La Pine Schools district serving approximately 415 students. The school offers a Gifted and Talented program and has a student-teacher ratio of 17:1.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/la-pine/196-Lapine-Elementary-School/",
+      "https://www.publicschoolreview.com/lapine-elementary-school-profile",
+      "https://www.niche.com/k12/la-pine-elementary-school-lapine-or/"
+    ]
+  },
+  {
+    "name": "Sisters Elementary School",
+    "level": "elementary",
+    "city": "Sisters",
+    "found": true,
+    "district": "Sisters School District 6",
+    "grades": "K-5",
+    "enrollment": 491,
+    "student_teacher_ratio": "15:1",
+    "greatschools_rating": "8/10",
+    "address": "2155 W McKinney Butte Rd, Sisters, OR 97759",
+    "blurb": "Sisters Elementary School is a public K-5 school in Sisters School District 6, performing above average compared to Oregon public schools with the same grade span. The school offers a Gifted and Talented program and maintains smaller class sizes relative to the state average.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&ID=411149000283",
+      "https://www.greatschools.org/oregon/sisters/1129-Sisters-Elementary-School/"
+    ]
+  },
+  {
+    "name": "Three Rivers Elementary School",
+    "level": "elementary",
+    "city": "Sunriver",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-8",
+    "enrollment": 409,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "4/10",
+    "address": "56900 Enterprise Drive, Sunriver, OR 97707",
+    "blurb": "Three Rivers School is a public K-8 school in Sunriver serving around 409 students as part of the Bend-La Pine Schools district. The school offers a Gifted and Talented program and consistently ranks in the top half of Oregon elementary schools.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/sunriver/210-Three-Rivers-K-8-School/",
+      "https://www.schooldigger.com/go/OR/schools/0198001350/school.aspx",
+      "https://www.donorschoose.org/schools/oregon/bend-la-pine-school-district-1/three-rivers-elementary-school/54994"
+    ]
+  },
+  {
+    "name": "Silver Rail Elementary School",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 440,
+    "student_teacher_ratio": "18:1",
+    "greatschools_rating": "6/10",
+    "address": "61530 SE Stone Creek Lane, Bend, OR 97702",
+    "blurb": "Silver Rail Elementary serves grades K-5 and offers a Gifted and Talented program. It is notable as the first all-LED lighted elementary school in Oregon.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/4173-Silver-Rail-Elementary-School/",
+      "https://www.bend.k12.or.us/silverrail",
+      "https://www.schooldigger.com/go/OR/schools/0198001844/school.aspx"
+    ]
+  },
+  {
+    "name": "Tumalo Community School",
+    "level": "Elementary",
+    "city": "Tumalo",
+    "found": true,
+    "district": "Redmond School District 2J",
+    "grades": "K-5",
+    "enrollment": 266,
+    "student_teacher_ratio": "18:1",
+    "greatschools_rating": "8/10",
+    "address": "19835 2nd St, Bend, OR 97703",
+    "blurb": "Tumalo Community School is a K-5 public elementary school serving the Tumalo community as part of Redmond School District 2J, known for small class sizes and a Gifted and Talented program. The school performs above average compared to Oregon public elementary schools and maintains a student-teacher ratio well below the state average.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&SchoolID=411035000280&ID=411035000280",
+      "https://www.greatschools.org/oregon/bend/977-Tumalo-Community-School/",
+      "https://tumalo.redmondschools.org/contact/"
+    ]
+  },
+  {
+    "name": "High Lakes Elementary School",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 449,
+    "student_teacher_ratio": "20:1",
+    "greatschools_rating": "9/10",
+    "address": "2500 Northwest High Lakes Loop, Bend, OR 97701",
+    "blurb": "High Lakes Elementary is a top-performing K-5 school in the Bend-La Pine Schools district, ranking in Oregon's top 5% for math and reading proficiency. The school's motto is \"Individually Focused. Committed to All.\"",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/1700-High-Lakes-Elementary-School/",
+      "https://www.publicschoolreview.com/high-lakes-elementary-school-profile",
+      "https://www.bend.k12.or.us/highlakes/our-school/school-information"
+    ]
+  },
+  {
+    "name": "Barnes Butte Elementary School",
+    "level": "elementary",
+    "city": "Prineville",
+    "found": true,
+    "district": "Crook County School District",
+    "grades": "K-5",
+    "enrollment": 516,
+    "student_teacher_ratio": "15.5:1",
+    "greatschools_rating": "8/10",
+    "address": "1875 NE Ironhorse Drive, Prineville, OR 97754",
+    "blurb": "Barnes Butte Elementary serves grades K-5 in the Crook County School District, featuring a distinctive pod-configuration campus with seven classroom pods named after local geographic landmarks. The school offers a Gifted & Talented program, Title 1A Reading Services, and a Kindergarten Language Enhancement Option.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/prineville/4186-Barnes-Butte-Elementary/",
+      "https://bbe.crookcountyschools.org/about/",
+      "https://www.publicschoolreview.com/barnes-butte-elementary-school-profile",
+      "https://www.niche.com/k12/barnes-butte-elementary-school-prineville-or/"
+    ]
+  },
+  {
+    "name": "Sage Elementary School",
+    "level": "elementary",
+    "city": "Redmond",
+    "found": true,
+    "district": "Redmond School District 2J",
+    "grades": "K-5",
+    "enrollment": 493,
+    "student_teacher_ratio": "19:1",
+    "greatschools_rating": "8/10",
+    "address": "2790 SW Wickiup Avenue, Redmond, OR 97756",
+    "blurb": "Sage Elementary serves grades K-5 and offers a Gifted and Talented program, ranking among the top elementary schools in the Redmond School District. The school performs above average compared to Oregon public schools at the same grade levels, with strong academic outcomes in both math and reading.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/redmond/983-Sage-Elementary-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4110350&ID=411035001347",
+      "https://sage.redmondschools.org/",
+      "https://www.schooldigger.com/go/OR/schools/1035001347/school.aspx"
+    ]
+  },
+  {
+    "name": "North Star Elementary",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 319,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "8/10",
+    "address": "63567 NW Brownrigg Ln, Bend, OR 97703",
+    "blurb": "North Star Elementary opened in fall 2019 to serve north-central Bend and is part of Bend-La Pine Schools. The school performs above average compared to public and charter schools in Oregon at the same grade levels.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/4297-North-Star-Elementary/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4101980&SchoolPageNum=2&ID=410198001875",
+      "https://www.bend.k12.or.us/district/news-events/news/2019/02/new-school-named-north-star",
+      "https://www.bend.k12.or.us/northstar"
+    ]
+  },
+  {
+    "name": "Tom McCall Elementary School",
+    "level": "elementary",
+    "city": "Redmond",
+    "found": true,
+    "district": "Redmond School District 2J",
+    "grades": "K-5",
+    "enrollment": 463,
+    "student_teacher_ratio": "18:1",
+    "greatschools_rating": "5/10",
+    "address": "1200 NW Upas Ave, Redmond, OR 97756",
+    "blurb": "Tom McCall Elementary is a public K-5 school in Redmond School District 2J offering a Gifted and Talented program. The school emphasizes building a strong academic and character foundation while encouraging student curiosity and independent thinking.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4110350&ID=411035001645",
+      "https://www.greatschools.org/oregon/redmond/2974-Tom-Mccall-Elementary-School/",
+      "https://mccall.redmondschools.org/"
+    ]
+  },
+  {
+    "name": "Ponderosa Elementary",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 471,
+    "student_teacher_ratio": "20:1",
+    "greatschools_rating": "7/10",
+    "address": "63100 NE Purcell Boulevard, Bend, OR 97701",
+    "blurb": "Ponderosa Elementary serves grades K-5 in northeast Bend and is part of the Bend-La Pine Schools district. The school offers a Gifted and Talented program and consistently performs above state and district averages in English Language Arts and Mathematics proficiency.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/3094-Ponderosa-Elementary/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&Zip=97701&Miles=20&ID=410198001747",
+      "https://www.bend.k12.or.us/PONDEROSA"
+    ]
+  },
+  {
+    "name": "Terrebonne Community School",
+    "level": "elementary",
+    "city": "Terrebonne",
+    "found": true,
+    "district": "Redmond School District 2J",
+    "grades": "K-5",
+    "enrollment": 315,
+    "student_teacher_ratio": "18:1",
+    "greatschools_rating": "6/10",
+    "address": "1199 B Avenue, Terrebonne, OR 97760",
+    "blurb": "Terrebonne Community School is a public K-5 elementary school serving approximately 315 students in the rural Terrebonne community, part of Redmond School District 2J. The school offers a Gifted & Talented program and is a Title I school, with core values centered on purpose, respect, inspiration, determination, and empathy.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4110350&ID=411035000279",
+      "https://www.greatschools.org/oregon/terrebonne/976-Terrebonne-Community-School/",
+      "https://terrebonne.redmondschools.org/"
+    ]
+  },
+  {
+    "name": "Buckingham Elementary School",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 369,
+    "student_teacher_ratio": "16:1",
+    "greatschools_rating": "5/10",
+    "address": "62560 Hamby Road, Bend, OR 97701",
+    "blurb": "Buckingham Elementary serves kindergarten through 5th grade students and offers a Gifted & Talented program along with Project Lead The Way, featuring an integrated STEM focus. The school ranks among the top 20% of public elementary schools in Oregon.",
+    "source_urls": [
+      "https://www.bend.k12.or.us/buckingham",
+      "https://www.bend.k12.or.us/buckingham/our-school/school-information",
+      "https://www.greatschools.org/oregon/bend/209-Buckingham-Elementary-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4101980&ID=410198001290",
+      "https://www.publicschoolreview.com/buckingham-elementary-school-profile/97701"
+    ]
+  },
+  {
+    "name": "Madras Elementary School",
+    "level": "elementary",
+    "city": "Madras",
+    "found": true,
+    "district": "Jefferson County School District 509J",
+    "grades": "K-5",
+    "enrollment": 384,
+    "student_teacher_ratio": "15:1",
+    "greatschools_rating": "2/10",
+    "address": "215 SE 10th St, Madras, OR 97741",
+    "blurb": "Madras Elementary School serves grades K-5 and is one of six elementary schools in Jefferson County School District 509J. The school offers a Gifted and Talented program and is part of the district's Spanish Dual Language initiative.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?ID=410674000451",
+      "https://www.greatschools.org/oregon/madras/538-Madras-Primary-School/",
+      "https://www.publicschoolreview.com/madras-elementary-school-profile"
+    ]
+  },
+  {
+    "name": "Crooked River Elementary School",
+    "level": "elementary",
+    "city": "Prineville",
+    "found": true,
+    "district": "Crook County School District",
+    "grades": "K-5",
+    "enrollment": 553,
+    "student_teacher_ratio": "16:1",
+    "greatschools_rating": "6/10",
+    "address": "1400 SE 2nd St, Prineville, OR 97754",
+    "blurb": "Crooked River Elementary is a K-5 public school in Prineville serving over 550 students, known as \"The Home of the Mustangs.\" The school offers a Gifted and Talented program, Title 1A reading support, and an Oregon English Language Learner program.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/prineville/330-Crooked-River-Elementary-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4103720&ID=410372000238",
+      "https://cres.crookcountyschools.org/"
+    ]
+  },
+  {
+    "name": "R. E. Jewell Elementary School",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 435,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "7/10",
+    "address": "20550 Murphy Road, Bend, OR 97702",
+    "blurb": "R. E. Jewell Elementary is a public K-5 school in south Bend, part of Bend-La Pine Schools, and is home to one of the district's Dual Immersion Program options. The school also offers a Gifted & Talented program.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/200-R-E-Jewell-Elementary-School/",
+      "https://jewell.blschools.org/",
+      "https://www.niche.com/k12/re-jewell-elementary-school-bend-or/",
+      "https://www.donorschoose.org/schools/oregon/bend-la-pine-school-district-1/r-e-jewell-elementary-school/87727"
+    ]
+  },
+  {
+    "name": "Powell Butte Community Charter School",
+    "level": "elementary",
+    "city": "Powell Butte",
+    "found": true,
+    "district": "Crook County School District",
+    "grades": "K-8",
+    "enrollment": 212,
+    "student_teacher_ratio": "16:1",
+    "greatschools_rating": "",
+    "address": "13650 SW Hwy 126, Powell Butte, OR 97753",
+    "blurb": "Powell Butte Community Charter School is a K-8 public charter school founded in 2010 when the community organized to save the original Powell Butte Elementary from closure. The school uses a place-based, experiential learning model that integrates environmental stewardship and community service with a standards-based core curriculum.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4103720&ID=410372000242",
+      "https://www.publicschoolreview.com/powell-butte-community-charter-school-profile",
+      "https://powellbuttecharterschool.org/about-us/",
+      "https://co.crook.or.us/county-admin/page/powell-butte-charter-school",
+      "https://centraloregonian.com/2026/03/20/powell-butte-charter-school-to-rejoin-crook-county-school-district/"
+    ]
+  },
+  {
+    "name": "Elk Meadow Elementary School",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 459,
+    "student_teacher_ratio": "18:1",
+    "greatschools_rating": "4/10",
+    "address": "60880 Brookswood Blvd, Bend, OR 97702",
+    "blurb": "Elk Meadow Elementary is a public K-5 school in the Bend-La Pine Schools district serving approximately 459 students. The school offers a Gifted and Talented program and is one of 21 elementary schools in the district.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/191-Elk-Meadow-Elementary-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4101980&ID=410198000245",
+      "https://www.publicschoolreview.com/elk-meadow-elementary-school-profile"
+    ]
+  },
+  {
+    "name": "Lava Ridge Elementary School",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 434,
+    "student_teacher_ratio": "19:1",
+    "greatschools_rating": "6/10",
+    "address": "20805 Cooley Road, Bend, OR 97701",
+    "blurb": "Lava Ridge Elementary serves kindergarten through fifth grade on the east side of Bend as part of Bend-La Pine Schools. The school uses the PBIS (Positive Behavioral Interventions and Supports) framework and offers a Gifted and Talented program.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/206-Lava-Ridge-Elementary-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&Zip=97701&Miles=10&SchoolPageNum=1&ID=410198000546",
+      "https://www.bend.k12.or.us/lavaridge",
+      "https://www.donorschoose.org/schools/oregon/bend-la-pine-school-district-1/lava-ridge-elementary-school/61317"
+    ]
+  },
+  {
+    "name": "Pine Ridge Elementary School",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 528,
+    "student_teacher_ratio": "19:1",
+    "greatschools_rating": "7/10",
+    "address": "19840 Hollygrape Street, Bend, OR 97702",
+    "blurb": "Pine Ridge Elementary serves kindergarten through 5th grade in southeast Bend and is part of the Bend-La Pine Schools district. The school offers a Gifted and Talented program and ranks among the top elementary schools in the district, with student proficiency rates in reading and math that exceed Oregon state averages.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&SchoolID=410198001576&ID=410198001576",
+      "https://www.greatschools.org/oregon/bend/1819-Pine-Ridge-Elementary-School/",
+      "https://www.bend.k12.or.us/pineridge",
+      "https://www.schooldigger.com/go/OR/schools/0198001576/school.aspx"
+    ]
+  },
+  {
+    "name": "Vern Patrick Elementary School",
+    "level": "elementary",
+    "city": "Redmond",
+    "found": true,
+    "district": "Redmond School District 2J",
+    "grades": "K-5",
+    "enrollment": 331,
+    "student_teacher_ratio": "15:1",
+    "greatschools_rating": "7/10",
+    "address": "3001 SW Obsidian Ave, Redmond, OR 97756",
+    "blurb": "Vern Patrick Elementary serves grades K-5 and is home to the district's Dual Language Program. The school also provides Reading Support and Title 1A services, with a mission centered on ensuring every student is valued, supported, and empowered.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/redmond/981-Vern-Patrick-Elementary-School/",
+      "https://patrick.redmondschools.org/",
+      "https://www.usnews.com/education/k12/oregon/vern-patrick-elementary-school-280048",
+      "https://www.niche.com/k12/vern-patrick-elementary-school-redmond-or/"
+    ]
+  },
+  {
+    "name": "Juniper Elementary",
+    "level": "elementary",
+    "city": "Redmond",
+    "found": false,
+    "district": "",
+    "grades": "",
+    "enrollment": null,
+    "student_teacher_ratio": "",
+    "greatschools_rating": "",
+    "address": "",
+    "blurb": "",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4101980&ID=410198000265",
+      "http://redmond.k12.or.us/schools/",
+      "https://www.greatschools.org/best-elementary-schools/oregon/redmond",
+      "https://www.usnews.com/education/k12/elementary-schools/oregon/redmond-school-district-2j-107594"
+    ]
+  },
+  {
+    "name": "Rosland Elementary School",
+    "level": "elementary",
+    "city": "La Pine",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 237,
+    "student_teacher_ratio": "13:1",
+    "greatschools_rating": "1/10",
+    "address": "52350 Rease Dr, La Pine, OR 97739",
+    "blurb": "Rosland Elementary is a public K-5 school in La Pine serving the rural Deschutes County community as part of the Bend-La Pine Schools district. The school offers a Gifted and Talented program and special education services for students with IEPs.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4101980&SchoolPageNum=2&ID=410198001794",
+      "https://www.greatschools.org/oregon/la-pine/3142-Rosland-Elementary-School/",
+      "https://www.publicschoolreview.com/rosland-elementary-school-profile",
+      "https://www.schooldigger.com/go/OR/schools/0198001794/school.aspx"
+    ]
+  },
+  {
+    "name": "Culver Elementary School",
+    "level": "elementary",
+    "city": "Culver",
+    "found": true,
+    "district": "Culver School District 4",
+    "grades": "K-5",
+    "enrollment": 262,
+    "student_teacher_ratio": "16:1",
+    "greatschools_rating": "6/10",
+    "address": "310 West E Street, Culver, OR 97734",
+    "blurb": "Culver Elementary is the only elementary school in Culver School District 4, serving grades K\u20135. The school offers a Gifted and Talented program and is located in the small Central Oregon community of Culver.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/culver/341-Culver-Elementary-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4103840&ID=410384000446",
+      "https://www.culver.k12.or.us/"
+    ]
+  },
+  {
+    "name": "John Tuck Elementary School",
+    "level": "elementary",
+    "city": "Redmond",
+    "found": true,
+    "district": "Redmond School District 2J",
+    "grades": "K-5",
+    "enrollment": 382,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "9/10",
+    "address": "209 NW 10th St, Redmond, OR 97756",
+    "blurb": "John Tuck Elementary is a public K-5 school in the Redmond School District 2J, named after one of Redmond's earliest teachers. The school offers a Gifted & Talented program and is rated above average compared to Oregon public elementary schools.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/redmond/974-John-Tuck-Elementary-School/",
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4110350&ID=411035000277",
+      "https://tuck.redmondschools.org/about-us/",
+      "https://www.niche.com/k12/john-tuck-elementary-school-redmond-or/"
+    ]
+  },
+  {
+    "name": "Bear Creek Elementary School",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 521,
+    "student_teacher_ratio": "17:1",
+    "greatschools_rating": "5/10",
+    "address": "51 SE 13th St, Bend, OR 97702",
+    "blurb": "Bear Creek Elementary is a K-5 public school in the Bend-La Pine Schools district offering a Spanish-English Dual Language Immersion program and a Gifted & Talented program. It is one of the district's neighborhood elementary schools and was recognized with a 2024 OnPoint Prize for Excellence in Education Community Builder award.",
+    "source_urls": [
+      "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&DistrictID=4101980&ID=410198000258",
+      "https://www.greatschools.org/oregon/bend/192-Bear-Creek-Elementary-School/",
+      "https://www.donorschoose.org/schools/oregon/bend-la-pine-school-district-1/bear-creek-elementary-school/87719",
+      "https://ktvz.com/news/education/2024/05/08/bends-bear-creek-elementary-two-bend-la-pine-teachers-among-winners-of-onpoint-prize-for-excellence-in-education/"
+    ]
+  },
+  {
+    "name": "Ensworth Elementary School",
+    "level": "elementary",
+    "city": "Bend",
+    "found": true,
+    "district": "Bend-La Pine Schools",
+    "grades": "K-5",
+    "enrollment": 151,
+    "student_teacher_ratio": "13:1",
+    "greatschools_rating": "1/10",
+    "address": "2150 NE Daggett Ln, Bend, OR 97701",
+    "blurb": "Ensworth Elementary is a small public neighborhood school in northeast Bend serving students in grades K-5. The school offers a Gifted and Talented program and features smaller-than-average class sizes for the district.",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/bend/1846-Ensworth-Elementary-School/",
+      "https://www.publicschoolreview.com/ensworth-elementary-school-profile",
+      "https://www.bend.k12.or.us/ensworth"
+    ]
+  },
+  {
+    "name": "M A Lynch Elementary School",
+    "level": "elementary",
+    "city": "Redmond",
+    "found": true,
+    "district": "Redmond School District 2J",
+    "grades": "K-5",
+    "enrollment": 352,
+    "student_teacher_ratio": "15:1",
+    "greatschools_rating": "5/10",
+    "address": "1314 SW Kalama Ave, Redmond, OR 97756",
+    "blurb": "M.A. Lynch Elementary serves kindergarten through fifth grade in Redmond and is part of Redmond School District 2J. The school emphasizes a supportive community culture through its \"Empower ALL\" mission and offers a positive behavior reinforcement program alongside counseling and student support services.",
+    "source_urls": [
+      "https://lynch.redmondschools.org/",
+      "https://www.greatschools.org/oregon/redmond/975-M-A-Lynch-Elementary-School/",
+      "https://nces.ed.gov/ccd/schooLSearch/school_detail.asp?Search=1&County=Deschutes+County&State=41&SchoolPageNum=2&ID=411035000278"
+    ]
+  },
+  {
+    "name": "Metolius Elementary School",
+    "level": "elementary",
+    "city": "Madras",
+    "found": true,
+    "district": "Jefferson County School District 509J",
+    "grades": "K-5",
+    "enrollment": 230,
+    "student_teacher_ratio": "13:1",
+    "greatschools_rating": "2/10",
+    "address": "420 Butte Ave SW, Madras, OR 97741",
+    "blurb": "Metolius Elementary serves grades K-5 in Madras as part of Jefferson County School District 509J, offering a Gifted and Talented program and a 21st Century Before and After School Program. The school's motto is \"Students Flourish Here. We Care for Each Other. Better Every Day.\"",
+    "source_urls": [
+      "https://www.greatschools.org/oregon/metolius/539-Metolius-Elementary-School/",
+      "https://me.jcsd.k12.or.us/",
+      "https://www.jcsd.k12.or.us/schools/me/"
+    ]
+  }
+]
