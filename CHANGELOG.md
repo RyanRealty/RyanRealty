@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.12 (2026-06-03)
+
+### Other
+- Rebuild seller home-value LP from deep research: single-focus hero, proof strip, market verdict, TCPA
+
+---
+
+
 ## v1.402.11 (2026-06-03)
 
 ### Other
