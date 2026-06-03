@@ -8,25 +8,27 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { SoldStoryCard } from '@/components/seller-lp/SoldStoryCard'
 import LandingPageTracker from '@/components/LandingPageTracker'
 import SellerLPForm from './SellerLPForm'
+import SellerSocialProof from '@/components/seller-lp/SellerSocialProof'
+import MarketVisuals from '@/components/seller-lp/MarketVisuals'
+import type { StatCard } from '@/components/seller-lp/MarketVisuals.client'
 import {
   getBendMarketSnapshot,
+  getBendPriceTrend,
   getSoldStories,
   getTestimonialAggregate,
-  formatPriceCompact,
 } from './data'
 
 export const metadata: Metadata = {
-  title: 'What’s Your Bend Home Really Worth? | Ryan Realty',
+  title: 'What’s Your Home Worth in Today’s Market? | Ryan Realty',
   description:
-    'A real comparative market analysis from local Bend sales, not an algorithm. No spam. No obligation. No hard sell.',
+    'A real number from recent local Bend sales, not an algorithm. Prepared by a local broker.',
   robots: { index: false, follow: false },
   openGraph: {
-    title: 'What’s Your Bend Home Really Worth?',
+    title: 'What’s Your Home Worth in Today’s Market?',
     description:
-      'A real comparative market analysis from local Bend sales, not an algorithm. No spam. No obligation. No hard sell.',
+      'A real number from recent local Bend sales, not an algorithm. Prepared by a local broker.',
     type: 'website',
   },
 }
@@ -45,17 +47,44 @@ export default async function SellerHomeValuePage() {
   // Live local data — Bend market snapshot + the unified "homes we represent"
   // matrix (active listings + closed sales × optional Google reviews × broker
   // headshots). Each falls back gracefully if Supabase is briefly unreachable.
-  const [marketSnapshot, soldStories, aggregate] = await Promise.all([
+  const [marketSnapshot, priceTrend, soldStories, aggregate] = await Promise.all([
     getBendMarketSnapshot(),
+    getBendPriceTrend(),
     getSoldStories(),
     getTestimonialAggregate(),
   ])
 
-  // Visible cards: featured (top 2-up) + compact (next 3-up). schemaOnly
-  // stories stay in the JSON-LD review payload for SEO but aren't rendered.
-  const featuredStories = soldStories.filter((s) => s.featured)
-  const compactStories = soldStories.filter((s) => !s.featured)
-  const hasSoldStories = featuredStories.length > 0 || compactStories.length > 0
+  // Live Bend market stat cards. Only render a card when the underlying value
+  // is present — never a placeholder number. Each value is the live SFR pulse
+  // from market_pulse_live (see data.ts). CLAUDE.md §0 Data Accuracy.
+  const snap = marketSnapshot
+  let marketCards: StatCard[] = []
+  if (snap) {
+    const raw: Array<StatCard | null> = [
+      snap.medianSold90d != null
+        ? { countTo: snap.medianSold90d, format: 'money', label: 'Median sale price', sub: 'Closed in the last 90 days' }
+        : null,
+      snap.medianDaysToPending != null
+        ? { countTo: snap.medianDaysToPending, format: 'days', label: 'Time to pending', sub: 'Median, list to under contract' }
+        : null,
+      snap.saleToListPct != null
+        ? { countTo: snap.saleToListPct, format: 'pct', label: 'Sale to list', sub: 'Median final price vs asking' }
+        : null,
+      snap.soldCount30d != null
+        ? { countTo: snap.soldCount30d, format: 'int', label: 'Homes sold', sub: 'Closed in the last 30 days' }
+        : null,
+    ]
+    marketCards = raw.filter((c): c is StatCard => c !== null)
+  }
+
+  const updatedLabel = snap?.updatedAt
+    ? new Date(snap.updatedAt).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'America/Los_Angeles',
+      })
+    : ''
+  const hasMarketVisuals = priceTrend.points.length >= 2 || marketCards.length > 0
 
   // JSON-LD review schema for SEO rich results. Each review is attached to
   // the property it reviewed via itemReviewed → real-estate-agent's named
@@ -134,9 +163,9 @@ export default async function SellerHomeValuePage() {
           </Link>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
-            className="rounded-full border border-primary/20 bg-card px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground sm:text-base"
+            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
-            <span className="hidden sm:inline">Call Matt: </span>
+            <span className="hidden sm:inline">Call </span>
             {BROKER_PHONE}
           </a>
         </div>
@@ -152,132 +181,94 @@ export default async function SellerHomeValuePage() {
           sizes="100vw"
           className="lp-kenburns absolute inset-0 -z-20 object-cover object-center"
         />
-        <div className="absolute inset-0 -z-10 bg-primary/70" aria-hidden="true" />
+        {/* Two-layer navy treatment so the Bend aerial reads as a real feature.
+            Base vertical gradient keeps the eyebrow (top) and trust strip
+            (bottom) legible while letting the river + Cascades show through the
+            middle. A centered radial spotlight concentrates contrast behind the
+            headline + address field, then fades to transparent toward the left
+            and right edges so the photo opens up at the sides instead of
+            sitting under a flat dark box. */}
+        <div
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/60 via-primary/55 to-primary/65"
+          aria-hidden="true"
+        />
 
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-14 lg:py-20">
-          <div>
-            <div className="mb-5 flex items-center gap-4">
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full bg-card ring-2 ring-card/80 sm:h-24 sm:w-24">
-                <Image
-                  src="/images/brokers/ryan-matt.png"
-                  alt="Matt Ryan, Principal Broker at Ryan Realty"
-                  fill
-                  sizes="(max-width: 640px) 80px, 96px"
-                  className="object-cover object-top"
-                  priority
-                />
-              </div>
-              <div>
-                <p className="font-display text-lg font-semibold leading-tight text-card">Matt Ryan</p>
-                <p className="text-sm leading-tight text-card/85">Principal Broker · Bend, Oregon</p>
-                <p className="mt-0.5 text-xs uppercase tracking-wider text-card/70">
-                  Oregon License #201206613
-                </p>
-              </div>
-            </div>
-
-            <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-card/75">
-              For Bend, Oregon homeowners
-            </p>
-            <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tight text-card drop-shadow-sm sm:text-5xl lg:text-6xl">
-              Your Bend home is probably worth more than Zillow says.
-              <br />
-              <span className="text-card/90">Here&rsquo;s the real number.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-card/90 sm:text-xl">
-              A real comparative market analysis from local sales, not an algorithm. Sent within one business
-              day. No spam, no obligation, no hard sell.
-            </p>
-
-            <div className="mt-7 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-card/20 pt-6 sm:grid-cols-3">
-              <TrustStat value={`${aggregate.rating} / 5.0`} label="Google reviews" tone="on-photo" />
-              <TrustStat value="100% local" label="Bend principal broker" tone="on-photo" />
-              <TrustStat value="Licensed" label="OR #201206613" tone="on-photo" />
-            </div>
-          </div>
-
-          <div className="lg:pl-4">
-            <SellerLPForm knownVisitor={knownVisitor} />
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Trust strap — research-backed conversion lift between hero + steps ───
-          Single horizontal line of credibility signals. Mirrors what HomeLight /
-          Opendoor use to compress trust into one strip without adding height. */}
-      <section className="border-b border-primary/10 bg-primary text-primary-foreground">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-4 py-4 text-sm font-medium sm:px-6">
-          <span className="flex items-center gap-2">
-            <StarRow className="text-card" />
-            <span>{aggregate.rating} · {aggregate.count} verified Google reviews</span>
-          </span>
-          <span className="hidden h-3 w-px bg-primary-foreground/30 sm:block" aria-hidden />
-          <span>OR Principal Broker #201206613</span>
-          <span className="hidden h-3 w-px bg-primary-foreground/30 sm:block" aria-hidden />
-          <span>One business day turnaround</span>
-          <span className="hidden h-3 w-px bg-primary-foreground/30 sm:block" aria-hidden />
-          <span>No obligation · no hard sell</span>
-        </div>
-      </section>
-
-      {/* ─── What you get ─────────────────────────────────────────────── */}
-      <section className="border-b border-primary/10 bg-card/30">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-            Here&rsquo;s exactly what happens.
-          </h2>
-          <p className="mt-3 max-w-2xl text-lg text-foreground/80">
-            Three steps. Nothing hidden. You can stop at any point.
+        <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-10 text-center sm:px-6 sm:py-14 lg:py-16">
+          {/* 1 — Eyebrow */}
+          <p className="text-sm font-semibold uppercase tracking-wider text-card/85 drop-shadow-sm">
+            Bend · Oregon homeowners
           </p>
 
-          <ol className="mt-8 grid gap-6 sm:grid-cols-3">
-            <Step
-              num="1"
-              title="Enter your address"
-              body="Takes 30 seconds. No account to create. No credit card. Nothing weird."
-            />
-            <Step
-              num="2"
-              title="Get the real number"
-              body="A comparative market analysis from actual recent sales near your home, sent within one business day."
-            />
-            <Step
-              num="3"
-              title="Decide what to do with it"
-              body="No pressure either way. Many of our valuations end with people deciding to stay another year. We're fine with that."
-            />
-          </ol>
+          {/* 2 — H1 (Amboqia) */}
+          <h1 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-card drop-shadow-sm sm:text-5xl lg:text-6xl">
+            What’s your home worth in today’s market?
+          </h1>
+
+          {/* 3 — Subhead */}
+          <p className="mt-4 text-lg leading-relaxed text-card drop-shadow-sm">
+            Get real numbers from local pros, not an algorithm.
+          </p>
+
+          {/* 4-6 — Address field + button + microcopy: the hero centerpiece */}
+          <div className="mt-7 w-full">
+            <SellerLPForm knownVisitor={knownVisitor} heroVariant />
+          </div>
+
+          {/* 7 — How it works: the three steps, right in the hero area. */}
+          <div className="mt-8 grid w-full grid-cols-1 gap-4 border-t border-card/20 pt-6 text-left sm:grid-cols-3 sm:gap-5">
+            <HeroStep num="1" title="Enter the address" body="Any home you want a real estimate on." />
+            <HeroStep num="2" title="We’ll send you the report" body="Just tell us where to send it." />
+            <HeroStep num="3" title="You decide what’s next" body="Schedule a call, ask questions, or just keep it." />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Work with Bend's trusted team — photos + reviews together ────
+          One trust block: the three brokers shown big, paired with a real
+          Google review that fades through the set. Faces and words together. */}
+      <section className="border-b border-primary/10 bg-card">
+        <div className="mx-auto max-w-4xl px-4 py-10 text-center sm:px-6 sm:py-12">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            Work with Bend’s trusted team
+          </h2>
+          <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-8">
+            <Broker src="/images/brokers/ryan-matt.png" name="Matt Ryan" role="Principal Broker" />
+            <Broker src="/images/brokers/stevenson-paul.png" name="Paul Stevenson" role="Broker" />
+            <Broker src="/images/brokers/peterson-rebecca.png" name="Rebecca Peterson" role="Broker" />
+          </div>
+          <div className="mt-8 flex justify-center border-t border-primary/10 pt-8">
+            <SellerSocialProof tone="light" align="center" size="lg" />
+          </div>
         </div>
       </section>
 
       {/* ─── Anti-Zillow education ────────────────────────────────────── */}
       <section className="border-b border-primary/10">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12">
           <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
             Why your Zestimate is probably off.
           </h2>
           <p className="mt-3 max-w-2xl text-lg text-foreground/80">
-            Zillow&rsquo;s own published median error rate on off-market homes is 7%. On a Bend home worth $850,000,
-            that&rsquo;s a $59,500 swing. It doesn&rsquo;t see your remodeled kitchen. It doesn&rsquo;t know your
-            neighbor just sold quietly for $87K over asking. It doesn&rsquo;t know your lot backs to open space.
+            An online estimate is a guess from public records. It never sees your finishes, your lot, or
+            the quiet sale down the street.
           </p>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
+          <div className="mt-6 grid gap-5 sm:grid-cols-2">
             <Compare
-              header="What a Zestimate does"
+              header="An online estimate"
               points={[
-                'Pulls public tax-record square footage and bed/bath counts.',
-                'Compares to recent sales in a wide radius, often miles away.',
-                'Uses a model averaged across millions of homes nationwide.',
-                'Updates without ever stepping inside your house.',
+                'Tax-record square footage and bed/bath counts',
+                'Comps from a wide radius, often miles away',
+                'A national model averaged across millions of homes',
+                'Never steps inside your home',
               ]}
             />
             <Compare
-              header="What a real CMA does"
+              header="A real broker CMA"
               points={[
-                'Uses only true comparable sales in your specific neighborhood.',
-                'Accounts for finishes, view, lot, layout, and improvements.',
-                'Factors current Bend market velocity, not a national average.',
-                'Comes from a local broker who has walked similar homes recently.',
+                'Only true comparable sales in your neighborhood',
+                'Adjusts for finishes, view, lot, and layout',
+                'Current Bend market velocity, not a national average',
+                'From a broker who walked similar homes recently',
               ]}
               accent
             />
@@ -285,115 +276,61 @@ export default async function SellerHomeValuePage() {
         </div>
       </section>
 
-      {/* ─── Homes we've represented — unified matrix ────────────────────
-          One section, nine cards. Top row (3-up on lg) features the highest-
-          value properties; bottom rows (3-up) carry the rest. Each card pairs
-          a real Ryan Realty transaction (active listing or closed sale, list
-          side or buyer side) with the matching broker headshot — and when we
-          have a Google review from that seller, the review is attached
-          directly under the property. No stock imagery. Pattern modeled on
-          Compass spotlights + HomeLight customer cards + the SaaS spotlight
-          format used by Vercel and Linear. Pairings verified by Matt
-          2026-05-14; see scratch/social-proof-research.md for the brief. */}
-      {hasSoldStories && (
-        <section className="border-b border-primary/10 bg-card">
-          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-primary/70">
-                  Recent Ryan Realty work
-                </p>
-                <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-                  Homes we&rsquo;ve represented. And what the sellers said next.
-                </h2>
-                <p className="mt-3 max-w-2xl text-lg text-foreground/80">
-                  From $755K river-acreage to architectural estates on Bend&rsquo;s westside. Each
-                  home pairs to the broker who worked the deal — and where a seller left a
-                  Google review, you&rsquo;ll see it under the property.
-                </p>
-              </div>
-              <a
-                href="https://www.google.com/maps/search/?api=1&query=Ryan+Realty+Bend+OR"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
-              >
-                Read all reviews on Google →
-              </a>
+      {/* ─── Where Bend stands — live market chart + stat cards ───────────
+          Real Bend single-family data. The trend is market_stats_cache
+          monthly median sale price (current partial month dropped); the cards
+          are the live market_pulse_live SFR snapshot. Every value traces to
+          Supabase via data.ts — never invented. CLAUDE.md §0. */}
+      {hasMarketVisuals && (
+        <section className="border-b border-primary/10 bg-primary text-primary-foreground">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14">
+            <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+              Where Bend stands today.
+            </h2>
+            <p className="mt-3 max-w-2xl text-lg text-primary-foreground/85">
+              Price it right in the first week and you tend to outperform sellers who reach for the top
+              and reduce later. Here is what Bend single-family homes are actually doing right now.
+            </p>
+            <div className="mt-6">
+              <MarketVisuals
+                points={priceTrend.points}
+                latest={priceTrend.latest}
+                yoyPct={priceTrend.yoyPct}
+                updatedLabel={updatedLabel}
+                cards={marketCards}
+              />
             </div>
-
-            {/* Aggregate trust badge — anchors the section above the cards. */}
-            <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-primary/15 bg-card px-4 py-2 shadow-sm">
-              <GoogleMark className="h-5 w-5" />
-              <span className="text-sm font-semibold text-foreground">
-                {aggregate.rating} <span className="sr-only">out of 5</span>
-              </span>
-              <StarRow className="text-primary" />
-              <span className="text-sm text-muted-foreground">
-                · {aggregate.count} verified seller reviews on Google
-              </span>
-            </div>
-
-            {/* Featured row — top 2-up. The two highest-value transactions. */}
-            {featuredStories.length > 0 && (
-              <div className="mt-8 grid gap-5 lg:grid-cols-2">
-                {featuredStories.map((story) => (
-                  <SoldStoryCard key={story.key} story={story} />
-                ))}
-              </div>
-            )}
-
-            {/* Compact rows — 3-up on lg. The remaining six properties. */}
-            {compactStories.length > 0 && (
-              <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {compactStories.map((story) => (
-                  <SoldStoryCard key={story.key} story={story} />
-                ))}
-              </div>
-            )}
           </div>
         </section>
       )}
 
-      {/* ─── Market truth — live Bend snapshot ───────────────────────────── */}
-      <section className="border-b border-primary/10">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-            Where Bend is right now.
-          </h2>
-          <p className="mt-3 max-w-2xl text-lg text-foreground/80">
-            Sellers who price right in week one outperform sellers who reach for the top of the market and reduce later.
-            That difference is bigger in a balanced market than in a frenzy.
-          </p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <MarketStat
-              label="Median list price"
-              value={formatPriceCompact(marketSnapshot?.medianListPrice ?? null)}
-            />
-            <MarketStat
-              label="Active listings"
-              value={marketSnapshot?.activeCount ? marketSnapshot.activeCount.toLocaleString() : '—'}
-            />
-            <MarketStat
-              label="New last 30 days"
-              value={marketSnapshot?.newCount30d ? marketSnapshot.newCount30d.toLocaleString() : '—'}
-            />
-            <MarketStat label="Market" value={marketSnapshot?.marketHealthLabel ?? '—'} />
+      {/* ─── FAQ ──────────────────────────────────────────────────────────
+          Two-column on desktop so the section uses the full page width: the
+          heading anchors the left rail (sticky as the answers expand) while
+          the accordion fills the wider right column. Stacks to a single
+          column on mobile. */}
+      <section className="border-b border-primary/10 bg-card">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-12 lg:gap-14">
+          <div className="lg:col-span-4 lg:sticky lg:top-24 lg:self-start">
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+              What you’re probably wondering.
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-foreground/75">
+              Still have a question? Talk to a broker directly.
+            </p>
+            <a
+              href={`tel:${BROKER_PHONE_TEL}`}
+              className="mt-3 inline-flex items-center gap-2 text-base font-semibold text-primary underline-offset-4 hover:underline"
+            >
+              <PhoneIcon className="h-4 w-4" />
+              {BROKER_PHONE}
+            </a>
           </div>
-        </div>
-      </section>
-
-      {/* ─── FAQ ──────────────────────────────────────────────────────── */}
-      <section className="border-b border-primary/10">
-        <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-16">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-            What you&rsquo;re probably wondering.
-          </h2>
-          <Accordion type="single" collapsible className="mt-8 gap-4">
+          <Accordion type="single" collapsible className="gap-4 lg:col-span-8">
             <FAQ
-              value="faq-spam"
-              q="Will you spam me or sell my info?"
-              a="No. We never sell or share your information. You&rsquo;ll hear from Matt once, with your number. After that, it&rsquo;s up to you whether to talk further."
+              value="faq-how"
+              q="How is the number put together?"
+              a="A broker pulls the recent comparable sales near your home, then adjusts for your finishes, lot, view, and layout. You get a written comparative market analysis, not an automated guess. The precise figure tightens after a short walkthrough, which you can take or skip."
             />
             <FAQ
               value="faq-real"
@@ -409,41 +346,20 @@ export default async function SellerHomeValuePage() {
         </div>
       </section>
 
-      {/* ─── Heritage block ──────────────────────────────────────────── */}
-      <section className="border-b border-primary/10 bg-card">
-        <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-16">
-          <div className="relative mx-auto aspect-[4/3] w-full max-w-md">
-            <Image
-              src="/images/brand/signature-lockup.png"
-              alt="Ryan Realty. It's About Relationships. With Jax the blue lab."
-              fill
-              sizes="(max-width: 640px) 90vw, 480px"
-              className="object-contain"
-            />
-          </div>
-          <p className="mt-2 font-display text-xl text-primary sm:text-2xl">
-            Building community through authentic relationships.
-          </p>
-          <p className="mt-3 text-sm uppercase tracking-[0.12em] text-muted-foreground">
-            Local · Bend · Oregon · Since 2023
-          </p>
-        </div>
-      </section>
-
       {/* ─── Footer CTA ───────────────────────────────────────────────── */}
       <section className="bg-primary text-primary-foreground">
-        <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-14">
           <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to know your number?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-lg text-primary-foreground/85">
-            Enter your address. Get your home value within one business day. No spam, no obligation, no hard sell.
+            Enter your address. Get your real home value.
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="#seller-lp-address"
+              href="#get-value"
               scroll
-              className="inline-flex h-14 items-center justify-center rounded-xl bg-card px-7 text-lg font-semibold text-primary transition-colors hover:bg-card/90"
+              className="inline-flex h-14 items-center justify-center rounded-xl bg-warning px-7 text-lg font-semibold text-warning-foreground transition-colors hover:bg-warning/90"
             >
               Get my home value
             </Link>
@@ -460,7 +376,7 @@ export default async function SellerHomeValuePage() {
       {/* ─── Mini fine print ─────────────────────────────────────────── */}
       <footer className="bg-card pb-20 sm:pb-8">
         <div className="mx-auto max-w-7xl px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
-          <p>Ryan Realty LLC • Oregon Principal Broker #201206613 • Equal Housing Opportunity</p>
+          <p>Ryan Realty LLC • Equal Housing Opportunity</p>
           <p className="mt-2">
             <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
               Privacy
@@ -477,9 +393,9 @@ export default async function SellerHomeValuePage() {
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/15 bg-card/95 px-3 py-3 shadow-[0_-4px_12px_-2px_rgba(16,39,66,0.12)] backdrop-blur sm:hidden">
         <div className="flex items-center gap-2">
           <Link
-            href="#seller-lp-address"
+            href="#get-value"
             scroll
-            className="flex-1 rounded-xl bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground"
+            className="flex-1 rounded-xl bg-warning px-4 py-3 text-center text-sm font-semibold text-warning-foreground"
           >
             Get my home value
           </Link>
@@ -498,41 +414,34 @@ export default async function SellerHomeValuePage() {
 
 // ─── Tiny presentational helpers ─────────────────────────────────────────
 
-function TrustStat({
-  value,
-  label,
-  tone,
-}: {
-  value: string
-  label: string
-  tone?: 'on-photo' | 'on-surface'
-}) {
-  const onPhoto = tone === 'on-photo'
+function Broker({ src, name, role }: { src: string; name: string; role: string }) {
+  // Big, face-forward broker headshot. Transparent-PNG portrait on a soft navy
+  // disc, circular-cropped to the head + shoulders (object-top). Bigger than a
+  // trust-strip dot so visitors actually see who they will be working with.
   return (
-    <div>
-      <div className={`font-display text-xl font-semibold ${onPhoto ? 'text-card' : 'text-primary'}`}>
-        {value}
-      </div>
-      <div
-        className={`mt-0.5 text-xs uppercase tracking-wider ${
-          onPhoto ? 'text-card/70' : 'text-muted-foreground'
-        }`}
-      >
-        {label}
-      </div>
+    <div className="flex flex-col items-center">
+      <span className="relative h-24 w-24 overflow-hidden rounded-full bg-primary/5 sm:h-32 sm:w-32">
+        <Image src={src} alt={name} fill sizes="(max-width: 640px) 96px, 128px" className="object-cover object-top" />
+      </span>
+      <p className="mt-3 font-display text-base font-semibold text-primary sm:text-lg">{name}</p>
+      <p className="text-xs text-muted-foreground sm:text-sm">{role}</p>
     </div>
   )
 }
 
-function Step({ num, title, body }: { num: string; title: string; body: string }) {
+function HeroStep({ num, title, body }: { num: string; title: string; body: string }) {
+  // Compact step for the hero scrim: light text on the navy photo. Badge sits
+  // beside the label on mobile, above it on desktop.
   return (
-    <li className="rounded-2xl border border-primary/10 bg-card p-6">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary font-display text-lg font-semibold text-primary-foreground">
+    <div className="flex items-start gap-3 sm:flex-col sm:gap-2">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-card/15 font-display text-sm font-semibold text-card ring-1 ring-card/30">
         {num}
+      </span>
+      <div>
+        <p className="font-semibold text-card drop-shadow-sm">{title}</p>
+        <p className="text-sm leading-relaxed text-card/75 drop-shadow-sm">{body}</p>
       </div>
-      <h3 className="mt-4 font-display text-xl font-semibold text-primary">{title}</h3>
-      <p className="mt-2 text-base leading-relaxed text-foreground/80">{body}</p>
-    </li>
+    </div>
   )
 }
 
@@ -554,67 +463,24 @@ function Compare({
       <h3 className={`font-display text-xl font-semibold ${accent ? 'text-primary' : 'text-foreground/85'}`}>
         {header}
       </h3>
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-4 space-y-2.5">
         {points.map((p) => (
-          <li key={p} className="flex gap-3 text-base text-foreground/85">
-            <span aria-hidden className={accent ? 'text-primary' : 'text-muted-foreground'}>
-              •
+          <li key={p} className="flex items-start gap-2.5 text-base text-foreground/85">
+            <span
+              aria-hidden
+              className={
+                accent
+                  ? 'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground'
+                  : 'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground'
+              }
+            >
+              {accent ? '✓' : '✕'}
             </span>
             <span>{p}</span>
           </li>
         ))}
       </ul>
     </div>
-  )
-}
-
-function MarketStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-primary/10 bg-card p-5">
-      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="mt-1 font-display text-3xl font-semibold tabular-nums text-primary">{value}</div>
-    </div>
-  )
-}
-
-// ─── Trust-strip helpers ──────────────────────────────────────────────────
-
-function StarRow({ className }: { className?: string }) {
-  return (
-    <span aria-label="Five star rating" className={`text-base leading-none ${className ?? 'text-primary'}`}>
-      {'★★★★★'}
-    </span>
-  )
-}
-
-function GoogleMark({ className }: { className?: string }) {
-  // Inline Google "G" mark — preserves the official 4-color palette per Google
-  // brand guidelines for displaying verified-review attribution.
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="Google"
-      role="img"
-    >
-      <path
-        fill="#4285F4"
-        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.84 14.09A6.97 6.97 0 0 1 5.5 12c0-.72.12-1.42.34-2.09V7.07H2.18A10.97 10.97 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 5.38c1.62 0 3.07.56 4.21 1.64l3.16-3.16C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
-      />
-    </svg>
   )
 }
 

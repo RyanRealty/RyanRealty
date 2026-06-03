@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { submitSellerLPForm, type SellerLPTimeline } from './actions'
+import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
 
 declare global {
   interface Window {
@@ -24,15 +25,22 @@ export type SellerLPFormProps = {
   prefillEmail?: string | null
   /** Prefilled phone if we already know it. */
   prefillPhone?: string | null
+  /**
+   * When true AND the form is on the address step, render the address field +
+   * button + microcopy WITHOUT the card chrome, sized as the centered hero
+   * centerpiece on the dark hero photo. The qualify and success steps still
+   * render in their card-style layout (on the light background below the fold,
+   * since the page scrolls past the hero once the visitor advances).
+   */
+  heroVariant?: boolean
 }
 
 type Step = 'address' | 'qualify' | 'success'
 
 const TIMELINE_OPTIONS: { value: SellerLPTimeline; label: string; sub: string }[] = [
-  { value: 'ready-now', label: 'Ready now', sub: 'Thinking about listing in the next 90 days.' },
-  { value: 'next-3-6', label: 'Next 3 to 6 months', sub: 'Planning ahead, want to be informed.' },
-  { value: 'next-6-12', label: 'Next 6 to 12 months', sub: 'Longer horizon, gathering information.' },
-  { value: 'exploring', label: 'Just exploring', sub: "Curious about value. No timeline yet." },
+  { value: 'ready-now', label: 'Ready to sell', sub: 'Let’s get moving.' },
+  { value: 'next-3-6', label: 'Sometime this year', sub: 'Planning ahead, no rush.' },
+  { value: 'exploring', label: 'Just curious', sub: 'Here for the number, not the sales pitch.' },
 ]
 
 export default function SellerLPForm({
@@ -40,6 +48,7 @@ export default function SellerLPForm({
   prefillName,
   prefillEmail,
   prefillPhone,
+  heroVariant = false,
 }: SellerLPFormProps) {
   const [step, setStep] = useState<Step>('address')
   const [address, setAddress] = useState('')
@@ -123,12 +132,12 @@ export default function SellerLPForm({
   if (step === 'success') {
     const isHot = resultClassification === 'hot'
     return (
-      <div className="rounded-2xl border border-primary/15 bg-card p-8 shadow-sm">
+      <div className="rounded-2xl border border-primary/15 bg-card p-8 text-left shadow-sm">
         <h2 className="font-display text-2xl font-semibold text-primary">
           Got it. Your home value is on its way.
         </h2>
         <p className="mt-3 text-lg text-foreground/85">
-          We&rsquo;ll prepare a real comparative market analysis from local sales and send it to you within one business day.
+          We’ll prepare a real comparative market analysis from recent local sales and send it your way.
           {isHot ? ' Because your timeline is short, Matt will personally reach out shortly to walk through your number.' : ' Matt will follow up with your number and answer any questions.'}
         </p>
         <p className="mt-3 text-base text-muted-foreground">
@@ -141,44 +150,80 @@ export default function SellerLPForm({
     )
   }
 
-  // ─── Address step ──────────────────────────────────────────────────────
+  // ─── Address step — hero centerpiece variant ────────────────────────────
+  // No card chrome. The address field is the brightest, highest-contrast
+  // element on the hero: full-width of the centered column, white, large.
+  if (step === 'address' && heroVariant) {
+    return (
+      <form
+        id="get-value"
+        onSubmit={advanceFromAddress}
+        className="mx-auto w-full max-w-xl scroll-mt-24"
+        aria-label="Get your Bend home value"
+        noValidate
+      >
+        <Label htmlFor="seller-lp-address" className="sr-only">
+          Property address
+        </Label>
+        <AddressAutocomplete
+          id="seller-lp-address"
+          value={address}
+          onChange={setAddress}
+          placeholder="Enter your home address"
+          invalid={error !== null}
+          className={cn(
+            'h-16 rounded-xl border-2 bg-card px-5 text-lg shadow-lg md:text-lg',
+            'border-border focus:border-primary focus:ring-2 focus:ring-primary/30',
+            'placeholder:text-muted-foreground/70',
+          )}
+        />
+
+        {error && (
+          <p className="mt-3 text-sm font-medium text-card" role="alert">
+            {error}
+          </p>
+        )}
+
+        <Button
+          type="submit"
+          disabled={pending}
+          className="mt-3 h-16 w-full rounded-xl bg-warning text-lg font-semibold text-warning-foreground shadow-xl transition-colors hover:bg-warning/90 disabled:opacity-70"
+        >
+          {pending ? 'Working…' : 'Get my home value →'}
+        </Button>
+      </form>
+    )
+  }
+
+  // ─── Address step — card variant (fallback / non-hero placements) ────────
   if (step === 'address') {
     return (
       <form
+        id="get-value"
         onSubmit={advanceFromAddress}
-        className="rounded-2xl border border-primary/15 bg-card p-6 shadow-sm sm:p-8"
+        className="scroll-mt-24 rounded-2xl border border-primary/15 bg-card p-6 text-left shadow-sm sm:p-8"
         aria-labelledby="seller-lp-form-heading"
         noValidate
       >
-        <h2 id="seller-lp-form-heading" className="font-display text-xl font-semibold text-primary">
-          {knownVisitor ? 'Welcome back. What address would you like valued?' : 'Get your real home value'}
+        <h2 id="seller-lp-form-heading" className="font-display text-xl font-semibold leading-snug text-primary">
+          {knownVisitor ? 'Welcome back. See what your home is worth.' : 'See what your home is worth'}
         </h2>
-        {knownVisitor && (prefillEmail || prefillName) && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            We have your contact info on file{prefillEmail ? ` (${prefillEmail})` : ''}. Just confirm the address.
-          </p>
-        )}
         <div className="mt-5">
-          <Label htmlFor="seller-lp-address" className="text-base font-medium text-foreground">
+          <Label htmlFor="seller-lp-address" className="sr-only">
             Property address
           </Label>
-          <Input
+          <AddressAutocomplete
             id="seller-lp-address"
-            name="address"
-            type="text"
-            autoComplete="street-address"
-            required
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="123 NW Iowa Ave, Bend, OR 97703"
+            onChange={setAddress}
+            placeholder="Enter your home address"
+            autoFocus
+            invalid={error !== null}
             className={cn(
-              'mt-2 h-14 rounded-xl border-2 px-4 text-lg',
+              'h-14 rounded-xl border-2 px-4 text-lg md:text-lg',
               'border-border focus:border-primary focus:ring-2 focus:ring-primary/20',
               'placeholder:text-muted-foreground/70',
             )}
-            aria-invalid={error ? 'true' : undefined}
-            inputMode="text"
-            autoFocus
           />
         </div>
 
@@ -196,12 +241,6 @@ export default function SellerLPForm({
           {pending ? 'Working…' : 'Get my home value →'}
         </Button>
 
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          No spam. No obligation. No hard sell. Or call Matt at{' '}
-          <a href="tel:+15417033095" className="font-semibold text-foreground underline underline-offset-2 tabular-nums">
-            541.703.3095
-          </a>.
-        </p>
       </form>
     )
   }
@@ -210,7 +249,7 @@ export default function SellerLPForm({
   return (
     <form
       onSubmit={handleQualifySubmit}
-      className="rounded-2xl border border-primary/15 bg-card p-6 shadow-sm sm:p-8"
+      className="rounded-2xl border border-primary/15 bg-card p-6 text-left shadow-sm sm:p-8"
       aria-labelledby="seller-lp-form-heading-2"
       noValidate
     >
@@ -227,10 +266,10 @@ export default function SellerLPForm({
       </Button>
 
       <h2 id="seller-lp-form-heading-2" className="font-display text-xl font-semibold text-primary">
-        Where should we send your home value?
+        Where should we send it?
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Just two more fields. Phone is optional. Matt will reach out at whatever&rsquo;s easiest for you.
+        Two quick fields and it’s on its way. Phone is optional, and we promise not to call during dinner.
       </p>
 
       <div className="mt-5 grid gap-4">
@@ -285,30 +324,28 @@ export default function SellerLPForm({
           />
         </div>
 
-        <fieldset className="mt-2">
-          <legend className="text-base font-medium text-foreground">When are you thinking about selling?</legend>
+        <fieldset className="mt-1 border-t border-border/60 pt-5">
+          <legend className="text-base font-medium text-foreground">When are you thinking of selling?</legend>
           <RadioGroup
             value={timeline}
             onValueChange={(v) => setTimeline(v as SellerLPTimeline)}
-            className="mt-3 gap-2"
+            className="mt-3 gap-2.5"
           >
             {TIMELINE_OPTIONS.map((opt) => (
               <Label
                 key={opt.value}
                 htmlFor={`seller-lp-timeline-${opt.value}`}
                 className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3 font-normal transition-colors',
-                  timeline === opt.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40',
+                  'flex cursor-pointer items-center gap-3 rounded-xl border-2 p-4 font-normal transition-colors',
+                  timeline === opt.value
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/40',
                 )}
               >
-                <RadioGroupItem
-                  id={`seller-lp-timeline-${opt.value}`}
-                  value={opt.value}
-                  className="mt-1"
-                />
-                <span>
+                <RadioGroupItem id={`seller-lp-timeline-${opt.value}`} value={opt.value} className="shrink-0" />
+                <span className="min-w-0 leading-tight">
                   <span className="block text-base font-semibold text-foreground">{opt.label}</span>
-                  <span className="block text-sm text-muted-foreground">{opt.sub}</span>
+                  <span className="mt-0.5 block text-sm text-muted-foreground">{opt.sub}</span>
                 </span>
               </Label>
             ))}
@@ -325,14 +362,10 @@ export default function SellerLPForm({
       <Button
         type="submit"
         disabled={pending}
-        className="mt-5 h-14 w-full rounded-xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
+        className="mt-6 h-14 w-full rounded-xl bg-warning text-lg font-semibold text-warning-foreground transition-colors hover:bg-warning/90 disabled:opacity-70"
       >
         {pending ? 'Sending…' : 'Send my home value →'}
       </Button>
-
-      <p className="mt-4 text-center text-sm text-muted-foreground">
-        Your info stays private. We never sell or share it.
-      </p>
     </form>
   )
 }

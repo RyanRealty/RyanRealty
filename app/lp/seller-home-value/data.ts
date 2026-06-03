@@ -5,14 +5,48 @@
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getLiveMarketPulse } from '@/app/actions/market-stats'
+import { getMarketPulseRowForGeo, getPriceHistory } from '@/lib/data'
 import { TESTIMONIALS, type Testimonial } from '@/lib/testimonials'
 
 export type BendMarketSnapshot = {
+  /** Median active list price (SFR). */
   medianListPrice: number | null
+  /** Median closed sale price over the trailing 90 days (SFR) — the honest
+   *  "what homes actually sell for" anchor. */
+  medianSold90d: number | null
+  /** Median days from list to under-contract (list-to-pending). */
+  medianDaysToPending: number | null
+  /** Median final-price-to-list-price ratio, as a percent (0.99 → 99.0). */
+  saleToListPct: number | null
+  /** Closed sales in the trailing 30 days (SFR). */
+  soldCount30d: number | null
+  /** Months of supply: active / (sold-per-month). */
+  monthsOfSupply: number | null
   activeCount: number | null
   newCount30d: number | null
   marketHealthLabel: string | null
+  /** ISO timestamp the pulse row was last refreshed. */
+  updatedAt: string | null
+}
+
+/** A single real monthly median-sale-price point for the trend chart. */
+export type PriceTrendPoint = { iso: string; median: number }
+
+export type BendPriceTrend = {
+  /** Oldest → newest, trailing complete months only (current partial month dropped). */
+  points: PriceTrendPoint[]
+  /** Most recent complete month. */
+  latest: { iso: string; value: number } | null
+  /** Year-over-year change vs the same month one year prior, as a signed percent.
+   *  Null when the prior-year point is not in the series. */
+  yoyPct: number | null
+}
+
+/** Coerce a Supabase numeric-as-string (or number) to a finite number or null. */
+function num(v: unknown): number | null {
+  if (v == null) return null
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) ? n : null
 }
 
 /** A single Ryan Realty listing card for the LP social-proof grid. */
@@ -362,17 +396,83 @@ export async function getOurListings(): Promise<OurListing[]> {
  */
 export async function getBendMarketSnapshot(): Promise<BendMarketSnapshot | null> {
   try {
-    const pulse = await getLiveMarketPulse({ geoType: 'city', geoSlug: 'bend' })
-    if (!pulse) return null
+    // Pull the wider SFR pulse projection (the default DAL columns omit the
+    // sale-to-list / days-to-pending / sold-90d fields the LP stat cards show).
+    const row = await getMarketPulseRowForGeo({
+      geoType: 'city',
+      geoSlug: 'bend',
+      columns:
+        'median_list_price, median_close_price_90d, median_days_to_pending, median_sale_to_list, sold_count_30d, months_of_supply, active_count, new_count_30d, market_health_label, updated_at',
+    })
+    if (!row) return null
+    const saleToList = num(row['median_sale_to_list'])
     return {
-      medianListPrice: pulse.median_list_price,
-      activeCount: pulse.active_count ?? null,
-      newCount30d: pulse.new_count_30d ?? null,
-      marketHealthLabel: pulse.market_health_label ?? null,
+      medianListPrice: num(row['median_list_price']),
+      medianSold90d: num(row['median_close_price_90d']),
+      medianDaysToPending: num(row['median_days_to_pending']),
+      saleToListPct: saleToList == null ? null : saleToList * 100,
+      soldCount30d: num(row['sold_count_30d']),
+      monthsOfSupply: num(row['months_of_supply']),
+      activeCount: num(row['active_count']),
+      newCount30d: num(row['new_count_30d']),
+      marketHealthLabel: (row['market_health_label'] as string | null) ?? null,
+      updatedAt: (row['updated_at'] as string | null) ?? null,
     }
   } catch (e) {
     console.warn('[seller-lp/data] getBendMarketSnapshot failed:', e)
     return null
+  }
+}
+
+/**
+ * Real Bend median-sale-price trend for the LP market chart.
+ *
+ * Source: market_stats_cache (monthly), via getPriceHistory — the same
+ * cache backing the city pages and market reports. Never invented.
+ *
+ * Data-accuracy guards (CLAUDE.md §0):
+ *  - Drops the in-progress current calendar month (incomplete sales skew
+ *    the median high on a tiny sample).
+ *  - Returns the trailing 13 complete months so the YoY endpoints align
+ *    with the first and last plotted points.
+ *  - YoY compares the latest complete month to the same month one year
+ *    prior; null when that point is missing.
+ */
+export async function getBendPriceTrend(): Promise<BendPriceTrend> {
+  try {
+    const hist = await getPriceHistory('city', 'bend', 'monthly', 24)
+    let pts: PriceTrendPoint[] = hist
+      .filter((p) => typeof p.medianSalePrice === 'number' && (p.medianSalePrice as number) > 0)
+      .map((p) => ({ iso: p.periodStart, median: p.medianSalePrice as number }))
+
+    // Drop the in-progress current calendar month (Pacific time).
+    const curYm = new Date()
+      .toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit' })
+      .slice(0, 7)
+    while (pts.length > 0 && pts[pts.length - 1]!.iso.slice(0, 7) === curYm) {
+      pts = pts.slice(0, -1)
+    }
+
+    // Trailing 13 complete months → first vs last span exactly one year.
+    pts = pts.slice(-13)
+
+    const last = pts.length > 0 ? pts[pts.length - 1]! : null
+    const latest = last ? { iso: last.iso, value: last.median } : null
+
+    let yoyPct: number | null = null
+    if (latest) {
+      const priorYear = String(Number(latest.iso.slice(0, 4)) - 1)
+      const month = latest.iso.slice(5, 7)
+      const prior = pts.find((p) => p.iso.slice(0, 4) === priorYear && p.iso.slice(5, 7) === month)
+      if (prior && prior.median > 0) {
+        yoyPct = ((latest.value - prior.median) / prior.median) * 100
+      }
+    }
+
+    return { points: pts, latest, yoyPct }
+  } catch (e) {
+    console.warn('[seller-lp/data] getBendPriceTrend failed:', e)
+    return { points: [], latest: null, yoyPct: null }
   }
 }
 
