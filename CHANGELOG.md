@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.8 (2026-06-03)
+
+### Other
+- Collision-safe photo re-screen + Central Oregon lifestyle section
+
+---
+
+
 ## v1.402.7 (2026-06-03)
 
 ### Other
