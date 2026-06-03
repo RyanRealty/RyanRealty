@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.18 (2026-06-03)
+
+### Other
+- List LP: drop the homes-sold count from the track-record band
+
+---
+
+
 ## v1.402.17 (2026-06-03)
 
 ### Other
