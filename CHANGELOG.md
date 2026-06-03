@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.10 (2026-06-03)
+
+### Other
+- Add /parks content pages (18 Central Oregon parks, official polygons + nearby homes)
+
+---
+
+
 ## v1.402.9 (2026-06-03)
 
 ### Other
