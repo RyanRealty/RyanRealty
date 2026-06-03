@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.4 (2026-06-03)
+
+### Other
+- Add photo curation system + wire approved heroes site-wide
+
+---
+
+
 ## v1.402.3 (2026-06-02)
 
 ### Bug Fixes
