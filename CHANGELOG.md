@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.17 (2026-06-03)
+
+### Other
+- List LP: show precise $12.2M track-record volume (was rounding to $12M)
+
+---
+
+
 ## v1.402.16 (2026-06-03)
 
 ### Other
