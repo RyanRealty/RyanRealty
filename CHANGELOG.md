@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.13 (2026-06-03)
+
+### Other
+- Rename Buy->Homes + stylized by-city mega-menu + 11 data-grounded search presets
+
+---
+
+
 ## v1.402.12 (2026-06-03)
 
 ### Other
