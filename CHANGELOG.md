@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.14 (2026-06-03)
+
+### Other
+- Fix on-golf-course search filter to read populated signals (was 0 results everywhere)
+
+---
+
+
 ## v1.402.13 (2026-06-03)
 
 ### Other
