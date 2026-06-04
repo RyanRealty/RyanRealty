@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.403.0 (2026-06-04)
+
+### Features
+- feat(nav): surface all search presets in mega menu + rebalance layout
+
+### Bug Fixes
+- fix(listing): restore broker CTA sidebar (slug rename regression)
+
+---
+
+
 ## v1.402.26 (2026-06-04)
 
 ### Maintenance
