@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.406.1 (2026-06-04)
+
+### Bug Fixes
+- fix(seo): listing links use the FULL city/neighborhood/subdivision/address canonical
+
+---
+
+
 ## v1.406.0 (2026-06-04)
 
 ### Features
