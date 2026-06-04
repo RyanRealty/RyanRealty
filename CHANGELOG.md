@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.25 (2026-06-04)
+
+### Other
+- Modernize search/preset pages to a clean results page + fix count accuracy
+
+---
+
+
 ## v1.402.24 (2026-06-04)
 
 ### Other
