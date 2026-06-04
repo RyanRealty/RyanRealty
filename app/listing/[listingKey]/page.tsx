@@ -245,7 +245,16 @@ export default async function ListingDetailPage({ params }: PageProps) {
     ])
 
   const listingWithPhotos = { ...listing, photos }
-  const matt = brokers.find((b) => b.slug === 'matt-ryan') ?? null
+  // Resolve the fallback contact broker by the STABLE principal flag, not a slug
+  // string: the slug was renamed 'matt-ryan' -> 'matthew-ryan' (commit 6cb0202),
+  // which silently nulled `matt` and made the whole sticky CTA sidebar disappear.
+  // Prefer the principal, then known slug variants, then email, then any broker.
+  const matt =
+    brokers.find((b) => b.isPrincipal) ??
+    brokers.find((b) => b.slug === 'matthew-ryan' || b.slug === 'matt-ryan') ??
+    brokers.find((b) => b.email === 'matt@ryan-realty.com') ??
+    brokers[0] ??
+    null
   const ctaBroker = listingAgent ?? matt
 
   const street = [listing.streetNumber, listing.streetName].filter(Boolean).join(' ').trim()
