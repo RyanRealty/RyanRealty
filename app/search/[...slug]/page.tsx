@@ -33,8 +33,7 @@ import ListingTile from '../../../components/ListingTile'
 import { GolfLanding } from '@/components/site/golf/GolfLanding'
 import type { ListingCardData } from '@/components/site/ListingCard'
 import { GOLF_COMMUNITIES } from '@/data/golf-landing'
-import { getGolfImages, pickGolfImage } from '@/lib/data'
-import { getListingsWithAdvanced } from '@/app/actions/listings'
+import { getGolfImages, pickGolfImage, getGolfHomesForLanding } from '@/lib/data'
 import AdvancedSearchFilters from '../../../components/AdvancedSearchFilters'
 import ShareButton from '../../../components/ShareButton'
 import BreadcrumbStrip from '../../../components/layout/BreadcrumbStrip'
@@ -323,17 +322,15 @@ export default async function SearchPage({
   // real golf homes + FAQ). `?all=1` falls through to the standard filterable
   // list+map view of the same golf-filtered homes.
   if (preset?.landing === 'golf' && city && sp.all !== '1') {
-    const [golfListings, golfImages] = await Promise.all([
-      // filterOpts is already the AdvancedListingsFilters shape, so call the
-      // advanced DAL directly. (getCachedSearchListings round-trips through the
-      // SavedSearchFilters converter, which mis-maps advanced field names and
-      // zeroes the golf filter.) The page's revalidate=60 covers caching. The
-      // golf homes ARE the page, so give the query a longer guard than 2.5s.
-      withTimeout(getListingsWithAdvanced({ ...filterOpts, limit: 24, offset: 0 }), { listings: [], totalCount: 0 }, 20000),
+    const [golfRows, golfImages] = await Promise.all([
+      // Lightweight golf-homes fetch (search_golf_homes RPC, no full_count window)
+      // returns in well under a second. The full search RPC's count(*) OVER ()
+      // golf-filters all ~134K Bend rows (~7s, risks a serverless timeout).
+      withTimeout(getGolfHomesForLanding(city, 24), [], 6000),
       withTimeout(getGolfImages(24), []),
     ])
     const heroImage = pickGolfImage(golfImages, city, null)
-    const homes = golfListings.listings.map((l): ListingCardData => {
+    const homes = golfRows.map((l): ListingCardData => {
       const street = [l.StreetNumber, l.StreetName].filter(Boolean).join(' ').trim()
       const cityLine = [[l.City, 'OR'].filter(Boolean).join(', '), l.PostalCode].filter(Boolean).join(' ').trim()
       return {
@@ -358,7 +355,7 @@ export default async function SearchPage({
         heroImage={heroImage}
         communities={communities}
         homes={homes}
-        totalHomes={golfListings.totalCount}
+        totalHomes={0}
         allHomesHref={allHomesHref}
       />
     )

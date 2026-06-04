@@ -160,6 +160,9 @@ export type { LifestyleImage } from '@/lib/data/media/getLifestyleImages'
 // Golf photography for the immersive golf landing (surface_tags 'golf').
 export { getGolfImages, pickGolfImage } from '@/lib/data/media/getGolfImages'
 export type { GolfImage } from '@/lib/data/media/getGolfImages'
+// Lightweight golf-homes fetch for the on-golf-course landing (no full_count window).
+export { getGolfHomesForLanding } from '@/lib/data/listings/getGolfHomesForLanding'
+export type { GolfHomeRow } from '@/lib/data/listings/getGolfHomesForLanding'
 
 // Intelligent mega-menu data — one cached read powering the full-width nav
 // panels for every parent (counts, medians, months-of-supply, sparkline, …).

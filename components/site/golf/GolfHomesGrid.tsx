@@ -39,14 +39,12 @@ export function GolfHomesGrid({ homes, totalHomes, allHomesHref }: Props) {
             <Eyebrow>For sale</Eyebrow>
             <H2>Active golf homes</H2>
           </Stack>
-          {totalHomes > 0 ? (
-            <Link
-              href={allHomesHref}
-              className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
-            >
-              View all {totalHomes}
-            </Link>
-          ) : null}
+          <Link
+            href={allHomesHref}
+            className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+          >
+            {totalHomes > 0 ? `View all ${totalHomes}` : 'Browse all'}
+          </Link>
         </div>
 
         {homes.length > 0 ? (
@@ -60,7 +58,7 @@ export function GolfHomesGrid({ homes, totalHomes, allHomesHref }: Props) {
             <div className="mt-10 flex justify-center">
               <Button asChild size="lg">
                 <Link href={allHomesHref}>
-                  View all {totalHomes} golf homes
+                  {totalHomes > 0 ? `View all ${totalHomes} golf homes` : 'Browse all golf homes'}
                 </Link>
               </Button>
             </div>
