@@ -24,6 +24,7 @@ import { CTABar } from '@/components/site/CTABar'
 import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import { Container } from '@/components/site/primitives'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { listingTileHref } from '@/lib/slug'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -48,7 +49,14 @@ function tileToCard(tile: Awaited<ReturnType<typeof getListingTiles>>[number]): 
   if (tile.subdivisionName) cityParts.push(tile.subdivisionName)
   return {
     listingKey: tile.listingKey,
-    href: `/listing/${tile.listingKey}`,
+    href: listingTileHref({
+      listingKey: tile.listingKey,
+      listNumber: tile.listNumber,
+      streetNumber: tile.streetNumber,
+      streetName: tile.streetName,
+      city: tile.city,
+      subdivisionName: tile.subdivisionName,
+    }),
     photoUrl: tile.photoUrl ?? null,
     price: tile.listPrice ?? null,
     addressLine,
@@ -111,7 +119,7 @@ export default async function SubdivisionPage({ params }: Props) {
         listings={boundary.pins.map((p) => ({
           lat: p.lat,
           lng: p.lng,
-          href: `/listing/${p.listingKey}`,
+          href: listingTileHref({ listingKey: p.listingKey }),
           price: p.price,
         }))}
         zoom={15}

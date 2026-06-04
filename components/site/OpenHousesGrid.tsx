@@ -1,6 +1,7 @@
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import type { OpenHouseWithListing } from '@/app/actions/open-houses'
 import ListingCard, { type ListingCardData, type ListingBadge } from './ListingCard'
+import { listingTileHref } from '@/lib/slug'
 import {
   Body,
   Container,
@@ -26,7 +27,14 @@ import {
  */
 
 function listingDetailHref(o: OpenHouseWithListing): string {
-  return `/listing/${o.listing_key}`
+  return listingTileHref({
+    listingKey: o.listing_key,
+    listNumber: o.list_number,
+    streetNumber: o.street_number,
+    streetName: o.street_name,
+    city: o.city,
+    subdivisionName: o.subdivision_name,
+  })
 }
 
 function buildAddressLine(o: OpenHouseWithListing): string {

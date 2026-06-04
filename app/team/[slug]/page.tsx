@@ -26,6 +26,7 @@ import { BrokerContactCard } from '@/components/site/BrokerContactCard'
 import { CTABar } from '@/components/site/CTABar'
 import { Separator } from '@/components/ui/separator'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { listingTileHref } from '@/lib/slug'
 import {
   Body,
   Caption,
@@ -93,7 +94,13 @@ function toListingCardData(tile: {
   const cityLine = [cityParts, tile.SubdivisionName].filter(Boolean).join(' · ')
   return {
     listingKey: key,
-    href: `/listing/${encodeURIComponent(key)}`,
+    href: listingTileHref({
+      listingKey: tile.ListingKey,
+      streetNumber: tile.StreetNumber,
+      streetName: tile.StreetName,
+      city: tile.City,
+      subdivisionName: tile.SubdivisionName,
+    }),
     photoUrl: tile.PhotoURL ?? null,
     price: tile.ListPrice ?? null,
     addressLine,

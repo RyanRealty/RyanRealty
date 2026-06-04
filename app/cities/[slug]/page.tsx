@@ -34,6 +34,7 @@ import {
 import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import { golfCommunityImage, pickGeoImage, cityHero } from '@/lib/geo-images'
+import { listingTileHref } from '@/lib/slug'
 import { getCityMetadataByName } from '@/lib/data/cities/getCityMetadata'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
@@ -393,7 +394,7 @@ export default async function CityDetailPage({ params }: Props) {
           listings={boundaryMapData.pins.map((p) => ({
             lat: p.lat,
             lng: p.lng,
-            href: `/listing/${p.listingKey}`,
+            href: listingTileHref({ listingKey: p.listingKey }),
             price: p.price,
           }))}
           zoom={12}

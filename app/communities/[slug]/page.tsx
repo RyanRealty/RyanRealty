@@ -62,6 +62,7 @@ import { FAQBlock } from '@/components/site/FAQBlock'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import { listingTileHref } from '@/lib/slug'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -107,7 +108,14 @@ function tileToCardData(tile: Awaited<ReturnType<typeof getListingTiles>>[number
 
   return {
     listingKey: tile.listingKey,
-    href: `/listing/${tile.listingKey}`,
+    href: listingTileHref({
+      listingKey: tile.listingKey,
+      listNumber: tile.listNumber,
+      streetNumber: tile.streetNumber,
+      streetName: tile.streetName,
+      city: tile.city,
+      subdivisionName: tile.subdivisionName,
+    }),
     photoUrl: tile.photoUrl ?? null,
     price: tile.listPrice ?? null,
     addressLine,
@@ -472,7 +480,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           listings={boundaryMapData.pins.map((p) => ({
             lat: p.lat,
             lng: p.lng,
-            href: `/listing/${p.listingKey}`,
+            href: listingTileHref({ listingKey: p.listingKey }),
             price: p.price,
           }))}
           zoom={14}

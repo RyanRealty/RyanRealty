@@ -1,6 +1,7 @@
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { Eyebrow, Grid, H2, Stack } from '@/components/site/primitives'
 import type { ListingTile } from '@/lib/data/types/listing'
+import { listingTileHref } from '@/lib/slug'
 
 /**
  * Listing-detail SimilarListings — renders the nearest-comparables grid
@@ -32,7 +33,7 @@ function tileToCard(tile: ListingTile): ListingCardData {
     .join(' · ')
   return {
     listingKey: tile.listingKey,
-    href: `/listing/${tile.listingKey}`,
+    href: listingTileHref(tile),
     photoUrl: tile.photoUrl,
     price: tile.listPrice,
     addressLine: street || 'Address available',

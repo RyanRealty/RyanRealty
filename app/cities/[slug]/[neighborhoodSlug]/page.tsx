@@ -38,6 +38,7 @@ import { Container, Section, Grid, Stack, Eyebrow, H2 } from '@/components/site/
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import MotivatedListings from '@/components/site/MotivatedListings'
 import { buildMarketFaq } from '@/lib/site/market-faq'
+import { listingTileHref } from '@/lib/slug'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
 export const dynamicParams = true
@@ -85,7 +86,14 @@ function tileToCardData(tile: Awaited<ReturnType<typeof getListingTiles>>[number
 
   return {
     listingKey: tile.listingKey,
-    href: `/listing/${tile.listingKey}`,
+    href: listingTileHref({
+      listingKey: tile.listingKey,
+      listNumber: tile.listNumber,
+      streetNumber: tile.streetNumber,
+      streetName: tile.streetName,
+      city: tile.city,
+      subdivisionName: tile.subdivisionName,
+    }),
     photoUrl: tile.photoUrl ?? null,
     price: tile.listPrice ?? null,
     addressLine,
@@ -304,7 +312,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           listings={boundaryMapData.pins.map((p) => ({
             lat: p.lat,
             lng: p.lng,
-            href: `/listing/${p.listingKey}`,
+            href: listingTileHref({ listingKey: p.listingKey }),
             price: p.price,
           }))}
           zoom={13}

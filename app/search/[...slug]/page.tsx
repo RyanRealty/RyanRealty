@@ -15,7 +15,7 @@ import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/
 import { getBestListingHeroForGeography } from '../../actions/photo-classification'
 import SaveSearchButton from '../../../components/SaveSearchButton'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
-import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, listingsBrowsePath } from '../../../lib/slug'
+import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, listingsBrowsePath, listingTileHref } from '../../../lib/slug'
 import { entityKeyToSlug } from '../../../lib/community-slug'
 import { getPresetBySlug, isPresetSlug, resolvePresetYearBuiltMin } from '../../../lib/search-presets'
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
@@ -309,7 +309,13 @@ export default async function SearchPage({
       const cityLine = [[l.City, 'OR'].filter(Boolean).join(', '), l.PostalCode].filter(Boolean).join(' ').trim()
       return {
         listingKey: (l.ListNumber ?? l.ListingKey ?? '').toString().trim(),
-        href: `/listing/${l.ListNumber ?? l.ListingKey ?? ''}`,
+        href: listingTileHref({
+          listingKey: l.ListingKey,
+          listNumber: l.ListNumber,
+          streetNumber: l.StreetNumber,
+          streetName: l.StreetName,
+          city: l.City,
+        }),
         photoUrl: l.PhotoURL ?? null,
         price: l.ListPrice ?? null,
         addressLine: street || 'Address available on request',
@@ -689,7 +695,14 @@ export default async function SearchPage({
               const cityLine = [[listing.City ?? city, 'OR'].filter(Boolean).join(', '), listing.PostalCode].filter(Boolean).join(' ').trim()
               const card: ListingCardData = {
                 listingKey: key,
-                href: `/listing/${listing.ListNumber ?? listing.ListingKey ?? ''}`,
+                href: listingTileHref({
+                  listingKey: listing.ListingKey,
+                  listNumber: listing.ListNumber,
+                  streetNumber: listing.StreetNumber,
+                  streetName: listing.StreetName,
+                  city: listing.City,
+                  subdivisionName: listing.SubdivisionName,
+                }),
                 photoUrl: listing.PhotoURL ?? null,
                 price: listing.ListPrice ?? null,
                 addressLine: street || 'Address available on request',

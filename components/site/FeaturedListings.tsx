@@ -4,6 +4,7 @@ import { getListings } from '@/app/actions/listings'
 import type { ListingTileRow } from '@/app/actions/listings'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { Container } from '@/components/site/primitives'
+import { listingTileHref } from '@/lib/slug'
 
 /**
  * FeaturedListings — premium active inventory for a scope, rendered as the
@@ -45,7 +46,14 @@ function toCardData(l: ListingTileRow): ListingCardData | null {
   if (l.SubdivisionName) cityParts.push(l.SubdivisionName)
   return {
     listingKey: key,
-    href: `/listing/${encodeURIComponent(key)}`,
+    href: listingTileHref({
+      listingKey: l.ListingKey,
+      listNumber: l.ListNumber,
+      streetNumber: l.StreetNumber,
+      streetName: l.StreetName,
+      city: l.City,
+      subdivisionName: l.SubdivisionName,
+    }),
     photoUrl: l.PhotoURL ?? null,
     price: l.ListPrice ?? null,
     addressLine,

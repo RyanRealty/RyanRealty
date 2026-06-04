@@ -193,6 +193,30 @@ export function listingDetailPath(
 }
 
 /**
+ * Canonical public detail href for a listing tile / pin. Always returns a
+ * /homes-for-sale/... URL via listingDetailPath — never the raw /listing/<key>
+ * alias. Pass whatever fields the caller has (camelCase tile shape); when
+ * address fields are absent (e.g. a bare map pin) it degrades to the still-valid
+ * /homes-for-sale/listing/<id> form, never a 404. This is the ONE helper every
+ * site surface should use so the address bar shows the SEO URL on navigation.
+ */
+export function listingTileHref(tile: {
+  listingKey?: string | null
+  listNumber?: string | null
+  streetNumber?: string | null
+  streetName?: string | null
+  city?: string | null
+  subdivisionName?: string | null
+}): string {
+  return listingDetailPath(
+    String(tile.listingKey ?? tile.listNumber ?? ''),
+    { streetNumber: tile.streetNumber ?? null, streetName: tile.streetName ?? null, city: tile.city ?? null },
+    { city: tile.city ?? null, subdivision: tile.subdivisionName ?? null },
+    { mlsNumber: tile.listNumber ?? null },
+  )
+}
+
+/**
  * Extract the listing key from a URL segment that may be:
  * - "key"
  * - "key~address-slug" (legacy)

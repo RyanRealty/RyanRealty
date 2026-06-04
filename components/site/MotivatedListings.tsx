@@ -4,6 +4,7 @@ import { getMotivatedListings } from '@/lib/data'
 import type { MotivatedListing } from '@/lib/data'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { Container } from '@/components/site/primitives'
+import { listingTileHref } from '@/lib/slug'
 
 /**
  * MotivatedListings — homes with price cuts or motivation signals in their
@@ -36,7 +37,14 @@ function toCardData(l: MotivatedListing): ListingCardData | null {
   const reason = l.reasons[0]
   return {
     listingKey: key,
-    href: `/listing/${encodeURIComponent(key)}`,
+    href: listingTileHref({
+      listingKey: l.listingKey,
+      listNumber: l.listNumber,
+      streetNumber: l.streetNumber,
+      streetName: l.streetName,
+      city: l.city,
+      subdivisionName: l.subdivisionName,
+    }),
     photoUrl: l.photoUrl ?? null,
     price: l.listPrice ?? null,
     addressLine,

@@ -18,6 +18,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getZipListings, getSurfaceImage } from '@/lib/data'
+import { listingTileHref } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import { HeroBlock } from '@/components/site/HeroBlock'
@@ -87,7 +88,7 @@ function tileToCardData(tile: Awaited<ReturnType<typeof getZipListings>>[number]
   if (tile.subdivisionName) cityParts.push(tile.subdivisionName)
   return {
     listingKey: tile.listingKey,
-    href: `/listing/${tile.listingKey}`,
+    href: listingTileHref(tile),
     photoUrl: tile.photoUrl ?? null,
     price: tile.listPrice ?? null,
     addressLine,
