@@ -30,6 +30,11 @@ import { getPresetBySlug, isPresetSlug, resolvePresetYearBuiltMin } from '../../
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
 import { communityPagePath } from '../../../lib/community-slug'
 import ListingTile from '../../../components/ListingTile'
+import { GolfLanding } from '@/components/site/golf/GolfLanding'
+import type { ListingCardData } from '@/components/site/ListingCard'
+import { GOLF_COMMUNITIES } from '@/data/golf-landing'
+import { getGolfImages, pickGolfImage } from '@/lib/data'
+import { getListingsWithAdvanced } from '@/app/actions/listings'
 import AdvancedSearchFilters from '../../../components/AdvancedSearchFilters'
 import ShareButton from '../../../components/ShareButton'
 import BreadcrumbStrip from '../../../components/layout/BreadcrumbStrip'
@@ -178,6 +183,8 @@ export async function generateMetadata({
 }
 
 type SearchParams = {
+  /** On the on-golf-course landing, ?all=1 falls through to the standard filterable list. */
+  all?: string
   minPrice?: string
   maxPrice?: string
   beds?: string
@@ -310,6 +317,52 @@ export default async function SearchPage({
         ...(preset.params.sort != null && { sort: preset.params.sort as AdvancedSort }),
       }
     : filterOptsBase
+
+  // Golf landing — the on-golf-course preset renders a purpose-built, immersive
+  // golf properties landing page (hero + community spotlight + stat band + the
+  // real golf homes + FAQ). `?all=1` falls through to the standard filterable
+  // list+map view of the same golf-filtered homes.
+  if (preset?.landing === 'golf' && city && sp.all !== '1') {
+    const [golfListings, golfImages] = await Promise.all([
+      // filterOpts is already the AdvancedListingsFilters shape, so call the
+      // advanced DAL directly. (getCachedSearchListings round-trips through the
+      // SavedSearchFilters converter, which mis-maps advanced field names and
+      // zeroes the golf filter.) The page's revalidate=60 covers caching. The
+      // golf homes ARE the page, so give the query a longer guard than 2.5s.
+      withTimeout(getListingsWithAdvanced({ ...filterOpts, limit: 24, offset: 0 }), { listings: [], totalCount: 0 }, 20000),
+      withTimeout(getGolfImages(24), []),
+    ])
+    const heroImage = pickGolfImage(golfImages, city, null)
+    const homes = golfListings.listings.map((l): ListingCardData => {
+      const street = [l.StreetNumber, l.StreetName].filter(Boolean).join(' ').trim()
+      const cityLine = [[l.City, 'OR'].filter(Boolean).join(', '), l.PostalCode].filter(Boolean).join(' ').trim()
+      return {
+        listingKey: (l.ListNumber ?? l.ListingKey ?? '').toString().trim(),
+        href: `/listing/${l.ListNumber ?? l.ListingKey ?? ''}`,
+        photoUrl: l.PhotoURL ?? null,
+        price: l.ListPrice ?? null,
+        addressLine: street || 'Address available on request',
+        cityLine: cityLine || 'Central Oregon',
+        beds: l.BedroomsTotal ?? null,
+        baths: l.BathroomsTotal ?? null,
+        sqft: l.TotalLivingAreaSqFt ?? null,
+      }
+    })
+    const citySlug = cityEntityKey(city)
+    const cityCommunities = GOLF_COMMUNITIES.filter((c) => c.citySlug === citySlug)
+    const communities = cityCommunities.length ? cityCommunities : GOLF_COMMUNITIES
+    const allHomesHref = `${homesForSalePath(city)}/on-golf-course?all=1`
+    return (
+      <GolfLanding
+        city={city}
+        heroImage={heroImage}
+        communities={communities}
+        homes={homes}
+        totalHomes={golfListings.totalCount}
+        allHomesHref={allHomesHref}
+      />
+    )
+  }
 
   // Fetch ALL independent data in a single parallel batch (was 3 sequential waterfalls)
   const [listingsResult, marketStats, statusCounts, subdivisions, hotCommunities, priceChangeKeys, session, resortEntityKeys, searchPulse, searchActivityFeed, searchRecentlySold, cityPriceHistory, cityGuidesForCluster, cityOpenHouses] = await Promise.all([

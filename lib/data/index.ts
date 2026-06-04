@@ -157,6 +157,28 @@ export type { SurfaceImage, Surface } from '@/lib/data/media/getSurfaceImages'
 // Active-lifestyle photography (biking/skiing/fishing/…) for the LifestyleStrip.
 export { getLifestyleImages } from '@/lib/data/media/getLifestyleImages'
 export type { LifestyleImage } from '@/lib/data/media/getLifestyleImages'
+// Golf photography for the immersive golf landing (surface_tags 'golf').
+export { getGolfImages, pickGolfImage } from '@/lib/data/media/getGolfImages'
+export type { GolfImage } from '@/lib/data/media/getGolfImages'
+
+// Intelligent mega-menu data — one cached read powering the full-width nav
+// panels for every parent (counts, medians, months-of-supply, sparkline, …).
+export { getMegaMenuData } from '@/lib/data/nav/getMegaMenuData'
+export type {
+  MegaMenuData,
+  MegaMenuHomes,
+  MegaMenuHomesCity,
+  MegaMenuCommunities,
+  MegaMenuCommunity,
+  MegaMenuCities,
+  MegaMenuCity,
+  MegaMenuMarket,
+  MegaMenuSparkPoint,
+  MegaMenuSell,
+  MegaMenuLearn,
+  MegaMenuGuide,
+  MegaMenuPopularSearch,
+} from '@/lib/data/nav/getMegaMenuData'
 
 // Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'

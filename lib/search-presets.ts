@@ -9,6 +9,13 @@ export type SearchPreset = {
   label: string
   /** Short label for "in {place}" e.g. "Under $500K", "Pending" */
   shortLabel: string
+  /**
+   * When set, the route owner renders a dedicated immersive landing page
+   * instead of the generic search results layout. The route branch checks
+   * this field before falling through to the default results view.
+   * Currently supported values: "golf"
+   */
+  landing?: 'golf'
   params: {
     maxPrice?: number
     minPrice?: number
@@ -86,7 +93,7 @@ export const SEARCH_PRESETS: SearchPreset[] = [
   { slug: 'with-pool', shortLabel: 'With Pool', label: 'Homes with Pool', params: { hasPool: true, sort: 'newest' } },
   { slug: 'with-view', shortLabel: 'With View', label: 'Homes with View', params: { hasView: true, sort: 'newest' } },
   { slug: 'with-fireplace', shortLabel: 'With Fireplace', label: 'Homes with Fireplace', params: { hasFireplace: true, sort: 'newest' } },
-  { slug: 'on-golf-course', shortLabel: 'On Golf Course', label: 'Homes on Golf Course', params: { hasGolfCourse: true, sort: 'newest' } },
+  { slug: 'on-golf-course', shortLabel: 'On Golf Course', label: 'Homes on Golf Course', landing: 'golf', params: { hasGolfCourse: true, sort: 'newest' } },
   // View types (details.View keyword match)
   { slug: 'mountain-view', shortLabel: 'Mountain View', label: 'Homes with Mountain View', params: { viewContains: 'Mountain', sort: 'newest' } },
   { slug: 'water-view', shortLabel: 'Water View', label: 'Homes with Water View', params: { viewContains: 'Water', sort: 'newest' } },
