@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ChevronDownIcon } from '@heroicons/react/20/solid'
 import { Eyebrow } from '@/components/site/primitives'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { MenuEntry } from '@/lib/site-menu'
 
@@ -239,35 +240,58 @@ function MegaPanelView({
         'duration-200 animate-in fade-in-0 slide-in-from-top-1 motion-reduce:animate-none',
       )}
     >
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        <Eyebrow as="p" className="mb-5 font-display tracking-[0.12em] text-muted-foreground">
-          {entry.label}
-        </Eyebrow>
-        <div className="flex flex-wrap gap-x-16 gap-y-8">
-          {entry.columns.map((column) => (
-            <div key={column.heading} className="min-w-[11rem]">
-              <Eyebrow as="h3" className="mb-3 text-muted-foreground">
-                {column.heading}
-              </Eyebrow>
-              <ul className="flex flex-col">
-                {column.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className={cn(
-                        'block py-1.5 text-[15px] text-foreground transition-colors',
-                        'hover:text-primary hover:underline underline-offset-4',
-                        'focus-visible:outline-none focus-visible:text-primary focus-visible:underline',
-                        'motion-reduce:transition-none',
-                      )}
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+      <div className="mx-auto max-w-7xl px-4 py-9 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-12">
+          {/* Intent-grouped link columns. Flex-wrap so a dense parent (Homes)
+              reflows gracefully while a sparse parent stays balanced. */}
+          <div className="flex flex-1 flex-wrap gap-x-6 gap-y-7">
+            {entry.columns.map((column) => (
+              <div key={column.heading} className="w-40">
+                <Eyebrow as="h3" className="mb-2.5 font-semibold text-foreground/70">
+                  {column.heading}
+                </Eyebrow>
+                <ul className="flex flex-col">
+                  {column.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className={cn(
+                          'block py-1.5 text-[15px] text-foreground/90 transition-colors',
+                          'hover:text-primary hover:underline underline-offset-4',
+                          'focus-visible:outline-none focus-visible:text-primary focus-visible:underline',
+                          'motion-reduce:transition-none',
+                        )}
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Right-edge utility rail: one clear next action per section. Text
+              only (no photos) — keeps the panel balanced edge-to-edge so a
+              sparse parent never strands a lone column in an empty bar. */}
+          {entry.promo ? (
+            <aside className="lg:w-60 lg:shrink-0">
+              <div className="rounded-xl border border-border bg-secondary/40 p-5">
+                <Eyebrow as="p" className="mb-2 text-muted-foreground">
+                  {entry.promo.eyebrow}
+                </Eyebrow>
+                <p className="font-display text-lg leading-snug text-foreground">
+                  {entry.promo.title}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {entry.promo.body}
+                </p>
+                <Button asChild size="sm" className="mt-4 w-full">
+                  <Link href={entry.promo.ctaHref}>{entry.promo.ctaLabel}</Link>
+                </Button>
+              </div>
+            </aside>
+          ) : null}
         </div>
       </div>
     </div>

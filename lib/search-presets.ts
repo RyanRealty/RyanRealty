@@ -72,6 +72,8 @@ export const SEARCH_PRESETS: SearchPreset[] = [
   { slug: 'under-1m', shortLabel: 'Under $1M', label: 'Homes Under $1 Million', params: { maxPrice: 1_000_000, sort: 'newest' } },
   { slug: 'under-1-5m', shortLabel: 'Under $1.5M', label: 'Homes Under $1.5 Million', params: { maxPrice: 1_500_000, sort: 'newest' } },
   { slug: 'luxury', shortLabel: 'Luxury', label: 'Luxury Homes', params: { minPrice: 1_000_000, sort: 'newest' } },
+  { slug: 'over-1-5m', shortLabel: '$1.5M+', label: 'Homes Over $1.5 Million', params: { minPrice: 1_500_000, sort: 'price_desc' } },
+  { slug: 'over-2m', shortLabel: '$2M+', label: 'Homes Over $2 Million', params: { minPrice: 2_000_000, sort: 'price_desc' } },
   // Status / recency
   { slug: 'pending', shortLabel: 'Pending', label: 'Pending / Under Contract', params: { statusFilter: 'pending', sort: 'newest' } },
   { slug: 'new-listings', shortLabel: 'New Listings', label: 'New Listings (Last 7 Days)', params: { newListingsDays: 7, sort: 'newest' } },

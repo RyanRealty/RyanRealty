@@ -2,23 +2,25 @@
  * lib/site-menu.ts — the STATIC, serializable mega-menu config.
  *
  * One entry per top-level parent (Homes, Communities, Cities, Market, Sell,
- * Company, Learn). Each entry carries the intent-grouped link columns and an
- * optional editorial featured card (one photo + caption + CTA) that the clean
- * editorial mega-menu renders. There are NO stats, counts, sparklines, verdict
- * pills, or tiles here by design — this is the approved "menu-B" direction.
+ * Company, Learn). Each entry carries intent-grouped link columns plus a short
+ * text "promo" (eyebrow + title + one line + a single CTA) that the editorial
+ * mega-menu pins to the right edge of the full-width panel. The promo is what
+ * keeps every panel balanced edge-to-edge — sparse parents (Sell, Company,
+ * Learn) no longer strand a lone column in a wide empty bar. There are NO stats,
+ * counts, sparklines, verdict pills, tiles, or photos here by design — this is
+ * the approved clean "menu-B" direction (photos were explicitly removed).
  *
  * Single source of truth for nav structure remains lib/site-nav.ts (PRIMARY_NAV
  * drives the reachability gate). This file is the DISPLAY layer for the desktop
  * panels and the mobile accordion. Every href below is grounded in a real route:
- *   - /homes-for-sale + homesForSalePath(city) + preset paths (app/search/[...slug])
+ *   - /homes-for-sale + homesForSalePath(city) + preset paths (app/search/[...slug],
+ *     preset slugs verified against lib/search-presets.ts)
  *   - /communities + /communities/<slug> (app/communities/[slug])
  *   - /cities + /cities/<slug> (app/cities/[slug])
- *   - /housing-market + its sub-routes (app/housing-market/*)
+ *   - /housing-market + /housing-market/<city> (app/housing-market/*)
  *   - /sell, /sell/valuation (app/sell/*)
  *   - /team, /about, /contact, /reviews, /join (real pages)
- *   - /guides, /blog, /faq, /videos, /resources, /tools/* (real pages)
- *
- * Featured images live under public/ and are verified to exist.
+ *   - /guides, /blog, /faq, /videos, /tools/* (real pages)
  *
  * Because this is a plain data module (no JSX, no client hooks) it is fully
  * serializable and can be imported by the SERVER SiteHeader and passed to the
@@ -39,11 +41,11 @@ export type MenuColumn = {
   links: MenuLink[]
 }
 
-export type MenuFeatured = {
-  /** Omit to render a clean navy block with just the CTA (used for Market). */
-  imageSrc?: string
-  alt: string
-  caption: string
+/** A short text call-to-action pinned to the right edge of a panel. No image. */
+export type MenuPromo = {
+  eyebrow: string
+  title: string
+  body: string
   ctaLabel: string
   ctaHref: string
 }
@@ -52,14 +54,14 @@ export type MenuEntry = {
   label: string
   href: string
   columns: MenuColumn[]
-  featured?: MenuFeatured
+  promo?: MenuPromo
 }
 
 // ─── Helpers (build-time only, fully static) ─────────────────────────────────
 
 const bend = homesForSalePath('Bend') // "/homes-for-sale/bend"
 
-/** A Bend preset search path, e.g. preset('under-750k') -> /homes-for-sale/bend/under-750k */
+/** A Bend preset search path, e.g. bendPreset('under-750k') -> /homes-for-sale/bend/under-750k */
 function bendPreset(slug: string): string {
   return `${bend}/${slug}`
 }
@@ -94,23 +96,48 @@ export const MENU: MenuEntry[] = [
         ],
       },
       {
-        heading: 'Popular searches',
+        heading: 'By price',
         links: [
+          { label: 'Under $400K', href: bendPreset('under-400k') },
+          { label: 'Under $500K', href: bendPreset('under-500k') },
           { label: 'Under $750K', href: bendPreset('under-750k') },
-          { label: 'Luxury homes', href: bendPreset('luxury') },
-          { label: 'New construction', href: bendPreset('new-construction') },
-          { label: 'On golf course', href: bendPreset('on-golf-course') },
-          { label: 'Acreage', href: bendPreset('acreage') },
+          { label: 'Under $1M', href: bendPreset('under-1m') },
+          { label: 'Luxury ($1M+)', href: bendPreset('luxury') },
+          { label: '$1.5M and up', href: bendPreset('over-1-5m') },
+          { label: '$2M and up', href: bendPreset('over-2m') },
+        ],
+      },
+      {
+        heading: 'Lifestyle & views',
+        links: [
+          { label: 'On the golf course', href: bendPreset('on-golf-course') },
+          { label: 'Mountain views', href: bendPreset('mountain-view') },
+          { label: 'River views', href: bendPreset('river-view') },
           { label: 'Single level', href: bendPreset('single-level') },
+          { label: 'Acreage (1+ acres)', href: bendPreset('acreage') },
+          { label: '5+ acres', href: bendPreset('acreage-5') },
+          { label: 'With a shop', href: bendPreset('with-shop') },
+          { label: 'With a pool', href: bendPreset('with-pool') },
+        ],
+      },
+      {
+        heading: 'Type & status',
+        links: [
+          { label: 'New construction', href: bendPreset('new-construction') },
+          { label: 'Condos', href: bendPreset('condos') },
+          { label: 'Townhomes', href: bendPreset('townhomes') },
+          { label: 'New this week', href: bendPreset('new-listings') },
+          { label: 'New this month', href: bendPreset('new-listings-30') },
+          { label: 'Pending', href: bendPreset('pending') },
         ],
       },
     ],
-    featured: {
-      imageSrc: '/lp/central-oregon-golf/img/bend-cascades-01.jpg',
-      alt: 'Homes across Central Oregon with the Cascade peaks behind Bend',
-      caption: 'Homes across Central Oregon',
-      ctaLabel: 'Browse all homes',
-      ctaHref: '/homes-for-sale',
+    promo: {
+      eyebrow: 'Search',
+      title: 'Find your place in Central Oregon',
+      body: 'Browse every active listing or search the map.',
+      ctaLabel: 'Open map search',
+      ctaHref: '/search',
     },
   },
   {
@@ -149,12 +176,12 @@ export const MENU: MenuEntry[] = [
         ],
       },
     ],
-    featured: {
-      imageSrc: '/lp/central-oregon-golf/img/tetherow-hero.jpg',
-      alt: 'Tetherow golf community in Bend, Oregon',
-      caption: 'Tetherow, Bend',
-      ctaLabel: 'Explore Tetherow',
-      ctaHref: '/communities/tetherow',
+    promo: {
+      eyebrow: 'Explore',
+      title: 'Resort and golf communities',
+      body: 'Compare master-planned neighborhoods across the region.',
+      ctaLabel: 'All communities',
+      ctaHref: '/communities',
     },
   },
   {
@@ -162,27 +189,39 @@ export const MENU: MenuEntry[] = [
     href: '/cities',
     columns: [
       {
-        heading: 'Central Oregon cities',
+        heading: 'Deschutes County',
         links: [
           { label: 'Bend', href: '/cities/bend' },
           { label: 'Redmond', href: '/cities/redmond' },
           { label: 'Sisters', href: '/cities/sisters' },
           { label: 'Sunriver', href: '/cities/sunriver' },
           { label: 'La Pine', href: '/cities/la-pine' },
+        ],
+      },
+      {
+        heading: 'Nearby areas',
+        links: [
           { label: 'Prineville', href: '/cities/prineville' },
           { label: 'Terrebonne', href: '/cities/terrebonne' },
           { label: 'Powell Butte', href: '/cities/powell-butte' },
           { label: 'Madras', href: '/cities/madras' },
           { label: 'Culver', href: '/cities/culver' },
+        ],
+      },
+      {
+        heading: 'Browse',
+        links: [
           { label: 'See every city we cover', href: '/cities' },
+          { label: 'Homes by city', href: '/homes-for-sale' },
+          { label: 'Market by city', href: '/housing-market' },
         ],
       },
     ],
-    featured: {
-      imageSrc: '/lp/central-oregon-golf/img/three-sisters-backdrop.jpg',
-      alt: 'The Three Sisters peaks above Central Oregon',
-      caption: 'Central Oregon, end to end',
-      ctaLabel: 'See every city',
+    promo: {
+      eyebrow: 'Coverage',
+      title: 'Every city we cover',
+      body: 'Local market data and homes for each Central Oregon city.',
+      ctaLabel: 'See all cities',
       ctaHref: '/cities',
     },
   },
@@ -191,7 +230,7 @@ export const MENU: MenuEntry[] = [
     href: '/housing-market',
     columns: [
       {
-        heading: 'Housing market',
+        heading: 'Market data',
         links: [
           { label: 'Market overview', href: '/housing-market' },
           { label: 'Latest market report', href: '/housing-market/reports' },
@@ -200,13 +239,22 @@ export const MENU: MenuEntry[] = [
           { label: 'Neighborhood guides', href: '/area-guides' },
         ],
       },
+      {
+        heading: 'By city',
+        links: [
+          { label: 'Bend market', href: '/housing-market/bend' },
+          { label: 'Redmond market', href: '/housing-market/redmond' },
+          { label: 'Sisters market', href: '/housing-market/sisters' },
+          { label: 'Central Oregon', href: '/housing-market/central-oregon' },
+        ],
+      },
     ],
-    featured: {
-      // No image — a clean navy block per the mockup's Market panel.
-      alt: 'Central Oregon housing market',
-      caption: 'Where the market stands right now',
-      ctaLabel: 'See the latest',
-      ctaHref: '/housing-market',
+    promo: {
+      eyebrow: 'Market',
+      title: 'Where the market stands',
+      body: 'Current prices, inventory, and pace across the region.',
+      ctaLabel: 'Latest report',
+      ctaHref: '/housing-market/reports',
     },
   },
   {
@@ -218,12 +266,25 @@ export const MENU: MenuEntry[] = [
         links: [
           { label: 'Free home valuation', href: '/sell/valuation' },
           { label: 'How selling works', href: '/sell' },
-          { label: 'Our current listings', href: '/our-homes' },
-          { label: 'Seller guides', href: '/guides' },
           { label: 'Recently sold', href: '/homes-for-sale?status=Sold' },
         ],
       },
+      {
+        heading: 'Seller resources',
+        links: [
+          { label: 'Seller guides', href: '/guides' },
+          { label: 'Our current listings', href: '/our-homes' },
+          { label: 'Market reports', href: '/housing-market/reports' },
+        ],
+      },
     ],
+    promo: {
+      eyebrow: 'Sellers',
+      title: 'What is your home worth?',
+      body: 'Get a free valuation, without the high pressure.',
+      ctaLabel: 'Free home valuation',
+      ctaHref: '/sell/valuation',
+    },
   },
   {
     label: 'Company',
@@ -232,30 +293,54 @@ export const MENU: MenuEntry[] = [
       {
         heading: 'Ryan Realty',
         links: [
-          { label: 'Meet the team', href: '/team' },
           { label: 'About Ryan Realty', href: '/about' },
-          { label: 'Contact us', href: '/contact' },
+          { label: 'Meet the team', href: '/team' },
           { label: 'Client reviews', href: '/reviews' },
+        ],
+      },
+      {
+        heading: 'Connect',
+        links: [
+          { label: 'Contact us', href: '/contact' },
           { label: 'Join the team', href: '/join' },
         ],
       },
     ],
+    promo: {
+      eyebrow: 'Ryan Realty',
+      title: 'Talk to a local broker',
+      body: 'Questions about buying or selling here? We are glad to help.',
+      ctaLabel: 'Contact us',
+      ctaHref: '/contact',
+    },
   },
   {
     label: 'Learn',
     href: '/guides',
     columns: [
       {
-        heading: 'Guides and tools',
+        heading: 'Guides & answers',
         links: [
           { label: 'Buyer and seller guides', href: '/guides' },
           { label: 'Blog', href: '/blog' },
           { label: 'Frequently asked questions', href: '/faq' },
+        ],
+      },
+      {
+        heading: 'Tools',
+        links: [
           { label: 'Mortgage calculator', href: '/tools/mortgage-calculator' },
           { label: 'Appreciation tool', href: '/tools/appreciation' },
           { label: 'Video library', href: '/videos' },
         ],
       },
     ],
+    promo: {
+      eyebrow: 'Resources',
+      title: 'Guides, tools, and answers',
+      body: 'Free home tools plus buyer and seller guides.',
+      ctaLabel: 'Browse guides',
+      ctaHref: '/guides',
+    },
   },
 ]
