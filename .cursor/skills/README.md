@@ -4,8 +4,6 @@ This project includes:
 
 | Folder | Skill `name` | When it applies |
 |--------|----------------|-----------------|
-| `frontend-design/` | `frontend-design` | Building or reworking any web page, landing page, hero, or component — design taste + anti-AI-slop layer |
-| `hallmark/` | `hallmark` | Anti-slop design audits/redesigns + study a reference design; run `hallmark audit <path>` on existing pages |
 | `oregon-real-estate-oref/` | `oregon-real-estate-oref` | Oregon transactions, OREF forms, compliance checklists |
 | `oregon-orea-principal-broker/` | `oregon-orea-principal-broker` | Educated first-pass file review: OREA + OAR 863 (you remain final say) |
 | `skyslope-api/` | `skyslope-api` | SkySlope APIs, env vars, auditing files via API |

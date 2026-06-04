@@ -37,8 +37,8 @@ Then merge new paths into this file under the right heading.
 
 ### A — RyanRealty project (`.cursor/skills`)
 
-- `/Users/matthewryan/RyanRealty/.cursor/skills/frontend-design/SKILL.md` *(building/reworking any web page, landing page, hero, or component — design taste + anti-AI-slop layer)*
-- `/Users/matthewryan/RyanRealty/.cursor/skills/hallmark/SKILL.md` *(anti-slop design audits/redesigns + study a reference design; run `hallmark audit <path>` on existing pages)*
+- `/Users/matthewryan/RyanRealty/.claude/skills/frontend-design/SKILL.md` *(building/reworking any web page, landing page, hero, or component — design taste + anti-AI-slop layer)*
+- `/Users/matthewryan/RyanRealty/.claude/skills/hallmark/SKILL.md` *(anti-slop design audits/redesigns + study a reference design; run `hallmark audit <path>` on existing pages)*
 - `/Users/matthewryan/RyanRealty/.cursor/skills/oregon-orea-principal-broker/SKILL.md`
 - `/Users/matthewryan/RyanRealty/.cursor/skills/oregon-real-estate-oref/SKILL.md`
 - `/Users/matthewryan/RyanRealty/.cursor/skills/professional-word-docx/SKILL.md`
