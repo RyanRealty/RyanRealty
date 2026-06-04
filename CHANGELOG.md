@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.404.1 (2026-06-04)
+
+### Bug Fixes
+- fix(geo): correct Awbrey Glen community boundary (hull -> county plat union)
+
+---
+
+
 ## v1.404.0 (2026-06-04)
 
 ### Features
