@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import { ChevronDownIcon, ArrowRightIcon } from '@heroicons/react/20/solid'
+import { ChevronDownIcon } from '@heroicons/react/20/solid'
 import { Eyebrow } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 import type { MenuEntry } from '@/lib/site-menu'
@@ -13,7 +12,7 @@ import type { MenuEntry } from '@/lib/site-menu'
  *
  * Renders the seven parent triggers on the navy header, plus ONE full-width
  * editorial panel for the active parent. Each panel is intent-grouped text-link
- * columns on the left and a single editorial photo (caption + CTA) on the right.
+ * intent-grouped link columns, text only (no imagery).
  * No stats, tiles, sparklines, counts, or verdict pills anywhere.
  *
  * INTERACTION (the whole point — the rejected bento dropped on the way to a link):
@@ -212,7 +211,7 @@ export default function MegaMenu({ menu }: { menu: MenuEntry[] }) {
  *
  * Spans the viewport (fixed, left-1/2 -translate-x-1/2 w-screen) under the 72px
  * sticky header. Inner content is a max-w-7xl container: intent-grouped link
- * columns on the left, the editorial featured card on the right.
+ * intent-grouped link columns, text only.
  */
 function MegaPanelView({
   entry,
@@ -227,7 +226,6 @@ function MegaPanelView({
   onMouseEnter: () => void
   onMouseLeave: () => void
 }) {
-  const hasFeatured = Boolean(entry.featured)
   return (
     <div
       id={id}
@@ -242,88 +240,37 @@ function MegaPanelView({
       )}
     >
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        <div
-          className={cn(
-            'grid gap-10',
-            hasFeatured ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]' : 'lg:grid-cols-1',
-          )}
-        >
-          {/* Left: intent-grouped link columns */}
-          <div>
-            <Eyebrow as="p" className="mb-5 font-display tracking-[0.12em] text-muted-foreground">
-              {entry.label}
-            </Eyebrow>
-            <div className="flex flex-wrap gap-x-12 gap-y-8">
-              {entry.columns.map((column) => (
-                <div key={column.heading} className="min-w-[10rem]">
-                  <Eyebrow as="h3" className="mb-3 text-muted-foreground">
-                    {column.heading}
-                  </Eyebrow>
-                  <ul className="flex flex-col">
-                    {column.links.map((link) => (
-                      <li key={link.href}>
-                        <Link
-                          href={link.href}
-                          className={cn(
-                            'block py-1.5 text-[15px] text-foreground transition-colors',
-                            'hover:text-primary hover:underline underline-offset-4',
-                            'focus-visible:outline-none focus-visible:text-primary focus-visible:underline',
-                            'motion-reduce:transition-none',
-                          )}
-                        >
-                          {link.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+        <Eyebrow as="p" className="mb-5 font-display tracking-[0.12em] text-muted-foreground">
+          {entry.label}
+        </Eyebrow>
+        <div className="flex flex-wrap gap-x-16 gap-y-8">
+          {entry.columns.map((column) => (
+            <div key={column.heading} className="min-w-[11rem]">
+              <Eyebrow as="h3" className="mb-3 text-muted-foreground">
+                {column.heading}
+              </Eyebrow>
+              <ul className="flex flex-col">
+                {column.links.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className={cn(
+                        'block py-1.5 text-[15px] text-foreground transition-colors',
+                        'hover:text-primary hover:underline underline-offset-4',
+                        'focus-visible:outline-none focus-visible:text-primary focus-visible:underline',
+                        'motion-reduce:transition-none',
+                      )}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
-
-          {/* Right: editorial featured card */}
-          {entry.featured && <FeaturedCard featured={entry.featured} />}
+          ))}
         </div>
       </div>
     </div>
   )
 }
 
-function FeaturedCard({ featured }: { featured: NonNullable<MenuEntry['featured']> }) {
-  return (
-    <Link
-      href={featured.ctaHref}
-      className={cn(
-        'group relative flex min-h-[15rem] flex-col justify-end overflow-hidden rounded-xl bg-primary',
-        'focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/40',
-      )}
-    >
-      {featured.imageSrc && (
-        <>
-          <Image
-            src={featured.imageSrc}
-            alt={featured.alt}
-            fill
-            sizes="(min-width: 1024px) 22rem, 100vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-          />
-          {/* Navy protection scrim for caption legibility */}
-          <div
-            aria-hidden
-            className="absolute inset-0 bg-gradient-to-t from-primary/85 via-primary/30 to-transparent"
-          />
-        </>
-      )}
-      <div className="relative p-5">
-        <p className="mb-3 text-[13px] leading-snug text-white/80">{featured.caption}</p>
-        <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-white">
-          {featured.ctaLabel}
-          <ArrowRightIcon
-            aria-hidden
-            className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
-          />
-        </span>
-      </div>
-    </Link>
-  )
-}
