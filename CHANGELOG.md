@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.21 (2026-06-04)
+
+### Other
+- Install frontend-design + hallmark design skills (anti-AI-slop layer)
+
+---
+
+
 ## v1.402.20 (2026-06-04)
 
 ### Other
