@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.404.0 (2026-06-04)
+
+### Features
+- feat(seo): internal listing links use the canonical /homes-for-sale URL
+
+---
+
+
 ## v1.403.0 (2026-06-04)
 
 ### Features
