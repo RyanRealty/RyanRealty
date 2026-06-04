@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.26 (2026-06-04)
+
+### Maintenance
+- docs: full site audit 2026-06-03 + route render-audit tool
+
+---
+
+
 ## v1.402.25 (2026-06-04)
 
 ### Other
