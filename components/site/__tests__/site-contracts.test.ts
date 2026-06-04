@@ -18,8 +18,10 @@ function readSrc(rel: string): string {
 }
 
 describe('design directive contracts', () => {
-  it('D74 — SiteHeader nav renders at 15px (text-[15px])', () => {
-    const src = readSrc('components/site/SiteHeader.tsx')
+  it('D74 — primary nav renders at 15px (text-[15px])', () => {
+    // Nav triggers moved from SiteHeader into the MegaMenu client component
+    // (editorial mega-menu redesign, 2026-06-03). The 15px directive is unchanged.
+    const src = readSrc('components/site/nav/MegaMenu.tsx')
     expect(src).toMatch(/text-\[15px\]/)
   })
 

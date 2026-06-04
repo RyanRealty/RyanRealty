@@ -45,7 +45,7 @@ export default function PredictiveInsights({ trends, area, period, className }: 
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Market Insights — {area}</h3>
+            <h3 className="text-sm font-semibold text-foreground">Market Insights: {area}</h3>
             {period && <p className="text-xs text-muted-foreground">{period}</p>}
           </div>
           <Badge variant="secondary" className="text-xs">AI Analysis</Badge>

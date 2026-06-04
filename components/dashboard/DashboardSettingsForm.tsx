@@ -79,7 +79,7 @@ export default function DashboardSettingsForm({ profile, buyingPrefs, userEmail 
               readOnly
               className="mt-1 block w-full max-w-md rounded-lg border border-border bg-muted px-3 py-2 text-sm text-muted-foreground"
             />
-            <p className="mt-0.5 text-xs text-muted-foreground">Linked to your account; change in your auth provider.</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Linked to your account. Change in your auth provider.</p>
           </div>
           <div>
             <Label htmlFor="phone" className="block text-sm font-medium text-muted-foreground">Phone</Label>
@@ -167,7 +167,7 @@ export default function DashboardSettingsForm({ profile, buyingPrefs, userEmail 
       <section className="rounded-lg border border-border bg-muted p-6">
         <h2 className="text-lg font-semibold text-foreground">Delete account</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          To delete your account and data, please contact us. Your saved items will be removed and data anonymized; broker relationship data may be retained per our policy.
+          To delete your account and data, please contact us. Your saved items will be removed and data anonymized. Broker relationship data may be retained per our policy.
         </p>
       </section>
     </div>

@@ -16,6 +16,7 @@ const EXCLUDED_PATHS = [
   "scripts/",
 ];
 const IGNORE_FILE = ".design-token-lint-ignore";
+const BASELINE_PATH = path.join(ROOT, "scripts/design-tokens-baseline.json");
 
 const DISALLOWED_CLASSES = /\b(card-base|btn-cta)\b/g;
 const DISALLOWED_COLOR_CLASSES =
@@ -291,11 +292,40 @@ function lintFile(filePath) {
   return { file: relative, issues };
 }
 
+// Per-file count = number of distinct issue categories flagged in that
+// file. Total = sum across files. Mirrors scripts/check-brand-voice.mjs
+// so the two gates ratchet the same way.
+function summarize(results) {
+  const byFile = {};
+  let total = 0;
+  for (const r of results) {
+    byFile[r.file] = r.issues.length;
+    total += r.issues.length;
+  }
+  return { total, byFile };
+}
+
+function loadBaseline() {
+  if (!fs.existsSync(BASELINE_PATH)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
 function run() {
   const runAll = process.argv.includes("--all");
   const useBaseDiff = process.argv.includes("--base-diff");
+  const writeBaseline = process.argv.includes("--write-baseline");
+  const ratchet = process.argv.includes("--ratchet");
   const ignoredFiles = loadIgnoredFiles();
-  const candidateFiles = runAll
+
+  // Ratchet + baseline modes scan the WHOLE tree (a stable repo-wide debt
+  // count), mirroring scripts/check-brand-voice.mjs. Default / --base-diff
+  // / --all keep the original changed-file behaviour for local dev.
+  const scanWholeTree = writeBaseline || ratchet || runAll;
+  const candidateFiles = scanWholeTree
     ? SOURCE_DIRS.flatMap((dir) => walkDirectory(path.join(ROOT, dir)))
     : getChangedFiles(useBaseDiff);
 
@@ -312,13 +342,70 @@ function run() {
     );
   });
 
+  const results = files.map(lintFile).filter(Boolean);
+  const summary = summarize(results);
+
+  // ── Baseline writer ────────────────────────────────────────────────
+  if (writeBaseline) {
+    fs.writeFileSync(
+      BASELINE_PATH,
+      JSON.stringify(
+        {
+          generatedAt: new Date().toISOString(),
+          total: summary.total,
+          byFile: summary.byFile,
+          note:
+            "Pre-existing design-token debt, grandfathered by the G26 ratchet (scripts/lint-design-tokens.js --ratchet). Total must monotonically DECREASE toward 0 — never add to it. New debt fails CI. Regenerate after cleaning a file with: npm run ci:design-tokens -- --write-baseline.",
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    console.log(
+      `✓ Design-token baseline written: ${summary.total} issue-categories across ${results.length} files.`,
+    );
+    return;
+  }
+
+  // ── Ratchet (the CI gate) ──────────────────────────────────────────
+  if (ratchet) {
+    const baseline = loadBaseline();
+    if (!baseline) {
+      console.error("✗ No design-token baseline at scripts/design-tokens-baseline.json");
+      console.error("  Run: npm run ci:design-tokens -- --write-baseline");
+      process.exit(2);
+    }
+    if (summary.total > baseline.total) {
+      console.error(
+        `\n✗ Design-token regression: ${summary.total} issue-categories vs baseline ${baseline.total}\n`,
+      );
+      for (const r of results) {
+        const baseCount = baseline.byFile[r.file] ?? 0;
+        if (r.issues.length > baseCount) {
+          console.error(`- ${r.file} (${r.issues.length}, baseline ${baseCount})`);
+          for (const issue of r.issues) console.error(`  - ${issue}`);
+        }
+      }
+      console.error(
+        "\nUse the locked ladder / design tokens (DESIGN_DIRECTIVES.md). If a NEW file legitimately needs an exception, add it to .design-token-lint-ignore.",
+      );
+      process.exit(1);
+    }
+    if (summary.total < baseline.total) {
+      console.log(
+        `✓ Design tokens improved: ${summary.total} vs baseline ${baseline.total} (−${baseline.total - summary.total}). Run --write-baseline to ratchet down.`,
+      );
+    } else {
+      console.log(`✓ Design tokens stable: ${summary.total} issue-categories (= baseline).`);
+    }
+    return;
+  }
+
+  // ── Default / --all / --base-diff (local dev feedback) ─────────────
   if (!files.length) {
     console.log("Design-token guardrails skipped (no relevant changed files).");
     return;
   }
-
-  const results = files.map(lintFile).filter(Boolean);
-
   if (!results.length) {
     console.log("Design-token guardrails passed.");
     return;

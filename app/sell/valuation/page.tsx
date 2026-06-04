@@ -34,7 +34,7 @@ export default function SellValuationPage() {
           </h1>
           <p className="mt-6 text-lg text-muted/90">
             Get a custom valuation from Bend&apos;s trusted experts. We use local comps and market
-            trends to give you a clear picture of your home&apos;s value—and how to maximize it.
+            trends to give you a clear picture of your home&apos;s value, and how to maximize it.
           </p>
         </div>
       </section>

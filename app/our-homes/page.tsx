@@ -21,7 +21,6 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', images: [ogImage] },
 }
 
-export const revalidate = 60
 export const dynamic = 'force-dynamic'
 
 export default async function OurHomesPage() {

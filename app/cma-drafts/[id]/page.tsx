@@ -157,7 +157,7 @@ export default async function CmaDraftReviewPage({
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Range</p>
             <p className="mt-1 tabular-nums text-foreground">
-              {formatUsd(r.cma_value_low)} – {formatUsd(r.cma_value_high)}
+              {formatUsd(r.cma_value_low)} - {formatUsd(r.cma_value_high)}
             </p>
           </div>
           <div>

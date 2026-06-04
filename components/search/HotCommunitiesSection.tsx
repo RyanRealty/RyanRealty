@@ -32,7 +32,7 @@ export default function HotCommunitiesSection({
     <section className="w-full" aria-labelledby="hot-communities-heading">
       <TilesSlider
         title={`Hot communities in ${city}`}
-        subtitle="Where the action is — most listings, pending sales, and new listings. Explore these in-demand neighborhoods."
+        subtitle="Where the action is. Most listings, pending sales, and new listings. Explore these in-demand neighborhoods."
         titleId="hot-communities-heading"
       >
         {displayCommunities.map((c, i) => {

@@ -33,7 +33,7 @@ export default function ContentPageHero({ title, subtitle, imageUrl, ctas }: Con
         <div className="absolute inset-0">
           <Image
             src={imageUrl}
-            alt={`${title} — hero image`}
+            alt={`${title}, hero image`}
             fill
             className="object-cover object-center"
             sizes="100vw"

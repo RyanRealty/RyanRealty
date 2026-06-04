@@ -60,7 +60,7 @@ export default function AdminSetupClient() {
         <section>
           <h2 className="font-semibold text-foreground">Step 3: Complete</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            You&apos;re all set! Welcome to your admin dashboard.
+            You&apos;re all set. Welcome to your admin dashboard.
           </p>
           {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
           <Button

@@ -76,7 +76,7 @@ export default function CityTile({ city, signedIn = false, saved = false, engage
         <Link href={href} className="absolute inset-0 block">
           <Image
             src={heroSrc}
-            alt={`${city.name}, Oregon — city overview`}
+            alt={`${city.name}, Oregon, city overview`}
             fill
             className="object-cover transition hover:scale-[1.02]"
             sizes="(max-width: 768px) 100vw, 400px"

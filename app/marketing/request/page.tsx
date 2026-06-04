@@ -33,7 +33,7 @@ export default function MarketingRequestPage() {
           </h1>
           <p className="mt-4 text-base text-muted-foreground">
             Pick anything you need. The team gets the request, drafts it, and replies on the email
-            thread with the draft for your review. Most items land in your inbox within a day; market
+            thread with the draft for your review. Most items land in your inbox within a day. Market
             reports and full listing kits take a little longer.
           </p>
         </div>

@@ -107,12 +107,12 @@ export default function TermsPage() {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold">Ryan Realty Social — content publishing application</h2>
+          <h2 className="text-lg font-semibold">Ryan Realty Social: content publishing application</h2>
           <p className="mt-2">
-            Ryan Realty operates an application named <strong>Ryan Realty Social</strong> that publishes original real-estate content (market reports, listing videos, neighborhood guides, news commentary) from this website to third-party platforms — including TikTok, Instagram, Facebook, YouTube, LinkedIn, X, Threads, Pinterest, and Google Business Profile — on behalf of Ryan Realty and its participating brokerage agents.
+            Ryan Realty operates an application named <strong>Ryan Realty Social</strong> that publishes original real-estate content (market reports, listing videos, neighborhood guides, news commentary) from this website to third-party platforms, including TikTok, Instagram, Facebook, YouTube, LinkedIn, X, Threads, Pinterest, and Google Business Profile, on behalf of Ryan Realty and its participating brokerage agents.
           </p>
           <p className="mt-2">
-            Ryan Realty Social does not collect user data from these third-party platforms. It does not post on behalf of website visitors, customers, or any user other than the brokerage and its authorized agents. Use of Ryan Realty Social is governed by these Terms of Service in addition to the platform-specific terms of each connected service (TikTok Developer Terms, Meta Platform Terms, YouTube API Services Terms, LinkedIn API Terms, etc.). Connected platform tokens are stored encrypted and used solely to publish Ryan Realty&rsquo;s own content; we do not access, scrape, or sell any platform user&rsquo;s data through this application.
+            Ryan Realty Social does not collect user data from these third-party platforms. It does not post on behalf of website visitors, customers, or any user other than the brokerage and its authorized agents. Use of Ryan Realty Social is governed by these Terms of Service in addition to the platform-specific terms of each connected service (TikTok Developer Terms, Meta Platform Terms, YouTube API Services Terms, LinkedIn API Terms, etc.). Connected platform tokens are stored encrypted and used solely to publish Ryan Realty&rsquo;s own content. We do not access, scrape, or sell any platform user&rsquo;s data through this application.
           </p>
           <p className="mt-2">
             For questions about the Ryan Realty Social application, including content removal requests, contact us at the address below.

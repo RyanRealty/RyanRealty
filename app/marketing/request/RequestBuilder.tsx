@@ -183,7 +183,7 @@ export default function RequestBuilder() {
                   id="property"
                   value={property}
                   onChange={(e) => setProperty(e.target.value)}
-                  placeholder="19496 Tumalo Reservoir Rd, Bend OR 97703 — or MLS 220189422"
+                  placeholder="19496 Tumalo Reservoir Rd, Bend OR 97703, or MLS 220189422"
                 />
               </div>
             )}
@@ -215,7 +215,7 @@ export default function RequestBuilder() {
                 id="details"
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
-                placeholder="Open house Saturday 1–3pm. Price improvement coming Friday. Audience is out-of-state sellers. Deadline by end of week."
+                placeholder="Open house Saturday 1-3pm. Price improvement coming Friday. Audience is out-of-state sellers. Deadline by end of week."
                 rows={4}
               />
             </div>

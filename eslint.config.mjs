@@ -107,6 +107,50 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // scripts/ + eslint-rules/ are dev tooling, NOT the Next.js app runtime:
+    //   - one-off ops scripts (backfills, seeds, migrations, audits) must use
+    //     raw supabase.from(). The cached DAL is for the app, not maintenance
+    //     jobs that read/write arbitrary tables (CLAUDE.md: scripts use raw SQL).
+    //   - both legitimately use CommonJS require().
+    // The DAL boundary + require-import rules are therefore off here. The
+    // brand-voice rule is already off for these dirs (see block below).
+    files: [
+      "scripts/**/*.{ts,tsx,mjs,js,cjs}",
+      "eslint-rules/**/*.{js,mjs,cjs}",
+    ],
+    rules: {
+      "no-restricted-syntax": "off",
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  {
+    // Inline-<style> (D32/D33) + DAL-boundary allowlist — specific files
+    // where the construct is legitimate, NOT the anti-pattern the rule
+    // targets:
+    //   - components/ui/chart.tsx: vendored shadcn primitive whose per-chart
+    //     CSS-variable <style> block is upstream-owned. Do not refactor it.
+    //   - components/pulse/*: self-contained @keyframes for the like/pulse
+    //     micro-animations (scoped, not design-system typography redefinition).
+    //   - app/lp/*: standalone landing pages with bespoke scoped <style>.
+    //   - data/golf/*: a data-loader module (reads market_stats_cache +
+    //     listings); treated as a data layer per Matt 2026-06-03.
+    // D32/D33/DAL stay ON everywhere else, so any NEW inline <style> or raw
+    // query still errors and forces a conscious addition to this list.
+    files: [
+      "components/ui/chart.tsx",
+      "components/pulse/HeartBurst.tsx",
+      "components/pulse/PulseCard.tsx",
+      "app/lp/bend/page.tsx",
+      "app/lp/central-oregon-golf/page.tsx",
+      "app/lp/tetherow/page.tsx",
+      "data/golf/community-kpis.ts",
+      "data/golf/featured-listings.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": "off",
+    },
+  },
+  {
     // Brand-voice rule is OFF in surfaces that are not user-facing prose:
     //   - API routes + server actions
     //   - admin tools (internal-only UI)

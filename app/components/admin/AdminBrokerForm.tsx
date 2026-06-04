@@ -567,14 +567,14 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
       <div ref={headshotSectionRef} className="border-t border-border pt-4">
         <h3 className="text-sm font-semibold text-foreground">Headshot</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Upload a headshot or generate one with AI. Only the default photo is used on the site; you can save multiple and pick one.
+          Upload a headshot or generate one with AI. Only the default photo is used on the site. You can save multiple and pick one.
         </p>
         {headshotGenerating && (
           <div className="mt-4 flex items-center gap-4 rounded-lg border-2 border-warning/40 bg-warning/10 p-4" role="status" aria-live="polite">
             <span className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-warning border-t-transparent" aria-hidden />
             <div>
               <p className="text-sm font-medium text-foreground">Generating professional headshot…</p>
-              <p className="text-xs text-warning">This usually takes 1–2 minutes. Please wait — do not leave or refresh.</p>
+              <p className="text-xs text-warning">This usually takes 1-2 minutes. Please wait, and do not leave or refresh.</p>
             </div>
           </div>
         )}
@@ -600,7 +600,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
         )}
         {generatedPreviewUrl && (
           <div ref={generatedPreviewRef} className="mt-4 rounded-lg border-2 border-success/40 bg-success/10/80 p-4">
-            <p className="text-sm font-medium text-success">Your new headshot — review and choose an action</p>
+            <p className="text-sm font-medium text-success">Your new headshot, review and choose an action</p>
             <div className="mt-3 flex flex-wrap items-start gap-4">
               <Button
                 type="button"
@@ -611,7 +611,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
                 {/* eslint-disable-next-line @next/next/no-img-element -- Generated headshot blob URL; next/image not used in admin form */}
                 <img
                   src={generatedPreviewUrl}
-                  alt="Generated headshot — review before saving or setting as default"
+                  alt="Generated headshot, review before saving or setting as default"
                   className="h-full w-full object-contain"
                 />
               </Button>
@@ -707,7 +707,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
           <div className="rounded-lg border border-border bg-muted/50 p-4">
             <p className="text-sm font-medium text-muted-foreground">2. Generate professional headshot with AI</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Choose a prompt, upload a source photo, then generate. The AI will create a headshot matching the prompt (e.g. studio, wardrobe, background). Takes 1–2 minutes. Then set as default, save, or generate another.
+              Choose a prompt, upload a source photo, then generate. The AI will create a headshot matching the prompt (e.g. studio, wardrobe, background). Takes 1-2 minutes. Then set as default, save, or generate another.
             </p>
             {replicateConfigured === false && (
               <p className="mt-2 text-sm text-warning">
@@ -770,7 +770,7 @@ export default function AdminBrokerForm({ broker, initialGeneratedMedia = [], cl
               <div className="mt-4 rounded-lg border border-border bg-card p-4">
                 <p className="text-sm font-semibold text-foreground">Manage prompts</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Add custom prompts or edit saved ones. The default prompt is read-only; duplicate it to create an editable copy.
+                  Add custom prompts or edit saved ones. The default prompt is read-only. Duplicate it to create an editable copy.
                 </p>
                 {promptMessage && (
                   <p className={`mt-2 text-sm ${promptMessage.type === 'ok' ? 'text-success' : 'text-destructive'}`}>

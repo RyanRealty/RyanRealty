@@ -79,7 +79,7 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
     <main className="min-h-screen bg-background">
       <ContentPageHero
         title="Open Houses in Central Oregon"
-        subtitle="This weekend and upcoming. Browse by list, map, or calendar—add showings to your calendar or RSVP from the listing."
+        subtitle="This weekend and upcoming. Browse by list, map, or calendar. Add showings to your calendar or RSVP from the listing."
         imageUrl={CONTENT_HERO_IMAGES.openHouses}
         ctas={[
           { label: 'View All Listings', href: listingsBrowsePath(), primary: true },

@@ -23,6 +23,8 @@ import { ArrowLeftRightIcon } from '@hugeicons/core-free-icons'
 import { normalizeMlsDisplayNumber } from '@/lib/mls-source'
 import MlsSourceBadge from '@/components/legal/MlsSourceBadge'
 import { isDirectListingVideoFileUrl, parseListingVideoEmbedForTile } from '@/lib/video-embed'
+const IFRAME_ALLOW_POLICY = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen'
+
 
 function daysOnMarket(
   onMarketDate: string | null | undefined,
@@ -409,7 +411,7 @@ function ListingTile({
                 title="Listing video preview"
                 src={tileVideoEmbed.src}
                 className="absolute inset-0 z-[2] h-full w-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                allow={IFRAME_ALLOW_POLICY}
                 allowFullScreen
               />
             ) : null}

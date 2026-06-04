@@ -36,7 +36,7 @@ export default function CityCard({
         <div className="relative aspect-[21/9] w-full overflow-hidden">
           <Image
             src={heroSrc}
-            alt={`${name}, Oregon — real estate overview`}
+            alt={`${name}, Oregon real estate overview`}
             fill
             className="object-cover transition group-hover:scale-[1.02]"
             sizes="(max-width: 768px) 100vw, 50vw"

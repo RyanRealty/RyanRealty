@@ -32,7 +32,7 @@ export default function CityTilesGridStatic({ cities }: Props) {
           >
             <Image
               src={heroSrc}
-              alt={`${city.name}, Oregon — city overview`}
+              alt={`${city.name}, Oregon, city overview`}
               fill
               className="object-cover transition duration-300 group-hover:scale-[1.02]"
               sizes="(max-width: 768px) 100vw, 400px"

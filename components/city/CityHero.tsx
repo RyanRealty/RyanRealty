@@ -36,7 +36,7 @@ export default function CityHero({
       <div className="absolute inset-0">
         <Image
           src={src}
-          alt={`${name}, Oregon — city hero`}
+          alt={`${name}, Oregon, city hero`}
           fill
           className="object-cover"
           sizes="100vw"

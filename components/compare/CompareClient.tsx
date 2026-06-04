@@ -281,7 +281,7 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
               />
             ) : (
               <div className="flex h-full items-center justify-center bg-muted text-muted-foreground text-sm">
-                Map unavailable — configure Google Maps API key
+                Map unavailable. Configure Google Maps API key.
               </div>
             )}
           </div>

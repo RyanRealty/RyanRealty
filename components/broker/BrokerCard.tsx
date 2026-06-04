@@ -55,7 +55,7 @@ export default function BrokerCard({ agent, basePath = 'team' }: Props) {
             {agent.photo_url ? (
               <Image
                 src={agent.photo_url}
-                alt={`${agent.display_name || 'Agent'} — real estate agent`}
+                alt={`${agent.display_name || 'Agent'}, real estate agent`}
                 fill
                 className="object-cover"
                 sizes="96px"

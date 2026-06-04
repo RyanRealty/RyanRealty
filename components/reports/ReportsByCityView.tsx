@@ -151,7 +151,7 @@ export default function ReportsByCityView({
             Housing market metrics
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {periodStart} – {periodEnd}. Real-time data from MLS.
+            {periodStart} - {periodEnd}. Real-time data from MLS.
           </p>
         </CardHeader>
         <CardContent className="p-0">

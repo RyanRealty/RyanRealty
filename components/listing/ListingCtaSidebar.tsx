@@ -266,7 +266,7 @@ export default function ListingCtaSidebar({
             </DialogDescription>
           </DialogHeader>
           {submitStatus === 'done' ? (
-            <p className="text-success font-medium">Thanks! We&apos;ll be in touch soon.</p>
+            <p className="text-success font-medium">Thanks. We&apos;ll be in touch soon.</p>
           ) : (
             <form onSubmit={(e) => showModal && handleInquirySubmit(e, showModal)} className="space-y-3">
               <div>

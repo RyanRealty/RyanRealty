@@ -33,7 +33,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-export const revalidate = 30
 export const dynamic = 'force-dynamic'
 
 // ─── service-role client ────────────────────────────────────────────────────

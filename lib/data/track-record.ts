@@ -27,10 +27,10 @@ async function _getBrokerageTrackRecord(): Promise<BrokerageTrackRecord | null> 
   try {
     const { data, error } = await sb
       .from('listings')
-      .select('"ClosePrice"')
+      .select('ClosePrice')
       .ilike('ListOfficeName', '%ryan realty%')
       .eq('StandardStatus', 'Closed')
-      .not('"ClosePrice"', 'is', null)
+      .not('ClosePrice', 'is', null)
 
     if (error || !data) return null
 

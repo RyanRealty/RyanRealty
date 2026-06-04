@@ -46,7 +46,7 @@ export default async function DashboardSavedPage() {
 
       {listings.length === 0 ? (
         <div className="mt-8 rounded-lg border border-border bg-muted p-8 text-center">
-          <p className="text-muted-foreground">You haven&apos;t saved any homes yet. Start browsing!</p>
+          <p className="text-muted-foreground">You haven&apos;t saved any homes yet. Start browsing.</p>
           <Link
             href="/homes-for-sale"
             className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-accent/90"

@@ -51,6 +51,30 @@ ruleTester.run('rr-brand-voice/no-violations', rule, {
       name: 'aria-label with clean prose passes',
       code: `const x = () => <button aria-label="Open menu">Menu</button>`,
     },
+    {
+      name: 'className with Tailwind !important modifiers is not flagged (code, not prose)',
+      code: `const x = () => <div className="!px-1 !py-0 !text-[9px]">x</div>`,
+    },
+    {
+      name: 'iframe allow attribute with semicolons is not flagged (code, not prose)',
+      code: `const x = () => <iframe allow="accelerometer; autoplay; encrypted-media" />`,
+    },
+    {
+      name: 'href / src / id / type attributes are not scanned (code, not prose)',
+      code: `const x = () => <a href="/buy?x=1;y=2" id="cta-link" type="button">Buy</a>`,
+    },
+    {
+      name: 'JavaScript inside a <script> child is not flagged (analytics pixel syntax)',
+      code: 'const x = () => <script>{`!function(f,b){f.fbq||(f.fbq=function(){}); })();`}</script>',
+    },
+    {
+      name: 'JS inside a Next <Script> child is not flagged',
+      code: 'const x = () => <Script>{`window.dataLayer = window.dataLayer || []; gtag("js");`}</Script>',
+    },
+    {
+      name: 'CSS inside a <style> child is not flagged (semicolons + custom props are code)',
+      code: 'const x = () => <style>{`:root { --tw-cream: #faf8f4; } @keyframes pop { 0% { opacity: 0; } }`}</style>',
+    },
   ],
   invalid: [
     {

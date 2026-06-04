@@ -21,7 +21,7 @@ export default function NeighborhoodPageActionBar({
     <PageActionBar
       shareUrl={shareUrl}
       shareTitle={`${neighborhoodName} in ${cityName}, Oregon | Homes for sale | Ryan Realty`}
-      shareText={`Explore ${neighborhoodName} in ${cityName}, Oregon — homes for sale.`}
+      shareText={`Explore ${neighborhoodName} in ${cityName}, Oregon. Homes for sale.`}
       signedIn={true}
       variant={variant}
     />

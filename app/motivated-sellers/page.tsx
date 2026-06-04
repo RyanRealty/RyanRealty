@@ -143,11 +143,11 @@ export default async function MotivatedSellersPage() {
                 drive the score: price cuts from the original list price (the more and the
                 bigger, the higher the score), days on market (a long time on market with
                 no takers is a signal), and specific phrases in the listing remarks
-                (the agent or seller saying things like "seller motivated," "priced to sell,"
-                or "bring all offers"). No guesswork, no fabrication.
+                (the agent or seller saying things like &quot;seller motivated,&quot; &quot;priced to sell,&quot;
+                or &quot;bring all offers&quot;). No guesswork, no fabrication.
               </Body>
               <Body size="default" tone="muted">
-                A home with two price cuts totaling 8 percent plus "motivated seller" in the
+                A home with two price cuts totaling 8 percent plus &quot;motivated seller&quot; in the
                 remarks will rank above a home that simply sat 60 days. The score is
                 recalculated every 10 minutes as new price changes come through.
               </Body>

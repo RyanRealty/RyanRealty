@@ -141,7 +141,7 @@ export default function ListingDetailMapGoogle({ subjectListing, otherListings }
                       {/* eslint-disable-next-line @next/next/no-img-element -- Map popup thumbnail: listing photo URL from API; small fixed size */}
                       <img
                         src={(subjectListing as SubjectListingPoint).photoUrl!}
-                        alt="This listing — map thumbnail"
+                        alt="This listing, map thumbnail"
                         className="h-full w-full object-contain"
                         width={72}
                         height={54}

@@ -166,8 +166,8 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
             <Body size="default" tone="muted">
               Every listing on this page has at least one real motivation signal from the
               MLS: a price reduction from the original list price, the seller or agent
-              using specific phrases in the listing remarks (things like "seller motivated,"
-              "priced to sell," or "bring all offers"), or an unusually long days on market.
+              using specific phrases in the listing remarks (things like &quot;seller motivated,&quot;
+              &quot;priced to sell,&quot; or &quot;bring all offers&quot;), or an unusually long days on market.
               The score weights price cuts most heavily, followed by remarks, then DOM.
             </Body>
             <Body size="default" tone="muted">

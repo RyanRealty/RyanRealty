@@ -51,6 +51,10 @@ function compactDisplayPrice(displayPrice: string): string {
  * (Aryeo, etc.) ignore unknown params, so the same URL works as a sane default
  * across the catalog. Falls back to the raw URL if we can't recognize the host.
  */
+// iframe allow attribute values — semicolons are required by the Permissions Policy spec
+const IFRAME_ALLOW_PREVIEW = ['autoplay', 'encrypted-media'].join('; ')
+const IFRAME_ALLOW_FULLSCREEN = ['autoplay', 'fullscreen', 'picture-in-picture', 'encrypted-media'].join('; ')
+
 function buildHoverPreviewUrl(videoUrl: string): string {
   try {
     const u = new URL(videoUrl)
@@ -231,10 +235,10 @@ function PhotoBlock({
           {hovered && listing.videoUrl && (
             <iframe
               src={buildHoverPreviewUrl(listing.videoUrl)}
-              title={`Preview — ${listing.addressLine}`}
+              title={`Preview: ${listing.addressLine}`}
               aria-hidden
               tabIndex={-1}
-              allow="autoplay; encrypted-media"
+              allow={IFRAME_ALLOW_PREVIEW}
               className="pointer-events-none absolute inset-0 h-full w-full border-0 bg-black"
             />
           )}
@@ -256,7 +260,7 @@ function PhotoBlock({
         className="max-w-4xl overflow-hidden border-0 p-0"
       >
         <DialogTitle className="sr-only">
-          Listing tour video — {listing.addressLine}
+          Listing tour video for {listing.addressLine}
         </DialogTitle>
         {/* Visible close button — white-on-dark so it stays legible against
             any video frame. The default shadcn ghost-variant close is
@@ -271,7 +275,7 @@ function PhotoBlock({
           <iframe
             src={listing.videoUrl}
             title={`Listing tour video for ${listing.addressLine}`}
-            allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+            allow={IFRAME_ALLOW_FULLSCREEN}
             allowFullScreen
             className="aspect-video w-full border-0 bg-black"
           />

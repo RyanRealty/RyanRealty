@@ -102,7 +102,7 @@ export default function PlaceAboutTabs({
               <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted sm:aspect-[3/4]">
                 <Image
                   src={aboutImageUrl}
-                  alt={`${displayName} – area overview`}
+                  alt={`${displayName}, area overview`}
                   width={600}
                   height={450}
                   className="h-full w-full object-cover"

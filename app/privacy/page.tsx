@@ -38,7 +38,7 @@ export default function PrivacyPage() {
       <section className={SECTION_CLASS}>
         <h2 className={H2_CLASS}>What data we collect</h2>
         <p className={P_CLASS}>
-          We collect: (1) <strong>Personal information</strong> — when you sign in (e.g., with Google), we receive your name and email; when you contact us or inquire about a listing, we receive what you provide. (2) <strong>Browsing activity</strong> — which pages and listings you view, searches you run, and when you are signed in we associate this with your account. (3) <strong>Cookies and device info</strong> — session and preference cookies, and general device/browser data for security and analytics.
+          We collect: (1) <strong>Personal information</strong>, when you sign in (e.g., with Google), we receive your name and email. When you contact us or inquire about a listing, we receive what you provide. (2) <strong>Browsing activity</strong>, which pages and listings you view, searches you run, and when you are signed in we associate this with your account. (3) <strong>Cookies and device info</strong>, session and preference cookies, and general device/browser data for security and analytics.
         </p>
       </section>
 
@@ -52,10 +52,10 @@ export default function PrivacyPage() {
       <section className={SECTION_CLASS}>
         <h2 className={H2_CLASS}>Third-party sharing</h2>
         <ul className={UL_CLASS}>
-          <li><strong>Follow Up Boss (FUB)</strong> — CRM for lead and activity tracking</li>
-          <li><strong>Resend</strong> — transactional and marketing email</li>
-          <li><strong>Google Analytics (GA4)</strong> — site analytics, including <strong>Google Signals</strong> (see below)</li>
-          <li><strong>Meta</strong> — advertising and analytics when you interact with our ads or use Meta products</li>
+          <li><strong>Follow Up Boss (FUB)</strong>, CRM for lead and activity tracking</li>
+          <li><strong>Resend</strong>, transactional and marketing email</li>
+          <li><strong>Google Analytics (GA4)</strong>, site analytics, including <strong>Google Signals</strong> (see below)</li>
+          <li><strong>Meta</strong>, advertising and analytics when you interact with our ads or use Meta products</li>
         </ul>
         <p className={P_CLASS}>
           Each has its own privacy policy. We do not sell your personal information.
@@ -76,9 +76,9 @@ export default function PrivacyPage() {
         <h2 className={H2_CLASS}>Cookies</h2>
         <p className={P_CLASS}>We use:</p>
         <ul className={UL_CLASS}>
-          <li><strong>Essential</strong> — sign-in session, cookie-consent choice. Required for the site to work.</li>
-          <li><strong>Analytics</strong> — with your consent, to understand how the site is used.</li>
-          <li><strong>Marketing</strong> — with your consent, for advertising and retargeting.</li>
+          <li><strong>Essential</strong>, sign-in session, cookie-consent choice. Required for the site to work.</li>
+          <li><strong>Analytics</strong>, with your consent, to understand how the site is used.</li>
+          <li><strong>Marketing</strong>, with your consent, for advertising and retargeting.</li>
         </ul>
         <p className={P_CLASS}>
           You can change your cookie preferences via the cookie banner or your browser settings. See our{' '}
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
       <section className={SECTION_CLASS}>
         <h2 className={H2_CLASS}>California (CCPA) rights</h2>
         <p className={P_CLASS}>
-          If you are a California resident, you have: the <strong>right to know</strong> what personal information we collect and how it is used; the <strong>right to delete</strong> your personal information; the <strong>right to opt-out of sale</strong> (we do not sell personal information); and the <strong>right to non-discrimination</strong> for exercising these rights. To exercise, contact us at the email below. We will respond within 45 days.
+          If you are a California resident, you have the <strong>right to know</strong> what personal information we collect and how it is used. You have the <strong>right to delete</strong> your personal information. You have the <strong>right to opt-out of sale</strong> (we do not sell personal information). You also have the <strong>right to non-discrimination</strong> for exercising these rights. To exercise, contact us at the email below. We will respond within 45 days.
         </p>
       </section>
 
@@ -140,7 +140,7 @@ export default function PrivacyPage() {
       </section>
 
       <section className={SECTION_CLASS}>
-        <h2 className={H2_CLASS}>Ryan Realty Social — content publishing application</h2>
+        <h2 className={H2_CLASS}>Ryan Realty Social, content publishing application</h2>
         <p className={P_CLASS}>
           Ryan Realty operates an application named <strong>Ryan Realty Social</strong> that publishes our own original real-estate content (market reports, listing videos, neighborhood guides, news commentary) from this website to third-party platforms on our behalf, including TikTok, Instagram, Facebook, YouTube, LinkedIn, X, Threads, Pinterest, and Google Business Profile.
         </p>

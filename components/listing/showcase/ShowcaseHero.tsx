@@ -14,6 +14,8 @@ type Props = {
   photos: Photo[]
 }
 
+const EMBED_ALLOW = ['autoplay', 'fullscreen', 'picture-in-picture', 'encrypted-media'].join('; ')
+
 /* ─── Video URL helpers ─── */
 
 function isDirectVideoUrl(url: string): boolean {
@@ -235,7 +237,7 @@ export default function ShowcaseHero({ listingKey, heroVideoUrl, photos }: Props
                 <iframe
                   src={getEmbedUrl(heroVideoUrl)}
                   className="h-full w-full border-0"
-                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                  allow={EMBED_ALLOW}
                   allowFullScreen
                   title="Listing video tour"
                   onLoad={handleVideoPlay}

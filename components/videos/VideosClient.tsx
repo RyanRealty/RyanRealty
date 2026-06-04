@@ -80,7 +80,7 @@ export default function VideosClient({ initialListings }: Props) {
                 className="relative block aspect-video w-full bg-foreground"
               >
                 {listing.photo_url ? (
-                  <Image src={listing.photo_url} alt={`${listing.unparsed_address || listing.subdivision_name || 'Property'} — video thumbnail`} fill className="object-cover" sizes="400px" />
+                  <Image src={listing.photo_url} alt={`${listing.unparsed_address || listing.subdivision_name || 'Property'}, video thumbnail`} fill className="object-cover" sizes="400px" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-primary-foreground">No image</div>
                 )}
@@ -182,7 +182,7 @@ export default function VideosClient({ initialListings }: Props) {
                 className="aspect-video w-full"
               />
               {selected.video_source === 'virtual_tour' && (
-                <p className="mt-2 text-center text-sm text-primary-foreground/90">Virtual tour — opens in player or new tab</p>
+                <p className="mt-2 text-center text-sm text-primary-foreground/90">Virtual tour, opens in player or new tab</p>
               )}
             </div>
             <div className="w-full bg-card p-4 md:w-80">

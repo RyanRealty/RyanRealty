@@ -41,7 +41,7 @@ export default function WelcomeBanner() {
   return (
     <Alert className="mb-8 flex flex-wrap items-center justify-between gap-4 bg-success/10 border-success/30">
       <p className="text-sm font-medium text-success">
-        Welcome to your account! Here you can manage your{' '}
+        Welcome to your account. Here you can manage your{' '}
         <Link href="/account/saved-searches" className="underline hover:no-underline">saved searches</Link>,{' '}
         <Link href="/account/saved-homes" className="underline hover:no-underline">saved homes</Link>,{' '}
         <Link href="/account/buying-preferences" className="underline hover:no-underline">buying preferences</Link>, and{' '}

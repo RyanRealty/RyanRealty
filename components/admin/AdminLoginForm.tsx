@@ -72,7 +72,7 @@ export default function AdminLoginForm() {
         {forgotSent ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Check your email for a reset link. Use it to set a new password; you’ll then be signed in and sent to the admin.
+              Check your email for a reset link. Use it to set a new password. You&apos;ll then be signed in and sent to the admin.
             </p>
             <Button
               type="button"

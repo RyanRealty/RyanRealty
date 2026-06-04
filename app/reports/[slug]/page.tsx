@@ -87,7 +87,7 @@ export default async function ReportPage({ params }: Props) {
             <h1 className="text-2xl font-bold tracking-tight text-primary-foreground sm:text-3xl">{report.title}</h1>
             <ShareButton
               title={report.title}
-              text={`Central Oregon market report: ${report.period_start} – ${report.period_end}. Pending and closed sales by city.`}
+              text={`Central Oregon market report: ${report.period_start} - ${report.period_end}. Pending and closed sales by city.`}
               url={reportUrl}
               variant="default"
               trackContext="weekly_report"
@@ -95,7 +95,7 @@ export default async function ReportPage({ params }: Props) {
             />
           </div>
           <p className="mt-2 text-muted/90">
-            {report.period_start} – {report.period_end}
+            {report.period_start} - {report.period_end}
           </p>
         </div>
       </section>
@@ -104,7 +104,7 @@ export default async function ReportPage({ params }: Props) {
           <div className="overflow-hidden rounded-lg border border-border shadow-sm">
             <Image
               src={imageUrl}
-              alt={`${report.title} — market report image`}
+              alt={`${report.title}, market report image`}
               width={1200}
               height={336}
               className="w-full object-cover"

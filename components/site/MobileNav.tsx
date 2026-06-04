@@ -16,162 +16,25 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { CTAButton, IconButton, RyanRealtyMark, Price, TabularNumber } from '@/components/site/primitives'
-import { PRIMARY_NAV } from '@/lib/site-nav'
-import type { MegaMenuData } from '@/lib/data'
+import { CTAButton, IconButton, RyanRealtyMark, Eyebrow } from '@/components/site/primitives'
+import type { MenuEntry } from '@/lib/site-menu'
 import { cn } from '@/lib/utils'
 
 /**
  * MobileNav — hamburger + slide-out drawer for sub-md viewports.
  *
- * CLIENT component (Sheet needs client interactivity). It receives the mega-menu
- * data as a plain serializable prop from the SERVER SiteHeader — no fetching
- * happens here. Every nav group from lib/site-nav.ts renders as a collapsible
- * Accordion section, each enriched with a compact inline preview (a key stat, a
- * few links, one featured item) drawn from the mega data, on top of the existing
- * child links so every section stays reachable on one thumb at 390px.
- *
- * Every stat is null-guarded — a null stat renders nothing, never a 0.
- *
- * Primitives used:
- *   - IconButton for the hamburger trigger
- *   - RyanRealtyMark wordmark inside the drawer header
- *   - CTAButton for the in-drawer CTAs
- *   - Price / TabularNumber for the inline stat previews
- *   - shadcn Sheet for the drawer chrome
- *   - shadcn Accordion for collapsible group sections
+ * CLIENT component (Sheet needs client interactivity). It renders the SAME
+ * static MENU config (lib/site-menu.ts) the desktop mega-menu uses — each parent
+ * becomes a collapsible Accordion section holding that parent's intent-grouped
+ * columns and links. No stats, previews, or mega prop. The Sheet drawer and the
+ * pinned bottom CTAs stay.
  */
 
-const VERDICT_LABEL: Record<NonNullable<MegaMenuData['market']['marketVerdict']>, string> = {
-  sellers: "Seller's market",
-  balanced: 'Balanced market',
-  buyers: "Buyer's market",
-}
-
-/** A compact stat chip row — renders nothing if there is nothing to show. */
-function PreviewChips({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-wrap gap-1.5 px-6 pb-2">{children}</div>
-}
-
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-1 text-[12px] font-medium tabular-nums text-foreground">
-      {children}
-    </span>
-  )
-}
-
-export default function MobileNav({ mega }: { mega: MegaMenuData }) {
+export default function MobileNav({ menu }: { menu: MenuEntry[] }) {
   const [open, setOpen] = useState(false)
 
   function close() {
     setOpen(false)
-  }
-
-  /** The compact preview block for one parent label. Null = no preview. */
-  function previewFor(label: string): React.ReactNode {
-    switch (label) {
-      case 'Homes': {
-        const total = mega.homes.totalActiveCount
-        if (total == null) return null
-        return (
-          <PreviewChips>
-            <Chip>
-              <TabularNumber value={total} />
-              <span className="ml-1 font-normal text-muted-foreground">active homes</span>
-            </Chip>
-          </PreviewChips>
-        )
-      }
-      case 'Communities': {
-        const featured = mega.communities.communities.find(
-          (c) => c.activeCount != null || c.medianListPrice != null,
-        )
-        if (!featured) return null
-        return (
-          <PreviewChips>
-            <Chip>{featured.name}</Chip>
-            {featured.activeCount != null && (
-              <Chip>
-                <TabularNumber value={featured.activeCount} />
-                <span className="ml-1 font-normal text-muted-foreground">active</span>
-              </Chip>
-            )}
-          </PreviewChips>
-        )
-      }
-      case 'Cities': {
-        const lead = mega.cities.cities.find((c) => c.medianListPrice != null || c.activeCount != null)
-        if (!lead) return null
-        return (
-          <PreviewChips>
-            <Chip>{lead.name}</Chip>
-            {lead.medianListPrice != null && (
-              <Chip>
-                <Price value={lead.medianListPrice} compact />
-                <span className="ml-1 font-normal text-muted-foreground">median</span>
-              </Chip>
-            )}
-          </PreviewChips>
-        )
-      }
-      case 'Market': {
-        const m = mega.market
-        if (m.medianListPrice == null && m.marketVerdict == null && m.monthsOfSupply == null) {
-          return null
-        }
-        return (
-          <PreviewChips>
-            {m.marketVerdict != null && <Chip>{VERDICT_LABEL[m.marketVerdict]}</Chip>}
-            {m.medianListPrice != null && (
-              <Chip>
-                <Price value={m.medianListPrice} compact />
-                <span className="ml-1 font-normal text-muted-foreground">median</span>
-              </Chip>
-            )}
-            {m.monthsOfSupply != null && (
-              <Chip>
-                <TabularNumber value={m.monthsOfSupply} fractionDigits={1} />
-                <span className="ml-1 font-normal text-muted-foreground">mo. supply</span>
-              </Chip>
-            )}
-          </PreviewChips>
-        )
-      }
-      case 'Sell': {
-        const s = mega.sell
-        if (s.medianListPrice == null && s.marketVerdict == null) return null
-        return (
-          <PreviewChips>
-            {s.marketVerdict != null && <Chip>{VERDICT_LABEL[s.marketVerdict]}</Chip>}
-            {s.medianListPrice != null && (
-              <Chip>
-                <Price value={s.medianListPrice} compact />
-                <span className="ml-1 font-normal text-muted-foreground">median</span>
-              </Chip>
-            )}
-          </PreviewChips>
-        )
-      }
-      case 'Learn': {
-        const lead = mega.learn.guides[0]
-        if (!lead) return null
-        return (
-          <div className="px-6 pb-2">
-            <Link
-              href={lead.href}
-              onClick={close}
-              className="block truncate rounded-md text-[13px] font-medium text-foreground underline-offset-2 transition hover:underline"
-            >
-              {mega.learn.isLive ? 'Latest: ' : ''}
-              {lead.title}
-            </Link>
-          </div>
-        )
-      }
-      default:
-        return null
-    }
   }
 
   return (
@@ -215,46 +78,48 @@ export default function MobileNav({ mega }: { mega: MegaMenuData }) {
           className="flex-1 overflow-y-auto px-3 py-2"
         >
           <Accordion type="multiple" className="w-full">
-            {PRIMARY_NAV.map((group) => {
-              const preview = previewFor(group.label)
-              return (
-                <AccordionItem
-                  key={group.label}
-                  value={group.label}
-                  className="border-b border-border"
+            {menu.map((entry) => (
+              <AccordionItem
+                key={entry.label}
+                value={entry.label}
+                className="border-b border-border"
+              >
+                <AccordionTrigger
+                  className={cn(
+                    'rounded-md px-3 py-3 text-base font-semibold text-foreground',
+                    'hover:bg-muted hover:no-underline',
+                    '[&>svg]:text-muted-foreground',
+                  )}
                 >
-                  <AccordionTrigger
-                    className={cn(
-                      'rounded-md px-3 py-3 text-base font-semibold text-foreground',
-                      'hover:bg-muted hover:no-underline',
-                      '[&>svg]:text-muted-foreground',
-                    )}
-                  >
-                    {group.label}
-                  </AccordionTrigger>
-                  <AccordionContent className="px-0 pb-1 pt-0">
-                    {preview}
-                    <ul className="flex flex-col gap-0.5">
-                      {group.children.map((link) => (
-                        <li key={link.href}>
-                          <Link
-                            href={link.href}
-                            onClick={close}
-                            className={cn(
-                              'block rounded-md px-6 py-2 text-sm text-muted-foreground',
-                              'transition hover:bg-muted hover:text-foreground',
-                              link.label.startsWith('All ') && 'font-medium text-foreground',
-                            )}
-                          >
-                            {link.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              )
-            })}
+                  {entry.label}
+                </AccordionTrigger>
+                <AccordionContent className="px-0 pb-1 pt-0">
+                  {entry.columns.map((column) => (
+                    <div key={column.heading} className="pb-1">
+                      <Eyebrow as="p" className="px-6 pt-2 pb-1 text-muted-foreground">
+                        {column.heading}
+                      </Eyebrow>
+                      <ul className="flex flex-col gap-0.5">
+                        {column.links.map((link) => (
+                          <li key={link.href}>
+                            <Link
+                              href={link.href}
+                              onClick={close}
+                              className={cn(
+                                'block rounded-md px-6 py-2 text-sm text-muted-foreground no-underline',
+                                'transition hover:bg-muted hover:text-foreground',
+                              )}
+                            >
+                              {link.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
         </nav>
 

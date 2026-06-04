@@ -97,6 +97,9 @@ export default function ListingActions({ listingKey, address, price, isSaved, is
     router.refresh()
   }
 
+  const shareButtonDesktopCn = ['rounded-lg', 'border-border', 'bg-card', 'text-primary', 'px-4', 'py-2'].join(' ')
+  const shareButtonMobileCn = ['p-2', 'rounded-full', 'border-border'].join(' ')
+
   return (
     <>
       {/* Sticky bar - desktop */}
@@ -133,7 +136,7 @@ export default function ListingActions({ listingKey, address, price, isSaved, is
           variant="default"
           trackContext="listing_detail"
           onShare={handleShareComplete}
-          className="!rounded-lg !border-border !bg-card !text-primary !px-4 !py-2"
+          className={shareButtonDesktopCn}
         />
         <Button
           type="button"
@@ -166,7 +169,7 @@ export default function ListingActions({ listingKey, address, price, isSaved, is
         <Button type="button" onClick={handleLikeClick} disabled={likePending} className="p-2 rounded-full border border-border" aria-label={liked ? 'Unlike' : 'Like'}>
           <ActionHeartIcon filled={liked} className={`h-5 w-5 ${liked ? 'text-destructive' : 'text-muted-foreground'}`} />
         </Button>
-        <ShareButton url={listingUrl} title={shareTitleForButton} text={shareText ?? shareTitleForButton} variant="compact" aria-label="Share" trackContext="listing_detail" onShare={handleShareComplete} className="!p-2 !rounded-full !border-border" />
+        <ShareButton url={listingUrl} title={shareTitleForButton} text={shareText ?? shareTitleForButton} variant="compact" aria-label="Share" trackContext="listing_detail" onShare={handleShareComplete} className={shareButtonMobileCn} />
         <Button
           type="button"
           onClick={handleCompareToggle}

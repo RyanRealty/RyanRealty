@@ -15,7 +15,7 @@ export default function ReportsIndexContent({ reports, salesCards }: Props) {
     <>
       <TilesSlider
         title="Sales reports by city"
-        subtitle="Pre-built reports for each city: this week, last week, last month, and last year. No waiting — view or download anytime."
+        subtitle="Pre-built reports for each city: this week, last week, last month, and last year. No waiting. View or download anytime."
         titleId="sales-reports-heading"
       >
         {salesCards.map((card) => (
@@ -49,7 +49,7 @@ export default function ReportsIndexContent({ reports, salesCards }: Props) {
               >
                 <span className="font-semibold text-primary">{r.title}</span>
                 <span className="ml-2 text-sm text-muted-foreground">
-                  {r.period_start} – {r.period_end}
+                  {r.period_start} - {r.period_end}
                 </span>
               </Link>
             </li>

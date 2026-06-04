@@ -133,7 +133,7 @@ export default function BrokerContactForm({
           </div>
           {status === 'success' && (
             <p className="rounded-lg bg-success/20 px-4 py-3 text-sm text-success-foreground">
-              Message sent! {brokerFirstName} will be in touch shortly.
+              Message sent. {brokerFirstName} will be in touch shortly.
             </p>
           )}
           {status === 'error' && (

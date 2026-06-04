@@ -51,7 +51,7 @@ export default function CityPageActionBar({
       like={false}
       shareUrl={shareUrl}
       shareTitle={`Homes for sale in ${cityName}, Oregon | Ryan Realty`}
-      shareText={`Explore ${cityName}, Oregon — homes for sale, communities, and neighborhoods.`}
+      shareText={`Explore ${cityName}, Oregon. Homes for sale, communities, and neighborhoods.`}
       signedIn={signedIn}
       variant={variant}
     />

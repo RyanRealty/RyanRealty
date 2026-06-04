@@ -6,7 +6,6 @@ import CityTilesGridStatic from '@/components/city/CityTilesGridStatic'
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
 
-export const revalidate = 60
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {

@@ -22,7 +22,7 @@ export default function BrokerCardCompact({ broker }: Props) {
         <div className="flex gap-4">
           <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-full bg-border">
             {photo ? (
-              <Image src={photo} alt={`${name} — real estate agent`} width={64} height={64} className="h-full w-full object-cover" />
+              <Image src={photo} alt={`${name}, real estate agent`} width={64} height={64} className="h-full w-full object-cover" />
             ) : (
               <div className="h-full w-full bg-primary/10" />
             )}

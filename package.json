@@ -15,7 +15,7 @@
     "lint:design-tokens:all": "node scripts/lint-design-tokens.js --all",
     "lint:seo-routes": "node scripts/check-seo-routes.mjs && node scripts/check-seo-authoring.mjs",
     "ci:seo-routes": "node scripts/check-seo-routes.mjs && node scripts/check-seo-authoring.mjs",
-    "ci:design-tokens": "node scripts/lint-design-tokens.js --base-diff",
+    "ci:design-tokens": "node scripts/lint-design-tokens.js --ratchet",
     "ci:dal-boundary": "node scripts/check-dal-boundary.mjs",
     "ci:dal-boundary:report": "node scripts/check-dal-boundary.mjs --report",
     "ci:dal-boundary:baseline": "node scripts/check-dal-boundary.mjs --write-baseline",

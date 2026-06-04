@@ -206,12 +206,12 @@ export default function OpenHousesClient({ initialOpenHouses, initialFilters }: 
               >
                 <div className="relative aspect-[4/3] bg-muted">
                   {oh.photo_url ? (
-                    <Image src={oh.photo_url} alt={`${address(oh)} — open house`} fill className="object-cover" sizes="(max-width:640px) 100vw, 320px" />
+                    <Image src={oh.photo_url} alt={`${address(oh)}, open house`} fill className="object-cover" sizes="(max-width:640px) 100vw, 320px" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-muted-foreground">No photo</div>
                   )}
                   <span className="absolute left-2 top-2 rounded-md bg-destructive px-2 py-1 text-xs font-semibold text-destructive-foreground">
-                    {formatDate(oh.event_date)} · {formatTime(oh.start_time)} – {formatTime(oh.end_time)}
+                    {formatDate(oh.event_date)} · {formatTime(oh.start_time)} - {formatTime(oh.end_time)}
                   </span>
                 </div>
                 <div className="p-4">
@@ -249,7 +249,7 @@ export default function OpenHousesClient({ initialOpenHouses, initialFilters }: 
                   >
                     <span className="font-medium text-primary">{formatDate(oh.event_date)}</span>
                     <span className="text-muted-foreground">
-                      {formatTime(oh.start_time)} – {formatTime(oh.end_time)}
+                      {formatTime(oh.start_time)} - {formatTime(oh.end_time)}
                     </span>
                     <span className="text-sm">{address(oh)}</span>
                     <span className="text-sm font-semibold">${(oh.list_price ?? 0).toLocaleString()}</span>

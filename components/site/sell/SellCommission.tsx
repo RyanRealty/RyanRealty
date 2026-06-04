@@ -27,7 +27,7 @@ export function SellCommission() {
             </Stack>
             <Stack gap="default">
               <Body size="default" tone="muted" className="leading-[1.65]">
-                We charge a total commission split between the listing brokerage and the buyer's brokerage. That covers professional photography, the MLS listing, all marketing, every showing, and full transaction management from contract to close.
+                We charge a total commission split between the listing brokerage and the buyer&apos;s brokerage. That covers professional photography, the MLS listing, all marketing, every showing, and full transaction management from contract to close.
               </Body>
               <Body size="default" tone="muted" className="leading-[1.65]">
                 The commission structure changed in 2025. We work under the new model and can walk you through the exact breakdown, the buyer-agency agreement we use, and realistic concession math for your price point. No surprises at the table.

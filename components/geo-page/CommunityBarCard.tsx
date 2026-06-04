@@ -24,6 +24,8 @@ type Props = {
  * Compact community card for the city-page CommunitiesBar only.
  * Thumbnail + name + count + share/like/save. Guest like/save click → login.
  */
+const RESORT_BADGE_CN = '!text-[9px] !px-1 !py-0'
+
 export default function CommunityBarCard({ community, signedIn = false, saved = false, liked = false, engagement }: Props) {
   const router = useRouter()
   const [savedState, setSavedState] = useState(saved)
@@ -82,7 +84,7 @@ export default function CommunityBarCard({ community, signedIn = false, saved = 
           )}
           {community.isResort && (
             <div className="absolute right-0.5 top-0.5">
-              <Badge variant="secondary" className="!text-[9px] !px-1 !py-0">Resort</Badge>
+              <Badge variant="secondary" className={RESORT_BADGE_CN}>Resort</Badge>
             </div>
           )}
           <CardActionBar

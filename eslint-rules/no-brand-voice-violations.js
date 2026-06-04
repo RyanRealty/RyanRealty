@@ -19,14 +19,19 @@
  *     the canonical data-placeholder pattern used in stats tables to
  *     mean "unavailable" (CLAUDE.md §3 + voice_guidelines.md §6.1).
  *
- * Scope:
+ * Scope (only surfaces a person actually reads, per CLAUDE.md §3):
  *   - JSXText nodes (text between JSX tags)
- *   - String / template literals used as JSX attribute values
+ *   - Human-readable JSX attributes ONLY: alt, title, placeholder,
+ *     label, summary, aria-label / aria-description / etc.
  *   - String / template literals rendered inside JSX expression
  *     containers ({"text in jsx"}) — same effective body prose
  *
- *   NOT scanned: regular code comments, identifiers, non-JSX string
- *   literals in JS/TS. Those are not user-facing per CLAUDE.md §3.
+ *   NOT scanned: code comments, identifiers, non-JSX string literals,
+ *   non-readable attributes (className, style, allow, href, src, id,
+ *   role, type …), and the body of <script> / <Script> elements (that
+ *   is JavaScript — analytics pixels, JSON-LD — whose semicolons and
+ *   exclamation marks are syntax, not prose). None of these are
+ *   user-facing per CLAUDE.md §3.
  *
  * Output format: one ESLint error per banned token, message names the
  * specific violation so the fix is obvious.
@@ -105,6 +110,57 @@ function isInsideJsx(node) {
   return false
 }
 
+// Attributes whose string value is genuinely read by a person — visible
+// text or assistive-tech labels. Brand voice applies to these. Every
+// other attribute (className, style, allow, href, src, id, role, type,
+// rel, target, name …) is code, not prose, and must NOT be scanned.
+// CLAUDE.md §3: only what a client or member of the public could read is
+// governed.
+const HUMAN_READABLE_ATTRS = new Set([
+  'alt',
+  'title',
+  'placeholder',
+  'label',
+  'summary',
+  'aria-label',
+  'aria-description',
+  'aria-placeholder',
+  'aria-roledescription',
+  'aria-valuetext',
+])
+
+function attrName(jsxAttributeNode) {
+  const n = jsxAttributeNode && jsxAttributeNode.name
+  return n && n.type === 'JSXIdentifier' ? n.name : null
+}
+
+function isHumanReadableAttr(jsxAttributeNode) {
+  return HUMAN_READABLE_ATTRS.has(attrName(jsxAttributeNode))
+}
+
+// True when the node sits inside a <script>, <Script>, or <style>
+// element. The body of those is code — JavaScript (analytics pixels,
+// JSON-LD) or CSS (keyframes, custom properties, scoped page styles) —
+// not prose. Its semicolons, em-dashes, and exclamation marks are
+// syntax, not brand-voice misses.
+function isInsideCodeElement(node) {
+  let p = node.parent
+  while (p) {
+    if (p.type === 'JSXElement' && p.openingElement) {
+      const name = p.openingElement.name
+      const tag =
+        name && name.type === 'JSXIdentifier'
+          ? name.name
+          : name && name.type === 'JSXMemberExpression' && name.property
+            ? name.property.name
+            : null
+      if (tag === 'script' || tag === 'Script' || tag === 'style') return true
+    }
+    p = p.parent
+  }
+  return false
+}
+
 // ─── Rule ─────────────────────────────────────────────────────────────
 
 const rule = {
@@ -128,33 +184,36 @@ const rule = {
 
     return {
       JSXText(node) {
+        if (isInsideCodeElement(node)) return
         scanText(node.value, report, node)
       },
 
-      // String literal as a JSX attribute value: `placeholder="…"`,
-      // `aria-label="…"`, etc. Filter to attribute parents only — bare
-      // string literals in JS code are not user-facing.
+      // String literal as a JSX attribute value. Only scan attributes a
+      // person actually reads (alt, title, placeholder, aria-*). className,
+      // allow, href, style, id, etc. are code, not prose — skip them.
       Literal(node) {
         if (typeof node.value !== 'string') return
         if (!node.parent) return
 
         if (node.parent.type === 'JSXAttribute') {
-          scanText(node.value, report, node)
+          if (isHumanReadableAttr(node.parent)) scanText(node.value, report, node)
           return
         }
 
-        // String inside `{"…"}` rendered as JSX child.
+        // String inside `{"…"}` rendered as JSX child — visible prose,
+        // unless it sits inside a <script> block (then it is JS).
         if (
           node.parent.type === 'JSXExpressionContainer' &&
           isInsideJsx(node.parent)
         ) {
+          if (isInsideCodeElement(node)) return
           scanText(node.value, report, node)
         }
       },
 
-      // Template literal as JSX child or attribute value. Only flag the
-      // static `quasis` parts — interpolated expressions can be runtime
-      // data placeholders (a dash served from the API to mean
+      // Template literal as JSX child or human-readable attribute value.
+      // Only flag the static `quasis` parts — interpolated expressions can
+      // be runtime data placeholders (a dash served from the API to mean
       // unavailable is fine).
       TemplateLiteral(node) {
         if (!node.parent) return
@@ -162,6 +221,8 @@ const rule = {
           node.parent.type === 'JSXExpressionContainer' && isInsideJsx(node.parent)
         const parentIsJsxAttr = node.parent.type === 'JSXAttribute'
         if (!parentIsJsxChild && !parentIsJsxAttr) return
+        if (parentIsJsxAttr && !isHumanReadableAttr(node.parent)) return
+        if (parentIsJsxChild && isInsideCodeElement(node)) return
         for (const q of node.quasis) {
           scanText(q.value.cooked ?? q.value.raw, report, q)
         }

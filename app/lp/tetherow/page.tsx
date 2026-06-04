@@ -969,7 +969,7 @@ export default async function TetherowLandingPage() {
         </div>
         <p className="mt-[18px] max-w-[860px] text-[13px] leading-[1.6] text-[color:var(--rr-muted)]">
           Live close data from Supabase market cache · methodology {methodologyVersion}, computed{' '}
-          {methodologyDate}. Sale-to-list ratio is computed against original list price; price
+          {methodologyDate}. Sale-to-list ratio is computed against original list price. Price
           per square foot is computed against close price and reported living area. Larger floor
           plans show wider list-to-close gaps. The 12-month median sale-to-list at Tetherow is{' '}
           {formatRatioPct(saleToList)} across all closings.

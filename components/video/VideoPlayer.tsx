@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button"
 
 export type VideoPlayerType = 'youtube' | 'vimeo' | 'matterport' | 'direct'
 
+const YT_ALLOW = ['accelerometer', 'autoplay', 'clipboard-write', 'encrypted-media', 'gyroscope', 'picture-in-picture'].join('; ')
+const VIMEO_ALLOW = ['autoplay', 'fullscreen', 'picture-in-picture'].join('; ')
+
 function parseVideoUrl(url: string): { type: VideoPlayerType; id?: string } {
   const u = url.toLowerCase().trim()
   if (u.includes('youtube.com/watch') || u.includes('youtu.be/')) {
@@ -67,7 +70,7 @@ export default function VideoPlayer({ videoUrl, type, listingId, posterUrl, clas
             title="YouTube video"
             src={`https://www.youtube.com/embed/${id}?autoplay=1`}
             className="h-full w-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allow={YT_ALLOW}
             allowFullScreen
           />
         ) : (
@@ -93,7 +96,7 @@ export default function VideoPlayer({ videoUrl, type, listingId, posterUrl, clas
           title="Vimeo video"
           src={`https://player.vimeo.com/video/${id}`}
           className="h-full w-full"
-          allow="autoplay; fullscreen; picture-in-picture"
+          allow={VIMEO_ALLOW}
           allowFullScreen
         />
       </div>

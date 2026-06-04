@@ -83,7 +83,7 @@ export default function PageCTA({
     return (
       <Card className={cn('border-success/30 bg-success/5', className)}>
         <CardContent className="p-6 text-center sm:p-8">
-          <p className="text-lg font-semibold text-foreground">Thank you!</p>
+          <p className="text-lg font-semibold text-foreground">Thank you.</p>
           <p className="mt-1 text-sm text-muted-foreground">
             We received your information and will be in touch soon.
           </p>

@@ -70,7 +70,7 @@ export default function CommunityPageActionBar({
       likeDisabled={pending}
       shareUrl={shareUrl}
       shareTitle={`${communityName} homes for sale | ${cityName}, Oregon | Ryan Realty`}
-      shareText={`Explore ${communityName} in ${cityName}, Oregon — homes for sale and community info.`}
+      shareText={`Explore ${communityName} in ${cityName}, Oregon. Homes for sale and community info.`}
       showShare={true}
       signedIn={signedIn}
       variant={variant}

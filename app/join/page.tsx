@@ -25,7 +25,7 @@ export default function JoinPage() {
     <main className="min-h-screen bg-background">
       <ContentPageHero
         title="Grow Your Career With Us"
-        subtitle="A passionate Central Oregon brokerage built on community and excellence. Licensed or thinking about it—we'd love to talk."
+        subtitle="A passionate Central Oregon brokerage built on community and excellence. Licensed or thinking about it, we'd love to talk."
         imageUrl={CONTENT_HERO_IMAGES.join}
         ctas={[
           { label: 'Get in Touch', href: '/contact?inquiry=Join%20Our%20Team', primary: true },
@@ -80,7 +80,7 @@ export default function JoinPage() {
           </h2>
           <p className="mt-4 text-muted-foreground">
             Tell us a bit about yourself and your goals. We&apos;ll follow up to discuss fit,
-            support, and next steps. No pressure—just a real conversation.
+            support, and next steps. No pressure, just a real conversation.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link

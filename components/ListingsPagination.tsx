@@ -37,7 +37,7 @@ export default function ListingsPagination({
       aria-label="Listings pagination"
     >
       <p className="text-sm text-muted-foreground">
-        Showing <span className="font-medium text-foreground">{start.toLocaleString()}–{end.toLocaleString()}</span> of{' '}
+        Showing <span className="font-medium text-foreground">{start.toLocaleString()}-{end.toLocaleString()}</span> of{' '}
         <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span> homes
       </p>
       <div className="flex items-center gap-2">

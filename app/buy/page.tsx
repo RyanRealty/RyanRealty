@@ -58,7 +58,7 @@ export default async function BuyPage() {
     <main className="min-h-screen bg-background">
       <ContentPageHero
         title="Find Your Home in Central Oregon"
-        subtitle="Local expertise, real-time listings, and a team that puts you first. Bend, Redmond, Sisters, Sunriver—and the lifestyle you've been looking for."
+        subtitle="Local expertise, real-time listings, and a team that puts you first. Bend, Redmond, Sisters, Sunriver, and the lifestyle you've been looking for."
         imageUrl={CONTENT_HERO_IMAGES.buy}
         ctas={[
           { label: 'View Listings', href: listingsBrowsePath(), primary: true },
@@ -147,7 +147,7 @@ export default async function BuyPage() {
               href="/contact?inquiry=Buying"
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground transition hover:bg-primary/90"
             >
-              Start your search — contact us
+              Start your search. Contact us.
               <ArrowRightHugeIcon className="h-5 w-5" />
             </Link>
           </div>

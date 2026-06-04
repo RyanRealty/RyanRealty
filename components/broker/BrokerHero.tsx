@@ -75,7 +75,7 @@ export default function BrokerHero({ broker, fallbackImageUrl }: Props) {
               ) : (
                 <Image
                   src={agentImageUrl}
-                  alt={`${broker.display_name} — real estate agent photo`}
+                  alt={`${broker.display_name}, real estate agent photo`}
                   fill
                   className="object-cover"
                   sizes="224px"
