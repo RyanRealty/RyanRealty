@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.24 (2026-06-04)
+
+### Other
+- Mega-menu: remove the featured photos (text-only panels per Matt)
+
+---
+
+
 ## v1.402.23 (2026-06-04)
 
 ### Other
