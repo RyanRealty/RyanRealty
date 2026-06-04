@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.20 (2026-06-04)
+
+### Other
+- Golf landing: fetch homes via lightweight search_golf_homes RPC (drop 7s full_count)
+
+---
+
+
 ## v1.402.19 (2026-06-04)
 
 ### Maintenance
