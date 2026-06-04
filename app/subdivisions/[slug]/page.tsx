@@ -49,14 +49,7 @@ function tileToCard(tile: Awaited<ReturnType<typeof getListingTiles>>[number]): 
   if (tile.subdivisionName) cityParts.push(tile.subdivisionName)
   return {
     listingKey: tile.listingKey,
-    href: listingTileHref({
-      listingKey: tile.listingKey,
-      listNumber: tile.listNumber,
-      streetNumber: tile.streetNumber,
-      streetName: tile.streetName,
-      city: tile.city,
-      subdivisionName: tile.subdivisionName,
-    }),
+    href: listingTileHref(tile),
     photoUrl: tile.photoUrl ?? null,
     price: tile.listPrice ?? null,
     addressLine,

@@ -206,12 +206,25 @@ export function listingTileHref(tile: {
   streetNumber?: string | null
   streetName?: string | null
   city?: string | null
+  /** Boundary city/neighborhood from the listing_tile_mv spatial xref — pass
+   *  these (a ListingTile carries them) so the URL gets the FULL hierarchy. */
+  boundaryCity?: string | null
+  boundaryNeighborhood?: string | null
   subdivisionName?: string | null
 }): string {
+  // Mirror the AUTHORITATIVE canonical builder in app/listing/[listingKey]/page.tsx
+  // (generateMetadata) and app/sitemap.ts EXACTLY, so every internal link agrees
+  // with the indexed canonical: city/neighborhood/subdivision/address-mls.
+  const subdivision =
+    tile.subdivisionName && tile.subdivisionName !== 'N/A' ? tile.subdivisionName : null
   return listingDetailPath(
     String(tile.listingKey ?? tile.listNumber ?? ''),
     { streetNumber: tile.streetNumber ?? null, streetName: tile.streetName ?? null, city: tile.city ?? null },
-    { city: tile.city ?? null, subdivision: tile.subdivisionName ?? null },
+    {
+      city: tile.boundaryCity ?? tile.city ?? null,
+      neighborhood: tile.boundaryNeighborhood ?? null,
+      subdivision,
+    },
     { mlsNumber: tile.listNumber ?? null },
   )
 }

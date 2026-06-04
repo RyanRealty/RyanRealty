@@ -8,6 +8,7 @@ import {
   teamPath,
   valuationPath,
   listingDetailPath,
+  listingTileHref,
   subdivisionListingsPath,
   listingKeyFromSlug,
 } from './slug'
@@ -132,5 +133,38 @@ describe('slug', () => {
 
   it('extracts listing key from legacy tilde slug', () => {
     expect(listingKeyFromSlug('12345~100-main-st-bend-or-97702')).toBe('12345')
+  })
+
+  // CONTRACT: every internal listing link must produce the SAME canonical URL as
+  // the detail page (generateMetadata) + the sitemap — the full
+  // city/neighborhood/subdivision/address-mls hierarchy. A regression to a
+  // shorter URL (e.g. dropping the neighborhood segment) fails here.
+  it('listingTileHref builds the full city/neighborhood/subdivision/address-mls canonical', () => {
+    expect(
+      listingTileHref({
+        listingKey: 'spark-key-12345',
+        listNumber: '220189456',
+        streetNumber: '100',
+        streetName: 'Main St',
+        city: 'Bend',
+        boundaryCity: 'Bend',
+        boundaryNeighborhood: 'Westside',
+        subdivisionName: 'Northwest Crossing',
+      }),
+    ).toBe('/homes-for-sale/bend/westside/northwest-crossing/100-main-st-220189456')
+  })
+
+  it('listingTileHref prefers boundaryCity and drops the N/A subdivision sentinel', () => {
+    expect(
+      listingTileHref({
+        listingKey: 'k',
+        listNumber: '220189456',
+        streetNumber: '100',
+        streetName: 'Main St',
+        city: 'Bend',
+        boundaryCity: 'Redmond',
+        subdivisionName: 'N/A',
+      }),
+    ).toBe('/homes-for-sale/redmond/100-main-st-220189456')
   })
 })
