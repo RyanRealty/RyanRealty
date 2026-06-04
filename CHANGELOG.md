@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.406.0 (2026-06-04)
+
+### Features
+- feat(area-guides): rebuild on the design system (retire legacy sliders)
+
+---
+
+
 ## v1.405.0 (2026-06-04)
 
 ### Features
