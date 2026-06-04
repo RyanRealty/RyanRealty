@@ -1,43 +1,32 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
-import { getOpenHousesWithListings } from '../../actions/open-houses'
-import OpenHouseSection from '@/components/open-houses/OpenHouseSection'
 import {
-  getCityStatusCounts,
-  getSubdivisionsInCity,
-  getHotCommunitiesInCity,
-  getNearbyCommunities,
   getListingKeysWithRecentPriceChange,
   getCityFromSlug,
   getSubdivisionNameFromSlug,
+  getListingsAdvanced,
   type AdvancedSort,
 } from '../../actions/listings'
-import { getMarketStatsForCity, getMarketStatsForSubdivision } from '../../actions/market-stats'
 import { getSession } from '../../actions/auth'
 import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../../actions/banners'
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/share-metadata'
 import { getBestListingHeroForGeography } from '../../actions/photo-classification'
-import { refreshHeroMedia } from '../../actions/hero-videos'
-import { getCommunityProfile } from '@/lib/community-profiles'
 import SaveSearchButton from '../../../components/SaveSearchButton'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
-import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, listingsBrowsePath, slugify } from '../../../lib/slug'
+import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, listingsBrowsePath } from '../../../lib/slug'
 import { entityKeyToSlug } from '../../../lib/community-slug'
 import { getPresetBySlug, isPresetSlug, resolvePresetYearBuiltMin } from '../../../lib/search-presets'
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
-import { communityPagePath } from '../../../lib/community-slug'
-import ListingTile from '../../../components/ListingTile'
+import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { Container, Body, Grid, H1, H2 } from '@/components/site/primitives'
 import { GolfLanding } from '@/components/site/golf/GolfLanding'
-import type { ListingCardData } from '@/components/site/ListingCard'
 import { GOLF_COMMUNITIES } from '@/data/golf-landing'
 import { getGolfImages, pickGolfImage, getGolfHomesForLanding } from '@/lib/data'
 import AdvancedSearchFilters from '../../../components/AdvancedSearchFilters'
 import ShareButton from '../../../components/ShareButton'
 import BreadcrumbStrip from '../../../components/layout/BreadcrumbStrip'
-import HeroRefreshButton from '../../../components/HeroRefreshButton'
 import SearchPageJsonLd from './SearchPageJsonLd'
 import ResortCommunityJsonLd from './ResortCommunityJsonLd'
 import { isResortCommunity } from '../../../lib/resort-communities'
@@ -47,28 +36,13 @@ import {
   getSubdivisionTabContent,
 } from '../../actions/subdivision-descriptions'
 import SearchListingsToolbar from '../../../components/SearchListingsToolbar'
-import HotCommunitiesSection from '../../../components/search/HotCommunitiesSection'
-import MarketSnapshotChart from '../../../components/search/MarketSnapshotChart'
 import TrackSearchView from '../../../components/tracking/TrackSearchView'
-import { getSavedCommunityKeys } from '../../actions/saved-communities'
 import { getSavedListingKeys } from '../../actions/saved-listings'
 import { getLikedListingKeys } from '../../actions/likes'
 import { getBuyingPreferences } from '../../actions/buying-preferences'
-import { getCityBoundary, getCityPriceHistory } from '../../actions/cities'
+import { getCityBoundary } from '../../actions/cities'
 import { getCommunityBySlug } from '../../actions/communities'
-import { estimatedMonthlyPayment, formatMonthlyPayment, DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '../../../lib/mortgage'
 import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
-import { getActivityFeed } from '../../actions/activity-feed'
-import { getRecentlySold } from '../../actions/recently-sold'
-import { getLiveMarketPulse } from '../../actions/market-stats'
-import ActivityFeedSlider from '../../../components/ActivityFeedSlider'
-import RecentlySoldRow from '../../../components/RecentlySoldRow'
-import LivePulseBanner from '../../../components/reports/LivePulseBanner'
-import AdUnit from '../../../components/AdUnit'
-import InFeedAdCard from '../../../components/search/InFeedAdCard'
-import CityClusterNav from '../../../components/CityClusterNav'
-import { getGuidesByCity } from '../../actions/guides'
-import { getCachedSearchListings } from '../../actions/search-cache'
 import { decodeMapPolygon } from '@/lib/map-polygon'
 
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 2500): Promise<T> {
@@ -361,68 +335,19 @@ export default async function SearchPage({
     )
   }
 
-  // Fetch ALL independent data in a single parallel batch (was 3 sequential waterfalls)
-  const [listingsResult, marketStats, statusCounts, subdivisions, hotCommunities, priceChangeKeys, session, resortEntityKeys, searchPulse, searchActivityFeed, searchRecentlySold, cityPriceHistory, cityGuidesForCluster, cityOpenHouses] = await Promise.all([
-    withTimeout(getCachedSearchListings(filterOpts, page, pageSize), { listings: [], totalCount: 0, cacheKey: 'timeout' }),
-    decodedSubdivision && city
-      ? withTimeout(getMarketStatsForSubdivision(city, decodedSubdivision), {
-          count: 0, avgPrice: null, medianPrice: null, avgDom: null, newListingsLast30Days: 0, pendingCount: 0, closedLast12Months: 0,
-        })
-      : city
-        ? withTimeout(getMarketStatsForCity(city), {
-            count: 0, avgPrice: null, medianPrice: null, avgDom: null, newListingsLast30Days: 0, pendingCount: 0, closedLast12Months: 0,
-          })
-        : Promise.resolve({
-            count: 0,
-            avgPrice: null,
-            medianPrice: null,
-            avgDom: null,
-            newListingsLast30Days: 0,
-            pendingCount: 0,
-            closedLast12Months: 0,
-          }),
-    city ? withTimeout(getCityStatusCounts({ city, subdivision: decodedSubdivision ?? null }), { active: 0, pending: 0, closed: 0, other: 0 }) : Promise.resolve({ active: 0, pending: 0, closed: 0, other: 0 }),
-    city && !subdivision ? withTimeout(getSubdivisionsInCity(city), []) : Promise.resolve([]),
-    city && !subdivision ? withTimeout(getHotCommunitiesInCity(city), []) : Promise.resolve([]),
+  // Fetch the independent data the clean results page renders in one parallel batch:
+  //   listings (grid + pagination), market stats (header median list price),
+  //   recent price-change keys (map view), session (save-search + map view),
+  //   resort entity keys (JSON-LD + breadcrumb resort flag).
+  const [listingsResult, priceChangeKeys, session, resortEntityKeys] = await Promise.all([
+    // Use the advanced RPC directly: it honors the full advanced filterOpts AND
+    // returns an accurate full_count. getCachedSearchListings round-trips through
+    // the SavedSearchFilters converter, which caps/mis-maps the count (200 for
+    // every page) and breaks pagination past that cap.
+    withTimeout(getListingsAdvanced({ ...filterOpts, limit: pageSize, offset }), { listings: [], totalCount: 0 }),
     withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
     withTimeout(getSession(), null, 600),
     withTimeout(getResortEntityKeys(), new Set<string>()),
-    // These were in sequential block 3 — now parallel
-    city
-      ? withTimeout(getLiveMarketPulse({
-          geoType: subdivision && decodedSubdivision ? 'subdivision' : 'city',
-          geoSlug: subdivision && decodedSubdivision ? subdivisionEntityKey(city, decodedSubdivision) : slugify(city),
-        }), null)
-      : Promise.resolve(null),
-    city
-      ? withTimeout(getActivityFeed({
-          city,
-          subdivision: decodedSubdivision ?? undefined,
-          limit: 12,
-          eventTypes: ['new_listing', 'price_drop', 'status_pending', 'status_closed', 'status_expired', 'back_on_market'],
-        }), [])
-      : Promise.resolve([]),
-    city
-      ? withTimeout(getRecentlySold({ city, subdivision: decodedSubdivision ?? undefined, limit: 12 }), [])
-      : Promise.resolve([]),
-    // These were in sequential block 2 — now parallel
-    city ? withTimeout(getCityPriceHistory(city), []) : Promise.resolve([]),
-    city && !subdivision ? withTimeout(getGuidesByCity(city), []) : Promise.resolve([]),
-    // Open houses for this city
-    city ? withTimeout(getOpenHousesWithListings({ city }).catch(() => []), []) : Promise.resolve([]),
-  ])
-  const hotCommunitiesSlice = city && !subdivision ? hotCommunities.slice(0, 10) : []
-  const cityGuideSlug = (cityGuidesForCluster as Array<{ slug: string }>).length > 0 ? (cityGuidesForCluster as Array<{ slug: string }>)[0]!.slug : null
-  // Second batch: depends on results from first batch (session, hotCommunities)
-  const [hotCommunityBannerUrls, savedCommunityKeys] = await Promise.all([
-    city && !subdivision && hotCommunitiesSlice.length > 0
-      ? Promise.all(
-          hotCommunitiesSlice.map((c) =>
-            withTimeout(getBannerUrl('subdivision', subdivisionEntityKey(city, c.subdivisionName)), null, 1200)
-          )
-        )
-      : Promise.resolve([]),
-    session?.user ? withTimeout(getSavedCommunityKeys(), []) : Promise.resolve([]),
   ])
   const { listings, totalCount } = listingsResult
   const effectiveStatusFilter = (filterOpts.statusFilter && ['active', 'active_and_pending', 'pending', 'closed', 'all'].includes(filterOpts.statusFilter))
@@ -430,9 +355,6 @@ export default async function SearchPage({
     : filterOpts.includeClosed
       ? 'all'
       : 'active'
-  const nearbyCommunities = city && subdivision && decodedSubdivision
-    ? await withTimeout(getNearbyCommunities(city, decodedSubdivision), [])
-    : []
 
   const placeName = subdivision && decodedSubdivision ? getSubdivisionDisplayName(decodedSubdivision) : (city ?? 'Central Oregon')
   const displayName = preset ? `${placeName} ${preset.shortLabel}` : (presetLabel ?? placeName)
@@ -443,36 +365,6 @@ export default async function SearchPage({
     subdivision
       ? (subdivisionTabContent?.about ?? getSubdivisionBlurb(decodedSubdivision!))
       : null
-  const communityQuickFacts = subdivision
-    ? (() => {
-        const prices = listings.map((l) => Number(l.ListPrice ?? 0)).filter((v) => Number.isFinite(v) && v > 0)
-        const hoa = listings
-          .map((l) => Number((l as { AssociationFee?: number | null }).AssociationFee ?? 0))
-          .filter((v) => Number.isFinite(v) && v > 0)
-        const lot = listings
-          .map((l) => {
-            const acres = Number((l as { lot_size_acres?: number | null }).lot_size_acres ?? 0)
-            const sqft = Number((l as { lot_size_sqft?: number | null }).lot_size_sqft ?? 0)
-            if (Number.isFinite(acres) && acres > 0) return acres
-            if (Number.isFinite(sqft) && sqft > 0) return sqft / 43560
-            return 0
-          })
-          .filter((v) => v > 0)
-        const years = listings
-          .map((l) => Number((l as { YearBuilt?: number | null }).YearBuilt ?? 0))
-          .filter((v) => Number.isFinite(v) && v > 0)
-        return {
-          minPrice: prices.length ? Math.min(...prices) : null,
-          maxPrice: prices.length ? Math.max(...prices) : null,
-          minHoa: hoa.length ? Math.min(...hoa) : null,
-          maxHoa: hoa.length ? Math.max(...hoa) : null,
-          avgLot: lot.length ? lot.reduce((a, b) => a + b, 0) / lot.length : null,
-          minYear: years.length ? Math.min(...years) : null,
-          maxYear: years.length ? Math.max(...years) : null,
-        }
-      })()
-    : null
-
   const entityType = subdivision ? ('subdivision' as const) : ('city' as const)
   const entityKey = subdivision ? subdivisionEntityKey(city!, decodedSubdivision!) : cityEntityKey(city!)
   const resortKeys = city && subdivision ? await withTimeout(getResortEntityKeys(), new Set<string>(), 1200) : new Set<string>()
@@ -485,6 +377,9 @@ export default async function SearchPage({
         subdivision ? isResortSubdivision : undefined
       )
     : ''
+  // Banner URL is still resolved because the SearchPageJsonLd / ResortCommunityJsonLd
+  // structured data references the place's hero image. The clean results page does
+  // not render a photo hero band, so only the URL is needed (no attribution chrome).
   const [listingHero, bannerResult] =
     city
       ? await Promise.all([
@@ -492,12 +387,10 @@ export default async function SearchPage({
           withTimeout(getOrCreatePlaceBanner(entityType, entityKey, bannerSearchQuery), { url: null, attribution: null }, 1500),
         ])
       : [null, { url: null, attribution: null }]
-  const heroVideoUrl = null
   // Prefer curated Central Oregon lifestyle image over generic Unsplash/AI banner
-  const { getCityHeroImage, CITY_HERO_IMAGES } = await import('@/lib/central-oregon-images')
+  const { CITY_HERO_IMAGES } = await import('@/lib/central-oregon-images')
   const curatedCityImage = city ? (CITY_HERO_IMAGES[city.toLowerCase().replace(/\s+/g, '-')] ?? null) : null
   const bannerUrl = curatedCityImage ?? listingHero?.url ?? bannerResult?.url ?? null
-  const bannerAttribution = listingHero?.attribution ?? bannerResult?.attribution ?? null
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const searchPagePath = buildCanonicalPath(city ?? null, decodedSubdivision ?? null, subdivision ?? null, resolved.presetSlug)
@@ -616,72 +509,37 @@ export default async function SearchPage({
     )
   }
 
-  return (
-    <main className="min-h-screen">
-      {/* Hero first: full-width, then breadcrumb + content in wrapper (Zillow-style) */}
-      {city && (
-        <section className="w-full" aria-label={`Hero: ${displayName}`}>
-          {(heroVideoUrl || bannerUrl) ? (
-            <div className="relative w-full overflow-hidden bg-foreground geo-hero-band">
-              {heroVideoUrl ? (
-                <video
-                  src={heroVideoUrl}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  className="absolute inset-0 h-full w-full object-cover"
-                  aria-label={`Aerial flyover of ${displayName}, Central Oregon`}
-                />
-              ) : bannerUrl ? (
-                <>
-                  <div className="absolute inset-0 animate-hero-ken-burns">
-                    <Image
-                      src={bannerUrl}
-                      alt={`Real estate in ${displayName}, Central Oregon - scenic area`}
-                      width={1200}
-                      height={336}
-                      className="h-full w-full object-cover"
-                      sizes="100vw"
-                      priority
-                    />
-                  </div>
-                  {bannerAttribution && (
-                    <p className="absolute bottom-2 left-2 z-10 text-xs text-primary-foreground/90 drop-shadow-md">
-                      {bannerAttribution}
-                    </p>
-                  )}
-                </>
-              ) : null}
-              <div className="absolute bottom-2 right-2 flex flex-wrap gap-2 justify-end">
-                <HeroRefreshButton
-                  refreshAction={refreshHeroMedia}
-                  entityType={subdivision ? 'subdivision' : 'city'}
-                  entityKey={subdivision ? subdivisionEntityKey(city, decodedSubdivision!) : cityEntityKey(city)}
-                  searchQuery={bannerSearchQuery}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="flex geo-hero-band flex-col items-center justify-center gap-4 bg-muted">
-              <p className="text-sm text-muted-foreground">No hero media yet.</p>
-              <HeroRefreshButton
-                refreshAction={refreshHeroMedia}
-                entityType={subdivision ? 'subdivision' : 'city'}
-                entityKey={subdivision ? subdivisionEntityKey(city, decodedSubdivision!) : cityEntityKey(city)}
-                searchQuery={bannerSearchQuery}
-              />
-            </div>
-          )}
-        </section>
-      )}
+  // Clean header copy — data-grounded. Active count = totalCount (the accurate
+  // full_count of the filtered results). The median is intentionally omitted:
+  // the only available source is a city-wide cached value that misrepresents a
+  // price-filtered preset, so per the data-accuracy rule it is cut, not faked.
+  const headerCount = totalCount > 0 ? totalCount : null
+  const headerIntroParts: string[] = []
+  if (headerCount != null) headerIntroParts.push(`${headerCount.toLocaleString()} ${headerCount === 1 ? 'home' : 'homes'} for sale.`)
+  const headerIntro = headerIntroParts.join(' ')
+  // Header title adapts: preset label folds into placeName, filter-only searches
+  // use the derived presetLabel, everything else is "Homes for sale in <place>".
+  const headerTitle = preset
+    ? `Homes in ${placeName} ${preset.shortLabel.toLowerCase()}`
+    : presetLabel
+      ? `${presetLabel} homes in Central Oregon`
+      : `Homes for sale in ${placeName}`
 
+  // Related searches — SEO internal-linking for a city/preset page. Cross-link to
+  // that city's other popular searches plus an "All [City] homes" link.
+  const relatedCitySlug = city ? cityEntityKey(city) : null
+  const relatedAllHomes = relatedCitySlug ? getAllCityHomesLink(relatedCitySlug) : null
+  const relatedSearches = relatedCitySlug
+    ? getPopularSearchesForCity(relatedCitySlug, 12).filter((l) => l.href !== searchPagePath).slice(0, 8)
+    : []
+
+  return (
+    <main className="min-h-screen bg-background">
       {searchBreadcrumbItems.length > 1 && (
         <BreadcrumbStrip items={searchBreadcrumbItems} />
       )}
 
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <Container className="py-8">
         {city && (
           <TrackSearchView
             city={city}
@@ -740,422 +598,27 @@ export default async function SearchPage({
         </>
       )}
 
-      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold capitalize tracking-tight text-foreground sm:text-3xl">
-            Homes in {displayName}
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            {totalCount.toLocaleString()} listing{totalCount !== 1 ? 's' : ''}.{' '}
-            <Link
-              href={`${searchPagePath}?${new URLSearchParams(
-                Object.fromEntries(
-                  Object.entries({
-                    ...sp,
-                    view: 'map',
-                  }).filter(([, v]) => v !== undefined && v !== '')
-                ) as Record<string, string>
-              ).toString()}`}
-              className="font-medium text-foreground underline hover:no-underline"
-            >
-              View on map
-            </Link>
-          </p>
-          {city && (totalCount > 0 || statusCounts.pending > 0 || statusCounts.closed > 0) && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              <span className="font-medium text-muted-foreground">{totalCount.toLocaleString()} active</span>
-              {' · '}
-              <span className="font-medium text-muted-foreground">{statusCounts.pending.toLocaleString()} under contract</span>
-              {' · '}
-              <span className="font-medium text-muted-foreground">{statusCounts.closed.toLocaleString()} closed</span>
-              {(statusCounts.other > 0) && (
-                <> · <span className="font-medium text-muted-foreground">{statusCounts.other.toLocaleString()} other</span></>
-              )}
-            </p>
+      {/* 2. Clean header — H1 + one-line data-grounded intro + share. */}
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-2xl">
+          <H1>{headerTitle}</H1>
+          {headerIntro && (
+            <Body size="large" className="mt-3 tabular-nums">
+              {headerIntro}
+            </Body>
           )}
         </div>
         <ShareButton
-          title={`Homes for Sale in ${displayName}`}
-          text={subdivisionBlurb ?? cityContent?.metaDescription ?? `Browse ${totalCount.toLocaleString()} listings in ${displayName}, Central Oregon.`}
+          title={`Homes for sale in ${displayName}`}
+          text={subdivisionBlurb ?? cityContent?.metaDescription ?? `Browse homes for sale in ${displayName}, Central Oregon.`}
           url={siteUrl ? `${siteUrl}${searchPagePath}` : undefined}
           variant="default"
         />
       </header>
 
-      {/* Preset intro — data-grounded, unique per city + preset. Counts pulled
-          live (totalCount = filtered result count; median = the city's current
-          active median from market stats). No invented figures. */}
-      {city && !subdivision && preset && (() => {
-        const allHomes = getAllCityHomesLink(cityEntityKey(city))
-        const otherPresets = getPopularSearchesForCity(cityEntityKey(city), 8)
-          .filter((l) => l.href !== searchPagePath)
-          .slice(0, 6)
-        return (
-          <section className="mb-10 rounded-xl border border-border bg-card p-6 shadow-sm" aria-labelledby="preset-intro-heading">
-            <h2 id="preset-intro-heading" className="text-base font-semibold text-foreground">
-              {preset.label} in {placeName}
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {totalCount > 0 ? (
-                <>
-                  There {totalCount === 1 ? 'is' : 'are'} currently{' '}
-                  <span className="font-medium text-foreground" style={{ fontVariantNumeric: 'tabular-nums' }}>{totalCount.toLocaleString()}</span>{' '}
-                  active {preset.shortLabel.toLowerCase()} {totalCount === 1 ? 'listing' : 'listings'} in {placeName}.
-                  {marketStats.medianPrice != null && (
-                    <> The median list price across all active homes in {placeName} is{' '}
-                      <span className="font-medium text-foreground" style={{ fontVariantNumeric: 'tabular-nums' }}>${marketStats.medianPrice.toLocaleString()}</span>.</>
-                  )}
-                  {' '}Browse the matches below, save the ones you like, and reach out when you want a closer look.
-                </>
-              ) : (
-                <>No active {preset.shortLabel.toLowerCase()} listings in {placeName} right now. Inventory changes daily, so save this search or explore the other searches below.</>
-              )}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {allHomes && (
-                <Link
-                  href={allHomes.href}
-                  className="rounded-lg border border-border bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-                >
-                  {allHomes.label}
-                </Link>
-              )}
-              {otherPresets.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="rounded-lg border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition hover:bg-background"
-                >
-                  {placeName} {l.label}
-                </Link>
-              ))}
-            </div>
-          </section>
-        )
-      })()}
-
-      {/* About this community — show rich profile if available, else subdivision blurb */}
-      {subdivision && (() => {
-        const profile = decodedSubdivision ? getCommunityProfile(decodedSubdivision) : null
-        const aboutText = profile?.description ?? subdivisionBlurb ?? subdivisionTabContent?.about
-        if (!aboutText) return null
-        return (
-          <section className="mb-10 rounded-lg border border-border bg-card p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-foreground">
-              {profile ? profile.name : `About ${displayName}`}
-            </h2>
-            {profile?.tagline && (
-              <p className="mt-1 text-sm font-medium text-primary">{profile.tagline}</p>
-            )}
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
-              {aboutText}
-            </p>
-            {profile?.amenities && profile.amenities.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-sm font-medium text-foreground">Amenities</h3>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {profile.amenities.map((a) => (
-                    <span key={a} className="rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">{a}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {profile?.lifestyle && profile.lifestyle.length > 0 && (
-              <div className="mt-3">
-                <h3 className="text-sm font-medium text-foreground">Lifestyle</h3>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {profile.lifestyle.map((l) => (
-                    <span key={l} className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs text-primary">{l}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {profile?.priceRange && (
-              <p className="mt-3 text-sm text-muted-foreground">Typical price range: <span className="font-medium text-foreground">{profile.priceRange}</span></p>
-            )}
-            {profile?.highlights && profile.highlights.length > 0 && (
-              <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-muted-foreground">
-                {profile.highlights.map((h) => (
-                  <li key={h}>{h}</li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )
-      })()}
-
-      {/* Amenities & lifestyle (resort communities — section always shown when flagged; content or placeholder) */}
-      {subdivision && city && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys) && (
-        <section className="mb-10 rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="amenities-heading">
-          <h2 id="amenities-heading" className="text-lg font-semibold text-foreground">Amenities & lifestyle</h2>
-          {subdivisionTabContent?.attractions || subdivisionTabContent?.dining ? (
-            <>
-              {subdivisionTabContent?.attractions && (
-                <div className="mt-3">
-                  <h3 className="text-sm font-medium text-muted-foreground">Things to do</h3>
-                  <div className="mt-1 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
-                    {subdivisionTabContent.attractions}
-                  </div>
-                </div>
-              )}
-              {subdivisionTabContent?.dining && (
-                <div className="mt-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">Dining</h3>
-                  <div className="mt-1 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
-                    {subdivisionTabContent.dining}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Resort & master plan community. Amenities and lifestyle details for {displayName} are being updated.
-            </p>
-          )}
-        </section>
-      )}
-
-      {/* Market Snapshot — summary + price trend for city/community */}
-      <section className="mb-10 rounded-lg border border-border bg-muted p-6 shadow-sm" aria-labelledby="market-snapshot-heading">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <h2 id="market-snapshot-heading" className="text-lg font-semibold text-foreground">
-              Market Snapshot
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {marketStats.count.toLocaleString()} home{marketStats.count !== 1 ? 's' : ''} for sale
-              {marketStats.newListingsLast30Days > 0 &&
-                ` · ${marketStats.newListingsLast30Days} new in the last 30 days`}
-              {' · '}
-              <Link href="/reports" className="font-medium text-foreground underline hover:no-underline">
-                Market reports
-              </Link>
-            </p>
-            {city && (marketStats.count > 0 || statusCounts.pending > 0 || statusCounts.closed > 0) && (
-              <p className="mt-2 text-sm text-muted-foreground">
-                {marketStats.count.toLocaleString()} active · {statusCounts.pending.toLocaleString()} under contract · {statusCounts.closed.toLocaleString()} closed
-                {statusCounts.other > 0 && ` · ${statusCounts.other.toLocaleString()} other`}
-              </p>
-            )}
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
-              <div className="rounded-lg bg-card border border-border p-4">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Homes for sale (active)</p>
-                <p className="mt-1 text-2xl font-bold text-foreground">{marketStats.count.toLocaleString()}</p>
-              </div>
-              {marketStats.avgPrice != null && (
-                <div className="rounded-lg bg-card border border-border p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Avg. list price (active)</p>
-                  <p className="mt-1 text-2xl font-bold text-foreground">
-                    ${marketStats.avgPrice.toLocaleString()}
-                  </p>
-                </div>
-              )}
-              {marketStats.medianPrice != null && (
-                <div className="rounded-lg bg-card border border-border p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Median list price</p>
-                  <p className="mt-1 text-2xl font-bold text-foreground">
-                    ${marketStats.medianPrice.toLocaleString()}
-                  </p>
-                </div>
-              )}
-              <div className="rounded-lg bg-card border border-border p-4">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">New (last 30 days)</p>
-                <p className="mt-1 text-2xl font-bold text-foreground">{marketStats.newListingsLast30Days}</p>
-              </div>
-              {marketStats.pendingCount > 0 && (
-                <div className="rounded-lg bg-card border border-border p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pending</p>
-                  <p className="mt-1 text-2xl font-bold text-foreground">{marketStats.pendingCount}</p>
-                </div>
-              )}
-              {marketStats.closedLast12Months > 0 && (
-                <div className="rounded-lg bg-card border border-border p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Closed (12 mo)</p>
-                  <p className="mt-1 text-2xl font-bold text-foreground">{marketStats.closedLast12Months}</p>
-                </div>
-              )}
-            </div>
-          </div>
-          {city && cityPriceHistory.length >= 2 && (
-            <div className="shrink-0 lg:pt-0 lg:pl-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">Median price trend</p>
-              <MarketSnapshotChart data={cityPriceHistory} />
-            </div>
-          )}
-        </div>
-      </section>
-      <section className="mb-10">
-        <AdUnit slot="2002001001" format="horizontal" />
-      </section>
-
-      {searchPulse && (
-        <section className="mb-10">
-          <LivePulseBanner
-            title={`${displayName} live market pulse`}
-            activeCount={searchPulse.active_count}
-            pendingCount={searchPulse.pending_count}
-            newCount7d={searchPulse.new_count_7d}
-            updatedAt={searchPulse.updated_at}
-          />
-        </section>
-      )}
-
-      {subdivision && communityQuickFacts && (
-        <section className="mb-10 rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="community-quick-facts-heading">
-          <h2 id="community-quick-facts-heading" className="text-lg font-semibold text-foreground">
-            Community quick facts
-          </h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-border bg-muted p-4">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Price range</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">
-                {communityQuickFacts.minPrice && communityQuickFacts.maxPrice
-                  ? `$${communityQuickFacts.minPrice.toLocaleString()} - $${communityQuickFacts.maxPrice.toLocaleString()}`
-                  : 'Not available'}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border bg-muted p-4">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">HOA range</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">
-                {communityQuickFacts.minHoa && communityQuickFacts.maxHoa
-                  ? `$${communityQuickFacts.minHoa.toLocaleString()} - $${communityQuickFacts.maxHoa.toLocaleString()}`
-                  : 'Not available'}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border bg-muted p-4">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Average lot size</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">
-                {communityQuickFacts.avgLot ? `${communityQuickFacts.avgLot.toFixed(2)} ac` : 'Not available'}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border bg-muted p-4">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Year built</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">
-                {communityQuickFacts.minYear && communityQuickFacts.maxYear
-                  ? `${communityQuickFacts.minYear} - ${communityQuickFacts.maxYear}`
-                  : 'Not available'}
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {searchActivityFeed.length > 0 && (
-        <section className="mb-10">
-          <ActivityFeedSlider
-            title={subdivision ? `What is happening in ${displayName}` : `What is happening in ${city ?? 'Central Oregon'}`}
-            items={searchActivityFeed}
-            signedIn={!!session?.user}
-            userEmail={session?.user?.email ?? undefined}
-            savedKeys={savedKeys}
-            likedKeys={likedKeys}
-          />
-        </section>
-      )}
-
-      {searchRecentlySold.length > 0 && (
-        <section className="mb-10">
-          <RecentlySoldRow
-            title={subdivision ? `Recently sold in ${displayName}` : `Recently sold in ${city ?? 'Central Oregon'}`}
-            listings={searchRecentlySold}
-            signedIn={!!session?.user}
-            userEmail={session?.user?.email ?? undefined}
-            savedKeys={savedKeys}
-            likedKeys={likedKeys}
-          />
-        </section>
-      )}
-
-      {/* Hot communities (city page only) — scrollable row with photo background */}
-      {city && !subdivision && hotCommunities.length > 0 && (
-        <section className="mb-10">
-          <HotCommunitiesSection
-            city={city}
-            communities={hotCommunities}
-            bannerUrls={hotCommunityBannerUrls}
-            signedIn={!!session?.user}
-            savedCommunityKeys={savedCommunityKeys}
-          />
-        </section>
-      )}
-
-      {/* Communities in this city (city page only) */}
-      {city && !subdivision && subdivisions.length > 0 && (
-        <section className="mb-10">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">Communities in {city}</h2>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Explore neighborhoods and communities in {city}. Click a community to see homes for sale.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {subdivisions.map(({ subdivisionName, count }) => (
-              <Link
-                key={subdivisionName}
-                href={communityPagePath(city, subdivisionName)}
-                className="rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition hover:border-primary/20 hover:shadow"
-              >
-                {getSubdivisionDisplayName(subdivisionName)} <span className="text-muted-foreground">({count})</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Open houses in this city */}
-      {city && !subdivision && (cityOpenHouses as any[]).length > 0 && (
-        <section className="mb-10">
-          <OpenHouseSection
-            title={`Open houses in ${displayName}`}
-            items={(cityOpenHouses as any[]).slice(0, 10)}
-            viewAllHref={`/open-houses/${cityEntityKey(city)}`}
-          />
-        </section>
-      )}
-
-      {city && !subdivision && (
-        <section className="mb-10 rounded-lg border border-border bg-card p-6 shadow-sm" aria-labelledby="browse-by-heading">
-          <h2 id="browse-by-heading" className="text-lg font-semibold text-foreground">Browse by</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Link href={`${homesForSalePath(city)}/under-500k`} className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background">
-              Price under $500K
-            </Link>
-            <Link href={`${homesForSalePath(city)}/under-1m`} className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background">
-              Price under $1M
-            </Link>
-            <Link href={`${homesForSalePath(city)}/luxury`} className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background">
-              Luxury homes
-            </Link>
-            <Link href={`${homesForSalePath(city)}/new-listings`} className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background">
-              New listings
-            </Link>
-            <Link href={`${homesForSalePath(city)}/open-house`} className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background">
-              Open houses
-            </Link>
-            <Link href={`${homesForSalePath(city)}/with-pool`} className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background">
-              Homes with pool
-            </Link>
-            <Link href={`${homesForSalePath(city)}/with-view`} className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background">
-              Homes with view
-            </Link>
-            <Link href={`${homesForSalePath(city)}/on-golf-course`} className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background">
-              Golf course homes
-            </Link>
-          </div>
-        </section>
-      )}
-
-      {city && !subdivision && (
-        <section className="mb-10">
-          <CityClusterNav
-            cityName={city}
-            citySlug={cityEntityKey(city)}
-            activePage={preset ? 'filter' : 'homes-for-sale'}
-            guideSlug={cityGuideSlug}
-          />
-        </section>
-      )}
-
-      <div className="mb-6 flex flex-wrap items-center gap-4">
-        <Suspense fallback={<div className="h-14 rounded-lg border border-border bg-muted" />}>
+      {/* 3. Filter bar — the existing URL-driven filters, presented as one tidy row. */}
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <Suspense fallback={<div className="h-14 flex-1 rounded-lg border border-border bg-muted" />}>
           <AdvancedSearchFilters
             basePath={searchPagePath}
             minPrice={sp.minPrice}
@@ -1190,34 +653,13 @@ export default async function SearchPage({
         <SaveSearchButton user={!!session?.user} />
       </div>
 
-      <section className="mb-10 rounded-xl border border-border bg-card p-5">
-        <h2 className="text-base font-semibold text-foreground">Interactive map search</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Open the full map view to draw boundaries and explore listings quickly.
-        </p>
-        <div className="mt-3">
-          <Link
-            href={`${searchPagePath}?${new URLSearchParams(
-              Object.fromEntries(
-                Object.entries({
-                  ...sp,
-                  view: 'map',
-                }).filter(([, v]) => v !== undefined && v !== '')
-              ) as Record<string, string>
-            ).toString()}`}
-            className="inline-flex rounded-md border border-border bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-          >
-            Open map view
-          </Link>
-        </div>
-      </section>
-
+      {/* 4 + 5. Listings grid (design-system ListingCard) + sort/pagination toolbar. */}
       {!city && !hasFilterOnly ? (
-        <p className="text-muted-foreground">Select a city or subdivision to see listings.</p>
+        <Body className="mt-10">Select a city or subdivision to see listings.</Body>
       ) : listings.length === 0 ? (
-        <p className="text-muted-foreground">No active listings in this area yet.</p>
+        <Body className="mt-10">No homes match this search right now. Adjust the filters or explore a related search below.</Body>
       ) : (
-        <>
+        <div className="mt-6">
           <SearchListingsToolbar
             pathname={searchPagePath}
             totalCount={totalCount}
@@ -1240,63 +682,55 @@ export default async function SearchPage({
               perPage: perPageParam,
             }}
           />
-          <section
-            className={`grid gap-6 ${columns === 1 ? 'grid-cols-1 max-w-md' : columns === 2 ? 'grid-cols-1 sm:grid-cols-2' : columns === 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}
-          >
-            {listings.flatMap((listing, i) => {
+          <Grid cols={4} gap="loose" className="mt-2">
+            {listings.map((listing, i) => {
               const key = (listing.ListNumber ?? listing.ListingKey ?? `listing-${i}`).toString().trim()
-              const price = Number(listing.ListPrice ?? 0)
-              const displayPrefs = prefs ?? { downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT, interestRate: DEFAULT_DISPLAY_RATE, loanTermYears: DEFAULT_DISPLAY_TERM_YEARS }
-              const monthly = price > 0 ? estimatedMonthlyPayment(price, displayPrefs.downPaymentPercent, displayPrefs.interestRate, displayPrefs.loanTermYears) : null
-              const tiles = [
-                <ListingTile
-                  key={key}
-                  listing={listing}
-                  listingKey={key}
-                  hasRecentPriceChange={key ? priceChangeKeys.has(key) : false}
-                  saved={session?.user ? savedKeys.includes(key) : undefined}
-                  liked={session?.user ? likedKeys.includes(key) : undefined}
-                  monthlyPayment={monthly != null && monthly > 0 ? formatMonthlyPayment(monthly) : undefined}
-                  signedIn={!!session?.user}
-                  userEmail={session?.user?.email ?? null}
-                />
-              ]
-              if ((i + 1) % 8 === 0) {
-                tiles.push(
-                  <InFeedAdCard
-                    key={`ad-${i}`}
-                    slot="2002001002"
-                  />
-                )
+              const street = [listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ').trim()
+              const cityLine = [[listing.City ?? city, 'OR'].filter(Boolean).join(', '), listing.PostalCode].filter(Boolean).join(' ').trim()
+              const card: ListingCardData = {
+                listingKey: key,
+                href: `/listing/${listing.ListNumber ?? listing.ListingKey ?? ''}`,
+                photoUrl: listing.PhotoURL ?? null,
+                price: listing.ListPrice ?? null,
+                addressLine: street || 'Address available on request',
+                cityLine: cityLine || 'Central Oregon',
+                beds: listing.BedroomsTotal ?? null,
+                baths: listing.BathroomsTotal ?? null,
+                sqft: listing.TotalLivingAreaSqFt ?? null,
+                ...(key && priceChangeKeys.has(key) ? { badge: { kind: 'drop' as const, label: 'Price drop' } } : {}),
               }
-              return tiles
+              return <ListingCard key={key} listing={card} />
             })}
-          </section>
-          {subdivision && nearbyCommunities.length > 0 && (
-            <section className="mt-10">
-              <h2 className="mb-4 text-lg font-semibold text-foreground">Nearby communities</h2>
-              <p className="mb-4 text-sm text-muted-foreground">
-                Explore other communities in {city} near {getSubdivisionDisplayName(decodedSubdivision)}.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {nearbyCommunities.map((c) => (
-                  <Link
-                    key={c.subdivisionName}
-                    href={communityPagePath(city!, c.subdivisionName)}
-                    className="rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition hover:border-primary/20 hover:shadow"
-                  >
-                    {getSubdivisionDisplayName(c.subdivisionName)} <span className="text-muted-foreground">({c.count})</span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-          <section className="mt-10">
-            <AdUnit slot="2002001003" format="horizontal" />
-          </section>
-        </>
+          </Grid>
+        </div>
       )}
-      </div>
+
+      {/* 6. Related searches — SEO internal links to this city's other popular searches. */}
+      {(relatedAllHomes || relatedSearches.length > 0) && (
+        <section className="mt-14 border-t border-border pt-10" aria-labelledby="related-searches-heading">
+          <H2 id="related-searches-heading">Related searches</H2>
+          <div className="mt-5 flex flex-wrap gap-2.5">
+            {relatedAllHomes && (
+              <Link
+                href={relatedAllHomes.href}
+                className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+              >
+                {relatedAllHomes.label}
+              </Link>
+            )}
+            {relatedSearches.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/30 hover:shadow-sm"
+              >
+                {placeName} {l.label.toLowerCase()}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+      </Container>
     </main>
   )
 }
