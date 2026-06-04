@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.402.19 (2026-06-04)
+
+### Maintenance
+- docs: handoff for remaining 7 SkySlope form-compliance deals (#22)
+
+### Other
+- Add immersive golf landing + full-width intelligent bento mega-menu
+
+---
+
+
 ## v1.402.18 (2026-06-03)
 
 ### Other
