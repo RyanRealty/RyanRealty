@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.405.0 (2026-06-04)
+
+### Features
+- feat(nav): merge Communities + Cities into one 'Explore' mega menu
+
+---
+
+
 ## v1.404.1 (2026-06-04)
 
 ### Bug Fixes
