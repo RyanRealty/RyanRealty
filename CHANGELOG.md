@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.22 (2026-06-04)
+
+### Other
+- Redesign mega-menu: clean editorial panels (drop bento + stats), fix disappearing bug
+
+---
+
+
 ## v1.402.21 (2026-06-04)
 
 ### Other
