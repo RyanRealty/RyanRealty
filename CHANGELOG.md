@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.402.23 (2026-06-04)
+
+### Other
+- Relocate frontend-design + hallmark to .claude/skills (native Claude Code skills)
+
+---
+
+
 ## v1.402.22 (2026-06-04)
 
 ### Other
