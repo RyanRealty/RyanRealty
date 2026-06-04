@@ -92,19 +92,16 @@ export const PRIMARY_NAV: NavGroup[] = [
     ],
   },
   {
-    label: 'Communities',
+    // Explore = the merged Communities + Cities parent (Matt directive 2026-06-04).
+    // Keeps every city + community href reachable so the reachability gate passes;
+    // the desktop mega-menu groups them into columns (see lib/site-menu.ts).
+    label: 'Explore',
     href: '/communities',
-    children: [
-      { href: '/communities', label: 'All communities' },
-      ...COMMUNITY_LINKS,
-    ],
-  },
-  {
-    label: 'Cities',
-    href: '/cities',
     children: [
       { href: '/cities', label: 'All cities' },
       ...CITY_LINKS,
+      { href: '/communities', label: 'All communities' },
+      ...COMMUNITY_LINKS,
     ],
   },
   {

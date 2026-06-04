@@ -326,10 +326,11 @@ async function sendLeadConfirmation(params: {
     `apply the right adjustments for your property, and email you a`,
     `personalized analysis within the next business day.`,
     '',
-    `If you have anything you'd like us to know upfront — recent improvements,`,
-    `timing, or specific questions — just reply to this email.`,
+    `If you have anything you'd like us to know upfront, like recent`,
+    `improvements, timing, or specific questions, just reply to this email.`,
     '',
-    `— Ryan Realty`,
+    `Matt Ryan`,
+    `Ryan Realty`,
     `541.213.6706`,
     `https://ryan-realty.com`,
   ].join('\n')
@@ -339,9 +340,10 @@ async function sendLeadConfirmation(params: {
   <p>Hi ${escapeHtml(firstName)},</p>
   <p>Thanks for requesting a Comparative Market Analysis for <strong>${escapeHtml(params.subjectAddress)}</strong>.</p>
   <p>${escapeHtml(brokerFirst)} from Ryan Realty will pull recent comparable sales, apply the right adjustments for your property, and email you a personalized analysis within the next business day.</p>
-  <p>If you have anything you'd like us to know upfront — recent improvements, timing, or specific questions — just reply to this email.</p>
+  <p>If you have anything you'd like us to know upfront, like recent improvements, timing, or specific questions, just reply to this email.</p>
   <p style="margin-top:32px;color:#5b6473;font-size:13px;">
-    — Ryan Realty<br/>
+    Matt Ryan<br/>
+    Ryan Realty<br/>
     <a href="tel:5412136706" style="color:#5b6473;">541.213.6706</a><br/>
     <a href="https://ryan-realty.com" style="color:#5b6473;">ryan-realty.com</a>
   </p>
@@ -350,10 +352,15 @@ async function sendLeadConfirmation(params: {
 
   await sendEmail({
     to: params.leadEmail,
+    // From Matt personally, not a noreply. `mail.ryan-realty.com` is the
+    // Resend-verified sending domain, the display name reads as Matt, and
+    // replies route to his real inbox. (Matt 2026-06-04: "send it from my
+    // email, not the noreply.") TODO: switch to matt@ryan-realty.com once the
+    // root domain is verified in Resend so the raw address drops the subdomain.
+    from: 'Matt Ryan <matt@mail.ryan-realty.com>',
     subject,
     text,
     html,
-    // Replies route to the broker who will sign the CMA.
     replyTo: 'matt@ryan-realty.com',
   })
 }

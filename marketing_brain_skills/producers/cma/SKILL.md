@@ -186,6 +186,28 @@ Target 6-10 comps. If subdivision returns fewer than 6, expand to same-zip + sam
 
 Also pull every comp's `pending_timestamp`, `OnMarketDate`, `CloseDate`, `DaysOnMarket`, `days_to_pending`. The CMA reports **Days to Offer** (active days = `pending_timestamp - OnMarketDate`) as the primary recency signal, with the Spark-reported DOM (which includes time under contract) as a secondary number. See §10.  this is a known Oregon Data Share quirk.
 
+**Step 4.5.  Pull the subject's market-conditions context (makes the valuation time-aware)**
+
+A comp that closed 11 months ago in a moving market is not the same data point as one that closed last month. Treating them identically is the single biggest way a CMA goes stale. Before pricing, pull the subject geo's verified market context. Use the cache, never aggregate raw `listings` (CLAUDE.md §Supabase): `market_stats_cache` (6-hour freshness) for the tightest matching geo, and `market_pulse_live` (10-min) for the city/region.
+
+```sql
+-- Resolve subject geo tightest-first: subdivision/neighborhood slug, then city.
+SELECT geo_type, geo_slug, median_price_per_sqft_closed, yoy_median_price_delta_pct,
+       median_dom, avg_sale_to_list_ratio, months_of_supply,
+       pct_sold_over_asking, pct_sold_under_asking, methodology_version, computed_at
+FROM market_stats_cache
+WHERE geo_slug = '<subject geo slug>'   -- neighborhood e.g. 'bend-awbrey-butte', else city 'bend'
+ORDER BY computed_at DESC
+LIMIT 1;
+```
+
+Capture and trace (citations.json) for the subject's geo:
+- `median_price_per_sqft_closed`.  the market $/sqft rate, the anchor for Step 9 Method 3
+- `yoy_median_price_delta_pct`.  the time-trend rate that drives the per-comp market-conditions adjustment (Step 9)
+- `median_dom` + days-to-offer, `avg_sale_to_list_ratio`, `months_of_supply`, `pct_sold_over_asking` / `pct_sold_under_asking`.  the Market-context page
+
+This context drives three things: (1) the per-comp market-conditions (time) adjustment in Step 9, (2) the new Market-context page in the layout, and (3) the defensibility of the High-End tier.  a buyer's market (MoS ≥ 6, homes closing under asking) does not support an aggressive High End, and the CMA must say so out loud. If no cache row exists at any geo level (rare), note it explicitly and price on physically-adjusted comps alone with no time adjustment.  never fabricate a trend rate (CLAUDE.md §0).
+
 **Step 5.  Pull photo arrays for subject + comps**
 
 For each `ListingKey`, call `GET /api/listings/<key>/photos` (this is the Spark `_expand=Photos` endpoint added 2026-05-14). Cache the primary URL + 5 supplementary URLs per comp. If `PhotoURL` is null in Supabase but the listing has photos via this endpoint, use what Spark returns.
@@ -224,10 +246,11 @@ The canonical layout (clone from the 21042 Robin exemplar at `public/drafts/cma-
 | 2 | **Subject narrative**.  at-a-glance · site & structure · why this matters · listing history |
 | 3 | **Subject flyer**.  hero + 6-photo grid + current/historical MLS remarks + features (off-market badge if not currently Active) |
 | 4 | **Comp location map**.  Google Maps Static via `/api/maps/cma-<slug>` · numbered legend · pin order matches comp flyer order |
-| 5 | **Comp summary**.  subject row at top + 4×2 thumbnail grid + full data table |
+| 5 | **Comp summary**.  subject row at top + 4×2 thumbnail grid + full data table + per-comp adjustment grid (market-conditions / size / beds-baths / lot-garage-condition → adjusted $) |
 | 6 → N | **Comp flyers**.  one full page per comp (hero + 6-photo grid + public_remarks + features). N scales with comp count (6 comps → flyers 6-11; 8 comps → flyers 6-13). |
-| N+1 | **Pricing strategy**.  Method 1 ($/sqft tier) + Method 2 (un-renovated baseline + value-add) + Converged range (3 tiers: Conservative / Recommended / High End) |
-| N+2 | **Why this list price**.  outlier explanations (if any high or low comps need context) + listing-history rationale + verification trace (data sources) |
+| N+1 | **Market context**.  the subject geo's verified conditions from `market_stats_cache` / `market_pulse_live`: months of supply + seller/balanced/buyer verdict, median days to offer, sale-to-list ratio, YoY $/sqft trend, % sold over/under asking.  with the source trace. Frames why the recommended list sits where it does. |
+| N+2 | **Pricing strategy**.  Method 1 ($/sqft tier) + Method 2 (baseline + value-add) + Method 3 (time-and-physically-adjusted comp reconciliation) + converged range (3 tiers: Conservative / Recommended / High End) + the confidence statement |
+| N+3 | **Why this list price**.  outlier explanations (if any high or low comps need context) + market-conditions rationale + listing-history rationale + verification trace (data sources) |
 | Final | **Disclosure + broker signature**.  disclosure paragraphs + Amboqia-script broker signature + transparent headshot + license # |
 
 Page numbers in the comp flyer area scale with the number of comps. 6 comps → 13 pages, 8 comps → 15 pages, etc. Always renumber footers. NEVER hardcode a `Page X of 15`.  count actual pages.
@@ -303,10 +326,33 @@ Two methods, both must converge within ±5% for the range to be defensible:
 
 **Method 2.  Un-renovated baseline + improvement value-add.** Anchor baseline on the closest-vintage unimproved comps. Add value-add for documented seller improvements using Remodeling Magazine Cost-vs-Value Pacific-region recovery rates (kitchen 65-75%, roof 60-70%, paint 60-80%, landscape 60-100%, HVAC 60-80%, window coverings 25-40%).
 
+**Market-conditions (time) adjustment.  apply to EVERY comp before any method.** Normalize each comp's close price to today using the verified YoY trend from Step 4.5:
+
+```
+months_since_close  = (today − comp.CloseDate) / 30.44
+time_adjustment     = comp.ClosePrice × (yoy_median_price_delta_pct / 100) × (months_since_close / 12)
+time_adjusted_price = comp.ClosePrice + time_adjustment
+```
+
+This is the appraiser "market conditions adjustment".  the single most important reason two CMAs of the same house can differ, and the gap the old recipe ignored. Show it as an explicit line in the adjustment grid. The YoY rate traces to `market_stats_cache` (Step 4.5).  never estimate it.
+
+**Per-comp adjustment grid (appraiser-style.  required on the comp summary page).** Every comp gets a transparent ledger, not just a final number. A seller reading this CMA should see exactly how each comp was reconciled to their home:
+
+| Comp | Close $ | Market-conditions (time) | Size ($/sqft) | Beds / baths | Lot / garage / condition | Adjusted $ |
+|------|---------|--------------------------|---------------|--------------|--------------------------|------------|
+
+Size, bed/bath, lot, garage, and condition adjustments follow standard paired-sales logic against the subject. Keep every adjustment defensible.  if you cannot justify it from the data, do not make it.
+
+**Method 3.  time-and-physically-adjusted comp reconciliation.** The similarity-weighted average of the adjusted prices from the grid (weight by size proximity, distance, and recency). This is the third independent estimate, and the one that carries the market-conditions correction.
+
+**Convergence + confidence.** All three methods (tiered $/sqft, baseline + value-add, adjusted-comp reconciliation) must land within ±5%. If they diverge more than that, do not average through it.  state which method governs and why, and lower the stated confidence. Confidence (High / Moderate / Supportable-only) is a function of: comp count (≥5 is strong), range dispersion, median comp age (>9 months caps at Moderate), median comp distance (>4 mi caps at Moderate), and method divergence. State the confidence and a one-line reason on the pricing page.  honest uncertainty beats false precision (CLAUDE.md §0).
+
 The converged range gets three tiers:
 - **Conservative**.  quick-sale entry, ~30-day close
 - **Recommended List**.  what to actually list at; usually the upper-middle of the range
 - **High End**.  supportable ceiling with all condition + photo issues resolved
+
+Check the High-End tier against the Step 4.5 market context before committing to it. A buyer's market (months of supply ≥ 6) or a geo where homes are closing under asking does not support an aggressive ceiling.  say so plainly and pull the High End in. A seller's market (MoS ≤ 4, homes closing over asking, low days-to-offer) supports it. The market verdict belongs in the pricing rationale, not just the recommended number.
 
 **Step 10.  Subject row in the comp table**
 
@@ -315,7 +361,9 @@ The subject row at the top of the comp summary table should populate List with t
 **Step 11.  QA gate (per CLAUDE.md §0)**
 
 - Every figure in the deliverable traces to a Supabase query run in this session.  write `out/cma-<slug>/citations.json`
-- Months of supply check is not required (this is a CMA, not a market report), but $/sqft, lot sizes, beds/baths, close dates, and DOM/days-to-offer must all match Supabase exactly
+- Every comp number (close price, $/sqft, lot, beds/baths, close date, DOM/days-to-offer) matches Supabase exactly, AND every market-context figure (months of supply, YoY $/sqft trend, sale-to-list, % over/under asking, median DOM) traces to `market_stats_cache` / `market_pulse_live` with `geo_slug` + `methodology_version` + `computed_at` recorded in citations.json. The market verdict (seller / balanced / buyer) must match the months-of-supply number against the thresholds (≤ 4 seller, 4-6 balanced, ≥ 6 buyer)
+- Per-comp adjustment grid: each line (market-conditions/time, size, beds-baths, lot/garage/condition) is shown and defensible, and the math foots to the adjusted price. The market-conditions adjustment uses the verified YoY rate from Step 4.5, never an estimate
+- Three-method convergence: Methods 1, 2, and 3 land within ±5%, or the divergence is explained on the pricing page and confidence is lowered accordingly. The stated confidence (High / Moderate / Supportable-only) matches the comp count, dispersion, recency, and distance per Step 9
 - Brand voice check: banned words from CLAUDE.md §"Voice + content" (`stunning`, `nestled`, `breathtaking`, `must-see`, etc.) must not appear in CMA narrative.  they're fine in MLS-pulled `public_remarks` (those are quoted text)
 - Days to Offer must be displayed alongside any DOM number.  see §10
 - Map renders successfully (hit `/api/maps/cma-<slug>` and confirm 200)

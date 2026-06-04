@@ -1,14 +1,14 @@
 /**
  * lib/site-menu.ts — the STATIC, serializable mega-menu config.
  *
- * One entry per top-level parent (Homes, Communities, Cities, Market, Sell,
- * Company, Learn). Each entry carries intent-grouped link columns plus a short
- * text "promo" (eyebrow + title + one line + a single CTA) that the editorial
- * mega-menu pins to the right edge of the full-width panel. The promo is what
- * keeps every panel balanced edge-to-edge — sparse parents (Sell, Company,
- * Learn) no longer strand a lone column in a wide empty bar. There are NO stats,
- * counts, sparklines, verdict pills, tiles, or photos here by design — this is
- * the approved clean "menu-B" direction (photos were explicitly removed).
+ * One entry per top-level parent (Homes, Explore, Market, Sell, Company, Learn).
+ * "Explore" combines what used to be two parents (Communities + Cities) into one
+ * intuitive panel — cities, golf + resort communities, and Bend neighborhoods.
+ * Each entry carries intent-grouped link columns plus a short text "promo"
+ * (eyebrow + title + one line + a single CTA) pinned to the right edge of the
+ * full-width panel so every panel stays balanced edge-to-edge. There are NO
+ * stats, counts, sparklines, verdict pills, tiles, or photos here by design —
+ * this is the approved clean "menu-B" direction.
  *
  * Single source of truth for nav structure remains lib/site-nav.ts (PRIMARY_NAV
  * drives the reachability gate). This file is the DISPLAY layer for the desktop
@@ -141,9 +141,25 @@ export const MENU: MenuEntry[] = [
     },
   },
   {
-    label: 'Communities',
+    // Explore = the merged Communities + Cities parent (Matt directive 2026-06-04).
+    // One intuitive panel for every place in Central Oregon.
+    label: 'Explore',
     href: '/communities',
     columns: [
+      {
+        heading: 'Cities',
+        links: [
+          { label: 'Bend', href: '/cities/bend' },
+          { label: 'Redmond', href: '/cities/redmond' },
+          { label: 'Sisters', href: '/cities/sisters' },
+          { label: 'Sunriver', href: '/cities/sunriver' },
+          { label: 'La Pine', href: '/cities/la-pine' },
+          { label: 'Prineville', href: '/cities/prineville' },
+          { label: 'Terrebonne', href: '/cities/terrebonne' },
+          { label: 'Powell Butte', href: '/cities/powell-butte' },
+          { label: 'See all cities', href: '/cities' },
+        ],
+      },
       {
         heading: 'Golf communities',
         links: [
@@ -178,51 +194,10 @@ export const MENU: MenuEntry[] = [
     ],
     promo: {
       eyebrow: 'Explore',
-      title: 'Resort and golf communities',
-      body: 'Compare master-planned neighborhoods across the region.',
-      ctaLabel: 'All communities',
+      title: 'Central Oregon, end to end',
+      body: 'Cities, golf and resort communities, and Bend neighborhoods.',
+      ctaLabel: 'Browse communities',
       ctaHref: '/communities',
-    },
-  },
-  {
-    label: 'Cities',
-    href: '/cities',
-    columns: [
-      {
-        heading: 'Deschutes County',
-        links: [
-          { label: 'Bend', href: '/cities/bend' },
-          { label: 'Redmond', href: '/cities/redmond' },
-          { label: 'Sisters', href: '/cities/sisters' },
-          { label: 'Sunriver', href: '/cities/sunriver' },
-          { label: 'La Pine', href: '/cities/la-pine' },
-        ],
-      },
-      {
-        heading: 'Nearby areas',
-        links: [
-          { label: 'Prineville', href: '/cities/prineville' },
-          { label: 'Terrebonne', href: '/cities/terrebonne' },
-          { label: 'Powell Butte', href: '/cities/powell-butte' },
-          { label: 'Madras', href: '/cities/madras' },
-          { label: 'Culver', href: '/cities/culver' },
-        ],
-      },
-      {
-        heading: 'Browse',
-        links: [
-          { label: 'See every city we cover', href: '/cities' },
-          { label: 'Homes by city', href: '/homes-for-sale' },
-          { label: 'Market by city', href: '/housing-market' },
-        ],
-      },
-    ],
-    promo: {
-      eyebrow: 'Coverage',
-      title: 'Every city we cover',
-      body: 'Local market data and homes for each Central Oregon city.',
-      ctaLabel: 'See all cities',
-      ctaHref: '/cities',
     },
   },
   {

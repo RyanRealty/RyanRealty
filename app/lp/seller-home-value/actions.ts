@@ -221,7 +221,11 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     if (supabase && email) {
       const { error: insertError } = await supabase.from('valuation_requests').insert({
         address_street: parsed.street,
-        address_city: parsed.city,
+        // address_city is NOT NULL — a free-form address typed without commas
+        // (no Places pick) yields a null city and silently drops this row even
+        // though the FUB lead still lands. Default to Bend (the LP's market) so
+        // the analytics/auto-CMA row is never lost. (Matt 2026-06-04.)
+        address_city: parsed.city || 'Bend',
         address_state: parsed.state,
         address_postal_code: parsed.postalCode,
         name: name || null,
