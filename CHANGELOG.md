@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.409.0 (2026-06-05)
+
+### Features
+- feat(buy,compare): rebuild on the design system + parity contracts
+
+---
+
+
 ## v1.408.1 (2026-06-05)
 
 ### Bug Fixes
