@@ -1,0 +1,134 @@
+{
+  "route": "app/housing-market/[...slug]/page.tsx",
+  "mockup": "design_system/ryan-realty/ui_kits/market-report/index.html",
+  "competitiveTarget": "Beat Zillow / Redfin / Windermere geo market pages. Live per-geo stat band, 12-month price trend chart, market FAQ plus FAQPage JSON-LD, Dataset JSON-LD for AI citability, and a broker lead-capture form no aggregator site carries.",
+  "note": "Flagship ranking route. Dedicated detail mockup is a follow-up deliverable; the page currently shares the market-report/index.html mockup dir. The two-table components (PriceBandTable, CityComparisonTable) are built as stubs pending verified DAL price-band aggregation — see stubbed reason in page file. Route is app/housing-market/[...slug]/page.tsx (catch-all for both /housing-market/<city> and /housing-market/<city>/<community>).",
+  "requiredComponents": [
+    {
+      "name": "BreadcrumbNav",
+      "section": "Home > Housing market > {geoName}, includeJsonLd=false (schemas array on MetadataBlock handles the single BreadcrumbList)",
+      "blocking": true
+    },
+    {
+      "name": "DisplayHeading",
+      "section": "Hero H1 '{geoName} housing market' in Amboqia Boriango rendered via HeroBlock. Replaces the plain h1 line 101 of the skeleton.",
+      "blocking": true
+    },
+    {
+      "name": "HeroBlock",
+      "section": "Full-bleed hero with Old Mill canonical photo, display H1 via DisplayHeading, and data-driven lede (active count + median list price from getMarketPulse).",
+      "blocking": true
+    },
+    {
+      "name": "MarketSnapshot",
+      "section": "Key stats band, 4 live SFR cards (active, median list, median DOM, months of supply + verdict). citySlug prop reads market_pulse_live via getMarketPulse. Replaces hand-rolled cards lines 105 to 130 of the skeleton.",
+      "blocking": true
+    },
+    {
+      "name": "PriceChart",
+      "section": "12-month median sale price trend, getPriceHistory(geoType, geoSlug, 'monthly', 24) from market_stats_cache. Renders only when series >= 6 complete months.",
+      "blocking": true
+    },
+    {
+      "name": "PriceBandTable",
+      "section": "'Where the activity is' inventory-by-price-band table. NEW site block at components/site/PriceBandTable.tsx. Currently stubbed with TODO — no DAL price-band aggregation exists yet.",
+      "blocking": true
+    },
+    {
+      "name": "CityComparisonTable",
+      "section": "City-level comparison table from per-city market_pulse_live rows. NEW site block at components/site/CityComparisonTable.tsx. Data from getMarketPulseCitySnapshots fan-out, never hardcoded.",
+      "blocking": true
+    },
+    {
+      "name": "ContentSection",
+      "section": "Market narrative dynamically generated from MoS verdict and live stats. Methodology trace line citing market_stats_cache, geo_type, geo_slug, methodology_version, refreshed_at.",
+      "blocking": true
+    },
+    {
+      "name": "FAQBlock",
+      "section": "Market FAQ, 5 to 6 geo-specific Q and A pairs from buildMarketFaq. includeJsonLd=true auto-emits FAQPage JSON-LD via MetadataBlock (G34).",
+      "blocking": true
+    },
+    {
+      "name": "MetadataBlock",
+      "section": "Dataset JSON-LD (G34 AI-citability), schema type 'dataset' with variableMeasured from buildMarketFaq datasetVariables. dateModified equals pulse.refreshedAt from market_pulse_live, never hardcoded. Also emits breadcrumb and webPage schemas.",
+      "blocking": true
+    },
+    {
+      "name": "LeadCaptureBlock",
+      "section": "Monthly report subscription form, 'Get the {geoName} report every month', variant='inquiry', tone='muted'.",
+      "blocking": true
+    },
+    {
+      "name": "RelatedAreas",
+      "section": "City cross-navigation, nearby Central Oregon cities with activeCount from market_pulse_live. eyebrow 'Central Oregon cities', cols=4.",
+      "blocking": true
+    },
+    {
+      "name": "CTABar",
+      "section": "Broker contact band, tone='navy'. primary '/contact' Schedule a call, secondary 'tel:5412136706' 541.213.6706.",
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "SiteHeader",
+      "section": "renders from app/layout.tsx",
+      "note": "Not in requiredComponents because the gate checks the route file."
+    },
+    {
+      "name": "SiteFooter",
+      "section": "renders from app/layout.tsx",
+      "note": "Not in requiredComponents because the gate checks the route file."
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "ActivityFeed",
+      "reason": "Live transaction events for the geo. Deferred until geo-scoped activity feed data is verified for subdivision and community levels."
+    }
+  ],
+  "jsonLd": {
+    "required": [
+      {
+        "type": "BreadcrumbList",
+        "emittedBy": "MetadataBlock schemas array (breadcrumb entry)",
+        "gate": "G34"
+      },
+      {
+        "type": "Dataset",
+        "emittedBy": "MetadataBlock schemas array (dataset entry)",
+        "gate": "G34",
+        "note": "Primary AI-citability signal. dateModified must equal pulse.refreshedAt from market_pulse_live. Each variableMeasured value must equal the on-screen number (CLAUDE.md §0)."
+      },
+      {
+        "type": "FAQPage",
+        "emittedBy": "FAQBlock includeJsonLd=true",
+        "gate": "G34"
+      }
+    ]
+  },
+  "dataLayer": {
+    "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live 10 to 15 min freshness, used by MarketSnapshot, lede, and Dataset dateModified",
+    "getPriceHistory": "lib/data/market/getPriceHistory.ts, market_stats_cache monthly, limit 24, used by PriceChart",
+    "getMarketStats": "lib/data/market/getMarketStats.ts, market_stats_cache 6h freshness, used by methodology trace in ContentSection",
+    "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows, used by CityComparisonTable",
+    "note": "All DAL functions imported from @/lib/data (G8 compliant). No @/app/actions/* imports."
+  },
+  "generateStaticParams": {
+    "required": true,
+    "coreSlugs": [
+      "bend",
+      "redmond",
+      "sisters",
+      "sunriver",
+      "la-pine",
+      "tumalo",
+      "prineville",
+      "terrebonne",
+      "black-butte-ranch",
+      "eagle-crest",
+      "crooked-river-ranch"
+    ]
+  }
+}
