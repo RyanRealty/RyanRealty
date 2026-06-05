@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.407.0 (2026-06-05)
+
+### Features
+- feat(housing-market): rebuild [...slug] ranking page on the design system + AI-citable JSON-LD
+
+### Bug Fixes
+- fix(contact): add the visible FUB-tracked phone (money-path P0)
+- fix(sell): retire orphan /sell/plan, kill the unsourced market stat (§0)
+
+---
+
+
 ## v1.406.2 (2026-06-05)
 
 ### Maintenance
