@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.408.0 (2026-06-05)
+
+### Features
+- feat(housing-market): comprehensive city reports, slim hub, region price chart
+
+---
+
+
 ## v1.407.0 (2026-06-05)
 
 ### Features
