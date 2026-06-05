@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.406.2 (2026-06-05)
+
+### Maintenance
+- chore(crons): stand down dead/bloat crons; make reporting-cache non-fatal
+
+---
+
+
 ## v1.406.1 (2026-06-04)
 
 ### Bug Fixes
