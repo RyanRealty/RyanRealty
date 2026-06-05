@@ -1,16 +1,44 @@
+/**
+ * Compare page (/compare) — Wave 3 site-v2 rebuild.
+ *
+ * Utility page (noindex). Removed dead createClient import — the page
+ * never constructed a Supabase client directly. Data is fetched via the
+ * DAL (getListingTiles + getListingDetailPhotos from @/lib/data).
+ *
+ * H1 upgraded from a plain h1 to DisplayHeading (Amboqia).
+ * Layout uses Container + Section primitives from @/components/site/primitives.
+ * Loading skeleton uses the Skeleton primitive from @/components/ui/skeleton
+ * (see CompareClient internals) — no hand-rolled loading placeholders here
+ * because the compare grid is rendered server-side; the Skeleton usage lives
+ * inside CompareClient's client-side transition states.
+ *
+ * AICompare: built but unimported. See bottom of file for investigation note
+ * and wire-or-delete recommendation for Matt.
+ *
+ * robots: noindex, follow — kept. This route is NOT in the sitemap.
+ */
+
 import type { Metadata } from 'next'
-import { createClient } from '@supabase/supabase-js'
+import { getListingTiles, getListingDetailPhotos } from '@/lib/data'
 import CompareClient, { type CompareListingData } from '@/components/compare/CompareClient'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import {
+  Container,
+  Section,
+  DisplayHeading,
+  Body,
+} from '@/components/site/primitives'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = {
-  title: 'Compare Properties',
+  title: 'Compare properties · Ryan Realty',
   description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
   alternates: { canonical: `${siteUrl}/compare` },
   robots: { index: false, follow: true },
   openGraph: {
-    title: 'Compare Properties | Ryan Realty',
+    title: 'Compare properties | Ryan Realty',
     description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
     url: `${siteUrl}/compare`,
     type: 'website',
@@ -19,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Compare Properties | Ryan Realty',
+    title: 'Compare properties | Ryan Realty',
     description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
     images: [`${siteUrl}/api/og?type=default`],
   },
@@ -35,6 +63,11 @@ function daysOnMarket(d: string | null | undefined): number | null {
   return days >= 0 ? days : null
 }
 
+// Suppress unused-variable lint warning. The helper is retained so it can
+// be wired to listing-history data when the compare table adds a
+// "listed date" row in a future sprint.
+void daysOnMarket
+
 export default async function ComparePage({
   searchParams,
 }: {
@@ -48,27 +81,12 @@ export default async function ComparePage({
     .filter(Boolean)
     .slice(0, 4)
 
-  if (ids.length === 0) {
-    return (
-      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <CompareClient listings={[]} />
-      </main>
-    )
-  }
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  const key = serviceKey?.trim() ? serviceKey : anonKey
   let listings: CompareListingData[] = []
 
-  if (url?.trim() && key?.trim()) {
-    void createClient
-    const { getListingTiles, getListingDetailPhotos } = await import('@/lib/data')
-
+  if (ids.length > 0) {
     const [byNumberTiles, byKeyTiles] = await Promise.all([
-      getListingTiles({ listNumbers: ids, status: 'all', limit: 50 }),
-      getListingTiles({ listingKeys: ids, status: 'all', limit: 50 }),
+      getListingTiles({ listNumbers: ids, status: 'all', limit: 50 }).catch(() => []),
+      getListingTiles({ listingKeys: ids, status: 'all', limit: 50 }).catch(() => []),
     ])
     const allTiles = [...byNumberTiles, ...byKeyTiles]
     const seen = new Set<string>()
@@ -119,8 +137,78 @@ export default async function ComparePage({
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <CompareClient listings={listings} />
+    <main className="min-h-screen bg-background">
+      <MetadataBlock
+        schema={{
+          type: 'breadcrumb',
+          items: [
+            { name: 'Home', url: '/' },
+            { name: 'Compare', url: '/compare' },
+          ],
+        }}
+      />
+
+      <div className="bg-background border-b border-border py-3">
+        <Container>
+          <BreadcrumbNav
+            items={[{ label: 'Home', href: '/' }, { label: 'Compare properties' }]}
+            tone="on-light"
+          />
+        </Container>
+      </div>
+
+      <Section padding="tight" tone="default">
+        <Container>
+          <div className="mb-6">
+            <DisplayHeading
+              as="h1"
+              className="text-[clamp(2rem,4vw,2.75rem)] leading-[1.08] tracking-[-0.02em]"
+            >
+              Compare properties
+            </DisplayHeading>
+            {ids.length === 0 && (
+              <Body size="default" tone="muted" className="mt-2 max-w-[56ch]">
+                Add homes from any search or listing page to compare them side by side. Up to 4 properties at a time.
+              </Body>
+            )}
+          </div>
+          <CompareClient listings={listings} />
+        </Container>
+      </Section>
     </main>
   )
 }
+
+/*
+ * AICompare investigation note (for Matt's decision)
+ * ────────────────────────────────────────────────────
+ * components/compare/AICompare.tsx is a built, self-contained client
+ * component that:
+ *   - Accepts ComparisonListing[] (a slightly different shape than
+ *     CompareListingData — it uses pricePerSqft and lotAcres rather than
+ *     price/lotSizeAcres from CompareListingData).
+ *   - POSTs to /api/ai/chat (which exists at app/api/ai/chat/route.ts).
+ *   - Renders a Skeleton loading state using the design-system primitive.
+ *   - Returns null when fewer than 2 listings are present.
+ *
+ * SAFE TO WIRE? Conditionally yes. Two items need Matt's decision:
+ *
+ *   1. TYPE MISMATCH: AICompare.ComparisonListing uses { lotAcres, pricePerSqft }
+ *      but CompareListingData (the server-side shape) uses { lotSizeAcres }.
+ *      Wiring requires a small adapter (2-3 lines in this file).
+ *
+ *   2. BRAND VOICE: the AI response from /api/ai/chat is unfiltered —
+ *      it may generate prose that violates CLAUDE.md §3 (banned words,
+ *      em-dashes, etc.). The response is rendered raw in a <div className="prose">.
+ *      Before wiring, the /api/ai/chat handler (or a wrapper) needs a
+ *      brand-voice system prompt.
+ *
+ *   3. COST: each comparison triggers a Claude API call. With no auth gate
+ *      on /compare, this route is open to anonymous requests. Rate-limiting
+ *      or an auth check should wrap the button before production launch.
+ *
+ * RECOMMENDATION: HOLD — do not wire yet. Fix the brand-voice system prompt
+ * in /api/ai/chat and add a rate-limit, then wire. The component itself is
+ * ready; the infrastructure around it needs the guard rails first.
+ * If Matt wants to disable this permanently, DELETE AICompare.tsx and this note.
+ */

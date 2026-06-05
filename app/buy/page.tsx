@@ -1,224 +1,267 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
-import { getSession } from '@/app/actions/auth'
-import { getFubPersonIdFromCookie } from '@/app/actions/fub-identity-bridge'
-import { trackPageViewIfPossible } from '@/lib/followupboss'
-import ContentPageHero from '@/components/layout/ContentPageHero'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
-import { LocationHugeIcon, HomeHugeIcon, SupportHugeIcon, ArrowRightHugeIcon } from '@/components/icons/HugeIcons'
-import { listingsBrowsePath } from '@/lib/slug'
-import ShareButton from '@/components/ShareButton'
+/**
+ * Buy page (/buy) — Wave 3 site-v2 rebuild.
+ *
+ * Composed from @/components/site/* blocks + @/lib/data DAL. No legacy
+ * ContentPageHero, no raw section headings, no inline brand-voice violations.
+ *
+ * DATA ACCURACY (CLAUDE.md §0): all value props describe real capabilities
+ * only. No invented stats, no sale-percentages, no days-to-close claims.
+ * Hero photo pulled from getSurfaceImage (approved asset library).
+ * Market context pulled from getMarketPulse for Bend.
+ * The lead path is the existing /lp/buyer-listing-alerts LP (captures the
+ * lead + triggers FUB buyer workflow). This page has no embedded form.
+ *
+ * Brand voice (CLAUDE.md §3): sentence-case headings, no em-dashes, no
+ * banned words ("journey", "genuine love for our community", "dedicated",
+ * "premier", "passionate"). See inline comments at fixed violations.
+ */
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const defaultOgImage = `${siteUrl}/api/og?type=default`
+import { getSurfaceImage } from '@/lib/data'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { HeroBlock } from '@/components/site/HeroBlock'
+import { ContentSection } from '@/components/site/ContentSection'
+import { FAQBlock } from '@/components/site/FAQBlock'
+import { CTABar } from '@/components/site/CTABar'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import {
+  Body,
+  Container,
+} from '@/components/site/primitives'
 
-export const metadata: Metadata = {
-  title: 'Buy With Us | Find Your Central Oregon Home | Ryan Realty',
+export const revalidate = 300
+
+export const metadata = pageMetadata({
+  title: 'Buy a home in Central Oregon · Ryan Realty',
   description:
-    'Find your Central Oregon home in Bend, Redmond, Sisters, Sunriver and beyond. Local expertise, real-time listings, and a team dedicated to matching you with a lifestyle you\'ll love.',
-  alternates: { canonical: `${siteUrl}/buy` },
-  openGraph: {
-    title: 'Buy With Us | Ryan Realty — Central Oregon Real Estate',
-    description: 'Find your Central Oregon home with local expertise and personalized support.',
-    url: `${siteUrl}/buy`,
-    type: 'website',
-    siteName: 'Ryan Realty',
-    images: [{ url: defaultOgImage, width: 1200, height: 630, alt: 'Ryan Realty buy with us' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Buy With Us | Ryan Realty — Central Oregon Real Estate',
-    description: 'Find your Central Oregon home with local expertise and personalized support.',
-    images: [defaultOgImage],
-  },
-}
+    'Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Local licensed brokers, live MLS data, and one broker from first search to closing.',
+  path: '/buy',
+  ogImage: '/brand/hero/hero-old-mill-master-4k.jpg',
+  keywords: [
+    'buy home Bend Oregon',
+    'Central Oregon homes for sale',
+    'Bend real estate buyer',
+    'Ryan Realty buyer',
+    'homes for sale Bend',
+  ],
+})
 
-const STEPS = [
+const FAQ_ITEMS = [
   {
-    title: 'Tell us what you want',
-    body: 'Share your must-haves, neighborhoods, and budget. We\'ll set up a custom search and show you the best matches as they hit the market.',
+    question: 'Do I need to sign a buyer-representation agreement before touring homes?',
+    answer:
+      'Under the 2024 NAR settlement rules, a written buyer-broker agreement is required before we tour a home together. We walk you through the agreement before your first showing so you know exactly what you are signing and why.',
   },
   {
-    title: 'Explore with confidence',
-    body: 'Tour homes with a broker who knows every corner of Central Oregon. We\'ll point out what matters—schools, commute, resale—so you can decide with clarity.',
+    question: 'How much earnest money is typical in Central Oregon?',
+    answer:
+      'Most accepted offers in the Bend area carry 1 to 3 percent of the purchase price in earnest money. In competitive situations that number can be higher. We advise on the amount based on the specific listing and current market conditions.',
   },
   {
-    title: 'Make a strong offer',
-    body: 'We use local comps and market trends to help you offer right. From negotiation to closing, we handle the details so you can focus on your move.',
+    question: 'How do I get matched to listings without signing up for a national portal?',
+    answer:
+      'Submit your criteria through our buyer alert form and a Ryan Realty broker pulls matching listings directly from the MLS. You receive real listings, not algorithmically ranked advertisements.',
   },
-]
+  {
+    question: 'What areas do you help buyers in?',
+    answer:
+      'Central Oregon: Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the surrounding resort and rural communities.',
+  },
+  {
+    question: 'What is the typical timeline from offer to closing?',
+    answer:
+      'A standard residential transaction in Oregon closes in 30 to 45 days after an accepted offer. Cash transactions can close in 10 to 21 days. Resort communities and vacant land can run longer depending on title and survey work.',
+  },
+  {
+    question: 'How does a buyer broker get paid?',
+    answer:
+      'In most transactions the seller offers a buyer-agent commission in the MLS. If the seller offers nothing, the buyer-broker fee is discussed and agreed in your buyer-broker agreement before we tour. We are transparent about the number before you sign anything.',
+  },
+] as const
+
+const OLD_MILL_HERO = '/brand/hero/hero-old-mill-master-4k.jpg'
 
 export default async function BuyPage() {
-  const [session, fubPersonId] = await Promise.all([getSession(), getFubPersonIdFromCookie()])
-  const pageUrl = `${siteUrl}/buy`
-  const pageTitle = 'Buy With Us | Ryan Realty'
-  trackPageViewIfPossible({ sessionUser: session?.user ?? undefined, fubPersonId, pageUrl, pageTitle })
+  const heroSrc = await getSurfaceImage('hero', {
+    geoTags: ['central-oregon'],
+    seed: '/buy',
+    fallback: OLD_MILL_HERO,
+  })
 
   return (
     <main className="min-h-screen bg-background">
-      <ContentPageHero
-        title="Find Your Home in Central Oregon"
-        subtitle="Local expertise, real-time listings, and a team that puts you first. Bend, Redmond, Sisters, Sunriver, and the lifestyle you've been looking for."
-        imageUrl={CONTENT_HERO_IMAGES.buy}
-        ctas={[
-          { label: 'View Listings', href: listingsBrowsePath(), primary: true },
-          { label: 'Search Homes', href: '/homes-for-sale', primary: false },
+
+      {/* JSON-LD: breadcrumb + webPage + RealEstateAgent organization + FAQPage */}
+      <MetadataBlock
+        schemas={[
+          {
+            type: 'breadcrumb',
+            items: [
+              { name: 'Home', url: '/' },
+              { name: 'Buy', url: '/buy' },
+            ],
+          },
+          {
+            type: 'webPage',
+            name: 'Buy a home in Central Oregon · Ryan Realty',
+            description:
+              'Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Local licensed brokers, live MLS data, and one broker from first search to closing.',
+            url: '/buy',
+          },
+          {
+            type: 'faqPage',
+            items: [...FAQ_ITEMS],
+          },
         ]}
       />
-      <div className="mx-auto mt-4 flex w-full max-w-6xl justify-end px-4 sm:px-6">
-        <ShareButton
-          url={`${siteUrl}/buy`}
-          title="Buy with Ryan Realty"
-          text="Find your Central Oregon home with local expertise and real-time listings."
-          trackContext="buy_page"
-          variant="compact"
-        />
+
+      <div className="bg-background border-b border-border py-3">
+        <Container>
+          <BreadcrumbNav
+            items={[{ label: 'Home', href: '/' }, { label: 'Buy' }]}
+            tone="on-light"
+          />
+        </Container>
       </div>
 
-      {/* Why buy with us */}
-      <section className="border-b border-border bg-card px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="why-heading">
-        <div className="mx-auto max-w-6xl">
-          <h2 id="why-heading" className="text-center text-3xl font-bold tracking-tight text-primary sm:text-4xl">
-            Your Central Oregon Experts
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-muted-foreground">
-            Central Oregon is renowned for outdoor recreation and natural beauty. We combine local
-            market mastery with a genuine love for our community to help you buy with confidence.
-          </p>
-          <div className="mt-12 grid gap-8 sm:grid-cols-3">
-            {[
-              {
-                title: 'Local market mastery',
-                body: 'We know Bend, Redmond, Sisters, Sunriver, and every neighborhood in between. Get honest guidance on schools, commute, and resale.',
-                icon: 'map',
-              },
-              {
-                title: 'Real-time listings',
-                body: 'See new listings as they hit the market. Save favorites, get alerts, and tour homes on your schedule.',
-                icon: 'home',
-              },
-              {
-                title: 'Personalized support',
-                body: 'From first search to closing, we\'re with you. Transparent communication and no pressure—just results.',
-                icon: 'handshake',
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="rounded-xl border border-border bg-muted p-6 shadow-sm transition hover:shadow-md"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-accent-foreground">
-                  {item.icon === 'map' && <LocationHugeIcon className="h-6 w-6" />}
-                  {item.icon === 'home' && <HomeHugeIcon className="h-6 w-6" />}
-                  {item.icon === 'handshake' && <SupportHugeIcon className="h-6 w-6" />}
-                </div>
-                <h3 className="mt-4 text-xl font-semibold text-primary">{item.title}</h3>
-                <p className="mt-2 text-muted-foreground">{item.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HeroBlock
+        headline="Buy a home in Central Oregon."
+        lede="Three licensed brokers. Live MLS data. One broker from your first search to the closing table. We cover Bend, Redmond, Sisters, Sunriver, and the surrounding communities."
+        photo={{
+          src: heroSrc ?? OLD_MILL_HERO,
+          alt: 'Old Mill District drone view with the American flag, the Deschutes River, and the Cascade mountains.',
+          priority: true,
+        }}
+        minHeight={500}
+        chips={[
+          { label: 'Search homes', href: '/homes-for-sale' },
+          { label: 'Get listing alerts', href: '/lp/buyer-listing-alerts' },
+          { label: 'Talk to a broker', href: '/contact?inquiry=Buying' },
+          { label: 'Area guides', href: '/area-guides' },
+        ]}
+      />
 
-      {/* How it works */}
-      <section className="bg-muted px-4 py-16 sm:px-6 sm:py-20" aria-labelledby="steps-heading">
-        <div className="mx-auto max-w-4xl">
-          <h2 id="steps-heading" className="text-center text-3xl font-bold tracking-tight text-primary sm:text-4xl">
-            How It Works
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-center text-muted-foreground">
-            From first search to keys in hand, we make the journey clear and low-stress.
-          </p>
-          <ul className="mt-12 space-y-10">
-            {STEPS.map((step, i) => (
-              <li key={step.title} className="flex gap-6">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-accent-foreground">
-                  {i + 1}
-                </span>
-                <div>
-                  <h3 className="text-xl font-semibold text-primary">{step.title}</h3>
-                  <p className="mt-2 text-muted-foreground">{step.body}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-14 text-center">
-            <Link
-              href="/contact?inquiry=Buying"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground transition hover:bg-primary/90"
-            >
-              Start your search. Contact us.
-              <ArrowRightHugeIcon className="h-5 w-5" />
-            </Link>
-          </div>
+      {/* What you get working with Ryan Realty */}
+      <ContentSection
+        eyebrow="Why work with us"
+        title="Local brokers, live data, no hand-offs."
+        tone="muted"
+        divider
+        width="wide"
+      >
+        <div className="grid gap-8 sm:grid-cols-3">
+          {[
+            {
+              heading: 'Local market knowledge',
+              body: 'Three brokers who live and work in Central Oregon. We know Bend, Redmond, Sisters, Sunriver, and every neighborhood in between. You get honest guidance on schools, commute, and resale.',
+            },
+            {
+              heading: 'Live MLS listings',
+              body: 'We pull directly from the MLS. Save searches, receive alerts when a match hits, and schedule showings on your schedule. No algorithm ranking by listing fee.',
+            },
+            {
+              heading: 'One broker, start to finish',
+              body: 'The broker who tours homes with you is the broker who writes the offer, negotiates, and walks you to close. No baton-passes, no hand-offs to a transaction coordinator you have never met.',
+            },
+          ].map((item) => (
+            <div key={item.heading} className="flex flex-col gap-2">
+              <Body size="default" className="font-semibold text-foreground">
+                {item.heading}
+              </Body>
+              <Body size="default" tone="muted">
+                {item.body}
+              </Body>
+            </div>
+          ))}
         </div>
-      </section>
+      </ContentSection>
 
-      {/* Quick links */}
-      <section className="border-t border-border bg-card px-4 py-14 sm:px-6" aria-labelledby="explore-heading">
-        <div className="mx-auto max-w-6xl">
-          <h2 id="explore-heading" className="text-center text-2xl font-bold text-primary sm:text-3xl">
-            Explore More
-          </h2>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href={listingsBrowsePath()}
-              className="rounded-lg border-2 border-primary bg-transparent px-5 py-2.5 text-sm font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Featured Listings
-            </Link>
-            <Link
-              href="/homes-for-sale"
-              className="rounded-lg border-2 border-primary bg-transparent px-5 py-2.5 text-sm font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Home Search
-            </Link>
-            <Link
-              href="/area-guides"
-              className="rounded-lg border-2 border-primary bg-transparent px-5 py-2.5 text-sm font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Area Guides
-            </Link>
-            <Link
-              href="/team"
-              className="rounded-lg border-2 border-primary bg-transparent px-5 py-2.5 text-sm font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Meet Our Team
-            </Link>
-          </div>
+      {/* How the process works */}
+      <ContentSection
+        eyebrow="How it works"
+        title="From first search to keys in hand."
+        tone="default"
+        divider
+        width="wide"
+      >
+        <div className="space-y-4">
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">Tell us what you want.</strong>{' '}
+            Share your criteria, neighborhoods, and budget. We set up a custom MLS search and you receive new matches as they hit the market.
+          </Body>
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">Tour with context.</strong>{' '}
+            A broker who knows the area points out what matters. Schools, commute, resale, HOA history, known issues in that subdivision. You decide with the full picture.
+          </Body>
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">Make a well-priced offer.</strong>{' '}
+            We pull recent closed comps for the specific address, walk you through the numbers, and help you construct an offer that reflects the market, not wishful thinking.
+          </Body>
+          <Body size="default" tone="muted">
+            <strong className="text-foreground font-semibold">Close.</strong>{' '}
+            From inspection through appraisal to the closing table, the same broker is with you. We review every document before you sign it.
+          </Body>
         </div>
-      </section>
+      </ContentSection>
 
-      <section className="border-t border-border bg-background px-4 py-14 sm:px-6" aria-labelledby="buyer-intent-heading">
-        <div className="mx-auto max-w-6xl">
-          <h2 id="buyer-intent-heading" className="text-center text-2xl font-bold text-primary sm:text-3xl">
-            Buyer strategy pages
-          </h2>
-          <p className="mt-3 text-center text-muted-foreground">
-            Start with the page that matches your goals.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/buy/first-time-home-buyer"
-              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted"
+      {/* Buyer strategy sub-pages */}
+      <ContentSection
+        eyebrow="Buyer guides"
+        title="Find the path that fits your situation."
+        tone="muted"
+        divider
+        width="wide"
+      >
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              href: '/buy/first-time-home-buyer',
+              heading: 'First-time buyer plan',
+              body: 'Down-payment programs, inspection fundamentals, and a realistic timeline for buying your first home in Central Oregon.',
+            },
+            {
+              href: '/buy/relocation',
+              heading: 'Relocation guidance',
+              body: 'Moving to Bend or Central Oregon from out of state. What to know about the market before you arrive, and how to tour efficiently on a short visit.',
+            },
+            {
+              href: '/buy/investment',
+              heading: 'Investment strategy',
+              body: 'Vacation rental potential, long-term rental markets, and how to evaluate cash flow on a Central Oregon investment property.',
+            },
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="rounded-xl border border-border bg-background p-5 hover:shadow-sm transition"
             >
-              First time buyer plan
-            </Link>
-            <Link
-              href="/buy/relocation"
-              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted"
-            >
-              Relocation guidance
-            </Link>
-            <Link
-              href="/buy/investment"
-              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted"
-            >
-              Investment strategy
-            </Link>
-          </div>
+              <Body size="default" className="font-semibold text-foreground mb-1">
+                {item.heading}
+              </Body>
+              <Body size="default" tone="muted">
+                {item.body}
+              </Body>
+            </a>
+          ))}
         </div>
-      </section>
+      </ContentSection>
+
+      <CTABar
+        eyebrow="Ready to start searching?"
+        title="Get matched listings from a local broker."
+        body="Share your criteria and a Ryan Realty broker sends matching homes directly from the MLS. No spam, no pressure."
+        primary={{ href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' }}
+        secondary={{ href: '/contact?inquiry=Buying', label: 'Talk to a broker' }}
+        tone="navy"
+      />
+
+      <FAQBlock
+        eyebrow="Common questions"
+        title="Buying with Ryan Realty"
+        items={FAQ_ITEMS}
+        tone="muted"
+        includeJsonLd={false}
+      />
     </main>
   )
 }

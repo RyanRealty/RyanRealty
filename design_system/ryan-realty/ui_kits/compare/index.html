@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compare properties mockup. Ryan Realty</title>
+<link rel="icon" href="../../assets/favicon.ico">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="../_shared/site-mockup.css">
+<style>
+  .compare-table { width:100%; border-collapse:collapse; margin-top:24px; }
+  .compare-table th, .compare-table td { padding:10px 14px; border:1px solid var(--border); font-size:14px; }
+  .compare-table th { background:var(--muted); font-weight:600; text-align:left; }
+  .compare-table td { text-align:center; }
+  .compare-table td:first-child { text-align:left; color:var(--muted-foreground); }
+  .compare-table tr.best td { color:var(--primary); font-weight:600; }
+  .compare-photo { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:8px; }
+  .empty-state { padding:48px 0; text-align:center; color:var(--muted-foreground); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="../website/index.html"><img src="../../assets/logo-header-white.png" alt="Ryan Realty"></a>
+    <nav class="nav">
+      <a href="../city/index.html">Search</a>
+      <a href="../community/index.html">Communities</a>
+      <a href="../market-report/index.html">Market</a>
+      <a href="../team/index.html">Meet the Team</a>
+      <a href="../sell/index.html">Sell</a>
+    </nav>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost-on-navy">Sign in</button>
+      <button class="btn btn-on-navy">Search homes</button>
+    </div>
+  </div>
+</header>
+
+<!-- Breadcrumb -->
+<div style="border-bottom:1px solid var(--border);padding:12px 0">
+  <div class="container">
+    <nav style="font-size:13px;color:var(--muted-foreground)">
+      <a href="../website/index.html" style="color:var(--muted-foreground)">Home</a>
+      <span style="margin:0 6px">·</span>
+      <span style="color:var(--foreground)">Compare properties</span>
+    </nav>
+  </div>
+</div>
+
+<!-- Page heading section -->
+<section style="padding:40px 0 32px">
+  <div class="container">
+    <!-- H1 via DisplayHeading (Amboqia font-display) -->
+    <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,2.75rem);line-height:1.08;letter-spacing:-0.02em;color:var(--foreground);margin:0 0 8px 0">Compare properties</h1>
+
+    <!-- Empty-state hint — shown when no ?ids= present -->
+    <p style="font-size:15px;color:var(--muted-foreground);max-width:56ch;margin:0">
+      Add homes from any search or listing page to compare them side by side. Up to 4 properties at a time.
+    </p>
+  </div>
+</section>
+
+<!-- Compare table — populated state (2 sample listings) -->
+<section style="padding:0 0 48px">
+  <div class="container">
+
+    <!-- Property photo row -->
+    <div style="display:grid;grid-template-columns:160px repeat(2, 1fr);gap:12px;margin-bottom:16px;align-items:end">
+      <div></div>
+      <div>
+        <img class="compare-photo" src="../../assets/hero-bend-downtown.png" alt="61482 Skyline Ranch Rd">
+        <p style="font-size:13px;font-weight:600;margin:6px 0 2px">61482 Skyline Ranch Rd</p>
+        <p style="font-size:12px;color:var(--muted-foreground);margin:0">Bend, OR · Tetherow</p>
+        <button style="margin-top:8px;font-size:12px;color:var(--muted-foreground);background:none;border:none;cursor:pointer;padding:0">Remove</button>
+      </div>
+      <div>
+        <img class="compare-photo" src="../../assets/hero-awbrey-clean.jpg" alt="19206 Kiowa Rd">
+        <p style="font-size:13px;font-weight:600;margin:6px 0 2px">19206 Kiowa Rd</p>
+        <p style="font-size:12px;color:var(--muted-foreground);margin:0">Bend, OR · Mountain View</p>
+        <button style="margin-top:8px;font-size:12px;color:var(--muted-foreground);background:none;border:none;cursor:pointer;padding:0">Remove</button>
+      </div>
+    </div>
+
+    <!-- Comparison table using @/components/ui/table -->
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th style="width:160px">Field</th>
+          <th>61482 Skyline Ranch Rd</th>
+          <th>19206 Kiowa Rd</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Price</td>
+          <td>$1,495,000</td>
+          <td class="best">$895,000</td>
+        </tr>
+        <tr>
+          <td>Beds</td>
+          <td class="best">4</td>
+          <td>3</td>
+        </tr>
+        <tr>
+          <td>Baths</td>
+          <td class="best">3.5</td>
+          <td>2</td>
+        </tr>
+        <tr>
+          <td>Sq Ft</td>
+          <td class="best">3,420</td>
+          <td>2,100</td>
+        </tr>
+        <tr>
+          <td>Price / Sq Ft</td>
+          <td>$437</td>
+          <td class="best">$426</td>
+        </tr>
+        <tr>
+          <td>Lot (acres)</td>
+          <td class="best">0.28</td>
+          <td>0.14</td>
+        </tr>
+        <tr>
+          <td>Year Built</td>
+          <td>2018</td>
+          <td class="best">2022</td>
+        </tr>
+        <tr>
+          <td>Garage</td>
+          <td class="best">3</td>
+          <td>2</td>
+        </tr>
+        <tr>
+          <td>Days on Market</td>
+          <td>42</td>
+          <td class="best">18</td>
+        </tr>
+        <tr>
+          <td>Status</td>
+          <td>Active</td>
+          <td>Active</td>
+        </tr>
+        <tr>
+          <td>Community</td>
+          <td>Tetherow</td>
+          <td>Mountain View</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Share / PDF action row -->
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-outline">Copy share link</button>
+      <button class="btn btn-outline">Download PDF</button>
+      <a href="/homes-for-sale" class="btn btn-outline">Add another property</a>
+    </div>
+
+    <!-- Skeleton loading state representation (shown during data fetch) -->
+    <div style="margin-top:32px;padding:20px;border:1px dashed var(--border);border-radius:8px;opacity:0.4">
+      <p style="font-size:12px;color:var(--muted-foreground);margin:0 0 8px 0">Loading state — Skeleton primitives from @/components/ui/skeleton</p>
+      <div style="height:16px;background:var(--muted);border-radius:4px;margin-bottom:8px;width:100%"></div>
+      <div style="height:16px;background:var(--muted);border-radius:4px;margin-bottom:8px;width:83%"></div>
+      <div style="height:16px;background:var(--muted);border-radius:4px;width:67%"></div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-cols">
+      <div><img class="wm" src="../../assets/logo-header-white.png" alt="Ryan Realty"><p>Your local team for Central Oregon real estate.</p></div>
+      <div><h4>Search</h4><a>Homes for sale</a></div>
+      <div><h4>Buy</h4><a>Listing alerts</a><a>First-time buyer</a></div>
+      <div><h4>Company</h4><a>Meet the team</a><a>Contact</a></div>
+    </div>
+    <div class="legal">© 2026 Ryan Realty LLC · License 201206613. Equal Housing Opportunity.</div>
+  </div>
+</footer>
+
+</body>
+</html>
