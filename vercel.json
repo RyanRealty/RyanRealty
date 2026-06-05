@@ -13,10 +13,6 @@
       "schedule": "0 2 * * 0"
     },
     {
-      "path": "/api/cron/detect-fsbo-listings",
-      "schedule": "20 7 * * *"
-    },
-    {
       "path": "/api/cron/refresh-market-stats",
       "schedule": "0 7 * * *"
     },
@@ -25,16 +21,8 @@
       "schedule": "0 4 * * 0"
     },
     {
-      "path": "/api/cron/refresh-listing-year-stats",
-      "schedule": "27 */4 * * *"
-    },
-    {
       "path": "/api/cron/refresh-place-content",
       "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-video-tours-cache",
-      "schedule": "37 * * * *"
     },
     {
       "path": "/api/cron/refresh-mvs",
@@ -57,10 +45,6 @@
       "schedule": "0 12 * * *"
     },
     {
-      "path": "/api/cron/marketing-weekly-cycle",
-      "schedule": "0 2 * * 1"
-    },
-    {
       "path": "/api/cron/marketing-daily-digest",
       "schedule": "0 14 * * *"
     },
@@ -73,40 +57,12 @@
       "schedule": "0 13 * * *"
     },
     {
-      "path": "/api/cron/marketing-measurement-loop",
-      "schedule": "0 15 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-competitor-recon",
-      "schedule": "0 7 * * 1-5"
-    },
-    {
-      "path": "/api/cron/loop-health-check",
-      "schedule": "30 12 * * *"
-    },
-    {
-      "path": "/api/cron/producer-dispatcher",
-      "schedule": "23 * * * *"
-    },
-    {
-      "path": "/api/cron/producer-runtime",
-      "schedule": "47 * * * *"
-    },
-    {
-      "path": "/api/cron/publisher-sweep",
-      "schedule": "53 * * * *"
-    },
-    {
       "path": "/api/cron/gbp-monthly-digest",
       "schedule": "0 13 1 * *"
     },
     {
       "path": "/api/cron/gbp-health-check",
-      "schedule": "42 * * * *"
-    },
-    {
-      "path": "/api/cron/marketing-snapshot-google-ads",
-      "schedule": "30 6 * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/snapshot-channels",

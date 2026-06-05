@@ -80,6 +80,7 @@ export async function GET(request: Request) {
   ]
 
   let monthlyCount = 0
+  const monthlyErrors: string[] = []
 
   for (const { geo_type, geo_name } of geoEntries) {
     const { error } = await supabase.rpc('compute_reporting_cache_payload', {
@@ -91,14 +92,18 @@ export async function GET(request: Request) {
     })
 
     if (error) {
+      // Do NOT abort the whole cron on a Phase-1 RPC failure. The Supabase-side
+      // compute_reporting_cache_payload RPC is currently absent in production, so
+      // this errored on every run and returned 500 BEFORE Phase 2 — the Next.js
+      // cache pre-warm that /reports actually reads — ever ran. Record and keep
+      // going so the page stays warm. (Build-vs-remove of reporting_cache is a
+      // separate decision tracked in the completeness audit.)
       console.error(
         `[refresh-reporting-cache] compute_reporting_cache_payload ${geo_name} error:`,
         error.message
       )
-      return NextResponse.json(
-        { ok: false, error: `compute_reporting_cache_payload(${geo_name}): ${error.message}` },
-        { status: 500 }
-      )
+      monthlyErrors.push(`${geo_name}: ${error.message}`)
+      continue
     }
     monthlyCount++
   }
@@ -174,6 +179,7 @@ export async function GET(request: Request) {
       quarterly: 0,
       ytd: 0,
     },
+    monthly_errors: monthlyErrors.length > 0 ? monthlyErrors : undefined,
     next_cache_warmed: nextCacheWarmed,
     next_cache_errors: nextCacheErrors.length > 0 ? nextCacheErrors : undefined,
     duration_ms: Date.now() - startMs,
