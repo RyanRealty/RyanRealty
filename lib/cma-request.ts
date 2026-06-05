@@ -18,6 +18,7 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
+import { sendGmailMessage } from '@/lib/gmail-draft'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -350,19 +351,35 @@ async function sendLeadConfirmation(params: {
 </div>
 `.trim()
 
-  await sendEmail({
+  // Send from Matt's real Google Workspace mailbox (matt@ryan-realty.com) via
+  // domain-wide-delegation impersonation — genuinely his address, lands in his
+  // Sent folder, and replies thread straight to his inbox. No Resend-verified
+  // sending domain required. (Matt 2026-06-05: "email is matt@ryan-realty.com" —
+  // not the noreply, not the mail. subdomain.)
+  const gmailRes = await sendGmailMessage({
+    impersonateAs: 'matt@ryan-realty.com',
     to: params.leadEmail,
-    // From Matt personally, not a noreply. `mail.ryan-realty.com` is the
-    // Resend-verified sending domain, the display name reads as Matt, and
-    // replies route to his real inbox. (Matt 2026-06-04: "send it from my
-    // email, not the noreply.") TODO: switch to matt@ryan-realty.com once the
-    // root domain is verified in Resend so the raw address drops the subdomain.
-    from: 'Matt Ryan <matt@mail.ryan-realty.com>',
     subject,
-    text,
-    html,
+    bodyText: text,
+    bodyHtml: html,
     replyTo: 'matt@ryan-realty.com',
   })
+  if (!gmailRes.ok) {
+    // Graceful fallback so the acknowledgment never silently fails: send via
+    // Resend from the verified mail.ryan-realty.com subdomain (display name still
+    // reads "Matt Ryan", replies still route to his real inbox).
+    console.warn(
+      `[cma-request] Gmail send-as-matt failed (${gmailRes.error ?? 'unknown'}); falling back to Resend`,
+    )
+    await sendEmail({
+      to: params.leadEmail,
+      from: 'Matt Ryan <matt@mail.ryan-realty.com>',
+      subject,
+      text,
+      html,
+      replyTo: 'matt@ryan-realty.com',
+    })
+  }
 }
 
 function escapeHtml(s: string): string {

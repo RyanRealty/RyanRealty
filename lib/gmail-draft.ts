@@ -32,6 +32,10 @@ import { google } from 'googleapis'
  *  that's actually allowlisted for our service account (verified 2026-05-29). */
 export const GMAIL_DRAFT_SCOPE = 'https://www.googleapis.com/auth/gmail.modify'
 
+/** messages.send scope. In the DWD allowlist for the service account (verified 2026-05-14
+ *  in lib/marketing-brain/inbox-auth.ts; the inbox reply path sends with it in production). */
+export const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send'
+
 /** Default mailbox the draft is created in. */
 export const DEFAULT_DRAFT_USER =
   process.env.GOOGLE_SERVICE_ACCOUNT_SUBJECT?.trim() || 'matt@ryan-realty.com'
@@ -64,7 +68,7 @@ export interface GmailDraftResult {
   hint?: string
 }
 
-function buildJwt(subject: string) {
+function buildJwt(subject: string, scopes: string[] = [GMAIL_DRAFT_SCOPE]) {
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL?.trim()
   const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
   if (!clientEmail || !privateKey) {
@@ -75,7 +79,7 @@ function buildJwt(subject: string) {
   return new google.auth.JWT({
     email: clientEmail,
     key: privateKey.replace(/\\n/g, '\n'),
-    scopes: [GMAIL_DRAFT_SCOPE],
+    scopes,
     subject,
   })
 }
@@ -218,6 +222,77 @@ export async function createGmailDraft(
       error: msg,
       hint: scopeIssue
         ? `drafts.create was rejected — confirm ${GMAIL_DRAFT_SCOPE} is in the DWD allowlist for the service account.`
+        : undefined,
+    }
+  }
+}
+
+export interface GmailSendResult {
+  ok: boolean
+  messageId?: string
+  threadId?: string
+  error?: string
+  hint?: string
+}
+
+/**
+ * Send a message (NOT a draft) from a Ryan Realty mailbox via DWD impersonation.
+ *
+ * Unlike createGmailDraft(), this delivers immediately and the message lands in
+ * the impersonated user's Sent folder, so a reply threads straight back to their
+ * real inbox. Use this for transactional mail that should genuinely originate from
+ * a broker's address (e.g. the CMA "we got your request" acknowledgment from
+ * matt@ryan-realty.com) without needing a Resend-verified sending domain.
+ *
+ * Auth: same service account as createGmailDraft, but requests gmail.send (also in
+ * the DWD allowlist, verified 2026-05-14). Returns { ok:false, error, hint } on
+ * auth/scope failure so callers can fall back to another delivery path (e.g. Resend).
+ */
+export async function sendGmailMessage(
+  params: CreateGmailDraftParams,
+): Promise<GmailSendResult> {
+  const from = params.impersonateAs?.trim() || DEFAULT_DRAFT_USER
+  let jwt
+  try {
+    jwt = buildJwt(from, [GMAIL_SEND_SCOPE])
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+
+  try {
+    await jwt.authorize()
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    const scopeIssue = /unauthorized_client|invalid_grant|insufficient|access_denied/i.test(msg)
+    return {
+      ok: false,
+      error: msg,
+      hint: scopeIssue
+        ? `Add ${GMAIL_SEND_SCOPE} to the DWD allowlist in Workspace Admin → Security → API controls → Domain-wide delegation for the service account, then retry.`
+        : undefined,
+    }
+  }
+
+  try {
+    const gmail = google.gmail({ version: 'v1', auth: jwt })
+    const raw = toBase64Url(buildMimeMessage(params, from))
+    const res = await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: { raw },
+    })
+    return {
+      ok: true,
+      messageId: res.data.id ?? undefined,
+      threadId: res.data.threadId ?? undefined,
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    const scopeIssue = /insufficient|scope|forbidden|403/i.test(msg)
+    return {
+      ok: false,
+      error: msg,
+      hint: scopeIssue
+        ? `messages.send was rejected — confirm ${GMAIL_SEND_SCOPE} is in the DWD allowlist for the service account.`
         : undefined,
     }
   }

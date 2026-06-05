@@ -170,7 +170,19 @@ WHERE "PostalCode" = '<zip>'
   AND "StreetName" ILIKE '<street>%';
 ```
 
-Capture: `SubdivisionName`, `BedroomsTotal`, `BathroomsTotal`, `TotalLivingAreaSqFt`, `year_built`, `lot_size_acres`, `garage_spaces`, `Latitude`, `Longitude`, `PhotoURL`, `public_remarks`. If subject isn't in the MLS (e.g. never been listed), Matt provides the values directly in `payload.client_notes`.
+Capture: `SubdivisionName`, `BedroomsTotal`, `BathroomsTotal`, `TotalLivingAreaSqFt`, `year_built`, `lot_size_acres`, `garage_spaces`, `Latitude`, `Longitude`, `PhotoURL`, `public_remarks`. If subject isn't in the MLS (e.g. never been listed), Matt provides the values directly in `payload.client_notes`. (Note: the listings agent fields are `list_agent_name` / `list_agent_email`, NOT `ListAgentEmail`.  the older field name in this skill was wrong.)
+
+**Step 3.5.  Verify zoning + land-use entitlements from the AUTHORITATIVE county record (never the MLS, never an inference)**
+
+Zoning is a top-three value driver for land and the MLS zoning field is routinely blank or wrong. Pull it from the authoritative county source before stating any zoning on a CMA (CLAUDE.md §GIS-authoritative).
+
+- **Deschutes County:** Deschutes County DIAL (`dial.deschutes.org`) by tax account number.  `/Real/Index/<account>` confirms address/acreage/owner, and `/Real/DevelopmentSummary/<account>` gives the zoning. Capture the exact zoning code(s) INCLUDING combining/overlay zones, the map/taxlot, and owner of record.
+- Codes you will see: base zones EFU / **EFUTRB** (Exclusive Farm Use, Tumalo-Redmond-Bend subzone), MUA10, RR10, UAR10, F1/F2; overlays **LM** (Landscape Management), **WA** (Wildlife Area), FP (Flood Plain), SMIA, AS (Airport Safety).
+- Record each in citations.json with the source URL + fetched date.
+
+**Buildability is NOT automatic on EFU or restrictive zones.** A dwelling on EFU land requires a qualifying entitlement (farm dwelling, lot-of-record dwelling, or an approved Conditional Use Permit). If a CMA's value rests on buildability, verify the CURRENT status of any CUP / partition / dwelling approval with the County.  CUPs lapse if not acted on (often 2-4 years). Never state "buildable" on an EFU parcel without a verified, current entitlement.  label it conditional and surface to Matt.
+
+(Matt directive 2026-06-04: the first 18705 Tumalo Reservoir draft mislabeled an EFU/LM/WA parcel as "RR10" and called it freely buildable. This step exists so that never ships.)
 
 **Step 4.  Pull subdivision comps**
 
@@ -310,6 +322,65 @@ If `bleed.length > 0`, the CMA is NOT ready. Either split the offending section 
 
 Note: this check is **self-calibrating**.  it reads each page's actual footer position rather than assuming a fixed ceiling, so it works whether the per-CMA stylesheet uses 1056 px letter portrait, 1100 px legal stretch, or anything in between. The 4 px buffer below `footerTop` is the minimum gap between body content and the footer band; widen it to 8-12 px if you want stricter visual breathing room.
 
+**Step 7b.  Land / acreage CMA additions (PropertyType D — required when subject is raw land or acreage)**
+
+When the subject's `PropertyType = 'D'` (land), the standard SFR layout (Steps 7 and 9) applies with the following mandatory additions. These were locked 2026-06-04 based on the 18705 Tumalo Reservoir Road CMA build — the first full zoning-aware land CMA produced under this skill. Reference: `public/drafts/cma-18705-tumalo-reservoir/cma.html` (20 pages, 6-exhibit appendix).
+
+**Addition 1 — Zoning Analysis & Comp Weighting (two pages, placed immediately before the Pricing Strategy page)**
+
+For land CMAs, zoning is the primary value driver. A comp in the wrong zone — even at the same acreage and price per acre — is misleading, not informative. Insert two dedicated pages:
+
+*Page A: Per-comp zoning pros/cons table.* Columns:
+- Parcel (address + acreage)
+- Zone (from authoritative GIS — see Step 3.5, never from MLS)
+- Dwelling pathway (by-right / conditional use / lot-of-record / none confirmed)
+- Subdividable? (yes/no, with governing code reference)
+- Irrigation / high-value farmland status
+- Weight & why (PRIMARY / FLOOR ANCHOR / SIZE-TREND SUPPORT / CONTEXT ONLY / EXCLUDED)
+
+Weighting logic:
+- **PRIMARY weight:** comps in the identical base zone (e.g., EFUTRB matching an EFUTRB subject) and the same entitlement class. These are the only true matches. List all primary comps.
+- **FLOOR ANCHOR:** a zone-matched comp with the worst comparable conditions (no water, no confirmed CUP, poor location). Sets the conservative low end. Always include if one exists.
+- **SIZE-TREND SUPPORT:** zone-matched comps outside the primary size range (e.g., 65-80 ac supporting a 40-ac subject). Show how large-parcel compression anchors the low end and confirms the subject's tier is above that band.
+- **CONTEXT ONLY:** zone-matched comps with a small-lot premium (e.g., 11-ac EFUTRB with replacement dwelling) that does not extrapolate to the subject's acreage. Show but do not use for sizing.
+- **EXCLUDED:** comps in a different zone class (MUA-10, RR-10, TUR-5, UAR-10, residential). Do not apply a haircut and use them — exclude them entirely. The reason: by-right dwelling + subdivision optionality is the core of the premium those zones command, and there is no defensible way to strip it out with a numerical adjustment. State the exclusion reason explicitly in the table.
+
+*Page B: Weighting narrative.* Plain-language explanation of:
+1. Why the matching base zone comps are the only true matches (entitlement class logic).
+2. Why non-EFU / by-right / subdivisible comps are excluded rather than discounted (the optionality premium is not separable with paired-sales logic).
+3. How irrigation and farming value interact with the subject's water-rights status (especially relevant if subject has no irrigation: explain the dual effect — discount vs. enabling condition for dwelling CUP pathway under DCC 18.16).
+4. Any subdivision floor imposed by overlay zones (e.g., WA 40-acre minimum under DCC 18.88) and what it means for buyer optionality.
+5. The explicit value conclusion: where the subject lands in the $/acre range, which comps anchor the low and high ends, and the recommended list price. This narrative ties directly to the Pricing Strategy page that follows.
+
+**Addition 2 — Supplemental Documentation exhibit appendix (two pages, placed after the Disclosure + Signature page)**
+
+A professional exhibit list of every authoritative county record backing the CMA. Required for any land CMA where zoning, entitlement, or parcel boundary is a value driver (which is always). Each exhibit entry must include:
+- Exhibit number (EX-1, EX-2, ...)
+- Document name
+- Source + authoritative URL + document/account ID
+- Date pulled
+- Key finding (verbatim quote where the fact is decisive)
+
+Required exhibits for a Deschutes County land CMA (adapt for other counties):
+
+| # | Document | Source |
+|---|---|---|
+| EX-1 | Zoning of record | Deschutes County DIAL Development Summary (`dial.deschutes.org/Real/DevelopmentSummary/<account>`) — captures base zone, overlays, Legal Lot of Record status |
+| EX-2 | Dwelling entitlement / Declaratory Ruling | Deschutes County WebLink F&D document (if a CUP or DR exists) — include verbatim condition language confirming the entitlement |
+| EX-3 | Permit history | Deschutes County DIAL Permits (`dial.deschutes.org/Real/Permits/<account>`) — lists finaled building/electrical/plumbing, land-use permits, CUP extensions |
+| EX-4 | Parcel boundary / aerial | Deschutes County GIS taxlot layer (`maps.deschutes.org/arcgis/rest/services/Dial2_Taxlots/MapServer/0`) — acreage computed from authoritative polygon, not MLS or assessor estimate |
+| EX-5 | Comp zoning | Deschutes County GIS Summary_Information layer spatial query per comp taxlot — confirms zone for every comp included or excluded |
+| EX-6 | Applicable zoning code | Deschutes County Code Title 18 refs for each overlay (DCC 18.16 EFU, 18.84 LM, 18.88 WA, etc.) with deschutescounty.gov URLs |
+
+Note: source PDFs (F&D, permit printouts) are available from the county portal at the exhibit URLs and should be offered as attachments when the CMA is delivered.
+
+Write all six exhibits (or the applicable subset) into `out/cma-<slug>/citations.json` under a `supplemental_exhibits` key in addition to the standard `sources` array.
+
+**Cross-references:**
+- Step 3.5 of this skill: authoritative zoning pull (GIS, not MLS). The exhibit list is the public-facing record of that step.
+- CLAUDE.md §GIS-authoritative: polygons/KML/boundaries must come from City/County GIS or Census TIGER. Never approximate or infer from memory.
+- CLAUDE.md §0 (Data Accuracy): every exhibit entry carries a source URL, date pulled, and key finding so the trace is auditable.
+
 **Step 8.  Build the comp location map endpoint**
 
 Create `app/api/maps/cma-<slug>/route.ts` (or generalize to a parameterized endpoint after the second CMA). The route proxies a Google Maps Static API call with:
@@ -401,6 +472,28 @@ The subject row at the top of the comp summary table should populate List with t
 }
 ```
 
+**Step 12b.  Independent Verification Review (MANDATORY substantive-accuracy gate.  the draft does NOT surface to Matt until this passes)**
+
+Step 11's QA gate checks FORMAT and provenance (page-fit, brand voice, "figures trace to a query"). It does NOT catch substantive valuation errors.  a fabricated zoning code, a non-comparable comp, a "bare land" mischaracterization, or an unverified entitlement all render cleanly and pass Step 11. Those are §0 failures that risk Matt's license if they reach a client. (Verified failure modes from the 18705 Tumalo Reservoir build, 2026-06-04: the first draft labeled an EFU/LM/WA parcel "RR10," leaned on MUA10/TUR5 comps that inflated the value, and called an improved parcel with a confirmed dwelling right "bare land".  all three passed Step 11. Only manual scrutiny caught them. This step exists so the producer catches them, not Matt.)
+
+Before the draft surfaces (Step 13), an **independent reviewer.  a SEPARATE agent pass, NEVER the agent that built the CMA.  runs an adversarial verification** whose job is to FALSIFY each value-driving claim against the authoritative record, not to admire the layout. Spawn it as its own subagent (fresh context) and hand it the draft HTML, `citations.json`, and the source records (Supabase pulls + the county DIAL / GIS / permit records + the comp set). Its mandate: find what is WRONG, default to "flag it" when uncertain.
+
+**Verification checklist (a verdict + evidence for every item):**
+
+1. **Zoning** comes from the authoritative county record (Deschutes DIAL DevelopmentSummary per Step 3.5), NOT inferred or from the MLS, and every base zone + overlay (LM / WA / FP / SMIA / AS) is captured and correctly stated. Pull it fresh and compare.
+2. **Comp comparability**.  every comp is zoning-matched (same entitlement class as the subject). Any comp in a different or easier zone (MUA10 / RR10 / UAR10 / TUR5 vs an EFU subject) is EXCLUDED or explicitly down-weighted with the reason, never silently averaged in. Pull each comp's zone from the county GIS and flag any mismatch used at weight.
+3. **Property profile**.  bare-vs-improved, structures, utilities, and dwelling status reconcile to the permit + assessor record (DIAL Permits + Land & Structures), not just the MLS or an owner claim.
+4. **Value drivers traced to PRIMARY records**.  every fact that moves the number (dwelling right / CUP / DR, water rights, buildability, lot-of-record, partition) traces to a primary county record cited in `citations.json`, not asserted.
+5. **No inference stated as fact**.  scan for any definitive claim (zoning, acreage, buildability, entitlement) that lacks a primary-source citation. This is the exact RR10 failure mode.
+6. **Narrative reconciles to data**.  every verdict / pill / sentence is consistent with the number beside it (market verdict matches MoS, the $/acre conclusion matches the comp weighting, the recommended list sits correctly within the range, the methods converge within ±5% or the divergence is explained).
+7. **Math foots**.  the adjustment grid, weighted average, $/acre, range, and tier prices all compute from the cited inputs.
+
+**Output:** the reviewer returns a verdict.  **PASS** (every item verified) or **FAIL** with a numbered punch list, each flag carrying the claim, why it is wrong or unverified, and the authoritative source that should govern.
+
+**The gate (hard):** the CMA does NOT advance to Step 13 until the verification PASSES. On FAIL, the producer fixes every flagged item.  re-pulling the authoritative record where needed.  and re-runs the reviewer. A draft may surface to Matt only with the verdict attached: PASS, or PASS-with-dispositioned-flags where a flag was reviewed and explicitly resolved with the basis recorded. Matt's review (§7 `matt-review-draft`) stays the FINAL gate.  this step makes the draft trustworthy before it reaches him, so he approves a vetted document instead of doing the QA himself.
+
+Record the verdict + any resolved flags in `citations.json` under a `verification_review` block, and include it in the `executor_response` surfaced with the draft (Step 13). This is `engineering:code-review` for a valuation.  the same enforce-it-don't-eyeball-it gate. Non-negotiable for land / complex CMAs; it still runs for a simple in-subdivision SFR CMA but typically passes quickly.
+
 **Step 13.  UPDATE the action row to `ready` and surface to Matt**
 
 ```sql
@@ -452,6 +545,56 @@ VALUES...
 
 4. Git commit + push the `public/cmas/<slug>/` files. Do not commit the `public/drafts/cma-<slug>/` version.  that's the draft scratch space.
 5. Set `marketing_brain_actions.status = 'approved'` then `'executed'` once the push completes.
+6. **Immediately after the git push (step 4 above), call the finalize-deliver endpoint** (Step 15 below) to fire the Gmail draft + Matt notification. Do not wait for a separate manual trigger.
+
+---
+
+**Step 15.  Fire Gmail draft + Matt notification (the delivery wiring)**
+
+Once the HTML is at `public/cmas/<slug>/cma.html` and the git push is done, call:
+
+```bash
+curl -X POST https://ryan-realty.com/api/cma/<slug>/finalize-deliver \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Or, from within the same agent session that just did the push:
+
+```typescript
+import { finalizeAndDeliverCma } from '@/lib/cma-deliver'
+const result = await finalizeAndDeliverCma({ slug: 'cma-<slug>' })
+```
+
+**What this does (in order, all best-effort):**
+
+1. Renders the CMA HTML to a PDF buffer via `renderCmaPdfBuffer(slug)` (puppeteer + @sparticuz/chromium-min, same engine as `/api/cma/<slug>/pdf`). Errors if the PDF exceeds the 25 MB Gmail cap.
+2. Creates a **Gmail DRAFT** in the signing broker's mailbox (`matt@ryan-realty.com` by default, or the broker resolved from `public.cmas.broker_slug` if they're on the `@ryan-realty.com` domain) via `createGmailDraft` (Google DWD / `gmail.modify` scope, verified live 2026-05-29). The draft is addressed to the lead, has the CMA PDF attached, and BCC's `ryan.realty@followupboss.me` so FUB logs it the moment Matt hits Send. **Matt reviews and sends personally** — this is a DRAFT, never an auto-send to the lead.
+3. **Fallback:** if the Gmail DWD scope is unavailable, Resend delivers the PDF to the broker (not the lead) with context to forward manually. The response field `fellBackToResend: true` signals this.
+4. Notifies Matt via Resend (`MATT_ALERT_EMAIL` env var, defaults to `matt@ryan-realty.com`) that the CMA is ready: Gmail-draft confirmation, recommended list price, PDF link at `/api/cma/<slug>/pdf`.
+
+**Response shape:**
+
+```json
+{
+  "ok": true,
+  "slug": "cma-<slug>",
+  "gmail_draft_id": "r8765432109",
+  "fell_back_to_resend": false,
+  "matt_notified": true,
+  "pdf_bytes": 8453120,
+  "warnings": []
+}
+```
+
+**Auth:** the route accepts either `Authorization: Bearer <CRON_SECRET>` or an active admin Supabase session cookie (same pattern as `/api/admin/run-producer/[id]`).
+
+**Canonical implementation files:**
+- `lib/cma-deliver.ts` — `finalizeAndDeliverCma()` — the core logic
+- `app/api/cma/[slug]/finalize-deliver/route.ts` — the HTTP trigger
+
+**Note:** The CMA HTML build itself is agentic — the agent-in-the-loop runs this SKILL.md recipe (Steps 1–14) to produce the HTML. This step (15) covers everything *after* the HTML exists: PDF render → Gmail draft → Matt notify.
 
 ---
 
@@ -463,7 +606,8 @@ VALUES...
 | `/api/listings/[key]/photos` | Spark photo array per listing | `SPARK_API_KEY`, `SPARK_API_BASE_URL` |
 | `/api/maps/cma-<slug>` | Google Maps Static map | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` |
 | Vercel MCP | get preview URL for the draft branch | (no env var; uses MCP token) |
-| Resend (ops-email-send) | post-finalization email delivery to client | `RESEND_API_KEY`, `mail.ryan-realty.com` sender |
+| `lib/cma-deliver.ts` | Gmail draft + Matt notification on finalization | `GOOGLE_SERVICE_ACCOUNT_*`, `RESEND_API_KEY`, `CRON_SECRET` |
+| Resend (ops-email-send) | Resend fallback + Matt alert | `RESEND_API_KEY`, `RESEND_FROM`, `MATT_ALERT_EMAIL` |
 
 ---
 
