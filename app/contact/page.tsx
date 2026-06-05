@@ -94,6 +94,10 @@ export default async function ContactPage({ searchParams }: PageProps) {
               Ryan Realty<br />
               Central Oregon
             </p>
+            <div className="mt-4">
+              <p className="text-sm text-muted-foreground">Call or text</p>
+              <a href="tel:+15417033095" className="text-lg font-semibold text-primary hover:underline">541.703.3095</a>
+            </div>
             <p className="mt-4 text-sm text-muted-foreground">
               Serving Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and surrounding communities across Central Oregon.
             </p>
