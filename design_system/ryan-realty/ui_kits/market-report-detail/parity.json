@@ -30,6 +30,11 @@
       "blocking": true
     },
     {
+      "name": "MarketDetailStats",
+      "section": "Fuller market stats section after PriceChart. Surfaces median sale price, median $/sqft (with YoY), avg sale-to-list ratio, YoY median price delta, market health label, homes sold + total volume, active inventory, cash-purchase share, median concessions. Data from getCityMarketDetail (market_stats_cache confirmed-existing columns only). Renders only when geoType === 'city'. §0: every on-screen number traces to getCityMarketDetail — columns median_sale_price, median_price_per_sqft_closed, avg_sale_to_list_ratio, yoy_median_price_delta_pct, yoy_ppsf_change_pct, yoy_dom_change, market_health_label, market_health_score, sold_count, total_volume, end_of_period_inventory, cash_purchase_pct, median_concessions_amount.",
+      "blocking": true
+    },
+    {
       "name": "PriceBandTable",
       "section": "'Where the activity is' inventory-by-price-band table. NEW site block at components/site/PriceBandTable.tsx. Currently stubbed with TODO — no DAL price-band aggregation exists yet.",
       "blocking": true
@@ -113,6 +118,7 @@
     "getPriceHistory": "lib/data/market/getPriceHistory.ts, market_stats_cache monthly, limit 24, used by PriceChart",
     "getMarketStats": "lib/data/market/getMarketStats.ts, market_stats_cache 6h freshness, used by methodology trace in ContentSection",
     "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows, used by CityComparisonTable",
+    "getCityMarketDetail": "lib/data/market/getCityMarketDetail.ts, market_stats_cache full projection (confirmed-existing columns only, verified 2026-06-05), 6h freshness, used by MarketDetailStats. City-level only; subdivision deferred.",
     "note": "All DAL functions imported from @/lib/data (G8 compliant). No @/app/actions/* imports."
   },
   "generateStaticParams": {

@@ -40,7 +40,7 @@ import {
   getMarketPulse,
   getPriceHistory,
   getMarketPulseCitySnapshots,
-  getMarketStats,
+  getCityMarketDetail,
 } from '@/lib/data'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -60,6 +60,7 @@ import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import { RelatedAreas, type RelatedAreaItem } from '@/components/site/RelatedAreas'
 import { CTABar } from '@/components/site/CTABar'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MarketDetailStats } from '@/components/site/MarketDetailStats'
 import { Container, DisplayHeading } from '@/components/site/primitives'
 
 // ---------------------------------------------------------------------------
@@ -299,14 +300,17 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   //                  period_type='monthly', limit=24. Source: getPriceHistory.
   //   citySnapshots — market_pulse_live, geo_type='city', geo_slug IN
   //                   COMPARISON_CITY_LABELS. Source: getMarketPulseCitySnapshots.
-  //   stats       — market_stats_cache, most recent monthly row. Source: getMarketStats.
-  //                 Used for refreshedAt + methodology_version in narrative.
+  //   detail      — market_stats_cache, full projection, most recent monthly row.
+  //                 Source: getCityMarketDetail. Used by MarketDetailStats section.
+  //                 City-level only (market_stats_cache city rows verified).
   // -------------------------------------------------------------------------
-  const [pulse, priceHistory, citySnapshots, stats] = await Promise.all([
+  const [pulse, priceHistory, citySnapshots, detail] = await Promise.all([
     getMarketPulse({ geoType, geoSlug }).catch(() => null),
     getPriceHistory(geoType, geoSlug, 'monthly', 24).catch(() => []),
     getMarketPulseCitySnapshots(COMPARISON_CITY_LABELS).catch(() => []),
-    getMarketStats({ geoType, geoSlug, periodType: 'monthly' }).catch(() => null),
+    geoType === 'city'
+      ? getCityMarketDetail({ geoType, geoSlug, periodType: 'monthly' }).catch(() => null)
+      : Promise.resolve(null),
   ])
 
   // Drop in-progress current month from price series to avoid a misleading
@@ -488,6 +492,14 @@ export default async function HousingMarketGeoPage({ params }: Props) {
           data={completePriceMonths}
           tone="muted"
         />
+      ) : null}
+
+      {/* Fuller market stats — closed-sales detail from market_stats_cache.
+          §0: every number traces to getCityMarketDetail (confirmed-existing
+          columns only). City-level only; subdivision detail deferred until
+          market_stats_cache subdivision rows are verified. */}
+      {geoType === 'city' ? (
+        <MarketDetailStats detail={detail} geoName={geoName} />
       ) : null}
 
       {/* Price-band breakdown.

@@ -56,6 +56,7 @@ export type {
   MarketPulse,
   PriceHistoryPoint,
   MarketReport,
+  MarketDetail,
 } from '@/lib/data/types/market'
 
 export type {
@@ -228,6 +229,7 @@ export type {
 
 // Market (real impls — no MV dependency, usable today)
 export { getMarketStats } from '@/lib/data/market/getMarketStats'
+export { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 export {
   getMarketStatsCacheRowForGeo,
   getMarketStatsCacheRowsForGeos,
