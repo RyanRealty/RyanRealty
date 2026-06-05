@@ -1,11 +1,19 @@
 /**
- * getMarketStats — fetch period-anchored market stats for a geo.
+ * getMarketStats — period-anchored CLOSED-SALES stats for a geo.
  *
- * Reads from `public.market_stats_cache` (6-hour freshness per the canonical
- * DB doc). This is the table the marketing brain refreshes every 6 hours
- * with median sale, DOM, MoS, YoY, etc.
+ * Reads from `public.market_stats_cache` (6-hour freshness). This cache holds
+ * closed-sales aggregates: median sale price, median DOM, sold count, avg
+ * sale-to-list, YoY median-price change, end-of-period inventory.
  *
- * No MV dependency — implementation is real and usable today.
+ * It does NOT hold current-inventory metrics (median LIST price, months of
+ * supply) — those live in market_pulse_live (getMarketPulse), so those fields
+ * are null in the returned MarketStats. (For the fuller stats-cache projection
+ * — price/sqft, market health, cash share, concessions — use getCityMarketDetail.)
+ *
+ * BUGFIX 2026-06-05: the prior select listed median_list_price, months_of_supply,
+ * sale_to_list_ratio, active_count, yoy_change_pct, and refreshed_at — none of
+ * which exist in market_stats_cache — so every call errored and the function
+ * always returned null. Now selects only confirmed-existing columns.
  */
 
 import { z } from 'zod'
@@ -46,10 +54,11 @@ async function fetchMarketStats(input: GetMarketStatsInput): Promise<MarketStats
       supabase
         .from('market_stats_cache')
         .select(
+          // Confirmed-existing market_stats_cache columns only (verified 2026-06-05).
           'geo_type, geo_slug, period_type, period_start, period_end, ' +
-            'median_sale_price, median_list_price, median_dom, months_of_supply, ' +
-            'sale_to_list_ratio, sold_count, active_count, yoy_change_pct, ' +
-            'refreshed_at, methodology_version'
+            'median_sale_price, median_dom, avg_sale_to_list_ratio, sold_count, ' +
+            'end_of_period_inventory, yoy_median_price_delta_pct, ' +
+            'updated_at, methodology_version'
         )
         .eq('geo_type', geoType)
         .eq('geo_slug', geoSlug)
@@ -61,7 +70,10 @@ async function fetchMarketStats(input: GetMarketStatsInput): Promise<MarketStats
     if (!data) return null
 
     const row = data as unknown as Record<string, unknown>
-    const monthsOfSupply = row.months_of_supply as number | null
+    // Current-inventory fields (median list price, months of supply) are not in
+    // the sales cache, so they are null here. Callers needing them read the
+    // pulse (getMarketPulse). mosVerdict therefore resolves to null.
+    const monthsOfSupply: number | null = null
     return {
       geoType: row.geo_type as GeoType,
       geoSlug: row.geo_slug as string,
@@ -69,15 +81,16 @@ async function fetchMarketStats(input: GetMarketStatsInput): Promise<MarketStats
       periodStart: row.period_start as IsoTimestamp,
       periodEnd: row.period_end as IsoTimestamp,
       medianSalePrice: row.median_sale_price as number | null,
-      medianListPrice: row.median_list_price as number | null,
+      medianListPrice: null,
       medianDaysOnMarket: row.median_dom as number | null,
       monthsOfSupply,
       mosVerdict: classifyMoS(monthsOfSupply),
-      saleToListRatio: row.sale_to_list_ratio as number | null,
+      saleToListRatio: row.avg_sale_to_list_ratio as number | null,
       soldCount: row.sold_count as number | null,
-      activeCount: row.active_count as number | null,
-      yoyChangePct: row.yoy_change_pct as number | null,
-      refreshedAt: row.refreshed_at as IsoTimestamp,
+      // "active" for the period = end-of-period inventory (the cache's count).
+      activeCount: row.end_of_period_inventory as number | null,
+      yoyChangePct: row.yoy_median_price_delta_pct as number | null,
+      refreshedAt: row.updated_at as IsoTimestamp,
       methodologyVersion: (row.methodology_version as string) ?? 'unknown',
     }
 }

@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-06-05T15:22:58.127Z
+**Generated:** 2026-06-05T17:40:41.222Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -365,8 +365,6 @@ Companion files:
 **Exports:** `getMarketStats`
 
 **Tables:** `market_stats_cache`
-
-**Selected columns:** `geo_type`, `geo_slug`, `period_type`, `period_start`, `period_end`
 
 **TTL windows:** `CACHE_WINDOWS.marketStats`
 
