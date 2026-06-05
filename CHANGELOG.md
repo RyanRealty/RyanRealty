@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.408.1 (2026-06-05)
+
+### Bug Fixes
+- fix(data): getMarketStats queried 6 nonexistent columns (always returned null)
+
+---
+
+
 ## v1.408.0 (2026-06-05)
 
 ### Features
