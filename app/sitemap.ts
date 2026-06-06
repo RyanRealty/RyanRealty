@@ -71,6 +71,10 @@ async function buildAllUrls(baseUrl: string, now: Date): Promise<MetadataRoute.S
     // the Next.js dynamic route + ISR exemplar.
     { url: `${baseUrl}/lp/tetherow/`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/buy`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    // Buyer listing-alerts LP — the buyer lead-capture counterpart to the seller
+    // valuation LP. Previously absent from the sitemap (orphaned from organic
+    // discovery); now crawlable.
+    { url: `${baseUrl}/lp/buyer-listing-alerts`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/lp/bend/`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/lp/tetherow/heath/`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
     { url: `${baseUrl}/our-homes`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },

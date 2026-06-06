@@ -78,6 +78,7 @@ export const MENU: MenuEntry[] = [
         links: [
           { label: 'All homes for sale', href: '/homes-for-sale' },
           { label: 'Map search', href: '/search' },
+          { label: 'Get listing alerts', href: '/lp/buyer-listing-alerts' },
           { label: 'Open houses', href: '/open-houses' },
           { label: 'Compare homes', href: '/compare' },
         ],
@@ -133,11 +134,11 @@ export const MENU: MenuEntry[] = [
       },
     ],
     promo: {
-      eyebrow: 'Search',
-      title: 'Find your place in Central Oregon',
-      body: 'Browse every active listing or search the map.',
-      ctaLabel: 'Open map search',
-      ctaHref: '/search',
+      eyebrow: 'Buyers',
+      title: 'Be first to new listings',
+      body: 'Get homes that match your search the moment they hit the market.',
+      ctaLabel: 'Get listing alerts',
+      ctaHref: '/lp/buyer-listing-alerts',
     },
   },
   {

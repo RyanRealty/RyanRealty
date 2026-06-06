@@ -34,6 +34,13 @@ export default function SiteHeader() {
           <CTAButton href="/login" tone="on-navy-ghost" size="md" className="hidden sm:inline-flex">
             Sign in
           </CTAButton>
+          {/* Buyer counterpart to "List your home" — drives the listing-alerts
+              LP so buyers have a one-click capture path, not just sellers. Ghost
+              (secondary to the solid seller CTA); lg+ only so the header never
+              crowds — smaller screens reach it via the Homes menu + mobile nav. */}
+          <CTAButton href="/lp/buyer-listing-alerts" tone="on-navy-ghost" size="md" className="hidden lg:inline-flex">
+            Get listing alerts
+          </CTAButton>
           <CTAButton href="/lp/seller-home-value" tone="on-navy" size="md" className="hidden sm:inline-flex">
             List your home
           </CTAButton>

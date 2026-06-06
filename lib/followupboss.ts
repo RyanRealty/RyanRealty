@@ -905,11 +905,18 @@ export async function trackSavedPropertySearch(params: {
   const email = params.user?.email?.trim()
   const fubId = params.fubPersonId
   let person: FubEventPerson
+  let resolvedId: number | null = null
   if (email) {
     const existing = await findPersonByEmail(email)
-    person = existing ? { id: existing.id } : { emails: [{ value: email }] }
+    if (existing) {
+      person = { id: existing.id }
+      resolvedId = existing.id
+    } else {
+      person = { emails: [{ value: email }] }
+    }
   } else if (fubId != null && fubId > 0) {
     person = { id: fubId }
+    resolvedId = fubId
   } else {
     return
   }
@@ -925,6 +932,32 @@ export async function trackSavedPropertySearch(params: {
     sourceUrl: params.searchUrl,
     message: `Saved search: ${name}${summary}${count}`,
   })
+
+  // Canonical buyer tagging — saving a search is a warm buyer signal, so tag +
+  // enroll the lead. Without this the person got a "Saved Property Search" event
+  // but NO audience:buyer tag, so they were invisible to qualified_buyer_leads
+  // and never entered the FUB buyer workflow (its automation rule listens for
+  // audience:buyer). The tagger's own compliance guard skips realtors / opt-outs.
+  // Resolve the id after the event in case sendEvent just created the person.
+  // Dynamic import breaks the canonical-lead-tagger <-> followupboss import cycle.
+  // Fully non-blocking — a tagging failure never affects the saved-search flow.
+  if (resolvedId == null && email) {
+    const after = await findPersonByEmail(email)
+    resolvedId = after?.id ?? null
+  }
+  if (resolvedId != null && resolvedId > 0) {
+    try {
+      const { canonicallyTagLead } = await import('@/lib/canonical-lead-tagger')
+      await canonicallyTagLead({
+        fubPersonId: resolvedId,
+        audience: 'buyer',
+        source: 'idx-registration',
+        tier: 'warm',
+      })
+    } catch {
+      // non-blocking
+    }
+  }
 }
 
 /**
