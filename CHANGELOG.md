@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.415.0 (2026-06-06)
+
+### Features
+- feat(cwv): real-user Core Web Vitals (RUM) + scoreboard panel
+
+---
+
+
 ## v1.414.2 (2026-06-06)
 
 ### Other
