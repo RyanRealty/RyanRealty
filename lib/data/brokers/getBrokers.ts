@@ -16,6 +16,7 @@ import { unstable_cache } from 'next/cache'
 import { supabaseAnon, supabaseServer } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import type { Broker } from '@/lib/data/types/broker'
+import { BROKERS, type BrokerKey } from '@/lib/brand/contact'
 
 /** Canonical local transparent headshots, keyed by slug (+ known aliases). */
 const HEADSHOT_PNG: Record<string, string> = {
@@ -51,50 +52,30 @@ function normalizePhone(raw: string | null | undefined): string | null {
  * (verified 2026-06-02). Bios are long-form and live in the DB, so they stay
  * null here; the detail page supplies a factual fallback sentence when absent.
  */
-const FALLBACK_BROKERS: Broker[] = [
-  {
-    slug: 'matthew-ryan',
-    fullName: 'Matt Ryan',
-    title: 'Owner & Principal Broker',
-    email: 'matt@ryan-realty.com',
-    phoneDirect: '541.703.3095',
-    phoneFub: '541.703.3095',
-    headshotPng: '/images/brokers/ryan-matt.png',
-    headshotJpg: '/images/brokers/ryan-matt.jpg',
-    licenseNumber: '201206613',
+/** Render extras not carried in the canonical identity module, keyed by BrokerKey. */
+const FALLBACK_SPECIALTIES: Record<BrokerKey, string[]> = {
+  matt: ['Residential', 'Buyer Representation', 'Seller Services', 'Relocation'],
+  paul: ['Redmond Area', 'Rural Properties', 'First-Time Buyers', 'Family Homes'],
+  rebecca: ['First-Time Buyers', 'Investment Properties', 'Residential Sales', 'Relocation'],
+}
+
+const FALLBACK_BROKERS: Broker[] = (Object.keys(BROKERS) as BrokerKey[]).map((key) => {
+  const b = BROKERS[key]
+  return {
+    slug: b.slug,
+    fullName: b.name,
+    title: b.title,
+    email: b.email,
+    phoneDirect: b.phone,
+    phoneFub: b.phone,
+    headshotPng: HEADSHOT_PNG[b.slug] ?? null,
+    headshotJpg: HEADSHOT_JPG[b.slug] ?? null,
+    licenseNumber: b.license,
     bio: null,
-    isPrincipal: true,
-    specialties: ['Residential', 'Buyer Representation', 'Seller Services', 'Relocation'],
-  },
-  {
-    slug: 'paul-stevenson',
-    fullName: 'Paul Stevenson',
-    title: 'Broker',
-    email: 'paul@ryan-realty.com',
-    phoneDirect: '541.977.6841',
-    phoneFub: '541.977.6841',
-    headshotPng: '/images/brokers/stevenson-paul.png',
-    headshotJpg: '/images/brokers/stevenson-paul.jpg',
-    licenseNumber: '201259123',
-    bio: null,
-    isPrincipal: false,
-    specialties: ['Redmond Area', 'Rural Properties', 'First-Time Buyers', 'Family Homes'],
-  },
-  {
-    slug: 'rebecca-peterson',
-    fullName: 'Rebecca Ryser Peterson',
-    title: 'Broker',
-    email: 'rebeccapeterson@ryan-realty.com',
-    phoneDirect: '415.308.9087',
-    phoneFub: '415.308.9087',
-    headshotPng: '/images/brokers/peterson-rebecca.png',
-    headshotJpg: '/images/brokers/peterson-rebecca.jpg',
-    licenseNumber: '201254727',
-    bio: null,
-    isPrincipal: false,
-    specialties: ['First-Time Buyers', 'Investment Properties', 'Residential Sales', 'Relocation'],
-  },
-]
+    isPrincipal: b.isPrincipal,
+    specialties: FALLBACK_SPECIALTIES[key],
+  }
+})
 
 /** Look up "Matt Ryan" broker (used by FUB pipeline snapshots). */
 export async function getMattBrokerRecord(): Promise<{ id: string; slug?: string | null; email?: string | null } | null> {

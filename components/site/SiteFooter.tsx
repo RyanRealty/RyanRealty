@@ -9,6 +9,7 @@ import {
   TextLink,
 } from '@/components/site/primitives'
 import { FOOTER_NAV, LEGAL_LINKS } from '@/lib/site-nav'
+import { BRAND, CONTACT, BROKERS } from '@/lib/brand/contact'
 
 /**
  * SiteFooter — comprehensive multi-column footer driven by FOOTER_NAV
@@ -68,22 +69,22 @@ export default function SiteFooter() {
             <div className="text-[13px] text-white/72 tabular-nums space-y-1">
               <p className="flex items-center gap-1.5">
                 <TextLink
-                  href="tel:5412136706"
+                  href={`tel:${CONTACT.phoneDirectTel}`}
                   tone="on-navy"
                   weight="normal"
                   underline="never"
                 >
-                  541.213.6706
+                  {CONTACT.phoneDirect}
                 </TextLink>
                 <MiddleDot className="text-white/40" />
                 <TextLink
-                  href="https://ryan-realty.com"
+                  href={BRAND.url}
                   tone="on-navy"
                   weight="normal"
                   underline="never"
                   external
                 >
-                  ryan-realty.com
+                  {BRAND.domain}
                 </TextLink>
               </p>
               <p>
@@ -142,11 +143,11 @@ export default function SiteFooter() {
           <Caption tone="on-photo" className="text-white/50 leading-[1.6]">
             Listings data provided by Oregon Data Share and Morgan Data Shuttle.
             Information deemed reliable but not guaranteed. All listings courtesy of
-            participating MLS members. &copy; {new Date().getFullYear()} Ryan Realty LLC{' '}
-            <MiddleDot className="text-white/40" /> Bend, Oregon{' '}
+            participating MLS members. &copy; {new Date().getFullYear()} {BRAND.legalName}{' '}
+            <MiddleDot className="text-white/40" /> {BRAND.address.city}, {BRAND.address.regionFull}{' '}
             <MiddleDot className="text-white/40" /> Licensed in the State of Oregon{' '}
             <MiddleDot className="text-white/40" /> Principal Broker license{' '}
-            <span className="tabular-nums">201206613</span>. Equal Housing Opportunity.
+            <span className="tabular-nums">{BROKERS.matt.license}</span>. Equal Housing Opportunity.
           </Caption>
         </div>
       </Container>

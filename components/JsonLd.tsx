@@ -14,19 +14,7 @@
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
 import type { Broker } from '@/lib/data/types/broker'
 import { teamPath } from '@/lib/slug'
-
-// Social profiles — LOCKED 2026-05-13 (CLAUDE.md): @ryanrealtybend everywhere,
-// /ryanrealtybend on Facebook + LinkedIn vanity.
-const SAME_AS = [
-  'https://www.instagram.com/ryanrealtybend',
-  'https://www.facebook.com/ryanrealtybend',
-  'https://www.youtube.com/@ryanrealtybend',
-  'https://www.tiktok.com/@ryanrealtybend',
-  'https://x.com/ryanrealtybend',
-  'https://www.linkedin.com/company/ryanrealtybend',
-  'https://www.pinterest.com/ryanrealtybend',
-  'https://www.threads.net/@ryanrealtybend',
-]
+import { BRAND, CONTACT, SOCIAL_PROFILES } from '@/lib/brand/contact'
 
 /** "541.213.6706" -> "+1-541-213-6706" (schema.org E.164-ish telephone). */
 function toTel(dotted: string | null | undefined): string | undefined {
@@ -65,7 +53,7 @@ function brokerAgent(b: Broker, baseUrl: string): Record<string, unknown> {
 }
 
 export default async function JsonLd() {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? BRAND.url).replace(/\/$/, '')
   const brokers = await getBrokers().catch(() => [] as Broker[])
   const principal = brokers.find((b) => b.isPrincipal) ?? null
   const team = brokers.filter((b) => !b.isPrincipal)
@@ -74,14 +62,14 @@ export default async function JsonLd() {
     '@context': 'https://schema.org',
     '@type': ['RealEstateAgent', 'LocalBusiness'],
     '@id': `${baseUrl}#organization`,
-    name: 'Ryan Realty',
-    legalName: 'Ryan Realty LLC',
+    name: BRAND.name,
+    legalName: BRAND.legalName,
     description:
       'Independent real estate brokerage serving Bend, Redmond, Sisters, Sunriver, and Central Oregon. Browse homes for sale, search by city and neighborhood, and see live market data.',
     url: baseUrl,
-    telephone: '+1-541-213-6706',
-    email: 'matt@ryan-realty.com',
-    foundingDate: '2023-06-21',
+    telephone: CONTACT.phoneDirectTel,
+    email: CONTACT.email.primary,
+    foundingDate: BRAND.founded,
     areaServed: {
       '@type': 'GeoCircle',
       geoMidpoint: { '@type': 'GeoCoordinates', latitude: 44.0582, longitude: -121.3153 },
@@ -89,11 +77,11 @@ export default async function JsonLd() {
     },
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'Bend',
-      addressRegion: 'OR',
+      addressLocality: BRAND.address.city,
+      addressRegion: BRAND.address.region,
       addressCountry: 'US',
     },
-    sameAs: SAME_AS,
+    sameAs: SOCIAL_PROFILES,
     founder: principal ? brokerAgent(principal, baseUrl) : undefined,
     employee: team.length > 0 ? team.map((b) => brokerAgent(b, baseUrl)) : undefined,
   })
@@ -102,7 +90,7 @@ export default async function JsonLd() {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     '@id': `${baseUrl}#website`,
-    name: 'Ryan Realty',
+    name: BRAND.name,
     url: baseUrl,
     description: 'Search Central Oregon homes for sale. Browse listings, maps, and live market data.',
     publisher: { '@id': `${baseUrl}#organization` },
