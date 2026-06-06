@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.414.1 (2026-06-06)
+
+### Other
+- seo(communities): retarget H1 + lede to "homes for sale" intent
+
+---
+
+
 ## v1.414.0 (2026-06-06)
 
 ### Features
