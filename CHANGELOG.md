@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.410.4 (2026-06-06)
+
+### Bug Fixes
+- fix(gate): de-noise brand-voice gate (125 -> 14) + ratchet baseline
+
+---
+
+
 ## v1.410.3 (2026-06-06)
 
 ### Bug Fixes
