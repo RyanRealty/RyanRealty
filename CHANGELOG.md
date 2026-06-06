@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.413.0 (2026-06-06)
+
+### Features
+- feat(ai-citability): close AI structured-data gaps + extend the gate
+
+---
+
+
 ## v1.412.0 (2026-06-06)
 
 ### Features
