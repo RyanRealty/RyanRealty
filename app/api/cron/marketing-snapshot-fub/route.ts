@@ -43,7 +43,15 @@ const FUB_BASE = 'https://api.followupboss.com/v1'
 // Comparison is case-insensitive (see isSellerLead helper).
 // nurture-only is explicitly excluded — those are not yet qualified.
 const SELLER_LEAD_TAGS = new Set<string>([
-  // Playbook kebab-case (canonical doc)
+  // Canonical schema (docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4) — QUALIFIED
+  // tiers only. The tagger applies `audience:seller` to every seller plus
+  // `seller:<tier>`; nurture-only leads are NOT yet qualified, so we match the
+  // hot/warm tiers and deliberately omit `audience:seller` (carried by nurture
+  // leads too) and `seller:nurture`. Added 2026-06-06 — before this, canonical
+  // leads since 2026-05-17 were undercounted to 0.
+  'seller:hot',
+  'seller:warm',
+  // Playbook kebab-case (legacy canonical doc)
   'hot-seller',
   'warm-seller',
   'seller',

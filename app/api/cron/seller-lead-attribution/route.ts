@@ -34,9 +34,22 @@ export const maxDuration = 120
 const FUB_BASE = 'https://api.followupboss.com/v1'
 const DEFAULT_LOOKBACK_HOURS = 24
 
-// Canonical seller-intent tags (from docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md §2
-// and docs/FUB_SELLER_WORKFLOW_2026-05-17.md tag schema).
+// Seller-intent tags. This cron attributes ALL seller leads (no nurture
+// exclusion), so it matches the canonical audience marker + every tier.
+//
+// CANONICAL schema (docs/FUB_SELLER_WORKFLOW_2026-05-17.md §4): the lead tagger
+// applies `audience:seller` to every seller plus `seller:<tier>`
+// (hot|warm|nurture, default nurture). Before 2026-06-06 this set held ONLY the
+// legacy strings below, so every canonically-tagged lead since 2026-05-17 was
+// filtered out and attributed_count was always 0. Both schemas are kept so
+// pre- and post-migration leads attribute.
 const SELLER_TAGS = new Set([
+  // Canonical (2026-05-17+)
+  'audience:seller',
+  'seller:hot',
+  'seller:warm',
+  'seller:nurture',
+  // Legacy (pre-2026-05-17)
   'hot-seller',
   'warm-seller',
   'seller',
