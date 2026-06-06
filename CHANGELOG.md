@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.410.0 (2026-06-06)
+
+### Features
+- feat(brand): canonical broker-facts module + G38 gate
+
+---
+
+
 ## v1.409.2 (2026-06-06)
 
 ### Bug Fixes
