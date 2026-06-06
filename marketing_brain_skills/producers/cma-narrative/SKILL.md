@@ -17,8 +17,8 @@ optional_inputs: ['comp_count (default 6)', 'include_pricing_strategy (default t
 estimated_runtime_min: 25
 cost_usd_estimate: $0
 thumbnail_uri: public/cmas/cma-21042-robin/cma.html
-example_outputs: []
-    label: Tumalo Reservoir - CMA exemplar
+example_outputs:
+  - label: Tumalo Reservoir - CMA exemplar
     surface: print
 
 ---

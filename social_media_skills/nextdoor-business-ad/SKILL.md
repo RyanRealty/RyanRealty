@@ -8,7 +8,6 @@ description: >
 action_types:
   - content:nextdoor_business_ad
 output_type: paid-ad
-output_type: paid-ad
 target_platforms: ['nextdoor']
 asset_destination: "out/nextdoor/<campaign_id>/"
 auto_inputs: ['recent_listings', 'brand_assets']

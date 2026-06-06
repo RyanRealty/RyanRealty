@@ -9,7 +9,6 @@ description: >
 action_types:
   - content:market_report_blog
 output_type: text
-output_type: text
 target_platforms: ['agentfire_blog', 'gbp', 'email']
 asset_destination: "out/blog-posts/<date>/"
 auto_inputs: ['market_stats_cache', 'market_pulse_live', 'listing_history']

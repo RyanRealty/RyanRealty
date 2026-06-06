@@ -593,7 +593,7 @@ There are THREE ways a producer can actually run. The first is canonical and rep
 **Migration status (2026-05-21):**
 - `PRODUCER_RUNTIME_ENABLED=true` set in Vercel production env.
 - `require_action_row()` shipped in `_producer_lib.py` (commit 749377f). No producer scripts call it yet — opt-in as scripts are touched.
-- REGISTRY reconciled against on-disk inventory (out/audits/registry-reconciliation-2026-05-22.md). 43 producers wired, 8 skill-only.
+- REGISTRY reconciled: 80 brain-callable producers in REGISTRY, 8 skill-only (NO_SCRIPT).
 
 ### The protocol: `marketing_brain_actions` table
 

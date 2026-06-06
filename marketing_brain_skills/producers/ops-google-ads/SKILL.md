@@ -12,7 +12,6 @@ action_types:
   - ops:google_keyword_swap
   - ops:google_negative_add
 output_type: operational
-output_type: operational
 target_platforms: []
 asset_destination: marketing_brain_actions row + Google Ads API
 auto_inputs: ['google_ads_performance', 'keyword_data']

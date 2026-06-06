@@ -9,7 +9,6 @@ description: >
 action_types:
   - content:meta_creative_variant
 output_type: paid-ad
-output_type: paid-ad
 target_platforms: []
 asset_destination: "out/meta-creatives/<campaign_id>/"
 auto_inputs: ['existing_ad_performance', 'listing_photos', 'brand_assets']

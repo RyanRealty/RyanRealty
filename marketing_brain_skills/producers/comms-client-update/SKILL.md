@@ -11,7 +11,6 @@ action_types:
   - comms:client_milestone
   - comms:past_client_touch
 output_type: text
-output_type: operational
 target_platforms: ['email']
 asset_destination: marketing_brain_actions row + email/SMS
 auto_inputs: ['fub_contact_data', 'transaction_status']

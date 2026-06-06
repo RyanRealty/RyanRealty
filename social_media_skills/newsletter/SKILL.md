@@ -8,7 +8,6 @@ description: >
 action_types:
   - content:newsletter
 output_type: text
-output_type: text
 target_platforms: ['email']
 asset_destination: "out/newsletters/<date>/"
 auto_inputs: ['market_stats_cache', 'recent_listings', 'content_performance']

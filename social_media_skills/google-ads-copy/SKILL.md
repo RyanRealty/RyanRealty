@@ -9,7 +9,6 @@ description: >
 action_types:
   - content:google_ads_copy
 output_type: paid-ad
-output_type: paid-ad
 target_platforms: []
 asset_destination: "out/google-ads/<campaign_id>/"
 auto_inputs: ['existing_ad_performance', 'keywords', 'landing_page_url']

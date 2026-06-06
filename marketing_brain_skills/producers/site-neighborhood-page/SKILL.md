@@ -9,7 +9,6 @@ action_types:
   - site:neighborhood_page_create
   - site:neighborhood_page_update
 output_type: web-page
-output_type: web-page
 target_platforms: []
 asset_destination: app/neighborhoods/[slug]/page.tsx
 auto_inputs: ['market_stats_cache', 'neighborhood_boundaries', 'recent_listings']

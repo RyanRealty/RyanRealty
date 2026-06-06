@@ -2,7 +2,7 @@
 
 The brain reads this file at decision-time to know which producer handles which `action_type`. New producer? Add a row here and the brain immediately knows.
 
-**Last audited:** 2026-05-14.
+**Last audited:** 2026-06-06.
 **Canonical source for each producer:** the `SKILL.md` at the listed path.
 **Template for new producers:** `marketing_brain_skills/producers/TEMPLATE.md`.
 

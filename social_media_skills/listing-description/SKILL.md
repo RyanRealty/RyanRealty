@@ -8,7 +8,6 @@ description: >
 action_types:
   - content:listing_description
 output_type: text
-output_type: text
 target_platforms: ['zillow']
 asset_destination: "out/listing-descriptions/<mls_id>/"
 auto_inputs: ['mls_listing_record', 'listing_photos']
