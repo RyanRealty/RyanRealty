@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-04T02:05:32.518Z",
-  "total": 164,
+  "generatedAt": "2026-06-05T22:53:25.397Z",
+  "total": 163,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/admin/(protected)/analytics/_components/charts.tsx": 1,
@@ -36,7 +36,7 @@
     "app/admin/(protected)/visitors/live/page.tsx": 1,
     "app/api/cma/[slug]/gmail-draft/route.ts": 1,
     "app/api/cron/analytics-daily-digest/route.ts": 2,
-    "app/api/cron/marketing-optimization-report/route.ts": 3,
+    "app/api/cron/marketing-optimization-report/route.ts": 2,
     "app/api/cron/visitor-hot-lead-escalation/route.ts": 2,
     "app/api/meta/oauth-callback/route.ts": 2,
     "app/area-guides/loading.tsx": 1,

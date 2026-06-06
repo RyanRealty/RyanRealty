@@ -162,12 +162,12 @@ export default async function ComparePage({
           <div className="mb-6">
             <DisplayHeading
               as="h1"
-              className="text-[clamp(2rem,4vw,2.75rem)] leading-[1.08] tracking-[-0.02em]"
+              className="text-4xl sm:text-5xl tracking-[-0.02em]"
             >
               Compare properties
             </DisplayHeading>
             {ids.length === 0 && (
-              <Body size="default" tone="muted" className="mt-2 max-w-[56ch]">
+              <Body size="default" tone="muted" className="mt-2 max-w-prose">
                 Add homes from any search or listing page to compare them side by side. Up to 4 properties at a time.
               </Body>
             )}

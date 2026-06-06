@@ -384,7 +384,7 @@ export default async function CentralOregonRegionPage() {
         tone="default"
         divider
       >
-        <div className="flex flex-col gap-4 text-muted-foreground text-[15px] leading-[1.65]">
+        <div className="flex flex-col gap-4 text-muted-foreground text-base leading-relaxed">
           <p>{narrativeWhat}</p>
           {narrativeMethod ? (
             <p className="text-xs text-muted-foreground border-t border-border pt-4 mt-2">
