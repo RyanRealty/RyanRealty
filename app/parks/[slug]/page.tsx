@@ -24,7 +24,7 @@ import {
   getParkBoundaryGeoJSON,
   type ParkHomeTile,
 } from '@/lib/data'
-import { CO_PARKS, type ParkType } from '@/data/co-parks'
+import { CO_PARKS, getParkBySlug, type ParkType } from '@/data/co-parks'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
@@ -67,10 +67,12 @@ export function generateStaticParams(): Array<{ slug: string }> {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const detail = await getParkDetail(slug)
-  if (!detail) notFound()
+  // Registry-only — the metadata needs no live data, so it never touches the
+  // DB. That keeps a transient listings timeout from failing metadata
+  // generation (and shaves a query off every render).
+  const park = getParkBySlug(slug)
+  if (!park) notFound()
 
-  const { park } = detail
   const typeLabel = TYPE_LABEL[park.type].toLowerCase()
   const desc = `${park.name} is a ${typeLabel} in ${park.city}, Central Oregon. See what is there and the homes for sale nearby, from Ryan Realty, a local Central Oregon brokerage.`
 
@@ -98,10 +100,21 @@ function homeToCard(home: ParkHomeTile): ListingCardData {
 export default async function ParkDetailPage({ params }: Props) {
   const { slug } = await params
 
-  const detail = await getParkDetail(slug)
-  if (!detail) notFound()
+  // The park's core content (blurb, amenities, acreage) comes from the static
+  // registry; only the nearby homes need the DB. A transient listings timeout
+  // (Supabase 57014) must never fail the static build or 500 the page — degrade
+  // to the park with zero homes (which already has its own empty state) and let
+  // ISR retry on the next revalidate. getParkDetail returns null for an unknown
+  // slug and throws on a DB error; the registry lookup tells the two apart, so a
+  // real 404 still 404s while a transient timeout renders the park.
+  const detail = await getParkDetail(slug).catch(() => null)
+  const park = detail?.park ?? getParkBySlug(slug)
+  if (!park) notFound()
 
-  const { park, homes, stats, nearbyParks } = detail
+  const homes = detail?.homes ?? []
+  const stats = detail?.stats ?? { count: 0, medianListPrice: null }
+  const nearbyParks =
+    detail?.nearbyParks ?? CO_PARKS.filter((p) => p.slug !== park.slug && p.city === park.city)
 
   // The map frames the park's official boundary polygon, then renders the
   // nearby-home pins inside the same view. The polygon is the authoritative
