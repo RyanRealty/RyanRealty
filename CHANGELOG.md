@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.410.5 (2026-06-06)
+
+### Bug Fixes
+- fix(attribution): C10 — readers recognize the canonical seller tag schema
+
+---
+
+
 ## v1.410.4 (2026-06-06)
 
 ### Bug Fixes
